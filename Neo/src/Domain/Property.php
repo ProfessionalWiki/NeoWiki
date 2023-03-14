@@ -10,7 +10,6 @@ class Property {
 		private PropertyId $id,
 		private PropertyType $type,
 	) {
-
 	}
 
 }
