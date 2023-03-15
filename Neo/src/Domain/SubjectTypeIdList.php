@@ -17,4 +17,14 @@ class SubjectTypeIdList {
 	) {
 	}
 
+	/**
+	 * @return string[]
+	 */
+	public function toStringArray(): array {
+		return array_map(
+			fn( SubjectTypeId $id ) => $id->text,
+			$this->ids
+		);
+	}
+
 }
