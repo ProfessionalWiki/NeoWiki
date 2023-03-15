@@ -7,8 +7,12 @@ namespace ProfessionalWiki\NeoWiki\Domain;
 class Subject {
 
 	public function __construct(
-		private SubjectId $id,
-		private SubjectData $data,
+		public readonly SubjectId $id,
+		public readonly SubjectTypeIdList $types,
+		// TODO: "fingerprint"?
+		// TODO: "same as" identifiers?
+		public readonly RelationList $relations,
+		public readonly SubjectProperties $properties,
 	) {
 	}
 
