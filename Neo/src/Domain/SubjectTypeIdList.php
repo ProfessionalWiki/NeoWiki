@@ -4,10 +4,16 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain;
 
-class SubjectId {
+/**
+ * "Instance Of"
+ */
+class SubjectTypeIdList {
 
 	public function __construct(
-		public readonly string $text,
+		/**
+		 * @var SubjectTypeId[]
+		 */
+		public readonly array $ids
 	) {
 	}
 
