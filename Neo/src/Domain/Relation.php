@@ -9,7 +9,7 @@ class Relation {
 	public function __construct(
 		public readonly RelationId $id,
 		public readonly RelationTypeId $type,
-		public readonly SubjectId $target,
+		public readonly SubjectId $targetId,
 		public readonly RelationProperties $properties,
 	) {
 	}
