@@ -70,7 +70,7 @@ class SubjectContent extends \JsonContent {
 				fn( string $id, stdClass $relation ) => new Relation(
 					id: new RelationId( $id ),
 					type: new RelationTypeId( $relation->type ),
-					target: new SubjectId( $relation->target ),
+					targetId: new SubjectId( $relation->target ),
 					properties: new RelationProperties( (array)( ( (array)$relation )['properties'] ?? [] ) ),
 				),
 				array_keys( $relations ),
