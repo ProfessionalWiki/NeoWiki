@@ -46,7 +46,7 @@ class SubjectContent extends \JsonContent {
 		$jsonArray = (array)$this->getData()->getValue();
 
 		return new Subject(
-			id: new SubjectId( 'Berlin.node' ), // TODO
+			id: new SubjectId( 'Berlin' ), // TODO
 			types: $this->newSubjectTypeIdList( $jsonArray ),
 			relations: $this->newRelationList( $jsonArray ),
 			properties: $this->newSubjectProperties( $jsonArray ),
