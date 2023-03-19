@@ -27,7 +27,7 @@ class CypherContentHandler extends \TextContentHandler {
 		Content $content,
 		ContentParseParams $cpoParams,
 		ParserOutput &$parserOutput
-	) {
+	): void {
 		if ( !$cpoParams->getGenerateHtml() ) {
 			$parserOutput->setText( null );
 			return;
@@ -44,8 +44,14 @@ class CypherContentHandler extends \TextContentHandler {
 		);
 	}
 
-	private function outputVisualization( ParserOutput &$parserOutput, SummarizedResult $queryResult ) {
-		$parserOutput->setText( \Html::element( 'pre', [], json_encode($this->convertToVisjsData($queryResult), JSON_PRETTY_PRINT) ) );
+	private function outputVisualization( ParserOutput &$parserOutput, SummarizedResult $queryResult ): void {
+		$parserOutput->setText(
+			\Html::element(
+				'pre',
+				[],
+				(string)json_encode( $this->convertToVisjsData( $queryResult ), JSON_PRETTY_PRINT )
+			)
+		);
 	}
 
 	private function convertToVisJsData( SummarizedResult $result ): array {
