@@ -17,6 +17,10 @@ class MediaWikiHooks {
 		if ( str_ends_with( $title->getText(), '.node' ) ) {
 			$model = SubjectContent::CONTENT_MODEL_ID;
 		}
+
+		if ( str_ends_with( $title->getText(), '.query' ) ) {
+			$model = CypherContent::CONTENT_MODEL_ID;
+		}
 	}
 
 	public static function onMultiContentSave(
