@@ -45,11 +45,48 @@ class CypherContentHandler extends \TextContentHandler {
 	private function outputVisualization( ParserOutput &$parserOutput, SummarizedResult $queryResult ): void {
 		// TODO: show message if query result is empty
 
-		$parserOutput->addModules( [ 'ext.neowiki.visjs' ] );
+//		$parserOutput->addModules( [ 'ext.neowiki.visjs' ] );
+//
+//		$visJs = new VisJsOutput();
+//
+//		$parserOutput->setText( $visJs->buildHtmlForQueryResult( $queryResult ) );
 
-		$visJs = new VisJsOutput();
+		$parserOutput->addModules( [ 'ext.neowiki.popoto' ] );
 
-		$parserOutput->setText( $visJs->buildHtmlForQueryResult( $queryResult ) );
+		$parserOutput->setText(
+			<<<HTML
+<section class="ppt-section-main" style="height: 700px">
+    <div class="ppt-section-header">
+        <span class="ppt-header-span">Neo4j movie graph -</span> Results example
+    </div>
+
+    <div class="ppt-container-graph">
+
+        <div id="popoto-taxonomy" class="ppt-taxo-nav">
+
+        </div>
+
+        <div id="popoto-graph" class="ppt-div-graph">
+            <!-- Graph is generated here -->
+        </div>
+    </div>
+
+    <div id="popoto-cypher" class="ppt-container-query">
+        <!-- Query viewer is generated here -->
+    </div>
+
+    <!-- Add a header with total number of results count -->
+    <div class="ppt-section-header">
+        RESULTS <span id="rescount" class="ppt-count"></span>
+    </div>
+
+    <div id="popoto-results" class="ppt-container-results">
+        <!-- Results are generated here -->
+    </div>
+
+</section>
+HTML
+		);
 	}
 
 }
