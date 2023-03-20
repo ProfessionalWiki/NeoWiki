@@ -89,6 +89,11 @@ HTML
 				if ( $value instanceof Node ) {
 					$nodes[$value->getId()] = [
 						'id' => $value->getId(),
+						'label' => $value->getProperties()->get( 'name', $value->getProperties()->get( 'id', '' ) ),
+						'title' => json_encode(
+							[ 'labels' => $value->getLabels()->toArray(), 'properties' => $value->getProperties()->toArray() ],
+							JSON_PRETTY_PRINT
+						),
 						'labels' => $value->getLabels()->toArray(),
 						'properties' => $value->getProperties()->toArray()
 					];
@@ -96,7 +101,9 @@ HTML
 					$edges[] = [
 						'from' => $value->getStartNodeId(),
 						'to' => $value->getEndNodeId(),
+						'arrows' => 'to',
 						'label' => $value->getType(),
+						'title' => json_encode( $value->getProperties()->toArray(), JSON_PRETTY_PRINT  ),
 						'properties' => $value->getProperties()->toArray(),
 					];
 				}
