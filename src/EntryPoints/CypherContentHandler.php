@@ -45,12 +45,35 @@ class CypherContentHandler extends \TextContentHandler {
 	}
 
 	private function outputVisualization( ParserOutput &$parserOutput, SummarizedResult $queryResult ): void {
+		// TODO: show message if query result is empty
+
+		$parserOutput->addModules( [ 'ext.neowiki.visjs' ] );
+
+		$json = json_encode( $this->convertToVisJsData( $queryResult ), JSON_PRETTY_PRINT );
+
+		$id = uniqid( 'viz_' );
+
 		$parserOutput->setText(
-			\Html::element(
-				'pre',
-				[],
-				(string)json_encode( $this->convertToVisjsData( $queryResult ), JSON_PRETTY_PRINT )
-			)
+			<<<HTML
+<style type="text/css">
+	.NeoWikiQueryViz {
+		width: 85vw;
+		height: 80vh;
+		border: 1px solid lightgray;
+		font: 22pt arial;
+	}
+</style>
+
+<div id="{$id}" class="NeoWikiQueryViz"></div>
+
+<script type="text/javascript">
+	if ( typeof window.NeoWikiVizData === "undefined" ) {
+		window.NeoWikiVizData = {};
+	}
+
+	window.NeoWikiVizData['{$id}'] = {$json};
+</script>
+HTML
 		);
 	}
 
@@ -64,7 +87,7 @@ class CypherContentHandler extends \TextContentHandler {
 		foreach ( $result as $record ) {
 			foreach ( $record->values() as $value ) {
 				if ( $value instanceof Node ) {
-					$nodes[] = [
+					$nodes[$value->getId()] = [
 						'id' => $value->getId(),
 						'labels' => $value->getLabels()->toArray(),
 						'properties' => $value->getProperties()->toArray()
@@ -81,7 +104,7 @@ class CypherContentHandler extends \TextContentHandler {
 		}
 
 		return [
-			'nodes' => $nodes,
+			'nodes' => array_values( $nodes ),
 			'edges' => $edges
 		];
 	}
