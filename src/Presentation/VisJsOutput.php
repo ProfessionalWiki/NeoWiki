@@ -52,7 +52,7 @@ HTML;
 							[ 'labels' => $value->getLabels()->toArray(), 'properties' => $value->getProperties()->toArray() ],
 							JSON_PRETTY_PRINT
 						),
-						'labels' => $value->getLabels()->toArray(),
+						'types' => $value->getLabels()->toArray(),
 						'properties' => $value->getProperties()->toArray()
 					];
 				} elseif ( $value instanceof Relationship ) {
