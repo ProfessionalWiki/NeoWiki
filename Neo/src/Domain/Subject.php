@@ -8,12 +8,22 @@ class Subject {
 
 	public function __construct(
 		public readonly SubjectId $id,
+		public readonly SubjectLabel $label,
 		public readonly SubjectTypeIdList $types,
-		// TODO: "fingerprint"?
 		// TODO: "same as" identifiers?
 		public readonly RelationList $relations,
 		public readonly SubjectProperties $properties,
 	) {
+	}
+
+	public static function newSubject( SubjectId $id, SubjectLabel $label ): self {
+		return new self(
+			id: $id,
+			label: $label,
+			types: new SubjectTypeIdList( [] ),
+			relations: new RelationList( [] ),
+			properties: new SubjectProperties( [] ),
+		);
 	}
 
 }
