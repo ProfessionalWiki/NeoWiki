@@ -21,7 +21,9 @@ class StoreContentUC {
 			$content = $slot->getContent();
 
 			if ( $content instanceof SubjectContent ) {
-				$this->queryStore->saveSubject( $content->getSubject() );
+				foreach ( $content->getSubjects()->asArray() as $subject ) {
+					$this->queryStore->saveSubject( $subject );
+				}
 			}
 		}
 	}
