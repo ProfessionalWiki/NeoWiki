@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\UseCases;
 use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
+use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
 
 class StoreContentUC {
@@ -17,15 +18,20 @@ class StoreContentUC {
 	}
 
 	public function storeContent( RenderedRevision $renderedRevision, UserIdentity $user ): void {
+		$allSubjects = new SubjectMap();
+
 		foreach ( $renderedRevision->getRevision()->getSlots()->getSlots() as $slot ) {
 			$content = $slot->getContent();
 
 			if ( $content instanceof SubjectContent ) {
-				foreach ( $content->getSubjects()->asArray() as $subject ) {
-					$this->queryStore->saveSubject( $subject );
-				}
+				$allSubjects->append( $content->getSubjects() );
 			}
 		}
+
+		$this->queryStore->savePage(
+			pageId: $renderedRevision->getRevision()->getPageId(),
+			subjects: $allSubjects
+		);
 	}
 
 }
