@@ -26,4 +26,14 @@ class Subject {
 		);
 	}
 
+	/**
+	 * @return string[]
+	 */
+	public function getRelationsAsIdStringArray(): array {
+		return array_map(
+			fn( Relation $relation ): string => $relation->id->text,
+			$this->relations->relations
+		);
+	}
+
 }

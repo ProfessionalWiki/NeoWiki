@@ -9,7 +9,7 @@ class SubjectMap {
 	/**
 	 * @var array<string, Subject>
 	 */
-	private $subjects = [];
+	private array $subjects = [];
 
 	public function __construct( Subject ...$subjects ) {
 		foreach ( $subjects as $subject ) {
@@ -26,6 +26,19 @@ class SubjectMap {
 	 */
 	public function asArray(): array {
 		return array_values( $this->subjects );
+	}
+
+	public function append( self $subjectMap ): void {
+		foreach ( $subjectMap->asArray() as $subject ) {
+			$this->subjects[$subject->id->text] = $subject;
+		}
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public function getIdsAsTextArray(): array {
+		return array_keys( $this->subjects );
 	}
 
 }
