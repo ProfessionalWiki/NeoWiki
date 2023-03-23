@@ -9,7 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
 
 interface QueryStore {
 
-	public function savePage( int $pageId, SubjectMap $subjects ): void;
+	public function savePage( int $pageId, string $pageTitle, SubjectMap $subjects ): void;
 
 	public function runReadQuery( string $cypher ): SummarizedResult;
 

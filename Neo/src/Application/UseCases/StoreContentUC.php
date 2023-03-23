@@ -30,6 +30,7 @@ class StoreContentUC {
 
 		$this->queryStore->savePage(
 			pageId: $renderedRevision->getRevision()->getPageId(),
+			pageTitle: $renderedRevision->getRevision()->getPageAsLinkTarget()->getText(),
 			subjects: $allSubjects
 		);
 	}
