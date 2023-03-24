@@ -5,12 +5,14 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use CommentStoreComment;
+use MediaWiki\Extension\Network\NetworkFunction\NetworkConfig;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentity;
+use Parser;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Status;
 use Title;
@@ -60,6 +62,13 @@ class MediaWikiHooks {
 		string $reason,
 		RevisionRecord $revision
 	): void {
+	}
+
+	public static function onParserFirstCallInit( Parser $parser ): void {
+		$parser->setFunctionHook(
+			'cypher',
+			NeoWikiExtension::getInstance()->newCypherFunction()->handleParserFunctionCall( ... )
+		);
 	}
 
 }
