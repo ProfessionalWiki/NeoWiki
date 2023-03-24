@@ -11,6 +11,8 @@ interface QueryStore {
 
 	public function savePage( int $pageId, string $pageTitle, SubjectMap $subjects ): void;
 
+	public function deletePage( int $pageId ): void;
+
 	public function runReadQuery( string $cypher ): SummarizedResult;
 
 }

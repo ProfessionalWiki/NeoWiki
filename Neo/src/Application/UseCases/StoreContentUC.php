@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\UseCases;
 
 use MediaWiki\Revision\RenderedRevision;
-use MediaWiki\User\UserIdentity;
+use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
@@ -17,10 +17,14 @@ class StoreContentUC {
 	) {
 	}
 
-	public function storeContent( RenderedRevision $renderedRevision, UserIdentity $user ): void {
+	public function onPageSave( RenderedRevision $renderedRevision ): void {
+		$this->storeRevisionRecord( $renderedRevision->getRevision() );
+	}
+
+	private function storeRevisionRecord( RevisionRecord $revisionRecord ): void {
 		$allSubjects = new SubjectMap();
 
-		foreach ( $renderedRevision->getRevision()->getSlots()->getSlots() as $slot ) {
+		foreach ( $revisionRecord->getSlots()->getSlots() as $slot ) {
 			$content = $slot->getContent();
 
 			if ( $content instanceof SubjectContent ) {
@@ -29,10 +33,20 @@ class StoreContentUC {
 		}
 
 		$this->queryStore->savePage(
-			pageId: $renderedRevision->getRevision()->getPageId(),
-			pageTitle: $renderedRevision->getRevision()->getPageAsLinkTarget()->getText(),
+			pageId: $revisionRecord->getPageId(),
+			pageTitle: $revisionRecord->getPageAsLinkTarget()->getText(),
 			subjects: $allSubjects
 		);
+	}
+
+	public function onPageDelete( int $pageId ): void {
+		$this->queryStore->deletePage( $pageId );
+	}
+
+	public function onPageUndelete( RevisionRecord $restoredRevision ): void {
+		// TODO: this might be getting called for all revisions. We should only store the latest one.
+		// Calling isCurrent() on the RevisionRecord does not work, because it is always false.
+		$this->storeRevisionRecord( $restoredRevision );
 	}
 
 }
