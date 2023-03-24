@@ -5,7 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use CommentStoreComment;
+use MediaWiki\Linker\LinkTarget;
+use MediaWiki\Page\ProperPageIdentity;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RenderedRevision;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Status;
@@ -30,13 +34,32 @@ class MediaWikiHooks {
 		$flags,
 		Status $hookStatus
 	): void {
-		NeoWikiExtension::getInstance()->getStoreContentUC()->storeContent( $renderedRevision, $user );
+		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageSave( $renderedRevision );
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
 		if ( $model === SubjectContent::CONTENT_MODEL_ID ) {
 			$lang = 'json';
 		}
+	}
+
+	public static function onPageDeleteComplete( ProperPageIdentity $page, Authority $deleter, string $reason, int $pageId, RevisionRecord $deletedRev ): void {
+		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageDelete( $pageId );
+	}
+
+	public static function onRevisionUndeleted( RevisionRecord $restoredRevision, ?int $oldPageId ): void {
+		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageUndelete( $restoredRevision );
+	}
+
+	public static function onPageMoveComplete(
+		LinkTarget $old,
+		LinkTarget $new,
+		UserIdentity $userIdentity,
+		int $pageId,
+		int $redirectId,
+		string $reason,
+		RevisionRecord $revision
+	): void {
 	}
 
 }
