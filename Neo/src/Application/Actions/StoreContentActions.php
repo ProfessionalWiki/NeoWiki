@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Application\UseCases;
+namespace ProfessionalWiki\NeoWiki\Application\Actions;
 
 use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
 
-class StoreContentUC {
+class StoreContentActions {
 
 	public function __construct(
 		private readonly QueryStore $queryStore,
