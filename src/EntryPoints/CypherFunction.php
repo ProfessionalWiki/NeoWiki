@@ -64,8 +64,18 @@ class CypherFunction {
 		return [
 			'id' => $subject->getProperties()->get( 'id' ),
 			'types' => $subject->getLabels(),
-			'properties' => array_diff_key( $subject->getProperties()->toRecursiveArray(), [ 'id' => '' ] )
+			'properties' => $this->getPropertiesFromSubjectNode( $subject )
 		];
+	}
+
+	private function getPropertiesFromSubjectNode( Node $subject ): array {
+		return array_map(
+			fn( mixed $value ): array => [ 'values' => (array)$value ],
+			array_diff_key(
+				$subject->getProperties()->toRecursiveArray(),
+				[ 'id' => '' ]
+			)
+		);
 	}
 
 	private function defaultEmptyProperties( array $subjects ): array {
@@ -74,7 +84,7 @@ class CypherFunction {
 		return array_map(
 			function( array $subject ) use ( $propertyNames ): array {
 				$subject['properties'] = array_merge(
-					array_fill_keys( $propertyNames, '' ),
+					array_fill_keys( $propertyNames, [ 'values' => [] ] ),
 					$subject['properties']
 				);
 
