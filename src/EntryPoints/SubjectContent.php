@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 use FormatJson;
 use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectSlotDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\SubjectSlotSerializer;
 
 class SubjectContent extends \JsonContent {
 
@@ -25,6 +26,10 @@ class SubjectContent extends \JsonContent {
 
 	public function getSubjects(): SubjectMap {
 		return ( new SubjectSlotDeserializer() )->deserialize( $this->getText() );
+	}
+
+	public function setSubjects( SubjectMap $subjects ): void {
+		$this->mText = ( new SubjectSlotSerializer() )->serialize( $subjects );
 	}
 
 }
