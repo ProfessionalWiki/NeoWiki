@@ -18,7 +18,15 @@ class SubjectMap {
 	}
 
 	public function getSubject( SubjectId $id ): Subject {
-		return $this->subjects[$id->text];
+		if ( array_key_exists( $id->text, $this->subjects ) ) {
+			return $this->subjects[$id->text];
+		}
+
+		throw new \OutOfBoundsException( 'Subject not found' );
+	}
+
+	public function hasSubject( SubjectId $id ): bool {
+		return array_key_exists( $id->text, $this->subjects );
 	}
 
 	/**
@@ -29,9 +37,11 @@ class SubjectMap {
 	}
 
 	public function append( self $subjectMap ): void {
-		foreach ( $subjectMap->asArray() as $subject ) {
-			$this->subjects[$subject->id->text] = $subject;
-		}
+		array_walk( $subjectMap->subjects, $this->updateSubject( ... ) );
+	}
+
+	public function updateSubject( Subject $subject ): void {
+		$this->subjects[$subject->id->text] = $subject;
 	}
 
 	/**
