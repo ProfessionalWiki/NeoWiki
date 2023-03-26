@@ -18,12 +18,15 @@ class PatchSubjectApi extends SimpleHandler {
 	}
 
 	public function run( string $subjectId ): Response {
+		// TODO: format validation?
+		$request = json_decode( $this->getRequest()->getBody()->getContents(), true );
+
 		$this->patchSubjectAction->patch(
 			new SubjectId( $subjectId ),
-			[] // TODO: get patch from request
+			$request['properties'] // TODO: support property removal. Maybe second list. Maybe null values. Maybe other approach?
 		);
 
-		return new Response();
+		return new Response( json_encode( $request ) );
 	}
 
 	public function getParamSettings(): array {
@@ -33,7 +36,6 @@ class PatchSubjectApi extends SimpleHandler {
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
 			],
-			// TODO: define patch format
 		];
 	}
 

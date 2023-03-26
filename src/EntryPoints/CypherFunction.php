@@ -24,6 +24,8 @@ class CypherFunction {
 	public function handleParserFunctionCall( Parser $parser, string ...$arguments ): array {
 		// TODO: check if argument exists
 
+		$parser->getOutput()->addModules( [ 'ext.neowiki.editor' ] );
+
 		$results = $this->queryStore->runReadQuery( $arguments[0] )->getResults();
 
 		return [
