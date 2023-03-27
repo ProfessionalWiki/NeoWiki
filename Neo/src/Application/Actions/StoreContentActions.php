@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions;
 use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
+use ProfessionalWiki\NeoWiki\Domain\PageInfo;
 use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
 
@@ -34,7 +35,9 @@ class StoreContentActions {
 
 		$this->queryStore->savePage(
 			pageId: $revisionRecord->getPageId(),
-			pageTitle: $revisionRecord->getPageAsLinkTarget()->getText(),
+			pageInfo: new PageInfo(
+				title: $revisionRecord->getPageAsLinkTarget()->getText()
+			),
 			subjects: $allSubjects
 		);
 	}
