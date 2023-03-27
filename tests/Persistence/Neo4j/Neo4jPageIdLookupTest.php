@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jPageIdLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\Tests\TestPageInfo;
 use ProfessionalWiki\NeoWiki\Tests\TestSubject;
 
 /**
@@ -48,15 +49,15 @@ class Neo4jPageIdLookupTest extends TestCase {
 
 		$queryStore->savePage(
 			pageId: 1,
-			pageTitle: 'Bar',
+			pageInfo: TestPageInfo::build(),
 			subjects: new SubjectMap(
-				TestSubject::build( id: 'GUID-5' ),
+				TestSubject::build( id: 'GUID-4' ),
 			)
 		);
 
 		$queryStore->savePage(
 			pageId: 42,
-			pageTitle: 'Right',
+			pageInfo: TestPageInfo::build(),
 			subjects: new SubjectMap(
 				TestSubject::build( id: 'GUID-1' ),
 				TestSubject::build( id: 'GUID-2' ), // Target
@@ -66,9 +67,9 @@ class Neo4jPageIdLookupTest extends TestCase {
 
 		$queryStore->savePage(
 			pageId: 32202,
-			pageTitle: 'Foo',
+			pageInfo: TestPageInfo::build(),
 			subjects: new SubjectMap(
-				TestSubject::build( id: 'GUID-4' ),
+				TestSubject::build( id: 'GUID-5' ),
 			)
 		);
 

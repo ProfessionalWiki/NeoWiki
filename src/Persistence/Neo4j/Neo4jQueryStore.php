@@ -9,6 +9,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherList;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
+use ProfessionalWiki\NeoWiki\Domain\PageInfo;
 use ProfessionalWiki\NeoWiki\Domain\Subject;
 use ProfessionalWiki\NeoWiki\Domain\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
@@ -22,8 +23,8 @@ class Neo4jQueryStore implements QueryStore {
 	) {
 	}
 
-	public function savePage( int $pageId, string $pageTitle, SubjectMap $subjects ): void {
-		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $pageId, $pageTitle, $subjects ) {
+	public function savePage( int $pageId, PageInfo $pageInfo, SubjectMap $subjects ): void {
+		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $pageId, $pageInfo, $subjects ) {
 			$transaction->run(
 				'
 				// Create or update the page
@@ -43,7 +44,7 @@ class Neo4jQueryStore implements QueryStore {
 				',
 				[
 					'pageId' => $pageId,
-					'pageTitle' => $pageTitle,
+					'pageTitle' => $pageInfo->title,
 					'subjectIds' => $subjects->getIdsAsTextArray()
 				]
 			);
