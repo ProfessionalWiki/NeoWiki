@@ -17,12 +17,8 @@ class SubjectMap {
 		}
 	}
 
-	public function getSubject( SubjectId $id ): Subject {
-		if ( array_key_exists( $id->text, $this->subjects ) ) {
-			return $this->subjects[$id->text];
-		}
-
-		throw new \OutOfBoundsException( 'Subject not found' );
+	public function getSubject( SubjectId $id ): ?Subject {
+		return $this->subjects[$id->text] ?? null;
 	}
 
 	public function hasSubject( SubjectId $id ): bool {
