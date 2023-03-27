@@ -24,7 +24,10 @@ class Neo4jPageIdLookup implements PageIdLookup {
 				 * @var SummarizedResult $result
 				 */
 				$result = $transaction->run(
-					'MATCH (page:Page)-[:HasSubject]->({id: $subjectId}) RETURN page.id AS pageId',
+					'
+					MATCH (page:Page)-[:HasSubject]->(subject)
+					WHERE subject.id = $subjectId
+					RETURN page.id AS pageId',
 					[ 'subjectId' => $subjectId->text ]
 				);
 
