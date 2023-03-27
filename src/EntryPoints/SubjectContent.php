@@ -32,4 +32,10 @@ class SubjectContent extends \JsonContent {
 		$this->mText = ( new SubjectSlotSerializer() )->serialize( $subjects );
 	}
 
+	public static function newFromSubjects( SubjectMap $subjects ): self {
+		$content = new self( '' );
+		$content->setSubjects( $subjects );
+		return $content;
+	}
+
 }
