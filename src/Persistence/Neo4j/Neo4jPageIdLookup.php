@@ -24,11 +24,15 @@ class Neo4jPageIdLookup implements PageIdLookup {
 				 * @var SummarizedResult $result
 				 */
 				$result = $transaction->run(
-					'MATCH (page:Page)-[:HasSubject]->({id: $subjectId}) RETURN page.id',
+					'MATCH (page:Page)-[:HasSubject]->({id: $subjectId}) RETURN page.id AS pageId',
 					[ 'subjectId' => $subjectId->text ]
 				);
 
-				// TODO
+				$arrayResult = $result->getResults()->toRecursiveArray();
+
+				if ( array_key_exists( 0, $arrayResult ) && array_key_exists( 'pageId', $arrayResult[0] ) ) {
+					return (int)$arrayResult[0]['pageId'];
+				}
 
 				return null;
 			}
