@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
+use ProfessionalWiki\NeoWiki\Domain\PageInfo;
 use ProfessionalWiki\NeoWiki\Domain\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
 
@@ -16,7 +17,7 @@ class InMemoryQueryStore implements QueryStore {
 	 */
 	private array $subjectsByPageId = [];
 
-	public function savePage( int $pageId, string $pageTitle, SubjectMap $subjects ): void {
+	public function savePage( int $pageId, PageInfo $pageInfo, SubjectMap $subjects ): void {
 		$this->subjectsByPageId[$pageId] = $subjects;
 	}
 

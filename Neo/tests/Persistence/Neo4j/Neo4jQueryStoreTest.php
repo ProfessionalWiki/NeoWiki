@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\Tests\TestPageInfo;
 use ProfessionalWiki\NeoWiki\Tests\TestSubject;
 
 /**
@@ -41,7 +42,9 @@ class Neo4jQueryStoreTest extends TestCase {
 
 		$store->savePage(
 			pageId: 42,
-			pageTitle: 'TestPage',
+			pageInfo: TestPageInfo::build(
+				title: 'TestPage'
+			),
 			subjects: new SubjectMap()
 		);
 
@@ -71,7 +74,7 @@ class Neo4jQueryStoreTest extends TestCase {
 
 		$store->savePage(
 			pageId: 42,
-			pageTitle: 'TestPage',
+			pageInfo: TestPageInfo::build(),
 			subjects: new SubjectMap(
 				TestSubject::build( id: 'GUID-1' ),
 				TestSubject::build( id: 'GUID-2' ),
@@ -100,7 +103,7 @@ class Neo4jQueryStoreTest extends TestCase {
 
 		$store->savePage(
 			pageId: 42,
-			pageTitle: 'TestPage',
+			pageInfo: TestPageInfo::build(),
 			subjects: new SubjectMap(
 				TestSubject::build( id: 'GUID-1' ),
 				TestSubject::build( id: 'GUID-2' ),
@@ -109,7 +112,7 @@ class Neo4jQueryStoreTest extends TestCase {
 
 		$store->savePage(
 			pageId: 42,
-			pageTitle: 'TestPage',
+			pageInfo: TestPageInfo::build(),
 			subjects: new SubjectMap(
 				TestSubject::build( id: 'GUID-1' ),
 				TestSubject::build( id: 'GUID-3' ),
@@ -128,17 +131,17 @@ class Neo4jQueryStoreTest extends TestCase {
 
 		$store->savePage(
 			pageId: 10,
-			pageTitle: 'TestPage 1',
+			pageInfo: TestPageInfo::build(),
 			subjects: new SubjectMap( TestSubject::build( id: 'GUID-1' ), )
 		);
 		$store->savePage(
 			pageId: 20,
-			pageTitle: 'TestPage 2',
+			pageInfo: TestPageInfo::build(),
 			subjects: new SubjectMap( TestSubject::build( id: 'GUID-2' ), )
 		);
 		$store->savePage(
 			pageId: 30,
-			pageTitle: 'TestPage 3',
+			pageInfo: TestPageInfo::build(),
 			subjects: new SubjectMap( TestSubject::build( id: 'GUID-3' ), )
 		);
 
