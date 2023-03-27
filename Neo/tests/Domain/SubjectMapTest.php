@@ -26,12 +26,9 @@ class SubjectMapTest extends TestCase {
 		);
 	}
 
-	public function testGetSubjectThrowsExceptionIfNotFound(): void {
+	public function testGetSubjectReturnsNullIfNotFound(): void {
 		$subjectMap = new SubjectMap();
-
-		$this->expectException( \OutOfBoundsException::class );
-
-		$subjectMap->getSubject( new SubjectId( '123' ) );
+		$this->assertNull( $subjectMap->getSubject( new SubjectId( '123' ) ) );
 	}
 
 	public function testHasSubject(): void {
