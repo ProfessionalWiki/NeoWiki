@@ -17,10 +17,6 @@ class PatchSubjectApiTest extends \MediaWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
 	public function testSmoke(): void {
-		// TODO: environment for integration tests should do this by default
-		NeoWikiExtension::getInstance()->setQueryStore( new SpyQueryStore() );
-		NeoWikiExtension::getInstance()->setSubjectRepository( new InMemorySubjectRepository() );
-
 		$response = $this->executeHandler(
 			NeoWikiExtension::getInstance()->newPatchSubjectApi(),
 			new RequestData( [
