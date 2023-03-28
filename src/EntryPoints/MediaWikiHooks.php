@@ -4,18 +4,15 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
-use CommentStoreComment;
-use MediaWiki\Extension\Network\NetworkFunction\NetworkConfig;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Permissions\Authority;
-use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentity;
 use Parser;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use Status;
 use Title;
+use WikiPage;
 
 class MediaWikiHooks {
 
@@ -29,14 +26,17 @@ class MediaWikiHooks {
 		}
 	}
 
-	public static function onMultiContentSave(
-		RenderedRevision $renderedRevision,
+	/**
+	 * @see RevisionFromEditCompleteHook
+	 */
+	public static function onRevisionFromEditComplete(
+		WikiPage $wikiPage,
+		RevisionRecord $revision,
+		int|bool $originalRevId,
 		UserIdentity $user,
-		CommentStoreComment $summary,
-		$flags,
-		Status $hookStatus
+		array &$tags
 	): void {
-		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageSave( $renderedRevision );
+		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision );
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
