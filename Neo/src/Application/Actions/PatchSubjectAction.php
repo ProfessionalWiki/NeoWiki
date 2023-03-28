@@ -23,7 +23,12 @@ class PatchSubjectAction {
 	public function patch( SubjectId $subjectId, array $patch ): void {
 		$subject = $this->subjectRepository->getSubject( $subjectId );
 
-		// TODO: apply patch
+		if ( $subject === null ) {
+			throw new \RuntimeException( 'Subject not found: ' . $subjectId->text );
+		}
+
+		$subject->applyPatch( $patch );
+		$this->subjectRepository->saveSubject( $subject );
 	}
 
 }

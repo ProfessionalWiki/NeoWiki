@@ -11,6 +11,6 @@ interface SubjectRepository {
 
 	public function getSubject( SubjectId $subjectId ): ?Subject;
 
-	public function storeSubject( Subject $subject ): void;
+	public function saveSubject( Subject $subject ): void;
 
 }

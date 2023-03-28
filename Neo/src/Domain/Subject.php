@@ -12,7 +12,7 @@ class Subject {
 		public readonly SubjectTypeIdList $types,
 		// TODO: "same as" identifiers?
 		public readonly RelationList $relations,
-		public readonly SubjectProperties $properties,
+		private SubjectProperties $properties,
 	) {
 	}
 
@@ -34,6 +34,17 @@ class Subject {
 			fn( Relation $relation ): string => $relation->id->text,
 			$this->relations->relations
 		);
+	}
+
+	/**
+	 * @param array<string, array> $patch Property name to list of new values
+	 */
+	public function applyPatch( array $patch ): void {
+		$this->properties = $this->properties->applyPatch( $patch );
+	}
+
+	public function getProperties(): SubjectProperties {
+		return $this->properties;
 	}
 
 }

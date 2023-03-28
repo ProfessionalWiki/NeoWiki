@@ -8,10 +8,23 @@ class SubjectProperties {
 
 	public function __construct(
 		/**
-		 * @var array<string, string|int|array<int|string>>
+		 * @var array<string, array<string|int|array<int|string>>>
 		 */
 		public readonly array $map,
 	) {
+	}
+
+	/**
+	 * @param array<string, array> $patch Property name to list of new values
+	 */
+	public function applyPatch( array $patch ): self {
+		$newMap = $this->map;
+
+		foreach ( $patch as $propertyName => $values ) {
+			$newMap[$propertyName] = $values;
+		}
+
+		return new self( $newMap );
 	}
 
 }

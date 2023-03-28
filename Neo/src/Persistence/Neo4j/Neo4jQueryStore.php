@@ -75,7 +75,7 @@ class Neo4jQueryStore implements QueryStore {
 			[
 				'id' => $subject->id->text,
 				'props' => array_merge(
-					$subject->properties->map,
+					$subject->getProperties()->map,
 					[
 						'name' => $subject->label->text,
 						'id' => $subject->id->text,

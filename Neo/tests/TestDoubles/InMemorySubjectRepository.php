@@ -19,7 +19,7 @@ class InMemorySubjectRepository implements SubjectRepository {
 		return $this->subjects[$subjectId->text] ?? null;
 	}
 
-	public function storeSubject( Subject $subject ): void {
+	public function saveSubject( Subject $subject ): void {
 		$this->subjects[$subject->id->text] = $subject;
 	}
 
