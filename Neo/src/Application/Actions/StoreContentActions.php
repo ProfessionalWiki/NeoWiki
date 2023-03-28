@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions;
 
-use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\PageInfo;
@@ -18,8 +17,8 @@ class StoreContentActions {
 	) {
 	}
 
-	public function onPageSave( RenderedRevision $renderedRevision ): void {
-		$this->storeRevisionRecord( $renderedRevision->getRevision() );
+	public function onRevisionCreated( RevisionRecord $revisionRecord ): void {
+		$this->storeRevisionRecord( $revisionRecord );
 	}
 
 	private function storeRevisionRecord( RevisionRecord $revisionRecord ): void {
@@ -31,6 +30,10 @@ class StoreContentActions {
 			if ( $content instanceof SubjectContent ) {
 				$allSubjects->append( $content->getSubjects() );
 			}
+		}
+
+		if ( $revisionRecord->getPageId() === 0 ) {
+			throw new \RuntimeException( 'Page ID should not be 0' );
 		}
 
 		$this->queryStore->savePage(
@@ -47,6 +50,8 @@ class StoreContentActions {
 	}
 
 	public function onPageUndelete( RevisionRecord $restoredRevision ): void {
+		// TODO: is this needed? Likely onRevisionCreated is already triggered
+
 		// TODO: this might be getting called for all revisions. We should only store the latest one.
 		// Calling isCurrent() on the RevisionRecord does not work, because it is always false.
 		$this->storeRevisionRecord( $restoredRevision );
