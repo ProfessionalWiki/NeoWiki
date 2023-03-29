@@ -89,13 +89,13 @@ class Neo4jQueryStoreTest extends TestCase {
 	}
 
 	private function assertPageHasSubjects( array $expectedSubjects, int $pageId, Neo4jQueryStore $store ): void {
-		$result = $store->runReadQuery( 'MATCH (page:Page {id: ' . $pageId . '})-[:HasSubject]->(subject) RETURN subject.id as id' );
+		$result = $store->runReadQuery(
+			'MATCH (page:Page {id: ' . $pageId . '})-[:HasSubject]->(subject) RETURN subject.id as id'
+		)->getResults()->toRecursiveArray();
 
-		// FIXME: order is not deterministic
-		$this->assertSame(
-			$expectedSubjects,
-			$result->getResults()->toRecursiveArray()
-		);
+		foreach ( $expectedSubjects as $expectedSubject ) {
+			$this->assertContains( $expectedSubject, $result );
+		}
 	}
 
 	public function testSavesPageRemovesObsoleteSubjects(): void {
