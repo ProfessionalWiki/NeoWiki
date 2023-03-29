@@ -6,8 +6,8 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use FormatJson;
 use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
-use ProfessionalWiki\NeoWiki\Persistence\SubjectSlotDeserializer;
-use ProfessionalWiki\NeoWiki\Persistence\SubjectSlotSerializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotSerializer;
 
 class SubjectContent extends \JsonContent {
 

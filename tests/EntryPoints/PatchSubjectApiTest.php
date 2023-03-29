@@ -10,8 +10,6 @@ use ProfessionalWiki\NeoWiki\Domain\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\TestSubject;
 
 /**
