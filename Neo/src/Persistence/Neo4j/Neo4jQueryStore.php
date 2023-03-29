@@ -13,8 +13,6 @@ use ProfessionalWiki\NeoWiki\Domain\PageInfo;
 use ProfessionalWiki\NeoWiki\Domain\Subject;
 use ProfessionalWiki\NeoWiki\Domain\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
-use ProfessionalWiki\NeoWiki\Persistence\Cypher;
-use RuntimeException;
 
 class Neo4jQueryStore implements QueryStore {
 
