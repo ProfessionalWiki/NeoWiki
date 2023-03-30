@@ -71,4 +71,8 @@ class MediaWikiHooks {
 		);
 	}
 
+	public static function onScribuntoExternalLibraries( string $engine, array &$extraLibraries ): void {
+		$extraLibraries['NeoWiki'] = NeoWikiLua::class;
+	}
+
 }
