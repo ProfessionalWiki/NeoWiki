@@ -4,18 +4,18 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
-use ProfessionalWiki\NeoWiki\Domain\Relation;
-use ProfessionalWiki\NeoWiki\Domain\RelationId;
-use ProfessionalWiki\NeoWiki\Domain\RelationList;
-use ProfessionalWiki\NeoWiki\Domain\RelationProperties;
-use ProfessionalWiki\NeoWiki\Domain\RelationTypeId;
-use ProfessionalWiki\NeoWiki\Domain\Subject;
-use ProfessionalWiki\NeoWiki\Domain\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
-use ProfessionalWiki\NeoWiki\Domain\SubjectProperties;
-use ProfessionalWiki\NeoWiki\Domain\SubjectTypeId;
-use ProfessionalWiki\NeoWiki\Domain\SubjectTypeIdList;
+use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationTypeId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeIdList;
 
 class SubjectSlotDeserializer {
 

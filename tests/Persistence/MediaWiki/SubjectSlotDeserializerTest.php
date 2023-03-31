@@ -5,9 +5,9 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\Subject;
-use ProfessionalWiki\NeoWiki\Domain\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 
