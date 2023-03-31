@@ -14,8 +14,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeIdList;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotSerializer;
-use ProfessionalWiki\NeoWiki\Tests\TestRelation;
-use ProfessionalWiki\NeoWiki\Tests\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotSerializer
