@@ -6,12 +6,12 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 
 use Laudis\Neo4j\Types\CypherMap;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
-use ProfessionalWiki\NeoWiki\Tests\TestPageInfo;
-use ProfessionalWiki\NeoWiki\Tests\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore
@@ -40,13 +40,12 @@ class Neo4jQueryStoreTest extends TestCase {
 	public function testSavesPageIdAndTitle(): void {
 		$store = $this->newQueryStore();
 
-		$store->savePage(
-			pageId: 42,
-			pageInfo: TestPageInfo::build(
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build(
 				title: 'TestPage'
-			),
-			subjects: new SubjectMap()
-		);
+			)
+		) );
 
 		$result = $store->runReadQuery( 'MATCH (page:Page {id: 42}) RETURN properties(page) as page' );
 
@@ -72,14 +71,13 @@ class Neo4jQueryStoreTest extends TestCase {
 	public function testSavesPageSubjects(): void {
 		$store = $this->newQueryStore();
 
-		$store->savePage(
-			pageId: 42,
-			pageInfo: TestPageInfo::build(),
-			subjects: new SubjectMap(
+		$store->savePage( TestPage::build(
+			id: 42,
+			childSubjects: new SubjectMap(
 				TestSubject::build( id: 'GUID-1' ),
 				TestSubject::build( id: 'GUID-2' ),
 			)
-		);
+		) );
 
 		$this->assertPageHasSubjects(
 			[ [ 'id' => 'GUID-1' ], [ 'id' => 'GUID-2' ] ],
@@ -101,53 +99,26 @@ class Neo4jQueryStoreTest extends TestCase {
 	public function testSavesPageRemovesObsoleteSubjects(): void {
 		$store = $this->newQueryStore();
 
-		$store->savePage(
-			pageId: 42,
-			pageInfo: TestPageInfo::build(),
-			subjects: new SubjectMap(
+		$store->savePage( TestPage::build(
+			id: 42,
+			childSubjects: new SubjectMap(
 				TestSubject::build( id: 'GUID-1' ),
 				TestSubject::build( id: 'GUID-2' ),
 			)
-		);
+		) );
 
-		$store->savePage(
-			pageId: 42,
-			pageInfo: TestPageInfo::build(),
-			subjects: new SubjectMap(
+		$store->savePage( TestPage::build(
+			id: 42,
+			childSubjects: new SubjectMap(
 				TestSubject::build( id: 'GUID-1' ),
 				TestSubject::build( id: 'GUID-3' ),
 			)
-		);
+		) );
 
 		$this->assertPageHasSubjects(
 			[ [ 'id' => 'GUID-1' ], [ 'id' => 'GUID-3' ] ],
 			42,
 			$store
-		);
-	}
-
-	public function testGetPageIdForSubject(): void {
-		$store = $this->newQueryStore();
-
-		$store->savePage(
-			pageId: 10,
-			pageInfo: TestPageInfo::build(),
-			subjects: new SubjectMap( TestSubject::build( id: 'GUID-1' ), )
-		);
-		$store->savePage(
-			pageId: 20,
-			pageInfo: TestPageInfo::build(),
-			subjects: new SubjectMap( TestSubject::build( id: 'GUID-2' ), )
-		);
-		$store->savePage(
-			pageId: 30,
-			pageInfo: TestPageInfo::build(),
-			subjects: new SubjectMap( TestSubject::build( id: 'GUID-3' ), )
-		);
-
-		$this->assertSame(
-			20,
-			$store->getPageIdForSubject( new SubjectId( 'GUID-2' ) )
 		);
 	}
 

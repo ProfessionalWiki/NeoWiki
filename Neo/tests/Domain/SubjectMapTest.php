@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\Tests\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap
