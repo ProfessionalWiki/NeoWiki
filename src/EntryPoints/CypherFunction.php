@@ -22,14 +22,22 @@ class CypherFunction {
 	 * @return array<mixed, mixed>
 	 */
 	public function handleParserFunctionCall( Parser $parser, string ...$arguments ): array {
-		// TODO: check if argument exists
-
 		$parser->getOutput()->addModules( [ 'ext.neowiki.editor' ] );
+
+		if ( trim( $arguments[0] ) === '' ) {
+			return $this->buildParserFunctionHtmlResponse( 'Cypher query is missing' );
+		}
 
 		$results = $this->queryEngine->runReadQuery( $arguments[0] )->getResults();
 
+		return $this->buildParserFunctionHtmlResponse(
+			$this->createMediaWikiHtmlTable( $results ) . $this->createJsonOutput( $results )
+		);
+	}
+
+	private function buildParserFunctionHtmlResponse( string $html ): array {
 		return [
-			$this->createMediaWikiHtmlTable( $results ) . $this->createJsonOutput( $results ),
+			$html,
 			'noparse' => true,
 			'isHTML' => true,
 		];
