@@ -11,8 +11,8 @@ use MediaWiki\Revision\SlotRecord;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Application\PageIdLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Domain\Subject;
-use ProfessionalWiki\NeoWiki\Domain\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
 use WikiPage;
 

@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubjectAction;
-use ProfessionalWiki\NeoWiki\Domain\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class PatchSubjectApi extends SimpleHandler {

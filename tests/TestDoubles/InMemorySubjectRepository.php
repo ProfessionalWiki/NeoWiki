@@ -5,8 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Domain\Subject;
-use ProfessionalWiki\NeoWiki\Domain\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 class InMemorySubjectRepository implements SubjectRepository {
 

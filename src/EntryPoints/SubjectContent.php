@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use FormatJson;
-use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotSerializer;
 
