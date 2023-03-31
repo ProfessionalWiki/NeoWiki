@@ -8,12 +8,14 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherList;
+use ProfessionalWiki\NeoWiki\Application\QueryEngine;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-class Neo4jQueryStore implements QueryStore {
+class Neo4jQueryStore implements QueryStore, QueryEngine {
 
 	public function __construct(
 		private ClientInterface $client,
@@ -163,7 +165,7 @@ class Neo4jQueryStore implements QueryStore {
 	// TODO: add deleteSubject function
 	// TODO: page should not always be deleted due to incoming links. Difference between ID and title in meaning
 
-	public function deletePage( int $pageId ): void {
+	public function deletePage( PageId $pageId ): void {
 		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $pageId ) {
 			foreach ( $this->getSubjectIdsByPageId( $transaction, $pageId ) as $subjectId ) {
 				$this->deleteSubject( $transaction, new SubjectId( $subjectId ) );
@@ -174,14 +176,14 @@ class Neo4jQueryStore implements QueryStore {
 	/**
 	 * @return string[]
 	 */
-	private function getSubjectIdsByPageId( TransactionInterface $transaction, int $pageId ): array {
+	private function getSubjectIdsByPageId( TransactionInterface $transaction, PageId $pageId ): array {
 		/**
 		 * @var SummarizedResult $result
 		 */
 		$result = $transaction->run(
 			'MATCH (page:Page {id: $pageId})-[:HasSubject]->(subject:Subject)
 				RETURN subject.id AS id, subject AS properties, labels(subject) AS labels',
-			[ 'pageId' => $pageId ]
+			[ 'pageId' => $pageId->id ]
 		);
 
 		return $result->toArray();
