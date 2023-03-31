@@ -11,8 +11,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jPageIdLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
-use ProfessionalWiki\NeoWiki\Tests\TestPageInfo;
-use ProfessionalWiki\NeoWiki\Tests\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jPageIdLookup
@@ -47,31 +47,28 @@ class Neo4jPageIdLookupTest extends TestCase {
 		$client = $this->getClient();
 		$queryStore = new Neo4jQueryStore( $client );
 
-		$queryStore->savePage(
-			pageId: 1,
-			pageInfo: TestPageInfo::build(),
-			subjects: new SubjectMap(
+		$queryStore->savePage( TestPage::build(
+			id: 1,
+			childSubjects: new SubjectMap(
 				TestSubject::build( id: 'GUID-4' ),
 			)
-		);
+		) );
 
-		$queryStore->savePage(
-			pageId: 42,
-			pageInfo: TestPageInfo::build(),
-			subjects: new SubjectMap(
+		$queryStore->savePage( TestPage::build(
+			id: 42,
+			childSubjects: new SubjectMap(
 				TestSubject::build( id: 'GUID-1' ),
 				TestSubject::build( id: 'GUID-2' ), // Target
 				TestSubject::build( id: 'GUID-3' ),
 			)
-		);
+		) );
 
-		$queryStore->savePage(
-			pageId: 32202,
-			pageInfo: TestPageInfo::build(),
-			subjects: new SubjectMap(
+		$queryStore->savePage( TestPage::build(
+			id: 32202,
+			childSubjects: new SubjectMap(
 				TestSubject::build( id: 'GUID-5' ),
 			)
-		);
+		) );
 
 		$this->assertSame(
 			42,
