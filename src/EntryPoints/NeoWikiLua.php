@@ -12,7 +12,7 @@ class NeoWikiLua extends Scribunto_LuaLibraryBase {
 
 	public function register(): array {
 		return $this->getEngine()->registerInterface(
-			__DIR__ . '/NeoWiki.lua',
+			__DIR__ . '/../NeoWiki.lua',
 			[
 				'getLabel' => fn( string $subjectId ): array => [ $this->getLabel( $subjectId ) ],
 			]
