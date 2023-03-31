@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Domain;
+namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 
 class RelationList {
 

@@ -5,13 +5,13 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\TestSubject;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Domain\SubjectMap
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap
  */
 class SubjectMapTest extends TestCase {
 

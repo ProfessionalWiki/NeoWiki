@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Actions;
 
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Domain\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 class PatchSubjectAction {
 
