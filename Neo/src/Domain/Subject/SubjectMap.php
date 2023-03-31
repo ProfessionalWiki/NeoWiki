@@ -32,6 +32,9 @@ class SubjectMap {
 		return array_values( $this->subjects );
 	}
 
+	/**
+	 * TODO: return new instance rather than mutate
+	 */
 	public function append( self $subjectMap ): void {
 		array_walk( $subjectMap->subjects, $this->updateSubject( ... ) );
 	}
@@ -45,6 +48,16 @@ class SubjectMap {
 	 */
 	public function getIdsAsTextArray(): array {
 		return array_keys( $this->subjects );
+	}
+
+	public function prepend( ?Subject $subject ): self {
+		$subjects = $this->subjects;
+
+		if ( $subject !== null ) {
+			$subjects = [ $subject ] + $subjects;
+		}
+
+		return new self( ...$subjects );
 	}
 
 }
