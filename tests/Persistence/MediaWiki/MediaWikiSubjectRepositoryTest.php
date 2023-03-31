@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository

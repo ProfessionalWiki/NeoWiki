@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
-use ProfessionalWiki\NeoWiki\Tests\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent
