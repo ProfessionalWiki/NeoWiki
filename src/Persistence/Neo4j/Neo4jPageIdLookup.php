@@ -8,7 +8,7 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use ProfessionalWiki\NeoWiki\Application\PageIdLookup;
-use ProfessionalWiki\NeoWiki\Domain\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 class Neo4jPageIdLookup implements PageIdLookup {
 

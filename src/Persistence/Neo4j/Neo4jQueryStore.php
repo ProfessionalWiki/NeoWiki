@@ -10,9 +10,9 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherList;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\PageInfo;
-use ProfessionalWiki\NeoWiki\Domain\Subject;
-use ProfessionalWiki\NeoWiki\Domain\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 
 class Neo4jQueryStore implements QueryStore {
 
