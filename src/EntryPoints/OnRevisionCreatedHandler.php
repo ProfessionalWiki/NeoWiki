@@ -50,7 +50,7 @@ class OnRevisionCreatedHandler {
 	}
 
 	public function onPageDelete( int $pageId ): void {
-		$this->queryStore->deletePage( $pageId );
+		$this->queryStore->deletePage( new PageId( $pageId ) );
 	}
 
 	public function onPageUndelete( RevisionRecord $restoredRevision ): void {

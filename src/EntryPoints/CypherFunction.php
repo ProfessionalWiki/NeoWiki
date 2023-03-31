@@ -7,13 +7,13 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\Node;
 use Parser;
-use ProfessionalWiki\NeoWiki\Application\QueryStore;
+use ProfessionalWiki\NeoWiki\Application\QueryEngine;
 use ProfessionalWiki\NeoWiki\Presentation\TemplateRenderer;
 
 class CypherFunction {
 
 	public function __construct(
-		private readonly QueryStore $queryStore,
+		private readonly QueryEngine $queryEngine,
 		private readonly TemplateRenderer $templateRenderer,
 	) {
 	}
@@ -26,7 +26,7 @@ class CypherFunction {
 
 		$parser->getOutput()->addModules( [ 'ext.neowiki.editor' ] );
 
-		$results = $this->queryStore->runReadQuery( $arguments[0] )->getResults();
+		$results = $this->queryEngine->runReadQuery( $arguments[0] )->getResults();
 
 		return [
 			$this->createMediaWikiHtmlTable( $results ) . $this->createJsonOutput( $results ),

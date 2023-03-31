@@ -39,7 +39,7 @@ class CypherContentHandler extends \TextContentHandler {
 
 		$this->outputVisualization(
 			$parserOutput,
-			NeoWikiExtension::getInstance()->getQueryStore()->runReadQuery( $content->getText() )
+			NeoWikiExtension::getInstance()->getQueryEngine()->runReadQuery( $content->getText() )
 		);
 	}
 
