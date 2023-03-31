@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\PageInfo;
-use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
 
 class StoreContentAction {

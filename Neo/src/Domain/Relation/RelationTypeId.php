@@ -2,9 +2,9 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Domain;
+namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 
-class RelationId {
+class RelationTypeId {
 
 	public function __construct(
 		public readonly string $text,

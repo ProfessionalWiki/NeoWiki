@@ -2,7 +2,9 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Domain;
+namespace ProfessionalWiki\NeoWiki\Domain\Subject;
+
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 
 class Subject {
 
