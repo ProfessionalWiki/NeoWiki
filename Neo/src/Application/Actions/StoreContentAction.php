@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\PageInfo;
 use ProfessionalWiki\NeoWiki\Domain\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
 
-class StoreContentActions {
+class StoreContentAction {
 
 	public function __construct(
 		private readonly QueryStore $queryStore,
