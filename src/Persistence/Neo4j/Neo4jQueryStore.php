@@ -9,10 +9,9 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherList;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
-use ProfessionalWiki\NeoWiki\Domain\PageInfo;
+use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 
 class Neo4jQueryStore implements QueryStore {
 
@@ -21,8 +20,8 @@ class Neo4jQueryStore implements QueryStore {
 	) {
 	}
 
-	public function savePage( int $pageId, PageInfo $pageInfo, SubjectMap $subjects ): void {
-		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $pageId, $pageInfo, $subjects ) {
+	public function savePage( Page $page ): void {
+		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $page ) {
 			$transaction->run(
 				'
 				// Create or update the page
@@ -41,16 +40,17 @@ class Neo4jQueryStore implements QueryStore {
 				DELETE r
 				',
 				[
-					'pageId' => $pageId,
-					'pageTitle' => $pageInfo->title,
-					'subjectIds' => $subjects->getIdsAsTextArray()
+					'pageId' => $page->getId()->id,
+					'pageTitle' => $page->getProperties()->title,
+					'subjectIds' => $page->getAllSubjects()->getIdsAsTextArray(),
 				]
 			);
 
-			foreach ( $subjects->asArray() as $subject ) {
+			// TODO: indicate which subject is the main subject?
+			foreach ( $page->getAllSubjects()->asArray() as $subject ) {
 				$this->updateNodeProperties( $transaction, $subject );
 				$this->updateRelations( $transaction, $subject );
-				$this->updateHasSubjectRelation( $transaction, $subject, $pageId );
+				$this->updateHasSubjectRelation( $transaction, $subject, $page->getId()->id );
 				$this->updateNodeLabels( $transaction, $subject );
 			}
 		} );
@@ -222,27 +222,6 @@ class Neo4jQueryStore implements QueryStore {
 		return $this->client->readTransaction(
 			function ( TransactionInterface $transaction ) use ( $cypher ): SummarizedResult {
 				return $transaction->run( $cypher );
-			}
-		);
-	}
-
-	public function getPageIdForSubject( SubjectId $subjectId ): ?int {
-		return $this->client->readTransaction(
-			function ( TransactionInterface $transaction ) use ( $subjectId ): ?int {
-				/**
-				 * @var SummarizedResult $result
-				 */
-				$result = $transaction->run(
-					'MATCH (page:Page)-[:HasSubject]->(subject {id: $subjectId})
-					RETURN page.id AS id',
-					[ 'subjectId' => $subjectId->text ]
-				);
-
-				if ( $result->isEmpty() ) {
-					return null;
-				}
-
-				return (int)$result->first()->get( 'id' );
 			}
 		);
 	}
