@@ -20,7 +20,8 @@ class NeoWikiLua extends Scribunto_LuaLibraryBase {
 	}
 
 	private function getLabel( string $subjectId ): string {
-		return NeoWikiExtension::getInstance()->newSubjectRepository()->getSubject( new SubjectId( $subjectId ) )->label->text;
+		$subject = NeoWikiExtension::getInstance()->newSubjectRepository()->getSubject( new SubjectId( $subjectId ) );
+		return $subject === null ? '' : $subject->label->text;
 	}
 
 }
