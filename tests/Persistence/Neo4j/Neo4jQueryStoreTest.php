@@ -65,8 +65,6 @@ class Neo4jQueryStoreTest extends TestCase {
 			'TestPage',
 			$page['name']
 		);
-
-//		$this->assertSame( 1, $result->getSummary()->getCounters()->nodesCreated() );
 	}
 
 	public function testSavesPageSubjects(): void {
@@ -74,14 +72,19 @@ class Neo4jQueryStoreTest extends TestCase {
 
 		$store->savePage( TestPage::build(
 			id: 42,
+			mainSubject: TestSubject::build( id: 'GUID-1' ),
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: 'GUID-1' ),
 				TestSubject::build( id: 'GUID-2' ),
+				TestSubject::build( id: 'GUID-3' ),
 			)
 		) );
 
 		$this->assertPageHasSubjects(
-			[ [ 'id' => 'GUID-1' ], [ 'id' => 'GUID-2' ] ],
+			[
+				[ 'id' => 'GUID-1', 'hs' => [ 'isMain' => true ] ],
+				[ 'id' => 'GUID-2', 'hs' => [ 'isMain' => false ] ],
+				[ 'id' => 'GUID-3', 'hs' => [ 'isMain' => false ] ]
+			],
 			42,
 			$store
 		);
@@ -89,12 +92,13 @@ class Neo4jQueryStoreTest extends TestCase {
 
 	private function assertPageHasSubjects( array $expectedSubjects, int $pageId, Neo4jQueryStore $store ): void {
 		$result = $store->runReadQuery(
-			'MATCH (page:Page {id: ' . $pageId . '})-[:HasSubject]->(subject) RETURN subject.id as id'
+			'
+			MATCH (page:Page {id: ' . $pageId . '})-[hs:HasSubject]->(subject)
+			RETURN subject.id as id, properties(hs) as hs
+			ORDER BY id'
 		)->getResults()->toRecursiveArray();
 
-		foreach ( $expectedSubjects as $expectedSubject ) {
-			$this->assertContains( $expectedSubject, $result );
-		}
+		$this->assertSame( $expectedSubjects, $result );
 	}
 
 	public function testSavesPageRemovesObsoleteSubjects(): void {
@@ -102,22 +106,26 @@ class Neo4jQueryStoreTest extends TestCase {
 
 		$store->savePage( TestPage::build(
 			id: 42,
+			mainSubject: TestSubject::build( id: 'GUID-1' ),
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: 'GUID-1' ),
 				TestSubject::build( id: 'GUID-2' ),
+				TestSubject::build( id: 'GUID-3' ),
 			)
 		) );
 
 		$store->savePage( TestPage::build(
 			id: 42,
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: 'GUID-1' ),
-				TestSubject::build( id: 'GUID-3' ),
+				TestSubject::build( id: 'GUID-2' ),
+				TestSubject::build( id: 'GUID-4' ),
 			)
 		) );
 
 		$this->assertPageHasSubjects(
-			[ [ 'id' => 'GUID-1' ], [ 'id' => 'GUID-3' ] ],
+			[
+				[ 'id' => 'GUID-2', 'hs' => [ 'isMain' => false ] ],
+				[ 'id' => 'GUID-4', 'hs' => [ 'isMain' => false ] ]
+			],
 			42,
 			$store
 		);
