@@ -162,15 +162,22 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 		}
 	}
 
-	// TODO: add deleteSubject function
-	// TODO: page should not always be deleted due to incoming links. Difference between ID and title in meaning
-
 	public function deletePage( PageId $pageId ): void {
 		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $pageId ) {
 			foreach ( $this->getSubjectIdsByPageId( $transaction, $pageId ) as $subjectId ) {
 				$this->deleteSubject( $transaction, new SubjectId( $subjectId ) );
 			}
+
+			$this->deletePageNode( $transaction, $pageId );
 		} );
+	}
+
+	private function deletePageNode( TransactionInterface $transaction, PageId $pageId ): void {
+		// TODO: Redlinks: page should not always be deleted due to incoming links? Difference between ID and title in meaning
+		$transaction->run(
+			'MATCH (page:Page {id: $pageId}) DETACH DELETE page',
+			[ 'pageId' => $pageId->id ]
+		);
 	}
 
 	/**
