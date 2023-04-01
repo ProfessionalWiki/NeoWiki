@@ -11,4 +11,8 @@ class SubjectId {
 	) {
 	}
 
+	public function equals( self $other ): bool {
+		return $this->text === $other->text;
+	}
+
 }

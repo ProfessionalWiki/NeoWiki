@@ -37,4 +37,12 @@ class Page {
 		return $this->childSubjects->prepend( $this->mainSubject );
 	}
 
+	public function isMainSubject( Subject $subject ): bool {
+		if ( $this->mainSubject === null ) {
+			return false;
+		}
+
+		return $subject->hasSameIdentity( $this->mainSubject );
+	}
+
 }

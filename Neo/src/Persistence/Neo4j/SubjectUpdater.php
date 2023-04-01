@@ -19,22 +19,11 @@ class SubjectUpdater {
 	) {
 	}
 
-	public function updateSubject( Subject $subject ): void {
+	public function updateSubject( Subject $subject, bool $isMainSubject ): void {
 		$this->updateNodeProperties( $subject );
 		$this->updateRelations( $subject );
-		$this->updateHasSubjectRelation( $subject );
+		$this->updateHasSubjectRelation( $subject, $isMainSubject );
 		$this->updateNodeLabels( $subject );
-	}
-
-	private function updateHasSubjectRelation( Subject $subject ): void {
-		$this->transaction->run(
-			'MATCH (page:Page {id: $pageId}), (subject {id: $subjectId})
-					MERGE (page)-[:HasSubject]->(subject)',
-			[
-				'pageId' => $this->pageId->id,
-				'subjectId' => $subject->id->text,
-			]
-		);
 	}
 
 	private function updateNodeProperties( Subject $subject ): void {
@@ -49,6 +38,18 @@ class SubjectUpdater {
 						'id' => $subject->id->text,
 					]
 				),
+			]
+		);
+	}
+
+	private function updateHasSubjectRelation( Subject $subject, bool $isMainSubject ): void {
+		$this->transaction->run(
+			'MATCH (page:Page {id: $pageId}), (subject {id: $subjectId})
+					MERGE (page)-[:HasSubject {isMain: $isMainSubject}]->(subject)',
+			[
+				'pageId' => $this->pageId->id,
+				'subjectId' => $subject->id->text,
+				'isMainSubject' => $isMainSubject,
 			]
 		);
 	}

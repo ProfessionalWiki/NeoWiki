@@ -50,4 +50,8 @@ class Subject {
 		return $this->properties;
 	}
 
+	public function hasSameIdentity( self $subject ): bool {
+		return $this->id->equals( $subject->id );
+	}
+
 }
