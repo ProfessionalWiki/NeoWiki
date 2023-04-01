@@ -7,12 +7,10 @@ namespace ProfessionalWiki\NeoWiki\Persistence\Neo4j;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
-use Laudis\Neo4j\Types\CypherList;
 use ProfessionalWiki\NeoWiki\Application\QueryEngine;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 class Neo4jQueryStore implements QueryStore, QueryEngine {
@@ -48,118 +46,13 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 				]
 			);
 
+			$updater = new SubjectUpdater( $transaction, $page->getId() );
+
 			// TODO: indicate which subject is the main subject?
 			foreach ( $page->getAllSubjects()->asArray() as $subject ) {
-				$this->updateNodeProperties( $transaction, $subject );
-				$this->updateRelations( $transaction, $subject );
-				$this->updateHasSubjectRelation( $transaction, $subject, $page->getId()->id );
-				$this->updateNodeLabels( $transaction, $subject );
+				$updater->updateSubject( $subject );
 			}
 		} );
-	}
-
-	private function updateHasSubjectRelation( TransactionInterface $transaction, Subject $subject, int $pageId ): void {
-		$transaction->run(
-			'MATCH (page:Page {id: $pageId}), (subject {id: $subjectId})
-					MERGE (page)-[:HasSubject]->(subject)',
-			[
-				'pageId' => $pageId,
-				'subjectId' => $subject->id->text,
-			]
-		);
-	}
-
-	private function updateNodeProperties( TransactionInterface $transaction, Subject $subject ): void {
-		$transaction->run(
-			'MERGE (n {id: $id}) SET n = $props',
-			[
-				'id' => $subject->id->text,
-				'props' => array_merge(
-					$subject->getProperties()->map,
-					[
-						'name' => $subject->label->text,
-						'id' => $subject->id->text,
-					]
-				),
-			]
-		);
-	}
-
-	private function updateNodeLabels( TransactionInterface $transaction, Subject $subject ): void {
-		$oldLabels = $this->getNodeLabels( $transaction, $subject->id );
-		$newLabels = $subject->types->toStringArray();
-
-		$labelsToRemove = array_diff( $oldLabels, $newLabels );
-
-		if ( $labelsToRemove !== [] ) {
-			$transaction->run(
-				'MATCH (n {id: $id}) REMOVE n:' . Cypher::buildLabelList( $labelsToRemove ),
-				[ 'id' => $subject->id->text ]
-			);
-		}
-
-		$labelsToAdd = array_diff( $newLabels, $oldLabels );
-
-		if ( $labelsToAdd !== [] ) {
-			$transaction->run(
-				'MATCH (n {id: $id}) SET n:' . Cypher::buildLabelList( $labelsToAdd ),
-				[ 'id' => $subject->id->text ]
-			);
-		}
-	}
-
-	/**
-	 * @return string[]
-	 */
-	private function getNodeLabels( TransactionInterface $transaction, SubjectId $id ): array {
-		/**
-		 * @var SummarizedResult $result
-		 */
-		$result = $transaction->run(
-			'MATCH (n) WHERE n.id = $id RETURN labels(n)',
-			[ 'id' => $id->text ]
-		);
-
-		if ( $result->isEmpty() ) {
-			return [];
-		}
-
-		/**
-		 * @var CypherList $labels
-		 */
-		$labels = $result->first()->get( 'labels(n)' );
-
-		return $labels->toArray();
-	}
-
-	private function updateRelations( TransactionInterface $transaction, Subject $subject ): void {
-		// Delete relations that are no longer present
-		$transaction->run(
-			'
-				MATCH (subject {id: $subjectId})-[relation]->()
-				WHERE NOT relation.id IN $relationIds
-				DELETE relation',
-			[
-				'subjectId' => $subject->id->text,
-				'relationIds' => $subject->getRelationsAsIdStringArray()
-			]
-		);
-
-		// Create or update relations
-		foreach ( $subject->relations->relations as $relation ) {
-			$transaction->run(
-				'
-					MATCH (subject {id: $subjectId})
-					MERGE (target {id: $targetId})
-					MERGE (subject)-[relation:' . Cypher::escape( $relation->type->text ) . ']->(target)
-						ON CREATE SET relation=$relationProperties ON MATCH SET relation=$relationProperties',
-				[
-					'subjectId' => $subject->id->text,
-					'targetId' => $relation->targetId->text,
-					'relationProperties' => array_merge( $relation->properties->map, [ 'id' => $relation->id->text ] ),
-				]
-			);
-		}
 	}
 
 	public function deletePage( PageId $pageId ): void {
