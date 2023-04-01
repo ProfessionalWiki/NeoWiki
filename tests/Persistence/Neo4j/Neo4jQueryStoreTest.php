@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 
 use Laudis\Neo4j\Types\CypherMap;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
@@ -120,6 +121,24 @@ class Neo4jQueryStoreTest extends TestCase {
 			42,
 			$store
 		);
+	}
+
+	public function testSavingPageAndThenDeletingItLeavesNoTrace(): void {
+		$store = $this->newQueryStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build(
+				title: 'TestPage'
+			)
+		) );
+
+		$store->deletePage( new PageId( 42 ) );
+
+		$result = $store->runReadQuery( 'MATCH (n) RETURN *' );
+
+		$this->assertSame( [], $result->toArray() );
+		$this->assertTrue( $result->isEmpty() );
 	}
 
 }
