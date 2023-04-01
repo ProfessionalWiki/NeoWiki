@@ -50,7 +50,7 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 
 			// TODO: indicate which subject is the main subject?
 			foreach ( $page->getAllSubjects()->asArray() as $subject ) {
-				$updater->updateSubject( $subject );
+				$updater->updateSubject( $subject, $page->isMainSubject( $subject ) );
 			}
 		} );
 	}
