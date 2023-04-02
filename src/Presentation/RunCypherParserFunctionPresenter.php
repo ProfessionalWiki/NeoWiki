@@ -36,7 +36,7 @@ class RunCypherParserFunctionPresenter implements RunCypherPresenter {
 	}
 
 	private function buildHtml(): string {
-		if ( $this->html !== '' ) {
+		if ( isset( $this->html ) ) {
 			return $this->html;
 		}
 
