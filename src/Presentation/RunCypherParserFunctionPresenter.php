@@ -45,7 +45,7 @@ class RunCypherParserFunctionPresenter implements RunCypherPresenter {
 
 	private function createMediaWikiHtmlTable(): string {
 		return $this->templateRenderer->viewModelToString(
-			'Table.html.twig',
+			'TableTabulator.html.twig',
 			[
 				'subjects' => $this->viewModel
 			]
