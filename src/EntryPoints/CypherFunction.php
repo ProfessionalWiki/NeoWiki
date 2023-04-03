@@ -22,6 +22,8 @@ class CypherFunction {
 	 * @return array<mixed, mixed>
 	 */
 	public function handleParserFunctionCall( Parser $parser, string ...$arguments ): array {
+		$parser->getOutput()->addModules( [ 'ext.neowiki.editor' ] );
+
 		$presenter = new RunCypherParserFunctionPresenter( $this->templateRenderer );
 
 		$cypherQueryQuery = new RunCypherQuery(
