@@ -36,10 +36,10 @@ class SubjectMap {
 	 * TODO: return new instance rather than mutate
 	 */
 	public function append( self $subjectMap ): void {
-		array_walk( $subjectMap->subjects, $this->updateSubject( ... ) );
+		array_walk( $subjectMap->subjects, $this->addOrUpdateSubject( ... ) );
 	}
 
-	public function updateSubject( Subject $subject ): void {
+	public function addOrUpdateSubject( Subject $subject ): void {
 		$this->subjects[$subject->id->text] = $subject;
 	}
 

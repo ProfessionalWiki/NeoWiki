@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
@@ -19,7 +20,11 @@ class InMemorySubjectRepository implements SubjectRepository {
 		return $this->subjects[$subjectId->text] ?? null;
 	}
 
-	public function saveSubject( Subject $subject ): void {
+	public function updateSubject( Subject $subject ): void {
+		$this->subjects[$subject->id->text] = $subject;
+	}
+
+	public function createSubject( Subject $subject, PageId $pageId ): void {
 		$this->subjects[$subject->id->text] = $subject;
 	}
 
