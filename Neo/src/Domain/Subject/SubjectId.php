@@ -9,6 +9,7 @@ class SubjectId {
 	public function __construct(
 		public readonly string $text,
 	) {
+		// TODO: validation
 	}
 
 	public function equals( self $other ): bool {
