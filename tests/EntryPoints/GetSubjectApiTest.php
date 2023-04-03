@@ -13,34 +13,29 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\PatchSubjectApi
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi
  * @group database
  */
-class PatchSubjectApiTest extends \MediaWikiIntegrationTestCase {
+class GetSubjectApiTest extends \MediaWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
-	public function testSmoke(): void {
+	public function testSubjectIsFound(): void {
 		$this->createPages();
 
 		$response = $this->executeHandler(
-			NeoWikiExtension::newPatchSubjectApi(),
+			NeoWikiExtension::newGetSubjectApi(),
 			new RequestData( [
-				'method' => 'PATCH',
+				'method' => 'GET',
 				'pathParams' => [
 					'subjectId' => '123e4567-e89b-12d3-a456-426655440000'
-				],
-				'bodyContents' => json_encode( [
-					'properties' => [
-						'animal' => 'bunny',
-						'fluff' => 9001,
-					]
-				] ),
-				'headers' => [
-					'Content-Type' => 'application/json'
 				]
 			] )
 		);
 
+		$this->assertSame(
+			'{"subject":{"id":"123e4567-e89b-12d3-a456-426655440000","label":"Test subject 426655440000","types":[],"properties":[]}}',
+			$response->getBody()->getContents()
+		);
 		$this->assertSame( 200, $response->getStatusCode() );
 	}
 
@@ -54,6 +49,24 @@ class PatchSubjectApiTest extends \MediaWikiIntegrationTestCase {
 				)
 			) )
 		);
+	}
+
+	public function testSubjectIsNotFound(): void {
+		$response = $this->executeHandler(
+			NeoWikiExtension::newGetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [
+					'subjectId' => '404e4567-e89b-12d3-a456-426655440404'
+				]
+			] )
+		);
+
+		$this->assertSame(
+			'{"subject":null}',
+			$response->getBody()->getContents()
+		);
+		$this->assertSame( 200, $response->getStatusCode() );
 	}
 
 }
