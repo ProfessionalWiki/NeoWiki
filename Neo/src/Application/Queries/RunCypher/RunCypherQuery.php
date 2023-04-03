@@ -11,8 +11,8 @@ use ProfessionalWiki\NeoWiki\Application\QueryEngine;
 class RunCypherQuery {
 
 	public function __construct(
+		private readonly RunCypherPresenter $presenter,
 		private readonly QueryEngine $queryEngine,
-		private readonly RunCypherPresenter $presenter
 	) {
 	}
 

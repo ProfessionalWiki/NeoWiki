@@ -6,7 +6,9 @@
 				"Company"
 			],
 			"properties": {
-				"Founded at": 2019,
+				"Founded at": [
+					2019
+				],
 				"Website": [
 					"https://professional.wiki",
 					"https://wikibase.consulting"
@@ -17,21 +19,27 @@
 					"type": "HasProduct",
 					"target": "c0d5c7e8-1d9c-11ec-9621-0242ac130002",
 					"properties": {
-						"Since": 2022
+						"Since": [
+							2022
+						]
 					}
 				},
 				"456": {
 					"type": "HasClient",
 					"target": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
 					"properties": {
-						"Since": 2021
+						"Since": [
+							2021
+						]
 					}
 				},
 				"789": {
 					"type": "HasClient",
 					"target": "7e3e53f0-1d9d-11ec-835b-0242ac130003",
 					"properties": {
-						"Since": 2022
+						"Since": [
+							2022
+						]
 					}
 				}
 			}
@@ -42,8 +50,12 @@
 				"Company"
 			],
 			"properties": {
-				"Founded at": 2005,
-				"Website": "https://acme.example"
+				"Founded at": [
+					2005
+				],
+				"Website": [
+					"https://acme.example"
+				]
 			},
 			"relations": {
 			}
@@ -65,8 +77,12 @@
 				"SaaS"
 			],
 			"properties": {
-				"Available since": 2022,
-				"Website": "https://pro.wiki"
+				"Available since": [
+					2022
+				],
+				"Website": [
+					"https://pro.wiki"
+				]
 			},
 			"relations": {
 				"222": {
