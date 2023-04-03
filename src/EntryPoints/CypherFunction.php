@@ -25,8 +25,8 @@ class CypherFunction {
 		$presenter = new RunCypherParserFunctionPresenter( $this->templateRenderer );
 
 		$cypherQueryQuery = new RunCypherQuery(
+			$presenter,
 			$this->queryEngine,
-			$presenter
 		);
 
 		$cypherQueryQuery->runCypher( $arguments[0] );
