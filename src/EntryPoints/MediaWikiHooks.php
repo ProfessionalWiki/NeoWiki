@@ -5,16 +5,31 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use MediaWiki\Linker\LinkTarget;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\User\UserIdentity;
 use Parser;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
 use Title;
 use WikiPage;
 
 class MediaWikiHooks {
+
+	public static function onMediaWikiServices( MediaWikiServices $services ): void {
+		$services->addServiceManipulator(
+			'SlotRoleRegistry',
+			static function ( SlotRoleRegistry $registry ) {
+				$registry->defineRoleWithModel(
+					MediaWikiSubjectRepository::SLOT_NAME,
+					SubjectContent::CONTENT_MODEL_ID
+				);
+			}
+		);
+	}
 
 	public static function onContentHandlerDefaultModelFor( Title $title, ?string &$model ): void {
 		if ( str_ends_with( $title->getText(), '.node' ) ) {

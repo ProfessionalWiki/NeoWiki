@@ -7,16 +7,15 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi
  * @group database
  */
-class GetSubjectApiTest extends \MediaWikiIntegrationTestCase {
+class GetSubjectApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
 	public function testSubjectIsFound(): void {
@@ -40,14 +39,12 @@ class GetSubjectApiTest extends \MediaWikiIntegrationTestCase {
 	}
 
 	private function createPages(): void {
-		$this->editPage(
-			'PatchSubjectApiTest',
-			SubjectContent::newFromSubjects( new SubjectMap(
-				TestSubject::build(
-					id: '123e4567-e89b-12d3-a456-426655440000',
-					label: new SubjectLabel( 'Test subject 426655440000' ),
-				)
-			) )
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest',
+			mainSubject: TestSubject::build(
+				id: '123e4567-e89b-12d3-a456-426655440000',
+				label: new SubjectLabel( 'Test subject 426655440000' ),
+			)
 		);
 	}
 
