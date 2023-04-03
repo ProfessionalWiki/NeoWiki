@@ -28,7 +28,7 @@ class PatchSubjectAction {
 		}
 
 		$subject->applyPatch( $patch );
-		$this->subjectRepository->saveSubject( $subject );
+		$this->subjectRepository->updateSubject( $subject );
 	}
 
 }

@@ -8,7 +8,7 @@ class SubjectProperties {
 
 	public function __construct(
 		/**
-		 * @var array<string, array<string|int|array<int|string>>>
+		 * @var array<string, mixed[]>
 		 */
 		public readonly array $map,
 	) {

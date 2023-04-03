@@ -88,7 +88,7 @@ class SubjectMapTest extends TestCase {
 			TestSubject::build( '789' ),
 		);
 
-		$subjectMap->updateSubject( $subject2 );
+		$subjectMap->addOrUpdateSubject( $subject2 );
 
 		$this->assertEquals(
 			$subject2,

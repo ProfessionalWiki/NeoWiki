@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
+use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 
 class Subject {
 
@@ -13,10 +14,25 @@ class Subject {
 		public readonly SubjectId $id,
 		public readonly SubjectLabel $label,
 		public readonly SubjectTypeIdList $types,
-		// TODO: "same as" identifiers?
-		public readonly RelationList $relations,
 		private SubjectProperties $properties,
+		public readonly RelationList $relations, // TODO: "same as" identifiers?
 	) {
+	}
+
+	public static function createNew(
+		GuidGenerator $guidGenerator,
+		SubjectLabel $label,
+		?SubjectTypeIdList $types = null,
+		?SubjectProperties $properties = null,
+		?RelationList $relations = null,
+	): self {
+		return new self(
+			id: SubjectId::createNew( $guidGenerator ),
+			label: $label,
+			types: $types ?? new SubjectTypeIdList( [] ),
+			properties: $properties ?? new SubjectProperties( [] ),
+			relations: $relations ?? new RelationList( [] ),
+		);
 	}
 
 	public static function newSubject( SubjectId $id, SubjectLabel $label ): self {
@@ -24,8 +40,8 @@ class Subject {
 			id: $id,
 			label: $label,
 			types: new SubjectTypeIdList( [] ),
-			relations: new RelationList( [] ),
 			properties: new SubjectProperties( [] ),
+			relations: new RelationList( [] ),
 		);
 	}
 
