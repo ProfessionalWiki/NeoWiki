@@ -4,12 +4,14 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
 
 class OnRevisionCreatedHandler {
 
@@ -25,16 +27,17 @@ class OnRevisionCreatedHandler {
 	private function storeRevisionRecord( RevisionRecord $revisionRecord ): void {
 		$allSubjects = new SubjectMap();
 
-		foreach ( $revisionRecord->getSlots()->getSlots() as $slot ) {
-			$content = $slot->getContent();
-
-			if ( $content instanceof SubjectContent ) {
-				$allSubjects->append( $content->getSubjects() );
-			}
-		}
-
 		if ( $revisionRecord->getPageId() === 0 ) {
 			throw new \RuntimeException( 'Page ID should not be 0' );
+		}
+
+		try {
+			$neoContent = $revisionRecord->getSlots()->getContent( MediaWikiSubjectRepository::SLOT_NAME );
+			if ( $neoContent instanceof SubjectContent ) {
+				$allSubjects->append( $neoContent->getSubjects() );
+			}
+		}
+		catch ( RevisionAccessException ) {
 		}
 
 		$this->queryStore->savePage(
