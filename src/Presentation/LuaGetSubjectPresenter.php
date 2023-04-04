@@ -21,9 +21,9 @@ class LuaGetSubjectPresenter implements GetSubjectPresenter {
 	public function presentSubjectNotFound(): void {
 	}
 
-	public function getLuaResponse(): array {
+	public function getLuaResponse(): ?array {
 		if ( $this->response === null ) {
-			return []; // TODO: what to return?
+			return null;
 		}
 
 		return [

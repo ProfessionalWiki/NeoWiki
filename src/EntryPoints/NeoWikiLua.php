@@ -20,7 +20,7 @@ class NeoWikiLua extends Scribunto_LuaLibraryBase {
 		);
 	}
 
-	private function getSubject( string $subjectId ): array {
+	private function getSubject( string $subjectId ): ?array {
 		$presenter = new LuaGetSubjectPresenter();
 		$query = NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter );
 
@@ -30,7 +30,13 @@ class NeoWikiLua extends Scribunto_LuaLibraryBase {
 	}
 
 	private function getLabel( string $subjectId ): string {
-		return $this->getSubject( $subjectId )['label'] ?? '';
+		$subject = $this->getSubject( $subjectId );
+
+		if ( $subject === null || !array_key_exists( 'label', $subject ) ) {
+			return '';
+		}
+
+		return $subject['label'];
 	}
 
 }
