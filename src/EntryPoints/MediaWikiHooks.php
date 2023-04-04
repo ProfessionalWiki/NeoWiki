@@ -4,16 +4,21 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use CommentStoreComment;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\User\UserIdentity;
 use Parser;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
+use ReflectionClass;
+use Status;
 use Title;
 use WikiPage;
 
@@ -52,6 +57,31 @@ class MediaWikiHooks {
 		array &$tags
 	): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision );
+	}
+
+	public static function onMultiContentSave(
+		RenderedRevision $renderedRevision,
+		UserIdentity $user,
+		CommentStoreComment $summary,
+		$flags,
+		Status $hookStatus
+	): void {
+		$title = Title::newFromID( $renderedRevision->getRevision()->getPage()->getId() );
+
+		if ( $title instanceof Title && str_ends_with( $title->getText(), '.node' ) ) {
+			$slots = $renderedRevision->getRevision()->getSlots();
+			$slotRecord = $slots->getSlot( 'main' );
+
+			if ( $slotRecord->getContent() instanceof SubjectContent ) {
+				$reflector = new ReflectionClass( $slots );
+				$property = $reflector->getProperty( 'slots' );
+				$property->setAccessible( true );
+
+				$slotRecords = $property->getValue( $slots );
+				$slotRecords[MediaWikiSubjectRepository::SLOT_NAME] = SlotRecord::newUnsaved( MediaWikiSubjectRepository::SLOT_NAME, $slotRecord->getContent() );
+				$property->setValue( $slots, $slotRecords );
+			}
+		}
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
