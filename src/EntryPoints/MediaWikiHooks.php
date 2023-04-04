@@ -69,7 +69,7 @@ class MediaWikiHooks {
 		Status $hookStatus
 	): void {
 		$title = Title::newFromID( $renderedRevision->getRevision()->getPage()->getId() );
-
+return;
 		if ( $title instanceof Title && str_ends_with( $title->getText(), '.node' ) ) {
 			$slots = $renderedRevision->getRevision()->getSlots();
 			$slotRecord = $slots->getSlot( 'main' );
