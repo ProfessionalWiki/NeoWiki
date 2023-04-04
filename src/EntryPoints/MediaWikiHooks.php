@@ -39,10 +39,6 @@ class MediaWikiHooks {
 	}
 
 	public static function onContentHandlerDefaultModelFor( Title $title, ?string &$model ): void {
-		if ( str_ends_with( $title->getText(), '.node' ) ) {
-			$model = SubjectContent::CONTENT_MODEL_ID;
-		}
-
 		if ( str_ends_with( $title->getText(), '.query' ) ) {
 			$model = CypherContent::CONTENT_MODEL_ID;
 		}
@@ -59,31 +55,6 @@ class MediaWikiHooks {
 		array &$tags
 	): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision );
-	}
-
-	public static function onMultiContentSave(
-		RenderedRevision $renderedRevision,
-		UserIdentity $user,
-		CommentStoreComment $summary,
-		$flags,
-		Status $hookStatus
-	): void {
-		$title = Title::newFromID( $renderedRevision->getRevision()->getPage()->getId() );
-return;
-		if ( $title instanceof Title && str_ends_with( $title->getText(), '.node' ) ) {
-			$slots = $renderedRevision->getRevision()->getSlots();
-			$slotRecord = $slots->getSlot( 'main' );
-
-			if ( $slotRecord->getContent() instanceof SubjectContent ) {
-				$reflector = new ReflectionClass( $slots );
-				$property = $reflector->getProperty( 'slots' );
-				$property->setAccessible( true );
-
-				$slotRecords = $property->getValue( $slots );
-				$slotRecords[MediaWikiSubjectRepository::SLOT_NAME] = SlotRecord::newUnsaved( MediaWikiSubjectRepository::SLOT_NAME, $slotRecord->getContent() );
-				$property->setValue( $slots, $slotRecords );
-			}
-		}
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
