@@ -14,10 +14,12 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\User\UserIdentity;
+use OutputPage;
 use Parser;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
 use ReflectionClass;
+use Skin;
 use Status;
 use Title;
 use WikiPage;
@@ -118,6 +120,15 @@ class MediaWikiHooks {
 
 	public static function onScribuntoExternalLibraries( string $engine, array &$extraLibraries ): void {
 		$extraLibraries['NeoWiki'] = NeoWikiLua::class;
+	}
+
+	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
+		if ( !$out->isArticle() || $out->getWikiPage()->getNamespace() !== NS_MAIN ) {
+			return;
+		}
+
+		$out->enableOOUI();
+		$out->addModules( [ 'ext.neowiki.subject' ] );
 	}
 
 }
