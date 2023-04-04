@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use Wikimedia\ParamValidator\ParamValidator;
 

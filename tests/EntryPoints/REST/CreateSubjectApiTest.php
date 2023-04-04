@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace EntryPoints;
+namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\RequestData;
