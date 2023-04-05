@@ -107,4 +107,32 @@ class SubjectMapTest extends TestCase {
 		);
 	}
 
+	public function testDeleteSubject(): void {
+		$subject1 = TestSubject::build( '123' );
+		$subject2 = TestSubject::build( '456' );
+		$subject3 = TestSubject::build( '789' );
+
+		$subjectMap = new SubjectMap( $subject1, $subject2, $subject3 );
+		$newMap = $subjectMap->delete( $subject2->id );
+
+		$this->assertEquals(
+			$newMap,
+			new SubjectMap( $subject1, $subject3 )
+		);
+	}
+
+	public function testDeleteNonExistentSubject(): void {
+		$subject1 = TestSubject::build( '123' );
+		$subject2 = TestSubject::build( '456' );
+		$subject3 = TestSubject::build( '789' );
+
+		$subjectMap = new SubjectMap( $subject1, $subject3 );
+		$newMap = $subjectMap->delete( $subject2->id );
+
+		$this->assertEquals(
+			$newMap,
+			new SubjectMap( $subject1, $subject3 )
+		);
+	}
+
 }

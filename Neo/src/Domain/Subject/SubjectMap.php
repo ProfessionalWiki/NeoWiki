@@ -60,4 +60,14 @@ class SubjectMap {
 		return new self( ...$subjects );
 	}
 
+	public function delete( SubjectId $id ): self {
+		$subjects = $this->subjects;
+
+		if ( array_key_exists( $id->text, $subjects ) ) {
+			unset( $subjects[$id->text] );
+		}
+
+		return new self( ...$subjects );
+	}
+
 }

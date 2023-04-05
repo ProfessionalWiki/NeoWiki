@@ -28,4 +28,8 @@ class InMemorySubjectRepository implements SubjectRepository {
 		$this->subjects[$subject->id->text] = $subject;
 	}
 
+	public function deleteSubject( SubjectId $id ): void {
+		unset( $this->subjects[$id->text] );
+	}
+
 }
