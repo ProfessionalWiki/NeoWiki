@@ -19,4 +19,6 @@ interface SubjectRepository {
 
 	public function createSubject( Subject $subject, PageId $pageId ): void;
 
+	public function deleteSubject( SubjectId $id ): void;
+
 }
