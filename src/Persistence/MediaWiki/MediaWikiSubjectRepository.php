@@ -108,4 +108,22 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		$this->saveContent( $content, $pageId->id );
 	}
 
+	public function deleteSubject( SubjectId $id ): void {
+		$pageId = $this->getPageIdForSubject( $id );
+
+		if ( $pageId === null ) {
+			return;
+		}
+
+		$content = $this->getContentByPageId( $pageId );
+
+		if ( $content === null ) {
+			return;
+		}
+
+		$content->setSubjects( $content->getSubjects()->delete( $id ) );
+
+		$this->saveContent( $content, $pageId );
+	}
+
 }

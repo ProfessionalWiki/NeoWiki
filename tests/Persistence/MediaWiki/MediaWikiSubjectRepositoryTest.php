@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -84,6 +83,34 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 
 		$this->createPageWithSubjects(
 			'SubjectRepoTestThree'
+		);
+	}
+
+	public function testDeleteSubject(): void {
+		$this->createPages();
+
+		$this->newRepository()->deleteSubject(
+			new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f9' )
+		);
+
+		$this->assertNull(
+			$this->newRepository()->getSubject(
+				new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f9' )
+			)
+		);
+	}
+
+	public function testDeleteSubjectForUnknownSubject(): void {
+		$this->createPages();
+
+		$this->newRepository()->deleteSubject(
+			new SubjectId( 'never-existed' )
+		);
+
+		$this->assertNull(
+			$this->newRepository()->getSubject(
+				new SubjectId( 'never-existed' )
+			)
 		);
 	}
 
