@@ -121,7 +121,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 			return;
 		}
 
-		$content->setSubjects( $content->getSubjects()->delete( $id ) );
+		$content->setSubjects( $content->getSubjects()->without( $id ) );
 
 		$this->saveContent( $content, $pageId );
 	}
