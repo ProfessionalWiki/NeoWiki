@@ -113,7 +113,7 @@ class SubjectMapTest extends TestCase {
 		$subject3 = TestSubject::build( '789' );
 
 		$subjectMap = new SubjectMap( $subject1, $subject2, $subject3 );
-		$newMap = $subjectMap->delete( $subject2->id );
+		$newMap = $subjectMap->without( $subject2->id );
 
 		$this->assertEquals(
 			$newMap,
@@ -127,7 +127,7 @@ class SubjectMapTest extends TestCase {
 		$subject3 = TestSubject::build( '789' );
 
 		$subjectMap = new SubjectMap( $subject1, $subject3 );
-		$newMap = $subjectMap->delete( $subject2->id );
+		$newMap = $subjectMap->without( $subject2->id );
 
 		$this->assertEquals(
 			$newMap,
