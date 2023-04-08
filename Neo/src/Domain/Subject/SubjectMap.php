@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
-class SubjectMap {
+class SubjectMap implements \Countable {
 
 	/**
 	 * @var array<string, Subject>
@@ -68,6 +68,14 @@ class SubjectMap {
 		}
 
 		return new self( ...$subjects );
+	}
+
+	public function isEmpty(): bool {
+		return empty( $this->subjects );
+	}
+
+	public function count(): int {
+		return count( $this->subjects );
 	}
 
 }
