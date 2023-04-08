@@ -45,12 +45,12 @@ class RunCypherParserFunctionPresenter implements RunCypherPresenter {
 
 	private function createMediaWikiHtmlTable(): string {
 		return $this->templateRenderer->viewModelToString(
-			'Table.html.twig',
+			'TableTabulator.html.twig',
 			[
 				'subjects' => $this->viewModel
 			]
 		) . $this->templateRenderer->viewModelToString(
-			'TableTabulator.html.twig',
+			'Table.html.twig',
 			[
 				'subjects' => $this->viewModel
 			]
@@ -58,11 +58,18 @@ class RunCypherParserFunctionPresenter implements RunCypherPresenter {
 	}
 
 	private function createJsonOutput(): string {
-		return \Html::element(
+		$pre = \Html::element(
 			'pre',
 			[],
 			json_encode( $this->result->getResults()->toRecursiveArray(), JSON_PRETTY_PRINT )
 		);
+
+		return <<<HTML
+<div class="mw-collapsible mw-collapsed">
+	<div>Query result JSON</div>
+	<div class="mw-collapsible-content">$pre</div>
+</div>
+HTML;
 	}
 
 	private function buildParserFunctionHtmlResponse( string $html ): array {
