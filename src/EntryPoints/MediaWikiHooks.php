@@ -4,23 +4,18 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
-use CommentStoreComment;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Permissions\Authority;
-use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\User\UserIdentity;
 use OutputPage;
 use Parser;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
-use ReflectionClass;
 use Skin;
-use Status;
 use Title;
 use WikiPage;
 
@@ -31,8 +26,9 @@ class MediaWikiHooks {
 			'SlotRoleRegistry',
 			static function ( SlotRoleRegistry $registry ) {
 				$registry->defineRoleWithModel(
-					MediaWikiSubjectRepository::SLOT_NAME,
-					SubjectContent::CONTENT_MODEL_ID
+					role: MediaWikiSubjectRepository::SLOT_NAME,
+					model: SubjectContent::CONTENT_MODEL_ID,
+					layout: [ 'display' => 'none' ]
 				);
 			}
 		);
@@ -98,8 +94,14 @@ class MediaWikiHooks {
 			return;
 		}
 
-		$out->enableOOUI();
-		$out->addModules( [ 'ext.neowiki.subject' ] );
+		$content = NeoWikiExtension::getInstance()->newSubjectContentRepository()->getSubjectContentByPageTitle( $out->getTitle() );
+
+		if ( $content === null || !$content->hasSubjects() ) {
+			$out->enableOOUI();
+			$out->addModules( [ 'ext.neowiki.subject' ] );
+		}
+
+		$out->addHTML( NeoWikiExtension::getInstance()->getFactBox()->htmlFor( $out->getTitle() ) );
 	}
 
 }

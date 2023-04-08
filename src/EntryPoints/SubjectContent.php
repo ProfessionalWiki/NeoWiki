@@ -28,6 +28,10 @@ class SubjectContent extends \JsonContent {
 		return ( new SubjectSlotDeserializer() )->deserialize( $this->getText() );
 	}
 
+	public function hasSubjects(): bool {
+		return !$this->getSubjects()->isEmpty();
+	}
+
 	public function setSubjects( SubjectMap $subjects ): void {
 		$this->mText = ( new SubjectSlotSerializer() )->serialize( $subjects );
 	}
