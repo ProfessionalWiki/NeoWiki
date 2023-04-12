@@ -40,7 +40,7 @@ class RunCypherParserFunctionPresenter implements RunCypherPresenter {
 			return $this->html;
 		}
 
-		return $this->createMediaWikiHtmlTable() . $this->createJsonOutput() . '<div id="app"></div>';
+		return $this->createMediaWikiHtmlTable() . $this->createJsonOutput();
 	}
 
 	private function createMediaWikiHtmlTable(): string {
