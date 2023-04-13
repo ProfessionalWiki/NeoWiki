@@ -22,7 +22,7 @@ class CypherFunction {
 	 * @return array<mixed, mixed>
 	 */
 	public function handleParserFunctionCall( Parser $parser, string ...$arguments ): array {
-		$parser->getOutput()->addModules( [ 'ext.neowiki.editor' ] );
+		$parser->getOutput()->addModules( [ 'ext.neowiki.table-editor' ] );
 
 		$presenter = new RunCypherParserFunctionPresenter( $this->templateRenderer );
 
