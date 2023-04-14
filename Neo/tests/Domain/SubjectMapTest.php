@@ -107,7 +107,7 @@ class SubjectMapTest extends TestCase {
 		);
 	}
 
-	public function testDeleteSubject(): void {
+	public function testWithoutSubjectReturnsNewInstanceWithoutTheSubject(): void {
 		$subject1 = TestSubject::build( '123' );
 		$subject2 = TestSubject::build( '456' );
 		$subject3 = TestSubject::build( '789' );
@@ -119,9 +119,11 @@ class SubjectMapTest extends TestCase {
 			$newMap,
 			new SubjectMap( $subject1, $subject3 )
 		);
+
+		$this->assertNotSame( $newMap, $subjectMap );
 	}
 
-	public function testDeleteNonExistentSubject(): void {
+	public function testWithoutNonExistentSubject(): void {
 		$subject1 = TestSubject::build( '123' );
 		$subject2 = TestSubject::build( '456' );
 		$subject3 = TestSubject::build( '789' );
@@ -132,6 +134,18 @@ class SubjectMapTest extends TestCase {
 		$this->assertEquals(
 			$newMap,
 			new SubjectMap( $subject1, $subject3 )
+		);
+	}
+
+	public function withoutDoesNotMutate(): void {
+		$subject1 = TestSubject::build( '123' );
+
+		$subjectMap = new SubjectMap( $subject1 );
+		$subjectMap->without( $subject1->id );
+
+		$this->assertEquals(
+			$subjectMap,
+			new SubjectMap( $subject1 )
 		);
 	}
 
