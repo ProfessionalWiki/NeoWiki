@@ -14,6 +14,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeIdList;
 
 class TestSubject {
 
+	public const ZERO_GUID = '00000000-0000-0000-0000-000000000000';
+
 	public static function build(
 		?string $id = null,
 		?SubjectLabel $label = null,
@@ -22,7 +24,7 @@ class TestSubject {
 		?SubjectProperties $properties = null,
 	): Subject {
 		return new Subject(
-			id: new SubjectId( $id ?? 'GUID-GUID-GUID' ),
+			id: new SubjectId( $id ?? self::ZERO_GUID ),
 			label: $label ?? new SubjectLabel( "Test subject" ),
 			types: $types ?? new SubjectTypeIdList( [] ),
 			relations: $relations ?? new RelationList( [] ),
