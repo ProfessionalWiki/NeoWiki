@@ -10,7 +10,6 @@ use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
 
 class OnRevisionCreatedHandler {
@@ -25,20 +24,22 @@ class OnRevisionCreatedHandler {
 	}
 
 	private function storeRevisionRecord( RevisionRecord $revisionRecord ): void {
-		$allSubjects = new SubjectMap();
-
 		if ( $revisionRecord->getPageId() === 0 ) {
 			throw new \RuntimeException( 'Page ID should not be 0' );
 		}
 
 		try {
 			$neoContent = $revisionRecord->getSlots()->getContent( MediaWikiSubjectRepository::SLOT_NAME );
-			if ( $neoContent instanceof SubjectContent ) {
-				$allSubjects = $allSubjects->append( $neoContent->getSubjects() );
-			}
 		}
 		catch ( RevisionAccessException ) {
+			return; // TODO: log this
 		}
+
+		if ( !( $neoContent instanceof SubjectContent ) ) {
+			return; // TODO: log this
+		}
+
+		$contentData = $neoContent->getContentData();
 
 		$this->queryStore->savePage(
 			new Page(
@@ -46,8 +47,8 @@ class OnRevisionCreatedHandler {
 				properties: new PageProperties(
 					title: $revisionRecord->getPageAsLinkTarget()->getText()
 				),
-				mainSubject: null, // TODO
-				childSubjects: $allSubjects
+				mainSubject: $contentData->getMainSubject(),
+				childSubjects: $contentData->getChildSubjects()
 			)
 		);
 	}

@@ -7,38 +7,42 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeIdList;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotDeserializer;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotSerializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentData;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotSerializer
- * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotDeserializer
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataSerializer
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer
  */
-class SubjectSlotSerializerTest extends TestCase {
+class SubjectContentDataSerializerTest extends TestCase {
 
 	public function testSerializeEmptySubjects(): void {
-		$serializer = new SubjectSlotSerializer();
+		$serializer = new SubjectContentDataSerializer();
 
 		$this->assertSame(
 			'{
+    "mainSubject": null,
     "subjects": {}
 }',
-			$serializer->serialize( new SubjectMap() )
+			$serializer->serialize( SubjectContentData::newEmpty() )
 		);
 	}
 
 	public function testSerializeMinimalSubject(): void {
-		$serializer = new SubjectSlotSerializer();
+		$serializer = new SubjectContentDataSerializer();
 
 		$this->assertSame(
 			'{
+    "mainSubject": null,
     "subjects": {
         "f81d4fae-7dec-11d0-a765-00a0c91e6bf6": {
             "label": "Test subject",
@@ -48,17 +52,21 @@ class SubjectSlotSerializerTest extends TestCase {
         }
     }
 }',
-			$serializer->serialize( new SubjectMap(
-				TestSubject::build( 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6' )
+			$serializer->serialize( new SubjectContentData(
+				null,
+				new SubjectMap(
+					TestSubject::build( 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6' )
+				)
 			) )
 		);
 	}
 
 	public function testSerializeFullSubject(): void {
-		$serializer = new SubjectSlotSerializer();
+		$serializer = new SubjectContentDataSerializer();
 
 		$this->assertSame(
 			'{
+    "mainSubject": "70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001",
     "subjects": {
         "70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001": {
             "label": "Test subject a001",
@@ -68,8 +76,12 @@ class SubjectSlotSerializerTest extends TestCase {
             ],
             "relations": [],
             "properties": {
-                "founded": "2019-01-01",
-                "founder": "John Doe"
+                "founded": [
+                    "2019-01-01"
+                ],
+                "founder": [
+                    "John Doe"
+                ]
             }
         },
         "93e58a18-dc3e-41aa-8d67-79a18e98b002": {
@@ -104,18 +116,8 @@ class SubjectSlotSerializerTest extends TestCase {
 		);
 	}
 
-	private function newFullSubjectMap(): SubjectMap {
-		return new SubjectMap(
-			TestSubject::build(
-				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001',
-				label: new SubjectLabel( 'Test subject a001' ),
-				types: new SubjectTypeIdList( [ new SubjectTypeId( 'Company' ), new SubjectTypeId( 'Organization' ) ] ),
-				relations: new RelationList( [] ),
-				properties: new SubjectProperties( [
-					'founded' => '2019-01-01',
-					'founder' => 'John Doe',
-				] )
-			),
+	private function newFullSubjectMap(): SubjectContentData {
+		$subjects = new SubjectMap(
 			TestSubject::build(
 				id: '93e58a18-dc3e-41aa-8d67-79a18e98b002',
 				label: new SubjectLabel( 'Test subject b002' ),
@@ -142,13 +144,27 @@ class SubjectSlotSerializerTest extends TestCase {
 				] )
 			)
 		);
+
+		return new SubjectContentData(
+			mainSubject: TestSubject::build(
+				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001',
+				label: new SubjectLabel( 'Test subject a001' ),
+				types: new SubjectTypeIdList( [ new SubjectTypeId( 'Company' ), new SubjectTypeId( 'Organization' ) ] ),
+				relations: new RelationList( [] ),
+				properties: new SubjectProperties( [
+					'founded' => [ '2019-01-01' ],
+					'founder' => [ 'John Doe' ],
+				] )
+			),
+			childSubjects: $subjects
+		);
 	}
 
 	public function testSerializationRoundTrip(): void {
 		$this->assertEquals(
 			$this->newFullSubjectMap(),
-			( new SubjectSlotDeserializer() )->deserialize(
-				( new SubjectSlotSerializer() )->serialize( $this->newFullSubjectMap() )
+			( new SubjectContentDataDeserializer() )->deserialize(
+				( new SubjectContentDataSerializer() )->serialize( $this->newFullSubjectMap() )
 			)
 		);
 	}

@@ -17,19 +17,38 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeIdList;
 
-class SubjectSlotDeserializer {
+class SubjectContentDataDeserializer {
 
 	/**
-	 * Mirrors @see SubjectSlotSerializer::serialize
+	 * Mirrors @see SubjectContentDataSerializer::serialize
 	 */
-	public function deserialize( string $json ): SubjectMap {
-		$jsonArray = json_decode( $json, true )['subjects'] ?? [];
+	public function deserialize( string $json ): SubjectContentData {
+		$jsonArray = json_decode( $json, true );
+		$subjects = $this->deserializeSubjects( $jsonArray );
+
+		if ( ( $jsonArray['mainSubject'] ?? null ) === null ) {
+			return new SubjectContentData(
+				null,
+				$subjects,
+			);
+		}
+
+		$mainSubjectId = new SubjectId( $jsonArray['mainSubject'] );
+
+		return new SubjectContentData(
+			$subjects->getSubject( $mainSubjectId ),
+			$subjects->without( $mainSubjectId ),
+		);
+	}
+
+	private function deserializeSubjects( array $jsonArray ): SubjectMap {
+		$subjectsArray = $jsonArray['subjects'] ?? [];
 
 		return new SubjectMap(
 			...array_map(
 				fn( string $id, array $subject ) => $this->deserializeSubject( $id, $subject ),
-				array_keys( $jsonArray ),
-				$jsonArray,
+				array_keys( $subjectsArray ),
+				$subjectsArray,
 			)
 		);
 	}
@@ -39,8 +58,8 @@ class SubjectSlotDeserializer {
 			id: new SubjectId( $id ),
 			label: new SubjectLabel( $jsonArray['label'] ),
 			types: $this->newSubjectTypeIdList( $jsonArray ),
-			relations: $this->newRelationList( $jsonArray ),
 			properties: $this->newSubjectProperties( $jsonArray ),
+			relations: $this->newRelationList( $jsonArray ),
 		);
 	}
 

@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 use HTMLForm;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
 use SpecialPage;
 use Title;
 
@@ -77,7 +77,7 @@ class SpecialNeoJson extends SpecialPage {
 
 	private function onSubmit( array $formData, Title $title ): bool {
 		$content = SubjectContent::newFromSubjects(
-			( new SubjectSlotDeserializer() )->deserialize( $formData['json'] )
+			( new SubjectContentDataDeserializer() )->deserialize( $formData['json'] )
 		);
 
 		NeoWikiExtension::getInstance()->newSubjectContentRepository()->editSubjectContent(

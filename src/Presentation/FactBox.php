@@ -18,7 +18,7 @@ class FactBox {
 	}
 
 	public function htmlFor( Title $title ): string {
-		$subjects = $this->subjectContentRepository->getSubjectContentByPageTitle( $title )?->getSubjects() ?? new SubjectMap();
+		$subjects = $this->subjectContentRepository->getSubjectContentByPageTitle( $title )?->getContentData()->getAllSubjects() ?? new SubjectMap();
 
 		return $this->templateRenderer->viewModelToString(
 			'FactBox.html.twig',

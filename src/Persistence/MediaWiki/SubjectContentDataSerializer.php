@@ -5,17 +5,16 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 
-class SubjectSlotSerializer {
+class SubjectContentDataSerializer {
 
 	/**
-	 * Mirrors @see SubjectSlotDeserializer::deserialize
+	 * Mirrors @see SubjectContentDataDeserializer::deserialize
 	 */
-	public function serialize( SubjectMap $subjects ): string {
+	public function serialize( SubjectContentData $contentData ): string {
 		$serializedSubjects = [];
 
-		foreach ( $subjects->asArray() as $subject ) {
+		foreach ( $contentData->getAllSubjects()->asArray() as $subject ) {
 			$serializedSubjects[$subject->id->text] = [
 				'label' => $subject->label->text,
 				'types' => $subject->types->toStringArray(),
@@ -24,7 +23,13 @@ class SubjectSlotSerializer {
 			];
 		}
 
-		return json_encode( [ 'subjects' => (object)$serializedSubjects ], JSON_PRETTY_PRINT );
+		return json_encode(
+			[
+				'mainSubject' => $contentData->getMainSubject()?->id->text,
+				'subjects' => (object)$serializedSubjects,
+			],
+			JSON_PRETTY_PRINT
+		);
 	}
 
 	private function serializeRelations( RelationList $relations ): array {
