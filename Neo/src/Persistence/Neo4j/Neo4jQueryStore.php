@@ -46,13 +46,22 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 				]
 			);
 
-			$updater = new SubjectUpdater( $transaction, $page->getId() );
-
-			// TODO: indicate which subject is the main subject?
-			foreach ( $page->getAllSubjects()->asArray() as $subject ) {
-				$updater->updateSubject( $subject, $page->isMainSubject( $subject ) );
-			}
+			$this->updateSubjects( $transaction, $page );
 		} );
+	}
+
+	private function updateSubjects( TransactionInterface $transaction, Page $page ): void {
+		$updater = new SubjectUpdater( $transaction, $page->getId() );
+
+		$mainSubject = $page->getMainSubject();
+
+		if ( $mainSubject !== null ) {
+			$updater->updateSubject( $mainSubject, isMainSubject: true );
+		}
+
+		foreach ( $page->getChildSubjects()->asArray() as $subject ) {
+			$updater->updateSubject( $subject, isMainSubject: false );
+		}
 	}
 
 	public function deletePage( PageId $pageId ): void {
