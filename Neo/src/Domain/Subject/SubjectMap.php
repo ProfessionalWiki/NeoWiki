@@ -32,11 +32,14 @@ class SubjectMap implements \Countable {
 		return array_values( $this->subjects );
 	}
 
-	/**
-	 * TODO: return new instance rather than mutate
-	 */
-	public function append( self $subjectMap ): void {
-		array_walk( $subjectMap->subjects, $this->addOrUpdateSubject( ... ) );
+	public function append( self $subjectMap ): self {
+		$subjects = $this->subjects;
+
+		foreach ( $subjectMap->subjects as $subject ) {
+			$subjects[$subject->id->text] = $subject;
+		}
+
+		return new self( ...$subjects );
 	}
 
 	public function addOrUpdateSubject( Subject $subject ): void {
