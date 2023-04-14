@@ -60,7 +60,7 @@ class SubjectMapTest extends TestCase {
 		);
 	}
 
-	public function testAppend(): void {
+	public function testAppendReturnsNewInstanceWithTheNewSubjects(): void {
 		$subject1 = TestSubject::build( '123' );
 		$subject2 = TestSubject::build( '456', label: new SubjectLabel( 'v1' ) );
 		$subject2v2 = TestSubject::build( '456', label: new SubjectLabel( 'v2' ) );
@@ -69,11 +69,24 @@ class SubjectMapTest extends TestCase {
 		$subjectMap1 = new SubjectMap( $subject1, $subject2 );
 		$subjectMap2 = new SubjectMap( $subject2v2, $subject3 );
 
-		$subjectMap1->append( $subjectMap2 );
+		$subjectMap3 = $subjectMap1->append( $subjectMap2 );
 
 		$this->assertEquals(
 			[ $subject1, $subject2v2, $subject3 ],
-			$subjectMap1->asArray()
+			$subjectMap3->asArray()
+		);
+	}
+
+	public function testAppendDoesNotMutate(): void {
+		$subject1 = TestSubject::build( '123' );
+		$subject2 = TestSubject::build( '456' );
+
+		$subjectMap = new SubjectMap( $subject1 );
+		$subjectMap->append( new SubjectMap( $subject2 ) );
+
+		$this->assertEquals(
+			$subjectMap,
+			new SubjectMap( $subject1 )
 		);
 	}
 
@@ -137,7 +150,7 @@ class SubjectMapTest extends TestCase {
 		);
 	}
 
-	public function withoutDoesNotMutate(): void {
+	public function testWithoutDoesNotMutate(): void {
 		$subject1 = TestSubject::build( '123' );
 
 		$subjectMap = new SubjectMap( $subject1 );
