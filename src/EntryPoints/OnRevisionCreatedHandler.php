@@ -34,7 +34,7 @@ class OnRevisionCreatedHandler {
 		try {
 			$neoContent = $revisionRecord->getSlots()->getContent( MediaWikiSubjectRepository::SLOT_NAME );
 			if ( $neoContent instanceof SubjectContent ) {
-				$allSubjects->append( $neoContent->getSubjects() );
+				$allSubjects = $allSubjects->append( $neoContent->getSubjects() );
 			}
 		}
 		catch ( RevisionAccessException ) {
