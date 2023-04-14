@@ -14,7 +14,6 @@ use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
 use WikiPage;
 
@@ -31,7 +30,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 
 	public function getSubject( SubjectId $subjectId ): ?Subject {
 		return $this->getContentBySubjectId( $subjectId )
-			?->getSubjects()
+			?->getContentData()->getAllSubjects()
 			->getSubject( $subjectId );
 	}
 
@@ -86,9 +85,9 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 	}
 
 	private function updateSubjectContent( SubjectContent $content, Subject $subject ): void {
-		$subjects = $content->getSubjects();
-		$subjects->addOrUpdateSubject( $subject );
-		$content->setSubjects( $subjects );
+		$contentData = $content->getContentData();
+		$contentData->updateSubject( $subject );
+		$content->setContentData( $contentData );
 	}
 
 	private function saveContent( SubjectContent $content, int $pageId ): void {
@@ -101,8 +100,9 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		}
 	}
 
+	// FIXME: main or child subject?
 	public function createSubject( Subject $subject, PageId $pageId ): void {
-		$content = $this->getContentByPageId( $pageId->id ) ?? SubjectContent::newFromSubjects( new SubjectMap() );
+		$content = $this->getContentByPageId( $pageId->id ) ?? SubjectContent::newEmpty();
 
 		$this->updateSubjectContent( $content, $subject );
 		$this->saveContent( $content, $pageId->id );
@@ -121,7 +121,9 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 			return;
 		}
 
-		$content->setSubjects( $content->getSubjects()->without( $id ) );
+		$data = $content->getContentData();
+		$data->removeSubject( $id );
+		$content->setContentData( $data );
 
 		$this->saveContent( $content, $pageId );
 	}

@@ -8,31 +8,32 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotDeserializer
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer
  */
-class SubjectSlotDeserializerTest extends TestCase {
+class SubjectContentDataDeserializerTest extends TestCase {
 
 	public function testNodeExampleSmokeTest(): void {
-		$deserializer = new SubjectSlotDeserializer();
+		$deserializer = new SubjectContentDataDeserializer();
 		$deserializer->deserialize( TestData::getFileContents( 'nodeExample.json' ) );
 
 		$this->assertTrue( true );
 	}
 
 	public function testMinimalJson(): void {
-		$deserializer = new SubjectSlotDeserializer();
-		$subjectMap = $deserializer->deserialize( '{}' );
+		$deserializer = new SubjectContentDataDeserializer();
+		$data = $deserializer->deserialize( '{}' );
 
-		$this->assertSame( [], $subjectMap->asArray() );
+		$this->assertSame( [], $data->getAllSubjects()->asArray() );
+		$this->assertNull( $data->getMainSubject() );
 	}
 
 	public function testMinimalSubject(): void {
-		$deserializer = new SubjectSlotDeserializer();
-		$subjectMap = $deserializer->deserialize(
+		$deserializer = new SubjectContentDataDeserializer();
+		$data = $deserializer->deserialize(
 			<<<JSON
 {
 	"subjects": {
@@ -52,13 +53,13 @@ JSON
 				Subject::newSubject( new SubjectId( 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6' ), new SubjectLabel( 'ACME Inc.' ) ),
 				Subject::newSubject( new SubjectId( '7e3e53f0-1d9d-11ec-835b-0242ac130003' ), new SubjectLabel( 'Contoso Ltd.' ) ),
 			],
-			$subjectMap->asArray()
+			$data->getAllSubjects()->asArray()
 		);
 	}
 
 	public function testEmptyTopLevelSubjectAttributes(): void {
-		$deserializer = new SubjectSlotDeserializer();
-		$subjectMap = $deserializer->deserialize(
+		$deserializer = new SubjectContentDataDeserializer();
+		$data = $deserializer->deserialize(
 			<<<JSON
 {
 	"subjects": {
@@ -80,7 +81,7 @@ JSON
 			[
 			Subject::newSubject( new SubjectId( '7e3e53f0-1d9d-11ec-835b-0242ac130003' ), new SubjectLabel( 'ACME Inc.' ) ),
 			],
-			$subjectMap->asArray()
+			$data->getAllSubjects()->asArray()
 		);
 	}
 

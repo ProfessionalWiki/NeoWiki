@@ -5,9 +5,9 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use FormatJson;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotDeserializer;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotSerializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentData;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataSerializer;
 
 class SubjectContent extends \JsonContent {
 
@@ -20,29 +20,32 @@ class SubjectContent extends \JsonContent {
 		);
 	}
 
+	public static function newFromData( SubjectContentData $data ): self {
+		return new self( ( new SubjectContentDataSerializer() )->serialize( $data ) );
+	}
+
+	public static function newEmpty(): self {
+		return self::newFromData( SubjectContentData::newEmpty() );
+	}
+
 	public function beautifyJSON(): string {
 		return FormatJson::encode( json_decode( $this->getText() ), true, FormatJson::UTF8_OK );
 	}
 
-	public function getSubjects(): SubjectMap {
-		return ( new SubjectSlotDeserializer() )->deserialize( $this->getText() );
-	}
-
 	public function hasSubjects(): bool {
-		return !$this->getSubjects()->isEmpty();
+		return $this->getContentData()->hasSubjects();
 	}
 
-	public function setSubjects( SubjectMap $subjects ): void {
-		$this->mText = ( new SubjectSlotSerializer() )->serialize( $subjects );
+	public function isEmpty(): bool {
+		return $this->getContentData()->isEmpty();
 	}
 
-	/**
-	 * TODO: add main subject and rename subjects to childSubjects
-	 */
-	public static function newFromSubjects( SubjectMap $subjects ): self {
-		$content = new self( '' );
-		$content->setSubjects( $subjects );
-		return $content;
+	public function setContentData( SubjectContentData $data ): void {
+		$this->mText = ( new SubjectContentDataSerializer() )->serialize( $data );
+	}
+
+	public function getContentData(): SubjectContentData {
+		return ( new SubjectContentDataDeserializer() )->deserialize( $this->getText() );
 	}
 
 }
