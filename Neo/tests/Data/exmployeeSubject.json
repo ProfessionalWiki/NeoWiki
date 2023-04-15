@@ -1,0 +1,22 @@
+{
+	"label": "John Doe",
+	"types": [
+		"Person"
+	],
+	"properties": {
+		"LegalName": "John Doe",
+		"WorkEmail": "JohnDoe@professional.wiki",
+		"EmergencyContact": "0118 999 881 999 119 725 3",
+		"BirthDate": "1945-07-16",
+		"EmploymentFte": 0.42,
+		"MonthlyCompensation": 1337,
+		"IsAwesome": true,
+		"Skills": [
+			"ChatGPT",
+			"Magic",
+			"NeoWiki"
+		]
+	},
+	"relations": {
+	}
+}
