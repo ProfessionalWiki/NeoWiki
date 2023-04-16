@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 
 class SubjectContentDataSerializer {
@@ -11,7 +12,7 @@ class SubjectContentDataSerializer {
 	/**
 	 * Mirrors @see SubjectContentDataDeserializer::deserialize
 	 */
-	public function serialize( SubjectContentData $contentData ): string {
+	public function serialize( PageSubjects $contentData ): string {
 		$serializedSubjects = [];
 
 		foreach ( $contentData->getAllSubjects()->asArray() as $subject ) {

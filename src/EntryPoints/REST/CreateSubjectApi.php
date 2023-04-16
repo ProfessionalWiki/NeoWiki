@@ -15,6 +15,11 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 
 	private array $apiResponse = [];
 
+	public function __construct(
+		private readonly bool $isMainSubject,
+	) {
+	}
+
 	public function run( int $pageId ): Response {
 		// TODO: format validation
 		$request = json_decode( $this->getRequest()->getBody()->getContents(), true );
@@ -22,6 +27,7 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 		NeoWikiExtension::getInstance()->newCreateSubjectAction( $this )->createSubject(
 			new CreateSubjectRequest(
 				pageId: $pageId,
+				isMainSubject: $this->isMainSubject,
 				label: $request['label'],
 				types: $request['types'],
 				properties: $request['properties'],

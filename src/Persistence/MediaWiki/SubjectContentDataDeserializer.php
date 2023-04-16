@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
@@ -22,12 +23,12 @@ class SubjectContentDataDeserializer {
 	/**
 	 * Mirrors @see SubjectContentDataSerializer::serialize
 	 */
-	public function deserialize( string $json ): SubjectContentData {
+	public function deserialize( string $json ): PageSubjects {
 		$jsonArray = json_decode( $json, true );
 		$subjects = $this->deserializeSubjects( $jsonArray );
 
 		if ( ( $jsonArray['mainSubject'] ?? null ) === null ) {
-			return new SubjectContentData(
+			return new PageSubjects(
 				null,
 				$subjects,
 			);
@@ -35,7 +36,7 @@ class SubjectContentDataDeserializer {
 
 		$mainSubjectId = new SubjectId( $jsonArray['mainSubject'] );
 
-		return new SubjectContentData(
+		return new PageSubjects(
 			$subjects->getSubject( $mainSubjectId ),
 			$subjects->without( $mainSubjectId ),
 		);

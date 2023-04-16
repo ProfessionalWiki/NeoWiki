@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
 
@@ -40,7 +41,7 @@ class OnRevisionCreatedHandler {
 			return; // TODO: log this
 		}
 
-		$contentData = $neoContent->getContentData();
+		$contentData = $neoContent->getPageSubjects();
 
 		$this->queryStore->savePage(
 			new Page(
@@ -48,8 +49,10 @@ class OnRevisionCreatedHandler {
 				properties: new PageProperties(
 					title: $revisionRecord->getPageAsLinkTarget()->getText()
 				),
-				mainSubject: $contentData->getMainSubject(),
-				childSubjects: $contentData->getChildSubjects()
+				subjects: new PageSubjects(
+					mainSubject: $contentData->getMainSubject(),
+					childSubjects: $contentData->getChildSubjects()
+				)
 			)
 		);
 	}

@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
 
 use FormatJson;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentData;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataSerializer;
 
@@ -20,12 +20,12 @@ class SubjectContent extends \JsonContent {
 		);
 	}
 
-	public static function newFromData( SubjectContentData $data ): self {
+	public static function newFromData( PageSubjects $data ): self {
 		return new self( ( new SubjectContentDataSerializer() )->serialize( $data ) );
 	}
 
 	public static function newEmpty(): self {
-		return self::newFromData( SubjectContentData::newEmpty() );
+		return self::newFromData( PageSubjects::newEmpty() );
 	}
 
 	public function beautifyJSON(): string {
@@ -33,19 +33,31 @@ class SubjectContent extends \JsonContent {
 	}
 
 	public function hasSubjects(): bool {
-		return $this->getContentData()->hasSubjects();
+		return $this->getPageSubjects()->hasSubjects();
 	}
 
 	public function isEmpty(): bool {
-		return $this->getContentData()->isEmpty();
+		return $this->getPageSubjects()->isEmpty();
 	}
 
-	public function setContentData( SubjectContentData $data ): void {
+	public function setPageSubjects( PageSubjects $data ): void {
 		$this->mText = ( new SubjectContentDataSerializer() )->serialize( $data );
 	}
 
-	public function getContentData(): SubjectContentData {
+	/**
+	 * Returns a fresh instance of PageSubjects that does not have a reference to this content object.
+	 */
+	public function getPageSubjects(): PageSubjects {
 		return ( new SubjectContentDataDeserializer() )->deserialize( $this->getText() );
+	}
+
+	/**
+	 * @param callable(PageSubjects):void $mutator
+	 */
+	public function mutatePageSubjects( callable $mutator ): void {
+		$data = $this->getPageSubjects();
+		$mutator( $data );
+		$this->setPageSubjects( $data );
 	}
 
 }

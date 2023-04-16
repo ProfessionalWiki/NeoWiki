@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -111,6 +113,71 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 			$this->newRepository()->getSubject(
 				new SubjectId( 'never-existed' )
 			)
+		);
+	}
+
+	public function testGetMainSubjectReturnsNullForUnknownPage(): void {
+		$this->assertNull(
+			$this->newRepository()->getMainSubject( new PageId( 404404404 ) )
+		);
+	}
+
+	public function testGetMainSubjectReturnsNullForPageWithoutSubject(): void {
+		$pageId = $this->createPageWithSubjects( 'SubjectRepoTestPageWithSubject' )->getPage()->getId();
+
+		$this->assertNull(
+			$this->newRepository()->getMainSubject( new PageId( $pageId ) )
+		);
+	}
+
+	public function testGetMainSubjectReturnsSubject(): void {
+		$pageId = $this->createPageWithSubjects(
+			'SubjectRepoTestPageWithSubject',
+			mainSubject: TestSubject::build(
+				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48d086',
+				label: new SubjectLabel( 'Test subject d086' ),
+			)
+		)->getPage()->getId();
+
+		$this->assertEquals(
+			TestSubject::build(
+				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48d086',
+				label: new SubjectLabel( 'Test subject d086' ),
+			),
+			$this->newRepository()->getMainSubject( new PageId( $pageId ) )
+		);
+	}
+
+	public function testGetAndSetPageSubjects(): void {
+		$pageId = new PageId(
+			$this->createPageWithSubjects( 'SubjectRepoTestPageWithSubject' )->getPage()->getId()
+		);
+
+		$repo = $this->newRepository();
+		$subjects = $repo->getPageSubjects( $pageId );
+
+		$subjects->setMainSubject(
+			TestSubject::build(
+				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48d086',
+				label: new SubjectLabel( 'Test subject d086' ),
+			)
+		);
+
+		$repo->savePageSubjects( $subjects, $pageId );
+
+		$this->assertEquals(
+			TestSubject::build(
+				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48d086',
+				label: new SubjectLabel( 'Test subject d086' ),
+			),
+			$repo->getMainSubject( $pageId )
+		);
+	}
+
+	public function testGetPageSubjectsReturnsEmptySubjectMapForUnknownPage(): void {
+		$this->assertEquals(
+			PageSubjects::newEmpty(),
+			$this->newRepository()->getPageSubjects( new PageId( 404404404 ) )
 		);
 	}
 
