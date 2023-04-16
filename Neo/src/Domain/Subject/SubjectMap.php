@@ -32,7 +32,11 @@ class SubjectMap implements \Countable {
 		return array_values( $this->subjects );
 	}
 
-	public function append( self $subjectMap ): self {
+	public function addOrUpdateSubject( Subject $subject ): void {
+		$this->subjects[$subject->id->text] = $subject;
+	}
+
+	public function union( self $subjectMap ): self {
 		$subjects = $this->subjects;
 
 		foreach ( $subjectMap->subjects as $subject ) {
@@ -40,10 +44,6 @@ class SubjectMap implements \Countable {
 		}
 
 		return new self( ...$subjects );
-	}
-
-	public function addOrUpdateSubject( Subject $subject ): void {
-		$this->subjects[$subject->id->text] = $subject;
 	}
 
 	/**

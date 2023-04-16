@@ -11,24 +11,25 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeIdList;
+use ProfessionalWiki\NeoWiki\Infrastructure\ProductionGuidGenerator;
 
 class TestSubject {
 
 	public const ZERO_GUID = '00000000-0000-0000-0000-000000000000';
 
 	public static function build(
-		?string $id = null,
+		string|SubjectId|null $id = null,
 		?SubjectLabel $label = null,
 		?SubjectTypeIdList $types = null,
 		?RelationList $relations = null,
 		?SubjectProperties $properties = null,
 	): Subject {
 		return new Subject(
-			id: new SubjectId( $id ?? self::ZERO_GUID ),
+			id: $id instanceof SubjectId ? $id : new SubjectId( $id ?? self::ZERO_GUID ),
 			label: $label ?? new SubjectLabel( "Test subject" ),
 			types: $types ?? new SubjectTypeIdList( [] ),
-			relations: $relations ?? new RelationList( [] ),
 			properties: $properties ?? new SubjectProperties( [] ),
+			relations: $relations ?? new RelationList( [] ),
 		);
 	}
 
@@ -47,6 +48,13 @@ class TestSubject {
 				label: new SubjectLabel( 'Test subject c003' ),
 			)
 		);
+	}
+
+	/**
+	 * Generates a new GUID
+	 */
+	public static function uniqueId(): SubjectId {
+		return SubjectId::createNew( new ProductionGuidGenerator() );
 	}
 
 }

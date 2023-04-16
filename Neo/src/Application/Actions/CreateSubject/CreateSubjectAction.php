@@ -25,10 +25,17 @@ class CreateSubjectAction {
 	public function createSubject( CreateSubjectRequest $request ): void {
 		$subject = $this->buildSubject( $request );
 
-		$this->subjectRepository->createSubject(
-			$subject,
-			new PageId( $request->pageId )
-		);
+		$pageSubjects = $this->subjectRepository->getPageSubjects( new PageId( $request->pageId ) );
+
+		if ( $request->isMainSubject ) {
+			// TODO: catch RuntimeException and present error
+			$pageSubjects->createMainSubject( $subject );
+		} else {
+			// TODO: catch RuntimeException and present error
+			$pageSubjects->createChildSubject( $subject );
+		}
+
+		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ) );
 
 		$this->presenter->presentCreated( $subject->id->text );
 	}

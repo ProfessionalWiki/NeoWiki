@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Domain;
+namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -60,7 +60,7 @@ class SubjectMapTest extends TestCase {
 		);
 	}
 
-	public function testAppendReturnsNewInstanceWithTheNewSubjects(): void {
+	public function testUnionReturnsNewInstanceWithTheNewSubjects(): void {
 		$subject1 = TestSubject::build( '123' );
 		$subject2 = TestSubject::build( '456', label: new SubjectLabel( 'v1' ) );
 		$subject2v2 = TestSubject::build( '456', label: new SubjectLabel( 'v2' ) );
@@ -69,7 +69,7 @@ class SubjectMapTest extends TestCase {
 		$subjectMap1 = new SubjectMap( $subject1, $subject2 );
 		$subjectMap2 = new SubjectMap( $subject2v2, $subject3 );
 
-		$subjectMap3 = $subjectMap1->append( $subjectMap2 );
+		$subjectMap3 = $subjectMap1->union( $subjectMap2 );
 
 		$this->assertEquals(
 			[ $subject1, $subject2v2, $subject3 ],
@@ -77,12 +77,12 @@ class SubjectMapTest extends TestCase {
 		);
 	}
 
-	public function testAppendDoesNotMutate(): void {
+	public function testUnionDoesNotMutate(): void {
 		$subject1 = TestSubject::build( '123' );
 		$subject2 = TestSubject::build( '456' );
 
 		$subjectMap = new SubjectMap( $subject1 );
-		$subjectMap->append( new SubjectMap( $subject2 ) );
+		$subjectMap->union( new SubjectMap( $subject2 ) );
 
 		$this->assertEquals(
 			$subjectMap,
