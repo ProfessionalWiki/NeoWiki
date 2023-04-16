@@ -13,6 +13,8 @@ use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\User\UserIdentity;
 use OutputPage;
 use Parser;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\CypherContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
 use Skin;

@@ -14,7 +14,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use WikiPage;
 
 class MediaWikiSubjectRepository implements SubjectRepository {

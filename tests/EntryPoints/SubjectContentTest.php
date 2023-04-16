@@ -6,12 +6,12 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentData
  */
 class SubjectContentTest extends TestCase {
