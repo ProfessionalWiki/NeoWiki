@@ -16,6 +16,11 @@ class InMemorySubjectRepository implements SubjectRepository {
 	 */
 	private array $subjects = [];
 
+	/**
+	 * @var array<int, Subject> Main subjects indexed by their page ID
+	 */
+	private array $mainSubjects = [];
+
 	public function getSubject( SubjectId $subjectId ): ?Subject {
 		return $this->subjects[$subjectId->text] ?? null;
 	}
@@ -24,12 +29,21 @@ class InMemorySubjectRepository implements SubjectRepository {
 		$this->subjects[$subject->id->text] = $subject;
 	}
 
-	public function createSubject( Subject $subject, PageId $pageId ): void {
-		$this->subjects[$subject->id->text] = $subject;
-	}
-
 	public function deleteSubject( SubjectId $id ): void {
 		unset( $this->subjects[$id->text] );
+	}
+
+	public function getMainSubject( PageId $pageId ): ?Subject {
+		return $this->mainSubjects[$pageId->id] ?? null;
+	}
+
+	public function setMainSubject( Subject $subject, PageId $pageId ): void {
+		$this->updateSubject( $subject );
+		$this->mainSubjects[$pageId->id] = $subject;
+	}
+
+	public function setChildSubject( Subject $subject, PageId $pageId ): void {
+		$this->updateSubject( $subject );
 	}
 
 }

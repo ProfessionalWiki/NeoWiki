@@ -8,6 +8,8 @@ class CreateSubjectRequest {
 
 	public function __construct(
 		public readonly int $pageId,
+		public readonly bool $isMainSubject,
+
 		public readonly string $label,
 
 		/**
