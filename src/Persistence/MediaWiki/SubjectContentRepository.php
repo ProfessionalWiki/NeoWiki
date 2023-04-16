@@ -11,7 +11,7 @@ use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\EntryPoints\SubjectContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use RuntimeException;
 use WikiPage;
 

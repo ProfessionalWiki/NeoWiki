@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\EntryPoints;
+namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
 
 use Content;
 use MediaWiki\Content\Renderer\ContentParseParams;
