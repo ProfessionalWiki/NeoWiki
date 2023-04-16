@@ -42,7 +42,7 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 				[
 					'pageId' => $page->getId()->id,
 					'pageTitle' => $page->getProperties()->title,
-					'subjectIds' => $page->getAllSubjects()->getIdsAsTextArray(),
+					'subjectIds' => $page->getSubjects()->getAllSubjects()->getIdsAsTextArray(),
 				]
 			);
 
@@ -53,13 +53,13 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 	private function updateSubjects( TransactionInterface $transaction, Page $page ): void {
 		$updater = new SubjectUpdater( $transaction, $page->getId() );
 
-		$mainSubject = $page->getMainSubject();
+		$mainSubject = $page->getSubjects()->getMainSubject();
 
 		if ( $mainSubject !== null ) {
 			$updater->updateSubject( $mainSubject, isMainSubject: true );
 		}
 
-		foreach ( $page->getChildSubjects()->asArray() as $subject ) {
+		foreach ( $page->getSubjects()->getChildSubjects()->asArray() as $subject ) {
 			$updater->updateSubject( $subject, isMainSubject: false );
 		}
 	}
