@@ -12,6 +12,7 @@ use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Application\PageIdLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -30,7 +31,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 
 	public function getSubject( SubjectId $subjectId ): ?Subject {
 		return $this->getContentBySubjectId( $subjectId )
-			?->getContentData()->getAllSubjects()
+			?->getPageSubjects()->getAllSubjects()
 			->getSubject( $subjectId );
 	}
 
@@ -85,9 +86,9 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 	}
 
 	private function updateSubjectContent( SubjectContent $content, Subject $subject ): void {
-		$contentData = $content->getContentData();
+		$contentData = $content->getPageSubjects();
 		$contentData->updateSubject( $subject );
-		$content->setContentData( $contentData );
+		$content->setPageSubjects( $contentData );
 	}
 
 	private function saveContent( SubjectContent $content, int $pageId ): void {
@@ -98,14 +99,6 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 			$updater->setContent( self::SLOT_NAME, $content );
 			$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
 		}
-	}
-
-	// FIXME: main or child subject?
-	public function createSubject( Subject $subject, PageId $pageId ): void {
-		$content = $this->getContentByPageId( $pageId->id ) ?? SubjectContent::newEmpty();
-
-		$this->updateSubjectContent( $content, $subject );
-		$this->saveContent( $content, $pageId->id );
 	}
 
 	public function deleteSubject( SubjectId $id ): void {
@@ -121,11 +114,26 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 			return;
 		}
 
-		$data = $content->getContentData();
-		$data->removeSubject( $id );
-		$content->setContentData( $data );
+		$content->mutatePageSubjects( function( PageSubjects $pageSubjects ) use ( $id ) {
+			$pageSubjects->removeSubject( $id );
+		} );
 
 		$this->saveContent( $content, $pageId );
 	}
 
+	public function getMainSubject( PageId $pageId ): ?Subject {
+		return $this->getContentByPageId( $pageId->id )?->getPageSubjects()->getMainSubject();
+	}
+
+	public function getPageSubjects( PageId $pageId ): PageSubjects {
+		return $this->getContentByPageId( $pageId->id )?->getPageSubjects() ?? PageSubjects::newEmpty();
+	}
+
+	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId ): void {
+		$content = $this->getContentByPageId( $pageId->id ) ?? SubjectContent::newEmpty();
+
+		$content->setPageSubjects( $pageSubjects );
+
+		$this->saveContent( $content, $pageId->id );
+	}
 }

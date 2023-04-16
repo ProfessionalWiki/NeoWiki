@@ -13,7 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeIdList;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentData;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
@@ -33,7 +33,7 @@ class SubjectContentDataSerializerTest extends TestCase {
     "mainSubject": null,
     "subjects": {}
 }',
-			$serializer->serialize( SubjectContentData::newEmpty() )
+			$serializer->serialize( PageSubjects::newEmpty() )
 		);
 	}
 
@@ -52,7 +52,7 @@ class SubjectContentDataSerializerTest extends TestCase {
         }
     }
 }',
-			$serializer->serialize( new SubjectContentData(
+			$serializer->serialize( new PageSubjects(
 				null,
 				new SubjectMap(
 					TestSubject::build( 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6' )
@@ -116,7 +116,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 		);
 	}
 
-	private function newFullSubjectMap(): SubjectContentData {
+	private function newFullSubjectMap(): PageSubjects {
 		$subjects = new SubjectMap(
 			TestSubject::build(
 				id: '93e58a18-dc3e-41aa-8d67-79a18e98b002',
@@ -145,7 +145,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 			)
 		);
 
-		return new SubjectContentData(
+		return new PageSubjects(
 			mainSubject: TestSubject::build(
 				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001',
 				label: new SubjectLabel( 'Test subject a001' ),

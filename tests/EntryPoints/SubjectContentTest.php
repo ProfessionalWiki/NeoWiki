@@ -5,14 +5,15 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentData;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent
- * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentData
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects
  */
 class SubjectContentTest extends TestCase {
 
@@ -26,7 +27,7 @@ class SubjectContentTest extends TestCase {
 
 	private function newContentWithMainSubject(): SubjectContent {
 		return SubjectContent::newFromData(
-			new SubjectContentData(
+			new PageSubjects(
 				mainSubject: TestSubject::build(),
 				childSubjects: new SubjectMap()
 			)
@@ -44,8 +45,8 @@ class SubjectContentTest extends TestCase {
 	public function testCanModifyData(): void {
 		$content = SubjectContent::newEmpty();
 
-		$content->setContentData(
-			new SubjectContentData(
+		$content->setPageSubjects(
+			new PageSubjects(
 				mainSubject: TestSubject::build( id: TestSubject::ZERO_GUID ),
 				childSubjects: new SubjectMap()
 			)
@@ -53,8 +54,23 @@ class SubjectContentTest extends TestCase {
 
 		$this->assertSame(
 			TestSubject::ZERO_GUID,
-			$content->getContentData()->getMainSubject()->id->text
+			$content->getPageSubjects()->getMainSubject()->id->text
 		);
+	}
+
+	public function testMutatePageSubjects(): void {
+		$content = SubjectContent::newFromData(
+			new PageSubjects(
+				mainSubject: TestSubject::build( id: TestSubject::ZERO_GUID ),
+				childSubjects: new SubjectMap()
+			)
+		);
+
+		$content->mutatePageSubjects( function( PageSubjects $subjects ): void {
+			$subjects->removeSubject( new SubjectId( TestSubject::ZERO_GUID ) );
+		} );
+
+		$this->assertNull( $content->getPageSubjects()->getMainSubject() );
 	}
 
 }

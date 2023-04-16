@@ -27,7 +27,7 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$pageId = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title )->getId();
 
 		$response = $this->executeHandler(
-			NeoWikiExtension::newCreateSubjectApi(),
+			NeoWikiExtension::newCreateMainSubjectApi(),
 			new RequestData( [
 				'method' => 'POST',
 				'pathParams' => [
