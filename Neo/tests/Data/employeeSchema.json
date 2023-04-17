@@ -1,52 +1,60 @@
 {
-	"$schema": "https://json-schema.org/draft/2020-12/schema",
-
-	"title": "Employee",
-	"description": "Employee foo bar baz",
+	"$schema": "https://json-schema.org/draft/2020-12/schema#",
 
 	"type": "object",
 	"properties": {
-		"LegalName": {
-			"type": "string",
-			"format": "string"
+		"label": {
+			"type": "string"
 		},
-		"WorkEmail": {
-			"type": "string",
-			"format": "email"
-		},
-		"EmergencyContact": {
-			"type": "string",
-			"description": "Phone number of the employee's emergency contact",
-			"format": "phoneNumber"
-		},
-		"BirthDate": {
-			"type": "string",
-			"format": "date"
-		},
-		"EmploymentFte": {
-			"type": "number",
-			"format": "percentage",
-			"minimum": 0,
-			"maximum": 100
-		},
-		"MonthlyCompensation": {
-			"type": "number",
-			"format": "currency",
-			"currencyCode": "EUR",
-			"renderPrecision": 2
-		},
-		"IsAwesome": {
-			"type": "boolean",
-			"format": "checkbox"
-		},
-		"skills": {
+		"types": {
 			"type": "array",
-			"description": "A list of the person's skills",
 			"items": {
-				"type": "string",
-				"format": "string"
+				"type": "string"
+			}
+		},
+		"properties": {
+			"type": "object",
+			"properties": {
+				"LegalName": {
+					"type": "string"
+				},
+				"WorkEmail": {
+					"type": "string"
+				},
+				"EmergencyContact": {
+					"type": "string",
+					"description": "Phone number of the employee's emergency contact"
+				},
+				"BirthDate": {
+					"type": "string"
+				},
+				"EmploymentFte": {
+					"type": "number",
+					"minimum": 0,
+					"maximum": 100
+				},
+				"MonthlyCompensation": {
+					"type": "number",
+					"currencyCode": "EUR",
+					"renderPrecision": 2
+				},
+				"IsAwesome": {
+					"type": "boolean"
+				},
+				"Skills": {
+					"type": "array",
+					"description": "A list of the person's skills",
+					"items": {
+						"type": "string"
+					},
+					"uniqueItems": true
+				}
 			},
-			"uniqueItems": true
+			"additionalProperties": false
+		},
+		"relations": {
+			"type": "object"
 		}
-	}
+	},
+	"additionalProperties": false
 }
