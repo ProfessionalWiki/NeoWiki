@@ -5,18 +5,13 @@
 	"description": "Employee foo bar baz",
 
 	"type": "object",
+
+	"additionalProperties": true,
 	"properties": {
-		"label": {
-			"type": "string"
-		},
-		"types": {
-			"type": "array",
-			"items": {
-				"type": "string"
-			}
-		},
 		"properties": {
 			"type": "object",
+
+			"additionalProperties": false,
 			"properties": {
 				"LegalName": {
 					"type": "string",
@@ -60,12 +55,10 @@
 					},
 					"uniqueItems": true
 				}
-			},
-			"additionalProperties": false
+			}
 		},
 		"relations": {
 			"type": "object"
 		}
-	},
-	"additionalProperties": false
+	}
 }
