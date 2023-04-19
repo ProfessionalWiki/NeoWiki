@@ -11,6 +11,7 @@ use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\User\UserIdentity;
+use OOUI\ButtonWidget;
 use OutputPage;
 use Parser;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\CypherContent;
@@ -18,6 +19,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
 use Skin;
+use SpecialPage;
 use Title;
 use WikiPage;
 
@@ -92,10 +94,17 @@ class MediaWikiHooks {
 	}
 
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
-		if ( !$out->isArticle() || $out->getWikiPage()->getNamespace() !== NS_MAIN ) {
+		if ( $out->isArticle() && $out->getWikiPage()->getNamespace() === NS_MAIN ) {
+			self::addSubjectEditor( $out );
 			return;
 		}
 
+		if ( $out->isArticle() && $out->getWikiPage()->getNamespace() === NS_NEOWIKI_SCHEMA ) {
+			self::addCreateSubjectButton( $out );
+		}
+	}
+
+	private static function addSubjectEditor( OutputPage $out ): void {
 		$content = NeoWikiExtension::getInstance()->newSubjectContentRepository()->getSubjectContentByPageTitle( $out->getTitle() );
 
 		if ( $content === null || !$content->hasSubjects() ) {
@@ -104,6 +113,20 @@ class MediaWikiHooks {
 		}
 
 		$out->addHTML( NeoWikiExtension::getInstance()->getFactBox()->htmlFor( $out->getTitle() ) );
+	}
+
+	private static function addCreateSubjectButton( OutputPage $out ): void {
+		$out->enableOOUI();
+		$html = $out->getHTML();
+		$out->clearHTML();
+		$title = $out->getTitle()->getText();
+		$out->addHTML(
+			new ButtonWidget( [
+				'label' => 'Create new ' . $title,
+				'href' => SpecialPage::getTitleFor( 'NeoSubject' )->getLocalURL() . '/' . $title // TODO: better way to generate subpage URL
+			] )
+		);
+		$out->addHTML( $html );
 	}
 
 }
