@@ -87,6 +87,11 @@ class MediaWikiHooks {
 			'cypher',
 			NeoWikiExtension::getInstance()->newCypherFunction()->handleParserFunctionCall( ... )
 		);
+
+		$parser->setFunctionHook(
+			'infobox',
+			NeoWikiExtension::getInstance()->newInfoboxFunction()->handleParserFunctionCall( ... )
+		);
 	}
 
 	public static function onScribuntoExternalLibraries( string $engine, array &$extraLibraries ): void {

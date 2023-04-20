@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\EntryPoints;
+namespace ProfessionalWiki\NeoWiki\EntryPoints\Parser;
 
 use Parser;
 use ProfessionalWiki\NeoWiki\Application\Queries\RunCypher\RunCypherQuery;
