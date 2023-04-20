@@ -77,7 +77,7 @@ class SpecialNeoJson extends SpecialPage {
 	}
 
 	private function onSubmit( array $formData, Title $title ): bool {
-		$content = SubjectContent::newFromSubjects(
+		$content = SubjectContent::newFromData(
 			( new SubjectContentDataDeserializer() )->deserialize( $formData['json'] )
 		);
 
