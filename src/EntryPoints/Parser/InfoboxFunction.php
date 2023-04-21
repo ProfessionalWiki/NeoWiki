@@ -5,9 +5,17 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints\Parser;
 
 use Html;
+use MediaWiki\Page\PageReference;
 use Parser;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentRepository;
+use Title;
 
 class InfoboxFunction {
+
+	public function __construct(
+		private SubjectContentRepository $repository
+	) {
+	}
 
 	/**
 	 * @return array<mixed, mixed>
@@ -15,12 +23,18 @@ class InfoboxFunction {
 	public function handleParserFunctionCall( Parser $parser, string ...$arguments ): array {
 		// TODO $parser->getOutput()->addModules( [ 'ext.neowiki.table-editor' ] );
 
+		if ( $arguments[0] !== '' ) {
+			$subjectId = $arguments[0];
+		} else {
+			$subjectId = $this->getPageMainSubjectId( $parser->getPage() );
+		}
+
 		return $this->buildParserFunctionHtmlResponse(
 			Html::element(
 				'div',
 				[
 					'class' => 'nwInfoboxLoader',
-					'data-subject-id' => $arguments[0],
+					'data-subject-id' => $subjectId,
 				]
 			)
 		);
@@ -32,6 +46,13 @@ class InfoboxFunction {
 			'noparse' => true,
 			'isHTML' => true,
 		];
+	}
+
+	private function getPageMainSubjectId( PageReference $page ): string {
+		return $this->repository->getSubjectContentByPageTitle( Title::castFromPageReference( $page ) )
+			?->getPageSubjects()
+			->getMainSubject()
+			?->id->text ?? '';
 	}
 
 }
