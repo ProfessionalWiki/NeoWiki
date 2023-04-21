@@ -202,7 +202,7 @@ class SpecialNeoSubject extends FormSpecialPage {
 		try {
 			if ( !$page->exists() ) {
 				$updater = $page->newPageUpdater( RequestContext::getMain()->getUser() );
-				$updater->setContent( SlotRecord::MAIN, new WikitextContent( 'TODO {{#:NeoBox|' . $this->schemaName . '}}' ) );
+				$updater->setContent( SlotRecord::MAIN, new WikitextContent( 'TODO {{#infobox:}}[[Schema:' . $this->schemaName . ']]' ) );
 				$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'Created ' . $this->schemaName ) );
 			}
 		} catch ( MWException $e ) {
