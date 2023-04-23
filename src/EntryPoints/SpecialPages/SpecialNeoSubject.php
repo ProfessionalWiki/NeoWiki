@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\EntryPoints;
+namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 
 use CommentStoreComment;
 use FormSpecialPage;
