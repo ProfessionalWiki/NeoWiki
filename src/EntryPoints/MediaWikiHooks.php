@@ -122,6 +122,7 @@ class MediaWikiHooks {
 
 	private static function addCreateSubjectButton( OutputPage $out ): void {
 		$out->enableOOUI();
+		$out->addModules( [ 'ext.neowiki.table-editor' ] );
 		$html = $out->getHTML();
 		$out->clearHTML();
 		$title = $out->getTitle()->getText();
