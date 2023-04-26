@@ -22,6 +22,7 @@ export enum ValueType {
 
 	String = 'string',
 	Number = 'number',
+	Integer = 'integer',
 	Boolean = 'boolean',
 	Array = 'array', // TODO: figure out how to handle arrays
 
