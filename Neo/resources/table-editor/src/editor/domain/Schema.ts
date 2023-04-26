@@ -1,4 +1,4 @@
-export type SchemaProperty = {
+export type PropertyDefinition = {
 	type: string;
 	format?: string;
 	description?: string;
@@ -6,17 +6,32 @@ export type SchemaProperty = {
 	maximum?: number;
 	currencyCode?: string;
 	renderPrecision?: number;
-	items?: SchemaProperty;
+	items?: PropertyDefinition;
 	uniqueItems?: boolean;
 };
 
-export type Schema = {
-	$schema: string;
-	title: string;
-	description: string;
-	type: string;
-	properties: Record<string, SchemaProperty>;
-};
+export class Schema {
+
+	public constructor(
+		private readonly title: string,
+		private readonly description: string,
+		private readonly properties: Record<string, PropertyDefinition>
+	) {
+	}
+
+	public getTitle(): string {
+		return this.title;
+	}
+
+	public getDescription(): string {
+		return this.description;
+	}
+
+	public getPropertyDefinitions(): Record<string, PropertyDefinition> {
+		return this.properties;
+	}
+
+}
 
 export enum ValueType {
 
