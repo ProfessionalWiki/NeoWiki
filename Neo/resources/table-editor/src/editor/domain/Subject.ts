@@ -7,7 +7,7 @@ export class Subject {
 	public constructor(
 		private readonly id: SubjectId,
 		private readonly label: string,
-		private readonly types: string[],
+		private readonly schemaId: string,
 		private properties: SubjectProperties
 	) {
 	}
@@ -20,8 +20,8 @@ export class Subject {
 		return this.label;
 	}
 
-	public getTypes(): string[] {
-		return this.types;
+	public getSchemaId(): string {
+		return this.schemaId;
 	}
 
 	public getProperties(): SubjectProperties {
