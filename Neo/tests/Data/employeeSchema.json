@@ -5,7 +5,7 @@
 	"description": "Employee foo bar baz",
 
 	"type": "object",
-	"required": [ "propertyDefinitions", "relations" ],
+	"required": [ "properties", "relations" ],
 
 	"additionalProperties": true,
 	"properties": {
