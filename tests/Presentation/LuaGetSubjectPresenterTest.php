@@ -19,7 +19,7 @@ class LuaGetSubjectPresenterTest extends TestCase {
 		$presenter->presentSubject( new GetSubjectResponse(
 			id: 'Q1',
 			label: 'Foo',
-			types: [ 'Type1', 'Type2' ],
+			schemaId: 'Employee',
 			properties: [
 				'P1' => [ 'Bar', 'Baz' ],
 				'P2' => [ 'Hi' ],
@@ -30,7 +30,7 @@ class LuaGetSubjectPresenterTest extends TestCase {
 			[
 				'id' => 'Q1',
 				'label' => 'Foo',
-				'types' => [ 1 => 'Type1', 2 => 'Type2' ],
+				'schema' => 'Employee',
 				'properties' => [
 					'P1' => [ 1 => 'Bar', 2 => 'Baz' ],
 					'P2' => [ 1 => 'Hi' ],

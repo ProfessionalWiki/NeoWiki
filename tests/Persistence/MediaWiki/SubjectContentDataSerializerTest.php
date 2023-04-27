@@ -5,15 +5,15 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeIdList;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
@@ -46,7 +46,7 @@ class SubjectContentDataSerializerTest extends TestCase {
     "subjects": {
         "f81d4fae-7dec-11d0-a765-00a0c91e6bf6": {
             "label": "Test subject",
-            "types": [],
+            "schema": "TestSubjectSchemaId",
             "relations": [],
             "properties": []
         }
@@ -70,10 +70,7 @@ class SubjectContentDataSerializerTest extends TestCase {
     "subjects": {
         "70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001": {
             "label": "Test subject a001",
-            "types": [
-                "Company",
-                "Organization"
-            ],
+            "schema": "Employee",
             "relations": [],
             "properties": {
                 "founded": [
@@ -86,13 +83,13 @@ class SubjectContentDataSerializerTest extends TestCase {
         },
         "93e58a18-dc3e-41aa-8d67-79a18e98b002": {
             "label": "Test subject b002",
-            "types": [],
+            "schema": "TestSubjectSchemaId",
             "relations": [],
             "properties": []
         },
         "9d6b4927-0c04-41b3-8daa-3b1d83f4c003": {
             "label": "Test subject c003",
-            "types": [],
+            "schema": "TestSubjectSchemaId",
             "relations": {
                 "70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001": {
                     "type": "HasSkill",
@@ -149,7 +146,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 			mainSubject: TestSubject::build(
 				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001',
 				label: new SubjectLabel( 'Test subject a001' ),
-				types: new SubjectTypeIdList( [ new SubjectTypeId( 'Company' ), new SubjectTypeId( 'Organization' ) ] ),
+				schemaId: new SchemaId( 'Employee' ),
 				relations: new RelationList( [] ),
 				properties: new SubjectProperties( [
 					'founded' => [ '2019-01-01' ],

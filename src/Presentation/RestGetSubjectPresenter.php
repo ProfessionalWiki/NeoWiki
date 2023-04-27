@@ -20,7 +20,7 @@ class RestGetSubjectPresenter implements GetSubjectPresenter {
 			'subject' => [
 				'id' => $response->id,
 				'label' => $response->label,
-				'types' => $response->types,
+				'schema' => $response->schemaId,
 				'properties' => $response->properties,
 			]
 		];

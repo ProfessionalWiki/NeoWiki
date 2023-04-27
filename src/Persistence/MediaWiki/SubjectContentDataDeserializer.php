@@ -10,13 +10,12 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationTypeId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeId;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeIdList;
 
 class SubjectContentDataDeserializer {
 
@@ -58,18 +57,9 @@ class SubjectContentDataDeserializer {
 		return new Subject(
 			id: new SubjectId( $id ),
 			label: new SubjectLabel( $jsonArray['label'] ),
-			types: $this->newSubjectTypeIdList( $jsonArray ),
+			schemaId: new SchemaId( $jsonArray['schema'] ),
 			properties: $this->newSubjectProperties( $jsonArray ),
 			relations: $this->newRelationList( $jsonArray ),
-		);
-	}
-
-	private function newSubjectTypeIdList( array $jsonArray ): SubjectTypeIdList {
-		return new SubjectTypeIdList(
-			array_map(
-				fn( string $id ) => new SubjectTypeId( $id ),
-				$jsonArray['types'] ?? []
-			)
 		);
 	}
 

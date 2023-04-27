@@ -35,7 +35,7 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 				],
 				'bodyContents' => json_encode( [
 					'label' => 'Test subject',
-					'types' => [ 'Foo', 'Bar' ],
+					'schema' => 'Employee',
 					'properties' => [
 						'animal' => 'bunny',
 						'fluff' => 9001,
@@ -55,7 +55,7 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$subject = NeoWikiExtension::getInstance()->newSubjectRepository()->getSubject( new SubjectId( $responseData['subjectId'] ) );
 
 		$this->assertSame( 'Test subject', $subject->label->text );
-		$this->assertSame( [ 'Foo', 'Bar' ], $subject->types->toStringArray() );
+		$this->assertSame( 'Employee', $subject->getSchemaId()->getText() );
 		$this->assertSame( [ 'animal' => 'bunny', 'fluff' => 9001 ], $subject->getProperties()->map );
 	}
 
