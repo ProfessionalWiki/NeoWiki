@@ -1,15 +1,3 @@
-export type PropertyDefinition = {
-	type: string;
-	format?: string;
-	description?: string;
-	minimum?: number;
-	maximum?: number;
-	currencyCode?: string;
-	renderPrecision?: number;
-	items?: PropertyDefinition;
-	uniqueItems?: boolean;
-};
-
 export enum ValueType {
 
 	String = 'string',
@@ -42,6 +30,37 @@ export enum ValueFormat {
 
 }
 
+export class PropertyDefinition {
+
+	public constructor(
+		public readonly type: ValueType,
+		public readonly format: ValueFormat,
+		public readonly description?: string,
+		public readonly minimum?: number,
+		public readonly maximum?: number,
+		public readonly currencyCode?: string,
+		public readonly renderPrecision?: number,
+		public readonly items?: PropertyDefinition,
+		public readonly uniqueItems?: boolean
+	) {
+	}
+
+	public static fromJson( definition: Record<string, any> ): PropertyDefinition {
+		return new PropertyDefinition(
+			definition.type as ValueType,
+			definition.format as ValueFormat,
+			definition.description,
+			definition.minimum,
+			definition.maximum,
+			definition.currencyCode,
+			definition.renderPrecision,
+			definition.items ? PropertyDefinition.fromJson( definition.items ) : undefined,
+			definition.uniqueItems
+		);
+	}
+
+}
+
 export class Schema {
 
 	public constructor(
@@ -63,9 +82,13 @@ export class Schema {
 		return this.properties;
 	}
 
+	public getPropertyDefinition( propertyName: string ): PropertyDefinition {
+		return this.properties[ propertyName ];
+	}
+
 	public getPropertyValueType( propertyName: string ): ValueType {
 		if ( this.properties[ propertyName ] ) {
-			return this.properties[ propertyName ].type as ValueType;
+			return this.properties[ propertyName ].type;
 		}
 
 		return ValueType.String; // TODO: is that what we want?
