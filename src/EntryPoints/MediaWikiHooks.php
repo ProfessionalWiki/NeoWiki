@@ -11,7 +11,6 @@ use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\User\UserIdentity;
-use OOUI\ButtonWidget;
 use OutputPage;
 use Parser;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\CypherContent;
@@ -20,7 +19,6 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
 use Skin;
-use SpecialPage;
 use Title;
 use WikiPage;
 
@@ -124,16 +122,6 @@ class MediaWikiHooks {
 	private static function addCreateSubjectButton( OutputPage $out ): void {
 		$out->enableOOUI();
 		$out->addModules( [ 'ext.neowiki.table-editor' ] );
-		$html = $out->getHTML();
-		$out->clearHTML();
-		$title = $out->getTitle()->getText();
-		$out->addHTML(
-			new ButtonWidget( [
-				'label' => 'Create new ' . $title,
-				'href' => SpecialPage::getTitleFor( 'NeoSubject' )->getLocalURL() . '/' . $title // TODO: better way to generate subpage URL
-			] )
-		);
-		$out->addHTML( $html );
 	}
 
 }
