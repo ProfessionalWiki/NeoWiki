@@ -3,7 +3,7 @@
 	"types": [
 		"Person"
 	],
-	"properties": {
+	"propertyDefinitions": {
 		"LegalName": "John Doe",
 		"WorkEmail": "JohnDoe@professional.wiki",
 		"EmergencyContact": "0118 999 881 999 119 725 3",
