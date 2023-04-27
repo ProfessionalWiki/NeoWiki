@@ -8,7 +8,7 @@
 
 	"additionalProperties": true,
 	"properties": {
-		"propertyDefinitions": {
+		"properties": {
 			"type": "object",
 
 			"additionalProperties": false,
