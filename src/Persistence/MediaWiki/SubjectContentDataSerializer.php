@@ -18,7 +18,7 @@ class SubjectContentDataSerializer {
 		foreach ( $contentData->getAllSubjects()->asArray() as $subject ) {
 			$serializedSubjects[$subject->id->text] = [
 				'label' => $subject->label->text,
-				'types' => $subject->types->toStringArray(),
+				'schema' => $subject->getSchemaId()->getText(),
 				'relations' => $this->serializeRelations( $subject->relations ),
 				'properties' => $subject->getProperties()->map,
 			];
