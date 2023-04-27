@@ -31,7 +31,7 @@ class GetSubjectQuery {
 		return new GetSubjectResponse(
 			id: $subject->id->text,
 			label: $subject->label->text,
-			types: $subject->types->toStringArray(),
+			schemaId: $subject->getSchemaId()->getText(),
 			properties: $subject->getProperties()->map,
 		);
 	}
