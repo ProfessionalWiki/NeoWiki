@@ -64,10 +64,6 @@ export class Schema {
 	}
 
 	public getPropertyValueType( propertyName: string ): ValueType {
-		// FIXME: the schema format in the test and on my local wiki differ. Do we use the simple or the complex format?
-		// For the complex format we need to get at "properties.properties.properties" instead of just "properties".
-		// See employeeSchema.json for the complex format.
-
 		if ( this.properties[ propertyName ] ) {
 			return this.properties[ propertyName ].type as ValueType;
 		}
