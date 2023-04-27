@@ -2,9 +2,7 @@
 	"subjects": {
 		"123e4567-e89b-12d3-a456-426655440000": {
 			"label": "Professional Wiki GmbH",
-			"types": [
-				"Company"
-			],
+			"schema": "Company",
 			"properties": {
 				"Founded at": [
 					2019
@@ -46,9 +44,7 @@
 		},
 		"f81d4fae-7dec-11d0-a765-00a0c91e6bf6": {
 			"label": "ACME Inc.",
-			"types": [
-				"Company"
-			],
+			"schema": "Company",
 			"properties": {
 				"Founded at": [
 					2005
@@ -62,9 +58,7 @@
 		},
 		"7e3e53f0-1d9d-11ec-835b-0242ac130003": {
 			"label": "Contoso Ltd.",
-			"types": [
-				"Company"
-			],
+			"schema": "Company",
 			"properties": {
 			},
 			"relations": {
@@ -72,10 +66,7 @@
 		},
 		"c0d5c7e8-1d9c-11ec-9621-0242ac130002": {
 			"label": "ProWiki",
-			"types": [
-				"Product",
-				"SaaS"
-			],
+			"schema": "Product",
 			"properties": {
 				"Available since": [
 					2022

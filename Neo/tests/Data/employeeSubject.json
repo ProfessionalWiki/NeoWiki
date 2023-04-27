@@ -1,8 +1,6 @@
 {
 	"label": "John Doe",
-	"types": [
-		"Person"
-	],
+	"schema": "Person",
 	"properties": {
 		"LegalName": "John Doe",
 		"WorkEmail": "JohnDoe@professional.wiki",

@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 
 class Subject {
@@ -13,7 +14,7 @@ class Subject {
 	public function __construct(
 		public readonly SubjectId $id,
 		public readonly SubjectLabel $label,
-		public readonly SubjectTypeIdList $types,
+		private readonly SchemaId $schemaId,
 		private SubjectProperties $properties,
 		public readonly RelationList $relations, // TODO: "same as" identifiers?
 	) {
@@ -22,24 +23,24 @@ class Subject {
 	public static function createNew(
 		GuidGenerator $guidGenerator,
 		SubjectLabel $label,
-		?SubjectTypeIdList $types = null,
+		SchemaId $schemaId,
 		?SubjectProperties $properties = null,
 		?RelationList $relations = null,
 	): self {
 		return new self(
 			id: SubjectId::createNew( $guidGenerator ),
 			label: $label,
-			types: $types ?? new SubjectTypeIdList( [] ),
+			schemaId: $schemaId,
 			properties: $properties ?? new SubjectProperties( [] ),
 			relations: $relations ?? new RelationList( [] ),
 		);
 	}
 
-	public static function newSubject( SubjectId $id, SubjectLabel $label ): self {
+	public static function newSubject( SubjectId $id, SubjectLabel $label, SchemaId $schemaId ): self {
 		return new self(
 			id: $id,
 			label: $label,
-			types: new SubjectTypeIdList( [] ),
+			schemaId: $schemaId,
 			properties: new SubjectProperties( [] ),
 			relations: new RelationList( [] ),
 		);
@@ -68,6 +69,10 @@ class Subject {
 
 	public function hasSameIdentity( self $subject ): bool {
 		return $this->id->equals( $subject->id );
+	}
+
+	public function getSchemaId(): SchemaId {
+		return $this->schemaId;
 	}
 
 }
