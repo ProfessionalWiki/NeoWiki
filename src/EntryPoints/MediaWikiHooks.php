@@ -15,6 +15,7 @@ use OOUI\ButtonWidget;
 use OutputPage;
 use Parser;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\CypherContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
@@ -58,7 +59,7 @@ class MediaWikiHooks {
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
-		if ( $model === SubjectContent::CONTENT_MODEL_ID ) {
+		if ( in_array( $model, [ SubjectContent::CONTENT_MODEL_ID, SchemaContent::CONTENT_MODEL_ID ] ) ) {
 			$lang = 'json';
 		}
 	}
