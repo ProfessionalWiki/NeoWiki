@@ -1,65 +1,50 @@
 {
-	"$schema": "https://json-schema.org/draft/2020-12/schema#",
-
 	"title": "Employee",
 	"description": "Employee foo bar baz",
-
-	"type": "object",
-	"required": [ "properties", "relations" ],
-
-	"additionalProperties": true,
-	"properties": {
-		"properties": {
-			"type": "object",
-
-			"additionalProperties": false,
-			"properties": {
-				"LegalName": {
-					"type": "string",
-					"format": "string"
-				},
-				"WorkEmail": {
-					"type": "string",
-					"format": "email"
-				},
-				"EmergencyContact": {
-					"type": "string",
-					"description": "Phone number of the employee's emergency contact",
-					"format": "phoneNumber"
-				},
-				"BirthDate": {
-					"type": "string",
-					"format": "date"
-				},
-				"EmploymentFte": {
-					"type": "number",
-					"format": "percentage",
-					"minimum": 0,
-					"maximum": 100
-				},
-				"MonthlyCompensation": {
-					"type": "number",
-					"format": "currency",
-					"currencyCode": "EUR",
-					"renderPrecision": 2
-				},
-				"IsAwesome": {
-					"type": "boolean",
-					"format": "checkbox"
-				},
-				"Skills": {
-					"type": "array",
-					"description": "A list of the person's skills",
-					"items": {
-						"type": "string",
-						"format": "string"
-					},
-					"uniqueItems": true
-				}
-			}
+	"propertyDefinitions": {
+		"LegalName": {
+			"type": "string",
+			"format": "string"
 		},
-		"relations": {
-			"type": "object"
+		"WorkEmail": {
+			"type": "string",
+			"format": "email"
+		},
+		"EmergencyContact": {
+			"type": "string",
+			"description": "Phone number of the employee's emergency contact",
+			"format": "phoneNumber"
+		},
+		"BirthDate": {
+			"type": "string",
+			"format": "date"
+		},
+		"EmploymentFte": {
+			"type": "number",
+			"format": "percentage",
+			"minimum": 0,
+			"maximum": 100
+		},
+		"MonthlyCompensation": {
+			"type": "number",
+			"format": "currency",
+			"currencyCode": "EUR",
+			"renderPrecision": 2
+		},
+		"IsAwesome": {
+			"type": "boolean",
+			"format": "checkbox"
+		},
+		"Skills": {
+			"type": "array",
+			"description": "A list of the person's skills",
+			"items": {
+				"type": "string",
+				"format": "string"
+			},
+			"uniqueItems": true
 		}
+	},
+	"relations": {
 	}
 }
