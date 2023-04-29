@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use EditPage;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\ProperPageIdentity;
@@ -18,6 +19,8 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
+use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaErrorFormatter;
 use Skin;
 use Title;
 use WikiPage;
@@ -122,6 +125,21 @@ class MediaWikiHooks {
 	private static function addCreateSubjectButton( OutputPage $out ): void {
 		$out->enableOOUI();
 		$out->addModules( [ 'ext.neowiki.table-editor' ] );
+	}
+
+	public static function onEditFilter( EditPage $editPage, ?string $text, ?string $section, string &$error ): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		if ( is_string( $text )
+			&& $editPage->getTitle()->getNamespace() === NS_NEOWIKI_SCHEMA
+			&& !$validator->validate( $text )
+		) {
+			$errors = $validator->getErrors();
+			$error = \Html::errorBox(
+				wfMessage( 'neowiki-schema-invalid', count( $errors ) )->escaped() .
+				JsonSchemaErrorFormatter::format( $errors )
+			);
+		}
 	}
 
 }
