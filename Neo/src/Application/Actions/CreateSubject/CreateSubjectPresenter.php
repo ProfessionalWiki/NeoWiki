@@ -8,6 +8,6 @@ interface CreateSubjectPresenter {
 
 	public function presentCreated( string $subjectId ): void;
 
-	public function presentInvalidRequest(): void;
+	public function presentSubjectAlreadyExists(): void;
 
 }
