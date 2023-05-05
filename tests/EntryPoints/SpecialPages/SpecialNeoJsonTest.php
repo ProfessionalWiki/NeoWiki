@@ -7,13 +7,11 @@ use SpecialPageTestBase;
 
 class SpecialNeoJsonTest extends SpecialPageTestBase
 {
-    protected function newSpecialPage(): SpecialNeoJson
-    {
+    protected function newSpecialPage(): SpecialNeoJson {
         return new SpecialNeoJson();
     }
 
-    public function testPageExists(): void
-    {
+    public function testPageExists(): void {
         /** @var string $output */
         [ $output ] = $this->executeSpecialPage();
 
