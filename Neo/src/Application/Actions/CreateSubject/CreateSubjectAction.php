@@ -4,13 +4,14 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
-use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use RuntimeException;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
+use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
 
 class CreateSubjectAction {
 
@@ -21,23 +22,25 @@ class CreateSubjectAction {
 	) {
 	}
 
-	public function createSubject( CreateSubjectRequest $request ): void {
-		$subject = $this->buildSubject( $request );
+	public function createSubject(CreateSubjectRequest $request): void {
+        $subject = $this->buildSubject($request);
 
-		$pageSubjects = $this->subjectRepository->getPageSubjects( new PageId( $request->pageId ) );
+        $pageSubjects = $this->subjectRepository->getPageSubjects(new PageId($request->pageId));
 
-		if ( $request->isMainSubject ) {
-			// TODO: catch RuntimeException and present error
-			$pageSubjects->createMainSubject( $subject );
-		} else {
-			// TODO: catch RuntimeException and present error
-			$pageSubjects->createChildSubject( $subject );
-		}
+        try {
+            if ($request->isMainSubject) {
+                $pageSubjects->createMainSubject($subject);
+            } else {
+                $pageSubjects->createChildSubject($subject);
+            }
 
-		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ) );
+            $this->subjectRepository->savePageSubjects($pageSubjects, new PageId($request->pageId));
 
-		$this->presenter->presentCreated( $subject->id->text );
-	}
+            $this->presenter->presentCreated($subject->id->text);
+        } catch (RuntimeException $e) {
+            $this->presenter->presentSubjectAlreadyExists();
+        }
+    }
 
 	private function buildSubject( CreateSubjectRequest $request ): Subject {
 		return Subject::createNew(
