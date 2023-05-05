@@ -61,10 +61,10 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 	}
 
 	public function presentSubjectAlreadyExists(): void {
-        $this->apiResponse = [
-            'status' => 'error',
-            'message' => 'Subject already exists',
-        ];
-    }
+		$this->apiResponse = [
+			'status' => 'error',
+			'message' => 'Subject already exists',
+		];
+	}
 
 }
