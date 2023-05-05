@@ -23,23 +23,23 @@ class CreateSubjectAction {
 	}
 
 	public function createSubject( CreateSubjectRequest $request ): void {
-	$subject = $this->buildSubject( $request );
+		$subject = $this->buildSubject( $request );
 
-	$pageSubjects = $this->subjectRepository->getPageSubjects( new PageId( $request->pageId ) );
+		$pageSubjects = $this->subjectRepository->getPageSubjects( new PageId( $request->pageId ) );
 
-	try {
-		if ( $request->isMainSubject ) {
-			$pageSubjects->createMainSubject( $subject );
-		} else {
-			$pageSubjects->createChildSubject( $subject );
+		try {
+			if ( $request->isMainSubject ) {
+				$pageSubjects->createMainSubject( $subject );
+			} else {
+				$pageSubjects->createChildSubject( $subject );
+			}
+		} catch ( RuntimeException $e ) {
+			$this->presenter->presentSubjectAlreadyExists();
+			return;
 		}
-	} catch ( RuntimeException $e ) {
-		$this->presenter->presentSubjectAlreadyExists();
-		return;
-	}
 
-	$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ) );
-	$this->presenter->presentCreated( $subject->id->text );
+		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ) );
+		$this->presenter->presentCreated( $subject->id->text );
 	}
 
 	private function buildSubject( CreateSubjectRequest $request ): Subject {
