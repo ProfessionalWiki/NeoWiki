@@ -6,7 +6,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialNeoJson;
 use SpecialPageTestBase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SpecialNeoJson
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialNeoJson
  */
 class SpecialNeoJsonTest extends SpecialPageTestBase {
 	protected function newSpecialPage(): SpecialNeoJson {
