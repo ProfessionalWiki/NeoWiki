@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
 
 use FormatJson;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataSerializer;
 
@@ -48,7 +49,7 @@ class SubjectContent extends \JsonContent {
 	 * Returns a fresh instance of PageSubjects that does not have a reference to this content object.
 	 */
 	public function getPageSubjects(): PageSubjects {
-		return ( new SubjectContentDataDeserializer() )->deserialize( $this->getText() );
+		return NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize( $this->getText() );
 	}
 
 	/**

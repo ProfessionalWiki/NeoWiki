@@ -9,15 +9,17 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeId;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectTypeIdList;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataSerializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaRepository;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataSerializer
@@ -47,8 +49,7 @@ class SubjectContentDataSerializerTest extends TestCase {
         "f81d4fae-7dec-11d0-a765-00a0c91e6bf6": {
             "label": "Test subject",
             "schema": "TestSubjectSchemaId",
-            "relations": [],
-            "properties": []
+            "properties": {}
         }
     }
 }',
@@ -71,7 +72,6 @@ class SubjectContentDataSerializerTest extends TestCase {
         "70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001": {
             "label": "Test subject a001",
             "schema": "Employee",
-            "relations": [],
             "properties": {
                 "founded": [
                     "2019-01-01"
@@ -84,28 +84,27 @@ class SubjectContentDataSerializerTest extends TestCase {
         "93e58a18-dc3e-41aa-8d67-79a18e98b002": {
             "label": "Test subject b002",
             "schema": "TestSubjectSchemaId",
-            "relations": [],
-            "properties": []
+            "properties": {}
         },
         "9d6b4927-0c04-41b3-8daa-3b1d83f4c003": {
             "label": "Test subject c003",
             "schema": "TestSubjectSchemaId",
-            "relations": {
-                "70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001": {
-                    "type": "HasSkill",
-                    "target": "93e58a18-dc3e-41aa-8d67-79a18e98b002",
-                    "properties": {
-                        "level": "Expert",
-                        "years": "10"
+            "properties": {
+                "Has skill": [
+                    {
+                        "target": "93e58a18-dc3e-41aa-8d67-79a18e98b002",
+                        "properties": {
+                            "level": "Expert",
+                            "years": "10"
+                        }
                     }
-                },
-                "A8EF3D2A-3477-4A84-ADEF-3EC62C0E325D": {
-                    "type": "Likes",
-                    "target": "9d6b4927-0c04-41b3-8daa-3b1d83f4d004",
-                    "properties": []
-                }
-            },
-            "properties": []
+                ],
+                "Likes": [
+                    {
+                        "target": "9d6b4927-0c04-41b3-8daa-3b1d83f4d004"
+                    }
+                ]
+            }
         }
     }
 }',
@@ -124,8 +123,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 				label: new SubjectLabel( 'Test subject c003' ),
 				relations: new RelationList( [
 					TestRelation::build(
-						id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001',
-						type: 'HasSkill',
+						type: 'Has skill',
 						targetId: '93e58a18-dc3e-41aa-8d67-79a18e98b002',
 						properties: new RelationProperties( [
 							'level' => 'Expert',
@@ -133,7 +131,6 @@ class SubjectContentDataSerializerTest extends TestCase {
 						] )
 					),
 					TestRelation::build(
-						id: 'A8EF3D2A-3477-4A84-ADEF-3EC62C0E325D',
 						type: 'Likes',
 						targetId: '9d6b4927-0c04-41b3-8daa-3b1d83f4d004',
 						properties: new RelationProperties( [] )
@@ -158,10 +155,25 @@ class SubjectContentDataSerializerTest extends TestCase {
 	}
 
 	public function testSerializationRoundTrip(): void {
-		$this->assertEquals(
-			$this->newFullSubjectMap(),
-			( new SubjectContentDataDeserializer() )->deserialize(
-				( new SubjectContentDataSerializer() )->serialize( $this->newFullSubjectMap() )
+		$contentJson = TestData::getFileContents( 'nodeExample.json' );
+
+		$deserializer = new SubjectContentDataDeserializer( $this->newSchemaRepoWithCompanyAndProduct() );
+		$serializer = new SubjectContentDataSerializer();
+
+		$newJson = $serializer->serialize( $deserializer->deserialize( $contentJson ) );
+
+		$this->assertJsonStringEqualsJsonString( $contentJson, $newJson );
+	}
+
+	private function newSchemaRepoWithCompanyAndProduct(): SchemaRepository {
+		return new InMemorySchemaRepository(
+			( new SchemaDeserializer() )->deserialize(
+				new SchemaId( 'Company' ),
+				TestData::getFileContents( 'companySchema.json' )
+			),
+			( new SchemaDeserializer() )->deserialize(
+				new SchemaId( 'Product' ),
+				TestData::getFileContents( 'productSchema.json' )
 			)
 		);
 	}
