@@ -125,7 +125,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		return $this->getContentByPageId( $pageId->id )?->getPageSubjects()->getMainSubject();
 	}
 
-	public function getPageSubjects( PageId $pageId ): PageSubjects {
+	public function getSubjectsByPageId( PageId $pageId ): PageSubjects {
 		return $this->getContentByPageId( $pageId->id )?->getPageSubjects() ?? PageSubjects::newEmpty();
 	}
 

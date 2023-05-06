@@ -12,9 +12,11 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
  */
 class SchemaContentValidatorTest extends TestCase {
 
-	public function testEmployeeSubjectIsValid(): void {
+	/**
+	 * @dataProvider exampleSchemaProvider
+	 */
+	public function testExampleSchemaIsValid( string $data ): void {
 		$validator = SchemaContentValidator::newInstance();
-		$data = $this->getEmployeeSchemaData();
 
 		$valid = $validator->validate( $data );
 
@@ -25,8 +27,10 @@ class SchemaContentValidatorTest extends TestCase {
 		$this->assertTrue( $valid );
 	}
 
-	private function getEmployeeSchemaData(): string {
-		return file_get_contents( __DIR__ . '/../../Data/employeeSchema.json' );
+	public function exampleSchemaProvider(): iterable {
+		yield [ file_get_contents( __DIR__ . '/../../Data/employeeSchema.json' ) ];
+		yield [ file_get_contents( __DIR__ . '/../../Data/companySchema.json' ) ];
+		yield [ file_get_contents( __DIR__ . '/../../Data/productSchema.json' ) ];
 	}
 
 	public function testEmptyJsonFailsValidation(): void {
@@ -67,21 +71,6 @@ class SchemaContentValidatorTest extends TestCase {
 
 		$this->assertSame(
 			[ '/' => 'The required properties (propertyDefinitions) are missing' ],
-			$validator->getErrors()
-		);
-	}
-
-	public function testMissingRelationsFailsValidation(): void {
-		$validator = SchemaContentValidator::newInstance();
-
-		$this->assertFalse(
-			$validator->validate(
-				'{ "title": "Foo Bar", "propertyDefinitions": {}, "notRelations": {} }'
-			)
-		);
-
-		$this->assertSame(
-			[ '/' => 'The required properties (relations) are missing' ],
 			$validator->getErrors()
 		);
 	}

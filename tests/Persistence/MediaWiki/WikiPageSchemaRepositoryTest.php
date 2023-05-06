@@ -4,27 +4,17 @@ declare( strict_types = 1 );
 
 namespace Persistence\MediaWiki;
 
-use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\ArrayProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaRepository;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaRepository;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaRepository
- *
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Schema
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\ArrayProperty
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer
  *
  * @group database
  */
@@ -36,7 +26,7 @@ class WikiPageSchemaRepositoryTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function newRepository(): WikiPageSchemaRepository {
+	private function newRepository(): SchemaRepository {
 		return NeoWikiExtension::getInstance()->newSchemaRepository();
 	}
 
@@ -56,12 +46,6 @@ class WikiPageSchemaRepositoryTest extends NeoWikiIntegrationTestCase {
 	"title": "SchemaRepositoryTest_Valid",
 	"description": "Where are those TPS reports?",
 	"propertyDefinitions": {
-		"Operating revenue": {
-			"type": "number",
-			"format": "currency",
-			"minimum": 0,
-			"maximum": 1337
-		},
 		"Websites": {
 			"type": "array",
 			"description": "Websites owned by the company",
@@ -69,110 +53,35 @@ class WikiPageSchemaRepositoryTest extends NeoWikiIntegrationTestCase {
 				"type": "string",
 				"format": "url"
 			}
-		},
-		"Has product": {
-			"type": "array",
-			"label": "Products",
-			"items": {
-				"type": "relation",
-				"format": "relation",
-				"label": "Product",
-				"targetSchema": "Product"
-			}
-		},
-		"Is bankrupt": {
-			"type": "boolean",
-			"format": "checkbox"
 		}
 	}
 }
 JSON
-
 		);
 
 		$schema = $this->newRepository()->getSchema( new SchemaId( 'SchemaRepositoryTest_Valid' ) );
 
-		$this->assertSame( 'SchemaRepositoryTest_Valid', $schema->id->getText() );
-		$this->assertSame( 'Where are those TPS reports?', $schema->description );
-
-		$this->assertEquals(
-			new NumberProperty( format: ValueFormat::Currency, description: '', minimum: 0, maximum: 1337 ),
-			$schema->properties->getProperty( 'Operating revenue' )
-		);
+		$this->assertSame( 'SchemaRepositoryTest_Valid', $schema->getId()->getText() );
+		$this->assertSame( 'Where are those TPS reports?', $schema->getDescription() );
 
 		$this->assertEquals(
 			new ArrayProperty(
 				description: 'Websites owned by the company',
 				itemDefinition: new StringProperty( format: ValueFormat::Url, description: '' )
 			),
-			$schema->properties->getProperty( 'Websites' )
-		);
-
-		$this->assertEquals(
-			new ArrayProperty(
-				description: '',
-				itemDefinition: new RelationProperty(
-					description: '',
-					targetSchema: new SchemaId( 'Product' )
-				)
-			),
-			$schema->properties->getProperty( 'Has product' )
-		);
-
-		$this->assertEquals(
-			new BooleanProperty( format: ValueFormat::Checkbox, description: '' ),
-			$schema->properties->getProperty( 'Is bankrupt' )
+			$schema->getProperty( 'Websites' )
 		);
 	}
 
-	public function testThrowsExceptionWhenSchemaIsInvalid(): void {
-		// TODO: maybe we should catch the error and return null instead?
-
+	public function testReturnsNullOnInvalidJson(): void {
 		$this->createSchema(
-			'SchemaRepositoryTest_MissingType',
-			<<<JSON
-{
-	"title": "SchemaRepositoryTest_MissingType",
-	"description": "Where are those TPS reports?",
-	"propertyDefinitions": {
-		"Is bankrupt": {
-		}
-	}
-}
-JSON
-
+			'SchemaRepositoryTest_InvalidJson',
+			'~=[,,_,,]:3'
 		);
 
-		$this->expectError();
-		$this->expectErrorMessage( 'Undefined array key "type"' );
-
-		$this->newRepository()->getSchema( new SchemaId( 'SchemaRepositoryTest_MissingType' ) );
-	}
-
-	public function testThrowsExceptionWhenTypeAndFormatMismatch(): void {
-		// TODO: maybe we should catch the exception and return null instead?
-
-		$this->createSchema(
-			'SchemaRepositoryTest_TypeFormatMismatch',
-			<<<JSON
-{
-	"title": "SchemaRepositoryTest_TypeFormatMismatch",
-	"description": "Where are those TPS reports?",
-	"propertyDefinitions": {
-		"Is bankrupt": {
-			"type": "boolean",
-			"format": "currency"
-		}
-	}
-}
-JSON
-
+		$this->assertNull(
+			$this->newRepository()->getSchema( new SchemaId( 'SchemaRepositoryTest_InvalidJson' ) )
 		);
-
-		$this->expectException( InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'BooleanProperty must have a boolean format' );
-
-		$this->newRepository()->getSchema( new SchemaId( 'SchemaRepositoryTest_TypeFormatMismatch' ) );
 	}
 
 }

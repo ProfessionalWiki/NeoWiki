@@ -78,7 +78,7 @@ class SpecialNeoJson extends SpecialPage {
 
 	private function onSubmit( array $formData, Title $title ): bool {
 		$content = SubjectContent::newFromData(
-			( new SubjectContentDataDeserializer() )->deserialize( $formData['json'] )
+			NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize( $formData['json'] )
 		);
 
 		NeoWikiExtension::getInstance()->newSubjectContentRepository()->editSubjectContent(

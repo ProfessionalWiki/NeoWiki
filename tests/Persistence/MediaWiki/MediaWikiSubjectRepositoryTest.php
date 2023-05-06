@@ -154,7 +154,7 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$repo = $this->newRepository();
-		$subjects = $repo->getPageSubjects( $pageId );
+		$subjects = $repo->getSubjectsByPageId( $pageId );
 
 		$subjects->setMainSubject(
 			TestSubject::build(
@@ -177,7 +177,7 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 	public function testGetPageSubjectsReturnsEmptySubjectMapForUnknownPage(): void {
 		$this->assertEquals(
 			PageSubjects::newEmpty(),
-			$this->newRepository()->getPageSubjects( new PageId( 404404404 ) )
+			$this->newRepository()->getSubjectsByPageId( new PageId( 404404404 ) )
 		);
 	}
 
