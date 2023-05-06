@@ -14,8 +14,8 @@ class NumberProperty extends PropertyDefinition {
 	public function __construct(
 		ValueFormat $format,
 		string $description,
-		private readonly float $minimum,
-		private readonly float $maximum,
+		private readonly ?float $minimum,
+		private readonly ?float $maximum,
 	) {
 		$this->assertIsNumberFormat( $format );
 
@@ -28,6 +28,7 @@ class NumberProperty extends PropertyDefinition {
 
 	private function assertIsNumberFormat( ValueFormat $format ): void {
 		if ( !in_array( $format, [
+			ValueFormat::Number,
 			ValueFormat::Percentage,
 			ValueFormat::Currency,
 			ValueFormat::Slider,
@@ -36,11 +37,11 @@ class NumberProperty extends PropertyDefinition {
 		}
 	}
 
-	public function getMinimum(): float {
+	public function getMinimum(): ?float {
 		return $this->minimum;
 	}
 
-	public function getMaximum(): float {
+	public function getMaximum(): ?float {
 		return $this->maximum;
 	}
 

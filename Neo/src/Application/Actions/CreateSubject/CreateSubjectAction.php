@@ -25,7 +25,7 @@ class CreateSubjectAction {
 	public function createSubject( CreateSubjectRequest $request ): void {
 		$subject = $this->buildSubject( $request );
 
-		$pageSubjects = $this->subjectRepository->getPageSubjects( new PageId( $request->pageId ) );
+		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( new PageId( $request->pageId ) );
 
 		try {
 			if ( $request->isMainSubject ) {

@@ -6,6 +6,6 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
 interface SchemaRepository {
 
-	public function getSchema( SchemaId $schemaName ): ?Schema;
+	public function getSchema( SchemaId $schemaId ): ?Schema;
 
 }

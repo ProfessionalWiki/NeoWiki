@@ -24,7 +24,7 @@ class CreateSubjectActionTest extends TestCase {
 		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
 		$mockGuidGenerator = $this->newStubGuidGenerator( 'some-guid' );
 
-		$mockSubjectRepository->method( 'getPageSubjects' )->willReturn( PageSubjects::newEmpty() );
+		$mockSubjectRepository->method( 'getSubjectsByPageId' )->willReturn( PageSubjects::newEmpty() );
 		$mockSubjectRepository->method( 'savePageSubjects' );
 
 		$mockPresenter = $this->createMock( CreateSubjectPresenter::class );
@@ -46,7 +46,7 @@ class CreateSubjectActionTest extends TestCase {
 		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
 		$mockGuidGenerator = $this->newStubGuidGenerator( 'child-guid' );
 
-		$mockSubjectRepository->method( 'getPageSubjects' )->willReturn( $this->createMock( PageSubjects::class ) );
+		$mockSubjectRepository->method( 'getSubjectsByPageId' )->willReturn( $this->createMock( PageSubjects::class ) );
 		$mockSubjectRepository->method( 'savePageSubjects' );
 
 		$mockPresenter = $this->createMock( CreateSubjectPresenter::class );
@@ -70,7 +70,7 @@ class CreateSubjectActionTest extends TestCase {
 
 		$pageSubjects = $this->createMock( PageSubjects::class );
 		$pageSubjects->method( 'createMainSubject' )->willThrowException( new RuntimeException( 'Subject already exists' ) );
-		$mockSubjectRepository->method( 'getPageSubjects' )->willReturn( $pageSubjects );
+		$mockSubjectRepository->method( 'getSubjectsByPageId' )->willReturn( $pageSubjects );
 
 		$mockPresenter = $this->createMock( CreateSubjectPresenter::class );
 				$mockPresenter->expects( $this->once() )->method( 'presentSubjectAlreadyExists' );

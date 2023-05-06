@@ -6,12 +6,16 @@ namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
 class SubjectProperties {
 
-	public function __construct(
-		/**
-		 * @var array<string, mixed[]>
-		 */
-		public readonly array $map,
-	) {
+	/**
+	 * @var array<string, mixed>
+	 */
+	private readonly array $map;
+
+	/**
+	 * @param array<string, mixed> $map
+	 */
+	public function __construct( array $map ) {
+		$this->map = $map;
 	}
 
 	/**
@@ -25,6 +29,13 @@ class SubjectProperties {
 		}
 
 		return new self( $newMap );
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function asMap(): array {
+		return $this->map;
 	}
 
 }

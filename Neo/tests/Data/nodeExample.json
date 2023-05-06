@@ -1,102 +1,51 @@
 {
+	"mainSubject": "12345678-0000-0000-0000-000000000001",
 	"subjects": {
-		"123e4567-e89b-12d3-a456-426655440000": {
+		"12345678-0000-0000-0000-000000000001": {
 			"label": "Professional Wiki GmbH",
 			"schema": "Company",
 			"properties": {
-				"Founded at": [
-					2019
-				],
-				"Website": [
+				"Founded at": 2019,
+				"Websites": [
 					"https://professional.wiki",
 					"https://wikibase.consulting"
+				],
+				"Has product": [
+					{
+						"target": "12345678-0000-0000-0000-000000000004"
+					}
 				]
-			},
-			"relations": {
-				"123": {
-					"type": "HasProduct",
-					"target": "c0d5c7e8-1d9c-11ec-9621-0242ac130002",
-					"properties": {
-						"Since": [
-							2022
-						]
-					}
-				},
-				"456": {
-					"type": "HasClient",
-					"target": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
-					"properties": {
-						"Since": [
-							2021
-						]
-					}
-				},
-				"789": {
-					"type": "HasClient",
-					"target": "7e3e53f0-1d9d-11ec-835b-0242ac130003",
-					"properties": {
-						"Since": [
-							2022
-						]
-					}
-				}
 			}
 		},
-		"f81d4fae-7dec-11d0-a765-00a0c91e6bf6": {
+		"12345678-0000-0000-0000-000000000002": {
 			"label": "ACME Inc.",
 			"schema": "Company",
 			"properties": {
-				"Founded at": [
-					2005
-				],
-				"Website": [
+				"Founded at": 2005,
+				"Websites": [
 					"https://acme.example"
 				]
-			},
-			"relations": {
 			}
 		},
-		"7e3e53f0-1d9d-11ec-835b-0242ac130003": {
+		"12345678-0000-0000-0000-000000000003": {
 			"label": "Contoso Ltd.",
 			"schema": "Company",
 			"properties": {
-			},
-			"relations": {
 			}
 		},
-		"c0d5c7e8-1d9c-11ec-9621-0242ac130002": {
+		"12345678-0000-0000-0000-000000000004": {
 			"label": "ProWiki",
 			"schema": "Product",
 			"properties": {
-				"Available since": [
-					2022
-				],
-				"Website": [
-					"https://pro.wiki"
-				]
-			},
-			"relations": {
-				"222": {
-					"type": "HasPlan",
-					"target": "Basic",
-					"properties": {
-						"Monthly price": 33
-					}
-				},
-				"333": {
-					"type": "HasPlan",
-					"target": "Premium",
-					"properties": {
-						"Monthly price": 119
-					}
-				},
-				"444": {
-					"type": "HasPlan",
-					"target": "Ultra",
-					"properties": {
-						"Monthly price": 279
-					}
-				}
+				"Available since": 2022,
+				"Website": "https://pro.wiki"
+			}
+		},
+		"12345678-0000-0000-0000-000000000005": {
+			"label": "NeoWiki",
+			"schema": "Product",
+			"properties": {
+				"Available since": 2023
 			}
 		}
 	}
