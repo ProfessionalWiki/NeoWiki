@@ -28,7 +28,7 @@ interface SubjectRepository {
 	/**
 	 * TODO: document exceptions
 	 */
-	public function getPageSubjects( PageId $pageId ): PageSubjects;
+	public function getSubjectsByPageId( PageId $pageId ): PageSubjects;
 
 	/**
 	 * TODO: document exceptions

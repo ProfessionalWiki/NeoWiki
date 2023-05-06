@@ -32,7 +32,7 @@ class GetSubjectQuery {
 			id: $subject->id->text,
 			label: $subject->label->text,
 			schemaId: $subject->getSchemaId()->getText(),
-			properties: $subject->getProperties()->map,
+			properties: $subject->getProperties()->asMap(),
 		);
 	}
 

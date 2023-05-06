@@ -17,6 +17,7 @@ enum ValueFormat: string {
 	case DateTime = 'dateTime';
 	case Duration = 'duration';
 
+	case Number = 'number';
 	case Percentage = 'percentage';
 	case Currency = 'currency';
 	case Slider = 'slider';

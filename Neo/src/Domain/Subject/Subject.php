@@ -51,7 +51,7 @@ class Subject {
 	 */
 	public function getRelationsAsIdStringArray(): array {
 		return array_map(
-			fn( Relation $relation ): string => $relation->id->text,
+			fn( Relation $relation ): string => $relation->targetId->text,
 			$this->relations->relations
 		);
 	}
@@ -63,16 +63,19 @@ class Subject {
 		$this->properties = $this->properties->applyPatch( $patch );
 	}
 
-	public function getProperties(): SubjectProperties {
-		return $this->properties;
-	}
-
 	public function hasSameIdentity( self $subject ): bool {
 		return $this->id->equals( $subject->id );
+	}
+
+	public function getLabel(): SubjectLabel {
+		return $this->label;
 	}
 
 	public function getSchemaId(): SchemaId {
 		return $this->schemaId;
 	}
 
+	public function getProperties(): SubjectProperties {
+		return $this->properties;
+	}
 }

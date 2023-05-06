@@ -43,8 +43,11 @@
 				"format": "string"
 			},
 			"uniqueItems": true
+		},
+		"Job": {
+			"type": "relation",
+			"format": "relation",
+			"targetSchema": "Job"
 		}
-	},
-	"relations": {
 	}
 }

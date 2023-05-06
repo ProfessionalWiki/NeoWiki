@@ -1,0 +1,26 @@
+{
+	"title": "Company",
+	"propertyDefinitions": {
+		"Founded at": {
+			"type": "number",
+			"format": "number"
+		},
+		"Websites": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"format": "url"
+			}
+		},
+		"Has product": {
+			"type": "array",
+			"label": "Products",
+			"items": {
+				"type": "relation",
+				"format": "relation",
+				"label": "Product",
+				"targetSchema": "Product"
+			}
+		}
+	}
+}
