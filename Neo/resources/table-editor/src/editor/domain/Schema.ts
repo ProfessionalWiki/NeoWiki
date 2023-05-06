@@ -21,6 +21,7 @@ export enum ValueFormat {
 	DateTime = 'dateTime',
 	Duration = 'duration',
 
+	Number = 'number',
 	Percentage = 'percentage',
 	Currency = 'currency',
 	Slider = 'slider',
