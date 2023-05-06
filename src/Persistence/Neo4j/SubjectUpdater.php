@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Persistence\Neo4j;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -32,7 +33,7 @@ class SubjectUpdater {
 			[
 				'id' => $subject->id->text,
 				'props' => array_merge(
-					$subject->getProperties()->map,
+					$subject->getProperties()->asMap(),
 					[
 						'name' => $subject->label->text,
 						'id' => $subject->id->text,
@@ -125,7 +126,7 @@ class SubjectUpdater {
 				[
 					'subjectId' => $subject->id->text,
 					'targetId' => $relation->targetId->text,
-					'relationProperties' => array_merge( $relation->properties->map, [ 'id' => $relation->id->text ] ),
+					'relationProperties' => array_merge( $relation->properties->map, [ 'id' => $relation->targetId->text ] ),
 				]
 			);
 		}
