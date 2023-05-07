@@ -60,7 +60,7 @@ JSON
 		$this->assertSame( 'SchemaRepositoryTest_Valid', $schema->id->getText() );
 		$this->assertSame( 'Where are those TPS reports?', $schema->description );
 		$this->assertEquals(
-			new NumberProperty( description: '', format: ValueFormat::Currency, minimum: 0, maximum: 1337 ),
+			new NumberProperty( format: ValueFormat::Currency, description: '', minimum: 0, maximum: 1337 ),
 			$schema->properties->getProperty( 'Operating revenue' )
 		);
 	}
