@@ -12,17 +12,17 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 class NumberProperty extends PropertyDefinition {
 
 	public function __construct(
-		string $description,
 		ValueFormat $format,
+		string $description,
 		private readonly float $minimum,
 		private readonly float $maximum,
 	) {
 		$this->assertIsNumberFormat( $format );
 
 		parent::__construct(
-			description: $description,
 			type: ValueType::Number,
-			format: $format
+			format: $format,
+			description: $description
 		);
 	}
 

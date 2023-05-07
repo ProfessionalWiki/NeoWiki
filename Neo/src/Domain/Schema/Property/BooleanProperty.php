@@ -12,15 +12,15 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 class BooleanProperty extends PropertyDefinition {
 
 	public function __construct(
-		string $description,
 		ValueFormat $format,
+		string $description,
 	) {
 		$this->assertIsBooleanFormat( $format );
 
 		parent::__construct(
-			description: $description,
 			type: ValueType::Boolean,
-			format: $format
+			format: $format,
+			description: $description,
 		);
 	}
 
