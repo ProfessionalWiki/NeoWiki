@@ -11,8 +11,8 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaRepository;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
+use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
-use RuntimeException;
 
 class WikiPageSchemaRepository implements SchemaRepository {
 
@@ -58,7 +58,7 @@ class WikiPageSchemaRepository implements SchemaRepository {
 	}
 
 	private function propertyDefinitionFromJson( string $propertyName, array $property ): PropertyDefinition {
-		return match ( $property['type'] ) {
+		return match ( ValueType::from( $property['type'] ) ) {
 			// TODO: handle all types
 
 			/*
@@ -69,44 +69,14 @@ class WikiPageSchemaRepository implements SchemaRepository {
 			),
 			*/
 
-			'number' => new NumberProperty(
+			ValueType::Number => new NumberProperty(
 				name: $propertyName,
 				description: $property['description'] ?? '',
-				format: $this->newValueFormat( $property['format'] ),
+				format: ValueFormat::from( $property['format'] ),
 				minimum: $property['minimum'] ?? null,
 				maximum: $property['maximum'] ?? null,
 			),
-
-			default => throw new RuntimeException( 'Unknown property type: ' . $property['type'] ),
 		};
-	}
-
-	private function newValueFormat( string $format ): ValueFormat {
-		$map = [
-			'text' => ValueFormat::Text,
-
-			'email' => ValueFormat::Email,
-			'url' => ValueFormat::Url,
-			'phoneNumber' => ValueFormat::PhoneNumber,
-
-			'date' => ValueFormat::Date,
-			'time' => ValueFormat::Time,
-			'dateTime' => ValueFormat::DateTime,
-			'duration' => ValueFormat::Duration,
-
-			'percentage' => ValueFormat::Percentage,
-			'currency' => ValueFormat::Currency,
-			'slider' => ValueFormat::Slider,
-
-			'checkbox' => ValueFormat::Checkbox,
-			'toggle' => ValueFormat::Toggle,
-		];
-
-		if ( array_key_exists( $format, $map ) ) {
-			return $map[$format];
-		}
-
-		throw new RuntimeException( 'Unknown number format: ' . $format );
 	}
 
 }
