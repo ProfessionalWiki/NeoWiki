@@ -4,7 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\ArrayProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
@@ -61,19 +63,21 @@ class WikiPageSchemaRepository implements SchemaRepository {
 		return match ( ValueType::from( $property['type'] ) ) {
 			// TODO: handle all types
 
-			/*
-			'array' => new ArrayProperty(
-				name: $propertyName,
+			ValueType::Array => new ArrayProperty(
 				description: $property['description'] ?? '',
-				items: $this->propertyDefinitionFromJson( $propertyName, $property['items'] ), // TODO: name does not make sense here
+				itemDefinition: $this->propertyDefinitionFromJson( $property['items'] ),
 			),
-			*/
 
 			ValueType::Number => new NumberProperty(
-				description: $property['description'] ?? '',
 				format: ValueFormat::from( $property['format'] ),
+				description: $property['description'] ?? '',
 				minimum: $property['minimum'] ?? null,
 				maximum: $property['maximum'] ?? null,
+			),
+
+			ValueType::String => new StringProperty(
+				format: ValueFormat::from( $property['format'] ),
+				description: $property['description'] ?? '',
 			),
 		};
 	}
