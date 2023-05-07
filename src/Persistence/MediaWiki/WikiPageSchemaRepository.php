@@ -51,13 +51,13 @@ class WikiPageSchemaRepository implements SchemaRepository {
 		$properties = [];
 
 		foreach ( $json['propertyDefinitions'] ?? [] as $propertyName => $property ) {
-			$properties[] = $this->propertyDefinitionFromJson( $propertyName, $property );
+			$properties[$propertyName] = $this->propertyDefinitionFromJson( $property );
 		}
 
-		return new PropertyDefinitions( ...$properties );
+		return new PropertyDefinitions( $properties );
 	}
 
-	private function propertyDefinitionFromJson( string $propertyName, array $property ): PropertyDefinition {
+	private function propertyDefinitionFromJson( array $property ): PropertyDefinition {
 		return match ( ValueType::from( $property['type'] ) ) {
 			// TODO: handle all types
 
@@ -70,7 +70,6 @@ class WikiPageSchemaRepository implements SchemaRepository {
 			*/
 
 			ValueType::Number => new NumberProperty(
-				name: $propertyName,
 				description: $property['description'] ?? '',
 				format: ValueFormat::from( $property['format'] ),
 				minimum: $property['minimum'] ?? null,
