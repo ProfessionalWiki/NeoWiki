@@ -12,7 +12,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 class NumberProperty extends PropertyDefinition {
 
 	public function __construct(
-		string $name,
 		string $description,
 		ValueFormat $format,
 		private readonly float $minimum,
@@ -21,7 +20,6 @@ class NumberProperty extends PropertyDefinition {
 		$this->assertIsNumberFormat( $format );
 
 		parent::__construct(
-			name: $name,
 			description: $description,
 			type: ValueType::Number,
 			format: $format

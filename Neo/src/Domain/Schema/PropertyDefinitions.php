@@ -13,10 +13,11 @@ class PropertyDefinitions {
 	 */
 	private array $properties = [];
 
-	public function __construct( PropertyDefinition ...$properties ) {
-		foreach ( $properties as $property ) {
-			$this->properties[$property->getName()] = $property;
-		}
+	/**
+	 * @param array<string, PropertyDefinition> $properties Property definitions indexed by name
+	 */
+	public function __construct( array $properties ) {
+		$this->properties = $properties;
 	}
 
 	public function getProperty( string $name ): PropertyDefinition {
