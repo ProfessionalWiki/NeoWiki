@@ -4,26 +4,26 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
-enum ValueFormat {
+enum ValueFormat: string {
 
-	case Text;
+	case Text = 'text';
 
-	case Email;
-	case Url;
-	case PhoneNumber;
+	case Email = 'email';
+	case Url = 'url';
+	case PhoneNumber = 'phoneNumber';
 
-	case Date;
-	case Time;
-	case DateTime;
-	case Duration;
+	case Date = 'date';
+	case Time = 'time';
+	case DateTime = 'dateTime';
+	case Duration = 'duration';
 
-	case Percentage;
-	case Currency;
-	case Slider;
+	case Percentage = 'percentage';
+	case Currency = 'currency';
+	case Slider = 'slider';
 
-	case Checkbox;
-	case Toggle;
+	case Checkbox = 'checkbox';
+	case Toggle = 'toggle';
 
-	case Relation;
+	case Relation = 'relation';
 
 }
