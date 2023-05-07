@@ -116,4 +116,28 @@ JSON
 		);
 	}
 
+	public function testThrowsExceptionWhenSchemaIsInvalid(): void {
+		// TODO: maybe we should catch the error and return null instead?
+
+		$this->createSchema(
+			'SchemaRepositoryTest_MissingType',
+			<<<JSON
+{
+	"title": "SchemaRepositoryTest_MissingType",
+	"description": "Where are those TPS reports?",
+	"propertyDefinitions": {
+		"Is bankrupt": {
+		}
+	}
+}
+JSON
+
+		);
+
+		$this->expectError();
+		$this->expectErrorMessage( 'Undefined array key "type"' );
+
+		$this->newRepository()->getSchema( new SchemaId( 'SchemaRepositoryTest_MissingType' ) );
+	}
+
 }
