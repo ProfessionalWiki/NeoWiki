@@ -11,8 +11,8 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 class ArrayProperty extends PropertyDefinition {
 
 	public function __construct(
-		private readonly PropertyDefinition $itemDefinition,
 		string $description,
+		private readonly PropertyDefinition $itemDefinition,
 	) {
 		$this->assertIsValidItemType( $this->itemDefinition );
 
