@@ -12,13 +12,12 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 class RelationProperty extends PropertyDefinition {
 
 	public function __construct(
-		ValueFormat $format,
 		string $description,
 		private readonly SchemaId $targetSchema,
 	) {
 		parent::__construct(
 			type: ValueType::Relation,
-			format: $format,
+			format: ValueFormat::Relation,
 			description: $description
 		);
 	}
