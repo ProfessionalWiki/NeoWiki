@@ -17,6 +17,14 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaRepository
+ *
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Schema
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\ArrayProperty
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty
+ *
  * @group database
  */
 class WikiPageSchemaRepositoryTest extends NeoWikiIntegrationTestCase {
