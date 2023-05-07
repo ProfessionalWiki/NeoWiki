@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace Persistence\MediaWiki;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\ArrayProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
@@ -146,6 +147,32 @@ JSON
 		$this->expectErrorMessage( 'Undefined array key "type"' );
 
 		$this->newRepository()->getSchema( new SchemaId( 'SchemaRepositoryTest_MissingType' ) );
+	}
+
+	public function testThrowsExceptionWhenTypeAndFormatMismatch(): void {
+		// TODO: maybe we should catch the exception and return null instead?
+
+		$this->createSchema(
+			'SchemaRepositoryTest_TypeFormatMismatch',
+			<<<JSON
+{
+	"title": "SchemaRepositoryTest_TypeFormatMismatch",
+	"description": "Where are those TPS reports?",
+	"propertyDefinitions": {
+		"Is bankrupt": {
+			"type": "boolean",
+			"format": "currency"
+		}
+	}
+}
+JSON
+
+		);
+
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'BooleanProperty must have a boolean format' );
+
+		$this->newRepository()->getSchema( new SchemaId( 'SchemaRepositoryTest_TypeFormatMismatch' ) );
 	}
 
 }
