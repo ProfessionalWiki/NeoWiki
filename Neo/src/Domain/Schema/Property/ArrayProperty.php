@@ -11,14 +11,12 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 class ArrayProperty extends PropertyDefinition {
 
 	public function __construct(
-		string $name,
 		string $description,
 		private readonly PropertyDefinition $itemDefinition,
 	) {
 		$this->assertIsValidItemType( $this->itemDefinition );
 
 		parent::__construct(
-			name: $name,
 			description: $description,
 			type: ValueType::Array,
 			format: $itemDefinition->getFormat()

@@ -12,14 +12,12 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 class StringProperty extends PropertyDefinition {
 
 	public function __construct(
-		string $name,
 		string $description,
 		ValueFormat $format,
 	) {
 		$this->assertIsStringFormat( $format );
 
 		parent::__construct(
-			name: $name,
 			description: $description,
 			type: ValueType::String,
 			format: $format
