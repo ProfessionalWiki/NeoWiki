@@ -25,7 +25,7 @@ class PropertyDefinitions {
 			return $this->properties[$name];
 		}
 
-		throw new InvalidArgumentException( "Property $name does not exist" );
+		throw new InvalidArgumentException( "Property '$name' does not exist" );
 	}
 
 }

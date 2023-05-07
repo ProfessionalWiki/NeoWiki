@@ -7,14 +7,10 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 abstract class PropertyDefinition {
 
 	public function __construct(
-		private readonly string $description,
 		private readonly ValueType $type,
 		private readonly ValueFormat $format,
+		private readonly string $description,
 	) {
-	}
-
-	public function getDescription(): string {
-		return $this->description;
 	}
 
 	public function getType(): ValueType {
@@ -23,6 +19,10 @@ abstract class PropertyDefinition {
 
 	public function getFormat(): ValueFormat {
 		return $this->format;
+	}
+
+	public function getDescription(): string {
+		return $this->description;
 	}
 
 }
