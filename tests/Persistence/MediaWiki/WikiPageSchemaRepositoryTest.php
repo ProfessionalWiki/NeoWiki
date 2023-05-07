@@ -5,7 +5,9 @@ declare( strict_types = 1 );
 namespace Persistence\MediaWiki;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\ArrayProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
@@ -53,10 +55,25 @@ class WikiPageSchemaRepositoryTest extends NeoWikiIntegrationTestCase {
 		},
 		"Websites": {
 			"type": "array",
+			"description": "Websites owned by the company",
 			"items": {
 				"type": "string",
 				"format": "url"
 			}
+		},
+		"Has product": {
+			"type": "array",
+			"label": "Products",
+			"items": {
+				"type": "relation",
+				"format": "relation",
+				"label": "Product",
+				"targetSchema": "Product"
+			}
+		},
+		"Is bankrupt": {
+			"type": "boolean",
+			"format": "checkbox"
 		}
 	}
 }
@@ -76,10 +93,26 @@ JSON
 
 		$this->assertEquals(
 			new ArrayProperty(
-				description: '',
+				description: 'Websites owned by the company',
 				itemDefinition: new StringProperty( format: ValueFormat::Url, description: '' )
 			),
 			$schema->properties->getProperty( 'Websites' )
+		);
+
+		$this->assertEquals(
+			new ArrayProperty(
+				description: '',
+				itemDefinition: new RelationProperty(
+					description: '',
+					targetSchema: new SchemaId( 'Product' )
+				)
+			),
+			$schema->properties->getProperty( 'Has product' )
+		);
+
+		$this->assertEquals(
+			new BooleanProperty( format: ValueFormat::Checkbox, description: '' ),
+			$schema->properties->getProperty( 'Is bankrupt' )
 		);
 	}
 
