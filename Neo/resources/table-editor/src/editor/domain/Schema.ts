@@ -42,7 +42,8 @@ export class PropertyDefinition {
 		public readonly currencyCode?: string,
 		public readonly renderPrecision?: number,
 		public readonly items?: PropertyDefinition,
-		public readonly uniqueItems?: boolean
+		public readonly uniqueItems?: boolean,
+		public readonly required?: boolean
 	) {
 	}
 
