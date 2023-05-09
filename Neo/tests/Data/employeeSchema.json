@@ -4,7 +4,7 @@
 	"propertyDefinitions": {
 		"LegalName": {
 			"type": "string",
-			"format": "string"
+			"format": "text"
 		},
 		"WorkEmail": {
 			"type": "string",
@@ -40,7 +40,7 @@
 			"description": "A list of the person's skills",
 			"items": {
 				"type": "string",
-				"format": "string"
+				"format": "text"
 			},
 			"uniqueItems": true
 		},
