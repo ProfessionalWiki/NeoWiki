@@ -32,7 +32,7 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 				WITH page
 				MATCH (page)-[r:HasSubject]->(subject)
 				WHERE NOT subject.id IN $subjectIds
-				DELETE r, subject
+				DETACH DELETE subject
 
 				// Remove all existing HasSubject relations
 				WITH page
