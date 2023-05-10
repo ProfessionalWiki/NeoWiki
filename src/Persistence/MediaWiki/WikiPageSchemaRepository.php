@@ -9,11 +9,13 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaRepository;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
+use MediaWiki\Permissions\Authority;
 
 class WikiPageSchemaRepository implements SchemaRepository {
 
 	public function __construct(
 		private readonly PageContentFetcher $pageContentFetcher,
+		private readonly Authority $authority
 	) {
 	}
 
@@ -33,7 +35,7 @@ class WikiPageSchemaRepository implements SchemaRepository {
 	}
 
 	private function getContent( SchemaId $schemaName ): ?SchemaContent {
-		$content = $this->pageContentFetcher->getPageContent( $schemaName->getText(), NS_NEOWIKI_SCHEMA );
+		$content = $this->pageContentFetcher->getPageContent( $schemaName->getText(), $this->authority, NS_NEOWIKI_SCHEMA );
 
 		if ( $content instanceof SchemaContent ) {
 			return $content;
