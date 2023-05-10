@@ -30,7 +30,7 @@ class MediaWikiHooks {
 	public static function onMediaWikiServices( MediaWikiServices $services ): void {
 		$services->addServiceManipulator(
 			'SlotRoleRegistry',
-			static function ( SlotRoleRegistry $registry ) {
+			static function ( SlotRoleRegistry $registry ): void {
 				$registry->defineRoleWithModel(
 					role: MediaWikiSubjectRepository::SLOT_NAME,
 					model: SubjectContent::CONTENT_MODEL_ID,

@@ -114,7 +114,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 			return;
 		}
 
-		$content->mutatePageSubjects( function( PageSubjects $pageSubjects ) use ( $id ) {
+		$content->mutatePageSubjects( function( PageSubjects $pageSubjects ) use ( $id ): void {
 			$pageSubjects->removeSubject( $id );
 		} );
 
