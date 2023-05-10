@@ -21,7 +21,7 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 	}
 
 	public function savePage( Page $page ): void {
-		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $page ) {
+		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $page ): void {
 			$transaction->run(
 				'
 				// Create or update the page
@@ -65,7 +65,7 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 	}
 
 	public function deletePage( PageId $pageId ): void {
-		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $pageId ) {
+		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $pageId ): void {
 			foreach ( $this->getSubjectIdsByPageId( $transaction, $pageId ) as $subjectId ) {
 				$this->deleteSubject( $transaction, new SubjectId( $subjectId ) );
 			}
