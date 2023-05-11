@@ -5,6 +5,7 @@ export enum ValueType {
 	Integer = 'integer',
 	Boolean = 'boolean',
 	Array = 'array', // TODO: figure out how to handle arrays
+	Relation = 'relation',
 
 }
 
@@ -29,6 +30,8 @@ export enum ValueFormat {
 	Checkbox = 'checkbox',
 	Toggle = 'toggle',
 
+	Relation = 'relation',
+
 }
 
 export class PropertyDefinition {
@@ -43,7 +46,8 @@ export class PropertyDefinition {
 		public readonly renderPrecision?: number,
 		public readonly items?: PropertyDefinition,
 		public readonly uniqueItems?: boolean,
-		public readonly required?: boolean
+		public readonly required?: boolean,
+		public readonly targetSchema?: string
 	) {
 	}
 
@@ -57,7 +61,9 @@ export class PropertyDefinition {
 			definition.currencyCode,
 			definition.renderPrecision,
 			definition.items ? PropertyDefinition.fromJson( definition.items ) : undefined,
-			definition.uniqueItems
+			definition.uniqueItems,
+			definition.required,
+			definition.targetSchema
 		);
 	}
 
