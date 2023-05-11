@@ -15,12 +15,12 @@ use Content;
 
 class PageContentFetcherTest extends TestCase {
 
-	private $pageContentFetcher;
-	private $titleParser;
-	private $revisionLookup;
-	private $authority;
-	private $revisionRecord;
-	private $content;
+	private PageContentFetcher $pageContentFetcher;
+	private TitleParser $titleParser;
+	private RevisionLookup $revisionLookup;
+	private Authority $authority;
+	private RevisionRecord $revisionRecord;
+	private Content $content;
 
 	public function setUp(): void {
 		$this->titleParser = $this->createMock( TitleParser::class );
