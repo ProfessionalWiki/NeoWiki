@@ -12,6 +12,12 @@
 				"format": "url"
 			}
 		},
+		"Has main product": {
+			"type": "relation",
+			"format": "relation",
+			"label": "Main Product",
+			"targetSchema": "Product"
+		},
 		"Has product": {
 			"type": "array",
 			"label": "Products",
