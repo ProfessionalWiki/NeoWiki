@@ -108,7 +108,9 @@ class SubjectContentDataDeserializer {
 					}
 				}
 				else {
-					$relations[] = $this->propertyValueToRelation( $propertyName, $properties[$propertyName] );
+					if ( $this->isValidRelationArray( $properties[$propertyName] ) ) {
+						$relations[] = $this->propertyValueToRelation( $propertyName, $properties[$propertyName] );
+					}
 				}
 			}
 		}
@@ -122,6 +124,10 @@ class SubjectContentDataDeserializer {
 			targetId: new SubjectId( $propertyValue['target'] ),
 			properties: new RelationProperties( $propertyValue['properties'] ?? [] ),
 		);
+	}
+
+	private function isValidRelationArray( mixed $propertyValue ): bool {
+		return is_array( $propertyValue ) && array_key_exists( 'target', $propertyValue );
 	}
 
 }

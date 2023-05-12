@@ -218,4 +218,31 @@ JSON
 		);
 	}
 
+	public function testEmptyRelationProperty(): void {
+		$deserializer = new SubjectContentDataDeserializer( $this->newSchemaRepoWithCompanyAndProduct() );
+		$subjects = $deserializer->deserialize(
+			<<<JSON
+{
+	"mainSubject": "12345678-0000-0000-0000-000000000001",
+	"subjects": {
+		"12345678-0000-0000-0000-000000000001": {
+			"label": "Professional Wiki GmbH",
+			"schema": "Company",
+			"properties": {
+				"Has main product": {}
+			}
+		}
+	}
+}
+JSON
+		);
+
+		$this->assertSame( [], $subjects->getMainSubject()->getProperties()->asMap() );
+
+		$this->assertSame(
+			[],
+			$subjects->getMainSubject()->getRelationsAsIdStringArray()
+		);
+	}
+
 }
