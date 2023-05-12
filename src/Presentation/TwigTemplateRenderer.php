@@ -4,26 +4,33 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Presentation;
 
+use Html;
+use Psr\Log\LoggerInterface;
+use Throwable;
 use Twig\Environment;
-use Twig\Loader\FilesystemLoader;
 
 class TwigTemplateRenderer implements TemplateRenderer {
 
+	public const ERROR_MSG = 'Template Render Error';
+
 	public function __construct(
-		private readonly string $templateDirectory
+		private Environment $twig,
+		private LoggerInterface $logger
 	) {
 	}
 
 	/**
+	 * @param string $template
 	 * @param array<string, mixed> $parameters
 	 */
 	public function viewModelToString( string $template, array $parameters ): string {
-		$twig = new Environment(
-			new FilesystemLoader( [ $this->templateDirectory ] )
-		);
+		try {
+			$html = $this->twig->render( $template, $parameters );
+		} catch ( Throwable $e ) {
+			$html = Html::errorBox( self::ERROR_MSG );
+			$this->logger->critical( $e->getMessage(), $e->getTrace() );
+		}
 
-		// TODO: catch error
-		return $twig->render( $template, $parameters );
+		return $html;
 	}
-
 }
