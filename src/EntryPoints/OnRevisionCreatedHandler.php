@@ -62,9 +62,6 @@ class OnRevisionCreatedHandler {
 	}
 
 	public function onPageUndelete( RevisionRecord $restoredRevision ): void {
-		// TODO: is this needed? Likely onRevisionCreated is already triggered
-
-		// TODO: this might be getting called for all revisions. We should only store the latest one.
 		// Calling isCurrent() on the RevisionRecord does not work, because it is always false.
 		$this->storeRevisionRecord( $restoredRevision );
 	}
