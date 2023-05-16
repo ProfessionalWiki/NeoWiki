@@ -16,7 +16,7 @@ class Subject {
 		public readonly SubjectLabel $label,
 		private readonly SchemaId $schemaId,
 		private SubjectProperties $properties,
-		public readonly RelationList $relations, // TODO: "same as" identifiers?
+		private readonly RelationList $relations, // TODO: "same as" identifiers?
 	) {
 	}
 
@@ -77,5 +77,9 @@ class Subject {
 
 	public function getProperties(): SubjectProperties {
 		return $this->properties;
+	}
+
+	public function getRelations(): RelationList {
+		return $this->relations;
 	}
 }

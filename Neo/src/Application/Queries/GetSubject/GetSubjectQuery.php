@@ -32,7 +32,8 @@ class GetSubjectQuery {
 			id: $subject->id->text,
 			label: $subject->label->text,
 			schemaId: $subject->getSchemaId()->getText(),
-			properties: $subject->getProperties()->asMap(),
+			properties: $subject->getProperties()->asMap() + $subject->getRelations()->asMap()
+			// TODO: should relations get a dedicated value?
 		);
 	}
 
