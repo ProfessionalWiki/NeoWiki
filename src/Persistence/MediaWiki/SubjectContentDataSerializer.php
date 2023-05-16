@@ -33,7 +33,7 @@ class SubjectContentDataSerializer {
 				'schema' => $subject->getSchemaId()->getText(),
 				'properties' => (object)array_merge(
 					$subject->getProperties()->asMap(),
-					$this->serializeRelations( $subject->relations )
+					$this->serializeRelations( $subject->getRelations() )
 				),
 			];
 		}
