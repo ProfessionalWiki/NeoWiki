@@ -2,6 +2,10 @@ import type { SubjectId } from '@/editor/domain/SubjectId';
 
 export type SubjectProperties = Record<string, any>;
 
+export interface RelationValue {
+	target: string;
+}
+
 export class Subject {
 
 	public constructor(
