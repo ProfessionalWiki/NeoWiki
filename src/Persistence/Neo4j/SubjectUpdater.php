@@ -116,7 +116,7 @@ class SubjectUpdater {
 		);
 
 		// Create or update relations
-		foreach ( $subject->relations->relations as $relation ) {
+		foreach ( $subject->getRelations()->relations as $relation ) {
 			$this->transaction->run(
 				'
 					MATCH (subject {id: $subjectId})
