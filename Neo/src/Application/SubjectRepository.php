@@ -9,9 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-interface SubjectRepository {
-
-	public function getSubject( SubjectId $subjectId ): ?Subject;
+interface SubjectRepository extends SubjectLookup {
 
 	/**
 	 * Does nothing if the subject is not found.
