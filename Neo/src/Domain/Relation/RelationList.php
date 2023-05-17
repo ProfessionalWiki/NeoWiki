@@ -24,7 +24,8 @@ class RelationList {
 			// TODO: at this point we don't know if it's a single relation or an array of relations.
 			$map[$relation->type->text] ??= [];
 			$map[$relation->type->text][] = [
-				'target' => $relation->targetId->text
+				'target' => $relation->targetId->text,
+				'properties' => $relation->properties->map,
 			];
 		}
 
