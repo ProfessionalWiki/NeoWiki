@@ -16,7 +16,7 @@ class GetSubjectApi extends SimpleHandler {
 		$presenter = new RestGetSubjectPresenter();
 		$query = NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter );
 
-		$query->execute( $subjectId, false ); // TODO: add parameter
+		$query->execute( $subjectId, false, false ); // TODO: add parameters
 
 		return $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
 	}
