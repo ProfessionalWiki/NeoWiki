@@ -20,7 +20,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup
  */
-class Neo4jPageIdLookupTest extends NeoWikiIntegrationTestCase {
+class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 
 	public function setUp(): void {
 		$this->setUpNeo4j();

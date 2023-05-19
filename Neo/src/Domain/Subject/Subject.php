@@ -67,6 +67,10 @@ class Subject {
 		return $this->id->equals( $subject->id );
 	}
 
+	public function getId(): SubjectId {
+		return $this->id;
+	}
+
 	public function getLabel(): SubjectLabel {
 		return $this->label;
 	}

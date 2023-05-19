@@ -8,6 +8,8 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponse;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
@@ -17,6 +19,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 
 /**
@@ -49,10 +52,14 @@ class GetSubjectQueryTest extends TestCase {
 						'expected property 2' => 'expected value 2',
 					] ),
 				),
-			)
+			),
+			new InMemoryPageIdentifiersLookup()
 		);
 
-		$query->execute( '00000000-6666-0000-0000-000000000001' );
+		$query->execute(
+			subjectId: '00000000-6666-0000-0000-000000000001',
+			includePageIdentifiers: false
+		);
 
 		$this->assertEquals(
 			new GetSubjectResponse(
@@ -71,6 +78,8 @@ class GetSubjectQueryTest extends TestCase {
 						]
 					]
 				],
+				pageId: null,
+				pageTitle: null,
 			),
 			$spyPresenter->response
 		);
@@ -98,12 +107,38 @@ class GetSubjectQueryTest extends TestCase {
 
 		$query = new GetSubjectQuery(
 			$spyPresenter,
-			new InMemorySubjectLookup()
+			new InMemorySubjectLookup(),
+			new InMemoryPageIdentifiersLookup()
 		);
 
-		$query->execute( TestSubject::ZERO_GUID );
+		$query->execute(
+			subjectId: TestSubject::ZERO_GUID,
+			includePageIdentifiers: false
+		);
 
 		$this->assertTrue( $spyPresenter->notFound );
+	}
+
+	public function testIncludePageIdentifiers(): void {
+		$spyPresenter = $this->getSpyPresenter();
+		$subject = TestSubject::build();
+
+		$query = new GetSubjectQuery(
+			$spyPresenter,
+			new InMemorySubjectLookup( $subject ),
+			new InMemoryPageIdentifiersLookup( [
+				[ new SubjectId( TestSubject::ZERO_GUID ), new PageIdentifiers( new PageId( 1 ), 'wrong title' ) ],
+				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'right title' ) ],
+			] )
+		);
+
+		$query->execute(
+			subjectId: $subject->getId()->text,
+			includePageIdentifiers: true
+		);
+
+		$this->assertSame( 42, $spyPresenter->response->pageId );
+		$this->assertSame( 'right title', $spyPresenter->response->pageTitle );
 	}
 
 }

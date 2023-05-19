@@ -13,7 +13,9 @@ class GetSubjectResponse {
 		/**
 		 * @var array<string, mixed>
 		 */
-		public readonly array $properties
+		public readonly array $properties,
+		public readonly ?int $pageId,
+		public readonly ?string $pageTitle,
 	) {
 	}
 
