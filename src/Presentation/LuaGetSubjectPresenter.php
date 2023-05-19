@@ -31,6 +31,8 @@ class LuaGetSubjectPresenter implements GetSubjectPresenter {
 			'label' => $this->response->label,
 			'schema' => $this->response->schemaId,
 			'properties' => array_map( $this->toOneBasedArray( ... ), $this->response->properties ),
+			'pageId' => $this->response->pageId,
+			'pageTitle' => $this->response->pageTitle,
 		];
 	}
 
