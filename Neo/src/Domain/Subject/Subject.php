@@ -86,4 +86,12 @@ class Subject {
 	public function getRelations(): RelationList {
 		return $this->relations;
 	}
+
+	/**
+	 * @return SubjectId[]
+	 */
+	public function getReferencedSubjects(): array {
+		return $this->relations->getTargetIds();
+	}
+
 }
