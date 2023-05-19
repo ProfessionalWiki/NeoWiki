@@ -40,7 +40,6 @@ class PageContentFetcherTest extends TestCase {
 
 		$this->revisionRecord->method( 'getContent' )->willReturn( $this->content );
 
-		$authority = $this->createMock( Authority::class );
 		$content = $this->pageContentFetcher->getPageContent( 'test title', null, NS_MAIN );
 
 		$this->assertSame( $this->content, $content );

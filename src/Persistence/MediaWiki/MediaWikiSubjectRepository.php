@@ -9,7 +9,7 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\User\UserIdentity;
-use ProfessionalWiki\NeoWiki\Application\PageIdLookup;
+use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -23,7 +23,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 	public const SLOT_NAME = 'neo';
 
 	public function __construct(
-		private PageIdLookup $pageIdLookup,
+		private PageIdentifiersLookup $pageIdentifiersLookup,
 		private RevisionLookup $revisionLookup,
 		private UserIdentity $user
 	) {
@@ -45,12 +45,12 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		return $this->getContentByPageId( $pageId );
 	}
 
-	private function getPageIdForSubject( SubjectId $subjectId ): ?int {
-		return $this->pageIdLookup->getPageIdOfSubject( $subjectId );
+	private function getPageIdForSubject( SubjectId $subjectId ): ?PageId {
+		return $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
 	}
 
-	private function getContentByPageId( int $pageId ): ?SubjectContent {
-		$revision = $this->revisionLookup->getRevisionByPageId( $pageId );
+	private function getContentByPageId( PageId $pageId ): ?SubjectContent {
+		$revision = $this->revisionLookup->getRevisionByPageId( $pageId->id );
 
 		if ( $revision === null ) {
 			return null;
@@ -91,8 +91,8 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		$content->setPageSubjects( $contentData );
 	}
 
-	private function saveContent( SubjectContent $content, int $pageId ): void {
-		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromID( $pageId );
+	private function saveContent( SubjectContent $content, PageId $pageId ): void {
+		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromID( $pageId->id );
 
 		if ( $wikiPage instanceof WikiPage ) {
 			$updater = $wikiPage->newPageUpdater( $this->user );
@@ -122,18 +122,18 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 	}
 
 	public function getMainSubject( PageId $pageId ): ?Subject {
-		return $this->getContentByPageId( $pageId->id )?->getPageSubjects()->getMainSubject();
+		return $this->getContentByPageId( $pageId )?->getPageSubjects()->getMainSubject();
 	}
 
 	public function getSubjectsByPageId( PageId $pageId ): PageSubjects {
-		return $this->getContentByPageId( $pageId->id )?->getPageSubjects() ?? PageSubjects::newEmpty();
+		return $this->getContentByPageId( $pageId )?->getPageSubjects() ?? PageSubjects::newEmpty();
 	}
 
 	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId ): void {
-		$content = $this->getContentByPageId( $pageId->id ) ?? SubjectContent::newEmpty();
+		$content = $this->getContentByPageId( $pageId ) ?? SubjectContent::newEmpty();
 
 		$content->setPageSubjects( $pageSubjects );
 
-		$this->saveContent( $content, $pageId->id );
+		$this->saveContent( $content, $pageId );
 	}
 }

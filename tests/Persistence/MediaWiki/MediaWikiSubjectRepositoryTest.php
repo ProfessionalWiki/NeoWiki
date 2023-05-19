@@ -16,18 +16,13 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup
  * @group database
  */
 class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 
 	public function setUp(): void {
-		try {
-			$client = NeoWikiExtension::getInstance()->getNeo4jClient();
-			$client->run( 'MATCH (n) DETACH DELETE n' );
-		}
-		catch ( \Exception ) {
-			$this->markTestSkipped( 'Neo4j not available' );
-		}
+		$this->setUpNeo4j();
 	}
 
 	private function newRepository(): MediaWikiSubjectRepository {
