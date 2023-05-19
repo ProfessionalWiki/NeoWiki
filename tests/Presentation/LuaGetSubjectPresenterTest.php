@@ -23,7 +23,9 @@ class LuaGetSubjectPresenterTest extends TestCase {
 			properties: [
 				'P1' => [ 'Bar', 'Baz' ],
 				'P2' => [ 'Hi' ],
-			]
+			],
+			pageId: 42,
+			pageTitle: 'Foo',
 		) );
 
 		$this->assertSame(
@@ -35,6 +37,8 @@ class LuaGetSubjectPresenterTest extends TestCase {
 					'P1' => [ 1 => 'Bar', 2 => 'Baz' ],
 					'P2' => [ 1 => 'Hi' ],
 				],
+				'pageId' => 42,
+				'pageTitle' => 'Foo',
 			],
 			$presenter->getLuaResponse()
 		);
