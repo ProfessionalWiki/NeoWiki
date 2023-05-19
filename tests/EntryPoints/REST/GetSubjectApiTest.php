@@ -33,7 +33,7 @@ class GetSubjectApiTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame(
-			'{"subject":{"id":"123e4567-e89b-12d3-a456-426655440000","label":"Test subject 426655440000","schema":"GetSubjectApiTest","properties":[]}}',
+			'{"requestedId":"123e4567-e89b-12d3-a456-426655440000","subjects":{"123e4567-e89b-12d3-a456-426655440000":{"id":"123e4567-e89b-12d3-a456-426655440000","label":"Test subject 426655440000","schema":"GetSubjectApiTest","properties":[]}}}',
 			$response->getBody()->getContents()
 		);
 		$this->assertSame( 200, $response->getStatusCode() );

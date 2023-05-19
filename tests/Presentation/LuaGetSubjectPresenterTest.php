@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Presentation;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponse;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Presentation\LuaGetSubjectPresenter;
 
 /**
@@ -17,15 +18,20 @@ class LuaGetSubjectPresenterTest extends TestCase {
 		$presenter = new LuaGetSubjectPresenter();
 
 		$presenter->presentSubject( new GetSubjectResponse(
-			id: 'Q1',
-			label: 'Foo',
-			schemaId: 'Employee',
-			properties: [
-				'P1' => [ 'Bar', 'Baz' ],
-				'P2' => [ 'Hi' ],
-			],
-			pageId: 42,
-			pageTitle: 'Foo',
+			'Q1',
+			[
+				'Q1' => new GetSubjectResponseItem(
+					id: 'Q1',
+					label: 'Foo',
+					schemaId: 'Employee',
+					properties: [
+						'P1' => [ 'Bar', 'Baz' ],
+						'P2' => [ 'Hi' ],
+					],
+					pageId: 42,
+					pageTitle: 'Foo',
+				)
+			]
 		) );
 
 		$this->assertSame(

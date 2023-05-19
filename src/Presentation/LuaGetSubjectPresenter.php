@@ -22,17 +22,19 @@ class LuaGetSubjectPresenter implements GetSubjectPresenter {
 	}
 
 	public function getLuaResponse(): ?array {
-		if ( $this->response === null ) {
+		if ( $this->response === null || !array_key_exists( $this->response->requestedId, $this->response->subjects ) ) {
 			return null;
 		}
 
+		$subject = $this->response->subjects[$this->response->requestedId];
+
 		return [
-			'id' => $this->response->id,
-			'label' => $this->response->label,
-			'schema' => $this->response->schemaId,
-			'properties' => array_map( $this->toOneBasedArray( ... ), $this->response->properties ),
-			'pageId' => $this->response->pageId,
-			'pageTitle' => $this->response->pageTitle,
+			'id' => $subject->id,
+			'label' => $subject->label,
+			'schema' => $subject->schemaId,
+			'properties' => array_map( $this->toOneBasedArray( ... ), $subject->properties ),
+			'pageId' => $subject->pageId,
+			'pageTitle' => $subject->pageTitle,
 		];
 	}
 

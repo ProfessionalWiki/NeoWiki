@@ -24,7 +24,7 @@ class NeoWikiLua extends Scribunto_LuaLibraryBase {
 		$presenter = new LuaGetSubjectPresenter();
 		$query = NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter );
 
-		$query->execute( $subjectId, true );
+		$query->execute( $subjectId, true, false );
 
 		return $presenter->getLuaResponse();
 	}
