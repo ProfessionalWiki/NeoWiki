@@ -7,15 +7,11 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSubject;
 class GetSubjectResponse {
 
 	public function __construct(
-		public readonly string $id,
-		public readonly string $label,
-		public readonly string $schemaId,
+		public readonly string $requestedId,
 		/**
-		 * @var array<string, mixed>
+		 * @var array<string, GetSubjectResponseItem> Indexed by subject ID
 		 */
-		public readonly array $properties,
-		public readonly ?int $pageId,
-		public readonly ?string $pageTitle,
+		public readonly array $subjects,
 	) {
 	}
 

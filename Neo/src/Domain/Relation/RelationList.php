@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+
 class RelationList {
 
 	public function __construct(
@@ -15,6 +17,7 @@ class RelationList {
 	}
 
 	/**
+	 * FIXME: domain model is inappropriate location for serialization logic
 	 * @return array<string, array<int, array<string, string>>>
 	 */
 	public function asMap(): array {
@@ -30,6 +33,16 @@ class RelationList {
 		}
 
 		return $map;
+	}
+
+	/**
+	 * @return SubjectId[]
+	 */
+	public function getTargetIds(): array {
+		return array_map(
+			fn( Relation $relation ): SubjectId => $relation->targetId,
+			$this->relations
+		);
 	}
 
 }

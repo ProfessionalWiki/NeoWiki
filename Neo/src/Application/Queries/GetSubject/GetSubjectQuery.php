@@ -6,7 +6,6 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSubject;
 
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
@@ -19,7 +18,11 @@ class GetSubjectQuery {
 	) {
 	}
 
-	public function execute( string $subjectId, bool $includePageIdentifiers ): void {
+	public function execute(
+		string $subjectId,
+		bool $includePageIdentifiers,
+		bool $includeReferencedSubjects
+	): void {
 		$subject = $this->subjectLookup->getSubject( new SubjectId( $subjectId ) );
 
 		if ( $subject === null ) {
@@ -27,14 +30,32 @@ class GetSubjectQuery {
 			return;
 		}
 
-		$this->presenter->presentSubject( $this->createResponse(
-			subject: $subject,
-			pageIdentifiers: $includePageIdentifiers ? $this->pageIdentifiersLookup->getPageIdOfSubject( $subject->id ) : null
-		) );
+		$response = [
+			$subject->getId()->text => $this->createResponse( $subject, $includePageIdentifiers )
+		];
+
+		if ( $includeReferencedSubjects ) {
+			foreach ( $subject->getReferencedSubjects() as $id ) {
+				$referencedSubject = $this->subjectLookup->getSubject( $id );
+
+				if ( $referencedSubject !== null ) {
+					$response[$referencedSubject->getId()->text] = $this->createResponse( $referencedSubject, $includePageIdentifiers );
+				}
+			}
+		}
+
+		$this->presenter->presentSubject(
+			new GetSubjectResponse(
+				requestedId: $subject->getId()->text,
+				subjects: $response
+			)
+		);
 	}
 
-	private function createResponse( Subject $subject, ?PageIdentifiers $pageIdentifiers ): GetSubjectResponse {
-		return new GetSubjectResponse(
+	private function createResponse( Subject $subject, bool $includePageIdentifiers ): GetSubjectResponseItem {
+		$pageIdentifiers = $includePageIdentifiers ? $this->pageIdentifiersLookup->getPageIdOfSubject( $subject->id ) : null;
+
+		return new GetSubjectResponseItem(
 			id: $subject->id->text,
 			label: $subject->label->text,
 			schemaId: $subject->getSchemaId()->getText(),
