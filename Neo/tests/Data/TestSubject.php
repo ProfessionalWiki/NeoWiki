@@ -18,14 +18,14 @@ class TestSubject {
 	public const ZERO_GUID = '00000000-0000-0000-0000-000000000000';
 
 	public static function build(
-		string|SubjectId|null $id = null,
+		string|SubjectId $id = self::ZERO_GUID,
 		?SubjectLabel $label = null,
 		?SchemaId $schemaId = null,
 		?RelationList $relations = null,
 		?SubjectProperties $properties = null,
 	): Subject {
 		return new Subject(
-			id: $id instanceof SubjectId ? $id : new SubjectId( $id ?? self::ZERO_GUID ),
+			id: $id instanceof SubjectId ? $id : new SubjectId( $id ),
 			label: $label ?? new SubjectLabel( "Test subject" ),
 			schemaId: $schemaId ?? new SchemaId( 'TestSubjectSchemaId' ),
 			properties: $properties ?? new SubjectProperties( [] ),
