@@ -65,7 +65,26 @@ describe( 'Subject', () => {
 			expect( await subject.getReferencedSubjects( lookup ) ).toEqual( new SubjectMap() );
 		} );
 
-		// TODO
+		it( 'should return a SubjectMap with referenced Subjects', async () => {
+			const subject1 = newTestSubject( { id: '00000000-0000-0000-0000-000000000001' } );
+			const subject2 = newTestSubject( { id: '00000000-0000-0000-0000-000000000002' } );
+			const subject3 = newTestSubject( { id: '00000000-0000-0000-0000-000000000003' } );
+			const lookup = new InMemorySubjectLookup( [ subject1, subject2, subject3 ] );
+
+			const subject = newTestSubject( {
+				id: ZERO_GUID,
+				properties: {
+					Property1: 'foo',
+					Property2: [ { target: '00000000-0000-0000-0000-000000000001' } ],
+					Property3: [ { target: '00000000-0000-0000-0000-000000000002' }, { target: '00000000-0000-0000-0000-000000000003' } ],
+					Property4: 'bar'
+				}
+			} );
+
+			const subjectMap = await subject.getReferencedSubjects( lookup );
+
+			expect( subjectMap ).toEqual( new SubjectMap( subject1, subject2, subject3 ) );
+		} );
 
 	} );
 
