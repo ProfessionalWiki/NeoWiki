@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { newTestSubject, ZERO_GUID } from '../TestSubject';
-import {PageIdentifiers} from "../Subject";
+import { PageIdentifiers } from '../Subject';
+import { SubjectMap } from '../SubjectMap';
+import { InMemorySubjectLookup } from '../../application/SubjectLookup';
+import { SubjectId } from '../SubjectId';
 
 describe( 'Subject', () => {
 
@@ -24,6 +27,46 @@ describe( 'Subject', () => {
 		} );
 
 		expect( subject.getPageIdentifiers() ).toEqual( identifiers );
+	} );
+
+	describe( 'getIdsOfReferencedSubjects', () => {
+
+		it( 'should return empty list when there are no properties', () => {
+			const subject = newTestSubject();
+
+			expect( subject.getIdsOfReferencedSubjects() ).toEqual( [] );
+		} );
+
+		it( 'should return a list of referenced SubjectIds when relations exist', () => {
+			const subject = newTestSubject( {
+				properties: {
+					Property1: 'foo',
+					Property2: [ { target: '00000000-0000-0000-0000-000000000001' } ],
+					Property3: [ { target: '00000000-0000-0000-0000-000000000002' }, { target: '00000000-0000-0000-0000-000000000003' } ],
+					Property4: 'bar'
+				}
+			} );
+
+			expect( subject.getIdsOfReferencedSubjects() ).toEqual( [
+				new SubjectId( '00000000-0000-0000-0000-000000000001' ),
+				new SubjectId( '00000000-0000-0000-0000-000000000002' ),
+				new SubjectId( '00000000-0000-0000-0000-000000000003' )
+			] );
+		} );
+
+	} );
+
+	describe( 'getReferencedSubjects', () => {
+
+		it( 'should return empty SubjectMap when there are no properties', async () => {
+			const subject = newTestSubject();
+			const lookup = new InMemorySubjectLookup( [] );
+
+			expect( await subject.getReferencedSubjects( lookup ) ).toEqual( new SubjectMap() );
+		} );
+
+		// TODO
+
 	} );
 
 } );
