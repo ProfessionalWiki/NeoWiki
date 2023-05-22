@@ -6,14 +6,14 @@ import { newTestSubject } from '../TestSubject';
 describe( 'SubjectMap', () => {
 
 	const subjects = new SubjectMap(
-		newTestSubject(
-			'00000000-0000-0000-0000-000000000000',
-			'John Doe'
-		),
-		newTestSubject(
-			'00000000-0000-0000-0000-000000000001',
-			'Foo Bar'
-		)
+		newTestSubject( {
+			id: '00000000-0000-0000-0000-000000000000',
+			label: 'John Doe'
+		} ),
+		newTestSubject( {
+			id: '00000000-0000-0000-0000-000000000001',
+			label: 'Foo Bar'
+		} )
 	);
 
 	it( 'should add elements in constructor', () => {
