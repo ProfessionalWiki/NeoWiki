@@ -1,4 +1,4 @@
-import { Subject } from '@/editor/domain/Subject';
+import { PageIdentifiers, Subject } from '@/editor/domain/Subject';
 import type { SubjectProperties } from '@/editor/domain/Subject';
 import { SubjectId } from '@/editor/domain/SubjectId';
 
@@ -10,12 +10,14 @@ export function newTestSubject(
 	id: string|SubjectId = ZERO_GUID,
 	label: string = DEFAULT_TEST_SUBJECT_LABEL,
 	schemaId: string = DEFAULT_TEST_SCHEMA_ID,
-	properties: SubjectProperties = {}
+	properties: SubjectProperties = {},
+	pageIdentifiers: PageIdentifiers = new PageIdentifiers( 0, 'TestSubjectPage' )
 ): Subject {
 	return new Subject(
 		id instanceof SubjectId ? id : new SubjectId( id ),
 		label,
 		schemaId,
-		properties
+		properties,
+		pageIdentifiers
 	);
 }
