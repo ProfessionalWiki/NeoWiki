@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newTestSubject, ZERO_GUID } from '../TestSubject';
+import {PageIdentifiers} from "../Subject";
 
 describe( 'Subject', () => {
 
@@ -13,6 +14,16 @@ describe( 'Subject', () => {
 		expect( subject.getLabel() ).toBe( 'I am a tomato' );
 		expect( subject.getSchemaId() ).toBe( 'Tomato' );
 		expect( subject.getPageIdentifiers().getPageName() ).toBe( 'TestSubjectPage' );
+	} );
+
+	it( 'should store page identifiers', () => {
+		const identifiers = new PageIdentifiers( 123, 'TestPage' );
+
+		const subject = newTestSubject( {
+			pageIdentifiers: identifiers
+		} );
+
+		expect( subject.getPageIdentifiers() ).toEqual( identifiers );
 	} );
 
 } );
