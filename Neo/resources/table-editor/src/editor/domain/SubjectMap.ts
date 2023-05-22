@@ -3,7 +3,7 @@ import type { Subject } from '@/editor/domain/Subject';
 
 export class SubjectMap {
 
-	private subjects = new Map<string, Subject>();
+	private subjects: Record<string, Subject> = {};
 
 	public constructor( ...subjects: Subject[] ) {
 		for ( const subject of subjects ) {
@@ -12,15 +12,17 @@ export class SubjectMap {
 	}
 
 	private add( subject: Subject ): void {
-		this.subjects.set( subject.getId().text, subject );
+		this.subjects[ subject.getId().text ] = subject;
 	}
 
 	public get( subjectId: SubjectId ): Subject|undefined {
-		return this.subjects.get( subjectId.text );
+		return this.subjects[ subjectId.text ];
 	}
 
 	public *[ Symbol.iterator ](): Generator<Subject, void, any> {
-		yield* this.subjects.values();
+		for ( const subject of Object.values( this.subjects ) ) {
+			yield subject;
+		}
 	}
 
 }

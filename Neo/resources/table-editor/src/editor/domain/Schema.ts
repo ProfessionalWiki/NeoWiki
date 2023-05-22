@@ -68,6 +68,12 @@ export class PropertyDefinition {
 		);
 	}
 
+	public isRelation(): boolean {
+		// TODO: automated test
+		return this.type === ValueType.Relation ||
+			( this.type === ValueType.Array && this.items?.type === ValueType.Relation );
+	}
+
 }
 
 export class Schema {

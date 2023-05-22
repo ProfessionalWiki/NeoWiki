@@ -36,6 +36,10 @@ export class Subject {
 		return this.properties;
 	}
 
+	public getPropertyValue( propertyName: string ): any {
+		return this.properties[ propertyName ];
+	}
+
 	public getPageIdentifiers(): PageIdentifiers {
 		return this.pageIdentifiers;
 	}
