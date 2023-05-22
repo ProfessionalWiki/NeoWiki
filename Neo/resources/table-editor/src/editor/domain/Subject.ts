@@ -67,9 +67,9 @@ export class Subject {
 	}
 
 	public getIdsOfReferencedSubjects(): SubjectId[] {
-		// TODO: use schema information to determine which properties are references
 		const ids: SubjectId[] = [];
 
+		// TODO: use schema information to determine which properties are references
 		/* eslint-disable */
 		for ( const [ key, value ] of Object.entries( this.properties ) ) {
 			if ( Array.isArray( value ) ) {
@@ -78,6 +78,9 @@ export class Subject {
 						ids.push( new SubjectId( relation.target ) );
 					}
 				}
+			}
+			else if ( typeof value === 'object' && value.target ) {
+				ids.push( new SubjectId( value.target ) );
 			}
 		}
 		/* eslint-enable */
