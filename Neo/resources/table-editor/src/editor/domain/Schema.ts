@@ -26,6 +26,7 @@ export enum ValueFormat {
 	Percentage = 'percentage',
 	Currency = 'currency',
 	Slider = 'slider',
+	Progress = 'progress',
 
 	Checkbox = 'checkbox',
 	Toggle = 'toggle',
