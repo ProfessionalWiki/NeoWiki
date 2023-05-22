@@ -21,6 +21,7 @@ enum ValueFormat: string {
 	case Percentage = 'percentage';
 	case Currency = 'currency';
 	case Slider = 'slider';
+	case Progress = 'progress';
 
 	case Checkbox = 'checkbox';
 	case Toggle = 'toggle';
