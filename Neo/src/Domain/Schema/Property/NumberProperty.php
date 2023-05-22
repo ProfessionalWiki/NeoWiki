@@ -32,6 +32,7 @@ class NumberProperty extends PropertyDefinition {
 			ValueFormat::Percentage,
 			ValueFormat::Currency,
 			ValueFormat::Slider,
+			ValueFormat::Progress
 		] ) ) {
 			throw new InvalidArgumentException( 'NumberProperty must have a number format' );
 		}
