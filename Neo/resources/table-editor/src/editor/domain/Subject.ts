@@ -51,4 +51,8 @@ export class Subject {
 		return this.properties;
 	}
 
+	public getPageIdentifiers(): PageIdentifiers {
+		return this.pageIdentifiers;
+	}
+
 }
