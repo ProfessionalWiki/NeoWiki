@@ -41,7 +41,7 @@ describe( 'Subject', () => {
 			const subject = newTestSubject( {
 				properties: {
 					Property1: 'foo',
-					Property2: [ { target: '00000000-0000-0000-0000-000000000001' } ],
+					Property2: { target: '00000000-0000-0000-0000-000000000001' },
 					Property3: [ { target: '00000000-0000-0000-0000-000000000002' }, { target: '00000000-0000-0000-0000-000000000003' } ],
 					Property4: 'bar'
 				}
