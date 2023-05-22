@@ -1,4 +1,6 @@
-import type { SubjectId } from '@/editor/domain/SubjectId';
+import { SubjectId } from '@/editor/domain/SubjectId';
+import { SubjectMap } from '@/editor/domain/SubjectMap';
+import type { SubjectLookup } from '@/editor/application/SubjectLookup';
 
 export type SubjectProperties = Record<string, any>;
 
@@ -53,6 +55,33 @@ export class Subject {
 
 	public getPageIdentifiers(): PageIdentifiers {
 		return this.pageIdentifiers;
+	}
+
+	public async getReferencedSubjects( lookup: SubjectLookup ): Promise<SubjectMap> {
+		return new SubjectMap(
+			...await Promise.all(
+				// TODO: error handling: silently ignore missing subjects?
+				this.getIdsOfReferencedSubjects().map( ( id ) => lookup.getSubject( id ) )
+			)
+		);
+	}
+
+	public getIdsOfReferencedSubjects(): SubjectId[] {
+		// TODO: use schema information to determine which properties are references
+		const ids: SubjectId[] = [];
+
+		/* eslint-disable */
+		for ( const [ key, value ] of Object.entries( this.properties ) ) {
+			if ( Array.isArray( value ) ) {
+				for ( const relation of value ) {
+					if ( typeof relation === 'object' && relation.target ) {
+						ids.push( new SubjectId( relation.target ) );
+					}
+				}
+			}
+		}
+		/* eslint-enable */
+		return ids;
 	}
 
 }
