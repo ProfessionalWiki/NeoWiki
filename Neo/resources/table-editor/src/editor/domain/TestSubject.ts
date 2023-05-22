@@ -1,6 +1,7 @@
-import { PageIdentifiers, Subject } from '@/editor/domain/Subject';
+import { Subject } from '@/editor/domain/Subject';
 import type { SubjectProperties } from '@/editor/domain/Subject';
 import { SubjectId } from '@/editor/domain/SubjectId';
+import { PageIdentifiers } from '@/editor/domain/PageIdentifiers';
 
 export const ZERO_GUID = '00000000-0000-0000-0000-000000000000';
 export const DEFAULT_TEST_SUBJECT_LABEL = 'Test subject';
