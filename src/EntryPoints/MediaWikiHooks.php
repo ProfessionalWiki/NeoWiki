@@ -112,13 +112,6 @@ class MediaWikiHooks {
 	}
 
 	private static function addSubjectEditor( OutputPage $out ): void {
-		$content = NeoWikiExtension::getInstance()->newSubjectContentRepository()->getSubjectContentByPageTitle( $out->getTitle() );
-
-		if ( $content === null || !$content->hasSubjects() ) {
-			$out->enableOOUI();
-			$out->addModules( [ 'ext.neowiki.subject' ] );
-		}
-
 		$out->addHTML( NeoWikiExtension::getInstance()->getFactBox()->htmlFor( $out->getTitle() ) );
 	}
 
