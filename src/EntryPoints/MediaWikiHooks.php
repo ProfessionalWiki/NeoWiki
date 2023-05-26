@@ -86,13 +86,18 @@ class MediaWikiHooks {
 
 	public static function onParserFirstCallInit( Parser $parser ): void {
 		$parser->setFunctionHook(
-			'cypher',
-			NeoWikiExtension::getInstance()->newCypherFunction()->handleParserFunctionCall( ... )
+			'infobox',
+			NeoWikiExtension::getInstance()->newInfoboxFunction()->handleParserFunctionCall( ... )
 		);
 
 		$parser->setFunctionHook(
-			'infobox',
-			NeoWikiExtension::getInstance()->newInfoboxFunction()->handleParserFunctionCall( ... )
+			'table',
+			NeoWikiExtension::getInstance()->newTableFunction()->handleParserFunctionCall( ... )
+		);
+
+		$parser->setFunctionHook(
+			'cypher',
+			NeoWikiExtension::getInstance()->newCypherFunction()->handleParserFunctionCall( ... )
 		);
 	}
 
