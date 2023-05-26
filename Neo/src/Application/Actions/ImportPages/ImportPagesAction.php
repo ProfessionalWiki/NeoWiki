@@ -28,7 +28,7 @@ class ImportPagesAction {
 	}
 
 	public function import(): void {
-		foreach ( [ 'Company', 'Employee', 'Product' ] as $schemaName ) {
+		foreach ( [ 'Company', 'Employee', 'Product', 'Everything' ] as $schemaName ) {
 			$this->createPage(
 				"Schema:$schemaName",
 				[
