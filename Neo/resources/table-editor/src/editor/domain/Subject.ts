@@ -14,7 +14,7 @@ export class Subject {
 	public constructor(
 		private readonly id: SubjectId,
 		private readonly label: string,
-		private readonly schemaId: string,
+		private readonly schemaId: string, // TODO: rename to schemaName
 		private readonly properties: SubjectProperties,
 		private readonly pageIdentifiers: PageIdentifiers
 	) {
