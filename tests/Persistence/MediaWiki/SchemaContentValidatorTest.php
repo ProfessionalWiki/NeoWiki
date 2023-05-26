@@ -31,6 +31,7 @@ class SchemaContentValidatorTest extends TestCase {
 		yield [ file_get_contents( __DIR__ . '/../../../DemoData/Schema/Employee.json' ) ];
 		yield [ file_get_contents( __DIR__ . '/../../../DemoData/Schema/Company.json' ) ];
 		yield [ file_get_contents( __DIR__ . '/../../../DemoData/Schema/Product.json' ) ];
+		yield [ file_get_contents( __DIR__ . '/../../../DemoData/Schema/Everything.json' ) ];
 	}
 
 	public function testEmptyJsonFailsValidation(): void {
