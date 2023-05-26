@@ -22,7 +22,7 @@ class SubjectContentDataDeserializerTest extends TestCase {
 
 	public function testNodeExampleSmokeTest(): void {
 		$deserializer = new SubjectContentDataDeserializer( $this->newSchemaRepoWithCompanyAndProduct() );
-		$subjects = $deserializer->deserialize( TestData::getFileContents( 'nodeExample.json' ) );
+		$subjects = $deserializer->deserialize( TestData::getFileContents( 'Subject/Professional_Wiki.json' ) );
 
 		$this->assertSame(
 			'Professional Wiki GmbH',
@@ -34,11 +34,11 @@ class SubjectContentDataDeserializerTest extends TestCase {
 		return new InMemorySchemaRepository(
 			( new SchemaDeserializer() )->deserialize(
 				new SchemaId( 'Company' ),
-				TestData::getFileContents( 'companySchema.json' )
+				TestData::getFileContents( 'Schema/Company.json' )
 			),
 			( new SchemaDeserializer() )->deserialize(
 				new SchemaId( 'Product' ),
-				TestData::getFileContents( 'productSchema.json' )
+				TestData::getFileContents( 'Schema/Product.json' )
 			)
 		);
 	}

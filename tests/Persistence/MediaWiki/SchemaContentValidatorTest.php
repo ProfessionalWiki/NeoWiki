@@ -28,9 +28,9 @@ class SchemaContentValidatorTest extends TestCase {
 	}
 
 	public function exampleSchemaProvider(): iterable {
-		yield [ file_get_contents( __DIR__ . '/../../Data/employeeSchema.json' ) ];
-		yield [ file_get_contents( __DIR__ . '/../../Data/companySchema.json' ) ];
-		yield [ file_get_contents( __DIR__ . '/../../Data/productSchema.json' ) ];
+		yield [ file_get_contents( __DIR__ . '/../../../DemoData/Schema/Employee.json' ) ];
+		yield [ file_get_contents( __DIR__ . '/../../../DemoData/Schema/Company.json' ) ];
+		yield [ file_get_contents( __DIR__ . '/../../../DemoData/Schema/Product.json' ) ];
 	}
 
 	public function testEmptyJsonFailsValidation(): void {

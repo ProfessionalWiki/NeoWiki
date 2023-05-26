@@ -155,7 +155,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 	}
 
 	public function testSerializationRoundTrip(): void {
-		$contentJson = TestData::getFileContents( 'nodeExample.json' );
+		$contentJson = TestData::getFileContents( 'Subject/Professional_Wiki.json' );
 
 		$deserializer = new SubjectContentDataDeserializer( $this->newSchemaRepoWithCompanyAndProduct() );
 		$serializer = new SubjectContentDataSerializer();
@@ -169,11 +169,11 @@ class SubjectContentDataSerializerTest extends TestCase {
 		return new InMemorySchemaRepository(
 			( new SchemaDeserializer() )->deserialize(
 				new SchemaId( 'Company' ),
-				TestData::getFileContents( 'companySchema.json' )
+				TestData::getFileContents( 'Schema/Company.json' )
 			),
 			( new SchemaDeserializer() )->deserialize(
 				new SchemaId( 'Product' ),
-				TestData::getFileContents( 'productSchema.json' )
+				TestData::getFileContents( 'Schema/Product.json' )
 			)
 		);
 	}
