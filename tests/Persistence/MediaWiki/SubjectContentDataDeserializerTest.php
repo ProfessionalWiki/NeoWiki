@@ -161,7 +161,7 @@ JSON
 			"label": "Professional Wiki GmbH",
 			"schema": "Company",
 			"properties": {
-				"Has product": [
+				"Products": [
 					{
 						"target": "12345678-0000-0000-0000-000000000004"
 					},
@@ -198,7 +198,7 @@ JSON
 			"label": "Professional Wiki GmbH",
 			"schema": "Company",
 			"properties": {
-				"Has main product": {
+				"Main product": {
 					"target": "12345678-0000-0000-0000-000000000004"
 				}
 			}
@@ -229,7 +229,7 @@ JSON
 			"label": "Professional Wiki GmbH",
 			"schema": "Company",
 			"properties": {
-				"Has main product": {}
+				"Main product": {}
 			}
 		}
 	}
