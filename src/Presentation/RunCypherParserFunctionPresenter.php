@@ -50,7 +50,7 @@ class RunCypherParserFunctionPresenter implements RunCypherPresenter {
 				'subjects' => $this->viewModel
 			]
 		) . $this->templateRenderer->viewModelToString(
-			'Table.html.twig',
+			'ResultTable.html.twig',
 			[
 				'subjects' => $this->viewModel
 			]
