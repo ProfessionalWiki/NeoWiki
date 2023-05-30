@@ -75,24 +75,12 @@ export class Subject {
 		return ids;
 	}
 
-	public getNonEmptyProperties(): string[] {
+	public getNamesOfNonEmptyProperties(): string[] {
 		return Object.keys( this.properties ).filter( ( propertyName ) => {
 			const value = this.properties[ propertyName ];
-			if ( value === false ) {
-				return true;
-			}
-			if ( !value ) {
-				return false;
-			}
-			if ( Array.isArray( value ) ) {
-				return value.length > 0;
-			} else if ( typeof value === 'string' ) {
-				return value.trim() !== '';
-			} else if ( typeof value === 'number' ) {
-				return !isNaN( value );
-			} else {
-				return true;
-			}
+
+			return value !== undefined &&
+				!( Array.isArray( value ) && value.length === 0 ); // TODO: do we need to check for empty arrays here?
 		} );
 	}
 
