@@ -5,14 +5,14 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
-use ProfessionalWiki\NeoWiki\Infrastructure\ProductionGuidGenerator;
+use Ramsey\Uuid\Uuid;
 
 class SubjectId {
 
 	public readonly string $text;
 
 	public function __construct( string $text ) {
-		if ( !ProductionGuidGenerator::isValid( $text ) ) {
+		if ( !Uuid::isValid( $text ) ) {
 			throw new \InvalidArgumentException( 'Subject ID has the wrong format' );
 		}
 
