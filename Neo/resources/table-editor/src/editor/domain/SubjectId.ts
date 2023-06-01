@@ -1,3 +1,14 @@
+import { Uuid } from "@/editor/infrastructure/Uuid";
+import { InvalidArgumentError } from "@/editor/infrastructure/Exceptions/InvalidArgumentError";
+
 export class SubjectId {
-	public constructor( public readonly text: string ) {}
+	public readonly text: string;
+
+	public constructor( text: string ) {
+		if ( !Uuid.isValid( text ) ) {
+			throw new InvalidArgumentError( 'Subject ID has the wrong format' );
+		}
+
+		this.text = text;
+	}
 }
