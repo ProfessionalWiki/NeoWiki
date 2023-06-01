@@ -3,14 +3,14 @@ import { SubjectId } from '../SubjectId';
 
 describe( 'Subject', () => {
 
-	it( 'should be initialized with correct Uuid', () => {
+	it( 'can be initialized with valid GUID', () => {
 		const GUID = '00000000-7777-0000-0000-000000000001';
 		const subjectId = new SubjectId( GUID );
 
 		expect( subjectId.text ).toBe( GUID );
 	} );
 
-	it( 'given an invalid Uuid', () => {
+	it( 'throws exception when given an invalid GUID', () => {
 		const GUID = '7777-0000-000000000001';
 		expect( () => new SubjectId( GUID ) ).toThrowError();
 	} );
