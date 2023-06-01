@@ -5,13 +5,18 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
+use ProfessionalWiki\NeoWiki\Infrastructure\ProductionGuidGenerator;
 
 class SubjectId {
 
-	public function __construct(
-		public readonly string $text,
-	) {
-		// TODO: validation
+	public readonly string $text;
+
+	public function __construct( string $text ) {
+		if ( !ProductionGuidGenerator::isValid( $text ) ) {
+			throw new \InvalidArgumentException( 'Subject ID has the wrong format' );
+		}
+
+		$this->text = $text;
 	}
 
 	public function equals( self $other ): bool {
