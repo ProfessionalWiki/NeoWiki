@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newTestSubject, ZERO_GUID } from '../TestSubject';
-import { SubjectMap } from '../SubjectMap';
-import { InMemorySubjectLookup } from '../../application/SubjectLookup';
 import { SubjectId } from '../SubjectId';
-import { PageIdentifiers } from '../PageIdentifiers';
 
 describe( 'Subject', () => {
 
@@ -16,6 +12,6 @@ describe( 'Subject', () => {
 
 	it( 'given an invalid Uuid', () => {
 		const GUID = '7777-0000-000000000001';
-		expect(() => new SubjectId( GUID ) ).toThrowError();
+		expect( () => new SubjectId( GUID ) ).toThrowError();
 	} );
 } );
