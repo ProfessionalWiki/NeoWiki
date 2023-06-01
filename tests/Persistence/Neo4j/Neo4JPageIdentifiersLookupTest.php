@@ -17,24 +17,24 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
-const GUID_1 = '00000000-1237-0000-0000-000000000001';
-const GUID_2 = '00000000-1237-0000-0000-000000000002';
-const GUID_3 = '00000000-1237-0000-0000-000000000003';
-const GUID_4 = '00000000-1237-0000-0000-000000000004';
-const GUID_5 = '00000000-1237-0000-0000-000000000005';
-const GUID_404 = '00000000-1237-0000-0000-000000000007';
-
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup
  */
 class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
+
+	private const GUID_1 = '00000000-1237-0000-0000-000000000001';
+	private const GUID_2 = '00000000-1237-0000-0000-000000000002';
+	private const GUID_3 = '00000000-1237-0000-0000-000000000003';
+	private const GUID_4 = '00000000-1237-0000-0000-000000000004';
+	private const GUID_5 = '00000000-1237-0000-0000-000000000005';
+	private const GUID_404 = '00000000-1237-0000-0000-000000000007';
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
 	}
 
 	public function testReturnsNullOnEmptyGraph(): void {
-		$this->assertNull( $this->newLookup()->getPageIdOfSubject( new SubjectId( GUID_404 ) ) );
+		$this->assertNull( $this->newLookup()->getPageIdOfSubject( new SubjectId( self::GUID_404 ) ) );
 	}
 
 	private function newLookup( ClientInterface $client = null ): Neo4JPageIdentifiersLookup {
@@ -55,7 +55,7 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 			id: 1,
 			properties: new PageProperties( title: 'Foo' ),
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: GUID_4 ),
+				TestSubject::build( id: self::GUID_4 ),
 			)
 		) );
 
@@ -63,9 +63,9 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 			id: 42,
 			properties: new PageProperties( title: 'Bar' ),
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: GUID_1 ),
-				TestSubject::build( id: GUID_2 ), // Target
-				TestSubject::build( id: GUID_3 ),
+				TestSubject::build( id: self::GUID_1 ),
+				TestSubject::build( id: self::GUID_2 ), // Target
+				TestSubject::build( id: self::GUID_3 ),
 			)
 		) );
 
@@ -73,13 +73,13 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 			id: 32202,
 			properties: new PageProperties( title: 'Baz' ),
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: GUID_5 ),
+				TestSubject::build( id: self::GUID_5 ),
 			)
 		) );
 
 		$this->assertEquals(
 			new PageIdentifiers( new PageId( 42 ), 'Bar' ),
-			$this->newLookup( $client )->getPageIdOfSubject( new SubjectId( GUID_1 ) )
+			$this->newLookup( $client )->getPageIdOfSubject( new SubjectId( self::GUID_1 ) )
 		);
 	}
 
