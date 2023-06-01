@@ -4,13 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 
+use Title;
 use HTMLForm;
+use SpecialPage;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
-use SpecialPage;
-use Title;
 
 class SpecialNeoJson extends SpecialPage {
 
@@ -77,18 +77,21 @@ class SpecialNeoJson extends SpecialPage {
 	}
 
 	private function onSubmit( array $formData, Title $title ): bool {
+		$jsonFilter = new JsonFilter();
+		$filteredJson = $jsonFilter->filterJson( $formData['json'] );
+	
 		$content = SubjectContent::newFromData(
-			NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize( $formData['json'] )
+			NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize( $filteredJson )
 		);
-
+	
 		NeoWikiExtension::getInstance()->newSubjectContentRepository()->editSubjectContent(
 			$content,
 			new PageId( $title->getId() )
 		);
-
+	
 		return true;
 	}
-
+	
 	public function getGroupName(): string {
 		return 'neowiki'; // TODO
 	}
