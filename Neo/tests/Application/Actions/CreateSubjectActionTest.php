@@ -13,9 +13,9 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectActi
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
 
-const GUID = '00000000-7777-0000-0000-000000000001';
-
 class CreateSubjectActionTest extends TestCase {
+	private const GUID = '00000000-7777-0000-0000-000000000001';
+
 	private function newStubGuidGenerator( string $guid ): GuidGenerator {
 		$stubGuidGenerator = $this->createMock( GuidGenerator::class );
 		$stubGuidGenerator->method( 'generate' )->willReturn( $guid );
@@ -24,13 +24,13 @@ class CreateSubjectActionTest extends TestCase {
 
 	public function testCreateMainSubject(): void {
 		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
-		$mockGuidGenerator = $this->newStubGuidGenerator( GUID );
+		$mockGuidGenerator = $this->newStubGuidGenerator( self::GUID );
 
 		$mockSubjectRepository->method( 'getSubjectsByPageId' )->willReturn( PageSubjects::newEmpty() );
 		$mockSubjectRepository->method( 'savePageSubjects' );
 
 		$mockPresenter = $this->createMock( CreateSubjectPresenter::class );
-		$mockPresenter->expects( $this->once() )->method( 'presentCreated' )->with( GUID );
+		$mockPresenter->expects( $this->once() )->method( 'presentCreated' )->with( self::GUID );
 
 		$request = new CreateSubjectRequest(
 			pageId: 1,
@@ -46,13 +46,13 @@ class CreateSubjectActionTest extends TestCase {
 
 	public function testCreateChildSubject(): void {
 		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
-		$mockGuidGenerator = $this->newStubGuidGenerator( GUID );
+		$mockGuidGenerator = $this->newStubGuidGenerator( self::GUID );
 
 		$mockSubjectRepository->method( 'getSubjectsByPageId' )->willReturn( $this->createMock( PageSubjects::class ) );
 		$mockSubjectRepository->method( 'savePageSubjects' );
 
 		$mockPresenter = $this->createMock( CreateSubjectPresenter::class );
-		$mockPresenter->expects( $this->once() )->method( 'presentCreated' )->with( GUID );
+		$mockPresenter->expects( $this->once() )->method( 'presentCreated' )->with( self::GUID );
 
 		$request = new CreateSubjectRequest(
 			pageId: 1,
@@ -68,7 +68,7 @@ class CreateSubjectActionTest extends TestCase {
 
 	public function testSubjectAlreadyExists(): void {
 		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
-		$mockGuidGenerator = $this->newStubGuidGenerator( GUID );
+		$mockGuidGenerator = $this->newStubGuidGenerator( self::GUID );
 
 		$pageSubjects = $this->createMock( PageSubjects::class );
 		$pageSubjects->method( 'createMainSubject' )->willThrowException( new RuntimeException( 'Subject already exists' ) );

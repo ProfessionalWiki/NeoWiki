@@ -14,15 +14,14 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
-const GUID_1 = '00000000-1237-0000-0000-000000000001';
-const GUID_2 = '00000000-1237-0000-0000-000000000002';
-const GUID_3 = '00000000-1237-0000-0000-000000000003';
-const GUID_4 = '00000000-1237-0000-0000-000000000004';
-
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore
  */
 class Neo4jQueryStoreTest extends TestCase {
+	private const GUID_1 = '00000000-1237-0000-0000-000000000001';
+	private const GUID_2 = '00000000-1237-0000-0000-000000000002';
+	private const GUID_3 = '00000000-1237-0000-0000-000000000003';
+	private const GUID_4 = '00000000-1237-0000-0000-000000000004';
 
 	public function testReadQueryReturnsNothingWhenDbIsEmpty(): void {
 		$result = $this->newQueryStore()->runReadQuery( 'MATCH (n) RETURN n' );
@@ -77,18 +76,18 @@ class Neo4jQueryStoreTest extends TestCase {
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			mainSubject: TestSubject::build( id: GUID_1 ),
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: GUID_2 ),
-				TestSubject::build( id: GUID_3 ),
+				TestSubject::build( id: self::GUID_2 ),
+				TestSubject::build( id: self::GUID_3 ),
 			)
 		) );
 
 		$this->assertPageHasSubjects(
 			[
-				[ 'id' => GUID_1, 'hs' => [ 'isMain' => true ] ],
-				[ 'id' => GUID_2, 'hs' => [ 'isMain' => false ] ],
-				[ 'id' => GUID_3, 'hs' => [ 'isMain' => false ] ]
+				[ 'id' => self::GUID_1, 'hs' => [ 'isMain' => true ] ],
+				[ 'id' => self::GUID_2, 'hs' => [ 'isMain' => false ] ],
+				[ 'id' => self::GUID_3, 'hs' => [ 'isMain' => false ] ]
 			],
 			42,
 			$store
@@ -111,25 +110,25 @@ class Neo4jQueryStoreTest extends TestCase {
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			mainSubject: TestSubject::build( id: GUID_1 ),
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: GUID_2 ),
-				TestSubject::build( id: GUID_3 ),
+				TestSubject::build( id: self::GUID_2 ),
+				TestSubject::build( id: self::GUID_3 ),
 			)
 		) );
 
 		$store->savePage( TestPage::build(
 			id: 42,
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: GUID_2 ),
-				TestSubject::build( id: GUID_4 ),
+				TestSubject::build( id: self::GUID_2 ),
+				TestSubject::build( id: self::GUID_4 ),
 			)
 		) );
 
 		$this->assertPageHasSubjects(
 			[
-				[ 'id' => GUID_2, 'hs' => [ 'isMain' => false ] ],
-				[ 'id' => GUID_4, 'hs' => [ 'isMain' => false ] ]
+				[ 'id' => self::GUID_2, 'hs' => [ 'isMain' => false ] ],
+				[ 'id' => self::GUID_4, 'hs' => [ 'isMain' => false ] ]
 			],
 			42,
 			$store
