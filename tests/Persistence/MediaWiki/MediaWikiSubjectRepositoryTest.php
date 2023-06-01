@@ -101,12 +101,12 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		$this->createPages();
 
 		$this->newRepository()->deleteSubject(
-			new SubjectId( 'never-existed' )
+			new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f9' )
 		);
 
 		$this->assertNull(
 			$this->newRepository()->getSubject(
-				new SubjectId( 'never-existed' )
+				new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f9' )
 			)
 		);
 	}
