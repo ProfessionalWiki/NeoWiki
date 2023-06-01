@@ -1,5 +1,5 @@
-import { Uuid } from "@/editor/infrastructure/Uuid";
-import { InvalidArgumentError } from "@/editor/infrastructure/Exceptions/InvalidArgumentError";
+import { Uuid } from '@/editor/infrastructure/Uuid';
+import { InvalidArgumentError } from '@/editor/infrastructure/Exceptions/InvalidArgumentError';
 
 export class SubjectId {
 	public readonly text: string;
