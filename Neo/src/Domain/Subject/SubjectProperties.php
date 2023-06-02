@@ -15,7 +15,7 @@ class SubjectProperties {
 	 * @param array<string, mixed> $map
 	 */
 	public function __construct( array $map ) {
-		$this->map = $this->arrayFilterRecursive( $map );
+		$this->map = $this->arrayFilter( $map );
 	}
 
 	/**
@@ -23,18 +23,18 @@ class SubjectProperties {
 	 * @return array<string, mixed>
 	 * @psalm-suppress all
 	 */
-	public function arrayFilterRecursive( array $input ): array {
-		foreach ( $input as &$value ) {
-			if ( is_array( $value ) ) {
-				$value = $this->arrayFilterRecursive( $value );
-			}
-		}
-
+	public function arrayFilter( array $input ): array {
 		return array_filter( $input, function( $value ) {
-			return !empty( $value );
+			if ( is_array( $value ) ) {
+				return count( $value ) > 0;
+			}
+			if ( is_string( $value ) ) {
+				return $value !== '';
+			}
+			return $value !== null;
 		} );
 	}
-
+	
 	/**
 	 * @param array<string, array> $patch Property name to list of new values
 	 */
