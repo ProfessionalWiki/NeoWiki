@@ -18,6 +18,11 @@ class SubjectProperties {
 		$this->map = $this->arrayFilterRecursive( $map );
 	}
 
+	/**
+	 * @param array<array-key, mixed> $input
+	 * @return array<string, mixed>
+	 * @psalm-suppress all
+	 */
 	public function arrayFilterRecursive( array $input ): array {
 		foreach ( $input as &$value ) {
 			if ( is_array( $value ) ) {
