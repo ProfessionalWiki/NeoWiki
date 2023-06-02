@@ -34,6 +34,35 @@ class SubjectPropertiesTest extends TestCase {
 					'Non-empty Array' => [ 'I am not empty' ],
 				]
 			],
+			'null property' => [
+				[
+					'Null' => null,
+				],
+				[
+					'Null' => null,
+				]
+			],
+			'number property' => [
+				[
+					'Zero' => 0,
+					'Non-zero' => 1,
+				],
+				[
+					'Zero' => 0,
+					'Non-zero' => 1,
+				]
+			],
+			'boolean property' => [
+				[
+					'False' => false,
+					'True' => true,
+				],
+				[
+					'False' => false,
+					'True' => true,
+				]
+			],
 		];
 	}
+	
 }
