@@ -15,7 +15,19 @@ class SubjectProperties {
 	 * @param array<string, mixed> $map
 	 */
 	public function __construct( array $map ) {
-		$this->map = $map;
+		$this->map = $this->arrayFilterRecursive( $map );
+	}
+
+	public function arrayFilterRecursive( array $input ): array {
+		foreach ( $input as &$value ) {
+			if ( is_array( $value ) ) {
+				$value = $this->arrayFilterRecursive( $value );
+			}
+		}
+
+		return array_filter( $input, function( $value ) {
+			return !empty( $value );
+		} );
 	}
 
 	/**
