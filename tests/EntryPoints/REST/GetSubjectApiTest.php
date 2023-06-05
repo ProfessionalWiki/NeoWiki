@@ -92,12 +92,10 @@ JSON,
 	"title": "GetSubjectApiTestSchema",
 	"propertyDefinitions": {
 		"MyRelation": {
-			"type": "array",
-			"items": {
-				"type": "relation",
-				"format": "relation",
-				"targetSchema": "GetSubjectApiTestSchema"
-			}
+			"type": "relation",
+			"format": "relation",
+			"relation": "MyRelation",
+			"targetSchema": "GetSubjectApiTestSchema"
 		}
 	}
 }
