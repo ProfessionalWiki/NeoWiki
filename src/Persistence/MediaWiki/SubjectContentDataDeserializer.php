@@ -99,17 +99,17 @@ class SubjectContentDataDeserializer {
 		$properties = $jsonArray['properties'] ?? [];
 
 		foreach ( $schema->getRelationProperties()->asMap() as $propertyName => $propertyDefinition ) {
-			if ( array_key_exists( $propertyName, $properties ) ) {
-				// TODO: this is probably not good because it will fail if the type gets changed
-				// Likely we should always store all values as array, so we know how to deserialize them
-				if ( $propertyDefinition->getType() === ValueType::Array ) {
-					foreach ( $properties[$propertyName] as $value ) {
-						$relations[] = $this->propertyValueToRelation( $propertyName, $value );
-					}
+			if ( $propertyDefinition->getType() === ValueType::Relation && array_key_exists( $propertyName, $properties ) ) {
+				$value = $properties[$propertyName];
+
+				if ( $this->isValidRelation( $value ) ) {
+					$relations[] = $this->propertyValueToRelation( $propertyName, $value );
 				}
-				else {
-					if ( $this->isValidRelationArray( $properties[$propertyName] ) ) {
-						$relations[] = $this->propertyValueToRelation( $propertyName, $properties[$propertyName] );
+				if ( is_array( $value ) ) {
+					foreach ( $value as $relation ) {
+						if ( $this->isValidRelation( $relation ) ) {
+							$relations[] = $this->propertyValueToRelation( $propertyName, $relation );
+						}
 					}
 				}
 			}
@@ -126,7 +126,7 @@ class SubjectContentDataDeserializer {
 		);
 	}
 
-	private function isValidRelationArray( mixed $propertyValue ): bool {
+	private function isValidRelation( mixed $propertyValue ): bool {
 		return is_array( $propertyValue ) && array_key_exists( 'target', $propertyValue );
 	}
 
