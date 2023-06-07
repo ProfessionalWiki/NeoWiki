@@ -206,12 +206,4 @@ export class Schema {
 		return this.properties[ propertyName ];
 	}
 
-	public getPropertyValueType( propertyName: string ): ValueType {
-		if ( this.properties[ propertyName ] ) {
-			return this.properties[ propertyName ].type;
-		}
-
-		return ValueType.String; // TODO: is that what we want?
-	}
-
 }
