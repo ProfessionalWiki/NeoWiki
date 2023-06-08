@@ -13,7 +13,7 @@ export enum ValueFormat {
 
 	Email = 'email',
 	Url = 'url',
-	PhoneNumber = 'phoneNumber', // TODO: field supposedly exists already
+	PhoneNumber = 'phoneNumber',
 
 	Date = 'date',
 	Time = 'time',
