@@ -1,5 +1,18 @@
-import { createPropertyDefinitionFromJson, ValueFormat, ValueType } from '@/editor/domain/Schema';
+import { createPropertyDefinitionFromJson, ValueFormat, ValueType, PropertyId } from '@/editor/domain/Schema';
 import { describe, expect, it } from 'vitest';
+
+describe( 'PropertyId constructor', () => {
+
+	it( 'creates a valid PropertyId', () => {
+		const id = new PropertyId( 'test' );
+		expect( id.toString() ).toBe( 'test' );
+	} );
+
+	it( 'throws an error for an empty string', () => {
+		expect( () => new PropertyId( '' ) ).toThrow( 'Invalid PropertyId' );
+	} );
+
+} );
 
 describe( 'createPropertyDefinitionFromJson', () => {
 
@@ -9,10 +22,12 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			format: 'checkbox'
 		};
 
-		const property = createPropertyDefinitionFromJson( json );
+		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		expect( property.description ).toBe( '' );
 		expect( property.required ).toBe( false );
+
+		expect( property.id.toString() ).toBe( 'test' );
 	} );
 
 	it( 'creates a property definition with defaults specified', () => {
@@ -23,7 +38,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			required: true
 		};
 
-		const property = createPropertyDefinitionFromJson( json );
+		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		expect( property.description ).toBe( 'Foo' );
 		expect( property.required ).toBe( true );
@@ -37,7 +52,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			uniqueItems: false
 		};
 
-		const property = createPropertyDefinitionFromJson( json );
+		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		if ( property.type === ValueType.String ) {
 			expect( property.multiple ).toBe( true );
@@ -54,7 +69,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			format: 'number'
 		};
 
-		const property = createPropertyDefinitionFromJson( json );
+		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		if ( property.format === ValueFormat.Number ) {
 			expect( property.minimum ).toBe( undefined );
@@ -75,7 +90,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			precision: 2
 		};
 
-		const property = createPropertyDefinitionFromJson( json );
+		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		if ( property.format === ValueFormat.Number ) {
 			expect( property.minimum ).toBe( 42 );
@@ -95,7 +110,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			precision: 2
 		};
 
-		const property = createPropertyDefinitionFromJson( json );
+		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		if ( property.format === ValueFormat.Currency ) {
 			expect( property.currencyCode ).toBe( 'EUR' );
@@ -118,7 +133,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			maximum: 1337
 		};
 
-		const property = createPropertyDefinitionFromJson( json );
+		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		if ( property.format === ValueFormat.Currency ) {
 			expect( property.currencyCode ).toBe( 'EUR' );
@@ -140,7 +155,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			step: 23
 		};
 
-		const property = createPropertyDefinitionFromJson( json );
+		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		if ( property.format === ValueFormat.Progress ) {
 			expect( property.minimum ).toBe( 42 );
@@ -158,7 +173,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			format: 'checkbox'
 		};
 
-		const property = createPropertyDefinitionFromJson( json );
+		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		expect( property.type ).toBe( ValueType.Boolean );
 		expect( property.format ).toBe( ValueFormat.Checkbox );
@@ -172,7 +187,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			targetSchema: 'Company'
 		};
 
-		const property = createPropertyDefinitionFromJson( json );
+		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		if ( property.type === ValueType.Relation ) {
 			expect( property.relation ).toBe( 'Employer' );
@@ -195,7 +210,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			uniqueItems: false
 		};
 
-		const property = createPropertyDefinitionFromJson( json );
+		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		if ( property.type === ValueType.Relation ) {
 			expect( property.multiple ).toBe( true );
@@ -211,7 +226,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			format: 'text'
 		};
 
-		expect( () => createPropertyDefinitionFromJson( json ) ).toThrow( 'Unsupported type: unsupported' );
+		expect( () => createPropertyDefinitionFromJson( 'test', json ) ).toThrow( 'Unsupported type: unsupported' );
 	} );
 
 } );

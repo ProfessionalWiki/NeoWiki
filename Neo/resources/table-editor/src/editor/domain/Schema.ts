@@ -31,6 +31,34 @@ export enum ValueFormat {
 
 }
 
+export class PropertyId {
+
+	private readonly id: string;
+
+	public constructor( id: string ) {
+		if ( id === '' ) {
+			throw new Error( 'Invalid PropertyId' );
+		}
+		this.id = id;
+	}
+
+	public toString(): string {
+		return this.id;
+	}
+
+}
+
+
+interface BasePropertyDefinition {
+
+	id: PropertyId;
+	type: ValueType;
+	format: ValueFormat;
+	description: string;
+	required: boolean;
+
+}
+
 type StringValueFormat =
 	ValueFormat.Text
 	| ValueFormat.Email
@@ -40,15 +68,6 @@ type StringValueFormat =
 	| ValueFormat.Time
 	| ValueFormat.DateTime
 	| ValueFormat.Duration;
-
-interface BasePropertyDefinition {
-
-	type: ValueType;
-	format: ValueFormat;
-	description: string;
-	required: boolean;
-
-}
 
 interface StringProperty extends BasePropertyDefinition {
 
@@ -122,9 +141,10 @@ export function isCurrencyProperty( property: PropertyDefinition ): property is 
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function createPropertyDefinitionFromJson( json: any ): PropertyDefinition {
+export function createPropertyDefinitionFromJson( id: string, json: any ): PropertyDefinition {
 
 	const baseDef: BasePropertyDefinition = {
+		id: new PropertyId( id ),
 		type: json.type as ValueType,
 		format: json.format as ValueFormat,
 		description: json.description ?? '',
