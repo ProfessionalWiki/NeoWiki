@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { SubjectMap } from '../SubjectMap';
 import { SubjectId } from '../SubjectId';
-import { newTestSubject } from '../TestSubject';
+import { newSubject } from '../../../TestHelpers';
 
 describe( 'SubjectMap', () => {
 
 	const subjects = new SubjectMap(
-		newTestSubject( {
+		newSubject( {
 			id: '00000000-0000-0000-0000-000000000000',
 			label: 'John Doe'
 		} ),
-		newTestSubject( {
+		newSubject( {
 			id: '00000000-0000-0000-0000-000000000001',
 			label: 'Foo Bar'
 		} )
