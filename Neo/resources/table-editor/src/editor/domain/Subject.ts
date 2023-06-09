@@ -2,6 +2,7 @@ import { SubjectId } from '@/editor/domain/SubjectId';
 import { SubjectMap } from '@/editor/domain/SubjectMap';
 import type { SubjectLookup } from '@/editor/application/SubjectLookup';
 import type { PageIdentifiers } from '@/editor/domain/PageIdentifiers';
+import { PropertyName } from '@/editor/domain/Schema';
 
 export type SubjectProperties = Record<string, any>;
 
@@ -75,13 +76,14 @@ export class Subject {
 		return ids;
 	}
 
-	public getNamesOfNonEmptyProperties(): string[] {
+	// TODO: test
+	public getNamesOfNonEmptyProperties(): PropertyName[] {
 		return Object.keys( this.properties ).filter( ( propertyName ) => {
 			const value = this.properties[ propertyName ];
 
 			return value !== undefined &&
 				!( Array.isArray( value ) && value.length === 0 ); // TODO: do we need to check for empty arrays here?
-		} );
+		} ).map( ( propertyName ) => new PropertyName( propertyName ) );
 	}
 
 }
