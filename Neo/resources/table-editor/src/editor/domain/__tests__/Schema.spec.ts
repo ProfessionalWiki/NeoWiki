@@ -1,15 +1,15 @@
-import { createPropertyDefinitionFromJson, ValueFormat, ValueType, PropertyId } from '@/editor/domain/Schema';
+import { createPropertyDefinitionFromJson, ValueFormat, ValueType, PropertyName } from '@/editor/domain/Schema';
 import { describe, expect, it } from 'vitest';
 
 describe( 'PropertyId constructor', () => {
 
 	it( 'creates a valid PropertyId', () => {
-		const id = new PropertyId( 'test' );
+		const id = new PropertyName( 'test' );
 		expect( id.toString() ).toBe( 'test' );
 	} );
 
 	it( 'throws an error for an empty string', () => {
-		expect( () => new PropertyId( '' ) ).toThrow( 'Invalid PropertyId' );
+		expect( () => new PropertyName( '' ) ).toThrow( 'Invalid PropertyId' );
 	} );
 
 } );
@@ -27,7 +27,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		expect( property.description ).toBe( '' );
 		expect( property.required ).toBe( false );
 
-		expect( property.id.toString() ).toBe( 'test' );
+		expect( property.name.toString() ).toBe( 'test' );
 	} );
 
 	it( 'creates a property definition with defaults specified', () => {

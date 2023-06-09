@@ -31,27 +31,26 @@ export enum ValueFormat {
 
 }
 
-export class PropertyId {
+export class PropertyName {
 
-	private readonly id: string;
+	private readonly name: string;
 
-	public constructor( id: string ) {
-		if ( id === '' ) {
+	public constructor( name: string ) {
+		if ( name === '' ) {
 			throw new Error( 'Invalid PropertyId' );
 		}
-		this.id = id;
+		this.name = name;
 	}
 
 	public toString(): string {
-		return this.id;
+		return this.name;
 	}
 
 }
 
-
 interface BasePropertyDefinition {
 
-	id: PropertyId;
+	name: PropertyName;
 	type: ValueType;
 	format: ValueFormat;
 	description: string;
@@ -144,7 +143,7 @@ export function isCurrencyProperty( property: PropertyDefinition ): property is 
 export function createPropertyDefinitionFromJson( id: string, json: any ): PropertyDefinition {
 
 	const baseDef: BasePropertyDefinition = {
-		id: new PropertyId( id ),
+		name: new PropertyName( id ),
 		type: json.type as ValueType,
 		format: json.format as ValueFormat,
 		description: json.description ?? '',
@@ -201,12 +200,40 @@ export function createPropertyDefinitionFromJson( id: string, json: any ): Prope
 
 }
 
+export class PropertyDefinitionCollection {
+
+	private readonly properties: Record<string, PropertyDefinition>;
+
+	public constructor( properties: PropertyDefinition[] ) {
+		this.properties = {};
+
+		for ( const property of properties ) {
+			const id = property.name.toString();
+
+			if ( this.properties[ id ] ) {
+				throw new Error( `Duplicate property id: ${id}` );
+			}
+
+			this.properties[ id ] = property;
+		}
+	}
+
+	public get( id: PropertyName ): PropertyDefinition {
+		return this.properties[ id.toString() ];
+	}
+
+	public getAll(): Record<string, PropertyDefinition> {
+		return this.properties;
+	}
+
+}
+
 export class Schema {
 
 	public constructor(
 		private readonly title: string,
 		private readonly description: string,
-		private readonly properties: Record<string, PropertyDefinition>
+		private readonly properties: PropertyDefinitionCollection
 	) {
 	}
 
@@ -219,11 +246,11 @@ export class Schema {
 	}
 
 	public getPropertyDefinitions(): Record<string, PropertyDefinition> {
-		return this.properties;
+		return this.properties.getAll(); // TODO: remove method?
 	}
 
 	public getPropertyDefinition( propertyName: string ): PropertyDefinition {
-		return this.properties[ propertyName ];
+		return this.properties.get( new PropertyName( propertyName ) );
 	}
 
 }
