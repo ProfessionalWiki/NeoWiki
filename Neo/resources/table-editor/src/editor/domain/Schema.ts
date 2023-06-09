@@ -218,12 +218,43 @@ export class PropertyDefinitionCollection {
 		}
 	}
 
-	public get( id: PropertyName ): PropertyDefinition {
+	public get( id: PropertyName ): PropertyDefinition | undefined {
 		return this.properties[ id.toString() ];
 	}
 
-	public getAll(): Record<string, PropertyDefinition> {
+	public getOrThrow( id: PropertyName ): PropertyDefinition {
+		return this.properties[ id.toString() ];
+	}
+
+	public has( id: PropertyName ): boolean {
+		return id.toString() in this.properties;
+	}
+
+	public asRecord(): Record<string, PropertyDefinition> {
 		return this.properties;
+	}
+
+	public [ Symbol.iterator ](): Iterator<PropertyDefinition> {
+		const properties = Object.values( this.properties );
+		let index = 0;
+
+		return {
+			next: (): IteratorResult<PropertyDefinition> => {
+				if ( index < properties.length ) {
+					return { value: properties[ index++ ], done: false };
+				} else {
+					return { value: undefined, done: true };
+				}
+			}
+		};
+	}
+
+	public withNames( names: PropertyName[] ): PropertyDefinitionCollection {
+		return new PropertyDefinitionCollection(
+			names
+				.map( ( name ) => this.get( name ) )
+				.filter( Boolean ) as PropertyDefinition[]
+		);
 	}
 
 }
@@ -245,12 +276,12 @@ export class Schema {
 		return this.description;
 	}
 
-	public getPropertyDefinitions(): Record<string, PropertyDefinition> {
-		return this.properties.getAll(); // TODO: remove method?
+	public getPropertyDefinitions(): PropertyDefinitionCollection {
+		return this.properties;
 	}
 
 	public getPropertyDefinition( propertyName: string ): PropertyDefinition {
-		return this.properties.get( new PropertyName( propertyName ) );
+		return this.properties.getOrThrow( new PropertyName( propertyName ) );
 	}
 
 }
