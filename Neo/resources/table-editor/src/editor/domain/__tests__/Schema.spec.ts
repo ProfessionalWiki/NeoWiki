@@ -289,15 +289,15 @@ describe( 'PropertyDefinitionCollection', () => {
 			const newCollection = collection.withNames( [ new PropertyName( 'test1' ) ] );
 
 			expect( newCollection.get( new PropertyName( 'test1' ) ) ).toEqual( property1 );
-			expect( newCollection.get( new PropertyName( 'test2' ) ) ).toBeUndefined();
+			expect( newCollection.has( new PropertyName( 'test2' ) ) ).toBe( false );
 		} );
 
 		it( 'ignores unknown property names when creating a new collection', () => {
 			const newCollection = collection.withNames( [ new PropertyName( 'test1' ), new PropertyName( 'test3' ) ] );
 
 			expect( newCollection.get( new PropertyName( 'test1' ) ) ).toEqual( property1 );
-			expect( newCollection.get( new PropertyName( 'test2' ) ) ).toBeUndefined();
-			expect( newCollection.get( new PropertyName( 'test3' ) ) ).toBeUndefined();
+			expect( newCollection.has( new PropertyName( 'test2' ) ) ).toBe( false );
+			expect( newCollection.has( new PropertyName( 'test3' ) ) ).toBe( false );
 		} );
 
 		it( 'returns a new collection with the same order as the input names', () => {

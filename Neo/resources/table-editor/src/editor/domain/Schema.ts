@@ -218,11 +218,7 @@ export class PropertyDefinitionCollection {
 		}
 	}
 
-	public get( id: PropertyName ): PropertyDefinition | undefined {
-		return this.properties[ id.toString() ];
-	}
-
-	public getOrThrow( id: PropertyName ): PropertyDefinition {
+	public get( id: PropertyName ): PropertyDefinition {
 		return this.properties[ id.toString() ];
 	}
 
@@ -284,7 +280,7 @@ export class Schema {
 	}
 
 	public getPropertyDefinition( propertyName: string ): PropertyDefinition {
-		return this.properties.getOrThrow( new PropertyName( propertyName ) );
+		return this.properties.get( new PropertyName( propertyName ) );
 	}
 
 }
