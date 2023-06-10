@@ -250,10 +250,13 @@ export class PropertyDefinitionCollection {
 	}
 
 	public withNames( names: PropertyName[] ): PropertyDefinitionCollection {
+		const stringNames = names.map( ( name ): string => name.toString() );
+		return this.filter( ( property ): boolean => stringNames.includes( property.name.toString() ) );
+	}
+
+	private filter( callback: ( property: PropertyDefinition ) => boolean ): PropertyDefinitionCollection {
 		return new PropertyDefinitionCollection(
-			names
-				.map( ( name ) => this.get( name ) )
-				.filter( Boolean ) as PropertyDefinition[]
+			Object.values( this.properties ).filter( callback )
 		);
 	}
 

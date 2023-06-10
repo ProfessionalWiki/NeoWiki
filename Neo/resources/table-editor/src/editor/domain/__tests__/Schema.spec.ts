@@ -301,14 +301,13 @@ describe( 'PropertyDefinitionCollection', () => {
 		} );
 
 		it( 'returns a new collection with the same order as the input names', () => {
-			const newCollection = collection.withNames( [ new PropertyName( 'test2' ), new PropertyName( 'test1' ) ] );
-			const properties = [];
-
-			for ( const property of newCollection ) {
-				properties.push( property );
-			}
-
-			expect( properties ).toEqual( [ property2, property1 ] );
+			expect(
+				collection.withNames( [
+					new PropertyName( 'test2' ),
+					new PropertyName( 'test1' ),
+					new PropertyName( 'test2' )
+				] )
+			).toEqual( new PropertyDefinitionCollection( [ property1, property2 ] ) );
 		} );
 
 	} );
