@@ -50,11 +50,11 @@ export class PropertyName {
 
 interface BasePropertyDefinition {
 
-	name: PropertyName;
-	type: ValueType;
-	format: ValueFormat;
-	description: string;
-	required: boolean;
+	readonly name: PropertyName;
+	readonly type: ValueType;
+	readonly format: ValueFormat;
+	readonly description: string;
+	readonly required: boolean;
 
 }
 
@@ -70,59 +70,59 @@ type StringValueFormat =
 
 interface StringProperty extends BasePropertyDefinition {
 
-	type: ValueType.String;
-	format: StringValueFormat;
-	multiple?: boolean;
-	uniqueItems?: boolean;
+	readonly type: ValueType.String;
+	readonly format: StringValueFormat;
+	readonly multiple?: boolean;
+	readonly uniqueItems?: boolean;
 
 }
 
 interface NumberProperty extends BasePropertyDefinition {
 
-	type: ValueType.Number;
-	format: ValueFormat.Number;
-	precision?: number;
-	minimum?: number;
-	maximum?: number;
+	readonly type: ValueType.Number;
+	readonly format: ValueFormat.Number;
+	readonly precision?: number;
+	readonly minimum?: number;
+	readonly maximum?: number;
 
 }
 
 interface CurrencyProperty extends BasePropertyDefinition {
 
-	type: ValueType.Number;
-	format: ValueFormat.Currency;
-	currencyCode: string;
-	precision: number;
-	minimum?: number;
-	maximum?: number;
+	readonly type: ValueType.Number;
+	readonly format: ValueFormat.Currency;
+	readonly currencyCode: string;
+	readonly precision: number;
+	readonly minimum?: number;
+	readonly maximum?: number;
 
 }
 
 interface ProgressProperty extends BasePropertyDefinition {
 
-	type: ValueType.Number;
-	format: ValueFormat.Progress;
-	minimum: number;
-	maximum: number;
-	step: number;
+	readonly type: ValueType.Number;
+	readonly format: ValueFormat.Progress;
+	readonly minimum: number;
+	readonly maximum: number;
+	readonly step: number;
 
 }
 
 interface CheckboxProperty extends BasePropertyDefinition {
 
-	type: ValueType.Boolean;
-	format: ValueFormat.Checkbox;
+	readonly type: ValueType.Boolean;
+	readonly format: ValueFormat.Checkbox;
 
 }
 
 interface RelationProperty extends BasePropertyDefinition {
 
-	type: ValueType.Relation;
-	format: ValueFormat.Relation;
-	relation: string;
-	targetSchema: string;
-	multiple?: boolean;
-	uniqueItems?: boolean;
+	readonly type: ValueType.Relation;
+	readonly format: ValueFormat.Relation;
+	readonly relation: string;
+	readonly targetSchema: string;
+	readonly multiple?: boolean;
+	readonly uniqueItems?: boolean;
 
 }
 
