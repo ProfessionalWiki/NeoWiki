@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SubjectMap } from '../SubjectMap';
 import { SubjectId } from '../SubjectId';
-import { newSubject } from '../../../TestHelpers';
+import { newSubject } from '@/TestHelpers';
 
 describe( 'SubjectMap', () => {
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { newSubject, ZERO_GUID } from '../../../TestHelpers';
+import { newSubject, ZERO_GUID } from '@/TestHelpers';
 import { SubjectMap } from '../SubjectMap';
-import { InMemorySubjectLookup } from '../../application/SubjectLookup';
+import { InMemorySubjectLookup } from '@/editor/application/SubjectLookup';
 import { SubjectId } from '../SubjectId';
 import { PageIdentifiers } from '../PageIdentifiers';
 
