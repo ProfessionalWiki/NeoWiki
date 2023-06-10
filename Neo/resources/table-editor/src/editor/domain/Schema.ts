@@ -200,7 +200,7 @@ export function createPropertyDefinitionFromJson( id: string, json: any ): Prope
 
 }
 
-export class PropertyDefinitionCollection {
+export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 
 	private readonly properties: Record<string, PropertyDefinition>;
 
@@ -245,13 +245,13 @@ export class PropertyDefinitionCollection {
 		};
 	}
 
-	public withNames( names: PropertyName[] ): PropertyDefinitionCollection {
+	public withNames( names: PropertyName[] ): PropertyDefinitionList {
 		const stringNames = names.map( ( name ): string => name.toString() );
 		return this.filter( ( property ): boolean => stringNames.includes( property.name.toString() ) );
 	}
 
-	private filter( callback: ( property: PropertyDefinition ) => boolean ): PropertyDefinitionCollection {
-		return new PropertyDefinitionCollection(
+	private filter( callback: ( property: PropertyDefinition ) => boolean ): PropertyDefinitionList {
+		return new PropertyDefinitionList(
 			Object.values( this.properties ).filter( callback )
 		);
 	}
@@ -263,7 +263,7 @@ export class Schema {
 	public constructor(
 		private readonly title: string,
 		private readonly description: string,
-		private readonly properties: PropertyDefinitionCollection
+		private readonly properties: PropertyDefinitionList
 	) {
 	}
 
@@ -275,7 +275,7 @@ export class Schema {
 		return this.description;
 	}
 
-	public getPropertyDefinitions(): PropertyDefinitionCollection {
+	public getPropertyDefinitions(): PropertyDefinitionList {
 		return this.properties;
 	}
 

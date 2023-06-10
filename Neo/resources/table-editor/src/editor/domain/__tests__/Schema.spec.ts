@@ -3,7 +3,7 @@ import {
 	ValueFormat,
 	ValueType,
 	PropertyName,
-	PropertyDefinitionCollection
+	PropertyDefinitionList
 } from '@/editor/domain/Schema';
 import { describe, expect, it } from 'vitest';
 
@@ -250,21 +250,21 @@ describe( 'PropertyDefinitionCollection', () => {
 	} );
 
 	it( 'constructs a collection from an array of property definitions', () => {
-		const collection = new PropertyDefinitionCollection( [ property1, property2 ] );
+		const collection = new PropertyDefinitionList( [ property1, property2 ] );
 
 		expect( collection.get( new PropertyName( 'test1' ) ) ).toEqual( property1 );
 		expect( collection.get( new PropertyName( 'test2' ) ) ).toEqual( property2 );
 	} );
 
 	it( 'throws an error when constructing a collection with duplicate property ids', () => {
-		expect( () => new PropertyDefinitionCollection( [
+		expect( () => new PropertyDefinitionList( [
 			property1,
 			property1
 		] ) ).toThrow( 'Duplicate property id: test1' );
 	} );
 
 	it( 'allows iteration over the properties in the collection', () => {
-		const collection = new PropertyDefinitionCollection( [ property1, property2 ] );
+		const collection = new PropertyDefinitionList( [ property1, property2 ] );
 		const properties = [];
 
 		for ( const property of collection ) {
@@ -275,7 +275,7 @@ describe( 'PropertyDefinitionCollection', () => {
 	} );
 
 	it( 'has only elements it actually does have', () => {
-		const collection = new PropertyDefinitionCollection( [ property1, property2 ] );
+		const collection = new PropertyDefinitionList( [ property1, property2 ] );
 
 		expect( collection.has( new PropertyName( 'test2' ) ) ).toBe( true );
 		expect( collection.has( new PropertyName( 'test3' ) ) ).toBe( false );
@@ -283,7 +283,7 @@ describe( 'PropertyDefinitionCollection', () => {
 
 	describe( 'withNames', () => {
 
-		const collection = new PropertyDefinitionCollection( [ property1, property2 ] );
+		const collection = new PropertyDefinitionList( [ property1, property2 ] );
 
 		it( 'creates a new collection from a list of property names', () => {
 			const newCollection = collection.withNames( [ new PropertyName( 'test1' ) ] );
@@ -307,7 +307,7 @@ describe( 'PropertyDefinitionCollection', () => {
 					new PropertyName( 'test1' ),
 					new PropertyName( 'test2' )
 				] )
-			).toEqual( new PropertyDefinitionCollection( [ property1, property2 ] ) );
+			).toEqual( new PropertyDefinitionList( [ property1, property2 ] ) );
 		} );
 
 	} );
