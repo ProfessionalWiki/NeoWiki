@@ -1,22 +1,24 @@
-import { SubjectId } from '@/editor/domain/SubjectId';
-import { SubjectMap } from '@/editor/domain/SubjectMap';
 import type { SubjectLookup } from '@/editor/application/SubjectLookup';
 import type { PageIdentifiers } from '@/editor/domain/PageIdentifiers';
 import { PropertyName } from '@/editor/domain/Schema';
+import type { SubjectMap } from '@/editor/domain/SubjectMap';
+import type { SubjectId } from '@/editor/domain/SubjectId';
+import type { StatementList } from '@/editor/domain/StatementList';
 
-export type SubjectProperties = Record<string, any>;
+export type SubjectProperties = Record<string, any>; // TODO: remove
 
 export interface RelationValue {
 	target: string;
 }
+// => class RelationValue { constructor( public readonly target: string ) {} }
 
 export class Subject {
 
 	public constructor(
 		private readonly id: SubjectId,
 		private readonly label: string,
-		private readonly schemaId: string, // TODO: rename to schemaName
-		private readonly properties: SubjectProperties,
+		private readonly schemaName: string,
+		private readonly statements: StatementList,
 		private readonly pageIdentifiers: PageIdentifiers
 	) {
 	}
@@ -29,16 +31,16 @@ export class Subject {
 		return this.label;
 	}
 
-	public getSchemaId(): string {
-		return this.schemaId;
+	public getSchemaId(): string { // TODO: rename to schemaName
+		return this.schemaName;
 	}
 
-	public getProperties(): SubjectProperties {
-		return this.properties;
+	public getStatements(): StatementList {
+		return this.statements;
 	}
 
-	public getPropertyValue( propertyName: string ): any {
-		return this.properties[ propertyName ];
+	public getStatementValue( propertyName: string ): any {
+		return this.statements.get( new PropertyName( propertyName ) ).value;
 	}
 
 	public getPageIdentifiers(): PageIdentifiers {
@@ -46,44 +48,12 @@ export class Subject {
 	}
 
 	public async getReferencedSubjects( lookup: SubjectLookup ): Promise<SubjectMap> {
-		return new SubjectMap(
-			...await Promise.all(
-				// TODO: error handling: silently ignore missing subjects?
-				this.getIdsOfReferencedSubjects().map( ( id ) => lookup.getSubject( id ) )
-			)
-		);
-	}
-
-	public getIdsOfReferencedSubjects(): SubjectId[] {
-		const ids: SubjectId[] = [];
-
-		// TODO: use schema information to determine which properties are references.
-		// Or... use type information inside the subject if we decided to include it.
-		/* eslint-disable */
-		for ( const [ key, value ] of Object.entries( this.properties ) ) {
-			if ( Array.isArray( value ) ) {
-				for ( const relation of value ) {
-					if ( typeof relation === 'object' && relation.target ) {
-						ids.push( new SubjectId( relation.target ) );
-					}
-				}
-			}
-			else if ( typeof value === 'object' && value.target ) {
-				ids.push( new SubjectId( value.target ) );
-			}
-		}
-		/* eslint-enable */
-		return ids;
+		return this.statements.getReferencedSubjects( lookup );
 	}
 
 	// TODO: test
 	public getNamesOfNonEmptyProperties(): PropertyName[] {
-		return Object.keys( this.properties ).filter( ( propertyName ) => {
-			const value = this.properties[ propertyName ];
-
-			return value !== undefined &&
-				!( Array.isArray( value ) && value.length === 0 ); // TODO: do we need to check for empty arrays here?
-		} ).map( ( propertyName ) => new PropertyName( propertyName ) );
+		return this.statements.withNonEmptyValues().getPropertyNames();
 	}
 
 }

@@ -142,6 +142,13 @@ export function isCurrencyProperty( property: PropertyDefinition ): property is 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function createPropertyDefinitionFromJson( id: string, json: any ): PropertyDefinition {
 
+	/**
+	 * TODO
+	 * Type assertion in createPropertyDefinitionFromJson function: You're using type assertions (as keyword) to cast
+	 * the JSON values to certain types. This could potentially cause runtime errors if the JSON data doesn't match
+	 * the expected format. It would be safer to add some explicit checks here.
+	 */
+
 	const baseDef: BasePropertyDefinition = {
 		name: new PropertyName( id ),
 		type: json.type as ValueType,
@@ -208,13 +215,13 @@ export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 		this.properties = {};
 
 		for ( const property of properties ) {
-			const id = property.name.toString();
+			const name = property.name.toString();
 
-			if ( this.properties[ id ] ) {
-				throw new Error( `Duplicate property id: ${id}` );
+			if ( this.properties[ name ] ) {
+				throw new Error( `Duplicate property name: ${name}` );
 			}
 
-			this.properties[ id ] = property;
+			this.properties[ name ] = property;
 		}
 	}
 
@@ -222,8 +229,8 @@ export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 		return this.properties[ id.toString() ];
 	}
 
-	public has( id: PropertyName ): boolean {
-		return id.toString() in this.properties;
+	public has( name: PropertyName ): boolean {
+		return name.toString() in this.properties;
 	}
 
 	public asRecord(): Record<string, PropertyDefinition> {
