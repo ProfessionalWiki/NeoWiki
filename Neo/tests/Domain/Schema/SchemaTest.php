@@ -5,12 +5,10 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Schema
@@ -19,7 +17,7 @@ class SchemaTest extends TestCase {
 
 	public function testPropertyExists(): void {
 		$schema = $this->newSchemaWithProperties( [
-			'name' => new StringProperty( format: ValueFormat::Text, description: 'The name of the company' ),
+			'name' => TestProperty::buildString(),
 		] );
 
 		$this->assertTrue( $schema->hasProperty( 'name' ) );
@@ -36,8 +34,8 @@ class SchemaTest extends TestCase {
 
 	public function testIsRelationProperty(): void {
 		$schema = $this->newSchemaWithProperties( [
-			'name' => new StringProperty( format: ValueFormat::Text, description: 'The name of the company' ),
-			'ceo' => new RelationProperty( description: 'The company CEO', targetSchema: new SchemaId( 'Person' ) ),
+			'name' => TestProperty::buildString(),
+			'ceo' => TestProperty::buildRelation(),
 		] );
 
 		$this->assertFalse( $schema->isRelationProperty( 'name' ) );
@@ -45,17 +43,20 @@ class SchemaTest extends TestCase {
 	}
 
 	public function testGetRelationProperties(): void {
+		$ceoProperty = TestProperty::buildRelation( description: 'The company CEO', targetSchema: new SchemaId( 'Person' ) );
+		$barProperty = TestProperty::buildRelation( targetSchema: new SchemaId( 'Tomato' ) );
+
 		$schema = $this->newSchemaWithProperties( [
-			'name' => new StringProperty( format: ValueFormat::Text, description: 'The name of the company' ),
-			'ceo' => new RelationProperty( description: 'The company CEO', targetSchema: new SchemaId( 'Person' ) ),
-			'foo' => new StringProperty( format: ValueFormat::Text, description: 'foo' ),
-			'bar' => new RelationProperty( description: '', targetSchema: new SchemaId( 'Tomato' ) ),
+			'name' => TestProperty::buildString(),
+			'ceo' => $ceoProperty,
+			'foo' => TestProperty::buildString(),
+			'bar' => $barProperty,
 		] );
 
 		$this->assertEquals(
 			new PropertyDefinitions( [
-				'ceo' => new RelationProperty( description: 'The company CEO', targetSchema: new SchemaId( 'Person' ) ),
-				'bar' => new RelationProperty( description: '', targetSchema: new SchemaId( 'Tomato' ) ),
+				'ceo' => $ceoProperty,
+				'bar' => $barProperty,
 			] ),
 			$schema->getRelationProperties()
 		);

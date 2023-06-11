@@ -14,13 +14,18 @@ class StringProperty extends PropertyDefinition {
 	public function __construct(
 		ValueFormat $format,
 		string $description,
+		bool $required,
+		?string $default,
+		private readonly bool $multiple
 	) {
 		$this->assertIsStringFormat( $format );
 
 		parent::__construct(
 			type: ValueType::String,
 			format: $format,
-			description: $description
+			description: $description,
+			required: $required,
+			default: $default,
 		);
 	}
 
@@ -35,6 +40,10 @@ class StringProperty extends PropertyDefinition {
 		] ) ) {
 			throw new InvalidArgumentException( 'StringProperty must have a string format' );
 		}
+	}
+
+	public function isMultiple(): bool {
+		return $this->multiple;
 	}
 
 }

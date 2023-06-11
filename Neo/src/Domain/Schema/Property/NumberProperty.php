@@ -14,15 +14,18 @@ class NumberProperty extends PropertyDefinition {
 	public function __construct(
 		ValueFormat $format,
 		string $description,
+		bool $required,
+		?float $default,
 		private readonly ?float $minimum,
 		private readonly ?float $maximum,
 	) {
 		$this->assertIsNumberFormat( $format );
-
 		parent::__construct(
 			type: ValueType::Number,
 			format: $format,
-			description: $description
+			description: $description,
+			required: $required,
+			default: $default
 		);
 	}
 
