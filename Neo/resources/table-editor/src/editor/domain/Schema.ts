@@ -25,8 +25,10 @@ export class Schema {
 		return this.properties;
 	}
 
-	public getPropertyDefinition( propertyName: string ): PropertyDefinition {
-		return this.properties.get( new PropertyName( propertyName ) );
+	public getPropertyDefinition( propertyName: string|PropertyName ): PropertyDefinition {
+		return this.properties.get(
+			propertyName instanceof PropertyName ? propertyName : new PropertyName( propertyName )
+		);
 	}
 
 }

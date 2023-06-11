@@ -55,6 +55,7 @@ interface BasePropertyDefinition {
 	readonly format: ValueFormat;
 	readonly description: string;
 	readonly required: boolean;
+	readonly default?: any;
 
 }
 
@@ -154,7 +155,8 @@ export function createPropertyDefinitionFromJson( id: string, json: any ): Prope
 		type: json.type as ValueType,
 		format: json.format as ValueFormat,
 		description: json.description ?? '',
-		required: json.required ?? false
+		required: json.required ?? false,
+		default: json.default
 	};
 
 	switch ( json.type ) {
