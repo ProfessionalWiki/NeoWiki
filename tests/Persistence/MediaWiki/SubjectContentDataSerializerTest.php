@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataSerializer;
@@ -145,7 +145,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 				label: new SubjectLabel( 'Test subject a001' ),
 				schemaId: new SchemaId( 'Employee' ),
 				relations: new RelationList( [] ),
-				properties: new SubjectProperties( [
+				properties: new StatementList( [
 					'founded' => [ '2019-01-01' ],
 					'founder' => [ 'John Doe' ],
 				] )

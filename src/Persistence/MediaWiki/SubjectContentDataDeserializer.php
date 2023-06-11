@@ -18,7 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 
 class SubjectContentDataDeserializer {
 
@@ -77,7 +77,7 @@ class SubjectContentDataDeserializer {
 		);
 	}
 
-	private function newSubjectProperties( array $jsonArray, Schema $schema ): SubjectProperties {
+	private function newSubjectProperties( array $jsonArray, Schema $schema ): StatementList {
 		$propertyValueMap = [];
 
 		foreach ( $jsonArray['properties'] ?? [] as $propertyName => $value ) {
@@ -86,7 +86,7 @@ class SubjectContentDataDeserializer {
 			}
 		}
 
-		return new SubjectProperties( $propertyValueMap );
+		return new StatementList( $propertyValueMap );
 	}
 
 	private function newRelationList( array $jsonArray, Schema $schema ): RelationList {
