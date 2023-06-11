@@ -1,4 +1,4 @@
-import type { PropertyName } from '@/editor/domain/Schema';
+import type { PropertyName } from '@/editor/domain/PropertyDefinition';
 
 export class Statement {
 

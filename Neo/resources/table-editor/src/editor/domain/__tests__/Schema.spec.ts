@@ -1,11 +1,6 @@
-import {
-	createPropertyDefinitionFromJson,
-	ValueFormat,
-	ValueType,
-	PropertyName,
-	PropertyDefinitionList
-} from '@/editor/domain/Schema';
 import { describe, expect, it } from 'vitest';
+import { createPropertyDefinitionFromJson, PropertyName, ValueFormat, ValueType } from '@/editor/domain/PropertyDefinition';
+import { PropertyDefinitionList } from '@/editor/domain/PropertyDefinitionList';
 
 describe( 'PropertyId constructor', () => {
 

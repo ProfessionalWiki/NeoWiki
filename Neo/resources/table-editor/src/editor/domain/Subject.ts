@@ -1,10 +1,10 @@
 import type { SubjectLookup } from '@/editor/application/SubjectLookup';
 import type { PageIdentifiers } from '@/editor/domain/PageIdentifiers';
-import { PropertyName } from '@/editor/domain/Schema';
 import type { SchemaName } from '@/editor/domain/Schema';
 import type { SubjectMap } from '@/editor/domain/SubjectMap';
 import type { SubjectId } from '@/editor/domain/SubjectId';
 import type { StatementList } from '@/editor/domain/StatementList';
+import { PropertyName } from '@/editor/domain/PropertyDefinition';
 
 export type SubjectProperties = Record<string, any>; // TODO: remove
 

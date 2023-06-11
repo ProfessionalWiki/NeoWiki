@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SubjectId } from '../SubjectId';
+import { SubjectId } from '@/editor/domain/SubjectId';
 
 describe( 'Subject', () => {
 

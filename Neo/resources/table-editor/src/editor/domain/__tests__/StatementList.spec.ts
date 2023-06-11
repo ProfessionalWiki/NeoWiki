@@ -1,8 +1,8 @@
 import { Statement } from '@/editor/domain/Statement';
-import { PropertyName } from '@/editor/domain/Schema';
 import { describe, expect, it } from 'vitest';
-import { SubjectId } from '../SubjectId';
-import { StatementList } from '../StatementList';
+import { SubjectId } from '@/editor/domain/SubjectId';
+import { StatementList } from '@/editor/domain/StatementList';
+import { PropertyName } from '@/editor/domain/PropertyDefinition';
 
 describe( 'StatementList', () => {
 

@@ -1,8 +1,8 @@
-import { PropertyName } from '@/editor/domain/Schema';
 import type { SubjectLookup } from '@/editor/application/SubjectLookup';
 import { SubjectMap } from '@/editor/domain/SubjectMap';
 import { SubjectId } from '@/editor/domain/SubjectId';
 import { Statement } from '@/editor/domain/Statement';
+import { PropertyName } from '@/editor/domain/PropertyDefinition';
 
 export class StatementList implements Iterable<Statement> {
 
