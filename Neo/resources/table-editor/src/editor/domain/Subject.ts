@@ -1,6 +1,7 @@
 import type { SubjectLookup } from '@/editor/application/SubjectLookup';
 import type { PageIdentifiers } from '@/editor/domain/PageIdentifiers';
 import { PropertyName } from '@/editor/domain/Schema';
+import type { SchemaName } from '@/editor/domain/Schema';
 import type { SubjectMap } from '@/editor/domain/SubjectMap';
 import type { SubjectId } from '@/editor/domain/SubjectId';
 import type { StatementList } from '@/editor/domain/StatementList';
@@ -17,7 +18,7 @@ export class Subject {
 	public constructor(
 		private readonly id: SubjectId,
 		private readonly label: string,
-		private readonly schemaName: string,
+		private readonly schemaName: SchemaName,
 		private readonly statements: StatementList,
 		private readonly pageIdentifiers: PageIdentifiers
 	) {
@@ -31,7 +32,7 @@ export class Subject {
 		return this.label;
 	}
 
-	public getSchemaId(): string { // TODO: rename to schemaName
+	public getSchemaName(): SchemaName {
 		return this.schemaName;
 	}
 

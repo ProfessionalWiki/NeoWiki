@@ -265,17 +265,19 @@ export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 
 }
 
+export type SchemaName = string;
+
 export class Schema {
 
 	public constructor(
-		private readonly title: string,
+		private readonly name: SchemaName,
 		private readonly description: string,
 		private readonly properties: PropertyDefinitionList
 	) {
 	}
 
-	public getTitle(): string {
-		return this.title;
+	public getName(): SchemaName {
+		return this.name;
 	}
 
 	public getDescription(): string {

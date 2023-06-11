@@ -15,7 +15,7 @@ describe( 'Subject', () => {
 
 		expect( subject.getId().text ).toBe( ZERO_GUID );
 		expect( subject.getLabel() ).toBe( 'I am a tomato' );
-		expect( subject.getSchemaId() ).toBe( 'Tomato' );
+		expect( subject.getSchemaName() ).toBe( 'Tomato' );
 		expect( subject.getPageIdentifiers().getPageName() ).toBe( 'TestSubjectPage' );
 	} );
 
