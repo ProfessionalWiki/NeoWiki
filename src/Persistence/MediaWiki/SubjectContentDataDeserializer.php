@@ -8,12 +8,11 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationTypeId;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaRepository;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -120,7 +119,7 @@ class SubjectContentDataDeserializer {
 
 	private function propertyValueToRelation( string $propertyName, array $propertyValue ): Relation {
 		return new Relation(
-			type: new RelationTypeId( $propertyName ),
+			type: new RelationType( $propertyName ),
 			targetId: new SubjectId( $propertyValue['target'] ),
 			properties: new RelationProperties( $propertyValue['properties'] ?? [] ),
 		);

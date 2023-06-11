@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace Persistence\MediaWiki;
 
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\ArrayProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaRepository;
@@ -47,12 +46,10 @@ class WikiPageSchemaRepositoryTest extends NeoWikiIntegrationTestCase {
 	"description": "Where are those TPS reports?",
 	"propertyDefinitions": {
 		"Websites": {
-			"type": "array",
+			"type": "string",
+			"format": "url",
 			"description": "Websites owned by the company",
-			"items": {
-				"type": "string",
-				"format": "url"
-			}
+			"multiple": true
 		}
 	}
 }
@@ -65,9 +62,12 @@ JSON
 		$this->assertSame( 'Where are those TPS reports?', $schema->getDescription() );
 
 		$this->assertEquals(
-			new ArrayProperty(
+			new StringProperty(
+				format: ValueFormat::Url,
 				description: 'Websites owned by the company',
-				itemDefinition: new StringProperty( format: ValueFormat::Url, description: '' )
+				required: false,
+				default: null,
+				multiple: true
 			),
 			$schema->getProperty( 'Websites' )
 		);
