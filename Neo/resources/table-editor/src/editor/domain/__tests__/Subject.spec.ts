@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { newSubject, ZERO_GUID } from '@/TestHelpers';
-import { SubjectMap } from '../SubjectMap';
+import { SubjectMap } from '@/editor/domain/SubjectMap';
 import { InMemorySubjectLookup } from '@/editor/application/SubjectLookup';
-import { PageIdentifiers } from '../PageIdentifiers';
-import { StatementList } from '../StatementList';
+import { PageIdentifiers } from '@/editor/domain/PageIdentifiers';
+import { StatementList } from '@/editor/domain/StatementList';
 
 describe( 'Subject', () => {
 

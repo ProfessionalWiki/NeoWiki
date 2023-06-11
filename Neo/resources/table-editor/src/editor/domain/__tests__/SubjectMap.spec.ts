@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { SubjectMap } from '../SubjectMap';
-import { SubjectId } from '../SubjectId';
+import { SubjectMap } from '@/editor/domain/SubjectMap';
+import { SubjectId } from '@/editor/domain/SubjectId';
 import { newSubject } from '@/TestHelpers';
 
 describe( 'SubjectMap', () => {
