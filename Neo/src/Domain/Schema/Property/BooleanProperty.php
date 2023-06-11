@@ -14,6 +14,8 @@ class BooleanProperty extends PropertyDefinition {
 	public function __construct(
 		ValueFormat $format,
 		string $description,
+		bool $required,
+		?bool $default,
 	) {
 		$this->assertIsBooleanFormat( $format );
 
@@ -21,6 +23,8 @@ class BooleanProperty extends PropertyDefinition {
 			type: ValueType::Boolean,
 			format: $format,
 			description: $description,
+			required: $required,
+			default: $default
 		);
 	}
 

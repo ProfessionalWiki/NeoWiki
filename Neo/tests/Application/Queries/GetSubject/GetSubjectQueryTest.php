@@ -14,7 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationTypeId;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -41,7 +41,7 @@ class GetSubjectQueryTest extends TestCase {
 					schemaId: new SchemaId( '00000000-6666-0000-0000-000000000010' ),
 					relations: new RelationList( [
 						new Relation(
-							type: new RelationTypeId( 'FriendOf' ),
+							type: new RelationType( 'FriendOf' ),
 							targetId: new SubjectId( '00000000-6666-0000-0000-000000000020' ),
 							properties: new RelationProperties( [
 								'relation property' => 'relation value'
@@ -160,7 +160,7 @@ class GetSubjectQueryTest extends TestCase {
 			label: new SubjectLabel( 'requested subject' ),
 			relations: new RelationList( [
 				new Relation(
-					type: new RelationTypeId( 'FriendOf' ),
+					type: new RelationType( 'FriendOf' ),
 					targetId: new SubjectId( '00000000-6666-0000-0000-000000000009' ),
 					properties: new RelationProperties( [
 						'relation property' => 'relation value'

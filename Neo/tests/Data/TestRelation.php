@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationTypeId;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 /**
@@ -20,7 +20,7 @@ class TestRelation {
 		?RelationProperties $properties = null
 	): Relation {
 		return new Relation(
-			new RelationTypeId( $type ?? 'FriendOf' ),
+			new RelationType( $type ?? 'FriendOf' ),
 			new SubjectId( $targetId ?? '130A09E1-54FF-4A20-8A14-4E62D700BBBB' ),
 			$properties ?? new RelationProperties( [] )
 		);
