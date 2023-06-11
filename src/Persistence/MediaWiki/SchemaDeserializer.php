@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use InvalidArgumentException;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\ArrayProperty;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
@@ -44,39 +44,45 @@ class SchemaDeserializer {
 				throw new InvalidArgumentException( 'Property name must be a string' );
 			}
 
-			$properties[$propertyName] = $this->propertyDefinitionFromJson( $property );
+			$properties[$propertyName] = $this->propertyDefinitionFromJson( $property, $propertyName );
 		}
 
 		return new PropertyDefinitions( $properties );
 	}
 
-	private function propertyDefinitionFromJson( array $property ): PropertyDefinition {
+	private function propertyDefinitionFromJson( array $property, string $propertyName ): PropertyDefinition {
 		return match ( ValueType::from( $property['type'] ) ) {
-			ValueType::Array => new ArrayProperty(
-				description: $property['description'] ?? '',
-				itemDefinition: $this->propertyDefinitionFromJson( $property['items'] ),
-			),
-
 			ValueType::Boolean => new BooleanProperty(
 				format: ValueFormat::from( $property['format'] ),
 				description: $property['description'] ?? '',
+				required: $property['required'] ?? false,
+				default: $property['default'] ?? null,
 			),
 
 			ValueType::Number => new NumberProperty(
 				format: ValueFormat::from( $property['format'] ),
 				description: $property['description'] ?? '',
+				required: $property['required'] ?? false,
+				default: $property['default'] ?? null,
 				minimum: $property['minimum'] ?? null,
 				maximum: $property['maximum'] ?? null,
 			),
 
 			ValueType::Relation => new RelationProperty(
 				description: $property['description'] ?? '',
+				required: $property['required'] ?? false,
+				default: $property['default'] ?? null,
+				relationType: new RelationType( $property['relation'] ?? $propertyName ),
 				targetSchema: new SchemaId( $property['targetSchema'] ),
+				multiple: $property['multiple'] ?? false,
 			),
 
 			ValueType::String => new StringProperty(
 				format: ValueFormat::from( $property['format'] ),
 				description: $property['description'] ?? '',
+				required: $property['required'] ?? false,
+				default: $property['default'] ?? null,
+				multiple: $property['multiple'] ?? false,
 			),
 		};
 	}

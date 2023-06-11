@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\ArrayProperty;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
@@ -81,25 +81,22 @@ JSON
 			"type": "number",
 			"format": "currency",
 			"minimum": 0,
-			"maximum": 1337
+			"maximum": 1337,
+			"required": true,
+			"default": 42
 		},
 		"Websites": {
-			"type": "array",
+			"type": "string",
+			"format": "url",
 			"description": "Websites owned by the company",
-			"items": {
-				"type": "string",
-				"format": "url"
-			}
+			"multiple": true
 		},
 		"Has product": {
-			"type": "array",
-			"label": "Products",
-			"items": {
-				"type": "relation",
-				"format": "relation",
-				"label": "Product",
-				"targetSchema": "Product"
-			}
+			"type": "relation",
+			"format": "relation",
+			"label": "Product",
+			"targetSchema": "Product",
+			"multiple": true
 		},
 		"Is bankrupt": {
 			"type": "boolean",
@@ -114,31 +111,47 @@ JSON
 		$this->assertSame( 'Where are those TPS reports?', $schema->getDescription() );
 
 		$this->assertEquals(
-			new NumberProperty( format: ValueFormat::Currency, description: '', minimum: 0, maximum: 1337 ),
+			new NumberProperty(
+				format: ValueFormat::Currency,
+				description: '',
+				required: true,
+				default: 42,
+				minimum: 0,
+				maximum: 1337
+			),
 			$schema->getProperty( 'Operating revenue' )
 		);
 
 		$this->assertEquals(
-			new ArrayProperty(
+			new StringProperty(
+				format: ValueFormat::Url,
 				description: 'Websites owned by the company',
-				itemDefinition: new StringProperty( format: ValueFormat::Url, description: '' )
+				required: false,
+				default: '',
+				multiple: true
 			),
 			$schema->getProperty( 'Websites' )
 		);
 
 		$this->assertEquals(
-			new ArrayProperty(
+			new RelationProperty(
 				description: '',
-				itemDefinition: new RelationProperty(
-					description: '',
-					targetSchema: new SchemaId( 'Product' )
-				)
+				required: false,
+				default: null,
+				relationType: new RelationType( 'Has product' ),
+				targetSchema: new SchemaId( 'Product' ),
+				multiple: true,
 			),
 			$schema->getProperty( 'Has product' )
 		);
 
 		$this->assertEquals(
-			new BooleanProperty( format: ValueFormat::Checkbox, description: '' ),
+			new BooleanProperty(
+				format: ValueFormat::Checkbox,
+				description: '',
+				required: false,
+				default: null,
+			),
 			$schema->getProperty( 'Is bankrupt' )
 		);
 	}
@@ -160,7 +173,14 @@ JSON
 		);
 
 		$this->assertEquals(
-			new NumberProperty( format: ValueFormat::Currency, description: '', minimum: null, maximum: null ),
+			new NumberProperty(
+				format: ValueFormat::Currency,
+				description: '',
+				required: false,
+				default: null,
+				minimum: null,
+				maximum: null
+			),
 			$schema->getProperty( 'Operating revenue' )
 		);
 	}
