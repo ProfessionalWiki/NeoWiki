@@ -11,4 +11,8 @@ class RelationType {
 	) {
 	}
 
+	public function getText(): string {
+		return $this->text;
+	}
+
 }
