@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionGuidGenerator;
 
 class TestSubject {
@@ -22,13 +22,13 @@ class TestSubject {
 		?SubjectLabel $label = null,
 		?SchemaId $schemaId = null,
 		?RelationList $relations = null,
-		?SubjectProperties $properties = null,
+		?StatementList $properties = null,
 	): Subject {
 		return new Subject(
 			id: $id instanceof SubjectId ? $id : new SubjectId( $id ),
 			label: $label ?? new SubjectLabel( "Test subject" ),
 			schemaId: $schemaId ?? new SchemaId( 'TestSubjectSchemaId' ),
-			properties: $properties ?? new SubjectProperties( [] ),
+			properties: $properties ?? new StatementList( [] ),
 			relations: $relations ?? new RelationList( [] ),
 		);
 	}

@@ -1,15 +1,15 @@
 <?php
 
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use PHPUnit\Framework\TestCase;
 
-class SubjectPropertiesTest extends TestCase {
+class StatementListTest extends TestCase {
 
 	/**
 	 * @dataProvider provideTestData
 	 */
 	public function testConstructorFiltersOutEmptyProperties( array $input, array $expected ): void {
-		$subjectProperties = new SubjectProperties( $input );
+		$subjectProperties = new StatementList( $input );
 
 		$this->assertEquals( $expected, $subjectProperties->asMap() );
 	}
@@ -64,5 +64,5 @@ class SubjectPropertiesTest extends TestCase {
 			],
 		];
 	}
-	
+
 }

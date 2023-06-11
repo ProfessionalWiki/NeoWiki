@@ -18,7 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
@@ -48,7 +48,7 @@ class GetSubjectQueryTest extends TestCase {
 							] ),
 						)
 					] ),
-					properties: new SubjectProperties( [
+					properties: new StatementList( [
 						'expected property 1' => 'expected value 1',
 						'expected property 2' => 'expected value 2',
 					] ),
