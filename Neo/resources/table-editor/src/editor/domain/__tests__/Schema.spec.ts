@@ -260,7 +260,7 @@ describe( 'PropertyDefinitionCollection', () => {
 		expect( () => new PropertyDefinitionList( [
 			property1,
 			property1
-		] ) ).toThrow( 'Duplicate property id: test1' );
+		] ) ).toThrow( 'Duplicate property name: test1' );
 	} );
 
 	it( 'allows iteration over the properties in the collection', () => {
