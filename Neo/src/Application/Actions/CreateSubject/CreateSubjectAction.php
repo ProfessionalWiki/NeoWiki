@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectProperties;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 
 class CreateSubjectAction {
 
@@ -52,8 +52,8 @@ class CreateSubjectAction {
 		);
 	}
 
-	private function buildSubjectProperties( CreateSubjectRequest $request ): SubjectProperties {
-		return new SubjectProperties( $request->properties );
+	private function buildSubjectProperties( CreateSubjectRequest $request ): StatementList {
+		return new StatementList( $request->properties );
 	}
 
 }

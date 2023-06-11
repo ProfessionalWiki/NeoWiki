@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
-class SubjectProperties {
+class StatementList {
 
 	/**
 	 * @var array<string, mixed>
@@ -34,7 +34,7 @@ class SubjectProperties {
 			return true;
 		} );
 	}
-	
+
 	/**
 	 * @param array<string, array> $patch Property name to list of new values
 	 */

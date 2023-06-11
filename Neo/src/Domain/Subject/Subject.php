@@ -15,7 +15,7 @@ class Subject {
 		public readonly SubjectId $id,
 		public readonly SubjectLabel $label,
 		private readonly SchemaId $schemaId,
-		private SubjectProperties $properties,
+		private StatementList $properties,
 		private readonly RelationList $relations, // TODO: "same as" identifiers?
 	) {
 	}
@@ -24,14 +24,14 @@ class Subject {
 		GuidGenerator $guidGenerator,
 		SubjectLabel $label,
 		SchemaId $schemaId,
-		?SubjectProperties $properties = null,
+		?StatementList $properties = null,
 		?RelationList $relations = null,
 	): self {
 		return new self(
 			id: SubjectId::createNew( $guidGenerator ),
 			label: $label,
 			schemaId: $schemaId,
-			properties: $properties ?? new SubjectProperties( [] ),
+			properties: $properties ?? new StatementList( [] ),
 			relations: $relations ?? new RelationList( [] ),
 		);
 	}
@@ -41,7 +41,7 @@ class Subject {
 			id: $id,
 			label: $label,
 			schemaId: $schemaId,
-			properties: new SubjectProperties( [] ),
+			properties: new StatementList( [] ),
 			relations: new RelationList( [] ),
 		);
 	}
@@ -79,7 +79,7 @@ class Subject {
 		return $this->schemaId;
 	}
 
-	public function getProperties(): SubjectProperties {
+	public function getProperties(): StatementList {
 		return $this->properties;
 	}
 
