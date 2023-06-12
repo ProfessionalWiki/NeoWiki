@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { createPropertyDefinitionFromJson, PropertyName, ValueFormat, ValueType } from '@/editor/domain/PropertyDefinition';
 
-describe( 'PropertyId constructor', () => {
+describe( 'PropertyName constructor', () => {
 
-	it( 'creates a valid PropertyId', () => {
+	it( 'creates a valid PropertyName', () => {
 		const id = new PropertyName( 'test' );
 		expect( id.toString() ).toBe( 'test' );
 	} );
 
 	it( 'throws an error for an empty string', () => {
-		expect( () => new PropertyName( '' ) ).toThrow( 'Invalid PropertyId' );
+		expect( () => new PropertyName( '' ) ).toThrow( 'Invalid PropertyName' );
 	} );
 
 } );

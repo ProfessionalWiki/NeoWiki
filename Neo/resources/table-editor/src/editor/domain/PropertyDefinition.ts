@@ -37,7 +37,7 @@ export class PropertyName {
 
 	public constructor( name: string ) {
 		if ( name === '' ) {
-			throw new Error( 'Invalid PropertyId' );
+			throw new Error( 'Invalid PropertyName' );
 		}
 		this.name = name;
 	}

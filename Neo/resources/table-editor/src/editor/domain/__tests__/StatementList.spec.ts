@@ -112,7 +112,7 @@ describe( 'StatementList', () => {
 		};
 
 		expect( () => StatementList.fromPropertyValueRecord( record ) )
-			.toThrow( 'Invalid PropertyId' );
+			.toThrow( 'Invalid PropertyName' );
 	} );
 
 	it( 'can round-trip from record', () => {
