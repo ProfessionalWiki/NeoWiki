@@ -32,16 +32,16 @@ class TestProperty {
 		string $description = '',
 		bool $required = false,
 		$default = null,
-		RelationType $relationType = new RelationType( 'TestPropRelation' ),
-		SchemaId $targetSchema = new SchemaId( 'TestPropSchema' ),
+		RelationType|string $relationType = 'TestPropRelation',
+		SchemaId|string $targetSchema = 'TestPropSchema',
 		bool $multiple = false
 	): RelationProperty {
 		return new RelationProperty(
 			description: $description,
 			required: $required,
 			default: $default,
-			relationType: $relationType,
-			targetSchema: $targetSchema,
+			relationType: $relationType instanceof RelationType ? $relationType : new RelationType( $relationType ),
+			targetSchema: $targetSchema instanceof SchemaId ? $targetSchema : new SchemaId( $targetSchema ),
 			multiple: $multiple
 		);
 	}

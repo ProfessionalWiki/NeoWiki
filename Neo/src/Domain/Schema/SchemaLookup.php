@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
-interface SchemaRepository {
+interface SchemaLookup {
 
 	public function getSchema( SchemaId $schemaId ): ?Schema;
 

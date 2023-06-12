@@ -6,34 +6,50 @@ namespace ProfessionalWiki\NeoWiki\Persistence\Neo4j;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 class SubjectUpdater {
 
 	public function __construct(
+		private readonly SchemaLookup $schemaRepository,
 		private readonly TransactionInterface $transaction,
 		private readonly PageId $pageId
 	) {
 	}
 
 	public function updateSubject( Subject $subject, bool $isMainSubject ): void {
-		$this->updateNodeProperties( $subject );
-		$this->updateRelations( $subject );
+		$schema = $this->schemaRepository->getSchema( $subject->getSchemaId() );
+
+		if ( $schema === null ) {
+			// TODO: log warning
+		}
+
+		// Note: the below method calls might need to be in this order
+		$this->updateNodeProperties( $subject, $schema );
+
+		if ( $schema !== null ) {
+			$this->updateRelations( $subject, $schema );
+		}
+
 		$this->updateHasSubjectRelation( $subject, $isMainSubject );
 		$this->updateNodeLabels( $subject );
 	}
 
-	private function updateNodeProperties( Subject $subject ): void {
+	private function updateNodeProperties( Subject $subject, ?Schema $schema ): void {
 		$this->transaction->run(
 			'MERGE (n {id: $id}) SET n = $props',
 			[
 				'id' => $subject->id->text,
 				'props' => array_merge(
-					$subject->getProperties()->asMap(),
+					// TODO: this explodes if an object such as a relation is in the map
+					// Add some safety code, especially if we continue to not have a more solid model for values
+					$subject->getStatements()->withoutRelations( $schema )->asMap(),
 					[
 						'name' => $subject->label->text,
 						'id' => $subject->id->text,
@@ -102,21 +118,28 @@ class SubjectUpdater {
 		return $labels->toArray();
 	}
 
-	private function updateRelations( Subject $subject ): void {
-		// Delete relations that are no longer present
+	private function updateRelations( Subject $subject, Schema $schema ): void {
+		$relations = $subject->getRelations( $schema );
+
+		$this->deleteRelationsThatAreNoLongerPresent( $subject->getId(), $relations );
+		$this->createOrUpdateRelations( $subject->getId(), $relations );
+	}
+
+	private function deleteRelationsThatAreNoLongerPresent( SubjectId $subjectId, RelationList $relations ): void {
 		$this->transaction->run(
 			'
 				MATCH (subject {id: $subjectId})-[relation]->()
 				WHERE NOT relation.id IN $relationIds
 				DELETE relation',
 			[
-				'subjectId' => $subject->id->text,
-				'relationIds' => $subject->getRelationsAsIdStringArray()
+				'subjectId' => $subjectId->text,
+				'relationIds' => $relations->getTargetIds()->asStringArray(), // FIXME: we need unique relation ids
 			]
 		);
+	}
 
-		// Create or update relations
-		foreach ( $subject->getRelations()->relations as $relation ) {
+	private function createOrUpdateRelations( SubjectId $subjectId, RelationList $relations ): void {
+		foreach ( $relations->relations as $relation ) {
 			$this->transaction->run(
 				'
 					MATCH (subject {id: $subjectId})
@@ -124,7 +147,7 @@ class SubjectUpdater {
 					MERGE (subject)-[relation:' . Cypher::escape( $relation->type->text ) . ']->(target)
 						ON CREATE SET relation=$relationProperties ON MATCH SET relation=$relationProperties',
 				[
-					'subjectId' => $subject->id->text,
+					'subjectId' => $subjectId->text,
 					'targetId' => $relation->targetId->text,
 					'relationProperties' => array_merge( $relation->properties->map, [ 'id' => $relation->targetId->text ] ),
 				]

@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSubject;
 
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
@@ -15,6 +16,7 @@ class GetSubjectQuery {
 		private readonly GetSubjectPresenter $presenter,
 		private readonly SubjectLookup $subjectLookup,
 		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
+		private readonly SchemaLookup $schemaLookup
 	) {
 	}
 
@@ -35,11 +37,15 @@ class GetSubjectQuery {
 		];
 
 		if ( $includeReferencedSubjects ) {
-			foreach ( $subject->getReferencedSubjects() as $id ) {
-				$referencedSubject = $this->subjectLookup->getSubject( $id );
+			$schema = $this->schemaLookup->getSchema( $subject->getSchemaId() );
 
-				if ( $referencedSubject !== null ) {
-					$response[$referencedSubject->getId()->text] = $this->createResponse( $referencedSubject, $includePageIdentifiers );
+			if ( $schema !== null ) {
+				foreach ( $subject->getReferencedSubjects( $schema )->asArray() as $id ) {
+					$referencedSubject = $this->subjectLookup->getSubject( $id );
+
+					if ( $referencedSubject !== null ) {
+						$response[$referencedSubject->getId()->text] = $this->createResponse( $referencedSubject, $includePageIdentifiers );
+					}
 				}
 			}
 		}
@@ -59,7 +65,7 @@ class GetSubjectQuery {
 			id: $subject->id->text,
 			label: $subject->label->text,
 			schemaId: $subject->getSchemaId()->getText(),
-			properties: $subject->getProperties()->asMap() + $subject->getRelations()->asMap(),
+			properties: $subject->getStatements()->asMap(),
 			pageId: $pageIdentifiers?->getId()->id,
 			pageTitle: $pageIdentifiers?->getTitle(),
 		);

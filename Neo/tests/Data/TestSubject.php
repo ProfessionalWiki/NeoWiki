@@ -4,13 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionGuidGenerator;
 
 class TestSubject {
@@ -21,15 +20,13 @@ class TestSubject {
 		string|SubjectId $id = self::ZERO_GUID,
 		?SubjectLabel $label = null,
 		?SchemaId $schemaId = null,
-		?RelationList $relations = null,
 		?StatementList $properties = null,
 	): Subject {
 		return new Subject(
 			id: $id instanceof SubjectId ? $id : new SubjectId( $id ),
 			label: $label ?? new SubjectLabel( "Test subject" ),
 			schemaId: $schemaId ?? new SchemaId( 'TestSubjectSchemaId' ),
-			properties: $properties ?? new StatementList( [] ),
-			relations: $relations ?? new RelationList( [] ),
+			statements: $properties ?? new StatementList( [] ),
 		);
 	}
 

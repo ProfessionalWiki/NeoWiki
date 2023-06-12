@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace Domain\Subject;
+namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
