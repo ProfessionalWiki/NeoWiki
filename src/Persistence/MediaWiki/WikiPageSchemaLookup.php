@@ -7,11 +7,11 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaRepository;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use MediaWiki\Permissions\Authority;
 
-class WikiPageSchemaRepository implements SchemaRepository {
+class WikiPageSchemaLookup implements SchemaLookup {
 
 	public function __construct(
 		private readonly PageContentFetcher $pageContentFetcher,

@@ -5,8 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 
 class SubjectContentDataSerializer {
@@ -31,36 +29,11 @@ class SubjectContentDataSerializer {
 			$serializedSubjects[$subject->id->text] = [
 				'label' => $subject->label->text,
 				'schema' => $subject->getSchemaId()->getText(),
-				'properties' => (object)array_merge(
-					$subject->getProperties()->asMap(),
-					$this->serializeRelations( $subject->getRelations() )
-				),
+				'properties' => (object)$subject->getStatements()->asMap(),
 			];
 		}
 
 		return (object)$serializedSubjects;
-	}
-
-	private function serializeRelations( RelationList $relations ): array {
-		$serialized = [];
-
-		foreach ( $relations->relations as $relation ) {
-			$serialized[$relation->type->text][] = $this->serializeRelation( $relation );
-		}
-
-		return $serialized;
-	}
-
-	private function serializeRelation( Relation $relation ): array {
-		$serialized = [];
-
-		$serialized['target'] = $relation->targetId->text;
-
-		if ( $relation->properties->map !== [] ) {
-			$serialized['properties'] = (object)$relation->properties->map;
-		}
-
-		return $serialized;
 	}
 
 }
