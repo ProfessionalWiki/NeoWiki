@@ -4,8 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
-use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 
@@ -15,8 +15,7 @@ class Subject {
 		public readonly SubjectId $id,
 		public readonly SubjectLabel $label,
 		private readonly SchemaId $schemaId,
-		private StatementList $properties,
-		private readonly RelationList $relations, // TODO: "same as" identifiers?
+		private StatementList $statements,
 	) {
 	}
 
@@ -25,14 +24,12 @@ class Subject {
 		SubjectLabel $label,
 		SchemaId $schemaId,
 		?StatementList $properties = null,
-		?RelationList $relations = null,
 	): self {
 		return new self(
 			id: SubjectId::createNew( $guidGenerator ),
 			label: $label,
 			schemaId: $schemaId,
-			properties: $properties ?? new StatementList( [] ),
-			relations: $relations ?? new RelationList( [] ),
+			statements: $properties ?? new StatementList( [] ),
 		);
 	}
 
@@ -41,18 +38,7 @@ class Subject {
 			id: $id,
 			label: $label,
 			schemaId: $schemaId,
-			properties: new StatementList( [] ),
-			relations: new RelationList( [] ),
-		);
-	}
-
-	/**
-	 * @return string[]
-	 */
-	public function getRelationsAsIdStringArray(): array {
-		return array_map(
-			fn( Relation $relation ): string => $relation->targetId->text,
-			$this->relations->relations
+			statements: new StatementList( [] ),
 		);
 	}
 
@@ -60,7 +46,7 @@ class Subject {
 	 * @param array<string, array> $patch Property name to list of new values
 	 */
 	public function applyPatch( array $patch ): void {
-		$this->properties = $this->properties->applyPatch( $patch );
+		$this->statements = $this->statements->applyPatch( $patch );
 	}
 
 	public function hasSameIdentity( self $subject ): bool {
@@ -79,19 +65,16 @@ class Subject {
 		return $this->schemaId;
 	}
 
-	public function getProperties(): StatementList {
-		return $this->properties;
+	public function getStatements(): StatementList {
+		return $this->statements;
 	}
 
-	public function getRelations(): RelationList {
-		return $this->relations;
+	public function getRelations( Schema $readerSchema ): RelationList {
+		return $this->statements->getRelations( $readerSchema );
 	}
 
-	/**
-	 * @return SubjectId[]
-	 */
-	public function getReferencedSubjects(): array {
-		return $this->relations->getTargetIds();
+	public function getReferencedSubjects( Schema $readerSchema ): SubjectIdList {
+		return $this->getRelations( $readerSchema )->getTargetIds();
 	}
 
 }

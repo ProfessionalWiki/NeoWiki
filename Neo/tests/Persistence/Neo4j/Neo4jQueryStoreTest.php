@@ -13,11 +13,13 @@ use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore
  */
 class Neo4jQueryStoreTest extends TestCase {
+
 	private const GUID_1 = '00000000-1237-0000-0000-000000000001';
 	private const GUID_2 = '00000000-1237-0000-0000-000000000002';
 	private const GUID_3 = '00000000-1237-0000-0000-000000000003';
@@ -39,7 +41,7 @@ class Neo4jQueryStoreTest extends TestCase {
 			$this->markTestSkipped( 'Neo4j not available' );
 		}
 
-		return new Neo4jQueryStore( $client );
+		return new Neo4jQueryStore( $client, new InMemorySchemaLookup() );
 	}
 
 	public function testSavesPageIdAndTitle(): void {

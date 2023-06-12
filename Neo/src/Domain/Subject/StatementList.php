@@ -4,18 +4,27 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
+use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+
 class StatementList {
 
 	/**
 	 * @var array<string, mixed>
 	 */
-	private readonly array $map;
+	private readonly array $valuesByProperty;
 
 	/**
 	 * @param array<string, mixed> $map
 	 */
 	public function __construct( array $map ) {
-		$this->map = $this->arrayFilter( $map );
+		$this->valuesByProperty = $this->arrayFilter( $map );
 	}
 
 	/**
@@ -39,7 +48,7 @@ class StatementList {
 	 * @param array<string, array> $patch Property name to list of new values
 	 */
 	public function applyPatch( array $patch ): self {
-		$newMap = $this->map;
+		$newMap = $this->valuesByProperty;
 
 		foreach ( $patch as $propertyName => $values ) {
 			$newMap[$propertyName] = $values;
@@ -52,7 +61,66 @@ class StatementList {
 	 * @return array<string, mixed>
 	 */
 	public function asMap(): array {
-		return $this->map;
+		return $this->valuesByProperty;
+	}
+
+	public function getRelations( Schema $readerSchema ): RelationList {
+		/**
+		 * @var Relation[] $relations
+		 */
+		$relations = [];
+
+		/**
+		 * @var RelationProperty $propertyDefinition
+		 */
+		foreach ( $readerSchema->getRelationProperties()->asMap() as $propertyName => $propertyDefinition ) {
+			foreach ( $this->getRelationValueArray( $propertyName ) as $relation ) {
+				if ( $this->isValidRelation( $relation ) ) {
+					$relations[] = $this->propertyValueToRelation( $relation, $propertyDefinition->getRelationType() );
+				}
+			}
+		}
+
+		return new RelationList( $relations );
+	}
+
+	private function getRelationValueArray( string $propertyName ): array {
+		$value = $this->valuesByProperty[$propertyName] ?? [];
+
+		if ( is_array( $value ) && !$this->isValidRelation( $value ) ) {
+			return $value;
+		}
+
+		return [ $value ];
+	}
+
+	private function propertyValueToRelation( array $propertyValue, RelationType $type ): Relation {
+		return new Relation(
+			type: $type,
+			targetId: new SubjectId( $propertyValue['target'] ),
+			properties: new RelationProperties( $propertyValue['properties'] ?? [] ),
+		);
+	}
+
+	private function isValidRelation( mixed $propertyValue ): bool {
+		return is_array( $propertyValue ) && array_key_exists( 'target', $propertyValue );
+	}
+
+	public function withoutRelations( ?Schema $readerSchema ): self {
+		$readerSchema ??= new Schema( new SchemaId( 'Whatever' ), '', new PropertyDefinitions( [] ) );
+
+		$newMap = [];
+		$relationProperties = $readerSchema->getRelationProperties();
+
+		foreach ( $this->valuesByProperty as $propertyName => $value ) {
+			if ( !$relationProperties->hasProperty( $propertyName )
+				&& !$this->isValidRelation( $value ) // TODO: replace by writer-schema model
+				&& !( is_array( $value ) && $this->isValidRelation( $value[0] ) ) ) {
+				$newMap[$propertyName] = $value;
+			}
+		}
+
+		return new self( $newMap );
 	}
 
 }

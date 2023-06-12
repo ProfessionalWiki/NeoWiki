@@ -11,12 +11,14 @@ use ProfessionalWiki\NeoWiki\Application\QueryEngine;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 class Neo4jQueryStore implements QueryStore, QueryEngine {
 
 	public function __construct(
-		private ClientInterface $client,
+		private readonly ClientInterface $client,
+		private readonly SchemaLookup $schemaRepository,
 	) {
 	}
 
@@ -51,7 +53,8 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 	}
 
 	private function updateSubjects( TransactionInterface $transaction, Page $page ): void {
-		$updater = new SubjectUpdater( $transaction, $page->getId() );
+		// TODO: we should make sure this schema retrieval is cached
+		$updater = new SubjectUpdater( $this->schemaRepository, $transaction, $page->getId() );
 
 		$mainSubject = $page->getSubjects()->getMainSubject();
 
