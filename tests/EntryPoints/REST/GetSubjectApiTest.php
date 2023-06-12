@@ -6,12 +6,11 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
@@ -25,6 +24,23 @@ class GetSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
+
+		$this->createSchema(
+			'GetSubjectApiTestSchema',
+			<<<JSON
+{
+	"title": "GetSubjectApiTestSchema",
+	"propertyDefinitions": {
+		"MyRelation": {
+			"type": "relation",
+			"format": "relation",
+			"relation": "MyRelation",
+			"targetSchema": "GetSubjectApiTestSchema"
+		}
+	}
+}
+JSON
+		);
 	}
 
 	public function testSubjectIsFound(): void {
@@ -33,7 +49,7 @@ class GetSubjectApiTest extends NeoWikiIntegrationTestCase {
 			mainSubject: TestSubject::build(
 				id: '123e4567-e89b-12d3-a456-426655440000',
 				label: new SubjectLabel( 'Test subject 426655440000' ),
-				schemaId: new SchemaId( 'GetSubjectApiTest' )
+				schemaId: new SchemaId( 'GetSubjectApiTestSchema' )
 			)
 		);
 
@@ -55,7 +71,7 @@ class GetSubjectApiTest extends NeoWikiIntegrationTestCase {
         "123e4567-e89b-12d3-a456-426655440000": {
             "id": "123e4567-e89b-12d3-a456-426655440000",
             "label": "Test subject 426655440000",
-            "schema": "GetSubjectApiTest",
+            "schema": "GetSubjectApiTestSchema",
             "properties": []
         }
     }
@@ -107,14 +123,20 @@ JSON
 			mainSubject: TestSubject::build(
 				id: '123e4567-e89b-12d3-a456-426655440000',
 				schemaId: new SchemaId( 'GetSubjectApiTestSchema' ),
-				relations: new RelationList( [
-					TestRelation::build( type: 'MyRelation', targetId: '123e4567-e89b-12d3-a456-426655440001' ),
-					TestRelation::build( type: 'MyRelation', targetId: '123e4567-e89b-12d3-a456-426655440002' ),
+				properties: new StatementList( [
+					'MyRelation' => [
+						[
+							'target' => '123e4567-e89b-12d3-a456-426655440001',
+						],
+						[
+							'target' => '123e4567-e89b-12d3-a456-426655440002',
+						],
+					],
 				] )
 			),
 			childSubjects: new SubjectMap(
 				TestSubject::build(
-					id: '123e4567-e89b-12d3-a456-426655440001',
+					id: '123e4567-e89b-12d3-a456-426655440001', // FIXME: for some reason SubjectLookup is not finding this one
 				)
 			)
 		)->getPage()->getId();
@@ -124,8 +146,12 @@ JSON
 			mainSubject: TestSubject::build(
 				id: '123e4567-e89b-12d3-a456-426655440002',
 				schemaId: new SchemaId( 'GetSubjectApiTestSchema' ),
-				relations: new RelationList( [
-					TestRelation::build( type: 'MyRelation', targetId: '123e4567-e89b-12d3-a456-426655440001' )
+				properties: new StatementList( [
+					'MyRelation' => [
+						[
+							'target' => '123e4567-e89b-12d3-a456-426655440001',
+						],
+					],
 				] )
 			),
 		)->getPage()->getId();
@@ -157,12 +183,10 @@ JSON
             "properties": {
                 "MyRelation": [
                     {
-                        "target": "123e4567-e89b-12d3-a456-426655440001",
-                        "properties": []
+                        "target": "123e4567-e89b-12d3-a456-426655440001"
                     },
                     {
-                        "target": "123e4567-e89b-12d3-a456-426655440002",
-                        "properties": []
+                        "target": "123e4567-e89b-12d3-a456-426655440002"
                     }
                 ]
             }
@@ -184,8 +208,7 @@ JSON
             "properties": {
                 "MyRelation": [
                     {
-                        "target": "123e4567-e89b-12d3-a456-426655440001",
-                        "properties": []
+                        "target": "123e4567-e89b-12d3-a456-426655440001"
                     }
                 ]
             }

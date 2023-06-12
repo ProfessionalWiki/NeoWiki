@@ -2,22 +2,22 @@
 
 declare( strict_types = 1 );
 
-namespace Persistence\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaRepository;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaRepository
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer
  *
  * @group database
  */
-class WikiPageSchemaRepositoryTest extends NeoWikiIntegrationTestCase {
+class WikiPageSchemaLookupTest extends NeoWikiIntegrationTestCase {
 
 	public function testGetSchemaReturnsNullWhenPageDoesNotExists(): void {
 		$this->assertNull(
@@ -25,8 +25,8 @@ class WikiPageSchemaRepositoryTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function newRepository(): SchemaRepository {
-		return NeoWikiExtension::getInstance()->newSchemaRepository();
+	private function newRepository(): SchemaLookup {
+		return NeoWikiExtension::getInstance()->getSchemaLookup();
 	}
 
 	public function testGetSchemaReturnsNullWhenPage(): void {

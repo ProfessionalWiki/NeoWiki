@@ -56,7 +56,7 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 'Test subject', $subject->label->text );
 		$this->assertSame( 'Employee', $subject->getSchemaId()->getText() );
-		$this->assertSame( [ 'animal' => 'bunny', 'fluff' => 9001 ], $subject->getProperties()->asMap() );
+		$this->assertSame( [ 'animal' => 'bunny', 'fluff' => 9001 ], $subject->getStatements()->asMap() );
 	}
 
 }

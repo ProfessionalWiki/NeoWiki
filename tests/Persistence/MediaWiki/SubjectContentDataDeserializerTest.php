@@ -6,14 +6,14 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaRepository;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer
@@ -21,7 +21,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaRepository;
 class SubjectContentDataDeserializerTest extends TestCase {
 
 	public function testNodeExampleSmokeTest(): void {
-		$deserializer = new SubjectContentDataDeserializer( $this->newSchemaRepoWithCompanyAndProduct() );
+		$deserializer = new SubjectContentDataDeserializer();
 		$subjects = $deserializer->deserialize( TestData::getFileContents( 'Subject/Professional_Wiki.json' ) );
 
 		$this->assertSame(
@@ -30,8 +30,8 @@ class SubjectContentDataDeserializerTest extends TestCase {
 		);
 	}
 
-	private function newSchemaRepoWithCompanyAndProduct(): SchemaRepository {
-		return new InMemorySchemaRepository(
+	private function newSchemaRepoWithCompanyAndProduct(): SchemaLookup {
+		return new InMemorySchemaLookup(
 			( new SchemaDeserializer() )->deserialize(
 				new SchemaId( 'Company' ),
 				TestData::getFileContents( 'Schema/Company.json' )
@@ -44,7 +44,7 @@ class SubjectContentDataDeserializerTest extends TestCase {
 	}
 
 	public function testMinimalJson(): void {
-		$deserializer = new SubjectContentDataDeserializer( new InMemorySchemaRepository() );
+		$deserializer = new SubjectContentDataDeserializer();
 		$data = $deserializer->deserialize( '{}' );
 
 		$this->assertSame( [], $data->getAllSubjects()->asArray() );
@@ -52,7 +52,7 @@ class SubjectContentDataDeserializerTest extends TestCase {
 	}
 
 	public function testMinimalSubjects(): void {
-		$deserializer = new SubjectContentDataDeserializer( $this->newSchemaRepoWithCompanyAndProduct() );
+		$deserializer = new SubjectContentDataDeserializer();
 		$data = $deserializer->deserialize(
 			<<<JSON
 {
@@ -88,7 +88,7 @@ JSON
 	}
 
 	public function testEmptyTopLevelSubjectAttributes(): void {
-		$deserializer = new SubjectContentDataDeserializer( $this->newSchemaRepoWithCompanyAndProduct() );
+		$deserializer = new SubjectContentDataDeserializer();
 		$data = $deserializer->deserialize(
 			<<<JSON
 {
@@ -117,7 +117,7 @@ JSON
 	}
 
 	public function testWhenSchemaIsNotFoundAnEmptyFallbackIsUsed(): void {
-		$deserializer = new SubjectContentDataDeserializer( $this->newSchemaRepoWithCompanyAndProduct() );
+		$deserializer = new SubjectContentDataDeserializer();
 		$subjects = $deserializer->deserialize(
 			<<<JSON
 {
@@ -141,7 +141,7 @@ JSON
 				'foo' => 'bar',
 				'baz' => 42,
 			],
-			$subjects->getMainSubject()->getProperties()->asMap()
+			$subjects->getMainSubject()->getStatements()->asMap()
 		);
 
 		$this->assertSame(
@@ -150,8 +150,8 @@ JSON
 		);
 	}
 
-	public function testArrayOfRelationProperty(): void {
-		$deserializer = new SubjectContentDataDeserializer( $this->newSchemaRepoWithCompanyAndProduct() );
+	public function testRelationPropertyWithMultipleValues(): void {
+		$deserializer = new SubjectContentDataDeserializer();
 		$subjects = $deserializer->deserialize(
 			<<<JSON
 {
@@ -176,72 +176,18 @@ JSON
 JSON
 		);
 
-		$this->assertSame( [], $subjects->getMainSubject()->getProperties()->asMap() );
-
 		$this->assertSame(
 			[
-				'12345678-0000-0000-0000-000000000004',
-				'12345678-0000-0000-0000-000000000005',
+				'Products' => [
+					[
+						'target' => '12345678-0000-0000-0000-000000000004',
+					],
+					[
+						'target' => '12345678-0000-0000-0000-000000000005',
+					]
+				],
 			],
-			$subjects->getMainSubject()->getRelationsAsIdStringArray()
-		);
-	}
-
-	public function testRelationProperty(): void {
-		$deserializer = new SubjectContentDataDeserializer( $this->newSchemaRepoWithCompanyAndProduct() );
-		$subjects = $deserializer->deserialize(
-			<<<JSON
-{
-	"mainSubject": "12345678-0000-0000-0000-000000000001",
-	"subjects": {
-		"12345678-0000-0000-0000-000000000001": {
-			"label": "Professional Wiki GmbH",
-			"schema": "Company",
-			"properties": {
-				"Main product": {
-					"target": "12345678-0000-0000-0000-000000000004"
-				}
-			}
-		}
-	}
-}
-JSON
-		);
-
-		$this->assertSame( [], $subjects->getMainSubject()->getProperties()->asMap() );
-
-		$this->assertSame(
-			[
-				'12345678-0000-0000-0000-000000000004',
-			],
-			$subjects->getMainSubject()->getRelationsAsIdStringArray()
-		);
-	}
-
-	public function testEmptyRelationProperty(): void {
-		$deserializer = new SubjectContentDataDeserializer( $this->newSchemaRepoWithCompanyAndProduct() );
-		$subjects = $deserializer->deserialize(
-			<<<JSON
-{
-	"mainSubject": "12345678-0000-0000-0000-000000000001",
-	"subjects": {
-		"12345678-0000-0000-0000-000000000001": {
-			"label": "Professional Wiki GmbH",
-			"schema": "Company",
-			"properties": {
-				"Main product": {}
-			}
-		}
-	}
-}
-JSON
-		);
-
-		$this->assertSame( [], $subjects->getMainSubject()->getProperties()->asMap() );
-
-		$this->assertSame(
-			[],
-			$subjects->getMainSubject()->getRelationsAsIdStringArray()
+			$subjects->getMainSubject()->getStatements()->asMap()
 		);
 	}
 
