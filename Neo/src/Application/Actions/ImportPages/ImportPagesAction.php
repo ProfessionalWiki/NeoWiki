@@ -10,7 +10,6 @@ use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use WikitextContent;
 
 class ImportPagesAction {
@@ -19,7 +18,6 @@ class ImportPagesAction {
 		private readonly ImportPresenter $presenter,
 		private readonly Authority $performer,
 		private readonly WikiPageFactory $wikiPageFactory,
-		private readonly PageContentFetcher $pageContentFetcher,
 		private readonly SchemaContentSource $schemaContentSource,
 		private readonly SubjectPageSource $subjectPageSource,
 	) {
@@ -39,17 +37,13 @@ class ImportPagesAction {
 			$this->createPage(
 				$subjectPageData->pageName,
 				[
-					'main' => $this->getOrDefaultMainWikitextContent( $subjectPageData->pageName, $subjectPageData->wikitext ),
+					'main' => new WikitextContent( $subjectPageData->wikitext ),
 					MediaWikiSubjectRepository::SLOT_NAME => new SubjectContent( $subjectPageData->subjectsJson ),
 				]
 			);
 		}
 
 		$this->presenter->presentDone();
-	}
-
-	private function getOrDefaultMainWikitextContent( string $pageName, string $default ): Content {
-		return $this->pageContentFetcher->getPageContent( $pageName, $this->performer ) ?? new WikitextContent( $default );
 	}
 
 	/**
