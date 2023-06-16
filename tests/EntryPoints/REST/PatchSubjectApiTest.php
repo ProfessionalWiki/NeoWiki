@@ -44,6 +44,7 @@ class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function createPages(): void {
+		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
 		$this->createPageWithSubjects(
 			'PatchSubjectApiTest',
 			mainSubject: TestSubject::build(

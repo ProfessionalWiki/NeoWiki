@@ -136,7 +136,8 @@ JSON
 			),
 			childSubjects: new SubjectMap(
 				TestSubject::build(
-					id: '123e4567-e89b-12d3-a456-426655440001', // FIXME: for some reason SubjectLookup is not finding this one
+					id: '123e4567-e89b-12d3-a456-426655440001',
+					schemaId: new SchemaId( 'GetSubjectApiTestSchema' ),
 				)
 			)
 		)->getPage()->getId();
@@ -194,7 +195,7 @@ JSON
         "123e4567-e89b-12d3-a456-426655440001": {
             "id": "123e4567-e89b-12d3-a456-426655440001",
             "label": "Test subject",
-            "schema": "TestSubjectSchemaId",
+            "schema": "GetSubjectApiTestSchema",
             "pageId": $firstPageId,
             "pageTitle": "GetSubjectApiTest0000",
             "properties": []
