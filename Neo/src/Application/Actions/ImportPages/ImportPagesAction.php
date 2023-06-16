@@ -9,7 +9,6 @@ use Content;
 use FileFetcher\FileFetcher;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
@@ -24,17 +23,16 @@ class ImportPagesAction {
 		private readonly FileFetcher $fileFetcher,
 		private readonly WikiPageFactory $wikiPageFactory,
 		private readonly PageContentFetcher $pageContentFetcher,
+		private readonly SchemaContentSource $schemaContentSource,
 	) {
 	}
 
 	public function import(): void {
-		foreach ( [ 'Company', 'Employee', 'Product', 'Everything' ] as $schemaName ) {
+		foreach ( $this->schemaContentSource->getSchemas() as $schemaName => $schemaContent ) {
 			$this->createPage(
 				"Schema:$schemaName",
 				[
-					'main' => new SchemaContent(
-						$this->getFileContent( "/DemoData/Schema/$schemaName.json" )
-					),
+					'main' => $schemaContent,
 				]
 			);
 		}
