@@ -21,17 +21,14 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
 	public function testCreatesSubject(): void {
-		$title = Title::newFromText( 'CreateSubjectApiTest' );
-
-		$this->editPage( $title, 'Whatever wikitext' );
-		$pageId = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title )->getId();
+		$this->createSchema( 'Employee' );
 
 		$response = $this->executeHandler(
 			NeoWikiExtension::newCreateMainSubjectApi(),
 			new RequestData( [
 				'method' => 'POST',
 				'pathParams' => [
-					'pageId' => $pageId
+					'pageId' => $this->getIdOfExistingPage()
 				],
 				'bodyContents' => json_encode( [
 					'label' => 'Test subject',
@@ -57,6 +54,13 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Test subject', $subject->label->text );
 		$this->assertSame( 'Employee', $subject->getSchemaId()->getText() );
 		$this->assertSame( [ 'animal' => 'bunny', 'fluff' => 9001 ], $subject->getStatements()->asMap() );
+	}
+
+	private function getIdOfExistingPage(): int {
+		$title = Title::newFromText( 'CreateSubjectApiTest' );
+
+		$this->editPage( $title, 'Whatever wikitext' );
+		return MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title )->getId();
 	}
 
 }
