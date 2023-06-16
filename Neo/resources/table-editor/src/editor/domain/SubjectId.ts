@@ -6,7 +6,7 @@ export class SubjectId {
 
 	public constructor( text: string ) {
 		if ( !Uuid.isValid( text ) ) {
-			throw new InvalidArgumentError( 'Subject ID has the wrong format' );
+			throw new InvalidArgumentError( 'Subject ID has the wrong format. ID: ' + text );
 		}
 
 		this.text = text;
