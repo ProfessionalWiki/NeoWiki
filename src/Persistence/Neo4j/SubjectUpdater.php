@@ -28,20 +28,17 @@ class SubjectUpdater {
 
 		if ( $schema === null ) {
 			// TODO: log warning
+			return;
 		}
 
 		// Note: the below method calls might need to be in this order
 		$this->updateNodeProperties( $subject, $schema );
-
-		if ( $schema !== null ) {
-			$this->updateRelations( $subject, $schema );
-		}
-
+		$this->updateRelations( $subject, $schema );
 		$this->updateHasSubjectRelation( $subject, $isMainSubject );
 		$this->updateNodeLabels( $subject );
 	}
 
-	private function updateNodeProperties( Subject $subject, ?Schema $schema ): void {
+	private function updateNodeProperties( Subject $subject, Schema $schema ): void {
 		$this->transaction->run(
 			'MERGE (n {id: $id}) SET n = $props',
 			[
