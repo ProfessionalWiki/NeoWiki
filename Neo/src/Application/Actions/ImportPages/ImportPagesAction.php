@@ -6,11 +6,9 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ImportPages;
 
 use CommentStoreComment;
 use Content;
-use FileFetcher\FileFetcher;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use WikitextContent;
@@ -20,10 +18,10 @@ class ImportPagesAction {
 	public function __construct(
 		private readonly ImportPresenter $presenter,
 		private readonly Authority $performer,
-		private readonly FileFetcher $fileFetcher,
 		private readonly WikiPageFactory $wikiPageFactory,
 		private readonly PageContentFetcher $pageContentFetcher,
 		private readonly SchemaContentSource $schemaContentSource,
+		private readonly SubjectPageSource $subjectPageSource,
 	) {
 	}
 
@@ -37,14 +35,12 @@ class ImportPagesAction {
 			);
 		}
 
-		foreach ( [ 'NeoWiki', 'ProWiki', 'Professional_Wiki' ] as $pageName ) {
+		foreach ( $this->subjectPageSource->getSubjectPages() as $subjectPageData ) {
 			$this->createPage(
-				$pageName,
+				$subjectPageData->pageName,
 				[
-					'main' => $this->getOrDefaultMainWikitextContent( $pageName, '{{#infobox:}}' ),
-					MediaWikiSubjectRepository::SLOT_NAME => new SubjectContent(
-						$this->getFileContent( "/DemoData/Subject/$pageName.json" )
-					),
+					'main' => $this->getOrDefaultMainWikitextContent( $subjectPageData->pageName, $subjectPageData->wikitext ),
+					MediaWikiSubjectRepository::SLOT_NAME => new SubjectContent( $subjectPageData->subjectsJson ),
 				]
 			);
 		}
@@ -54,12 +50,6 @@ class ImportPagesAction {
 
 	private function getOrDefaultMainWikitextContent( string $pageName, string $default ): Content {
 		return $this->pageContentFetcher->getPageContent( $pageName, $this->performer ) ?? new WikitextContent( $default );
-	}
-
-	private function getFileContent( string $fileName ): string {
-		return $this->fileFetcher->fetchFile(
-			NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . $fileName
-		);
 	}
 
 	/**

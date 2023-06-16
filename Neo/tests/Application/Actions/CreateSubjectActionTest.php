@@ -2,7 +2,7 @@
 
 declare( strict_types=1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions\CreateSubject;
+namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
 use RuntimeException;
 use PHPUnit\Framework\TestCase;
