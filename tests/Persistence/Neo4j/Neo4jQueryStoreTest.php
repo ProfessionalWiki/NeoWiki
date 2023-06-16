@@ -5,25 +5,31 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 
 use Laudis\Neo4j\Types\CypherMap;
-use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore
  */
-class Neo4jQueryStoreTest extends TestCase {
+class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 
 	private const GUID_1 = '00000000-1237-0000-0000-000000000001';
 	private const GUID_2 = '00000000-1237-0000-0000-000000000002';
 	private const GUID_3 = '00000000-1237-0000-0000-000000000003';
 	private const GUID_4 = '00000000-1237-0000-0000-000000000004';
+
+	public function setUp(): void {
+		$this->setUpNeo4j();
+		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+	}
 
 	public function testReadQueryReturnsNothingWhenDbIsEmpty(): void {
 		$result = $this->newQueryStore()->runReadQuery( 'MATCH (n) RETURN n' );
@@ -33,15 +39,12 @@ class Neo4jQueryStoreTest extends TestCase {
 	}
 
 	private function newQueryStore(): Neo4jQueryStore {
-		try {
-			$client = NeoWikiExtension::getInstance()->getNeo4jClient();
-			$client->run( 'MATCH (n) DETACH DELETE n' );
-		}
-		catch ( \Exception $e ) {
-			$this->markTestSkipped( 'Neo4j not available' );
-		}
-
-		return new Neo4jQueryStore( $client, new InMemorySchemaLookup() );
+		return new Neo4jQueryStore(
+			NeoWikiExtension::getInstance()->getNeo4jClient(),
+			new InMemorySchemaLookup(
+				TestSchema::build( id: TestSubject::DEFAULT_SCHEMA_ID )
+			)
+		);
 	}
 
 	public function testSavesPageIdAndTitle(): void {
