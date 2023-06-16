@@ -106,9 +106,7 @@ class StatementList {
 		return is_array( $propertyValue ) && array_key_exists( 'target', $propertyValue );
 	}
 
-	public function withoutRelations( ?Schema $readerSchema ): self {
-		$readerSchema ??= new Schema( new SchemaId( 'Whatever' ), '', new PropertyDefinitions( [] ) );
-
+	public function withoutRelations( Schema $readerSchema ): self {
 		$newMap = [];
 		$relationProperties = $readerSchema->getRelationProperties();
 

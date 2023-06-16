@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\ProductionGuidGenerator;
 class TestSubject {
 
 	public const ZERO_GUID = '00000000-0000-0000-0000-000000000000';
+	public const DEFAULT_SCHEMA_ID = 'TestSubjectSchemaId';
 
 	public static function build(
 		string|SubjectId $id = self::ZERO_GUID,
@@ -25,7 +26,7 @@ class TestSubject {
 		return new Subject(
 			id: $id instanceof SubjectId ? $id : new SubjectId( $id ),
 			label: $label ?? new SubjectLabel( "Test subject" ),
-			schemaId: $schemaId ?? new SchemaId( 'TestSubjectSchemaId' ),
+			schemaId: $schemaId ?? new SchemaId( self::DEFAULT_SCHEMA_ID ),
 			statements: $properties ?? new StatementList( [] ),
 		);
 	}

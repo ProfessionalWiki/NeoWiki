@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
@@ -50,7 +51,12 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 
 	public function testFindsIdOfPage(): void {
 		$client = $this->getClient();
-		$queryStore = new Neo4jQueryStore( $client, new InMemorySchemaLookup() );
+		$queryStore = new Neo4jQueryStore(
+			$client,
+			new InMemorySchemaLookup(
+				TestSchema::build( id: TestSubject::DEFAULT_SCHEMA_ID )
+			)
+		);
 
 		$queryStore->savePage( TestPage::build(
 			id: 1,
@@ -80,7 +86,7 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertEquals(
 			new PageIdentifiers( new PageId( 42 ), 'Bar' ),
-			$this->newLookup( $client )->getPageIdOfSubject( new SubjectId( self::GUID_1 ) )
+			$this->newLookup( $client )->getPageIdOfSubject( new SubjectId( self::GUID_2 ) )
 		);
 	}
 
