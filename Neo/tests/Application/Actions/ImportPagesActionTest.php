@@ -24,7 +24,6 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 	private ImportPresenter $presenter;
 	private Authority $performer;
 	private WikiPageFactory $wikiPageFactory;
-	private PageContentFetcher $pageContentFetcher;
 	private SchemaContentSource $schemaContentSource;
 	private SubjectPageSource $subjectPageSource;
 	private ImportPagesAction $importPagesAction;
@@ -33,7 +32,6 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 		$this->presenter = $this->newPresenterSpy();
 		$this->performer = $this->getTestUser()->getUser();
 		$this->wikiPageFactory = MediaWikiServices::getInstance()->getWikiPageFactory();
-		$this->pageContentFetcher = $this->createMock( PageContentFetcher::class );
 		$this->schemaContentSource = $this->createMock( SchemaContentSource::class );
 		$this->subjectPageSource = $this->createMock( SubjectPageSource::class );
 
@@ -41,7 +39,6 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 			$this->presenter,
 			$this->performer,
 			$this->wikiPageFactory,
-			$this->pageContentFetcher,
 			$this->schemaContentSource,
 			$this->subjectPageSource,
 		);
@@ -68,9 +65,6 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 
 		$this->schemaContentSource->method( 'getSchemas' )->willReturn( $mockedSchemas );
 		$this->subjectPageSource->method( 'getSubjectPages' )->willReturn( $mockedSubjectPages );
-		$this->pageContentFetcher->method( 'getPageContent' )->willReturnCallback( function ( $pageName, $performer ) {
-			return new WikitextContent( $pageName . 'Content' );
-		} );
 
 		$this->importPagesAction->import();
 
