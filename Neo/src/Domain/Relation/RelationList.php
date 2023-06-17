@@ -36,6 +36,16 @@ class RelationList {
 		return $map;
 	}
 
+	/**
+	 * @return string[]
+	 */
+	public function getIdsAsStringArray(): array {
+		return array_map(
+			fn( Relation $relation ): string => $relation->id->asString(),
+			$this->relations
+		);
+	}
+
 	public function getTargetIds(): SubjectIdList {
 		return new SubjectIdList(
 			array_map(

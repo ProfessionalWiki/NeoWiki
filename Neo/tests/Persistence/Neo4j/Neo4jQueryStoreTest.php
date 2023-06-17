@@ -158,4 +158,22 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertTrue( $result->isEmpty() );
 	}
 
+	//public function testUpdatesRelations(): void {
+	//	$store = $this->newQueryStore();
+	//
+	//	$store->savePage( TestPage::build(
+	//		mainSubject: TestSubject::build( id: self::GUID_1 ),
+	//		childSubjects: new SubjectMap(
+	//			TestSubject::build(
+	//				id: self::GUID_2,
+	//				properties: new StatementList( [
+	//
+	//				] )
+	//			),
+	//		)
+	//	) );
+	//
+	//
+	//}
+
 }

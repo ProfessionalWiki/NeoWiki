@@ -8,7 +8,6 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherList;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -116,40 +115,12 @@ class SubjectUpdater {
 	}
 
 	private function updateRelations( Subject $subject, Schema $schema ): void {
-		$relations = $subject->getRelations( $schema );
-
-		$this->deleteRelationsThatAreNoLongerPresent( $subject->getId(), $relations );
-		$this->createOrUpdateRelations( $subject->getId(), $relations );
-	}
-
-	private function deleteRelationsThatAreNoLongerPresent( SubjectId $subjectId, RelationList $relations ): void {
-		$this->transaction->run(
-			'
-				MATCH (subject {id: $subjectId})-[relation]->()
-				WHERE NOT relation.id IN $relationIds
-				DELETE relation',
-			[
-				'subjectId' => $subjectId->text,
-				'relationIds' => $relations->getTargetIds()->asStringArray(), // FIXME: we need unique relation ids
-			]
+		$updater = new SubjectRelationUpdater(
+			$subject->getId(),
+			$subject->getRelations( $schema ),
+			$this->transaction
 		);
-	}
-
-	private function createOrUpdateRelations( SubjectId $subjectId, RelationList $relations ): void {
-		foreach ( $relations->relations as $relation ) {
-			$this->transaction->run(
-				'
-					MATCH (subject {id: $subjectId})
-					MERGE (target {id: $targetId})
-					MERGE (subject)-[relation:' . Cypher::escape( $relation->type->text ) . ']->(target)
-						ON CREATE SET relation=$relationProperties ON MATCH SET relation=$relationProperties',
-				[
-					'subjectId' => $subjectId->text,
-					'targetId' => $relation->targetId->text,
-					'relationProperties' => array_merge( $relation->properties->map, [ 'id' => $relation->targetId->text ] ),
-				]
-			);
-		}
+		$updater->updateRelations();
 	}
 
 }

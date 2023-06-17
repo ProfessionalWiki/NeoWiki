@@ -21,8 +21,21 @@ class RelationListTest extends TestCase {
 		);
 	}
 
+	public function testGetIdsAsStringArray(): void {
+		$this->assertSame(
+			[
+				'130A09E1-54FF-4A20-8A14-4E62D700AAAA',
+				'130A09E1-54FF-4A20-8A14-4E62D700AAAB'
+			],
+			( new RelationList( [
+				TestRelation::build( id: '130A09E1-54FF-4A20-8A14-4E62D700AAAA' ),
+				TestRelation::build( id: '130A09E1-54FF-4A20-8A14-4E62D700AAAB' ),
+			] ) )->getIdsAsStringArray()
+		);
+	}
+
 	public function testGetTargetIds(): void {
-		$this->assertEquals(
+		$this->assertSame(
 			[
 				'130A09E1-54FF-4A20-8A14-4E62D700AAAA',
 				'130A09E1-54FF-4A20-8A14-4E62D700AAAB'
