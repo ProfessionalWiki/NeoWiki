@@ -108,15 +108,18 @@ class StatementListTest extends TestCase {
 			'string1' => 'value1',
 			'relation1' => [
 				[
+					'id' => '12345678-0000-0000-0000-000000000044',
 					'target' => '12345678-0000-0000-0000-000000000004',
 				],
 			],
 			'string2' => 'value3',
 			'relation2' => [
 				[
+					'id' => '12345678-0000-0000-0000-000000000055',
 					'target' => '12345678-0000-0000-0000-000000000005',
 				],
 				[
+					'id' => '12345678-0000-0000-0000-000000000066',
 					'target' => '12345678-0000-0000-0000-000000000006',
 				],
 			],
@@ -129,9 +132,9 @@ class StatementListTest extends TestCase {
 
 		$this->assertEquals(
 			new RelationList( [
-				TestRelation::build( type: 'Type1', targetId: '12345678-0000-0000-0000-000000000004' ),
-				TestRelation::build( type: 'Type2', targetId: '12345678-0000-0000-0000-000000000005' ),
-				TestRelation::build( type: 'Type2', targetId: '12345678-0000-0000-0000-000000000006' ),
+				TestRelation::build( id: '12345678-0000-0000-0000-000000000044', type: 'Type1', targetId: '12345678-0000-0000-0000-000000000004' ),
+				TestRelation::build( id: '12345678-0000-0000-0000-000000000055', type: 'Type2', targetId: '12345678-0000-0000-0000-000000000005' ),
+				TestRelation::build( id: '12345678-0000-0000-0000-000000000066', type: 'Type2', targetId: '12345678-0000-0000-0000-000000000006' ),
 			] ),
 			$statements->getRelations( $schema )
 		);
@@ -142,13 +145,14 @@ class StatementListTest extends TestCase {
 
 		$statements = new StatementList( [
 			'relation1' => [
+				'id' => '12345678-0000-0000-0000-000000000044',
 				'target' => '12345678-0000-0000-0000-000000000004',
 			],
 		] );
 
 		$this->assertEquals(
 			new RelationList( [
-				TestRelation::build( type: 'Type1', targetId: '12345678-0000-0000-0000-000000000004' ),
+				TestRelation::build( id: '12345678-0000-0000-0000-000000000044', type: 'Type1', targetId: '12345678-0000-0000-0000-000000000004' ),
 			] ),
 			$statements->getRelations( $schema )
 		);
@@ -163,12 +167,22 @@ class StatementListTest extends TestCase {
 			],
 			'relation2' => [
 				[
+					'id' => '12345678-0000-0000-0000-000000000044',
 					'target' => '12345678-0000-0000-0000-000000000004',
 				],
 				[
 					'not' => 'valid',
 				],
 				[
+					'missing' => 'id',
+					'target' => '12345678-0000-0000-0000-000000000005',
+				],
+				[
+					'missing' => 'target',
+					'id' => '12345678-0000-0000-0000-000000000044',
+				],
+				[
+					'id' => '12345678-0000-0000-0000-000000000055',
 					'target' => '12345678-0000-0000-0000-000000000005',
 				],
 			],
@@ -176,8 +190,8 @@ class StatementListTest extends TestCase {
 
 		$this->assertEquals(
 			new RelationList( [
-				TestRelation::build( type: 'Type2', targetId: '12345678-0000-0000-0000-000000000004' ),
-				TestRelation::build( type: 'Type2', targetId: '12345678-0000-0000-0000-000000000005' ),
+				TestRelation::build( id: '12345678-0000-0000-0000-000000000044', type: 'Type2', targetId: '12345678-0000-0000-0000-000000000004' ),
+				TestRelation::build( id: '12345678-0000-0000-0000-000000000055', type: 'Type2', targetId: '12345678-0000-0000-0000-000000000005' ),
 			] ),
 			$statements->getRelations( $schema )
 		);

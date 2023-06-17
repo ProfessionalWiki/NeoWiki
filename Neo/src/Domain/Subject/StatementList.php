@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
@@ -94,8 +95,14 @@ class StatementList {
 		return [ $value ];
 	}
 
+	/**
+	 * TODO: this construction can still fail despite earlier calls to isValidRelation.
+	 * For instance via the checks in RelationId and SubjectId. Probably better
+	 * to skip the checks and instead try this method in a try-catch.
+	 */
 	private function propertyValueToRelation( array $propertyValue, RelationType $type ): Relation {
 		return new Relation(
+			id: new RelationId( $propertyValue['id'] ),
 			type: $type,
 			targetId: new SubjectId( $propertyValue['target'] ),
 			properties: new RelationProperties( $propertyValue['properties'] ?? [] ),
@@ -103,7 +110,9 @@ class StatementList {
 	}
 
 	private function isValidRelation( mixed $propertyValue ): bool {
-		return is_array( $propertyValue ) && array_key_exists( 'target', $propertyValue );
+		return is_array( $propertyValue )
+			&& array_key_exists( 'target', $propertyValue ) && is_string( $propertyValue['target'] )
+			&& array_key_exists( 'id', $propertyValue ) && is_string( $propertyValue['id'] );
 	}
 
 	public function withoutRelations( Schema $readerSchema ): self {

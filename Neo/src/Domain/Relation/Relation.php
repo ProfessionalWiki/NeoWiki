@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 class Relation {
 
 	public function __construct(
+		public readonly RelationId $id,
 		public readonly RelationType $type,
 		public readonly SubjectId $targetId,
 		public readonly RelationProperties $properties,
