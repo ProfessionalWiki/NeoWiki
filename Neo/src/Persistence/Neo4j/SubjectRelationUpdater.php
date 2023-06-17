@@ -33,29 +33,28 @@ class SubjectRelationUpdater {
 		);
 
 		foreach ( $this->relations->relations as $relation ) {
+			// Remove relation if it has a different type or target
 			$this->transaction->run(
-				'
-					MATCH (subject {id: $subjectId})
-					OPTIONAL MATCH (subject)-[oldRelation {id: $relationId}]->(oldTarget)
-					WITH subject, oldRelation, oldTarget,
-					     oldRelation IS NOT NULL AND (oldRelation.type <> $relationType OR oldTarget.id <> $targetId) AS shouldReplace,
-					     oldRelation IS NULL AS shouldCreate
-					WHERE shouldReplace OR shouldCreate
-					FOREACH (_ IN CASE WHEN shouldReplace THEN [1] ELSE [] END |
-						DELETE oldRelation
-					)
-					FOREACH (_ IN CASE WHEN shouldReplace OR shouldCreate THEN [1] ELSE [] END |
-						MERGE (target {id: $targetId})
-						CREATE (subject)-[newRelation:' . Cypher::escape( $relation->type->text ) . ']->(target)
-						SET newRelation = $relationProperties
-					)
-				',
+				'MATCH (subject {id: $subjectId})-[oldRelation {id: $relationId}]->()
+				 WHERE oldRelation.type <> $relationType OR NOT (subject)-[oldRelation]->({id: $targetId})
+				 DELETE oldRelation',
 				[
 					'subjectId' => $this->subjectId->text,
 					'relationId' => $relation->id->asString(),
 					'relationType' => $relation->type->text,
 					'targetId' => $relation->targetId->text,
+				]
+			);
+
+			// Create new relation or update properties of existing relation
+			$this->transaction->run(
+				'MERGE (subject {id: $subjectId})-[relation:' . Cypher::escape( $relation->type->text ) . ' {id: $relationId}]->(target {id: $targetId})
+             	SET relation = $relationProperties',
+				[
+					'subjectId' => $this->subjectId->text,
+					'relationId' => $relation->id->asString(),
 					'relationProperties' => $this->getPropertiesForNeo4j( $relation ),
+					'targetId' => $relation->targetId->text,
 				]
 			);
 		}
