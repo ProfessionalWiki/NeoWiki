@@ -2,22 +2,22 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
+namespace ProfessionalWiki\NeoWiki\Tests\Domain\Relation;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Relation\RelationId
  */
-class SubjectIdTest extends TestCase {
+class RelationIdTest extends TestCase {
 
 	/**
 	 * @dataProvider validGuidProvider
 	 */
 	public function testInitialisationWithCorrectUuid( string $validGuid ): void {
-		$subjectId = new SubjectId( $validGuid );
-		$this->assertSame( $validGuid, $subjectId->text );
+		$RelationId = new RelationId( $validGuid );
+		$this->assertSame( $validGuid, $RelationId->asString() );
 	}
 
 	public static function validGuidProvider(): iterable {
@@ -30,8 +30,8 @@ class SubjectIdTest extends TestCase {
 	 * @dataProvider validGuidProvider
 	 */
 	public function testEquals( string $validGuid ): void {
-		$this->assertTrue( ( new SubjectId( $validGuid ) )->equals( new SubjectId( $validGuid ) ) );
-		$this->assertFalse( ( new SubjectId( $validGuid ) )->equals( new SubjectId( '40400000-0000-0000-0000-000000000000' ) ) );
+		$this->assertTrue( ( new RelationId( $validGuid ) )->equals( new RelationId( $validGuid ) ) );
+		$this->assertFalse( ( new RelationId( $validGuid ) )->equals( new RelationId( '40400000-0000-0000-0000-000000000000' ) ) );
 	}
 
 	/**
@@ -39,7 +39,7 @@ class SubjectIdTest extends TestCase {
 	 */
 	public function testInitialisationWithInvalidUuid( string $invalidGuid ): void {
 		$this->expectException( \InvalidArgumentException::class );
-		new SubjectId( $invalidGuid );
+		new RelationId( $invalidGuid );
 	}
 
 	public static function invalidGuidProvider(): iterable {
