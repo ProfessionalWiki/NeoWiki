@@ -44,6 +44,7 @@ class GetSubjectQueryTest extends TestCase {
 						'expected property 2' => 'expected value 2',
 						'FriendOf' => [
 							[
+								'id' => '00000000-1111-2222-1100-000000000020',
 								'target' => '00000000-6666-0000-0000-000000000020',
 								'properties' => [
 									'relation property' => 'relation value'
@@ -76,6 +77,7 @@ class GetSubjectQueryTest extends TestCase {
 							'expected property 2' => 'expected value 2',
 							'FriendOf' => [
 								[
+									'id' => '00000000-1111-2222-1100-000000000020',
 									'target' => '00000000-6666-0000-0000-000000000020',
 									'properties' => [
 										'relation property' => 'relation value'
@@ -165,6 +167,7 @@ class GetSubjectQueryTest extends TestCase {
 			properties: new StatementList( [
 				'FriendOf' => [
 					[
+						'id' => '00000000-1111-2222-1100-000000000029',
 						'target' => '00000000-6666-0000-0000-000000000009',
 						'properties' => [
 							'relation property' => 'relation value'
