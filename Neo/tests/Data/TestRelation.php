@@ -17,15 +17,15 @@ class TestRelation {
 
 	public static function build(
 		string|RelationId $id = null,
-		?string $type = null,
-		?string $targetId = null,
-		?RelationProperties $properties = null
+		string $type = 'FriendOf',
+		string $targetId = '130A09E1-54FF-4A20-8A14-4E62D700BBBB',
+		RelationProperties $properties = new RelationProperties( [] )
 	): Relation {
 		return new Relation(
 			self::defaultId( $id ),
-			new RelationType( $type ?? 'FriendOf' ),
-			new SubjectId( $targetId ?? '130A09E1-54FF-4A20-8A14-4E62D700BBBB' ),
-			$properties ?? new RelationProperties( [] )
+			new RelationType( $type ),
+			new SubjectId( $targetId ),
+			$properties
 		);
 	}
 
