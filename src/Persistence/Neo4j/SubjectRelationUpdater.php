@@ -21,6 +21,15 @@ class SubjectRelationUpdater {
 	public function updateRelations(): void {
 		$relationIds = $this->relations->getIdsAsStringArray();
 
+		$this->removeNonexistentRelations( $relationIds );
+
+		foreach ( $this->relations->relations as $relation ) {
+			$this->removeIfTypeOrTargetChanged( $relation );
+			$this->createOrUpdate( $relation );
+		}
+	}
+
+	private function removeNonexistentRelations( array $relationIds ): void {
 		$this->transaction->run(
 			'
 				MATCH ({id: $subjectId})-[relation]->()
@@ -31,33 +40,33 @@ class SubjectRelationUpdater {
 				'relationIds' => $relationIds,
 			]
 		);
+	}
 
-		foreach ( $this->relations->relations as $relation ) {
-			// Remove relation if it has a different type or target
-			$this->transaction->run(
-				'MATCH (subject {id: $subjectId})-[oldRelation {id: $relationId}]->()
-				 WHERE oldRelation.type <> $relationType OR NOT (subject)-[oldRelation]->({id: $targetId})
-				 DELETE oldRelation',
-				[
-					'subjectId' => $this->subjectId->text,
-					'relationId' => $relation->id->asString(),
-					'relationType' => $relation->type->text,
-					'targetId' => $relation->targetId->text,
-				]
-			);
+	private function removeIfTypeOrTargetChanged( Relation $relation ): void {
+		$this->transaction->run(
+			'MATCH (subject {id: $subjectId})-[oldRelation {id: $relationId}]->()
+			 WHERE oldRelation.type <> $relationType OR NOT (subject)-[oldRelation]->({id: $targetId})
+			 DELETE oldRelation',
+			[
+				'subjectId' => $this->subjectId->text,
+				'relationId' => $relation->id->asString(),
+				'relationType' => $relation->type->text,
+				'targetId' => $relation->targetId->text,
+			]
+		);
+	}
 
-			// Create new relation or update properties of existing relation
-			$this->transaction->run(
-				'MERGE (subject {id: $subjectId})-[relation:' . Cypher::escape( $relation->type->text ) . ' {id: $relationId}]->(target {id: $targetId})
-             	SET relation = $relationProperties',
-				[
-					'subjectId' => $this->subjectId->text,
-					'relationId' => $relation->id->asString(),
-					'relationProperties' => $this->getPropertiesForNeo4j( $relation ),
-					'targetId' => $relation->targetId->text,
-				]
-			);
-		}
+	private function createOrUpdate( Relation $relation ): void {
+		$this->transaction->run(
+			'MERGE (subject {id: $subjectId})-[relation:' . Cypher::escape( $relation->type->text ) . ' {id: $relationId}]->(target {id: $targetId})
+			 SET relation = $relationProperties',
+			[
+				'subjectId' => $this->subjectId->text,
+				'relationId' => $relation->id->asString(),
+				'relationProperties' => $this->getPropertiesForNeo4j( $relation ),
+				'targetId' => $relation->targetId->text,
+			]
+		);
 	}
 
 	private function getPropertiesForNeo4j( Relation $relation ): array {
