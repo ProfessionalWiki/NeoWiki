@@ -58,7 +58,9 @@ class SubjectRelationUpdater {
 
 	private function createOrUpdate( Relation $relation ): void {
 		$this->transaction->run(
-			'MERGE (subject {id: $subjectId})-[relation:' . Cypher::escape( $relation->type->text ) . ' {id: $relationId}]->(target {id: $targetId})
+			'MERGE (subject {id: $subjectId})
+			 MERGE (target {id: $targetId})
+			 MERGE (subject)-[relation:' . Cypher::escape( $relation->type->text ) . ' {id: $relationId}]->(target)
 			 SET relation = $relationProperties',
 			[
 				'subjectId' => $this->subjectId->text,
