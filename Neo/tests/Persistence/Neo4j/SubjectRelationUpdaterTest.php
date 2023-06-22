@@ -276,4 +276,25 @@ class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		$this->assertHasRelations( $expectedRelations );
 	}
 
+	public function testRelationWithNonExistentTargetNodeDoesNotCreateDuplicateSubject(): void {
+		$this->updateRelations(
+			new RelationList( [
+				TestRelation::build(
+					id: '00000000-1237-0000-0000-000000000001',
+					type: 'RelationType',
+					targetId: '00000000-0000-0000-1111-000000000000',
+					properties: new RelationProperties( [] ),
+				)
+			] )
+		);
+
+		$result = NeoWikiExtension::getInstance()->getNeo4jClient()->run(
+			'MATCH (subject {id: $subjectId})
+       		RETURN subject',
+			[ 'subjectId' => self::SUBJECT_ID ]
+		);
+
+		$this->assertCount( 1, $result->getResults()->toRecursiveArray() );
+	}
+
 }
