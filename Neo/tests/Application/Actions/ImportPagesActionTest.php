@@ -12,7 +12,6 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageData;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use WikitextContent;
 
 /**

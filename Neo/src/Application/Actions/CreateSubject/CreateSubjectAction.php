@@ -4,14 +4,15 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
-use RuntimeException;
+use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
-use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
+use RuntimeException;
 
 class CreateSubjectAction {
 
@@ -19,10 +20,16 @@ class CreateSubjectAction {
 		private readonly CreateSubjectPresenter $presenter,
 		private readonly SubjectRepository $subjectRepository,
 		private readonly GuidGenerator $guidGenerator,
+		private SubjectActionAuthorizer $subjectActionAuthorizer
 	) {
 	}
 
 	public function createSubject( CreateSubjectRequest $request ): void {
+
+		if ( ( $request->isMainSubject && !$this->subjectActionAuthorizer->canCreateMainSubject() ) || !$this->subjectActionAuthorizer->canCreateChildSubject() ) {
+			throw new \RuntimeException( 'You do not have the necessary permissions to create this subject' );
+		}
+
 		$subject = $this->buildSubject( $request );
 
 		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( new PageId( $request->pageId ) );
