@@ -21,10 +21,14 @@ class PatchSubjectApi extends SimpleHandler {
 		// TODO: format validation?
 		$request = json_decode( $this->getRequest()->getBody()->getContents(), true );
 
-		$this->patchSubjectAction->patch(
-			new SubjectId( $subjectId ),
-			$request['properties'] // TODO: support property removal. Maybe second list. Maybe null values. Maybe other approach?
-		);
+		try {
+			$this->patchSubjectAction->patch(
+				new SubjectId( $subjectId ),
+				$request['properties'] // TODO: support property removal. Maybe second list. Maybe null values. Maybe other approach?
+			);
+		} catch ( \RuntimeException $e ) {
+			return new Response( 403, [], $e->getMessage() );
+		}
 
 		return new Response( json_encode( $request ) );
 	}

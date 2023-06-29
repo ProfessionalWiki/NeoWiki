@@ -10,6 +10,8 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPres
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ParamValidator\ParamValidator;
+use MediaWiki\Permissions\Authority;
+use RequestContext;
 
 class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 
@@ -21,20 +23,29 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 	}
 
 	public function run( int $pageId ): Response {
-		// TODO: format validation
-		$request = json_decode( $this->getRequest()->getBody()->getContents(), true );
+		try {
+			// TODO: format validation
+			$request = json_decode( $this->getRequest()->getBody()->getContents(), true );
 
-		NeoWikiExtension::getInstance()->newCreateSubjectAction( $this )->createSubject(
-			new CreateSubjectRequest(
-				pageId: $pageId,
-				isMainSubject: $this->isMainSubject,
-				label: $request['label'],
-				schemaId: $request['schema'],
-				properties: $request['properties'],
-			)
-		);
+			NeoWikiExtension::getInstance()->newCreateSubjectAction( $this, $this->getAuthority() )->createSubject(
+				new CreateSubjectRequest(
+					pageId: $pageId,
+					isMainSubject: $this->isMainSubject,
+					label: $request['label'],
+					schemaId: $request['schema'],
+					properties: $request['properties'],
+				)
+			);
 
-		return $this->buildResponseObject();
+			return $this->buildResponseObject();
+		} catch ( \RuntimeException $e ) {
+			$response = $this->getResponseFactory()->createJson( [
+				'status' => 'error',
+				'message' => $e->getMessage(),
+			] );
+			$response->setStatus( 403 );
+			return $response;
+		}
 	}
 
 	private function buildResponseObject(): Response {
@@ -66,5 +77,4 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 			'message' => 'Subject already exists',
 		];
 	}
-
 }

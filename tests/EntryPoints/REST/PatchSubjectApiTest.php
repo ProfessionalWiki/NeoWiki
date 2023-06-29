@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -21,8 +22,10 @@ class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
 	public function testSmoke(): void {
 		$this->createPages();
 
+		$authority = $this->createMock( Authority::class );
+
 		$response = $this->executeHandler(
-			NeoWikiExtension::newPatchSubjectApi(),
+			NeoWikiExtension::newPatchSubjectApi( $authority ),
 			new RequestData( [
 				'method' => 'PATCH',
 				'pathParams' => [
