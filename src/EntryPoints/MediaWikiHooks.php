@@ -140,4 +140,8 @@ class MediaWikiHooks {
 		}
 	}
 
+	public static function onMakeGlobalVariablesScript( array &$vars, OutputPage $out ): void {
+		$vars['NeoWiki'] = NeoWikiExtension::getInstance()->getExternalNeo4jConfig();
+	}
+
 }
