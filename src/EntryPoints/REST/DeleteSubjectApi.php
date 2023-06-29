@@ -18,10 +18,17 @@ class DeleteSubjectApi extends SimpleHandler {
 	}
 
 	public function run( string $subjectId ): Response {
-		$this->deleteSubjectAction->deleteSubject(
-			new SubjectId( $subjectId )
-		);
-
+		try {
+			$this->deleteSubjectAction->deleteSubject(
+				new SubjectId( $subjectId )
+			);	
+		} catch ( \RuntimeException $e ) {
+			return $this->getResponseFactory()->createJson( [
+				'status' => 'error',
+				'message' => $e->getMessage(),
+			] );
+		}
+		
 		return new Response();
 	}
 
