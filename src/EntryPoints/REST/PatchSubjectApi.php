@@ -6,28 +6,24 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class PatchSubjectApi extends SimpleHandler {
-
-	public function __construct(
-		private PatchSubjectAction $patchSubjectAction
-	) {
-	}
 
 	public function run( string $subjectId ): Response {
 		// TODO: format validation?
 		$request = json_decode( $this->getRequest()->getBody()->getContents(), true );
 
+		// TODO: replace try-catch with presenter. See CreateSubjectApi for example.
 		try {
-			$this->patchSubjectAction->patch(
+			NeoWikiExtension::getInstance()->newPatchSubjectAction( $this->getAuthority() )->patch(
 				new SubjectId( $subjectId ),
 				$request['properties'] // TODO: support property removal. Maybe second list. Maybe null values. Maybe other approach?
 			);
 		} catch ( \RuntimeException $e ) {
-			return new Response( 403, [], $e->getMessage() );
+			return new Response( 403, [], $e->getMessage() ); // FIXME: response only takes one argument
 		}
 
 		return new Response( json_encode( $request ) );
