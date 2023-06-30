@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
 
 class PatchSubjectAction {
+
 	public function __construct(
 		private SubjectRepository $subjectRepository,
 		private SubjectActionAuthorizer $subjectActionAuthorizer
