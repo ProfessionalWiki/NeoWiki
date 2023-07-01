@@ -43,4 +43,8 @@ class Schema {
 		return $this->properties->getRelations();
 	}
 
+	public function getAllProperties(): PropertyDefinitions {
+		return $this->properties;
+	}
+
 }
