@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator
@@ -28,10 +29,10 @@ class SchemaContentValidatorTest extends TestCase {
 	}
 
 	public function exampleSchemaProvider(): iterable {
-		yield [ file_get_contents( __DIR__ . '/../../../DemoData/Schema/Employee.json' ) ];
-		yield [ file_get_contents( __DIR__ . '/../../../DemoData/Schema/Company.json' ) ];
-		yield [ file_get_contents( __DIR__ . '/../../../DemoData/Schema/Product.json' ) ];
-		yield [ file_get_contents( __DIR__ . '/../../../DemoData/Schema/Everything.json' ) ];
+		yield [ TestData::getFileContents( 'Schema/Employee.json' ) ];
+		yield [ TestData::getFileContents( 'Schema/Company.json' ) ];
+		yield [ TestData::getFileContents( 'Schema/Product.json' ) ];
+		yield [ TestData::getFileContents( 'Schema/Everything.json' ) ];
 	}
 
 	public function testEmptyJsonFailsValidation(): void {
