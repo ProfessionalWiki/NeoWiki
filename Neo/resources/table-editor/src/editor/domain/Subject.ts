@@ -8,11 +8,6 @@ import { PropertyName } from '@/editor/domain/PropertyDefinition';
 
 export type SubjectProperties = Record<string, any>; // TODO: remove
 
-export interface RelationValue {
-	target: string;
-}
-// => class RelationValue { constructor( public readonly target: string ) {} }
-
 export class Subject {
 
 	public constructor(
