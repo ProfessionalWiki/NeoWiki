@@ -9,9 +9,8 @@ use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\ParamValidator\ParamValidator;
-use MediaWiki\Permissions\Authority;
-use RequestContext;
 
 class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 
@@ -19,10 +18,13 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 
 	public function __construct(
 		private readonly bool $isMainSubject,
+		private readonly CsrfValidator $csrfValidator
 	) {
 	}
 
 	public function run( int $pageId ): Response {
+		$this->csrfValidator->verifyCsrfToken();
+
 		try {
 			// TODO: format validation
 			$request = json_decode( $this->getRequest()->getBody()->getContents(), true );

@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -15,7 +16,14 @@ class GetSubjectApi extends SimpleHandler {
 	private const EXPAND_PAGE = 'page';
 	private const EXPAND_RELATIONS = 'relations';
 
+	public function __construct(
+		private readonly CsrfValidator $csrfValidator
+	) {
+	}
+
 	public function run( string $subjectId ): Response {
+		$this->csrfValidator->verifyCsrfToken();
+
 		$presenter = new RestGetSubjectPresenter();
 		$query = NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter );
 

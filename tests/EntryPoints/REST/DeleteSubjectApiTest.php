@@ -6,8 +6,11 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
@@ -22,8 +25,13 @@ class DeleteSubjectApiTest extends NeoWikiIntegrationTestCase {
 	public function testSmoke(): void {
 		$this->createPages();
 
+		$csrfValidatorstub = $this->createStub( CsrfValidator::class );
+		$csrfValidatorstub->method( 'verifyCsrfToken' )->willReturn( true );
+
 		$response = $this->executeHandler(
-			NeoWikiExtension::newDeleteSubjectApi(),
+			new DeleteSubjectApi(
+				csrfValidator: $csrfValidatorstub
+			),
 			new RequestData( [
 				'method' => 'DELETE',
 				'pathParams' => [
