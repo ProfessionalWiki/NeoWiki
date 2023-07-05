@@ -8,7 +8,9 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use Title;
 
@@ -23,8 +25,14 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 	public function testCreatesSubject(): void {
 		$this->createSchema( 'Employee' );
 
+		$csrfValidatorstub = $this->createStub( CsrfValidator::class );
+		$csrfValidatorstub->method( 'verifyCsrfToken' )->willReturn( true );
+
 		$response = $this->executeHandler(
-			NeoWikiExtension::newCreateMainSubjectApi(),
+			new CreateSubjectApi(
+				isMainSubject: true,
+				csrfValidator: $csrfValidatorstub
+			),
 			new RequestData( [
 				'method' => 'POST',
 				'pathParams' => [

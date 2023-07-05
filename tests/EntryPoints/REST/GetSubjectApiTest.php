@@ -10,7 +10,8 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
@@ -21,6 +22,8 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  */
 class GetSubjectApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
+
+	private readonly CsrfValidator $csrfValidatorstub;
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
@@ -41,6 +44,9 @@ class GetSubjectApiTest extends NeoWikiIntegrationTestCase {
 }
 JSON
 		);
+
+		$this->csrfValidatorstub = $this->createStub( CsrfValidator::class );
+		$this->csrfValidatorstub->method( 'verifyCsrfToken' )->willReturn( true );
 	}
 
 	public function testSubjectIsFound(): void {
@@ -54,7 +60,7 @@ JSON
 		);
 
 		$response = $this->executeHandler(
-			NeoWikiExtension::newGetSubjectApi(),
+			new GetSubjectApi( csrfValidator: $this->csrfValidatorstub ),
 			new RequestData( [
 				'method' => 'GET',
 				'pathParams' => [
@@ -84,7 +90,7 @@ JSON,
 
 	public function testSubjectIsNotFound(): void {
 		$response = $this->executeHandler(
-			NeoWikiExtension::newGetSubjectApi(),
+			new GetSubjectApi( csrfValidator: $this->csrfValidatorstub ),
 			new RequestData( [
 				'method' => 'GET',
 				'pathParams' => [
@@ -161,7 +167,7 @@ JSON
 		)->getPage()->getId();
 
 		$response = $this->executeHandler(
-			NeoWikiExtension::newGetSubjectApi(),
+			new GetSubjectApi( csrfValidator: $this->csrfValidatorstub ),
 			new RequestData( [
 				'method' => 'GET',
 				'pathParams' => [

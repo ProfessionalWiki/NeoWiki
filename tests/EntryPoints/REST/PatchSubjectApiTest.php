@@ -6,8 +6,11 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\PatchSubjectApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
@@ -21,8 +24,13 @@ class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
 	public function testSmoke(): void {
 		$this->createPages();
 
+		$csrfValidatorstub = $this->createStub( CsrfValidator::class );
+		$csrfValidatorstub->method( 'verifyCsrfToken' )->willReturn( true );
+
 		$response = $this->executeHandler(
-			NeoWikiExtension::newPatchSubjectApi(),
+			new PatchSubjectApi(
+				csrfValidator: $csrfValidatorstub
+			),
 			new RequestData( [
 				'method' => 'PATCH',
 				'pathParams' => [

@@ -4,14 +4,27 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
+use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class DeleteSubjectApi extends SimpleHandler {
+
+	public function __construct(
+		private readonly CsrfValidator $csrfValidator
+	) {
+	}
+
+	/**
+	 * @throws HttpException
+	 */
 	public function run( string $subjectId ): Response {
+		$this->csrfValidator->verifyCsrfToken();
+
 		try {
 			NeoWikiExtension::getInstance()->newDeleteSubjectAction( $this->getAuthority() )->deleteSubject(
 				new SubjectId( $subjectId )
