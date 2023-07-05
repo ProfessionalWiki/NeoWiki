@@ -37,6 +37,7 @@ class StringProperty extends PropertyDefinition {
 			ValueFormat::Date,
 			ValueFormat::DateTime,
 			ValueFormat::Time,
+			ValueFormat::PhoneNumber
 		] ) ) {
 			throw new InvalidArgumentException( 'StringProperty must have a string format' );
 		}
