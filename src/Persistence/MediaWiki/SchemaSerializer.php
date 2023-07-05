@@ -58,8 +58,17 @@ class SchemaSerializer {
 		];
 
 		if ( $property instanceof RelationProperty ) {
-			$data['relationType'] = $property->getRelationType()->getText();
+			$data['relation'] = $property->getRelationType()->getText();
 			$data['targetSchema'] = $property->getTargetSchema()->getText();
+		}
+
+		if ( $property instanceof NumberProperty ) {
+			if ( $property->getMinimum() !== null ) {
+				$data['minimum'] = $property->getMinimum();
+			}
+			if ( $property->getMaximum() !== null ) {
+				$data['maximum'] = $property->getMaximum();
+			}
 		}
 
 		return $data;

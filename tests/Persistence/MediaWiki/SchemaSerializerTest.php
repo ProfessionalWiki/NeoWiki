@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaSerializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 
 class SchemaSerializerTest extends TestCase {
 
@@ -72,8 +73,8 @@ class SchemaSerializerTest extends TestCase {
 					description: 'Test number property',
 					required: false,
 					default: 0,
-					minimum: 0,
-					maximum: 100
+					minimum: null,
+					maximum: null
 				)
 			] )
 		);
@@ -119,7 +120,7 @@ class SchemaSerializerTest extends TestCase {
 					'description' => 'Test relation property',
 					'required' => false,
 					'default' => null,
-					'relationType' => 'testRelationType',
+					'relation' => 'testRelationType',
 					'targetSchema' => 'targetSchema',
 					'multiple' => false,
 					'format' => ValueFormat::Relation
@@ -162,27 +163,30 @@ class SchemaSerializerTest extends TestCase {
 		$this->assertSerializesTo( $expectedJson, $schema );
 	}
 
-	public function testSchemaIntegrityAfterRoundTripSerialization(): void {
-		$originalSchema = new Schema(
-			id: new SchemaId( 'testSchema' ),
-			description: 'Test schema description',
-			properties: new PropertyDefinitions( [
-				'testString' => new StringProperty(
-					format: ValueFormat::Text,
-					description: 'Test string property',
-					required: true,
-					default: 'default',
-					multiple: false
-				)
-			] )
-		);
+	/**
+	 * @dataProvider exampleSchemaProvider
+	 */
+	public function testSchemaIntegrityAfterRoundTripSerialization( string $originalSchemaJson ): void {
+		$originalSchemaArray = json_decode( $originalSchemaJson, true );
+
+		$deserializer = new SchemaDeserializer();
+		$originalSchema = $deserializer->deserialize( new SchemaId( $originalSchemaArray['title'] ), json_encode( $originalSchemaArray ) );
 
 		$serialized = $this->serializer->serialize( $originalSchema );
 
-		$deserializer = new SchemaDeserializer();
 		$deserialized = $deserializer->deserialize( $originalSchema->getId(), $serialized );
 
 		$this->assertEquals( $originalSchema, $deserialized );
+	}
+
+	public function exampleSchemaProvider(): iterable {
+		$dir = new \DirectoryIterator( __DIR__ . '/../../../DemoData/Schema' );
+
+		foreach ( $dir as $fileinfo ) {
+			if ( !$fileinfo->isDot() && $fileinfo->getExtension() === 'json' ) {
+				yield [ TestData::getFileContents( 'Schema/' . $fileinfo->getFilename() ) ];
+			}
+		}
 	}
 
 }

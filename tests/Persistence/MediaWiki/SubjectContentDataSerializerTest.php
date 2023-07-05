@@ -148,16 +148,26 @@ class SubjectContentDataSerializerTest extends TestCase {
 		);
 	}
 
-	public function testSerializationRoundTrip(): void {
-		// TODO: data provider with all files in DemoData/Subject/
-		$contentJson = TestData::getFileContents( 'Subject/Professional_Wiki.json' );
-
+	/**
+	 * @dataProvider exampleSubjectProvider
+	 */
+	public function testSerializationRoundTrip( string $contentJson ): void {
 		$deserializer = new SubjectContentDataDeserializer();
 		$serializer = new SubjectContentDataSerializer();
 
 		$newJson = $serializer->serialize( $deserializer->deserialize( $contentJson ) );
 
 		$this->assertJsonStringEqualsJsonString( $contentJson, $newJson );
+	}
+
+	public function exampleSubjectProvider(): iterable {
+		$dir = new \DirectoryIterator( __DIR__ . '/../../../DemoData/Subject' );
+
+		foreach ( $dir as $fileinfo ) {
+			if ( !$fileinfo->isDot() && $fileinfo->getExtension() === 'json' ) {
+				yield [ TestData::getFileContents( 'Subject/' . $fileinfo->getFilename() ) ];
+			}
+		}
 	}
 
 }
