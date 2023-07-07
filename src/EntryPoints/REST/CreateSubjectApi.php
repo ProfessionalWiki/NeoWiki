@@ -41,12 +41,10 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 
 			return $this->buildResponseObject();
 		} catch ( \RuntimeException $e ) {
-			$response = $this->getResponseFactory()->createJson( [
+			return $this->getResponseFactory()->createHttpError( 403, [
 				'status' => 'error',
 				'message' => $e->getMessage(),
 			] );
-			$response->setStatus( 403 );
-			return $response;
 		}
 	}
 

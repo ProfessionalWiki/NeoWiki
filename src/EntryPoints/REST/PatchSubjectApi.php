@@ -35,7 +35,10 @@ class PatchSubjectApi extends SimpleHandler {
 				$request['properties'] // TODO: support property removal. Maybe second list. Maybe null values. Maybe other approach?
 			);
 		} catch ( \RuntimeException $e ) {
-			return new Response( 403, [], $e->getMessage() ); // FIXME: response only takes one argument
+			return $this->getResponseFactory()->createHttpError( 403, [
+				'status' => 'error',
+				'message' => $e->getMessage(),
+			] );
 		}
 
 		return new Response( json_encode( $request ) );
