@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -21,35 +22,14 @@ use Title;
  */
 class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
+	use MockAuthorityTrait;
 
 	public function testCreatesSubject(): void {
 		$this->createSchema( 'Employee' );
 
-		$csrfValidatorstub = $this->createStub( CsrfValidator::class );
-		$csrfValidatorstub->method( 'verifyCsrfToken' )->willReturn( true );
-
 		$response = $this->executeHandler(
-			new CreateSubjectApi(
-				isMainSubject: true,
-				csrfValidator: $csrfValidatorstub
-			),
-			new RequestData( [
-				'method' => 'POST',
-				'pathParams' => [
-					'pageId' => $this->getIdOfExistingPage()
-				],
-				'bodyContents' => json_encode( [
-					'label' => 'Test subject',
-					'schema' => 'Employee',
-					'properties' => [
-						'animal' => 'bunny',
-						'fluff' => 9001,
-					]
-				] ),
-				'headers' => [
-					'Content-Type' => 'application/json'
-				]
-			] )
+			$this->newCreateSubjectApi(),
+			$this->createValidRequestData()
 		);
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
@@ -64,11 +44,57 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ 'animal' => 'bunny', 'fluff' => 9001 ], $subject->getStatements()->asMap() );
 	}
 
+	private function newCreateSubjectApi( bool $isMainSubject = true ): CreateSubjectApi {
+		$csrfValidatorstub = $this->createStub( CsrfValidator::class );
+		$csrfValidatorstub->method( 'verifyCsrfToken' )->willReturn( true );
+
+		return new CreateSubjectApi(
+			isMainSubject: $isMainSubject,
+			csrfValidator: $csrfValidatorstub
+		);
+	}
+
+	private function createValidRequestData(): RequestData {
+		return new RequestData( [
+			'method' => 'POST',
+			'pathParams' => [
+				'pageId' => $this->getIdOfExistingPage()
+			],
+			'bodyContents' => json_encode( [
+				'label' => 'Test subject',
+				'schema' => 'Employee',
+				'properties' => [
+					'animal' => 'bunny',
+					'fluff' => 9001,
+				]
+			] ),
+			'headers' => [
+				'Content-Type' => 'application/json'
+			]
+		] );
+	}
+
 	private function getIdOfExistingPage(): int {
 		$title = Title::newFromText( 'CreateSubjectApiTest' );
 
 		$this->editPage( $title, 'Whatever wikitext' );
 		return MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title )->getId();
+	}
+
+	public function testPermissionDenied(): void {
+		$this->createSchema( 'Employee' );
+
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createValidRequestData(),
+			authority: $this->mockAnonAuthorityWithPermissions( [] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 403, $response->getStatusCode() );
+		$this->assertSame( 'error', $responseData['status'] );
+		$this->assertSame( 'You do not have the necessary permissions to create this subject', $responseData['message'] );
 	}
 
 }

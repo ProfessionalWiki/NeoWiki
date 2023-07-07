@@ -30,7 +30,7 @@ class DeleteSubjectApi extends SimpleHandler {
 				new SubjectId( $subjectId )
 			);
 		} catch ( \RuntimeException $e ) {
-			return $this->getResponseFactory()->createJson( [
+			return $this->getResponseFactory()->createHttpError( 403, [
 				'status' => 'error',
 				'message' => $e->getMessage(),
 			] );
