@@ -16,14 +16,10 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
 class GetSchemaQueryTest extends TestCase {
-	private GetSchemaPresenter $presenter;
 	private InMemorySchemaLookup $schemaLookup;
-	private SchemaSerializer $serializer;
 
 	protected function setUp(): void {
-		$this->presenter = $this->createMock( GetSchemaPresenter::class );
 		$this->schemaLookup = new InMemorySchemaLookup();
-		$this->serializer = $this->createMock( SchemaSerializer::class );
 	}
 
 	public function testExecuteWhenSchemaNotFound(): void {
