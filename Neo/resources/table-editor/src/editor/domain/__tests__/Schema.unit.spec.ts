@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { createPropertyDefinitionFromJson, ValueFormat, ValueType } from '@/editor/domain/PropertyDefinition';
+import { createPropertyDefinitionFromJson, Format, PropertyName } from '@/editor/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@/editor/domain/PropertyDefinitionList';
 import { newSchema } from '../../../TestHelpers';
+import { ValueType } from '../Value';
+import { newTextProperty } from '../valueFormats/Text';
+import { newNumberProperty } from '../valueFormats/Number';
 
 describe( 'Schema', () => {
 
@@ -24,7 +27,27 @@ describe( 'Schema', () => {
 			const property = schema.getPropertyDefinition( 'test' );
 
 			expect( property.type ).toBe( ValueType.String );
-			expect( property.format ).toBe( ValueFormat.Text );
+			expect( property.format ).toBe( Format.Text );
+		} );
+
+	} );
+
+	describe( 'getTypeOf', () => {
+
+		const schema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				newTextProperty( 'One' ),
+				newNumberProperty( 'Two' ),
+				newTextProperty( 'Three' )
+			] )
+		} );
+
+		it( 'returns type of present property', () => {
+			expect( schema.getTypeOf( new PropertyName( 'Two' ) ) ).toBe( ValueType.Number );
+		} );
+
+		it( 'returns undefined for unknown property', () => {
+			expect( schema.getTypeOf( new PropertyName( 'Four' ) ) ).toBeUndefined();
 		} );
 
 	} );

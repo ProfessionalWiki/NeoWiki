@@ -3,13 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { SubjectId } from '@/editor/domain/SubjectId';
 import { StatementList } from '@/editor/domain/StatementList';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
+import { Relation, RelationValue, newStringValue, newNumberValue } from '../Value';
+import { PropertyDefinitionList } from '../PropertyDefinitionList';
+import { newTextProperty } from '../valueFormats/Text';
+import { newNumberProperty } from '../valueFormats/Number';
+import { newSchema } from '../../../TestHelpers';
 
 describe( 'StatementList', () => {
 
 	const property1 = new PropertyName( 'property1' );
 	const property2 = new PropertyName( 'property2' );
-	const statement1 = new Statement( property1, 'value1' );
-	const statement2 = new Statement( property2, 'value2' );
+	const statement1 = new Statement( property1, newStringValue( 'value1' ) );
+	const statement2 = new Statement( property2, newStringValue( 'value2' ) );
 
 	it( 'constructs a StatementList from an array of Statements', () => {
 		const statementList = new StatementList( [ statement1, statement2 ] );
@@ -64,22 +69,33 @@ describe( 'StatementList', () => {
 		it( 'should return empty list when there are no properties', () => {
 			const statements = new StatementList( [] );
 
-			expect( statements.getIdsOfReferencedSubjects() ).toEqual( [] );
+			expect( statements.getIdsOfReferencedSubjects() ).toEqual( new Set() );
 		} );
 
 		it( 'should return a list of referenced SubjectIds when relations exist', () => {
 			const statements = new StatementList( [
-				new Statement( new PropertyName( 'Property1' ), 'foo' ),
-				new Statement( new PropertyName( 'Property2' ), { target: '00000000-0000-0000-0000-000000000001' } ),
-				new Statement( new PropertyName( 'Property3' ), [ { target: '00000000-0000-0000-0000-000000000002' }, { target: '00000000-0000-0000-0000-000000000003' } ] ),
-				new Statement( new PropertyName( 'Property4' ), 'bar' )
+				new Statement( new PropertyName( 'Property1' ), newStringValue( 'foo' ) ),
+				new Statement(
+					new PropertyName( 'Property2' ),
+					new RelationValue( [
+						new Relation( undefined, '00000000-0000-0000-0000-000000000001' )
+					] )
+				),
+				new Statement(
+					new PropertyName( 'Property3' ),
+					new RelationValue( [
+						new Relation( undefined, '00000000-0000-0000-0000-000000000002' ),
+						new Relation( undefined, '00000000-0000-0000-0000-000000000003' )
+					] )
+				),
+				new Statement( new PropertyName( 'Property4' ), newStringValue( 'bar' ) )
 			] );
 
-			expect( statements.getIdsOfReferencedSubjects() ).toEqual( [
+			expect( statements.getIdsOfReferencedSubjects() ).toEqual( new Set( [
 				new SubjectId( '00000000-0000-0000-0000-000000000001' ),
 				new SubjectId( '00000000-0000-0000-0000-000000000002' ),
 				new SubjectId( '00000000-0000-0000-0000-000000000003' )
-			] );
+			] ) );
 		} );
 
 	} );
@@ -88,38 +104,64 @@ describe( 'StatementList', () => {
 		const statementList = new StatementList( [ statement1, statement2 ] );
 
 		expect( statementList.asPropertyValueRecord() ).toEqual( {
-			property1: 'value1',
-			property2: 'value2'
+			property1: newStringValue( 'value1' ),
+			property2: newStringValue( 'value2' )
 		} );
 	} );
 
 	it( 'constructs from a property-value record correctly', () => {
-		const statementList = StatementList.fromPropertyValueRecord( {
-			property1: 'value1',
-			property2: 'value2'
-		} );
+		const statementList = StatementList.fromJsonValues(
+			{
+				property1: 'value1',
+				property2: 'value2'
+			},
+			newSchema( {
+				properties: new PropertyDefinitionList( [
+					newTextProperty( 'property1' ),
+					newTextProperty( 'property2' )
+				] )
+			} )
+		);
 
 		expect( statementList.get( new PropertyName( 'property1' ) ) )
-			.toEqual( new Statement( new PropertyName( 'property1' ), 'value1' ) );
+			.toEqual( new Statement( new PropertyName( 'property1' ), newStringValue( 'value1' ) ) );
 		expect( statementList.get( new PropertyName( 'property2' ) ) )
-			.toEqual( new Statement( new PropertyName( 'property2' ), 'value2' ) );
+			.toEqual( new Statement( new PropertyName( 'property2' ), newStringValue( 'value2' ) ) );
 	} );
 
 	it( 'throws an error when constructing from record with invalid property name', () => {
-		const record = {
-			'': 'value1', // An empty string is not a valid PropertyName
-			property2: 'value2'
-		};
 
-		expect( () => StatementList.fromPropertyValueRecord( record ) )
+		expect( () => StatementList.fromJsonValues(
+			{
+				'': 'value1', // An empty string is not a valid PropertyName
+				property2: 'value2'
+			},
+			newSchema()
+		) )
 			.toThrow( 'Invalid PropertyName' );
 	} );
 
-	it( 'can round-trip from record', () => {
-		const statementList = new StatementList( [ statement1, statement2 ] );
+	it( 'from JSON values', () => {
+		const statementList = StatementList.fromJsonValues(
+			{
+				p1: 'hello',
+				p2: 42,
+				p3: [ 'foo', 'bar' ]
+			},
+			newSchema( {
+				properties: new PropertyDefinitionList( [
+					newTextProperty( 'p1' ),
+					newNumberProperty( 'p2' ),
+					newTextProperty( 'p3' )
+				] )
+			} )
+		);
 
-		expect( StatementList.fromPropertyValueRecord( statementList.asPropertyValueRecord() ) )
-			.toStrictEqual( statementList );
+		expect( statementList ).toStrictEqual( new StatementList( [
+			new Statement( new PropertyName( 'p1' ), newStringValue( 'hello' ) ),
+			new Statement( new PropertyName( 'p2' ), newNumberValue( 42 ) ),
+			new Statement( new PropertyName( 'p3' ), newStringValue( 'foo', 'bar' ) )
+		] ) );
 	} );
 
 } );
