@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newSubject, ZERO_GUID } from '@/TestHelpers';
+import { newSchema, newSubject, ZERO_GUID } from '@/TestHelpers';
 import { SubjectMap } from '@/editor/domain/SubjectMap';
 import { InMemorySubjectLookup } from '@/editor/application/SubjectLookup';
 import { PageIdentifiers } from '@/editor/domain/PageIdentifiers';
@@ -46,12 +46,15 @@ describe( 'Subject', () => {
 
 			const subject = newSubject( {
 				id: ZERO_GUID,
-				statements: StatementList.fromPropertyValueRecord( {
-					Property1: 'foo',
-					Property2: [ { target: '00000000-0000-0000-0000-000000000001' } ],
-					Property3: [ { target: '00000000-0000-0000-0000-000000000002' }, { target: '00000000-0000-0000-0000-000000000003' } ],
-					Property4: 'bar'
-				} )
+				statements: StatementList.fromJsonValues(
+					{
+						Property1: 'foo',
+						Property2: [ { target: '00000000-0000-0000-0000-000000000001' } ],
+						Property3: [ { target: '00000000-0000-0000-0000-000000000002' }, { target: '00000000-0000-0000-0000-000000000003' } ],
+						Property4: 'bar'
+					},
+					newSchema()
+				)
 			} );
 
 			const subjectMap = await subject.getReferencedSubjects( lookup );

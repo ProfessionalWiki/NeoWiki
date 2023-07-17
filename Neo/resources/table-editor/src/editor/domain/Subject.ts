@@ -4,7 +4,8 @@ import type { SchemaName } from '@/editor/domain/Schema';
 import type { SubjectMap } from '@/editor/domain/SubjectMap';
 import type { SubjectId } from '@/editor/domain/SubjectId';
 import type { StatementList } from '@/editor/domain/StatementList';
-import { PropertyName } from '@/editor/domain/PropertyDefinition';
+import type { PropertyName } from '@/editor/domain/PropertyDefinition';
+import type { Value } from '@/editor/domain/Value';
 
 export type SubjectProperties = Record<string, any>; // TODO: remove
 
@@ -35,8 +36,8 @@ export class Subject {
 		return this.statements;
 	}
 
-	public getStatementValue( propertyName: string ): any {
-		return this.statements.get( new PropertyName( propertyName ) ).value;
+	public getStatementValue( propertyName: PropertyName ): Value | undefined {
+		return this.statements.get( propertyName ).value;
 	}
 
 	public getPageIdentifiers(): PageIdentifiers {

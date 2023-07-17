@@ -1,6 +1,7 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import type { PropertyDefinitionList } from '@/editor/domain/PropertyDefinitionList';
+import type { ValueType } from '@/editor/domain/Value';
 
 export type SchemaName = string;
 
@@ -29,6 +30,10 @@ export class Schema {
 		return this.properties.get(
 			propertyName instanceof PropertyName ? propertyName : new PropertyName( propertyName )
 		);
+	}
+
+	public getTypeOf( propertyName: PropertyName ): ValueType|undefined {
+		return this.properties.has( propertyName ) ? this.properties.get( propertyName ).type : undefined;
 	}
 
 }

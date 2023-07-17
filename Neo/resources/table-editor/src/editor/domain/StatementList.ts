@@ -3,6 +3,8 @@ import { SubjectMap } from '@/editor/domain/SubjectMap';
 import { SubjectId } from '@/editor/domain/SubjectId';
 import { Statement } from '@/editor/domain/Statement';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
+import { jsonToValue, RelationValue, type Value } from '@/editor/domain/Value';
+import type { Schema } from '@/editor/domain/Schema';
 
 export class StatementList implements Iterable<Statement> {
 
@@ -59,9 +61,8 @@ export class StatementList implements Iterable<Statement> {
 		);
 	}
 
-	// TODO: dedicated test
-	public asPropertyValueRecord(): Record<string, unknown> {
-		const record: Record<string, unknown> = {};
+	public asPropertyValueRecord(): Record<string, Value|undefined> {
+		const record: Record<string, Value|undefined> = {};
 
 		for ( const statement of this ) {
 			record[ statement.propertyName.toString() ] = statement.value;
@@ -70,39 +71,40 @@ export class StatementList implements Iterable<Statement> {
 		return record;
 	}
 
-	// TODO: dedicated test
-	public static fromPropertyValueRecord( record: Record<string, unknown> ): StatementList {
+	public static fromJsonValues( record: Record<string, unknown>, schema: Schema ): StatementList {
 		return new StatementList(
 			Object.entries( record )
-				.map( ( [ key, value ] ) => new Statement( new PropertyName( key ), value ) )
+				.map( ( [ key, value ] ) => new Statement(
+					new PropertyName( key ),
+					jsonToValue(
+						value,
+						schema.getTypeOf( new PropertyName( key ) )
+					)
+				) )
 		);
 	}
 
 	public async getReferencedSubjects( lookup: SubjectLookup ): Promise<SubjectMap> {
+		const ids = [ ...this.getIdsOfReferencedSubjects() ];
+
 		return new SubjectMap(
 			...await Promise.all(
-				// TODO: error handling: silently ignore missing subjects?
-				this.getIdsOfReferencedSubjects().map( ( id ) => lookup.getSubject( id ) )
+				ids.map( ( id ) => lookup.getSubject( id ) ) // TODO: error handling: silently ignore missing subjects?
 			)
 		);
 	}
 
-	public getIdsOfReferencedSubjects(): SubjectId[] {
-		const ids: SubjectId[] = [];
+	public getIdsOfReferencedSubjects(): Set<SubjectId> {
+		const relationValues = this.getValuesOfType( RelationValue );
+		return new Set(
+			relationValues.flatMap( ( value ) => value.targetIds.map( ( id ) => new SubjectId( id ) ) )
+		);
+	}
 
-		// TODO: use schema information to determine which properties are references.
-		// Or... use type information inside the subject if we decided to include it.
-		for ( const statement of this ) {
-			const value = Array.isArray( statement.value ) ? statement.value : [ statement.value ];
-
-			for ( const relation of value ) {
-				if ( typeof relation === 'object' && relation.target ) {
-					ids.push( new SubjectId( relation.target ) );
-				}
-			}
-		}
-
-		return ids;
+	private getValuesOfType<T extends Value>( type: new( ...args: any[] ) => T ): T[] {
+		return [ ...this ]
+			.map( ( statement ) => statement.value )
+			.filter( ( value ): value is T => value instanceof type );
 	}
 
 }

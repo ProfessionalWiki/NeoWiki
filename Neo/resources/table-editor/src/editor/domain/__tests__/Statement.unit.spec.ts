@@ -1,15 +1,16 @@
 import { Statement } from '@/editor/domain/Statement';
 import { describe, expect, it } from 'vitest';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
+import { newStringValue } from '../Value';
 
 describe( 'Statement', () => {
 
 	it( 'constructor creates a Statement with given property and value', () => {
 		const property = new PropertyName( 'test' );
-		const statement = new Statement( property, 'value' );
+		const statement = new Statement( property, newStringValue( 'value' ) );
 
 		expect( statement.propertyName.toString() ).toBe( 'test' );
-		expect( statement.value ).toBe( 'value' );
+		expect( statement.value ).toEqual( newStringValue( 'value' ) );
 	} );
 
 	describe( 'hasValue', () => {
@@ -19,18 +20,13 @@ describe( 'Statement', () => {
 			expect( statement.hasValue() ).toBe( false );
 		} );
 
-		it( 'returns true for strings', () => {
-			const statement = new Statement( new PropertyName( 'test' ), '' );
+		it( 'returns true for values, even when they are empty strings', () => {
+			const statement = new Statement( new PropertyName( 'test' ), newStringValue( '' ) );
 			expect( statement.hasValue() ).toBe( true );
 		} );
 
-		it( 'returns false for empty arrays', () => {
-			const statement = new Statement( new PropertyName( 'test' ), [] );
-			expect( statement.hasValue() ).toBe( false );
-		} );
-
-		it( 'returns true for arrays with elements', () => {
-			const statement = new Statement( new PropertyName( 'test' ), [ '' ] );
+		it( 'returns true values, even when they are empty arrays', () => {
+			const statement = new Statement( new PropertyName( 'test' ), newStringValue() );
 			expect( statement.hasValue() ).toBe( true );
 		} );
 

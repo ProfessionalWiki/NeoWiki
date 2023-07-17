@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createPropertyDefinitionFromJson, PropertyName, ValueFormat, ValueType } from '@/editor/domain/PropertyDefinition';
+import { createPropertyDefinitionFromJson, PropertyName, Format } from '@/editor/domain/PropertyDefinition';
+import { ValueType } from '../Value';
+import type { TextProperty } from '../valueFormats/Text';
+import type { NumberProperty } from '../valueFormats/Number';
+import type { CurrencyProperty } from '../valueFormats/Currency';
+import type { ProgressProperty } from '../valueFormats/Progress';
+import type { RelationProperty } from '../valueFormats/Relation';
 
 describe( 'PropertyName constructor', () => {
 
@@ -52,15 +58,13 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			uniqueItems: false
 		};
 
-		const property = createPropertyDefinitionFromJson( 'test', json );
-
-		if ( property.type === ValueType.String ) {
-			expect( property.multiple ).toBe( true );
-			expect( property.uniqueItems ).toBe( false );
-		}
+		const property = createPropertyDefinitionFromJson( 'test', json ) as TextProperty;
 
 		expect( property.type ).toBe( ValueType.String );
-		expect( property.format ).toBe( ValueFormat.Text );
+		expect( property.format ).toBe( Format.Text );
+
+		expect( property.multiple ).toBe( true );
+		expect( property.uniqueItems ).toBe( false );
 	} );
 
 	it( 'creates a number property definition with defaults', () => {
@@ -69,16 +73,14 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			format: 'number'
 		};
 
-		const property = createPropertyDefinitionFromJson( 'test', json );
-
-		if ( property.format === ValueFormat.Number ) {
-			expect( property.minimum ).toBe( undefined );
-			expect( property.maximum ).toBe( undefined );
-			expect( property.precision ).toBe( undefined );
-		}
+		const property = createPropertyDefinitionFromJson( 'test', json ) as NumberProperty;
 
 		expect( property.type ).toBe( ValueType.Number );
-		expect( property.format ).toBe( ValueFormat.Number );
+		expect( property.format ).toBe( Format.Number );
+
+		expect( property.minimum ).toBe( undefined );
+		expect( property.maximum ).toBe( undefined );
+		expect( property.precision ).toBe( undefined );
 	} );
 
 	it( 'creates a number property definition with all fields', () => {
@@ -90,16 +92,14 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			precision: 2
 		};
 
-		const property = createPropertyDefinitionFromJson( 'test', json );
-
-		if ( property.format === ValueFormat.Number ) {
-			expect( property.minimum ).toBe( 42 );
-			expect( property.maximum ).toBe( 1337 );
-			expect( property.precision ).toBe( 2 );
-		}
+		const property = createPropertyDefinitionFromJson( 'test', json ) as NumberProperty;
 
 		expect( property.type ).toBe( ValueType.Number );
-		expect( property.format ).toBe( ValueFormat.Number );
+		expect( property.format ).toBe( Format.Number );
+
+		expect( property.minimum ).toBe( 42 );
+		expect( property.maximum ).toBe( 1337 );
+		expect( property.precision ).toBe( 2 );
 	} );
 
 	it( 'creates a currency property definition with defaults', () => {
@@ -110,17 +110,15 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			precision: 2
 		};
 
-		const property = createPropertyDefinitionFromJson( 'test', json );
-
-		if ( property.format === ValueFormat.Currency ) {
-			expect( property.currencyCode ).toBe( 'EUR' );
-			expect( property.precision ).toBe( 2 );
-			expect( property.minimum ).toBe( undefined );
-			expect( property.maximum ).toBe( undefined );
-		}
+		const property = createPropertyDefinitionFromJson( 'test', json ) as CurrencyProperty;
 
 		expect( property.type ).toBe( ValueType.Number );
-		expect( property.format ).toBe( ValueFormat.Currency );
+		expect( property.format ).toBe( Format.Currency );
+
+		expect( property.currencyCode ).toBe( 'EUR' );
+		expect( property.precision ).toBe( 2 );
+		expect( property.minimum ).toBe( undefined );
+		expect( property.maximum ).toBe( undefined );
 	} );
 
 	it( 'creates a currency property definition with all fields', () => {
@@ -133,17 +131,15 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			maximum: 1337
 		};
 
-		const property = createPropertyDefinitionFromJson( 'test', json );
-
-		if ( property.format === ValueFormat.Currency ) {
-			expect( property.currencyCode ).toBe( 'EUR' );
-			expect( property.precision ).toBe( 2 );
-			expect( property.minimum ).toBe( 42 );
-			expect( property.maximum ).toBe( 1337 );
-		}
+		const property = createPropertyDefinitionFromJson( 'test', json ) as CurrencyProperty;
 
 		expect( property.type ).toBe( ValueType.Number );
-		expect( property.format ).toBe( ValueFormat.Currency );
+		expect( property.format ).toBe( Format.Currency );
+
+		expect( property.currencyCode ).toBe( 'EUR' );
+		expect( property.precision ).toBe( 2 );
+		expect( property.minimum ).toBe( 42 );
+		expect( property.maximum ).toBe( 1337 );
 	} );
 
 	it( 'creates a currency progress property definition', () => {
@@ -155,16 +151,14 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			step: 23
 		};
 
-		const property = createPropertyDefinitionFromJson( 'test', json );
-
-		if ( property.format === ValueFormat.Progress ) {
-			expect( property.minimum ).toBe( 42 );
-			expect( property.maximum ).toBe( 1337 );
-			expect( property.step ).toBe( 23 );
-		}
+		const property = createPropertyDefinitionFromJson( 'test', json ) as ProgressProperty;
 
 		expect( property.type ).toBe( ValueType.Number );
-		expect( property.format ).toBe( ValueFormat.Progress );
+		expect( property.format ).toBe( Format.Progress );
+
+		expect( property.minimum ).toBe( 42 );
+		expect( property.maximum ).toBe( 1337 );
+		expect( property.step ).toBe( 23 );
 	} );
 
 	it( 'creates a boolean property definition', () => {
@@ -176,7 +170,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		expect( property.type ).toBe( ValueType.Boolean );
-		expect( property.format ).toBe( ValueFormat.Checkbox );
+		expect( property.format ).toBe( Format.Checkbox );
 	} );
 
 	it( 'creates a relation property definition with defaults', () => {
@@ -187,17 +181,15 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			targetSchema: 'Company'
 		};
 
-		const property = createPropertyDefinitionFromJson( 'test', json );
-
-		if ( property.type === ValueType.Relation ) {
-			expect( property.relation ).toBe( 'Employer' );
-			expect( property.targetSchema ).toBe( 'Company' );
-			expect( property.multiple ).toBe( false );
-			expect( property.uniqueItems ).toBe( true );
-		}
+		const property = createPropertyDefinitionFromJson( 'test', json ) as RelationProperty;
 
 		expect( property.type ).toBe( ValueType.Relation );
-		expect( property.format ).toBe( ValueFormat.Relation );
+		expect( property.format ).toBe( Format.Relation );
+
+		expect( property.relation ).toBe( 'Employer' );
+		expect( property.targetSchema ).toBe( 'Company' );
+		expect( property.multiple ).toBe( false );
+		expect( property.uniqueItems ).toBe( true );
 	} );
 
 	it( 'creates a relation property definition with all fields', () => {
@@ -210,23 +202,21 @@ describe( 'createPropertyDefinitionFromJson', () => {
 			uniqueItems: false
 		};
 
-		const property = createPropertyDefinitionFromJson( 'test', json );
-
-		if ( property.type === ValueType.Relation ) {
-			expect( property.multiple ).toBe( true );
-			expect( property.uniqueItems ).toBe( false );
-		}
+		const property = createPropertyDefinitionFromJson( 'test', json ) as RelationProperty;
 
 		expect( property.type ).toBe( ValueType.Relation );
+
+		expect( property.multiple ).toBe( true );
+		expect( property.uniqueItems ).toBe( false );
 	} );
 
-	it( 'throws an error for an unsupported type', () => {
+	it( 'throws an error for an unsupported format', () => {
 		const json = {
-			type: 'unsupported',
-			format: 'text'
+			type: 'string',
+			format: 'unsupported'
 		};
 
-		expect( () => createPropertyDefinitionFromJson( 'test', json ) ).toThrow( 'Unsupported type: unsupported' );
+		expect( () => createPropertyDefinitionFromJson( 'test', json ) ).toThrow( 'Unknown value format: unsupported' );
 	} );
 
 	it( 'creates definitions without default value', () => {
