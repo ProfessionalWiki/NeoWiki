@@ -3,7 +3,7 @@ import { SubjectMap } from '@/editor/domain/SubjectMap';
 import { SubjectId } from '@/editor/domain/SubjectId';
 import { Statement } from '@/editor/domain/Statement';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
-import { jsonToValue, RelationValue, type Value } from '@/editor/domain/Value';
+import { jsonToValue, RelationValue, type Value, valueToJson } from '@/editor/domain/Value';
 import type { Schema } from '@/editor/domain/Schema';
 
 export class StatementList implements Iterable<Statement> {
@@ -107,4 +107,17 @@ export class StatementList implements Iterable<Statement> {
 			.filter( ( value ): value is T => value instanceof type );
 	}
 
+}
+
+export function statementsToJson( statements: StatementList ): unknown {
+	const valuesJson: Record<string, unknown> = {};
+
+	for ( const statement of statements ) {
+		if ( statement.value === undefined ) {
+			continue;
+		}
+		valuesJson[ statement.propertyName.toString() ] = valueToJson( statement.value );
+	}
+
+	return valuesJson;
 }

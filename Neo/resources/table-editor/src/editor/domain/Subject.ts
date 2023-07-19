@@ -8,7 +8,7 @@ import type { PropertyName } from '@/editor/domain/PropertyDefinition';
 import type { Value } from '@/editor/domain/Value';
 
 /**
- * @deprecated
+ * @deprecated Use {@link StatementList} instead.
  */
 export type SubjectProperties = Record<string, unknown>; // TODO: remove
 

@@ -123,3 +123,18 @@ export function newBooleanValue( boolean: boolean ): BooleanValue {
 		boolean: boolean
 	} as BooleanValue;
 }
+
+export function valueToJson( value: Value ): unknown {
+	switch ( value.type ) {
+		case ValueType.String:
+			return ( value as StringValue ).strings;
+		case ValueType.Number:
+			return ( value as NumberValue ).number;
+		case ValueType.Boolean:
+			return ( value as BooleanValue ).boolean;
+		case ValueType.Relation:
+			return ( value as RelationValue ).relations.map( ( relation ) => ( { id: relation.id, target: relation.target } ) );
+		default:
+			throw new Error( `Unsupported value type: ${( value as Value ).type}` );
+	}
+}

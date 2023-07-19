@@ -1,9 +1,9 @@
 import { Statement } from '@/editor/domain/Statement';
 import { describe, expect, it } from 'vitest';
 import { SubjectId } from '@/editor/domain/SubjectId';
-import { StatementList } from '@/editor/domain/StatementList';
+import { StatementList, statementsToJson } from '@/editor/domain/StatementList';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
-import { Relation, RelationValue, newStringValue, newNumberValue } from '../Value';
+import { Relation, RelationValue, newStringValue, newNumberValue, newBooleanValue } from '../Value';
 import { PropertyDefinitionList } from '../PropertyDefinitionList';
 import { newTextProperty } from '../valueFormats/Text';
 import { newNumberProperty } from '../valueFormats/Number';
@@ -162,6 +162,30 @@ describe( 'StatementList', () => {
 			new Statement( new PropertyName( 'p2' ), newNumberValue( 42 ) ),
 			new Statement( new PropertyName( 'p3' ), newStringValue( 'foo', 'bar' ) )
 		] ) );
+	} );
+
+} );
+
+describe( 'statementsToJson', () => {
+
+	it( 'converts all values into JSON representations', () => {
+		const values = new StatementList( [
+			new Statement( new PropertyName( 'value1' ), newStringValue( 'test' ) ),
+			new Statement( new PropertyName( 'value2' ), newNumberValue( 123 ) ),
+			new Statement( new PropertyName( 'value3' ), newBooleanValue( true ) ),
+			new Statement( new PropertyName( 'value4' ), new RelationValue( [ new Relation( 'testId', 'testTarget' ) ] ) )
+		] );
+
+		const json = statementsToJson( values );
+
+		expect( json ).toEqual( {
+			value1: [ 'test' ],
+			value2: 123,
+			value3: true,
+			value4: [
+				{ id: 'testId', target: 'testTarget' }
+			]
+		} );
 	} );
 
 } );
