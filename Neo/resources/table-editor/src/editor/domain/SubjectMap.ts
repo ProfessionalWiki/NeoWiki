@@ -19,7 +19,7 @@ export class SubjectMap {
 		return this.subjects[ subjectId.text ];
 	}
 
-	public *[ Symbol.iterator ](): Generator<Subject, void, any> {
+	public *[ Symbol.iterator ](): Generator<Subject, void> {
 		for ( const subject of Object.values( this.subjects ) ) {
 			yield subject;
 		}

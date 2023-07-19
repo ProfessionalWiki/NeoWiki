@@ -31,7 +31,7 @@ export interface ValueFormatInterface<T extends PropertyDefinition, V extends Va
 
 	createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): T;
 
-	createFormField( value: V | undefined, property: T ): any; // TODO: is there no working supertype for OOUI widgets?!
+	createFormField( value: V | undefined, property: T ): OO.ui.Widget;
 	formatValueAsHtml( value: V, property: T ): string;
 
 	// TODO: createTableEditorCell?

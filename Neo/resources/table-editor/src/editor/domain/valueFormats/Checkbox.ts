@@ -21,7 +21,7 @@ export class CheckboxFormat implements ValueFormatInterface<CheckboxProperty, Bo
 		} as CheckboxProperty;
 	}
 
-	public createFormField( value: BooleanValue | undefined, property: CheckboxProperty ): any {
+	public createFormField( value: BooleanValue | undefined, property: CheckboxProperty ): OO.ui.CheckboxInputWidget {
 		return new OO.ui.CheckboxInputWidget( {
 			selected: value?.boolean ?? false,
 			required: property.required // TODO: verify that making the field required does not force checking the box
