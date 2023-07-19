@@ -3,7 +3,6 @@ import { type NumberValue, ValueType } from '@/editor/domain/Value';
 import type { ValueFormatInterface } from '@/editor/domain/ValueFormat';
 import { ValidationResult } from '@/editor/domain/ValueFormat';
 import { Format, PropertyName } from '@/editor/domain/PropertyDefinition';
-import type { TextProperty } from '@/editor/domain/valueFormats/Text';
 
 export interface NumberProperty extends PropertyDefinition {
 
@@ -45,7 +44,13 @@ export class NumberFormat implements ValueFormatInterface<NumberProperty, Number
 			options.step = 1 / Math.pow( 10, property.precision );
 		}
 
-		return new OO.ui.NumberInputWidget( options );
+		const widget = new OO.ui.NumberInputWidget( options );
+
+		setTimeout( () => {
+			widget.setFlags( { invalid: false } );
+		} );
+
+		return widget;
 	}
 
 	public formatValueAsHtml( value: NumberValue, property: NumberProperty ): string {

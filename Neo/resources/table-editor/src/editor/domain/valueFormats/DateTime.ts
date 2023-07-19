@@ -22,10 +22,14 @@ export class DateTimeFormat implements ValueFormatInterface<DateTimeProperty, St
 	}
 
 	public createFormField( value: StringValue | undefined, property: DateTimeProperty ): any {
-		return new mw.widgets.datetime.DateTimeInputWidget( {
+		const widget = new mw.widgets.datetime.DateTimeInputWidget( {
 			value: value?.strings[ 0 ] ?? '', // TODO: handle multiple values?
 			required: property.required
 		} );
+
+		widget.setFlags( { invalid: false } );
+
+		return widget;
 	}
 
 	public formatValueAsHtml( value: StringValue, property: DateTimeProperty ): string {
