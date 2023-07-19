@@ -56,11 +56,15 @@ export class TimeFormat implements ValueFormatInterface<TimeProperty, StringValu
 			} );
 		}
 
-		return new mw.widgets.datetime.DateTimeInputWidget( {
+		const widget = new mw.widgets.datetime.DateTimeInputWidget( {
 			type: 'time',
-			value: value,
+			value: value.strings.join( '' ),
 			required: property.required
 		} );
+
+		widget.setFlags( { invalid: false } );
+
+		return widget;
 	}
 
 	public formatValueAsHtml( value: StringValue, property: TimeProperty ): string {
