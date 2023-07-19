@@ -1,6 +1,7 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type NumberValue, ValueType } from '@/editor/domain/Value';
 import { CurrencyInputWidgetFactory } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
+import type { CurrencyInputWidget } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
 import type { ValueFormatInterface } from '@/editor/domain/ValueFormat';
 import { ValidationResult } from '@/editor/domain/ValueFormat';
 
@@ -32,7 +33,7 @@ export class CurrencyFormat implements ValueFormatInterface<CurrencyProperty, Nu
 		} as CurrencyProperty;
 	}
 
-	public createFormField( value: NumberValue | undefined, property: CurrencyProperty ): any {
+	public createFormField( value: NumberValue | undefined, property: CurrencyProperty ): CurrencyInputWidget {
 		return CurrencyInputWidgetFactory.create( {
 			value: value === undefined ? '' : value.number.toString(),
 			currency: property.currencyCode,

@@ -49,7 +49,7 @@ export interface PropertyDefinition {
 	readonly format: Format;
 	readonly description: string;
 	readonly required: boolean;
-	readonly default?: any;
+	readonly default?: unknown;
 
 }
 

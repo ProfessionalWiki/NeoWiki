@@ -7,7 +7,10 @@ import type { StatementList } from '@/editor/domain/StatementList';
 import type { PropertyName } from '@/editor/domain/PropertyDefinition';
 import type { Value } from '@/editor/domain/Value';
 
-export type SubjectProperties = Record<string, any>; // TODO: remove
+/**
+ * @deprecated
+ */
+export type SubjectProperties = Record<string, unknown>; // TODO: remove
 
 export class Subject {
 
