@@ -43,7 +43,7 @@ class Subject {
 	}
 
 	/**
-	 * @param array<string, array> $patch Property name to list of new values
+	 * @param array<string, mixed> $patch Property name to list of new values
 	 */
 	public function applyPatch( array $patch ): void {
 		$this->statements = $this->statements->applyPatch( $patch );
