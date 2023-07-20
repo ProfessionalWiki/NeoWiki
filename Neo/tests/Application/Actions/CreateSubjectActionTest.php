@@ -8,110 +8,73 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
-use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\TestGuidGenerator;
 use RuntimeException;
 
 class CreateSubjectActionTest extends TestCase {
-	private const GUID = '00000000-7777-0000-0000-000000000001';
 
-	private function newStubGuidGenerator( string $guid ): GuidGenerator {
-		$stubGuidGenerator = $this->createMock( GuidGenerator::class );
-		$stubGuidGenerator->method( 'generate' )->willReturn( $guid );
-		return $stubGuidGenerator;
+	private const GUID = '00000000-8888-0000-0000-000000000002';
+	private CreateSubjectPresenter $mockPresenter;
+
+	public function setUp(): void {
+		$this->inMemorySubjectRepository = new InMemorySubjectRepository();
+		$this->guidGenerator = new TestGuidGenerator( self::GUID );
+		$this->mockPresenter = $this->createMock( CreateSubjectPresenter::class );
+	}
+
+	private function newCreateSubjectAction(): CreateSubjectAction {
+		return new CreateSubjectAction(
+			$this->mockPresenter,
+			$this->inMemorySubjectRepository,
+			$this->guidGenerator,
+			new SucceedingSubjectActionAuthorizer()
+		);
 	}
 
 	public function testCreateMainSubject(): void {
-		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
-		$mockGuidGenerator = $this->newStubGuidGenerator( self::GUID );
-		$subjectAuthorizer = new SucceedingSubjectActionAuthorizer();
+		$this->inMemorySubjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
 
-		$mockSubjectRepository->method( 'getSubjectsByPageId' )->willReturn( PageSubjects::newEmpty() );
-		$mockSubjectRepository->method( 'savePageSubjects' );
+		$this->mockPresenter->expects( $this->once() )->method( 'presentCreated' )->with( self::GUID );
 
-		$mockPresenter = $this->createMock( CreateSubjectPresenter::class );
-		$mockPresenter->expects( $this->once() )->method( 'presentCreated' )->with( self::GUID );
-
-		$request = new CreateSubjectRequest(
-			pageId: 1,
-			isMainSubject: true,
-			label: 'Some Label',
-			schemaId: 'some-schema-id',
-			properties: []
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaId: 'some-schema-id',
+				properties: []
+			)
 		);
-
-		$action = new CreateSubjectAction(
-			$mockPresenter,
-			$mockSubjectRepository,
-			$mockGuidGenerator,
-			$subjectAuthorizer
-		);
-		$action->createSubject( $request );
-	}
-
-	public function testCreateChildSubject(): void {
-		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
-		$mockGuidGenerator = $this->newStubGuidGenerator( self::GUID );
-		$subjectAuthorizer = new SucceedingSubjectActionAuthorizer();
-
-		$mockSubjectRepository->method( 'getSubjectsByPageId' )->willReturn( $this->createMock( PageSubjects::class ) );
-		$mockSubjectRepository->method( 'savePageSubjects' );
-
-		$mockPresenter = $this->createMock( CreateSubjectPresenter::class );
-		$mockPresenter->expects( $this->once() )->method( 'presentCreated' )->with( self::GUID );
-
-		$request = new CreateSubjectRequest(
-			pageId: 1,
-			isMainSubject: false,
-			label: 'Child Label',
-			schemaId: 'child-schema-id',
-			properties: []
-		);
-
-		$action = new CreateSubjectAction(
-			$mockPresenter,
-			$mockSubjectRepository,
-			$mockGuidGenerator,
-			$subjectAuthorizer
-		);
-		$action->createSubject( $request );
 	}
 
 	public function testSubjectAlreadyExists(): void {
-		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
-		$mockGuidGenerator = $this->newStubGuidGenerator( self::GUID );
-		$subjectAuthorizer = new SucceedingSubjectActionAuthorizer();
-
 		$pageSubjects = $this->createMock( PageSubjects::class );
-		$pageSubjects->method( 'createMainSubject' )->willThrowException( new RuntimeException( 'Subject already exists' ) );
-		$mockSubjectRepository->method( 'getSubjectsByPageId' )->willReturn( $pageSubjects );
-
-		$mockPresenter = $this->createMock( CreateSubjectPresenter::class );
-		$mockPresenter->expects( $this->once() )->method( 'presentSubjectAlreadyExists' );
-
-		$request = new CreateSubjectRequest(
-			pageId: 1,
-			isMainSubject: true,
-			label: 'Existing Label',
-			schemaId: 'existing-schema-id',
-			properties: []
+		$pageSubjects->method( 'createMainSubject' )->willThrowException(
+			new RuntimeException( 'Subject already exists' )
 		);
+		$this->inMemorySubjectRepository->savePageSubjects( $pageSubjects, new PageId( 1 ) );
 
-		$action = new CreateSubjectAction(
-			$mockPresenter,
-			$mockSubjectRepository,
-			$mockGuidGenerator,
-			$subjectAuthorizer
+		$this->mockPresenter->expects( $this->once() )->method( 'presentSubjectAlreadyExists' );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Existing Label',
+				schemaId: 'existing-schema-id',
+				properties: []
+			)
 		);
-		$action->createSubject( $request );
 	}
 
 	public function testUserIsAllowedToCreateSubject(): void {
 		$subjectAuthorizer = new SucceedingSubjectActionAuthorizer();
-
 		$this->assertTrue( $subjectAuthorizer->canCreateChildSubject() );
 		$this->assertTrue( $subjectAuthorizer->canCreateMainSubject() );
 	}
@@ -120,22 +83,58 @@ class CreateSubjectActionTest extends TestCase {
 		$subjectAuthorizer = new FailingSubjectActionAuthorizer();
 
 		$createSubjectAction = new CreateSubjectAction(
-			$this->createMock( CreateSubjectPresenter::class ),
-			$this->createMock( SubjectRepository::class ),
-			$this->createMock( GuidGenerator::class ),
+			$this->mockPresenter,
+			$this->inMemorySubjectRepository,
+			$this->guidGenerator,
 			$subjectAuthorizer
 		);
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'You do not have the necessary permissions to create this subject' );
 
-		$createSubjectAction->createSubject( new CreateSubjectRequest(
-			pageId: 1,
-			isMainSubject: true,
-			label: 'Some Label',
-			schemaId: 'some-schema-id',
-			properties: []
-		) );
+		$createSubjectAction->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaId: 'some-schema-id',
+				properties: []
+			)
+		);
+	}
+
+	public function testNewRelationGetsCreated(): void {
+		$this->inMemorySubjectRepository->updateSubject( TestSubject::build() );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 145345,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaId: '00000000-8888-0000-0000-000000000022',
+				properties: [ 'Has product' => [ [ 'target' => '00000000-5555-0000-0000-000000000099' ] ] ]
+			)
+		);
+
+		$this->assertSame(
+			self::GUID,
+			$this->inMemorySubjectRepository
+				->getSubjectsByPageId( new PageId( 145345 ) )
+				->getMainSubject()
+				->getId()
+				->text,
+			'Relation ID is incorrect'
+		);
+	}
+
+	public function testIsRelationValueWithEmptyArray(): void {
+		$createSubjectAction = $this->newCreateSubjectAction();
+		$emptyArray = [];
+
+		$this->assertFalse(
+			$createSubjectAction->isRelationValue( $emptyArray ),
+			'isRelationValue should return false when passed an empty array.'
+		);
 	}
 
 }
