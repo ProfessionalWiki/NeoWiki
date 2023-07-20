@@ -114,9 +114,10 @@ export function statementsToJson( statements: StatementList ): unknown {
 
 	for ( const statement of statements ) {
 		if ( statement.value === undefined ) {
-			continue;
+			valuesJson[ statement.propertyName.toString() ] = null;
+		} else {
+			valuesJson[ statement.propertyName.toString() ] = valueToJson( statement.value );
 		}
-		valuesJson[ statement.propertyName.toString() ] = valueToJson( statement.value );
 	}
 
 	return valuesJson;
