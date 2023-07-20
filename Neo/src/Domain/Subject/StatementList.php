@@ -46,13 +46,17 @@ class StatementList {
 	}
 
 	/**
-	 * @param array<string, array> $patch Property name to list of new values
+	 * @param array<string, mixed> $patch Property name to list of new values
 	 */
 	public function applyPatch( array $patch ): self {
 		$newMap = $this->valuesByProperty;
 
 		foreach ( $patch as $propertyName => $values ) {
-			$newMap[$propertyName] = $values;
+			if ( $values === null ) {
+				unset( $newMap[$propertyName] );
+			} else {
+				$newMap[$propertyName] = $values;
+			}
 		}
 
 		return new self( $newMap );

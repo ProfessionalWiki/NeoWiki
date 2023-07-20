@@ -21,7 +21,7 @@ class PatchSubjectAction {
 
 	/**
 	 * @param SubjectId $subjectId
-	 * @param array<string, array> $patch Property name to list of new values
+	 * @param array<string, mixed> $patch Property name to list of new values
 	 */
 	public function patch( SubjectId $subjectId, array $patch ): void {
 		if ( !$this->subjectActionAuthorizer->canEditSubject() ) {
