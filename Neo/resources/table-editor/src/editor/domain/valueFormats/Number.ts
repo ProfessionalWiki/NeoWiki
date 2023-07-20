@@ -54,7 +54,16 @@ export class NumberFormat implements ValueFormatInterface<NumberProperty, Number
 	}
 
 	public formatValueAsHtml( value: NumberValue, property: NumberProperty ): string {
-		return ''; // TODO
+		if ( value.number === undefined ) {
+			// TODO: handle values that are not saved as NumberValue
+			return '';
+		}
+
+		if ( property.precision !== undefined ) {
+			return value.number.toFixed( property.precision );
+		}
+
+		return value.number.toString();
 	}
 
 }
