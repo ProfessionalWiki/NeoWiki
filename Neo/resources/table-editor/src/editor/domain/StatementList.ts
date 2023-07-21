@@ -109,7 +109,7 @@ export class StatementList implements Iterable<Statement> {
 
 }
 
-export function statementsToJson( statements: StatementList ): unknown {
+export function statementsToJson( statements: StatementList ): Record<string, unknown> {
 	const valuesJson: Record<string, unknown> = {};
 
 	for ( const statement of statements ) {
