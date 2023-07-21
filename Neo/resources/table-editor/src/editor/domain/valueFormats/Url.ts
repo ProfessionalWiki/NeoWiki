@@ -13,7 +13,7 @@ import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 export interface UrlProperty extends MultiStringProperty {
 }
 
-export class UrlFormat implements ValueFormatInterface<UrlProperty, StringValue>, TableEditorColumnsAssemblingInterface<ColumnDefinition> {
+export class UrlFormat implements ValueFormatInterface<UrlProperty, StringValue>, TableEditorColumnsAssemblingInterface {
 
 	public readonly valueType = ValueType.String;
 	public readonly name = 'url';

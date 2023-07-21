@@ -38,16 +38,16 @@ export interface ValueFormatInterface<T extends PropertyDefinition, V extends Va
 	// TODO: createTableEditorCell?
 }
 
-export interface TableEditorColumnsAssemblingInterface<T extends ColumnDefinition> {
-	createTableEditorColumn( column: T ): T ;
+export interface TableEditorColumnsAssemblingInterface {
+	createTableEditorColumn( column: ColumnDefinition ): ColumnDefinition;
 }
 
-export const isTableEditorColumnsAssemblingFormat = ( object: any ): object is TableEditorColumnsAssemblingInterface<ColumnDefinition> => {
+export const isTableEditorColumnsAssemblingFormat = ( object: any ): object is TableEditorColumnsAssemblingInterface => {
 	return 'createTableEditorColumn' in object;
 };
 
 export type ValueFormat = ValueFormatInterface<PropertyDefinition, Value> | TableEditorColumnsAssemblingFormat;
-export type TableEditorColumnsAssemblingFormat = ValueFormatInterface<PropertyDefinition, Value> & TableEditorColumnsAssemblingInterface<ColumnDefinition>;
+export type TableEditorColumnsAssemblingFormat = ValueFormatInterface<PropertyDefinition, Value> & TableEditorColumnsAssemblingInterface;
 
 export class ValidationResult {
 

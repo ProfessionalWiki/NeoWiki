@@ -16,7 +16,7 @@ export interface ProgressProperty extends PropertyDefinition {
 
 }
 
-export class ProgressFormat implements ValueFormatInterface<ProgressProperty, NumberValue>, TableEditorColumnsAssemblingInterface<ColumnDefinition> {
+export class ProgressFormat implements ValueFormatInterface<ProgressProperty, NumberValue>, TableEditorColumnsAssemblingInterface {
 
 	public readonly valueType = ValueType.Number;
 	public readonly name = 'progress';
