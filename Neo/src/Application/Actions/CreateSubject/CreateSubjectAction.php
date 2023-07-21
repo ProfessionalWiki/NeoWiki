@@ -21,7 +21,7 @@ class CreateSubjectAction {
 		private readonly CreateSubjectPresenter $presenter,
 		private readonly SubjectRepository $subjectRepository,
 		private readonly GuidGenerator $guidGenerator,
-		private SubjectActionAuthorizer $subjectActionAuthorizer
+		private readonly SubjectActionAuthorizer $subjectActionAuthorizer
 	) {
 	}
 
@@ -62,12 +62,15 @@ class CreateSubjectAction {
 
 	private function buildSubjectProperties( CreateSubjectRequest $request ): StatementList {
 		return new StatementList(
-			array_map( function ( $value ) {
-				if ( $this->isRelationValue( $value ) ) {
-					return $this->assignRelationIds( $value );
-				}
-				return $value;
-			}, $request->properties )
+			array_map(
+				function ( $value ) {
+					if ( $this->isRelationValue( $value ) ) {
+						return $this->assignRelationIds( $value );
+					}
+					return $value;
+				},
+				$request->properties
+			)
 		);
 	}
 
@@ -76,12 +79,15 @@ class CreateSubjectAction {
 	}
 
 	private function assignRelationIds( array $value ): array {
-		return array_map( function ( $item ) {
-			if ( is_array( $item ) && isset( $item['target'] ) ) {
-				$item['id'] = RelationId::createNew( $this->guidGenerator )->asString();
-			}
-			return $item;
-		}, $value );
+		return array_map(
+			function ( $item ) {
+				if ( is_array( $item ) && isset( $item['target'] ) ) {
+					$item['id'] = RelationId::createNew( $this->guidGenerator )->asString();
+				}
+				return $item;
+			},
+			$value
+		);
 	}
 
 }

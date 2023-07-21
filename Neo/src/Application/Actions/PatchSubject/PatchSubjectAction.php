@@ -13,9 +13,9 @@ use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
 class PatchSubjectAction {
 
 	public function __construct(
-		private SubjectRepository $subjectRepository,
-		private SubjectActionAuthorizer $subjectActionAuthorizer,
-		private GuidGenerator $guidGenerator
+		private readonly SubjectRepository $subjectRepository,
+		private readonly SubjectActionAuthorizer $subjectActionAuthorizer,
+		private readonly GuidGenerator $guidGenerator
 	) {
 	}
 
@@ -37,16 +37,20 @@ class PatchSubjectAction {
 		foreach ( $patch as $key => $value ) {
 			/** @var mixed $value */
 			if ( is_array( $value ) ) {
-				$patch[$key] = array_map( function ( $item ) {
-					if ( is_array( $item ) && isset( $item['target'] ) && !isset( $item['id'] ) ) {
-						$item['id'] = RelationId::createNew( $this->guidGenerator )->asString();
-					}
-					return $item;
-				}, $value );
+				$patch[$key] = array_map(
+					function ( $item ) {
+						if ( is_array( $item ) && isset( $item['target'] ) && !isset( $item['id'] ) ) {
+							$item['id'] = RelationId::createNew( $this->guidGenerator )->asString();
+						}
+						return $item;
+					},
+					$value
+				);
 			}
 		}
 
 		$subject->applyPatch( $patch );
+
 		$this->subjectRepository->updateSubject( $subject );
 	}
 
