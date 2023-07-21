@@ -35,10 +35,9 @@ class PatchSubjectAction {
 		}
 
 		foreach ( $patch as $key => $value ) {
-			/** @var mixed $value */
 			if ( is_array( $value ) ) {
 				$patch[$key] = array_map(
-					function ( $item ) {
+					function ( mixed $item ): mixed {
 						if ( is_array( $item ) && isset( $item['target'] ) && !isset( $item['id'] ) ) {
 							$item['id'] = RelationId::createNew( $this->guidGenerator )->asString();
 						}
