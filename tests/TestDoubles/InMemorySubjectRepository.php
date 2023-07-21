@@ -12,7 +12,14 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 class InMemorySubjectRepository implements SubjectRepository {
 
+	/**
+	 * @var array<string, Subject>
+	 */
 	private array $subjects = [];
+
+	/**
+	 * @var array<string, PageSubjects>
+	 */
 	private array $subjectsByPage = [];
 
 	public function getSubject( SubjectId $subjectId ): ?Subject {
@@ -28,16 +35,16 @@ class InMemorySubjectRepository implements SubjectRepository {
 	}
 
 	public function getSubjectsByPageId( PageId $pageId ): PageSubjects {
-		$pageSubjects = $this->subjectsByPage[$pageId->id] ?? null;
-		if ( $pageSubjects === null ) {
-			return PageSubjects::newEmpty();
-		} else {
-			return $pageSubjects;
+		if ( array_key_exists( $pageId->id, $this->subjectsByPage ) ) {
+			return $this->subjectsByPage[$pageId->id];
 		}
+
+		return PageSubjects::newEmpty();
 	}
 
 	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId ): void {
 		$this->subjectsByPage[$pageId->id] = $pageSubjects;
+
 		foreach ( $pageSubjects->getAllSubjects() as $subject ) {
 			$this->subjects[$subject->getId()->text] = $subject;
 		}
