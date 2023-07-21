@@ -2,12 +2,13 @@ import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/Pr
 import { TagMultiselectWidgetFactory } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { StringValue, Value } from '@/editor/domain/Value';
 import { ValueType } from '@/editor/domain/Value';
+import type { ColumnDefinition } from 'tabulator-tables';
 
 export class ValueFormatRegistry {
 
-	private propertyTypes: Map<string, ValueFormatInterface<any, any>> = new Map();
+	private propertyTypes: Map<string, ValueFormat> = new Map();
 
-	public registerFormat( format: ValueFormatInterface<any, any> ): void {
+	public registerFormat( format: ValueFormat ): void {
 		this.propertyTypes.set( format.name, format );
 	}
 
@@ -37,7 +38,16 @@ export interface ValueFormatInterface<T extends PropertyDefinition, V extends Va
 	// TODO: createTableEditorCell?
 }
 
-export type ValueFormat = ValueFormatInterface<PropertyDefinition, Value>;
+export interface TableEditorColumnsAssemblingInterface<T extends ColumnDefinition> {
+	createTableEditorColumn( column: T ): T ;
+}
+
+export const isTableEditorColumnsAssemblingFormat = ( object: any ): object is TableEditorColumnsAssemblingInterface<ColumnDefinition> => {
+	return 'createTableEditorColumn' in object;
+};
+
+export type ValueFormat = ValueFormatInterface<PropertyDefinition, Value> | TableEditorColumnsAssemblingFormat;
+export type TableEditorColumnsAssemblingFormat = ValueFormatInterface<PropertyDefinition, Value> & TableEditorColumnsAssemblingInterface<ColumnDefinition>;
 
 export class ValidationResult {
 

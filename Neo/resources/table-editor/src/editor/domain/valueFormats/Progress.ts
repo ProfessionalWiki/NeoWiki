@@ -1,8 +1,12 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type NumberValue, ValueType } from '@/editor/domain/Value';
 import { ProgressBarWidgetFactory } from '@/editor/presentation/Widgets/ProgressBarWidgetFactory';
-import type { ValueFormatInterface } from '@/editor/domain/ValueFormat';
-import { ValidationResult } from '@/editor/domain/ValueFormat';
+import {
+	type ValueFormatInterface,
+	type TableEditorColumnsAssemblingInterface,
+	ValidationResult
+} from '@/editor/domain/ValueFormat';
+import type { ColumnDefinition } from 'tabulator-tables';
 
 export interface ProgressProperty extends PropertyDefinition {
 
@@ -12,7 +16,7 @@ export interface ProgressProperty extends PropertyDefinition {
 
 }
 
-export class ProgressFormat implements ValueFormatInterface<ProgressProperty, NumberValue> {
+export class ProgressFormat implements ValueFormatInterface<ProgressProperty, NumberValue>, TableEditorColumnsAssemblingInterface<ColumnDefinition> {
 
 	public readonly valueType = ValueType.Number;
 	public readonly name = 'progress';
@@ -45,4 +49,17 @@ export class ProgressFormat implements ValueFormatInterface<ProgressProperty, Nu
 		return ''; // TODO
 	}
 
+	public createTableEditorColumn( column: ColumnDefinition ): ColumnDefinition {
+		column.formatter = 'progress';
+		column.formatterParams = {
+			legend: true,
+			legendAlign: 'left',
+			legendColor: '#FFFFFF',
+			color: '#3366CC',
+			min: 0, // TODO
+			max: 100 // TODO
+		};
+
+		return column;
+	}
 }

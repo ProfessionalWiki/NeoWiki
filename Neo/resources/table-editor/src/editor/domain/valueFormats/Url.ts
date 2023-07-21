@@ -1,17 +1,19 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
 import {
+	type TableEditorColumnsAssemblingInterface,
 	createStringFormField,
 	type ValidationError,
 	ValidationResult,
 	type ValueFormatInterface
 } from '@/editor/domain/ValueFormat';
 import DOMPurify from 'dompurify';
+import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
 export interface UrlProperty extends MultiStringProperty {
 }
 
-export class UrlFormat implements ValueFormatInterface<UrlProperty, StringValue> {
+export class UrlFormat implements ValueFormatInterface<UrlProperty, StringValue>, TableEditorColumnsAssemblingInterface<ColumnDefinition> {
 
 	public readonly valueType = ValueType.String;
 	public readonly name = 'url';
@@ -59,6 +61,19 @@ export class UrlFormat implements ValueFormatInterface<UrlProperty, StringValue>
 				return DOMPurify.sanitize( urlString ); // TODO: add styling and CSS classes?
 			}
 		} ).filter( Boolean ).join( ', ' );
+	}
+
+	public createTableEditorColumn( column: ColumnDefinition ): ColumnDefinition {
+		column.formatter = 'link';
+		column.formatterParams = {
+			target: '_blank',
+			label: ( cell: CellComponent ) => {
+				const val = cell.getValue();
+				return typeof val === 'string' || val instanceof String ? val.replace( /^https?:\/\//, '' ) : val;
+			}
+		};
+
+		return column;
 	}
 
 }
