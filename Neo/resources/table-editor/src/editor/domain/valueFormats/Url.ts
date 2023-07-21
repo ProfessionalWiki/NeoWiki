@@ -5,7 +5,7 @@ import {
 	createStringFormField,
 	type ValidationError,
 	ValidationResult,
-	type ValueFormatInterface
+	type ValueFormatInterface, createBaseColumnDefinition
 } from '@/editor/domain/ValueFormat';
 import DOMPurify from 'dompurify';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
@@ -63,7 +63,9 @@ export class UrlFormat implements ValueFormatInterface<UrlProperty, StringValue>
 		} ).filter( Boolean ).join( ', ' );
 	}
 
-	public createTableEditorColumn( column: ColumnDefinition ): ColumnDefinition {
+	public createTableEditorColumn( property: PropertyDefinition ): ColumnDefinition {
+		const column: ColumnDefinition = createBaseColumnDefinition( property );
+
 		column.formatter = 'link';
 		column.formatterParams = {
 			target: '_blank',

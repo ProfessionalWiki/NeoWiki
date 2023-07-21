@@ -4,7 +4,7 @@ import { ProgressBarWidgetFactory } from '@/editor/presentation/Widgets/Progress
 import {
 	type ValueFormatInterface,
 	type TableEditorColumnsAssemblingInterface,
-	ValidationResult
+	ValidationResult, createBaseColumnDefinition
 } from '@/editor/domain/ValueFormat';
 import type { ColumnDefinition } from 'tabulator-tables';
 
@@ -49,7 +49,9 @@ export class ProgressFormat implements ValueFormatInterface<ProgressProperty, Nu
 		return ''; // TODO
 	}
 
-	public createTableEditorColumn( column: ColumnDefinition ): ColumnDefinition {
+	public createTableEditorColumn( property: PropertyDefinition ): ColumnDefinition {
+		const column: ColumnDefinition = createBaseColumnDefinition( property );
+
 		column.formatter = 'progress';
 		column.formatterParams = {
 			legend: true,

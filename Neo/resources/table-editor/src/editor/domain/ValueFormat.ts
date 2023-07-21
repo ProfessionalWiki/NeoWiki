@@ -39,7 +39,14 @@ export interface ValueFormatInterface<T extends PropertyDefinition, V extends Va
 }
 
 export interface TableEditorColumnsAssemblingInterface {
-	createTableEditorColumn( column: ColumnDefinition ): ColumnDefinition;
+	createTableEditorColumn( property: PropertyDefinition ): ColumnDefinition;
+}
+
+export function createBaseColumnDefinition( property: PropertyDefinition ): ColumnDefinition {
+	return {
+		title: property.name.toString(),
+		field: property.name.toString()
+	};
 }
 
 export const isTableEditorColumnsAssemblingFormat = ( object: any ): object is TableEditorColumnsAssemblingInterface => {
