@@ -1,12 +1,10 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
+import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import { Relation, RelationValue, ValueType } from '@/editor/domain/Value';
 import { RelationMultiselectWidgetFactory } from '@/editor/presentation/Widgets/RelationMultiselectWidgetFactory';
 import { RelationLookupWidgetFactory } from '@/editor/presentation/Widgets/RelationLookupWidgetFactory';
-import { BaseValueFormat } from '@/editor/domain/ValueFormat';
-import { ValidationResult } from '@/editor/domain/ValueFormat';
-import { Format, PropertyName } from '@/editor/domain/PropertyDefinition';
-import type { ColumnDefinition } from 'tabulator-tables';
-import type { CellComponent } from 'tabulator-tables';
+import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
+import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import { SubjectId } from '@/editor/domain/SubjectId';
 import type { PageUrlBuilder } from '@/editor/infrastructure/PageUrlBuilder';
 import type { CellData } from '@/editor/presentation/SubjectTableLoader';
@@ -25,8 +23,8 @@ export interface RelationProperty extends PropertyDefinition {
 
 export class RelationFormat extends BaseValueFormat<RelationProperty, RelationValue> {
 
-	public readonly valueType = ValueType.String;
-	public readonly name = 'relation';
+	public static readonly valueType = ValueType.String;
+	public static readonly formatName = 'relation';
 	private readonly factory: RelationServicesFactory;
 
 	public constructor( factory: NeoWikiExtension ) {
@@ -143,7 +141,7 @@ export function newRelationProperty( name: string ): RelationProperty {
 	return {
 		name: new PropertyName( name ),
 		type: ValueType.Relation,
-		format: 'relation' as Format,
+		format: RelationFormat.formatName,
 		description: '',
 		required: false,
 		default: '',

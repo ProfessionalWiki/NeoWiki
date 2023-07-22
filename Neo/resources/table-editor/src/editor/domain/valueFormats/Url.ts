@@ -17,8 +17,8 @@ export interface UrlProperty extends MultiStringProperty {
 
 export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue> {
 
-	public readonly valueType = ValueType.String;
-	public readonly name = 'url';
+	public static readonly valueType = ValueType.String;
+	public static readonly formatName = 'url';
 
 	// TODO: unit tests
 	public validate( value: StringValue, property: UrlProperty ): ValidationResult {

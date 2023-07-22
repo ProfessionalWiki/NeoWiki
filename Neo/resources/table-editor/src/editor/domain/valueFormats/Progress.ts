@@ -17,8 +17,8 @@ export interface ProgressProperty extends PropertyDefinition {
 
 export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValue> {
 
-	public readonly valueType = ValueType.Number;
-	public readonly name = 'progress';
+	public static readonly valueType = ValueType.Number;
+	public static readonly formatName = 'progress';
 
 	public validate( value: NumberValue, property: ProgressProperty ): ValidationResult {
 		return new ValidationResult( [] ); // TODO

@@ -7,8 +7,8 @@ export interface DateTimeProperty extends PropertyDefinition {
 
 export class DateTimeFormat extends BaseValueFormat<DateTimeProperty, StringValue> {
 
-	public readonly valueType = ValueType.String;
-	public readonly name = 'dateTime';
+	public static readonly valueType = ValueType.String;
+	public static readonly formatName = 'dateTime';
 
 	public validate( value: StringValue, property: DateTimeProperty ): ValidationResult {
 		return new ValidationResult( [] ); // TODO

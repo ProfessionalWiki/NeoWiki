@@ -11,8 +11,8 @@ export interface TimeProperty extends MultiStringProperty {
 
 export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue> {
 
-	public readonly valueType = ValueType.String;
-	public readonly name = 'time';
+	public static readonly valueType = ValueType.String;
+	public static readonly formatName = 'time';
 
 	// TODO: unit tests
 	public validate( value: StringValue, property: TimeProperty ): ValidationResult {

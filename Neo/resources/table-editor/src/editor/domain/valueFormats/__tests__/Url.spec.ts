@@ -1,7 +1,7 @@
 import { test, describe, expect, it } from 'vitest';
 import { isValidUrl, UrlFormat, UrlFormatter, type UrlProperty } from '../Url';
 import { newStringValue, type StringValue, ValueType } from '../../Value';
-import { Format, PropertyName } from '../../PropertyDefinition';
+import { PropertyName } from '../../PropertyDefinition';
 
 test.each( [
 	[ '', false ],
@@ -152,7 +152,7 @@ function newUrlProperty(): UrlProperty {
 	return {
 		name: new PropertyName( 'url' ),
 		type: ValueType.String,
-		format: Format.Url,
+		format: UrlFormat.formatName,
 		description: 'URL',
 		required: false
 	};

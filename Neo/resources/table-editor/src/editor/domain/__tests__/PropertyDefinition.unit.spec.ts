@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { createPropertyDefinitionFromJson, PropertyName, Format } from '@/editor/domain/PropertyDefinition';
+import { createPropertyDefinitionFromJson, PropertyName } from '@/editor/domain/PropertyDefinition';
 import { ValueType } from '../Value';
 import type { TextProperty } from '../valueFormats/Text';
+import { TextFormat } from '../valueFormats/Text';
 import type { NumberProperty } from '../valueFormats/Number';
+import { NumberFormat } from '../valueFormats/Number';
 import type { CurrencyProperty } from '../valueFormats/Currency';
+import { CurrencyFormat } from '../valueFormats/Currency';
 import type { ProgressProperty } from '../valueFormats/Progress';
+import { ProgressFormat } from '../valueFormats/Progress';
 import type { RelationProperty } from '../valueFormats/Relation';
+import { RelationFormat } from '../valueFormats/Relation';
+import { CheckboxFormat } from '../valueFormats/Checkbox';
 
 describe( 'PropertyName constructor', () => {
 
@@ -61,7 +67,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		const property = createPropertyDefinitionFromJson( 'test', json ) as TextProperty;
 
 		expect( property.type ).toBe( ValueType.String );
-		expect( property.format ).toBe( Format.Text );
+		expect( property.format ).toBe( TextFormat.formatName );
 
 		expect( property.multiple ).toBe( true );
 		expect( property.uniqueItems ).toBe( false );
@@ -76,7 +82,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		const property = createPropertyDefinitionFromJson( 'test', json ) as NumberProperty;
 
 		expect( property.type ).toBe( ValueType.Number );
-		expect( property.format ).toBe( Format.Number );
+		expect( property.format ).toBe( NumberFormat.formatName );
 
 		expect( property.minimum ).toBe( undefined );
 		expect( property.maximum ).toBe( undefined );
@@ -95,7 +101,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		const property = createPropertyDefinitionFromJson( 'test', json ) as NumberProperty;
 
 		expect( property.type ).toBe( ValueType.Number );
-		expect( property.format ).toBe( Format.Number );
+		expect( property.format ).toBe( NumberFormat.formatName );
 
 		expect( property.minimum ).toBe( 42 );
 		expect( property.maximum ).toBe( 1337 );
@@ -113,7 +119,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		const property = createPropertyDefinitionFromJson( 'test', json ) as CurrencyProperty;
 
 		expect( property.type ).toBe( ValueType.Number );
-		expect( property.format ).toBe( Format.Currency );
+		expect( property.format ).toBe( CurrencyFormat.formatName );
 
 		expect( property.currencyCode ).toBe( 'EUR' );
 		expect( property.precision ).toBe( 2 );
@@ -134,7 +140,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		const property = createPropertyDefinitionFromJson( 'test', json ) as CurrencyProperty;
 
 		expect( property.type ).toBe( ValueType.Number );
-		expect( property.format ).toBe( Format.Currency );
+		expect( property.format ).toBe( CurrencyFormat.formatName );
 
 		expect( property.currencyCode ).toBe( 'EUR' );
 		expect( property.precision ).toBe( 2 );
@@ -154,7 +160,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		const property = createPropertyDefinitionFromJson( 'test', json ) as ProgressProperty;
 
 		expect( property.type ).toBe( ValueType.Number );
-		expect( property.format ).toBe( Format.Progress );
+		expect( property.format ).toBe( ProgressFormat.formatName );
 
 		expect( property.minimum ).toBe( 42 );
 		expect( property.maximum ).toBe( 1337 );
@@ -170,7 +176,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		const property = createPropertyDefinitionFromJson( 'test', json );
 
 		expect( property.type ).toBe( ValueType.Boolean );
-		expect( property.format ).toBe( Format.Checkbox );
+		expect( property.format ).toBe( CheckboxFormat.formatName );
 	} );
 
 	it( 'creates a relation property definition with defaults', () => {
@@ -184,7 +190,7 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		const property = createPropertyDefinitionFromJson( 'test', json ) as RelationProperty;
 
 		expect( property.type ).toBe( ValueType.Relation );
-		expect( property.format ).toBe( Format.Relation );
+		expect( property.format ).toBe( RelationFormat.formatName );
 
 		expect( property.relation ).toBe( 'Employer' );
 		expect( property.targetSchema ).toBe( 'Company' );

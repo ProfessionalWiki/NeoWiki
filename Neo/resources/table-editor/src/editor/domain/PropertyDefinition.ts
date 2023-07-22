@@ -1,30 +1,6 @@
 import type { ValueType } from '@/editor/domain/Value';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 
-export enum Format { // TODO: remove
-
-	Text = 'text',
-
-	Email = 'email',
-	Url = 'url',
-	PhoneNumber = 'phoneNumber',
-
-	Date = 'date',
-	Time = 'time',
-	DateTime = 'dateTime',
-	Duration = 'duration', // TODO
-
-	Number = 'number',
-	Currency = 'currency',
-	Progress = 'progress',
-
-	Checkbox = 'checkbox',
-	// Toggle = 'toggle',
-
-	Relation = 'relation',
-
-}
-
 export class PropertyName {
 
 	private readonly name: string;
@@ -46,7 +22,7 @@ export interface PropertyDefinition {
 
 	readonly name: PropertyName;
 	readonly type: ValueType;
-	readonly format: Format;
+	readonly format: string;
 	readonly description: string;
 	readonly required: boolean;
 	readonly default?: unknown;
@@ -73,7 +49,7 @@ export function createPropertyDefinitionFromJson( id: string, json: any ): Prope
 		{
 			name: new PropertyName( id ),
 			type: json.type as ValueType,
-			format: json.format as Format,
+			format: json.format as string,
 			description: json.description ?? '',
 			required: json.required ?? false,
 			default: json.default

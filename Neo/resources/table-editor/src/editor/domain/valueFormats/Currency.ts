@@ -15,8 +15,8 @@ export interface CurrencyProperty extends PropertyDefinition {
 
 export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValue> {
 
-	public readonly valueType = ValueType.Number;
-	public readonly name = 'currency';
+	public static readonly valueType = ValueType.Number;
+	public static readonly formatName = 'currency';
 
 	public validate( value: NumberValue, property: CurrencyProperty ): ValidationResult {
 		return new ValidationResult( [] ); // TODO

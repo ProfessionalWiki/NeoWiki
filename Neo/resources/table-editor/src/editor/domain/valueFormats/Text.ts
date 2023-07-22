@@ -1,7 +1,7 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
 import { BaseValueFormat, createStringFormField, ValidationResult } from '@/editor/domain/ValueFormat';
-import { Format, PropertyName } from '@/editor/domain/PropertyDefinition';
+import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
 export interface TextProperty extends MultiStringProperty {
@@ -9,8 +9,8 @@ export interface TextProperty extends MultiStringProperty {
 
 export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
 
-	public readonly valueType = ValueType.String;
-	public readonly name = 'text';
+	public static readonly valueType = ValueType.String;
+	public static readonly formatName = 'text';
 
 	public validate( value: StringValue, property: TextProperty ): ValidationResult {
 		return new ValidationResult( [] );
@@ -48,7 +48,7 @@ export function newTextProperty( name = 'MyTextProperty' ): TextProperty {
 	return {
 		name: new PropertyName( name ),
 		type: ValueType.String,
-		format: 'text' as Format,
+		format: TextFormat.formatName,
 		description: '',
 		required: false,
 		default: '',
