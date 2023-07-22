@@ -1,12 +1,18 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { RelationValue, ValueType } from '@/editor/domain/Value';
+import { Relation, RelationValue, ValueType } from '@/editor/domain/Value';
 import { RelationMultiselectWidgetFactory } from '@/editor/presentation/Widgets/RelationMultiselectWidgetFactory';
 import { RelationLookupWidgetFactory } from '@/editor/presentation/Widgets/RelationLookupWidgetFactory';
-import type { ValueFormatInterface } from '@/editor/domain/ValueFormat';
+import { BaseValueFormat } from '@/editor/domain/ValueFormat';
 import { ValidationResult } from '@/editor/domain/ValueFormat';
-import type { RelationTargetSuggester } from '@/editor/application/RelationTargetSuggester';
 import { Format, PropertyName } from '@/editor/domain/PropertyDefinition';
-import type { TextProperty } from '@/editor/domain/valueFormats/Text';
+import type { ColumnDefinition } from 'tabulator-tables';
+import type { CellComponent } from 'tabulator-tables';
+import { SubjectId } from '@/editor/domain/SubjectId';
+import type { PageUrlBuilder } from '@/editor/infrastructure/PageUrlBuilder';
+import type { CellData } from '@/editor/presentation/SubjectTableLoader';
+import type { SubjectMap } from '@/editor/domain/SubjectMap';
+import type { NeoWikiExtension } from '@/NeoWikiExtension';
+import type { RelationTargetSuggester } from '@/editor/application/RelationTargetSuggester';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -17,14 +23,15 @@ export interface RelationProperty extends PropertyDefinition {
 
 }
 
-export class RelationFormat implements ValueFormatInterface<RelationProperty, RelationValue> {
+export class RelationFormat extends BaseValueFormat<RelationProperty, RelationValue> {
 
 	public readonly valueType = ValueType.String;
 	public readonly name = 'relation';
+	private readonly factory: RelationServicesFactory;
 
-	public constructor(
-		private readonly relationTargetSuggester: RelationTargetSuggester
-	) {
+	public constructor( factory: NeoWikiExtension ) {
+		super();
+		this.factory = new RelationServicesFactory( factory );
 	}
 
 	public validate( value: RelationValue, property: RelationProperty ): ValidationResult {
@@ -47,7 +54,7 @@ export class RelationFormat implements ValueFormatInterface<RelationProperty, Re
 		if ( property.multiple ) {
 			const widget = RelationMultiselectWidgetFactory.create( {
 				targetSchema: property.targetSchema,
-				relationTargetSuggester: this.relationTargetSuggester
+				relationTargetSuggester: this.factory.getRelationTargetSuggester()
 				// TODO: allow duplicates when property.uniqueItems is false
 				// TODO: how to handle required?
 			} );
@@ -59,13 +66,75 @@ export class RelationFormat implements ValueFormatInterface<RelationProperty, Re
 		return RelationLookupWidgetFactory.create( {
 			selected: value,
 			targetSchema: property.targetSchema,
-			relationTargetSuggester: this.relationTargetSuggester,
+			relationTargetSuggester: this.factory.getRelationTargetSuggester(),
 			required: property.required
 		} );
 	}
 
 	public formatValueAsHtml( value: RelationValue, property: RelationProperty ): string {
 		return value.targetIds.join( ', ' ); // TODO
+	}
+
+	public createTableEditorColumn( property: RelationProperty ): ColumnDefinition {
+		const column: ColumnDefinition = super.createTableEditorColumn( property );
+		return this.factory.getColumnBuilder().createTableEditorColumn( column, property );
+	}
+
+}
+
+class RelationServicesFactory {
+
+	public constructor(
+		private readonly factory: NeoWikiExtension
+	) {
+	}
+
+	public getRelationTargetSuggester(): RelationTargetSuggester {
+		return this.factory.getRelationTargetSuggester();
+	}
+
+	public getColumnBuilder(): RelationColumnBuilder {
+		return new RelationColumnBuilder( this.factory.getPageUrlBuilder() );
+	}
+
+}
+
+class RelationColumnBuilder {
+
+	public constructor(
+		private readonly pageUrlBuilder: PageUrlBuilder
+	) {
+	}
+
+	public createTableEditorColumn( column: ColumnDefinition, _: RelationProperty ): ColumnDefinition {
+		column.formatter = this.relationsFormatter.bind( this );
+
+		return column;
+	}
+
+	private relationsFormatter( cell: CellComponent ): string {
+		const relationValue = cell.getValue() as RelationValue;
+
+		if ( relationValue === undefined ) {
+			return '';
+		}
+
+		const referencedSubjects = ( cell.getData() as CellData ).referencedSubjects;
+
+		return relationValue.relations
+			.map( ( relation ) => this.formatRelation( relation, referencedSubjects ) )
+			.join( ', ' );
+	}
+
+	private formatRelation( relation: Relation, referencedSubjects: SubjectMap ): string {
+		const subject = referencedSubjects.get( new SubjectId( relation.target ) );
+
+		if ( subject === undefined ) {
+			return '';
+		}
+
+		const url = this.pageUrlBuilder.buildUrl( subject.getPageIdentifiers().getPageName() );
+		return `<a href="${url}">${subject.getLabel()}</a>`;
 	}
 
 }

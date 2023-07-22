@@ -1,12 +1,11 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
-import type { ValueFormatInterface } from '@/editor/domain/ValueFormat';
-import { ValidationResult } from '@/editor/domain/ValueFormat';
+import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 
 export interface DateProperty extends PropertyDefinition {
 }
 
-export class DateFormat implements ValueFormatInterface<DateProperty, StringValue> {
+export class DateFormat extends BaseValueFormat<DateProperty, StringValue> {
 
 	public readonly valueType = ValueType.String;
 	public readonly name = 'date';

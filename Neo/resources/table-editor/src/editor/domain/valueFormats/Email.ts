@@ -1,11 +1,11 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
-import { createStringFormField, ValidationResult, type ValueFormatInterface } from '@/editor/domain/ValueFormat';
+import { createStringFormField, ValidationResult, BaseValueFormat } from '@/editor/domain/ValueFormat';
 
 export interface EmailProperty extends MultiStringProperty {
 }
 
-export class EmailFormat implements ValueFormatInterface<EmailProperty, StringValue> {
+export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue> {
 
 	public readonly valueType = ValueType.String;
 	public readonly name = 'email';

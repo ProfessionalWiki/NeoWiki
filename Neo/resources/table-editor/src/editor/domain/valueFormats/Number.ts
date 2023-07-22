@@ -1,6 +1,6 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type NumberValue, ValueType } from '@/editor/domain/Value';
-import type { ValueFormatInterface } from '@/editor/domain/ValueFormat';
+import { BaseValueFormat } from '@/editor/domain/ValueFormat';
 import { ValidationResult } from '@/editor/domain/ValueFormat';
 import { Format, PropertyName } from '@/editor/domain/PropertyDefinition';
 
@@ -12,7 +12,7 @@ export interface NumberProperty extends PropertyDefinition {
 
 }
 
-export class NumberFormat implements ValueFormatInterface<NumberProperty, NumberValue> {
+export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
 
 	public readonly valueType = ValueType.Number;
 	public readonly name = 'number';

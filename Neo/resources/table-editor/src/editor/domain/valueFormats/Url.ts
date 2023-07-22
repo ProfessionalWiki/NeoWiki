@@ -1,11 +1,10 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
 import {
-	type TableEditorColumnsAssemblingInterface,
+	BaseValueFormat,
 	createStringFormField,
 	type ValidationError,
-	ValidationResult,
-	type ValueFormatInterface, createBaseColumnDefinition
+	ValidationResult
 } from '@/editor/domain/ValueFormat';
 import DOMPurify from 'dompurify';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
@@ -13,7 +12,7 @@ import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 export interface UrlProperty extends MultiStringProperty {
 }
 
-export class UrlFormat implements ValueFormatInterface<UrlProperty, StringValue>, TableEditorColumnsAssemblingInterface {
+export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue> {
 
 	public readonly valueType = ValueType.String;
 	public readonly name = 'url';
@@ -64,7 +63,7 @@ export class UrlFormat implements ValueFormatInterface<UrlProperty, StringValue>
 	}
 
 	public createTableEditorColumn( property: UrlProperty ): ColumnDefinition {
-		const column: ColumnDefinition = createBaseColumnDefinition( property );
+		const column: ColumnDefinition = super.createTableEditorColumn( property );
 
 		column.formatter = 'link';
 		column.formatterParams = {

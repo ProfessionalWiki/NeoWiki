@@ -2,7 +2,7 @@ import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type NumberValue, ValueType } from '@/editor/domain/Value';
 import { CurrencyInputWidgetFactory } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
 import type { CurrencyInputWidget } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
-import type { ValueFormatInterface } from '@/editor/domain/ValueFormat';
+import { BaseValueFormat } from '@/editor/domain/ValueFormat';
 import { ValidationResult } from '@/editor/domain/ValueFormat';
 
 export interface CurrencyProperty extends PropertyDefinition {
@@ -14,7 +14,7 @@ export interface CurrencyProperty extends PropertyDefinition {
 
 }
 
-export class CurrencyFormat implements ValueFormatInterface<CurrencyProperty, NumberValue> {
+export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValue> {
 
 	public readonly valueType = ValueType.Number;
 	public readonly name = 'currency';

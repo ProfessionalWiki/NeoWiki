@@ -1,12 +1,12 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type BooleanValue, ValueType } from '@/editor/domain/Value';
-import type { ValueFormatInterface } from '@/editor/domain/ValueFormat';
+import { BaseValueFormat } from '@/editor/domain/ValueFormat';
 import { ValidationResult } from '@/editor/domain/ValueFormat';
 
 export interface CheckboxProperty extends PropertyDefinition {
 }
 
-export class CheckboxFormat implements ValueFormatInterface<CheckboxProperty, BooleanValue> {
+export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanValue> {
 
 	public readonly valueType = ValueType.Boolean;
 	public readonly name = 'checkbox';
