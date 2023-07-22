@@ -1,12 +1,12 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
-import { createStringFormField, ValidationResult, type ValueFormatInterface } from '@/editor/domain/ValueFormat';
+import { BaseValueFormat, createStringFormField, ValidationResult } from '@/editor/domain/ValueFormat';
 import { Format, PropertyName } from '@/editor/domain/PropertyDefinition';
 
 export interface TextProperty extends MultiStringProperty {
 }
 
-export class TextFormat implements ValueFormatInterface<TextProperty, StringValue> {
+export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
 
 	public readonly valueType = ValueType.String;
 	public readonly name = 'text';

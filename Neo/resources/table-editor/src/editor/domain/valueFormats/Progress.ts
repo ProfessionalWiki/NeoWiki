@@ -2,9 +2,8 @@ import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type NumberValue, ValueType } from '@/editor/domain/Value';
 import { ProgressBarWidgetFactory } from '@/editor/presentation/Widgets/ProgressBarWidgetFactory';
 import {
-	type ValueFormatInterface,
-	type TableEditorColumnsAssemblingInterface,
-	ValidationResult, createBaseColumnDefinition
+	BaseValueFormat,
+	ValidationResult
 } from '@/editor/domain/ValueFormat';
 import type { ColumnDefinition } from 'tabulator-tables';
 
@@ -16,7 +15,7 @@ export interface ProgressProperty extends PropertyDefinition {
 
 }
 
-export class ProgressFormat implements ValueFormatInterface<ProgressProperty, NumberValue>, TableEditorColumnsAssemblingInterface {
+export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValue> {
 
 	public readonly valueType = ValueType.Number;
 	public readonly name = 'progress';
@@ -50,7 +49,7 @@ export class ProgressFormat implements ValueFormatInterface<ProgressProperty, Nu
 	}
 
 	public createTableEditorColumn( property: ProgressProperty ): ColumnDefinition {
-		const column: ColumnDefinition = createBaseColumnDefinition( property );
+		const column: ColumnDefinition = super.createTableEditorColumn( property );
 
 		column.formatter = 'progress';
 		column.formatterParams = {

@@ -1,16 +1,16 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
 import {
+	BaseValueFormat,
 	createStringFormField,
 	type ValidationError,
-	ValidationResult,
-	type ValueFormatInterface
+	ValidationResult
 } from '@/editor/domain/ValueFormat';
 
 export interface PhoneNumberProperty extends MultiStringProperty {
 }
 
-export class PhoneNumberFormat implements ValueFormatInterface<PhoneNumberProperty, StringValue> {
+export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, StringValue> {
 
 	public readonly valueType = ValueType.String;
 	public readonly name = 'phoneNumber';

@@ -1,13 +1,13 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
 import { TagMultiselectWidgetFactory } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
-import type { ValidationError, ValueFormatInterface } from '@/editor/domain/ValueFormat';
-import { ValidationResult } from '@/editor/domain/ValueFormat';
+import type { ValidationError } from '@/editor/domain/ValueFormat';
+import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 
 export interface TimeProperty extends MultiStringProperty {
 }
 
-export class TimeFormat implements ValueFormatInterface<TimeProperty, StringValue> {
+export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue> {
 
 	public readonly valueType = ValueType.String;
 	public readonly name = 'time';

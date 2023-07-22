@@ -3,6 +3,7 @@ import { TagMultiselectWidgetFactory } from '@/editor/presentation/Widgets/TagMu
 import type { StringValue, Value } from '@/editor/domain/Value';
 import { ValueType } from '@/editor/domain/Value';
 import type { ColumnDefinition } from 'tabulator-tables';
+import type { CellComponent } from 'tabulator-tables';
 
 export class ValueFormatRegistry {
 
@@ -24,37 +25,40 @@ export class ValueFormatRegistry {
 
 }
 
-export interface ValueFormatInterface<T extends PropertyDefinition, V extends Value> {
-	readonly valueType: ValueType;
-	readonly name: string;
+export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Value> {
+	public abstract readonly valueType: ValueType;
+	public abstract readonly name: string;
 
-	validate( value: V, property: T ): ValidationResult;
+	public abstract validate( value: V, property: T ): ValidationResult;
 
-	createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): T;
+	public abstract createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): T;
 
-	createFormField( value: V | undefined, property: T ): OO.ui.Widget;
-	formatValueAsHtml( value: V, property: T ): string;
+	public abstract createFormField( value: V | undefined, property: T ): OO.ui.Widget;
+
+	public abstract formatValueAsHtml( value: V, property: T ): string;
+
+	public createTableEditorColumn( property: T ): ColumnDefinition {
+		const column: ColumnDefinition = {
+			title: property.name.toString(),
+			field: property.name.toString()
+		};
+
+		// TODO: move to formats
+		if ( ( property.type === ValueType.String ) && isMultiplePropertyDefinition( property ) && property.multiple ) {
+			column.formatter = ( cell: CellComponent ) => cell.getValue()?.join( ', ' );
+		}
+
+		function isMultiplePropertyDefinition( p: PropertyDefinition ): p is PropertyDefinition & { multiple: boolean } {
+			return 'multiple' in p;
+		}
+
+		return column;
+	}
 
 	// TODO: createTableEditorCell?
 }
 
-export interface TableEditorColumnsAssemblingInterface {
-	createTableEditorColumn( property: PropertyDefinition ): ColumnDefinition;
-}
-
-export function createBaseColumnDefinition( property: PropertyDefinition ): ColumnDefinition {
-	return {
-		title: property.name.toString(),
-		field: property.name.toString()
-	};
-}
-
-export const isTableEditorColumnsAssemblingFormat = ( object: any ): object is TableEditorColumnsAssemblingInterface => {
-	return 'createTableEditorColumn' in object;
-};
-
-export type ValueFormat = ValueFormatInterface<PropertyDefinition, Value> | TableEditorColumnsAssemblingFormat;
-export type TableEditorColumnsAssemblingFormat = ValueFormatInterface<PropertyDefinition, Value> & TableEditorColumnsAssemblingInterface;
+export type ValueFormat = BaseValueFormat<PropertyDefinition, Value>;
 
 export class ValidationResult {
 
