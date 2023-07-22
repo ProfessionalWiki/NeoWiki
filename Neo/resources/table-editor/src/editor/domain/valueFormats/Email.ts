@@ -8,8 +8,8 @@ export interface EmailProperty extends MultiStringProperty {
 
 export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue> {
 
-	public readonly valueType = ValueType.String;
-	public readonly name = 'email';
+	public static readonly valueType = ValueType.String;
+	public static readonly formatName = 'email';
 
 	public validate( value: StringValue, property: EmailProperty ): ValidationResult {
 		return new ValidationResult( [] ); // TODO

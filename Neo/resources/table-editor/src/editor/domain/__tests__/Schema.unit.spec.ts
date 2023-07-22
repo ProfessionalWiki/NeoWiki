@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createPropertyDefinitionFromJson, Format, PropertyName } from '@/editor/domain/PropertyDefinition';
+import { createPropertyDefinitionFromJson, PropertyName } from '@/editor/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@/editor/domain/PropertyDefinitionList';
 import { newSchema } from '../../../TestHelpers';
 import { ValueType } from '../Value';
-import { newTextProperty } from '../valueFormats/Text';
+import { newTextProperty, TextFormat } from '../valueFormats/Text';
 import { newNumberProperty } from '../valueFormats/Number';
 
 describe( 'Schema', () => {
@@ -27,7 +27,7 @@ describe( 'Schema', () => {
 			const property = schema.getPropertyDefinition( 'test' );
 
 			expect( property.type ).toBe( ValueType.String );
-			expect( property.format ).toBe( Format.Text );
+			expect( property.format ).toBe( TextFormat.formatName );
 		} );
 
 	} );

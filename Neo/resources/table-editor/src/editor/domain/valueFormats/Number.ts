@@ -1,8 +1,7 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
+import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import { type NumberValue, ValueType } from '@/editor/domain/Value';
-import { BaseValueFormat } from '@/editor/domain/ValueFormat';
-import { ValidationResult } from '@/editor/domain/ValueFormat';
-import { Format, PropertyName } from '@/editor/domain/PropertyDefinition';
+import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 
 export interface NumberProperty extends PropertyDefinition {
 
@@ -14,8 +13,8 @@ export interface NumberProperty extends PropertyDefinition {
 
 export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
 
-	public readonly valueType = ValueType.Number;
-	public readonly name = 'number';
+	public static readonly valueType = ValueType.Number;
+	public static readonly formatName = 'number';
 
 	public validate( value: NumberValue, property: NumberProperty ): ValidationResult {
 		return new ValidationResult( [] ); // TODO
@@ -81,7 +80,7 @@ export function newNumberProperty( name = 'MyNumberProperty' ): NumberProperty {
 	return {
 		name: new PropertyName( name ),
 		type: ValueType.Number,
-		format: 'number' as Format,
+		format: NumberFormat.formatName,
 		description: '',
 		required: false
 	};

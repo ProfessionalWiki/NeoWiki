@@ -8,8 +8,8 @@ export interface CheckboxProperty extends PropertyDefinition {
 
 export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanValue> {
 
-	public readonly valueType = ValueType.Boolean;
-	public readonly name = 'checkbox';
+	public static readonly valueType = ValueType.Boolean;
+	public static readonly formatName = 'checkbox';
 
 	public validate( value: BooleanValue, property: CheckboxProperty ): ValidationResult {
 		return new ValidationResult( [] );

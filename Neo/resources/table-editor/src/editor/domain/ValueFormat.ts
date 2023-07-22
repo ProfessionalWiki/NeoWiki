@@ -9,7 +9,7 @@ export class ValueFormatRegistry {
 	private propertyTypes: Map<string, ValueFormat> = new Map();
 
 	public registerFormat( format: ValueFormat ): void {
-		this.propertyTypes.set( format.name, format );
+		this.propertyTypes.set( format.getFormatName(), format );
 	}
 
 	public getFormat( formatName: string ): ValueFormat {
@@ -25,8 +25,12 @@ export class ValueFormatRegistry {
 }
 
 export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Value> {
-	public abstract readonly valueType: ValueType;
-	public abstract readonly name: string;
+	public static readonly valueType: ValueType;
+	public static readonly formatName: string;
+
+	public getFormatName(): string {
+		return ( this.constructor as typeof BaseValueFormat ).formatName;
+	}
 
 	public abstract validate( value: V, property: T ): ValidationResult;
 

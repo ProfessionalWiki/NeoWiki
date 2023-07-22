@@ -13,8 +13,8 @@ export interface PhoneNumberProperty extends MultiStringProperty {
 
 export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, StringValue> {
 
-	public readonly valueType = ValueType.String;
-	public readonly name = 'phoneNumber';
+	public static readonly valueType = ValueType.String;
+	public static readonly formatName = 'phoneNumber';
 
 	// TODO: unit tests
 	public validate( value: StringValue, property: PhoneNumberProperty ): ValidationResult {
