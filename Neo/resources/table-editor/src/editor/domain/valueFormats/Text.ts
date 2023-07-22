@@ -2,6 +2,7 @@ import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/Pr
 import { type StringValue, ValueType } from '@/editor/domain/Value';
 import { BaseValueFormat, createStringFormField, ValidationResult } from '@/editor/domain/ValueFormat';
 import { Format, PropertyName } from '@/editor/domain/PropertyDefinition';
+import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
 export interface TextProperty extends MultiStringProperty {
 }
@@ -29,6 +30,16 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
 
 	public formatValueAsHtml( value: StringValue, property: TextProperty ): string {
 		return value.strings.join( ', ' );
+	}
+
+	public createTableEditorColumn( property: TextProperty ): ColumnDefinition {
+		const column = super.createTableEditorColumn( property );
+
+		if ( property.multiple ) {
+			column.formatter = ( cell: CellComponent ) => cell.getValue()?.join( ', ' );
+		}
+
+		return column;
 	}
 
 }
