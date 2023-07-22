@@ -1,11 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { TextFormat } from '../Text';
+import { newTextProperty, TextFormat } from '../Text';
+import { newStringValue } from '../../Value';
 
-describe( 'getFormatName', () => {
+describe( 'TextFormat', () => {
 
-	it( 'returns "text"', () => {
-		const format = new TextFormat();
-		expect( format.getFormatName() ).toBe( 'text' );
+	const format = new TextFormat();
+
+	describe( 'getFormatName', () => {
+
+		it( 'returns "text"', () => {
+			expect( format.getFormatName() ).toBe( 'text' );
+		} );
+
+	} );
+
+	describe( 'formatValueAsHtml', () => {
+
+		it( 'returns empty string for empty list', () => {
+			expect( format.formatValueAsHtml(
+				newStringValue(),
+				newTextProperty()
+			) ).toBe( '' );
+		} );
+
+		it( 'creates comma separated list for multiple values', () => {
+			expect( format.formatValueAsHtml(
+				newStringValue( 'foo', 'bar', 'baz' ),
+				newTextProperty()
+			) ).toBe( 'foo, bar, baz' );
+		} );
+
 	} );
 
 } );
