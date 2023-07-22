@@ -10,6 +10,9 @@ import DOMPurify from 'dompurify';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
 export interface UrlProperty extends MultiStringProperty {
+
+	// TODO: add link target (_blank, _self, etc.)
+
 }
 
 export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue> {
@@ -49,36 +52,59 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue> {
 	}
 
 	public formatValueAsHtml( value: StringValue, property: UrlProperty ): string {
-		return value.strings.map( ( urlString ) => {
-			try {
-				const url = new URL( urlString );
-				const sanitizedUrl = url.href;
-				const pathName = url.pathname === '/' ? '' : url.pathname;
-				const displayedUrl = url.hostname + pathName + url.search + url.hash;
-				return `<a href="${sanitizedUrl}">${displayedUrl}</a>`; // TODO: add CSS classes?
-			} catch ( _ ) {
-				return DOMPurify.sanitize( urlString ); // TODO: add styling and CSS classes?
-			}
-		} ).filter( Boolean ).join( ', ' );
+		return ( new UrlFormatter( property ) ).formatUrlArrayAsHtml( value.strings );
 	}
 
 	public createTableEditorColumn( property: UrlProperty ): ColumnDefinition {
 		const column: ColumnDefinition = super.createTableEditorColumn( property );
 
-		if ( property.multiple ) {
-			column.formatter = ( cell: CellComponent ) => cell.getValue()?.join( ', ' );
-		} else {
-			column.formatter = 'link';
-			column.formatterParams = {
-				target: '_blank',
-				label: ( cell: CellComponent ) => {
-					const val = cell.getValue();
-					return typeof val === 'string' || val instanceof String ? val.replace( /^https?:\/\//, '' ) : val;
-				}
-			};
-		}
+		column.formatter = function ( cell: CellComponent ) {
+			const value = cell.getValue();
+
+			if ( Array.isArray( value ) && typeof value[ 0 ] === 'string' ) {
+				return ( new UrlFormatter( property ) ).formatUrlArrayAsHtml( value );
+			}
+
+			return '';
+		};
 
 		return column;
+	}
+
+}
+
+export class UrlFormatter {
+
+	public constructor(
+		private readonly property: UrlProperty
+	) {
+	}
+
+	public formatUrlArrayAsHtml( urls: string[] ): string {
+		return urls.map( this.formatUrlAsHtml.bind( this ) )
+			.filter( ( v: string ) => v.trim() !== '' )
+			.join( ', ' );
+	}
+
+	public formatUrlAsHtml( urlString: string ): string {
+		try {
+			const url = new URL( urlString );
+			const sanitizedUrl = url.href;
+			const displayedUrl = this.urlStringToDisplayValue( urlString );
+			return `<a href="${sanitizedUrl}">${displayedUrl}</a>`; // TODO: add CSS classes?
+		} catch ( _ ) {
+			return DOMPurify.sanitize( urlString ); // TODO: add styling and CSS classes?
+		}
+	}
+
+	private urlStringToDisplayValue( urlString: string ): string {
+		try {
+			const url = new URL( urlString );
+			const pathName = url.pathname === '/' ? '' : url.pathname;
+			return url.hostname + pathName + url.search + url.hash;
+		} catch ( _ ) {
+			return DOMPurify.sanitize( urlString );
+		}
 	}
 
 }
