@@ -115,7 +115,7 @@ class RelationColumnBuilder {
 	private relationsFormatter( cell: CellComponent ): string {
 		const relationValue = cell.getValue() as RelationValue;
 
-		if ( relationValue === undefined ) {
+		if ( relationValue === undefined || relationValue.relations === undefined ) {
 			return '';
 		}
 
