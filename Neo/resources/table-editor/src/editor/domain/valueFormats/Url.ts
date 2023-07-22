@@ -63,7 +63,7 @@ export class UrlFormat implements ValueFormatInterface<UrlProperty, StringValue>
 		} ).filter( Boolean ).join( ', ' );
 	}
 
-	public createTableEditorColumn( property: PropertyDefinition ): ColumnDefinition {
+	public createTableEditorColumn( property: UrlProperty ): ColumnDefinition {
 		const column: ColumnDefinition = createBaseColumnDefinition( property );
 
 		column.formatter = 'link';

@@ -49,7 +49,7 @@ export class ProgressFormat implements ValueFormatInterface<ProgressProperty, Nu
 		return ''; // TODO
 	}
 
-	public createTableEditorColumn( property: PropertyDefinition ): ColumnDefinition {
+	public createTableEditorColumn( property: ProgressProperty ): ColumnDefinition {
 		const column: ColumnDefinition = createBaseColumnDefinition( property );
 
 		column.formatter = 'progress';
@@ -58,8 +58,9 @@ export class ProgressFormat implements ValueFormatInterface<ProgressProperty, Nu
 			legendAlign: 'left',
 			legendColor: '#FFFFFF',
 			color: '#3366CC',
-			min: 0, // TODO
-			max: 100 // TODO
+			min: property.minimum,
+			max: property.maximum
+			// TODO: step
 		};
 
 		return column;
