@@ -3,7 +3,6 @@ import { TagMultiselectWidgetFactory } from '@/editor/presentation/Widgets/TagMu
 import type { StringValue, Value } from '@/editor/domain/Value';
 import { ValueType } from '@/editor/domain/Value';
 import type { ColumnDefinition } from 'tabulator-tables';
-import type { CellComponent } from 'tabulator-tables';
 
 export class ValueFormatRegistry {
 
@@ -38,21 +37,10 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 	public abstract formatValueAsHtml( value: V, property: T ): string;
 
 	public createTableEditorColumn( property: T ): ColumnDefinition {
-		const column: ColumnDefinition = {
+		return {
 			title: property.name.toString(),
 			field: property.name.toString()
 		};
-
-		// TODO: move to formats
-		if ( ( property.type === ValueType.String ) && isMultiplePropertyDefinition( property ) && property.multiple ) {
-			column.formatter = ( cell: CellComponent ) => cell.getValue()?.join( ', ' );
-		}
-
-		function isMultiplePropertyDefinition( p: PropertyDefinition ): p is PropertyDefinition & { multiple: boolean } {
-			return 'multiple' in p;
-		}
-
-		return column;
 	}
 
 	// TODO: createTableEditorCell?

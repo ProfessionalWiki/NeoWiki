@@ -65,14 +65,18 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue> {
 	public createTableEditorColumn( property: UrlProperty ): ColumnDefinition {
 		const column: ColumnDefinition = super.createTableEditorColumn( property );
 
-		column.formatter = 'link';
-		column.formatterParams = {
-			target: '_blank',
-			label: ( cell: CellComponent ) => {
-				const val = cell.getValue();
-				return typeof val === 'string' || val instanceof String ? val.replace( /^https?:\/\//, '' ) : val;
-			}
-		};
+		if ( property.multiple ) {
+			column.formatter = ( cell: CellComponent ) => cell.getValue()?.join( ', ' );
+		} else {
+			column.formatter = 'link';
+			column.formatterParams = {
+				target: '_blank',
+				label: ( cell: CellComponent ) => {
+					const val = cell.getValue();
+					return typeof val === 'string' || val instanceof String ? val.replace( /^https?:\/\//, '' ) : val;
+				}
+			};
+		}
 
 		return column;
 	}

@@ -1,7 +1,6 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
-import { BaseValueFormat } from '@/editor/domain/ValueFormat';
-import { ValidationResult } from '@/editor/domain/ValueFormat';
+import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 
 export interface DateTimeProperty extends PropertyDefinition {
 }

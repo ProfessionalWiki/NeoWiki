@@ -3,6 +3,8 @@ import { type StringValue, ValueType } from '@/editor/domain/Value';
 import { TagMultiselectWidgetFactory } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { ValidationError } from '@/editor/domain/ValueFormat';
 import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
+import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
+import type { TextProperty } from '@/editor/domain/valueFormats/Text';
 
 export interface TimeProperty extends MultiStringProperty {
 }
@@ -69,6 +71,16 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue> {
 
 	public formatValueAsHtml( value: StringValue, property: TimeProperty ): string {
 		return value.strings.join( ', ' );
+	}
+
+	public createTableEditorColumn( property: TextProperty ): ColumnDefinition {
+		const column = super.createTableEditorColumn( property );
+
+		if ( property.multiple ) {
+			column.formatter = ( cell: CellComponent ) => cell.getValue()?.join( ', ' );
+		}
+
+		return column;
 	}
 
 }

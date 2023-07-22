@@ -6,6 +6,7 @@ import {
 	type ValidationError,
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
+import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
 export interface PhoneNumberProperty extends MultiStringProperty {
 }
@@ -48,6 +49,16 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 
 	public formatValueAsHtml( value: StringValue, property: PhoneNumberProperty ): string {
 		return value.strings.join( ', ' );
+	}
+
+	public createTableEditorColumn( property: PhoneNumberProperty ): ColumnDefinition {
+		const column = super.createTableEditorColumn( property );
+
+		if ( property.multiple ) {
+			column.formatter = ( cell: CellComponent ) => cell.getValue()?.join( ', ' );
+		}
+
+		return column;
 	}
 
 }

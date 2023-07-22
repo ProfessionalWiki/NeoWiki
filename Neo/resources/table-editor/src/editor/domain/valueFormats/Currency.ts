@@ -1,9 +1,8 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type NumberValue, ValueType } from '@/editor/domain/Value';
-import { CurrencyInputWidgetFactory } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
 import type { CurrencyInputWidget } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
-import { BaseValueFormat } from '@/editor/domain/ValueFormat';
-import { ValidationResult } from '@/editor/domain/ValueFormat';
+import { CurrencyInputWidgetFactory } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
+import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 
 export interface CurrencyProperty extends PropertyDefinition {
 
