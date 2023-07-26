@@ -176,4 +176,21 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 	//
 	//}
 
+	/**
+	 * @dataProvider timestampConversionProvider
+	 */
+	public function testFormatMediaWikiTimestamp( string $mwTime, string $neoTime ): void {
+		$this->assertSame(
+			$neoTime,
+			Neo4jQueryStore::mediaWikiTimestampToNeo4jFormat( $mwTime )
+		);
+	}
+
+	public static function timestampConversionProvider(): iterable {
+		yield [ '', '' ];
+		yield [ '20230726163439', '2023-07-26T16:34:39' ];
+		yield [ '20230101000000', '2023-01-01T00:00:00' ];
+		yield [ 'invalid', '' ];
+	}
+
 }

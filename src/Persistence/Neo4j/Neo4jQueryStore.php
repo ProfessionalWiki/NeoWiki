@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\Neo4j;
 
+use DateTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
@@ -28,7 +29,12 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 				'
 				// Create or update the page
 				MERGE (page:Page {id: $pageId})
-				SET page.id = $pageId, page.name = $pageTitle, page.lastUpdated = datetime()
+				SET page.id = $pageId,
+					page.name = $pageTitle,
+					page.creationTime = datetime($creationTime),
+					page.lastUpdated = datetime($modificationTime),
+					page.lastEditor = $lastEditor,
+					page.categories = $categories
 
 				// Delete subjects that are no longer present on the page
 				WITH page
@@ -43,13 +49,27 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 				',
 				[
 					'pageId' => $page->getId()->id,
-					'pageTitle' => $page->getProperties()->title,
 					'subjectIds' => $page->getSubjects()->getAllSubjects()->getIdsAsTextArray(),
+					'pageTitle' => $page->getProperties()->title,
+					'creationTime' => self::mediaWikiTimestampToNeo4jFormat( $page->getProperties()->creationTime ),
+					'modificationTime' => self::mediaWikiTimestampToNeo4jFormat( $page->getProperties()->modificationTime ),
+					'categories' => $page->getProperties()->categories, // TODO: turn into relations
+					'lastEditor' => $page->getProperties()->lastEditor, // TODO: turn into relation?
 				]
 			);
 
 			$this->updateSubjects( $transaction, $page );
 		} );
+	}
+
+	public static function mediaWikiTimestampToNeo4jFormat( string $timestamp ): string {
+		$date = DateTime::createFromFormat( 'YmdHis', $timestamp );
+
+		if ( $date === false ) {
+			return '';
+		}
+
+		return $date->format( 'Y-m-d\TH:i:s' );
 	}
 
 	private function updateSubjects( TransactionInterface $transaction, Page $page ): void {
