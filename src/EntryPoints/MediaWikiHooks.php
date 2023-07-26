@@ -56,7 +56,7 @@ class MediaWikiHooks {
 		UserIdentity $user,
 		array &$tags
 	): void {
-		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision );
+		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision, $wikiPage, $user );
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
