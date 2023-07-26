@@ -18,13 +18,13 @@ class TestPage {
 
 	public static function build(
 		?int $id = null,
-		PageProperties $properties = new PageProperties( 'PageTitle' ),
+		PageProperties $properties = null,
 		?Subject $mainSubject = null,
 		SubjectMap $childSubjects = new SubjectMap()
 	): Page {
 		return new Page(
 			id: new PageId( $id ?? 31337 ),
-			properties: $properties,
+			properties: $properties ?? TestPageProperties::build(),
 			subjects: new PageSubjects( $mainSubject, $childSubjects )
 		);
 	}

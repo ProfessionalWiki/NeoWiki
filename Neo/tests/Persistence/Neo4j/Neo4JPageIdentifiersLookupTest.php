@@ -7,13 +7,13 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -60,7 +60,7 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 
 		$queryStore->savePage( TestPage::build(
 			id: 1,
-			properties: new PageProperties( title: 'Foo' ),
+			properties: TestPageProperties::build( title: 'Foo' ),
 			childSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_4 ),
 			)
@@ -68,7 +68,7 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 
 		$queryStore->savePage( TestPage::build(
 			id: 42,
-			properties: new PageProperties( title: 'Bar' ),
+			properties: TestPageProperties::build( title: 'Bar' ),
 			childSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_1 ),
 				TestSubject::build( id: self::GUID_2 ), // Target
@@ -78,7 +78,7 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 
 		$queryStore->savePage( TestPage::build(
 			id: 32202,
-			properties: new PageProperties( title: 'Baz' ),
+			properties: TestPageProperties::build( title: 'Baz' ),
 			childSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_5 ),
 			)
