@@ -1,11 +1,12 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
 import {
+	createStringFormField, getTagFieldData, getTextFieldData,
 	BaseValueFormat,
-	createStringFormField,
 	type ValidationError,
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
+import type { FieldData } from '@/editor/presentation/SchemaForm';
 import DOMPurify from 'dompurify';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
@@ -15,7 +16,7 @@ export interface UrlProperty extends MultiStringProperty {
 
 }
 
-export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue> {
+export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'url';
@@ -51,8 +52,11 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue> {
 		return createStringFormField( value, property, 'url' );
 	}
 
-	public formatValueAsHtml( value: StringValue, property: UrlProperty ): string {
-		return ( new UrlFormatter( property ) ).formatUrlArrayAsHtml( value.strings );
+	public async getFieldData( field: OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
+		if ( field instanceof OO.ui.TagMultiselectWidget ) {
+			return getTagFieldData( field, property );
+		}
+		return await getTextFieldData( field );
 	}
 
 	public createTableEditorColumn( property: UrlProperty ): ColumnDefinition {
@@ -106,7 +110,6 @@ export class UrlFormatter {
 			return DOMPurify.sanitize( urlString );
 		}
 	}
-
 }
 
 export function isValidUrl( url: string ): boolean {

@@ -1,6 +1,7 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
+import { newNumberValue, type NumberValue, ValueType } from '@/editor/domain/Value';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
-import { type NumberValue, ValueType } from '@/editor/domain/Value';
+import type { FieldData } from '@/editor/presentation/SchemaForm';
 import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 
 export interface NumberProperty extends PropertyDefinition {
@@ -11,7 +12,7 @@ export interface NumberProperty extends PropertyDefinition {
 
 }
 
-export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
+export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, OO.ui.NumberInputWidget> {
 
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'number';
@@ -32,7 +33,7 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
 	public createFormField( value: NumberValue | undefined, property: NumberProperty ): any {
 		const options: any = {
 			type: 'number',
-			value: value === undefined ? '' : value.number.toString(),
+			value: value === undefined ? '' : value.number?.toString(),
 			min: property.minimum,
 			max: property.maximum,
 			required: property.required
@@ -44,27 +45,20 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
 		}
 
 		const widget = new OO.ui.NumberInputWidget( options );
-
-		setTimeout( () => {
-			widget.setFlags( { invalid: false } );
-		} );
+		setTimeout( () => widget.setFlags( { invalid: false } ) );
 
 		return widget;
 	}
 
-	public formatValueAsHtml( value: NumberValue, property: NumberProperty ): string {
-		if ( value.number === undefined ) {
-			// TODO: handle values that are not saved as NumberValue
-			return '';
-		}
+	public async getFieldData( field: OO.ui.NumberInputWidget ): Promise<FieldData> {
+		const isValid = await field.getValidity().catch( () => false ) !== false;
 
-		if ( property.precision !== undefined ) {
-			return value.number.toFixed( property.precision );
-		}
-
-		return value.number.toString();
+		return {
+			value: field.getValue() === '' ? undefined : newNumberValue( field.getNumericValue() ),
+			valid: isValid,
+			errorMessage: isValid ? undefined : ( field.$input[ 0 ] as HTMLInputElement ).validationMessage
+		};
 	}
-
 }
 
 // TODO: use or remove

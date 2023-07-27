@@ -1,8 +1,9 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { type NumberValue, ValueType } from '@/editor/domain/Value';
-import type { CurrencyInputWidget } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
+import { newNumberValue, type NumberValue, ValueType } from '@/editor/domain/Value';
 import { CurrencyInputWidgetFactory } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
+import type { CurrencyInputWidget } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
 import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
+import type { FieldData } from '@/editor/presentation/SchemaForm';
 
 export interface CurrencyProperty extends PropertyDefinition {
 
@@ -13,7 +14,7 @@ export interface CurrencyProperty extends PropertyDefinition {
 
 }
 
-export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValue> {
+export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValue, CurrencyInputWidget> {
 
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'currency';
@@ -43,10 +44,11 @@ export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValu
 		} );
 	}
 
-	public formatValueAsHtml( value: NumberValue, property: CurrencyProperty ): string {
-		// TODO: Format number according to precision
-		// TODO: limit to minimum and maximum? How do we want to deal with invalid values during display?
-		return property.currencyCode + ' ' + value.number;
+	public async getFieldData( field: CurrencyInputWidget ): Promise<FieldData> {
+		return {
+			value: newNumberValue( Number( field.getValue() ) ),
+			valid: true,
+			errorMessage: undefined
+		};
 	}
-
 }

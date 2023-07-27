@@ -1,7 +1,7 @@
-import { test, describe, expect, it } from 'vitest';
+import { test, expect, describe, it } from 'vitest';
 import { isValidUrl, UrlFormat, UrlFormatter, type UrlProperty } from '../Url';
-import { newStringValue, type StringValue, ValueType } from '../../Value';
 import { PropertyName } from '../../PropertyDefinition';
+import { ValueType } from '../../Value';
 
 test.each( [
 	[ '', false ],
@@ -26,42 +26,6 @@ test.each( [
 ] )( 'isValidUrl should return %s for URL: %s', ( url: string, expected: boolean ) => {
 	const isValid = isValidUrl( url );
 	expect( isValid ).toBe( expected );
-} );
-
-describe( 'UrlFormat', () => {
-
-	describe( 'formatValueAsHtml', () => {
-
-		function formatUrl( urlValue: StringValue ): string {
-			return ( new UrlFormat() ).formatValueAsHtml( urlValue, newUrlProperty() );
-		}
-
-		it( 'returns empty string for empty string value', () => {
-			expect(
-				formatUrl( newStringValue() )
-			).toBe( '' );
-		} );
-
-		it( 'handles multiple URLs', () => {
-			expect(
-				formatUrl( newStringValue( 'https://pro.wiki/blog', 'https://pro.wiki/pricing' ) )
-			).toBe( '<a href="https://pro.wiki/blog">pro.wiki/blog</a>, <a href="https://pro.wiki/pricing">pro.wiki/pricing</a>' );
-		} );
-
-		it( 'returns invalid URLs as they are', () => {
-			expect(
-				formatUrl( newStringValue( 'https://pro.wiki', '~[,,_,,]:3', 'https://pro.wiki/pricing', 'invalid' ) )
-			).toBe( '<a href="https://pro.wiki/">pro.wiki</a>, ~[,,_,,]:3, <a href="https://pro.wiki/pricing">pro.wiki/pricing</a>, invalid' );
-		} );
-
-		it( 'sanitizes evil URLs', () => {
-			expect(
-				formatUrl( newStringValue( 'evil <script>alert("xss");</script>', '<strong>bold</strong>' ) )
-			).toBe( 'evil , <strong>bold</strong>' ); // FIXME: this is NOT what we want. EVERYTHING should be escaped, and nothing should be omitted.
-		} );
-
-	} );
-
 } );
 
 describe( 'UrlFormatter', () => {

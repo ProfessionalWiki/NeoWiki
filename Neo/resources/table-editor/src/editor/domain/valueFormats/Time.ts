@@ -1,15 +1,16 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { type StringValue, ValueType } from '@/editor/domain/Value';
+import { newStringValue, type StringValue, ValueType } from '@/editor/domain/Value';
 import { TagMultiselectWidgetFactory } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { ValidationError } from '@/editor/domain/ValueFormat';
 import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
+import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import type { TextProperty } from '@/editor/domain/valueFormats/Text';
 
 export interface TimeProperty extends MultiStringProperty {
 }
 
-export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue> {
+export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui.InputWidget> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'time';
@@ -69,8 +70,12 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue> {
 		return widget;
 	}
 
-	public formatValueAsHtml( value: StringValue, property: TimeProperty ): string {
-		return value.strings.join( ', ' );
+	public async getFieldData( field: OO.ui.InputWidget ): Promise<FieldData> {
+		return {
+			value: newStringValue( field.getValue() ?? '' ),
+			valid: true,
+			errorMessage: undefined
+		};
 	}
 
 	public createTableEditorColumn( property: TextProperty ): ColumnDefinition {
@@ -82,7 +87,6 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue> {
 
 		return column;
 	}
-
 }
 
 export function isValidTime( time: string ): boolean {

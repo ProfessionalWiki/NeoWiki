@@ -1,7 +1,8 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { TagMultiselectWidgetFactory } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { StringValue, Value } from '@/editor/domain/Value';
-import { ValueType } from '@/editor/domain/Value';
+import { newStringValue, ValueType } from '@/editor/domain/Value';
+import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { ColumnDefinition } from 'tabulator-tables';
 
 export class ValueFormatRegistry {
@@ -24,7 +25,11 @@ export class ValueFormatRegistry {
 
 }
 
-export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Value> {
+// TODO: Consider a better solution but not all widgets are correctly defined as inheritors of OO.ui.Widget
+export type Field = OO.ui.CheckboxInputWidget | OO.ui.InputWidget | OO.ui.TagMultiselectWidget
+| OO.ui.TextInputWidget | OO.ui.NumberInputWidget | OO.ui.ProgressBarWidget | OO.ui.MenuTagMultiselectWidget | OO.ui.Widget;
+
+export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Value, F extends Field> {
 	public static readonly valueType: ValueType;
 	public static readonly formatName: string;
 
@@ -38,7 +43,7 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 
 	public abstract createFormField( value: V | undefined, property: T ): OO.ui.Widget;
 
-	public abstract formatValueAsHtml( value: V, property: T ): string;
+	public abstract getFieldData( field: F, property: T ): Promise<FieldData>;
 
 	public createTableEditorColumn( property: T ): ColumnDefinition {
 		return {
@@ -46,11 +51,9 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 			field: property.name.toString()
 		};
 	}
-
-	// TODO: createTableEditorCell?
 }
 
-export type ValueFormat = BaseValueFormat<PropertyDefinition, Value>;
+export type ValueFormat = BaseValueFormat<PropertyDefinition, Value, Field>;
 
 export class ValidationResult {
 
@@ -90,4 +93,30 @@ export function createStringFormField( value: StringValue | undefined, property:
 		value: value.strings[ 0 ],
 		required: property.required
 	} );
+}
+
+export function getTagFieldData( field: OO.ui.TagMultiselectWidget, property: PropertyDefinition ): FieldData {
+	// TODO: validate input
+	const isValid: boolean = field.checkValidity();
+	const errorMessage: string|undefined = '';
+	const fieldValue = field.getValue() as string[];
+
+	return {
+		value: newStringValue( ...fieldValue ), // TODO: extract into getTagFieldValue
+		valid: isValid,
+		errorMessage: errorMessage
+	};
+}
+
+export async function getTextFieldData( field: OO.ui.TextInputWidget ): Promise<FieldData> {
+	// TODO: this is an ugly way to validate via Promise
+	const isValid = await field.getValidity().catch( () => false ) !== false;
+	const inputElement = field.$input[ 0 ] as HTMLInputElement;
+	const value = field.getValue();
+
+	return {
+		value: newStringValue( value ?? '' ),
+		valid: isValid,
+		errorMessage: isValid ? undefined : inputElement.validationMessage
+	};
 }

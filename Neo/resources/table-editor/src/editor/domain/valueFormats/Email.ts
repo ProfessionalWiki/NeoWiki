@@ -1,12 +1,18 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
-import { createStringFormField, ValidationResult, BaseValueFormat } from '@/editor/domain/ValueFormat';
+import {
+	BaseValueFormat,
+	createStringFormField,
+	getTagFieldData, getTextFieldData,
+	ValidationResult
+} from '@/editor/domain/ValueFormat';
+import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
 export interface EmailProperty extends MultiStringProperty {
 }
 
-export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue> {
+export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'email';
@@ -22,13 +28,15 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue> {
 			uniqueItems: json.uniqueItems ?? true
 		} as EmailProperty;
 	}
-
 	public createFormField( value: StringValue | undefined, property: EmailProperty ): any {
 		return createStringFormField( value, property, 'email' );
 	}
 
-	public formatValueAsHtml( value: StringValue, property: EmailProperty ): string {
-		return value.strings.join( ', ' ); // TODO
+	public async getFieldData( field: OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
+		if ( field instanceof OO.ui.TagMultiselectWidget ) {
+			return getTagFieldData( field, property );
+		}
+		return await getTextFieldData( field );
 	}
 
 	public createTableEditorColumn( property: EmailProperty ): ColumnDefinition {
@@ -40,5 +48,4 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue> {
 
 		return column;
 	}
-
 }

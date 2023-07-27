@@ -1,6 +1,7 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type NumberValue, ValueType } from '@/editor/domain/Value';
-import { ProgressBarWidgetFactory } from '@/editor/presentation/Widgets/ProgressBarWidgetFactory';
+import { type ProgressBarWidget, ProgressBarWidgetFactory } from '@/editor/presentation/Widgets/ProgressBarWidgetFactory';
+import type { FieldData } from '@/editor/presentation/SchemaForm';
 import {
 	BaseValueFormat,
 	ValidationResult
@@ -15,7 +16,7 @@ export interface ProgressProperty extends PropertyDefinition {
 
 }
 
-export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValue> {
+export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValue, ProgressBarWidget> {
 
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'progress';
@@ -44,8 +45,8 @@ export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValu
 		return progressBar;
 	}
 
-	public formatValueAsHtml( value: NumberValue, property: ProgressProperty ): string {
-		return ''; // TODO
+	public async getFieldData( field: ProgressBarWidget ): Promise<FieldData> {
+		return field.getFieldData();
 	}
 
 	public createTableEditorColumn( property: ProgressProperty ): ColumnDefinition {

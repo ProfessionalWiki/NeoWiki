@@ -1,13 +1,19 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
-import { BaseValueFormat, createStringFormField, ValidationResult } from '@/editor/domain/ValueFormat';
+import {
+	BaseValueFormat,
+	createStringFormField,
+	getTagFieldData, getTextFieldData,
+	ValidationResult
+} from '@/editor/domain/ValueFormat';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
+import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
 export interface TextProperty extends MultiStringProperty {
 }
 
-export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
+export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui.TextInputWidget|OO.ui.TagMultiselectWidget> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'text';
@@ -28,8 +34,11 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
 		return createStringFormField( value, property, 'text' );
 	}
 
-	public formatValueAsHtml( value: StringValue, property: TextProperty ): string {
-		return value.strings.join( ', ' );
+	public async getFieldData( field: OO.ui.TextInputWidget|OO.ui.TagMultiselectWidget, property: PropertyDefinition ): Promise<FieldData> {
+		if ( field instanceof OO.ui.TagMultiselectWidget ) {
+			return getTagFieldData( field, property );
+		}
+		return await getTextFieldData( field );
 	}
 
 	public createTableEditorColumn( property: TextProperty ): ColumnDefinition {
@@ -41,10 +50,9 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
 
 		return column;
 	}
-
 }
 
-export function newTextProperty( name = 'MyTextProperty' ): TextProperty {
+export function newTextProperty( name = 'MyTextProperty', multiple = false ): TextProperty {
 	return {
 		name: new PropertyName( name ),
 		type: ValueType.String,
@@ -52,7 +60,7 @@ export function newTextProperty( name = 'MyTextProperty' ): TextProperty {
 		description: '',
 		required: false,
 		default: '',
-		multiple: false,
+		multiple: multiple,
 		uniqueItems: true
 	};
 }
