@@ -1,17 +1,18 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type StringValue, ValueType } from '@/editor/domain/Value';
 import {
+	createStringFormField, getTagFieldData, getTextFieldData,
 	BaseValueFormat,
-	createStringFormField,
 	type ValidationError,
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
+import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
 export interface PhoneNumberProperty extends MultiStringProperty {
 }
 
-export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, StringValue> {
+export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, StringValue, OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'phoneNumber';
@@ -47,8 +48,11 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 		return createStringFormField( value, property, 'tel' );
 	}
 
-	public formatValueAsHtml( value: StringValue, property: PhoneNumberProperty ): string {
-		return value.strings.join( ', ' );
+	public async getFieldData( field: OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
+		if ( field instanceof OO.ui.TagMultiselectWidget ) {
+			return getTagFieldData( field, property );
+		}
+		return await getTextFieldData( field );
 	}
 
 	public createTableEditorColumn( property: PhoneNumberProperty ): ColumnDefinition {
@@ -60,7 +64,6 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 
 		return column;
 	}
-
 }
 
 export function isValidPhoneNumber( phoneNumber: string ): boolean {

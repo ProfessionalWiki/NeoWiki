@@ -1,16 +1,21 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import { Relation, RelationValue, ValueType } from '@/editor/domain/Value';
 import { RelationMultiselectWidgetFactory } from '@/editor/presentation/Widgets/RelationMultiselectWidgetFactory';
-import { RelationLookupWidgetFactory } from '@/editor/presentation/Widgets/RelationLookupWidgetFactory';
+import {
+	isRelationLookupWidget,
+	RelationLookupWidgetFactory
+} from '@/editor/presentation/Widgets/RelationLookupWidgetFactory';
 import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
+import type { RelationTargetSuggester } from '@/editor/application/RelationTargetSuggester';
+import { PropertyName } from '@/editor/domain/PropertyDefinition';
+import type { FieldData } from '@/editor/presentation/SchemaForm';
+import type { ProgressBarWidget } from '@/editor/presentation/Widgets/ProgressBarWidgetFactory';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import { SubjectId } from '@/editor/domain/SubjectId';
 import type { PageUrlBuilder } from '@/editor/infrastructure/PageUrlBuilder';
-import type { CellData } from '@/editor/presentation/SubjectTableLoader';
 import type { SubjectMap } from '@/editor/domain/SubjectMap';
 import type { NeoWikiExtension } from '@/NeoWikiExtension';
-import type { RelationTargetSuggester } from '@/editor/application/RelationTargetSuggester';
+import type { CellData } from '@/editor/presentation/SubjectTableLoader';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -21,7 +26,7 @@ export interface RelationProperty extends PropertyDefinition {
 
 }
 
-export class RelationFormat extends BaseValueFormat<RelationProperty, RelationValue> {
+export class RelationFormat extends BaseValueFormat<RelationProperty, RelationValue, ProgressBarWidget|OO.ui.TagMultiselectWidget> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'relation';
@@ -69,8 +74,20 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		} );
 	}
 
-	public formatValueAsHtml( value: RelationValue, property: RelationProperty ): string {
-		return value.targetIds.join( ', ' ); // TODO
+	public async getFieldData( field: ProgressBarWidget|OO.ui.TagMultiselectWidget ): Promise<FieldData> {
+		if ( isRelationLookupWidget( field ) ) {
+			return field.getFieldData();
+		}
+
+		const isValid: boolean = ( field as OO.ui.TagMultiselectWidget ).checkValidity();
+		const fieldValue = ( field as OO.ui.TagMultiselectWidget ).getValue() as string[];
+		const value = new RelationValue( fieldValue.map( ( targetId ) => new Relation( undefined, targetId ) ) );
+
+		return {
+			value: value,
+			valid: isValid,
+			errorMessage: undefined
+		};
 	}
 
 	public createTableEditorColumn( property: RelationProperty ): ColumnDefinition {
@@ -134,7 +151,6 @@ class RelationColumnBuilder {
 		const url = this.pageUrlBuilder.buildUrl( subject.getPageIdentifiers().getPageName() );
 		return `<a href="${url}">${subject.getLabel()}</a>`;
 	}
-
 }
 
 export function newRelationProperty( name: string ): RelationProperty {

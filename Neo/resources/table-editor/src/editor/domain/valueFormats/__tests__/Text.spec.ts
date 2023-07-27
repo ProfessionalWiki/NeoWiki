@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newTextProperty, TextFormat } from '../Text';
-import { newStringValue } from '../../Value';
+import { TextFormat } from '../Text';
 
 describe( 'TextFormat', () => {
 
@@ -13,23 +12,4 @@ describe( 'TextFormat', () => {
 		} );
 
 	} );
-
-	describe( 'formatValueAsHtml', () => {
-
-		it( 'returns empty string for empty list', () => {
-			expect( format.formatValueAsHtml(
-				newStringValue(),
-				newTextProperty()
-			) ).toBe( '' );
-		} );
-
-		it( 'creates comma separated list for multiple values', () => {
-			expect( format.formatValueAsHtml(
-				newStringValue( 'foo', 'bar', 'baz' ),
-				newTextProperty()
-			) ).toBe( 'foo, bar, baz' );
-		} );
-
-	} );
-
 } );

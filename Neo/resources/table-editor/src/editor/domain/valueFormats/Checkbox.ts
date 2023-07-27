@@ -1,12 +1,13 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { type BooleanValue, ValueType } from '@/editor/domain/Value';
+import { type BooleanValue, newBooleanValue, ValueType } from '@/editor/domain/Value';
 import { BaseValueFormat } from '@/editor/domain/ValueFormat';
 import { ValidationResult } from '@/editor/domain/ValueFormat';
+import type { FieldData } from '@/editor/presentation/SchemaForm';
 
 export interface CheckboxProperty extends PropertyDefinition {
 }
 
-export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanValue> {
+export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanValue, OO.ui.CheckboxInputWidget> {
 
 	public static readonly valueType = ValueType.Boolean;
 	public static readonly formatName = 'checkbox';
@@ -28,8 +29,11 @@ export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanVal
 		} );
 	}
 
-	public formatValueAsHtml( value: BooleanValue, property: CheckboxProperty ): string {
-		return value.boolean ? '<span style="color: green">✓</span>' : '<span style="color: red">✗</span>';
+	public async getFieldData( field: OO.ui.CheckboxInputWidget, property: CheckboxProperty ): Promise<FieldData> {
+		return {
+			value: newBooleanValue( field.isSelected() ),
+			valid: true,
+			errorMessage: undefined
+		};
 	}
-
 }
