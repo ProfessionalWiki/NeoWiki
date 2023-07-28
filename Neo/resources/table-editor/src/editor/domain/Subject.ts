@@ -48,7 +48,7 @@ export class Subject {
 	}
 
 	public async getReferencedSubjects( lookup: SubjectLookup ): Promise<SubjectMap> {
-		return this.statements.getReferencedSubjects( lookup );
+		return this.statements?.getReferencedSubjects( lookup );
 	}
 
 	// TODO: test

@@ -71,6 +71,7 @@ export type ValidationError = {
 	message: string;
 };
 
+// TODO consider how to move this and getTagFieldData and getTextFieldData from here
 export function createStringFormField( value: StringValue | undefined, property: MultiStringProperty, fieldType: string ): OO.ui.Widget {
 	value = value ?? {
 		type: ValueType.String,
