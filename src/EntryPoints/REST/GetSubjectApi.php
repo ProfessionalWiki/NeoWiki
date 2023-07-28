@@ -16,14 +16,7 @@ class GetSubjectApi extends SimpleHandler {
 	private const EXPAND_PAGE = 'page';
 	private const EXPAND_RELATIONS = 'relations';
 
-	public function __construct(
-		private readonly CsrfValidator $csrfValidator
-	) {
-	}
-
 	public function run( string $subjectId ): Response {
-		$this->csrfValidator->verifyCsrfToken();
-
 		$presenter = new RestGetSubjectPresenter();
 		$query = NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter );
 
