@@ -14,14 +14,7 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class GetSchemaApi extends SimpleHandler {
 
-	public function __construct(
-		private readonly CsrfValidator $csrfValidator
-	) {
-	}
-
 	public function run( string $schemaName ): Response {
-		$this->csrfValidator->verifyCsrfToken();
-
 		$presenter = new RestGetSchemaPresenter();
 
 		NeoWikiExtension::getInstance()->newGetSchemaQuery( $presenter )->execute( $schemaName );

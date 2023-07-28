@@ -8,7 +8,6 @@ use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
-use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
@@ -19,7 +18,6 @@ class GetSchemaApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
 	private SchemaId $schemaId;
-	private CsrfValidator $csrfValidatorStub;
 	private const SCHEMA_ID = 'TestSchema';
 
 	public function setUp(): void {
@@ -40,14 +38,11 @@ class GetSchemaApiTest extends NeoWikiIntegrationTestCase {
 }
 JSON
 		);
-
-		$this->csrfValidatorStub = $this->createStub( CsrfValidator::class );
-		$this->csrfValidatorStub->method( 'verifyCsrfToken' )->willReturn( true );
 	}
 
 	public function testSchemaIsFound(): void {
 		$response = $this->executeHandler(
-			new GetSchemaApi( $this->csrfValidatorStub ),
+			new GetSchemaApi(),
 			new RequestData( [
 				'method' => 'GET',
 				'pathParams' => [
@@ -83,7 +78,7 @@ JSON,
 
 	public function testSchemaIsNotFound(): void {
 		$response = $this->executeHandler(
-			new GetSchemaApi( $this->csrfValidatorStub ),
+			new GetSchemaApi(),
 			new RequestData( [
 				'method' => 'GET',
 				'pathParams' => [
