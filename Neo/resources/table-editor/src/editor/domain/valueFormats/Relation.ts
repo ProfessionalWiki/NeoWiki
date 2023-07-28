@@ -1,15 +1,17 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { Relation, RelationValue, ValueType } from '@/editor/domain/Value';
-import { RelationMultiselectWidgetFactory } from '@/editor/presentation/Widgets/RelationMultiselectWidgetFactory';
 import {
-	isRelationLookupWidget,
+	type RelationMultiselectWidget,
+	RelationMultiselectWidgetFactory
+} from '@/editor/presentation/Widgets/RelationMultiselectWidgetFactory';
+import {
+	type RelationLookupWidget,
 	RelationLookupWidgetFactory
 } from '@/editor/presentation/Widgets/RelationLookupWidgetFactory';
 import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 import type { RelationTargetSuggester } from '@/editor/application/RelationTargetSuggester';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
-import type { ProgressBarWidget } from '@/editor/presentation/Widgets/ProgressBarWidgetFactory';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import { SubjectId } from '@/editor/domain/SubjectId';
 import type { PageUrlBuilder } from '@/editor/infrastructure/PageUrlBuilder';
@@ -26,7 +28,7 @@ export interface RelationProperty extends PropertyDefinition {
 
 }
 
-export class RelationFormat extends BaseValueFormat<RelationProperty, RelationValue, ProgressBarWidget|OO.ui.TagMultiselectWidget> {
+export class RelationFormat extends BaseValueFormat<RelationProperty, RelationValue, RelationLookupWidget|RelationMultiselectWidget> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'relation';
@@ -74,20 +76,8 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		} );
 	}
 
-	public async getFieldData( field: ProgressBarWidget|OO.ui.TagMultiselectWidget ): Promise<FieldData> {
-		if ( isRelationLookupWidget( field ) ) {
-			return field.getFieldData();
-		}
-
-		const isValid: boolean = ( field as OO.ui.TagMultiselectWidget ).checkValidity();
-		const fieldValue = ( field as OO.ui.TagMultiselectWidget ).getValue() as string[];
-		const value = new RelationValue( fieldValue.map( ( targetId ) => new Relation( undefined, targetId ) ) );
-
-		return {
-			value: value,
-			valid: isValid,
-			errorMessage: undefined
-		};
+	public async getFieldData( field: RelationLookupWidget|RelationMultiselectWidget ): Promise<FieldData> {
+		return field.getFieldData();
 	}
 
 	public createTableEditorColumn( property: RelationProperty ): ColumnDefinition {
