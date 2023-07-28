@@ -18,6 +18,7 @@ import type { PageUrlBuilder } from '@/editor/infrastructure/PageUrlBuilder';
 import type { SubjectMap } from '@/editor/domain/SubjectMap';
 import type { NeoWikiExtension } from '@/NeoWikiExtension';
 import type { CellData } from '@/editor/presentation/SubjectTableLoader';
+import type { Subject } from '@/editor/domain/Subject';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -118,16 +119,17 @@ class RelationColumnBuilder {
 	}
 
 	private relationsFormatter( cell: CellComponent ): string {
-		const relationValue = cell.getValue() as RelationValue;
+		const relationValue = cell.getValue() as Relation[];
 
-		if ( relationValue === undefined || relationValue.relations === undefined ) {
+		if ( relationValue === undefined ) {
 			return '';
 		}
 
 		const referencedSubjects = ( cell.getData() as CellData ).referencedSubjects;
 
-		return relationValue.relations
+		return relationValue
 			.map( ( relation ) => this.formatRelation( relation, referencedSubjects ) )
+			.filter( ( link: string ) => link )
 			.join( ', ' );
 	}
 
@@ -138,8 +140,12 @@ class RelationColumnBuilder {
 			return '';
 		}
 
-		const url = this.pageUrlBuilder.buildUrl( subject.getPageIdentifiers().getPageName() );
+		const url = this.pageUrlBuilder.buildUrl( this.getSubjectPageName( subject ) );
 		return `<a href="${url}">${subject.getLabel()}</a>`;
+	}
+
+	private getSubjectPageName( subject: Subject ): string {
+		return subject.getLabel().charAt( 0 ).toUpperCase() + subject.getLabel().slice( 1 );
 	}
 }
 
