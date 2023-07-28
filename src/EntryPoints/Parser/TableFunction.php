@@ -21,7 +21,7 @@ class TableFunction {
 				[
 					'class' => 'nwSubjectTableLoader',
 					'data-schema-id' => $arguments[0],
-					'data-page-id' => \Title::newFromDBkey( $parser->getPage()?->getDBkey() )->getId(),
+					'data-page-id' => \Title::newFromDBkey( $arguments[1] ?? $parser->getPage()?->getDBkey() )->getId(),
 				]
 			),
 			'noparse' => true,
