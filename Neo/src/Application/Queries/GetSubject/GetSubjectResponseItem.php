@@ -13,7 +13,7 @@ class GetSubjectResponseItem {
 		/**
 		 * @var array<string, mixed>
 		 */
-		public readonly array $properties,
+		public readonly array $statements,
 		public readonly ?int $pageId,
 		public readonly ?string $pageTitle,
 	) {
