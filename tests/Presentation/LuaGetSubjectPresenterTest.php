@@ -27,6 +27,7 @@ class LuaGetSubjectPresenterTest extends TestCase {
 					statements: [
 						'P1' => [ 'Bar', 'Baz' ],
 						'P2' => [ 'Hi' ],
+						'P3' => 9001,
 					],
 					pageId: 42,
 					pageTitle: 'Foo',
@@ -42,6 +43,7 @@ class LuaGetSubjectPresenterTest extends TestCase {
 				'statements' => [
 					'P1' => [ 1 => 'Bar', 2 => 'Baz' ],
 					'P2' => [ 1 => 'Hi' ],
+					'P3' => [ 1 => 9001 ],
 				],
 				'pageId' => 42,
 				'pageTitle' => 'Foo',
