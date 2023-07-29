@@ -72,7 +72,7 @@ class GetSubjectQueryTest extends TestCase {
 						id: '00000000-6666-0000-0000-000000000001',
 						label: 'expected label',
 						schemaId: '00000000-6666-0000-0000-000000000010',
-						properties: [
+						statements: [
 							'expected property 1' => 'expected value 1',
 							'expected property 2' => 'expected value 2',
 							'FriendOf' => [

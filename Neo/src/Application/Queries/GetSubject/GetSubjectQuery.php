@@ -65,7 +65,7 @@ class GetSubjectQuery {
 			id: $subject->id->text,
 			label: $subject->label->text,
 			schemaId: $subject->getSchemaId()->getText(),
-			properties: $subject->getStatements()->asMap(),
+			statements: $subject->getStatements()->asMap(),
 			pageId: $pageIdentifiers?->getId()->id,
 			pageTitle: $pageIdentifiers?->getTitle(),
 		);
