@@ -39,13 +39,12 @@ class LuaGetSubjectPresenter implements GetSubjectPresenter {
 	}
 
 	/**
-	 * @param array<mixed, mixed> $array
 	 * @return array<int, mixed>
 	 */
-	private function toOneBasedArray( array $array ): array {
+	private function toOneBasedArray( mixed $value ): array {
 		$oneBasedArray = [];
 
-		foreach ( array_values( $array ) as $key => $value ) {
+		foreach ( array_values( (array)$value ) as $key => $value ) {
 			$oneBasedArray[$key + 1] = $value;
 		}
 
