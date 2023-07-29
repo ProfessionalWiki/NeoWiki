@@ -24,7 +24,7 @@ class LuaGetSubjectPresenterTest extends TestCase {
 					id: 'Q1',
 					label: 'Foo',
 					schemaId: 'Employee',
-					properties: [
+					statements: [
 						'P1' => [ 'Bar', 'Baz' ],
 						'P2' => [ 'Hi' ],
 					],
@@ -39,7 +39,7 @@ class LuaGetSubjectPresenterTest extends TestCase {
 				'id' => 'Q1',
 				'label' => 'Foo',
 				'schema' => 'Employee',
-				'properties' => [
+				'statements' => [
 					'P1' => [ 1 => 'Bar', 2 => 'Baz' ],
 					'P2' => [ 1 => 'Hi' ],
 				],
