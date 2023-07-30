@@ -30,8 +30,10 @@ export class DateFormat extends BaseValueFormat<DateProperty, StringValue, OO.ui
 	}
 
 	public async getFieldData( field: OO.ui.InputWidget ): Promise<FieldData> {
+		const value = field.getValue();
+
 		return {
-			value: newStringValue( field.getValue() ?? '' ),
+			value: value !== '' ? newStringValue( value ) : newStringValue(),
 			valid: true,
 			errorMessage: undefined
 		};
