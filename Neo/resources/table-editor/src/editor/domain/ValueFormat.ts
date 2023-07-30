@@ -116,7 +116,7 @@ export async function getTextFieldData( field: OO.ui.TextInputWidget ): Promise<
 	const value = field.getValue();
 
 	return {
-		value: newStringValue( value ?? '' ),
+		value: value !== '' ? newStringValue( value ) : newStringValue(),
 		valid: isValid,
 		errorMessage: isValid ? undefined : inputElement.validationMessage
 	};
