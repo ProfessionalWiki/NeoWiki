@@ -6,10 +6,12 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ImportPages;
 
 use CommentStoreComment;
 use Content;
+use MediaWiki\Extension\Scribunto\ScribuntoContent;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
+use TextContent;
 use WikitextContent;
 
 class ImportPagesAction {
@@ -20,6 +22,7 @@ class ImportPagesAction {
 		private readonly WikiPageFactory $wikiPageFactory,
 		private readonly SchemaContentSource $schemaContentSource,
 		private readonly SubjectPageSource $subjectPageSource,
+		private readonly PageContentSource $pageContentSource,
 	) {
 	}
 
@@ -39,6 +42,17 @@ class ImportPagesAction {
 				[
 					'main' => new WikitextContent( $subjectPageData->wikitext ),
 					MediaWikiSubjectRepository::SLOT_NAME => new SubjectContent( $subjectPageData->subjectsJson ),
+				]
+			);
+		}
+
+		foreach ( $this->pageContentSource->getPageContentStrings() as $pageName => $sourceText ) {
+			$content = str_starts_with( $pageName, 'Module:' ) ? new ScribuntoContent( $sourceText ) : new WikitextContent( $sourceText );
+
+			$this->createPage(
+				$pageName,
+				[
+					'main' => $content,
 				]
 			);
 		}
