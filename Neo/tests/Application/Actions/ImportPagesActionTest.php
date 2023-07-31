@@ -9,6 +9,7 @@ use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPagesAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPresenter;
+use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\PageContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageData;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
@@ -25,6 +26,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 	private WikiPageFactory $wikiPageFactory;
 	private SchemaContentSource $schemaContentSource;
 	private SubjectPageSource $subjectPageSource;
+	private PageContentSource $pageContentSource;
 	private ImportPagesAction $importPagesAction;
 
 	protected function setUp(): void {
@@ -33,6 +35,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 		$this->wikiPageFactory = MediaWikiServices::getInstance()->getWikiPageFactory();
 		$this->schemaContentSource = $this->createMock( SchemaContentSource::class );
 		$this->subjectPageSource = $this->createMock( SubjectPageSource::class );
+		$this->pageContentSource = $this->createMock( PageContentSource::class );
 
 		$this->importPagesAction = new ImportPagesAction(
 			$this->presenter,
@@ -40,30 +43,38 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 			$this->wikiPageFactory,
 			$this->schemaContentSource,
 			$this->subjectPageSource,
+			$this->pageContentSource
 		);
 	}
 
 	public function testImportAction(): void {
-		$mockedSchemas = [
-			'Schema1' => new WikitextContent( 'schema1Content' ),
-			'Schema2' => new WikitextContent( 'schema2Content' )
-		];
+		$this->schemaContentSource->method( 'getSchemas' )->willReturn(
+			[
+				'Schema1' => new WikitextContent( 'schema1Content' ),
+				'Schema2' => new WikitextContent( 'schema2Content' )
+			]
+		);
 
-		$mockedSubjectPages = [
-			new SubjectPageData(
-				'Page1',
-				'Page1Content',
-				'[]'
-			),
-			new SubjectPageData(
-				'Page2',
-				'Page2Content',
-				'[]'
-			)
-		];
+		$this->subjectPageSource->method( 'getSubjectPages' )->willReturn(
+			[
+				new SubjectPageData(
+					'Page1',
+					'Page1Content',
+					'[]'
+				),
+				new SubjectPageData(
+					'Page2',
+					'Page2Content',
+					'[]'
+				)
+			]
+		);
 
-		$this->schemaContentSource->method( 'getSchemas' )->willReturn( $mockedSchemas );
-		$this->subjectPageSource->method( 'getSubjectPages' )->willReturn( $mockedSubjectPages );
+		$this->pageContentSource->method( 'getPageContentStrings' )->willReturn(
+			[
+				'PageOne' => 'Whatever wikitext',
+			]
+		);
 
 		$this->importPagesAction->import();
 
@@ -77,6 +88,8 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 				'Created revision for Page1',
 				'Importing Page2...',
 				'Created revision for Page2',
+				'Importing PageOne...',
+				'Created revision for PageOne',
 				'Done'
 			],
 			$this->presenter->getMessages()

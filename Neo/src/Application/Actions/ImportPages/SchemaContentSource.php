@@ -24,6 +24,9 @@ class SchemaContentSource {
 
 		$directoryIterator = new DirectoryIterator( $this->directoryPath );
 
+		/**
+		 * @var DirectoryIterator $fileInfo
+		 */
 		foreach ( $directoryIterator as $fileInfo ) {
 			if ( !$fileInfo->isFile() ) {
 				continue;
