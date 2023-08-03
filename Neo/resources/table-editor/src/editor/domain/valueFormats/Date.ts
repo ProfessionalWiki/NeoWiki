@@ -22,11 +22,21 @@ export class DateFormat extends BaseValueFormat<DateProperty, StringValue, OO.ui
 	}
 
 	public createFormField( value: StringValue | undefined, property: DateProperty ): any {
-		return new mw.widgets.DateInputWidget( { // TODO: handle multiple values?
+		const widget = new mw.widgets.DateInputWidget( { // TODO: handle multiple values?
 			displayFormat: 'Do [of] MMMM, YYYY',
 			value: value?.strings[ 0 ] ?? '',
 			required: property.required
 		} );
+
+		widget.$element.find( '.mw-widget-dateInputWidget-calendar' ).css( {
+			position: 'relative'
+		} );
+
+		widget.$element.find( '.mw-widget-dateInputWidget-calendar .mw-widget-calendarWidget-body' ).css( {
+			position: 'absolute'
+		} );
+
+		return widget;
 	}
 
 	public async getFieldData( field: OO.ui.InputWidget ): Promise<FieldData> {
