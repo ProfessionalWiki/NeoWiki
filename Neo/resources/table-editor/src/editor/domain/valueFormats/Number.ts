@@ -2,7 +2,8 @@ import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { newNumberValue, type NumberValue, ValueType } from '@/editor/domain/Value';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
-import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
+import { BaseValueFormat, ValidationResult, type ValidationError } from '@/editor/domain/ValueFormat';
+import { NumberInputWidgetFactory, type NumberInputWidget } from '@/editor/presentation/Widgets/NumberInputWidgetFactory';
 
 export interface NumberProperty extends PropertyDefinition {
 
@@ -12,13 +13,38 @@ export interface NumberProperty extends PropertyDefinition {
 
 }
 
-export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, OO.ui.NumberInputWidget> {
+export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, NumberInputWidget> {
 
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'number';
 
+	private getBoundsMessage( value: number, minimum: number | undefined, maximum: number | undefined ): string | null {
+		if ( minimum !== undefined && maximum !== undefined ) {
+			if ( value < minimum || value > maximum ) {
+				return `Value should be within the allowed range (${minimum} - ${maximum}).`;
+			}
+		}
+
+		if ( minimum !== undefined && value < minimum ) {
+			return `Value should be greater than or equal to ${minimum}.`;
+		}
+
+		if ( maximum !== undefined && value > maximum ) {
+			return `Value should be less than or equal to ${maximum}.`;
+		}
+
+		return null;
+	}
+
 	public validate( value: NumberValue, property: NumberProperty ): ValidationResult {
-		return new ValidationResult( [] ); // TODO
+		const errors: ValidationError[] = [];
+		const boundsMessage = this.getBoundsMessage( value.number, property.minimum, property.maximum );
+
+		if ( boundsMessage ) {
+			errors.push( { message: boundsMessage } );
+		}
+
+		return new ValidationResult( errors );
 	}
 
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): NumberProperty {
@@ -30,28 +56,17 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, O
 		} as NumberProperty;
 	}
 
-	public createFormField( value: NumberValue | undefined, property: NumberProperty ): any {
-		const options: any = {
-			type: 'number',
+	public createFormField( value: NumberValue | undefined, property: NumberProperty ): NumberInputWidget {
+		return NumberInputWidgetFactory.create( {
 			value: value === undefined ? '' : value.number?.toString(),
 			min: property.minimum,
 			max: property.maximum,
 			required: property.required
-		};
-
-		// FIXME: this does not work, and even without this code, NumberInputWidget is not allowing decimals
-		if ( property.precision !== undefined ) {
-			options.step = 1 / Math.pow( 10, property.precision );
-		}
-
-		const widget = new OO.ui.NumberInputWidget( options );
-		setTimeout( () => widget.setFlags( { invalid: false } ) );
-
-		return widget;
+		} );
 	}
 
-	public async getFieldData( field: OO.ui.NumberInputWidget ): Promise<FieldData> {
-		const isValid = await field.getValidity().catch( () => false ) !== false;
+	public async getFieldData( field: NumberInputWidget ): Promise<FieldData> {
+		const isValid = ( field.$input[ 0 ] as HTMLInputElement ).checkValidity();
 
 		return {
 			value: field.getValue() === '' ? undefined : newNumberValue( field.getNumericValue() ),
@@ -59,15 +74,7 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, O
 			errorMessage: isValid ? undefined : ( field.$input[ 0 ] as HTMLInputElement ).validationMessage
 		};
 	}
-}
 
-// TODO: use or remove
-export function isValidNumber( number: string, required = false ): boolean {
-	if ( !required && number === '' ) {
-		return true;
-	}
-	const pattern = /^\s*-?\d+(\.\d+)?\s*$/;
-	return pattern.test( number );
 }
 
 export function newNumberProperty( name = 'MyNumberProperty' ): NumberProperty {
