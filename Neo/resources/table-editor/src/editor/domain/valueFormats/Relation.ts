@@ -1,5 +1,5 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { Relation, RelationValue, ValueType } from '@/editor/domain/Value';
+import { RelationValue, ValueType } from '@/editor/domain/Value';
 import {
 	type RelationMultiselectWidget,
 	RelationMultiselectWidgetFactory
@@ -13,12 +13,11 @@ import type { RelationTargetSuggester } from '@/editor/application/RelationTarge
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
-import { SubjectId } from '@/editor/domain/SubjectId';
 import type { PageUrlBuilder } from '@/editor/infrastructure/PageUrlBuilder';
-import type { SubjectMap } from '@/editor/domain/SubjectMap';
 import type { NeoWikiExtension } from '@/NeoWikiExtension';
 import type { CellData } from '@/editor/presentation/SubjectTableLoader';
-import type { Subject } from '@/editor/domain/Subject';
+import type { VueComponentManager } from '@/editor/presentation/Vue/VueComponentManager';
+import VueRelation from '@/components/propertyValues/Relation.vue';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -35,7 +34,7 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 	public static readonly formatName = 'relation';
 	private readonly factory: RelationServicesFactory;
 
-	public constructor( factory: NeoWikiExtension ) {
+	public constructor( factory: NeoWikiExtension, private readonly vueComponentManager: VueComponentManager ) {
 		super();
 		this.factory = new RelationServicesFactory( factory );
 	}
@@ -83,7 +82,17 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 
 	public createTableEditorColumn( property: RelationProperty ): ColumnDefinition {
 		const column: ColumnDefinition = super.createTableEditorColumn( property );
-		return this.factory.getColumnBuilder().createTableEditorColumn( column, property );
+
+		column.formatter = ( cell: CellComponent ) => {
+			return this.vueComponentManager.createDivWithComponent( VueRelation, {
+				property: property,
+				value: new RelationValue( cell.getValue() ),
+				referencedSubjects: ( cell.getData() as CellData ).referencedSubjects,
+				pageUrlBuilder: this.factory.getPageUrlBuilder()
+			} );
+		};
+
+		return column;
 	}
 
 }
@@ -99,53 +108,8 @@ class RelationServicesFactory {
 		return this.factory.getRelationTargetSuggester();
 	}
 
-	public getColumnBuilder(): RelationColumnBuilder {
-		return new RelationColumnBuilder( this.factory.getPageUrlBuilder() );
-	}
-
-}
-
-class RelationColumnBuilder {
-
-	public constructor(
-		private readonly pageUrlBuilder: PageUrlBuilder
-	) {
-	}
-
-	public createTableEditorColumn( column: ColumnDefinition, _: RelationProperty ): ColumnDefinition {
-		column.formatter = this.relationsFormatter.bind( this );
-
-		return column;
-	}
-
-	private relationsFormatter( cell: CellComponent ): string {
-		const relationValue = cell.getValue() as Relation[];
-
-		if ( relationValue === undefined ) {
-			return '';
-		}
-
-		const referencedSubjects = ( cell.getData() as CellData ).referencedSubjects;
-
-		return relationValue
-			.map( ( relation ) => this.formatRelation( relation, referencedSubjects ) )
-			.filter( ( link: string ) => link )
-			.join( ', ' );
-	}
-
-	private formatRelation( relation: Relation, referencedSubjects: SubjectMap ): string {
-		const subject = referencedSubjects.get( new SubjectId( relation.target ) );
-
-		if ( subject === undefined ) {
-			return '';
-		}
-
-		const url = this.pageUrlBuilder.buildUrl( this.getSubjectPageName( subject ) );
-		return `<a href="${url}">${subject.getLabel()}</a>`;
-	}
-
-	private getSubjectPageName( subject: Subject ): string {
-		return subject.getLabel().charAt( 0 ).toUpperCase() + subject.getLabel().slice( 1 );
+	public getPageUrlBuilder(): PageUrlBuilder {
+		return this.factory.getPageUrlBuilder();
 	}
 }
 

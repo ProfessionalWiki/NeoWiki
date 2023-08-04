@@ -53,6 +53,7 @@ export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValu
 		const column: ColumnDefinition = super.createTableEditorColumn( property );
 
 		column.formatter = 'progress';
+		column.cssClass = 'progress';
 		column.formatterParams = {
 			legend: true,
 			legendAlign: 'left',
