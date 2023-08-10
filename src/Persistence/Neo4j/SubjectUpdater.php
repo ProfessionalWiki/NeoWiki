@@ -12,13 +12,15 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use Psr\Log\LoggerInterface;
 
 class SubjectUpdater {
 
 	public function __construct(
 		private readonly SchemaLookup $schemaRepository,
 		private readonly TransactionInterface $transaction,
-		private readonly PageId $pageId
+		private readonly PageId $pageId,
+		private LoggerInterface $logger
 	) {
 	}
 
@@ -26,7 +28,7 @@ class SubjectUpdater {
 		$schema = $this->schemaRepository->getSchema( $subject->getSchemaId() );
 
 		if ( $schema === null ) {
-			// TODO: log warning
+			$this->logger->warning( 'Schema not found: ' . $subject->getSchemaId()->getText() );
 			return;
 		}
 
