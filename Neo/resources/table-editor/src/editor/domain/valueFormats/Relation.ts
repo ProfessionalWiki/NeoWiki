@@ -86,7 +86,7 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		column.formatter = ( cell: CellComponent ) => {
 			return this.vueComponentManager.createDivWithComponent( VueRelation, {
 				property: property,
-				value: new RelationValue( cell.getValue() ),
+				value: new RelationValue( cell.getValue() ?? [] ),
 				referencedSubjects: ( cell.getData() as CellData ).referencedSubjects,
 				pageUrlBuilder: this.factory.getPageUrlBuilder()
 			} );
