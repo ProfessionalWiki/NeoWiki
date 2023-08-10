@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup
@@ -30,9 +31,11 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 	private const GUID_4 = '00000000-1237-0000-0000-000000000004';
 	private const GUID_5 = '00000000-1237-0000-0000-000000000005';
 	private const GUID_404 = '00000000-1237-0000-0000-000000000007';
+	private LegacyLoggerSpy $logger;
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
+		$this->logger = new LegacyLoggerSpy();
 	}
 
 	public function testReturnsNullOnEmptyGraph(): void {
@@ -55,7 +58,8 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 			$client,
 			new InMemorySchemaLookup(
 				TestSchema::build( id: TestSubject::DEFAULT_SCHEMA_ID )
-			)
+			),
+			$this->logger
 		);
 
 		$queryStore->savePage( TestPage::build(
