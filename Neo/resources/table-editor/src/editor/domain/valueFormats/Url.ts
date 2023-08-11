@@ -7,6 +7,7 @@ import {
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
+import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import DOMPurify from 'dompurify';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
@@ -16,7 +17,7 @@ export interface UrlProperty extends MultiStringProperty {
 
 }
 
-export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget> {
+export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMultiselectWidget|OO.ui.TextInputWidget> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'url';
@@ -52,7 +53,7 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, OO.ui.T
 		return createStringFormField( value, property, 'url' );
 	}
 
-	public async getFieldData( field: OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
+	public async getFieldData( field: TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
 		if ( field instanceof OO.ui.TagMultiselectWidget ) {
 			return getTagFieldData( field, property );
 		}

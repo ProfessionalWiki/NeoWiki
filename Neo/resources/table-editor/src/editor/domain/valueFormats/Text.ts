@@ -9,11 +9,12 @@ import {
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
+import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 
 export interface TextProperty extends MultiStringProperty {
 }
 
-export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui.TextInputWidget|OO.ui.TagMultiselectWidget> {
+export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui.TextInputWidget|TagMultiselectWidget> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'text';
@@ -34,7 +35,7 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui
 		return createStringFormField( value, property, 'text' );
 	}
 
-	public async getFieldData( field: OO.ui.TextInputWidget|OO.ui.TagMultiselectWidget, property: PropertyDefinition ): Promise<FieldData> {
+	public async getFieldData( field: OO.ui.TextInputWidget|TagMultiselectWidget, property: PropertyDefinition ): Promise<FieldData> {
 		if ( field instanceof OO.ui.TagMultiselectWidget ) {
 			return getTagFieldData( field, property );
 		}

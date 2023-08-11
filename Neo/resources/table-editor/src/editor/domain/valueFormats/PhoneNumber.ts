@@ -7,12 +7,13 @@ import {
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
+import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
 export interface PhoneNumberProperty extends MultiStringProperty {
 }
 
-export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, StringValue, OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget> {
+export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, StringValue, TagMultiselectWidget|OO.ui.TextInputWidget> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'phoneNumber';
@@ -48,7 +49,7 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 		return createStringFormField( value, property, 'tel' );
 	}
 
-	public async getFieldData( field: OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
+	public async getFieldData( field: TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
 		if ( field instanceof OO.ui.TagMultiselectWidget ) {
 			return getTagFieldData( field, property );
 		}
