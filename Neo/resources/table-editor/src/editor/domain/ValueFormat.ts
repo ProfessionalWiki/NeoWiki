@@ -1,5 +1,5 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { TagMultiselectWidgetFactory } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
+import { TagMultiselectWidgetFactory, type TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { StringValue, Value } from '@/editor/domain/Value';
 import { newStringValue, ValueType } from '@/editor/domain/Value';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
@@ -26,7 +26,7 @@ export class ValueFormatRegistry {
 }
 
 // TODO: Consider a better solution but not all widgets are correctly defined as inheritors of OO.ui.Widget
-export type Field = OO.ui.CheckboxInputWidget | OO.ui.InputWidget | OO.ui.TagMultiselectWidget
+export type Field = OO.ui.CheckboxInputWidget | OO.ui.InputWidget | TagMultiselectWidget
 | OO.ui.TextInputWidget | OO.ui.NumberInputWidget | OO.ui.ProgressBarWidget | OO.ui.MenuTagMultiselectWidget | OO.ui.Widget;
 
 export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Value, F extends Field> {
@@ -84,8 +84,8 @@ export function createStringFormField( value: StringValue | undefined, property:
 			allowArbitrary: true,
 			allowDuplicates: !property.uniqueItems,
 			allowEditTags: true,
-			allowReordering: true
-			// TODO: handle required?
+			allowReordering: true,
+			required: property.required
 		} );
 	}
 
@@ -96,17 +96,8 @@ export function createStringFormField( value: StringValue | undefined, property:
 	} );
 }
 
-export function getTagFieldData( field: OO.ui.TagMultiselectWidget, property: PropertyDefinition ): FieldData {
-	// TODO: validate input
-	const isValid: boolean = field.checkValidity();
-	const errorMessage: string|undefined = '';
-	const fieldValue = field.getValue() as string[];
-
-	return {
-		value: newStringValue( ...fieldValue ), // TODO: extract into getTagFieldValue
-		valid: isValid,
-		errorMessage: errorMessage
-	};
+export function getTagFieldData( field: TagMultiselectWidget, property: PropertyDefinition ): FieldData {
+	return field.getFieldData();
 }
 
 export async function getTextFieldData( field: OO.ui.TextInputWidget ): Promise<FieldData> {

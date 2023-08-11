@@ -54,8 +54,8 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui
 				allowArbitrary: true,
 				allowDuplicates: !property.uniqueItems,
 				allowEditTags: true,
-				allowReordering: true
-				// TODO: handle required?
+				allowReordering: true,
+				required: property.required
 			} );
 		}
 

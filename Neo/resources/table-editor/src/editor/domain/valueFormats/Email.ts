@@ -7,12 +7,13 @@ import {
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
+import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 
 export interface EmailProperty extends MultiStringProperty {
 }
 
-export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget> {
+export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, TagMultiselectWidget|OO.ui.TextInputWidget> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'email';
@@ -32,7 +33,7 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, OO.
 		return createStringFormField( value, property, 'email' );
 	}
 
-	public async getFieldData( field: OO.ui.TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
+	public async getFieldData( field: TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
 		if ( field instanceof OO.ui.TagMultiselectWidget ) {
 			return getTagFieldData( field, property );
 		}
