@@ -73,7 +73,7 @@ class SchemaDeserializer {
 				required: $property['required'] ?? false,
 				default: $property['default'] ?? null,
 				relationType: new RelationType( $property['relation'] ?? $propertyName ),
-				targetSchema: new SchemaId( $property['targetSchema'] ),
+				targetSchema: new SchemaId( $property['targetSchema'] ?? '__UNDEFINED__' ),
 				multiple: $property['multiple'] ?? false,
 			),
 
