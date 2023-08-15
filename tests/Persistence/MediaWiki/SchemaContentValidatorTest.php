@@ -77,4 +77,82 @@ class SchemaContentValidatorTest extends TestCase {
 		);
 	}
 
+	public function testInvalidTypeFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				<<<JSON
+{
+	"title": "Foo Bar",
+	"propertyDefinitions": {
+		"someRelation": {
+			"type": "not a real type",
+			"format": "text"
+		}
+	}
+}
+JSON
+			)
+		);
+
+		$this->assertSame(
+			[ '/propertyDefinitions/someRelation/type' => 'The data should match one item from enum' ],
+			$validator->getErrors()
+		);
+	}
+
+	public function testInvalidFormatFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				<<<JSON
+{
+	"title": "Foo Bar",
+	"propertyDefinitions": {
+		"someRelation": {
+			"type": "string",
+			"format": "not a real format"
+		}
+	}
+}
+JSON
+			)
+		);
+
+		$this->assertSame(
+			[ '/propertyDefinitions/someRelation/format' => 'The data should match one item from enum' ],
+			$validator->getErrors()
+		);
+	}
+
+	public function testMissingRelationPropertyDefinitionsFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				<<<JSON
+{
+	"title": "Foo Bar",
+	"propertyDefinitions": {
+		"someRelation": {
+			"type": "relation",
+			"format": "relation"
+		}
+	}
+}
+JSON
+			)
+		);
+
+		$this->assertSame(
+			[
+				'/propertyDefinitions/someRelation/format' => 'The data must must match the const value',
+				'/propertyDefinitions/someRelation' => 'The required properties (relation, targetSchema) are missing'
+			],
+			$validator->getErrors()
+		);
+	}
+
 }
