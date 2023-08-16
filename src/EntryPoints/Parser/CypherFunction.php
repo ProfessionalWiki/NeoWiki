@@ -7,7 +7,8 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Parser;
 use Parser;
 use ProfessionalWiki\NeoWiki\Application\Queries\RunCypher\RunCypherQuery;
 use ProfessionalWiki\NeoWiki\Application\QueryEngine;
-use ProfessionalWiki\NeoWiki\Presentation\RunCypherParserFunctionPresenter;
+use ProfessionalWiki\NeoWiki\Presentation\RunCypher\Format;
+use ProfessionalWiki\NeoWiki\Presentation\RunCypher\ParserFunctionRunCypherPresenter;
 use ProfessionalWiki\NeoWiki\Presentation\TemplateRenderer;
 
 class CypherFunction {
@@ -24,7 +25,10 @@ class CypherFunction {
 	public function handleParserFunctionCall( Parser $parser, string ...$arguments ): array {
 		$parser->getOutput()->addModules( [ 'ext.neowiki.table-editor' ] );
 
-		$presenter = new RunCypherParserFunctionPresenter( $this->templateRenderer );
+		$presenter = new ParserFunctionRunCypherPresenter(
+			templateRenderer: $this->templateRenderer,
+			presentationFormat: Format::fromString( $arguments[1] ?? Format::DEFAULT->value )
+		);
 
 		$cypherQueryQuery = new RunCypherQuery(
 			$presenter,
