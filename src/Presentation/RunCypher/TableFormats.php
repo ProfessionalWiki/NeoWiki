@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Presentation\RunCypher;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\DateTime;
 use Laudis\Neo4j\Types\Node;
 use ProfessionalWiki\NeoWiki\Presentation\TemplateRenderer;
 
@@ -62,12 +63,20 @@ class TableFormats {
 
 	private function getPropertiesFromSubjectNode( Node $subject ): array {
 		return array_map(
-			fn( mixed $value ): array => [ 'values' => (array)$value ],
+			fn( mixed $value ): array => [ 'values' => $this->normalizeValue( $value ) ],
 			array_diff_key(
 				$subject->getProperties()->toRecursiveArray(),
 				[ 'id' => '' ]
 			)
 		);
+	}
+
+	private function normalizeValue( mixed $value ): array {
+		if ( $value instanceof DateTime ) {
+			return [ $value->toDateTime()->format( 'Y-m-d H:i:s' ) ];
+		}
+
+		return (array)$value;
 	}
 
 	private function defaultEmptyProperties( array $subjects ): array {
