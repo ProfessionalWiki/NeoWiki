@@ -14,25 +14,32 @@ class TableFormats {
 
 	public function __construct(
 		private readonly TemplateRenderer $templateRenderer,
+		private readonly array $columnsToInclude,
 	) {
 	}
 
 	public function createMediaWikiTable( SummarizedResult $result ): string {
 		return $this->templateRenderer->viewModelToString(
 			'ResultTable.html.twig',
-			[
-				'subjects' => $this->resultsToViewModel( $result->getResults() )
-			]
+			$this->buildTwigViewModel( $result )
 		);
 	}
 
 	public function createTabulatorTable( SummarizedResult $result ): string {
 		return $this->templateRenderer->viewModelToString(
 			'TableTabulator.html.twig',
-			[
-				'subjects' => $this->resultsToViewModel( $result->getResults() )
-			]
+			$this->buildTwigViewModel( $result )
 		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function buildTwigViewModel( SummarizedResult $result ): array {
+		return [
+			'subjects' => $this->resultsToViewModel( $result->getResults() ),
+			'includeId' => $this->columnsToInclude === [] || in_array( 'id', $this->columnsToInclude ),
+		];
 	}
 
 	private function resultsToViewModel( CypherList $results ): array {
@@ -57,17 +64,27 @@ class TableFormats {
 		return [
 			'id' => $subject->getProperties()->get( 'id' ),
 			'types' => $subject->getLabels(),
-			'properties' => $this->getPropertiesFromSubjectNode( $subject )
+			'properties' => $this->getStatementsFromSubjectNode( $subject )
 		];
 	}
 
-	private function getPropertiesFromSubjectNode( Node $subject ): array {
+	private function getStatementsFromSubjectNode( Node $subject ): array {
 		return array_map(
 			fn( mixed $value ): array => [ 'values' => $this->normalizeValue( $value ) ],
-			array_diff_key(
-				$subject->getProperties()->toRecursiveArray(),
-				[ 'id' => '' ]
-			)
+			$this->filterOutStatementsWithPropertiesToExclude( $subject->getProperties()->toRecursiveArray() )
+		);
+	}
+
+	private function filterOutStatementsWithPropertiesToExclude( array $statements ): array {
+		unset( $statements['id'] );
+
+		if ( $this->columnsToInclude === [] ) {
+			return $statements;
+		}
+
+		return array_intersect_key(
+			$statements,
+			array_flip( $this->columnsToInclude )
 		);
 	}
 
