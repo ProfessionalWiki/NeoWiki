@@ -12,6 +12,4 @@ interface RunCypherPresenter {
 
 	public function presentSummarizedResult( SummarizedResult $result ): void;
 
-	public function presentViewModel( array $viewModel ): void;
-
 }
