@@ -82,9 +82,9 @@ class TableFormats {
 			return $statements;
 		}
 
-		return array_intersect_key(
-			$statements,
-			array_flip( $this->columnsToInclude )
+		return array_merge(
+			array_flip( $this->columnsToInclude ),
+			array_intersect_key( $statements, array_flip( $this->columnsToInclude ) )
 		);
 	}
 
