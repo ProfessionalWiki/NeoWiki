@@ -27,7 +27,8 @@ class CypherFunction {
 
 		$presenter = new ParserFunctionRunCypherPresenter(
 			templateRenderer: $this->templateRenderer,
-			presentationFormat: Format::fromString( $arguments[1] ?? Format::DEFAULT->value )
+			presentationFormat: Format::fromString( $arguments[1] ?? Format::DEFAULT->value ),
+			columnsToInclude: $this->getColumnsToIncludeFromArgumentArray( $arguments ),
 		);
 
 		$cypherQueryQuery = new RunCypherQuery(
@@ -38,6 +39,14 @@ class CypherFunction {
 		$cypherQueryQuery->runCypher( $arguments[0] );
 
 		return $presenter->getParserFunctionResponseStructure();
+	}
+
+	private function getColumnsToIncludeFromArgumentArray( array $arguments ): array {
+		if ( isset( $arguments[2] ) && trim( $arguments[2] ) !== '' ) {
+			return explode( ',', $arguments[2] );
+		}
+
+		return [];
 	}
 
 }

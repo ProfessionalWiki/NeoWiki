@@ -14,9 +14,13 @@ class ParserFunctionRunCypherPresenter implements RunCypherPresenter {
 	private string $html;
 	private ?SummarizedResult $result = null;
 
+	/**
+	 * @param string[] $columnsToInclude
+	 */
 	public function __construct(
 		private readonly TemplateRenderer $templateRenderer,
 		private readonly Format $presentationFormat,
+		private readonly array $columnsToInclude,
 	) {
 	}
 
@@ -39,12 +43,14 @@ class ParserFunctionRunCypherPresenter implements RunCypherPresenter {
 
 		$result = $this->getSummarizedResult();
 
+		$tableFormats = new TableFormats( $this->templateRenderer, $this->columnsToInclude );
+
 		// TODO: format interface and registry
 		return match ( $this->presentationFormat ) {
-			Format::TABULATOR_TABLE => ( new TableFormats( $this->templateRenderer ) )->createTabulatorTable( $result ),
+			Format::TABULATOR_TABLE => $tableFormats->createTabulatorTable( $result ),
 			Format::DEBUG_JSON => ( new JsonFormat() )->createJsonOutput( $result ),
-			Format::MEDIAWIKI_TABLE => ( new TableFormats( $this->templateRenderer ) )->createMediaWikiTable( $result ),
-			Format::DEFAULT => ( new TableFormats( $this->templateRenderer ) )->createMediaWikiTable( $result ),
+			Format::MEDIAWIKI_TABLE => $tableFormats->createMediaWikiTable( $result ),
+			Format::DEFAULT => $tableFormats->createMediaWikiTable( $result ),
 		};
 	}
 
