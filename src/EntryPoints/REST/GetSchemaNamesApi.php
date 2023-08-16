@@ -8,11 +8,12 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Rest\StringStream;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use Wikimedia\ParamValidator\ParamValidator;
 
-class GetSchemasApi extends SimpleHandler {
+class GetSchemaNamesApi extends SimpleHandler {
 
-	public function run(): Response {
-		$schemas = NeoWikiExtension::getInstance()->newGetSchemasQuery()->execute();
+	public function run( string $search ): Response {
+		$schemas = NeoWikiExtension::getInstance()->newGetSchemaNamesQuery()->execute( $search );
 
 		$response = $this->getResponseFactory()->create();
 		$response->setBody( new StringStream( json_encode( $schemas ) ) );
@@ -22,7 +23,13 @@ class GetSchemasApi extends SimpleHandler {
 	}
 
 	public function getParamSettings(): array {
-		return [];
+		return [
+			'search' => [
+				self::PARAM_SOURCE => 'path',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false
+			],
+		];
 	}
 
 }
