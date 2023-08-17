@@ -3,27 +3,27 @@
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 
 use Wikimedia\Rdbms\IDatabase;
+use TitleArray;
 
 class DatabaseSchemaNameLookup implements SchemaNameLookup {
 
+	private const LIMIT = 10;
+
 	public function __construct(
-		private readonly IDatabase $db,
-		private readonly ResultWrapperToArrayConverter $resultConverter
+		private readonly IDatabase $db
 	) {
 	}
 
-	public function getFirstTenSchemaNamesMatching( string $search = '' ): array {
-		$search = addslashes( str_replace( ';', '', $search ) );
-		$likeQuery = '(`page_title` LIKE \'%' . $search . '%\' OR `page_title` LIKE \'%' . ucfirst( $search ) . '%\')';
+	public function getFirstTenSchemaNames(): array {
 
-		$resultWrapper = $this->db->select(
+		$res = $this->db->select(
 			'page',
-			[ 'page_title' ],
-			[ 'page_namespace = ' . (int)NS_NEOWIKI_SCHEMA . ' AND ' . $likeQuery ],
+			[ 'page_id', 'page_namespace', 'page_title' ],
+			[ 'page_namespace' => (int)NS_NEOWIKI_SCHEMA ],
 			__METHOD__,
-			[ 'ORDER BY' => 'page_id ASC', 'LIMIT' => 10 ]
+			[ 'ORDER BY' => 'page_id ASC', 'LIMIT' => $this::LIMIT ]
 		);
 
-		return $this->resultConverter->convertToObjectArray( $resultWrapper );
+		return iterator_to_array( TitleArray::newFromResult( $res ) );
 	}
 }
