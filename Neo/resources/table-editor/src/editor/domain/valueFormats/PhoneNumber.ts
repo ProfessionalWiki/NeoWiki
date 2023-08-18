@@ -45,7 +45,7 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 		} as PhoneNumberProperty;
 	}
 
-	public createFormField( value: StringValue | undefined, property: PhoneNumberProperty ): any {
+	public createFormField( value: StringValue | undefined, property: PhoneNumberProperty ): OO.ui.Widget {
 		return createStringFormField( value, property, 'tel' );
 	}
 

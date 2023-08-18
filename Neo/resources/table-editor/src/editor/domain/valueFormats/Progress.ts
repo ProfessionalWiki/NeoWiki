@@ -34,7 +34,7 @@ export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValu
 		} as ProgressProperty;
 	}
 
-	public createFormField( value: NumberValue | undefined, property: ProgressProperty ): any {
+	public createFormField( value: NumberValue | undefined, property: ProgressProperty ): OO.ui.Widget {
 		const progressBar = ProgressBarWidgetFactory.create( {
 			progress: value?.number ?? 0,
 			min: property.minimum ?? 0,

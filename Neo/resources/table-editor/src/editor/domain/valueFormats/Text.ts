@@ -31,7 +31,7 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui
 		} as TextProperty;
 	}
 
-	public createFormField( value: StringValue | undefined, property: TextProperty ): any {
+	public createFormField( value: StringValue | undefined, property: TextProperty ): OO.ui.TextInputWidget | TagMultiselectWidget {
 		return createStringFormField( value, property, 'text' );
 	}
 

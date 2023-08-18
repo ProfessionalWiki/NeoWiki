@@ -21,7 +21,7 @@ export class DateTimeFormat extends BaseValueFormat<DateTimeProperty, StringValu
 		} as DateTimeProperty;
 	}
 
-	public createFormField( value: StringValue | undefined, property: DateTimeProperty ): any {
+	public createFormField( value: StringValue | undefined, property: DateTimeProperty ): OO.ui.Widget {
 		const widget = new mw.widgets.datetime.DateTimeInputWidget( {
 			value: value?.strings[ 0 ] ?? '', // TODO: handle multiple values?
 			required: property.required
