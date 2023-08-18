@@ -12,7 +12,7 @@ class GetSchemaNamesQuery {
 	}
 
 	public function execute( string $search ): array {
-		$schemaNames = $this->schemaNameLookup->getSchemasNameMatching( $search );
+		$schemaNames = $this->schemaNameLookup->getSchemaNamesMatching( $search );
 
 		return array_map( function ( Title $title ): string {
 			return $title->getText();
