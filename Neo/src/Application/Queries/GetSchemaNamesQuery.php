@@ -3,7 +3,7 @@
 namespace ProfessionalWiki\NeoWiki\Application\Queries;
 
 use ProfessionalWiki\NeoWiki\Domain\Subject\SchemaNameLookup;
-use Title;
+use TitleValue;
 
 class GetSchemaNamesQuery {
 
@@ -12,14 +12,15 @@ class GetSchemaNamesQuery {
 	) {
 	}
 
+	/**
+	 * @return string[]
+	 */
 	public function execute( string $search ): array {
-		$schemaNames = $this->schemaNameLookup->getSchemaNamesMatching( $search );
-
 		return array_map(
-			function ( Title $title ): string {
+			function ( TitleValue $title ): string {
 				return $title->getText();
 			},
-			$schemaNames
+			$this->schemaNameLookup->getSchemaNamesMatching( $search )
 		);
 	}
 
