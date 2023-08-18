@@ -4,10 +4,13 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use ProfessionalWiki\NeoWiki\Domain\Subject\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use Title;
+use RuntimeException;
+use SearchSuggestion;
+use SearchSuggestionSet;
+use TitleValue;
 use Wikimedia\Rdbms\IDatabase;
-use TitleArray;
 use SearchEngine;
+use Wikimedia\Rdbms\IResultWrapper;
 
 class DatabaseSchemaNameLookup implements SchemaNameLookup {
 
@@ -20,28 +23,45 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	}
 
 	/**
-	 * @return Title[]
+	 * @return TitleValue[]
 	 */
 	public function getSchemaNamesMatching( string $search ): array {
-		if ( trim( $search ) !== '' ) {
-			$this->searchEngine->setNamespaces( [ NeoWikiExtension::NS_SCHEMA ] );
-			$this->searchEngine->setLimitOffset( self::LIMIT );
-
-			return $this->searchEngine->extractTitles(
-				$this->searchEngine->completionSearch( $search )
-			);
+		if ( trim( $search ) === '' ) {
+			return $this->getFirstSchemaNames();
 		}
 
-		return $this->getFirstSchemaNames();
+		return $this->searchSuggestionsToTitleArray( $this->getSearchSuggestions( $search ) );
+	}
+
+	private function getSearchSuggestions( string $search ): SearchSuggestionSet {
+		$this->searchEngine->setNamespaces( [ NeoWikiExtension::NS_SCHEMA ] );
+		$this->searchEngine->setLimitOffset( self::LIMIT );
+
+		return $this->searchEngine->completionSearch( $search );
 	}
 
 	/**
-	 * @return Title[]
+	 * @return TitleValue[]
+	 */
+	private function searchSuggestionsToTitleArray( SearchSuggestionSet $suggestions ): array {
+		return $suggestions->map( function ( SearchSuggestion $suggestion ) {
+			$title = $suggestion->getSuggestedTitle();
+
+			if ( $title === null ) {
+				throw new RuntimeException( 'Title is null' );
+			}
+
+			return new TitleValue( $title->getNamespace(), $title->getText() );
+		} );
+	}
+
+	/**
+	 * @return TitleValue[]
 	 */
 	private function getFirstSchemaNames(): array {
 		$res = $this->db->select(
 			'page',
-			[ 'page_id', 'page_namespace', 'page_title' ],
+			[ 'page_title' ],
 			[ 'page_namespace' => NeoWikiExtension::NS_SCHEMA ],
 			__METHOD__,
 			[
@@ -50,6 +70,20 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 			]
 		);
 
-		return iterator_to_array( TitleArray::newFromResult( $res ) );
+		return $this->dbResultToTitleValueArray( $res );
 	}
+
+	/**
+	 * @return TitleValue[]
+	 */
+	private function dbResultToTitleValueArray( IResultWrapper $result ): array {
+		$titles = [];
+
+		foreach ( $result as $row ) {
+			$titles[] = new TitleValue( NeoWikiExtension::NS_SCHEMA, $row->page_title );
+		}
+
+		return $titles;
+	}
+
 }

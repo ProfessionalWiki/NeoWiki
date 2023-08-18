@@ -37,21 +37,12 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testGetSubjectReturnsSubject(): void {
-		$this->createPages();
-
-		$this->assertEquals(
-			TestSubject::build(
-				id: '93e58a18-dc3e-41aa-8d67-79a18e9846f9',
-				label: new SubjectLabel( 'Test subject 46f9' ),
-			),
-			$this->newRepository()->getSubject(
-				new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f9' )
-			)
-		);
-	}
-
 	private function createPages(): void {
+		$this->markPageTableAsUsed();
+		$this->truncateTables( $this->tablesUsed, $this->db );
+
+		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+
 		$this->createPageWithSubjects(
 			'SubjectRepoTestOne',
 			mainSubject: TestSubject::build(
@@ -60,8 +51,8 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 			),
 			childSubjects: new SubjectMap(
 				TestSubject::build(
-					id: '93e58a18-dc3e-41aa-8d67-79a18e9846f9',
-					label: new SubjectLabel( 'Test subject 46f9' ),
+					id: '93e58a18-dc3e-41aa-8d67-79a18e9846f8',
+					label: new SubjectLabel( 'Test subject 46f8' ),
 				),
 				TestSubject::build(
 					id: '9d6b4927-0c04-41b3-8daa-3b1d83f42cf3',
@@ -87,12 +78,12 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		$this->createPages();
 
 		$this->newRepository()->deleteSubject(
-			new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f9' )
+			new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f8' )
 		);
 
 		$this->assertNull(
 			$this->newRepository()->getSubject(
-				new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f9' )
+				new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f8' )
 			)
 		);
 	}
@@ -101,12 +92,12 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		$this->createPages();
 
 		$this->newRepository()->deleteSubject(
-			new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f9' )
+			new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f8' )
 		);
 
 		$this->assertNull(
 			$this->newRepository()->getSubject(
-				new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f9' )
+				new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f8' )
 			)
 		);
 	}
@@ -173,6 +164,20 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		$this->assertEquals(
 			PageSubjects::newEmpty(),
 			$this->newRepository()->getSubjectsByPageId( new PageId( 404404404 ) )
+		);
+	}
+
+	public function testGetSubjectReturnsSubject(): void {
+		$this->createPages();
+
+		$this->assertEquals(
+			TestSubject::build(
+				id: '93e58a18-dc3e-41aa-8d67-79a18e9846f8',
+				label: new SubjectLabel( 'Test subject 46f8' ),
+			),
+			$this->newRepository()->getSubject(
+				new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f8' )
+			)
 		);
 	}
 
