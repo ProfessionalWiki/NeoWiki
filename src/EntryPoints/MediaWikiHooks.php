@@ -111,7 +111,7 @@ class MediaWikiHooks {
 			return;
 		}
 
-		if ( $out->isArticle() && $out->getWikiPage()->getNamespace() === NS_NEOWIKI_SCHEMA ) {
+		if ( $out->isArticle() && $out->getWikiPage()->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
 			self::addCreateSubjectButton( $out );
 		}
 	}
@@ -129,7 +129,7 @@ class MediaWikiHooks {
 		$validator = SchemaContentValidator::newInstance();
 
 		if ( is_string( $text )
-			&& $editPage->getTitle()->getNamespace() === NS_NEOWIKI_SCHEMA
+			&& $editPage->getTitle()->getNamespace() === NeoWikiExtension::NS_SCHEMA
 			&& !$validator->validate( $text )
 		) {
 			$errors = $validator->getErrors();

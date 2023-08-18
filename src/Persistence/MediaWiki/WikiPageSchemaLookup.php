@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use MediaWiki\Permissions\Authority;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class WikiPageSchemaLookup implements SchemaLookup {
 
@@ -35,7 +36,11 @@ class WikiPageSchemaLookup implements SchemaLookup {
 	}
 
 	private function getContent( SchemaId $schemaName ): ?SchemaContent {
-		$content = $this->pageContentFetcher->getPageContent( $schemaName->getText(), $this->authority, NS_NEOWIKI_SCHEMA );
+		$content = $this->pageContentFetcher->getPageContent(
+			$schemaName->getText(),
+			$this->authority,
+			NeoWikiExtension::NS_SCHEMA
+		);
 
 		if ( $content instanceof SchemaContent ) {
 			return $content;

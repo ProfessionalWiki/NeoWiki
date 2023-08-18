@@ -2,8 +2,13 @@
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 
-interface SchemaNameLookup {
-	public function getFirstSchemaNames(): array;
+use Title;
 
+interface SchemaNameLookup {
+
+	/**
+	 * @return Title[]
+	 */
 	public function getSchemaNamesMatching( string $search ): array;
+
 }
