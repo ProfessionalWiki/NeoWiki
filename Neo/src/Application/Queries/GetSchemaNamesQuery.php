@@ -6,6 +6,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup\Sche
 use Title;
 
 class GetSchemaNamesQuery {
+
 	public function __construct(
 		private readonly SchemaNameLookup $schemaNameLookup
 	) {
@@ -14,8 +15,12 @@ class GetSchemaNamesQuery {
 	public function execute( string $search ): array {
 		$schemaNames = $this->schemaNameLookup->getSchemaNamesMatching( $search );
 
-		return array_map( function ( Title $title ): string {
-			return $title->getText();
-		}, $schemaNames );
+		return array_map(
+			function ( Title $title ): string {
+				return $title->getText();
+			},
+			$schemaNames
+		);
 	}
+
 }
