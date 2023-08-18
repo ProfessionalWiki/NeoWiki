@@ -101,23 +101,6 @@ JSON,
 	}
 
 	public function testFullExpansion(): void {
-		$this->createSchema(
-			'GetSubjectApiTestSchema',
-			<<<JSON
-{
-	"title": "GetSubjectApiTestSchema",
-	"propertyDefinitions": {
-		"MyRelation": {
-			"type": "relation",
-			"format": "relation",
-			"relation": "MyRelation",
-			"targetSchema": "GetSubjectApiTestSchema"
-		}
-	}
-}
-JSON
-		);
-
 		$firstPageId = $this->createPageWithSubjects(
 			'GetSubjectApiTest0000',
 			mainSubject: TestSubject::build(
