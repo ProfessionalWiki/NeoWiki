@@ -1,7 +1,8 @@
 <?php
 
-namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
+namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
+use ProfessionalWiki\NeoWiki\Domain\Subject\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Title;
 use Wikimedia\Rdbms\IDatabase;
