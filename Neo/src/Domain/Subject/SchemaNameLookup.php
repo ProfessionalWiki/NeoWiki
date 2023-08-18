@@ -2,12 +2,12 @@
 
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
-use Title;
+use TitleValue;
 
 interface SchemaNameLookup {
 
 	/**
-	 * @return Title[]
+	 * @return TitleValue[]
 	 */
 	public function getSchemaNamesMatching( string $search ): array;
 
