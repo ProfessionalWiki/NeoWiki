@@ -16,7 +16,7 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	) {
 	}
 
-	public function getFirstSchemasName(): array {
+	public function getFirstSchemaNames(): array {
 		$res = $this->db->select(
 			'page',
 			[ 'page_id', 'page_namespace', 'page_title' ],
@@ -28,7 +28,7 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 		return iterator_to_array( TitleArray::newFromResult( $res ) );
 	}
 
-	public function getSchemasNameMatching( string $search ): array {
+	public function getSchemaNamesMatching( string $search ): array {
 		if ( $search ) {
 			$this->searchEngine->setNamespaces( [ (int)NS_NEOWIKI_SCHEMA ] );
 			$this->searchEngine->setLimitOffset( (int)$this::LIMIT );
@@ -38,6 +38,6 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 			);
 		}
 
-		return $this->getFirstSchemasName();
+		return $this->getFirstSchemaNames();
 	}
 }

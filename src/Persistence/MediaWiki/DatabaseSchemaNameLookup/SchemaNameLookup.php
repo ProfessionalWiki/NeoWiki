@@ -3,7 +3,7 @@
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 
 interface SchemaNameLookup {
-	public function getFirstSchemasName(): array;
+	public function getFirstSchemaNames(): array;
 
-	public function getSchemasNameMatching( string $search ): array;
+	public function getSchemaNamesMatching( string $search ): array;
 }
