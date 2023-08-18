@@ -2,7 +2,7 @@
 
 namespace ProfessionalWiki\NeoWiki\Application\Queries;
 
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup\SchemaNameLookup;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SchemaNameLookup;
 use Title;
 
 class GetSchemaNamesQuery {
