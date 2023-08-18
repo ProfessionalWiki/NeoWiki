@@ -2,6 +2,8 @@
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use Title;
 use Wikimedia\Rdbms\IDatabase;
 use TitleArray;
 use SearchEngine;
@@ -16,22 +18,13 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	) {
 	}
 
-	public function getFirstSchemaNames(): array {
-		$res = $this->db->select(
-			'page',
-			[ 'page_id', 'page_namespace', 'page_title' ],
-			[ 'page_namespace' => (int)NS_NEOWIKI_SCHEMA ],
-			__METHOD__,
-			[ 'ORDER BY' => 'page_id ASC', 'LIMIT' => $this::LIMIT ]
-		);
-
-		return iterator_to_array( TitleArray::newFromResult( $res ) );
-	}
-
+	/**
+	 * @return Title[]
+	 */
 	public function getSchemaNamesMatching( string $search ): array {
-		if ( $search ) {
-			$this->searchEngine->setNamespaces( [ (int)NS_NEOWIKI_SCHEMA ] );
-			$this->searchEngine->setLimitOffset( (int)$this::LIMIT );
+		if ( trim( $search ) !== '' ) {
+			$this->searchEngine->setNamespaces( [ NeoWikiExtension::NS_SCHEMA ] );
+			$this->searchEngine->setLimitOffset( self::LIMIT );
 
 			return $this->searchEngine->extractTitles(
 				$this->searchEngine->completionSearch( $search )
@@ -39,5 +32,23 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 		}
 
 		return $this->getFirstSchemaNames();
+	}
+
+	/**
+	 * @return Title[]
+	 */
+	private function getFirstSchemaNames(): array {
+		$res = $this->db->select(
+			'page',
+			[ 'page_id', 'page_namespace', 'page_title' ],
+			[ 'page_namespace' => NeoWikiExtension::NS_SCHEMA ],
+			__METHOD__,
+			[
+				'ORDER BY' => 'page_id ASC',
+				'LIMIT' => self::LIMIT
+			]
+		);
+
+		return iterator_to_array( TitleArray::newFromResult( $res ) );
 	}
 }
