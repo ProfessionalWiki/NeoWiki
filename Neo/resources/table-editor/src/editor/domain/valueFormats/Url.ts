@@ -49,7 +49,7 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMult
 		} as UrlProperty;
 	}
 
-	public createFormField( value: StringValue | undefined, property: UrlProperty ): any {
+	public createFormField( value: StringValue | undefined, property: UrlProperty ): OO.ui.Widget {
 		return createStringFormField( value, property, 'url' );
 	}
 

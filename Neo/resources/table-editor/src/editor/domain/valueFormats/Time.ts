@@ -42,7 +42,7 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui
 		} as TimeProperty;
 	}
 
-	public createFormField( value: StringValue | undefined, property: TimeProperty ): any {
+	public createFormField( value: StringValue | undefined, property: TimeProperty ): OO.ui.Widget {
 		value = value ?? {
 			type: ValueType.String,
 			strings: []

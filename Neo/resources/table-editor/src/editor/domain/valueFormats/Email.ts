@@ -29,7 +29,8 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, Tag
 			uniqueItems: json.uniqueItems ?? true
 		} as EmailProperty;
 	}
-	public createFormField( value: StringValue | undefined, property: EmailProperty ): any {
+
+	public createFormField( value: StringValue | undefined, property: EmailProperty ): OO.ui.Widget {
 		return createStringFormField( value, property, 'email' );
 	}
 

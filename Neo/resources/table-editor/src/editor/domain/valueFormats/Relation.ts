@@ -53,7 +53,7 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		} as RelationProperty;
 	}
 
-	public createFormField( value: RelationValue | undefined, property: RelationProperty ): any {
+	public createFormField( value: RelationValue | undefined, property: RelationProperty ): OO.ui.Widget {
 		value ||= new RelationValue( [] );
 
 		if ( property.multiple ) {

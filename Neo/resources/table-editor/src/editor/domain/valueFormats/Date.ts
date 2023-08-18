@@ -21,7 +21,7 @@ export class DateFormat extends BaseValueFormat<DateProperty, StringValue, OO.ui
 		} as DateProperty;
 	}
 
-	public createFormField( value: StringValue | undefined, property: DateProperty ): any {
+	public createFormField( value: StringValue | undefined, property: DateProperty ): OO.ui.Widget {
 		const widget = new mw.widgets.DateInputWidget( { // TODO: handle multiple values?
 			displayFormat: 'Do [of] MMMM, YYYY',
 			value: value?.strings[ 0 ] ?? '',
