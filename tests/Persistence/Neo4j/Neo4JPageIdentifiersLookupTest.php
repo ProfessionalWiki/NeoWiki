@@ -57,7 +57,7 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 		$queryStore = new Neo4jQueryStore(
 			$client,
 			new InMemorySchemaLookup(
-				TestSchema::build( id: TestSubject::DEFAULT_SCHEMA_ID )
+				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
 			),
 			$this->logger
 		);
