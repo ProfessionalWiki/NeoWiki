@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
@@ -26,7 +26,7 @@ class SchemaTest extends TestCase {
 
 	private function newSchemaWithProperties( array $propertyDefinitions ): Schema {
 		return new Schema(
-			id: new SchemaId( 'Company' ),
+			name: new SchemaName( 'Company' ),
 			description: 'A company',
 			properties: new PropertyDefinitions( $propertyDefinitions )
 		);
@@ -43,8 +43,8 @@ class SchemaTest extends TestCase {
 	}
 
 	public function testGetRelationProperties(): void {
-		$ceoProperty = TestProperty::buildRelation( description: 'The company CEO', targetSchema: new SchemaId( 'Person' ) );
-		$barProperty = TestProperty::buildRelation( targetSchema: new SchemaId( 'Tomato' ) );
+		$ceoProperty = TestProperty::buildRelation( description: 'The company CEO', targetSchema: new SchemaName( 'Person' ) );
+		$barProperty = TestProperty::buildRelation( targetSchema: new SchemaName( 'Tomato' ) );
 
 		$schema = $this->newSchemaWithProperties( [
 			'name' => TestProperty::buildString(),

@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -25,7 +25,7 @@ class SubjectUpdaterTest extends TestCase {
 	private LegacyLoggerSpy $logger;
 	private Subject $subject;
 	private SubjectUpdater $subjectUpdater;
-	private SchemaId $schemaId;
+	private SchemaName $schemaId;
 
 	protected function setUp(): void {
 		$this->transaction = $this->createMock( TransactionInterface::class );
@@ -35,7 +35,7 @@ class SubjectUpdaterTest extends TestCase {
 		$this->logger = new LegacyLoggerSpy();
 
 		$subjectId = new SubjectId( '00000000-0000-0000-0015-000000000000' );
-		$this->schemaId = new SchemaId( 'null' );
+		$this->schemaId = new SchemaName( 'null' );
 		$this->subject = new Subject(
 			$subjectId,
 			new SubjectLabel( 'Test Label' ),

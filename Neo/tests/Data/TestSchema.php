@@ -6,17 +6,17 @@ namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 
 class TestSchema {
 
 	public static function build(
-		string|SchemaId $id = 'TestSchemaId',
+		string|SchemaName $name = 'TestSchemaName',
 		string $description = 'Test Schema Description',
 		PropertyDefinitions $properties = new PropertyDefinitions( [] ),
 	): Schema {
 		return new Schema(
-			id: $id instanceof SchemaId ? $id : new SchemaId( $id ),
+			name: $name instanceof SchemaName ? $name : new SchemaName( $name ),
 			description: $description,
 			properties: $properties,
 		);

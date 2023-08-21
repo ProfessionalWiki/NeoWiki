@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 
 class Subject {
@@ -14,7 +14,7 @@ class Subject {
 	public function __construct(
 		public readonly SubjectId $id,
 		public readonly SubjectLabel $label,
-		private readonly SchemaId $schemaId,
+		private readonly SchemaName $schemaId,
 		private StatementList $statements,
 	) {
 	}
@@ -22,7 +22,7 @@ class Subject {
 	public static function createNew(
 		GuidGenerator $guidGenerator,
 		SubjectLabel $label,
-		SchemaId $schemaId,
+		SchemaName $schemaId,
 		?StatementList $properties = null,
 	): self {
 		return new self(
@@ -33,7 +33,7 @@ class Subject {
 		);
 	}
 
-	public static function newSubject( SubjectId $id, SubjectLabel $label, SchemaId $schemaId ): self {
+	public static function newSubject( SubjectId $id, SubjectLabel $label, SchemaName $schemaId ): self {
 		return new self(
 			id: $id,
 			label: $label,
@@ -61,7 +61,7 @@ class Subject {
 		return $this->label;
 	}
 
-	public function getSchemaId(): SchemaId {
+	public function getSchemaId(): SchemaName {
 		return $this->schemaId;
 	}
 

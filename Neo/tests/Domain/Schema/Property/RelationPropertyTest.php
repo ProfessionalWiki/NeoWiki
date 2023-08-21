@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Property\Schema;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty
@@ -22,7 +22,7 @@ class RelationPropertyTest extends TestCase {
 			required: true,
 			default: null,
 			relationType: new RelationType( 'Type' ),
-			targetSchema: new SchemaId( 'Schema' ),
+			targetSchema: new SchemaName( 'Schema' ),
 			multiple: true
 		);
 

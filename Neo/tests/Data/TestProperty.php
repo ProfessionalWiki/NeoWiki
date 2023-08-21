@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Data;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 
 class TestProperty {
@@ -33,7 +33,7 @@ class TestProperty {
 		bool $required = false,
 		$default = null,
 		RelationType|string $relationType = 'TestPropRelation',
-		SchemaId|string $targetSchema = 'TestPropSchema',
+		SchemaName|string $targetSchema = 'TestPropSchema',
 		bool $multiple = false
 	): RelationProperty {
 		return new RelationProperty(
@@ -41,7 +41,7 @@ class TestProperty {
 			required: $required,
 			default: $default,
 			relationType: $relationType instanceof RelationType ? $relationType : new RelationType( $relationType ),
-			targetSchema: $targetSchema instanceof SchemaId ? $targetSchema : new SchemaId( $targetSchema ),
+			targetSchema: $targetSchema instanceof SchemaName ? $targetSchema : new SchemaName( $targetSchema ),
 			multiple: $multiple
 		);
 	}
