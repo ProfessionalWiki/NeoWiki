@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -49,7 +49,7 @@ JSON
 			mainSubject: TestSubject::build(
 				id: '123e4567-e89b-12d3-a456-426655440000',
 				label: new SubjectLabel( 'Test subject 426655440000' ),
-				schemaId: new SchemaId( 'GetSubjectApiTestSchema' )
+				schemaId: new SchemaName( 'GetSubjectApiTestSchema' )
 			)
 		);
 
@@ -105,7 +105,7 @@ JSON,
 			'GetSubjectApiTest0000',
 			mainSubject: TestSubject::build(
 				id: '123e4567-e89b-12d3-a456-426655440000',
-				schemaId: new SchemaId( 'GetSubjectApiTestSchema' ),
+				schemaId: new SchemaName( 'GetSubjectApiTestSchema' ),
 				properties: new StatementList( [
 					'MyRelation' => [
 						[
@@ -122,7 +122,7 @@ JSON,
 			childSubjects: new SubjectMap(
 				TestSubject::build(
 					id: '123e4567-e89b-12d3-a456-426655440001',
-					schemaId: new SchemaId( 'GetSubjectApiTestSchema' ),
+					schemaId: new SchemaName( 'GetSubjectApiTestSchema' ),
 				)
 			)
 		)->getPage()->getId();
@@ -131,7 +131,7 @@ JSON,
 			'GetSubjectApiTest0002',
 			mainSubject: TestSubject::build(
 				id: '123e4567-e89b-12d3-a456-426655440002',
-				schemaId: new SchemaId( 'GetSubjectApiTestSchema' ),
+				schemaId: new SchemaName( 'GetSubjectApiTestSchema' ),
 				properties: new StatementList( [
 					'MyRelation' => [
 						[

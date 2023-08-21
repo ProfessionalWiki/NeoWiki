@@ -14,8 +14,13 @@ class RestGetSchemaPresenter implements GetSchemaPresenter {
 		return $this->apiResponse;
 	}
 
-	public function presentSchema( string $schemaJson ): void {
-		$this->apiResponse = '{"schema":' . $schemaJson . '}';
+	public function presentSchema( string $json ): void {
+		$this->apiResponse = (string)json_encode(
+			[
+				'schema' => json_decode( $json ),
+			],
+			JSON_PRETTY_PRINT
+		);
 	}
 
 	public function presentSchemaNotFound(): void {

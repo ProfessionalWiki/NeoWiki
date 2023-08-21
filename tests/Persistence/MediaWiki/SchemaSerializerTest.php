@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer;
@@ -34,7 +34,7 @@ class SchemaSerializerTest extends TestCase {
 
 	public function testSerializeBoolean(): void {
 		$schema = new Schema(
-			id: new SchemaId( 'testSchema' ),
+			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
 				'testBoolean' => new BooleanProperty(
@@ -65,7 +65,7 @@ class SchemaSerializerTest extends TestCase {
 
 	public function testSerializeNumber(): void {
 		$schema = new Schema(
-			id: new SchemaId( 'testSchema' ),
+			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
 				'testNumber' => new NumberProperty(
@@ -98,7 +98,7 @@ class SchemaSerializerTest extends TestCase {
 
 	public function testSerializeRelation(): void {
 		$schema = new Schema(
-			id: new SchemaId( 'testSchema' ),
+			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
 				'testRelation' => new RelationProperty(
@@ -106,7 +106,7 @@ class SchemaSerializerTest extends TestCase {
 					required: false,
 					default: null,
 					relationType: new RelationType( 'testRelationType' ),
-					targetSchema: new SchemaId( 'targetSchema' ),
+					targetSchema: new SchemaName( 'targetSchema' ),
 					multiple: false
 				)
 			] )
@@ -133,7 +133,7 @@ class SchemaSerializerTest extends TestCase {
 
 	public function testSerializeString(): void {
 		$schema = new Schema(
-			id: new SchemaId( 'testSchema' ),
+			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
 				'testString' => new StringProperty(
@@ -166,15 +166,15 @@ class SchemaSerializerTest extends TestCase {
 	/**
 	 * @dataProvider exampleSchemaProvider
 	 */
-	public function testSchemaIntegrityAfterRoundTripSerialization( string $originalSchemaJson ): void {
+	public function testSchemaIntegrityAfterRoundTripSerialization( string $schemaName, string $originalSchemaJson ): void {
 		$originalSchemaArray = json_decode( $originalSchemaJson, true );
 
 		$deserializer = new SchemaDeserializer();
-		$originalSchema = $deserializer->deserialize( new SchemaId( $originalSchemaArray['title'] ), json_encode( $originalSchemaArray ) );
+		$originalSchema = $deserializer->deserialize( new SchemaName( $schemaName ), json_encode( $originalSchemaArray ) );
 
 		$serialized = $this->serializer->serialize( $originalSchema );
 
-		$deserialized = $deserializer->deserialize( $originalSchema->getId(), $serialized );
+		$deserialized = $deserializer->deserialize( $originalSchema->getName(), $serialized );
 
 		$this->assertEquals( $originalSchema, $deserialized );
 	}
@@ -184,7 +184,7 @@ class SchemaSerializerTest extends TestCase {
 
 		foreach ( $dir as $fileinfo ) {
 			if ( !$fileinfo->isDot() && $fileinfo->getExtension() === 'json' ) {
-				yield [ TestData::getFileContents( 'Schema/' . $fileinfo->getFilename() ) ];
+				yield [ $fileinfo->getBasename( '.json' ), TestData::getFileContents( 'Schema/' . $fileinfo->getFilename() ) ];
 			}
 		}
 	}

@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use MediaWiki\Permissions\Authority;
@@ -20,7 +20,7 @@ class WikiPageSchemaLookup implements SchemaLookup {
 	) {
 	}
 
-	public function getSchema( SchemaId $schemaId ): ?Schema {
+	public function getSchema( SchemaName $schemaId ): ?Schema {
 		$content = $this->getContent( $schemaId );
 
 		if ( $content === null ) {
@@ -35,7 +35,7 @@ class WikiPageSchemaLookup implements SchemaLookup {
 		}
 	}
 
-	private function getContent( SchemaId $schemaName ): ?SchemaContent {
+	private function getContent( SchemaName $schemaName ): ?SchemaContent {
 		$content = $this->pageContentFetcher->getPageContent(
 			$schemaName->getText(),
 			$this->authority,

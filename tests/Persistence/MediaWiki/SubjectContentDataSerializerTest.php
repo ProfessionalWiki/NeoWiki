@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -138,7 +138,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 			mainSubject: TestSubject::build(
 				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48a001',
 				label: new SubjectLabel( 'Test subject a001' ),
-				schemaId: new SchemaId( 'Employee' ),
+				schemaId: new SchemaName( 'Employee' ),
 				properties: new StatementList( [
 					'founded' => [ '2019-01-01' ],
 					'founder' => [ 'John Doe' ],

@@ -13,7 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 
@@ -22,7 +22,7 @@ class SchemaDeserializer {
 	/**
 	 * @throws InvalidArgumentException
 	 */
-	public function deserialize( SchemaId $schemaId, string $json ): Schema {
+	public function deserialize( SchemaName $schemaId, string $json ): Schema {
 		$json = json_decode( $json, true );
 
 		if ( !is_array( $json ) ) {
@@ -30,7 +30,7 @@ class SchemaDeserializer {
 		}
 
 		return new Schema(
-			id: $schemaId,
+			name: $schemaId,
 			description: $json['description'] ?? '',
 			properties: $this->propertiesFromJson( $json ),
 		);
@@ -73,7 +73,7 @@ class SchemaDeserializer {
 				required: $property['required'] ?? false,
 				default: $property['default'] ?? null,
 				relationType: new RelationType( $property['relation'] ?? $propertyName ),
-				targetSchema: new SchemaId( $property['targetSchema'] ?? '__UNDEFINED__' ),
+				targetSchema: new SchemaName( $property['targetSchema'] ?? '__UNDEFINED__' ),
 				multiple: $property['multiple'] ?? false,
 			),
 

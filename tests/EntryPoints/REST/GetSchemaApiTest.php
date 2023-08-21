@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
@@ -17,7 +17,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class GetSchemaApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
-	private SchemaId $schemaId;
+	private SchemaName $schemaId;
 	private const SCHEMA_ID = 'TestSchema';
 
 	public function setUp(): void {

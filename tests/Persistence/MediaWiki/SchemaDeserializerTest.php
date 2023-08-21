@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer;
 
@@ -46,7 +46,7 @@ JSON
 
 	private function deserialize( string $json ): Schema {
 		return ( new SchemaDeserializer() )->deserialize(
-			new SchemaId( 'SchemaDeserializerTest' ),
+			new SchemaName( 'SchemaDeserializerTest' ),
 			$json
 		);
 	}
@@ -107,7 +107,7 @@ JSON
 JSON
 		);
 
-		$this->assertSame( 'SchemaDeserializerTest', $schema->getId()->getText() );
+		$this->assertSame( 'SchemaDeserializerTest', $schema->getName()->getText() );
 		$this->assertSame( 'Where are those TPS reports?', $schema->getDescription() );
 
 		$this->assertEquals(
@@ -139,7 +139,7 @@ JSON
 				required: false,
 				default: null,
 				relationType: new RelationType( 'Has product' ),
-				targetSchema: new SchemaId( 'Product' ),
+				targetSchema: new SchemaName( 'Product' ),
 				multiple: true,
 			),
 			$schema->getProperty( 'Has product' )
