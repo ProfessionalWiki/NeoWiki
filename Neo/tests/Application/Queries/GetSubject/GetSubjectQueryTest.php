@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseIt
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -38,7 +38,7 @@ class GetSubjectQueryTest extends TestCase {
 				TestSubject::build(
 					id: '00000000-6666-0000-0000-000000000001',
 					label: new SubjectLabel( 'expected label' ),
-					schemaId: new SchemaId( '00000000-6666-0000-0000-000000000010' ),
+					schemaId: new SchemaName( '00000000-6666-0000-0000-000000000010' ),
 					properties: new StatementList( [
 						'expected property 1' => 'expected value 1',
 						'expected property 2' => 'expected value 2',
@@ -158,7 +158,7 @@ class GetSubjectQueryTest extends TestCase {
 
 	public function testIncludeReferencedSubjects(): void {
 		$spyPresenter = $this->getSpyPresenter();
-		$schemaId = new SchemaId( 'GetSubjectQueryTest' );
+		$schemaId = new SchemaName( 'GetSubjectQueryTest' );
 
 		$subject = TestSubject::build(
 			id: '00000000-6666-0000-0000-000000000008',
@@ -191,7 +191,7 @@ class GetSubjectQueryTest extends TestCase {
 			] ),
 			new InMemorySchemaLookup(
 				TestSchema::build(
-					id: $schemaId,
+					name: $schemaId,
 					properties: new PropertyDefinitions( [ 'FriendOf' => TestProperty::buildRelation() ] )
 				)
 			)

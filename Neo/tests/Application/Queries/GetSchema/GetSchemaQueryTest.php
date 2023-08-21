@@ -9,7 +9,7 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
@@ -36,10 +36,10 @@ class GetSchemaQueryTest extends TestCase {
 	}
 
 	public function testExecuteWithCompleteSchema(): void {
-		$schemaName = 'testId';
+		$schemaName = 'testName';
 
 		$schema = TestSchema::build(
-			id: new SchemaId( $schemaName ),
+			name: new SchemaName( $schemaName ),
 			description: 'test',
 			properties: new PropertyDefinitions( [
 				'property1' => new StringProperty(
@@ -84,8 +84,8 @@ JSON;
 			public string $schemaJson = '';
 			public bool $notFound = false;
 
-			public function presentSchema( string $schemaJson ): void {
-				$this->schemaJson = $schemaJson;
+			public function presentSchema( string $json ): void {
+				$this->schemaJson = $json;
 			}
 
 			public function presentSchemaNotFound(): void {

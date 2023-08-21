@@ -45,7 +45,7 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 		return new Neo4jQueryStore(
 			NeoWikiExtension::getInstance()->getNeo4jClient(),
 			new InMemorySchemaLookup(
-				TestSchema::build( id: TestSubject::DEFAULT_SCHEMA_ID )
+				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
 			),
 			$this->logger
 		);

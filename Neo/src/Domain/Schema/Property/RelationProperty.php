@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
 
@@ -17,7 +17,7 @@ class RelationProperty extends PropertyDefinition {
 		bool $required,
 		mixed $default, // TODO: type
 		private readonly RelationType $relationType,
-		private readonly SchemaId $targetSchema,
+		private readonly SchemaName $targetSchema,
 		private readonly bool $multiple
 	) {
 		parent::__construct(
@@ -33,7 +33,7 @@ class RelationProperty extends PropertyDefinition {
 		return $this->relationType;
 	}
 
-	public function getTargetSchema(): SchemaId {
+	public function getTargetSchema(): SchemaName {
 		return $this->targetSchema;
 	}
 

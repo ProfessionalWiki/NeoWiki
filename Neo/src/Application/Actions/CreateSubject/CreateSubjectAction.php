@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -55,7 +55,7 @@ class CreateSubjectAction {
 		return Subject::createNew(
 			guidGenerator: $this->guidGenerator,
 			label: new SubjectLabel( $request->label ),
-			schemaId: new SchemaId( $request->schemaId ),
+			schemaId: new SchemaName( $request->schemaId ),
 			properties: $this->buildSubjectProperties( $request ),
 		);
 	}

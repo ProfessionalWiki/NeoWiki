@@ -9,14 +9,14 @@ use OutOfBoundsException;
 class Schema {
 
 	public function __construct(
-		private readonly SchemaId $id,
+		private readonly SchemaName $name,
 		private readonly string $description,
 		private readonly PropertyDefinitions $properties,
 	) {
 	}
 
-	public function getId(): SchemaId {
-		return $this->id;
+	public function getName(): SchemaName {
+		return $this->name;
 	}
 
 	public function getDescription(): string {
