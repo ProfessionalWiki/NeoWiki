@@ -47,27 +47,12 @@ class SchemaContentValidatorTest extends TestCase {
 		);
 	}
 
-	public function testMissingTitleFailsValidation(): void {
-		$validator = SchemaContentValidator::newInstance();
-
-		$this->assertFalse(
-			$validator->validate(
-				'{ "notTitle": "Foo Bar", "propertyDefinitions": {}, "relations": {} }'
-			)
-		);
-
-		$this->assertSame(
-			[ '/' => 'The required properties (title) are missing' ],
-			$validator->getErrors()
-		);
-	}
-
 	public function testMissingPropertyDefinitionsFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
 
 		$this->assertFalse(
 			$validator->validate(
-				'{ "title": "Foo Bar", "notPropertyDefinitions": {}, "relations": {} }'
+				'{ "notPropertyDefinitions": {}, "relations": {} }'
 			)
 		);
 
@@ -84,7 +69,6 @@ class SchemaContentValidatorTest extends TestCase {
 			$validator->validate(
 				<<<JSON
 {
-	"title": "Foo Bar",
 	"propertyDefinitions": {
 		"someRelation": {
 			"type": "not a real type",
@@ -109,7 +93,6 @@ JSON
 			$validator->validate(
 				<<<JSON
 {
-	"title": "Foo Bar",
 	"propertyDefinitions": {
 		"someRelation": {
 			"type": "string",
@@ -134,7 +117,6 @@ JSON
 			$validator->validate(
 				<<<JSON
 {
-	"title": "Foo Bar",
 	"propertyDefinitions": {
 		"someRelation": {
 			"type": "relation",

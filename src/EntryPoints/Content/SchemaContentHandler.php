@@ -11,7 +11,14 @@ class SchemaContentHandler extends \JsonContentHandler {
 	}
 
 	public function makeEmptyContent(): SchemaContent {
-		return new SchemaContent( '{}' );
+		return new SchemaContent( <<<JSON
+{
+	"propertyDefinitions": {
+
+	}
+}
+JSON
+		);
 	}
 
 }

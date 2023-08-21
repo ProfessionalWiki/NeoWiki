@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -21,7 +21,7 @@ class WikiPageSchemaLookupTest extends NeoWikiIntegrationTestCase {
 
 	public function testGetSchemaReturnsNullWhenPageDoesNotExists(): void {
 		$this->assertNull(
-			$this->newRepository()->getSchema( new SchemaId( 'SchemaRepositoryTest_404' ) )
+			$this->newRepository()->getSchema( new SchemaName( 'SchemaRepositoryTest_404' ) )
 		);
 	}
 
@@ -33,7 +33,7 @@ class WikiPageSchemaLookupTest extends NeoWikiIntegrationTestCase {
 		$this->editPage( 'Schema:SchemaRepositoryTest_Wikitext', 'Hello world' );
 
 		$this->assertNull(
-			$this->newRepository()->getSchema( new SchemaId( 'SchemaRepositoryTest_Wikitext' ) )
+			$this->newRepository()->getSchema( new SchemaName( 'SchemaRepositoryTest_Wikitext' ) )
 		);
 	}
 
@@ -56,9 +56,9 @@ class WikiPageSchemaLookupTest extends NeoWikiIntegrationTestCase {
 JSON
 		);
 
-		$schema = $this->newRepository()->getSchema( new SchemaId( 'SchemaRepositoryTest_Valid' ) );
+		$schema = $this->newRepository()->getSchema( new SchemaName( 'SchemaRepositoryTest_Valid' ) );
 
-		$this->assertSame( 'SchemaRepositoryTest_Valid', $schema->getId()->getText() );
+		$this->assertSame( 'SchemaRepositoryTest_Valid', $schema->getName()->getText() );
 		$this->assertSame( 'Where are those TPS reports?', $schema->getDescription() );
 
 		$this->assertEquals(
@@ -80,7 +80,7 @@ JSON
 		);
 
 		$this->assertNull(
-			$this->newRepository()->getSchema( new SchemaId( 'SchemaRepositoryTest_InvalidJson' ) )
+			$this->newRepository()->getSchema( new SchemaName( 'SchemaRepositoryTest_InvalidJson' ) )
 		);
 	}
 

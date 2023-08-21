@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -33,11 +33,11 @@ class SubjectContentDataDeserializerTest extends TestCase {
 	private function newSchemaRepoWithCompanyAndProduct(): SchemaLookup {
 		return new InMemorySchemaLookup(
 			( new SchemaDeserializer() )->deserialize(
-				new SchemaId( 'Company' ),
+				new SchemaName( 'Company' ),
 				TestData::getFileContents( 'Schema/Company.json' )
 			),
 			( new SchemaDeserializer() )->deserialize(
-				new SchemaId( 'Product' ),
+				new SchemaName( 'Product' ),
 				TestData::getFileContents( 'Schema/Product.json' )
 			)
 		);
@@ -75,12 +75,12 @@ JSON
 				Subject::newSubject(
 					new SubjectId( 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6' ),
 					new SubjectLabel( 'ACME Inc.' ),
-					new SchemaId( "Company" )
+					new SchemaName( "Company" )
 				),
 				Subject::newSubject(
 					new SubjectId( '7e3e53f0-1d9d-11ec-835b-0242ac130003' ),
 					new SubjectLabel( 'Contoso Ltd.' ),
-					new SchemaId( "Company" )
+					new SchemaName( "Company" )
 				),
 			],
 			$data->getAllSubjects()->asArray()
@@ -109,7 +109,7 @@ JSON
 				Subject::newSubject(
 					new SubjectId( '7e3e53f0-1d9d-11ec-835b-0242ac130003' ),
 					new SubjectLabel( 'ACME Inc.' ),
-					new SchemaId( 'Company' )
+					new SchemaName( 'Company' )
 				),
 			],
 			$data->getAllSubjects()->asArray()
