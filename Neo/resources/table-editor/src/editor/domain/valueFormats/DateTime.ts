@@ -2,6 +2,7 @@ import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/editor/domain/Value';
 import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
+import type { DateTimeWidgetFactory } from '@/editor/presentation/Widgets/DateWidgets/DateTimeWidgetFactory';
 
 export interface DateTimeProperty extends PropertyDefinition {
 }
@@ -10,6 +11,10 @@ export class DateTimeFormat extends BaseValueFormat<DateTimeProperty, StringValu
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'dateTime';
+
+	public constructor( private readonly dateTimeWidgetFactory: DateTimeWidgetFactory ) {
+		super();
+	}
 
 	public validate( value: StringValue, property: DateTimeProperty ): ValidationResult {
 		return new ValidationResult( [] ); // TODO
@@ -22,7 +27,7 @@ export class DateTimeFormat extends BaseValueFormat<DateTimeProperty, StringValu
 	}
 
 	public createFormField( value: StringValue | undefined, property: DateTimeProperty ): OO.ui.Widget {
-		const widget = new mw.widgets.datetime.DateTimeInputWidget( {
+		const widget = this.dateTimeWidgetFactory.create( {
 			value: value?.strings[ 0 ] ?? '', // TODO: handle multiple values?
 			required: property.required
 		} );
