@@ -72,7 +72,7 @@ export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValu
 		const isValid = ( field.$input[ 0 ] as HTMLInputElement ).checkValidity();
 
 		return {
-			value: newNumberValue( Number( field.getValue() ) ),
+			value: newNumberValue( field.getValue() === '' ? NaN : Number( field.getValue() ) ),
 			valid: isValid,
 			errorMessage: isValid ? undefined : ( field.$input[ 0 ] as HTMLInputElement ).validationMessage
 		};

@@ -69,7 +69,7 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, N
 		const isValid = ( field.$input[ 0 ] as HTMLInputElement ).checkValidity();
 
 		return {
-			value: field.getValue() === '' ? undefined : newNumberValue( field.getNumericValue() ),
+			value: newNumberValue( field.getNumericValue() ),
 			valid: isValid,
 			errorMessage: isValid ? undefined : ( field.$input[ 0 ] as HTMLInputElement ).validationMessage
 		};
