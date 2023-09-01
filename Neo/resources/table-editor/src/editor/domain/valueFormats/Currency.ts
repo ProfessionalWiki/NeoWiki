@@ -42,7 +42,10 @@ export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValu
 		const boundsMessage = this.getBoundsMessage( value.number, property.minimum, property.maximum );
 
 		if ( boundsMessage ) {
-			errors.push( { message: boundsMessage } );
+			errors.push( {
+				message: boundsMessage,
+				value: value
+			} );
 		}
 
 		return new ValidationResult( errors );

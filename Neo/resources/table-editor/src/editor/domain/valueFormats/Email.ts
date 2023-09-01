@@ -1,14 +1,18 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { type StringValue, ValueType } from '@/editor/domain/Value';
+import { newStringValue, type StringValue, ValueType } from '@/editor/domain/Value';
 import {
 	BaseValueFormat,
-	createStringFormField,
-	getTagFieldData, getTextFieldData,
+	getTextFieldData,
+	type ValidationError,
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
+import {
+	type MultipleTextInputWidget,
+	MultipleTextInputWidgetFactory
+} from '@/editor/presentation/Widgets/MultipleTextInputWidgetFactory';
 
 export interface EmailProperty extends MultiStringProperty {
 }
@@ -19,7 +23,18 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, Tag
 	public static readonly formatName = 'email';
 
 	public validate( value: StringValue, property: EmailProperty ): ValidationResult {
-		return new ValidationResult( [] ); // TODO
+		const errors: ValidationError[] = [];
+
+		value.strings.forEach( ( email ) => {
+			if ( !isValidEmail( email ) ) {
+				errors.push( {
+					message: `${email} is not a valid email`,
+					value: newStringValue( email )
+				} );
+			}
+		} );
+
+		return new ValidationResult( errors );
 	}
 
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): EmailProperty {
@@ -31,14 +46,27 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, Tag
 	}
 
 	public createFormField( value: StringValue | undefined, property: EmailProperty ): OO.ui.Widget {
-		return createStringFormField( value, property, 'email' );
+		if ( property.multiple ) {
+			return MultipleTextInputWidgetFactory.create( {
+				type: this.getFormatName(),
+				typeFormat: this,
+				values: value?.strings ?? [],
+				required: property.required
+			} );
+		}
+
+		return new OO.ui.TextInputWidget( {
+			type: this.getFormatName(),
+			value: value?.strings[ 0 ] ?? '',
+			required: property.required
+		} );
 	}
 
-	public async getFieldData( field: TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
-		if ( field instanceof OO.ui.TagMultiselectWidget ) {
-			return getTagFieldData( field, property );
+	public async getFieldData( field: OO.ui.Widget, property: PropertyDefinition ): Promise<FieldData> {
+		if ( Object.prototype.hasOwnProperty.call( field, 'multiple' ) ) {
+			return ( field as MultipleTextInputWidget ).getFieldData();
 		}
-		return await getTextFieldData( field );
+		return await getTextFieldData( field as OO.ui.TextInputWidget );
 	}
 
 	public createTableEditorColumn( property: EmailProperty ): ColumnDefinition {
@@ -50,4 +78,10 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, Tag
 
 		return column;
 	}
+}
+
+export function isValidEmail( email: string ): boolean {
+	return Boolean( email.match(
+		/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ // eslint-disable-line
+	) );
 }

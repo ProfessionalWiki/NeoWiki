@@ -1,5 +1,5 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { type StringValue, ValueType } from '@/editor/domain/Value';
+import { newStringValue, type StringValue, ValueType } from '@/editor/domain/Value';
 import {
 	createStringFormField, getTagFieldData, getTextFieldData,
 	BaseValueFormat,
@@ -29,7 +29,8 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 		value.strings.forEach( ( string ) => {
 			if ( !isValidPhoneNumber( string ) ) {
 				errors.push( {
-					message: `${string} is not a valid phone number`
+					message: `${string} is not a valid phone number`,
+					value: newStringValue( string )
 				} );
 			}
 		} );

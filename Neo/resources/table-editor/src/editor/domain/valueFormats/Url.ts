@@ -1,7 +1,7 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { type StringValue, ValueType } from '@/editor/domain/Value';
+import { newStringValue, type StringValue, ValueType } from '@/editor/domain/Value';
 import {
-	createStringFormField, getTagFieldData, getTextFieldData,
+	getTextFieldData,
 	BaseValueFormat,
 	type ValidationError,
 	ValidationResult
@@ -10,6 +10,10 @@ import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import DOMPurify from 'dompurify';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
+import {
+	type MultipleTextInputWidget,
+	MultipleTextInputWidgetFactory
+} from '@/editor/presentation/Widgets/MultipleTextInputWidgetFactory';
 
 export interface UrlProperty extends MultiStringProperty {
 
@@ -33,7 +37,8 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMult
 		value.strings.forEach( ( url ) => {
 			if ( !isValidUrl( url ) ) {
 				errors.push( {
-					message: `${url} is not a valid URL`
+					message: `${url} is not a valid URL`,
+					value: newStringValue( url )
 				} );
 			}
 		} );
@@ -50,14 +55,27 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMult
 	}
 
 	public createFormField( value: StringValue | undefined, property: UrlProperty ): OO.ui.Widget {
-		return createStringFormField( value, property, 'url' );
+		if ( property.multiple ) {
+			return MultipleTextInputWidgetFactory.create( {
+				type: this.getFormatName(),
+				typeFormat: this,
+				values: value?.strings ?? [],
+				required: property.required
+			} );
+		}
+
+		return new OO.ui.TextInputWidget( {
+			type: this.getFormatName(),
+			value: value?.strings[ 0 ] ?? '',
+			required: property.required
+		} );
 	}
 
-	public async getFieldData( field: TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
-		if ( field instanceof OO.ui.TagMultiselectWidget ) {
-			return getTagFieldData( field, property );
+	public async getFieldData( field: OO.ui.Widget, property: PropertyDefinition ): Promise<FieldData> {
+		if ( Object.prototype.hasOwnProperty.call( field, 'multiple' ) ) {
+			return ( field as MultipleTextInputWidget ).getFieldData();
 		}
-		return await getTextFieldData( field );
+		return await getTextFieldData( field as OO.ui.TextInputWidget );
 	}
 
 	public createTableEditorColumn( property: UrlProperty ): ColumnDefinition {

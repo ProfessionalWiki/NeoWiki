@@ -26,7 +26,8 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui
 		value.strings.forEach( ( string ) => {
 			if ( !isValidTime( string ) ) {
 				errors.push( {
-					message: `${string} is not a valid time`
+					message: `${string} is not a valid time`,
+					value: newStringValue( string )
 				} );
 			}
 		} );

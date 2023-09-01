@@ -4,6 +4,7 @@ import type { StringValue, Value } from '@/editor/domain/Value';
 import { newStringValue, ValueType } from '@/editor/domain/Value';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { ColumnDefinition } from 'tabulator-tables';
+import type { MultipleTextInputWidget } from '@/editor/presentation/Widgets/MultipleTextInputWidgetFactory';
 
 export class ValueFormatRegistry {
 
@@ -26,7 +27,7 @@ export class ValueFormatRegistry {
 }
 
 // TODO: Consider a better solution but not all widgets are correctly defined as inheritors of OO.ui.Widget
-export type Field = OO.ui.CheckboxInputWidget | OO.ui.InputWidget | TagMultiselectWidget
+export type Field = OO.ui.CheckboxInputWidget | OO.ui.InputWidget | TagMultiselectWidget | MultipleTextInputWidget
 | OO.ui.TextInputWidget | OO.ui.NumberInputWidget | OO.ui.ProgressBarWidget | OO.ui.MenuTagMultiselectWidget | OO.ui.Widget;
 
 export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Value, F extends Field> {
@@ -69,6 +70,7 @@ export class ValidationResult {
 
 export type ValidationError = {
 	message: string;
+	value: Value;
 };
 
 // TODO consider how to move this and getTagFieldData and getTextFieldData from here
