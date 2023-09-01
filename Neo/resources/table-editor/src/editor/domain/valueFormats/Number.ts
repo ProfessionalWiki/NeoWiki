@@ -41,7 +41,10 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, N
 		const boundsMessage = this.getBoundsMessage( value.number, property.minimum, property.maximum );
 
 		if ( boundsMessage ) {
-			errors.push( { message: boundsMessage } );
+			errors.push( {
+				message: boundsMessage,
+				value: value
+			} );
 		}
 
 		return new ValidationResult( errors );
