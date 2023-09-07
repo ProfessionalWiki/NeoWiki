@@ -5,15 +5,15 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\Neo4j;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
-use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
+use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelation;
+use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 class SubjectRelationUpdater {
 
 	public function __construct(
 		private readonly SubjectId $subjectId,
-		private readonly RelationList $relations,
+		private readonly TypedRelationList $relations,
 		private readonly TransactionInterface $transaction,
 	) {
 	}
@@ -42,7 +42,7 @@ class SubjectRelationUpdater {
 		);
 	}
 
-	private function removeIfTypeOrTargetChanged( Relation $relation ): void {
+	private function removeIfTypeOrTargetChanged( TypedRelation $relation ): void {
 		$this->transaction->run(
 			'MATCH (subject {id: $subjectId})-[oldRelation {id: $relationId}]->()
 			 WHERE oldRelation.type <> $relationType OR NOT (subject)-[oldRelation]->({id: $targetId})
@@ -56,7 +56,7 @@ class SubjectRelationUpdater {
 		);
 	}
 
-	private function createOrUpdate( Relation $relation ): void {
+	private function createOrUpdate( TypedRelation $relation ): void {
 		$this->transaction->run(
 			'MERGE (subject {id: $subjectId})
 			 MERGE (target {id: $targetId})
@@ -71,7 +71,7 @@ class SubjectRelationUpdater {
 		);
 	}
 
-	private function getPropertiesForNeo4j( Relation $relation ): array {
+	private function getPropertiesForNeo4j( TypedRelation $relation ): array {
 		return array_merge(
 			$relation->properties->map,
 			[ 'id' => $relation->id->asString() ]
