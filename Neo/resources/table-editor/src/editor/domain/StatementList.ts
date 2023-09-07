@@ -1,7 +1,7 @@
 import type { SubjectLookup } from '@/editor/application/SubjectLookup';
 import { SubjectMap } from '@/editor/domain/SubjectMap';
 import { SubjectId } from '@/editor/domain/SubjectId';
-import { Statement } from '@/editor/domain/Statement';
+import { isJsonStatement, Statement } from '@/editor/domain/Statement';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import { jsonToValue, RelationValue, type Value, valueToJson } from '@/editor/domain/Value';
 import type { Schema } from '@/editor/domain/Schema';
@@ -74,10 +74,11 @@ export class StatementList implements Iterable<Statement> {
 	public static fromJsonValues( record: Record<string, unknown>, schema: Schema ): StatementList {
 		return new StatementList(
 			Object.entries( record )
-				.map( ( [ key, value ] ) => new Statement(
+				.map( ( [ key, statementJson ] ) => new Statement(
 					new PropertyName( key ),
+					schema.getPropertyDefinition( key ).format,
 					jsonToValue(
-						value,
+						isJsonStatement( statementJson ) ? statementJson.value : null,
 						schema.getTypeOf( new PropertyName( key ) )
 					)
 				) )
@@ -115,9 +116,20 @@ export function statementsToJson( statements: StatementList ): Record<string, un
 	for ( const statement of statements ) {
 		if ( statement.value === undefined ) {
 			valuesJson[ statement.propertyName.toString() ] = null;
-		} else {
-			valuesJson[ statement.propertyName.toString() ] = valueToJson( statement.value );
+			continue;
 		}
+
+		const value = valueToJson( statement.value );
+
+		if ( typeof value === 'number' && isNaN( value ) ) {
+			valuesJson[ statement.propertyName.toString() ] = null;
+			continue;
+		}
+
+		valuesJson[ statement.propertyName.toString() ] = {
+			value: value,
+			format: statement.format
+		};
 	}
 
 	return valuesJson;

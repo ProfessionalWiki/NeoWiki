@@ -5,16 +5,18 @@ import { StatementList, statementsToJson } from '@/editor/domain/StatementList';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import { Relation, RelationValue, newStringValue, newNumberValue, newBooleanValue } from '../Value';
 import { PropertyDefinitionList } from '../PropertyDefinitionList';
-import { newTextProperty } from '../valueFormats/Text';
-import { newNumberProperty } from '../valueFormats/Number';
+import { newTextProperty, TextFormat } from '../valueFormats/Text';
+import { newNumberProperty, NumberFormat } from '../valueFormats/Number';
 import { newSchema } from '../../../TestHelpers';
+import { RelationFormat } from '../valueFormats/Relation';
+import { CheckboxFormat } from '../valueFormats/Checkbox';
 
 describe( 'StatementList', () => {
 
 	const property1 = new PropertyName( 'property1' );
 	const property2 = new PropertyName( 'property2' );
-	const statement1 = new Statement( property1, newStringValue( 'value1' ) );
-	const statement2 = new Statement( property2, newStringValue( 'value2' ) );
+	const statement1 = new Statement( property1, TextFormat.formatName, newStringValue( 'value1' ) );
+	const statement2 = new Statement( property2, TextFormat.formatName, newStringValue( 'value2' ) );
 
 	it( 'constructs a StatementList from an array of Statements', () => {
 		const statementList = new StatementList( [ statement1, statement2 ] );
@@ -48,7 +50,7 @@ describe( 'StatementList', () => {
 	} );
 
 	it( 'filters out Statements with empty values', () => {
-		const emptyStatement = new Statement( new PropertyName( 'emptyProperty' ), undefined );
+		const emptyStatement = new Statement( new PropertyName( 'emptyProperty' ), TextFormat.formatName, undefined );
 		const statementList = new StatementList( [ statement1, emptyStatement, statement2 ] );
 
 		const nonEmptyStatementList = statementList.withNonEmptyValues();
@@ -74,21 +76,23 @@ describe( 'StatementList', () => {
 
 		it( 'should return a list of referenced SubjectIds when relations exist', () => {
 			const statements = new StatementList( [
-				new Statement( new PropertyName( 'Property1' ), newStringValue( 'foo' ) ),
+				new Statement( new PropertyName( 'Property1' ), TextFormat.formatName, newStringValue( 'foo' ) ),
 				new Statement(
 					new PropertyName( 'Property2' ),
+					RelationFormat.formatName,
 					new RelationValue( [
 						new Relation( undefined, '00000000-0000-0000-0000-000000000001' )
 					] )
 				),
 				new Statement(
 					new PropertyName( 'Property3' ),
+					RelationFormat.formatName,
 					new RelationValue( [
 						new Relation( undefined, '00000000-0000-0000-0000-000000000002' ),
 						new Relation( undefined, '00000000-0000-0000-0000-000000000003' )
 					] )
 				),
-				new Statement( new PropertyName( 'Property4' ), newStringValue( 'bar' ) )
+				new Statement( new PropertyName( 'Property4' ), TextFormat.formatName, newStringValue( 'bar' ) )
 			] );
 
 			expect( statements.getIdsOfReferencedSubjects() ).toEqual( new Set( [
@@ -112,8 +116,14 @@ describe( 'StatementList', () => {
 	it( 'constructs from a property-value record correctly', () => {
 		const statementList = StatementList.fromJsonValues(
 			{
-				property1: 'value1',
-				property2: 'value2'
+				property1: {
+					value: 'value1',
+					format: TextFormat.formatName
+				},
+				property2: {
+					value: 'value2',
+					format: TextFormat.formatName
+				}
 			},
 			newSchema( {
 				properties: new PropertyDefinitionList( [
@@ -124,17 +134,23 @@ describe( 'StatementList', () => {
 		);
 
 		expect( statementList.get( new PropertyName( 'property1' ) ) )
-			.toEqual( new Statement( new PropertyName( 'property1' ), newStringValue( 'value1' ) ) );
+			.toEqual( new Statement( new PropertyName( 'property1' ), TextFormat.formatName, newStringValue( 'value1' ) ) );
 		expect( statementList.get( new PropertyName( 'property2' ) ) )
-			.toEqual( new Statement( new PropertyName( 'property2' ), newStringValue( 'value2' ) ) );
+			.toEqual( new Statement( new PropertyName( 'property2' ), TextFormat.formatName, newStringValue( 'value2' ) ) );
 	} );
 
 	it( 'throws an error when constructing from record with invalid property name', () => {
 
 		expect( () => StatementList.fromJsonValues(
 			{
-				'': 'value1', // An empty string is not a valid PropertyName
-				property2: 'value2'
+				'': {
+					value: 'value1',
+					format: TextFormat.formatName
+				}, // An empty string is not a valid PropertyName
+				property2: {
+					value: 'value2',
+					format: TextFormat.formatName
+				}
 			},
 			newSchema()
 		) )
@@ -144,9 +160,18 @@ describe( 'StatementList', () => {
 	it( 'from JSON values', () => {
 		const statementList = StatementList.fromJsonValues(
 			{
-				p1: 'hello',
-				p2: 42,
-				p3: [ 'foo', 'bar' ]
+				p1: {
+					value: 'hello',
+					format: TextFormat.formatName
+				},
+				p2: {
+					value: 42,
+					format: NumberFormat.formatName
+				},
+				p3: {
+					value: [ 'foo', 'bar' ],
+					format: TextFormat.formatName
+				}
 			},
 			newSchema( {
 				properties: new PropertyDefinitionList( [
@@ -158,9 +183,9 @@ describe( 'StatementList', () => {
 		);
 
 		expect( statementList ).toStrictEqual( new StatementList( [
-			new Statement( new PropertyName( 'p1' ), newStringValue( 'hello' ) ),
-			new Statement( new PropertyName( 'p2' ), newNumberValue( 42 ) ),
-			new Statement( new PropertyName( 'p3' ), newStringValue( 'foo', 'bar' ) )
+			new Statement( new PropertyName( 'p1' ), TextFormat.formatName, newStringValue( 'hello' ) ),
+			new Statement( new PropertyName( 'p2' ), NumberFormat.formatName, newNumberValue( 42 ) ),
+			new Statement( new PropertyName( 'p3' ), TextFormat.formatName, newStringValue( 'foo', 'bar' ) )
 		] ) );
 	} );
 
@@ -170,21 +195,45 @@ describe( 'statementsToJson', () => {
 
 	it( 'converts all values into JSON representations', () => {
 		const values = new StatementList( [
-			new Statement( new PropertyName( 'value1' ), newStringValue( 'test' ) ),
-			new Statement( new PropertyName( 'value2' ), newNumberValue( 123 ) ),
-			new Statement( new PropertyName( 'value3' ), newBooleanValue( true ) ),
-			new Statement( new PropertyName( 'value4' ), new RelationValue( [ new Relation( 'testId', 'testTarget' ) ] ) )
+			new Statement( new PropertyName( 'value1' ), TextFormat.formatName, newStringValue( 'test' ) ),
+			new Statement( new PropertyName( 'value2' ), NumberFormat.formatName, newNumberValue( 123 ) ),
+			new Statement( new PropertyName( 'value3' ), CheckboxFormat.formatName, newBooleanValue( true ) ),
+			new Statement( new PropertyName( 'value4' ), RelationFormat.formatName, new RelationValue( [ new Relation( 'testId', 'testTarget' ) ] ) )
 		] );
 
 		const json = statementsToJson( values );
 
 		expect( json ).toEqual( {
-			value1: [ 'test' ],
-			value2: 123,
-			value3: true,
-			value4: [
-				{ id: 'testId', target: 'testTarget' }
-			]
+			value1: {
+				value: [ 'test' ],
+				format: TextFormat.formatName
+			},
+			value2: {
+				value: 123,
+				format: NumberFormat.formatName
+			},
+			value3: {
+				value: true,
+				format: CheckboxFormat.formatName
+			},
+			value4: {
+				value: [
+					{ id: 'testId', target: 'testTarget' }
+				],
+				format: RelationFormat.formatName
+			}
+		} );
+	} );
+
+	it( 'converts an empty number to null', () => {
+		const values = new StatementList( [
+			new Statement( new PropertyName( 'EmptyValue' ), NumberFormat.formatName, newNumberValue( NaN ) )
+		] );
+
+		const json = statementsToJson( values );
+
+		expect( json ).toEqual( {
+			EmptyValue: null
 		} );
 	} );
 

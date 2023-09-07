@@ -4,6 +4,11 @@ import { SubjectMap } from '@/editor/domain/SubjectMap';
 import { InMemorySubjectLookup } from '@/editor/application/SubjectLookup';
 import { PageIdentifiers } from '@/editor/domain/PageIdentifiers';
 import { StatementList } from '@/editor/domain/StatementList';
+import { PropertyDefinitionList } from '../PropertyDefinitionList';
+import { createPropertyDefinitionFromJson } from '../PropertyDefinition';
+import { ValueType } from '../Value';
+import { TextFormat } from '../valueFormats/Text';
+import { RelationFormat } from '../valueFormats/Relation';
 
 describe( 'Subject', () => {
 
@@ -48,12 +53,55 @@ describe( 'Subject', () => {
 				id: ZERO_GUID,
 				statements: StatementList.fromJsonValues(
 					{
-						Property1: 'foo',
-						Property2: [ { target: '00000000-0000-0000-0000-000000000001' } ],
-						Property3: [ { target: '00000000-0000-0000-0000-000000000002' }, { target: '00000000-0000-0000-0000-000000000003' } ],
-						Property4: 'bar'
+						Property1: {
+							value: [ 'foo' ],
+							format: TextFormat.formatName
+						},
+						Property2: {
+							value: [ { target: '00000000-0000-0000-0000-000000000001' } ],
+							format: RelationFormat.formatName
+						},
+						Property3: {
+							value: [ { target: '00000000-0000-0000-0000-000000000002' }, { target: '00000000-0000-0000-0000-000000000003' } ],
+							format: RelationFormat.formatName
+						},
+						Property4: {
+							value: [ 'bar' ],
+							format: TextFormat.formatName
+						}
 					},
-					newSchema()
+					newSchema( {
+						properties: new PropertyDefinitionList( [
+							createPropertyDefinitionFromJson(
+								'Property1',
+								{
+									type: ValueType.String,
+									format: TextFormat.formatName
+								}
+							),
+							createPropertyDefinitionFromJson(
+								'Property2',
+								{
+									type: ValueType.Relation,
+									format: RelationFormat.formatName
+								}
+							),
+							createPropertyDefinitionFromJson(
+								'Property3',
+								{
+									type: ValueType.String,
+									format: RelationFormat.formatName
+								}
+							),
+							createPropertyDefinitionFromJson(
+								'Property4',
+								{
+									type: ValueType.String,
+									format: TextFormat.formatName
+								}
+							)
+						] )
+					} )
 				)
 			} );
 

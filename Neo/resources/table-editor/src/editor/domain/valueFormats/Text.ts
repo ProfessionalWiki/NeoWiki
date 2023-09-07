@@ -53,11 +53,11 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui
 	}
 }
 
-export function newTextProperty( name = 'MyTextProperty', multiple = false ): TextProperty {
+export function newTextProperty( name = 'MyTextProperty', multiple = false, format = TextFormat.formatName ): TextProperty {
 	return {
 		name: new PropertyName( name ),
 		type: ValueType.String,
-		format: TextFormat.formatName,
+		format: format,
 		description: '',
 		required: false,
 		default: '',
