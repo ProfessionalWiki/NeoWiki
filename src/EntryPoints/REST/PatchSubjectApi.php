@@ -8,8 +8,8 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class PatchSubjectApi extends SimpleHandler {
@@ -32,7 +32,7 @@ class PatchSubjectApi extends SimpleHandler {
 		try {
 			NeoWikiExtension::getInstance()->newPatchSubjectAction( $this->getAuthority() )->patch(
 				new SubjectId( $subjectId ),
-				$request['properties'] // TODO: support property removal. Maybe second list. Maybe null values. Maybe other approach?
+				$request['statements'] // TODO: support property removal. Maybe second list. Maybe null values. Maybe other approach?
 			);
 		} catch ( \RuntimeException $e ) {
 			return $this->getResponseFactory()->createHttpError( 403, [

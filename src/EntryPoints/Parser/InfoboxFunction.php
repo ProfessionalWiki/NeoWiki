@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Parser;
 use Html;
 use MediaWiki\Page\PageReference;
 use Parser;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
 use Title;
 
 class InfoboxFunction {

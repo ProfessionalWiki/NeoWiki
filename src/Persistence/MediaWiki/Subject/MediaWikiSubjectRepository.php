@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
 use CommentStoreComment;
 use MediaWiki\MediaWikiServices;

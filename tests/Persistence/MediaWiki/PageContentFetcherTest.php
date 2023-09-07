@@ -4,14 +4,13 @@ declare( strict_types=1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
-use PHPUnit\Framework\TestCase;
-use MediaWiki\Revision\RevisionLookup;
-use MediaWiki\Permissions\Authority;
-use TitleParser;
-use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\Revision\SlotRecord;
-use MalformedTitleException;
 use Content;
+use MalformedTitleException;
+use MediaWiki\Permissions\Authority;
+use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Revision\RevisionRecord;
+use PHPUnit\Framework\TestCase;
+use TitleParser;
 
 class PageContentFetcherTest extends TestCase {
 

@@ -9,9 +9,9 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
+use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
 class SchemaSerializer {
 

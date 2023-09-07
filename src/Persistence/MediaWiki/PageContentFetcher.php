@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 use Content;
 use MalformedTitleException;
 use MediaWiki\Permissions\Authority;
-use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;

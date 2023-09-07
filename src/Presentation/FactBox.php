@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Presentation;
 
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
 use SpecialPage;
 use Title;
 
