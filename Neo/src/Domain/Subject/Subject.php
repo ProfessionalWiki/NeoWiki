@@ -4,7 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
+use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
+use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
@@ -23,13 +24,13 @@ class Subject {
 		GuidGenerator $guidGenerator,
 		SubjectLabel $label,
 		SchemaName $schemaId,
-		?StatementList $properties = null,
+		?StatementList $statements = null,
 	): self {
 		return new self(
 			id: SubjectId::createNew( $guidGenerator ),
 			label: $label,
 			schemaId: $schemaId,
-			statements: $properties ?? new StatementList( [] ),
+			statements: $statements ?? new StatementList( [] ),
 		);
 	}
 
@@ -40,13 +41,6 @@ class Subject {
 			schemaId: $schemaId,
 			statements: new StatementList( [] ),
 		);
-	}
-
-	/**
-	 * @param array<string, mixed> $patch Property name to list of new values
-	 */
-	public function applyPatch( array $patch ): void {
-		$this->statements = $this->statements->applyPatch( $patch );
 	}
 
 	public function hasSameIdentity( self $subject ): bool {
@@ -69,12 +63,19 @@ class Subject {
 		return $this->statements;
 	}
 
-	public function getRelations( Schema $readerSchema ): RelationList {
-		return $this->statements->getRelations( $readerSchema );
+	public function getTypedRelations( Schema $readerSchema ): TypedRelationList {
+		return $this->statements->getTypedRelations( $readerSchema );
 	}
 
-	public function getReferencedSubjects( Schema $readerSchema ): SubjectIdList {
-		return $this->getRelations( $readerSchema )->getTargetIds();
+	public function getReferencedSubjects(): SubjectIdList {
+		return $this->statements->getReferencedSubjects();
+	}
+
+	public function patchStatements( StatementListPatcher $patcher, array $patch ): void {
+		$this->statements = $patcher->buildStatementList(
+			statements: $this->statements,
+			patch: $patch,
+		);
 	}
 
 }

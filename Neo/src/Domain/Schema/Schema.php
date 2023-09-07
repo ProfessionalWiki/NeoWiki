@@ -26,11 +26,11 @@ class Schema {
 	/**
 	 * @throws OutOfBoundsException
 	 */
-	public function getProperty( string $name ): PropertyDefinition {
+	public function getProperty( string|PropertyName $name ): PropertyDefinition {
 		return $this->properties->getProperty( $name );
 	}
 
-	public function hasProperty( string $name ): bool {
+	public function hasProperty( string|PropertyName $name ): bool {
 		return $this->properties->hasProperty( $name );
 	}
 

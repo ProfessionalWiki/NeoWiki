@@ -5,84 +5,27 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\StatementList
  */
 class StatementListTest extends TestCase {
 
-	/**
-	 * @dataProvider provideTestData
-	 */
-	public function testConstructorFiltersOutEmptyProperties( array $input, array $expected ): void {
-		$statements = new StatementList( $input );
-
-		$this->assertEquals( $expected, $statements->asMap() );
-	}
-
-	public function provideTestData(): array {
-		return [
-			'empty string property' => [
-				[
-					'Empty String' => '',
-					'Non-empty String' => 'I am not empty',
-				],
-				[
-					'Non-empty String' => 'I am not empty',
-				]
-			],
-			'empty array property' => [
-				[
-					'Empty Array' => [],
-					'Non-empty Array' => [ 'I am not empty' ],
-				],
-				[
-					'Non-empty Array' => [ 'I am not empty' ],
-				]
-			],
-			'null property' => [
-				[
-					'Null' => null,
-				],
-				[
-					'Null' => null,
-				]
-			],
-			'number property' => [
-				[
-					'Zero' => 0,
-					'Non-zero' => 1,
-				],
-				[
-					'Zero' => 0,
-					'Non-zero' => 1,
-				]
-			],
-			'boolean property' => [
-				[
-					'False' => false,
-					'True' => true,
-				],
-				[
-					'False' => false,
-					'True' => true,
-				]
-			],
-		];
-	}
-
 	public function testGetRelationsReturnsEmptyArrayWhenThereAreNoStatements(): void {
 		$statements = new StatementList( [] );
 		$schema = $this->newSchemaWithSomeRelations();
 
-		$this->assertSame( [], $statements->getRelations( $schema )->asMap() );
+		$this->assertSame( [], $statements->getTypedRelations( $schema )->relations );
 	}
 
 	private function newSchemaWithSomeRelations(): Schema {
@@ -96,118 +39,90 @@ class StatementListTest extends TestCase {
 		);
 	}
 
-	public function testGetRelationsReturnsEmptyArrayWhenThereAreNoPropertyDefinitions(): void {
-		$statements = $this->newStatementsWithSomeRelations();
-		$schema = TestSchema::build();
+	// TODO: more getTypedRelations tests
 
-		$this->assertSame( [], $statements->getRelations( $schema )->asMap() );
+	public function testGetReferencedSubjectsReturnsEmptyArrayForEmptyList(): void {
+		$statements = new StatementList( [] );
+
+		$this->assertSame( [], $statements->getReferencedSubjects()->asStringArray() );
 	}
 
-	private function newStatementsWithSomeRelations(): StatementList {
-		return new StatementList( [
-			'string1' => 'value1',
-			'relation1' => [
-				[
-					'id' => '12345678-0000-0000-0000-000000000044',
-					'target' => '12345678-0000-0000-0000-000000000004',
-				],
-			],
-			'string2' => 'value3',
-			'relation2' => [
-				[
-					'id' => '12345678-0000-0000-0000-000000000055',
-					'target' => '12345678-0000-0000-0000-000000000005',
-				],
-				[
-					'id' => '12345678-0000-0000-0000-000000000066',
-					'target' => '12345678-0000-0000-0000-000000000006',
-				],
-			],
-		] );
-	}
-
-	public function testGetRelationsReturnsOnlyRelations(): void {
-		$statements = $this->newStatementsWithSomeRelations();
-		$schema = $this->newSchemaWithSomeRelations();
-
-		$this->assertEquals(
-			new RelationList( [
-				TestRelation::build( id: '12345678-0000-0000-0000-000000000044', type: 'Type1', targetId: '12345678-0000-0000-0000-000000000004' ),
-				TestRelation::build( id: '12345678-0000-0000-0000-000000000055', type: 'Type2', targetId: '12345678-0000-0000-0000-000000000005' ),
-				TestRelation::build( id: '12345678-0000-0000-0000-000000000066', type: 'Type2', targetId: '12345678-0000-0000-0000-000000000006' ),
-			] ),
-			$statements->getRelations( $schema )
-		);
-	}
-
-	public function testGetRelationsHandlesNonArrayRelationValues(): void {
-		$schema = $this->newSchemaWithSomeRelations();
-
+	public function testGetReferencedSubjectsReturnsAllAndOnlyReferencedSubjects(): void {
 		$statements = new StatementList( [
-			'relation1' => [
-				'id' => '12345678-0000-0000-0000-000000000044',
-				'target' => '12345678-0000-0000-0000-000000000004',
-			],
+			TestStatement::build(
+				property: 'P0',
+			),
+			TestStatement::build(
+				property: 'P1',
+				value: new RelationValue( TestRelation::build( targetId: '00000000-0000-0000-4201-000000000000' ) ),
+				format: RelationFormat::NAME
+			),
+			TestStatement::build(
+				property: 'P1 and a half',
+			),
+			TestStatement::build(
+				property: 'P2',
+				value: new RelationValue(
+					TestRelation::build( targetId: '00000000-0000-0000-4202-000000000000' ),
+					TestRelation::build( targetId: '00000000-0000-0000-4203-000000000000' )
+				),
+				format: RelationFormat::NAME
+			),
+			TestStatement::build(
+				property: 'P3',
+				value: new RelationValue(
+					TestRelation::build( targetId: '00000000-0000-0000-4203-000000000000' ), // Duplicate
+					TestRelation::build( targetId: '00000000-0000-0000-4204-000000000000' )
+				),
+				format: RelationFormat::NAME
+			),
 		] );
 
-		$this->assertEquals(
-			new RelationList( [
-				TestRelation::build( id: '12345678-0000-0000-0000-000000000044', type: 'Type1', targetId: '12345678-0000-0000-0000-000000000004' ),
-			] ),
-			$statements->getRelations( $schema )
+		$this->assertSame(
+			[
+				'00000000-0000-0000-4201-000000000000',
+				'00000000-0000-0000-4202-000000000000',
+				'00000000-0000-0000-4203-000000000000',
+				'00000000-0000-0000-4204-000000000000',
+			],
+			$statements->getReferencedSubjects()->asStringArray()
 		);
 	}
 
-	public function testGetRelationsDiscardsInvalidRelationValues(): void {
-		$schema = $this->newSchemaWithSomeRelations();
+	public function testGetStatementReturnsKnownStatement(): void {
+		$statement = TestStatement::build( property: 'P2' );
 
-		$statements = new StatementList( [
-			'relation1' => [
-				'not' => 'valid',
-			],
-			'relation2' => [
-				[
-					'id' => '12345678-0000-0000-0000-000000000044',
-					'target' => '12345678-0000-0000-0000-000000000004',
-				],
-				[
-					'not' => 'valid',
-				],
-				[
-					'missing' => 'id',
-					'target' => '12345678-0000-0000-0000-000000000005',
-				],
-				[
-					'missing' => 'target',
-					'id' => '12345678-0000-0000-0000-000000000044',
-				],
-				[
-					'id' => '12345678-0000-0000-0000-000000000055',
-					'target' => '12345678-0000-0000-0000-000000000005',
-				],
-			],
+		$list = new StatementList( [
+			TestStatement::build( property: 'P1' ),
+			$statement,
+			TestStatement::build( property: 'P3' )
 		] );
 
 		$this->assertEquals(
-			new RelationList( [
-				TestRelation::build( id: '12345678-0000-0000-0000-000000000044', type: 'Type2', targetId: '12345678-0000-0000-0000-000000000004' ),
-				TestRelation::build( id: '12345678-0000-0000-0000-000000000055', type: 'Type2', targetId: '12345678-0000-0000-0000-000000000005' ),
-			] ),
-			$statements->getRelations( $schema )
+			$statement,
+			$list->getStatement( new PropertyName( 'P2' ) )
 		);
 	}
 
-	public function testWithoutRelations(): void {
-		$statements = $this->newStatementsWithSomeRelations();
-		$schema = $this->newSchemaWithSomeRelations();
+	public function testGetStatementReturnsNullForUnknownStatement(): void {
+		$list = new StatementList( [
+			TestStatement::build( property: 'P1' ),
+			TestStatement::build( property: 'P3' )
+		] );
 
-		$this->assertEquals(
-			new StatementList( [
-				'string1' => 'value1',
-				'string2' => 'value3',
-			] ),
-			$statements->withoutRelations( $schema )
+		$this->assertNull(
+			$list->getStatement( new PropertyName( 'P2' ) )
 		);
+	}
+
+	public function testConstructorThrowsOnNonStatement(): void {
+		$this->expectException( \InvalidArgumentException::class );
+
+		new StatementList( [
+			TestStatement::build( property: 'P1' ),
+			[ 'P2' => 'old style statement' ],
+			TestStatement::build( property: 'P3' )
+		] );
 	}
 
 }

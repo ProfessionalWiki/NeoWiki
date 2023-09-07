@@ -10,8 +10,7 @@ use MediaWiki\Extension\Scribunto\ScribuntoContent;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiSubjectRepository;
-use TextContent;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use WikitextContent;
 
 class ImportPagesAction {

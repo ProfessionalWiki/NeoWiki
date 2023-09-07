@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
+use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
 class StringProperty extends PropertyDefinition {
 

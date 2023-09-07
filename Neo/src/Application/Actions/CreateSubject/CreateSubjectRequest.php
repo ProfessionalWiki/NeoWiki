@@ -17,7 +17,7 @@ class CreateSubjectRequest {
 		/**
 		 * @var array<string, mixed[]>
 		 */
-		public readonly array $properties,
+		public readonly array $statements,
 	) {
 	}
 

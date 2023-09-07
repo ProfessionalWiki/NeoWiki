@@ -21,13 +21,13 @@ class TestSubject {
 		string|SubjectId $id = self::ZERO_GUID,
 		SubjectLabel|string $label = 'Test subject',
 		?SchemaName $schemaId = null,
-		?StatementList $properties = null,
+		?StatementList $statements = null,
 	): Subject {
 		return new Subject(
 			id: $id instanceof SubjectId ? $id : new SubjectId( $id ),
 			label: $label instanceof SubjectLabel ? $label : new SubjectLabel( $label ),
 			schemaId: $schemaId ?? new SchemaName( self::DEFAULT_SCHEMA_ID ),
-			statements: $properties ?? new StatementList( [] ),
+			statements: $statements ?? new StatementList( [] ),
 		);
 	}
 

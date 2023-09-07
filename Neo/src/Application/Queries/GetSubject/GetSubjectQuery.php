@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSubject;
 
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
@@ -16,7 +16,6 @@ class GetSubjectQuery {
 		private readonly GetSubjectPresenter $presenter,
 		private readonly SubjectLookup $subjectLookup,
 		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
-		private readonly SchemaLookup $schemaLookup
 	) {
 	}
 
@@ -37,15 +36,11 @@ class GetSubjectQuery {
 		];
 
 		if ( $includeReferencedSubjects ) {
-			$schema = $this->schemaLookup->getSchema( $subject->getSchemaId() );
+			foreach ( $subject->getReferencedSubjects()->asArray() as $id ) {
+				$referencedSubject = $this->subjectLookup->getSubject( $id );
 
-			if ( $schema !== null ) {
-				foreach ( $subject->getReferencedSubjects( $schema )->asArray() as $id ) {
-					$referencedSubject = $this->subjectLookup->getSubject( $id );
-
-					if ( $referencedSubject !== null ) {
-						$response[$referencedSubject->getId()->text] = $this->createResponse( $referencedSubject, $includePageIdentifiers );
-					}
+				if ( $referencedSubject !== null ) {
+					$response[$referencedSubject->getId()->text] = $this->createResponse( $referencedSubject, $includePageIdentifiers );
 				}
 			}
 		}
@@ -65,10 +60,23 @@ class GetSubjectQuery {
 			id: $subject->id->text,
 			label: $subject->label->text,
 			schemaId: $subject->getSchemaId()->getText(),
-			statements: $subject->getStatements()->asMap(),
+			statements: $this->arrayifyStatements( $subject->getStatements() ),
 			pageId: $pageIdentifiers?->getId()->id,
 			pageTitle: $pageIdentifiers?->getTitle(),
 		);
+	}
+
+	private function arrayifyStatements( StatementList $statements ): array {
+		$array = [];
+
+		foreach ( $statements->asArray() as $statement ) {
+			$array[$statement->getPropertyName()->text] = [
+				'format' => $statement->getFormat(),
+				'value' => $statement->getValue()->toScalars()
+			];
+		}
+
+		return $array;
 	}
 
 }

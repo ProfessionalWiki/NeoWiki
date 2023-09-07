@@ -11,16 +11,17 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponse;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
-use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 
 /**
@@ -39,23 +40,22 @@ class GetSubjectQueryTest extends TestCase {
 					id: '00000000-6666-0000-0000-000000000001',
 					label: new SubjectLabel( 'expected label' ),
 					schemaId: new SchemaName( '00000000-6666-0000-0000-000000000010' ),
-					properties: new StatementList( [
-						'expected property 1' => 'expected value 1',
-						'expected property 2' => 'expected value 2',
-						'FriendOf' => [
-							[
-								'id' => '00000000-1111-2222-1100-000000000020',
-								'target' => '00000000-6666-0000-0000-000000000020',
-								'properties' => [
-									'relation property' => 'relation value'
-								],
-							],
-						],
+					statements: new StatementList( [
+						TestStatement::build( 'expected property 1', 'expected value 1' ),
+						TestStatement::build( 'expected property 2', value: new NumberValue( 2 ), format: 'number' ),
+						TestStatement::build(
+							'FriendOf',
+							new RelationValue( TestRelation::build(
+								id: '00000000-1111-2222-1100-000000000020',
+								targetId: '00000000-6666-0000-0000-000000000020',
+								properties: [ 'relation property' => 'relation value' ]
+							) ),
+							RelationFormat::NAME,
+						),
 					] ),
 				),
 			),
 			new InMemoryPageIdentifiersLookup(),
-			new InMemorySchemaLookup()
 		);
 
 		$query->execute(
@@ -73,15 +73,24 @@ class GetSubjectQueryTest extends TestCase {
 						label: 'expected label',
 						schemaId: '00000000-6666-0000-0000-000000000010',
 						statements: [
-							'expected property 1' => 'expected value 1',
-							'expected property 2' => 'expected value 2',
+							'expected property 1' => [
+								'format' => 'text',
+								'value' => [ 'expected value 1' ]
+							],
+							'expected property 2' => [
+								'format' => 'number',
+								'value' => 2
+							],
 							'FriendOf' => [
-								[
-									'id' => '00000000-1111-2222-1100-000000000020',
-									'target' => '00000000-6666-0000-0000-000000000020',
-									'properties' => [
-										'relation property' => 'relation value'
-									],
+								'format' => 'relation',
+								'value' => [
+									[
+										'id' => '00000000-1111-2222-1100-000000000020',
+										'target' => '00000000-6666-0000-0000-000000000020',
+										'properties' => [
+											'relation property' => 'relation value'
+										],
+									]
 								]
 							]
 						],
@@ -118,7 +127,6 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			new InMemorySubjectLookup(),
 			new InMemoryPageIdentifiersLookup(),
-			new InMemorySchemaLookup()
 		);
 
 		$query->execute(
@@ -141,7 +149,6 @@ class GetSubjectQueryTest extends TestCase {
 				[ new SubjectId( TestSubject::ZERO_GUID ), new PageIdentifiers( new PageId( 1 ), 'wrong title' ) ],
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'right title' ) ],
 			] ),
-			new InMemorySchemaLookup()
 		);
 
 		$query->execute(
@@ -164,16 +171,16 @@ class GetSubjectQueryTest extends TestCase {
 			id: '00000000-6666-0000-0000-000000000008',
 			label: new SubjectLabel( 'requested subject' ),
 			schemaId: $schemaId,
-			properties: new StatementList( [
-				'FriendOf' => [
-					[
-						'id' => '00000000-1111-2222-1100-000000000029',
-						'target' => '00000000-6666-0000-0000-000000000009',
-						'properties' => [
-							'relation property' => 'relation value'
-						],
-					],
-				],
+			statements: new StatementList( [
+				TestStatement::build(
+					'FriendOf',
+					new RelationValue( TestRelation::build(
+						id: '00000000-6666-0000-0000-000000000007',
+						targetId: '00000000-6666-0000-0000-000000000009',
+						properties: [ 'relation property' => 'relation value' ]
+					) ),
+					RelationFormat::NAME,
+				),
 			] )
 		);
 
@@ -189,12 +196,6 @@ class GetSubjectQueryTest extends TestCase {
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'subject title' ) ],
 				[ $referencedSubject->id, new PageIdentifiers( new PageId( 1337 ), 'referenced title' ) ],
 			] ),
-			new InMemorySchemaLookup(
-				TestSchema::build(
-					name: $schemaId,
-					properties: new PropertyDefinitions( [ 'FriendOf' => TestProperty::buildRelation() ] )
-				)
-			)
 		);
 
 		$query->execute(

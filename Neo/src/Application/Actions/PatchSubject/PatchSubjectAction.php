@@ -4,10 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject;
 
+use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
 
 class PatchSubjectAction {
@@ -15,13 +14,16 @@ class PatchSubjectAction {
 	public function __construct(
 		private readonly SubjectRepository $subjectRepository,
 		private readonly SubjectActionAuthorizer $subjectActionAuthorizer,
-		private readonly GuidGenerator $guidGenerator
+		private readonly StatementListPatcher $patcher
 	) {
 	}
 
 	/**
+	 * The patch maps property name to scalar value representation (or null to delete the statement).
+	 * This follows the JSON Merge Patch specification (RFC 7396).
+	 *
 	 * @param SubjectId $subjectId
-	 * @param array<string, mixed> $patch Property name to list of new values
+	 * @param array<string, mixed> $patch
 	 */
 	public function patch( SubjectId $subjectId, array $patch ): void {
 		if ( !$this->subjectActionAuthorizer->canEditSubject() ) {
@@ -34,21 +36,7 @@ class PatchSubjectAction {
 			throw new \RuntimeException( 'Subject not found: ' . $subjectId->text );
 		}
 
-		foreach ( $patch as $key => $value ) {
-			if ( is_array( $value ) ) {
-				$patch[$key] = array_map(
-					function ( mixed $item ): mixed {
-						if ( is_array( $item ) && isset( $item['target'] ) && !isset( $item['id'] ) ) {
-							$item['id'] = RelationId::createNew( $this->guidGenerator )->asString();
-						}
-						return $item;
-					},
-					$value
-				);
-			}
-		}
-
-		$subject->applyPatch( $patch );
+		$subject->patchStatements( $this->patcher, $patch );
 
 		$this->subjectRepository->updateSubject( $subject );
 	}

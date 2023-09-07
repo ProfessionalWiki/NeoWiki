@@ -15,21 +15,24 @@ class SubjectIdList {
 	 * @param SubjectId[] $subjectIds
 	 */
 	public function __construct( array $subjectIds ) {
-		$this->subjectIds = $subjectIds;
+		$ids = [];
+
+		foreach ( $subjectIds as $id ) {
+			$ids[$id->text] = $id;
+		}
+
+		$this->subjectIds = $ids;
 	}
 
 	/**
-	 * @return SubjectId[]
+	 * @return array<string, SubjectId>
 	 */
 	public function asArray(): array {
 		return $this->subjectIds;
 	}
 
 	public function asStringArray(): array {
-		return array_map(
-			fn( SubjectId $subjectId ): string => $subjectId->text,
-			$this->subjectIds
-		);
+		return array_keys( $this->subjectIds );
 	}
 
 }

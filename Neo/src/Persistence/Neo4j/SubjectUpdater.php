@@ -10,8 +10,10 @@ use Laudis\Neo4j\Types\CypherList;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
 use Psr\Log\LoggerInterface;
 
 class SubjectUpdater {
@@ -33,21 +35,19 @@ class SubjectUpdater {
 		}
 
 		// Note: the below method calls might need to be in this order
-		$this->updateNodeProperties( $subject, $schema );
+		$this->updateNodeProperties( $subject );
 		$this->updateRelations( $subject, $schema );
 		$this->updateHasSubjectRelation( $subject, $isMainSubject );
 		$this->updateNodeLabels( $subject );
 	}
 
-	private function updateNodeProperties( Subject $subject, Schema $schema ): void {
+	private function updateNodeProperties( Subject $subject ): void {
 		$this->transaction->run(
 			'MERGE (n {id: $id}) SET n = $props',
 			[
 				'id' => $subject->id->text,
 				'props' => array_merge(
-					// TODO: this explodes if an object such as a relation is in the map
-					// Add some safety code, especially if we continue to not have a more solid model for values
-					$subject->getStatements()->withoutRelations( $schema )->asMap(),
+					$this->statementsToNodeProperties( $subject->getStatements() ),
 					[
 						'name' => $subject->label->text,
 						'id' => $subject->id->text,
@@ -55,6 +55,18 @@ class SubjectUpdater {
 				),
 			]
 		);
+	}
+
+	private function statementsToNodeProperties( StatementList $statements ): array {
+		$nodeProps = [];
+
+		foreach ( $statements->asArray() as $statement ) {
+			if ( $statement->getFormat() !== RelationFormat::NAME ) {
+				$nodeProps[$statement->getPropertyName()->text] = $statement->getValue()->toScalars();
+			}
+		}
+
+		return $nodeProps;
 	}
 
 	private function updateHasSubjectRelation( Subject $subject, bool $isMainSubject ): void {
@@ -119,7 +131,7 @@ class SubjectUpdater {
 	private function updateRelations( Subject $subject, Schema $schema ): void {
 		$updater = new SubjectRelationUpdater(
 			$subject->getId(),
-			$subject->getRelations( $schema ),
+			$subject->getTypedRelations( $schema ),
 			$this->transaction
 		);
 		$updater->updateRelations();

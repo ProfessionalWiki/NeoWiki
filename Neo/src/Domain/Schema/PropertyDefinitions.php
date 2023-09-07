@@ -23,16 +23,16 @@ class PropertyDefinitions {
 	/**
 	 * @throws OutOfBoundsException
 	 */
-	public function getProperty( string $name ): PropertyDefinition {
-		if ( array_key_exists( $name, $this->properties ) ) {
-			return $this->properties[$name];
+	public function getProperty( string|PropertyName $name ): PropertyDefinition {
+		if ( array_key_exists( (string)$name, $this->properties ) ) {
+			return $this->properties[(string)$name];
 		}
 
 		throw new OutOfBoundsException( "Property '$name' does not exist" );
 	}
 
-	public function hasProperty( string $name ): bool {
-		return array_key_exists( $name, $this->properties );
+	public function hasProperty( string|PropertyName $name ): bool {
+		return array_key_exists( (string)$name, $this->properties );
 	}
 
 	/**

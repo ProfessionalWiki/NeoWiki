@@ -4,6 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
+/**
+ * TODO: remove
+ * @deprecated Use ValueFormatRegistry instead
+ */
 enum ValueFormat: string {
 
 	case Text = 'text';

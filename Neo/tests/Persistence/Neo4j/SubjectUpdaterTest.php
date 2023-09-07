@@ -14,8 +14,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdater;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
-use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 use Psr\Log\LogLevel;
+use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
 class SubjectUpdaterTest extends TestCase {
 
