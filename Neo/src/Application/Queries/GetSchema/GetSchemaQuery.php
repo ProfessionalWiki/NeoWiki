@@ -4,8 +4,8 @@ declare( strict_types=1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSchema;
 
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaSerializer;
 
 class GetSchemaQuery {

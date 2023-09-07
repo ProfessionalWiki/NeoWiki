@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\Data;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 /**
@@ -17,15 +16,13 @@ class TestRelation {
 
 	public static function build(
 		string|RelationId $id = null,
-		string $type = 'FriendOf',
-		string $targetId = '130A09E1-54FF-4A20-8A14-4E62D700BBBB',
-		RelationProperties $properties = new RelationProperties( [] )
+		string $targetId = '130A09E1-54FF-4A20-8A14-4E62D700BBBB', // TODO: also generate predictable IDs
+		array|RelationProperties $properties = []
 	): Relation {
 		return new Relation(
 			self::defaultId( $id ),
-			new RelationType( $type ),
 			new SubjectId( $targetId ),
-			$properties
+			is_array( $properties ) ? new RelationProperties( $properties ) : $properties
 		);
 	}
 

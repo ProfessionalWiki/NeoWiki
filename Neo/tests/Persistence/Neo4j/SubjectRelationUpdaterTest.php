@@ -5,8 +5,9 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationList;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
+use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -44,18 +45,16 @@ class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testCreatesRelations(): void {
-		$relations = new RelationList( [
+		$relations = new TypedRelationList( [
 			TestRelation::build(
 				id: '00000000-1237-0000-0000-000000000001',
-				type: 'Type1',
 				targetId: self::TARGET_SUBJECT_1,
 				properties: new RelationProperties( [ 'foo' => 'bar', 'baz' => 42 ] ),
-			),
+			)->withType( new RelationType( 'Type1' ) ),
 			TestRelation::build(
 				id: '00000000-1237-0000-0000-000000000002',
-				type: 'Type2',
 				targetId: self::TARGET_SUBJECT_2,
-			),
+			)->withType( new RelationType( 'Type2' ) ),
 		] );
 
 		$this->updateRelations( $relations );
@@ -63,7 +62,7 @@ class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		$this->assertHasRelations( $relations );
 	}
 
-	private function updateRelations( RelationList $relations ): void {
+	private function updateRelations( TypedRelationList $relations ): void {
 		$updater = new SubjectRelationUpdater(
 			new SubjectId( self::SUBJECT_ID ),
 			$relations,
@@ -72,7 +71,7 @@ class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		$updater->updateRelations();
 	}
 
-	private function assertHasRelations( RelationList $expected ): void {
+	private function assertHasRelations( TypedRelationList $expected ): void {
 		$result = NeoWikiExtension::getInstance()->getNeo4jClient()->run(
 			'MATCH (subject {id: $subjectId})-[relation]->(target)
        		RETURN relation, target.id as targetId
@@ -86,7 +85,7 @@ class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function buildExpectedRelations( RelationList $expected ): array {
+	private function buildExpectedRelations( TypedRelationList $expected ): array {
 		$expectedRelations = [];
 
 		foreach ( $expected->relations as $relation ) {
@@ -119,32 +118,28 @@ class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 
 	public function testRemovesRelations(): void {
 		$this->updateRelations(
-			new RelationList( [
+			new TypedRelationList( [
 				TestRelation::build(
 					id: '00000000-1237-0000-0000-000000000001',
-					type: 'Type1',
 					targetId: self::TARGET_SUBJECT_1,
 					properties: new RelationProperties( [ 'foo' => 'bar', 'baz' => 42 ] ),
-				),
+				)->withType( new RelationType( 'Type1' ) ),
 				TestRelation::build(
 					id: '00000000-1237-0000-0000-000000000002',
-					type: 'Type2',
 					targetId: self::TARGET_SUBJECT_2,
-				),
+				)->withType( new RelationType( 'Type2' ) ),
 				TestRelation::build(
 					id: '00000000-1237-0000-0000-000000000003',
-					type: 'Type2',
 					targetId: self::TARGET_SUBJECT_2,
-				),
+				)->withType( new RelationType( 'Type2' ) ),
 			] )
 		);
 
-		$expectedRelations = new RelationList( [
+		$expectedRelations = new TypedRelationList( [
 			TestRelation::build(
 				id: '00000000-1237-0000-0000-000000000002',
-				type: 'Type2',
 				targetId: self::TARGET_SUBJECT_2,
-			),
+			)->withType( new RelationType( 'Type2' ) ),
 		] );
 
 		$this->updateRelations( $expectedRelations );
@@ -154,45 +149,39 @@ class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 
 	public function testUpdatesRelationProperties(): void {
 		$this->updateRelations(
-			new RelationList( [
+			new TypedRelationList( [
 				TestRelation::build(
 					id: '00000000-1237-0000-0000-000000000001',
-					type: 'Type1',
 					targetId: self::TARGET_SUBJECT_1,
 					properties: new RelationProperties( [ 'foo' => 'bar', 'baz' => 42 ] ),
-				),
+				)->withType( new RelationType( 'Type1' ) ),
 				TestRelation::build(
 					id: '00000000-1237-0000-0000-000000000002',
-					type: 'Type2',
 					targetId: self::TARGET_SUBJECT_2,
 					properties: new RelationProperties( [ 'hello' => 'there' ] ),
-				),
+				)->withType( new RelationType( 'Type2' ) ),
 				TestRelation::build(
 					id: '00000000-1237-0000-0000-000000000003',
-					type: 'Type2',
 					targetId: self::TARGET_SUBJECT_2,
-				),
+				)->withType( new RelationType( 'Type2' ) ),
 			] )
 		);
 
-		$expectedRelations = new RelationList( [
+		$expectedRelations = new TypedRelationList( [
 			TestRelation::build(
 				id: '00000000-1237-0000-0000-000000000001',
-				type: 'Type1',
 				targetId: self::TARGET_SUBJECT_1,
 				properties: new RelationProperties( [ 'bah' => 1337, 'foo' => 'bar' ] ),
-			),
+			)->withType( new RelationType( 'Type1' ) ),
 			TestRelation::build(
 				id: '00000000-1237-0000-0000-000000000002',
-				type: 'Type2',
 				targetId: self::TARGET_SUBJECT_2,
-			),
+			)->withType( new RelationType( 'Type2' ) ),
 			TestRelation::build(
 				id: '00000000-1237-0000-0000-000000000004',
-				type: 'Type2',
 				targetId: self::TARGET_SUBJECT_2,
 				properties: new RelationProperties( [ 'neo' => 'wiki' ] ),
-			),
+			)->withType( new RelationType( 'Type2' ) ),
 		] );
 
 		$this->updateRelations( $expectedRelations );
@@ -202,35 +191,31 @@ class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 
 	public function testUpdatesRelationTargets(): void {
 		$this->updateRelations(
-			new RelationList( [
+			new TypedRelationList( [
 				TestRelation::build(
 					id: '00000000-1237-0000-0000-000000000001',
-					type: 'Type1',
 					targetId: self::TARGET_SUBJECT_1,
 					properties: new RelationProperties( [ 'foo' => 'bar', 'baz' => 42 ] ),
-				),
+				)->withType( new RelationType( 'Type1' ) ),
 				TestRelation::build(
 					id: '00000000-1237-0000-0000-000000000002',
-					type: 'Type2',
 					targetId: self::TARGET_SUBJECT_2,
 					properties: new RelationProperties( [ 'hello' => 'there' ] ),
-				),
+				)->withType( new RelationType( 'Type2' ) ),
 			] )
 		);
 
-		$expectedRelations = new RelationList( [
+		$expectedRelations = new TypedRelationList( [
 			TestRelation::build(
 				id: '00000000-1237-0000-0000-000000000001',
-				type: 'Type1',
 				targetId: self::TARGET_SUBJECT_2,
 				properties: new RelationProperties( [ 'foo' => 'bar', 'new' => 1337 ] ),
-			),
+			)->withType( new RelationType( 'Type1' ) ),
 			TestRelation::build(
 				id: '00000000-1237-0000-0000-000000000002',
-				type: 'Type2',
 				targetId: self::SUBJECT_ID,
 				properties: new RelationProperties( [ 'hello' => 'there' ] ),
-			),
+			)->withType( new RelationType( 'Type2' ) ),
 		] );
 
 		$this->updateRelations( $expectedRelations );
@@ -240,35 +225,31 @@ class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 
 	public function testUpdatesRelationTypes(): void {
 		$this->updateRelations(
-			new RelationList( [
+			new TypedRelationList( [
 				TestRelation::build(
 					id: '00000000-1237-0000-0000-000000000001',
-					type: 'Type1v2',
 					targetId: self::TARGET_SUBJECT_1,
 					properties: new RelationProperties( [ 'foo' => 'bar', 'baz' => 42 ] ),
-				),
+				)->withType( new RelationType( 'Type1v2' ) ),
 				TestRelation::build(
 					id: '00000000-1237-0000-0000-000000000002',
-					type: 'Type2v2',
 					targetId: self::TARGET_SUBJECT_2,
 					properties: new RelationProperties( [ 'hello' => 'there' ] ),
-				),
+				)->withType( new RelationType( 'Type2v2' ) ),
 			] )
 		);
 
-		$expectedRelations = new RelationList( [
+		$expectedRelations = new TypedRelationList( [
 			TestRelation::build(
 				id: '00000000-1237-0000-0000-000000000001',
-				type: 'Type1v2',
 				targetId: self::TARGET_SUBJECT_1,
 				properties: new RelationProperties( [ 'foo' => 'bar', 'new' => 1337 ] ),
-			),
+			)->withType( new RelationType( 'Type1v2' ) ),
 			TestRelation::build(
 				id: '00000000-1237-0000-0000-000000000002',
-				type: 'Type2v2',
 				targetId: self::TARGET_SUBJECT_2,
 				properties: new RelationProperties( [ 'hello' => 'there' ] ),
-			),
+			)->withType( new RelationType( 'Type2v2' ) ),
 		] );
 
 		$this->updateRelations( $expectedRelations );
@@ -278,13 +259,12 @@ class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 
 	public function testRelationWithNonExistentTargetNodeDoesNotCreateDuplicateSubject(): void {
 		$this->updateRelations(
-			new RelationList( [
+			new TypedRelationList( [
 				TestRelation::build(
 					id: '00000000-1237-0000-0000-000000000001',
-					type: 'RelationType',
 					targetId: '00000000-0000-0000-1111-000000000000',
 					properties: new RelationProperties( [] ),
-				)
+				)->withType( new RelationType( 'RelationType' ) )
 			] )
 		);
 

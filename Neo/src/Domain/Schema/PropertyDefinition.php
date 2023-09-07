@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
+use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
+
 abstract class PropertyDefinition {
 
 	public function __construct(

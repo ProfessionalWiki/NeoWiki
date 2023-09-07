@@ -6,29 +6,42 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction;
-use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
+use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectActionAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectActionAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\TestGuidGenerator;
 
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction
+ */
 class PatchSubjectActionTest extends TestCase {
 
 	private const GUID = '00000000-7777-0000-0000-000000000055';
+
+	private InMemorySubjectRepository $inMemorySubjectRepository;
+	private GuidGenerator $guidGenerator;
 
 	public function setUp(): void {
 		$this->inMemorySubjectRepository = new InMemorySubjectRepository();
 		$this->guidGenerator = new TestGuidGenerator( self::GUID );
 	}
 
-	private function newPatchSubjectAction( SubjectActionAuthorizer $authorizer ): PatchSubjectAction {
+	private function newPatchSubjectAction( SubjectActionAuthorizer $authorizer = null ): PatchSubjectAction {
 		return new PatchSubjectAction(
 			$this->inMemorySubjectRepository,
-			$authorizer,
-			$this->guidGenerator
+			$authorizer ?? new SucceedingSubjectActionAuthorizer(),
+			new StatementListPatcher(
+				formatTypeLookup: NeoWikiExtension::getInstance()->getFormatTypeLookup(),
+				guidGenerator: $this->guidGenerator
+			)
 		);
 	}
 
@@ -36,7 +49,7 @@ class PatchSubjectActionTest extends TestCase {
 		$subject = TestSubject::build( id: new SubjectId( self::GUID ) );
 		$this->inMemorySubjectRepository->updateSubject( $subject );
 
-		$patchSubjectAction = $this->newPatchSubjectAction( new SucceedingSubjectActionAuthorizer() );
+		$patchSubjectAction = $this->newPatchSubjectAction();
 		$patchSubjectAction->patch( $subject->getId(), [] );
 
 		$patchedSubject = $this->inMemorySubjectRepository->getSubject( new SubjectId( self::GUID ) );
@@ -58,7 +71,7 @@ class PatchSubjectActionTest extends TestCase {
 	}
 
 	public function testPatchNonExistentSubject(): void {
-		$patchSubjectAction = $this->newPatchSubjectAction( new SucceedingSubjectActionAuthorizer() );
+		$patchSubjectAction = $this->newPatchSubjectAction();
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'Subject not found: ' . self::GUID );
@@ -69,45 +82,30 @@ class PatchSubjectActionTest extends TestCase {
 	public function testNewRelationGetsGuid(): void {
 		$this->inMemorySubjectRepository->updateSubject( TestSubject::build() );
 
-		$this->newPatchSubjectAction( new SucceedingSubjectActionAuthorizer() )
+		$initialSubjectId = TestSubject::build()->getId();
+
+		$this->newPatchSubjectAction()
 			->patch(
-				$initialSubjectId = TestSubject::build()->getId(),
-				[ 'Has product' => [ [ 'target' => '00000000-5555-0000-0000-000000000099' ] ] ]
+				$initialSubjectId,
+				[
+					'Has product' => [
+						'format' => 'relation',
+						'value' => [ [ 'target' => '00000000-5555-0000-0000-000000000099' ] ]
+					]
+				]
 			);
 
+		/**
+		 * @var RelationValue $relation
+		 */
 		$relation = $this->inMemorySubjectRepository
 			->getSubject( $initialSubjectId )
-			->getStatements()
-			->asMap()['Has product'][0]['id'];
+			->getStatements()->getStatement( new PropertyName( 'Has product' ) )->getValue();
 
 		$this->assertSame(
 			self::GUID,
-			$relation,
+			$relation->relations[0]->id->asString(),
 			'Relation ID does not match expected GUID'
-		);
-	}
-
-	public function testFailingToSetRelationDueToMissingTarget(): void {
-		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( "Subject not found: " . self::GUID );
-
-		( new PatchSubjectAction(
-			$mockSubjectRepository,
-			new SucceedingSubjectActionAuthorizer(),
-			new TestGuidGenerator( self::GUID )
-		) )->patch(
-			new SubjectId( self::GUID ),
-			[
-				'Founded at' => 2005,
-				'Websites' => [
-					'https://acme.example'
-				],
-				'Main product' => [],
-				'Products' => [],
-				'World domination progress' => 42
-			]
 		);
 	}
 

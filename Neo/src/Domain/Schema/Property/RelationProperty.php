@@ -8,7 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
+use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
 class RelationProperty extends PropertyDefinition {
 
