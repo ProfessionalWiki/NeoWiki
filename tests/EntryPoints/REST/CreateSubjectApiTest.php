@@ -8,10 +8,13 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use Title;
 
@@ -41,7 +44,13 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 'Test subject', $subject->label->text );
 		$this->assertSame( 'Employee', $subject->getSchemaId()->getText() );
-		$this->assertSame( [ 'animal' => 'bunny', 'fluff' => 9001 ], $subject->getStatements()->asMap() );
+		$this->assertEquals(
+			new StatementList( [
+				TestStatement::build( property: 'animal', value: 'bunny' ),
+				TestStatement::build( property: 'fluff', value: new NumberValue( 9001 ), format: 'number' ),
+			] ),
+			$subject->getStatements()
+		);
 	}
 
 	private function newCreateSubjectApi( bool $isMainSubject = true ): CreateSubjectApi {
@@ -63,9 +72,15 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 			'bodyContents' => json_encode( [
 				'label' => 'Test subject',
 				'schema' => 'Employee',
-				'properties' => [
-					'animal' => 'bunny',
-					'fluff' => 9001,
+				'statements' => [
+					'animal' => [
+						'format' => 'text',
+						'value' => 'bunny'
+					],
+					'fluff' => [
+						'format' => 'number',
+						'value' => 9001
+					],
 				]
 			] ),
 			'headers' => [

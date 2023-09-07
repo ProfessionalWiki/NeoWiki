@@ -7,8 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
 use FormatJson;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataDeserializer;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectContentDataSerializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer;
 
 class SubjectContent extends \JsonContent {
 

@@ -11,6 +11,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
@@ -72,7 +74,7 @@ JSON
             "id": "123e4567-e89b-12d3-a456-426655440000",
             "label": "Test subject 426655440000",
             "schema": "GetSubjectApiTestSchema",
-            "properties": []
+            "statements": []
         }
     }
 }
@@ -106,17 +108,14 @@ JSON,
 			mainSubject: TestSubject::build(
 				id: '123e4567-e89b-12d3-a456-426655440000',
 				schemaId: new SchemaName( 'GetSubjectApiTestSchema' ),
-				properties: new StatementList( [
-					'MyRelation' => [
+				statements: new StatementList( [
+					TestStatement::buildRelation(
+						'MyRelation',
 						[
-							'id' => '00000000-1111-2222-1100-000000440011',
-							'target' => '123e4567-e89b-12d3-a456-426655440001',
-						],
-						[
-							'id' => '00000000-1111-2222-1100-000000440022',
-							'target' => '123e4567-e89b-12d3-a456-426655440002',
-						],
-					],
+							TestRelation::build( id: '00000000-1111-2222-1100-000000440011', targetId: '123e4567-e89b-12d3-a456-426655440001' ),
+							TestRelation::build( id: '00000000-1111-2222-1100-000000440022', targetId: '123e4567-e89b-12d3-a456-426655440002' ),
+						]
+					)
 				] )
 			),
 			childSubjects: new SubjectMap(
@@ -132,13 +131,13 @@ JSON,
 			mainSubject: TestSubject::build(
 				id: '123e4567-e89b-12d3-a456-426655440002',
 				schemaId: new SchemaName( 'GetSubjectApiTestSchema' ),
-				properties: new StatementList( [
-					'MyRelation' => [
+				statements: new StatementList( [
+					TestStatement::buildRelation(
+						'MyRelation',
 						[
-							'id' => '00000000-1111-2222-1100-000000440033',
-							'target' => '123e4567-e89b-12d3-a456-426655440001',
-						],
-					],
+							TestRelation::build( id: '00000000-1111-2222-1100-000000440033', targetId: '123e4567-e89b-12d3-a456-426655440001' ),
+						]
+					)
 				] )
 			),
 		)->getPage()->getId();
@@ -167,17 +166,20 @@ JSON,
             "schema": "GetSubjectApiTestSchema",
             "pageId": $firstPageId,
             "pageTitle": "GetSubjectApiTest0000",
-            "properties": {
-                "MyRelation": [
-                    {
-                    	"id": "00000000-1111-2222-1100-000000440011",
-                        "target": "123e4567-e89b-12d3-a456-426655440001"
-                    },
-                    {
-                    	"id": "00000000-1111-2222-1100-000000440022",
-                        "target": "123e4567-e89b-12d3-a456-426655440002"
-                    }
-                ]
+            "statements": {
+                "MyRelation": {
+                	"format": "relation",
+                	"value": [
+						{
+							"id": "00000000-1111-2222-1100-000000440011",
+							"target": "123e4567-e89b-12d3-a456-426655440001"
+						},
+						{
+							"id": "00000000-1111-2222-1100-000000440022",
+							"target": "123e4567-e89b-12d3-a456-426655440002"
+						}
+					]
+                }
             }
         },
         "123e4567-e89b-12d3-a456-426655440001": {
@@ -186,7 +188,7 @@ JSON,
             "schema": "GetSubjectApiTestSchema",
             "pageId": $firstPageId,
             "pageTitle": "GetSubjectApiTest0000",
-            "properties": []
+            "statements": []
         },
         "123e4567-e89b-12d3-a456-426655440002": {
             "id": "123e4567-e89b-12d3-a456-426655440002",
@@ -194,13 +196,16 @@ JSON,
             "schema": "GetSubjectApiTestSchema",
             "pageId": $secondPageId,
             "pageTitle": "GetSubjectApiTest0002",
-            "properties": {
-                "MyRelation": [
-                    {
-                    	"id": "00000000-1111-2222-1100-000000440033",
-                        "target": "123e4567-e89b-12d3-a456-426655440001"
-                    }
-                ]
+            "statements": {
+                "MyRelation": {
+                "format": "relation",
+				"value": [
+						{
+							"id": "00000000-1111-2222-1100-000000440033",
+							"target": "123e4567-e89b-12d3-a456-426655440001"
+						}
+					]
+                }
             }
         }
     }

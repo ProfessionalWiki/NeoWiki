@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 

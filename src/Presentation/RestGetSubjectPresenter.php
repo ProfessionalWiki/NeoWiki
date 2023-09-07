@@ -41,8 +41,7 @@ class RestGetSubjectPresenter implements GetSubjectPresenter {
 				$map[$subject->id]['pageTitle'] = $subject->pageTitle;
 			}
 
-			// TODO: rename to statements
-			$map[$subject->id]['properties'] = $subject->statements;
+			$map[$subject->id]['statements'] = $subject->statements;
 		}
 
 		return $map;

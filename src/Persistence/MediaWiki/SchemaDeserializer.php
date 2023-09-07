@@ -15,7 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
+use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
 class SchemaDeserializer {
 

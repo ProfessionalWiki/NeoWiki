@@ -5,11 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use InvalidArgumentException;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use MediaWiki\Permissions\Authority;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class WikiPageSchemaLookup implements SchemaLookup {

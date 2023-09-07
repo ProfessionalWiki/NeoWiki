@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -13,6 +13,11 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 
 class SubjectContentDataDeserializer {
+
+	public function __construct(
+		private readonly StatementDeserializer $statementDeserializer,
+	) {
+	}
 
 	/**
 	 * Mirrors @see SubjectContentDataSerializer::serialize
@@ -53,20 +58,20 @@ class SubjectContentDataDeserializer {
 			id: new SubjectId( $id ),
 			label: new SubjectLabel( $jsonArray['label'] ),
 			schemaId: new SchemaName( $jsonArray['schema'] ),
-			statements: $this->newSubjectProperties( $jsonArray ),
+			statements: $this->buildStatementList( $jsonArray ),
 		);
 	}
 
-	private function newSubjectProperties( array $jsonArray ): StatementList {
-		$propertyValueMap = [];
+	private function buildStatementList( array $jsonArray ): StatementList {
+		$statements = [];
 
-		foreach ( $jsonArray['properties'] ?? [] as $propertyName => $value ) {
-			if ( $value !== null ) { // TODO: deal with multiple values?
-				$propertyValueMap[$propertyName] = $value;
+		foreach ( $jsonArray['statements'] ?? [] as $propertyName => $value ) {
+			if ( $value !== null ) {
+				$statements[] = $this->statementDeserializer->deserialize( $propertyName, $value );
 			}
 		}
 
-		return new StatementList( $propertyValueMap );
+		return new StatementList( $statements );
 	}
 
 }

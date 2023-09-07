@@ -58,12 +58,36 @@ class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
 			'pathParams' => [
 				'subjectId' => '123e4567-e89b-12d3-a456-426655440000'
 			],
-			'bodyContents' => json_encode( [
-				'properties' => [
-					'animal' => 'bunny',
-					'fluff' => 9001,
-				]
-			] ),
+			'bodyContents' => <<<JSON
+{
+	"statements": {
+		"Founded at": {
+			"format": "number",
+			"value": 2019
+		},
+		"Websites": {
+			"format": "url",
+			"value": [
+				"https://professional.wiki",
+				"https://wikibase.consulting"
+			]
+		},
+		"Products": {
+			"format": "relation",
+			"value": [
+				{
+					"id": "00000000-1111-2222-1100-000000000004",
+					"target": "12345678-0000-0000-0000-000000000004"
+				},
+				{
+					"target": "12345678-0000-0000-0000-000000000005"
+				}
+			]
+		},
+		"DoNotWant": null
+	}
+}
+JSON,
 			'headers' => [
 				'Content-Type' => 'application/json'
 			]

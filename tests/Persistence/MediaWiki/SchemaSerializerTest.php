@@ -14,7 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueType;
+use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;

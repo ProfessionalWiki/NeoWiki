@@ -2,9 +2,11 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Statement;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 
 class SubjectContentDataSerializer {
@@ -29,11 +31,25 @@ class SubjectContentDataSerializer {
 			$serializedSubjects[$subject->id->text] = [
 				'label' => $subject->label->text,
 				'schema' => $subject->getSchemaId()->getText(),
-				'properties' => (object)$subject->getStatements()->asMap(),
+				'statements' => $this->serializeStatementList( $subject->getStatements() ),
 			];
 		}
 
 		return (object)$serializedSubjects;
+	}
+
+	private function serializeStatementList( StatementList $statementList ): object {
+		return (object)array_map(
+			$this->serializeStatement( ... ),
+			$statementList->asArray()
+		);
+	}
+
+	private function serializeStatement( Statement $statement ): array {
+		return [
+			'format' => $statement->getFormat(),
+			'value' => $statement->getValue()->toScalars(),
+		];
 	}
 
 }

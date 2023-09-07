@@ -5,11 +5,11 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use RuntimeException;
+use SearchEngine;
 use SearchSuggestion;
 use SearchSuggestionSet;
 use TitleValue;
 use Wikimedia\Rdbms\IDatabase;
-use SearchEngine;
 use Wikimedia\Rdbms\IResultWrapper;
 
 class DatabaseSchemaNameLookup implements SchemaNameLookup {
