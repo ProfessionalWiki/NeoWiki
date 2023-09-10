@@ -14,7 +14,7 @@ use Title;
 class SpecialNeoJson extends SpecialPage {
 
 	public function __construct() {
-		parent::__construct( 'NeoJson' );
+		parent::__construct( 'NeoJson', listed: false );
 	}
 
 	/**
