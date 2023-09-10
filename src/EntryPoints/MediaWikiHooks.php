@@ -106,7 +106,9 @@ class MediaWikiHooks {
 	}
 
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
-		if ( $out->isArticle() && $out->getWikiPage()->getNamespace() === NS_MAIN ) {
+		if ( $out->isArticle() && $out->getWikiPage()->getNamespace() === NS_MAIN
+			&& NeoWikiExtension::getInstance()->isDevelopmentUIEnabled()
+		) {
 			self::addSubjectEditor( $out );
 			return;
 		}
@@ -142,6 +144,12 @@ class MediaWikiHooks {
 
 	public static function onMakeGlobalVariablesScript( array &$vars, OutputPage $out ): void {
 		$vars['NeoWiki'] = NeoWikiExtension::getInstance()->getExternalNeo4jConfig();
+	}
+
+	public static function onSpecialPageInitList( array &$specialPages ): void {
+		if ( !NeoWikiExtension::getInstance()->isDevelopmentUIEnabled() ) {
+			unset( $specialPages['NeoJson'] );
+		}
 	}
 
 }
