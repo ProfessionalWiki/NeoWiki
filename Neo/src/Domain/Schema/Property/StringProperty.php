@@ -6,13 +6,19 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\DateFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\DateTimeFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\EmailFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\PhoneNumberFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TextFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TimeFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\UrlFormat;
 
 class StringProperty extends PropertyDefinition {
 
 	public function __construct(
-		ValueFormat $format,
+		string $format,
 		string $description,
 		bool $required,
 		?string $default,
@@ -29,15 +35,15 @@ class StringProperty extends PropertyDefinition {
 		);
 	}
 
-	public function assertIsStringFormat( ValueFormat $format ): void {
+	public function assertIsStringFormat( string $format ): void {
 		if ( !in_array( $format, [
-			ValueFormat::Text,
-			ValueFormat::Email,
-			ValueFormat::Url,
-			ValueFormat::Date,
-			ValueFormat::DateTime,
-			ValueFormat::Time,
-			ValueFormat::PhoneNumber
+			TextFormat::NAME,
+			EmailFormat::NAME,
+			UrlFormat::NAME,
+			DateFormat::NAME,
+			DateTimeFormat::NAME,
+			TimeFormat::NAME,
+			PhoneNumberFormat::NAME
 		] ) ) {
 			throw new InvalidArgumentException( 'StringProperty must have a string format' );
 		}

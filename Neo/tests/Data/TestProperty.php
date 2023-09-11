@@ -8,12 +8,12 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TextFormat;
 
 class TestProperty {
 
 	public static function buildString(
-		ValueFormat $format = ValueFormat::Text,
+		string $format = TextFormat::NAME,
 		string $description = '',
 		bool $required = false,
 		?string $default = null,

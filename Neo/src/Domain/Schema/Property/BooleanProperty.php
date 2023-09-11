@@ -6,13 +6,13 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\CheckboxFormat;
 
 class BooleanProperty extends PropertyDefinition {
 
 	public function __construct(
-		ValueFormat $format,
+		string $format,
 		string $description,
 		bool $required,
 		?bool $default,
@@ -28,11 +28,8 @@ class BooleanProperty extends PropertyDefinition {
 		);
 	}
 
-	private function assertIsBooleanFormat( ValueFormat $format ): void {
-		if ( !in_array( $format, [
-			ValueFormat::Checkbox,
-			ValueFormat::Toggle,
-		] ) ) {
+	private function assertIsBooleanFormat( string $format ): void {
+		if ( $format !== CheckboxFormat::NAME ) {
 			throw new InvalidArgumentException( 'BooleanProperty must have a boolean format' );
 		}
 	}

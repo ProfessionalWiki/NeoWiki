@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
 use OutOfBoundsException;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
 
 class PropertyDefinitions {
 
@@ -44,7 +45,7 @@ class PropertyDefinitions {
 
 	public function getRelations(): self {
 		return $this->filter(
-			fn( PropertyDefinition $property ) => $property->getFormat() === ValueFormat::Relation
+			fn( PropertyDefinition $property ) => $property->getFormat() === RelationFormat::NAME
 		);
 	}
 
