@@ -62,30 +62,6 @@ class SchemaContentValidatorTest extends TestCase {
 		);
 	}
 
-	public function testInvalidTypeFailsValidation(): void {
-		$validator = SchemaContentValidator::newInstance();
-
-		$this->assertFalse(
-			$validator->validate(
-				<<<JSON
-{
-	"propertyDefinitions": {
-		"someRelation": {
-			"type": "not a real type",
-			"format": "text"
-		}
-	}
-}
-JSON
-			)
-		);
-
-		$this->assertSame(
-			[ '/propertyDefinitions/someRelation/type' => 'The data should match one item from enum' ],
-			$validator->getErrors()
-		);
-	}
-
 	public function testInvalidFormatFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
 
@@ -95,7 +71,6 @@ JSON
 {
 	"propertyDefinitions": {
 		"someRelation": {
-			"type": "string",
 			"format": "not a real format"
 		}
 	}
@@ -119,7 +94,6 @@ JSON
 {
 	"propertyDefinitions": {
 		"someRelation": {
-			"type": "relation",
 			"format": "relation"
 		}
 	}

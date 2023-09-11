@@ -16,7 +16,8 @@ class WikiPageSchemaLookup implements SchemaLookup {
 
 	public function __construct(
 		private readonly PageContentFetcher $pageContentFetcher,
-		private readonly Authority $authority
+		private readonly Authority $authority,
+		private readonly SchemaPersistenceDeserializer $schemaDeserializer,
 	) {
 	}
 
@@ -28,7 +29,7 @@ class WikiPageSchemaLookup implements SchemaLookup {
 		}
 
 		try {
-			return ( new SchemaDeserializer() )->deserialize( $schemaId, $content->getText() );
+			return $this->schemaDeserializer->deserialize( $schemaId, $content->getText() );
 		}
 		catch ( InvalidArgumentException ) {
 			return null;

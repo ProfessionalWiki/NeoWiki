@@ -7,31 +7,25 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\CheckboxFormat;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\CurrencyFormat;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\UrlFormat;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer
  *
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\ArrayProperty
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\CheckboxProperty
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\CurrencyProperty
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty
  */
-class SchemaDeserializerTest extends TestCase {
+class SchemaPersistenceDeserializerTest extends TestCase {
 
 	public function testThrowsExceptionWhenSchemaIsInvalid(): void {
 		$this->expectError();
-		$this->expectErrorMessage( 'Undefined array key "type"' );
+		$this->expectErrorMessage( 'Undefined array key "format"' );
 
 		$this->deserialize(
 			<<<JSON
@@ -47,28 +41,9 @@ JSON
 	}
 
 	private function deserialize( string $json ): Schema {
-		return ( new SchemaDeserializer() )->deserialize(
+		return ( new SchemaPersistenceDeserializer( NeoWikiExtension::getInstance()->getValueFormatLookup() ) )->deserialize(
 			new SchemaName( 'SchemaDeserializerTest' ),
 			$json
-		);
-	}
-
-	public function testThrowsExceptionWhenTypeAndFormatMismatch(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'BooleanProperty must have a boolean format' );
-
-		$this->deserialize(
-			<<<JSON
-{
-	"description": "Where are those TPS reports?",
-	"propertyDefinitions": {
-		"Is bankrupt": {
-			"type": "boolean",
-			"format": "currency"
-		}
-	}
-}
-JSON
 		);
 	}
 
@@ -80,28 +55,25 @@ JSON
 	"description": "Where are those TPS reports?",
 	"propertyDefinitions": {
 		"Operating revenue": {
-			"type": "number",
 			"format": "currency",
+			"currencyCode": "BTC",
 			"minimum": 0,
 			"maximum": 1337,
 			"required": true,
 			"default": 42
 		},
 		"Websites": {
-			"type": "string",
 			"format": "url",
 			"description": "Websites owned by the company",
 			"multiple": true
 		},
 		"Has product": {
-			"type": "relation",
 			"format": "relation",
-			"label": "Product",
+			"relation": "HasProduct",
 			"targetSchema": "Product",
 			"multiple": true
 		},
 		"Is bankrupt": {
-			"type": "boolean",
 			"format": "checkbox"
 		}
 	}
@@ -113,11 +85,10 @@ JSON
 		$this->assertSame( 'Where are those TPS reports?', $schema->getDescription() );
 
 		$this->assertEquals(
-			new NumberProperty(
-				format: CurrencyFormat::NAME,
-				description: '',
+			TestProperty::buildCurrency(
 				required: true,
 				default: 42,
+				currencyCode: 'BTC',
 				minimum: 0,
 				maximum: 1337
 			),
@@ -125,8 +96,7 @@ JSON
 		);
 
 		$this->assertEquals(
-			new StringProperty(
-				format: UrlFormat::NAME,
+			TestProperty::buildUrl(
 				description: 'Websites owned by the company',
 				required: false,
 				default: '',
@@ -136,11 +106,11 @@ JSON
 		);
 
 		$this->assertEquals(
-			new RelationProperty(
+			TestProperty::buildRelation(
 				description: '',
 				required: false,
 				default: null,
-				relationType: new RelationType( 'Has product' ),
+				relationType: new RelationType( 'HasProduct' ),
 				targetSchema: new SchemaName( 'Product' ),
 				multiple: true,
 			),
@@ -148,17 +118,16 @@ JSON
 		);
 
 		$this->assertEquals(
-			new BooleanProperty(
-				format: CheckboxFormat::NAME,
+			TestProperty::buildCheckbox(
 				description: '',
 				required: false,
-				default: null,
+				default: false,
 			),
 			$schema->getProperty( 'Is bankrupt' )
 		);
 	}
 
-	public function testDeserializeMinimalNumberProperty(): void {
+	public function testDeserializeMinimalCurrencyProperty(): void {
 		$schema = $this->deserialize(
 			<<<JSON
 {
@@ -166,8 +135,8 @@ JSON
 	"description": "Where are those TPS reports?",
 	"propertyDefinitions": {
 		"Operating revenue": {
-			"type": "number",
-			"format": "currency"
+			"format": "currency",
+			"currencyCode": "BTC"
 		}
 	}
 }
@@ -175,11 +144,11 @@ JSON
 		);
 
 		$this->assertEquals(
-			new NumberProperty(
-				format: CurrencyFormat::NAME,
-				description: '',
+			TestProperty::buildCurrency(
 				required: false,
 				default: null,
+				currencyCode: 'BTC',
+				precision: null,
 				minimum: null,
 				maximum: null
 			),
