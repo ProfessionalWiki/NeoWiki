@@ -5,9 +5,9 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats;
 
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatDefinition;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormat;
 
-class NumberFormat implements ValueFormatDefinition {
+class NumberFormat implements ValueFormat {
 
 	public const NAME = 'number';
 
