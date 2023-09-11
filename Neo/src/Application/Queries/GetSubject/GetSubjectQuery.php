@@ -24,7 +24,7 @@ class GetSubjectQuery {
 		bool $includePageIdentifiers,
 		bool $includeReferencedSubjects
 	): void {
-		$subject = $this->subjectLookup->getSubject( new SubjectId( $subjectId ) );
+		$subject = $this->subjectLookup->getSubject( new SubjectId( $subjectId ) ); // TODO: error handling on invalid ID
 
 		if ( $subject === null ) {
 			$this->presenter->presentSubjectNotFound();
