@@ -9,15 +9,15 @@ use InvalidArgumentException;
 class ValueFormatRegistry {
 
 	/**
-	 * @var array<string, ValueFormatDefinition> Keys are format names
+	 * @var array<string, ValueFormat> Keys are format names
 	 */
 	private array $formats = [];
 
-	public function registerFormat( ValueFormatDefinition $format ): void {
+	public function registerFormat( ValueFormat $format ): void {
 		$this->formats[$format->getFormatName()] = $format;
 	}
 
-	public function getFormat( string $formatName ): ValueFormatDefinition {
+	public function getFormat( string $formatName ): ValueFormat {
 		if ( !isset( $this->formats[$formatName] ) ) {
 			throw new InvalidArgumentException( "Unknown format: $formatName" );
 		}
