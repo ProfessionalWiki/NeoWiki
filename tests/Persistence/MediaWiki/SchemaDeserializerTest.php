@@ -13,7 +13,9 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\CheckboxFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\CurrencyFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\UrlFormat;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer;
 
 /**
@@ -112,7 +114,7 @@ JSON
 
 		$this->assertEquals(
 			new NumberProperty(
-				format: ValueFormat::Currency,
+				format: CurrencyFormat::NAME,
 				description: '',
 				required: true,
 				default: 42,
@@ -124,7 +126,7 @@ JSON
 
 		$this->assertEquals(
 			new StringProperty(
-				format: ValueFormat::Url,
+				format: UrlFormat::NAME,
 				description: 'Websites owned by the company',
 				required: false,
 				default: '',
@@ -147,7 +149,7 @@ JSON
 
 		$this->assertEquals(
 			new BooleanProperty(
-				format: ValueFormat::Checkbox,
+				format: CheckboxFormat::NAME,
 				description: '',
 				required: false,
 				default: null,
@@ -174,7 +176,7 @@ JSON
 
 		$this->assertEquals(
 			new NumberProperty(
-				format: ValueFormat::Currency,
+				format: CurrencyFormat::NAME,
 				description: '',
 				required: false,
 				default: null,

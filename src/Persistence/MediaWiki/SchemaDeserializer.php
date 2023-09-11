@@ -14,7 +14,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
 class SchemaDeserializer {
@@ -53,14 +52,14 @@ class SchemaDeserializer {
 	private function propertyDefinitionFromJson( array $property, string $propertyName ): PropertyDefinition {
 		return match ( ValueType::from( $property['type'] ) ) {
 			ValueType::Boolean => new BooleanProperty(
-				format: ValueFormat::from( $property['format'] ),
+				format: $property['format'],
 				description: $property['description'] ?? '',
 				required: $property['required'] ?? false,
 				default: $property['default'] ?? null,
 			),
 
 			ValueType::Number => new NumberProperty(
-				format: ValueFormat::from( $property['format'] ),
+				format: $property['format'],
 				description: $property['description'] ?? '',
 				required: $property['required'] ?? false,
 				default: $property['default'] ?? null,
@@ -73,12 +72,12 @@ class SchemaDeserializer {
 				required: $property['required'] ?? false,
 				default: $property['default'] ?? null,
 				relationType: new RelationType( $property['relation'] ?? $propertyName ),
-				targetSchema: new SchemaName( $property['targetSchema'] ?? '__UNDEFINED__' ),
+				targetSchema: new SchemaName( $property['targetSchema'] ?? '__UNDEFINED__' ), // TODO: throw exception if undefined? log warning?
 				multiple: $property['multiple'] ?? false,
 			),
 
 			ValueType::String => new StringProperty(
-				format: ValueFormat::from( $property['format'] ),
+				format: $property['format'],
 				description: $property['description'] ?? '',
 				required: $property['required'] ?? false,
 				default: $property['default'] ?? null,

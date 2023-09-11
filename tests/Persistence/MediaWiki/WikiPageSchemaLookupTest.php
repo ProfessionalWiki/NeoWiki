@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\UrlFormat;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
@@ -63,7 +63,7 @@ JSON
 
 		$this->assertEquals(
 			new StringProperty(
-				format: ValueFormat::Url,
+				format: UrlFormat::NAME,
 				description: 'Websites owned by the company',
 				required: false,
 				default: null,
