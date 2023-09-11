@@ -13,8 +13,10 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\CheckboxFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\NumberFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TextFormat;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
@@ -38,7 +40,7 @@ class SchemaSerializerTest extends TestCase {
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
 				'testBoolean' => new BooleanProperty(
-					format: ValueFormat::Checkbox,
+					format: CheckboxFormat::NAME,
 					description: 'Test boolean property',
 					required: true,
 					default: false
@@ -54,7 +56,7 @@ class SchemaSerializerTest extends TestCase {
 					'description' => 'Test boolean property',
 					'required' => true,
 					'default' => false,
-					'format' => ValueFormat::Checkbox,
+					'format' => CheckboxFormat::NAME,
 					'multiple' => false
 				]
 			]
@@ -69,7 +71,7 @@ class SchemaSerializerTest extends TestCase {
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
 				'testNumber' => new NumberProperty(
-					format: ValueFormat::Number,
+					format: NumberFormat::NAME,
 					description: 'Test number property',
 					required: false,
 					default: 0,
@@ -87,7 +89,7 @@ class SchemaSerializerTest extends TestCase {
 					'description' => 'Test number property',
 					'required' => false,
 					'default' => 0,
-					'format' => ValueFormat::Number,
+					'format' => NumberFormat::NAME,
 					'multiple' => false
 				]
 			]
@@ -116,14 +118,14 @@ class SchemaSerializerTest extends TestCase {
 			'description' => 'Test schema description',
 			'propertyDefinitions' => [
 				'testRelation' => [
-					'type' => ValueType::Relation,
+					'type' => 'relation',
 					'description' => 'Test relation property',
 					'required' => false,
 					'default' => null,
 					'relation' => 'testRelationType',
 					'targetSchema' => 'targetSchema',
 					'multiple' => false,
-					'format' => ValueFormat::Relation
+					'format' => 'relation'
 				]
 			]
 		] );
@@ -137,7 +139,7 @@ class SchemaSerializerTest extends TestCase {
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
 				'testString' => new StringProperty(
-					format: ValueFormat::Text,
+					format: TextFormat::NAME,
 					description: 'Test string property',
 					required: true,
 					default: 'default',
@@ -154,7 +156,7 @@ class SchemaSerializerTest extends TestCase {
 					'description' => 'Test string property',
 					'required' => true,
 					'default' => 'default',
-					'format' => ValueFormat::Text,
+					'format' => 'text',
 					'multiple' => false
 				]
 			]
