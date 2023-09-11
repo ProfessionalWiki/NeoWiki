@@ -10,7 +10,7 @@ abstract class PropertyDefinition {
 
 	public function __construct(
 		private readonly ValueType $type,
-		private readonly ValueFormat $format,
+		private readonly string $format,
 		private readonly string $description,
 		private readonly bool $required,
 		private readonly mixed $default,
@@ -21,7 +21,7 @@ abstract class PropertyDefinition {
 		return $this->type;
 	}
 
-	public function getFormat(): ValueFormat {
+	public function getFormat(): string {
 		return $this->format;
 	}
 

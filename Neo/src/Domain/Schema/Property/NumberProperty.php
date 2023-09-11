@@ -6,13 +6,15 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\CurrencyFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\NumberFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\ProgressFormat;
 
 class NumberProperty extends PropertyDefinition {
 
 	public function __construct(
-		ValueFormat $format,
+		string $format,
 		string $description,
 		bool $required,
 		?float $default,
@@ -29,13 +31,11 @@ class NumberProperty extends PropertyDefinition {
 		);
 	}
 
-	private function assertIsNumberFormat( ValueFormat $format ): void {
+	private function assertIsNumberFormat( string $format ): void {
 		if ( !in_array( $format, [
-			ValueFormat::Number,
-			ValueFormat::Percentage,
-			ValueFormat::Currency,
-			ValueFormat::Slider,
-			ValueFormat::Progress
+			NumberFormat::NAME,
+			CurrencyFormat::NAME,
+			ProgressFormat::NAME
 		] ) ) {
 			throw new InvalidArgumentException( 'NumberProperty must have a number format' );
 		}

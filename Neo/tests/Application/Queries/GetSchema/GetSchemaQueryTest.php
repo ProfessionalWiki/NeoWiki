@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\ValueFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TextFormat;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
@@ -43,7 +43,7 @@ class GetSchemaQueryTest extends TestCase {
 			description: 'test',
 			properties: new PropertyDefinitions( [
 				'property1' => new StringProperty(
-					ValueFormat::Text,
+					TextFormat::NAME,
 					'A string property',
 					false,
 					null,

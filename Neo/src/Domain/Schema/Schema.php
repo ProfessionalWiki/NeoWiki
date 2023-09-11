@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
 use OutOfBoundsException;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
 
 class Schema {
 
@@ -36,7 +37,7 @@ class Schema {
 
 	public function isRelationProperty( string $name ): bool {
 		return $this->hasProperty( $name )
-			&& $this->properties->getProperty( $name )->getFormat() === ValueFormat::Relation;
+			&& $this->properties->getProperty( $name )->getFormat() === RelationFormat::NAME;
 	}
 
 	public function getRelationProperties(): PropertyDefinitions {
