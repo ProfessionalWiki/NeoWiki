@@ -2,31 +2,30 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\Tests\Presentation;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\CheckboxFormat;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\NumberFormat;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TextFormat;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaDeserializer;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaSerializer;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
-class SchemaSerializerTest extends TestCase {
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer
+ */
+class SchemaPresentationSerializerTest extends TestCase {
 
-	private SchemaSerializer $serializer;
+	private SchemaPresentationSerializer $serializer;
 
 	protected function setUp(): void {
-		$this->serializer = new SchemaSerializer();
+		$this->serializer = NeoWikiExtension::getInstance()->getPersistenceSchemaSerializer();
 	}
 
 	private function assertSerializesTo( string $expectedJson, Schema $schema ): void {
@@ -39,8 +38,7 @@ class SchemaSerializerTest extends TestCase {
 			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
-				'testBoolean' => new BooleanProperty(
-					format: CheckboxFormat::NAME,
+				'testBoolean' => TestProperty::buildCheckbox(
 					description: 'Test boolean property',
 					required: true,
 					default: false
@@ -52,12 +50,10 @@ class SchemaSerializerTest extends TestCase {
 			'description' => 'Test schema description',
 			'propertyDefinitions' => [
 				'testBoolean' => [
-					'type' => ValueType::Boolean,
 					'description' => 'Test boolean property',
 					'required' => true,
 					'default' => false,
 					'format' => CheckboxFormat::NAME,
-					'multiple' => false
 				]
 			]
 		] );
@@ -70,8 +66,7 @@ class SchemaSerializerTest extends TestCase {
 			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
-				'testNumber' => new NumberProperty(
-					format: NumberFormat::NAME,
+				'testNumber' => TestProperty::buildNumber(
 					description: 'Test number property',
 					required: false,
 					default: 0,
@@ -85,12 +80,13 @@ class SchemaSerializerTest extends TestCase {
 			'description' => 'Test schema description',
 			'propertyDefinitions' => [
 				'testNumber' => [
-					'type' => ValueType::Number,
 					'description' => 'Test number property',
 					'required' => false,
 					'default' => 0,
 					'format' => NumberFormat::NAME,
-					'multiple' => false
+					'maximum' => null,
+					'minimum' => null,
+					'precision' => null,
 				]
 			]
 		] );
@@ -103,7 +99,7 @@ class SchemaSerializerTest extends TestCase {
 			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
-				'testRelation' => new RelationProperty(
+				'testRelation' => TestProperty::buildRelation(
 					description: 'Test relation property',
 					required: false,
 					default: null,
@@ -118,7 +114,6 @@ class SchemaSerializerTest extends TestCase {
 			'description' => 'Test schema description',
 			'propertyDefinitions' => [
 				'testRelation' => [
-					'type' => 'relation',
 					'description' => 'Test relation property',
 					'required' => false,
 					'default' => null,
@@ -138,12 +133,11 @@ class SchemaSerializerTest extends TestCase {
 			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
-				'testString' => new StringProperty(
-					format: TextFormat::NAME,
+				'testString' => TestProperty::buildText(
 					description: 'Test string property',
 					required: true,
 					default: 'default',
-					multiple: false
+					multiple: false,
 				)
 			] )
 		);
@@ -152,12 +146,12 @@ class SchemaSerializerTest extends TestCase {
 			'description' => 'Test schema description',
 			'propertyDefinitions' => [
 				'testString' => [
-					'type' => ValueType::String,
 					'description' => 'Test string property',
 					'required' => true,
 					'default' => 'default',
 					'format' => 'text',
-					'multiple' => false
+					'multiple' => false,
+					'uniqueItems' => false,
 				]
 			]
 		] );
@@ -171,7 +165,7 @@ class SchemaSerializerTest extends TestCase {
 	public function testSchemaIntegrityAfterRoundTripSerialization( string $schemaName, string $originalSchemaJson ): void {
 		$originalSchemaArray = json_decode( $originalSchemaJson, true );
 
-		$deserializer = new SchemaDeserializer();
+		$deserializer = new SchemaPersistenceDeserializer( NeoWikiExtension::getInstance()->getValueFormatLookup() );
 		$originalSchema = $deserializer->deserialize( new SchemaName( $schemaName ), json_encode( $originalSchemaArray ) );
 
 		$serialized = $this->serializer->serialize( $originalSchema );
@@ -182,7 +176,7 @@ class SchemaSerializerTest extends TestCase {
 	}
 
 	public function exampleSchemaProvider(): iterable {
-		$dir = new \DirectoryIterator( __DIR__ . '/../../../DemoData/Schema' );
+		$dir = new \DirectoryIterator( __DIR__ . '/../../DemoData/Schema' );
 
 		foreach ( $dir as $fileinfo ) {
 			if ( !$fileinfo->isDot() && $fileinfo->getExtension() === 'json' ) {
