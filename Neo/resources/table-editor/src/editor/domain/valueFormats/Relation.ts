@@ -24,7 +24,7 @@ export interface RelationProperty extends PropertyDefinition {
 	readonly relation: string;
 	readonly targetSchema: string;
 	readonly multiple?: boolean;
-	readonly uniqueItems?: boolean;
+	readonly uniqueItems?: boolean; // TODO: remove
 
 }
 

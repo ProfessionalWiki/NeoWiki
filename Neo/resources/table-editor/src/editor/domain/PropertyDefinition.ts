@@ -32,8 +32,8 @@ export interface PropertyDefinition {
 export interface MultiStringProperty extends PropertyDefinition {
 
 	readonly type: ValueType.String;
-	readonly multiple?: boolean;
-	readonly uniqueItems?: boolean;
+	readonly multiple?: boolean; // TODO: this should be required
+	readonly uniqueItems?: boolean; // TODO: this should be required
 
 }
 

@@ -8,6 +8,7 @@ import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import type { TextProperty } from '@/editor/domain/valueFormats/Text';
 
 export interface TimeProperty extends MultiStringProperty {
+	// TODO: allow multiple values? Date and DateTime do not, neither does PHP
 }
 
 export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui.InputWidget> {
