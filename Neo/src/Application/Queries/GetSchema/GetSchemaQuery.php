@@ -6,14 +6,14 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSchema;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaSerializer;
+use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 
 class GetSchemaQuery {
 
 	public function __construct(
 		private GetSchemaPresenter $presenter,
 		private SchemaLookup $schemaLookup,
-		private SchemaSerializer $serializer
+		private SchemaPresentationSerializer $serializer
 	) {
 	}
 

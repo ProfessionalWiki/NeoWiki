@@ -4,9 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\ValueFormat;
 
-use InvalidArgumentException;
+use OutOfBoundsException;
 
-class ValueFormatRegistry {
+class ValueFormatRegistry implements ValueFormatLookup {
 
 	/**
 	 * @var array<string, ValueFormat> Keys are format names
@@ -17,12 +17,21 @@ class ValueFormatRegistry {
 		$this->formats[$format->getFormatName()] = $format;
 	}
 
-	public function getFormat( string $formatName ): ValueFormat {
-		if ( !isset( $this->formats[$formatName] ) ) {
-			throw new InvalidArgumentException( "Unknown format: $formatName" );
+	public function getFormat( string $formatName ): ?ValueFormat {
+		return $this->formats[$formatName] ?? null;
+	}
+
+	/**
+	 * @throws OutOfBoundsException
+	 */
+	public function getFormatOrThrow( string $formatName ): ValueFormat {
+		$format = $this->getFormat( $formatName );
+
+		if ( $format === null ) {
+			throw new OutOfBoundsException( "Unknown format: $formatName" );
 		}
 
-		return $this->formats[$formatName];
+		return $format;
 	}
 
 }

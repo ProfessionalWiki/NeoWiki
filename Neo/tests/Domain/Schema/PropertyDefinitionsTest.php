@@ -16,10 +16,10 @@ class PropertyDefinitionsTest extends TestCase {
 
 	public function testFilter(): void {
 		$properties = [
-			'p1' => TestProperty::buildString( description: 'foo' ),
-			'p2' => TestProperty::buildString( description: 'bar' ),
-			'p3' => TestProperty::buildString( description: 'foo' ),
-			'p4' => TestProperty::buildString( description: 'bar' ),
+			'p1' => TestProperty::buildText( description: 'foo' ),
+			'p2' => TestProperty::buildText( description: 'bar' ),
+			'p3' => TestProperty::buildText( description: 'foo' ),
+			'p4' => TestProperty::buildText( description: 'bar' ),
 		];
 
 		$propertyDefinitions = new PropertyDefinitions( $properties );
