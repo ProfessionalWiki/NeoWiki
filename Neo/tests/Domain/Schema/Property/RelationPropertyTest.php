@@ -2,11 +2,13 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Domain\Property\Schema;
+namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 
 /**
@@ -14,13 +16,15 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
  * @covers \ProfessionalWiki\NeoWiki\Domain\Relation\RelationType
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition
  */
-class RelationPropertyTest extends TestCase {
+class RelationPropertyTest extends PropertyTestCase {
 
 	public function testGetters(): void {
 		$property = new RelationProperty(
-			description: 'foo',
-			required: true,
-			default: null,
+			core: new PropertyCore(
+				description: 'foo',
+				required: true,
+				default: null
+			),
 			relationType: new RelationType( 'Type' ),
 			targetSchema: new SchemaName( 'Schema' ),
 			multiple: true
@@ -31,7 +35,101 @@ class RelationPropertyTest extends TestCase {
 		$this->assertNull( $property->getDefault() );
 		$this->assertSame( 'Type', $property->getRelationType()->getText() );
 		$this->assertSame( 'Schema', $property->getTargetSchema()->getText() );
-		$this->assertTrue( $property->isMultiple() );
+		$this->assertTrue( $property->allowsMultipleValues() );
+	}
+
+	public function testMinimalSerialization(): void {
+		$this->assertJsonStringEqualsJsonString(
+			<<<JSON
+{
+	"format": "relation",
+	"description": "",
+	"required": false,
+	"default": null,
+	"relation": "type",
+	"targetSchema": "schema",
+	"multiple": false
+}
+JSON,
+			$this->deserializeAndReserialize(
+				<<<JSON
+{
+	"format": "relation",
+	"relation": "type",
+	"targetSchema": "schema"
+}
+JSON
+			)
+		);
+	}
+
+	public function testFullSerializationWithChangedValuesIsStable(): void {
+		$this->assertSerializationDoesNotChange(
+			<<<JSON
+{
+	"format": "relation",
+	"description": "foo",
+	"required": true,
+	"default": null,
+	"relation": "type",
+	"targetSchema": "schema",
+	"multiple": true
+}
+JSON
+		);
+	}
+
+	public function testFullSerializationWithDefaultValuesIsStable(): void {
+		$this->assertSerializationDoesNotChange(
+			<<<JSON
+{
+	"format": "relation",
+	"description": "",
+	"required": false,
+	"default": null,
+	"relation": "type",
+	"targetSchema": "schema",
+	"multiple": false
+}
+JSON
+		);
+	}
+
+	public function testExceptionOnMissingRelationType(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->fromJson(
+			<<<JSON
+{
+	"format": "relation",
+	"targetSchema": "schema"
+}
+JSON
+		);
+	}
+
+	public function testExceptionOnMissingTargetSchema(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->fromJson(
+			<<<JSON
+{
+	"format": "relation",
+	"relation": "type"
+}
+JSON
+		);
+	}
+
+	public function testExceptionOnInvalidTargetSchema(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->fromJson(
+			<<<JSON
+{
+	"format": "relation",
+	"relation": "type",
+	"targetSchema": ""
+}
+JSON
+		);
 	}
 
 }

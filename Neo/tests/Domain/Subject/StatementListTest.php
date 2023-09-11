@@ -31,9 +31,9 @@ class StatementListTest extends TestCase {
 	private function newSchemaWithSomeRelations(): Schema {
 		return TestSchema::build(
 			properties: new PropertyDefinitions( [
-				'string1' => TestProperty::buildString(),
+				'string1' => TestProperty::buildText(),
 				'relation1' => TestProperty::buildRelation( relationType: 'Type1', targetSchema: 'Schema1' ),
-				'string2' => TestProperty::buildString(),
+				'string2' => TestProperty::buildText(),
 				'relation2' => TestProperty::buildRelation( relationType: 'Type2', targetSchema: 'Schema2', multiple: true ),
 			] )
 		);

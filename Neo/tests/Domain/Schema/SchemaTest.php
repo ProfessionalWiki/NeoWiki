@@ -17,7 +17,7 @@ class SchemaTest extends TestCase {
 
 	public function testPropertyExists(): void {
 		$schema = $this->newSchemaWithProperties( [
-			'name' => TestProperty::buildString(),
+			'name' => TestProperty::buildText(),
 		] );
 
 		$this->assertTrue( $schema->hasProperty( 'name' ) );
@@ -34,7 +34,7 @@ class SchemaTest extends TestCase {
 
 	public function testIsRelationProperty(): void {
 		$schema = $this->newSchemaWithProperties( [
-			'name' => TestProperty::buildString(),
+			'name' => TestProperty::buildText(),
 			'ceo' => TestProperty::buildRelation(),
 		] );
 
@@ -47,9 +47,9 @@ class SchemaTest extends TestCase {
 		$barProperty = TestProperty::buildRelation( targetSchema: new SchemaName( 'Tomato' ) );
 
 		$schema = $this->newSchemaWithProperties( [
-			'name' => TestProperty::buildString(),
+			'name' => TestProperty::buildText(),
 			'ceo' => $ceoProperty,
-			'foo' => TestProperty::buildString(),
+			'foo' => TestProperty::buildText(),
 			'bar' => $barProperty,
 		] );
 

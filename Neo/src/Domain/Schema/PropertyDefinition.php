@@ -4,45 +4,74 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
-use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
+use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatLookup;
 
 abstract class PropertyDefinition {
 
 	public function __construct(
-		private readonly ValueType $type,
-		private readonly string $format,
-		private readonly string $description,
-		private readonly bool $required,
-		private readonly mixed $default,
+		private readonly PropertyCore $core,
 	) {
 	}
 
-	public function getType(): ValueType {
-		return $this->type;
-	}
-
-	public function getFormat(): string {
-		return $this->format;
-	}
+	abstract public function getFormat(): string;
 
 	public function getDescription(): string {
-		return $this->description;
+		return $this->core->description;
 	}
 
 	public function isRequired(): bool {
-		return $this->required;
+		return $this->core->required;
 	}
 
 	public function getDefault(): mixed {
-		return $this->default;
+		return $this->core->default;
 	}
 
 	public function hasDefault(): bool {
-		return $this->default !== null;
+		return $this->core->default !== null;
 	}
 
-	public function isMultiple(): bool {
+	public function allowsMultipleValues(): bool {
 		return false;
+	}
+
+	public function toJson(): array {
+		return array_merge(
+			[
+				'format' => $this->getFormat(),
+				'description' => $this->getDescription(),
+				'required' => $this->isRequired(),
+				'default' => $this->getDefault(),
+			],
+			$this->nonCoreToJson()
+		);
+	}
+
+	abstract protected function nonCoreToJson(): array;
+
+	/**
+	 * @throws InvalidArgumentException
+	 */
+	public static function fromJson( array $json, ValueFormatLookup $formatLookup ): self {
+		$format = $formatLookup->getFormat( $json['format'] );
+
+		if ( $format === null ) {
+			throw new InvalidArgumentException( 'Unknown format: ' . $json['format'] );
+		}
+
+		$propertyCore = new PropertyCore(
+			description: $json['description'] ?? '',
+			required: $json['required'] ?? false,
+			default: $json['default'] ?? null
+		);
+
+		try{
+			return $format->buildPropertyDefinitionFromJson( $propertyCore, $json );
+		}
+		catch ( \Throwable $e ) {
+			throw new InvalidArgumentException( 'Invalid property definition: ' . json_encode( $json ), 0, $e );
+		}
 	}
 
 }

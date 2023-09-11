@@ -5,34 +5,39 @@ declare( strict_types=1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Queries\GetSchema;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\StringProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TextFormat;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaSerializer;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery
+ */
 class GetSchemaQueryTest extends TestCase {
+
 	private InMemorySchemaLookup $schemaLookup;
+	private GetSchemaPresenterSpy $presenter;
 
 	protected function setUp(): void {
 		$this->schemaLookup = new InMemorySchemaLookup();
+		$this->presenter = new GetSchemaPresenterSpy();
 	}
 
 	public function testExecuteWhenSchemaNotFound(): void {
-		$schemaName = 'testId';
+		$this->newGetSchemaQuery()->execute( 'doesNotExist' );
 
-		$presenter = $this->getSpyPresenter();
-		$serializer = new SchemaSerializer();
+		$this->assertTrue( $this->presenter->notFound );
+	}
 
-		$getSchemaQuery = new GetSchemaQuery( $presenter, $this->schemaLookup, $serializer );
-
-		$getSchemaQuery->execute( $schemaName );
-
-		$this->assertTrue( $presenter->notFound );
+	private function newGetSchemaQuery(): GetSchemaQuery {
+		return new GetSchemaQuery(
+			$this->presenter,
+			$this->schemaLookup,
+			NeoWikiExtension::getInstance()->getPersistenceSchemaSerializer()
+		);
 	}
 
 	public function testExecuteWithCompleteSchema(): void {
@@ -42,56 +47,38 @@ class GetSchemaQueryTest extends TestCase {
 			name: new SchemaName( $schemaName ),
 			description: 'test',
 			properties: new PropertyDefinitions( [
-				'property1' => new StringProperty(
-					TextFormat::NAME,
-					'A string property',
-					false,
-					null,
-					false
+				'property1' => TestProperty::buildText(
+					description: 'A string property',
+					required: false,
+					default: null,
+					multiple: false
 				)
 			] )
 		);
 
 		$this->schemaLookup->updateSchema( $schema );
-		$presenter = $this->getSpyPresenter();
-		$serializer = new SchemaSerializer();
 
-		$getSchemaQuery = new GetSchemaQuery( $presenter, $this->schemaLookup, $serializer );
+		$this->newGetSchemaQuery()->execute( $schemaName );
 
-		$getSchemaQuery->execute( $schemaName );
-
-		$expectedSchemaJson = <<<JSON
+		$this->assertJsonStringEqualsJsonString(
+			<<<JSON
 {
     "description": "test",
     "propertyDefinitions": {
         "property1": {
-            "type": "string",
+            "format": "text",
             "description": "A string property",
             "required": false,
             "default": null,
             "multiple": false,
-            "format": "text"
+            "uniqueItems": false
         }
     }
 }
-JSON;
-
-		$this->assertJsonStringEqualsJsonString( $expectedSchemaJson, $presenter->schemaJson );
-	}
-
-	private function getSpyPresenter(): GetSchemaPresenter {
-		return new class implements GetSchemaPresenter {
-			public string $schemaJson = '';
-			public bool $notFound = false;
-
-			public function presentSchema( string $json ): void {
-				$this->schemaJson = $json;
-			}
-
-			public function presentSchemaNotFound(): void {
-				$this->notFound = true;
-			}
-		};
+JSON
+			,
+			$this->presenter->schemaJson
+		);
 	}
 
 }

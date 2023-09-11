@@ -6,12 +6,13 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\NumberFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\CurrencyFormat;
 
-class NumberProperty extends PropertyDefinition {
+class CurrencyProperty extends PropertyDefinition {
 
 	public function __construct(
 		PropertyCore $core,
+		private readonly string $currencyCode,
 		private readonly float|int|null $precision,
 		private readonly float|int|null $minimum,
 		private readonly float|int|null $maximum,
@@ -21,7 +22,11 @@ class NumberProperty extends PropertyDefinition {
 	}
 
 	public function getFormat(): string {
-		return NumberFormat::NAME;
+		return CurrencyFormat::NAME;
+	}
+
+	public function getCurrencyCode(): string {
+		return $this->currencyCode;
 	}
 
 	public function getPrecision(): float|int|null {
@@ -51,6 +56,7 @@ class NumberProperty extends PropertyDefinition {
 	public static function fromPartialJson( PropertyCore $core, array $property ): self {
 		return new self(
 			core: $core,
+			currencyCode: $property['currencyCode'],
 			precision: $property['precision'] ?? null,
 			minimum: $property['minimum'] ?? null,
 			maximum: $property['maximum'] ?? null,
@@ -59,6 +65,7 @@ class NumberProperty extends PropertyDefinition {
 
 	public function nonCoreToJson(): array {
 		return [
+			'currencyCode' => $this->getCurrencyCode(),
 			'precision' => $this->getPrecision(),
 			'minimum' => $this->getMinimum(),
 			'maximum' => $this->getMaximum(),
