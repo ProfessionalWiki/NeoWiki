@@ -91,6 +91,12 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui
 
 		return column;
 	}
+
+	public getFormatAttributes(): string[] {
+		return [
+			'required'
+		];
+	}
 }
 
 export function isValidTime( time: string ): boolean {

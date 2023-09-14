@@ -43,4 +43,10 @@ export class DateFormat extends BaseValueFormat<DateProperty, StringValue, OO.ui
 			errorMessage: undefined
 		};
 	}
+
+	public getFormatAttributes(): string[] {
+		return [
+			'required'
+		];
+	}
 }

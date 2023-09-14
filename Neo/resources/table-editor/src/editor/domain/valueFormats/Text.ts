@@ -51,6 +51,14 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui
 
 		return column;
 	}
+
+	public getFormatAttributes(): string[] {
+		return [
+			'required',
+			'default',
+			'multiple'
+		];
+	}
 }
 
 export function newTextProperty( name = 'MyTextProperty', multiple = false, format = TextFormat.formatName ): TextProperty {

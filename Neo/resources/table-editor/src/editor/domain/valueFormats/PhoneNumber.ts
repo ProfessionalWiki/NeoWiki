@@ -66,6 +66,14 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 
 		return column;
 	}
+
+	public getFormatAttributes(): string[] {
+		return [
+			'required',
+			'default',
+			'multiple'
+		];
+	}
 }
 
 export function isValidPhoneNumber( phoneNumber: string ): boolean {

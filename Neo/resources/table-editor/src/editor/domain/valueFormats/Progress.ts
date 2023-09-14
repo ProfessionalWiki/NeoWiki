@@ -66,4 +66,13 @@ export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValu
 
 		return column;
 	}
+
+	public getFormatAttributes(): string[] {
+		return [
+			'required',
+			'minimum',
+			'maximum',
+			'precision'
+		];
+	}
 }

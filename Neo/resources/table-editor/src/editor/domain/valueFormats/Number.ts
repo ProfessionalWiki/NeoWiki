@@ -78,6 +78,15 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, N
 		};
 	}
 
+	public getFormatAttributes(): string[] {
+		return [
+			'required',
+			'minimum',
+			'maximum',
+			'precision'
+		];
+	}
+
 }
 
 export function newNumberProperty( name = 'MyNumberProperty' ): NumberProperty {

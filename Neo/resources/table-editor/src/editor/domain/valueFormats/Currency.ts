@@ -80,4 +80,14 @@ export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValu
 			errorMessage: isValid ? undefined : ( field.$input[ 0 ] as HTMLInputElement ).validationMessage
 		};
 	}
+
+	public getFormatAttributes(): string[] {
+		return [
+			'required',
+			'minimum',
+			'maximum',
+			'precision',
+			'currencyCode'
+		];
+	}
 }
