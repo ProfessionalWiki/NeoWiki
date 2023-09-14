@@ -5,7 +5,6 @@ import { newStringValue, ValueType } from '@/editor/domain/Value';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { MultipleTextInputWidget } from '@/editor/presentation/Widgets/MultipleTextInputWidgetFactory';
-import type { CheckboxProperty } from '@/editor/domain/valueFormats/Checkbox';
 
 export class ValueFormatRegistry {
 
