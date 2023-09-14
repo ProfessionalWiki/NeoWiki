@@ -45,4 +45,10 @@ export class DateTimeFormat extends BaseValueFormat<DateTimeProperty, StringValu
 			errorMessage: undefined
 		};
 	}
+
+	public getFormatAttributes(): string[] {
+		return [
+			'required'
+		];
+	}
 }

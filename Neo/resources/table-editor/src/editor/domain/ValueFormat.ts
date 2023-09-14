@@ -5,6 +5,7 @@ import { newStringValue, ValueType } from '@/editor/domain/Value';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { MultipleTextInputWidget } from '@/editor/presentation/Widgets/MultipleTextInputWidgetFactory';
+import type { CheckboxProperty } from '@/editor/domain/valueFormats/Checkbox';
 
 export class ValueFormatRegistry {
 
@@ -22,6 +23,10 @@ export class ValueFormatRegistry {
 		}
 
 		return format;
+	}
+
+	public getFormatNames(): string[] {
+		return Array.from( this.propertyTypes.keys() );
 	}
 
 }
@@ -45,6 +50,8 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 	public abstract createFormField( value: V | undefined, property: T ): OO.ui.Widget;
 
 	public abstract getFieldData( field: F, property: T ): Promise<FieldData>;
+
+	public abstract getFormatAttributes(): string[];
 
 	public createTableEditorColumn( property: T ): ColumnDefinition {
 		return {

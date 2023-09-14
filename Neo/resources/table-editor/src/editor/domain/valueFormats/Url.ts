@@ -94,6 +94,14 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMult
 		return column;
 	}
 
+	public getFormatAttributes(): string[] {
+		return [
+			'required',
+			'default',
+			'multiple'
+		];
+	}
+
 }
 
 export class UrlFormatter {

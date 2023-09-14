@@ -95,6 +95,15 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		return column;
 	}
 
+	public getFormatAttributes(): string[] {
+		return [
+			'required',
+			'relation',
+			'targetSchema',
+			'multiple'
+		];
+	}
+
 }
 
 class RelationServicesFactory {

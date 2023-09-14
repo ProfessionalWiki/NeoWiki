@@ -78,6 +78,14 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, Tag
 
 		return column;
 	}
+
+	public getFormatAttributes(): string[] {
+		return [
+			'required',
+			'default',
+			'multiple'
+		];
+	}
 }
 
 export function isValidEmail( email: string ): boolean {

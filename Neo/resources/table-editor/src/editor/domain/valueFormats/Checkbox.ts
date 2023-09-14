@@ -36,4 +36,10 @@ export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanVal
 			errorMessage: undefined
 		};
 	}
+
+	public getFormatAttributes(): string[] {
+		return [
+			'required'
+		];
+	}
 }
