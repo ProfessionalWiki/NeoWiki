@@ -20,6 +20,7 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 
 	public function __construct(
 		private readonly ClientInterface $client,
+		private readonly ClientInterface $readOnlyClient,
 		private readonly SchemaLookup $schemaRepository,
 		private LoggerInterface $logger
 	) {
@@ -155,7 +156,7 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 	}
 
 	public function runReadQuery( string $cypher ): SummarizedResult {
-		return $this->client->readTransaction(
+		return $this->readOnlyClient->readTransaction(
 			function ( TransactionInterface $transaction ) use ( $cypher ): SummarizedResult {
 				return $transaction->run( $cypher );
 			}
