@@ -25,7 +25,10 @@ class ParserFunctionRunCypherPresenter implements RunCypherPresenter {
 	}
 
 	public function presentError( RunCypherError $error ): void {
-		$this->html = 'Cypher query is missing'; // TODO
+		$this->html = match( $error ) {
+			RunCypherError::NOT_A_READ_QUERY => 'Cypher query is not read-only',
+			default => 'Cypher query is missing' // TODO
+		};
 	}
 
 	public function presentSummarizedResult( SummarizedResult $result ): void {
