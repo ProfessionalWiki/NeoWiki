@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherMap;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -44,6 +45,7 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 	private function newQueryStore(): Neo4jQueryStore {
 		return new Neo4jQueryStore(
 			NeoWikiExtension::getInstance()->getNeo4jClient(),
+			NeoWikiExtension::getInstance()->getReadOnlyNeo4jClient(),
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
 			),
@@ -195,6 +197,34 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 		yield [ '20230726163439', '2023-07-26T16:34:39' ];
 		yield [ '20230101000000', '2023-01-01T00:00:00' ];
 		yield [ 'invalid', '' ];
+	}
+
+	public function testRunReadQueryDoesNotDeleteNodes(): void {
+		$store = $this->newQueryStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::GUID_2 ),
+				TestSubject::build( id: self::GUID_3 ),
+			)
+		) );
+
+		$this->expectException( Neo4jException::class );
+		$this->expectExceptionMessage( "Delete relationship with type 'HasSubject' on database 'neo4j' is not allowed for user 'mediawiki_read' with roles [PUBLIC, reader]." );
+
+		$store->runReadQuery( 'MATCH (n) DETACH DELETE n' );
+
+		$this->assertPageHasSubjects(
+			[
+				[ 'id' => self::GUID_1, 'hs' => [ 'isMain' => true ] ],
+				[ 'id' => self::GUID_2, 'hs' => [ 'isMain' => false ] ],
+				[ 'id' => self::GUID_3, 'hs' => [ 'isMain' => false ] ]
+			],
+			42,
+			$store
+		);
 	}
 
 }
