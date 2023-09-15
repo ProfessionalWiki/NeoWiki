@@ -52,10 +52,15 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 		return NeoWikiExtension::getInstance()->getNeo4jClient();
 	}
 
+	private function getReadOnlyClient(): ClientInterface {
+		return NeoWikiExtension::getInstance()->getReadOnlyNeo4jClient();
+	}
+
 	public function testFindsIdOfPage(): void {
 		$client = $this->getClient();
 		$queryStore = new Neo4jQueryStore(
 			$client,
+			$this->getReadOnlyClient(),
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
 			),
