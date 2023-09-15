@@ -41,7 +41,10 @@ class MediaWikiHooks {
 	}
 
 	public static function onContentHandlerDefaultModelFor( Title $title, ?string &$model ): void {
-		if ( str_ends_with( $title->getText(), '.query' ) ) {
+		if (
+			NeoWikiExtension::getInstance()->isDevelopmentUIEnabled()
+			&& str_ends_with( $title->getText(), '.query' )
+		) {
 			$model = CypherContent::CONTENT_MODEL_ID;
 		}
 	}
