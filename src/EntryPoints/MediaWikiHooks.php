@@ -14,6 +14,7 @@ use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\User\UserIdentity;
 use OutputPage;
 use Parser;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\BlocksContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\CypherContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -34,6 +35,12 @@ class MediaWikiHooks {
 				$registry->defineRoleWithModel(
 					role: MediaWikiSubjectRepository::SLOT_NAME,
 					model: SubjectContent::CONTENT_MODEL_ID,
+					layout: [ 'display' => 'none' ]
+				);
+
+				$registry->defineRoleWithModel(
+					role: 'blocks',
+					model: BlocksContent::CONTENT_MODEL_ID,
 					layout: [ 'display' => 'none' ]
 				);
 			}
