@@ -35,7 +35,7 @@ class PageContentSource {
 					continue;
 				}
 
-				$pageContent[pathinfo( $fileInfo->getFilename(), PATHINFO_FILENAME )] = $this->getFileContent( $fileInfo->getRealPath() );
+				$pageContent[$fileInfo->getFilename()] = $this->getFileContent( $fileInfo->getRealPath() );
 			}
 		}
 
