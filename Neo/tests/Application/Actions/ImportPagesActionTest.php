@@ -72,7 +72,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 
 		$this->pageContentSource->method( 'getPageContentStrings' )->willReturn(
 			[
-				'PageOne' => 'Whatever wikitext',
+				'PageOne.wikitext' => 'Whatever wikitext',
 			]
 		);
 
