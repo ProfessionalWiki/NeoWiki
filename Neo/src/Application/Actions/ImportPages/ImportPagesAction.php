@@ -9,6 +9,7 @@ use Content;
 use MediaWiki\Extension\Scribunto\ScribuntoContent;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\BlocksContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use RuntimeException;
@@ -47,10 +48,12 @@ class ImportPagesAction {
 		}
 
 		foreach ( $this->pageContentSource->getPageContentStrings() as $fileName => $sourceText ) {
+			$slotName = $this->fileNameToSlotName( $fileName );
+
 			$this->createPage(
-				pathinfo( $fileName, PATHINFO_FILENAME ),
+				explode( '.', $fileName )[0],
 				[
-					'main' => $this->fileNameAndSourceToContent( $fileName, $sourceText ),
+					$slotName => $this->fileNameAndSourceToContent( $fileName, $sourceText ),
 				]
 			);
 		}
@@ -58,9 +61,17 @@ class ImportPagesAction {
 		$this->presenter->presentDone();
 	}
 
+	private function fileNameToSlotName( string $fileName ): string {
+		return str_ends_with( $fileName, '.blocks.json' ) ? BlocksContent::SLOT_NAME : 'main';
+	}
+
 	private function fileNameAndSourceToContent( string $fileName, string $sourceText ): Content {
 		if ( str_ends_with( $fileName, '.wikitext' ) ) {
 			return new WikitextContent( $sourceText );
+		}
+
+		if ( str_ends_with( $fileName, '.blocks.json' ) ) {
+			return new BlocksContent( $sourceText );
 		}
 
 		if ( str_starts_with( $fileName, 'Module:' ) ) {
