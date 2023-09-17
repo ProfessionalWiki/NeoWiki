@@ -39,7 +39,7 @@ class MediaWikiHooks {
 				);
 
 				$registry->defineRoleWithModel(
-					role: 'blocks',
+					role: BlocksContent::SLOT_NAME,
 					model: BlocksContent::CONTENT_MODEL_ID,
 					layout: [ 'display' => 'none' ]
 				);
