@@ -11,6 +11,7 @@ use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use RuntimeException;
 use WikitextContent;
 
 class ImportPagesAction {
@@ -45,18 +46,28 @@ class ImportPagesAction {
 			);
 		}
 
-		foreach ( $this->pageContentSource->getPageContentStrings() as $pageName => $sourceText ) {
-			$content = str_starts_with( $pageName, 'Module:' ) ? new ScribuntoContent( $sourceText ) : new WikitextContent( $sourceText );
-
+		foreach ( $this->pageContentSource->getPageContentStrings() as $fileName => $sourceText ) {
 			$this->createPage(
-				$pageName,
+				pathinfo( $fileName, PATHINFO_FILENAME ),
 				[
-					'main' => $content,
+					'main' => $this->fileNameAndSourceToContent( $fileName, $sourceText ),
 				]
 			);
 		}
 
 		$this->presenter->presentDone();
+	}
+
+	private function fileNameAndSourceToContent( string $fileName, string $sourceText ): Content {
+		if ( str_ends_with( $fileName, '.wikitext' ) ) {
+			return new WikitextContent( $sourceText );
+		}
+
+		if ( str_starts_with( $fileName, 'Module:' ) ) {
+			return new ScribuntoContent( $sourceText );
+		}
+
+		throw new RuntimeException( "Could not import file '$fileName'" );
 	}
 
 	/**
