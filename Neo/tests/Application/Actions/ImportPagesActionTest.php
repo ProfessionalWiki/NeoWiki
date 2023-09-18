@@ -5,14 +5,13 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Page\WikiPageFactory;
-use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPagesAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\PageContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageData;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use WikitextContent;
 
 /**
@@ -22,8 +21,6 @@ use WikitextContent;
 class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 
 	private ImportPresenter $presenter;
-	private Authority $performer;
-	private WikiPageFactory $wikiPageFactory;
 	private SchemaContentSource $schemaContentSource;
 	private SubjectPageSource $subjectPageSource;
 	private PageContentSource $pageContentSource;
@@ -31,16 +28,16 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 
 	protected function setUp(): void {
 		$this->presenter = $this->newPresenterSpy();
-		$this->performer = $this->getTestUser()->getUser();
-		$this->wikiPageFactory = MediaWikiServices::getInstance()->getWikiPageFactory();
 		$this->schemaContentSource = $this->createMock( SchemaContentSource::class );
 		$this->subjectPageSource = $this->createMock( SubjectPageSource::class );
 		$this->pageContentSource = $this->createMock( PageContentSource::class );
 
 		$this->importPagesAction = new ImportPagesAction(
 			$this->presenter,
-			$this->performer,
-			$this->wikiPageFactory,
+			new PageContentSaver(
+				MediaWikiServices::getInstance()->getWikiPageFactory(),
+				$this->getTestUser()->getUser(),
+			),
 			$this->schemaContentSource,
 			$this->subjectPageSource,
 			$this->pageContentSource

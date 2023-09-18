@@ -11,6 +11,8 @@ use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\BlocksContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use RuntimeException;
 use WikitextContent;
@@ -19,8 +21,7 @@ class ImportPagesAction {
 
 	public function __construct(
 		private readonly ImportPresenter $presenter,
-		private readonly Authority $performer,
-		private readonly WikiPageFactory $wikiPageFactory,
+		private readonly PageContentSaver $pageContentSaver,
 		private readonly SchemaContentSource $schemaContentSource,
 		private readonly SubjectPageSource $subjectPageSource,
 		private readonly PageContentSource $pageContentSource,
@@ -94,30 +95,33 @@ class ImportPagesAction {
 			return;
 		}
 
-		$updater = $this->wikiPageFactory->newFromTitle( $title )->newPageUpdater( $this->performer );
+		$savingResult = $this->pageContentSaver->saveContent(
+			page: $title,
+			contentBySlot: $contentBySlot,
+			comment: CommentStoreComment::newUnsavedComment(
+				'Importing NeoWiki demo data'
+			)
+		);
 
-		foreach ( $contentBySlot as $slotName => $content ) {
-			$updater->setContent( $slotName, $content );
-		}
-
-		$updater->saveRevision( CommentStoreComment::newUnsavedComment(
-			'Importing NeoWiki demo data'
-		) );
-
-		if ( $updater->wasSuccessful() ) {
-			if ( $updater->wasRevisionCreated() ) {
-				$this->presenter->presentCreatedRevision( $fullTitle );
-			}
-			else {
-				$this->presenter->presentNoChanges( $fullTitle );
-			}
-		}
-		else {
+		if ( $savingResult->status === PageContentSavingStatus::ERROR ) {
 			$this->presenter->presentImportFailed(
 				pageTitle: $fullTitle,
-				errorMessage: $updater->getStatus()?->getWikiText() ?? 'Unknown error'
+				errorMessage: $savingResult->errorMessage ?? ''
 			);
+			return;
 		}
+
+		if ( $savingResult->status === PageContentSavingStatus::REVISION_CREATED ) {
+			$this->presenter->presentCreatedRevision( $fullTitle );
+			return;
+		}
+
+		if ( $savingResult->status === PageContentSavingStatus::NO_CHANGES ) {
+			$this->presenter->presentNoChanges( $fullTitle );
+			return;
+		}
+
+		throw new RuntimeException();
 	}
 
 }
