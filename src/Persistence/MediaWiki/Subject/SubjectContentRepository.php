@@ -12,6 +12,7 @@ use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use RuntimeException;
 use WikiPage;
 
@@ -20,6 +21,7 @@ class SubjectContentRepository {
 	public function __construct(
 		private readonly WikiPageFactory $wikiPageFactory,
 		private readonly Authority $authority,
+		private readonly PageContentSaver $pageContentSaver,
 	) {
 	}
 
@@ -65,22 +67,19 @@ class SubjectContentRepository {
 	public function editSubjectContent(
 		SubjectContent $subjectContent,
 		PageId $pageId,
-		string $editSummary = 'Update Subject'
+		string $editSummary
 	): void {
-		$wikiPage = $this->wikiPageFactory->newFromID( $pageId->id );
-
-		if ( $wikiPage === null ) {
-			throw new RuntimeException( 'WikiPage not found' );
-		}
-
-		$updater = $wikiPage->newPageUpdater( $this->authority );
-
-		$updater->setContent(
-			MediaWikiSubjectRepository::SLOT_NAME,
-			$subjectContent
+		$savingResult = $this->pageContentSaver->saveContent(
+			$pageId,
+			[
+				MediaWikiSubjectRepository::SLOT_NAME => $subjectContent,
+			],
+			CommentStoreComment::newUnsavedComment( $editSummary )
 		);
 
-		$updater->saveRevision( CommentStoreComment::newUnsavedComment( $editSummary ) );
+		if ( $savingResult->errorMessage !== null ) {
+			throw new RuntimeException( $savingResult->errorMessage );
+		}
 	}
 
 }

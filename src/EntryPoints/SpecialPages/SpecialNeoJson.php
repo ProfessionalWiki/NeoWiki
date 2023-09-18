@@ -82,7 +82,8 @@ class SpecialNeoJson extends SpecialPage {
 
 		NeoWikiExtension::getInstance()->newSubjectContentRepository()->editSubjectContent(
 			$content,
-			new PageId( $title->getId() )
+			new PageId( $title->getId() ),
+			'Update Subject'
 		);
 
 		return true;
