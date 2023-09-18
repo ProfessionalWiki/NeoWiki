@@ -7,18 +7,11 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
 class BlocksContentHandler extends \JsonContentHandler {
 
 	protected function getContentClass(): string {
-		return BlockDefinitionContent::class;
+		return BlocksContent::class;
 	}
 
-	public function makeEmptyContent(): BlockDefinitionContent {
-		return new BlockDefinitionContent( <<<JSON
-{
-	"blocks": {
-
-	}
-}
-JSON
-		);
+	public function makeEmptyContent(): BlocksContent {
+		return BlocksContent::newEmpty();
 	}
 
 }

@@ -16,4 +16,15 @@ class BlocksContent extends \JsonContent {
 		);
 	}
 
+	public static function newEmpty(): self {
+		return new self( <<<JSON
+{
+	"blocks": {
+
+	}
+}
+JSON
+		);
+	}
+
 }
