@@ -11,7 +11,9 @@ use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use Title;
 use TitleParser;
+use TitleValue;
 
 class PageContentFetcher {
 
@@ -21,14 +23,19 @@ class PageContentFetcher {
 	) {
 	}
 
-	public function getPageContent( string $pageTitle, Authority $authority, int $defaultNamespace = NS_MAIN, string $slotName = SlotRecord::MAIN ): ?Content {
+	public function getPageContent(
+		string|Title $pageTitle,
+		Authority $authority,
+		int $defaultNamespace = NS_MAIN,
+		string $slotName = SlotRecord::MAIN
+	): ?Content {
 		try {
-			$title = $this->titleParser->parseTitle( $pageTitle, $defaultNamespace );
+			$titleValue = $this->normalizeTitle( $pageTitle, $defaultNamespace );
 		} catch ( MalformedTitleException ) {
 			return null;
 		}
 
-		$revision = $this->revisionLookup->getRevisionByTitle( $title );
+		$revision = $this->revisionLookup->getRevisionByTitle( $titleValue );
 
 		try {
 			return $revision?->getContent( $slotName, RevisionRecord::FOR_THIS_USER, $authority );
@@ -36,6 +43,23 @@ class PageContentFetcher {
 		catch ( RevisionAccessException ) {
 			return null;
 		}
+	}
+
+	/**
+	 * @throws MalformedTitleException
+	 */
+	private function normalizeTitle( string|Title $pageTitle, int $defaultNamespace ): TitleValue {
+		if ( is_string( $pageTitle ) ) {
+			return $this->titleParser->parseTitle( $pageTitle, $defaultNamespace );
+		}
+
+		$value = $pageTitle->getTitleValue();
+
+		if ( $value === null ) {
+			throw new MalformedTitleException( $pageTitle->getPrefixedText() );
+		}
+
+		return $value;
 	}
 
 }

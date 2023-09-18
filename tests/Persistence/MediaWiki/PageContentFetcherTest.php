@@ -10,6 +10,7 @@ use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use PHPUnit\Framework\TestCase;
+use Title;
 use TitleParser;
 
 /**
@@ -35,8 +36,7 @@ class PageContentFetcherTest extends TestCase {
 	}
 
 	public function testGetPageContentWithGivenAuthority(): void {
-		$title = $this->createMock( \Title::class );
-		$this->titleParser->method( 'parseTitle' )->willReturn( $title );
+		$this->titleParser->method( 'parseTitle' )->willReturn( Title::newFromText( 'test title' )->getTitleValue() );
 
 		$this->revisionLookup->method( 'getRevisionByTitle' )->willReturn( $this->revisionRecord );
 
@@ -48,8 +48,7 @@ class PageContentFetcherTest extends TestCase {
 	}
 
 	public function testGetPageContentWithDefaultAuthority(): void {
-		$title = $this->createMock( \Title::class );
-		$this->titleParser->method( 'parseTitle' )->willReturn( $title );
+		$this->titleParser->method( 'parseTitle' )->willReturn( Title::newFromText( 'test title' )->getTitleValue() );
 		$this->revisionLookup->method( 'getRevisionByTitle' )->willReturn( $this->revisionRecord );
 		$this->revisionRecord->method( 'getContent' )->willReturn( $this->content );
 
@@ -67,8 +66,7 @@ class PageContentFetcherTest extends TestCase {
 	}
 
 	public function testGetPageContentWithNonExistentRevision(): void {
-		$title = $this->createMock( \Title::class );
-		$this->titleParser->method( 'parseTitle' )->willReturn( $title );
+		$this->titleParser->method( 'parseTitle' )->willReturn( Title::newFromText( 'test title' )->getTitleValue() );
 
 		$this->revisionLookup->method( 'getRevisionByTitle' )->willReturn( null );
 
@@ -78,8 +76,10 @@ class PageContentFetcherTest extends TestCase {
 	}
 
 	public function testGetPageContentWithDefaultNamespace(): void {
-		$title = $this->createMock( \Title::class );
-		$this->titleParser->method( 'parseTitle' )->with( $this->equalTo( 'test title' ), $this->equalTo( NS_MAIN ) )->willReturn( $title );
+		$this->titleParser->method( 'parseTitle' )
+			->with( $this->equalTo( 'test title' ), $this->equalTo( NS_MAIN ) )
+			->willReturn( Title::newFromText( 'test title' )->getTitleValue() );
+
 		$this->revisionLookup->method( 'getRevisionByTitle' )->willReturn( $this->revisionRecord );
 		$this->revisionRecord->method( 'getContent' )->willReturn( $this->content );
 
