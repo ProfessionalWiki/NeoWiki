@@ -5,10 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
 use CommentStoreComment;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
-use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -16,16 +14,16 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use WikiPage;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 
 class MediaWikiSubjectRepository implements SubjectRepository {
 
 	public const SLOT_NAME = 'neo';
 
 	public function __construct(
-		private PageIdentifiersLookup $pageIdentifiersLookup,
-		private RevisionLookup $revisionLookup,
-		private UserIdentity $user
+		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
+		private readonly RevisionLookup $revisionLookup,
+		private readonly PageContentSaver $pageContentSaver,
 	) {
 	}
 
@@ -92,13 +90,15 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 	}
 
 	private function saveContent( SubjectContent $content, PageId $pageId ): void {
-		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromID( $pageId->id );
+		$this->pageContentSaver->saveContent(
+			$pageId,
+			[
+				self::SLOT_NAME => $content,
+			],
+			CommentStoreComment::newUnsavedComment( 'TODO' ) // TODO
+		);
 
-		if ( $wikiPage instanceof WikiPage ) {
-			$updater = $wikiPage->newPageUpdater( $this->user );
-			$updater->setContent( self::SLOT_NAME, $content );
-			$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
-		}
+		// TODO: expose failure information
 	}
 
 	public function deleteSubject( SubjectId $id ): void {
