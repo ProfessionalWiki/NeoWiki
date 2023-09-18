@@ -74,4 +74,13 @@ class PageContentFetcherIntegrationTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testCanUseTitleObject(): void {
+		$content = NeoWikiExtension::getInstance()->getPageContentFetcher()->getPageContent(
+			Title::newFromText( self::TITLE ),
+			$this->getTestSysop()->getAuthority()
+		);
+
+		$this->assertSame( 'foo', $content->getText() );
+	}
+
 }

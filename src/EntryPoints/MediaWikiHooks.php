@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use DatabaseUpdater;
 use EditPage;
+use Html;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\ProperPageIdentity;
@@ -117,16 +118,38 @@ class MediaWikiHooks {
 	}
 
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
-		if ( $out->isArticle() && $out->getWikiPage()->getNamespace() === NS_MAIN
-			&& NeoWikiExtension::getInstance()->isDevelopmentUIEnabled()
-		) {
-			self::addSubjectEditor( $out );
+		if ( !$out->isArticle() ) {
 			return;
 		}
 
-		if ( $out->isArticle() && $out->getWikiPage()->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
+		if ( $out->getWikiPage()->getNamespace() === NS_MAIN ) { // TODO: this check is too restrictive. What would be better?
+			if ( NeoWikiExtension::getInstance()->isDevelopmentUIEnabled() ) {
+				self::addSubjectEditor( $out );
+			}
+
+			$content = NeoWikiExtension::getInstance()->getPageContentFetcher()->getPageContent(
+				pageTitle: $out->getTitle(),
+				authority: $out->getUser(),
+				slotName: BlocksContent::SLOT_NAME
+			);
+
+			if ( $content instanceof BlocksContent ) {
+				self::addBlocks( $out, $content );
+			}
+		}
+
+		if ( $out->getWikiPage()->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
 			self::addCreateSubjectButton( $out );
 		}
+	}
+
+	private static function addBlocks( OutputPage $out, BlocksContent $content ): void {
+		$out->addModules( [ 'ext.neowiki.page-blocks' ] );
+		$out->addScript( Html::inlineScript(
+			<<<JS
+window.wikiPageBlocks = {$content->getText()};
+JS
+		) );
 	}
 
 	private static function addSubjectEditor( OutputPage $out ): void {
