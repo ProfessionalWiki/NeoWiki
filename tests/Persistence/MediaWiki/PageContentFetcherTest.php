@@ -12,6 +12,9 @@ use MediaWiki\Revision\RevisionRecord;
 use PHPUnit\Framework\TestCase;
 use TitleParser;
 
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher
+ */
 class PageContentFetcherTest extends TestCase {
 
 	private PageContentFetcher $pageContentFetcher;
@@ -28,7 +31,7 @@ class PageContentFetcherTest extends TestCase {
 		$this->revisionRecord = $this->createMock( RevisionRecord::class );
 		$this->content = $this->createMock( Content::class );
 
-		$this->pageContentFetcher = new PageContentFetcher( $this->titleParser, $this->revisionLookup, $this->authority );
+		$this->pageContentFetcher = new PageContentFetcher( $this->titleParser, $this->revisionLookup );
 	}
 
 	public function testGetPageContentWithGivenAuthority(): void {
@@ -39,7 +42,7 @@ class PageContentFetcherTest extends TestCase {
 
 		$this->revisionRecord->method( 'getContent' )->willReturn( $this->content );
 
-		$content = $this->pageContentFetcher->getPageContent( 'test title', null, NS_MAIN );
+		$content = $this->pageContentFetcher->getPageContent( 'test title', $this->authority );
 
 		$this->assertSame( $this->content, $content );
 	}
@@ -50,7 +53,7 @@ class PageContentFetcherTest extends TestCase {
 		$this->revisionLookup->method( 'getRevisionByTitle' )->willReturn( $this->revisionRecord );
 		$this->revisionRecord->method( 'getContent' )->willReturn( $this->content );
 
-		$content = $this->pageContentFetcher->getPageContent( 'test title', null, NS_MAIN );
+		$content = $this->pageContentFetcher->getPageContent( 'test title', $this->authority );
 
 		$this->assertSame( $this->content, $content );
 	}
@@ -58,18 +61,18 @@ class PageContentFetcherTest extends TestCase {
 	public function testGetPageContentWithMalformedTitle(): void {
 		$this->titleParser->method( 'parseTitle' )->willThrowException( new MalformedTitleException( "Mock malformed title exception" ) );
 
-		$content = $this->pageContentFetcher->getPageContent( 'test title', null, NS_MAIN );
+		$content = $this->pageContentFetcher->getPageContent( 'test title', $this->authority );
 
 		$this->assertNull( $content );
 	}
 
-	public function testGetPageContentWithNonExistentTitle(): void {
+	public function testGetPageContentWithNonExistentRevision(): void {
 		$title = $this->createMock( \Title::class );
 		$this->titleParser->method( 'parseTitle' )->willReturn( $title );
 
 		$this->revisionLookup->method( 'getRevisionByTitle' )->willReturn( null );
 
-		$content = $this->pageContentFetcher->getPageContent( 'test title', null, NS_MAIN );
+		$content = $this->pageContentFetcher->getPageContent( 'test title', $this->authority );
 
 		$this->assertNull( $content );
 	}
@@ -80,8 +83,9 @@ class PageContentFetcherTest extends TestCase {
 		$this->revisionLookup->method( 'getRevisionByTitle' )->willReturn( $this->revisionRecord );
 		$this->revisionRecord->method( 'getContent' )->willReturn( $this->content );
 
-		$content = $this->pageContentFetcher->getPageContent( 'test title', null, NS_MAIN );
+		$content = $this->pageContentFetcher->getPageContent( 'test title', $this->authority );
 
 		$this->assertSame( $this->content, $content );
 	}
+
 }

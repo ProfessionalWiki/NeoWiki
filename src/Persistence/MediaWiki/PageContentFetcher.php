@@ -14,17 +14,13 @@ use TitleParser;
 
 class PageContentFetcher {
 
-	private TitleParser $titleParser;
-	private RevisionLookup $revisionLookup;
-	private Authority $authority;
-
-	public function __construct( TitleParser $titleParser, RevisionLookup $revisionLookup, Authority $authority ) {
-		$this->titleParser = $titleParser;
-		$this->revisionLookup = $revisionLookup;
-		$this->authority = $authority;
+	public function __construct(
+		private readonly TitleParser $titleParser,
+		private readonly RevisionLookup $revisionLookup
+	) {
 	}
 
-	public function getPageContent( string $pageTitle, ?Authority $authority, int $defaultNamespace = NS_MAIN ): ?Content {
+	public function getPageContent( string $pageTitle, Authority $authority, int $defaultNamespace = NS_MAIN ): ?Content {
 		try {
 			$title = $this->titleParser->parseTitle( $pageTitle, $defaultNamespace );
 		} catch ( MalformedTitleException ) {
@@ -33,8 +29,7 @@ class PageContentFetcher {
 
 		$revision = $this->revisionLookup->getRevisionByTitle( $title );
 
-		$authority = $authority ?? $this->authority;
-
 		return $revision?->getContent( SlotRecord::MAIN, RevisionRecord::FOR_THIS_USER, $authority );
 	}
+	
 }
