@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 use Content;
 use MalformedTitleException;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
@@ -20,7 +21,7 @@ class PageContentFetcher {
 	) {
 	}
 
-	public function getPageContent( string $pageTitle, Authority $authority, int $defaultNamespace = NS_MAIN ): ?Content {
+	public function getPageContent( string $pageTitle, Authority $authority, int $defaultNamespace = NS_MAIN, string $slotName = SlotRecord::MAIN ): ?Content {
 		try {
 			$title = $this->titleParser->parseTitle( $pageTitle, $defaultNamespace );
 		} catch ( MalformedTitleException ) {
@@ -29,7 +30,12 @@ class PageContentFetcher {
 
 		$revision = $this->revisionLookup->getRevisionByTitle( $title );
 
-		return $revision?->getContent( SlotRecord::MAIN, RevisionRecord::FOR_THIS_USER, $authority );
+		try {
+			return $revision?->getContent( $slotName, RevisionRecord::FOR_THIS_USER, $authority );
+		}
+		catch ( RevisionAccessException ) {
+			return null;
+		}
 	}
-	
+
 }
