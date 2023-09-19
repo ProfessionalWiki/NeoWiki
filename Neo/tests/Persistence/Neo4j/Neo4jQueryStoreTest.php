@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherMap;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
@@ -27,11 +28,15 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 	private const GUID_2 = '00000000-1237-0000-0000-000000000002';
 	private const GUID_3 = '00000000-1237-0000-0000-000000000003';
 	private const GUID_4 = '00000000-1237-0000-0000-000000000004';
+	private const SCHEMA_ID_A = 'Alpha';
+	private const SCHEMA_ID_Z = 'Zed';
 	private LegacyLoggerSpy $logger;
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+		$this->createSchema( self::SCHEMA_ID_A );
+		$this->createSchema( self::SCHEMA_ID_Z );
 		$this->logger = new LegacyLoggerSpy();
 	}
 
@@ -47,7 +52,9 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 			NeoWikiExtension::getInstance()->getNeo4jClient(),
 			NeoWikiExtension::getInstance()->getReadOnlyNeo4jClient(),
 			new InMemorySchemaLookup(
-				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
+				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
+				TestSchema::build( name: self::SCHEMA_ID_A ),
+				TestSchema::build( name: self::SCHEMA_ID_Z )
 			),
 			$this->logger
 		);
@@ -221,6 +228,88 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 				[ 'id' => self::GUID_1, 'hs' => [ 'isMain' => true ] ],
 				[ 'id' => self::GUID_2, 'hs' => [ 'isMain' => false ] ],
 				[ 'id' => self::GUID_3, 'hs' => [ 'isMain' => false ] ]
+			],
+			42,
+			$store
+		);
+	}
+
+	public function testRunWriteQuerySavesToDb(): void {
+		$store = $this->newQueryStore();
+
+		$store->runWriteQuery( 'CREATE (:TestNode {name: "Test"} )' );
+
+		$result = $store->runReadQuery( 'MATCH (node:TestNode {name: "Test"}) RETURN node.name' );
+
+		$this->assertSame(
+			[
+				[ 'node.name' => 'Test' ]
+			],
+			$result->toRecursiveArray()
+		);
+	}
+
+	public function testSavesPageSubjectsWithSubjectLabel(): void {
+		$store = $this->newQueryStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaId: new SchemaName( self::SCHEMA_ID_A ) ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::GUID_2, schemaId: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
+				TestSubject::build( id: self::GUID_3, schemaId: new SchemaName( self::SCHEMA_ID_Z ) ),
+			)
+		) );
+
+		$this->assertPageHasSubjectsWithLabels(
+			[
+				[ 'id' => self::GUID_1, 'labels' => [ 'Subject', self::SCHEMA_ID_A ] ],
+				[ 'id' => self::GUID_2, 'labels' => [ 'Subject', TestSubject::DEFAULT_SCHEMA_ID ] ],
+				[ 'id' => self::GUID_3, 'labels' => [ 'Subject', self::SCHEMA_ID_Z ] ]
+			],
+			42,
+			$store
+		);
+	}
+
+	private function assertPageHasSubjectsWithLabels( array $expectedSubjects, int $pageId, Neo4jQueryStore $store ): void {
+		$result = $store->runReadQuery(
+			'MATCH (page:Page {id: ' . $pageId . '})-[hs:HasSubject]->(subject)
+			 RETURN subject.id as id, labels(subject) as labels
+			 ORDER BY id'
+		)->getResults()->toRecursiveArray();
+
+		$this->assertSame( $expectedSubjects, $result );
+	}
+
+	public function testSavesPageSubjectsWithSubjectLabelAfterUpdatingPage(): void {
+		$store = $this->newQueryStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaId: new SchemaName( self::SCHEMA_ID_A ) ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::GUID_2, schemaId: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
+				TestSubject::build( id: self::GUID_3, schemaId: new SchemaName( self::SCHEMA_ID_Z ) ),
+			)
+		) );
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaId: new SchemaName( self::SCHEMA_ID_A ) ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::GUID_2, schemaId: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
+				TestSubject::build( id: self::GUID_3, schemaId: new SchemaName( self::SCHEMA_ID_Z ) ),
+				TestSubject::build( id: self::GUID_4, schemaId: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
+			)
+		) );
+
+		$this->assertPageHasSubjectsWithLabels(
+			[
+				[ 'id' => self::GUID_1, 'labels' => [ 'Subject', self::SCHEMA_ID_A ] ],
+				[ 'id' => self::GUID_2, 'labels' => [ 'Subject', TestSubject::DEFAULT_SCHEMA_ID ] ],
+				[ 'id' => self::GUID_3, 'labels' => [ 'Subject', self::SCHEMA_ID_Z ] ],
+				[ 'id' => self::GUID_4, 'labels' => [ 'Subject', TestSubject::DEFAULT_SCHEMA_ID ] ],
 			],
 			42,
 			$store

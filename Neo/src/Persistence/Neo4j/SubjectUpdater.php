@@ -83,7 +83,7 @@ class SubjectUpdater {
 
 	private function updateNodeLabels( Subject $subject ): void {
 		$oldLabels = $this->getNodeLabels( $subject->id );
-		$newLabels = [ $subject->getSchemaId()->getText() ];
+		$newLabels = [ 'Subject', $subject->getSchemaId()->getText() ];
 
 		$labelsToRemove = array_diff( $oldLabels, $newLabels );
 
