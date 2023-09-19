@@ -10,13 +10,14 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use ProfessionalWiki\NeoWiki\Application\QueryEngine;
 use ProfessionalWiki\NeoWiki\Application\QueryStore;
+use ProfessionalWiki\NeoWiki\Application\WriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use Psr\Log\LoggerInterface;
 
-class Neo4jQueryStore implements QueryStore, QueryEngine {
+class Neo4jQueryStore implements QueryStore, QueryEngine, WriteQueryEngine {
 
 	public function __construct(
 		private readonly ClientInterface $client,
@@ -157,6 +158,14 @@ class Neo4jQueryStore implements QueryStore, QueryEngine {
 
 	public function runReadQuery( string $cypher ): SummarizedResult {
 		return $this->readOnlyClient->readTransaction(
+			function ( TransactionInterface $transaction ) use ( $cypher ): SummarizedResult {
+				return $transaction->run( $cypher );
+			}
+		);
+	}
+
+	public function runWriteQuery( string $cypher ): SummarizedResult {
+		return $this->client->writeTransaction(
 			function ( TransactionInterface $transaction ) use ( $cypher ): SummarizedResult {
 				return $transaction->run( $cypher );
 			}
