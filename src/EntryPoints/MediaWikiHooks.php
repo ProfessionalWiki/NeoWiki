@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use DatabaseUpdater;
 use EditPage;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
@@ -162,6 +163,10 @@ class MediaWikiHooks {
 		if ( !NeoWikiExtension::getInstance()->isDevelopmentUIEnabled() ) {
 			unset( $specialPages['NeoJson'] );
 		}
+	}
+
+	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ): void {
+		NeoWikiExtension::getInstance()->newNeo4jConstraintUpdater()->createDefaultConstraints();
 	}
 
 }
