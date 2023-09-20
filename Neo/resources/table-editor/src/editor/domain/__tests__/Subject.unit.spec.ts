@@ -110,6 +110,71 @@ describe( 'Subject', () => {
 			expect( subjectMap ).toEqual( new SubjectMap( subject1, subject2, subject3 ) );
 		} );
 
+		it( 'should return a SubjectMap with referenced Subjects excluding missing Subjects', async () => {
+			const referencedSubject = newSubject( { id: '00000000-0000-0000-0000-000000000001' } );
+			const lookup = new InMemorySubjectLookup( [ referencedSubject ] );
+
+			const subject = newSubject( {
+				id: ZERO_GUID,
+				statements: StatementList.fromJsonValues(
+					{
+						Property1: {
+							value: [ 'foo' ],
+							format: TextFormat.formatName
+						},
+						Property2: {
+							value: [ { target: '00000000-0000-0000-0000-888888888888' } ],
+							format: RelationFormat.formatName
+						},
+						Property3: {
+							value: [ { target: '00000000-0000-0000-0000-000000000001' }, { target: '00000000-0000-0000-0000-999999999999' } ],
+							format: RelationFormat.formatName
+						},
+						Property4: {
+							value: [ 'bar' ],
+							format: TextFormat.formatName
+						}
+					},
+					newSchema( {
+						properties: new PropertyDefinitionList( [
+							createPropertyDefinitionFromJson(
+								'Property1',
+								{
+									type: ValueType.String,
+									format: TextFormat.formatName
+								}
+							),
+							createPropertyDefinitionFromJson(
+								'Property2',
+								{
+									type: ValueType.Relation,
+									format: RelationFormat.formatName
+								}
+							),
+							createPropertyDefinitionFromJson(
+								'Property3',
+								{
+									type: ValueType.String,
+									format: RelationFormat.formatName
+								}
+							),
+							createPropertyDefinitionFromJson(
+								'Property4',
+								{
+									type: ValueType.String,
+									format: TextFormat.formatName
+								}
+							)
+						] )
+					} )
+				)
+			} );
+
+			const subjectMap = await subject.getReferencedSubjects( lookup );
+
+			expect( subjectMap ).toEqual( new SubjectMap( referencedSubject ) );
+		} );
+
 	} );
 
 } );
