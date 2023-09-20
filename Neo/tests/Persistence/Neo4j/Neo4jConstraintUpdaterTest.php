@@ -40,14 +40,14 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame(
 			[
 				[
-					'name' => 'Page_id',
+					'name' => 'Page id',
 					'type' => 'UNIQUENESS',
 					'entityType' => 'NODE',
 					'labelsOrTypes' => [ 'Page' ],
 					'properties' => [ 'id' ],
 				],
 				[
-					'name' => 'Subject_id',
+					'name' => 'Subject id',
 					'type' => 'UNIQUENESS',
 					'entityType' => 'NODE',
 					'labelsOrTypes' => [ 'Subject' ],

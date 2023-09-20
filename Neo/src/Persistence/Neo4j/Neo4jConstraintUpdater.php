@@ -20,15 +20,11 @@ class Neo4jConstraintUpdater {
 
 	private function createNodePropertyConstraint( string $nodeLabel, string $propertyName ): void {
 		$this->queryEngine->runWriteQuery(
-			'CREATE CONSTRAINT ' . Cypher::escape( $this->createConstraintName( $nodeLabel, $propertyName ) ) . '
+			'CREATE CONSTRAINT ' . Cypher::escape( $nodeLabel . ' ' . $propertyName ) . '
 			 IF NOT EXISTS
 			 FOR (node:' . Cypher::escape( $nodeLabel ) . ')
 			 REQUIRE node.' . Cypher::escape( $propertyName ) . ' IS UNIQUE'
 		);
-	}
-
-	private function createConstraintName( string $nodeLabel, string $propertyName ): string {
-		return preg_replace( '/[^a-z0-9_]/i', '_', $nodeLabel . '_' . $propertyName );
 	}
 
 }
