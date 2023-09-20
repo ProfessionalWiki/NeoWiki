@@ -5,6 +5,7 @@ import { isJsonStatement, Statement } from '@/editor/domain/Statement';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import { jsonToValue, RelationValue, type Value, valueToJson } from '@/editor/domain/Value';
 import type { Schema } from '@/editor/domain/Schema';
+import type { Subject } from '@/editor/domain/Subject';
 
 export class StatementList implements Iterable<Statement> {
 
@@ -88,10 +89,17 @@ export class StatementList implements Iterable<Statement> {
 	public async getReferencedSubjects( lookup: SubjectLookup ): Promise<SubjectMap> {
 		const ids = [ ...this.getIdsOfReferencedSubjects() ];
 
+		// TODO: Replace lookup with BatchSubjectLookup
 		return new SubjectMap(
-			...await Promise.all(
-				ids.map( ( id ) => lookup.getSubject( id ) ) // TODO: error handling: silently ignore missing subjects?
-			)
+			...( await Promise.all(
+				ids.map( async ( id ) => {
+					try {
+						return await lookup.getSubject( id );
+					} catch ( error ) {
+						return null;
+					}
+				} )
+			) ).filter( ( subject ): subject is Subject => subject !== null )
 		);
 	}
 
