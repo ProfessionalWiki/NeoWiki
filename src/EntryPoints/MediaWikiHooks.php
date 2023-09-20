@@ -153,7 +153,7 @@ class MediaWikiHooks {
 	}
 
 	public static function onMakeGlobalVariablesScript( array &$vars, OutputPage $out ): void {
-		if ( $out->canUseWikiPage() && $out->getWikiPage()->canExist() && $out->getWikiPage()->getNamespace() === NS_MAIN ) {
+		if ( $out->canUseWikiPage() && $out->getWikiPage()->canExist() ) {
 			$vars['NeoWiki'] = NeoWikiExtension::getInstance()->getExternalNeo4jConfig();
 		}
 	}
