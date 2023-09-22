@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 
 class CreateSchemaAction {
+
 	public function __construct(
 		private readonly CreateSchemaPresenter $presenter,
 		private readonly PageContentSaver $pageContentSaver,
@@ -54,18 +55,23 @@ class CreateSchemaAction {
 			comment: \CommentStoreComment::newUnsavedComment( 'The schema is created' )
 		);
 
-		if ( $savingResult->status === PageContentSavingStatus::ERROR ) {
-			$this->presenter->presentSchemaCreationError( $savingResult->errorMessage );
+		$this->presentSavingResult( $savingResult, $schemaJson );
+	}
+
+	private function presentSavingResult( PageContentSavingStatus $result, string $schemaJson ): void {
+		if ( $result->status === PageContentSavingStatus::ERROR ) {
+			$this->presenter->presentSchemaCreationError( $result->errorMessage );
 			return;
 		}
 
-		if ( $savingResult->status === PageContentSavingStatus::NO_CHANGES ) {
+		if ( $result->status === PageContentSavingStatus::NO_CHANGES ) {
 			$this->presenter->presentNoChanges();
 			return;
 		}
 
-		if ( $savingResult->status === PageContentSavingStatus::REVISION_CREATED ) {
+		if ( $result->status === PageContentSavingStatus::REVISION_CREATED ) {
 			$this->presenter->presentSchema( $schemaJson );
 		}
 	}
+
 }
