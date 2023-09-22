@@ -19,6 +19,12 @@ class CreateSchemaApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 	use MockAuthorityTrait;
 
+	private const SCHEMA_NAME = 'CreateSchemaApiTestSchema';
+
+	public function setUp(): void {
+		//$this->markPageTableAsUsed();
+	}
+
 	private function newCreateSchemaApi(): CreateSchemaApi {
 		$csrfValidatorStub = $this->createStub( CsrfValidator::class );
 		$csrfValidatorStub->method( 'verifyCsrfToken' )->willReturn( true );
@@ -31,33 +37,25 @@ class CreateSchemaApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function createValidRequestData( array $content, ?bool $name = null ): RequestData {
+	private function createValidRequestData( array $schemaArray, string $schemaName = self::SCHEMA_NAME ): RequestData {
 		return new RequestData( [
 			'method' => 'POST',
 			'pathParams' => [
-				'schemaName' => $name ?: 'Test schema'
+				'schemaName' => $schemaName
 			],
-			'bodyContents' => json_encode( $content ),
+			'bodyContents' => json_encode( $schemaArray ),
 			'headers' => [
 				'Content-Type' => 'application/json'
 			]
 		] );
 	}
 
-	public function testCreateSchema(): void {
-		$testContent = [
-			'description' => 'Description aaa',
-			'propertyDefinitions' => [
-				"aaa" => [
-					"type" => "string",
-					"format" => "email"
-				]
-			]
-		];
+	public function testCreateSchemaHappyPath(): void {
+		$schemaArray = $this->newValidSchemaArray();
 
 		$response = $this->executeHandler(
 			$this->newCreateSchemaApi(),
-			$this->createValidRequestData( $testContent )
+			$this->createValidRequestData( $schemaArray )
 		);
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
@@ -66,26 +64,18 @@ class CreateSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertNotEmpty( $responseData[ 'success' ] );
 		$this->assertTrue( $responseData[ 'success' ] );
 		$this->assertNotEmpty( $responseData[ 'schema' ][ 'description' ] );
-		$this->assertEquals( $testContent[ 'description' ], $responseData[ 'schema' ][ 'description' ] );
+		$this->assertEquals( $schemaArray[ 'description' ], $responseData[ 'schema' ][ 'description' ] );
 		$this->assertNotEmpty( $responseData[ 'schema' ][ 'propertyDefinitions' ] );
-		$this->assertSame( $testContent[ 'propertyDefinitions' ], $responseData[ 'schema' ][ 'propertyDefinitions' ] );
+		$this->assertSame( $schemaArray[ 'propertyDefinitions' ], $responseData[ 'schema' ][ 'propertyDefinitions' ] );
 		$this->assertCount( 1, $responseData[ 'schema' ][ 'propertyDefinitions' ] );
 	}
 
-	public function testSchemaExists(): void {
-		$testContent = [
-			'description' => 'Description aaa',
-			'propertyDefinitions' => [
-				"aaa" => [
-					"type" => "string",
-					"format" => "email"
-				]
-			]
-		];
+	public function testCreatingExistingSchemaResultsInError(): void {
+		$this->createSchema( self::SCHEMA_NAME );
 
 		$response = $this->executeHandler(
-			$this->newCreateSchemaApi( true ),
-			$this->createValidRequestData( $testContent )
+			$this->newCreateSchemaApi(),
+			$this->createValidRequestData( $this->newValidSchemaArray() )
 		);
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
@@ -95,20 +85,22 @@ class CreateSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'A schema by that name has already been registered.', $responseData[ 'message' ] );
 	}
 
-	public function testInvalidData(): void {
-		$testContent = [
-			'description' => 'Description aaa',
+	private function newValidSchemaArray(): array {
+		return [
+			'description' => 'Description',
 			'propertyDefinitions' => [
 				"aaa" => [
 					"type" => "string",
-					"formatrrr" => 'sss'
+					"format" => "email"
 				]
 			]
 		];
+	}
 
+	public function testInvalidSchemaResultsInError(): void {
 		$response = $this->executeHandler(
 			$this->newCreateSchemaApi(),
-			$this->createValidRequestData( $testContent, 'Test schema 2' )
+			$this->createValidRequestData( $this->newInvalidSchemaArray(), self::SCHEMA_NAME . '2' )
 		);
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
@@ -118,20 +110,22 @@ class CreateSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Invalid parameters for the schema creation.', $responseData['message'] );
 	}
 
-	public function testPermissionDenied(): void {
-		$testContent = [
-			'description' => 'Description that is really ',
+	private function newInvalidSchemaArray(): array {
+		return [
+			'description' => 'Description',
 			'propertyDefinitions' => [
 				"aaa" => [
 					"type" => "string",
-					"format" => "email"
+					"wrong_format_key" => 'text' // Invalid
 				]
 			]
 		];
+	}
 
+	public function testPermissionDenied(): void {
 		$response = $this->executeHandler(
-			$this->newCreateSchemaApi( true ),
-			$this->createValidRequestData( $testContent ),
+			$this->newCreateSchemaApi(),
+			$this->createValidRequestData( $this->newValidSchemaArray() ),
 			authority: $this->mockAnonAuthorityWithPermissions( [] )
 		);
 
@@ -141,4 +135,5 @@ class CreateSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertFalse( $responseData[ 'success' ] );
 		$this->assertSame( 'You don\'t have permissions to create a schema.', $responseData['message'] );
 	}
+
 }
