@@ -10,11 +10,16 @@ import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface TextProperty extends MultiStringProperty {
 }
 
-export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui.TextInputWidget|TagMultiselectWidget> {
+export interface TextAttributes extends PropertyAttributes {
+	readonly multiple?: boolean;
+}
+
+export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui.TextInputWidget|TagMultiselectWidget, TextAttributes> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'text';
@@ -52,12 +57,11 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui
 		return column;
 	}
 
-	public getFormatAttributes(): string[] {
-		return [
-			'required',
-			'default',
-			'multiple'
-		];
+	public getAttributes( base: PropertyAttributes ): TextAttributes {
+		return {
+			...base,
+			multiple: false
+		};
 	}
 }
 

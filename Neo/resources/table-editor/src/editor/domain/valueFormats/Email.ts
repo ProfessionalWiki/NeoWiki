@@ -13,11 +13,16 @@ import {
 	type MultipleTextInputWidget,
 	MultipleTextInputWidgetFactory
 } from '@/editor/presentation/Widgets/MultipleTextInputWidgetFactory';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface EmailProperty extends MultiStringProperty {
 }
 
-export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, TagMultiselectWidget|OO.ui.TextInputWidget> {
+interface EmailAttributes extends PropertyAttributes {
+	readonly multiple?: boolean;
+}
+
+export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, TagMultiselectWidget|OO.ui.TextInputWidget, EmailAttributes> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'email';
@@ -79,12 +84,11 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, Tag
 		return column;
 	}
 
-	public getFormatAttributes(): string[] {
-		return [
-			'required',
-			'default',
-			'multiple'
-		];
+	public getAttributes( base: PropertyAttributes ): EmailAttributes {
+		return {
+			...base,
+			multiple: false
+		};
 	}
 }
 

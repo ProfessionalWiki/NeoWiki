@@ -4,6 +4,7 @@ import { CurrencyInputWidgetFactory } from '@/editor/presentation/Widgets/Curren
 import type { CurrencyInputWidget } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
 import { BaseValueFormat, ValidationResult, type ValidationError } from '@/editor/domain/ValueFormat';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface CurrencyProperty extends PropertyDefinition {
 
@@ -14,7 +15,14 @@ export interface CurrencyProperty extends PropertyDefinition {
 
 }
 
-export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValue, CurrencyInputWidget> {
+interface CurrencyAttributes extends PropertyAttributes {
+	readonly currencyCode?: string;
+	readonly precision?: number;
+	readonly minimum?: number;
+	readonly maximum?: number;
+}
+
+export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValue, CurrencyInputWidget, CurrencyAttributes> {
 
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'currency';
@@ -81,13 +89,14 @@ export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValu
 		};
 	}
 
-	public getFormatAttributes(): string[] {
-		return [
-			'required',
-			'minimum',
-			'maximum',
-			'precision',
-			'currencyCode'
-		];
+	public getAttributes( base: PropertyAttributes ): CurrencyAttributes {
+		return {
+			...base,
+			minimum: 0,
+			maximum: 100,
+			precision: 0,
+			currencyCode: 'EUR',
+			default: 0
+		};
 	}
 }

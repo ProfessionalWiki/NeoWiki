@@ -6,12 +6,16 @@ import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import type { TextProperty } from '@/editor/domain/valueFormats/Text';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface TimeProperty extends MultiStringProperty {
 	// TODO: allow multiple values? Date and DateTime do not, neither does PHP
 }
 
-export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui.InputWidget> {
+export interface TimeAttributes extends PropertyAttributes {
+}
+
+export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui.InputWidget, TimeAttributes> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'time';
@@ -92,10 +96,10 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui
 		return column;
 	}
 
-	public getFormatAttributes(): string[] {
-		return [
-			'required'
-		];
+	public getAttributes( base: PropertyAttributes ): TimeAttributes {
+		return {
+			...base
+		};
 	}
 }
 
