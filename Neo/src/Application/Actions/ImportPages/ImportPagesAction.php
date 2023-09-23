@@ -7,8 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ImportPages;
 use CommentStoreComment;
 use Content;
 use MediaWiki\Extension\Scribunto\ScribuntoContent;
-use MediaWiki\Page\WikiPageFactory;
-use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\BlocksContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
