@@ -17,7 +17,7 @@ class SchemaContentValidator {
 	private array $errors = [];
 
 	public static function newInstance(): self {
-		$json = file_get_contents( __DIR__ . '/../../../schemaContentSchema.json' );
+		$json = file_get_contents( __DIR__ . '/schemaContentSchema.json' );
 
 		if ( !is_string( $json ) ) {
 			throw new RuntimeException( 'Could not obtain JSON Schema' );
