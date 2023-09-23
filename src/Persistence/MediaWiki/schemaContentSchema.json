@@ -1,0 +1,160 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema#",
+	"type": "object",
+	"properties": {
+		"description": {
+			"type": "string"
+		},
+		"propertyDefinitions": {
+			"type": "object",
+			"patternProperties": {
+				"^.*$": {
+					"type": "object",
+					"additionalProperties": true,
+					"required": [
+						"format"
+					],
+					"properties": {
+						"description": {
+							"type": "string"
+						},
+						"format": {
+							"type": "string",
+							"enum": [
+								"text",
+								"email",
+								"url",
+								"phoneNumber",
+								"date",
+								"time",
+								"dateTime",
+								"duration",
+								"number",
+								"currency",
+								"progress",
+								"checkbox",
+								"relation"
+							]
+						},
+						"required": {
+							"type": "boolean"
+						},
+						"multiple": {
+							"type": "boolean"
+						},
+						"uniqueItems": {
+							"type": "boolean"
+						}
+					},
+					"oneOf": [
+						{
+							"properties": {
+								"format": {
+									"const": "text"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "email"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "url"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "phoneNumber"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "date"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "time"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "dateTime"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "duration"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "number"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "currency"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "progress"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "checkbox"
+								}
+							}
+						},
+						{
+							"properties": {
+								"format": {
+									"const": "relation"
+								},
+								"relation": {
+									"type": "string"
+								},
+								"targetSchema": {
+									"type": "string"
+								}
+							},
+							"required": [
+								"relation",
+								"targetSchema"
+							]
+						}
+					]
+				}
+			}
+		}
+	},
+	"required": [
+		"propertyDefinitions"
+	],
+	"additionalProperties": true
+}
