@@ -3,11 +3,15 @@ import { type BooleanValue, newBooleanValue, ValueType } from '@/editor/domain/V
 import { BaseValueFormat } from '@/editor/domain/ValueFormat';
 import { ValidationResult } from '@/editor/domain/ValueFormat';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface CheckboxProperty extends PropertyDefinition {
 }
 
-export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanValue, OO.ui.CheckboxInputWidget> {
+interface CheckboxAttributes extends PropertyAttributes {
+}
+
+export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanValue, OO.ui.CheckboxInputWidget, CheckboxAttributes> {
 
 	public static readonly valueType = ValueType.Boolean;
 	public static readonly formatName = 'checkbox';
@@ -37,9 +41,10 @@ export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanVal
 		};
 	}
 
-	public getFormatAttributes(): string[] {
-		return [
-			'required'
-		];
+	public getAttributes( base: PropertyAttributes ): CheckboxAttributes {
+		return {
+			...base,
+			default: false
+		};
 	}
 }

@@ -9,11 +9,16 @@ import {
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface PhoneNumberProperty extends MultiStringProperty {
 }
 
-export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, StringValue, TagMultiselectWidget|OO.ui.TextInputWidget> {
+export interface PhoneNumberAttributes extends PropertyAttributes {
+	readonly multiple?: boolean;
+}
+
+export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, StringValue, TagMultiselectWidget|OO.ui.TextInputWidget, PhoneNumberAttributes> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'phoneNumber';
@@ -67,12 +72,11 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 		return column;
 	}
 
-	public getFormatAttributes(): string[] {
-		return [
-			'required',
-			'default',
-			'multiple'
-		];
+	public getAttributes( base: PropertyAttributes ): PhoneNumberAttributes {
+		return {
+			...base,
+			multiple: false
+		};
 	}
 }
 

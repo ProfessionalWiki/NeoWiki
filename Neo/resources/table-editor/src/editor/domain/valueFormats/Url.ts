@@ -14,6 +14,7 @@ import {
 	type MultipleTextInputWidget,
 	MultipleTextInputWidgetFactory
 } from '@/editor/presentation/Widgets/MultipleTextInputWidgetFactory';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface UrlProperty extends MultiStringProperty {
 
@@ -21,7 +22,11 @@ export interface UrlProperty extends MultiStringProperty {
 
 }
 
-export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMultiselectWidget|OO.ui.TextInputWidget> {
+export interface UrlAttributes extends PropertyAttributes {
+	readonly multiple?: boolean;
+}
+
+export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMultiselectWidget|OO.ui.TextInputWidget, UrlAttributes> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'url';
@@ -94,12 +99,11 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMult
 		return column;
 	}
 
-	public getFormatAttributes(): string[] {
-		return [
-			'required',
-			'default',
-			'multiple'
-		];
+	public getAttributes( base: PropertyAttributes ): UrlAttributes {
+		return {
+			...base,
+			multiple: false
+		};
 	}
 
 }

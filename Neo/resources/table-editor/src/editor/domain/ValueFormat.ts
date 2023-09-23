@@ -5,6 +5,7 @@ import { newStringValue, ValueType } from '@/editor/domain/Value';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { MultipleTextInputWidget } from '@/editor/presentation/Widgets/MultipleTextInputWidgetFactory';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export class ValueFormatRegistry {
 
@@ -34,7 +35,7 @@ export class ValueFormatRegistry {
 export type Field = OO.ui.CheckboxInputWidget | OO.ui.InputWidget | TagMultiselectWidget | MultipleTextInputWidget
 | OO.ui.TextInputWidget | OO.ui.NumberInputWidget | OO.ui.ProgressBarWidget | OO.ui.MenuTagMultiselectWidget | OO.ui.Widget;
 
-export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Value, F extends Field> {
+export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Value, F extends Field, A extends PropertyAttributes> {
 	public static readonly valueType: ValueType;
 	public static readonly formatName: string;
 
@@ -50,7 +51,7 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 
 	public abstract getFieldData( field: F, property: T ): Promise<FieldData>;
 
-	public abstract getFormatAttributes(): string[];
+	public abstract getAttributes( base: PropertyAttributes ): A;
 
 	public createTableEditorColumn( property: T ): ColumnDefinition {
 		return {
@@ -60,7 +61,7 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 	}
 }
 
-export type ValueFormat = BaseValueFormat<PropertyDefinition, Value, Field>;
+export type ValueFormat = BaseValueFormat<PropertyDefinition, Value, Field, PropertyAttributes>;
 
 export class ValidationResult {
 

@@ -18,6 +18,7 @@ import type { NeoWikiExtension } from '@/NeoWikiExtension';
 import type { CellData } from '@/editor/presentation/SubjectTableLoader';
 import type { VueComponentManager } from '@/editor/presentation/Vue/VueComponentManager';
 import VueRelation from '@/components/propertyValues/Relation.vue';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -28,7 +29,14 @@ export interface RelationProperty extends PropertyDefinition {
 
 }
 
-export class RelationFormat extends BaseValueFormat<RelationProperty, RelationValue, RelationLookupWidget|RelationMultiselectWidget> {
+export interface RelationAttributes extends PropertyAttributes {
+	readonly relation?: string;
+	readonly targetSchema?: string;
+	readonly multiple?: boolean;
+	readonly uniqueItems?: boolean;
+}
+
+export class RelationFormat extends BaseValueFormat<RelationProperty, RelationValue, RelationLookupWidget|RelationMultiselectWidget, RelationAttributes> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'relation';
@@ -95,13 +103,14 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		return column;
 	}
 
-	public getFormatAttributes(): string[] {
-		return [
-			'required',
-			'relation',
-			'targetSchema',
-			'multiple'
-		];
+	public getAttributes( base: PropertyAttributes ): RelationAttributes {
+		return {
+			...base,
+			relation: '',
+			targetSchema: '',
+			multiple: false,
+			uniqueItems: false
+		};
 	}
 
 }

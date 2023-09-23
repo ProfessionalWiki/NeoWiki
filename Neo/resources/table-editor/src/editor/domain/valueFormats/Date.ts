@@ -3,11 +3,15 @@ import { newStringValue, type StringValue, ValueType } from '@/editor/domain/Val
 import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { DateWidgetFactory } from '@/editor/presentation/Widgets/DateWidgets/DateWidgetFactory';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface DateProperty extends PropertyDefinition {
 }
 
-export class DateFormat extends BaseValueFormat<DateProperty, StringValue, OO.ui.InputWidget> {
+interface DateAttributes extends PropertyAttributes {
+}
+
+export class DateFormat extends BaseValueFormat<DateProperty, StringValue, OO.ui.InputWidget, DateAttributes> {
 
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'date';
@@ -44,9 +48,9 @@ export class DateFormat extends BaseValueFormat<DateProperty, StringValue, OO.ui
 		};
 	}
 
-	public getFormatAttributes(): string[] {
-		return [
-			'required'
-		];
+	public getAttributes( base: PropertyAttributes ): DateAttributes {
+		return {
+			...base
+		};
 	}
 }

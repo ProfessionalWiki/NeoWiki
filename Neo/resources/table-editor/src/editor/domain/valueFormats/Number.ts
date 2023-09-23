@@ -4,6 +4,7 @@ import { PropertyName } from '@/editor/domain/PropertyDefinition';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import { BaseValueFormat, ValidationResult, type ValidationError } from '@/editor/domain/ValueFormat';
 import { NumberInputWidgetFactory, type NumberInputWidget } from '@/editor/presentation/Widgets/NumberInputWidgetFactory';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface NumberProperty extends PropertyDefinition {
 
@@ -13,7 +14,13 @@ export interface NumberProperty extends PropertyDefinition {
 
 }
 
-export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, NumberInputWidget> {
+export interface NumberAttributes extends PropertyAttributes {
+	readonly precision?: number;
+	readonly minimum?: number;
+	readonly maximum?: number;
+}
+
+export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, NumberInputWidget, NumberAttributes> {
 
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'number';
@@ -78,13 +85,13 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, N
 		};
 	}
 
-	public getFormatAttributes(): string[] {
-		return [
-			'required',
-			'minimum',
-			'maximum',
-			'precision'
-		];
+	public getAttributes( base: PropertyAttributes ): NumberAttributes {
+		return {
+			...base,
+			minimum: 0,
+			maximum: 100,
+			precision: 0
+		};
 	}
 
 }

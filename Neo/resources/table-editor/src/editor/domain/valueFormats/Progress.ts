@@ -7,6 +7,7 @@ import {
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
 import type { ColumnDefinition } from 'tabulator-tables';
+import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface ProgressProperty extends PropertyDefinition {
 
@@ -16,7 +17,13 @@ export interface ProgressProperty extends PropertyDefinition {
 
 }
 
-export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValue, ProgressBarWidget> {
+export interface ProgressAttributes extends PropertyAttributes {
+	readonly minimum?: number;
+	readonly maximum?: number;
+	readonly step?: number;
+}
+
+export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValue, ProgressBarWidget, ProgressAttributes> {
 
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'progress';
@@ -67,12 +74,12 @@ export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValu
 		return column;
 	}
 
-	public getFormatAttributes(): string[] {
-		return [
-			'required',
-			'minimum',
-			'maximum',
-			'precision'
-		];
+	public getAttributes( base: PropertyAttributes ): ProgressAttributes {
+		return {
+			...base,
+			minimum: 0,
+			maximum: 100,
+			step: 1
+		};
 	}
 }
