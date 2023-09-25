@@ -25,10 +25,8 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, N
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'number';
 
-	public getExampleValue(): { value: number } {
-		return {
-			value: 42
-		};
+	public getExampleValue(): number {
+		return 42;
 	}
 
 	private getBoundsMessage( value: number, minimum: number | undefined, maximum: number | undefined ): string | null {

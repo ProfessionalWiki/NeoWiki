@@ -16,10 +16,8 @@ export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanVal
 	public static readonly valueType = ValueType.Boolean;
 	public static readonly formatName = 'checkbox';
 
-	public getExampleValue(): { value: boolean } {
-		return {
-			value: true
-		};
+	public getExampleValue(): boolean {
+		return true;
 	}
 
 	public validate( value: BooleanValue, property: CheckboxProperty ): ValidationResult {

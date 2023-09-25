@@ -20,10 +20,8 @@ export class DateFormat extends BaseValueFormat<DateProperty, StringValue, OO.ui
 		super();
 	}
 
-	public getExampleValue(): { value: string } {
-		return {
-			value: '2020-04-19'
-		};
+	public getExampleValue(): string {
+		return '2021-04-19';
 	}
 
 	public validate( value: StringValue, property: DateProperty ): ValidationResult {
