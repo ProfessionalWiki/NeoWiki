@@ -31,6 +31,14 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMult
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'url';
 
+	public getExampleValue<T extends { multiple?: boolean }>( property: T ): StringValue {
+		const exampleStrings = property.multiple ? [ 'http://example1.com', 'http://example2.com' ] : [ 'http://example.com' ];
+		return {
+			type: ValueType.String,
+			strings: exampleStrings
+		};
+	}
+
 	// TODO: unit tests
 	public validate( value: StringValue, property: UrlProperty ): ValidationResult {
 		const errors: ValidationError[] = [];
