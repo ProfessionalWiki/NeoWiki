@@ -279,6 +279,14 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 			 ORDER BY id'
 		)->getResults()->toRecursiveArray();
 
+		foreach ( $expectedSubjects as &$subject ) {
+			sort( $subject['labels'] );
+		}
+
+		foreach ( $result as &$subject ) {
+			sort( $subject['labels'] );
+		}
+
 		$this->assertSame( $expectedSubjects, $result );
 	}
 
