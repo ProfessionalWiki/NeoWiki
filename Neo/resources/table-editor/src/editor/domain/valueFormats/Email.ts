@@ -27,10 +27,8 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, Tag
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'email';
 
-	public getExampleValue( property: { multiple?: boolean } ): { value: string[] } {
-		return {
-			value: property.multiple ? [ 'example1@email.com', 'example2@email.com' ] : [ 'example@email.com' ]
-		};
+	public getExampleValue( property: { multiple?: boolean } ): string[] {
+		return property.multiple ? [ 'example1@email.com', 'example2@email.com' ] : [ 'example@email.com' ];
 	}
 
 	public validate( value: StringValue, property: EmailProperty ): ValidationResult {

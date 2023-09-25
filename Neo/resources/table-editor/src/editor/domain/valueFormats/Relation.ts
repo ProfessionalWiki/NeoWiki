@@ -47,19 +47,8 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		this.factory = new RelationServicesFactory( factory );
 	}
 
-	public getExampleValue( property: RelationProperty ): RelationValue {
-		let exampleRelations: Relation[];
-
-		if ( property.multiple ) {
-			exampleRelations = [
-				new Relation( undefined, 'exampleTarget1' ),
-				new Relation( undefined, 'exampleTarget2' )
-			];
-		} else {
-			exampleRelations = [ new Relation( undefined, 'exampleTarget' ) ];
-		}
-
-		return new RelationValue( exampleRelations );
+	public getExampleValue( property: RelationProperty ): string[] {
+		return property.multiple ? [ 'Some text', 'Some text 2' ] : [ 'Some Text' ];
 	}
 
 	public validate( value: RelationValue, property: RelationProperty ): ValidationResult {

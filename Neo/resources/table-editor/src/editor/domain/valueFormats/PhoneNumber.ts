@@ -23,10 +23,8 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'phoneNumber';
 
-	public getExampleValue( property: PhoneNumberProperty ): { value: string[] } {
-		return {
-			value: property.multiple ? [ '+123 456 7890', '+098 765 4321' ] : [ '+123 456 7890' ]
-		};
+	public getExampleValue( property: PhoneNumberProperty ): string[] {
+		return property.multiple ? [ '+123 456 7890', '+098 765 4321' ] : [ '+123 456 7890' ];
 	}
 
 	// TODO: unit tests

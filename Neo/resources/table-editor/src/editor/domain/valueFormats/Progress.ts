@@ -1,5 +1,5 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { type NumberValue, ValueType } from '@/editor/domain/Value';
+import { newNumberValue, type NumberValue, ValueType } from '@/editor/domain/Value';
 import { type ProgressBarWidget, ProgressBarWidgetFactory } from '@/editor/presentation/Widgets/ProgressBarWidgetFactory';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import {
@@ -28,10 +28,8 @@ export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValu
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'progress';
 
-	public getExampleValue(): { value: number } {
-		return {
-			value: 90
-		};
+	public getExampleValue(): number {
+		return 90;
 	}
 
 	public validate( value: NumberValue, property: ProgressProperty ): ValidationResult {
