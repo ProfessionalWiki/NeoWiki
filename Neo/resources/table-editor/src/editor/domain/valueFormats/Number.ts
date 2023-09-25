@@ -25,10 +25,9 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, N
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'number';
 
-	public getExampleValue(): NumberValue {
+	public getExampleValue(): { value: number } {
 		return {
-			type: ValueType.Number,
-			number: 42
+			value: 42
 		};
 	}
 

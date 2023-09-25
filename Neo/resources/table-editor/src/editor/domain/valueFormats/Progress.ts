@@ -28,10 +28,9 @@ export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValu
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'progress';
 
-	public getExampleValue( property: ProgressProperty ): NumberValue {
+	public getExampleValue(): { value: number } {
 		return {
-			type: ValueType.Number,
-			number: property.minimum + Math.floor( Math.random() * ( property.maximum - property.minimum + 1 ) )
+			value: 90
 		};
 	}
 

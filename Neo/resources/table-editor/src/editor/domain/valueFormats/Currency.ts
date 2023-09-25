@@ -27,10 +27,9 @@ export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValu
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'currency';
 
-	public getExampleValue(): NumberValue {
+	public getExampleValue(): { value: number } {
 		return {
-			type: ValueType.Number,
-			number: 42
+			value: 42
 		};
 	}
 

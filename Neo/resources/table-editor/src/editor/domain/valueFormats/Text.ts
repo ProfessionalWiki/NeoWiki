@@ -24,18 +24,9 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'text';
 
-	public getExampleValue( property: { multiple?: boolean } ): StringValue {
-		let exampleStrings: string[];
-
-		if ( property.multiple ) {
-			exampleStrings = [ 'http://example1.com', 'http://example2.com' ];
-		} else {
-			exampleStrings = [ 'http://example.com' ];
-		}
-
+	public getExampleValue( property: { multiple?: boolean } ): { value: string[]; multiple?: boolean } {
 		return {
-			type: ValueType.String,
-			strings: exampleStrings
+			value: property.multiple ? [ 'Some text', 'Some text 2' ] : [ 'Some Text' ]
 		};
 	}
 
