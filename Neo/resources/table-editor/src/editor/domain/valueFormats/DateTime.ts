@@ -20,8 +20,10 @@ export class DateTimeFormat extends BaseValueFormat<DateTimeProperty, StringValu
 		super();
 	}
 
-	public getExampleValue(): StringValue {
-		return newStringValue( '2020-04-19T11:09:02Z' );
+	public getExampleValue(): { value: string[] } {
+		return {
+			value: [ '2020-04-19T11:09:02Z' ]
+		};
 	}
 
 	public validate( value: StringValue, property: DateTimeProperty ): ValidationResult {

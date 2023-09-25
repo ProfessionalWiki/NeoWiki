@@ -20,8 +20,10 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'time';
 
-	public getExampleValue(): StringValue {
-		return newStringValue( '12:34:56' );
+	public getExampleValue( property: unknown ): { value: StringValue } {
+		return {
+			value: newStringValue( '12:10.14' )
+		};
 	}
 
 	// TODO: unit tests
