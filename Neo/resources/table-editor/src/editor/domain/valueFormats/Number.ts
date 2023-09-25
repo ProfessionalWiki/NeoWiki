@@ -25,6 +25,13 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, N
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'number';
 
+	public getExampleValue(): NumberValue {
+		return {
+			type: ValueType.Number,
+			number: 42
+		};
+	}
+
 	private getBoundsMessage( value: number, minimum: number | undefined, maximum: number | undefined ): string | null {
 		if ( minimum !== undefined && maximum !== undefined ) {
 			if ( value < minimum || value > maximum ) {

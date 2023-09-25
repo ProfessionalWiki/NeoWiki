@@ -27,6 +27,13 @@ export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValu
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'currency';
 
+	public getExampleValue(): NumberValue {
+		return {
+			type: ValueType.Number,
+			number: 42
+		};
+	}
+
 	private getBoundsMessage( value: number, minimum: number | undefined, maximum: number | undefined ): string | null {
 		if ( minimum !== undefined && maximum !== undefined ) {
 			if ( value < minimum || value > maximum ) {

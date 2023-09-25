@@ -1,5 +1,5 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { RelationValue, ValueType } from '@/editor/domain/Value';
+import { Relation, RelationValue, ValueType } from '@/editor/domain/Value';
 import {
 	type RelationMultiselectWidget,
 	RelationMultiselectWidgetFactory
@@ -45,6 +45,21 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 	public constructor( factory: NeoWikiExtension, private readonly vueComponentManager: VueComponentManager ) {
 		super();
 		this.factory = new RelationServicesFactory( factory );
+	}
+
+	public getExampleValue( property: RelationProperty ): RelationValue {
+		let exampleRelations: Relation[];
+
+		if ( property.multiple ) {
+			exampleRelations = [
+				new Relation( undefined, 'exampleTarget1' ),
+				new Relation( undefined, 'exampleTarget2' )
+			];
+		} else {
+			exampleRelations = [ new Relation( undefined, 'exampleTarget' ) ];
+		}
+
+		return new RelationValue( exampleRelations );
 	}
 
 	public validate( value: RelationValue, property: RelationProperty ): ValidationResult {
