@@ -21,7 +21,7 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui
 	public static readonly formatName = 'time';
 
 	public getExampleValue(): string {
-		return '12:10.14';
+		return '11:10.14';
 	}
 
 	// TODO: unit tests
