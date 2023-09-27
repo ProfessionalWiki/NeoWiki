@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Psr\Log\LoggerInterface;
 
 class SubjectUpdater {
@@ -22,7 +23,7 @@ class SubjectUpdater {
 		private readonly SchemaLookup $schemaRepository,
 		private readonly TransactionInterface $transaction,
 		private readonly PageId $pageId,
-		private LoggerInterface $logger
+		private readonly LoggerInterface $logger
 	) {
 	}
 
@@ -60,6 +61,7 @@ class SubjectUpdater {
 	private function statementsToNodeProperties( StatementList $statements ): array {
 		$nodeProps = [];
 
+		// TODO: inject ValueFormatLookup. Add ValueFormat::buildNeo4jValue($value)
 		foreach ( $statements->asArray() as $statement ) {
 			if ( $statement->getFormat() !== RelationFormat::NAME ) {
 				$nodeProps[$statement->getPropertyName()->text] = $statement->getValue()->toScalars();
