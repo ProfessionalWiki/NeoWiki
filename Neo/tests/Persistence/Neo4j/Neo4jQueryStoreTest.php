@@ -17,7 +17,6 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
-use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore
@@ -30,14 +29,12 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 	private const GUID_4 = '00000000-1237-0000-0000-000000000004';
 	private const SCHEMA_ID_A = 'Alpha';
 	private const SCHEMA_ID_Z = 'Zed';
-	private LegacyLoggerSpy $logger;
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
 		$this->createSchema( self::SCHEMA_ID_A );
 		$this->createSchema( self::SCHEMA_ID_Z );
-		$this->logger = new LegacyLoggerSpy();
 	}
 
 	public function testReadQueryReturnsNothingWhenDbIsEmpty(): void {
@@ -48,15 +45,12 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function newQueryStore(): Neo4jQueryStore {
-		return new Neo4jQueryStore(
-			NeoWikiExtension::getInstance()->getNeo4jClient(),
-			NeoWikiExtension::getInstance()->getReadOnlyNeo4jClient(),
+		return NeoWikiExtension::getInstance()->newNeo4jQueryStore(
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
 				TestSchema::build( name: self::SCHEMA_ID_A ),
 				TestSchema::build( name: self::SCHEMA_ID_Z )
-			),
-			$this->logger
+			)
 		);
 	}
 
