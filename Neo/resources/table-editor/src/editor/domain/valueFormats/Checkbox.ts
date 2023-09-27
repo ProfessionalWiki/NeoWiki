@@ -46,9 +46,6 @@ export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanVal
 	}
 
 	public getAttributes( base: PropertyAttributes ): CheckboxAttributes {
-		return {
-			...base,
-			default: false
-		};
+		return { ...base };
 	}
 }
