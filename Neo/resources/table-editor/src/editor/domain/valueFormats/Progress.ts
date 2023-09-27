@@ -28,8 +28,8 @@ export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValu
 	public static readonly valueType = ValueType.Number;
 	public static readonly formatName = 'progress';
 
-	public getExampleValue(): number {
-		return 90;
+	public getExampleValue(): NumberValue {
+		return newNumberValue( 90 );
 	}
 
 	public validate( value: NumberValue, property: ProgressProperty ): ValidationResult {

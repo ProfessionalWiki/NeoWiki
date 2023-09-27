@@ -29,6 +29,10 @@ export class ValueFormatRegistry {
 		return Array.from( this.propertyTypes.keys() );
 	}
 
+	public getFormats(): ValueFormat[] {
+		return Array.from( this.propertyTypes.values() );
+	}
+
 }
 
 // TODO: Consider a better solution but not all widgets are correctly defined as inheritors of OO.ui.Widget
@@ -53,7 +57,7 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 
 	public abstract getAttributes( base: PropertyAttributes ): A;
 
-	public abstract getExampleValue( property: unknown ): unknown;
+	public abstract getExampleValue(): V;
 
 	public createTableEditorColumn( property: T ): ColumnDefinition {
 		return {
