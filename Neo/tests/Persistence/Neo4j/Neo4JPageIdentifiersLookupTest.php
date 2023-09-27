@@ -11,14 +11,12 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
-use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup
@@ -31,11 +29,9 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 	private const GUID_4 = '00000000-1237-0000-0000-000000000004';
 	private const GUID_5 = '00000000-1237-0000-0000-000000000005';
 	private const GUID_404 = '00000000-1237-0000-0000-000000000007';
-	private LegacyLoggerSpy $logger;
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
-		$this->logger = new LegacyLoggerSpy();
 	}
 
 	public function testReturnsNullOnEmptyGraph(): void {
@@ -52,19 +48,11 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 		return NeoWikiExtension::getInstance()->getNeo4jClient();
 	}
 
-	private function getReadOnlyClient(): ClientInterface {
-		return NeoWikiExtension::getInstance()->getReadOnlyNeo4jClient();
-	}
-
 	public function testFindsIdOfPage(): void {
-		$client = $this->getClient();
-		$queryStore = new Neo4jQueryStore(
-			$client,
-			$this->getReadOnlyClient(),
+		$queryStore = NeoWikiExtension::getInstance()->newNeo4jQueryStore(
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
-			),
-			$this->logger
+			)
 		);
 
 		$queryStore->savePage( TestPage::build(
@@ -95,7 +83,7 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertEquals(
 			new PageIdentifiers( new PageId( 42 ), 'Bar' ),
-			$this->newLookup( $client )->getPageIdOfSubject( new SubjectId( self::GUID_2 ) )
+			$this->newLookup( $this->getClient() )->getPageIdOfSubject( new SubjectId( self::GUID_2 ) )
 		);
 	}
 

@@ -21,12 +21,10 @@ use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 
 	private const GUID_1 = '00000000-1237-0000-0000-000000000001';
-	private LegacyLoggerSpy $logger;
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
-		$this->logger = new LegacyLoggerSpy();
 	}
 
 	public function testDefaultConstraintsAreCreated(): void {
@@ -65,13 +63,10 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function newQueryStore(): Neo4jQueryStore {
-		return new Neo4jQueryStore(
-			NeoWikiExtension::getInstance()->getNeo4jClient(),
-			NeoWikiExtension::getInstance()->getReadOnlyNeo4jClient(),
+		return NeoWikiExtension::getInstance()->newNeo4jQueryStore(
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
-			),
-			$this->logger
+			)
 		);
 	}
 
