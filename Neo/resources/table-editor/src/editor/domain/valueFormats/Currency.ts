@@ -5,6 +5,9 @@ import type { CurrencyInputWidget } from '@/editor/presentation/Widgets/Currency
 import { BaseValueFormat, ValidationResult, type ValidationError } from '@/editor/domain/ValueFormat';
 import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
+import { PropertyName } from '@/editor/domain/PropertyDefinition';
+import type { NumberProperty } from '@/editor/domain/valueFormats/Number';
+import { NumberFormat } from '@/editor/domain/valueFormats/Number';
 
 export interface CurrencyProperty extends PropertyDefinition {
 
@@ -103,4 +106,20 @@ export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValu
 			default: 0
 		};
 	}
+}
+
+export function newCurrencyProperty(
+	name = 'MyCurrencyProperty',
+	currencyCode = 'EUR',
+	precision = 0
+): CurrencyProperty {
+	return {
+		name: new PropertyName( name ),
+		type: ValueType.Number,
+		format: CurrencyFormat.formatName,
+		precision: precision,
+		currencyCode: currencyCode,
+		description: '',
+		required: false
+	};
 }
