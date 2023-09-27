@@ -47,8 +47,9 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		this.factory = new RelationServicesFactory( factory );
 	}
 
-	public getExampleValue( property: RelationProperty ): string[] {
-		return property.multiple ? [ 'Some text', 'Some text 2' ] : [ 'Some Text' ];
+	public getExampleValue(): RelationValue {
+		// TODO: verify a relation without id can be rendered as example
+		return new RelationValue( [ new Relation( undefined, 'Some relation' ) ] );
 	}
 
 	public validate( value: RelationValue, property: RelationProperty ): ValidationResult {

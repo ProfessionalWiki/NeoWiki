@@ -1,5 +1,5 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
-import { type StringValue, ValueType } from '@/editor/domain/Value';
+import { newStringValue, type StringValue, ValueType } from '@/editor/domain/Value';
 import {
 	BaseValueFormat,
 	createStringFormField,
@@ -24,8 +24,8 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui
 	public static readonly valueType = ValueType.String;
 	public static readonly formatName = 'text';
 
-	public getExampleValue( property: { multiple?: boolean } ): string[] {
-		return property.multiple ? [ 'Some text', 'Some text 2' ] : [ 'Some Text' ];
+	public getExampleValue(): StringValue {
+		return newStringValue( 'Some Text' );
 	}
 
 	public validate( value: StringValue, property: TextProperty ): ValidationResult {

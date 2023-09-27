@@ -20,8 +20,8 @@ export class DateTimeFormat extends BaseValueFormat<DateTimeProperty, StringValu
 		super();
 	}
 
-	public getExampleValue(): string {
-		return '2021-01-01T12:00:00Z';
+	public getExampleValue(): StringValue {
+		return newStringValue( '2021-01-01T12:00:00Z' );
 	}
 
 	public validate( value: StringValue, property: DateTimeProperty ): ValidationResult {
