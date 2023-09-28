@@ -29,6 +29,7 @@ class SubjectUpdater {
 	}
 
 	public function updateSubject( Subject $subject, bool $isMainSubject ): void {
+		// TODO: we should make sure this schema retrieval is cached
 		$schema = $this->schemaRepository->getSchema( $subject->getSchemaId() );
 
 		if ( $schema === null ) {
