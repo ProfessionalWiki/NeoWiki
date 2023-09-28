@@ -32,24 +32,29 @@ class DateFormat implements ValueFormat {
 	}
 
 	public function buildNeo4jValue( NeoValue $value ): mixed {
-		/**
-		 * @var StringValue $value
-		 */
-
 		$dates = [];
 
-		foreach ( $value->strings as $string ) {
-			try {
-				$dates[] = new Date(
-					days: intdiv( ( new DateTimeImmutable( $string ) )->getTimestamp(), self::SECONDS_PER_DAY )
-				);
-			}
-			catch ( \Exception ) {
-				// Ignore invalid dates
+		if ( $value instanceof StringValue ) {
+			foreach ( $value->strings as $string ) {
+				try {
+					$dates[] = $this->dateStringToNeo4jDate( $string );
+				}
+				catch ( \Exception ) {
+					// Ignore invalid dates
+				}
 			}
 		}
 
 		return new CypherList( $dates );
+	}
+
+	private function dateStringToNeo4jDate( string $date ): Date {
+		return new Date(
+			days: intdiv(
+				( new DateTimeImmutable( $date ) )->getTimestamp(),
+				self::SECONDS_PER_DAY
+			)
+		);
 	}
 
 }
