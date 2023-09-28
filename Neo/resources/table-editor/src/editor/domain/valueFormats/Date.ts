@@ -25,7 +25,7 @@ export class DateFormat extends BaseValueFormat<DateProperty, StringValue, OO.ui
 	}
 
 	public validate( value: StringValue, property: DateProperty ): ValidationResult {
-		return new ValidationResult( [] ); // TODO
+		return new ValidationResult( [] ); // TODO: ensure is ISO date like 2023-09-29
 	}
 
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): DateProperty {
