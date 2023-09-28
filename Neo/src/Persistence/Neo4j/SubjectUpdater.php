@@ -13,16 +13,17 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatLookup;
 use Psr\Log\LoggerInterface;
 
 class SubjectUpdater {
 
 	public function __construct(
-		private readonly SchemaLookup $schemaRepository,
 		private readonly TransactionInterface $transaction,
 		private readonly PageId $pageId,
+		private readonly SchemaLookup $schemaRepository,
+		private readonly ValueFormatLookup $valueFormatLookup,
 		private readonly LoggerInterface $logger
 	) {
 	}
@@ -58,13 +59,24 @@ class SubjectUpdater {
 		);
 	}
 
-	private function statementsToNodeProperties( StatementList $statements ): array {
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function statementsToNodeProperties( StatementList $statements ): array {
 		$nodeProps = [];
 
-		// TODO: inject ValueFormatLookup. Add ValueFormat::buildNeo4jValue($value)
 		foreach ( $statements->asArray() as $statement ) {
-			if ( $statement->getFormat() !== RelationFormat::NAME ) {
-				$nodeProps[$statement->getPropertyName()->text] = $statement->getValue()->toScalars();
+			$format = $this->valueFormatLookup->getFormat( $statement->getFormat() );
+
+			if ( $format === null ) {
+				// TODO: log warning
+				continue;
+			}
+
+			$neo4jValue = $format->buildNeo4jValue( $statement->getValue() );
+
+			if ( $neo4jValue !== ValueFormat::NO_NEO4J_VALUE ) {
+				$nodeProps[$statement->getPropertyName()->text] = $neo4jValue;
 			}
 		}
 
