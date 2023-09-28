@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\PhoneNumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormat;
 
@@ -23,6 +24,10 @@ class PhoneNumberFormat implements ValueFormat {
 
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): PhoneNumberProperty {
 		return PhoneNumberProperty::fromPartialJson( $core, $property );
+	}
+
+	public function buildNeo4jValue( NeoValue $value ): mixed {
+		return $value->toScalars(); // TODO
 	}
 
 }
