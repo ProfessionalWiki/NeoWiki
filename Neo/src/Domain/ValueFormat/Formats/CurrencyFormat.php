@@ -28,7 +28,7 @@ class CurrencyFormat implements ValueFormat {
 	}
 
 	public function buildNeo4jValue( NeoValue $value ): mixed {
-		return $value->toScalars(); // TODO: map?
+		return $value->toScalars();
 	}
 
 }
