@@ -6,8 +6,9 @@ namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 use Ramsey\Uuid\Uuid;
+use Stringable;
 
-class SubjectId {
+class SubjectId implements Stringable {
 
 	public readonly string $text;
 
@@ -25,6 +26,10 @@ class SubjectId {
 
 	public static function createNew( GuidGenerator $guidGenerator ): self {
 		return new self( $guidGenerator->generate() );
+	}
+
+	public function __toString(): string {
+		return $this->text;
 	}
 
 }
