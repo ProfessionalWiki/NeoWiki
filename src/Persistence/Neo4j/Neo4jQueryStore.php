@@ -74,7 +74,6 @@ class Neo4jQueryStore implements QueryStore, QueryEngine, WriteQueryEngine {
 	}
 
 	private function updateSubjects( TransactionInterface $transaction, Page $page ): void {
-		// TODO: we should make sure this schema retrieval is cached
 		$updater = $this->subjectUpdaterFactory->newSubjectUpdater( $transaction, $page->getId() );
 
 		$mainSubject = $page->getSubjects()->getMainSubject();
