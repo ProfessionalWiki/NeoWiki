@@ -27,7 +27,7 @@ class NumberFormat implements ValueFormat {
 	}
 
 	public function buildNeo4jValue( NeoValue $value ): mixed {
-		return $value->toScalars(); // TODO
+		return $value->toScalars();
 	}
 
 }
