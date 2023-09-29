@@ -2,23 +2,23 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j\Formats;
+namespace Persistence\Neo4j\Formats;
 
-use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\LocalTime;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\DateFormat;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TimeFormat;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\DateFormat
+ * @covers \ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TimeFormat
  * @group database
  */
-class DateFormatNeo4jTest extends NeoWikiIntegrationTestCase {
+class TimeFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
@@ -34,25 +34,29 @@ class DateFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 				statements: new StatementList( [
 					new Statement(
 						property: new PropertyName( 'MyProperty' ),
-						format: DateFormat::NAME,
-						value: new StringValue( '2023-09-28', 'Ignored bad value', '2023-09-29' )
+						format: TimeFormat::NAME,
+						value: new StringValue(
+							'13:37',
+							'Ignored bad value',
+							'21:42:42',
+							'00:00:61', // Invalid
+							'24:00:01', // Invalid
+						)
 					),
 				] )
 			),
 		) );
 
 		$result = $store->runReadQuery(
-			"MATCH (n {id: '$subjectId'}) RETURN n.MyProperty[0] + duration('P3D') AS ModifiedDate1, n.MyProperty[1] as Date2"
+			"MATCH (n {id: '$subjectId'}) RETURN n.MyProperty"
 		)->toRecursiveArray()[0];
 
 		$this->assertEquals(
-			new Date( 19631 ),
-			$result['ModifiedDate1']
-		);
-
-		$this->assertEquals(
-			new Date( 19629 ),
-			$result['Date2']
+			[
+				new LocalTime( 49020000000000 ),
+				new LocalTime( 78162000000000 ),
+			],
+			$result['n.MyProperty']
 		);
 	}
 
