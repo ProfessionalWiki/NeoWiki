@@ -171,3 +171,11 @@ describe( 'valueToJson', () => {
 	} );
 
 } );
+
+describe( 'newStringValue', () => {
+
+	it( 'takes both string arrays and multiple string values', () => {
+		expect( newStringValue( 'foo', 'bar' ) ).toEqual( newStringValue( [ 'foo', 'bar' ] ) );
+	} );
+
+} );

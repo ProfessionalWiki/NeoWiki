@@ -103,10 +103,10 @@ export function jsonToValue( json: any, type: ValueType|undefined = undefined ):
 	throw new Error( 'Invalid value: ' + JSON.stringify( json ) );
 }
 
-export function newStringValue( ...strings: string[] ): StringValue {
+export function newStringValue( ...strings: string[] | [ string[] ] ): StringValue {
 	return {
 		type: ValueType.String,
-		strings: strings
+		strings: Array.isArray( strings[ 0 ] ) ? strings[ 0 ] : strings
 	} as StringValue;
 }
 
