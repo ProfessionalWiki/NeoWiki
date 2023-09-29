@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\SchemaAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
+use Title;
 
 class CreateSchemaAction {
 
@@ -38,12 +39,12 @@ class CreateSchemaAction {
 
 		try {
 			$this->deserializer->deserialize( $schemaName,  $schemaJson );
-		} catch ( \Exception $e ) {
+		} catch ( \Exception ) {
 			$this->presenter->presentInvalidArguments();
 			return;
 		}
 
-		$title = \Title::newFromText( 'Schema:' . $name );
+		$title = Title::makeTitleSafe( NS_NEOWIKI_SCHEMA, $name );
 		if ( $title === null ) {
 			$this->presenter->presentInvalidTitle();
 			return;
