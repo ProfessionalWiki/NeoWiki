@@ -12,3 +12,9 @@ export class SubjectId {
 		this.text = text;
 	}
 }
+
+export const ZERO_GUID = '00000000-0000-0000-0000-000000000000';
+
+export function newFakeSubjectId(): SubjectId {
+	return new SubjectId( ZERO_GUID );
+}
