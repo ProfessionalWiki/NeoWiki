@@ -7,7 +7,6 @@ import {
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
@@ -44,11 +43,11 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui
 		return createStringFormField( value, property, 'text' );
 	}
 
-	public async getFieldData( field: OO.ui.TextInputWidget|TagMultiselectWidget, property: PropertyDefinition ): Promise<FieldData> {
+	public getFieldData( field: OO.ui.TextInputWidget|TagMultiselectWidget ): StringValue {
 		if ( field instanceof OO.ui.TagMultiselectWidget ) {
-			return getTagFieldData( field, property );
+			return getTagFieldData( field );
 		}
-		return await getTextFieldData( field );
+		return getTextFieldData( field );
 	}
 
 	public createTableEditorColumn( property: TextProperty ): ColumnDefinition {
@@ -66,6 +65,14 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue, OO.ui
 			...base,
 			multiple: false
 		};
+	}
+
+	public getFieldElement( field: TagMultiselectWidget|OO.ui.TextInputWidget, property: TextProperty ): HTMLInputElement {
+		if ( property.multiple ) {
+			const multipleField = field as TagMultiselectWidget;
+			return multipleField.input.$input[ 0 ] as HTMLInputElement;
+		}
+		return ( field as OO.ui.TextInputWidget ).$input[ 0 ] as HTMLInputElement;
 	}
 }
 

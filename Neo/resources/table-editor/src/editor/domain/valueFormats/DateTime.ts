@@ -1,7 +1,6 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/editor/domain/Value';
 import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { DateTimeWidgetFactory } from '@/editor/presentation/Widgets/DateWidgets/DateTimeWidgetFactory';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
@@ -25,7 +24,7 @@ export class DateTimeFormat extends BaseValueFormat<DateTimeProperty, StringValu
 	}
 
 	public validate( value: StringValue, property: DateTimeProperty ): ValidationResult {
-		return new ValidationResult( [] ); // TODO
+		return new ValidationResult( [] );
 	}
 
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): DateTimeProperty {
@@ -44,19 +43,18 @@ export class DateTimeFormat extends BaseValueFormat<DateTimeProperty, StringValu
 		return widget;
 	}
 
-	public async getFieldData( field: OO.ui.InputWidget ): Promise<FieldData> {
+	public getFieldData( field: OO.ui.InputWidget ): StringValue {
 		const value = field.getValue();
-
-		return {
-			value: value !== '' ? newStringValue( value ) : newStringValue(),
-			valid: true,
-			errorMessage: undefined
-		};
+		return value !== '' ? newStringValue( value ) : newStringValue();
 	}
 
 	public getAttributes( base: PropertyAttributes ): DateTimeAttributes {
 		return {
 			...base
 		};
+	}
+
+	public getFieldElement( field: OO.ui.InputWidget ): HTMLInputElement {
+		return field.$input[ 0 ] as HTMLInputElement;
 	}
 }

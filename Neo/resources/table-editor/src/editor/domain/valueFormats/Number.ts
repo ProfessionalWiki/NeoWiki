@@ -1,8 +1,7 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { newNumberValue, type NumberValue, ValueType } from '@/editor/domain/Value';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
-import { BaseValueFormat, ValidationResult, type ValidationError } from '@/editor/domain/ValueFormat';
+import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 import { NumberInputWidgetFactory, type NumberInputWidget } from '@/editor/presentation/Widgets/NumberInputWidgetFactory';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
@@ -48,17 +47,15 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, N
 	}
 
 	public validate( value: NumberValue, property: NumberProperty ): ValidationResult {
-		const errors: ValidationError[] = [];
 		const boundsMessage = this.getBoundsMessage( value.number, property.minimum, property.maximum );
-
 		if ( boundsMessage ) {
-			errors.push( {
+			return new ValidationResult( [ {
 				message: boundsMessage,
 				value: value
-			} );
+			} ] );
 		}
 
-		return new ValidationResult( errors );
+		return new ValidationResult( [] );
 	}
 
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): NumberProperty {
@@ -79,14 +76,8 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, N
 		} );
 	}
 
-	public async getFieldData( field: NumberInputWidget ): Promise<FieldData> {
-		const isValid = ( field.$input[ 0 ] as HTMLInputElement ).checkValidity();
-
-		return {
-			value: newNumberValue( field.getNumericValue() ),
-			valid: isValid,
-			errorMessage: isValid ? undefined : ( field.$input[ 0 ] as HTMLInputElement ).validationMessage
-		};
+	public getFieldData( field: NumberInputWidget ): NumberValue {
+		return newNumberValue( field.getNumericValue() );
 	}
 
 	public getAttributes( base: PropertyAttributes ): NumberAttributes {
@@ -96,6 +87,10 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue, N
 			maximum: 100,
 			precision: 0
 		};
+	}
+
+	public getFieldElement( field: NumberInputWidget ): HTMLInputElement {
+		return field.$input[ 0 ] as HTMLInputElement;
 	}
 
 }

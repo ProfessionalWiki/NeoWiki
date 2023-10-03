@@ -2,12 +2,9 @@ import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { newNumberValue, type NumberValue, ValueType } from '@/editor/domain/Value';
 import { CurrencyInputWidgetFactory } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
 import type { CurrencyInputWidget } from '@/editor/presentation/Widgets/CurrencyWidgetFactory';
-import { BaseValueFormat, ValidationResult, type ValidationError } from '@/editor/domain/ValueFormat';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
+import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
-import type { NumberProperty } from '@/editor/domain/valueFormats/Number';
-import { NumberFormat } from '@/editor/domain/valueFormats/Number';
 
 export interface CurrencyProperty extends PropertyDefinition {
 
@@ -53,17 +50,15 @@ export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValu
 	}
 
 	public validate( value: NumberValue, property: CurrencyProperty ): ValidationResult {
-		const errors: ValidationError[] = [];
 		const boundsMessage = this.getBoundsMessage( value.number, property.minimum, property.maximum );
-
 		if ( boundsMessage ) {
-			errors.push( {
+			return new ValidationResult( [ {
 				message: boundsMessage,
 				value: value
-			} );
+			} ] );
 		}
 
-		return new ValidationResult( errors );
+		return new ValidationResult( [] );
 	}
 
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): CurrencyProperty {
@@ -86,14 +81,8 @@ export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValu
 		} );
 	}
 
-	public async getFieldData( field: CurrencyInputWidget ): Promise<FieldData> {
-		const isValid = ( field.$input[ 0 ] as HTMLInputElement ).checkValidity();
-
-		return {
-			value: newNumberValue( field.getValue() === '' ? NaN : Number( field.getValue() ) ),
-			valid: isValid,
-			errorMessage: isValid ? undefined : ( field.$input[ 0 ] as HTMLInputElement ).validationMessage
-		};
+	public getFieldData( field: CurrencyInputWidget ): NumberValue {
+		return newNumberValue( field.getValue() === '' ? NaN : Number( field.getValue() ) );
 	}
 
 	public getAttributes( base: PropertyAttributes ): CurrencyAttributes {
@@ -105,6 +94,10 @@ export class CurrencyFormat extends BaseValueFormat<CurrencyProperty, NumberValu
 			currencyCode: 'EUR',
 			default: 0
 		};
+	}
+
+	public getFieldElement( field: CurrencyInputWidget ): HTMLInputElement {
+		return field.$input[ 0 ] as HTMLInputElement;
 	}
 }
 

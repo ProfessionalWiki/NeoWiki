@@ -6,7 +6,6 @@ import {
 	type ValidationError,
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import DOMPurify from 'dompurify';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
@@ -39,16 +38,35 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMult
 	public validate( value: StringValue, property: UrlProperty ): ValidationResult {
 		const errors: ValidationError[] = [];
 
-		// TODO: validate unique values
-		// TODO: validate required?
-		// TODO: validate multiple values?
-
-		value.strings.forEach( ( url ) => {
-			if ( !isValidUrl( url ) ) {
+		value.strings.forEach( ( string ) => {
+			if ( !isValidUrl( string ) ) {
 				errors.push( {
-					message: `${url} is not a valid URL`,
-					value: newStringValue( url )
+					message: `${string} is not a valid URL`,
+					value: newStringValue( string )
 				} );
+			}
+		} );
+
+		return new ValidationResult( errors );
+	}
+
+	public validateMultipleField( fields: Set<HTMLInputElement>, value: StringValue, property: UrlProperty ): ValidationResult {
+		if ( fields === undefined || !property.multiple ) {
+			return new ValidationResult( [] );
+		}
+
+		const errors: ValidationError[] = [];
+
+		fields.forEach( ( input ) => {
+			const inputValue = input.value.trim();
+
+			if ( inputValue !== '' && !isValidUrl( inputValue ) ) {
+				errors.push( {
+					message: `${inputValue} is not a valid URL`,
+					value: newStringValue( inputValue )
+				} );
+			} else {
+				fields.delete( input );
 			}
 		} );
 
@@ -80,11 +98,11 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMult
 		} );
 	}
 
-	public async getFieldData( field: OO.ui.Widget, property: PropertyDefinition ): Promise<FieldData> {
+	public getFieldData( field: OO.ui.Widget, property: PropertyDefinition ): StringValue {
 		if ( Object.prototype.hasOwnProperty.call( field, 'multiple' ) ) {
 			return ( field as MultipleTextInputWidget ).getFieldData();
 		}
-		return await getTextFieldData( field as OO.ui.TextInputWidget );
+		return getTextFieldData( field as OO.ui.TextInputWidget );
 	}
 
 	public createTableEditorColumn( property: UrlProperty ): ColumnDefinition {
@@ -108,6 +126,14 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue, TagMult
 			...base,
 			multiple: false
 		};
+	}
+
+	public getFieldElement( field: OO.ui.Widget, property: UrlProperty ): HTMLInputElement|Set<HTMLInputElement> {
+		if ( property.multiple ) {
+			const multipleField = field as MultipleTextInputWidget;
+			return new Set( [ ...multipleField.$wrapper.find( `input[type="${multipleField.type}"]` ) ] as HTMLInputElement[] );
+		}
+		return ( field as OO.ui.TextInputWidget ).$input[ 0 ] as HTMLInputElement;
 	}
 
 }

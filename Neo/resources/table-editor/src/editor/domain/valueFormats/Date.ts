@@ -1,7 +1,6 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/editor/domain/Value';
 import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { DateWidgetFactory } from '@/editor/presentation/Widgets/DateWidgets/DateWidgetFactory';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
@@ -25,7 +24,7 @@ export class DateFormat extends BaseValueFormat<DateProperty, StringValue, OO.ui
 	}
 
 	public validate( value: StringValue, property: DateProperty ): ValidationResult {
-		return new ValidationResult( [] ); // TODO: ensure is ISO date like 2023-09-29
+		return new ValidationResult( [] );
 	}
 
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): DateProperty {
@@ -42,19 +41,18 @@ export class DateFormat extends BaseValueFormat<DateProperty, StringValue, OO.ui
 		} );
 	}
 
-	public async getFieldData( field: OO.ui.InputWidget ): Promise<FieldData> {
+	public getFieldData( field: OO.ui.InputWidget ): StringValue {
 		const value = field.getValue();
-
-		return {
-			value: value !== '' ? newStringValue( value ) : newStringValue(),
-			valid: true,
-			errorMessage: undefined
-		};
+		return value !== '' ? newStringValue( value ) : newStringValue();
 	}
 
 	public getAttributes( base: PropertyAttributes ): DateAttributes {
 		return {
 			...base
 		};
+	}
+
+	public getFieldElement( field: OO.ui.InputWidget ): HTMLInputElement {
+		return field.$input[ 0 ] as HTMLInputElement;
 	}
 }

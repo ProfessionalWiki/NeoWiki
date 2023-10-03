@@ -6,10 +6,10 @@ import {
 	type ValidationError,
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
+import { isValidTime } from '@/editor/domain/valueFormats/Time';
 
 export interface PhoneNumberProperty extends MultiStringProperty {
 }
@@ -30,10 +30,6 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 	// TODO: unit tests
 	public validate( value: StringValue, property: PhoneNumberProperty ): ValidationResult {
 		const errors: ValidationError[] = [];
-
-		// TODO: validate unique values
-		// TODO: validate required?
-		// TODO: validate multiple values?
 
 		value.strings.forEach( ( string ) => {
 			if ( !isValidPhoneNumber( string ) ) {
@@ -59,11 +55,11 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 		return createStringFormField( value, property, 'tel' );
 	}
 
-	public async getFieldData( field: TagMultiselectWidget|OO.ui.TextInputWidget, property: PropertyDefinition ): Promise<FieldData> {
+	public getFieldData( field: TagMultiselectWidget|OO.ui.TextInputWidget ): StringValue {
 		if ( field instanceof OO.ui.TagMultiselectWidget ) {
-			return getTagFieldData( field, property );
+			return getTagFieldData( field );
 		}
-		return await getTextFieldData( field );
+		return getTextFieldData( field );
 	}
 
 	public createTableEditorColumn( property: PhoneNumberProperty ): ColumnDefinition {
@@ -81,6 +77,14 @@ export class PhoneNumberFormat extends BaseValueFormat<PhoneNumberProperty, Stri
 			...base,
 			multiple: false
 		};
+	}
+
+	public getFieldElement( field: TagMultiselectWidget|OO.ui.TextInputWidget, property: PhoneNumberProperty ): HTMLInputElement {
+		if ( property.multiple ) {
+			const multipleField = field as TagMultiselectWidget;
+			return multipleField.input.$input[ 0 ] as HTMLInputElement;
+		}
+		return ( field as OO.ui.TextInputWidget ).$input[ 0 ] as HTMLInputElement;
 	}
 }
 
