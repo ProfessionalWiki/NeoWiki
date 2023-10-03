@@ -2,7 +2,6 @@ import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/Pr
 import { TagMultiselectWidgetFactory, type TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { StringValue, Value } from '@/editor/domain/Value';
 import { newStringValue, ValueType } from '@/editor/domain/Value';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { MultipleTextInputWidget } from '@/editor/presentation/Widgets/MultipleTextInputWidgetFactory';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
@@ -39,6 +38,8 @@ export class ValueFormatRegistry {
 export type Field = OO.ui.CheckboxInputWidget | OO.ui.InputWidget | TagMultiselectWidget | MultipleTextInputWidget
 | OO.ui.TextInputWidget | OO.ui.NumberInputWidget | OO.ui.ProgressBarWidget | OO.ui.MenuTagMultiselectWidget | OO.ui.Widget;
 
+export type FieldElement = HTMLInputElement|Set<HTMLInputElement>|undefined;
+
 export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Value, F extends Field, A extends PropertyAttributes> {
 	public static readonly valueType: ValueType;
 	public static readonly formatName: string;
@@ -53,7 +54,7 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 
 	public abstract createFormField( value: V | undefined, property: T ): OO.ui.Widget;
 
-	public abstract getFieldData( field: F, property: T ): Promise<FieldData>;
+	public abstract getFieldData( field: F, property: T ): Value;
 
 	public abstract getAttributes( base: PropertyAttributes ): A;
 
@@ -64,6 +65,14 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 			title: property.name.toString(),
 			field: property.name.toString()
 		};
+	}
+
+	public validateMultipleField( fieldElements: FieldElement, value: V, property: T ): ValidationResult {
+		return new ValidationResult( [] );
+	}
+
+	public getFieldElement( field: F, property: T ): FieldElement {
+		return undefined;
 	}
 }
 
@@ -111,19 +120,11 @@ export function createStringFormField( value: StringValue | undefined, property:
 	} );
 }
 
-export function getTagFieldData( field: TagMultiselectWidget, property: PropertyDefinition ): FieldData {
+export function getTagFieldData( field: TagMultiselectWidget ): StringValue {
 	return field.getFieldData();
 }
 
-export async function getTextFieldData( field: OO.ui.TextInputWidget ): Promise<FieldData> {
-	// TODO: this is an ugly way to validate via Promise
-	const isValid = await field.getValidity().catch( () => false ) !== false;
-	const inputElement = field.$input[ 0 ] as HTMLInputElement;
+export function getTextFieldData( field: OO.ui.TextInputWidget ): StringValue {
 	const value = field.getValue();
-
-	return {
-		value: value !== '' ? newStringValue( value ) : newStringValue(),
-		valid: isValid,
-		errorMessage: isValid ? undefined : inputElement.validationMessage
-	};
+	return value !== '' ? newStringValue( value ) : newStringValue();
 }

@@ -2,7 +2,6 @@ import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { type BooleanValue, newBooleanValue, ValueType } from '@/editor/domain/Value';
 import { BaseValueFormat } from '@/editor/domain/ValueFormat';
 import { ValidationResult } from '@/editor/domain/ValueFormat';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
 
 export interface CheckboxProperty extends PropertyDefinition {
@@ -37,12 +36,8 @@ export class CheckboxFormat extends BaseValueFormat<CheckboxProperty, BooleanVal
 		} );
 	}
 
-	public async getFieldData( field: OO.ui.CheckboxInputWidget, property: CheckboxProperty ): Promise<FieldData> {
-		return {
-			value: newBooleanValue( field.isSelected() ),
-			valid: true,
-			errorMessage: undefined
-		};
+	public getFieldData( field: OO.ui.CheckboxInputWidget ): BooleanValue {
+		return newBooleanValue( field.isSelected() );
 	}
 
 	public getAttributes( base: PropertyAttributes ): CheckboxAttributes {

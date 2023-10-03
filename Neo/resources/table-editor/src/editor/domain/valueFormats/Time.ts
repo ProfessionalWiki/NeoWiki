@@ -1,9 +1,11 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/editor/domain/Value';
-import { TagMultiselectWidgetFactory } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
+import {
+	type TagMultiselectWidget,
+	TagMultiselectWidgetFactory
+} from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { ValidationError } from '@/editor/domain/ValueFormat';
 import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import type { TextProperty } from '@/editor/domain/valueFormats/Text';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
@@ -69,25 +71,16 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui
 			} );
 		}
 
-		const widget = new mw.widgets.datetime.DateTimeInputWidget( {
+		return new mw.widgets.datetime.DateTimeInputWidget( {
 			type: 'time',
 			value: value.strings.join( '' ),
 			required: property.required
 		} );
-
-		widget.setFlags( { invalid: false } );
-
-		return widget;
 	}
 
-	public async getFieldData( field: OO.ui.InputWidget ): Promise<FieldData> {
+	public getFieldData( field: OO.ui.InputWidget ): StringValue {
 		const value = field.getValue();
-
-		return {
-			value: value !== '' ? newStringValue( value ) : newStringValue(),
-			valid: true,
-			errorMessage: undefined
-		};
+		return value !== '' ? newStringValue( value ) : newStringValue();
 	}
 
 	public createTableEditorColumn( property: TextProperty ): ColumnDefinition {
@@ -104,6 +97,14 @@ export class TimeFormat extends BaseValueFormat<TimeProperty, StringValue, OO.ui
 		return {
 			...base
 		};
+	}
+
+	public getFieldElement( field: OO.ui.Widget, property: TimeProperty ): HTMLInputElement {
+		if ( property.multiple ) {
+			const multipleField = field as TagMultiselectWidget;
+			return multipleField.input.$input[ 0 ] as HTMLInputElement;
+		}
+		return ( field as OO.ui.TextInputWidget ).$input[ 0 ] as HTMLInputElement;
 	}
 }
 

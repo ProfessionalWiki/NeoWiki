@@ -6,7 +6,6 @@ import {
 	type ValidationError,
 	ValidationResult
 } from '@/editor/domain/ValueFormat';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { TagMultiselectWidget } from '@/editor/presentation/Widgets/TagMultiselectWidgetFactory';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import {
@@ -14,6 +13,7 @@ import {
 	MultipleTextInputWidgetFactory
 } from '@/editor/presentation/Widgets/MultipleTextInputWidgetFactory';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
+import { isValidPhoneNumber } from '@/editor/domain/valueFormats/PhoneNumber';
 
 export interface EmailProperty extends MultiStringProperty {
 }
@@ -34,12 +34,35 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, Tag
 	public validate( value: StringValue, property: EmailProperty ): ValidationResult {
 		const errors: ValidationError[] = [];
 
-		value.strings.forEach( ( email ) => {
-			if ( !isValidEmail( email ) ) {
+		value.strings.forEach( ( string ) => {
+			if ( !isValidEmail( string ) ) {
 				errors.push( {
-					message: `${email} is not a valid email`,
-					value: newStringValue( email )
+					message: `${string} is not a valid email`,
+					value: newStringValue( string )
 				} );
+			}
+		} );
+
+		return new ValidationResult( errors );
+	}
+
+	public validateMultipleField( fields: Set<HTMLInputElement>, value: StringValue, property: EmailProperty ): ValidationResult {
+		if ( fields === undefined || !property.multiple ) {
+			return new ValidationResult( [] );
+		}
+
+		const errors: ValidationError[] = [];
+
+		fields.forEach( ( input ) => {
+			const inputValue = input.value.trim();
+
+			if ( inputValue !== '' && !isValidEmail( inputValue ) ) {
+				errors.push( {
+					message: `${inputValue} is not a valid email`,
+					value: newStringValue( inputValue )
+				} );
+			} else {
+				fields.delete( input );
 			}
 		} );
 
@@ -71,11 +94,11 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, Tag
 		} );
 	}
 
-	public async getFieldData( field: OO.ui.Widget, property: PropertyDefinition ): Promise<FieldData> {
+	public getFieldData( field: OO.ui.Widget ): StringValue {
 		if ( Object.prototype.hasOwnProperty.call( field, 'multiple' ) ) {
 			return ( field as MultipleTextInputWidget ).getFieldData();
 		}
-		return await getTextFieldData( field as OO.ui.TextInputWidget );
+		return getTextFieldData( field as OO.ui.TextInputWidget );
 	}
 
 	public createTableEditorColumn( property: EmailProperty ): ColumnDefinition {
@@ -93,6 +116,14 @@ export class EmailFormat extends BaseValueFormat<EmailProperty, StringValue, Tag
 			...base,
 			multiple: false
 		};
+	}
+
+	public getFieldElement( field: OO.ui.Widget, property: EmailProperty ): HTMLInputElement|Set<HTMLInputElement> {
+		if ( property.multiple ) {
+			const multipleField = field as MultipleTextInputWidget;
+			return new Set( [ ...multipleField.$wrapper.find( `input[type="${multipleField.type}"]` ) ] as HTMLInputElement[] );
+		}
+		return ( field as OO.ui.TextInputWidget ).$input[ 0 ] as HTMLInputElement;
 	}
 }
 

@@ -1,7 +1,6 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { newNumberValue, type NumberValue, ValueType } from '@/editor/domain/Value';
 import { type ProgressBarWidget, ProgressBarWidgetFactory } from '@/editor/presentation/Widgets/ProgressBarWidgetFactory';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
 import {
 	BaseValueFormat,
 	ValidationResult
@@ -56,7 +55,7 @@ export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValu
 		return progressBar;
 	}
 
-	public async getFieldData( field: ProgressBarWidget ): Promise<FieldData> {
+	public getFieldData( field: ProgressBarWidget ): NumberValue {
 		return field.getFieldData();
 	}
 

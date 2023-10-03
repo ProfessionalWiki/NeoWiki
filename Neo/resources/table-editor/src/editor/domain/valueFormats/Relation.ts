@@ -1,17 +1,13 @@
 import type { PropertyDefinition } from '@/editor/domain/PropertyDefinition';
 import { Relation, RelationValue, ValueType } from '@/editor/domain/Value';
-import {
-	type RelationMultiselectWidget,
-	RelationMultiselectWidgetFactory
-} from '@/editor/presentation/Widgets/RelationMultiselectWidgetFactory';
+import { type RelationMultiselectWidget, RelationMultiselectWidgetFactory } from '@/editor/presentation/Widgets/RelationMultiselectWidgetFactory';
 import {
 	type RelationLookupWidget,
 	RelationLookupWidgetFactory
 } from '@/editor/presentation/Widgets/RelationLookupWidgetFactory';
-import { BaseValueFormat, ValidationResult } from '@/editor/domain/ValueFormat';
+import { BaseValueFormat, type ValidationError, ValidationResult } from '@/editor/domain/ValueFormat';
 import type { RelationTargetSuggester } from '@/editor/application/RelationTargetSuggester';
 import { PropertyName } from '@/editor/domain/PropertyDefinition';
-import type { FieldData } from '@/editor/presentation/SchemaForm';
 import type { CellComponent, ColumnDefinition } from 'tabulator-tables';
 import type { PageUrlBuilder } from '@/editor/infrastructure/PageUrlBuilder';
 import type { NeoWikiExtension } from '@/NeoWikiExtension';
@@ -89,7 +85,7 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		} );
 	}
 
-	public async getFieldData( field: RelationLookupWidget|RelationMultiselectWidget ): Promise<FieldData> {
+	public getFieldData( field: RelationLookupWidget|RelationMultiselectWidget ): RelationValue {
 		return field.getFieldData();
 	}
 
@@ -116,6 +112,14 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 			multiple: false,
 			uniqueItems: false
 		};
+	}
+
+	public getFieldElement( field: RelationLookupWidget|RelationMultiselectWidget, property: RelationProperty ): HTMLInputElement {
+		if ( property.multiple ) {
+			const multipleField = field as RelationMultiselectWidget;
+			return multipleField.input.$input[ 0 ] as HTMLInputElement;
+		}
+		return ( field as RelationLookupWidget ).$input[ 0 ] as HTMLInputElement;
 	}
 
 }
