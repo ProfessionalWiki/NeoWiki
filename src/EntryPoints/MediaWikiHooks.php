@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 use DatabaseUpdater;
 use EditPage;
 use Html;
+use InvalidArgumentException;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\ProperPageIdentity;
@@ -16,6 +17,7 @@ use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\User\UserIdentity;
 use OutputPage;
 use Parser;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\BlocksContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\CypherContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
@@ -162,13 +164,24 @@ JS
 	}
 
 	public static function onEditFilter( EditPage $editPage, ?string $text, ?string $section, string &$error ): void {
-		$validator = SchemaContentValidator::newInstance();
+		if ( $editPage->getTitle()->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
+			self::validateSchemaEdit( $editPage, $text, $section, $error );
+		}
+	}
 
-		if ( is_string( $text )
-			&& $editPage->getTitle()->getNamespace() === NeoWikiExtension::NS_SCHEMA
-			&& !$validator->validate( $text )
-		) {
-			$errors = $validator->getErrors();
+	private static function validateSchemaEdit( EditPage $editPage, ?string $text, ?string $section, string &$error ): void {
+		try {
+			new SchemaName( $editPage->getTitle()->getText() );
+		} catch ( InvalidArgumentException $exception ) {
+			$error = \Html::errorBox(
+				$exception->getMessage()
+			);
+		}
+
+		$contentValidator = SchemaContentValidator::newInstance();
+
+		if ( !$contentValidator->validate( $text ) ) {
+			$errors = $contentValidator->getErrors();
 			$error = \Html::errorBox(
 				wfMessage( 'neowiki-schema-invalid', count( $errors ) )->escaped() .
 				JsonSchemaErrorFormatter::format( $errors )
