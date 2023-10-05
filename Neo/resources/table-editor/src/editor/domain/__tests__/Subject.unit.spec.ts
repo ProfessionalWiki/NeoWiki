@@ -36,7 +36,7 @@ describe( 'Subject', () => {
 
 	describe( 'getReferencedSubjects', () => {
 
-		it( 'should return empty SubjectMap when there are no properties', async () => {
+		it( 'should return empty SubjectMap when there are no statements', async () => {
 			const subject = newSubject();
 			const lookup = new InMemorySubjectLookup( [] );
 
