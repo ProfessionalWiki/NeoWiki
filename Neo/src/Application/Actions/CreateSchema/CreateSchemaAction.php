@@ -2,6 +2,7 @@
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSchema;
 
+use InvalidArgumentException;
 use MediaWiki\Revision\SlotRecord;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -29,7 +30,12 @@ class CreateSchemaAction {
 			return;
 		}
 
-		$schemaName = new SchemaName( $name );
+		try {
+			$schemaName = new SchemaName( $name );
+		} catch ( InvalidArgumentException ) {
+			$this->presenter->presentInvalidTitle();
+			return;
+		}
 
 		$existingSchema = $this->schemaLookup->getSchema( $schemaName );
 		if ( $existingSchema !== null ) {
