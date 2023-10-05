@@ -68,7 +68,7 @@ describe( 'StatementList', () => {
 
 	describe( 'getIdsOfReferencedSubjects', () => {
 
-		it( 'should return empty list when there are no properties', () => {
+		it( 'should return empty list when there are no statements', () => {
 			const statements = new StatementList( [] );
 
 			expect( statements.getIdsOfReferencedSubjects() ).toEqual( new Set() );
