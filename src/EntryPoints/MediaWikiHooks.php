@@ -191,7 +191,7 @@ JS
 
 	public static function onMakeGlobalVariablesScript( array &$vars, OutputPage $out ): void {
 		if ( $out->canUseWikiPage() && $out->getWikiPage()->canExist() ) {
-			$vars['NeoWiki'] = NeoWikiExtension::getInstance()->getExternalNeo4jConfig();
+			$vars['NeoWiki'] = NeoWikiExtension::getInstance()->config->getExternalReadOnlyNeo4jConfig();
 		}
 	}
 
