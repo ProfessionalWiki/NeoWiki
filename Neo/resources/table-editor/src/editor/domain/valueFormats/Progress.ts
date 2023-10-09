@@ -7,6 +7,9 @@ import {
 } from '@/editor/domain/ValueFormat';
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
+import { PropertyName } from '@/editor/domain/PropertyDefinition';
+import type { NumberProperty } from '@/editor/domain/valueFormats/Number';
+import { NumberFormat } from '@/editor/domain/valueFormats/Number';
 
 export interface ProgressProperty extends PropertyDefinition {
 
@@ -85,4 +88,22 @@ export class ProgressFormat extends BaseValueFormat<ProgressProperty, NumberValu
 			step: 1
 		};
 	}
+}
+
+export function newProgressProperty(
+	name = 'MyProgressProperty',
+	minimum = 0,
+	maximum = 100,
+	step = 1
+): ProgressProperty {
+	return {
+		name: new PropertyName( name ),
+		type: ValueType.Number,
+		format: ProgressFormat.formatName,
+		description: '',
+		required: false,
+		minimum: minimum,
+		maximum: maximum,
+		step: step
+	};
 }
