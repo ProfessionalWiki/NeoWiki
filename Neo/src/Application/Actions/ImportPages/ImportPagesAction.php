@@ -23,6 +23,7 @@ class ImportPagesAction {
 		private readonly SchemaContentSource $schemaContentSource,
 		private readonly SubjectPageSource $subjectPageSource,
 		private readonly PageContentSource $pageContentSource,
+		private readonly PageContentSource $moduleContentSource
 	) {
 	}
 
@@ -57,6 +58,15 @@ class ImportPagesAction {
 			);
 		}
 
+		foreach ( $this->moduleContentSource->getPageContentStrings() as $moduleName => $moduleContent ) {
+			$this->createPage(
+				"Module:$moduleName",
+				[
+					'main' => $this->fileNameAndSourceToContent( $moduleName, $moduleContent ),
+				]
+			);
+		}
+
 		$this->presenter->presentDone();
 	}
 
@@ -73,7 +83,7 @@ class ImportPagesAction {
 			return new BlocksContent( $sourceText );
 		}
 
-		if ( str_starts_with( $fileName, 'Module:' ) ) {
+		if ( str_ends_with( $fileName, '.lua' ) ) {
 			return new ScribuntoContent( $sourceText );
 		}
 

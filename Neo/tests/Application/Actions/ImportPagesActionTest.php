@@ -24,6 +24,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 	private SchemaContentSource $schemaContentSource;
 	private SubjectPageSource $subjectPageSource;
 	private PageContentSource $pageContentSource;
+	private PageContentSource $moduleContentSource;
 	private ImportPagesAction $importPagesAction;
 
 	protected function setUp(): void {
@@ -31,6 +32,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 		$this->schemaContentSource = $this->createMock( SchemaContentSource::class );
 		$this->subjectPageSource = $this->createMock( SubjectPageSource::class );
 		$this->pageContentSource = $this->createMock( PageContentSource::class );
+		$this->moduleContentSource = $this->createMock( PageContentSource::class );
 
 		$this->importPagesAction = new ImportPagesAction(
 			$this->presenter,
@@ -40,7 +42,8 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 			),
 			$this->schemaContentSource,
 			$this->subjectPageSource,
-			$this->pageContentSource
+			$this->pageContentSource,
+			$this->moduleContentSource
 		);
 	}
 
@@ -73,6 +76,12 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 			]
 		);
 
+		$this->moduleContentSource->method( 'getPageContentStrings' )->willReturn(
+			[
+				'ModuleOne.lua' => 'return {}'
+			]
+		);
+
 		$this->importPagesAction->import();
 
 		$this->assertSame(
@@ -87,6 +96,8 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 				'Created revision for Page2',
 				'Importing PageOne...',
 				'Created revision for PageOne',
+				'Importing Module:ModuleOne.lua...',
+				'Created revision for Module:ModuleOne.lua',
 				'Done'
 			],
 			$this->presenter->getMessages()
