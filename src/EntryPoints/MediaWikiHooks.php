@@ -36,6 +36,10 @@ class MediaWikiHooks {
 		$services->addServiceManipulator(
 			'SlotRoleRegistry',
 			static function ( SlotRoleRegistry $registry ): void {
+				if ( in_array( MediaWikiSubjectRepository::SLOT_NAME, $registry->getDefinedRoles() ) ) {
+					return; // Avoid duplicate slot definition.
+				}
+
 				$registry->defineRoleWithModel(
 					role: MediaWikiSubjectRepository::SLOT_NAME,
 					model: SubjectContent::CONTENT_MODEL_ID,
