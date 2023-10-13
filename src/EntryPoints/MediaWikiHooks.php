@@ -139,7 +139,7 @@ class MediaWikiHooks {
 				slotName: BlocksContent::SLOT_NAME
 			);
 
-			if ( $content instanceof BlocksContent ) {
+			if ( $content instanceof BlocksContent && NeoWikiExtension::getInstance()->isDevelopmentUIEnabled() ) {
 				self::addBlocks( $out, $content );
 			}
 		}
