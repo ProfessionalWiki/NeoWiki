@@ -15,6 +15,7 @@ import type { CellData } from '@/editor/presentation/SubjectTableLoader';
 import type { VueComponentManager } from '@/editor/presentation/Vue/VueComponentManager';
 import VueRelation from '@/components/propertyValues/Relation.vue';
 import type { PropertyAttributes } from '@/editor/domain/PropertyDefinitionAttributes';
+import { Uuid } from '@/editor/infrastructure/Uuid';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -43,9 +44,13 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		this.factory = new RelationServicesFactory( factory );
 	}
 
-	public getExampleValue(): RelationValue {
-		// TODO: verify a relation without id can be rendered as example
-		return new RelationValue( [ new Relation( undefined, 'Some relation' ) ] );
+	public getExampleValue( property?: RelationProperty ): RelationValue {
+		const relations = [ new Relation( undefined, Uuid.getRandomUUID() ) ];
+		if ( property !== undefined && property.multiple ) {
+			relations.push( new Relation( undefined, Uuid.getRandomUUID() ) );
+		}
+
+		return new RelationValue( relations );
 	}
 
 	public validate( value: RelationValue, property: RelationProperty ): ValidationResult {
@@ -140,7 +145,7 @@ class RelationServicesFactory {
 	}
 }
 
-export function newRelationProperty( name: string ): RelationProperty {
+export function newRelationProperty( name: string, targetSchema?: string, multiple?: boolean ): RelationProperty {
 	return {
 		name: new PropertyName( name ),
 		type: ValueType.Relation,
@@ -149,6 +154,7 @@ export function newRelationProperty( name: string ): RelationProperty {
 		required: false,
 		default: '',
 		relation: 'MyRelation',
-		targetSchema: 'MyTargetSchema'
+		targetSchema: targetSchema ?? 'MyTargetSchema',
+		multiple: multiple ?? false
 	};
 }
