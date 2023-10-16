@@ -58,7 +58,7 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 
 	public abstract getAttributes( base: PropertyAttributes ): A;
 
-	public abstract getExampleValue( property?: T ): V;
+	public abstract getExampleValue( property: T ): V;
 
 	public createTableEditorColumn( property: T ): ColumnDefinition {
 		return {
