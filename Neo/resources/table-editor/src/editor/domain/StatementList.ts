@@ -57,7 +57,7 @@ export class StatementList implements Iterable<Statement> {
 	}
 
 	public withOnlyRelationValues(): StatementList {
-		return this.filter( statement => statement.value instanceof RelationValue );
+		return this.filter( ( statement ) => statement.value instanceof RelationValue );
 	}
 
 	private filter( callback: ( property: Statement ) => boolean ): StatementList {
