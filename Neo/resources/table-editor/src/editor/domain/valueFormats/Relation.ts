@@ -44,7 +44,7 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		this.factory = new RelationServicesFactory( factory );
 	}
 
-	public getExampleValue( property?: RelationProperty ): RelationValue {
+	public getExampleValue( property: RelationProperty ): RelationValue {
 		const relations = [ new Relation( undefined, Uuid.getRandomUUID() ) ];
 		if ( property !== undefined && property.multiple ) {
 			relations.push( new Relation( undefined, Uuid.getRandomUUID() ) );

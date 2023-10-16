@@ -19,6 +19,14 @@ export class SubjectMap {
 		return this.subjects[ subjectId.text ];
 	}
 
+	public keys(): string[] {
+		return Object.keys( this.subjects );
+	}
+
+	public size(): number {
+		return this.keys().length;
+	}
+
 	public *[ Symbol.iterator ](): Generator<Subject, void> {
 		for ( const subject of Object.values( this.subjects ) ) {
 			yield subject;
