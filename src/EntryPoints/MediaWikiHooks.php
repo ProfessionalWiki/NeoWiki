@@ -206,7 +206,7 @@ JS
 	}
 
 	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ): void {
-		if ( !MediaWikiServices::getInstance()->getMainConfig()->has( 'NeoWikiEnableDevelopmentUI' ) ) {
+		if ( !is_string( MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiNeo4jExternalReadUrl' ) ) ) {
 			return; // The extension has not been initialized yet
 		}
 
