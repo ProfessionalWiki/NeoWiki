@@ -21,7 +21,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectActionAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectActionAuthorizer;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\TestGuidGenerator;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubGuidGenerator;
 use RuntimeException;
 
 /**
@@ -38,7 +38,7 @@ class CreateSubjectActionTest extends TestCase {
 
 	public function setUp(): void {
 		$this->subjectRepository = new InMemorySubjectRepository();
-		$this->guidGenerator = new TestGuidGenerator( self::GUID );
+		$this->guidGenerator = new StubGuidGenerator( self::GUID );
 		$this->presenterSpy = new CreateSubjectPresenterSpy();
 		$this->authorizer = new SucceedingSubjectActionAuthorizer();
 	}

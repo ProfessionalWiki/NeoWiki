@@ -4,35 +4,23 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
-use MediaWiki\Revision\SlotRecord;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\RevisionUpdater;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use RuntimeException;
-use Content;
-use WikitextContent;
 
 class CreateSubjectsAction {
 
-	/**
-	 * Subject Ids to overwrite
-	 * array key is an old subject id
-	 * array value is a new one
-	 * @var array<string, string>
-	 */
-	private array $subjectIds = [];
-
 	public function __construct(
 		private readonly SubjectRepository $subjectRepository,
-		private readonly GuidGenerator $guidGenerator,
 		private readonly SubjectActionAuthorizer $subjectActionAuthorizer,
 		private readonly StatementListPatcher $statementListPatcher,
 		private readonly RevisionUpdater $revisionUpdater
@@ -51,7 +39,6 @@ class CreateSubjectsAction {
 
 		$this->revisionUpdater->addSubjectsToRevision( [
 			MediaWikiSubjectRepository::SLOT_NAME => $this->getSubjectsContent( $subjects, $request ),
-			SlotRecord::MAIN => $this->getMainContent( $request )
 		] );
 	}
 
@@ -59,6 +46,8 @@ class CreateSubjectsAction {
 	 * @param array<int, Subject> $subjects
 	 */
 	private function getSubjectsContent( array $subjects, CreateSubjectsRequest $request ): SubjectContent {
+		// TODO: we should not need to talk to the DB to find out what subjects already exist.
+		// We are starting with a revision object. Our task is to add the new Subjects without removing the existing ones.
 		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $request->pageId );
 
 		foreach ( $subjects as $subject ) {
@@ -72,21 +61,11 @@ class CreateSubjectsAction {
 	}
 
 	/**
-	 * @throws \MWException
-	 */
-	private function getMainContent( CreateSubjectsRequest $request ): Content {
-		return new WikitextContent( str_replace(
-			array_keys( $this->subjectIds ),
-			array_values( $this->subjectIds ),
-			$request->subjectsPageData->wikitext
-		) );
-	}
-
-	/**
+	 * TODO: this should probably use SubjectContentDataDeserializer, or otherwise a similar service.
 	 * @return array<int, Subject>
 	 */
 	private function buildSubjects( CreateSubjectsRequest $request ): array {
-		$jsonSubjects = json_decode( $request->subjectsPageData->subjectsJson, true );
+		$jsonSubjects = json_decode( $request->subjectsJson, true );
 		if ( !is_array( $jsonSubjects ) ) {
 			return [];
 		}
@@ -105,18 +84,16 @@ class CreateSubjectsAction {
 			$statements = !empty( $jsonSubject[ 'statements' ] ) && is_array( $jsonSubject[ 'statements' ] )
 				? $jsonSubject[ 'statements' ] : [];
 
-			$subject = Subject::createNew(
-				guidGenerator: $this->guidGenerator,
+			$subjects[] = new Subject(
+				id: new SubjectId( (string)$jsonSubject['id'] ),
 				label: new SubjectLabel( (string)$jsonSubject[ 'label' ] ),
 				schemaId: new SchemaName( (string)$jsonSubject[ 'schema' ] ),
+				// FIXME: We should not use statementListPatcher to build a statement list as a hack
 				statements: $this->statementListPatcher->buildStatementList(
 					statements: new StatementList(),
 					patch: $statements
 				)
 			);
-
-			$subjects[] = $subject;
-			$this->subjectIds[ (string)$jsonSubject[ 'id' ] ] = $subject->getId()->text;
 		}
 
 		return $subjects;
