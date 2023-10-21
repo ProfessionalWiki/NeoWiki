@@ -28,6 +28,7 @@ class RevisionUpdater {
 			$revRecord->setContent( $slotName, $content );
 		}
 
+		// TODO: this causes problems (overrides the comment) and is probably not needed (there should already be a comment)
 		$revRecord->setUser( $this->performer )
 			->setComment( CommentStoreComment::newUnsavedComment( 'New subjects added' ) )
 			->setTimestamp( MWTimestamp::now( (int)TS_MW ) );

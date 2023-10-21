@@ -20,7 +20,6 @@ use MediaWiki\User\UserIdentity;
 use OutputPage;
 use Parser;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectsRequest;
-use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\SubjectsPageData;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\BlocksContent;
@@ -233,15 +232,9 @@ JS
 		\Status $hookStatus
 	): void {
 		$request = RequestContext::getMain();
-		$subjectsParameters = $request->getRequest()->getValues( 'infoboxes' );
+		$subjectsParameters = $request->getRequest()->getValues( 'infoboxes' ); // TODO: rename to visualEditorSubjects
 
 		if ( $subjectsParameters === [] ) {
-			return;
-		}
-
-		$mainContent = $renderedRevision->getRevision()->getContent( SlotRecord::MAIN );
-
-		if ( !( $mainContent instanceof \WikitextContent ) ) {
 			return;
 		}
 
@@ -249,10 +242,7 @@ JS
 			->createSubjects(
 				new CreateSubjectsRequest(
 					new PageId( $renderedRevision->getRevision()->getPage()->getId() ),
-					new SubjectsPageData(
-						$mainContent->getText(),
-						$subjectsParameters[ 'infoboxes' ]
-					)
+					$subjectsParameters[ 'infoboxes' ]
 				)
 			);
 	}
