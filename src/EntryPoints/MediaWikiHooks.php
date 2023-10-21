@@ -213,11 +213,16 @@ JS
 	}
 
 	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ): void {
-		if ( !is_string( MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiNeo4jExternalReadUrl' ) ) ) {
+		if ( !self::hasNeoWikiConfig() ) {
 			return; // The extension has not been initialized yet
 		}
 
 		NeoWikiExtension::getInstance()->newNeo4jConstraintUpdater()->createDefaultConstraints();
+	}
+
+	private static function hasNeoWikiConfig(): bool {
+		return MediaWikiServices::getInstance()->getMainConfig()->has( 'NeoWikiNeo4jExternalReadUrl' )
+			&& is_string( MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiNeo4jExternalReadUrl' ) );
 	}
 
 	public static function onMultiContentSave(
