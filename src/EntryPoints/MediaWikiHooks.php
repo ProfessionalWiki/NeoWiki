@@ -12,11 +12,16 @@ use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\User\UserIdentity;
 use OutputPage;
 use Parser;
+use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectsRequest;
+use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\SubjectsPageData;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\BlocksContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\CypherContent;
@@ -29,6 +34,7 @@ use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaErrorFormatter;
 use Skin;
 use Title;
 use WikiPage;
+use RequestContext;
 
 class MediaWikiHooks {
 
@@ -75,6 +81,7 @@ class MediaWikiHooks {
 		array &$tags
 	): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision, $wikiPage, $user );
+		$wikiPage->doPurge(); // clear cache
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
@@ -211,6 +218,33 @@ JS
 		}
 
 		NeoWikiExtension::getInstance()->newNeo4jConstraintUpdater()->createDefaultConstraints();
+	}
+
+	public static function onMultiContentSave(
+		RenderedRevision $renderedRevision,
+		\User $user,
+		\CommentStoreComment $summary,
+		int $flags,
+		\Status $hookStatus
+	): void {
+
+		$request = RequestContext::getMain();
+		$subjectsParameters = $request->getRequest()->getValues( 'infoboxes' );
+		if ( $subjectsParameters === [] ) {
+			return;
+		}
+
+		NeoWikiExtension::getInstance()
+			->newCreateSubjectsAction( $user, $renderedRevision )
+			->createSubjects(
+				new CreateSubjectsRequest(
+					new PageId( $renderedRevision->getRevision()->getPage()->getId() ),
+					new SubjectsPageData(
+						$renderedRevision->getRevision()->getContent( SlotRecord::MAIN )->getWikitextForTransclusion(),
+						$subjectsParameters[ 'infoboxes' ]
+					)
+				)
+			);
 	}
 
 }
