@@ -1,0 +1,17 @@
+<?php
+
+declare( strict_types = 1 );
+
+namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
+
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+
+class CreateSubjectsRequest {
+
+	public function __construct(
+		public readonly PageId $pageId,
+		public readonly SubjectsPageData $subjectsPageData
+	) {
+	}
+
+}
