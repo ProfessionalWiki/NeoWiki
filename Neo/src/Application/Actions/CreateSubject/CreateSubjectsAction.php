@@ -17,6 +17,13 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\RevisionUpdater;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use RuntimeException;
 
+/**
+ * TODO: rename to AddSubjectsToRevisionAction
+ *
+ * TODO: We could also include the RenderedRevision in the request model, avoiding the need for the SubjectRepository.
+ * This goes a bit against our architecture, but then again we already have the binding to RenderedRevision, it's
+ * just hidden a bit via RevisionUpdater.
+ */
 class CreateSubjectsAction {
 
 	public function __construct(
