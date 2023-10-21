@@ -232,20 +232,25 @@ JS
 		int $flags,
 		\Status $hookStatus
 	): void {
-
 		$request = RequestContext::getMain();
 		$subjectsParameters = $request->getRequest()->getValues( 'infoboxes' );
+
 		if ( $subjectsParameters === [] ) {
 			return;
 		}
 
-		NeoWikiExtension::getInstance()
-			->newCreateSubjectsAction( $user, $renderedRevision )
+		$mainContent = $renderedRevision->getRevision()->getContent( SlotRecord::MAIN );
+
+		if ( !( $mainContent instanceof \WikitextContent ) ) {
+			return;
+		}
+
+		NeoWikiExtension::getInstance()->newCreateSubjectsAction( $user, $renderedRevision )
 			->createSubjects(
 				new CreateSubjectsRequest(
 					new PageId( $renderedRevision->getRevision()->getPage()->getId() ),
 					new SubjectsPageData(
-						$renderedRevision->getRevision()->getContent( SlotRecord::MAIN )->getWikitextForTransclusion(),
+						$mainContent->getText(),
 						$subjectsParameters[ 'infoboxes' ]
 					)
 				)
