@@ -17,7 +17,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectActionAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectActionAuthorizer;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\TestGuidGenerator;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubGuidGenerator;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction
@@ -31,7 +31,7 @@ class PatchSubjectActionTest extends TestCase {
 
 	public function setUp(): void {
 		$this->inMemorySubjectRepository = new InMemorySubjectRepository();
-		$this->guidGenerator = new TestGuidGenerator( self::GUID );
+		$this->guidGenerator = new StubGuidGenerator( self::GUID );
 	}
 
 	private function newPatchSubjectAction( SubjectActionAuthorizer $authorizer = null ): PatchSubjectAction {

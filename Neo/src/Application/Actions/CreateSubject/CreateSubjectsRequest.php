@@ -10,7 +10,7 @@ class CreateSubjectsRequest {
 
 	public function __construct(
 		public readonly PageId $pageId,
-		public readonly SubjectsPageData $subjectsPageData
+		public readonly string $subjectsJson
 	) {
 	}
 
