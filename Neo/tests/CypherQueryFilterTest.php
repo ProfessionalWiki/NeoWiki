@@ -18,38 +18,38 @@ class CypherQueryFilterTest extends TestCase {
 		$this->filter = new CypherQueryFilter();
 	}
 
-	public function testFilterQueryRejectsSimpleWriteOperation(): void {
+	public function testRejectsSimpleWriteOperation(): void {
 		$query = "CREATE (n:Person {name: 'Alice'})";
 		$this->assertFalse( $this->filter->filterQuery( $query ), 'Filter should reject a simple CREATE operation' );
 	}
 
-	public function testFilterQueryRejectsComplexWriteOperation(): void {
+	public function testRejectsComplexWriteOperation(): void {
 		$query = "MATCH (n:Person) WHERE n.name = 'Alice' SET n.age = 30";
 		$this->assertFalse( $this->filter->filterQuery( $query ), 'Filter should reject a complex write operation' );
 	}
 
-	public function testFilterQueryRejectsSimpleFunctionCall(): void {
+	public function testRejectsSimpleFunctionCall(): void {
 		$query = "RETURN toUpper('hello')";
 		$this->assertFalse( $this->filter->filterQuery( $query ), 'Filter should reject a simple function call' );
 	}
 
-	public function testFilterQueryRejectsNestedFunctionCall(): void {
+	public function testRejectsNestedFunctionCall(): void {
 		$query = "RETURN size(split(toString(42), ''))";
 		$this->assertFalse( $this->filter->filterQuery( $query ), 'Filter should reject nested function calls' );
 	}
 
-	public function testFilterQueryAllowsValidReadQuery(): void {
+	public function testAllowsValidReadQuery(): void {
 		$query = "MATCH (n:Person) WHERE n.name = 'Alice' RETURN n";
 		$this->assertTrue( $this->filter->filterQuery( $query ), 'Filter should allow a valid read query' );
 	}
 
-	public function testFilterQueryAllowsParenthesesInStrings(): void {
+	public function testAllowsParenthesesInStrings(): void {
 		$query = "MATCH (n:Person) WHERE n.name = '(Alice)' RETURN n";
 		$this->assertTrue( $this->filter->filterQuery( $query ), 'Filter should allow parentheses in strings' );
 	}
 
 	#[DataProvider( 'writeOperationProvider' )]
-	public function testFilterQueryRejectsVariousWriteOperations( string $keyword ): void {
+	public function testRejectsVariousWriteOperations( string $keyword ): void {
 		$query = "$keyword (n:Label)";
 		$this->assertFalse( $this->filter->filterQuery( $query ), "Filter should reject '$keyword' operation" );
 	}
@@ -65,12 +65,12 @@ class CypherQueryFilterTest extends TestCase {
 		];
 	}
 
-	public function testFilterQueryAllowsWriteKeywordInString(): void {
+	public function testAllowsWriteKeywordInString(): void {
 		$query = "MATCH (n) WHERE n.action = 'CREATE' RETURN n";
 		$this->assertTrue( $this->filter->filterQuery( $query ), 'Filter should allow write keyword in a string' );
 	}
 
-	public function testFilterQueryAllowsPartialKeywordMatch(): void {
+	public function testAllowsPartialKeywordMatch(): void {
 		$query = "MATCH (n) WHERE n.name CONTAINS 'create' RETURN n";
 		$this->assertTrue(
 			$this->filter->filterQuery( $query ),
@@ -78,7 +78,7 @@ class CypherQueryFilterTest extends TestCase {
 		);
 	}
 
-	public function testFilterQueryRejectsFunctionCallWithEmptyParentheses(): void {
+	public function testRejectsFunctionCallWithEmptyParentheses(): void {
 		$query = 'RETURN rand()';
 		$this->assertFalse(
 			$this->filter->filterQuery( $query ),
@@ -86,7 +86,7 @@ class CypherQueryFilterTest extends TestCase {
 		);
 	}
 
-	public function testFilterQueryAllowsNonFunctionParentheses(): void {
+	public function testAllowsNonFunctionParentheses(): void {
 		$query = "MATCH (n:Person) WHERE n.age > 30 AND (n.name = 'Alice' OR n.name = 'Bob') RETURN n";
 		$this->assertTrue(
 			$this->filter->filterQuery( $query ),
@@ -94,7 +94,7 @@ class CypherQueryFilterTest extends TestCase {
 		);
 	}
 
-	public function testFilterQueryHandlesComplexNestedStructures(): void {
+	public function testHandlesComplexNestedStructures(): void {
 		$query = "MATCH (n:Person) WHERE n.age > 30 AND (n.name = 'Alice' OR n.name = 'Bob') AND NOT (n.city = 'New York' AND n.job = 'Teacher') RETURN n";
 		$this->assertTrue(
 			$this->filter->filterQuery( $query ),
@@ -102,14 +102,14 @@ class CypherQueryFilterTest extends TestCase {
 		);
 	}
 
-	public function testFilterQueryHandlesCommentsCorrectly(): void {
+	public function testHandlesCommentsCorrectly(): void {
 		$query = "MATCH (n:Person) // This is an inline comment\n" .
 			"WHERE n.age > 30 /* This is a\n" .
 			'multi-line comment */ RETURN n';
 		$this->assertTrue( $this->filter->filterQuery( $query ), 'Filter should handle comments correctly' );
 	}
 
-	public function testFilterQueryRejectsFunctionInWhereClause(): void {
+	public function testRejectsFunctionInWhereClause(): void {
 		$query = "MATCH (n:Person) WHERE toUpper(n.name) = 'ALICE' RETURN n";
 		$this->assertFalse(
 			$this->filter->filterQuery( $query ),
