@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  php:
+    build: .
+    depends_on:
+      - graph
+    volumes:
+      - ./:/app
+    working_dir: /app
+
+  graph:
+    image: neo4j
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    volumes:
+      - neo4j-data:/data
+    environment:
+      - NEO4J_AUTH=neo4j/neo4j
+
+volumes:
+  neo4j-data:

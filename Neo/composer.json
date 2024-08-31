@@ -1,0 +1,39 @@
+{
+	"name": "professional-wiki/neo",
+	"license": "proprietary",
+	"description": "TODO",
+	"authors": [
+		{
+			"name": "Professional.Wiki",
+			"email": "info@professional.wiki",
+			"homepage": "https://Professional.Wiki"
+		}
+	],
+	"require": {
+		"ext-json": "*",
+		"php": "^8.3",
+		"laudis/neo4j-php-client": "^3.1.2"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^11.3.1",
+		"phpstan/phpstan": "^1.12.0",
+		"mediawiki/mediawiki-codesniffer": "^v44.0.0",
+		"slevomat/coding-standard": "^v8.15.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"ProfessionalWiki\\Neo\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"ProfessionalWiki\\Neo\\Tests\\": "tests/"
+		}
+	},
+	"config": {
+		"allow-plugins": {
+			"php-http/discovery": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}
