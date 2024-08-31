@@ -5,17 +5,12 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\Neo;
 
 class CypherQueryFilter {
+
 	private const array WRITE_KEYWORDS = [
 		'CREATE', 'SET', 'DELETE', 'REMOVE', 'MERGE', 'DROP'
 	];
 
-	/**
-	 * Filter the given Cypher query
-	 *
-	 * @param string $query The Cypher query to filter
-	 * @return bool True if the query is safe, false otherwise
-	 */
-	public function filterQuery( string $query ): bool {
+	public function isReadQuery( string $query ): bool {
 		$normalizedQuery = $this->normalizeQuery( $query );
 
 		if ( $this->containsWriteOperations( $normalizedQuery ) ) {
