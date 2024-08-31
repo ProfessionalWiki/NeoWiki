@@ -117,4 +117,43 @@ class CypherQueryFilterTest extends TestCase {
 		);
 	}
 
+	#[DataProvider( 'maliciousQueryProvider' )]
+	public function testRejectsMaliciousQueries( string $query ): void {
+		$this->assertFalse( $this->filter->filterQuery( $query ) );
+	}
+
+	public static function maliciousQueryProvider(): iterable {
+		yield 'Hiding in string literals' => [
+				'MATCH (n) 
+WITH n, "CREATE (m:Malicious)" AS q
+CALL apoc.cypher.run(q, {}) YIELD value
+RETURN n, value'
+		];
+
+		yield 'Whitespace' => [
+			'MATCH (n) RETURN n\u000A\u000DCREATE (m:Malicious)'
+		];
+
+		yield 'Subqueries' => [
+			'MATCH (n)
+WHERE n.id IN [x IN range(1,10) | 
+  HEAD([(WITH x CREATE (m:Hidden) RETURN x)[0]])]
+RETURN n'
+		];
+
+		yield 'Procedure calls' => [
+			"MATCH (n)
+CALL dbms.procedures() YIELD name
+WITH n, name WHERE name = 'dbms.security.changePassword'
+CALL dbms.security.changePassword('newpassword')
+RETURN n"
+		];
+
+		yield 'Dynamic property name' => [
+			'MATCH (n)
+SET n["RETURN"] = "Malicious"
+RETURN n'
+		];
+	}
+
 }
