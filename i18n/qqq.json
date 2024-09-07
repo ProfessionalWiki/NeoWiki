@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jeroen De Dauw",
+			"Karsten Hoffmeyer",
+			"Morne Alberts",
+			"Waseem Abbas"
+		]
+	},
+	"neowiki-name": "{{Name}}",
+	"neowiki-description": "{{Desc|name=NeoWiki|url=https://github.com/ProfessionalWiki/NeoWiki}}"
+}

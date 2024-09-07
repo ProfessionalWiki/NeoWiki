@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<ruleset>
+	<file>src/</file>
+	<file>tests/</file>
+
+	<rule ref="./vendor/mediawiki/mediawiki-codesniffer/MediaWiki">
+		<exclude name="Generic.Files.LineLength.TooLong" />
+		<exclude name="MediaWiki.Commenting.FunctionComment" />
+		<exclude name="MediaWiki.Commenting.PropertyDocumentation" />
+		<exclude name="MediaWiki.Commenting.FunctionAnnotations.UnrecognizedAnnotation" />
+		<exclude name="MediaWiki.Commenting.MissingCovers.MissingCovers" />
+		<exclude name="MediaWiki.WhiteSpace.SpaceBeforeSingleLineComment" />
+		<exclude name="MediaWiki.WhiteSpace.DisallowEmptyLineFunctions.NoEmptyLine" />
+		<exclude name="MediaWiki.WhiteSpace.SpaceAfterClosure.NoWhitespaceAfterClosure" />
+		<exclude name="MediaWiki.WhiteSpace.SameLineCatch.CatchNotOnSameLine" />
+		<exclude name="MediaWiki.WhiteSpace.SpaceAfterClosure.NoWhitespaceAfterArrow" />
+		<exclude name="MediaWiki.Classes.UnusedUseStatement.UnusedUse" />
+		<exclude name="MediaWiki.Classes.UnsortedUseStatements.UnsortedUse" />
+		<exclude name="Squiz.WhiteSpace.SuperfluousWhitespace.EndLine" />
+		<exclude name="MediaWiki.ControlStructures.IfElseStructure.SpaceBeforeElse" />
+	</rule>
+
+	<rule ref="Generic.Formatting.NoSpaceAfterCast" />
+	<rule ref="Generic.Metrics.CyclomaticComplexity">
+	</rule>
+	<rule ref="Generic.Metrics.NestingLevel" />
+	<rule ref="Squiz.Operators.ValidLogicalOperators" />
+</ruleset>

@@ -1,0 +1,3 @@
+[submodule "Neo"]
+	path = Neo
+	url = git@github.com:ProfessionalWiki/Neo.git

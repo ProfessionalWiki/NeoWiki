@@ -1,0 +1,25 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/client-es6",
+		"wikimedia/mediawiki"
+	],
+	"globals": {
+		"exports": "writable"
+	},
+	"overrides": [
+		{
+			"files": [ "**/*.test.js" ],
+			"plugins": [ "jest" ],
+			"env": {
+				"jest/globals": true
+			},
+			"globals": {
+				"global": false
+			}
+		}
+	],
+	"ignorePatterns": [
+		"Neo/"
+	]
+}

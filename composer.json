@@ -1,0 +1,55 @@
+{
+	"name": "professional-wiki/neowiki",
+	"type": "mediawiki-extension",
+	"license": "proprietary",
+	"description": "TODO",
+	"authors": [
+		{
+			"name": "Professional.Wiki",
+			"email": "info@professional.wiki",
+			"homepage": "https://Professional.Wiki"
+		},
+		{
+			"name": "Jeroen De Dauw",
+			"email": "jeroendedauw@gmail.com",
+			"homepage": "https://www.EntropyWins.wtf/mediawiki"
+		}
+	],
+	"require": {
+		"php": "^8.3",
+		"composer/installers": "^2|^1.0.1",
+		"professional-wiki/neo": "@dev"
+	},
+	"require-dev": {
+		"vimeo/psalm": "^5.25.0",
+		"phpstan/phpstan": "^1.12.2",
+		"mediawiki/mediawiki-codesniffer": "44.0.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"ProfessionalWiki\\NeoWiki\\": "src/",
+			"ProfessionalWiki\\Neo\\": "Neo/src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"ProfessionalWiki\\NeoWiki\\Tests\\": "tests/"
+		}
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true,
+			"php-http/discovery": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	},
+	"extra": {
+		"installer-name": "NeoWiki"
+	},
+	"repositories": [
+		{
+			"type": "path",
+			"url": "Neo"
+		}
+	]
+}

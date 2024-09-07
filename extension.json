@@ -1,0 +1,75 @@
+{
+	"name": "NeoWiki",
+
+	"version": "0.0.0-alpha",
+
+	"author": [
+		"[https://Professional.Wiki/ Professional.Wiki]",
+		"[https://www.EntropyWins.wtf/mediawiki Jeroen De Dauw]"
+	],
+
+	"url": "https://github.com/ProfessionalWiki/NeoWiki",
+
+	"descriptionmsg": "neowiki-description",
+
+	"requires": {
+		"MediaWiki": ">= 1.43.0"
+	},
+
+	"MessagesDirs": {
+		"NeoWiki": [
+			"i18n"
+		]
+	},
+
+	"AutoloadNamespaces": {
+		"ProfessionalWiki\\NeoWiki\\": "src/",
+		"ProfessionalWiki\\Neo\\": "Neo/src/"
+	},
+
+	"TestAutoloadNamespaces": {
+		"ProfessionalWiki\\NeoWiki\\Tests\\": "tests/phpunit"
+	},
+
+	"Hooks": {
+		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay"
+	},
+
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "NeoWiki/resources"
+	},
+
+	"ResourceModules": {
+		"ext.neowiki.addButton": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"dependencies": [
+				"vue"
+			],
+			"packageFiles": [
+				"ext.neowiki.addButton/init.js",
+				"ext.neowiki.addButton/components/App.vue"
+			],
+			"styles": [
+			],
+			"messages": [
+			]
+		},
+		"ext.neowiki.infobox": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"dependencies": [
+				"vue"
+			],
+			"packageFiles": [
+				"ext.neowiki.infobox/init.js",
+				"ext.neowiki.infobox/components/App.vue"
+			],
+			"styles": [
+			],
+			"messages": [
+			]
+		}
+	},
+
+	"manifest_version": 2
+}
