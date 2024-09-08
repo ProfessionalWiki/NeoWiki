@@ -48,7 +48,8 @@
 			],
 			"packageFiles": [
 				"ext.neowiki.addButton/init.js",
-				"ext.neowiki.addButton/components/App.vue"
+				"ext.neowiki.addButton/components/App.vue",
+				"ext.neowiki.core/components/Message.vue"
 			],
 			"styles": [
 			],
@@ -62,7 +63,8 @@
 			],
 			"packageFiles": [
 				"ext.neowiki.infobox/init.js",
-				"ext.neowiki.infobox/components/App.vue"
+				"ext.neowiki.infobox/components/App.vue",
+				"ext.neowiki.core/components/Message.vue"
 			],
 			"styles": [
 			],
