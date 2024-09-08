@@ -8,5 +8,9 @@
 		]
 	},
 	"neowiki-name": "{{Name}}",
-	"neowiki-description": "{{Desc|name=NeoWiki|url=https://github.com/ProfessionalWiki/NeoWiki}}"
+	"neowiki-description": "{{Desc|name=NeoWiki|url=https://github.com/ProfessionalWiki/NeoWiki}}",
+
+	"neowiki-add-button": "TODO: testing",
+	"neowiki-infobox": "TODO: testing",
+	"neowiki-increment": "TODO: testing"
 }

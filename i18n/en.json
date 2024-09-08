@@ -8,5 +8,9 @@
 		]
 	},
 	"neowiki-name": "NeoWiki",
-	"neowiki-description": "TODO"
+	"neowiki-description": "TODO",
+
+	"neowiki-add-button": "addButton",
+	"neowiki-infobox": "infobox",
+	"neowiki-increment": "increment"
 }

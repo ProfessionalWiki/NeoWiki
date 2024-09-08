@@ -1,5 +1,5 @@
 <template>
-	<neo-message message="addButton"></neo-message>
+	<neo-message :message="$i18n( 'neowiki-add-button' ).text()"></neo-message>
 </template>
 
 <script>

@@ -32,7 +32,8 @@
 	},
 
 	"Hooks": {
-		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay"
+		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",
+		"SkinAfterPortlet": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSkinAfterPortlet"
 	},
 
 	"ResourceFileModulePaths": {
@@ -44,31 +45,62 @@
 		"ext.neowiki.addButton": {
 			"class": "MediaWiki\\ResourceLoader\\CodexModule",
 			"dependencies": [
-				"vue"
+				"vue",
+				"pinia"
+			],
+			"codexComponents": [
+				"CdxButton",
+				"CdxIcon"
 			],
 			"packageFiles": [
 				"ext.neowiki.addButton/init.js",
 				"ext.neowiki.addButton/components/App.vue",
-				"ext.neowiki.core/components/Message.vue"
+				"ext.neowiki.core/components/NeoMessage.vue",
+				"ext.neowiki.core/stores/counter.js",
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconAdd"
+					]
+				}
 			],
 			"styles": [
 			],
 			"messages": [
+				"neowiki-add-button",
+				"neowiki-increment"
 			]
 		},
 		"ext.neowiki.infobox": {
 			"class": "MediaWiki\\ResourceLoader\\CodexModule",
 			"dependencies": [
-				"vue"
+				"vue",
+				"pinia"
+			],
+			"codexComponents": [
+				"CdxButton",
+				"CdxCard",
+				"CdxIcon"
 			],
 			"packageFiles": [
 				"ext.neowiki.infobox/init.js",
 				"ext.neowiki.infobox/components/App.vue",
-				"ext.neowiki.core/components/Message.vue"
+				"ext.neowiki.core/components/NeoMessage.vue",
+				"ext.neowiki.core/stores/counter.js",
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconAdd"
+					]
+				}
 			],
 			"styles": [
 			],
 			"messages": [
+				"neowiki-infobox",
+				"neowiki-increment"
 			]
 		}
 	},
