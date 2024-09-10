@@ -36,8 +36,8 @@
 	},
 
 	"ResourceFileModulePaths": {
-		"localBasePath": "resources",
-		"remoteExtPath": "NeoWiki/resources"
+		"localBasePath": "",
+		"remoteExtPath": "NeoWiki"
 	},
 
 	"ResourceModules": {
@@ -47,8 +47,8 @@
 				"vue"
 			],
 			"packageFiles": [
-				"ext.neowiki.addButton/init.js",
-				"ext.neowiki.addButton/components/App.vue"
+				"resources/ext.neowiki.addButton/init.js",
+				"resources/ext.neowiki.addButton/components/App.vue"
 			],
 			"styles": [
 			],
@@ -61,8 +61,9 @@
 				"vue"
 			],
 			"packageFiles": [
-				"ext.neowiki.infobox/init.js",
-				"ext.neowiki.infobox/components/App.vue"
+				"resources/ext.neowiki.infobox/init.js",
+				"resources/ext.neowiki.infobox/components/App.vue",
+				"Neo/neojs/dist/neo.js"
 			],
 			"styles": [
 			],
