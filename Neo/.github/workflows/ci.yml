@@ -76,3 +76,75 @@ jobs:
 
       - run: composer install
       - run: vendor/bin/phpstan analyze --configuration=phpstan.neon --memory-limit=2G
+
+  NeoJS-build:
+    name: "NeoJS build"
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./neojs
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+  NeoJS-test:
+    name: "NeoJS tests"
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./neojs
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Test
+        run: npm run test
+
+  NeoJS-lint:
+    name: "NeoJS linting"
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./neojs
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
