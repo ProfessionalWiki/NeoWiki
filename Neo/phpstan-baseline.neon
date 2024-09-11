@@ -1,6 +1,181 @@
 parameters:
 	ignoreErrors:
 		-
+			message: "#^Access to constant ERROR on an unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSavingStatus\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Access to constant MAIN on an unknown class MediaWiki\\\\Revision\\\\SlotRecord\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Access to constant NO_CHANGES on an unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSavingStatus\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Access to constant REVISION_CREATED on an unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSavingStatus\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Access to property \\$errorMessage on an unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSavingStatus\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Access to property \\$status on an unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSavingStatus\\.$#"
+			count: 3
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Call to method deserialize\\(\\) on an unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\SchemaPersistenceDeserializer\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Call to method saveContent\\(\\) on an unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Call to static method makeTitleSafe\\(\\) on an unknown class Title\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Call to static method newUnsavedComment\\(\\) on an unknown class CommentStoreComment\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Constant NS_NEOWIKI_SCHEMA not found\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Instantiated class ProfessionalWiki\\\\NeoWiki\\\\EntryPoints\\\\Content\\\\SchemaContent not found\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Parameter \\$deserializer of method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Actions\\\\CreateSchema\\\\CreateSchemaAction\\:\\:__construct\\(\\) has invalid type ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\SchemaPersistenceDeserializer\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Parameter \\$pageContentSaver of method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Actions\\\\CreateSchema\\\\CreateSchemaAction\\:\\:__construct\\(\\) has invalid type ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Parameter \\$result of method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Actions\\\\CreateSchema\\\\CreateSchemaAction\\:\\:presentSavingResult\\(\\) has invalid type ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSavingStatus\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Property ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Actions\\\\CreateSchema\\\\CreateSchemaAction\\:\\:\\$deserializer has unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\SchemaPersistenceDeserializer as its type\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Property ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Actions\\\\CreateSchema\\\\CreateSchemaAction\\:\\:\\$pageContentSaver has unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver as its type\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSchema/CreateSchemaAction.php
+
+		-
+			message: "#^Access to constant SLOT_NAME on an unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\Subject\\\\MediaWikiSubjectRepository\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
+
+		-
+			message: "#^Call to method addSubjectsToRevision\\(\\) on an unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
+
+		-
+			message: "#^Call to static method newEmpty\\(\\) on an unknown class ProfessionalWiki\\\\NeoWiki\\\\EntryPoints\\\\Content\\\\SubjectContent\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Actions\\\\CreateSubject\\\\CreateSubjectsAction\\:\\:getSubjectsContent\\(\\) has invalid return type ProfessionalWiki\\\\NeoWiki\\\\EntryPoints\\\\Content\\\\SubjectContent\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
+
+		-
+			message: "#^Parameter \\$revisionUpdater of method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Actions\\\\CreateSubject\\\\CreateSubjectsAction\\:\\:__construct\\(\\) has invalid type ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
+
+		-
+			message: "#^Property ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Actions\\\\CreateSubject\\\\CreateSubjectsAction\\:\\:\\$revisionUpdater has unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater as its type\\.$#"
+			count: 1
+			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
+
+		-
+			message: "#^Call to method getText\\(\\) on an unknown class TitleValue\\.$#"
+			count: 1
+			path: src/Application/Queries/GetSchemaNamesQuery.php
+
+		-
+			message: "#^Parameter \\$title of anonymous function has invalid type TitleValue\\.$#"
+			count: 1
+			path: src/Application/Queries/GetSchemaNamesQuery.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Queries\\\\RunCypher\\\\RunCypherPresenter\\:\\:presentSummarizedResult\\(\\) has parameter \\$result with generic class Laudis\\\\Neo4j\\\\Databags\\\\SummarizedResult but does not specify its types\\: TValue$#"
+			count: 1
+			path: src/Application/Queries/RunCypher/RunCypherPresenter.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\QueryEngine\\:\\:runReadQuery\\(\\) return type with generic class Laudis\\\\Neo4j\\\\Databags\\\\SummarizedResult does not specify its types\\: TValue$#"
+			count: 1
+			path: src/Application/QueryEngine.php
+
+		-
+			message: "#^Cannot access offset 'format' on mixed\\.$#"
+			count: 2
+			path: src/Application/StatementListPatcher.php
+
+		-
+			message: "#^Cannot access offset 'value' on mixed\\.$#"
+			count: 1
+			path: src/Application/StatementListPatcher.php
+
+		-
+			message: "#^Parameter \\#1 \\$boolean of class ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Value\\\\BooleanValue constructor expects bool, mixed given\\.$#"
+			count: 1
+			path: src/Application/StatementListPatcher.php
+
+		-
+			message: "#^Parameter \\#1 \\$format of method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\StatementListPatcher\\:\\:deserializeValue\\(\\) expects string, mixed given\\.$#"
+			count: 1
+			path: src/Application/StatementListPatcher.php
+
+		-
+			message: "#^Parameter \\#1 \\$json of method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\StatementListPatcher\\:\\:deserializeRelationValue\\(\\) expects array, mixed given\\.$#"
+			count: 1
+			path: src/Application/StatementListPatcher.php
+
+		-
+			message: "#^Parameter \\#1 \\$number of class ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Value\\\\NumberValue constructor expects float\\|int, mixed given\\.$#"
+			count: 1
+			path: src/Application/StatementListPatcher.php
+
+		-
+			message: "#^Parameter \\#1 \\.\\.\\.\\$strings of class ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Value\\\\StringValue constructor expects string, mixed given\\.$#"
+			count: 1
+			path: src/Application/StatementListPatcher.php
+
+		-
+			message: "#^Parameter \\$format of class ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Statement constructor expects string, mixed given\\.$#"
+			count: 1
+			path: src/Application/StatementListPatcher.php
+
+		-
 			message: "#^Parameter \\#1 \\$string of function strtoupper expects string, string\\|null given\\.$#"
 			count: 1
 			path: src/CypherQueryFilter.php
@@ -14,3 +189,8 @@ parameters:
 			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, string\\|null given\\.$#"
 			count: 1
 			path: src/CypherQueryFilter.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Subject\\\\SchemaNameLookup\\:\\:getSchemaNamesMatching\\(\\) has invalid return type TitleValue\\.$#"
+			count: 1
+			path: src/Domain/Subject/SchemaNameLookup.php

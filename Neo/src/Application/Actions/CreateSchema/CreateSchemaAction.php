@@ -13,6 +13,10 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use Title;
 
+/**
+ * FIXME: this class binds to a bunch of MediaWiki-specific classes.
+ * TODO: re-add CreateSchemaActionTest
+ */
 class CreateSchemaAction {
 
 	public function __construct(
@@ -44,7 +48,7 @@ class CreateSchemaAction {
 		}
 
 		try {
-			$this->deserializer->deserialize( $schemaName,  $schemaJson );
+			$this->deserializer->deserialize( $schemaName, $schemaJson );
 		} catch ( \Exception ) {
 			$this->presenter->presentInvalidArguments();
 			return;
