@@ -4,9 +4,9 @@ declare( strict_types=1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
-use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 
-class FailingSubjectActionAuthorizer implements SubjectActionAuthorizer {
+class FailingSubjectAuthorizer implements SubjectAuthorizer {
 	public function canCreateMainSubject(): bool {
 		return false;
 	}

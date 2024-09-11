@@ -8,15 +8,15 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectActionAuthorizer;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 
 class DeleteSubjectActionTest extends TestCase {
 	private const GUID = '00000000-7777-0000-0000-000000000001';
 
 	public function testDeleteSubject(): void {
 		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
-		$subjectAuthorizer = new SucceedingSubjectActionAuthorizer();
+		$subjectAuthorizer = new SucceedingSubjectAuthorizer();
 
 		$mockSubjectRepository->expects( $this->once() )->method( 'deleteSubject' )->with( new SubjectId( self::GUID ) );
 
@@ -26,7 +26,7 @@ class DeleteSubjectActionTest extends TestCase {
 
 	public function testUserIsNotAllowedToDeleteSubject(): void {
 		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
-		$subjectAuthorizer = new FailingSubjectActionAuthorizer();
+		$subjectAuthorizer = new FailingSubjectAuthorizer();
 
 		$action = new DeleteSubjectAction( $mockSubjectRepository, $subjectAuthorizer );
 

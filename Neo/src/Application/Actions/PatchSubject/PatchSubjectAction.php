@@ -7,13 +7,13 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 
 class PatchSubjectAction {
 
 	public function __construct(
 		private readonly SubjectRepository $subjectRepository,
-		private readonly SubjectActionAuthorizer $subjectActionAuthorizer,
+		private readonly SubjectAuthorizer $subjectActionAuthorizer,
 		private readonly StatementListPatcher $patcher
 	) {
 	}

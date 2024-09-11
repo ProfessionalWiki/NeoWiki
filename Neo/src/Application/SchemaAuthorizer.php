@@ -2,11 +2,10 @@
 
 declare( strict_types=1 );
 
-namespace ProfessionalWiki\NeoWiki\Infrastructure;
+namespace ProfessionalWiki\NeoWiki\Application;
 
-/**
- * Fixme: this is the wrong NS
- */
 interface SchemaAuthorizer {
+
 	public function canCreateSchema(): bool;
+
 }

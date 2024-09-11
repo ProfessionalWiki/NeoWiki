@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
-use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use RuntimeException;
 
 class CreateSubjectAction {
@@ -21,7 +21,7 @@ class CreateSubjectAction {
 		private readonly CreateSubjectPresenter $presenter,
 		private readonly SubjectRepository $subjectRepository,
 		private readonly GuidGenerator $guidGenerator,
-		private readonly SubjectActionAuthorizer $subjectActionAuthorizer,
+		private readonly SubjectAuthorizer $subjectActionAuthorizer,
 		private readonly StatementListPatcher $statementListPatcher,
 	) {
 	}

@@ -2,12 +2,10 @@
 
 declare( strict_types=1 );
 
-namespace ProfessionalWiki\NeoWiki\Infrastructure;
+namespace ProfessionalWiki\NeoWiki\Application;
 
-/**
- * Fixme: this is the wrong NS
- */
-interface SubjectActionAuthorizer {
+interface SubjectAuthorizer {
+
 	public function canCreateMainSubject(): bool;
 
 	public function canCreateChildSubject(): bool;
@@ -15,4 +13,5 @@ interface SubjectActionAuthorizer {
 	public function canEditSubject(): bool;
 
 	public function canDeleteSubject(): bool;
+
 }
