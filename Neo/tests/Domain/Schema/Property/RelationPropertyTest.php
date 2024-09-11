@@ -5,17 +5,15 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 
-/**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty
- * @covers \ProfessionalWiki\NeoWiki\Domain\Relation\RelationType
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition
- */
+#[CoversClass( RelationType::class, PropertyDefinition::class, RelationProperty::class )]
 class RelationPropertyTest extends PropertyTestCase {
 
 	public function testGetters(): void {

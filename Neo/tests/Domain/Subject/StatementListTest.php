@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
@@ -16,9 +17,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 
-/**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\StatementList
- */
+#[CoversClass( StatementList::class )]
 class StatementListTest extends TestCase {
 
 	public function testGetRelationsReturnsEmptyArrayWhenThereAreNoStatements(): void {

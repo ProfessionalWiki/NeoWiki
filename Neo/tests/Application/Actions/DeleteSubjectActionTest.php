@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 
 class DeleteSubjectActionTest extends TestCase {
+
 	private const GUID = '00000000-7777-0000-0000-000000000001';
 
 	public function testDeleteSubject(): void {

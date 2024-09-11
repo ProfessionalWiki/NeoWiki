@@ -4,13 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
-/**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\Subject
- */
+#[CoversClass( Subject::class )]
 class SubjectTest extends TestCase {
 
 	public function testHasSameIdentity(): void {

@@ -4,17 +4,15 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-/**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId
- */
+#[CoversClass( SubjectId::class )]
 class SubjectIdTest extends TestCase {
 
-	/**
-	 * @dataProvider validGuidProvider
-	 */
+	#[DataProvider( 'validGuidProvider' )]
 	public function testInitialisationWithCorrectUuid( string $validGuid ): void {
 		$subjectId = new SubjectId( $validGuid );
 		$this->assertSame( $validGuid, $subjectId->text );
@@ -26,17 +24,15 @@ class SubjectIdTest extends TestCase {
 		yield [ '01833ce0-3486-7bfd-84a1-ad157cf64005' ];
 	}
 
-	/**
-	 * @dataProvider validGuidProvider
-	 */
+	#[DataProvider( 'validGuidProvider' )]
 	public function testEquals( string $validGuid ): void {
 		$this->assertTrue( ( new SubjectId( $validGuid ) )->equals( new SubjectId( $validGuid ) ) );
-		$this->assertFalse( ( new SubjectId( $validGuid ) )->equals( new SubjectId( '40400000-0000-0000-0000-000000000000' ) ) );
+		$this->assertFalse(
+			( new SubjectId( $validGuid ) )->equals( new SubjectId( '40400000-0000-0000-0000-000000000000' ) )
+		);
 	}
 
-	/**
-	 * @dataProvider invalidGuidProvider
-	 */
+	#[DataProvider( 'invalidGuidProvider' )]
 	public function testInitialisationWithInvalidUuid( string $invalidGuid ): void {
 		$this->expectException( \InvalidArgumentException::class );
 		new SubjectId( $invalidGuid );

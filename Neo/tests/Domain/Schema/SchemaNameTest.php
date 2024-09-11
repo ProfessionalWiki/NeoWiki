@@ -5,12 +5,12 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 
-/**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName
- */
+#[CoversClass( SchemaName::class )]
 class SchemaNameTest extends TestCase {
 
 	public function testNonReservedSchemaNameIsValid(): void {
@@ -25,9 +25,7 @@ class SchemaNameTest extends TestCase {
 		new SchemaName( '' );
 	}
 
-	/**
-	 * @dataProvider reservedSchemaNameProvider
-	 */
+	#[DataProvider( 'reservedSchemaNameProvider' )]
 	public function testReservedSchemaNameIsInvalid( string $name ): void {
 		$this->expectException( InvalidArgumentException::class );
 

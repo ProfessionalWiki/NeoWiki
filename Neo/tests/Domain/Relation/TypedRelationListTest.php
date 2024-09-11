@@ -2,16 +2,15 @@
 
 declare( strict_types = 1 );
 
-namespace Domain\Relation;
+namespace ProfessionalWiki\NeoWiki\Tests\Domain\Relation;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 
-/**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList
- */
+#[CoversClass( TypedRelationList::class )]
 class TypedRelationListTest extends TestCase {
 
 	public function testGetIdsAsStringArray(): void {
