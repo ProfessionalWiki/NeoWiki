@@ -2,11 +2,11 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\tests;
+namespace ProfessionalWiki\NeoWiki\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\Neo\CypherQueryFilter;
+use ProfessionalWiki\NeoWiki\CypherQueryFilter;
 
 #[CoversClass( CypherQueryFilter::class )]
 class CypherQueryFilterTest extends TestCase {

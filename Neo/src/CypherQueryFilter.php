@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\Neo;
+namespace ProfessionalWiki\NeoWiki;
 
 class CypherQueryFilter {
 
