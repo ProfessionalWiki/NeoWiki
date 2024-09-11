@@ -13,11 +13,11 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
-use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubGuidGenerator;
 
 /**
@@ -35,10 +35,10 @@ class PatchSubjectActionTest extends TestCase {
 		$this->guidGenerator = new StubGuidGenerator( self::GUID );
 	}
 
-	private function newPatchSubjectAction( SubjectActionAuthorizer $authorizer = null ): PatchSubjectAction {
+	private function newPatchSubjectAction( SubjectAuthorizer $authorizer = null ): PatchSubjectAction {
 		return new PatchSubjectAction(
 			$this->inMemorySubjectRepository,
-			$authorizer ?? new SucceedingSubjectActionAuthorizer(),
+			$authorizer ?? new SucceedingSubjectAuthorizer(),
 			new StatementListPatcher(
 				formatTypeLookup: new FormatTypeLookup( ValueFormatRegistry::withCoreFormats() ),
 				guidGenerator: $this->guidGenerator
@@ -63,7 +63,7 @@ class PatchSubjectActionTest extends TestCase {
 	}
 
 	public function testPatchSubjectWithoutPermission(): void {
-		$patchSubjectAction = $this->newPatchSubjectAction( new FailingSubjectActionAuthorizer() );
+		$patchSubjectAction = $this->newPatchSubjectAction( new FailingSubjectAuthorizer() );
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'You do not have the necessary permissions to edit this subject' );

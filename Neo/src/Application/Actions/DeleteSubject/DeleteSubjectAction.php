@@ -6,12 +6,12 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject;
 
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 
 class DeleteSubjectAction {
 	public function __construct(
 		private SubjectRepository $subjectRepository,
-		private SubjectActionAuthorizer $subjectActionAuthorizer
+		private SubjectAuthorizer $subjectActionAuthorizer
 	) {
 	}
 

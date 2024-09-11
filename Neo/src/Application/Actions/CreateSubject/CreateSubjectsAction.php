@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\RevisionUpdater;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use RuntimeException;
@@ -28,7 +28,7 @@ class CreateSubjectsAction {
 
 	public function __construct(
 		private readonly SubjectRepository $subjectRepository,
-		private readonly SubjectActionAuthorizer $subjectActionAuthorizer,
+		private readonly SubjectAuthorizer $subjectActionAuthorizer,
 		private readonly StatementListPatcher $statementListPatcher,
 		private readonly RevisionUpdater $revisionUpdater
 	) {

@@ -16,12 +16,12 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
-use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubGuidGenerator;
 use RuntimeException;
 
@@ -35,13 +35,13 @@ class CreateSubjectActionTest extends TestCase {
 	private InMemorySubjectRepository $subjectRepository;
 	private GuidGenerator $guidGenerator;
 	private CreateSubjectPresenterSpy $presenterSpy;
-	private SubjectActionAuthorizer $authorizer;
+	private SubjectAuthorizer $authorizer;
 
 	public function setUp(): void {
 		$this->subjectRepository = new InMemorySubjectRepository();
 		$this->guidGenerator = new StubGuidGenerator( self::GUID );
 		$this->presenterSpy = new CreateSubjectPresenterSpy();
-		$this->authorizer = new SucceedingSubjectActionAuthorizer();
+		$this->authorizer = new SucceedingSubjectAuthorizer();
 	}
 
 	private function newCreateSubjectAction(): CreateSubjectAction {
@@ -100,7 +100,7 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	public function testUserIsNotAllowedToCreateSubject(): void {
-		$this->authorizer = new FailingSubjectActionAuthorizer();
+		$this->authorizer = new FailingSubjectAuthorizer();
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'You do not have the necessary permissions to create this subject' );
