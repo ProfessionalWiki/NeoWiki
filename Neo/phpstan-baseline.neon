@@ -116,16 +116,6 @@ parameters:
 			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
 
 		-
-			message: "#^Call to method getText\\(\\) on an unknown class TitleValue\\.$#"
-			count: 1
-			path: src/Application/Queries/GetSchemaNamesQuery.php
-
-		-
-			message: "#^Parameter \\$title of anonymous function has invalid type TitleValue\\.$#"
-			count: 1
-			path: src/Application/Queries/GetSchemaNamesQuery.php
-
-		-
 			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Queries\\\\RunCypher\\\\RunCypherPresenter\\:\\:presentSummarizedResult\\(\\) has parameter \\$result with generic class Laudis\\\\Neo4j\\\\Databags\\\\SummarizedResult but does not specify its types\\: TValue$#"
 			count: 1
 			path: src/Application/Queries/RunCypher/RunCypherPresenter.php
@@ -189,8 +179,3 @@ parameters:
 			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, string\\|null given\\.$#"
 			count: 1
 			path: src/CypherQueryFilter.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Subject\\\\SchemaNameLookup\\:\\:getSchemaNamesMatching\\(\\) has invalid return type TitleValue\\.$#"
-			count: 1
-			path: src/Domain/Subject/SchemaNameLookup.php
