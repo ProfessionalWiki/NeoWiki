@@ -15,14 +15,14 @@ use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use RuntimeException;
 
-class CreateSubjectAction {
+readonly class CreateSubjectAction {
 
 	public function __construct(
-		private readonly CreateSubjectPresenter $presenter,
-		private readonly SubjectRepository $subjectRepository,
-		private readonly GuidGenerator $guidGenerator,
-		private readonly SubjectAuthorizer $subjectActionAuthorizer,
-		private readonly StatementListPatcher $statementListPatcher,
+		private CreateSubjectPresenter $presenter,
+		private SubjectRepository $subjectRepository,
+		private GuidGenerator $guidGenerator,
+		private SubjectAuthorizer $subjectActionAuthorizer,
+		private StatementListPatcher $statementListPatcher,
 	) {
 	}
 

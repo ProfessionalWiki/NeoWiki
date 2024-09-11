@@ -4,11 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Page;
 
-class PageIdentifiers {
+readonly class PageIdentifiers {
 
 	public function __construct(
-		private readonly PageId $id,
-		private readonly string $title,
+		private PageId $id,
+		private string $title,
 	) {
 	}
 

@@ -8,9 +8,9 @@ use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 use Ramsey\Uuid\Uuid;
 use Stringable;
 
-class SubjectId implements Stringable {
+readonly class SubjectId implements Stringable {
 
-	public readonly string $text;
+	public string $text;
 
 	public function __construct( string $text ) {
 		if ( !Uuid::isValid( $text ) ) {

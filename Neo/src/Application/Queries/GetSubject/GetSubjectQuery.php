@@ -10,12 +10,12 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-class GetSubjectQuery {
+readonly class GetSubjectQuery {
 
 	public function __construct(
-		private readonly GetSubjectPresenter $presenter,
-		private readonly SubjectLookup $subjectLookup,
-		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
+		private GetSubjectPresenter $presenter,
+		private SubjectLookup $subjectLookup,
+		private PageIdentifiersLookup $pageIdentifiersLookup,
 	) {
 	}
 

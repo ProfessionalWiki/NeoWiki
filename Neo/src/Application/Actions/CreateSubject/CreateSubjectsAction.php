@@ -24,13 +24,13 @@ use RuntimeException;
  * This goes a bit against our architecture, but then again we already have the binding to RenderedRevision, it's
  * just hidden a bit via RevisionUpdater.
  */
-class CreateSubjectsAction {
+readonly class CreateSubjectsAction {
 
 	public function __construct(
-		private readonly SubjectRepository $subjectRepository,
-		private readonly SubjectAuthorizer $subjectActionAuthorizer,
-		private readonly StatementListPatcher $statementListPatcher,
-		private readonly RevisionUpdater $revisionUpdater
+		private SubjectRepository $subjectRepository,
+		private SubjectAuthorizer $subjectActionAuthorizer,
+		private StatementListPatcher $statementListPatcher,
+		private RevisionUpdater $revisionUpdater
 	) {
 	}
 

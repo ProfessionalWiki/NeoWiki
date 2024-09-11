@@ -17,14 +17,14 @@ use Title;
  * FIXME: this class binds to a bunch of MediaWiki-specific classes.
  * TODO: re-add CreateSchemaActionTest
  */
-class CreateSchemaAction {
+readonly class CreateSchemaAction {
 
 	public function __construct(
-		private readonly CreateSchemaPresenter $presenter,
-		private readonly PageContentSaver $pageContentSaver,
-		private readonly SchemaLookup $schemaLookup,
-		private readonly SchemaPersistenceDeserializer $deserializer,
-		private readonly SchemaAuthorizer $authorizer
+		private CreateSchemaPresenter $presenter,
+		private PageContentSaver $pageContentSaver,
+		private SchemaLookup $schemaLookup,
+		private SchemaPersistenceDeserializer $deserializer,
+		private SchemaAuthorizer $authorizer
 	) {
 	}
 

@@ -4,20 +4,20 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
-class CreateSubjectRequest {
+readonly class CreateSubjectRequest {
 
 	public function __construct(
-		public readonly int $pageId,
-		public readonly bool $isMainSubject,
+		public int $pageId,
+		public bool $isMainSubject,
 
-		public readonly string $label,
+		public string $label,
 
-		public readonly string $schemaId,
+		public string $schemaId,
 
 		/**
 		 * @var array<string, mixed[]>
 		 */
-		public readonly array $statements,
+		public array $statements,
 	) {
 	}
 

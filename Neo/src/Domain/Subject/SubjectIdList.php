@@ -4,12 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
-class SubjectIdList {
+readonly class SubjectIdList {
 
 	/**
 	 * @var SubjectId[]
 	 */
-	private readonly array $subjectIds;
+	private array $subjectIds;
 
 	/**
 	 * @param SubjectId[] $subjectIds

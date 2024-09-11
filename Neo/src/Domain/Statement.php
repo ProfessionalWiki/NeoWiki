@@ -7,12 +7,12 @@ namespace ProfessionalWiki\NeoWiki\Domain;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 
-class Statement {
+readonly class Statement {
 
 	public function __construct(
-		private readonly PropertyName $property,
-		private readonly string $format,
-		private readonly NeoValue $value
+		private PropertyName $property,
+		private string $format,
+		private NeoValue $value
 	) {
 	}
 

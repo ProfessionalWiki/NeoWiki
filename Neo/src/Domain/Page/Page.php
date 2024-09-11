@@ -4,12 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Page;
 
-class Page {
+readonly class Page {
 
 	public function __construct(
-		private readonly PageId $id,
-		private readonly PageProperties $properties,
-		private readonly PageSubjects $subjects,
+		private PageId $id,
+		private PageProperties $properties,
+		private PageSubjects $subjects,
 	) {
 	}
 

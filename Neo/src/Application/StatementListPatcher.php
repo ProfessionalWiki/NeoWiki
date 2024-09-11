@@ -20,11 +20,11 @@ use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 
-class StatementListPatcher {
+readonly class StatementListPatcher {
 
 	public function __construct(
-		private readonly FormatTypeLookup $formatTypeLookup,
-		private readonly GuidGenerator $guidGenerator,
+		private FormatTypeLookup $formatTypeLookup,
+		private GuidGenerator $guidGenerator,
 	) {
 	}
 

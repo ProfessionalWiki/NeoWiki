@@ -4,10 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Value;
 
-class NumberValue implements NeoValue {
+readonly class NumberValue implements NeoValue {
 
 	public function __construct(
-		public readonly int|float $number
+		public int|float $number
 	) {
 	}
 
