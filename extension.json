@@ -44,11 +44,14 @@
 		"ext.neowiki.addButton": {
 			"class": "MediaWiki\\ResourceLoader\\CodexModule",
 			"dependencies": [
-				"vue"
+				"vue",
+				"pinia"
 			],
 			"packageFiles": [
-				"ext.neowiki.addButton/init.js",
-				"ext.neowiki.addButton/components/App.vue"
+				"ext.neowiki.addButton/dist/init.js",
+				"ext.neowiki.addButton/dist/store.js",
+				"ext.neowiki.addButton/dist/components/App.vue",
+				"ext.neowiki.addButton/dist/components/PropertyList.vue"
 			],
 			"styles": [
 			],
