@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
@@ -36,7 +36,7 @@ class GetSchemaQueryTest extends TestCase {
 		return new GetSchemaQuery(
 			$this->presenter,
 			$this->schemaLookup,
-			NeoWikiExtension::getInstance()->getPersistenceSchemaSerializer()
+			new SchemaPresentationSerializer()
 		);
 	}
 

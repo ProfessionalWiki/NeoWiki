@@ -10,9 +10,10 @@ use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectActionAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
@@ -39,7 +40,7 @@ class PatchSubjectActionTest extends TestCase {
 			$this->inMemorySubjectRepository,
 			$authorizer ?? new SucceedingSubjectActionAuthorizer(),
 			new StatementListPatcher(
-				formatTypeLookup: NeoWikiExtension::getInstance()->getFormatTypeLookup(),
+				formatTypeLookup: new FormatTypeLookup( ValueFormatRegistry::withCoreFormats() ),
 				guidGenerator: $this->guidGenerator
 			)
 		);

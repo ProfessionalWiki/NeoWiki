@@ -66,10 +66,9 @@ abstract class PropertyDefinition {
 			default: $json['default'] ?? null
 		);
 
-		try{
+		try {
 			return $format->buildPropertyDefinitionFromJson( $propertyCore, $json );
-		}
-		catch ( \Throwable $e ) {
+		} catch ( \Throwable $e ) {
 			throw new InvalidArgumentException( 'Invalid property definition: ' . json_encode( $json ), 0, $e );
 		}
 	}

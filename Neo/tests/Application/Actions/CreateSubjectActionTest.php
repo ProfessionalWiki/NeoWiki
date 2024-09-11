@@ -13,9 +13,10 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\SubjectActionAuthorizer;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectActionAuthorizer;
@@ -50,7 +51,7 @@ class CreateSubjectActionTest extends TestCase {
 			$this->guidGenerator,
 			$this->authorizer,
 			new StatementListPatcher(
-				NeoWikiExtension::getInstance()->getFormatTypeLookup(),
+				new FormatTypeLookup( ValueFormatRegistry::withCoreFormats() ),
 				$this->guidGenerator
 			)
 		);
