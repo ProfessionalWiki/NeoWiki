@@ -4,12 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Value;
 
-class StringValue implements NeoValue {
+readonly class StringValue implements NeoValue {
 
 	/**
 	 * @var string[]
 	 */
-	public readonly array $strings;
+	public array $strings;
 
 	public function __construct( string ...$strings ) {
 		$this->strings = $strings;

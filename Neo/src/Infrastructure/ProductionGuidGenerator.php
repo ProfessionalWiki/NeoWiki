@@ -11,4 +11,5 @@ class ProductionGuidGenerator implements GuidGenerator {
 	public function generate(): string {
 		return Uuid::uuid7()->toString();
 	}
+
 }

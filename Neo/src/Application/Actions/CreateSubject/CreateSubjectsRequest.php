@@ -6,11 +6,11 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 
-class CreateSubjectsRequest {
+readonly class CreateSubjectsRequest {
 
 	public function __construct(
-		public readonly PageId $pageId,
-		public readonly string $subjectsJson
+		public PageId $pageId,
+		public string $subjectsJson
 	) {
 	}
 

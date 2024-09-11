@@ -7,11 +7,11 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries\RunCypher;
 use Laudis\Neo4j\Exception\Neo4jException;
 use ProfessionalWiki\NeoWiki\Application\QueryEngine;
 
-class RunCypherQuery {
+readonly class RunCypherQuery {
 
 	public function __construct(
-		private readonly RunCypherPresenter $presenter,
-		private readonly QueryEngine $queryEngine,
+		private RunCypherPresenter $presenter,
+		private QueryEngine $queryEngine,
 	) {
 	}
 

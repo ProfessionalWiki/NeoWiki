@@ -6,15 +6,15 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
 use InvalidArgumentException;
 
-class SchemaName {
+readonly class SchemaName {
 
-	private const RESERVED_NAMES = [
+	private const array RESERVED_NAMES = [
 		'page',
 		'subject'
 	];
 
 	public function __construct(
-		private readonly string $text,
+		private string $text,
 	) {
 		if ( trim( $this->text ) === '' ) {
 			throw new InvalidArgumentException( 'Schema name cannot be empty' );

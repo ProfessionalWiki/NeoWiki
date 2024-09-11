@@ -7,9 +7,9 @@ namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
 use Ramsey\Uuid\Uuid;
 
-class RelationId {
+readonly class RelationId {
 
-	private readonly string $text;
+	private string $text;
 
 	public function __construct( string $text ) {
 		if ( !Uuid::isValid( $text ) ) {

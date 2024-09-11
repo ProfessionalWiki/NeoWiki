@@ -9,12 +9,12 @@ use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 
-class PatchSubjectAction {
+readonly class PatchSubjectAction {
 
 	public function __construct(
-		private readonly SubjectRepository $subjectRepository,
-		private readonly SubjectAuthorizer $subjectActionAuthorizer,
-		private readonly StatementListPatcher $patcher
+		private SubjectRepository $subjectRepository,
+		private SubjectAuthorizer $subjectActionAuthorizer,
+		private StatementListPatcher $patcher
 	) {
 	}
 

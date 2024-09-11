@@ -7,12 +7,12 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 use OutOfBoundsException;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
 
-class Schema {
+readonly class Schema {
 
 	public function __construct(
-		private readonly SchemaName $name,
-		private readonly string $description,
-		private readonly PropertyDefinitions $properties,
+		private SchemaName $name,
+		private string $description,
+		private PropertyDefinitions $properties,
 	) {
 	}
 

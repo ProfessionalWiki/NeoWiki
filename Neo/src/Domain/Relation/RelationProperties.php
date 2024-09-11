@@ -6,13 +6,13 @@ namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 
 use InvalidArgumentException;
 
-class RelationProperties {
+readonly class RelationProperties {
 
 	public function __construct(
 		/**
 		 * @var array<string, mixed>
 		 */
-		public readonly array $map,
+		public array $map,
 	) {
 		foreach ( $this->map as $key => $value ) {
 			if ( is_array( $value ) ) {

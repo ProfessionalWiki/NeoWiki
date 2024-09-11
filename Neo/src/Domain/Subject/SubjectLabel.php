@@ -4,10 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
-class SubjectLabel {
+readonly class SubjectLabel {
 
 	public function __construct(
-		public readonly string $text,
+		public string $text,
 	) {
 	}
 

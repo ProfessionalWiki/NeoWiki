@@ -6,12 +6,12 @@ namespace ProfessionalWiki\NeoWiki\Domain\Value;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 
-class RelationValue implements NeoValue {
+readonly class RelationValue implements NeoValue {
 
 	/**
 	 * @var Relation[]
 	 */
-	public readonly array $relations;
+	public array $relations;
 
 	public function __construct( Relation ...$relations ) {
 		$this->relations = $relations;

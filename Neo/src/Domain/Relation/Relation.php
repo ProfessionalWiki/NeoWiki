@@ -6,12 +6,12 @@ namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-class Relation {
+readonly class Relation {
 
 	public function __construct(
-		public readonly RelationId $id,
-		public readonly SubjectId $targetId,
-		public readonly RelationProperties $properties,
+		public RelationId $id,
+		public SubjectId $targetId,
+		public RelationProperties $properties,
 	) {
 	}
 

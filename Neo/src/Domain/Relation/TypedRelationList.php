@@ -4,13 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 
-class TypedRelationList {
+readonly class TypedRelationList {
 
 	public function __construct(
 		/**
 		 * @var TypedRelation[]
 		 */
-		public readonly array $relations
+		public array $relations
 	) {
 		foreach ( $relations as $relation ) {
 			if ( !( $relation instanceof TypedRelation ) ) {

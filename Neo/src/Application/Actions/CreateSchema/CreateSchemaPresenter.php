@@ -19,4 +19,5 @@ interface CreateSchemaPresenter {
 	public function presentInvalidTitle(): void;
 
 	public function presentNoChanges(): void;
+
 }

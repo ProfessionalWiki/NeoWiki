@@ -15,12 +15,12 @@ use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
 
-class StatementList {
+readonly class StatementList {
 
 	/**
 	 * @var array<string, Statement> Key is property name
 	 */
-	private readonly array $statements;
+	private array $statements;
 
 	/**
 	 * @param Statement[] $statements

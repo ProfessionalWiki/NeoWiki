@@ -7,10 +7,10 @@ namespace ProfessionalWiki\NeoWiki\Domain\ValueFormat;
 use OutOfBoundsException;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
-class FormatTypeLookup {
+readonly class FormatTypeLookup {
 
 	public function __construct(
-		private readonly ValueFormatRegistry $registry
+		private ValueFormatRegistry $registry
 	) {
 	}
 

@@ -5,10 +5,10 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SchemaNameLookup;
 use TitleValue;
 
-class GetSchemaNamesQuery {
+readonly class GetSchemaNamesQuery {
 
 	public function __construct(
-		private readonly SchemaNameLookup $schemaNameLookup
+		private SchemaNameLookup $schemaNameLookup
 	) {
 	}
 

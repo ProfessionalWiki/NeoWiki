@@ -4,10 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Value;
 
-class BooleanValue implements NeoValue {
+readonly class BooleanValue implements NeoValue {
 
 	public function __construct(
-		public readonly bool $boolean
+		public bool $boolean
 	) {
 	}
 
