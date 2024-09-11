@@ -29,8 +29,10 @@ baseline:
 	$(MAKE) stan-baseline
 	$(MAKE) psalm-baseline
 
+composer-install: install
 install:
 	docker-compose run --rm php /usr/bin/composer install
 
+composer-update: update
 update:
 	docker-compose run --rm php /usr/bin/composer update

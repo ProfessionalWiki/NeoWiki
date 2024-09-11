@@ -3,8 +3,8 @@ version: '3.8'
 services:
   php:
     build: .
-    depends_on:
-      - graph
+#    depends_on:
+#      - graph
     volumes:
       - ./:/app
     working_dir: /app
