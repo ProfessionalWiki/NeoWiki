@@ -4,15 +4,14 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
-namespace Domain\Subject;
+namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 
-/**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList
- */
+#[CoversClass( SubjectIdList::class )]
 class SubjectIdListTest extends TestCase {
 
 	public function testAsStringArray(): void {

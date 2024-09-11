@@ -41,8 +41,8 @@ class RelationProperty extends PropertyDefinition {
 	public static function fromPartialJson( PropertyCore $core, array $property ): self {
 		return new self(
 			core: $core,
-			relationType: new RelationType( $property['relation'] ),
-			targetSchema: new SchemaName( $property['targetSchema'] ),
+			relationType: new RelationType( $property['relation'] ?? null ), // Required field, constructor throws on null
+			targetSchema: new SchemaName( $property['targetSchema'] ?? null ), // Required field, constructor throws on null
 			multiple: $property['multiple'] ?? false,
 		);
 	}

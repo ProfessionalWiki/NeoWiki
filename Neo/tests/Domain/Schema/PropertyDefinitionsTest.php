@@ -4,14 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
-/**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions
- */
+#[CoversClass( PropertyDefinitions::class )]
 class PropertyDefinitionsTest extends TestCase {
 
 	public function testFilter(): void {

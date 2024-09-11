@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Page;
 
 use OutOfBoundsException;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -12,9 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
-/**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects
- */
+#[CoversClass( PageSubjects::class )]
 class PageSubjectsTest extends TestCase {
 
 	public function testGetAllSubjectsReturnsMainSubjectFirst(): void {

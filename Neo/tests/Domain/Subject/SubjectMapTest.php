@@ -4,16 +4,16 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
-/**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap
- */
+#[CoversClass( SubjectMap::class )]
 class SubjectMapTest extends TestCase {
+
 	private const GUID_123 = '00000000-1237-0000-0000-000000000001';
 	private const GUID_456 = '00000000-4567-0000-0000-000000000001';
 	private const GUID_789 = '00000000-7897-0000-0000-000000000001';

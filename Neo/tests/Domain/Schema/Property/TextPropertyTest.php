@@ -2,15 +2,13 @@
 
 declare( strict_types = 1 );
 
-namespace Domain\Schema\Property;
+namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use InvalidArgumentException;
-use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property\PropertyTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
 
-/**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty
- */
+#[CoversClass( TextProperty::class )]
 class TextPropertyTest extends PropertyTestCase {
 
 	public function testMinimalSerialization(): void {
