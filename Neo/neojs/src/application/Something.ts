@@ -1,4 +1,4 @@
-import { AnotherThing } from './AnotherThing';
+import { AnotherThing } from '@/application/AnotherThing';
 
 export class Something {
 	public doSomething(): string {
