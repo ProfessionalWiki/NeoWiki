@@ -6,9 +6,9 @@ cs: phpcs stan psalm
 
 phpunit:
 ifdef filter
-	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --filter $(filter)
+	../../vendor/bin/phpunit -c phpunit.xml.dist --filter $(filter)
 else
-	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist
+	../../vendor/bin/phpunit -c phpunit.xml.dist
 endif
 
 perf:
