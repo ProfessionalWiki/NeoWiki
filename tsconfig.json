@@ -34,8 +34,7 @@
 		"resources/**/*.tsx",
 		"resources/**/*.vue",
 		"tests/**/*.ts",
-		"tests/**/*.tsx",
-		"resources/ext.neowiki.addButton/ts/vue-augmentations.d.ts"
+		"tests/**/*.tsx"
 	],
 	"exclude": [
 		"node_modules"
