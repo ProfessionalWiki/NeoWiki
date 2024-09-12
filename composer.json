@@ -17,8 +17,7 @@
 	],
 	"require": {
 		"php": "^8.3",
-		"composer/installers": "^2|^1.0.1",
-		"professional-wiki/neo": "@dev"
+		"composer/installers": "^2|^1.0.1"
 	},
 	"require-dev": {
 		"vimeo/psalm": "^5.25.0",
@@ -27,13 +26,13 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"ProfessionalWiki\\NeoWiki\\": "src/",
-			"ProfessionalWiki\\Neo\\": "Neo/src/"
+			"ProfessionalWiki\\NeoWiki\\MediaWiki\\": "src/",
+			"ProfessionalWiki\\NeoWiki\\": "Neo/src"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"ProfessionalWiki\\NeoWiki\\Tests\\": "tests/"
+			"ProfessionalWiki\\NeoWiki\\MediaWiki\\Tests\\": "tests/phpunit/"
 		}
 	},
 	"config": {
