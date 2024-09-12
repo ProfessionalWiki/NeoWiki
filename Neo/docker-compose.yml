@@ -20,5 +20,12 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/neo4j
 
+  node:
+    image: node:20-alpine
+    user: "node"
+    working_dir: /home/node/app
+    volumes:
+      - ./neojs:/home/node/app
+
 volumes:
   neo4j-data:
