@@ -4,7 +4,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSchema;
 
 use InvalidArgumentException;
 use MediaWiki\Revision\SlotRecord;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\Application\SchemaAuthorizer;
