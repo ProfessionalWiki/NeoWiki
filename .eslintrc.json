@@ -21,5 +21,9 @@
 	],
 	"ignorePatterns": [
 		"Neo/"
-	]
+	],
+	"rules": {
+		"jsdoc/valid-types": "off",
+		"no-console": "warn"
+	}
 }
