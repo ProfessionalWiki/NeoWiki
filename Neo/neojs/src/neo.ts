@@ -1,4 +1,4 @@
-import { Something } from './application/Something';
+import { Something } from '@/application/Something';
 
 export class Neo {
 	private static instance: Neo;

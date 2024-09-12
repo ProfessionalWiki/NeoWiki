@@ -9,7 +9,11 @@
 		"strict": true,
 		"esModuleInterop": true,
 		"declaration": true,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"]
+		}
 	},
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "dist", "tests"]
