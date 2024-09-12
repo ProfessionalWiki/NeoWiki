@@ -100,7 +100,7 @@ jobs:
           "echo \"CREATE USER mediawiki_read SET PASSWORD 'mediawiki_read' CHANGE NOT REQUIRED; GRANT ROLE reader TO mediawiki_read;\" | cypher-shell -u neo4j -p password -a bolt://localhost:7689"
 
       - name: Run PHPUnit
-        run: php vendor/bin/phpunit -c extensions/NeoWiki/phpunit.xml.dist
+        run: php tests/phpunit/phpunit.php -c extensions/NeoWiki/phpunit.xml.dist
 
   phpcs:
     name: "PHPCS with PHP 8.3"

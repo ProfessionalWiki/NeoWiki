@@ -1,0 +1,14 @@
+{
+	"propertyDefinitions": {
+		"Has data type": {
+			"format": "text"
+		},
+		"Has personal data": {
+			"format": "text"
+		},
+		"Sample value": {
+			"format": "text",
+			"multiple": true
+		}
+	}
+}

@@ -1,0 +1,39 @@
+{
+	"mainSubject": "12345678-0000-0000-0000-000000000001",
+	"subjects": {
+		"12345678-0000-0000-0000-000000000001": {
+			"label": "Professional Wiki GmbH",
+			"schema": "Company",
+			"statements": {
+				"Founded at": {
+					"format": "number",
+					"value": 2019
+				},
+				"Websites": {
+					"format": "url",
+					"value": [
+						"https://professional.wiki",
+						"https://wikibase.consulting"
+					]
+				},
+				"Products": {
+					"format": "relation",
+					"value": [
+						{
+							"id": "00000000-1111-2222-1100-000000000004",
+							"target": "12345678-0000-0000-0000-000000000004"
+						},
+						{
+							"id": "00000000-1111-2222-1100-000000000005",
+							"target": "12345678-0000-0000-0000-000000000005"
+						}
+					]
+				},
+				"World domination progress": {
+					"format": "number",
+					"value": 42
+				}
+			}
+		}
+	}
+}

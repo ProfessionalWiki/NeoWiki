@@ -23,17 +23,104 @@
 	},
 
 	"AutoloadNamespaces": {
-		"ProfessionalWiki\\NeoWiki\\": "src/",
-		"ProfessionalWiki\\Neo\\": "Neo/src/"
+		"ProfessionalWiki\\NeoWiki\\MediaWiki\\": "src/",
+		"ProfessionalWiki\\NeoWiki\\": "Neo/src/"
 	},
 
 	"TestAutoloadNamespaces": {
-		"ProfessionalWiki\\NeoWiki\\Tests\\": "tests/phpunit"
+		"ProfessionalWiki\\NeoWiki\\Tests\\MediaWiki\\": "tests/phpunit",
+		"ProfessionalWiki\\NeoWiki\\Tests\\": "Neo/tests"
 	},
 
 	"Hooks": {
-		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay"
+		"MediaWikiServices": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onMediaWikiServices",
+
+		"CodeEditorGetPageLanguage": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onCodeEditorGetPageLanguage",
+
+		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",
+
+		"EditFilter": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFilter",
+
+		"SpecialPage_initList": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSpecialPageInitList"
 	},
+
+	"ContentHandlers": {
+		"NeoWikiSubject": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\Content\\SubjectContentHandler",
+		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\Content\\SchemaContentHandler"
+	},
+
+	"namespaces": [
+		{
+			"id": 7474,
+			"constant": "NS_NEOWIKI_SCHEMA",
+			"name": "Schema",
+			"defaultcontentmodel": "NeoWikiSchema",
+			"subpages": false,
+			"content": false,
+			"movable": false,
+			"protection": "neowiki-schema-edit"
+		}
+	],
+
+	"AvailableRights": [
+		"neowiki-schema-edit"
+	],
+
+	"GroupPermissions": {
+		"sysop": {
+			"neowiki-schema-edit": true
+		},
+		"interface-admin": {
+			"neowiki-schema-edit": true
+		}
+	},
+
+	"SpecialPages": {
+		"NeoJson": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson"
+	},
+
+	"ExtensionMessagesFiles": {
+		"NeoWikiAliases": "i18n/_Aliases.php",
+		"NeoWikiNamespaces": "i18n/_Namespaces.php"
+	},
+
+	"RestRoutes": [
+		{
+			"path": "/neowiki/v0/page/{pageId}/mainSubject",
+			"method": [ "POST" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newCreateMainSubjectApi"
+		},
+		{
+			"path": "/neowiki/v0/page/{pageId}/childSubjects",
+			"method": [ "POST" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newCreateChildSubjectApi"
+		},
+		{
+			"path": "/neowiki/v0/subject/{subjectId}",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newGetSubjectApi"
+		},
+		{
+			"path": "/neowiki/v0/subject/{subjectId}",
+			"method": [ "PATCH" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newPatchSubjectApi"
+		},
+		{
+			"path": "/neowiki/v0/subject/{subjectId}",
+			"method": [ "DELETE" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newDeleteSubjectApi"
+		},
+		{
+			"path": "/neowiki/v0/schema/{schemaName}",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newGetSchemaApi"
+		},
+		{
+			"path": "/neowiki/v0/schema-names/{search}",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newGetSchemaNamesApi"
+		}
+	],
 
 	"ResourceFileModulePaths": {
 		"localBasePath": "",

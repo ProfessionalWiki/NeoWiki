@@ -1,0 +1,20 @@
+{{#infobox:12345678-0000-0000-0000-000000000002}}
+{{#infobox:12345678-0000-0000-0000-000000000001}}
+
+This page shows infoboxes with data from the [[Professional Wiki]] and [[ACME Inc]] pages.
+
+This is achieved with the following wikitext that references the IDs of the subjects:
+
+<pre>
+{{#infobox:12345678-0000-0000-0000-000000000002}}
+{{#infobox:12345678-0000-0000-0000-000000000001}}
+</pre>
+
+
+It is also possible to show the products defined on [[ACME Inc]]:
+
+<pre>
+{{#table:Product|ACME Inc}}
+</pre>
+
+{{#table:Product|ACME Inc}}

@@ -1,0 +1,28 @@
+This page shows Subjects defined on [[ACME Inc]].
+
+Data is displayed multiple times in different forms, demonstrating automatic and immediate update everywhere once you edit it in one location.
+
+{{#infobox:12345678-0000-0000-0000-000000000002}}
+
+{{#table:Product|ACME Inc}}
+
+{{#table:Company|ACME Inc}}
+
+{{#infobox:12345678-0000-0000-0000-000000000013}}
+{{#infobox:12345678-0000-0000-0000-000000000012}}
+{{#infobox:12345678-0000-0000-0000-000000000011}}
+{{#infobox:12345678-0000-0000-0000-000000000002}}
+
+{{#table:Product|ACME Inc}}
+
+{{#table:Company|ACME Inc}}
+
+How to explain? How to describe? Even the omniscient viewpoint quails.
+
+A singleton star, reddish and dim. A ragtag of asteroids, and a single planet, more like a moon. In this era the star hung near the galactic plane, just beyond the Beyond. The structures on the surface were gone from normal view, pulverized into regolith across a span of aeons. The treasure was far underground, beneath a network of passages, in a single room filled with black. Information at the quantum density, undamaged. Maybe five billion years had passed since the archive was lost to the nets.
+
+The curse of the mummy's tomb, a comic image from mankind's own prehistory, lost before time. They had laughed when they said it, laughed with joy at the treasure . . . and determined to be cautious just the same. They would live here a year or five, the little company from Straum, the archaeologist programmers, their families and schools. A year or five would be enough to handmake the protocols, to skim the top and identify the treasure's origin in time and space, to learn a secret or two that would make Straumli Realm rich. And when they were done, they would sell the location; perhaps build a network link (but chancier that—this was beyond the Beyond; who knew what Power might grab what they'd found).
+
+So now there was a tiny settlement on the surface, and they called it the High Lab. It was really just humans playing with an old library. It should be safe, using their own automation, clean and benign. This library wasn't a living creature, or even possessed of automation (which here might mean something more, far more, than human). They would look and pick and choose, and be careful not to be burned. . . . Humans starting fires and playing with the flames.
+
+The archive informed the automation. Data structures were built, recipes followed. A local network was built, faster than anything on Straum, but surely safe. Nodes were added, modified by other recipes. The archive was a friendly place, with hierarchies of translation keys that led them along. Straum itself would be famous for this.

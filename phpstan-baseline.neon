@@ -1,0 +1,331 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Call to an undefined method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\NeoWikiExtension\\:\\:getQueryStore\\(\\)\\.$#"
+			count: 1
+			path: src/NeoWikiExtension.php
+
+		-
+			message: "#^Call to an undefined method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\NeoWikiExtension\\:\\:getReadOnlyNeo4jClient\\(\\)\\.$#"
+			count: 1
+			path: src/NeoWikiExtension.php
+
+		-
+			message: "#^Call to static method getMain\\(\\) on an unknown class RequestContext\\.$#"
+			count: 1
+			path: src/NeoWikiExtension.php
+
+		-
+			message: "#^Instantiated class ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Neo4JPageIdentifiersLookup not found\\.$#"
+			count: 1
+			path: src/NeoWikiExtension.php
+
+		-
+			message: "#^Instantiated class ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\PagePropertiesBuilder not found\\.$#"
+			count: 1
+			path: src/NeoWikiExtension.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\NeoWikiExtension\\:\\:getPageIdentifiersLookup\\(\\) should return ProfessionalWiki\\\\NeoWiki\\\\Application\\\\PageIdentifiersLookup but returns ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Neo4JPageIdentifiersLookup\\.$#"
+			count: 1
+			path: src/NeoWikiExtension.php
+
+		-
+			message: "#^Parameter \\#1 \\$titleParser of class ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentFetcher constructor expects TitleParser, MediaWiki\\\\Title\\\\TitleParser given\\.$#"
+			count: 1
+			path: src/NeoWikiExtension.php
+
+		-
+			message: "#^Parameter \\#2 \\$pagePropertiesBuilder of class ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\EntryPoints\\\\OnRevisionCreatedHandler constructor expects ProfessionalWiki\\\\NeoWiki\\\\Application\\\\PagePropertiesBuilder, ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\PagePropertiesBuilder given\\.$#"
+			count: 1
+			path: src/NeoWikiExtension.php
+
+		-
+			message: "#^Cannot access property \\$page_title on array\\|stdClass\\|false\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
+
+		-
+			message: "#^Instantiated class TitleValue not found\\.$#"
+			count: 2
+			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\DatabaseSchemaNameLookup\\:\\:dbResultToTitleValueArray\\(\\) has invalid return type TitleValue\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\DatabaseSchemaNameLookup\\:\\:getFirstSchemaNames\\(\\) has invalid return type TitleValue\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\DatabaseSchemaNameLookup\\:\\:getSchemaNamesMatching\\(\\) has invalid return type TitleValue\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\DatabaseSchemaNameLookup\\:\\:searchSuggestionsToTitleArray\\(\\) has invalid return type TitleValue\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
+
+		-
+			message: "#^Call to method getPrefixedText\\(\\) on an unknown class Title\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Call to method getTitleValue\\(\\) on an unknown class Title\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Call to method parseTitle\\(\\) on an unknown class TitleParser\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Caught class MalformedTitleException not found\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Instantiated class MalformedTitleException not found\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentFetcher\\:\\:getPageContent\\(\\) has invalid return type Content\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentFetcher\\:\\:getPageContent\\(\\) should return Content\\|null but returns MediaWiki\\\\Content\\\\Content\\|null\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentFetcher\\:\\:normalizeTitle\\(\\) has invalid return type TitleValue\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^PHPDoc tag @throws with type MalformedTitleException is not subtype of Throwable$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Parameter \\#1 \\$page of method MediaWiki\\\\Revision\\\\RevisionLookup\\:\\:getRevisionByTitle\\(\\) expects MediaWiki\\\\Linker\\\\LinkTarget\\|MediaWiki\\\\Page\\\\PageIdentity, TitleValue given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Parameter \\$pageTitle of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentFetcher\\:\\:getPageContent\\(\\) has invalid type Title\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Parameter \\$pageTitle of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentFetcher\\:\\:normalizeTitle\\(\\) has invalid type Title\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Parameter \\$titleParser of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentFetcher\\:\\:__construct\\(\\) has invalid type TitleParser\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Property ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentFetcher\\:\\:\\$titleParser has unknown class TitleParser as its type\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Throwing object of an unknown class MalformedTitleException\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentFetcher.php
+
+		-
+			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentSaver.php
+
+		-
+			message: "#^Parameter \\#1 \\$summary of method MediaWiki\\\\Storage\\\\PageUpdater\\:\\:saveRevision\\(\\) expects MediaWiki\\\\CommentStore\\\\CommentStoreComment, CommentStoreComment given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentSaver.php
+
+		-
+			message: "#^Parameter \\#2 \\$content of method MediaWiki\\\\Storage\\\\PageUpdater\\:\\:setContent\\(\\) expects MediaWiki\\\\Content\\\\Content, Content given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentSaver.php
+
+		-
+			message: "#^Parameter \\$comment of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContent\\(\\) has invalid type CommentStoreComment\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentSaver.php
+
+		-
+			message: "#^Parameter \\$comment of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContentViaUpdater\\(\\) has invalid type CommentStoreComment\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentSaver.php
+
+		-
+			message: "#^Parameter \\$contentBySlot of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContent\\(\\) has invalid type Content\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentSaver.php
+
+		-
+			message: "#^Parameter \\$contentBySlot of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContentViaUpdater\\(\\) has invalid type Content\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentSaver.php
+
+		-
+			message: "#^Using nullsafe method call on non\\-nullable type MediaWiki\\\\Storage\\\\PageUpdateStatus\\. Use \\-\\> instead\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/PageContentSaver.php
+
+		-
+			message: "#^Call to static method newUnsavedComment\\(\\) on an unknown class CommentStoreComment\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/RevisionUpdater.php
+
+		-
+			message: "#^Call to static method now\\(\\) on an unknown class MWTimestamp\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/RevisionUpdater.php
+
+		-
+			message: "#^Parameter \\#1 \\$user of method MediaWiki\\\\Revision\\\\MutableRevisionRecord\\:\\:setUser\\(\\) expects MediaWiki\\\\User\\\\UserIdentity, User given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/RevisionUpdater.php
+
+		-
+			message: "#^Parameter \\#2 \\$content of method MediaWiki\\\\Revision\\\\MutableRevisionRecord\\:\\:setContent\\(\\) expects MediaWiki\\\\Content\\\\Content, Content given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/RevisionUpdater.php
+
+		-
+			message: "#^Parameter \\$contentBySlot of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater\\:\\:addSubjectsToRevision\\(\\) has invalid type Content\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/RevisionUpdater.php
+
+		-
+			message: "#^Parameter \\$performer of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater\\:\\:__construct\\(\\) has invalid type User\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/RevisionUpdater.php
+
+		-
+			message: "#^Property ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater\\:\\:\\$performer has unknown class User as its type\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/RevisionUpdater.php
+
+		-
+			message: "#^Call to static method newUnsavedComment\\(\\) on an unknown class CommentStoreComment\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/MediaWikiSubjectRepository.php
+
+		-
+			message: "#^Parameter \\#2 \\$contentBySlot of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContent\\(\\) expects array\\<string, Content\\>, array\\<string, ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\EntryPoints\\\\Content\\\\SubjectContent\\> given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/MediaWikiSubjectRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\$boolean of class ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Value\\\\BooleanValue constructor expects bool, mixed given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/StatementDeserializer.php
+
+		-
+			message: "#^Parameter \\#1 \\$json of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\Subject\\\\StatementDeserializer\\:\\:deserializeRelationValue\\(\\) expects array, mixed given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/StatementDeserializer.php
+
+		-
+			message: "#^Parameter \\#1 \\$number of class ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Value\\\\NumberValue constructor expects float\\|int, mixed given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/StatementDeserializer.php
+
+		-
+			message: "#^Parameter \\#1 \\.\\.\\.\\$strings of class ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Value\\\\StringValue constructor expects string, mixed given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/StatementDeserializer.php
+
+		-
+			message: "#^Cannot access offset 'mainSubject' on mixed\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/SubjectContentDataDeserializer.php
+
+		-
+			message: "#^Parameter \\#1 \\$jsonArray of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\Subject\\\\SubjectContentDataDeserializer\\:\\:deserializeSubjects\\(\\) expects array, mixed given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/SubjectContentDataDeserializer.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of class ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Subject\\\\SubjectId constructor expects string, mixed given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/SubjectContentDataDeserializer.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\Subject\\\\SubjectContentDataSerializer\\:\\:serialize\\(\\) should return string but returns string\\|false\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/SubjectContentDataSerializer.php
+
+		-
+			message: "#^Call to static method newUnsavedComment\\(\\) on an unknown class CommentStoreComment\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/SubjectContentRepository.php
+
+		-
+			message: "#^Parameter \\#2 \\$contentBySlot of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContent\\(\\) expects array\\<string, Content\\>, array\\<string, ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\EntryPoints\\\\Content\\\\SubjectContent\\> given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/SubjectContentRepository.php
+
+		-
+			message: "#^Call to an undefined method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\EntryPoints\\\\Content\\\\SchemaContent\\:\\:getText\\(\\)\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/WikiPageSchemaLookup.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\SchemaNameLookup\\:\\:getSchemaNamesMatching\\(\\) has invalid return type TitleValue\\.$#"
+			count: 1
+			path: src/Persistence/SchemaNameLookup.php
+
+		-
+			message: "#^Call to method getHeader\\(\\) on an unknown class WebRequest\\.$#"
+			count: 1
+			path: src/Presentation/CsrfValidator.php
+
+		-
+			message: "#^Parameter \\$request of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Presentation\\\\CsrfValidator\\:\\:__construct\\(\\) has invalid type WebRequest\\.$#"
+			count: 1
+			path: src/Presentation/CsrfValidator.php
+
+		-
+			message: "#^Property ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Presentation\\\\CsrfValidator\\:\\:\\$request has unknown class WebRequest as its type\\.$#"
+			count: 1
+			path: src/Presentation/CsrfValidator.php
+
+		-
+			message: "#^Call to method getFullText\\(\\) on an unknown class Title\\.$#"
+			count: 1
+			path: src/Presentation/FactBox.php
+
+		-
+			message: "#^Call to static method getTitleFor\\(\\) on an unknown class SpecialPage\\.$#"
+			count: 1
+			path: src/Presentation/FactBox.php
+
+		-
+			message: "#^Parameter \\#1 \\$pageIdentity of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\Subject\\\\SubjectContentRepository\\:\\:getSubjectContentByPageTitle\\(\\) expects MediaWiki\\\\Page\\\\PageIdentity, Title given\\.$#"
+			count: 1
+			path: src/Presentation/FactBox.php
+
+		-
+			message: "#^Parameter \\$title of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Presentation\\\\FactBox\\:\\:htmlFor\\(\\) has invalid type Title\\.$#"
+			count: 1
+			path: src/Presentation/FactBox.php
+
+		-
+			message: "#^Call to static method errorBox\\(\\) on an unknown class Html\\.$#"
+			count: 1
+			path: src/Presentation/TwigTemplateRenderer.php

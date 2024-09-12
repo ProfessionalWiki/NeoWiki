@@ -1,0 +1,21 @@
+{
+	"mainSubject": "12345678-0000-0000-0000-000000000004",
+	"subjects": {
+		"12345678-0000-0000-0000-000000000004": {
+			"label": "ProWiki",
+			"schema": "Product",
+			"statements": {
+				"Available since": {
+					"format": "number",
+					"value": 2022
+				},
+				"Website": {
+					"format": "url",
+					"value": [
+						"https://pro.wiki"
+					]
+				}
+			}
+		}
+	}
+}

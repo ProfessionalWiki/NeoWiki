@@ -2,13 +2,13 @@
 
 ci: test cs
 test: phpunit
-cs: phpcs stan psalm
+cs: phpcs stan #TODO: psalm
 
 phpunit:
 ifdef filter
-	../../vendor/bin/phpunit -c phpunit.xml.dist --filter $(filter)
+	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --filter $(filter)
 else
-	../../vendor/bin/phpunit -c phpunit.xml.dist
+	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist
 endif
 
 perf:

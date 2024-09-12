@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Presentation;
+namespace ProfessionalWiki\NeoWiki\MediaWiki\Presentation;
 
 class JsonSchemaErrorFormatter {
 

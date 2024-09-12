@@ -1,0 +1,77 @@
+{
+	"mainSubject": "01899e9a-1798-70cc-b8db-8e396f333b7d",
+	"subjects": {
+		"01899e9a-1798-70cc-b8db-8e396f333b7d": {
+			"label": "Berlin",
+			"schema": "City",
+			"statements": {
+				"Country": {
+					"format": "text",
+					"value": [ "Germany" ]
+				}
+			}
+		},
+		"01899e9c-180d-7147-aa9f-c387e3e4926c": {
+			"label": "Latest",
+			"schema": "Population",
+			"statements": {
+				"Population": {
+					"format": "number",
+					"value": 3677472
+				},
+				"Date": {
+					"format": "text",
+					"value": [ "2020-12-31" ]
+				},
+				"Measurer": {
+					"format": "text",
+					"value": [ "register of municipalities" ]
+				},
+				"References": {
+					"format": "url",
+					"value": [ "https://example.com/Pop2020" ]
+				}
+			}
+		},
+		"01899ea3-f9c8-724a-bd88-22ca1303fb03": {
+			"label": "2016",
+			"schema": "Population",
+			"statements": {
+				"Population": {
+					"format": "number",
+					"value": 3574830
+				},
+				"Date": {
+					"format": "text",
+					"value": [ "2016-12-31" ]
+				},
+				"Measurer": {
+					"format": "text",
+					"value": [ "register of municipalities" ]
+				},
+				"References": {
+					"format": "url",
+					"value": [ "https://example.com/Pop2016" ]
+				}
+			}
+		},
+		"01899ea5-7b88-735a-8229-f7652a1c9834": {
+			"label": " 1852",
+			"schema": "Population",
+			"statements": {
+				"Population": {
+					"format": "number",
+					"value": 401972
+				},
+				"Date": {
+					"format": "text",
+					"value": [ "1852-01-01" ]
+				},
+				"Measurer": {
+					"format": "text",
+					"value": [ "unknown" ]
+				}
+			}
+		}
+	}
+}
