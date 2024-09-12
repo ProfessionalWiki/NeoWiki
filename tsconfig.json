@@ -10,10 +10,11 @@
 		"allowSyntheticDefaultImports": true,
 		"forceConsistentCasingInFileNames": true,
 		"useDefineForClassFields": true,
+		"allowImportingTsExtensions": true,
 		"sourceMap": true,
 		"baseUrl": ".",
 		"types": [
-			"webpack-env",
+			"types-mediawiki",
 			"jest",
 			"node"
 		],
@@ -33,7 +34,8 @@
 		"resources/**/*.tsx",
 		"resources/**/*.vue",
 		"tests/**/*.ts",
-		"tests/**/*.tsx"
+		"tests/**/*.tsx",
+		"resources/ext.neowiki.addButton/ts/vue-augmentations.d.ts"
 	],
 	"exclude": [
 		"node_modules"

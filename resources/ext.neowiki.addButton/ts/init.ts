@@ -14,7 +14,7 @@ import { useNeoWikiStore } from './store.ts';
 	// Initialize the store
 	const store = useNeoWikiStore();
 
-	const app = Vue.createMwApp( App );
+	const app = (Vue as any).createMwApp(App);
 
 	// Attach the store to the app
 	app.provide( 'store', store );

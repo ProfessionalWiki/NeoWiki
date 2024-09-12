@@ -1,10 +1,29 @@
 const fs = require( 'fs' );
 const path = require( 'path' );
+const { execFile } = require( 'child_process' );
 const { parse } = require( '@vue/compiler-sfc' );
 const { transform } = require( '@babel/core' );
 
 const inputDir = 'resources/ext.neowiki.addButton/ts';
 const outputDir = 'resources/ext.neowiki.addButton/dist';
+
+function runTypeCheck() {
+	return new Promise((resolve, reject) => {
+		const vueTscPath = path.resolve(__dirname, 'node_modules', '.bin', 'vue-tsc');
+		const args = ['--noEmit', '--project', path.resolve(__dirname, 'tsconfig.json')];
+
+		execFile(vueTscPath, args, (error, stdout, stderr) => {
+			if (error) {
+				console.error(`TypeScript compilation failed:\n${stdout}\n${stderr}`);
+				reject(error);
+			} else {
+				console.log('TypeScript compilation successful');
+				resolve();
+			}
+		});
+	});
+}
+
 
 function processFile( inputFile, outputFile ) {
 	const ext = path.extname( inputFile );
@@ -117,5 +136,14 @@ function processDirectory( inputDir, outputDir ) {
 	}
 }
 
-// Start processing from the root directory
-processDirectory( inputDir, outputDir );
+async function main() {
+	try {
+		await runTypeCheck();
+		processDirectory( inputDir, outputDir );
+	} catch( error ) {
+		console.error( 'Build failed due to TypeScript errors' );
+		process.exit( 1 );
+	}
+}
+
+main();

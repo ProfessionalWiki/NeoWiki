@@ -17,11 +17,10 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import PropertyList from './PropertyList.vue';
+import * as PropertyList from './PropertyList.vue';
 import { useNeoWikiStore } from '../store.ts';
 
-// @vue/component
-module.exports = exports = defineComponent( {
+const component = defineComponent( {
 	name: 'App',
 	components: {
 		PropertyList
@@ -41,6 +40,9 @@ module.exports = exports = defineComponent( {
 		console.log( 'NeoWiki component mounted' );
 	}
 } );
+
+export default component;
+module.exports = exports = component; // we have to add this for MW to work, that's the only redundancy
 </script>
 
 <style>

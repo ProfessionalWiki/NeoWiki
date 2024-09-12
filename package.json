@@ -38,9 +38,11 @@
 		"stylelint-config-wikimedia": "0.17.2",
 		"ts-jest": "^29.2.5",
 		"typescript": "~5.4.0",
-		"vue": "3.4.27"
+		"vue": "3.4.27",
+		"vue-tsc": "^2.1.6"
 	},
 	"dependencies": {
-		"chokidar": "^3.6.0"
+		"chokidar": "^3.6.0",
+		"types-mediawiki": "^1.8.0"
 	}
 }

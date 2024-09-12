@@ -7,14 +7,20 @@
 <script>
 "use strict";
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
 var _vue = require("vue");
-// @vue/component
-module.exports = (0, _vue.defineComponent)({
-  inject: ['store'],
-  created: function created() {
-    this.store = this.store;
+var component = (0, _vue.defineComponent)({
+  setup: function setup() {
+    return {
+      store: (0, _vue.inject)('store')
+    };
   }
 });
+var _default = exports.default = component;
+module.exports = exports = component; // we have to add this for MW to work, that's the only redundancy
 </script>
 
 <style>

@@ -49,3 +49,5 @@ export const useNeoWikiStore = defineStore( 'neoWiki', {
 		}
 	}
 } );
+
+export type Store = ReturnType<typeof useNeoWikiStore>; // can be cleaned

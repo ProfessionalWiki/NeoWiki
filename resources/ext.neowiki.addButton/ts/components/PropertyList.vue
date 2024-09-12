@@ -5,16 +5,19 @@
 </template>
 
 <script lang="ts">
-import { useNeoWikiStore } from '../store';
-import { defineComponent } from 'vue';
+import { Store } from '../store';
+import { defineComponent, inject } from 'vue';
 
-// @vue/component
-module.exports = defineComponent( {
-	inject: [ 'store' ],
-	created() {
-		this.store = this.store as ReturnType<typeof useNeoWikiStore>;
+const component =  defineComponent( {
+	setup() {
+		return {
+			store: inject('store') as Store
+		}
 	}
-} );
+});
+
+export default component;
+module.exports = exports = component; // we have to add this for MW to work, that's the only redundancy
 </script>
 
 <style scoped>
