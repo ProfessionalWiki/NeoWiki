@@ -1,0 +1,13 @@
+{{#infobox:}}
+
+Because NeoWiki supports adding as many Subjects as you want to a single page, it is possible to emulate Wikibase Statements.
+
+We did not optimize for this use case yet. In particular, the required Subject title field (first column in the table)
+does not make sense for such statements. Even so, this page demonstrates the core capability.
+
+{{#table:Population}}
+
+Neo4j has excellent native support for properties on relations. NeoWiki already supports this in its backend, but we
+do not have a UI for it yet. Properties on relations are perfect for when the qualified value is a subject. For instance,
+if you have a Person (ie John Doe) that Works For (property) a Company (ie Professional Wiki), their "Works For" relation
+could have start date, end date, and compensation properties.

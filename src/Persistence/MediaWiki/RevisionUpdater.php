@@ -1,6 +1,6 @@
 <?php
 
-namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki;
 
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RenderedRevision;

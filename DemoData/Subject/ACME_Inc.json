@@ -1,0 +1,90 @@
+{
+	"mainSubject": "12345678-0000-0000-0000-000000000002",
+	"subjects": {
+		"12345678-0000-0000-0000-000000000002": {
+			"label": "ACME Inc.",
+			"schema": "Company",
+			"statements": {
+				"Founded at": {
+					"format": "number",
+					"value": 2005
+				},
+				"Websites": {
+					"format": "url",
+					"value": [
+						"https://acme.example"
+					]
+				},
+				"World domination progress": {
+					"format": "number",
+					"value": 42
+				},
+				"Products": {
+					"format": "relation",
+					"value": [
+						{
+							"id": "00000000-1111-2222-1100-000000000001",
+							"target": "12345678-0000-0000-0000-000000000011"
+						},
+						{
+							"id": "00000000-1111-2222-1100-000000000002",
+							"target": "12345678-0000-0000-0000-000000000012"
+						},
+						{
+							"id": "00000000-1111-2222-1100-000000000003",
+							"target": "12345678-0000-0000-0000-000000000013"
+						}
+					]
+				}
+			}
+		},
+		"12345678-0000-0000-0000-000000000011": {
+			"label": "Foo",
+			"schema": "Product",
+			"statements": {
+				"Available since": {
+					"format": "number",
+					"value": 2006
+				},
+				"Website": {
+					"format": "url",
+					"value": [
+						"https://acme.example/product/foo"
+					]
+				}
+			}
+		},
+		"12345678-0000-0000-0000-000000000012": {
+			"label": "Bar",
+			"schema": "Product",
+			"statements": {
+				"Available since": {
+					"format": "number",
+					"value": 2010
+				},
+				"Website": {
+					"format": "url",
+					"value": [
+						"https://acme.example/product/bar"
+					]
+				}
+			}
+		},
+		"12345678-0000-0000-0000-000000000013": {
+			"label": "Baz",
+			"schema": "Product",
+			"statements": {
+				"Available since": {
+					"format": "number",
+					"value": 2015
+				},
+				"Website": {
+					"format": "url",
+					"value": [
+						"https://acme.example/product/baz"
+					]
+				}
+			}
+		}
+	}
+}

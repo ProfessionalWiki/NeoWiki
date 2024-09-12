@@ -1,0 +1,18 @@
+{
+	"description": "A population measurement",
+	"propertyDefinitions": {
+		"Population": {
+			"format": "number"
+		},
+		"Date": {
+			"format": "text"
+		},
+		"Measurer": {
+			"format": "text"
+		},
+		"References": {
+			"format": "url",
+			"multiple": true
+		}
+	}
+}

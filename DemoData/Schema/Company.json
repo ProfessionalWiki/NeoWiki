@@ -1,0 +1,26 @@
+{
+	"propertyDefinitions": {
+		"Founded at": {
+			"format": "number"
+		},
+		"Websites": {
+			"format": "url",
+			"multiple": true
+		},
+		"Main product": {
+			"format": "relation",
+			"relation": "Has main product",
+			"targetSchema": "Product"
+		},
+		"Products": {
+			"format": "relation",
+			"relation": "Has product",
+			"targetSchema": "Product",
+			"multiple": true
+		},
+		"World domination progress": {
+			"format": "number",
+			"default": 0
+		}
+	}
+}

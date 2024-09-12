@@ -1,0 +1,73 @@
+{
+	"mainSubject": "0188fa10-181a-719d-a4a4-7b4a3d40a958",
+	"subjects": {
+		"0188fa10-181a-719d-a4a4-7b4a3d40a958": {
+			"label": "f_capture_actuals",
+			"schema": "Table",
+			"statements": {
+				"Has personal data": {
+					"format": "text",
+					"value": [ "yes" ]
+				},
+				"Part of": {
+					"format": "text",
+					"value": [ "Data Warehouse", "Forecast Model" ]
+				}
+			}
+		},
+		"0188fa13-d814-70d8-80fc-d3f579d12f38": {
+			"label": "capture__date",
+			"schema": "Column",
+			"statements": {
+				"Has data type": {
+					"format": "text",
+					"value": [ "Date" ]
+				},
+				"Has personal data": {
+					"format": "text",
+					"value": [ "no" ]
+				},
+				"Sample value": {
+					"format": "text",
+					"value": [ "2022-07-01", "2021-10-13" ]
+				}
+			}
+		},
+		"0188fa14-6ee6-72a8-8082-ed6327f5ce50": {
+			"label": "payment_method_planning",
+			"schema": "Column",
+			"statements": {
+				"Has data type": {
+					"format": "text",
+					"value": [ "String" ]
+				},
+				"Has personal data": {
+					"format": "text",
+					"value": [ "no" ]
+				},
+				"Sample value": {
+					"format": "text",
+					"value": [ "Direct Bank Transfer", "Other" ]
+				}
+			}
+		},
+		"0188fa16-6b41-7221-8b53-63afc7eb225f": {
+			"label": "servicing_system_id",
+			"schema": "Column",
+			"statements": {
+				"Has data type": {
+					"format": "text",
+					"value": [ "String" ]
+				},
+				"Has personal data": {
+					"format": "text",
+					"value": [ "no" ]
+				},
+				"Sample value": {
+					"format": "text",
+					"value": [ "KRED", "SOFORT", "TXEU" ]
+				}
+			}
+		}
+	}
+}

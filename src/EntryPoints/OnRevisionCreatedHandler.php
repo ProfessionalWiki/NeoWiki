@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\EntryPoints;
+namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints;
 
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
@@ -12,8 +12,8 @@ use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use WikiPage;
 
 class OnRevisionCreatedHandler {

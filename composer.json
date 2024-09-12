@@ -18,7 +18,10 @@
 	"require": {
 		"php": "^8.3",
 		"composer/installers": "^2|^1.0.1",
-		"professional-wiki/neo": "@dev"
+		"professional-wiki/neo": "@dev",
+		"opis/json-schema": "^2.3.0",
+		"twig/twig": "^3.5.1",
+		"jeroen/psr-log-test-doubles": "^3.0.0"
 	},
 	"require-dev": {
 		"vimeo/psalm": "^5.25.0",
@@ -33,7 +36,8 @@
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"ProfessionalWiki\\NeoWiki\\MediaWiki\\Tests\\": "tests/phpunit/"
+			"ProfessionalWiki\\NeoWiki\\Tests\\MediaWiki\\": "tests/phpunit/",
+			"ProfessionalWiki\\NeoWiki\\Tests\\": "Neo/tests/"
 		}
 	},
 	"config": {

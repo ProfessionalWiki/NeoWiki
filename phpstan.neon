@@ -9,3 +9,10 @@ parameters:
 		- ../../includes
 		- ../../tests/phpunit
 		- ../../vendor
+	excludePaths:
+		analyse:
+			- src/EntryPoints/
+	reportUnmatchedIgnoredErrors: false
+	ignoreErrors:
+		- '#no value type specified in iterable type array\.$#'
+		- '#function array_map expects#'

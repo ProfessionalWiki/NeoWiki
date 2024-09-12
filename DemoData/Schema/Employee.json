@@ -1,0 +1,29 @@
+{
+	"description": "Someone working for a company",
+	"propertyDefinitions": {
+		"LegalName": {
+			"format": "text"
+		},
+		"WorkEmail": {
+			"format": "text"
+		},
+		"EmploymentFte": {
+			"format": "number",
+			"minimum": 0,
+			"maximum": 100,
+			"default": 100
+		},
+		"Skills": {
+			"format": "text",
+			"multiple": true,
+			"uniqueItems": true,
+			"description": "A list of the person's skills"
+		},
+		"Employer": {
+			"format": "relation",
+			"relation": "Employer",
+			"targetSchema": "Company",
+			"multiple": false
+		}
+	}
+}

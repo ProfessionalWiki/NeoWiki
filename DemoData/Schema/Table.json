@@ -1,0 +1,11 @@
+{
+	"propertyDefinitions": {
+		"Has personal data": {
+			"format": "text"
+		},
+		"Part of": {
+			"format": "text",
+			"multiple": true
+		}
+	}
+}

@@ -1,0 +1,64 @@
+<div style="max-width:1200px; font-size: 1.15rem">
+Welcome to the NeoWiki demo wiki!
+
+NeoWiki turns your wiki into a collaborative graph database by letting you store and query structured information. It is thus similar to Wikibase and Semantic MediaWiki. NeoWiki was developed as a more user-friendly and sustainable alternative to those two softwares.
+
+NeoWiki is still alpha software. Various features are incomplete or missing. This demo wiki exists so you can see the current state of NeoWiki and imagine what you could do with a further developed version of the software.
+</div>
+
+== Demo pages ==
+
+* Simple page with automatic infobox and edit form: [[NeoWiki]], [[ProWiki]]
+* Subject with relations: [[Professional Wiki]]
+* Multiple subjects per page: [[F_capture_actuals]], [[ACME Inc]]
+* Wikibase Statement emulation: [[Berlin]]
+* Displaying data from other pages: [[Company Infoboxes]]
+* [[Reactive UI example]]
+* [[Cypher query examples]]
+* [[Lua examples]]
+
+=== Schemas ===
+
+Schemas allow you to define the structure of your data. For instance, you can define that a Employee has a
+compensation in EUR with a value between 0 and 1000000.
+
+A finished version of NeoWiki would contain a dedicated editor for creating and modifying schemas. For now, you have
+to edit the JSON directly.
+
+You can create a new employee by doing to its schema page and clicking "create new employee" at the top. A finished
+version of NeoWiki would allow you to create new subjects directly from the Visual Editor when editing a page.
+
+* [[Schema:Company]]
+* [[Schema:Product]]
+* [[Schema:Employee]]
+* [[Schema:Everything]]
+* [{{fullurl:Special:AllPages|from=&to=&namespace=7474}} View all schemas]
+
+== How To ==
+
+* '''Create a new Schema''': Create a new page with the prefix "Schema:" and the name of your schema. For instance, "Schema:MyExample". Creating and editing schemas requires elevated permissions. We can turn this off.
+
+Technical
+
+* '''View or edit Subject JSON directly''': NeoWiki can be used without understanding what JSON is, and the JSON is not normally shown. However, as a technical person, you can access it via the REST API or the "View or edit JSON" link at the bottom of pages with Subjects. The latter is a development utility that would not be available on production wikis.
+* '''View the data in Neo4j''': Head over to https://neo.professional.wiki:7474/
+
+== REST API endpoints ==
+
+Example URL: https://neo.professional.wiki/w/rest.php/neowiki/v0/subject/12345678-0000-0000-0000-000000000001
+
+=== Read endpoints ===
+
+* <code>GET /neowiki/v0/subject/{subjectId}</code> Gets the JSON definition of a subject
+* <code>GET /neowiki/v0/schema/{schemaName}</code> Gets the JSON definition of a schema
+
+=== Write endpoints ===
+
+These require a CSRF token, first obtained via <code>api.php?action=query&format=json&meta=tokens&type=csrf</code>
+
+* <code>POST /neowiki/v0/page/{pageId}/mainSubject</code> Creates a new main subject
+* <code>POST /neowiki/v0/page/{pageId}/childSubjects</code> Creates a new child subject
+* <code>PATCH /neowiki/v0/subject/{subjectId}</code> Updates a subject
+* <code>DELETE /neowiki/v0/subject/{subjectId}</code> Deletes a subject
+
+These endpoints are designed for the NeoWiki frontend. They are not a complete general purpose API yet.

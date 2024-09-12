@@ -2,13 +2,13 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
+namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST;
 
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Rest\StringStream;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Presentation\RestGetSchemaPresenter;
+use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\RestGetSchemaPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class GetSchemaApi extends SimpleHandler {

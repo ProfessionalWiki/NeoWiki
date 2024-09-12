@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
+namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
@@ -41,7 +41,7 @@ class StatementDeserializer {
 
 	private function deserializeValue( string $format, mixed $value ): NeoValue {
 		return match ( $this->formatTypeLookup->formatToType( $format ) ) {
-			ValueType::String => new StringValue( ...$value ),
+			ValueType::String => new StringValue( ...(array)$value ),
 			ValueType::Number => new NumberValue( $value ),
 			ValueType::Relation => $this->deserializeRelationValue( $value ),
 			ValueType::Boolean => new BooleanValue( $value ),

@@ -1,0 +1,55 @@
+{
+	"description": "Everything currently almost supported, maybe.",
+	"propertyDefinitions": {
+		"string/text": {
+			"format": "text"
+		},
+		"string/text (required)": {
+			"format": "text",
+			"required": true
+		},
+		"string/text (many)": {
+			"format": "text",
+			"multiple": true
+		},
+		"string/text (duplicates)": {
+			"format": "text",
+			"multiple": true,
+			"uniqueItems": false
+		},
+		"string/text (default)": {
+			"format": "text",
+			"default": "Default value"
+		},
+		"string/url": {
+			"format": "url"
+		},
+		"string/url (many)": {
+			"format": "url",
+			"multiple": true
+		},
+		"number/number": {
+			"format": "number"
+		},
+		"number/number (w precision)": {
+			"format": "number",
+			"precision": 2
+		},
+		"number/number (w bounds)": {
+			"format": "number",
+			"minimum": 42,
+			"maximum": 100
+		},
+		"relation/relation": {
+			"format": "relation",
+			"relation": "Has product",
+			"targetSchema": "Product"
+		},
+		"relation/relation (many)": {
+			"format": "relation",
+			"relation": "Has product",
+			"targetSchema": "Product",
+			"multiple": true
+		}
+	}
+}

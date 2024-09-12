@@ -2,12 +2,12 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
+namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST;
 
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
+use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\RestGetSubjectPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class GetSubjectApi extends SimpleHandler {

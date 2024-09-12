@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
+namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content;
 
 class SchemaContentHandler extends \JsonContentHandler {
 

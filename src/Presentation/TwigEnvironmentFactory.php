@@ -1,6 +1,6 @@
 <?php
 
-namespace ProfessionalWiki\NeoWiki\Presentation;
+namespace ProfessionalWiki\NeoWiki\MediaWiki\Presentation;
 
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
