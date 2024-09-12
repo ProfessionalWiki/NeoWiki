@@ -7,23 +7,26 @@ const { transform } = require( '@babel/core' );
 const inputDir = 'resources/ext.neowiki.addButton/ts';
 const outputDir = 'resources/ext.neowiki.addButton/dist';
 
-function runTypeCheck() {
-	return new Promise((resolve, reject) => {
-		const vueTscPath = path.resolve(__dirname, 'node_modules', '.bin', 'vue-tsc');
-		const args = ['--noEmit', '--project', path.resolve(__dirname, 'tsconfig.json')];
+// ANSI escape codes for colors
+const GREEN = '\x1b[32m';
+const RESET = '\x1b[0m';
 
-		execFile(vueTscPath, args, (error, stdout, stderr) => {
-			if (error) {
-				console.error(`TypeScript compilation failed:\n${stdout}\n${stderr}`);
-				reject(error);
+function runTypeCheck() {
+	return new Promise( ( resolve, reject ) => {
+		const vueTscPath = path.resolve( __dirname, 'node_modules', '.bin', 'vue-tsc' );
+		const args = [ '--noEmit', '--project', path.resolve( __dirname, 'tsconfig.json' ) ];
+
+		execFile( vueTscPath, args, ( error, stdout, stderr ) => {
+			if( error ) {
+				console.error( `TypeScript compilation failed:\n${ stdout }\n${ stderr }` );
+				reject( error );
 			} else {
-				console.log('TypeScript compilation successful');
+				console.log( GREEN + 'TypeScript compilation successful' + RESET );
 				resolve();
 			}
-		});
-	});
+		} );
+	} );
 }
-
 
 function processFile( inputFile, outputFile ) {
 	const ext = path.extname( inputFile );
@@ -112,7 +115,7 @@ ${ descriptor.styles[0]?.content.trim() || '' }
 		fs.copyFileSync( inputFile, outputFile );
 	}
 
-	console.log( `Processed ${ inputFile } to ${ outputFile }` );
+	console.log( GREEN + `Processed ${ inputFile } to ${ outputFile }` + RESET );
 }
 
 // Function to recursively process all files in a directory
@@ -140,6 +143,7 @@ async function main() {
 	try {
 		await runTypeCheck();
 		processDirectory( inputDir, outputDir );
+		console.log( GREEN + 'Build completed successfully' + RESET );
 	} catch( error ) {
 		console.error( 'Build failed due to TypeScript errors' );
 		process.exit( 1 );
