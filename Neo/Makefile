@@ -36,3 +36,24 @@ install:
 composer-update: update
 update:
 	docker-compose run --rm php /usr/bin/composer update
+
+neojs-install:
+	docker-compose run --rm node npm install
+
+neojs-update:
+	docker-compose run --rm node npm update
+
+neojs-test:
+	docker-compose run --rm node npm run test
+
+neojs-test-watch:
+	docker-compose run --rm node npm run test:watch
+
+neojs-lint:
+	docker-compose run --rm node npm run lint
+
+neojs-build:
+	docker-compose run --rm node npm run build
+
+neojs-build-watch:
+	docker-compose run --rm node npm run build:watch
