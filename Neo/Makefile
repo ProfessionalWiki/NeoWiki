@@ -29,12 +29,12 @@ baseline:
 	$(MAKE) stan-baseline
 	$(MAKE) psalm-baseline
 
-composer-install: install
-install:
+install: composer-install neojs-install
+composer-install:
 	docker-compose run --rm php /usr/bin/composer install
 
-composer-update: update
-update:
+update: composer-update neojs-update
+composer-update:
 	docker-compose run --rm php /usr/bin/composer update
 
 neojs-install:
