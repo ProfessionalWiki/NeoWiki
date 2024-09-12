@@ -88,26 +88,3 @@ jobs:
 
       - name: Lint
         run: npm run lint
-
-  commit-dist:
-    name: "Commit dist folder"
-    needs: [build, test, lint]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download dist folder
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: neojs/dist
-
-      - name: Commit dist folder
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add -f neojs/dist
-          git commit -m "Update dist folder" -a || echo "No changes to commit"
-          git push
