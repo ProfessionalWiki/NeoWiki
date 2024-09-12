@@ -109,5 +109,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add neojs/dist
-          git commit -m "Update dist folder" -a || echo "No changes to commit"
+          git commit -f -m "Update dist folder" -a || echo "No changes to commit"
           git push
