@@ -128,7 +128,7 @@ jobs:
         run: composer install
 
       - name: Run PHPCS
-        run: vendor/bin/phpcs -p -s --standard=phpcs.xml .
+        run: vendor/bin/phpcs -p -s --standard=phpcs.xml
 
   fe-npm-test:
     name: "NPM: npm test"

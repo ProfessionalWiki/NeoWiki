@@ -3,8 +3,6 @@
 	<file>src/</file>
 	<file>tests/</file>
 
-	<exclude-pattern>Neo/*</exclude-pattern>
-
 	<rule ref="./vendor/mediawiki/mediawiki-codesniffer/MediaWiki">
 		<exclude name="Generic.Files.LineLength.TooLong" />
 		<exclude name="MediaWiki.Commenting.FunctionComment" />
