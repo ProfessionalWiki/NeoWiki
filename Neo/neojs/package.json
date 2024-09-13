@@ -3,10 +3,9 @@
 	"version": "0.0.0",
 	"description": "",
 	"main": "dist/neo.js",
-	"module": "dist/neo.mjs",
 	"types": "dist/neo.d.ts",
 	"scripts": {
-		"build": "tsup src/neo.ts --format cjs,esm --dts",
+		"build": "tsup src/neo.ts --format cjs --dts",
 		"build:watch": "npm run build -- --watch",
 		"test": "vitest run",
 		"test:watch": "vitest",
