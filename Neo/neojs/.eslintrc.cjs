@@ -6,13 +6,9 @@ module.exports = {
 	extends: [
 		'wikimedia',
 		'wikimedia/node',
-		'wikimedia/language/rules-es2017',
+		'wikimedia/language/es2022',
 		'@wmde/wikimedia-typescript'
 	],
-	env: {
-		node: true,
-		es6: true
-	},
 	parserOptions: {
 		ecmaVersion: 'latest',
 		sourceType: 'module'
