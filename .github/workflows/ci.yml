@@ -104,7 +104,7 @@ jobs:
         run: php vendor/bin/phpunit -c extensions/NeoWiki/phpunit.xml.dist
 
   phpcs:
-    name: "PHPCS with PHP ${{ matrix.php }}"
+    name: "PHPCS with PHP 8.3"
 
     runs-on: ubuntu-latest
 
@@ -112,7 +112,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
+          php-version: 8.3
 
       - name: Checkout NeoExtension
         uses: actions/checkout@v4
