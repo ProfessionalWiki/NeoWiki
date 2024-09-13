@@ -41,7 +41,7 @@ const component = defineComponent( {
 	}
 } );
 
-export default component;
+export default component;  // this can also be replaced with module.exports = exports = component in build.js
 module.exports = exports = component; // we have to add this for MW to work, that's the only redundancy
 </script>
 

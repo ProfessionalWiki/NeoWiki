@@ -50,7 +50,7 @@ var component = (0, _vue.defineComponent)({
     console.log('NeoWiki component mounted');
   }
 });
-var _default = exports.default = component;
+var _default = exports.default = component; // this can also be replaced with module.exports = exports = component in build.js
 module.exports = exports = component; // we have to add this for MW to work, that's the only redundancy
 </script>
 
