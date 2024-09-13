@@ -103,7 +103,7 @@ jobs:
       - name: Run PHPUnit
         run: php vendor/bin/phpunit -c extensions/NeoWiki/phpunit.xml.dist
 
-  PHPCS:
+  phpcs:
     name: "PHPCS with PHP ${{ matrix.php }}"
 
     runs-on: ubuntu-latest
@@ -113,8 +113,6 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, intl
-          tools: composer
 
       - name: Checkout NeoExtension
         uses: actions/checkout@v4
@@ -131,6 +129,7 @@ jobs:
 
       - name: Run PHPCS
         run: vendor/bin/phpcs -p -s --standard=phpcs.xml .
+
   fe-npm-test:
     name: "NPM: npm test"
     runs-on: ubuntu-latest
