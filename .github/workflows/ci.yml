@@ -102,3 +102,48 @@ jobs:
 
       - name: Run PHPUnit
         run: php vendor/bin/phpunit -c extensions/NeoWiki/phpunit.xml.dist
+
+  phpcs:
+    name: "PHPCS with PHP 8.3"
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+
+      - name: Checkout NeoExtension
+        uses: actions/checkout@v4
+
+      - name: Checkout Neo
+        uses: actions/checkout@v4
+        with:
+          repository: ProfessionalWiki/Neo
+          path: Neo
+          token: ${{ secrets.NEO_READ_FPAT }}
+
+      - name: Install dependencies
+        run: composer install
+
+      - name: Run PHPCS
+        run: vendor/bin/phpcs -p -s --standard=phpcs.xml
+
+  fe-npm-test:
+    name: "NPM: npm test"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run npm test
+        run: npm run test
