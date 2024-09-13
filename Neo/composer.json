@@ -23,12 +23,12 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"ProfessionalWiki\\NeoWiki\\": "src/",
-			"ProfessionalWiki\\NeoWiki\\Tests\\": "tests/"
+			"ProfessionalWiki\\NeoWiki\\": "src/"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
+			"ProfessionalWiki\\NeoWiki\\Tests\\": "tests/"
 		}
 	},
 	"config": {
