@@ -74,16 +74,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: mediawiki/extensions/NeoWiki
-          token: ${{ secrets.NEO_READ_FPAT }}
-          # Expected to expire on Sep 12 2025
-          # https://github.com/organizations/ProfessionalWiki/settings/secrets/actions/NEO_READ_FPAT (enter new value)
-          # (Re)generate token with contents read access for Neo and NeoExtension at https://github.com/settings/tokens?type=beta
 
       - uses: actions/checkout@v4
         with:
           repository: ProfessionalWiki/Neo
           path: mediawiki/extensions/NeoWiki/Neo
           token: ${{ secrets.NEO_READ_FPAT }}
+          # Expected to expire on Sep 12 2025
+          # https://github.com/organizations/ProfessionalWiki/settings/secrets/actions/NEO_READ_FPAT (enter new value)
+          # (Re)generate token with contents read access for Neo and NeoExtension at https://github.com/settings/tokens?type=beta
 
       - run: composer update
 
