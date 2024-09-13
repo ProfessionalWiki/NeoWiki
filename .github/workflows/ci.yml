@@ -83,7 +83,7 @@ jobs:
       - run: composer update
 
       - name: Wait for Neo4j
-        uses: iFaxity/wait-on-action@v1.1.0
+        uses: iFaxity/wait-on-action@v1
         with:
           resource: http-get://localhost:7689
           timeout: 60000
