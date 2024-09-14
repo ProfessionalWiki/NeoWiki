@@ -32,14 +32,9 @@ class NeoWikiHooks {
 			return;
 		}
 
-		// TODO: just for testing
-		if ( str_contains( $out->getHTML(), 'infobox' ) ) {
-			$out->addHTML( '<div id="neowiki-infobox"></div>' );
-			$out->addModules( 'ext.neowiki.infobox' );
-		} else {
-			$out->addHTML( '<div id="neowiki-add-button"></div>' );
-			$out->addModules( 'ext.neowiki.addButton' );
-		}
+		$out->addModules( 'ext.neowiki' );
+		$out->addModuleStyles( 'ext.neowiki.styles' );
+		$out->addHtml( '<div id="neowiki"></div>' );
 	}
 
 	public static function onMediaWikiServices( MediaWikiServices $services ): void {

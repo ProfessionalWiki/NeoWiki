@@ -29,8 +29,26 @@ psalm:
 psalm-baseline:
 	vendor/bin/psalm --config=psalm.xml --set-baseline=psalm-baseline.xml
 
-test-frontend-docker:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app -u node node:20 npm install && npm run test
-
 get-neo:
 	git clone git@github.com:ProfessionalWiki/Neo.git
+
+ts-install:
+	docker run -it --rm -v "$(CURDIR)/resources/ext.neowiki":/home/node/app -w /home/node/app -u node node:20 npm install
+
+ts-update:
+	docker run -it --rm -v "$(CURDIR)/resources/ext.neowiki":/home/node/app -w /home/node/app -u node node:20 npm update
+
+ts-build:
+	docker run -it --rm -v "$(CURDIR)/resources/ext.neowiki":/home/node/app -w /home/node/app -u node node:20 npm run build
+
+ts-build-watch:
+	docker run -it --rm -v "$(CURDIR)/resources/ext.neowiki":/home/node/app -w /home/node/app -u node node:20 npm run build:watch
+
+ts-test:
+	docker run -it --rm -v "$(CURDIR)/resources/ext.neowiki":/home/node/app -w /home/node/app -u node node:20 npm run test
+
+ts-test-watch:
+	docker run -it --rm -v "$(CURDIR)/resources/ext.neowiki":/home/node/app -w /home/node/app -u node node:20 npm run test:watch
+
+ts-lint:
+	docker run -it --rm -v "$(CURDIR)/resources/ext.neowiki":/home/node/app -w /home/node/app -u node node:20 npm run lint

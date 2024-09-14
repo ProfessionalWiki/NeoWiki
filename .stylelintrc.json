@@ -1,6 +1,0 @@
-{
-	"extends": "stylelint-config-wikimedia",
-	"ignoreFiles": [
-		"Neo/**/*"
-	]
-}
