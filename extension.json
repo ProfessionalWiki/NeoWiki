@@ -128,33 +128,35 @@
 	},
 
 	"ResourceModules": {
-		"ext.neowiki.addButton": {
+		"ext.neowiki": {
 			"class": "MediaWiki\\ResourceLoader\\CodexModule",
 			"dependencies": [
-				"vue"
+				"vue",
+				"pinia"
+			],
+			"codexComponents": [
+				"CdxButton",
+				"CdxIcon"
 			],
 			"packageFiles": [
-				"resources/ext.neowiki.addButton/init.js",
-				"resources/ext.neowiki.addButton/components/App.vue"
-			],
-			"styles": [
+				"resources/ext.neowiki/dist/neowiki.js",
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconAdd"
+					]
+				}
 			],
 			"messages": [
-			]
+				"neowiki-name"
+			],
+			"@group:": "TODO: Load code separately while in development. Remove later.",
+			"group": "ext.neowiki"
 		},
-		"ext.neowiki.infobox": {
-			"class": "MediaWiki\\ResourceLoader\\CodexModule",
-			"dependencies": [
-				"vue"
-			],
-			"packageFiles": [
-				"resources/ext.neowiki.infobox/init.js",
-				"resources/ext.neowiki.infobox/components/App.vue",
-				"Neo/neojs/dist/neo.js"
-			],
+		"ext.neowiki.styles": {
 			"styles": [
-			],
-			"messages": [
+				"resources/ext.neowiki/dist/neowiki.css"
 			]
 		}
 	},
