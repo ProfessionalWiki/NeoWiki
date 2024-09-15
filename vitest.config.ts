@@ -8,7 +8,9 @@ export default mergeConfig( viteConfig, defineConfig( {
 		include: [ 'resources/ext.neowiki/**/*.spec.ts' ],
 		coverage: {
 			provider: 'v8',
-			include: [ 'resources/ext.neowiki/src' ]
+			include: [ 'resources/ext.neowiki/src' ],
+			reporter: [ 'text', 'json-summary', 'json' ],
+			reportOnFailure: true
 		}
 	}
 } ) );
