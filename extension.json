@@ -128,11 +128,19 @@
 	},
 
 	"ResourceModules": {
+		"neo": {
+			"packageFiles": [
+				"Neo/neojs/dist/neo.js"
+			],
+			"@group:": "TODO: Load code separately while in development. Remove later.",
+			"group": "neo"
+		},
 		"ext.neowiki": {
 			"class": "MediaWiki\\ResourceLoader\\CodexModule",
 			"dependencies": [
 				"vue",
-				"pinia"
+				"pinia",
+				"neo"
 			],
 			"codexComponents": [
 				"CdxButton",

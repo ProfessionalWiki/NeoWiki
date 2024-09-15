@@ -19,7 +19,7 @@ export default defineConfig( {
 			formats: [ 'cjs' ]
 		},
 		rollupOptions: {
-			external: [ 'vue', '@wikimedia/codex', '@wikimedia/codex-icons', 'pinia' ],
+			external: [ 'vue', '@wikimedia/codex', '@wikimedia/codex-icons', 'pinia', 'neo' ],
 			output: {
 				globals: {
 					pinia: 'Pinia',

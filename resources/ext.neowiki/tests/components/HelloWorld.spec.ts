@@ -71,6 +71,6 @@ describe( 'HelloWorld', () => {
 
 		const paragraph = wrapper.find( '.read-the-docs' );
 		expect( paragraph.exists() ).toBe( true );
-		expect( paragraph.text() ).toContain( 'Click on the Vite and Vue logos to learn more' );
+		expect( paragraph.text() ).toContain( 'AnotherThing is done!' );
 	} );
 } );
