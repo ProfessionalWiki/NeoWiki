@@ -6,8 +6,8 @@
 	"module": "./dist/neo.mjs",
 	"types": "dist/neo.d.ts",
 	"scripts": {
-		"build": "tsup src/neo.ts --format cjs,esm --dts",
-		"build:watch": "npm run build -- --watch",
+		"build": "tsup",
+		"build:watch": "tsup --watch",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"lint": "eslint src/**/*.ts"
@@ -22,6 +22,7 @@
 		"eslint": "^8.57.0",
 		"eslint-plugin-n": "^17.10.2",
 		"eslint-plugin-unicorn": "^55.0.0",
+		"replace-in-file": "^8.1.0",
 		"tsup": "^8.2.4",
 		"typescript": "^5.6.2",
 		"vitest": "^2.0.5"
