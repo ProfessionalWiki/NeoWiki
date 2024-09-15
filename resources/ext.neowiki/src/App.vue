@@ -41,8 +41,6 @@ function onSchemaTypeChange( event: Event ): void {
 	const target = event.target as HTMLSelectElement;
 	store.updateSchemaType( target.value );
 }
-
-console.log( 'NeoWiki component mounted' );
 </script>
 
 <style scoped>
