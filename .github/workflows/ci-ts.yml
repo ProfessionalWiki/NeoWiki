@@ -2,13 +2,15 @@ name: CI (TypeScript)
 
 on:
   push:
-    paths:
-      - '.github/workflows/ci-ts.yml'
-      - 'resources/**'
+    paths-ignore:
+      - '.github/workflows/ci-php.yml'
+      - 'src/**'
+      - 'tests/**'
   pull_request:
-    paths:
-      - '.github/workflows/ci-ts.yml'
-      - 'resources/**'
+    paths-ignore:
+      - '.github/workflows/ci-php.yml'
+      - 'src/**'
+      - 'tests/**'
 
 jobs:
   build:
@@ -16,18 +18,31 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: ./resources/ext.neowiki
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ProfessionalWiki/Neo
+          path: Neo
+          token: ${{ secrets.NEO_READ_FPAT }}
+          # Expected to expire on Sep 12 2025
+          # https://github.com/organizations/ProfessionalWiki/settings/secrets/actions/NEO_READ_FPAT (enter new value)
+          # (Re)generate token with contents read access for Neo and NeoExtension at https://github.com/settings/tokens?type=beta
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Install NeoJS dependencies
+        run: npm install
+        working-directory: Neo/neojs
+
+      - name: Build NeoJS
+        run: npm run build
+        working-directory: Neo/neojs
 
       - name: Install dependencies
         run: npm install
@@ -40,18 +55,31 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: ./resources/ext.neowiki
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ProfessionalWiki/Neo
+          path: Neo
+          token: ${{ secrets.NEO_READ_FPAT }}
+          # Expected to expire on Sep 12 2025
+          # https://github.com/organizations/ProfessionalWiki/settings/secrets/actions/NEO_READ_FPAT (enter new value)
+          # (Re)generate token with contents read access for Neo and NeoExtension at https://github.com/settings/tokens?type=beta
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Install NeoJS dependencies
+        run: npm install
+        working-directory: Neo/neojs
+
+      - name: Build NeoJS
+        run: npm run build
+        working-directory: Neo/neojs
 
       - name: Install dependencies
         run: npm install
@@ -63,10 +91,6 @@ jobs:
     name: "Linting"
 
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ./resources/ext.neowiki
 
     steps:
       - name: Checkout
