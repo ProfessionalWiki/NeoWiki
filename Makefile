@@ -31,6 +31,7 @@ psalm-baseline:
 
 get-neo:
 	git clone git@github.com:ProfessionalWiki/Neo.git
+	cd Neo && $(MAKE) neojs-install neojs-build
 
 ts-install:
 	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app -u node node:20 npm install
