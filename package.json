@@ -1,10 +1,42 @@
 {
 	"name": "neowiki",
 	"private": true,
+	"version": "0.0.0",
+	"type": "module",
 	"scripts": {
+		"dev": "vite",
+		"build": "vue-tsc -b && vite build",
+		"tsc:watch": "vue-tsc -b --watch",
+		"vite:watch": "vite build --watch",
+		"build:watch": "npm-run-all --parallel tsc:watch vite:watch",
+		"lint:code": "eslint resources/ext.neowiki --ext .vue,.ts --ignore-path .gitignore",
+		"lint:styles": "stylelint \"resources/ext.neowiki/src/**/*.vue\"",
+		"lint": "npm-run-all lint:code lint:styles",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"coverage": "vitest run --coverage",
 		"lint:i18n": "banana-checker i18n/"
 	},
 	"devDependencies": {
-		"grunt-banana-checker": "0.13.0"
+		"@stylistic/eslint-plugin": "^2.8.0",
+		"@types/node": "^22.5.5",
+		"@vitejs/plugin-vue": "^5.1.3",
+		"@vitest/coverage-v8": "^2.1.1",
+		"@vue/test-utils": "^2.4.6",
+		"@wikimedia/codex": "1.12.0",
+		"@wikimedia/codex-icons": "1.12.0",
+		"@wmde/eslint-config-wikimedia-typescript": "^0.2.12",
+		"eslint-config-wikimedia": "^0.28.2",
+		"grunt-banana-checker": "0.13.0",
+		"jsdom": "^25.0.0",
+		"npm-run-all": "^4.1.5",
+		"pinia": "2.0.16",
+		"stylelint-config-wikimedia": "^0.17.2",
+		"types-mediawiki": "^1.8.0",
+		"typescript": "^5.6.2",
+		"vite": "^5.4.1",
+		"vitest": "^2.1.1",
+		"vue": "3.4.27",
+		"vue-tsc": "^2.0.29"
 	}
 }
