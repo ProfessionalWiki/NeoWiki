@@ -6,5 +6,13 @@ export default defineConfig( {
 		alias: {
 			'@': path.resolve( __dirname, './src' )
 		}
+	},
+	test: {
+		coverage: {
+			provider: 'v8',
+			include: [ 'src' ],
+			reporter: [ 'text', 'json-summary', 'json' ],
+			reportOnFailure: true
+		}
 	}
 } );

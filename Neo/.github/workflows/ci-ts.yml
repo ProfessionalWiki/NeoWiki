@@ -59,6 +59,12 @@ jobs:
       - name: Test
         run: npm run test
 
+      - name: Report Coverage
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: ./neojs
+
   lint:
     name: "NeoJS linting"
 
