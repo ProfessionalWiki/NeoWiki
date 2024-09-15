@@ -1,0 +1,104 @@
+name: CI (TypeScript)
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ci-ts.yml'
+      - 'resources/**'
+  pull_request:
+    paths:
+      - '.github/workflows/ci-ts.yml'
+      - 'resources/**'
+
+jobs:
+  build:
+    name: "Build"
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./resources/ext.neowiki
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+  test:
+    name: "Tests"
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./resources/ext.neowiki
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Test
+        run: npm run test
+
+  lint:
+    name: "Linting"
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./resources/ext.neowiki
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+  i18n:
+    name: "i18n"
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint i18n
+        run: npm run lint:i18n
