@@ -29,14 +29,8 @@ const count = ref( 0 );
 const anotherThing = Neo.getInstance().getSomething().getAnotherThing().doAnotherThing();
 </script>
 
-<style lang="scss" scoped>
-@import '@/assets/variables.scss';
-
+<style scoped>
 .read-the-docs {
-	color: $neo-secondary;
-
-	&:hover {
-		color: brightness( $neo-secondary, 10% );
-	}
+	color: #888;
 }
 </style>

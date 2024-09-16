@@ -11,22 +11,16 @@ import { Store } from '@/stores/Store.ts';
 const store = inject( 'store' ) as Store;
 </script>
 
-<style lang="scss" scoped>
-@import '@/assets/variables.scss';
-
+<style scoped>
 .user-greeting {
 	margin-top: 15px;
 	padding: 10px;
-	background-color: $neo-light;
+	background-color: #f0f0f0;
 	border-radius: 4px;
+}
 
-	p {
-		font-weight: bold;
-		color: $neo-text-color;
-
-		&:hover {
-			color: $neo-primary;
-		}
-	}
+p {
+	font-weight: bold;
+	color: #2c3e50;
 }
 </style>
