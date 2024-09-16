@@ -144,7 +144,10 @@
 			],
 			"codexComponents": [
 				"CdxButton",
-				"CdxIcon"
+				"CdxDialog",
+				"CdxField",
+				"CdxIcon",
+				"CdxTextInput"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",
@@ -158,7 +161,14 @@
 			],
 			"messages": [
 				"neowiki-name",
-				"neowiki-create-button"
+				"neowiki-create-button",
+				"neowiki-create-subject-dialog-title",
+				"neowiki-create-subject-dialog-start-blank",
+				"neowiki-create-subject-dialog-or-select",
+				"neowiki-infobox-editor-dialog-title-create",
+				"neowiki-infobox-editor-dialog-title-create-blank",
+				"neowiki-infobox-editor-subject-label",
+				"neowiki-infobox-editor-create-button"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

@@ -10,5 +10,14 @@
 	"neowiki-name": "NeoWiki",
 	"neowiki-description": "TODO",
 
-	"neowiki-create-button": "Create subject"
+	"neowiki-create-button": "Create subject",
+
+	"neowiki-create-subject-dialog-title": "Create subject",
+	"neowiki-create-subject-dialog-start-blank": "Start blank",
+	"neowiki-create-subject-dialog-or-select": "Or select a type",
+
+	"neowiki-infobox-editor-dialog-title-create": "Create new $1",
+	"neowiki-infobox-editor-dialog-title-create-blank": "Create new subject",
+	"neowiki-infobox-editor-subject-label": "Subject label",
+	"neowiki-infobox-editor-create-button": "Create"
 }
