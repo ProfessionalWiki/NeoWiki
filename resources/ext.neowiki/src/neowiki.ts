@@ -4,6 +4,7 @@ import { createMwApp, h } from 'vue';
 import { createPinia } from 'pinia';
 import NeoExample from '@/NeoExample.vue';
 import { useNeoWikiStore } from '@/stores/Store';
+import CreateButton from '@/components/CreateButton.vue';
 
 const app = createMwApp( {
 	setup() {
@@ -22,14 +23,13 @@ const app = createMwApp( {
 			}
 		} ) );
 
-		// TODO: Example: mount a single components.
-		const manualExample = document.querySelector( '.neowiki-example-manual' );
-		if ( manualExample ) {
-			components.push( h( NeoExample, {
-				key: 'manual',
+		const createButton = document.getElementById( 'mw-indicator-neowiki-create-button' );
+		if ( createButton ) {
+			components.push( h( CreateButton, {
+				key: 'create-button',
 				ref: ( instance ) => {
 					if ( instance !== null ) {
-						manualExample.appendChild( ( instance as any ).$el );
+						createButton.appendChild( ( instance as any ).$el );
 					}
 				}
 			} ) );

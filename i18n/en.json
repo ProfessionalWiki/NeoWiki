@@ -8,5 +8,7 @@
 		]
 	},
 	"neowiki-name": "NeoWiki",
-	"neowiki-description": "TODO"
+	"neowiki-description": "TODO",
+
+	"neowiki-create-button": "Create subject"
 }
