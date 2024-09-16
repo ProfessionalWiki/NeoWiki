@@ -7,13 +7,12 @@ export default defineConfig( {
 	plugins: [ vue(), mediawikiImportTransformer() ],
 	resolve: {
 		alias: {
-			'@': fileURLToPath( new URL( './resources/ext.neowiki/src', import.meta.url ) )
+			'@': fileURLToPath( new URL( './src', import.meta.url ) )
 		}
 	},
 	build: {
-		outDir: 'resources/ext.neowiki/dist',
 		lib: {
-			entry: 'resources/ext.neowiki/src/neowiki.ts',
+			entry: 'src/neowiki.ts',
 			name: 'NeoWiki',
 			fileName: () => 'neowiki.js',
 			formats: [ 'cjs' ]

@@ -22,8 +22,8 @@
 
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./resources/ext.neowiki/src/*"]
+			"@/*": ["./src/*"]
 		}
 	},
-	"include": ["resources/ext.neowiki/src/**/*.ts", "resources/ext.neowiki/src/**/*.vue"]
+	"include": ["src/**/*.ts", "src/**/*.vue"]
 }
