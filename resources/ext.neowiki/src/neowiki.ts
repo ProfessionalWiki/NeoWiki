@@ -2,8 +2,8 @@
 
 import { createMwApp, h } from 'vue';
 import { createPinia } from 'pinia';
-import NeoExample from '@/NeoExample.vue';
 import { useNeoWikiStore } from '@/stores/Store';
+import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
 import CreateButton from '@/components/CreateButton.vue';
 
 const app = createMwApp( {
@@ -12,15 +12,20 @@ const app = createMwApp( {
 		return { store };
 	},
 	render() {
-		// TODO: Example: mount multiple components.
-		const examples = document.querySelectorAll( '.neowiki-example' );
-		const components = Array.from( examples ).map( ( el, index ) => h( NeoExample, {
+		const infoboxes = document.querySelectorAll( '.neowiki-infobox' );
+		const components = Array.from( infoboxes ).map( ( el, index ) => h( AutomaticInfobox, {
 			key: index,
 			ref: ( instance ) => {
 				if ( instance !== null ) {
 					el.appendChild( ( instance as any ).$el );
 				}
-			}
+			},
+			// TODO: Remove
+			title: 'Foo',
+			statements: [
+				{ property: 'Foo', value: 'Bar' },
+				{ property: 'Lorem', value: 'Ipsum' }
+			]
 		} ) );
 
 		const createButton = document.getElementById( 'mw-indicator-neowiki-create-button' );
