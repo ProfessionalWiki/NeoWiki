@@ -2,21 +2,23 @@ name: CI (TypeScript)
 
 on:
   push:
-    paths-ignore:
-      - '.github/workflows/ci-php.yml'
-      - 'src/**'
-      - 'tests/**'
+    paths:
+      - '.github/workflows/ci-ts.yml'
+      - 'resources/**'
   pull_request:
-    paths-ignore:
-      - '.github/workflows/ci-php.yml'
-      - 'src/**'
-      - 'tests/**'
+    paths:
+      - '.github/workflows/ci-ts.yml'
+      - 'resources/**'
 
 jobs:
   build:
     name: "Build"
 
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./resources/ext.neowiki
 
     steps:
       - name: Checkout
@@ -55,6 +57,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: ./resources/ext.neowiki
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -90,12 +96,17 @@ jobs:
       - name: Report Coverage
         if: always()
         uses: davelosert/vitest-coverage-report-action@v2
-        working-directory: ./resources/ext.neowiki
+        with:
+          working-directory: ./resources/ext.neowiki
 
   lint:
     name: "Linting"
 
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./resources/ext.neowiki
 
     steps:
       - name: Checkout

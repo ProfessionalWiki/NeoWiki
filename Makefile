@@ -34,22 +34,22 @@ get-neo:
 	cd Neo && $(MAKE) neojs-install neojs-build
 
 ts-install:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app -u node node:20 npm install
+	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm install
 
 ts-update:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app -u node node:20 npm update
+	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm update
 
 ts-build:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app -u node node:20 npm run build
+	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm run build
 
 ts-build-watch:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app -u node node:20 npm run build:watch
+	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm run build:watch
 
 ts-test:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app -u node node:20 npm run test
+	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm run test
 
 ts-test-watch:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app -u node node:20 npm run test:watch
+	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm run test:watch
 
 ts-lint:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app -u node node:20 npm run lint
+	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm run lint
