@@ -19,7 +19,8 @@
 				>
 					{{ type }}
 				</option>
-			</select>      <p
+			</select>
+			<p
 				v-if="store.selectedSchemaType"
 				class="selected-schema"
 			>
@@ -33,7 +34,7 @@
 <script setup lang="ts">
 import PropertyList from '@/components/PropertyList.vue';
 import HelloWorld from '@/components/HelloWorld.vue';
-import { useNeoWikiStore } from '@/stores/Store.ts';
+import { useNeoWikiStore } from '@/stores/Store';
 
 const store = useNeoWikiStore();
 
