@@ -10,5 +10,14 @@
 	"neowiki-name": "{{Name}}",
 	"neowiki-description": "{{Desc|name=NeoWiki|url=https://github.com/ProfessionalWiki/NeoWiki}}",
 
-	"neowiki-create-button": "Create subject button text"
+	"neowiki-create-button": "Create subject button text",
+
+	"neowiki-create-subject-dialog-title": "Create subject dialog text",
+	"neowiki-create-subject-dialog-start-blank": "Create subject dialog text",
+	"neowiki-create-subject-dialog-or-select": "Create subject dialog text",
+
+	"neowiki-infobox-editor-dialog-title-create": "Infobox editor text",
+	"neowiki-infobox-editor-dialog-title-create-blank": "Infobox editor text",
+	"neowiki-infobox-editor-subject-label": "Infobox editor text",
+	"neowiki-infobox-editor-create-button": "Infobox editor text"
 }

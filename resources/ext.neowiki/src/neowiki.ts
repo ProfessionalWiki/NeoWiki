@@ -4,7 +4,7 @@ import { createMwApp, h } from 'vue';
 import { createPinia } from 'pinia';
 import { useNeoWikiStore } from '@/stores/Store';
 import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
-import CreateButton from '@/components/CreateButton.vue';
+import CreateSubjectButton from '@/components/CreateSubject/CreateSubjectButton.vue';
 
 const app = createMwApp( {
 	setup() {
@@ -30,7 +30,7 @@ const app = createMwApp( {
 
 		const createButton = document.getElementById( 'mw-indicator-neowiki-create-button' );
 		if ( createButton ) {
-			components.push( h( CreateButton, {
+			components.push( h( CreateSubjectButton, {
 				key: 'create-button',
 				ref: ( instance ) => {
 					if ( instance !== null ) {
