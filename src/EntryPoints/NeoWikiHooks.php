@@ -35,6 +35,11 @@ class NeoWikiHooks {
 		$out->addModules( 'ext.neowiki' );
 		$out->addModuleStyles( 'ext.neowiki.styles' );
 		$out->addHtml( '<div id="neowiki"></div>' );
+
+		// TODO: remove examples
+		$out->addHtml( '<div class="neowiki-example"></div>' );
+		$out->addHtml( '<div class="neowiki-example"></div>' );
+		$out->addHtml( '<div class="neowiki-example-manual"></div>' );
 	}
 
 	public static function onMediaWikiServices( MediaWikiServices $services ): void {
