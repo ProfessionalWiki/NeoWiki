@@ -16,6 +16,7 @@
 		"ramsey/uuid": "^4.7.3"
 	},
 	"require-dev": {
+		"vimeo/psalm": "dev-master",
 		"phpunit/phpunit": "^11.3.1",
 		"phpstan/phpstan": "^1.12.0",
 		"mediawiki/mediawiki-codesniffer": "^v44.0.0",

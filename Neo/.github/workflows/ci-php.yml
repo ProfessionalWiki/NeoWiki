@@ -82,3 +82,27 @@ jobs:
 
       - run: composer install
       - run: vendor/bin/phpstan analyze --configuration=phpstan.neon --memory-limit=2G
+
+  Psalm:
+    name: "Psalm with PHP ${{ matrix.php }}"
+
+    strategy:
+      matrix:
+        include:
+          - php: '8.3'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl
+          tools: composer
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - run: composer install
+      - run: vendor/bin/psalm --config=psalm.xml --no-diff
