@@ -7,6 +7,7 @@
 			<p>Select a Schema Type:</p>
 			<select
 				v-model="store.selectedSchemaType"
+				class="neowiki-select"
 				@change="onSchemaTypeChange"
 			>
 				<option value="">
@@ -19,7 +20,8 @@
 				>
 					{{ type }}
 				</option>
-			</select>      <p
+			</select>
+			<p
 				v-if="store.selectedSchemaType"
 				class="selected-schema"
 			>
@@ -43,51 +45,41 @@ function onSchemaTypeChange( event: Event ): void {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import '@/assets/variables';
+@import '@/assets/mixins';
+
 .neowiki-component {
-	font-family: 'Arial', sans-serif;
+	@include card-style;
+
+	font-family: Arial, sans-serif;
 	max-width: 600px;
 	margin: 0 auto;
-	padding: 20px;
-	border: 1px solid #ccc;
-	border-radius: 5px;
-}
+	color: $neo-text-color;
 
-h1 {
-	color: #333;
-}
+	h1,
+	h2 {
+		color: $neo-primary;
+	}
 
-button {
-	background-color: #4caf50;
-	color: #fff;
-	padding: 10px 15px;
-	border: 0;
-	border-radius: 4px;
-	cursor: pointer;
-	margin-bottom: 10px;
-}
+	.neowiki-select {
+		@include input-styles;
+	}
 
-button:hover {
-	background-color: #45a049;
-}
+	ul {
+		@include list-reset;
 
-input {
-	width: 100%;
-	padding: 10px;
-	margin-bottom: 10px;
-	border: 1px solid #ddd;
-	border-radius: 4px;
-}
+		li {
+			background-color: $neo-light;
+			margin-bottom: 5px;
+			padding: 10px;
+			border-radius: 4px;
+		}
+	}
 
-ul {
-	list-style-type: none;
-	padding: 0;
-}
-
-li {
-	background-color: #f1f1f1;
-	margin-bottom: 5px;
-	padding: 10px;
-	border-radius: 4px;
+	.selected-schema {
+		color: $neo-success;
+		font-weight: bold;
+	}
 }
 </style>
