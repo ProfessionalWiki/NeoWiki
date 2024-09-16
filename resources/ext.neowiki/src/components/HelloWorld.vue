@@ -30,7 +30,7 @@ const anotherThing = Neo.getInstance().getSomething().getAnotherThing().doAnothe
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/variables';
+@import '@/assets/scss/variables';
 
 .read-the-docs {
 	color: $neo-secondary;

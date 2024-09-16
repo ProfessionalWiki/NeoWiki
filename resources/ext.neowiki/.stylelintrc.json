@@ -5,22 +5,6 @@
 	"plugins": [
 		"stylelint-scss"
 	],
-	"overrides": [
-		{
-			"files": [
-				"*.scss",
-				"**/*.scss"
-			],
-			"customSyntax": "postcss-scss"
-		},
-		{
-			"files": [
-				"*.vue",
-				"**/*.vue"
-			],
-			"customSyntax": "postcss-html"
-		}
-	],
 	"rules": {
 		"at-rule-no-unknown": null,
 		"scss/at-rule-no-unknown": true,

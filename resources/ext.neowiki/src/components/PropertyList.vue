@@ -11,7 +11,7 @@ const store = useNeoWikiStore();
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/variables';
+@import '@/assets/scss/variables';
 
 .user-greeting {
 	margin-top: 15px;
