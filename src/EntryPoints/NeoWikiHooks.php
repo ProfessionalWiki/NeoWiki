@@ -36,6 +36,10 @@ class NeoWikiHooks {
 		$out->addModuleStyles( 'ext.neowiki.styles' );
 		$out->addHtml( '<div id="neowiki"></div>' );
 
+		$out->setIndicators( [
+			'neowiki-create-button' => '',
+		] );
+
 		// TODO: remove examples
 		$out->addHtml( '<div class="neowiki-example"></div>' );
 		$out->addHtml( '<div class="neowiki-example"></div>' );

@@ -157,7 +157,8 @@
 				}
 			],
 			"messages": [
-				"neowiki-name"
+				"neowiki-name",
+				"neowiki-create-button"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
