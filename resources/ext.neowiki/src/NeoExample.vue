@@ -46,8 +46,8 @@ function onSchemaTypeChange( event: Event ): void {
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/variables';
-@import '@/assets/mixins';
+@import '@/assets/scss/variables';
+@import '@/assets/scss/mixins';
 
 .neowiki-component {
 	@include card-style;
