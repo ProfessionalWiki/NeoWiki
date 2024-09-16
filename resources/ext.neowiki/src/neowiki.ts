@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { createMwApp, h } from 'vue';
+import { createPinia } from 'pinia';
 import NeoExample from '@/NeoExample.vue';
-import { createPinia, setActivePinia } from 'pinia';
 import { useNeoWikiStore } from '@/stores/Store';
 
-const pinia = createPinia();
-setActivePinia( pinia );
-const store = useNeoWikiStore();
-
 const app = createMwApp( {
+	setup() {
+		const store = useNeoWikiStore();
+		return { store };
+	},
 	render() {
 		// TODO: Example: mount multiple components.
 		const examples = document.querySelectorAll( '.neowiki-example' );
@@ -20,8 +20,7 @@ const app = createMwApp( {
 					el.appendChild( ( instance as any ).$el );
 				}
 			}
-		} )
-		);
+		} ) );
 
 		// TODO: Example: mount a single components.
 		const manualExample = document.querySelector( '.neowiki-example-manual' );
@@ -40,5 +39,5 @@ const app = createMwApp( {
 	}
 } );
 
-app.provide( 'store', store );
+app.use( createPinia() );
 app.mount( '#neowiki' );

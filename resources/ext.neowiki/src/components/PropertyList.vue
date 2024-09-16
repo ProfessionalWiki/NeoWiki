@@ -5,10 +5,9 @@
 </template>
 
 <script setup lang="ts">
-import { inject } from 'vue';
-import { Store } from '@/stores/Store.ts';
+import { useNeoWikiStore } from '@/stores/Store';
 
-const store = inject( 'store' ) as Store;
+const store = useNeoWikiStore();
 </script>
 
 <style scoped>
