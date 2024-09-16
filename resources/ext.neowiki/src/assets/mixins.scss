@@ -1,0 +1,48 @@
+@use 'sass:math';
+@use 'sass:color';
+
+@mixin input-styles {
+	width: 100%;
+	padding: 10px;
+	margin-bottom: 10px;
+	border: 1px solid $neo-input-border-color;
+	border-radius: 4px;
+	background-color: $neo-input-bg;
+	transition: border-color 0.2s, box-shadow 0.2s;
+
+	&:focus {
+		outline: 0;
+		border-color: $neo-primary;
+		box-shadow: 0 0 0 0.2rem rgba( $neo-primary, 0.25 );
+	}
+}
+
+@mixin list-reset {
+	list-style-type: none;
+	padding: 0;
+	margin: 0;
+}
+
+@mixin card-style {
+	background-color: $neo-white;
+	border: 1px solid $neo-border-color;
+	border-radius: 5px;
+	padding: 15px;
+	box-shadow: 0 2px 4px rgba( 0, 0, 0, 0.1 );
+}
+
+@function color-yiq( $color ) {
+	$r: color.red( $color );
+	$g: color.green( $color );
+	$b: color.blue( $color );
+
+	$yiq: math.div( ( $r * 299 ) + ( $g * 587 ) + ( $b * 114 ), 1000 );
+
+	@if ( $yiq >= 150 ) {
+		@return #111111;
+	}
+
+	@else {
+		@return #ffffff;
+	}
+}
