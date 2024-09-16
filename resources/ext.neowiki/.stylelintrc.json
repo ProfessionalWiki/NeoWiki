@@ -1,3 +1,30 @@
 {
-	"extends": "stylelint-config-wikimedia"
+	"extends": [
+		"stylelint-config-wikimedia"
+	],
+	"plugins": [
+		"stylelint-scss"
+	],
+	"overrides": [
+		{
+			"files": [
+				"*.scss",
+				"**/*.scss"
+			],
+			"customSyntax": "postcss-scss"
+		},
+		{
+			"files": [
+				"*.vue",
+				"**/*.vue"
+			],
+			"customSyntax": "postcss-html"
+		}
+	],
+	"rules": {
+		"at-rule-no-unknown": null,
+		"scss/at-rule-no-unknown": true,
+		"declaration-empty-line-before": null,
+		"font-family-name-quotes": "always-where-recommended"
+	}
 }
