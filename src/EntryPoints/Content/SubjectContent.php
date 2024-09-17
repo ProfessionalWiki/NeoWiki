@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\SubjectCont
 
 class SubjectContent extends \JsonContent {
 
-	public const CONTENT_MODEL_ID = 'NeoWikiSubject';
+	public const string CONTENT_MODEL_ID = 'NeoWikiSubject';
 
 	public function __construct( string $text, string $modelId = self::CONTENT_MODEL_ID ) {
 		parent::__construct(

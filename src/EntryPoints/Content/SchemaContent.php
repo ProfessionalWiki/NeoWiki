@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content;
 
 class SchemaContent extends \JsonContent {
 
-	public const CONTENT_MODEL_ID = 'NeoWikiSchema';
+	public const string CONTENT_MODEL_ID = 'NeoWikiSchema';
 
 	public function __construct( string $text, string $modelId = self::CONTENT_MODEL_ID ) {
 		parent::__construct(
