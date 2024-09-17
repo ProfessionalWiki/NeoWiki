@@ -2,9 +2,9 @@
 	"name": "neo",
 	"version": "0.0.0",
 	"description": "",
-	"main": "dist/neo.js",
-	"module": "./dist/neo.mjs",
-	"types": "dist/neo.d.ts",
+	"main": "dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "dist/index.d.ts",
 	"scripts": {
 		"build": "tsup",
 		"build:watch": "tsup --watch",

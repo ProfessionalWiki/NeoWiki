@@ -1,5 +1,5 @@
 import { expect, test, describe } from 'vitest';
-import { Neo } from '../src/neo';
+import { Neo } from '../src/Neo';
 import { Something } from '../src/application/Something';
 
 describe( 'Neo', () => {
