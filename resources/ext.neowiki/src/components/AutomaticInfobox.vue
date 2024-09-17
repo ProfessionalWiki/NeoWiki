@@ -26,9 +26,11 @@ defineProps<{
 }>();
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+
 .infobox {
-	border: 1px solid #000;
+	border: $border-base;
 	max-width: 300px;
 }
 
