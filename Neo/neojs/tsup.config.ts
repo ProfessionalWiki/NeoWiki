@@ -2,7 +2,7 @@ import { defineConfig } from 'tsup';
 import { replaceInFile } from 'replace-in-file';
 
 export default defineConfig( {
-	entry: [ 'src/neo.ts' ],
+	entry: [ 'src/index.ts' ],
 	format: [ 'cjs', 'esm' ],
 	dts: true,
 	sourcemap: true,
@@ -12,12 +12,12 @@ export default defineConfig( {
 			const results = await replaceInFile( {
 				files: 'dist/**/*.{js,mjs}',
 				from: [
-					'//# sourceMappingURL=neo.js.map',
-					'//# sourceMappingURL=neo.mjs.map'
+					'//# sourceMappingURL=index.js.map',
+					'//# sourceMappingURL=index.mjs.map'
 				],
 				to: [
-					'//# sourceMappingURL=/extensions/NeoWiki/Neo/neojs/dist/neo.js.map',
-					'//# sourceMappingURL=/extensions/NeoWiki/Neo/neojs/dist/neo.mjs.map'
+					'//# sourceMappingURL=/extensions/NeoWiki/Neo/neojs/dist/index.js.map',
+					'//# sourceMappingURL=/extensions/NeoWiki/Neo/neojs/dist/index.mjs.map'
 				]
 			} );
 			console.log( 'Modified sourceMappingURL:', results );
