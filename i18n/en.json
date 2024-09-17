@@ -18,6 +18,14 @@
 
 	"neowiki-infobox-editor-dialog-title-create": "Create new $1",
 	"neowiki-infobox-editor-dialog-title-create-blank": "Create new subject",
+	"neowiki-infobox-editor-dialog-title-edit": "Edit $1",
 	"neowiki-infobox-editor-subject-label": "Subject label",
-	"neowiki-infobox-editor-create-button": "Create"
+	"neowiki-infobox-editor-property-label": "Property",
+	"neowiki-infobox-editor-value-label": "Value",
+	"neowiki-infobox-editor-remove-statement": "Remove",
+	"neowiki-infobox-editor-add-statement": "Add statement",
+	"neowiki-infobox-editor-create-button": "Create",
+	"neowiki-infobox-editor-save-button": "Save",
+
+	"neowiki-infobox-edit-link": "Edit"
 }

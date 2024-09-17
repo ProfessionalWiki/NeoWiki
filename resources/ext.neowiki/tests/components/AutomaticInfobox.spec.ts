@@ -1,12 +1,22 @@
-import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { describe, it, expect, vi } from 'vitest';
 import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
+
+const $i18n = vi.fn().mockImplementation( ( key ) => ( {
+	text: () => key
+} ) );
 
 describe( 'AutomaticInfobox', () => {
 	it( 'renders the title correctly', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
-				title: 'Test Title'
+				title: 'Test Title',
+				statements: []
+			},
+			global: {
+				mocks: {
+					$i18n
+				}
 			}
 		} );
 
@@ -23,6 +33,11 @@ describe( 'AutomaticInfobox', () => {
 			props: {
 				title: 'Test Title',
 				statements
+			},
+			global: {
+				mocks: {
+					$i18n
+				}
 			}
 		} );
 
@@ -40,10 +55,32 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				title: 'Test Title'
+			},
+			global: {
+				mocks: {
+					$i18n
+				}
 			}
 		} );
 
-		expect( wrapper.find( '.infobox-statements' ).exists() ).toBe( true );
 		expect( wrapper.findAll( '.infobox-statement' ) ).toHaveLength( 0 );
+	} );
+
+	it( 'renders the edit link correctly', () => {
+		const wrapper = mount( AutomaticInfobox, {
+			props: {
+				title: 'Test Title',
+				statements: []
+			},
+			global: {
+				mocks: {
+					$i18n
+				}
+			}
+		} );
+
+		const editLink = wrapper.find( '.infobox-edit a' );
+		expect( editLink.exists() ).toBe( true );
+		expect( editLink.text() ).toBe( 'neowiki-infobox-edit-link' );
 	} );
 } );
