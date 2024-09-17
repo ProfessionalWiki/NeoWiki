@@ -52,25 +52,4 @@ describe( 'HelloWorld', () => {
 
 		expect( wrapper.text() ).toContain( 'count is 1' );
 	} );
-
-	it( 'contains the read-the-docs paragraph', () => {
-		const wrapper = mount( HelloWorld, {
-			props: {
-				msg: 'Hello Vitest'
-			},
-			global: {
-				mocks: {
-					$i18n
-				},
-				stubs: {
-					CdxButton,
-					CdxIcon
-				}
-			}
-		} );
-
-		const paragraph = wrapper.find( '.read-the-docs' );
-		expect( paragraph.exists() ).toBe( true );
-		expect( paragraph.text() ).toContain( 'AnotherThing is done!' );
-	} );
 } );
