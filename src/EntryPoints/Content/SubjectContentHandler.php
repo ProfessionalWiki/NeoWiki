@@ -23,7 +23,7 @@ class SubjectContentHandler extends \JsonContentHandler {
 		ContentParseParams $cpoParams,
 		ParserOutput &$parserOutput
 	): void {
-		$parserOutput->setText( '' );
+		$parserOutput->setRawText( '' );
 	}
 
 }
