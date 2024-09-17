@@ -39,6 +39,7 @@ module.exports = {
 		'@stylistic/semi': [ 'error', 'always' ],
 		// Overrides.
 		'n/no-missing-import': 'off',
-		'max-len': [ 'warn', { code: 120 } ]
+		'max-len': [ 'warn', { code: 120 } ],
+		'no-use-before-define': 'off'
 	}
 };
