@@ -21,28 +21,25 @@ import { cdxIconAdd } from '@wikimedia/codex-icons';
 import CreateSubjectDialog from '@/components/CreateSubject/CreateSubjectDialog.vue';
 import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
 
-const createSubjectDialog = ref<typeof CreateSubjectDialog|null>( null );
-const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
+const createSubjectDialog = ref<InstanceType<typeof CreateSubjectDialog> | null>( null );
+const infoboxEditorDialog = ref<InstanceType<typeof InfoboxEditor> | null>( null );
 const selectedType = ref( '' );
 
 const openDialog = (): void => {
-	if ( createSubjectDialog.value === null ) {
-		return;
+	if ( createSubjectDialog.value ) {
+		createSubjectDialog.value.openDialog();
 	}
-
-	createSubjectDialog.value.openDialog();
 };
 
 const onSubjectTypeSelected = ( type: string ): void => {
-	if ( infoboxEditorDialog.value === null ) {
-		return;
+	if ( infoboxEditorDialog.value ) {
+		selectedType.value = type;
+		infoboxEditorDialog.value.openDialog();
 	}
-
-	selectedType.value = type;
-	infoboxEditorDialog.value.openDialog();
 };
 
-const onCreationComplete = (): void => {
-	console.log( 'Creation process completed' );
+const onCreationComplete = ( statements: { property: string; value: string; type: string }[] ): void => {
+	console.log( 'Creation process completed', statements );
+	// Here you would typically handle the creation of the new subject
 };
 </script>

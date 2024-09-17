@@ -23,8 +23,9 @@ const app = createMwApp( {
 			// TODO: Remove
 			title: 'Foo',
 			statements: [
-				{ property: 'Foo', value: 'Bar' },
-				{ property: 'Lorem', value: 'Ipsum' }
+				{ property: 'Foo', value: 'Bar', type: 'text' },
+				{ property: 'Lorem', value: 'Ipsum', type: 'text' },
+				{ property: 'Age', value: '123', type: 'number' }
 			]
 		} ) );
 

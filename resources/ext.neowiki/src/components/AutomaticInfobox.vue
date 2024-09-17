@@ -7,7 +7,8 @@
 			<div
 				v-for="( statement, index ) in statements"
 				:key="index"
-				class="infobox-statement">
+				class="infobox-statement"
+			>
 				<div class="infobox-statement-property">
 					{{ statement.property }}
 				</div>
@@ -37,10 +38,10 @@ import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
 
 defineProps<{
 	title: string;
-	statements?: { property: string; value: string }[];
+	statements?: { property: string; value: string; type: string }[];
 }>();
 
-const infoboxEditorDialog = ref<typeof InfoboxEditor | null>( null );
+const infoboxEditorDialog = ref<InstanceType<typeof InfoboxEditor> | null>( null );
 
 const openEditor = (): void => {
 	if ( infoboxEditorDialog.value ) {
@@ -48,8 +49,9 @@ const openEditor = (): void => {
 	}
 };
 
-const onEditComplete = ( updatedStatements: { property: string; value: string }[] ): void => {
+const onEditComplete = ( updatedStatements: { property: string; value: string; type: string }[] ): void => {
 	console.log( 'Updated statements:', updatedStatements );
+	// Here you would typically update the parent component or store with the new data
 };
 </script>
 

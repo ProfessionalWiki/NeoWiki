@@ -144,9 +144,11 @@
 			],
 			"codexComponents": [
 				"CdxButton",
+				"CdxCard",
 				"CdxDialog",
 				"CdxField",
 				"CdxIcon",
+				"CdxMenuButton",
 				"CdxTextInput"
 			],
 			"packageFiles": [
