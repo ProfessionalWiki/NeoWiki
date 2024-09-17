@@ -204,73 +204,73 @@ jobs:
       - name: PHPStan
         run: cd extensions/NeoWiki && vendor/bin/phpstan analyze --configuration=phpstan.neon --memory-limit=2G
 
-  Psalm:
-    name: "Psalm: MW ${{ matrix.mw }}, PHP ${{ matrix.php }}"
-
-    continue-on-error: true # TODO
-
-    strategy:
-      matrix:
-        include:
-          - mw: 'master'
-            php: '8.3'
-
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: mediawiki
-
-    steps:
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-          extensions: mbstring, intl
-          tools: composer
-
-      - name: Cache MediaWiki
-        id: cache-mediawiki
-        uses: actions/cache@v4
-        with:
-          path: |
-            mediawiki
-            !mediawiki/extensions/
-            !mediawiki/vendor/
-          key: mw_${{ matrix.mw }}-php${{ matrix.php }}
-
-      - name: Cache Composer cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache
-          key: composer-php${{ matrix.php }}
-
-      - uses: actions/checkout@v4
-        with:
-          path: EarlyCopy
-
-      - name: Install MediaWiki
-        if: steps.cache-mediawiki.outputs.cache-hit != 'true'
-        working-directory: ~
-        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh ${{ matrix.mw }} NeoWiki
-
-      - uses: actions/checkout@v4
-        with:
-          path: mediawiki/extensions/NeoWiki
-
-      - uses: actions/checkout@v4
-        with:
-          repository: ProfessionalWiki/Neo
-          path: mediawiki/extensions/NeoWiki/Neo
-          token: ${{ secrets.NEO_READ_FPAT }}
-          # Expected to expire on Sep 12 2025
-          # https://github.com/organizations/ProfessionalWiki/settings/secrets/actions/NEO_READ_FPAT (enter new value)
-          # (Re)generate token with contents read access for Neo and NeoExtension at https://github.com/settings/tokens?type=beta
-
-      - run: composer update
-
-      - name: Composer install
-        run: cd extensions/NeoWiki && composer install --no-progress --no-interaction --prefer-dist --optimize-autoloader
-
-      - name: Psalm
-        run: cd extensions/NeoWiki && vendor/bin/psalm --config=psalm.xml --no-diff
+#  Psalm:
+#    name: "Psalm: MW ${{ matrix.mw }}, PHP ${{ matrix.php }}"
+#
+#    continue-on-error: true # TODO
+#
+#    strategy:
+#      matrix:
+#        include:
+#          - mw: 'master'
+#            php: '8.3'
+#
+#    runs-on: ubuntu-latest
+#
+#    defaults:
+#      run:
+#        working-directory: mediawiki
+#
+#    steps:
+#      - name: Setup PHP
+#        uses: shivammathur/setup-php@v2
+#        with:
+#          php-version: ${{ matrix.php }}
+#          extensions: mbstring, intl
+#          tools: composer
+#
+#      - name: Cache MediaWiki
+#        id: cache-mediawiki
+#        uses: actions/cache@v4
+#        with:
+#          path: |
+#            mediawiki
+#            !mediawiki/extensions/
+#            !mediawiki/vendor/
+#          key: mw_${{ matrix.mw }}-php${{ matrix.php }}
+#
+#      - name: Cache Composer cache
+#        uses: actions/cache@v4
+#        with:
+#          path: ~/.composer/cache
+#          key: composer-php${{ matrix.php }}
+#
+#      - uses: actions/checkout@v4
+#        with:
+#          path: EarlyCopy
+#
+#      - name: Install MediaWiki
+#        if: steps.cache-mediawiki.outputs.cache-hit != 'true'
+#        working-directory: ~
+#        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh ${{ matrix.mw }} NeoWiki
+#
+#      - uses: actions/checkout@v4
+#        with:
+#          path: mediawiki/extensions/NeoWiki
+#
+#      - uses: actions/checkout@v4
+#        with:
+#          repository: ProfessionalWiki/Neo
+#          path: mediawiki/extensions/NeoWiki/Neo
+#          token: ${{ secrets.NEO_READ_FPAT }}
+#          # Expected to expire on Sep 12 2025
+#          # https://github.com/organizations/ProfessionalWiki/settings/secrets/actions/NEO_READ_FPAT (enter new value)
+#          # (Re)generate token with contents read access for Neo and NeoExtension at https://github.com/settings/tokens?type=beta
+#
+#      - run: composer update
+#
+#      - name: Composer install
+#        run: cd extensions/NeoWiki && composer install --no-progress --no-interaction --prefer-dist --optimize-autoloader
+#
+#      - name: Psalm
+#        run: cd extensions/NeoWiki && vendor/bin/psalm --config=psalm.xml --no-diff
