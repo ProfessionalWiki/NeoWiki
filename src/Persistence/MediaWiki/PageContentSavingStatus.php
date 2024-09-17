@@ -6,9 +6,9 @@ namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki;
 
 class PageContentSavingStatus {
 
-	public const REVISION_CREATED = 'revisionCreated';
-	public const NO_CHANGES = 'noChanges';
-	public const ERROR = 'error';
+	public const string REVISION_CREATED = 'revisionCreated';
+	public const string NO_CHANGES = 'noChanges';
+	public const string ERROR = 'error';
 
 	public function __construct(
 		public readonly string $status,

@@ -11,7 +11,7 @@ use Twig\Environment;
 
 class TwigTemplateRenderer implements TemplateRenderer {
 
-	public const ERROR_MSG = 'Template Render Error';
+	public const string ERROR_MSG = 'Template Render Error';
 
 	public function __construct(
 		private Environment $twig,
