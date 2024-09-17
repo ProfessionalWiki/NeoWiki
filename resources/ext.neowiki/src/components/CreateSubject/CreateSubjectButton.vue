@@ -8,6 +8,7 @@
 		<InfoboxEditor
 			ref="infoboxEditorDialog"
 			:selected-type="selectedType"
+			:is-edit-mode="false"
 			@complete="onCreationComplete"
 		/>
 	</div>

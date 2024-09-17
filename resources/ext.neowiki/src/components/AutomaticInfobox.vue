@@ -16,14 +16,41 @@
 				</div>
 			</div>
 		</div>
+		<div class="infobox-edit">
+			<a href="#" @click.prevent="openEditor">
+				{{ $i18n( 'neowiki-infobox-edit-link' ).text() }}
+			</a>
+		</div>
+		<InfoboxEditor
+			ref="infoboxEditorDialog"
+			:selected-type="title"
+			:initial-statements="statements"
+			:is-edit-mode="true"
+			@complete="onEditComplete"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
+import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
+
 defineProps<{
 	title: string;
 	statements?: { property: string; value: string }[];
 }>();
+
+const infoboxEditorDialog = ref<typeof InfoboxEditor | null>( null );
+
+const openEditor = (): void => {
+	if ( infoboxEditorDialog.value ) {
+		infoboxEditorDialog.value.openDialog();
+	}
+};
+
+const onEditComplete = ( updatedStatements: { property: string; value: string }[] ): void => {
+	console.log( 'Updated statements:', updatedStatements );
+};
 </script>
 
 <style scoped>
@@ -38,5 +65,19 @@ defineProps<{
 
 .infobox-statement {
 	display: flex;
+}
+
+.infobox-edit {
+	text-align: right;
+	padding: 5px;
+}
+
+.infobox-edit a {
+	color: #0645ad;
+	text-decoration: none;
+}
+
+.infobox-edit a:hover {
+	text-decoration: underline;
 }
 </style>

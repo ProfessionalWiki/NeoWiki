@@ -155,7 +155,8 @@
 					"name": "icons.json",
 					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
 					"callbackParam": [
-						"cdxIconAdd"
+						"cdxIconAdd",
+						"cdxIconTrash"
 					]
 				}
 			],
@@ -167,8 +168,15 @@
 				"neowiki-create-subject-dialog-or-select",
 				"neowiki-infobox-editor-dialog-title-create",
 				"neowiki-infobox-editor-dialog-title-create-blank",
+				"neowiki-infobox-editor-dialog-title-edit",
 				"neowiki-infobox-editor-subject-label",
-				"neowiki-infobox-editor-create-button"
+				"neowiki-infobox-editor-property-label",
+				"neowiki-infobox-editor-value-label",
+				"neowiki-infobox-editor-remove-statement",
+				"neowiki-infobox-editor-add-statement",
+				"neowiki-infobox-editor-create-button",
+				"neowiki-infobox-editor-save-button",
+				"neowiki-infobox-edit-link"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
