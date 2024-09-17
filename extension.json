@@ -130,7 +130,7 @@
 	"ResourceModules": {
 		"neo": {
 			"packageFiles": [
-				"Neo/neojs/dist/neo.js"
+				"Neo/neojs/dist/index.js"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "neo"
