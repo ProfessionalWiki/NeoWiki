@@ -13,6 +13,7 @@ export default defineConfig( {
 			include: [ 'src' ],
 			reporter: [ 'text', 'json-summary', 'json' ],
 			reportOnFailure: true
-		}
+		},
+		environment: 'jsdom'
 	}
 } );
