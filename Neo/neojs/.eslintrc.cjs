@@ -40,6 +40,24 @@ module.exports = {
 		// Overrides.
 		'n/no-missing-import': 'off',
 		'max-len': [ 'warn', { code: 120 } ],
-		'no-use-before-define': 'off'
-	}
+		'no-use-before-define': 'off',
+		'@typescript-eslint/explicit-module-boundary-types': 'off',
+		'no-shadow': 'off',
+		'no-bitwise': [ 'off' ],
+		'@typescript-eslint/no-unused-vars': 'off'
+	},
+	overrides: [
+		{
+			files: [
+				'src/domain/valueFormats/**/*.ts',
+				'src/domain/PropertyDefinition.ts',
+				'src/domain/StatementList.ts',
+				'src/domain/Value.ts',
+				'src/domain/ValueFormat.ts'
+			],
+			rules: {
+				'@typescript-eslint/no-explicit-any': 'off'
+			}
+		}
+	]
 };
