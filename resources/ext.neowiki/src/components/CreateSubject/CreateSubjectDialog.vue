@@ -4,30 +4,28 @@
 			{{ $i18n( 'neowiki-create-subject-dialog-start-blank' ).text() }}
 		</CdxButton>
 		<p>{{ $i18n( 'neowiki-create-subject-dialog-or-select' ).text() }}</p>
-		<ul class="type-list">
+		<ul class="schema-list">
 			<li
-				v-for="type in typeOptions"
-				:key="type.value"
-				@click="proceedWithType( type.value )"
+				v-for="schema in schemas"
+				:key="schema.name"
+				@click="proceedWithSchema( schema.name )"
 			>
-				{{ type.label }}
+				{{ schema.name }}
 			</li>
 		</ul>
 	</CdxDialog>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { CdxDialog, CdxButton } from '@wikimedia/codex';
+import { useSchemaStore } from '@/stores/SchemaStore';
 
-const emit = defineEmits( [ 'next' ] );
+const emit = defineEmits<( e: 'next', schemaName: string ) => void>();
+
 const isOpen = ref( false );
-
-const typeOptions = [
-	{ value: 'person', label: 'Person' },
-	{ value: 'organization', label: 'Organization' },
-	{ value: 'place', label: 'Place' }
-];
+const schemaStore = useSchemaStore();
+const schemas = computed( () => schemaStore.getSchemas );
 
 const openDialog = (): void => {
 	isOpen.value = true;
@@ -38,29 +36,28 @@ const proceedWithBlank = (): void => {
 	emit( 'next', '' );
 };
 
-const proceedWithType = ( type: string ): void => {
+const proceedWithSchema = ( schemaName: string ): void => {
 	isOpen.value = false;
-	emit( 'next', type );
+	emit( 'next', schemaName );
 };
 
 defineExpose( { openDialog } );
 </script>
 
 <style scoped>
-/* TODO: replace styles */
-.type-list {
+.schema-list {
 	padding: 0;
 	margin: 0;
 }
 
-.type-list li {
+.schema-list li {
 	padding: 8px;
 	cursor: pointer;
 	transition: background-color 0.2s;
 	list-style: none;
 }
 
-.type-list li:hover {
+.schema-list li:hover {
 	background-color: #f0f0f0;
 }
 </style>
