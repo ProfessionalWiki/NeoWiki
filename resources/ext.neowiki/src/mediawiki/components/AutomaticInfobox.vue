@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
+import InfoboxEditor from '@/mediawiki/components/Infobox/InfoboxEditor.vue';
 
 defineProps<{
 	title: string;
@@ -54,7 +54,7 @@ const onEditComplete = ( updatedStatements: { property: string; value: string }[
 </script>
 
 <style scoped lang="scss">
-@import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+@import '../../../node_modules/@wikimedia/codex-design-tokens/theme-wikimedia-ui';
 
 .infobox {
 	border: $border-base;

@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect, vi } from 'vitest';
-import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
+import AutomaticInfobox from '@/mediawiki/components/AutomaticInfobox.vue';
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 	text: () => key

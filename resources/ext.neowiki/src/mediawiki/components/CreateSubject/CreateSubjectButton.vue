@@ -18,8 +18,8 @@
 import { ref } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
-import CreateSubjectDialog from '@/components/CreateSubject/CreateSubjectDialog.vue';
-import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
+import CreateSubjectDialog from '@/mediawiki/components/CreateSubject/CreateSubjectDialog.vue';
+import InfoboxEditor from '@/mediawiki/components/Infobox/InfoboxEditor.vue';
 
 const createSubjectDialog = ref<typeof CreateSubjectDialog|null>( null );
 const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );

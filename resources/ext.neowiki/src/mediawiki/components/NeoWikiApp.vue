@@ -21,8 +21,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
-import CreateSubjectButton from '@/components/CreateSubject/CreateSubjectButton.vue';
+import AutomaticInfobox from '@/mediawiki/components/AutomaticInfobox.vue';
+import CreateSubjectButton from '@/mediawiki/components/CreateSubject/CreateSubjectButton.vue';
 
 const infoboxElements = ref<Element[]>( [] );
 
