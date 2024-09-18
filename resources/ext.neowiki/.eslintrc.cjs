@@ -44,6 +44,8 @@ module.exports = {
 		'n/no-missing-import': 'off',
 		'max-len': [ 'warn', { code: 120 } ],
 		'vue/no-v-model-argument': 'off',
-		'es-x/no-optional-chaining': 'off'
+		'es-x/no-optional-chaining': 'off',
+		'no-unused-vars': 'off',
+		'@typescript-eslint/no-unused-vars': 'error'
 	}
 };
