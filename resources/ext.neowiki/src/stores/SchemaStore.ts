@@ -1,33 +1,29 @@
 import { defineStore } from 'pinia';
-
-interface Schema {
-	name: string;
-	description: string;
-	properties: [];
-}
+import { Schema } from '@neo/domain/Schema.ts';
+import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 
 export const useSchemaStore = defineStore( 'schema', {
 	// TODO: testing data
-	state: (): { schemas: Schema[] } => ( {
+	state: () => ( {
 		schemas: [
-			{
-				name: 'Person',
-				description: 'Information about an individual',
-				properties: []
-			},
-			{
-				name: 'Organization',
-				description: 'Details about a company or institution',
-				properties: []
-			},
-			{
-				name: 'Place',
-				description: 'Geographic location or landmark',
-				properties: []
-			}
+			new Schema(
+				'Person',
+				'Information about an individual',
+				new PropertyDefinitionList( [] )
+			),
+			new Schema(
+				'Organization',
+				'Details about a company or institution',
+				new PropertyDefinitionList( [] )
+			),
+			new Schema(
+				'Place',
+				'Geographic location or landmark',
+				new PropertyDefinitionList( [] )
+			)
 		]
 	} ),
 	getters: {
-		getSchemas: ( state ): Schema[] => state.schemas
+		getSchemas: ( state ) => state.schemas
 	}
 } );
