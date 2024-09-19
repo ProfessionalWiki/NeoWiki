@@ -1,5 +1,6 @@
 import { Vue } from 'vue';
 import { Component } from '@vue/runtime-core';
+import { mw } from 'types-mediawiki';
 
 declare module 'vue' {
 	export function createMwApp( rootComponent: Component, rootProps?: rootProps ): Vue.App<Element>;

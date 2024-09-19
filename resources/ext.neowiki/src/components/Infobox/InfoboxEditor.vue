@@ -89,6 +89,9 @@ const removeStatement = ( index: number ): void => {
 	statements.value.splice( index, 1 );
 };
 
+const handleValidation = ( isValid: boolean ): void => {
+	console.log( isValid );
+};
 const submit = (): void => {
 	console.log(
 		`${ props.isEditMode ? 'Updating' : 'Creating' } ${ props.selectedType || 'subject' }: ${ name.value }`
