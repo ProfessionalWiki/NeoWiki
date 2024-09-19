@@ -1,1 +1,1 @@
-export * from '@/Neo';
+export * from '@neo/Neo';

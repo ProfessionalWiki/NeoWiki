@@ -1,6 +1,6 @@
-import type { MultiStringProperty, PropertyDefinition } from '@/domain/PropertyDefinition';
-import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
-import { BaseValueFormat } from '@/domain/ValueFormat';
+import type { MultiStringProperty, PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import { newStringValue, type StringValue, ValueType } from '@neo/domain/Value';
+import { BaseValueFormat } from '@neo/domain/ValueFormat';
 import DOMPurify from 'dompurify';
 
 export interface UrlProperty extends MultiStringProperty {

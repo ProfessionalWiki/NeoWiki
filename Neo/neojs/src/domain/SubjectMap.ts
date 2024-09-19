@@ -1,5 +1,5 @@
-import type { SubjectId } from '@/domain/SubjectId';
-import type { Subject } from '@/domain/Subject';
+import type { SubjectId } from '@neo/domain/SubjectId';
+import type { Subject } from '@neo/domain/Subject';
 
 export class SubjectMap {
 

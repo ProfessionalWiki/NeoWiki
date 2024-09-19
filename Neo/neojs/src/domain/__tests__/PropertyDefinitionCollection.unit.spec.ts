@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition';
-import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
+import { createPropertyDefinitionFromJson, PropertyName } from '@neo/domain/PropertyDefinition';
+import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 
 describe( 'PropertyDefinitionCollection', () => {
 

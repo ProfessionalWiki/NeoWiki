@@ -1,14 +1,14 @@
-import { Statement } from '@/domain/Statement';
+import { Statement } from '@neo/domain/Statement';
 import { describe, expect, it } from 'vitest';
-import { SubjectId } from '@/domain/SubjectId';
-import { StatementList, statementsToJson } from '@/domain/StatementList';
-import { PropertyName } from '@/domain/PropertyDefinition';
+import { SubjectId } from '@neo/domain/SubjectId';
+import { StatementList, statementsToJson } from '@neo/domain/StatementList';
+import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { Relation, RelationValue, newStringValue, newNumberValue } from '../Value';
 import { PropertyDefinitionList } from '../PropertyDefinitionList';
 import { newTextProperty, TextFormat } from '../valueFormats/Text';
 import { newNumberProperty, NumberFormat } from '../valueFormats/Number';
 import { RelationFormat } from '../valueFormats/Relation';
-import { newSchema } from '@/TestHelpers';
+import { newSchema } from '@neo/TestHelpers';
 
 describe( 'StatementList', () => {
 

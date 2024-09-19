@@ -1,5 +1,5 @@
-import type { ValueType } from '@/domain/Value';
-import { Neo } from '@/Neo';
+import type { ValueType } from '@neo/domain/Value';
+import { Neo } from '@neo/Neo';
 
 export class PropertyName {
 

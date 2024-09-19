@@ -1,7 +1,7 @@
-import type { MultiStringProperty, PropertyDefinition } from '@/domain/PropertyDefinition';
-import { PropertyName } from '@/domain/PropertyDefinition';
-import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
-import { BaseValueFormat } from '@/domain/ValueFormat';
+import type { MultiStringProperty, PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { newStringValue, type StringValue, ValueType } from '@neo/domain/Value';
+import { BaseValueFormat } from '@neo/domain/ValueFormat';
 
 export interface TextProperty extends MultiStringProperty {
 }
@@ -9,6 +9,7 @@ export interface TextProperty extends MultiStringProperty {
 export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
 
 	public static readonly valueType = ValueType.String;
+
 	public static readonly formatName = 'text';
 
 	public getExampleValue(): StringValue {

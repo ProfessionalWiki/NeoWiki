@@ -1,6 +1,6 @@
-import { Statement } from '@/domain/Statement';
+import { Statement } from '@neo/domain/Statement';
 import { describe, expect, it } from 'vitest';
-import { PropertyName } from '@/domain/PropertyDefinition';
+import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue } from '../Value';
 import { TextFormat } from '../valueFormats/Text';
 
