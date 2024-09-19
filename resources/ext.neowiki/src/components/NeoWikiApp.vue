@@ -3,14 +3,11 @@
 	<teleport
 		v-for="( el, index ) in infoboxElements"
 		:key="`infobox-${index}`"
-		:to="el">
-		<!-- TODO: Remove dummy data -->
+		:to="el"
+	>
 		<AutomaticInfobox
-			title="Foo"
-			:statements="[
-				{ property: 'Foo', value: 'Bar' },
-				{ property: 'Lorem', value: 'Ipsum' }
-			]"
+			v-if="getSubject( el.getAttribute( 'data-subject-id' ) )"
+			:subject="getSubject( el.getAttribute( 'data-subject-id' ) )!"
 		/>
 	</teleport>
 
@@ -21,12 +18,24 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useSubjectStore } from '@/stores/SubjectStore';
+import { SubjectId } from '@neo/domain/SubjectId';
+import { Subject } from '@neo/domain/Subject';
 import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
 import CreateSubjectButton from '@/components/CreateSubject/CreateSubjectButton.vue';
 
 const infoboxElements = ref<Element[]>( [] );
+const subjectStore = useSubjectStore();
 
 onMounted( () => {
 	infoboxElements.value = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
 } );
+
+function getSubject( subjectId: string | null ): Subject | null {
+	if ( !subjectId ) {
+		return null;
+	}
+
+	return subjectStore.getSubject( new SubjectId( subjectId ) );
+}
 </script>
