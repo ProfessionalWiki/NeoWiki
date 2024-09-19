@@ -6,11 +6,11 @@
 		<p>{{ $i18n( 'neowiki-create-subject-dialog-or-select' ).text() }}</p>
 		<ul class="schema-list">
 			<li
-				v-for="schema in schemas"
-				:key="schema.getName()"
+				v-for="( [ key, schema ] ) in schemas"
+				:key="key"
 				@click="proceedWithSchema( schema.getName() )"
 			>
-				{{ schema.getName }}
+				{{ schema.getName() }}
 			</li>
 		</ul>
 	</CdxDialog>
