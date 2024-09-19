@@ -7,10 +7,10 @@
 		<ul class="schema-list">
 			<li
 				v-for="schema in schemas"
-				:key="schema.name"
-				@click="proceedWithSchema( schema.name )"
+				:key="schema.getName()"
+				@click="proceedWithSchema( schema.getName() )"
 			>
-				{{ schema.name }}
+				{{ schema.getName }}
 			</li>
 		</ul>
 	</CdxDialog>
