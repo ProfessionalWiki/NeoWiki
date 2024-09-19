@@ -1,0 +1,14 @@
+{
+	"extends": "./tsconfig.app.json",
+	"include": ["src/**/*.ts", "src/**/*.vue", "../../Neo/neojs/src/**/*.ts", "tests/**/*.ts"],
+	"exclude": [],
+	"compilerOptions": {
+		"composite": true,
+		"lib": [],
+		"types": [
+			"node",
+			"jsdom"
+		],
+		"allowJs": false
+	}
+}
