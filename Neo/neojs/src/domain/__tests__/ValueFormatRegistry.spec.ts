@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ValueFormatRegistry } from '@/domain/ValueFormat';
+import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
 import { TextFormat } from '../valueFormats/Text';
 import { NumberFormat } from '../valueFormats/Number';
 

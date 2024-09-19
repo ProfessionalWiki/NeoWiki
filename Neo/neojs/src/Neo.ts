@@ -1,8 +1,8 @@
-import { TextFormat } from '@/domain/valueFormats/Text';
-import { NumberFormat } from '@/domain/valueFormats/Number';
-import { RelationFormat } from '@/domain/valueFormats/Relation';
-import { UrlFormat } from '@/domain/valueFormats/Url';
-import { ValueFormatRegistry } from '@/domain/ValueFormat';
+import { TextFormat } from '@neo/domain/valueFormats/Text';
+import { NumberFormat } from '@neo/domain/valueFormats/Number';
+import { RelationFormat } from '@neo/domain/valueFormats/Relation';
+import { UrlFormat } from '@neo/domain/valueFormats/Url';
+import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
 
 export class Neo {
 	private static instance: Neo;

@@ -1,5 +1,5 @@
-import type { PropertyName } from '@/domain/PropertyDefinition';
-import type { Value } from '@/domain/Value';
+import type { PropertyName } from '@neo/domain/PropertyDefinition';
+import type { Value } from '@neo/domain/Value';
 
 export class Statement {
 

@@ -1,8 +1,8 @@
-import type { PropertyDefinition } from '@/domain/PropertyDefinition';
-import { PropertyName } from '@/domain/PropertyDefinition';
-import { Relation, RelationValue, ValueType } from '@/domain/Value';
-import { BaseValueFormat } from '@/domain/ValueFormat';
-import { Uuid } from '@/infrastructure/Uuid';
+import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { Relation, RelationValue, ValueType } from '@neo/domain/Value';
+import { BaseValueFormat } from '@neo/domain/ValueFormat';
+import { Uuid } from '@neo/infrastructure/Uuid';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -15,6 +15,7 @@ export interface RelationProperty extends PropertyDefinition {
 export class RelationFormat extends BaseValueFormat<RelationProperty, RelationValue> {
 
 	public static readonly valueType = ValueType.String;
+
 	public static readonly formatName = 'relation';
 
 	public getExampleValue( property: RelationProperty ): RelationValue {

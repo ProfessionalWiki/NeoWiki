@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition';
+import { createPropertyDefinitionFromJson, PropertyName } from '@neo/domain/PropertyDefinition';
 import { ValueType } from '../Value';
 import type { TextProperty } from '../valueFormats/Text';
 import { TextFormat } from '../valueFormats/Text';

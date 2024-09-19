@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { newSchema, newSubject, ZERO_GUID } from '@/TestHelpers';
-import { SubjectMap } from '@/domain/SubjectMap';
-import { InMemorySubjectLookup } from '@/domain/SubjectLookup';
-import { PageIdentifiers } from '@/domain/PageIdentifiers';
-import { StatementList } from '@/domain/StatementList';
+import { newSchema, newSubject, ZERO_GUID } from '@neo/TestHelpers';
+import { SubjectMap } from '@neo/domain/SubjectMap';
+import { InMemorySubjectLookup } from '@neo/domain/SubjectLookup';
+import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
+import { StatementList } from '@neo/domain/StatementList';
 import { PropertyDefinitionList } from '../PropertyDefinitionList';
 import { createPropertyDefinitionFromJson } from '../PropertyDefinition';
 import { ValueType } from '../Value';

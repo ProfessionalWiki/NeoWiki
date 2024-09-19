@@ -1,4 +1,4 @@
-import type { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
+import type { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 
 export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 

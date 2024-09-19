@@ -1,4 +1,4 @@
-import { Uuid } from '@/infrastructure/Uuid';
+import { Uuid } from '@neo/infrastructure/Uuid';
 
 export class SubjectId {
 	public readonly text: string;

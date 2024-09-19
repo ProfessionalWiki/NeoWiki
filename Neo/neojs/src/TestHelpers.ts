@@ -1,9 +1,9 @@
-import { Subject } from '@/domain/Subject';
-import { SubjectId } from '@/domain/SubjectId';
-import { PageIdentifiers } from '@/domain/PageIdentifiers';
-import { Schema } from '@/domain/Schema';
-import { StatementList } from '@/domain/StatementList';
-import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
+import { Subject } from '@neo/domain/Subject';
+import { SubjectId } from '@neo/domain/SubjectId';
+import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
+import { Schema } from '@neo/domain/Schema';
+import { StatementList } from '@neo/domain/StatementList';
+import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 
 export const ZERO_GUID = '00000000-0000-0000-0000-000000000000';
 export const DEFAULT_TEST_SUBJECT_LABEL = 'Test subject';
@@ -50,4 +50,3 @@ export function newSchema( {
 		properties ?? new PropertyDefinitionList( [] )
 	);
 }
-

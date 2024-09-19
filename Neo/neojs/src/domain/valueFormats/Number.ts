@@ -1,7 +1,7 @@
-import type { PropertyDefinition } from '@/domain/PropertyDefinition';
-import { PropertyName } from '@/domain/PropertyDefinition';
-import { newNumberValue, type NumberValue, ValueType } from '@/domain/Value';
-import { BaseValueFormat } from '@/domain/ValueFormat';
+import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { newNumberValue, type NumberValue, ValueType } from '@neo/domain/Value';
+import { BaseValueFormat } from '@neo/domain/ValueFormat';
 
 export interface NumberProperty extends PropertyDefinition {
 
@@ -14,6 +14,7 @@ export interface NumberProperty extends PropertyDefinition {
 export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
 
 	public static readonly valueType = ValueType.Number;
+
 	public static readonly formatName = 'number';
 
 	public getExampleValue(): NumberValue {

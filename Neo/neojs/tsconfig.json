@@ -12,7 +12,7 @@
 		"skipLibCheck": true,
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["src/*"]
+			"@neo/*": ["src/*"]
 		}
 	},
 	"include": ["src/**/*"],
