@@ -41,9 +41,9 @@ class NeoWikiHooks {
 		] );
 
 		// TODO: remove examples
-		$out->addHtml( '<div class="neowiki-infobox"></div>' );
-		$out->addHtml( '<div class="neowiki-infobox"></div>' );
-		$out->addHtml( '<div class="neowiki-infobox-manual"></div>' );
+		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="00000000-0000-0000-0000-000000000001"></div>' );
+		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="00000000-0000-0000-0000-000000000002"></div>' );
+		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="00000000-0000-0000-0000-000000000003"></div>' );
 	}
 
 	public static function onMediaWikiServices( MediaWikiServices $services ): void {
