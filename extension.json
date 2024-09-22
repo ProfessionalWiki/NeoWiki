@@ -139,7 +139,10 @@
 				"CdxDialog",
 				"CdxField",
 				"CdxIcon",
-				"CdxTextInput"
+				"CdxTextInput",
+				"CdxSearchInput",
+				"CdxTypeaheadSearch",
+				"CdxTooltip"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",
@@ -148,7 +151,9 @@
 					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
 					"callbackParam": [
 						"cdxIconAdd",
-						"cdxIconTrash"
+						"cdxIconTrash",
+						"cdxIconArrowPrevious",
+						"cdxIconInfoFilled"
 					]
 				}
 			],
@@ -168,7 +173,10 @@
 				"neowiki-infobox-editor-add-statement",
 				"neowiki-infobox-editor-create-button",
 				"neowiki-infobox-editor-save-button",
-				"neowiki-infobox-edit-link"
+				"neowiki-infobox-edit-link",
+				"neowiki-create-subject-dialog-select-type",
+				"neowiki-create-subject-dialog-start-blank-description",
+				"neowiki-create-subject-dialog-go-back"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

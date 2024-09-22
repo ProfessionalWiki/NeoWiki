@@ -46,6 +46,7 @@ module.exports = {
 		'vue/no-v-model-argument': 'off',
 		'es-x/no-optional-chaining': 'off',
 		'no-unused-vars': 'off',
-		'@typescript-eslint/no-unused-vars': 'error'
+		'@typescript-eslint/no-unused-vars': 'error',
+		'es-x/no-array-prototype-includes': 'off'
 	}
 };

@@ -4,12 +4,16 @@
 			<CdxIcon :icon="cdxIconAdd" />
 			{{ $i18n( 'neowiki-create-button' ).text() }}
 		</CdxButton>
-		<CreateSubjectDialog ref="createSubjectDialog" @next="onSubjectTypeSelected" />
+		<CreateSubjectDialog
+			ref="createSubjectDialog"
+			@next="onSubjectTypeSelected"
+		/>
 		<InfoboxEditor
 			ref="infoboxEditorDialog"
 			:selected-type="selectedType"
 			:is-edit-mode="false"
 			@complete="onCreationComplete"
+			@back="onInfoboxBack"
 		/>
 	</div>
 </template>
@@ -44,5 +48,14 @@ const onSubjectTypeSelected = ( type: string ): void => {
 
 const onCreationComplete = (): void => {
 	console.log( 'Creation process completed' );
+	selectedType.value = '';
+};
+
+const onInfoboxBack = (): void => {
+	if ( createSubjectDialog.value === null ) {
+		return;
+	}
+
+	createSubjectDialog.value.openDialog();
 };
 </script>

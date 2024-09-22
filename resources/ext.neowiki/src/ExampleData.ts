@@ -12,25 +12,23 @@ import { Schema } from '@neo/domain/Schema.ts';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 
 export function createExampleSchemas(): Map<string, Schema> {
-	const schemas = new Map<string, Schema>();
+	const schemaDefinitions = [
+		[ 'Person', 'Information about an individual' ],
+		[ 'Organization', 'Details about a company or institution' ],
+		[ 'Place', 'Geographic location or landmark' ],
+		[ 'Event', 'Information about a specific occurrence' ],
+		[ 'Product', 'Details about a commercial product or service' ],
+		[ 'Book', 'Information about a published book' ],
+		[ 'Movie', 'Details about a film production' ],
+		[ 'Animal', 'Information about a species or individual animal' ],
+		[ 'Plant', 'Details about a plant species or individual plant' ],
+		[ 'Artwork', 'Information about a piece of art' ]
+	];
 
-	schemas.set( 'Person', new Schema(
-		'Person',
-		'Information about an individual',
-		new PropertyDefinitionList( [] )
-	) );
-	schemas.set( 'Organization', new Schema(
-		'Organization',
-		'Details about a company or institution',
-		new PropertyDefinitionList( [] )
-	) );
-	schemas.set( 'Place', new Schema(
-		'Place',
-		'Geographic location or landmark',
-		new PropertyDefinitionList( [] )
-	) );
-
-	return schemas;
+	return new Map( schemaDefinitions.map( ( [ name, description ] ) => [
+		name,
+		new Schema( name, description, new PropertyDefinitionList( [] ) )
+	] ) );
 }
 
 export function createExampleSubjects(): Map<string, Subject> {

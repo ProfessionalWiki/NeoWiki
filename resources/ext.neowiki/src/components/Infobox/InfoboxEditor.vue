@@ -41,21 +41,28 @@
 			<CdxIcon :icon="cdxIconAdd" />
 			{{ $i18n( 'neowiki-infobox-editor-add-statement' ).text() }}
 		</CdxButton>
-		<div>
+		<template #footer>
+			<CdxButton
+				:aria-label="$i18n( 'neowiki-create-subject-dialog-go-back' ).text()"
+				weight="quiet"
+				@click="goBack">
+				<CdxIcon :icon="cdxIconArrowPrevious" />
+			</CdxButton>
+
 			<CdxButton
 				action="progressive"
 				weight="primary"
 				@click="submit">
 				{{ $i18n( 'neowiki-infobox-editor-save-button' ).text() }}
 			</CdxButton>
-		</div>
+		</template>
 	</CdxDialog>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import { CdxDialog, CdxTextInput, CdxButton, CdxField, CdxIcon } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconTrash, cdxIconArrowPrevious } from '@wikimedia/codex-icons';
 
 const props = defineProps<{
 	selectedType: string;
@@ -63,7 +70,7 @@ const props = defineProps<{
 	isEditMode: boolean;
 }>();
 
-const emit = defineEmits( [ 'complete' ] );
+const emit = defineEmits( [ 'complete', 'back' ] );
 const isOpen = ref( false );
 const name = ref( '' );
 const statements = ref<{ property: string; value: string }[]>( [] );
@@ -91,12 +98,23 @@ const submit = (): void => {
 	emit( 'complete', statements.value );
 };
 
+const goBack = (): void => {
+	emit( 'back' );
+	isOpen.value = false;
+};
+
 defineExpose( { openDialog } );
 </script>
 
 <style>
 .cdx-dialog.infobox-editor {
-	max-width: 800px;
+	max-width: 500px;
+
+	footer {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+	}
 }
 
 .statement-editor {
