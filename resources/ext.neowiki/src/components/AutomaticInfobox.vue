@@ -1,56 +1,57 @@
 <template>
 	<div class="infobox">
 		<div class="infobox-title">
-			{{ title }}
+			{{ subject.getLabel() }}
 		</div>
 		<div class="infobox-statements">
 			<div
-				v-for="( statement, index ) in statements"
-				:key="index"
-				class="infobox-statement">
+				v-for="statement in subject.getStatements()"
+				:key="statement.propertyName.toString()"
+				class="infobox-statement"
+			>
 				<div class="infobox-statement-property">
-					{{ statement.property }}
+					{{ statement.propertyName.toString() }}
 				</div>
 				<div class="infobox-statement-value">
-					{{ statement.value }}
+					<template v-if="statement.value">
+						<template v-if="statement.format === TextFormat.formatName">
+							{{ ( statement.value as StringValue ).strings.join( ', ' ) }}
+						</template>
+						<template v-else-if="statement.format === NumberFormat.formatName">
+							{{ ( statement.value as NumberValue ).number }}
+						</template>
+						<template v-else-if="statement.format === UrlFormat.formatName">
+							<div v-for="( url, key ) in ( statement.value as StringValue ).strings" :key="key">
+								<a :href="url">
+									{{ url }}
+								</a>
+							</div>
+						</template>
+						<template v-else-if="statement.format === RelationFormat.formatName">
+							<!-- TODO -->
+						</template>
+					</template>
 				</div>
 			</div>
 		</div>
-		<div class="infobox-edit">
-			<a href="#" @click.prevent="openEditor">
-				{{ $i18n( 'neowiki-infobox-edit-link' ).text() }}
-			</a>
-		</div>
-		<InfoboxEditor
-			ref="infoboxEditorDialog"
-			:selected-type="title"
-			:initial-statements="statements"
-			:is-edit-mode="true"
-			@complete="onEditComplete"
-		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
+import { PropType } from 'vue';
+import { Subject } from '@neo/domain/Subject';
+import { TextFormat } from '@neo/domain/valueFormats/Text';
+import { NumberFormat } from '@neo/domain/valueFormats/Number';
+import { UrlFormat } from '@neo/domain/valueFormats/Url';
+import { RelationFormat } from '@neo/domain/valueFormats/Relation';
+import { StringValue, NumberValue } from '@neo/domain/Value';
 
-defineProps<{
-	title: string;
-	statements?: { property: string; value: string }[];
-}>();
-
-const infoboxEditorDialog = ref<typeof InfoboxEditor | null>( null );
-
-const openEditor = (): void => {
-	if ( infoboxEditorDialog.value ) {
-		infoboxEditorDialog.value.openDialog();
+defineProps( {
+	subject: {
+		type: Object as PropType<Subject>,
+		required: true
 	}
-};
-
-const onEditComplete = ( updatedStatements: { property: string; value: string }[] ): void => {
-	console.log( 'Updated statements:', updatedStatements );
-};
+} );
 </script>
 
 <style scoped lang="scss">
@@ -63,23 +64,30 @@ const onEditComplete = ( updatedStatements: { property: string; value: string }[
 
 .infobox-title {
 	text-align: center;
+	font-weight: bold;
+	padding: 5px;
 }
 
 .infobox-statement {
 	display: flex;
-}
-
-.infobox-edit {
-	text-align: right;
 	padding: 5px;
 }
 
-.infobox-edit a {
-	color: #0645ad;
-	text-decoration: none;
+.infobox-statement-property {
+	font-weight: bold;
+	margin-right: 5px;
 }
 
-.infobox-edit a:hover {
-	text-decoration: underline;
+.infobox-statement-value {
+	flex: 1;
+}
+
+a {
+	color: $color-progressive;
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
 }
 </style>
