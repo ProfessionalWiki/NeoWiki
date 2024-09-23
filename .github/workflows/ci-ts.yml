@@ -98,6 +98,7 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           working-directory: ./resources/ext.neowiki
+          comment-on: "none"
 
   lint:
     name: "Linting"
