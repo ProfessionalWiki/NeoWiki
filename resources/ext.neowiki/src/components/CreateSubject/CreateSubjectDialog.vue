@@ -153,8 +153,10 @@ defineExpose( { openDialog } );
 	}
 
 	.cdx-typeahead-search {
-		max-height: 250px;
-		overflow-y: scroll;
+		&__menu {
+			max-height: 250px;
+			overflow-y: scroll;
+		}
 
 		&:focus-within .cdx-typeahead-search__menu {
 			display: block !important;
