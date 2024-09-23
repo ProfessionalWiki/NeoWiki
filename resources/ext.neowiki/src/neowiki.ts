@@ -1,5 +1,6 @@
 import { createMwApp } from 'vue';
 import { createPinia } from 'pinia';
+import '@/assets/scss/global.scss';
 import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { Neo } from '@neo/Neo.ts';
 
