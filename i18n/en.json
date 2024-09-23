@@ -10,13 +10,13 @@
 	"neowiki-name": "NeoWiki",
 	"neowiki-description": "TODO",
 
-	"neowiki-create-button": "Create subject",
+	"neowiki-create-button": "Add infobox",
 
-	"neowiki-create-subject-dialog-title": "Create subject",
+	"neowiki-create-subject-dialog-title": "Add infobox",
 	"neowiki-create-subject-dialog-start-blank": "Start blank",
 	"neowiki-create-subject-dialog-start-blank-description": "Tooltip for Start blank description",
-	"neowiki-create-subject-dialog-or-select": "Or select a type",
-	"neowiki-create-subject-dialog-select-type": "Use a Schema",
+	"neowiki-create-subject-dialog-or-select": "Or use a schema",
+	"neowiki-create-subject-dialog-select-schema": "Select a schema",
 	"neowiki-create-subject-dialog-go-back": "Go back",
 
 	"neowiki-infobox-editor-dialog-title-create": "Create new $1",
