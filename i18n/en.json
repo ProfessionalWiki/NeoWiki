@@ -16,7 +16,7 @@
 	"neowiki-create-subject-dialog-start-blank": "Start blank",
 	"neowiki-create-subject-dialog-start-blank-description": "Tooltip for Start blank description",
 	"neowiki-create-subject-dialog-or-select": "Or select a type",
-	"neowiki-create-subject-dialog-select-type": "Select a subject type",
+	"neowiki-create-subject-dialog-select-type": "Use a Schema",
 	"neowiki-create-subject-dialog-go-back": "Go back",
 
 	"neowiki-infobox-editor-dialog-title-create": "Create new $1",
