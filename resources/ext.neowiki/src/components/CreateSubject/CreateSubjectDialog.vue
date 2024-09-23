@@ -27,7 +27,7 @@
 				:id="searchInputId"
 				form-action=""
 				:search-results="searchResults"
-				:placeholder="$i18n( 'neowiki-create-subject-dialog-select-type' ).text()"
+				:placeholder="$i18n( 'neowiki-create-subject-dialog-select-schema' ).text()"
 				:initial-input-value="searchQuery"
 				:show-thumbnail="false"
 				:highlight-query="true"
