@@ -1,0 +1,37 @@
+.neo-cdx-field-inline {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	grid-column-gap: 10px;
+
+	.cdx-label {
+		width: 150px;
+	}
+
+	.cdx-field__control {
+		grid-column: 2 / 3;
+		grid-row: 1 / 2;
+
+		.cdx-select-vue {
+			display: block;
+		}
+	}
+
+	.cdx-label__description {
+		margin-top: 3px;
+	}
+
+	.cdx-field__help-text {
+		grid-column: 2 / 3;
+		grid-row: 3 / 4;
+		margin-top: 0;
+		display: block;
+	}
+
+	:has( .cdx-label__description:empty ) .cdx-field__control {
+		margin-bottom: 5px;
+	}
+
+	:has( .cdx-field__help-text:empty ) {
+		grid-template-rows: auto auto;
+	}
+}
