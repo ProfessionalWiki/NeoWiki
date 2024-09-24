@@ -1,91 +1,76 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Subject } from '@neo/domain/Subject.ts';
 import { SubjectId } from '@neo/domain/SubjectId.ts';
 import { StatementList } from '@neo/domain/StatementList.ts';
-import { Statement } from '@neo/domain/Statement.ts';
-import { PropertyName } from '@neo/domain/PropertyDefinition.ts';
-import { TextFormat } from '@neo/domain/valueFormats/Text.ts';
-import { newNumberValue, newStringValue } from '@neo/domain/Value.ts';
-import { NumberFormat } from '@neo/domain/valueFormats/Number.ts';
+import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition.ts';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
-import { UrlFormat } from '@neo/domain/valueFormats/Url.ts';
 import { Schema } from '@neo/domain/Schema.ts';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
+import CitySchema from '../../../DemoData/Schema/City.json';
+import ColumnSchema from '../../../DemoData/Schema/Column.json';
+import CompanySchema from '../../../DemoData/Schema/Company.json';
+import EmployeeSchema from '../../../DemoData/Schema/Employee.json';
+import EverythingSchema from '../../../DemoData/Schema/Everything.json';
+import PopulationSchema from '../../../DemoData/Schema/Population.json';
+import ProductSchema from '../../../DemoData/Schema/Product.json';
+import TableSchema from '../../../DemoData/Schema/Table.json';
+import ACMEIncSubject from '../../../DemoData/Subject/ACME_Inc.json';
+import BerlinSubject from '../../../DemoData/Subject/Berlin.json';
+import FCaptureActualsSubject from '../../../DemoData/Subject/F_capture_actuals.json';
+import NeoWikiSubject from '../../../DemoData/Subject/NeoWiki.json';
+import ProfessionalWikiSubject from '../../../DemoData/Subject/Professional_Wiki.json';
+import ProWikiSubject from '../../../DemoData/Subject/ProWiki.json';
 
 export function createExampleSchemas(): Map<string, Schema> {
-	const schemaDefinitions = [
-		[ 'Person', 'Information about an individual' ],
-		[ 'Organization', 'Details about a company or institution' ],
-		[ 'Place', 'Geographic location or landmark' ],
-		[ 'Event', 'Information about a specific occurrence' ],
-		[ 'Product', 'Details about a commercial product or service' ],
-		[ 'Book', 'Information about a published book' ],
-		[ 'Movie', 'Details about a film production' ],
-		[ 'Animal', 'Information about a species or individual animal' ],
-		[ 'Plant', 'Details about a plant species or individual plant' ],
-		[ 'Artwork', 'Information about a piece of art' ]
+	const schemaDefinitions: [string, any][] = [
+		[ 'City', CitySchema ],
+		[ 'Column', ColumnSchema ],
+		[ 'Company', CompanySchema ],
+		[ 'Employee', EmployeeSchema ],
+		[ 'Everything', EverythingSchema ],
+		[ 'Population', PopulationSchema ],
+		[ 'Product', ProductSchema ],
+		[ 'Table', TableSchema ]
 	];
 
-	return new Map( schemaDefinitions.map( ( [ name, description ] ) => [
+	return new Map( schemaDefinitions.map( ( [ name, schema ] ) => [
 		name,
-		new Schema( name, description, new PropertyDefinitionList( [] ) )
+		new Schema(
+			name,
+			schema.description ?? '',
+			new PropertyDefinitionList(
+				Object.entries( schema.propertyDefinitions ).map(
+					( [ id, json ] ) => createPropertyDefinitionFromJson( id, json )
+				)
+			)
+		)
 	] ) );
 }
 
 export function createExampleSubjects(): Map<string, Subject> {
-	const subjects = new Map<string, Subject>();
+	const subjectDefinitions: any[] = [
+		ACMEIncSubject,
+		BerlinSubject,
+		FCaptureActualsSubject,
+		NeoWikiSubject,
+		ProfessionalWikiSubject,
+		ProWikiSubject
+	];
 
-	subjects.set( '00000000-0000-0000-0000-000000000001', new Subject(
-		new SubjectId( '00000000-0000-0000-0000-000000000001' ),
-		'Example Person',
-		'Person',
-		new StatementList( [
-			new Statement(
-				new PropertyName( 'name' ), TextFormat.formatName, newStringValue( 'John Doe' )
-			),
-			new Statement(
-				new PropertyName( 'occupation' ), TextFormat.formatName, newStringValue( 'Engineer', 'Tester' )
-			),
-			new Statement(
-				new PropertyName( 'age' ), NumberFormat.formatName, newNumberValue( 42 )
+	return new Map( subjectDefinitions.map( ( subject, index ) => {
+		const mainSubject = subject.subjects[ subject.mainSubject ];
+		return [
+			subject.mainSubject,
+			new Subject(
+				new SubjectId( subject.mainSubject ),
+				mainSubject.label,
+				mainSubject.schema,
+				StatementList.fromJsonValues( mainSubject.statements, createExampleSchemas().get( mainSubject.schema )! ),
+				new PageIdentifiers( index, mainSubject.label + ' Page' )
 			)
-		] ),
-		new PageIdentifiers( 1, 'John_Doe' )
-	) );
-
-	subjects.set( '00000000-0000-0000-0000-000000000002', new Subject(
-		new SubjectId( '00000000-0000-0000-0000-000000000002' ),
-		'Example Company',
-		'Organization',
-		new StatementList( [
-			new Statement(
-				new PropertyName( 'name' ), TextFormat.formatName, newStringValue( 'Acme Corporation' )
-			),
-			new Statement(
-				new PropertyName( 'industry' ), TextFormat.formatName, newStringValue( 'Technology' )
-			),
-			new Statement(
-				new PropertyName( 'websites' ),
-				UrlFormat.formatName,
-				newStringValue( 'https://example.com', 'https://foo.bar' )
-			)
-		] ),
-		new PageIdentifiers( 2, 'Acme_Corporation' )
-	) );
-
-	subjects.set( '00000000-0000-0000-0000-000000000003', new Subject(
-		new SubjectId( '00000000-0000-0000-0000-000000000003' ),
-		'Example Place',
-		'Place',
-		new StatementList( [
-			new Statement(
-				new PropertyName( 'name' ), TextFormat.formatName, newStringValue( 'Central Park' )
-			),
-			new Statement(
-				new PropertyName( 'location' ), TextFormat.formatName, newStringValue( 'New York City' )
-			)
-		] ),
-		new PageIdentifiers( 3, 'Central_Park' )
-	) );
-
-	return subjects;
+		];
+	} ) );
 }
+
+console.log( 'Schemas', createExampleSchemas() );
+console.log( 'Subjects', createExampleSubjects() );
