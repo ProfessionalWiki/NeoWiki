@@ -16,8 +16,6 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 
 	public abstract getExampleValue( property: T ): V;
 
-	public abstract getInfoboxValueComponentName(): string;
-
 }
 
 export type ValueFormat = BaseValueFormat<PropertyDefinition, Value>;
