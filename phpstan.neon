@@ -16,3 +16,5 @@ parameters:
 	ignoreErrors:
 		- '#no value type specified in iterable type array\.$#'
 		- '#function array_map expects#'
+		- '#generic interface Laudis#'
+		- '#generic class Laudis#'

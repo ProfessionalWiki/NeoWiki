@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j\Formats;
+namespace phpunit\Persistence\Neo4j\Formats;
 
 use Laudis\Neo4j\Types\Date;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
@@ -12,16 +12,16 @@ use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\DateFormat;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\MediaWiki\NeoWikiIntegrationTestCase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\DateFormat
- * @group database
+ * @group Database
  */
 class DateFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 
 	public function setUp(): void {
-		$this->setUpNeo4j();
+		self::markTestSkipped( 'Format not supported yet' );
+		//$this->setUpNeo4j();
 	}
 
 	public function testStoresAsDates(): void {

@@ -1,42 +1,12 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Call to an undefined method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\NeoWikiExtension\\:\\:getQueryStore\\(\\)\\.$#"
-			count: 1
-			path: src/NeoWikiExtension.php
-
-		-
-			message: "#^Call to an undefined method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\NeoWikiExtension\\:\\:getReadOnlyNeo4jClient\\(\\)\\.$#"
-			count: 1
-			path: src/NeoWikiExtension.php
-
-		-
 			message: "#^Call to static method getMain\\(\\) on an unknown class RequestContext\\.$#"
 			count: 1
 			path: src/NeoWikiExtension.php
 
 		-
-			message: "#^Instantiated class ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Neo4JPageIdentifiersLookup not found\\.$#"
-			count: 1
-			path: src/NeoWikiExtension.php
-
-		-
-			message: "#^Instantiated class ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\PagePropertiesBuilder not found\\.$#"
-			count: 1
-			path: src/NeoWikiExtension.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\NeoWikiExtension\\:\\:getPageIdentifiersLookup\\(\\) should return ProfessionalWiki\\\\NeoWiki\\\\Application\\\\PageIdentifiersLookup but returns ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Neo4JPageIdentifiersLookup\\.$#"
-			count: 1
-			path: src/NeoWikiExtension.php
-
-		-
 			message: "#^Parameter \\#1 \\$titleParser of class ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentFetcher constructor expects TitleParser, MediaWiki\\\\Title\\\\TitleParser given\\.$#"
-			count: 1
-			path: src/NeoWikiExtension.php
-
-		-
-			message: "#^Parameter \\#2 \\$pagePropertiesBuilder of class ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\EntryPoints\\\\OnRevisionCreatedHandler constructor expects ProfessionalWiki\\\\NeoWiki\\\\Application\\\\PagePropertiesBuilder, ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\PagePropertiesBuilder given\\.$#"
 			count: 1
 			path: src/NeoWikiExtension.php
 
@@ -284,6 +254,31 @@ parameters:
 			message: "#^Call to an undefined method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\EntryPoints\\\\Content\\\\SchemaContent\\:\\:getText\\(\\)\\.$#"
 			count: 1
 			path: src/Persistence/MediaWiki/WikiPageSchemaLookup.php
+
+		-
+			message: "#^Anonymous function should return Laudis\\\\Neo4j\\\\Databags\\\\SummarizedResult but returns mixed\\.$#"
+			count: 2
+			path: src/Persistence/Neo4j/Neo4jQueryStore.php
+
+		-
+			message: "#^Cannot call method isEmpty\\(\\) on mixed\\.$#"
+			count: 1
+			path: src/Persistence/Neo4j/Neo4jQueryStore.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\Neo4j\\\\Neo4jQueryStore\\:\\:getSubjectIdsByPageId\\(\\) should return array\\<string\\> but returns array\\<int, mixed\\>\\.$#"
+			count: 1
+			path: src/Persistence/Neo4j/Neo4jQueryStore.php
+
+		-
+			message: "#^Cannot call method get\\(\\) on mixed\\.$#"
+			count: 1
+			path: src/Persistence/Neo4j/SubjectUpdater.php
+
+		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\Neo4j\\\\SubjectUpdater\\:\\:getNodeLabels\\(\\) should return array\\<string\\> but returns array\\<int, mixed\\>\\.$#"
+			count: 1
+			path: src/Persistence/Neo4j/SubjectUpdater.php
 
 		-
 			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\SchemaNameLookup\\:\\:getSchemaNamesMatching\\(\\) has invalid return type TitleValue\\.$#"

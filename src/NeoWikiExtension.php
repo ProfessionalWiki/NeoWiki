@@ -5,6 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\MediaWiki;
 
 use Exception;
+use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Contracts\ClientInterface;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
@@ -19,38 +21,43 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
+use ProfessionalWiki\NeoWiki\Application\QueryStore;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\WriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatLookup;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
+use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
+use ProfessionalWiki\NeoWiki\Infrastructure\ProductionGuidGenerator;
+use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\GetSchemaNamesApi;
 use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\PatchSubjectApi;
-use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
-use ProfessionalWiki\NeoWiki\Infrastructure\ProductionGuidGenerator;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\MediaWiki\Infrastructure\AuthorityBasedSubjectActionAuthorizer;
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\PageContentSaver;
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\SubjectUpdaterFactory;
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\FactBox;
 use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\RestGetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\TwigEnvironmentFactory;
 use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\TwigTemplateRenderer;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use Wikimedia\Rdbms\IDatabase;
 
@@ -60,12 +67,24 @@ class NeoWikiExtension {
 
 	private ValueFormatRegistry $formatRegistry;
 	private SubjectRepository $subjectRepository;
+	private Neo4jQueryStore $queryStore;
+	private ClientInterface $neo4jClient;
+	private ClientInterface $readOnlyNeo4jClient;
 
 	public static function getInstance(): self {
-		/** @var ?NeoWikiExtension $instance */
+		/** @var ?self $instance */
 		static $instance = null;
-		$instance ??= new self();
+
+		$instance ??= new self(
+			( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( MediaWikiServices::getInstance()->getMainConfig() )
+		);
+
 		return $instance;
+	}
+
+	private function __construct(
+		public readonly NeoWikiConfig $config
+	) {
 	}
 
 	public function getFormatRegistry(): ValueFormatRegistry {
@@ -97,8 +116,55 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function getQueryStore(): QueryStore {
+		if ( !isset( $this->queryStore ) ) {
+			$this->queryStore = $this->newNeo4jQueryStore( $this->getSchemaLookup() );
+		}
+
+		return $this->queryStore;
+	}
+
+	public function newNeo4jQueryStore( SchemaLookup $schemaLookup ): Neo4jQueryStore {
+		return new Neo4jQueryStore(
+			client: $this->getNeo4jClient(),
+			readOnlyClient: $this->getReadOnlyNeo4jClient(),
+			subjectUpdaterFactory: new SubjectUpdaterFactory(
+				schemaLookup: $schemaLookup, // Note: this is a hack, we should have a proper test environment
+				valueFormatLookup: $this->getValueFormatLookup(),
+				logger: LoggerFactory::getInstance( 'NeoWiki' )
+			),
+		);
+	}
+
+	public function getNeo4jClient(): ClientInterface {
+		if ( !isset( $this->neo4jClient ) ) {
+			$this->neo4jClient = ClientBuilder::create()
+				->withDriver( 'default', $this->config->neo4jInternalWriteUrl )
+				->withDefaultDriver( 'default' )
+				->build();
+		}
+
+		return $this->neo4jClient;
+	}
+
+	public function getReadOnlyNeo4jClient(): ClientInterface {
+		if ( !isset( $this->readOnlyNeo4jClient ) ) {
+			$this->readOnlyNeo4jClient = ClientBuilder::create()
+				->withDriver( 'default', $this->config->neo4jInternalReadUrl )
+				->withDefaultDriver( 'default' )
+				->build();
+		}
+
+		return $this->readOnlyNeo4jClient;
+	}
+
+	public function getWriteQueryEngine(): WriteQueryEngine {
+		$this->getQueryStore();
+		return $this->queryStore;
+	}
+
 	public function isDevelopmentUIEnabled(): bool {
-		return true; // FIXME
+		return $this->config->enableDevelopmentUIs;
 	}
 
 	public function getPageContentFetcher(): PageContentFetcher {

@@ -23,7 +23,6 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 
 	protected function setUpNeo4j(): void {
-		self::markTestSkipped();
 		try {
 			$client = NeoWikiExtension::getInstance()->getNeo4jClient();
 			$client->run( 'MATCH (n) DETACH DELETE n' );

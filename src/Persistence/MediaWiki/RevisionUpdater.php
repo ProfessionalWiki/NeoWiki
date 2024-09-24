@@ -2,12 +2,12 @@
 
 namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki;
 
+use CommentStoreComment;
+use Content;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RenderedRevision;
-use User;
-use Content;
-use CommentStoreComment;
 use MWTimestamp;
+use User;
 
 class RevisionUpdater {
 

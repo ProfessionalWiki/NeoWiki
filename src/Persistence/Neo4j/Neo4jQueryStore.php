@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Persistence\Neo4j;
+namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j;
 
 use DateTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
@@ -15,12 +15,12 @@ use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-class Neo4jQueryStore implements QueryStore, QueryEngine, WriteQueryEngine {
+readonly class Neo4jQueryStore implements QueryStore, QueryEngine, WriteQueryEngine {
 
 	public function __construct(
-		private readonly ClientInterface $client,
-		private readonly ClientInterface $readOnlyClient,
-		private readonly SubjectUpdaterFactory $subjectUpdaterFactory,
+		private ClientInterface $client,
+		private ClientInterface $readOnlyClient,
+		private SubjectUpdaterFactory $subjectUpdaterFactory,
 	) {
 	}
 
