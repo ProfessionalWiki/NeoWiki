@@ -24,6 +24,10 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
 		} as TextProperty;
 	}
 
+	public getInfoboxValueComponentName(): string {
+		return 'TextValue';
+	}
+
 }
 
 export function newTextProperty( name = 'MyTextProperty', multiple = false, format = TextFormat.formatName ): TextProperty {
