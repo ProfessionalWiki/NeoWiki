@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect, vi } from 'vitest';
-import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
+import AutomaticInfobox from '@/components/AutomaticInfobox/AutomaticInfobox.vue';
 import { Subject } from '@neo/domain/Subject';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { StatementList } from '@neo/domain/StatementList';
@@ -11,6 +11,7 @@ import { NumberFormat } from '@neo/domain/valueFormats/Number';
 import { UrlFormat } from '@neo/domain/valueFormats/Url';
 import { newStringValue, newNumberValue } from '@neo/domain/Value';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
+import { Neo } from '@neo/Neo';
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 	text: () => key
@@ -38,7 +39,8 @@ describe( 'AutomaticInfobox', () => {
 	it( 'renders the title correctly', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
-				subject: mockSubject
+				subject: mockSubject,
+				valueFormatRegistry: Neo.getInstance().getValueFormatRegistry() // TODO: test instance
 			},
 			global: {
 				mocks: {
@@ -53,7 +55,8 @@ describe( 'AutomaticInfobox', () => {
 	it( 'renders statements correctly', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
-				subject: mockSubject
+				subject: mockSubject,
+				valueFormatRegistry: Neo.getInstance().getValueFormatRegistry() // TODO: test instance
 			},
 			global: {
 				mocks: {
@@ -88,7 +91,8 @@ describe( 'AutomaticInfobox', () => {
 
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
-				subject: emptySubject
+				subject: emptySubject,
+				valueFormatRegistry: Neo.getInstance().getValueFormatRegistry() // TODO: test instance
 			},
 			global: {
 				mocks: {
