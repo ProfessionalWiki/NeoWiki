@@ -37,10 +37,6 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 		} as RelationProperty;
 	}
 
-	public getInfoboxValueComponentName(): string {
-		return 'RelationValue';
-	}
-
 }
 
 export function newRelationProperty( name: string, targetSchema?: string, multiple?: boolean ): RelationProperty {

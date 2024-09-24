@@ -30,10 +30,6 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
 		} as NumberProperty;
 	}
 
-	public getInfoboxValueComponentName(): string {
-		return 'NumberValue';
-	}
-
 }
 
 export function newNumberProperty( name = 'MyNumberProperty' ): NumberProperty {
