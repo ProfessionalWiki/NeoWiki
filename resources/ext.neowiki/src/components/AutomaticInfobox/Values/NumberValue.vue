@@ -1,17 +1,16 @@
 <template>
 	<div>
-		{{ ( statement.value as NumberValue ).number }}
+		{{ ( value as NumberValue ).number }}
 	</div>
 </template>
 
 <script setup lang="ts">
-import { NumberValue } from '@neo/domain/Value.ts';
+import { NumberValue, Value } from '@neo/domain/Value.ts';
 import { PropType } from 'vue';
-import { Statement } from '@neo/domain/Statement.ts';
 
 defineProps( {
-	statement: {
-		type: Object as PropType<Statement>,
+	value: {
+		type: Object as PropType<Value>,
 		required: true
 	}
 } );

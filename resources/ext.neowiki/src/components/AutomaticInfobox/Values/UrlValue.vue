@@ -9,16 +9,15 @@
 </template>
 
 <script setup lang="ts">
-import { StringValue } from '@neo/domain/Value.ts';
+import { StringValue, Value } from '@neo/domain/Value.ts';
 import { computed, PropType } from 'vue';
-import { Statement } from '@neo/domain/Statement.ts';
 
 const props = defineProps( {
-	statement: {
-		type: Object as PropType<Statement>,
+	value: {
+		type: Object as PropType<Value>,
 		required: true
 	}
 } );
 
-const urls = computed( () => ( props.statement.value as StringValue ).strings.filter( ( url ) => url.trim() !== '' ) );
+const urls = computed( () => ( props.value as StringValue ).strings.filter( ( url ) => url.trim() !== '' ) );
 </script>

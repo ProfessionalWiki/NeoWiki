@@ -15,7 +15,7 @@
 				<div class="infobox-statement-value">
 					<component
 						:is="valueFormatComponentRegistry.getComponent( statement.format ).getInfoboxValueComponent()"
-						:statement="statement"
+						:value="statement.value"
 					/>
 				</div>
 			</div>

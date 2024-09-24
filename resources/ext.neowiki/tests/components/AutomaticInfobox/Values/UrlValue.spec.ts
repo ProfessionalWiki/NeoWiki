@@ -1,21 +1,14 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect } from 'vitest';
 import UrlValue from '@/components/AutomaticInfobox/Values/UrlValue.vue';
-import { Statement } from '@neo/domain/Statement';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { UrlFormat } from '@neo/domain/valueFormats/Url';
 import { newStringValue } from '@neo/domain/Value';
 
 describe( 'UrlValue', () => {
 	it( 'renders a single URL correctly', () => {
-		const statement = new Statement(
-			new PropertyName( 'website' ),
-			UrlFormat.formatName,
-			newStringValue( 'https://example.com' )
-		);
-
 		const wrapper = mount( UrlValue, {
-			props: { statement }
+			props: {
+				value: newStringValue( 'https://example.com' )
+			}
 		} );
 
 		const link = wrapper.find( 'a' );
@@ -24,14 +17,11 @@ describe( 'UrlValue', () => {
 	} );
 
 	it( 'renders multiple URLs correctly', () => {
-		const statement = new Statement(
-			new PropertyName( 'socialMedia' ),
-			UrlFormat.formatName,
-			newStringValue( 'https://foo.com/example', 'https://bar.com/example' )
-		);
 
 		const wrapper = mount( UrlValue, {
-			props: { statement }
+			props: {
+				value: newStringValue( 'https://foo.com/example', 'https://bar.com/example' )
+			}
 		} );
 
 		const links = wrapper.findAll( 'a' );
@@ -43,28 +33,20 @@ describe( 'UrlValue', () => {
 	} );
 
 	it( 'renders nothing when a single empty URL is present', () => {
-		const statement = new Statement(
-			new PropertyName( 'website' ),
-			UrlFormat.formatName,
-			newStringValue( '' )
-		);
-
 		const wrapper = mount( UrlValue, {
-			props: { statement }
+			props: {
+				value: newStringValue( '' )
+			}
 		} );
 
 		expect( wrapper.find( 'a' ).exists() ).toBe( false );
 	} );
 
 	it( 'skips empty URLs when rendering multiple URLs', () => {
-		const statement = new Statement(
-			new PropertyName( 'socialMedia' ),
-			UrlFormat.formatName,
-			newStringValue( 'https://foo.com/example', '', 'https://bar.com/example', '  ' )
-		);
-
 		const wrapper = mount( UrlValue, {
-			props: { statement }
+			props: {
+				value: newStringValue( 'https://foo.com/example', '', 'https://bar.com/example', '  ' )
+			}
 		} );
 
 		const links = wrapper.findAll( 'a' );
@@ -74,14 +56,10 @@ describe( 'UrlValue', () => {
 	} );
 
 	it( 'renders nothing when all URLs are empty', () => {
-		const statement = new Statement(
-			new PropertyName( 'socialMedia' ),
-			UrlFormat.formatName,
-			newStringValue( '', '  ', '' )
-		);
-
 		const wrapper = mount( UrlValue, {
-			props: { statement }
+			props: {
+				value: newStringValue( '', '  ', '' )
+			}
 		} );
 
 		expect( wrapper.find( 'a' ).exists() ).toBe( false );
