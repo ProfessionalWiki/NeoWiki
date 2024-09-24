@@ -45,7 +45,7 @@ module.exports = {
 		'@stylistic/semi': [ 'error', 'always' ],
 		// Overrides.
 		'n/no-missing-import': 'off',
-		'max-len': [ 'warn', { code: 120 } ],
+		'max-len': 'off',
 		'vue/no-v-model-argument': 'off',
 		'es-x/no-optional-chaining': 'off',
 		'no-unused-vars': 'off',
