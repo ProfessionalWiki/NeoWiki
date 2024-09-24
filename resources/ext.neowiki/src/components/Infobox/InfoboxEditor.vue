@@ -9,13 +9,14 @@
 				$i18n( 'neowiki-infobox-editor-dialog-title-create', selectedType ).text() :
 				$i18n( 'neowiki-infobox-editor-dialog-title-create-blank' ).text() )"
 		class="infobox-editor">
-		<CdxField>
-			<CdxTextInput v-model="name" />
-
-			<template #label>
-				{{ $i18n( 'neowiki-infobox-editor-subject-label' ).text() }}
-			</template>
-		</CdxField>
+		<NeoTextField
+			v-model="name"
+			:required="true"
+			:min-length="3"
+			:max-length="50"
+			:label="$i18n( 'neowiki-infobox-editor-subject-label' ).text()"
+			@validation="handleValidation"
+		/>
 		<div
 			v-for="( statement, index ) in statements"
 			:key="index"
@@ -62,6 +63,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { CdxDialog, CdxTextInput, CdxButton, CdxField, CdxIcon } from '@wikimedia/codex';
+import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
 import { cdxIconAdd, cdxIconTrash, cdxIconArrowPrevious } from '@wikimedia/codex-icons';
 
 const props = defineProps<{
