@@ -30,5 +30,13 @@
 	"neowiki-infobox-editor-create-button": "Create",
 	"neowiki-infobox-editor-save-button": "Save",
 
-	"neowiki-infobox-edit-link": "Edit"
+	"neowiki-infobox-edit-link": "Edit",
+
+	"neowiki-field-required": "This field is required.",
+	"neowiki-field-min-length": "Minimum length is $1 characters.",
+	"neowiki-field-max-length": "Maximum length is $1 characters.",
+	"neowiki-field-invalid-number": "Please enter a valid number.",
+	"neowiki-field-min-value": "Minimum value is $1.",
+	"neowiki-field-max-value": "Maximum value is $1.",
+	"neowiki-field-invalid-url": "Please enter a valid URL."
 }
