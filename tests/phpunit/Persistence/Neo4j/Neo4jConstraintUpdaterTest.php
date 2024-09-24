@@ -2,21 +2,21 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
+namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\Persistence\Neo4j;
 
 use Laudis\Neo4j\Exception\Neo4jException;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jConstraintUpdater;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\Neo4jConstraintUpdater;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\MediaWiki\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
-use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jConstraintUpdater
+ * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\Neo4jConstraintUpdater
+ * @group Database
  */
 class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 

@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace Persistence\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\Persistence\MediaWiki;
 
 use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;

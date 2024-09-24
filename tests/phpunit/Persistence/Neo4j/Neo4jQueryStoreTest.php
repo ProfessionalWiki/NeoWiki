@@ -2,24 +2,25 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
+namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\Persistence\Neo4j;
 
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherMap;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\MediaWiki\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore
+ * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\Neo4jQueryStore
+ * @group Database
  */
 class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 

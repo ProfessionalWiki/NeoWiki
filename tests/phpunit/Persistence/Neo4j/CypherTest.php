@@ -2,14 +2,14 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
+namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\Persistence\Neo4j;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Cypher;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\Cypher;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Cypher
+ * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\Cypher
  */
 class CypherTest extends TestCase {
 

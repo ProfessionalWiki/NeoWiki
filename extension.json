@@ -35,6 +35,11 @@
 	"Hooks": {
 		"MediaWikiServices": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onMediaWikiServices",
 
+		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
+		"PageDeleteComplete": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onPageDeleteComplete",
+		"RevisionUndeleted": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onRevisionUndeleted",
+		"PageMoveComplete": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onPageMoveComplete",
+
 		"CodeEditorGetPageLanguage": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onCodeEditorGetPageLanguage",
 
 		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",

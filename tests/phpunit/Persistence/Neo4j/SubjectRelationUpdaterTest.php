@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
+namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\Persistence\Neo4j;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
@@ -10,14 +10,14 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectRelationUpdater;
+use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\SubjectRelationUpdater;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\MediaWiki\NeoWikiIntegrationTestCase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectRelationUpdater
+ * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\SubjectRelationUpdater
  * @group Database
  */
 class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
