@@ -11,7 +11,7 @@ import { NumberFormat } from '@neo/domain/valueFormats/Number';
 import { UrlFormat } from '@neo/domain/valueFormats/Url';
 import { newStringValue, newNumberValue } from '@neo/domain/Value';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
-import { Neo } from '@neo/Neo';
+import { NeoWikiExtension } from '@/NeoWikiExtension';
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 	text: () => key
@@ -40,7 +40,7 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: mockSubject,
-				valueFormatRegistry: Neo.getInstance().getValueFormatRegistry() // TODO: test instance
+				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry() // TODO: test instance
 			},
 			global: {
 				mocks: {
@@ -56,7 +56,7 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: mockSubject,
-				valueFormatRegistry: Neo.getInstance().getValueFormatRegistry() // TODO: test instance
+				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry() // TODO: test instance
 			},
 			global: {
 				mocks: {
@@ -92,7 +92,7 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: emptySubject,
-				valueFormatRegistry: Neo.getInstance().getValueFormatRegistry() // TODO: test instance
+				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry() // TODO: test instance
 			},
 			global: {
 				mocks: {

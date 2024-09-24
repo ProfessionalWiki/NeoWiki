@@ -14,7 +14,7 @@
 				</div>
 				<div class="infobox-statement-value">
 					<component
-						:is="getComponentName( statement.format )"
+						:is="valueFormatComponentRegistry.getComponent( statement.format ).getInfoboxValueComponent()"
 						:statement="statement"
 					/>
 				</div>
@@ -27,36 +27,18 @@
 import { PropType } from 'vue';
 import { Subject } from '@neo/domain/Subject';
 import { Statement } from '@neo/domain/Statement.ts';
-import NumberValue from '@/components/AutomaticInfobox/Values/NumberValue.vue';
-import TextValue from '@/components/AutomaticInfobox/Values/TextValue.vue';
-import UrlValue from '@/components/AutomaticInfobox/Values/UrlValue.vue';
-import RelationValue from '@/components/AutomaticInfobox/Values/RelationValue.vue';
-import { Component } from 'vue';
-import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
+import { ValueFormatComponentRegistry } from '@/presentation/ValueFormatComponentRegistry.ts';
 
-const props = defineProps( {
+defineProps( {
 	subject: {
 		type: Object as PropType<Subject>,
 		required: true
 	},
-	valueFormatRegistry: {
-		type: Object as PropType<ValueFormatRegistry>,
+	valueFormatComponentRegistry: {
+		type: Object as PropType<ValueFormatComponentRegistry>,
 		required: true
 	}
 } );
-
-const valueComponents = {
-	NumberValue,
-	TextValue,
-	UrlValue,
-	RelationValue
-};
-
-const getComponentName = ( format: string ): Component|null => {
-	const componentName = props.valueFormatRegistry.getFormat( format ).getInfoboxValueComponentName() as keyof typeof valueComponents;
-	// TODO: handle unknown value format?
-	return valueComponents[ componentName ] || null;
-};
 </script>
 
 <style scoped lang="scss">

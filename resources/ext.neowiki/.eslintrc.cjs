@@ -50,6 +50,7 @@ module.exports = {
 		'es-x/no-optional-chaining': 'off',
 		'no-unused-vars': 'off',
 		'@typescript-eslint/no-unused-vars': 'off',
-		'es-x/no-array-prototype-includes': 'off'
+		'es-x/no-array-prototype-includes': 'off',
+		'no-use-before-define': 'off'
 	}
 };
