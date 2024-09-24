@@ -81,6 +81,6 @@ watch( validationMessages, ( newMessages ) => {
 } );
 
 watch( () => props.modelValue, ( newValue ) => {
-	inputValue.value = newValue?.toString() ?? '';
+	inputValue.value = newValue !== null && newValue !== undefined ? newValue.toString() : '';
 } );
 </script>
