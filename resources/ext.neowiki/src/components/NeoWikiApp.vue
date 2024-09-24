@@ -8,7 +8,7 @@
 		<AutomaticInfobox
 			v-if="getSubject( el.getAttribute( 'data-subject-id' ) )"
 			:subject="getSubject( el.getAttribute( 'data-subject-id' ) )!"
-			:value-format-registry="Neo.getInstance().getValueFormatRegistry()"
+			:value-format-component-registry="NeoWikiExtension.getInstance().getValueFormatComponentRegistry()"
 		/>
 	</teleport>
 
@@ -24,7 +24,7 @@ import { SubjectId } from '@neo/domain/SubjectId';
 import { Subject } from '@neo/domain/Subject';
 import AutomaticInfobox from '@/components/AutomaticInfobox/AutomaticInfobox.vue';
 import CreateSubjectButton from '@/components/CreateSubject/CreateSubjectButton.vue';
-import { Neo } from '@neo/Neo';
+import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
 const infoboxElements = ref<Element[]>( [] );
 const subjectStore = useSubjectStore();
