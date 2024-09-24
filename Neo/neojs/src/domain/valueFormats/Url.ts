@@ -27,6 +27,10 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue> {
 		} as UrlProperty;
 	}
 
+	public getInfoboxValueComponentName(): string {
+		return 'UrlValue';
+	}
+
 }
 
 export class UrlFormatter {
