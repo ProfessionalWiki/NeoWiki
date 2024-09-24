@@ -12,12 +12,25 @@ import { UrlFormat } from '@neo/domain/valueFormats/Url';
 import { newStringValue, newNumberValue } from '@neo/domain/Value';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
+import { Schema } from '@neo/domain/Schema';
+import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
+import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition';
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 	text: () => key
 } ) );
 
 describe( 'AutomaticInfobox', () => {
+	const mockSchema = new Schema(
+		'TestSchema',
+		'A test schema',
+		new PropertyDefinitionList( [
+			createPropertyDefinitionFromJson( 'name', { type: 'string', format: TextFormat.formatName } ),
+			createPropertyDefinitionFromJson( 'age', { type: 'number', format: NumberFormat.formatName } ),
+			createPropertyDefinitionFromJson( 'website', { type: 'string', format: UrlFormat.formatName } )
+		] )
+	);
+
 	const mockSubject = new Subject(
 		new SubjectId( '00000000-0000-0000-0000-000000000001' ),
 		'Test Subject',
@@ -40,7 +53,8 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: mockSubject,
-				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry() // TODO: test instance
+				schema: mockSchema,
+				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry()
 			},
 			global: {
 				mocks: {
@@ -56,7 +70,8 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: mockSubject,
-				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry() // TODO: test instance
+				schema: mockSchema,
+				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry()
 			},
 			global: {
 				mocks: {
@@ -66,16 +81,19 @@ describe( 'AutomaticInfobox', () => {
 		} );
 
 		const statementElements = wrapper.findAll( '.infobox-statement' );
-		expect( statementElements ).toHaveLength( 3 );
+		expect( statementElements ).toHaveLength( 4 ); // 3 properties + 1 for schema type
 
-		expect( statementElements[ 0 ].find( '.infobox-statement-property' ).text() ).toBe( 'name' );
-		expect( statementElements[ 0 ].find( '.infobox-statement-value' ).text() ).toBe( 'John Doe, Jane Doe' );
+		expect( statementElements[ 0 ].find( '.infobox-statement-property' ).text() ).toBe( 'neowiki-infobox-type' );
+		expect( statementElements[ 0 ].find( '.infobox-statement-value' ).text() ).toBe( 'TestSchema' );
 
-		expect( statementElements[ 1 ].find( '.infobox-statement-property' ).text() ).toBe( 'age' );
-		expect( statementElements[ 1 ].find( '.infobox-statement-value' ).text() ).toBe( '30' );
+		expect( statementElements[ 1 ].find( '.infobox-statement-property' ).text() ).toBe( 'name' );
+		expect( statementElements[ 1 ].find( '.infobox-statement-value' ).text() ).toBe( 'John Doe, Jane Doe' );
 
-		expect( statementElements[ 2 ].find( '.infobox-statement-property' ).text() ).toBe( 'website' );
-		const linkElement = statementElements[ 2 ].find( '.infobox-statement-value a' );
+		expect( statementElements[ 2 ].find( '.infobox-statement-property' ).text() ).toBe( 'age' );
+		expect( statementElements[ 2 ].find( '.infobox-statement-value' ).text() ).toBe( '30' );
+
+		expect( statementElements[ 3 ].find( '.infobox-statement-property' ).text() ).toBe( 'website' );
+		const linkElement = statementElements[ 3 ].find( '.infobox-statement-value a' );
 		expect( linkElement.attributes( 'href' ) ).toBe( 'https://example.com' );
 		expect( linkElement.text() ).toBe( 'https://example.com' );
 	} );
@@ -92,7 +110,8 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: emptySubject,
-				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry() // TODO: test instance
+				schema: mockSchema,
+				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry()
 			},
 			global: {
 				mocks: {
@@ -101,6 +120,9 @@ describe( 'AutomaticInfobox', () => {
 			}
 		} );
 
-		expect( wrapper.findAll( '.infobox-statement' ) ).toHaveLength( 0 );
+		const statementElements = wrapper.findAll( '.infobox-statement' );
+		expect( statementElements ).toHaveLength( 1 ); // Only the schema type statement
+		expect( statementElements[ 0 ].find( '.infobox-statement-property' ).text() ).toBe( 'neowiki-infobox-type' );
+		expect( statementElements[ 0 ].find( '.infobox-statement-value' ).text() ).toBe( 'TestSchema' );
 	} );
 } );

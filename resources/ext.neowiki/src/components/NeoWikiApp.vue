@@ -8,6 +8,7 @@
 		<AutomaticInfobox
 			v-if="getSubject( el.getAttribute( 'data-subject-id' ) )"
 			:subject="getSubject( el.getAttribute( 'data-subject-id' ) )!"
+			:schema="getSchema( getSubject( el.getAttribute( 'data-subject-id' ) )!.getSchemaName() )"
 			:value-format-component-registry="NeoWikiExtension.getInstance().getValueFormatComponentRegistry()"
 		/>
 	</teleport>
@@ -25,9 +26,12 @@ import { Subject } from '@neo/domain/Subject';
 import AutomaticInfobox from '@/components/AutomaticInfobox/AutomaticInfobox.vue';
 import CreateSubjectButton from '@/components/CreateSubject/CreateSubjectButton.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { Schema } from '@neo/domain/Schema.ts';
 
 const infoboxElements = ref<Element[]>( [] );
 const subjectStore = useSubjectStore();
+const schemaStore = useSchemaStore();
 
 onMounted( () => {
 	infoboxElements.value = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
@@ -39,5 +43,9 @@ function getSubject( subjectId: string | null ): Subject | null {
 	}
 
 	return subjectStore.getSubject( new SubjectId( subjectId ) );
+}
+
+function getSchema( schemaName: string ): Schema {
+	return schemaStore.getSchema( schemaName );
 }
 </script>

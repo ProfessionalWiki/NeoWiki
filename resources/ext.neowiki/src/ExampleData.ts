@@ -71,6 +71,3 @@ export function createExampleSubjects(): Map<string, Subject> {
 		];
 	} ) );
 }
-
-console.log( 'Schemas', createExampleSchemas() );
-console.log( 'Subjects', createExampleSubjects() );
