@@ -4,34 +4,50 @@
 			{{ subject.getLabel() }}
 		</div>
 		<div class="infobox-statements">
+			<div class="infobox-statement">
+				<div class="infobox-statement-property">
+					{{ $i18n( 'neowiki-infobox-type' ).text() }}
+				</div>
+				<div class="infobox-statement-value">
+					{{ schema.getName() }}
+				</div>
+			</div>
 			<div
-				v-for="statement in subject.getStatements() as Iterable<Statement>"
-				:key="statement.propertyName.toString()"
+				v-for="( propertyDefinition, propertyName ) in propertiesToDisplay"
+				:key="propertyName"
 				class="infobox-statement"
 			>
 				<div class="infobox-statement-property">
-					{{ statement.propertyName.toString() }}
+					{{ propertyName }}
 				</div>
 				<div class="infobox-statement-value">
 					<component
-						:is="valueFormatComponentRegistry.getComponent( statement.format ).getInfoboxValueComponent()"
-						:value="statement.value"
+						:is="getComponent( propertyDefinition.format )"
+						:value="subject.getStatementValue( propertyDefinition.name )"
+						:property="propertyDefinition"
 					/>
 				</div>
 			</div>
+			<!-- TODO: statements not in schema -->
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { PropType } from 'vue';
+import { computed, PropType } from 'vue';
 import { Subject } from '@neo/domain/Subject';
-import { Statement } from '@neo/domain/Statement.ts';
-import { ValueFormatComponentRegistry } from '@/presentation/ValueFormatComponentRegistry.ts';
+import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
+import { ValueFormatComponentRegistry } from '@/presentation/ValueFormatComponentRegistry';
+import { Schema } from '@neo/domain/Schema';
+import { Component } from 'vue';
 
-defineProps( {
+const props = defineProps( {
 	subject: {
 		type: Object as PropType<Subject>,
+		required: true
+	},
+	schema: {
+		type: Object as PropType<Schema>,
 		required: true
 	},
 	valueFormatComponentRegistry: {
@@ -39,6 +55,12 @@ defineProps( {
 		required: true
 	}
 } );
+
+const getComponent = ( formatName: string ): Component => props.valueFormatComponentRegistry.getComponent( formatName ).getInfoboxValueComponent();
+
+const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => props.schema.getPropertyDefinitions()
+	.withNames( props.subject.getNamesOfNonEmptyProperties() )
+	.asRecord() );
 </script>
 
 <style scoped lang="scss">
