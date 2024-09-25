@@ -36,14 +36,24 @@ class NeoWikiHooks {
 		$out->addModuleStyles( 'ext.neowiki.styles' );
 		$out->addHtml( '<div id="neowiki"></div>' );
 
-		$out->setIndicators( [
-			'neowiki-create-button' => '',
-		] );
+		self::addCreateSubjectButton( $out );
 
 		// TODO: remove examples
 		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="12345678-0000-0000-0000-000000000001"></div>' );
 		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="12345678-0000-0000-0000-000000000004"></div>' );
 		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="12345678-0000-0000-0000-000000000005"></div>' );
+	}
+
+	private static function addCreateSubjectButton( OutputPage $out ): void {
+		if ( !NeoWikiExtension::getInstance()->newSubjectAuthorizer( $out->getAuthority() )->canCreateMainSubject() ) {
+			return;
+		}
+
+		// TODO: Check if page has a main subject.
+
+		$out->setIndicators( [
+			'neowiki-create-button' => '',
+		] );
 	}
 
 	public static function onMediaWikiServices( MediaWikiServices $services ): void {
