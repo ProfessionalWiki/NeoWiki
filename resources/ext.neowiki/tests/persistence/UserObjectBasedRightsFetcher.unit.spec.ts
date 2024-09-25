@@ -22,7 +22,7 @@ describe( 'User Rights', () => {
 	} );
 
 	it( 'can update current user rights', async () => {
-		const testRights = [ 'foo', 'edit', 'bar', 'writeapi', 'baz' ];
+		const testRights = [ 'foo', 'edit', 'bar', 'baz' ];
 		const userRightsFetcher = new TestUserObjectBasedRightsFetcher( testRights );
 
 		await userRightsFetcher.refreshRights();
