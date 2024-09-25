@@ -51,6 +51,7 @@ module.exports = {
 		'no-unused-vars': 'off',
 		'@typescript-eslint/no-unused-vars': 'off',
 		'es-x/no-array-prototype-includes': 'off',
-		'no-use-before-define': 'off'
+		'no-use-before-define': 'off',
+		'es-x/no-async-functions': 'off'
 	}
 };

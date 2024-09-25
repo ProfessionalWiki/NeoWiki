@@ -125,4 +125,42 @@ describe( 'AutomaticInfobox', () => {
 		expect( statementElements[ 0 ].find( '.infobox-statement-property' ).text() ).toBe( 'neowiki-infobox-type' );
 		expect( statementElements[ 0 ].find( '.infobox-statement-value' ).text() ).toBe( 'TestSchema' );
 	} );
+
+	it( 'does not render edit button when canEdit is false', () => {
+		const wrapper = mount( AutomaticInfobox, {
+			props: {
+				subject: mockSubject,
+				schema: mockSchema,
+				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry(),
+				canEdit: false
+			},
+			global: {
+				mocks: {
+					$i18n
+				}
+			}
+		} );
+
+		expect( wrapper.find( '.cdx-button' ).exists() ).toBe( false );
+	} );
+
+	it( 'renders edit button when canEdit is true', () => {
+		const wrapper = mount( AutomaticInfobox, {
+			props: {
+				subject: mockSubject,
+				schema: mockSchema,
+				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry(),
+				canEdit: true
+			},
+			global: {
+				mocks: {
+					$i18n
+				}
+			}
+		} );
+
+		const editButton = wrapper.find( '.cdx-button' );
+		expect( editButton.exists() ).toBe( true );
+		expect( editButton.text() ).toBe( 'neowiki-infobox-edit-link' );
+	} );
 } );

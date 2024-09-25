@@ -9,3 +9,9 @@ declare module '@vue/runtime-core' {
 		$i18n: ( ...args: Parameters<typeof window.mw.message> ) => mw.Message;
 	}
 }
+
+declare global {
+	interface Window {
+		mw: typeof mw;
+	}
+}
