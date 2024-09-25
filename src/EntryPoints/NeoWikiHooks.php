@@ -54,11 +54,19 @@ class NeoWikiHooks {
 			return;
 		}
 
-		// TODO: Check if page has a main subject.
+		if ( self::pageHasSubjects( $out->getTitle() ) ) {
+			return;
+		}
 
 		$out->setIndicators( [
 			'neowiki-create-button' => '',
 		] );
+	}
+
+	private static function pageHasSubjects( Title $title ): bool {
+		return NeoWikiExtension::getInstance()->newSubjectContentRepository()
+			->getSubjectContentByPageTitle( $title )
+			?->hasSubjects() === true;
 	}
 
 	public static function onMediaWikiServices( MediaWikiServices $services ): void {
