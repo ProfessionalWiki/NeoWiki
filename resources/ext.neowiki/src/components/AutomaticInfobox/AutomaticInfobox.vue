@@ -30,6 +30,10 @@
 			</div>
 			<!-- TODO: statements not in schema -->
 		</div>
+
+		<CdxButton v-if="canEdit">
+			{{ $i18n( 'neowiki-infobox-edit-link' ).text() }}
+		</CdxButton>
 	</div>
 </template>
 
@@ -40,6 +44,7 @@ import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
 import { ValueFormatComponentRegistry } from '@/presentation/ValueFormatComponentRegistry';
 import { Schema } from '@neo/domain/Schema';
 import { Component } from 'vue';
+import { CdxButton } from '@wikimedia/codex';
 
 const props = defineProps( {
 	subject: {
@@ -53,6 +58,11 @@ const props = defineProps( {
 	valueFormatComponentRegistry: {
 		type: Object as PropType<ValueFormatComponentRegistry>,
 		required: true
+	},
+	canEdit: {
+		type: Boolean,
+		required: false,
+		default: false
 	}
 } );
 
