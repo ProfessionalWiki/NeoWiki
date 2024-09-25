@@ -1,16 +1,16 @@
 <template>
 	<div>
-		TODO: {{ ( value as RelationValue ).targetIds.join( ', ' ) }}
+		TODO: {{ value.targetIds.join( ', ' ) }}
 	</div>
 </template>
 
 <script setup lang="ts">
 import { PropType } from 'vue';
-import { RelationValue, Value } from '@neo/domain/Value.ts';
+import { RelationValue } from '@neo/domain/Value.ts';
 
 defineProps( {
 	value: {
-		type: Object as PropType<Value>,
+		type: Object as PropType<RelationValue>,
 		required: true
 	}
 } );
