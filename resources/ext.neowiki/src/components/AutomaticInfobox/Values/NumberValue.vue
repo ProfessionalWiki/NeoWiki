@@ -1,16 +1,16 @@
 <template>
 	<div>
-		{{ ( value as NumberValue ).number }}
+		{{ value.number }}
 	</div>
 </template>
 
 <script setup lang="ts">
-import { NumberValue, Value } from '@neo/domain/Value.ts';
+import { NumberValue } from '@neo/domain/Value.ts';
 import { PropType } from 'vue';
 
 defineProps( {
 	value: {
-		type: Object as PropType<Value>,
+		type: Object as PropType<NumberValue>,
 		required: true
 	}
 } );
