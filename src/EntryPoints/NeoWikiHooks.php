@@ -28,7 +28,7 @@ use WikiPage;
 class NeoWikiHooks {
 
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
-		if ( !$out->isArticle() ) {
+		if ( !self::isContentPage( $out ) ) {
 			return;
 		}
 
@@ -36,14 +36,37 @@ class NeoWikiHooks {
 		$out->addModuleStyles( 'ext.neowiki.styles' );
 		$out->addHtml( '<div id="neowiki"></div>' );
 
-		$out->setIndicators( [
-			'neowiki-create-button' => '',
-		] );
+		self::addCreateSubjectButton( $out );
 
 		// TODO: remove examples
 		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="12345678-0000-0000-0000-000000000001"></div>' );
 		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="12345678-0000-0000-0000-000000000004"></div>' );
 		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="12345678-0000-0000-0000-000000000005"></div>' );
+	}
+
+	private static function isContentPage( OutputPage $out ): bool {
+		return $out->isArticle()
+			&& MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $out->getTitle()->getNamespace() );
+	}
+
+	private static function addCreateSubjectButton( OutputPage $out ): void {
+		if ( !NeoWikiExtension::getInstance()->newSubjectAuthorizer( $out->getAuthority() )->canCreateMainSubject() ) {
+			return;
+		}
+
+		if ( self::pageHasSubjects( $out->getTitle() ) ) {
+			return;
+		}
+
+		$out->setIndicators( [
+			'neowiki-create-button' => '',
+		] );
+	}
+
+	private static function pageHasSubjects( Title $title ): bool {
+		return NeoWikiExtension::getInstance()->newSubjectContentRepository()
+			->getSubjectContentByPageTitle( $title )
+			?->hasSubjects() === true;
 	}
 
 	public static function onMediaWikiServices( MediaWikiServices $services ): void {

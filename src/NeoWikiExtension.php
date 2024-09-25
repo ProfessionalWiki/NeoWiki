@@ -255,7 +255,7 @@ class NeoWikiExtension {
 		);
 	}
 
-	private function newSubjectAuthorizer( Authority $authority ): SubjectAuthorizer {
+	public function newSubjectAuthorizer( Authority $authority ): SubjectAuthorizer {
 		return new AuthorityBasedSubjectActionAuthorizer(
 			authority: $authority
 		);
