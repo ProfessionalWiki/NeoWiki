@@ -84,6 +84,13 @@
 		"NeoJson": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson"
 	},
 
+	"config": {
+		"NeoWikiEnableDevelopmentUI": {
+			"description": "Whether development UIs should be enabled",
+			"value": false
+		}
+	},
+
 	"ExtensionMessagesFiles": {
 		"NeoWikiAliases": "i18n/_Aliases.php",
 		"NeoWikiNamespaces": "i18n/_Namespaces.php"
