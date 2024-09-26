@@ -1,10 +1,12 @@
+@import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+
 .neo-cdx-field-inline {
 	display: grid;
 	grid-template-columns: auto 1fr;
-	grid-column-gap: 10px;
+	grid-column-gap: $spacing-75;
 
 	.cdx-label {
-		width: 150px;
+		width: $size-1600;
 	}
 
 	.cdx-field__control {
@@ -17,7 +19,7 @@
 	}
 
 	.cdx-label__description {
-		margin-top: 3px;
+		margin-top: $spacing-25;
 	}
 
 	.cdx-field__help-text {
@@ -28,10 +30,105 @@
 	}
 
 	:has( .cdx-label__description:empty ) .cdx-field__control {
-		margin-bottom: 5px;
+		margin-bottom: $spacing-35;
 	}
 
 	:has( .cdx-field__help-text:empty ) {
 		grid-template-rows: auto auto;
+	}
+}
+
+// Styling for number inputs
+input[type='number'] {
+	-moz-appearance: textfield;
+
+	&::-webkit-inner-spin-button,
+	&::-webkit-outer-spin-button {
+		opacity: $opacity-base;
+		background: $background-color-interactive-subtle;
+		border-left: $border-width-base solid $border-color-base;
+		color: $color-base;
+		width: $size-icon-medium;
+		cursor: $cursor-base--hover;
+		transition: all $transition-duration-base $transition-timing-function-system;
+
+		&:hover {
+			background: $background-color-interactive;
+		}
+	}
+}
+
+.cdx-field {
+	&__validation-message {
+		svg {
+			height: $size-icon-small !important;
+			width: $size-icon-small !important;
+		}
+	}
+}
+
+.cdx-message__content {
+	font-size: $font-size-x-small !important;
+	margin-left: $spacing-25 !important;
+
+	.cdx-icon {
+		svg {
+			height: $size-icon-small !important;
+			width: $size-icon-small !important;
+		}
+	}
+}
+
+// Improve accessibility
+@media (prefers-reduced-motion: reduce) {
+	.neo-cdx-field-inline *,
+	input[ type='number' ]::-webkit-inner-spin-button,
+	input[ type='number' ]::-webkit-outer-spin-button {
+		transition: none !important;
+	}
+}
+
+input {
+	border: $border-width-base solid rgba( $border-color-disabled, 0.55 ) !important;
+}
+
+.neo-float-right {
+	float: right;
+}
+
+@keyframes success-pulse {
+	0% {
+		transform: scale( 1 );
+	}
+
+	50% {
+		transform: scale( 1.01 );
+	}
+
+	100% {
+		transform: scale( 1 );
+	}
+}
+
+.cdx-text-input {
+	&__end-icon {
+		svg {
+			color: $color-success !important;
+		}
+	}
+}
+
+.cdx-checkbox {
+	cursor: pointer !important;
+	padding: 5px;
+
+	small {
+		cursor: pointer !important;
+		font-size: 12px !important;
+	}
+
+	small:hover {
+		color: $color-notice !important;
+		font-size: 12.2px !important;
 	}
 }

@@ -7,7 +7,8 @@
 			"statements": {
 				"Founded at": {
 					"format": "number",
-					"value": 2005
+					"value": 2005,
+					"required": true
 				},
 				"Websites": {
 					"format": "url",

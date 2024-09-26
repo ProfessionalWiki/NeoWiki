@@ -1,47 +1,41 @@
 <template>
 	<CdxDialog
 		v-model:open="isOpen"
-		:title="isEditMode ?
-			( selectedType ?
-				$i18n( 'neowiki-infobox-editor-dialog-title-edit', selectedType ).text() :
-				$i18n( 'neowiki-infobox-editor-dialog-title-edit-blank' ).text() ) :
-			( selectedType ?
-				$i18n( 'neowiki-infobox-editor-dialog-title-create', selectedType ).text() :
-				$i18n( 'neowiki-infobox-editor-dialog-title-create-blank' ).text() )"
+		title="manage Infobox"
 		class="infobox-editor">
 		<NeoTextField
-			v-model="name"
+			v-model="localSubject.label"
 			:required="true"
-			:min-length="3"
-			:max-length="50"
 			:label="$i18n( 'neowiki-infobox-editor-subject-label' ).text()"
 			@validation="handleValidation"
 		/>
-		<div
+		<NeoTextField
+			v-model="localSubject.schemaName"
+			:required="true"
+			:min-length="3"
+			:max-length="50"
+			:label="$i18n( 'neowiki-create-subject-dialog-schema' ).text()"
+			disabled
+		/>
+		<div class="add-statement-section">
+			<div class="add-statement-placeholder" @click="toggleDropdown">
+				<CdxIcon :icon="cdxIconAdd" class="add-icon" />
+				<span>{{ $i18n( 'neowiki-infobox-editor-add-property' ).text() }}</span>
+			</div>
+			<NeoTypeSelectDropdown
+				v-if="isDropdownOpen"
+				:types="statementTypes"
+				@select="addStatement"
+			/>
+		</div>
+		<StatementEditor
 			v-for="( statement, index ) in statements"
 			:key="index"
-			class="statement-editor">
-			<CdxField>
-				<CdxTextInput v-model="statement.property" />
-				<template #label>
-					{{ $i18n( 'neowiki-infobox-editor-property-label' ).text() }}
-				</template>
-			</CdxField>
-			<CdxField>
-				<CdxTextInput v-model="statement.value" />
-				<template #label>
-					{{ $i18n( 'neowiki-infobox-editor-value-label' ).text() }}
-				</template>
-			</CdxField>
-			<CdxButton action="destructive" @click="removeStatement( index )">
-				<CdxIcon :icon="cdxIconTrash" />
-				{{ $i18n( 'neowiki-infobox-editor-remove-statement' ).text() }}
-			</CdxButton>
-		</div>
-		<CdxButton @click="addStatement">
-			<CdxIcon :icon="cdxIconAdd" />
-			{{ $i18n( 'neowiki-infobox-editor-add-statement' ).text() }}
-		</CdxButton>
+			class="statement-editor-row"
+			:statement="statement"
+			@update="updateStatement( index, $event )"
+			@remove="removeStatement( index )"
+		/>
 		<template #footer>
 			<CdxButton
 				:aria-label="$i18n( 'neowiki-create-subject-dialog-go-back' ).text()"
@@ -62,29 +56,70 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { CdxDialog, CdxTextInput, CdxButton, CdxField, CdxIcon } from '@wikimedia/codex';
+import { CdxDialog, CdxButton, CdxIcon } from '@wikimedia/codex';
+import { cdxIconAdd, cdxIconArrowPrevious, cdxIconLink } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
-import { cdxIconAdd, cdxIconTrash, cdxIconArrowPrevious } from '@wikimedia/codex-icons';
+import StatementEditor from '@/components/UIComponents/StatementEditor.vue';
+import { Subject } from '@neo/domain/Subject.ts';
+import type { SubjectId } from '@neo/domain/SubjectId';
+import type { SchemaName } from '@neo/domain/Schema';
+import { StatementList } from '@neo/domain/StatementList.ts';
+import { Statement } from '@neo/domain/Statement';
+import NeoTypeSelectDropdown from '@/components/UIComponents/NeoTypeSelectDropdown.vue';
+import { cdxIconTextA, cdxIconStringInteger } from '@/assets/CustomIcons';
 
 const props = defineProps<{
-	selectedType: string;
-	initialStatements?: { property: string; value: string }[];
+	selectedSchemaType?: string;
+	subject?: Subject;
 	isEditMode: boolean;
 }>();
 
-const emit = defineEmits( [ 'complete', 'back' ] );
+const emit = defineEmits( [ 'complete', 'back', 'addStatement' ] );
 const isOpen = ref( false );
-const name = ref( '' );
-const statements = ref<{ property: string; value: string }[]>( [] );
+const localSubject = ref<Subject | null>( null );
+const statements = ref<Statement[]>( [] );
 
 const openDialog = (): void => {
 	isOpen.value = true;
-	name.value = props.selectedType || '';
-	statements.value = props.initialStatements ? [ ...props.initialStatements ] : [];
+	if ( props.subject ) {
+		localSubject.value = new Subject(
+			props.subject.getId(),
+			props.subject.getLabel(),
+			props.subject.getSchemaName(),
+			props.subject.getStatements(),
+			props.subject.getPageIdentifiers()
+		);
+		statements.value = [ ...props.subject.getStatements() ];
+	} else {
+		localSubject.value = new Subject(
+			'' as SubjectId, // Temporary ID
+			'',
+			props.selectedSchemaType as SchemaName,
+			new StatementList( [] ),
+			{}
+		);
+		statements.value = [];
+	}
 };
 
-const addStatement = (): void => {
-	statements.value.push( { property: '', value: '' } );
+const isDropdownOpen = ref( false );
+
+const statementTypes = [
+	{ value: 'text', label: 'Text', icon: cdxIconTextA },
+	{ value: 'url', label: 'URL', icon: cdxIconLink },
+	{ value: 'number', label: 'Number', icon: cdxIconStringInteger }
+];
+
+const toggleDropdown = (): void => {
+	isDropdownOpen.value = !isDropdownOpen.value;
+};
+
+const addStatement = ( type: string ): void => {
+	emit( 'addStatement', type );
+};
+
+const updateStatement = ( index: number, updatedStatement: Statement ): void => {
+	statements.value[ index ] = updatedStatement;
 };
 
 const removeStatement = ( index: number ): void => {
@@ -94,26 +129,42 @@ const removeStatement = ( index: number ): void => {
 const handleValidation = ( isValid: boolean ): void => {
 	console.log( isValid );
 };
-const submit = (): void => {
-	console.log(
-		`${ props.isEditMode ? 'Updating' : 'Creating' } ${ props.selectedType || 'subject' }: ${ name.value }`
-	);
-	console.log( 'Statements:', statements.value );
-	isOpen.value = false;
-	emit( 'complete', statements.value );
-};
 
 const goBack = (): void => {
 	emit( 'back' );
 	isOpen.value = false;
 };
 
+const submit = (): void => {
+	if ( localSubject.value ) {
+		const updatedSubject = new Subject(
+			localSubject.value.getId(),
+			localSubject.value.getLabel(),
+			localSubject.value.getSchemaName(),
+			new StatementList( statements.value ),
+			localSubject.value.getPageIdentifiers()
+		);
+		isOpen.value = false;
+		emit( 'complete', updatedSubject );
+	}
+};
+
 defineExpose( { openDialog } );
 </script>
 
-<style>
+<style lang="scss">
+@import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+
 .cdx-dialog.infobox-editor {
-	max-width: 500px;
+	max-width: $size-5600;
+	max-height: 90vh;
+	display: flex;
+	flex-direction: column;
+
+	.cdx-dialog__body {
+		flex-grow: 1;
+		overflow-y: auto;
+	}
 
 	footer {
 		display: flex;
@@ -122,9 +173,54 @@ defineExpose( { openDialog } );
 	}
 }
 
-.statement-editor {
-	margin-bottom: 10px;
-	padding-bottom: 10px;
-	border-bottom: 1px solid #eaecf0;
+.infobox-editor__content {
+	overflow-y: auto;
+	max-height: calc( 90vh - #{$size-800} );
+	padding-right: $spacing-100;
+}
+
+.add-statement-section {
+	margin: $spacing-100 0;
+	position: relative;
+	cursor: $cursor-base--hover;
+}
+
+.add-statement-placeholder {
+	display: flex;
+	align-items: center;
+	padding: $spacing-50 $spacing-75;
+	background-color: $background-color-interactive-subtle;
+	border: $border-width-base $border-style-dashed $border-color-base;
+	border-radius: $border-radius-base;
+	transition: all $transition-duration-base $transition-timing-function-system;
+
+	&:hover {
+		background-color: $background-color-interactive;
+		border-color: $border-color-interactive;
+	}
+
+	.add-icon {
+		margin-right: $spacing-50;
+		color: $color-success;
+	}
+
+	span {
+		color: $color-subtle;
+		font-size: $font-size-small;
+	}
+}
+
+.add-statement-section {
+	margin: $spacing-150 0;
+	position: relative;
+	width: 18%;
+	float: right;
+}
+
+.neo-type-select-dropdown {
+	margin-top: $spacing-25;
+	width: $size-full;
+	position: absolute;
+	z-index: $z-index-dropdown;
 }
 </style>
