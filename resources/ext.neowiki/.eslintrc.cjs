@@ -51,6 +51,17 @@ module.exports = {
 		'no-unused-vars': 'off',
 		'@typescript-eslint/no-unused-vars': 'off',
 		'es-x/no-array-prototype-includes': 'off',
-		'no-use-before-define': 'off'
-	}
+		'no-use-before-define': 'off',
+		'n/no-unsupported-features/node-builtins': 'off' // To avoid: "XYZ is not supported until Node.js x.y.z."
+	},
+	overrides: [
+		{
+			files: [
+				'src/infrastructure/**/*.ts'
+			],
+			rules: {
+				'@typescript-eslint/no-explicit-any': 'off'
+			}
+		}
+	]
 };
