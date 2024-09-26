@@ -8,7 +8,7 @@ use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\MediaWiki\PagePropertiesBuilder;
-use ProfessionalWiki\NeoWiki\Application\QueryStore;
+use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
