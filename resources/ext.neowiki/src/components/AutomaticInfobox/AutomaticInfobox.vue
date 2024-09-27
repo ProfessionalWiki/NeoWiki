@@ -41,14 +41,13 @@
 		<InfoboxEditor
 			ref="infoboxEditorDialog"
 			:is-edit-mode="true"
-			:subject="subject"
+			:subject="subjectRef"
 			@add-statement="addStatement"
 		/>
 		<PropertyDefinitionEditor
 			ref="propertyDefinitionEditor"
 			:property="editingProperty"
 			@save="handlePropertySave"
-			@cancel="handlePropertyCancel"
 		/>
 	</div>
 </template>
@@ -60,11 +59,13 @@ import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition
 import { ValueFormatComponentRegistry } from '@/presentation/ValueFormatComponentRegistry';
 import { Schema } from '@neo/domain/Schema';
 import { Component } from 'vue';
-import { CdxButton } from '@wikimedia/codex';
 import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
 import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefinitionEditor.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
-import { ValueType } from '@neo/domain/Value.ts';
+import { newNumberValue, newStringValue, ValueType } from '@neo/domain/Value.ts';
+import { Statement } from '@neo/domain/Statement.ts';
+import { Value } from 'sass-embedded';
+import { StatementList } from '@neo/domain/StatementList.ts';
 
 const props = defineProps( {
 	subject: {
@@ -87,6 +88,7 @@ const props = defineProps( {
 } );
 
 const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
+const subjectRef = computed( () => props.subject );
 
 const getComponent = ( formatName: string ): Component => props.valueFormatComponentRegistry.getComponent( formatName ).getInfoboxValueComponent();
 
@@ -142,25 +144,46 @@ const editProperty = ( propertyName: string ): void => {
 };
 
 const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
-	if ( props.schema.getPropertyDefinitions().has( savedProperty.name ) ) {
-		// Update existing property in schema
-		schemaStore.updatePropertyDefinition( props.schema.getName(), savedProperty );
-		// Update corresponding statement
-		// ... (update the statement logic)
-	} else {
-		// Add new property to schema
-		schemaStore.addPropertyDefinition( props.schema.getName(), savedProperty );
-		// Create new statement
-		// ... (create new statement logic)
+	let defaultValue: Value;
+
+	switch ( savedProperty.format ) {
+		case 'text':
+		case 'url':
+			defaultValue = newStringValue( '' );
+			break;
+		case 'number':
+			defaultValue = newNumberValue( 0 );
+			break;
+		default:
+			defaultValue = newStringValue( '' );
 	}
-	selectedPropertyName.value = null;
-	selectedPropertyType.value = null;
+
+	const statement = new Statement(
+		savedProperty.name,
+		savedProperty.format,
+		defaultValue
+	);
+
+	const updatedStatements = new StatementList( [
+		...subjectRef.value.getStatements(),
+		statement
+	] );
+
+	// Create a new Subject with the updated StatementList
+	const updatedSubject = new Subject(
+		subjectRef.value.getId(),
+		subjectRef.value.getLabel(),
+		subjectRef.value.getSchemaName(),
+		updatedStatements,
+		subjectRef.value.getPageIdentifiers()
+	);
+
+	// Update the subjectRef with the new Subject
+	subjectRef.value = updatedSubject;
+	infoboxEditorDialog.value.updateSubject( updatedSubject );
+	console.log( updatedSubject.getStatements() );
 };
 
-const handlePropertyCancel = (): void => {
-	selectedPropertyName.value = null;
-	selectedPropertyType.value = null;
-};
 </script>
 
 <style scoped lang="scss">

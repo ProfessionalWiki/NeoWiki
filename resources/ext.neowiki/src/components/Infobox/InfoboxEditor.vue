@@ -1,7 +1,7 @@
 <template>
 	<CdxDialog
 		v-model:open="isOpen"
-		title="manage Infobox"
+		title="Manage Infobox"
 		class="infobox-editor">
 		<NeoTextField
 			v-model="localSubject.label"
@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { CdxDialog, CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconArrowPrevious, cdxIconLink } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
@@ -116,6 +116,7 @@ const toggleDropdown = (): void => {
 
 const addStatement = ( type: string ): void => {
 	emit( 'addStatement', type );
+	isDropdownOpen.value = false;
 };
 
 const updateStatement = ( index: number, updatedStatement: Statement ): void => {
@@ -149,7 +150,12 @@ const submit = (): void => {
 	}
 };
 
-defineExpose( { openDialog } );
+const updateSubject = ( newSubject: Subject ): void => {
+	localSubject.value = newSubject;
+	statements.value = [ ...newSubject.getStatements() ];
+};
+
+defineExpose( { openDialog, updateSubject } );
 </script>
 
 <style lang="scss">

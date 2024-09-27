@@ -98,6 +98,7 @@ const save = (): void => {
 		isOpen.value = false;
 		emit( 'save', { ...localProperty.value } );
 	}
+	console.log( localProperty.value );
 };
 
 defineExpose( { openDialog } );
