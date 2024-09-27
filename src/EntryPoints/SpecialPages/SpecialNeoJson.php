@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\SpecialPages;
 
 use HTMLForm;
+use MediaWiki\Message\Message;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
@@ -93,13 +94,14 @@ class SpecialNeoJson extends SpecialPage {
 		return 'neowiki'; // TODO
 	}
 
-	public function getDescription(): string {
-		// TODO
-		return 'Editing neo slot of "'
-			. substr(
+	public function getDescription(): Message {
+		return $this->msg(
+			'neowiki-neojson-description',
+			substr(
 				$this->getContext()->getTitle()->getFullText(),
 				strpos( $this->getContext()->getTitle()->getFullText(), '/' ) + 1
-			) . '"';
+			)
+		);
 	}
 
 }
