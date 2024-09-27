@@ -1,15 +1,15 @@
 <!-- eslint-disable vue/no-multiple-template-root -->
 <template>
 	<teleport
-		v-for="( el, index ) in infoboxElements"
-		:key="`infobox-${index}`"
-		:to="el"
+		v-for="infobox in infoboxData"
+		:key="`infobox-${infobox.id}`"
+		:to="infobox.element"
 	>
 		<AutomaticInfobox
-			v-if="getSubject( el.getAttribute( 'data-subject-id' ) )"
-			:subject="getSubject( el.getAttribute( 'data-subject-id' ) )!"
-			:schema="getSchema( getSubject( el.getAttribute( 'data-subject-id' ) )!.getSchemaName() )"
-			:value-format-component-registry="NeoWikiExtension.getInstance().getValueFormatComponentRegistry()"
+			:subject="infobox.subject as Subject"
+			:schema="infobox.schema as Schema"
+			:value-format-component-registry="valueFormatComponentRegistry"
+			:can-edit="infobox.canEdit"
 		/>
 	</teleport>
 
@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useSubjectStore } from '@/stores/SubjectStore';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { Subject } from '@neo/domain/Subject';
@@ -29,23 +29,49 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@neo/domain/Schema.ts';
 
-const infoboxElements = ref<Element[]>( [] );
+interface InfoboxData {
+	id: string;
+	element: Element;
+	subject: Subject;
+	schema: Schema;
+	canEdit: boolean;
+}
+
+const infoboxData = ref<InfoboxData[]>( [] );
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
 
-onMounted( () => {
-	infoboxElements.value = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
+const valueFormatComponentRegistry = computed( () => NeoWikiExtension.getInstance().getValueFormatComponentRegistry()
+);
+
+onMounted( async (): Promise<void> => {
+	const elements = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
+
+	infoboxData.value = ( await Promise.all(
+		elements.map( async ( element ): Promise<InfoboxData> => {
+			const subjectId = element.getAttribute( 'data-subject-id' )!;
+			const subject = getSubject( subjectId );
+
+			return {
+				id: subjectId,
+				element,
+				subject: subject,
+				schema: getSchema( subject.getSchemaName() ),
+				canEdit: await canEdit( subjectId )
+			};
+		} )
+	) );
 } );
 
-function getSubject( subjectId: string | null ): Subject | null {
-	if ( !subjectId ) {
-		return null;
-	}
-
+function getSubject( subjectId: string ): Subject {
 	return subjectStore.getSubject( new SubjectId( subjectId ) );
 }
 
 function getSchema( schemaName: string ): Schema {
 	return schemaStore.getSchema( schemaName );
+}
+
+async function canEdit( subjectId: string ): Promise<boolean> {
+	return await NeoWikiExtension.getInstance().newSubjectAuthorizer().canEditSubject( new SubjectId( subjectId ) );
 }
 </script>

@@ -54,6 +54,10 @@ class NeoWikiHooks {
 			return;
 		}
 
+		if ( !self::pageIsLatestRevision( $out ) ) {
+			return;
+		}
+
 		if ( self::pageHasSubjects( $out->getTitle() ) ) {
 			return;
 		}
@@ -61,6 +65,10 @@ class NeoWikiHooks {
 		$out->setIndicators( [
 			'neowiki-create-button' => '',
 		] );
+	}
+
+	private static function pageIsLatestRevision( OutputPage $out ): bool {
+		return $out->getRevisionId() === $out->getTitle()->getLatestRevID();
 	}
 
 	private static function pageHasSubjects( Title $title ): bool {
