@@ -218,9 +218,10 @@ class NeoWikiExtension {
 	}
 
 	public function getSubjectRepository(): SubjectRepository {
-		if ( !isset( $this->subjectRepository ) ) {
+		// TODO: re-enable using the same instance. For some reason this causes an isolation issue in the integration tests
+		//if ( !isset( $this->subjectRepository ) ) {
 			$this->subjectRepository = $this->newSubjectRepository();
-		}
+		//}
 
 		return $this->subjectRepository;
 	}

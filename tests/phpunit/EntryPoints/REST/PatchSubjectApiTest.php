@@ -21,10 +21,6 @@ class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 	use MockAuthorityTrait;
 
-	public function setUp(): void {
-		self::markTestSkipped(); // TODO. Because Neo4JPageIdentifiersLookup
-	}
-
 	public function testSmoke(): void {
 		$this->createPages();
 
