@@ -24,11 +24,11 @@ class OnRevisionCreatedHandler {
 	) {
 	}
 
-	public function onRevisionCreated( RevisionRecord $revisionRecord, WikiPage $wikiPage, UserIdentity $user ): void {
-		$this->storeRevisionRecord( $revisionRecord, $wikiPage, $user );
+	public function onRevisionCreated( RevisionRecord $revisionRecord, UserIdentity $user ): void {
+		$this->storeRevisionRecord( $revisionRecord, $user );
 	}
 
-	private function storeRevisionRecord( RevisionRecord $revisionRecord, ?WikiPage $wikiPage, ?UserIdentity $user ): void {
+	private function storeRevisionRecord( RevisionRecord $revisionRecord, ?UserIdentity $user ): void {
 		if ( $revisionRecord->getPageId() === 0 ) {
 			throw new \RuntimeException( 'Page ID should not be 0' );
 		}
@@ -44,7 +44,7 @@ class OnRevisionCreatedHandler {
 		$this->queryStore->savePage(
 			new Page(
 				id: new PageId( $revisionRecord->getPageId() ),
-				properties: $this->pagePropertiesBuilder->getPagePropertiesFor( $revisionRecord, $wikiPage, $user ),
+				properties: $this->pagePropertiesBuilder->getPagePropertiesFor( $revisionRecord, $user ),
 				subjects: new PageSubjects(
 					mainSubject: $contentData->getMainSubject(),
 					childSubjects: $contentData->getChildSubjects()

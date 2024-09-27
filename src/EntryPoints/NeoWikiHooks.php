@@ -108,7 +108,7 @@ class NeoWikiHooks {
 		UserIdentity $user,
 		array &$tags
 	): void {
-		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision, $wikiPage, $user );
+		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision, $user );
 		$wikiPage->doPurge(); // clear cache
 	}
 
