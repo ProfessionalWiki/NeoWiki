@@ -1,11 +1,14 @@
 {
 	"propertyDefinitions": {
 		"Founded at": {
-			"format": "number"
+			"format": "number",
+			"description": "Basically when a company was created",
+			"required": "true"
 		},
 		"Websites": {
 			"format": "url",
-			"multiple": true
+			"multiple": true,
+			"description": "Websites of the company"
 		},
 		"Main product": {
 			"format": "relation",

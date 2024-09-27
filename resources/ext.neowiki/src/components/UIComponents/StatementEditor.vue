@@ -27,7 +27,7 @@
 				action="progressive"
 				weight="quiet"
 				class="statement-editor__action edit-icon"
-				@click="$emit( 'edit' )"
+				@click="$emit( 'edit', statement.propertyName )"
 			>
 				<CdxIcon :icon="cdxIconEdit" />
 			</CdxButton>
@@ -153,6 +153,29 @@ const handleValidation = ( isValid ): void => {
 	&__field-wrapper {
 		display: flex;
 		flex-direction: column;
+
+		:deep( .cdx-text-input__input ),
+		:deep( .cdx-select__handle ) {
+			border: $border-width-base solid $border-color-subtle;
+			background-color: $background-color-transparent;
+			border-radius: $border-radius-base;
+			transition: border-color $transition-duration-base $transition-timing-function-system, background-color $transition-duration-base $transition-timing-function-system;
+
+			&:hover,
+			&:focus {
+				border-color: $border-color-interactive;
+				background-color: $background-color-interactive-subtle;
+			}
+		}
+
+		.cdx-label {
+			font-weight: $font-weight-semi-bold !important;
+			color: $color-base-fixed !important;
+		}
+
+		:deep( .cdx-message ) {
+			margin-top: $spacing-25 !important;
+		}
 	}
 
 	&__property {
@@ -183,28 +206,5 @@ const handleValidation = ( isValid ): void => {
 			fill: $border-color-interactive !important;
 		}
 	}
-}
-
-:deep( .cdx-text-input__input ),
-:deep( .cdx-select__handle ) {
-	border: $border-width-base solid $border-color-subtle;
-	background-color: $background-color-transparent;
-	border-radius: $border-radius-base;
-	transition: border-color $transition-duration-base $transition-timing-function-system, background-color $transition-duration-base $transition-timing-function-system;
-
-	&:hover,
-	&:focus {
-		border-color: $border-color-interactive;
-		background-color: $background-color-interactive-subtle;
-	}
-}
-
-:deep( .cdx-label ) {
-	font-weight: $font-weight-bold;
-	color: $color-base;
-}
-
-:deep( .cdx-message ) {
-	margin-top: $spacing-25;
 }
 </style>

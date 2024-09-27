@@ -156,7 +156,8 @@
 				"CdxTypeaheadSearch",
 				"CdxTooltip",
 				"CdxSelect",
-				"CdxCheckbox"
+				"CdxCheckbox",
+				"CdxTextArea"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",

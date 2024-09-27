@@ -1,6 +1,7 @@
 <template>
 	<CdxDialog
 		v-model:open="isOpen"
+		:use-close-button="true"
 		title="Manage Infobox"
 		class="infobox-editor">
 		<NeoTextField
@@ -35,6 +36,12 @@
 			:statement="statement"
 			@update="updateStatement( index, $event )"
 			@remove="removeStatement( index )"
+			@edit="editProperty"
+		/>
+		<PropertyDefinitionEditor
+			ref="propertyDefinitionEditor"
+			:property="editingProperty"
+			@save="handlePropertySave"
 		/>
 		<template #footer>
 			<CdxButton
@@ -45,6 +52,7 @@
 			</CdxButton>
 
 			<CdxButton
+				class="neo-button"
 				action="progressive"
 				weight="primary"
 				@click="submit">
@@ -62,11 +70,16 @@ import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
 import StatementEditor from '@/components/UIComponents/StatementEditor.vue';
 import { Subject } from '@neo/domain/Subject.ts';
 import type { SubjectId } from '@neo/domain/SubjectId';
-import type { SchemaName } from '@neo/domain/Schema';
+import { Schema, SchemaName } from '@neo/domain/Schema';
+import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { StatementList } from '@neo/domain/StatementList.ts';
 import { Statement } from '@neo/domain/Statement';
 import NeoTypeSelectDropdown from '@/components/UIComponents/NeoTypeSelectDropdown.vue';
 import { cdxIconTextA, cdxIconStringInteger } from '@/assets/CustomIcons';
+import { useSchemaStore } from '@/stores/SchemaStore';
+import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefinitionEditor.vue';
+import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 
 const props = defineProps<{
 	selectedSchemaType?: string;
@@ -78,6 +91,9 @@ const emit = defineEmits( [ 'complete', 'back', 'addStatement' ] );
 const isOpen = ref( false );
 const localSubject = ref<Subject | null>( null );
 const statements = ref<Statement[]>( [] );
+const schemaStore = useSchemaStore();
+const propertyDefinitionEditor = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
+const editingProperty = ref<PropertyDefinition | null>( null );
 
 const openDialog = (): void => {
 	isOpen.value = true;
@@ -109,6 +125,21 @@ const statementTypes = [
 	{ value: 'url', label: 'URL', icon: cdxIconLink },
 	{ value: 'number', label: 'Number', icon: cdxIconStringInteger }
 ];
+
+const editProperty = ( propertyName: PropertyName ): void => {
+	if ( localSubject.value ) {
+		const schema = schemaStore.getSchema( localSubject.value.getSchemaName() );
+		const property = schema.getPropertyDefinitions().get( propertyName );
+		if ( property ) {
+			editingProperty.value = property;
+			propertyDefinitionEditor.value?.openDialog();
+		}
+	}
+};
+
+const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
+
+};
 
 const toggleDropdown = (): void => {
 	isDropdownOpen.value = !isDropdownOpen.value;

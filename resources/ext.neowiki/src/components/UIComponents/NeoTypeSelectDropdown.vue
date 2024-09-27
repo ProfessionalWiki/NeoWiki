@@ -34,10 +34,10 @@ const selectType = ( value: string ): void => {
 
 <style lang="scss" scoped>
 .neo-type-select-dropdown {
-	background: #f8f9fa;
+	background: #fff;
 	border: 1px solid #eaecf0;
 	border-radius: 8px;
-	box-shadow: 0 4px 12px rgba( 0, 0, 0, 0.1 );
+	box-shadow: 0 4px 12px #00000024;
 	overflow: hidden;
 
 	ul {

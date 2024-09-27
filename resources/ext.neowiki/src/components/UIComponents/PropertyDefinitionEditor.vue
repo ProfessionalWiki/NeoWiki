@@ -1,6 +1,7 @@
 <template>
 	<CdxDialog
 		v-model:open="isOpen"
+		:use-close-button="true"
 		title="New Property"
 		class="property-definition-editor"
 	>
@@ -12,7 +13,7 @@
 					:required="true"
 				/>
 				<div class="field-group format-select">
-					<label for="format-select">Format</label>
+					<label for="format-select">Type</label>
 					<CdxSelect
 						v-model:selected="localProperty.format"
 						:menu-items="formatOptions"
@@ -21,11 +22,13 @@
 			</div>
 			<NeoTextField
 				v-model="localProperty.description"
+				class="property-description"
 				label="Description"
 			/>
 			<div class="required-checkbox">
 				<CdxCheckbox
 					v-model="localProperty.required"
+					class="neo-round-checkbox"
 					label="Required"
 				>
 					<small>Make it a required field</small>
@@ -39,13 +42,14 @@
 		<template #footer>
 			<div class="dialog-footer">
 				<CdxButton
-					class="cancel-button"
+					class="cancel-button neo-button"
 					weight="quiet"
 					@click="cancel">
 					Cancel
 				</CdxButton>
 				<CdxButton
-					class="save-button"
+					size="medium"
+					class="save-button neo-button"
 					action="progressive"
 					weight="primary"
 					:disabled="!localProperty"
@@ -59,7 +63,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { CdxDialog, CdxButton, CdxSelect, CdxCheckbox } from '@wikimedia/codex';
+import { CdxDialog, CdxButton, CdxSelect, CdxCheckbox, CdxTextArea } from '@wikimedia/codex';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 
@@ -137,20 +141,15 @@ defineExpose( { openDialog } );
 	}
 
 	.cdx-label {
-		&__label {
-			&__text {
-				color: $color-base-fixed;
-				font-size: $font-size-small !important;
-				font-weight: $font-weight-normal !important;
-			}
-		}
+		font-weight: $font-weight-semi-bold !important;
+		color: $color-base-fixed !important;
 	}
 
 	.field-group {
 		label {
 			font-size: $font-size-small;
-			font-weight: $font-weight-normal !important;
-			color: $color-base-fixed;
+			font-weight: $font-weight-semi-bold !important;
+			color: $color-base-fixed !important;
 		}
 	}
 
@@ -160,17 +159,6 @@ defineExpose( { openDialog } );
 
 	.format-select {
 		flex: 1;
-
-		:deep( .cdx-select__handle ) {
-			border-radius: $border-radius-base;
-			border: $border-width-base solid $border-color-base;
-			transition: all $transition-duration-base $transition-timing-function-system;
-
-			&:hover,
-			&:focus {
-				border-color: $border-color-progressive;
-			}
-		}
 	}
 
 	.required-checkbox {
@@ -220,6 +208,31 @@ defineExpose( { openDialog } );
 		&:disabled {
 			opacity: $opacity-icon-base--disabled;
 			cursor: $cursor-not-allowed;
+		}
+	}
+}
+
+.property-description {
+	.cdx-text-input,
+	.cdx-text-area {
+		border: none !important;
+		border-bottom: $border-width-base solid $border-color-base !important;
+		box-shadow: none !important;
+
+		&__input,
+		&__textarea {
+			border: none !important;
+
+			&:focus,
+			&:hover {
+				border: none !important;
+				box-shadow: none !important;
+			}
+		}
+
+		&:focus-within,
+		&:hover {
+			border-bottom-color: $border-color-progressive !important;
 		}
 	}
 }

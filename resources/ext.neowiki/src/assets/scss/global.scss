@@ -132,3 +132,73 @@ input {
 		font-size: 12.2px !important;
 	}
 }
+
+$background-color-backdrop-light: rgb( 108, 117, 125, 0.75 );
+
+.cdx-dialog-backdrop {
+	background-color: $background-color-backdrop-light !important;
+}
+
+.cdx-dialog {
+	border-radius: 10px !important;
+}
+
+.cdx-menu {
+	border-radius: 5px !important;
+}
+
+.cdx-select-vue--enabled .cdx-select-vue__handle {
+	border-radius: 5px !important;
+	background-color: #fff !important;
+	border: $border-width-base solid rgba( $border-color-disabled, 0.55 ) !important;
+}
+
+.neo-button {
+	border-radius: 3px !important;
+	padding: $spacing-50 $spacing-100;
+	font-weight: $font-weight-bold;
+	transition: all $transition-duration-medium $transition-timing-function-system;
+	position: relative;
+	top: 0;
+	box-shadow: 0 4px 6px rgba( 0, 0, 0, 0.1 );
+
+	&:hover {
+		top: -1px;
+		box-shadow: 0 5px 7px rgba( 0, 0, 0, 0.12 );
+	}
+
+	&:active {
+		top: 1px;
+		box-shadow: 0 2px 4px rgba( 0, 0, 0, 0.1 );
+	}
+
+	&--action-progressive {
+		background-color: $background-color-progressive;
+		color: $color-inverted;
+		border: none;
+
+		&:hover {
+			background-color: $background-color-progressive--hover;
+		}
+
+		&:active {
+			background-color: $background-color-progressive--active;
+		}
+	}
+
+	&--weight-quiet {
+		color: $color-base;
+		background-color: transparent;
+		box-shadow: none;
+
+		&:hover {
+			background-color: $background-color-button-quiet--hover;
+			box-shadow: 0 2px 4px rgba( 0, 0, 0, 0.1 );
+		}
+
+		&:active {
+			background-color: $background-color-button-quiet--active;
+			box-shadow: none;
+		}
+	}
+}
