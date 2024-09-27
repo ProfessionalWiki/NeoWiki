@@ -4,4 +4,8 @@
 			<directory>tests/</directory>
 		</testsuite>
 	</testsuites>
+	<php>
+		<env name="NEO4J_URL_OVERRIDE" value="bolt://neo4j:password@test_neo:7689" />
+		<env name="NEO4J_URL_READ_OVERRIDE" value="bolt://mediawiki_read:mediawiki_read@test_neo:7689" />
+	</php>
 </phpunit>
