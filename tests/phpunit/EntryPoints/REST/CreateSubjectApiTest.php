@@ -27,10 +27,6 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 	use MockAuthorityTrait;
 
-	public function setUp(): void {
-		self::markTestSkipped(); // TODO. Because Neo4JPageIdentifiersLookup
-	}
-
 	public function testCreatesSubject(): void {
 		$this->createSchema( 'Employee' );
 
