@@ -19,16 +19,18 @@ class SubjectIdTest extends TestCase {
 	}
 
 	public static function validGuidProvider(): iterable {
-		yield [ '00000000-0000-0000-0000-000000000000' ];
-		yield [ '00000000-0000-0000-0000-000000000001' ];
-		yield [ '01833ce0-3486-7bfd-84a1-ad157cf64005' ];
+		yield [ 's11111111111111' ];
+		yield [ 's7uX6keGTokz16g' ];
+		yield [ 's7uX6keGXDSjdVT' ];
+		yield [ 'sStepAsideUU1D7' ];
+		yield [ 'sZzZzZzZzZzZzZz' ];
 	}
 
 	#[DataProvider( 'validGuidProvider' )]
 	public function testEquals( string $validGuid ): void {
 		$this->assertTrue( ( new SubjectId( $validGuid ) )->equals( new SubjectId( $validGuid ) ) );
 		$this->assertFalse(
-			( new SubjectId( $validGuid ) )->equals( new SubjectId( '40400000-0000-0000-0000-000000000000' ) )
+			( new SubjectId( $validGuid ) )->equals( new SubjectId( 'sNyanCatNyanCat' ) )
 		);
 	}
 
@@ -40,10 +42,23 @@ class SubjectIdTest extends TestCase {
 
 	public static function invalidGuidProvider(): iterable {
 		yield 'empty string' => [ '' ];
-		yield 'invalid character' => [ '00000000-0000-0000-0000-00000000000z' ];
-		yield 'missing character' => [ '00000000-0000-0000-0000-00000000000' ];
-		yield 'extra character' => [ '00000000-0000-0000-0000-0000000000000' ];
+		yield 'too short' => [ 's1111111111111' ];
+		yield 'too long' => [ 's111111111111111' ];
+		yield 'missing prefix' => [ '11111111111111' ];
+		yield 'wrong prefix' => [ 'r11111111111111' ];
+		yield 'invalid char' => [ 's1111111_111111' ];
+		yield 'base62 but not base58' => [ 's11111110111111' ];
 		yield 'definitely invalid' => [ '~=[,,_,,]:3' ];
+	}
+
+	#[DataProvider( 'invalidGuidProvider' )]
+	public function testIsValidFails( string $invalidGuid ): void {
+		$this->assertFalse( SubjectId::isValid( $invalidGuid ) );
+	}
+
+	#[DataProvider( 'validGuidProvider' )]
+	public function testIsValidPasses( string $validGuid ): void {
+		$this->assertTrue( SubjectId::isValid( $validGuid ) );
 	}
 
 }

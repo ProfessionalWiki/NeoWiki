@@ -18,13 +18,13 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
-use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
+use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 
 readonly class StatementListPatcher {
 
 	public function __construct(
 		private FormatTypeLookup $formatTypeLookup,
-		private GuidGenerator $guidGenerator,
+		private IdGenerator $idGenerator,
 	) {
 	}
 
@@ -90,7 +90,7 @@ readonly class StatementListPatcher {
 			return new RelationId( $relation['id'] ); // TODO: handle exception
 		}
 
-		return RelationId::createNew( $this->guidGenerator );
+		return RelationId::createNew( $this->idGenerator );
 	}
 
 }

@@ -19,15 +19,17 @@ class RelationIdTest extends TestCase {
 	}
 
 	public static function validGuidProvider(): iterable {
-		yield [ '00000000-0000-0000-0000-000000000000' ];
-		yield [ '00000000-0000-0000-0000-000000000001' ];
-		yield [ '01833ce0-3486-7bfd-84a1-ad157cf64005' ];
+		yield [ 'r11111111111111' ];
+		yield [ 'r7uX6keGTokz16g' ];
+		yield [ 'r7uX6keGXDSjdVT' ];
+		yield [ 'rStepAsideUU1D7' ];
+		yield [ 'rZzZzZzZzZzZzZz' ];
 	}
 
 	#[DataProvider( 'validGuidProvider' )]
 	public function testEquals( string $validGuid ): void {
 		$this->assertTrue( ( new RelationId( $validGuid ) )->equals( new RelationId( $validGuid ) ) );
-		$this->assertFalse( ( new RelationId( $validGuid ) )->equals( new RelationId( '40400000-0000-0000-0000-000000000000' ) ) );
+		$this->assertFalse( ( new RelationId( $validGuid ) )->equals( new RelationId( 'rNyanCatNyanCat' ) ) );
 	}
 
 	#[DataProvider( 'invalidGuidProvider' )]
@@ -38,10 +40,23 @@ class RelationIdTest extends TestCase {
 
 	public static function invalidGuidProvider(): iterable {
 		yield 'empty string' => [ '' ];
-		yield 'invalid character' => [ '00000000-0000-0000-0000-00000000000z' ];
-		yield 'missing character' => [ '00000000-0000-0000-0000-00000000000' ];
-		yield 'extra character' => [ '00000000-0000-0000-0000-0000000000000' ];
+		yield 'too short' => [ 'r1111111111111' ];
+		yield 'too long' => [ 'r111111111111111' ];
+		yield 'missing prefix' => [ '11111111111111' ];
+		yield 'wrong prefix' => [ 's11111111111111' ];
+		yield 'invalid char' => [ 'r1111111_111111' ];
+		yield 'base62 but not base58' => [ 'r11111110111111' ];
 		yield 'definitely invalid' => [ '~=[,,_,,]:3' ];
+	}
+
+	#[DataProvider( 'invalidGuidProvider' )]
+	public function testIsValidFails( string $invalidGuid ): void {
+		$this->assertFalse( RelationId::isValid( $invalidGuid ) );
+	}
+
+	#[DataProvider( 'validGuidProvider' )]
+	public function testIsValidPasses( string $validGuid ): void {
+		$this->assertTrue( RelationId::isValid( $validGuid ) );
 	}
 
 }

@@ -8,7 +8,7 @@ use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
+use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 
 class Subject {
 
@@ -21,7 +21,7 @@ class Subject {
 	}
 
 	public static function createNew(
-		GuidGenerator $guidGenerator,
+		IdGenerator $guidGenerator,
 		SubjectLabel $label,
 		SchemaName $schemaId,
 		?StatementList $statements = null,

@@ -7,22 +7,22 @@ describe( 'SubjectMap', () => {
 
 	const subjects = new SubjectMap(
 		newSubject( {
-			id: '00000000-0000-0000-0000-000000000000',
+			id: 's11111111111111',
 			label: 'John Doe'
 		} ),
 		newSubject( {
-			id: '00000000-0000-0000-0000-000000000001',
+			id: 's11111111111112',
 			label: 'Foo Bar'
 		} )
 	);
 
 	it( 'should add elements in constructor', () => {
-		expect( subjects.get( new SubjectId( '00000000-0000-0000-0000-000000000001' ) )?.getLabel() ).toBe( 'Foo Bar' );
-		expect( subjects.get( new SubjectId( '00000000-0000-0000-0000-000000000000' ) )?.getLabel() ).toBe( 'John Doe' );
+		expect( subjects.get( new SubjectId( 's11111111111112' ) )?.getLabel() ).toBe( 'Foo Bar' );
+		expect( subjects.get( new SubjectId( 's11111111111111' ) )?.getLabel() ).toBe( 'John Doe' );
 	} );
 
 	it( 'should return undefined when getting by unknown ID', () => {
-		expect( subjects.get( new SubjectId( '00000000-0000-0000-0000-000000000002' ) ) ).toBe( undefined );
+		expect( subjects.get( new SubjectId( 's11111111111113' ) ) ).toBe( undefined );
 	} );
 
 	it( 'should be iterable', () => {

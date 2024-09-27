@@ -30,11 +30,11 @@ export interface SubjectRepository extends SubjectLookup {
 export class StubSubjectRepository extends InMemorySubjectLookup implements SubjectRepository {
 
 	public createMainSubject( pageId: number, label: string, schemaName: string, statements: StatementList ): Promise<SubjectId> {
-		return Promise.resolve( new SubjectId( '00000000-0000-0000-0000-000000000000' ) );
+		return Promise.resolve( new SubjectId( 's11111111111111' ) );
 	}
 
 	public createChildSubject( _pageId: number, _label: string, _schemaName: string, _statements: StatementList ): Promise<SubjectId> {
-		return Promise.resolve( new SubjectId( '00000000-0000-0000-0000-000000000010' ) );
+		return Promise.resolve( new SubjectId( 's11111111111112' ) );
 	}
 
 	public updateSubject( id: SubjectId, statements: StatementList ): Promise<object> {

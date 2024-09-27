@@ -16,29 +16,29 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
-use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
+use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubGuidGenerator;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use RuntimeException;
 
 #[CoversClass( CreateSubjectAction::class )]
 class CreateSubjectActionTest extends TestCase {
 
-	private const GUID = '00000000-8888-0000-0000-000000000002';
+	private const string STUB_ID = 'EVNrDCjgVpv9oC';
 
 	private InMemorySubjectRepository $subjectRepository;
-	private GuidGenerator $guidGenerator;
+	private IdGenerator $idGenerator;
 	private CreateSubjectPresenterSpy $presenterSpy;
 	private SubjectAuthorizer $authorizer;
 
 	public function setUp(): void {
 		$this->subjectRepository = new InMemorySubjectRepository();
-		$this->guidGenerator = new StubGuidGenerator( self::GUID );
+		$this->idGenerator = new StubIdGenerator( self::STUB_ID );
 		$this->presenterSpy = new CreateSubjectPresenterSpy();
 		$this->authorizer = new SucceedingSubjectAuthorizer();
 	}
@@ -47,11 +47,11 @@ class CreateSubjectActionTest extends TestCase {
 		return new CreateSubjectAction(
 			$this->presenterSpy,
 			$this->subjectRepository,
-			$this->guidGenerator,
+			$this->idGenerator,
 			$this->authorizer,
 			new StatementListPatcher(
 				new FormatTypeLookup( ValueFormatRegistry::withCoreFormats() ),
-				$this->guidGenerator
+				$this->idGenerator
 			)
 		);
 	}
@@ -70,7 +70,7 @@ class CreateSubjectActionTest extends TestCase {
 		);
 
 		$this->assertSame(
-			self::GUID,
+			's' . self::STUB_ID,
 			$this->presenterSpy->result
 		);
 	}
@@ -128,11 +128,11 @@ class CreateSubjectActionTest extends TestCase {
 						'value' => [
 							[
 								// No ID
-								'target' => '00000000-5555-0000-0000-000000000098'
+								'target' => 's11111111111111'
 							],
 							[
-								'id' => '00000000-5555-0000-0000-000000000199', // Existing ID
-								'target' => '00000000-5555-0000-0000-000000000099'
+								'id' => 'rzzzzzzzzzzzzzz', // Existing ID
+								'target' => 's11111111111112'
 							]
 						]
 					]
@@ -148,12 +148,12 @@ class CreateSubjectActionTest extends TestCase {
 					property: 'Has product',
 					value: new RelationValue(
 						TestRelation::build(
-							id: self::GUID, // Generated ID
-							targetId: '00000000-5555-0000-0000-000000000098'
+							id: 'r' . self::STUB_ID, // Generated ID
+							targetId: 's11111111111111'
 						),
 						TestRelation::build(
-							id: '00000000-5555-0000-0000-000000000199',
-							targetId: '00000000-5555-0000-0000-000000000099'
+							id: 'rzzzzzzzzzzzzzz',
+							targetId: 's11111111111112'
 						)
 					),
 					format: 'relation'

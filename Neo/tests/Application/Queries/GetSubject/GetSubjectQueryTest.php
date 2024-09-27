@@ -36,17 +36,17 @@ class GetSubjectQueryTest extends TestCase {
 			new InMemorySubjectLookup(
 				TestSubject::build(),
 				TestSubject::build(
-					id: '00000000-6666-0000-0000-000000000001',
+					id: 's11111111111129',
 					label: new SubjectLabel( 'expected label' ),
-					schemaId: new SchemaName( '00000000-6666-0000-0000-000000000010' ),
+					schemaId: new SchemaName( 'GetSubjectQueryTestSchema' ),
 					statements: new StatementList( [
 						TestStatement::build( 'expected property 1', 'expected value 1' ),
 						TestStatement::build( 'expected property 2', value: new NumberValue( 2 ), format: 'number' ),
 						TestStatement::build(
 							'FriendOf',
 							new RelationValue( TestRelation::build(
-								id: '00000000-1111-2222-1100-000000000020',
-								targetId: '00000000-6666-0000-0000-000000000020',
+								id: 'r11111111111129',
+								targetId: 's11111111111131',
 								properties: [ 'relation property' => 'relation value' ]
 							) ),
 							RelationFormat::NAME,
@@ -58,19 +58,19 @@ class GetSubjectQueryTest extends TestCase {
 		);
 
 		$query->execute(
-			subjectId: '00000000-6666-0000-0000-000000000001',
+			subjectId: 's11111111111129',
 			includePageIdentifiers: false,
 			includeReferencedSubjects: false
 		);
 
 		$this->assertEquals(
 			new GetSubjectResponse(
-				'00000000-6666-0000-0000-000000000001',
+				's11111111111129',
 				[
-					'00000000-6666-0000-0000-000000000001' => new GetSubjectResponseItem(
-						id: '00000000-6666-0000-0000-000000000001',
+					's11111111111129' => new GetSubjectResponseItem(
+						id: 's11111111111129',
 						label: 'expected label',
-						schemaId: '00000000-6666-0000-0000-000000000010',
+						schemaId: 'GetSubjectQueryTestSchema',
 						statements: [
 							'expected property 1' => [
 								'format' => 'text',
@@ -84,8 +84,8 @@ class GetSubjectQueryTest extends TestCase {
 								'format' => 'relation',
 								'value' => [
 									[
-										'id' => '00000000-1111-2222-1100-000000000020',
-										'target' => '00000000-6666-0000-0000-000000000020',
+										'id' => 'r11111111111129',
+										'target' => 's11111111111131',
 										'properties' => [
 											'relation property' => 'relation value'
 										],
@@ -167,15 +167,15 @@ class GetSubjectQueryTest extends TestCase {
 		$schemaId = new SchemaName( 'GetSubjectQueryTest' );
 
 		$subject = TestSubject::build(
-			id: '00000000-6666-0000-0000-000000000008',
+			id: 's11111111111132',
 			label: new SubjectLabel( 'requested subject' ),
 			schemaId: $schemaId,
 			statements: new StatementList( [
 				TestStatement::build(
 					'FriendOf',
 					new RelationValue( TestRelation::build(
-						id: '00000000-6666-0000-0000-000000000007',
-						targetId: '00000000-6666-0000-0000-000000000009',
+						id: 'r11111111111134',
+						targetId: 's11111111111133',
 						properties: [ 'relation property' => 'relation value' ]
 					) ),
 					RelationFormat::NAME,
@@ -184,7 +184,7 @@ class GetSubjectQueryTest extends TestCase {
 		);
 
 		$referencedSubject = TestSubject::build(
-			id: '00000000-6666-0000-0000-000000000009',
+			id: 's11111111111133',
 			label: new SubjectLabel( 'referenced subject' ),
 		);
 

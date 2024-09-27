@@ -16,15 +16,15 @@ class SubjectIdListTest extends TestCase {
 
 	public function testAsStringArray(): void {
 		$ids = new SubjectIdList( [
-			new SubjectId( '00000000-0000-0000-0000-000000000001' ),
-			new SubjectId( '00000000-0000-0000-0000-000000000002' ),
-			new SubjectId( '00000000-0000-0000-0000-000000000001' ),
+			new SubjectId( 's1111111111a123' ),
+			new SubjectId( 's1111111111a456' ),
+			new SubjectId( 's1111111111a123' ),
 		] );
 
 		$this->assertSame(
 			[
-				'00000000-0000-0000-0000-000000000001',
-				'00000000-0000-0000-0000-000000000002',
+				's1111111111a123',
+				's1111111111a456',
 			],
 			$ids->asStringArray()
 		);

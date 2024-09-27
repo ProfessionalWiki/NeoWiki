@@ -1,19 +1,17 @@
-import { Uuid } from '@neo/infrastructure/Uuid';
-
 export class SubjectId {
+
 	public readonly text: string;
 
 	public constructor( text: string ) {
-		if ( !Uuid.isValid( text ) ) {
+		if ( !SubjectId.isValid( text ) ) {
 			throw new Error( 'Subject ID has the wrong format. ID: ' + text );
 		}
 
 		this.text = text;
 	}
-}
 
-export const ZERO_GUID = '00000000-0000-0000-0000-000000000000';
+	private static isValid( text: string ): boolean {
+		return /^s[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{14}$/.test( text );
+	}
 
-export function newFakeSubjectId(): SubjectId {
-	return new SubjectId( ZERO_GUID );
 }

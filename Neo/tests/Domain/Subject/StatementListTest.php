@@ -53,7 +53,7 @@ class StatementListTest extends TestCase {
 			),
 			TestStatement::build(
 				property: 'P1',
-				value: new RelationValue( TestRelation::build( targetId: '00000000-0000-0000-4201-000000000000' ) ),
+				value: new RelationValue( TestRelation::build( targetId: 's11111111111111' ) ),
 				format: RelationFormat::NAME
 			),
 			TestStatement::build(
@@ -62,16 +62,16 @@ class StatementListTest extends TestCase {
 			TestStatement::build(
 				property: 'P2',
 				value: new RelationValue(
-					TestRelation::build( targetId: '00000000-0000-0000-4202-000000000000' ),
-					TestRelation::build( targetId: '00000000-0000-0000-4203-000000000000' )
+					TestRelation::build( targetId: 's11111111111112' ),
+					TestRelation::build( targetId: 's11111111111113' )
 				),
 				format: RelationFormat::NAME
 			),
 			TestStatement::build(
 				property: 'P3',
 				value: new RelationValue(
-					TestRelation::build( targetId: '00000000-0000-0000-4203-000000000000' ), // Duplicate
-					TestRelation::build( targetId: '00000000-0000-0000-4204-000000000000' )
+					TestRelation::build( targetId: 's11111111111113' ), // Duplicate
+					TestRelation::build( targetId: 's11111111111114' )
 				),
 				format: RelationFormat::NAME
 			),
@@ -79,10 +79,10 @@ class StatementListTest extends TestCase {
 
 		$this->assertSame(
 			[
-				'00000000-0000-0000-4201-000000000000',
-				'00000000-0000-0000-4202-000000000000',
-				'00000000-0000-0000-4203-000000000000',
-				'00000000-0000-0000-4204-000000000000',
+				's11111111111111',
+				's11111111111112',
+				's11111111111113',
+				's11111111111114',
 			],
 			$statements->getReferencedSubjects()->asStringArray()
 		);

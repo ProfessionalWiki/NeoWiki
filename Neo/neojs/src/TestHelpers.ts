@@ -5,7 +5,7 @@ import { Schema } from '@neo/domain/Schema';
 import { StatementList } from '@neo/domain/StatementList';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 
-export const ZERO_GUID = '00000000-0000-0000-0000-000000000000';
+export const DEFAULT_SUBJECT_ID = 's11111111111111';
 export const DEFAULT_TEST_SUBJECT_LABEL = 'Test subject';
 export const DEFAULT_TEST_SCHEMA_ID = 'TestSchema';
 
@@ -18,7 +18,7 @@ interface NewTestSubjectOptions {
 }
 
 export function newSubject( {
-	id = ZERO_GUID,
+	id = DEFAULT_SUBJECT_ID,
 	label = DEFAULT_TEST_SUBJECT_LABEL,
 	schemaId = DEFAULT_TEST_SCHEMA_ID,
 	statements = new StatementList( [] ),

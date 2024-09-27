@@ -16,12 +16,12 @@ class TypedRelationListTest extends TestCase {
 	public function testGetIdsAsStringArray(): void {
 		$this->assertSame(
 			[
-				'130A09E1-54FF-4A20-8A14-4E62D700AAAA',
-				'130A09E1-54FF-4A20-8A14-4E62D700AAAB'
+				'r11111111111113',
+				'r11111111111114'
 			],
 			( new TypedRelationList( [
-				TestRelation::build( id: '130A09E1-54FF-4A20-8A14-4E62D700AAAA' )->withType( new RelationType( 'FriendOf' ) ),
-				TestRelation::build( id: '130A09E1-54FF-4A20-8A14-4E62D700AAAB' )->withType( new RelationType( 'FriendOf' ) ),
+				TestRelation::build( id: 'r11111111111113' )->withType( new RelationType( 'FriendOf' ) ),
+				TestRelation::build( id: 'r11111111111114' )->withType( new RelationType( 'FriendOf' ) ),
 			] ) )->getIdsAsStringArray()
 		);
 	}

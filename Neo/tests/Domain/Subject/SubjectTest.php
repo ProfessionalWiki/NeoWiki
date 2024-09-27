@@ -21,8 +21,8 @@ class SubjectTest extends TestCase {
 	}
 
 	public function testHasSameIdentityWithDifferentId(): void {
-		$secondSubject = TestSubject::build( new SubjectId( '00000000-0000-0000-0000-000000000001' ) );
-		$firstSubject = TestSubject::build( new SubjectId( '00000000-0000-0000-0000-000000000002' ) );
+		$secondSubject = TestSubject::build( new SubjectId( 's11111111111111' ) );
+		$firstSubject = TestSubject::build( new SubjectId( 's11111111111112' ) );
 
 		$this->assertFalse( $firstSubject->hasSameIdentity( $secondSubject ) );
 	}
