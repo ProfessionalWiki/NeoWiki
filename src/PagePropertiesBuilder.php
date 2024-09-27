@@ -4,25 +4,28 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\MediaWiki;
 
+use MediaWiki\Content\IContentHandlerFactory;
+use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
+use MediaWiki\Revision\SlotRecord;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
-use WikiPage;
 
-class PagePropertiesBuilder {
+readonly class PagePropertiesBuilder {
 
 	public function __construct(
-		private readonly RevisionStore $revisionStore
+		private RevisionStore $revisionStore,
+		private IContentHandlerFactory $contentHandlerFactory,
 	) {
 	}
 
-	public function getPagePropertiesFor( RevisionRecord $revision, ?WikiPage $wikiPage, ?UserIdentity $user ): PageProperties {
+	public function getPagePropertiesFor( RevisionRecord $revision, ?UserIdentity $user ): PageProperties {
 		return new PageProperties(
 			title: $revision->getPageAsLinkTarget()->getText(),
 			creationTime: $this->getCreationTime( $revision ),
 			modificationTime: $this->getModificationTime( $revision ),
-			categories: $this->getCategories( $wikiPage ),
+			categories: $this->getCategories( $revision ),
 			lastEditor: $user?->getName() ?? ''
 		);
 	}
@@ -50,15 +53,16 @@ class PagePropertiesBuilder {
 	/**
 	 * @return string[]
 	 */
-	private function getCategories( ?WikiPage $wikiPage ): array {
-		$categories = [];
+	private function getCategories( RevisionRecord $revision ): array {
+		$content = $revision->getContent( SlotRecord::MAIN );
 
-		// FIXME: this is getting the categories from the "previous" revision, not the revision that is being saved
-		foreach ( $wikiPage?->getCategories() ?? [] as $category ) {
-			$categories[] = $category->getText();
+		if ( $content === null ) {
+			return [];
 		}
 
-		return $categories;
+		return $this->contentHandlerFactory->getContentHandler( $content->getModel() )
+			->getParserOutput( $content, new ContentParseParams( $revision->getPage() ) )
+			->getCategoryNames();
 	}
 
 }

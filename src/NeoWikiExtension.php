@@ -111,7 +111,8 @@ class NeoWikiExtension {
 		return new OnRevisionCreatedHandler(
 			$this->getQueryStore(),
 			new PagePropertiesBuilder(
-				revisionStore: MediaWikiServices::getInstance()->getRevisionStore()
+				revisionStore: MediaWikiServices::getInstance()->getRevisionStore(),
+				contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory()
 			)
 		);
 	}
