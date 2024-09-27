@@ -1,36 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Access to constant SLOT_NAME on an unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\Subject\\\\MediaWikiSubjectRepository\\.$#"
-			count: 1
-			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
-
-		-
-			message: "#^Call to method addSubjectsToRevision\\(\\) on an unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater\\.$#"
-			count: 1
-			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
-
-		-
-			message: "#^Call to static method newEmpty\\(\\) on an unknown class ProfessionalWiki\\\\NeoWiki\\\\EntryPoints\\\\Content\\\\SubjectContent\\.$#"
-			count: 1
-			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Actions\\\\CreateSubject\\\\CreateSubjectsAction\\:\\:getSubjectsContent\\(\\) has invalid return type ProfessionalWiki\\\\NeoWiki\\\\EntryPoints\\\\Content\\\\SubjectContent\\.$#"
-			count: 1
-			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
-
-		-
-			message: "#^Parameter \\$revisionUpdater of method ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Actions\\\\CreateSubject\\\\CreateSubjectsAction\\:\\:__construct\\(\\) has invalid type ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater\\.$#"
-			count: 1
-			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
-
-		-
-			message: "#^Property ProfessionalWiki\\\\NeoWiki\\\\Application\\\\Actions\\\\CreateSubject\\\\CreateSubjectsAction\\:\\:\\$revisionUpdater has unknown class ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater as its type\\.$#"
-			count: 1
-			path: src/Application/Actions/CreateSubject/CreateSubjectsAction.php
-
-		-
 			message: "#^Cannot access offset 'format' on mixed\\.$#"
 			count: 2
 			path: src/Application/StatementListPatcher.php
