@@ -10,6 +10,8 @@
 	"neowiki-name": "NeoWiki",
 	"neowiki-description": "TODO",
 
+	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
+
 	"neowiki-create-button": "Add infobox",
 
 	"neowiki-create-subject-dialog-title": "Add infobox",

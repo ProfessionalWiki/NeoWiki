@@ -32,6 +32,10 @@ class NeoWikiHooks {
 			return;
 		}
 
+		if ( NeoWikiExtension::getInstance()->isDevelopmentUIEnabled() ) {
+			$out->addHTML( NeoWikiExtension::getInstance()->getFactBox()->htmlFor( $out->getTitle() ) );
+		}
+
 		$out->addModules( 'ext.neowiki' );
 		$out->addModuleStyles( 'ext.neowiki.styles' );
 		$out->addHtml( '<div id="neowiki"></div>' );
