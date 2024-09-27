@@ -13,16 +13,16 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 
 class DeleteSubjectActionTest extends TestCase {
 
-	private const GUID = '00000000-7777-0000-0000-000000000001';
+	private const string SUBJECT_ID = 's11111111111126';
 
 	public function testDeleteSubject(): void {
 		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
 		$subjectAuthorizer = new SucceedingSubjectAuthorizer();
 
-		$mockSubjectRepository->expects( $this->once() )->method( 'deleteSubject' )->with( new SubjectId( self::GUID ) );
+		$mockSubjectRepository->expects( $this->once() )->method( 'deleteSubject' )->with( new SubjectId( self::SUBJECT_ID ) );
 
 		$action = new DeleteSubjectAction( $mockSubjectRepository, $subjectAuthorizer );
-		$action->deleteSubject( new SubjectId( self::GUID ) );
+		$action->deleteSubject( new SubjectId( self::SUBJECT_ID ) );
 	}
 
 	public function testUserIsNotAllowedToDeleteSubject(): void {
@@ -34,6 +34,6 @@ class DeleteSubjectActionTest extends TestCase {
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'You do not have the necessary permissions to delete this subject' );
 
-		$action->deleteSubject( new SubjectId( self::GUID ) );
+		$action->deleteSubject( new SubjectId( self::SUBJECT_ID ) );
 	}
 }

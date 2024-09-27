@@ -80,24 +80,24 @@ describe( 'StatementList', () => {
 					new PropertyName( 'Property2' ),
 					RelationFormat.formatName,
 					new RelationValue( [
-						new Relation( undefined, '00000000-0000-0000-0000-000000000001' )
+						new Relation( undefined, 's11111111111111' )
 					] )
 				),
 				new Statement(
 					new PropertyName( 'Property3' ),
 					RelationFormat.formatName,
 					new RelationValue( [
-						new Relation( undefined, '00000000-0000-0000-0000-000000000002' ),
-						new Relation( undefined, '00000000-0000-0000-0000-000000000003' )
+						new Relation( undefined, 's11111111111112' ),
+						new Relation( undefined, 's11111111111113' )
 					] )
 				),
 				new Statement( new PropertyName( 'Property4' ), TextFormat.formatName, newStringValue( 'bar' ) )
 			] );
 
 			expect( statements.getIdsOfReferencedSubjects() ).toEqual( new Set( [
-				new SubjectId( '00000000-0000-0000-0000-000000000001' ),
-				new SubjectId( '00000000-0000-0000-0000-000000000002' ),
-				new SubjectId( '00000000-0000-0000-0000-000000000003' )
+				new SubjectId( 's11111111111111' ),
+				new SubjectId( 's11111111111112' ),
+				new SubjectId( 's11111111111113' )
 			] ) );
 		} );
 

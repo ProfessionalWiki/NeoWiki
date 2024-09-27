@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
+use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use RuntimeException;
 
@@ -20,7 +20,7 @@ readonly class CreateSubjectAction {
 	public function __construct(
 		private CreateSubjectPresenter $presenter,
 		private SubjectRepository $subjectRepository,
-		private GuidGenerator $guidGenerator,
+		private IdGenerator $guidGenerator,
 		private SubjectAuthorizer $subjectActionAuthorizer,
 		private StatementListPatcher $statementListPatcher,
 	) {

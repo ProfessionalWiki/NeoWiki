@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newSchema, newSubject, ZERO_GUID } from '@neo/TestHelpers';
+import { newSchema, newSubject, DEFAULT_SUBJECT_ID } from '@neo/TestHelpers';
 import { SubjectMap } from '@neo/domain/SubjectMap';
 import { InMemorySubjectLookup } from '@neo/domain/SubjectLookup';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
@@ -18,7 +18,7 @@ describe( 'Subject', () => {
 			schemaId: 'Tomato'
 		} );
 
-		expect( subject.getId().text ).toBe( ZERO_GUID );
+		expect( subject.getId().text ).toBe( DEFAULT_SUBJECT_ID );
 		expect( subject.getLabel() ).toBe( 'I am a tomato' );
 		expect( subject.getSchemaName() ).toBe( 'Tomato' );
 		expect( subject.getPageIdentifiers().getPageName() ).toBe( 'TestSubjectPage' );
@@ -44,13 +44,13 @@ describe( 'Subject', () => {
 		} );
 
 		it( 'should return a SubjectMap with referenced Subjects', async () => {
-			const subject1 = newSubject( { id: '00000000-0000-0000-0000-000000000001' } );
-			const subject2 = newSubject( { id: '00000000-0000-0000-0000-000000000002' } );
-			const subject3 = newSubject( { id: '00000000-0000-0000-0000-000000000003' } );
+			const subject1 = newSubject( { id: 's11111111111111' } );
+			const subject2 = newSubject( { id: 's11111111111112' } );
+			const subject3 = newSubject( { id: 's11111111111113' } );
 			const lookup = new InMemorySubjectLookup( [ subject1, subject2, subject3 ] );
 
 			const subject = newSubject( {
-				id: ZERO_GUID,
+				id: DEFAULT_SUBJECT_ID,
 				statements: StatementList.fromJsonValues(
 					{
 						Property1: {
@@ -58,11 +58,11 @@ describe( 'Subject', () => {
 							format: TextFormat.formatName
 						},
 						Property2: {
-							value: [ { target: '00000000-0000-0000-0000-000000000001' } ],
+							value: [ { target: 's11111111111111' } ],
 							format: RelationFormat.formatName
 						},
 						Property3: {
-							value: [ { target: '00000000-0000-0000-0000-000000000002' }, { target: '00000000-0000-0000-0000-000000000003' } ],
+							value: [ { target: 's11111111111112' }, { target: 's11111111111113' } ],
 							format: RelationFormat.formatName
 						},
 						Property4: {
@@ -111,11 +111,11 @@ describe( 'Subject', () => {
 		} );
 
 		it( 'should return a SubjectMap with referenced Subjects excluding missing Subjects', async () => {
-			const referencedSubject = newSubject( { id: '00000000-0000-0000-0000-000000000001' } );
+			const referencedSubject = newSubject( { id: 's11111111111111' } );
 			const lookup = new InMemorySubjectLookup( [ referencedSubject ] );
 
 			const subject = newSubject( {
-				id: ZERO_GUID,
+				id: DEFAULT_SUBJECT_ID,
 				statements: StatementList.fromJsonValues(
 					{
 						Property1: {
@@ -123,11 +123,11 @@ describe( 'Subject', () => {
 							format: TextFormat.formatName
 						},
 						Property2: {
-							value: [ { target: '00000000-0000-0000-0000-888888888888' } ],
+							value: [ { target: 's11111111111118' } ],
 							format: RelationFormat.formatName
 						},
 						Property3: {
-							value: [ { target: '00000000-0000-0000-0000-000000000001' }, { target: '00000000-0000-0000-0000-999999999999' } ],
+							value: [ { target: 's11111111111111' }, { target: 's11111111111119' } ],
 							format: RelationFormat.formatName
 						},
 						Property4: {

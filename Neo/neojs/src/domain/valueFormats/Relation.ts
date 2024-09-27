@@ -2,7 +2,6 @@ import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { Relation, RelationValue, ValueType } from '@neo/domain/Value';
 import { BaseValueFormat } from '@neo/domain/ValueFormat';
-import { Uuid } from '@neo/infrastructure/Uuid';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -19,9 +18,9 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 	public static readonly formatName = 'relation';
 
 	public getExampleValue( property: RelationProperty ): RelationValue {
-		const relations = [ new Relation( undefined, Uuid.getRandomUUID() ) ];
+		const relations = [ new Relation( undefined, 's11111111111111' ) ];
 		if ( property !== undefined && property.multiple ) {
-			relations.push( new Relation( undefined, Uuid.getRandomUUID() ) );
+			relations.push( new Relation( undefined, 's11111111111111' ) );
 		}
 
 		return new RelationValue( relations );

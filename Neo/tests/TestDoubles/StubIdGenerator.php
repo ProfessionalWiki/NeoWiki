@@ -4,17 +4,17 @@ declare( strict_types=1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
-use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
+use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 
-class StubGuidGenerator implements GuidGenerator {
+class StubIdGenerator implements IdGenerator {
 
 	public function __construct(
-		private readonly string $guid
+		private readonly string $id
 	) {
 	}
 
 	public function generate(): string {
-		return $this->guid;
+		return $this->id;
 	}
 
 }
