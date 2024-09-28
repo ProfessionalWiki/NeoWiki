@@ -52,11 +52,11 @@ class SubjectContentDataDeserializerTest extends TestCase {
 			<<<JSON
 {
 	"subjects": {
-		"f81d4fae-7dec-11d0-a765-00a0c91e6bf6": {
+		"sTestSCDD111115": {
 			"label": "ACME Inc.",
 			"schema": "Company"
 		},
-		"7e3e53f0-1d9d-11ec-835b-0242ac130003": {
+		"sTestSCDD111114": {
 			"label": "Contoso Ltd.",
 			"schema": "Company"
 		}
@@ -68,12 +68,12 @@ JSON
 		$this->assertEquals(
 			[
 				Subject::newSubject(
-					new SubjectId( 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6' ),
+					new SubjectId( 'sTestSCDD111115' ),
 					new SubjectLabel( 'ACME Inc.' ),
 					new SchemaName( "Company" )
 				),
 				Subject::newSubject(
-					new SubjectId( '7e3e53f0-1d9d-11ec-835b-0242ac130003' ),
+					new SubjectId( 'sTestSCDD111114' ),
 					new SubjectLabel( 'Contoso Ltd.' ),
 					new SchemaName( "Company" )
 				),
@@ -87,7 +87,7 @@ JSON
 			<<<JSON
 {
 	"subjects": {
-		"7e3e53f0-1d9d-11ec-835b-0242ac130003": {
+		"sTestSCDD111114": {
 			"label": "ACME Inc.",
 			"schema": "Company",
 			"statements": {
@@ -101,7 +101,7 @@ JSON
 		$this->assertEquals(
 			[
 				Subject::newSubject(
-					new SubjectId( '7e3e53f0-1d9d-11ec-835b-0242ac130003' ),
+					new SubjectId( 'sTestSCDD111114' ),
 					new SubjectLabel( 'ACME Inc.' ),
 					new SchemaName( 'Company' )
 				),
@@ -114,9 +114,9 @@ JSON
 		$subjects = $this->newDeserializer()->deserialize(
 			<<<JSON
 {
-	"mainSubject": "12345678-0000-0000-0000-000000000001",
+	"mainSubject": "sTestSCDD111111",
 	"subjects": {
-		"12345678-0000-0000-0000-000000000001": {
+		"sTestSCDD111111": {
 			"label": "Professional Wiki GmbH",
 			"schema": "Company",
 			"statements": {
@@ -124,12 +124,12 @@ JSON
 					"format": "relation",
 					"value": [
 						{
-							"id": "12345678-0000-0000-0000-900000000004",
-							"target": "12345678-0000-0000-0000-000000000004"
+							"id": "rTestSCDDrrrrr1",
+							"target": "sTestSCDD111112"
 						},
 						{
-							"id": "12345678-0000-0000-0000-900000000005",
-							"target": "12345678-0000-0000-0000-000000000005"
+							"id": "rTestSCDDrrrrr2",
+							"target": "sTestSCDD111113"
 						}
 					]
 				}
@@ -147,13 +147,13 @@ JSON
 					format: 'relation',
 					value: new RelationValue(
 						new Relation(
-							id: new RelationId( '12345678-0000-0000-0000-900000000004' ),
-							targetId: new SubjectId( '12345678-0000-0000-0000-000000000004' ),
+							id: new RelationId( 'rTestSCDDrrrrr1' ),
+							targetId: new SubjectId( 'sTestSCDD111112' ),
 							properties: new RelationProperties( [] )
 						),
 						new Relation(
-							id: new RelationId( '12345678-0000-0000-0000-900000000005' ),
-							targetId: new SubjectId( '12345678-0000-0000-0000-000000000005' ),
+							id: new RelationId( 'rTestSCDDrrrrr2' ),
+							targetId: new SubjectId( 'sTestSCDD111113' ),
 							properties: new RelationProperties( [] )
 						)
 					)

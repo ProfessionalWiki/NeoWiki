@@ -1,7 +1,7 @@
 {
-	"mainSubject": "12345678-0000-0000-0000-000000000001",
+	"mainSubject": "s1demo5sssssss1",
 	"subjects": {
-		"12345678-0000-0000-0000-000000000001": {
+		"s1demo5sssssss1": {
 			"label": "Professional Wiki GmbH",
 			"schema": "Company",
 			"statements": {
@@ -20,12 +20,12 @@
 					"format": "relation",
 					"value": [
 						{
-							"id": "00000000-1111-2222-1100-000000000004",
-							"target": "12345678-0000-0000-0000-000000000004"
+							"id": "r1demo5rrrrrrr1",
+							"target": "s1demo4sssssss1"
 						},
 						{
-							"id": "00000000-1111-2222-1100-000000000005",
-							"target": "12345678-0000-0000-0000-000000000005"
+							"id": "r1demo5rrrrrrr2",
+							"target": "s1demo6sssssss1"
 						}
 					]
 				},

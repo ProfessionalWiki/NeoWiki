@@ -37,8 +37,8 @@ class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->createPageWithSubjects(
 			'PatchSubjectApiTest',
 			mainSubject: TestSubject::build(
-				id: '123e4567-e89b-12d3-a456-426655440000',
-				label: new SubjectLabel( 'Test subject 426655440000' ),
+				id: 'sTestSA11111111',
+				label: new SubjectLabel( 'Test subject sTestSA11111111' ),
 			)
 		);
 	}
@@ -56,7 +56,7 @@ class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
 		return new RequestData( [
 			'method' => 'PATCH',
 			'pathParams' => [
-				'subjectId' => '123e4567-e89b-12d3-a456-426655440000'
+				'subjectId' => 'sTestSA11111111'
 			],
 			'bodyContents' => <<<JSON
 {
@@ -76,11 +76,11 @@ class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
 			"format": "relation",
 			"value": [
 				{
-					"id": "00000000-1111-2222-1100-000000000004",
-					"target": "12345678-0000-0000-0000-000000000004"
+					"id": "rTestSA11111rr1",
+					"target": "sTestSA11111114"
 				},
 				{
-					"target": "12345678-0000-0000-0000-000000000005"
+					"target": "sTestSA11111115"
 				}
 			]
 		},

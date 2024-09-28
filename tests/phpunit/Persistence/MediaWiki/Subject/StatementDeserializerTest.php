@@ -11,7 +11,6 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
@@ -69,13 +68,13 @@ class StatementDeserializerTest extends TestCase {
 				format: 'relation',
 				value: new RelationValue(
 					new Relation(
-						id: new RelationId( '00000000-1111-2222-1100-000000000001' ),
-						targetId: new SubjectId( '12345678-0000-0000-0000-000000000011' ),
+						id: new RelationId( 'rTestSDT1111rr1' ),
+						targetId: new SubjectId( 'sTestSDT1111111' ),
 						properties: new RelationProperties( [] ),
 					),
 					new Relation(
-						id: new RelationId( '00000000-1111-2222-1100-000000000002' ),
-						targetId: new SubjectId( '12345678-0000-0000-0000-000000000012' ),
+						id: new RelationId( 'rTestSDT1111rr2' ),
+						targetId: new SubjectId( 'sTestSDT1111112' ),
 						properties: new RelationProperties( [ 'Foo' => 'Bar' ] ),
 					),
 				)
@@ -86,12 +85,12 @@ class StatementDeserializerTest extends TestCase {
 					'format' => 'relation',
 					'value' => [
 						[
-							'id' => '00000000-1111-2222-1100-000000000001',
-							'target' => '12345678-0000-0000-0000-000000000011',
+							'id' => 'rTestSDT1111rr1',
+							'target' => 'sTestSDT1111111',
 						],
 						[
-							'id' => '00000000-1111-2222-1100-000000000002',
-							'target' => '12345678-0000-0000-0000-000000000012',
+							'id' => 'rTestSDT1111rr2',
+							'target' => 'sTestSDT1111112',
 							'properties' => [
 								'Foo' => 'Bar',
 							],

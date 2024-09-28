@@ -24,12 +24,12 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
  */
 class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 
-	private const GUID_1 = '00000000-1237-0000-0000-000000000001';
-	private const GUID_2 = '00000000-1237-0000-0000-000000000002';
-	private const GUID_3 = '00000000-1237-0000-0000-000000000003';
-	private const GUID_4 = '00000000-1237-0000-0000-000000000004';
-	private const SCHEMA_ID_A = 'Alpha';
-	private const SCHEMA_ID_Z = 'Zed';
+	private const GUID_1 = 'sTestNQS1111111';
+	private const GUID_2 = 'sTestNQS1111112';
+	private const GUID_3 = 'sTestNQS1111113';
+	private const GUID_4 = 'sTestNQS1111114';
+	private const SCHEMA_ID_A = 'sTestNQS111111A';
+	private const SCHEMA_ID_Z = 'sTestNQS111111Z';
 
 	public function setUp(): void {
 		$this->setUpNeo4j();

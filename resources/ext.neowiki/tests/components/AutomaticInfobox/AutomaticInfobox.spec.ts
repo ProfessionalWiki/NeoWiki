@@ -32,7 +32,7 @@ describe( 'AutomaticInfobox', () => {
 	);
 
 	const mockSubject = new Subject(
-		new SubjectId( '00000000-0000-0000-0000-000000000001' ),
+		new SubjectId( 's11111111111111' ),
 		'Test Subject',
 		'TestSchema',
 		new StatementList( [
@@ -100,7 +100,7 @@ describe( 'AutomaticInfobox', () => {
 
 	it( 'renders without statements when subject has no statements', () => {
 		const emptySubject = new Subject(
-			new SubjectId( '00000000-0000-0000-0000-000000000002' ),
+			new SubjectId( 's11111111111112' ),
 			'Empty Subject',
 			'TestSchema',
 			new StatementList( [] ),

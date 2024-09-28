@@ -21,6 +21,8 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
+use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
+use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\QueryStore;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
@@ -30,8 +32,6 @@ use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\WriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatLookup;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
-use ProfessionalWiki\NeoWiki\Infrastructure\GuidGenerator;
-use ProfessionalWiki\NeoWiki\Infrastructure\ProductionGuidGenerator;
 use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\DeleteSubjectApi;
@@ -212,7 +212,7 @@ class NeoWikiExtension {
 		return new CreateSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			guidGenerator: $this->getGuidGenerator(),
+			guidGenerator: $this->getIdGenerator(),
 			subjectActionAuthorizer: $this->newSubjectAuthorizer( $authority ),
 			statementListPatcher: $this->getStatementListPatcher()
 		);
@@ -235,14 +235,14 @@ class NeoWikiExtension {
 		);
 	}
 
-	private function getGuidGenerator(): GuidGenerator {
-		return new ProductionGuidGenerator();
+	private function getIdGenerator(): IdGenerator {
+		return new ProductionIdGenerator();
 	}
 
 	public function getStatementListPatcher(): StatementListPatcher {
 		return new StatementListPatcher(
 			formatTypeLookup: $this->getFormatTypeLookup(),
-			guidGenerator: $this->getGuidGenerator()
+			idGenerator: $this->getIdGenerator()
 		);
 	}
 

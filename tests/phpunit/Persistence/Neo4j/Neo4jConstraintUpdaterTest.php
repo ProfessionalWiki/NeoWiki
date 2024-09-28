@@ -20,7 +20,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
  */
 class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 
-	private const GUID_1 = '00000000-1237-0000-0000-000000000001';
+	private const string SUBJECT_ID = 'sTestNCU1111111';
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
@@ -94,16 +94,16 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			mainSubject: TestSubject::build( id: self::GUID_1 )
+			mainSubject: TestSubject::build( id: self::SUBJECT_ID )
 		) );
 
 		$this->expectException( Neo4jException::class );
 		$this->expectExceptionMessageMatches(
-			'/Neo.ClientError.Schema.ConstraintValidationFailed.*already exists with label `Subject` and property `id` = \'' . self::GUID_1 . '\'"/'
+			'/Neo.ClientError.Schema.ConstraintValidationFailed.*already exists with label `Subject` and property `id` = \'' . self::SUBJECT_ID . '\'"/'
 		);
 
 		$store->runWriteQuery(
-			'CREATE (:Subject {name: "Test", id: "' . self::GUID_1 . '"} )'
+			'CREATE (:Subject {name: "Test", id: "' . self::SUBJECT_ID . '"} )'
 		);
 	}
 
