@@ -5,34 +5,34 @@ import { TestUserObjectBasedRightsFetcher } from './UserObjectBasedRightsFetcher
 
 describe( 'Rights Based Subject Authorizer', async () => {
 
-	const GUID = '00000000-7777-0000-0000-000000000001';
+	const SUBJECT_ID = new SubjectId( 's11111111111117' );
 
 	it( 'can edit subject with right', async () => {
 		const rightsFetcher = new TestUserObjectBasedRightsFetcher( [ 'foo', 'edit', 'bar', 'baz' ] );
 		const authorizer = new RightsBasedSubjectAuthorizer( rightsFetcher );
 
-		expect( await authorizer.canEditSubject( new SubjectId( GUID ) ) ).toBe( true );
+		expect( await authorizer.canEditSubject( SUBJECT_ID ) ).toBe( true );
 	} );
 
 	it( 'cannot edit subject without edit right', async () => {
 		const rightsFetcher = new TestUserObjectBasedRightsFetcher( [ 'foo', 'bar', 'baz' ] );
 		const authorizer = new RightsBasedSubjectAuthorizer( rightsFetcher );
 
-		expect( await authorizer.canEditSubject( new SubjectId( GUID ) ) ).toBe( false );
+		expect( await authorizer.canEditSubject( SUBJECT_ID ) ).toBe( false );
 	} );
 
 	it( 'can delete subject with right', async () => {
 		const rightsFetcher = new TestUserObjectBasedRightsFetcher( [ 'foo', 'delete', 'bar', 'baz' ] );
 		const authorizer = new RightsBasedSubjectAuthorizer( rightsFetcher );
 
-		expect( await authorizer.canDeleteSubject( new SubjectId( GUID ) ) ).toBe( true );
+		expect( await authorizer.canDeleteSubject( SUBJECT_ID ) ).toBe( true );
 	} );
 
 	it( 'cannot delete subject without delete right', async () => {
 		const rightsFetcher = new TestUserObjectBasedRightsFetcher( [ 'foo', 'bar', 'baz' ] );
 		const authorizer = new RightsBasedSubjectAuthorizer( rightsFetcher );
 
-		expect( await authorizer.canDeleteSubject( new SubjectId( GUID ) ) ).toBe( false );
+		expect( await authorizer.canDeleteSubject( SUBJECT_ID ) ).toBe( false );
 	} );
 
 	it( 'can create child subject with rights', async () => {

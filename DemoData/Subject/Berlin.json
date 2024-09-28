@@ -1,7 +1,7 @@
 {
-	"mainSubject": "01899e9a-1798-70cc-b8db-8e396f333b7d",
+	"mainSubject": "s1demo2sssssss1",
 	"subjects": {
-		"01899e9a-1798-70cc-b8db-8e396f333b7d": {
+		"s1demo2sssssss1": {
 			"label": "Berlin",
 			"schema": "City",
 			"statements": {
@@ -11,7 +11,7 @@
 				}
 			}
 		},
-		"01899e9c-180d-7147-aa9f-c387e3e4926c": {
+		"s1demo2sssssss2": {
 			"label": "Latest",
 			"schema": "Population",
 			"statements": {
@@ -33,7 +33,7 @@
 				}
 			}
 		},
-		"01899ea3-f9c8-724a-bd88-22ca1303fb03": {
+		"s1demo2sssssss3": {
 			"label": "2016",
 			"schema": "Population",
 			"statements": {
@@ -55,7 +55,7 @@
 				}
 			}
 		},
-		"01899ea5-7b88-735a-8229-f7652a1c9834": {
+		"s1demo2sssssss4": {
 			"label": " 1852",
 			"schema": "Population",
 			"statements": {

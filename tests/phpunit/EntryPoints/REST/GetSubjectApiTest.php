@@ -48,8 +48,8 @@ JSON
 		$this->createPageWithSubjects(
 			'GetSubjectApiTest',
 			mainSubject: TestSubject::build(
-				id: '123e4567-e89b-12d3-a456-426655440008',
-				label: new SubjectLabel( 'Test subject 426655440008' ),
+				id: 'sTestGSA1111114',
+				label: new SubjectLabel( 'Test subject sTestGSA1111114' ),
 				schemaId: new SchemaName( 'GetSubjectApiTestSchema' )
 			)
 		);
@@ -59,7 +59,7 @@ JSON
 			new RequestData( [
 				'method' => 'GET',
 				'pathParams' => [
-					'subjectId' => '123e4567-e89b-12d3-a456-426655440008'
+					'subjectId' => 'sTestGSA1111114'
 				]
 			] )
 		);
@@ -67,11 +67,11 @@ JSON
 		$this->assertJsonStringEqualsJsonString(
 			<<<JSON
 {
-    "requestedId": "123e4567-e89b-12d3-a456-426655440008",
+    "requestedId": "sTestGSA1111114",
     "subjects": {
-        "123e4567-e89b-12d3-a456-426655440008": {
-            "id": "123e4567-e89b-12d3-a456-426655440008",
-            "label": "Test subject 426655440008",
+        "sTestGSA1111114": {
+            "id": "sTestGSA1111114",
+            "label": "Test subject sTestGSA1111114",
             "schema": "GetSubjectApiTestSchema",
             "statements": []
         }
@@ -89,7 +89,7 @@ JSON,
 			new RequestData( [
 				'method' => 'GET',
 				'pathParams' => [
-					'subjectId' => '404e4567-e89b-12d3-a456-426655440404'
+					'subjectId' => 'sTestGSA1111115'
 				]
 			] )
 		);
@@ -105,21 +105,21 @@ JSON,
 		$firstPageId = $this->createPageWithSubjects(
 			'GetSubjectApiTest0000',
 			mainSubject: TestSubject::build(
-				id: '123e4567-e89b-12d3-a456-426655440000',
+				id: 'sTestGSA1111111',
 				schemaId: new SchemaName( 'GetSubjectApiTestSchema' ),
 				statements: new StatementList( [
 					TestStatement::buildRelation(
 						'MyRelation',
 						[
-							TestRelation::build( id: '00000000-1111-2222-1100-000000440011', targetId: '123e4567-e89b-12d3-a456-426655440001' ),
-							TestRelation::build( id: '00000000-1111-2222-1100-000000440022', targetId: '123e4567-e89b-12d3-a456-426655440002' ),
+							TestRelation::build( id: 'rTestGSA1111rr1', targetId: 'sTestGSA1111112' ),
+							TestRelation::build( id: 'rTestGSA1111rr2', targetId: 'sTestGSA1111113' ),
 						]
 					)
 				] )
 			),
 			childSubjects: new SubjectMap(
 				TestSubject::build(
-					id: '123e4567-e89b-12d3-a456-426655440001',
+					id: 'sTestGSA1111112',
 					schemaId: new SchemaName( 'GetSubjectApiTestSchema' ),
 				)
 			)
@@ -128,13 +128,13 @@ JSON,
 		$secondPageId = $this->createPageWithSubjects(
 			'GetSubjectApiTest0002',
 			mainSubject: TestSubject::build(
-				id: '123e4567-e89b-12d3-a456-426655440002',
+				id: 'sTestGSA1111113',
 				schemaId: new SchemaName( 'GetSubjectApiTestSchema' ),
 				statements: new StatementList( [
 					TestStatement::buildRelation(
 						'MyRelation',
 						[
-							TestRelation::build( id: '00000000-1111-2222-1100-000000440033', targetId: '123e4567-e89b-12d3-a456-426655440001' ),
+							TestRelation::build( id: 'rTestGSA1111rr3', targetId: 'sTestGSA1111112' ),
 						]
 					)
 				] )
@@ -146,7 +146,7 @@ JSON,
 			new RequestData( [
 				'method' => 'GET',
 				'pathParams' => [
-					'subjectId' => '123e4567-e89b-12d3-a456-426655440000'
+					'subjectId' => 'sTestGSA1111111'
 				],
 				'queryParams' => [
 					'expand' => 'page|relations'
@@ -157,10 +157,10 @@ JSON,
 		$this->assertJsonStringEqualsJsonString(
 			<<<JSON
 {
-    "requestedId": "123e4567-e89b-12d3-a456-426655440000",
+    "requestedId": "sTestGSA1111111",
     "subjects": {
-        "123e4567-e89b-12d3-a456-426655440000": {
-            "id": "123e4567-e89b-12d3-a456-426655440000",
+        "sTestGSA1111111": {
+            "id": "sTestGSA1111111",
             "label": "Test subject",
             "schema": "GetSubjectApiTestSchema",
             "pageId": $firstPageId,
@@ -170,27 +170,27 @@ JSON,
                 	"format": "relation",
                 	"value": [
 						{
-							"id": "00000000-1111-2222-1100-000000440011",
-							"target": "123e4567-e89b-12d3-a456-426655440001"
+							"id": "rTestGSA1111rr1",
+							"target": "sTestGSA1111112"
 						},
 						{
-							"id": "00000000-1111-2222-1100-000000440022",
-							"target": "123e4567-e89b-12d3-a456-426655440002"
+							"id": "rTestGSA1111rr2",
+							"target": "sTestGSA1111113"
 						}
 					]
                 }
             }
         },
-        "123e4567-e89b-12d3-a456-426655440001": {
-            "id": "123e4567-e89b-12d3-a456-426655440001",
+        "sTestGSA1111112": {
+            "id": "sTestGSA1111112",
             "label": "Test subject",
             "schema": "GetSubjectApiTestSchema",
             "pageId": $firstPageId,
             "pageTitle": "GetSubjectApiTest0000",
             "statements": []
         },
-        "123e4567-e89b-12d3-a456-426655440002": {
-            "id": "123e4567-e89b-12d3-a456-426655440002",
+        "sTestGSA1111113": {
+            "id": "sTestGSA1111113",
             "label": "Test subject",
             "schema": "GetSubjectApiTestSchema",
             "pageId": $secondPageId,
@@ -200,8 +200,8 @@ JSON,
                 "format": "relation",
 				"value": [
 						{
-							"id": "00000000-1111-2222-1100-000000440033",
-							"target": "123e4567-e89b-12d3-a456-426655440001"
+							"id": "rTestGSA1111rr3",
+							"target": "sTestGSA1111112"
 						}
 					]
                 }

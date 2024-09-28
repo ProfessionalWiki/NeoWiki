@@ -46,7 +46,7 @@ class DeleteSubjectApiTest extends NeoWikiIntegrationTestCase {
 		return new RequestData( [
 			'method' => 'DELETE',
 			'pathParams' => [
-				'subjectId' => '123e4567-e89b-12d3-a456-426655440000'
+				'subjectId' => 'sTestDSA1111111'
 			],
 			'headers' => [
 				'Content-Type' => 'application/json'
@@ -58,8 +58,8 @@ class DeleteSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->createPageWithSubjects(
 			'DeleteSubjectApiTest',
 			mainSubject: TestSubject::build(
-				id: '123e4567-e89b-12d3-a456-426655440000',
-				label: new SubjectLabel( 'Test subject 426655440000' ),
+				id: 'sTestDSA1111111',
+				label: new SubjectLabel( 'Test subject sTestDSA1111111' ),
 			)
 		);
 	}

@@ -32,7 +32,7 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 	public function testGetSubjectReturnsNullForUnknownSubject(): void {
 		$this->assertNull(
 			$this->newRepository()->getSubject(
-				new SubjectId( '00000000-0000-0000-0000-000000000000' )
+				new SubjectId( 'sTestMSR1111111' )
 			)
 		);
 	}
@@ -46,17 +46,17 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		$this->createPageWithSubjects(
 			'SubjectRepoTestOne',
 			mainSubject: TestSubject::build(
-				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48d086',
-				label: new SubjectLabel( 'Test subject d086' ),
+				id: 'sTestMSR1111112',
+				label: new SubjectLabel( 'Test subject 2' ),
 			),
 			childSubjects: new SubjectMap(
 				TestSubject::build(
-					id: '93e58a18-dc3e-41aa-8d67-79a18e9846f8',
-					label: new SubjectLabel( 'Test subject 46f8' ),
+					id: 'sTestMSR1111113',
+					label: new SubjectLabel( 'Test subject 3' ),
 				),
 				TestSubject::build(
-					id: '9d6b4927-0c04-41b3-8daa-3b1d83f42cf3',
-					label: new SubjectLabel( 'Test subject 2cf3' ),
+					id: 'sTestMSR1111114',
+					label: new SubjectLabel( 'Test subject 4' ),
 				)
 			)
 		);
@@ -64,8 +64,8 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		$this->createPageWithSubjects(
 			'SubjectRepoTestTwo',
 			mainSubject: TestSubject::build(
-				id: 'e594cecf-bb6f-4857-a59b-eb26152e135d',
-				label: new SubjectLabel( 'Test subject 135d' ),
+				id: 'sTestMSR1111115',
+				label: new SubjectLabel( 'Test subject 5' ),
 			)
 		);
 
@@ -78,12 +78,12 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		$this->createPages();
 
 		$this->newRepository()->deleteSubject(
-			new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f8' )
+			new SubjectId( 'sTestMSR1111113' )
 		);
 
 		$this->assertNull(
 			$this->newRepository()->getSubject(
-				new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f8' )
+				new SubjectId( 'sTestMSR1111113' )
 			)
 		);
 	}
@@ -92,12 +92,12 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		$this->createPages();
 
 		$this->newRepository()->deleteSubject(
-			new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f8' )
+			new SubjectId( 'sTestMSR1111113' )
 		);
 
 		$this->assertNull(
 			$this->newRepository()->getSubject(
-				new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f8' )
+				new SubjectId( 'sTestMSR1111113' )
 			)
 		);
 	}
@@ -120,15 +120,15 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		$pageId = $this->createPageWithSubjects(
 			'SubjectRepoTestPageWithSubject',
 			mainSubject: TestSubject::build(
-				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48d086',
-				label: new SubjectLabel( 'Test subject d086' ),
+				id: 'sTestMSR1111112',
+				label: new SubjectLabel( 'Test subject 2' ),
 			)
 		)->getPage()->getId();
 
 		$this->assertEquals(
 			TestSubject::build(
-				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48d086',
-				label: new SubjectLabel( 'Test subject d086' ),
+				id: 'sTestMSR1111112',
+				label: new SubjectLabel( 'Test subject 2' ),
 			),
 			$this->newRepository()->getMainSubject( new PageId( $pageId ) )
 		);
@@ -144,8 +144,8 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 
 		$subjects->setMainSubject(
 			TestSubject::build(
-				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48d086',
-				label: new SubjectLabel( 'Test subject d086' ),
+				id: 'sTestMSR1111112',
+				label: new SubjectLabel( 'Test subject 2' ),
 			)
 		);
 
@@ -153,8 +153,8 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertEquals(
 			TestSubject::build(
-				id: '70ba6d09-4ca4-4f2a-93e4-4f4f9c48d086',
-				label: new SubjectLabel( 'Test subject d086' ),
+				id: 'sTestMSR1111112',
+				label: new SubjectLabel( 'Test subject 2' ),
 			),
 			$repo->getMainSubject( $pageId )
 		);
@@ -172,11 +172,11 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertEquals(
 			TestSubject::build(
-				id: '93e58a18-dc3e-41aa-8d67-79a18e9846f8',
-				label: new SubjectLabel( 'Test subject 46f8' ),
+				id: 'sTestMSR1111113',
+				label: new SubjectLabel( 'Test subject 3' ),
 			),
 			$this->newRepository()->getSubject(
-				new SubjectId( '93e58a18-dc3e-41aa-8d67-79a18e9846f8' )
+				new SubjectId( 'sTestMSR1111113' )
 			)
 		);
 	}
