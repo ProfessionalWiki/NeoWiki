@@ -30,14 +30,13 @@
 						/>
 					</div>
 				</div>
-				<a class="cdx-docs-link" @click="editInfoBox">Edit</a>
+				<a
+					v-if="canEdit"
+					class="cdx-docs-link"
+					@click="editInfoBox">Edit</a>
 				<!-- TODO: statements not in schema -->
 			</div>
 		</div>
-
-		<CdxButton v-if="canEdit">
-			{{ $i18n( 'neowiki-infobox-edit-link' ).text() }}
-		</CdxButton>
 
 		<InfoboxEditor
 			ref="infoboxEditorDialog"
@@ -65,10 +64,7 @@ import { Component } from 'vue';
 import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
 import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefinitionEditor.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
-import { newNumberValue, newStringValue, ValueType } from '@neo/domain/Value.ts';
-import { Statement } from '@neo/domain/Statement.ts';
-import { Value } from 'sass-embedded';
-import { StatementList } from '@neo/domain/StatementList.ts';
+import { ValueType } from '@neo/domain/Value.ts';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 
 const props = defineProps( {
