@@ -10,12 +10,16 @@ export const useSchemaStore = defineStore( 'schema', {
 		getSchemas: ( state ) => state.schemas,
 		getSchema: ( state ) => ( schemaName: string ): Schema => {
 			const schema = state.schemas.get( schemaName );
-
 			if ( schema === undefined ) {
 				throw new Error( 'Unknown schema: ' + schemaName );
 			}
 
 			return schema as Schema;
+		}
+	},
+	actions: {
+		setSchema( name: string, schema: Schema ) {
+			this.schemas.set( name, schema );
 		}
 	}
 } );

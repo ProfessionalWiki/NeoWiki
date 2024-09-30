@@ -1,47 +1,50 @@
 <template>
 	<CdxDialog
+		v-if="localSubject"
 		v-model:open="isOpen"
-		:title="isEditMode ?
-			( selectedType ?
-				$i18n( 'neowiki-infobox-editor-dialog-title-edit', selectedType ).text() :
-				$i18n( 'neowiki-infobox-editor-dialog-title-edit-blank' ).text() ) :
-			( selectedType ?
-				$i18n( 'neowiki-infobox-editor-dialog-title-create', selectedType ).text() :
-				$i18n( 'neowiki-infobox-editor-dialog-title-create-blank' ).text() )"
-		class="infobox-editor">
+		:use-close-button="true"
+		title="Manage Infobox"
+		class="infobox-editor"
+	>
 		<NeoTextField
-			v-model="name"
+			:model-value="localSubject.getLabel()"
 			:required="true"
-			:min-length="3"
-			:max-length="50"
 			:label="$i18n( 'neowiki-infobox-editor-subject-label' ).text()"
 			@validation="handleValidation"
 		/>
-		<div
+		<NeoTextField
+			:model-value="localSubject.getSchemaName()"
+			:required="true"
+			:label="$i18n( 'neowiki-create-subject-dialog-schema' ).text()"
+			disabled
+		/>
+		<div class="add-statement-section">
+			<div class="add-statement-placeholder" @click="toggleDropdown">
+				<CdxIcon :icon="cdxIconAdd" class="add-icon" />
+				<span>{{ $i18n( 'neowiki-infobox-editor-add-property' ).text() }}</span>
+			</div>
+			<NeoTypeSelectDropdown
+				v-if="isDropdownOpen"
+				:types="statementTypes"
+				@select="addStatement"
+			/>
+		</div>
+		<StatementEditor
 			v-for="( statement, index ) in statements"
 			:key="index"
-			class="statement-editor">
-			<CdxField>
-				<CdxTextInput v-model="statement.property" />
-				<template #label>
-					{{ $i18n( 'neowiki-infobox-editor-property-label' ).text() }}
-				</template>
-			</CdxField>
-			<CdxField>
-				<CdxTextInput v-model="statement.value" />
-				<template #label>
-					{{ $i18n( 'neowiki-infobox-editor-value-label' ).text() }}
-				</template>
-			</CdxField>
-			<CdxButton action="destructive" @click="removeStatement( index )">
-				<CdxIcon :icon="cdxIconTrash" />
-				{{ $i18n( 'neowiki-infobox-editor-remove-statement' ).text() }}
-			</CdxButton>
-		</div>
-		<CdxButton @click="addStatement">
-			<CdxIcon :icon="cdxIconAdd" />
-			{{ $i18n( 'neowiki-infobox-editor-add-statement' ).text() }}
-		</CdxButton>
+			class="statement-editor-row"
+			:statement="<Statement>statement"
+			@update="updateStatement( index, $event )"
+			@remove="removeStatement( index )"
+			@edit="editProperty"
+		/>
+		<PropertyDefinitionEditor
+			:key="localSubject.getId().text + 'info'"
+			ref="propertyDefinitionEditorInfo"
+			:edit-mode="true"
+			:property="editingProperty as PropertyDefinition"
+			@save="handlePropertySave"
+		/>
 		<template #footer>
 			<CdxButton
 				:aria-label="$i18n( 'neowiki-create-subject-dialog-go-back' ).text()"
@@ -51,6 +54,7 @@
 			</CdxButton>
 
 			<CdxButton
+				class="neo-button"
 				action="progressive"
 				weight="primary"
 				@click="submit">
@@ -61,30 +65,158 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { CdxDialog, CdxTextInput, CdxButton, CdxField, CdxIcon } from '@wikimedia/codex';
+import { ref, watch } from 'vue';
+import { CdxDialog, CdxButton, CdxIcon } from '@wikimedia/codex';
+import { cdxIconAdd, cdxIconArrowPrevious, cdxIconLink } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
-import { cdxIconAdd, cdxIconTrash, cdxIconArrowPrevious } from '@wikimedia/codex-icons';
+import StatementEditor from '@/components/UIComponents/StatementEditor.vue';
+import { Subject } from '@neo/domain/Subject.ts';
+import { SubjectId } from '@neo/domain/SubjectId';
+import { Schema, SchemaName } from '@neo/domain/Schema';
+import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { StatementList } from '@neo/domain/StatementList.ts';
+import { Statement } from '@neo/domain/Statement';
+import NeoTypeSelectDropdown from '@/components/UIComponents/NeoTypeSelectDropdown.vue';
+import { cdxIconTextA, cdxIconStringInteger } from '@/assets/CustomIcons';
+import { useSchemaStore } from '@/stores/SchemaStore';
+import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefinitionEditor.vue';
+import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
+import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
+import { newSubject } from '@neo/TestHelpers.ts';
 
 const props = defineProps<{
-	selectedType: string;
-	initialStatements?: { property: string; value: string }[];
-	isEditMode: boolean;
+	selectedSchemaType?: string;
+	subject?: Subject;
 }>();
 
-const emit = defineEmits( [ 'complete', 'back' ] );
+const emit = defineEmits( [ 'save', 'back', 'addStatement' ] );
 const isOpen = ref( false );
-const name = ref( '' );
-const statements = ref<{ property: string; value: string }[]>( [] );
+const localSubject = ref<Subject | null>( null );
+const statements = ref<Statement[]>( [] );
+const schemaStore = useSchemaStore();
+const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
+const editingProperty = ref<PropertyDefinition | null>( null );
+
+const addMissingStatements = (): void => {
+	if ( props.subject !== undefined ) {
+		const schemaName = props.subject.getSchemaName();
+		const schema = schemaStore.getSchema( schemaName );
+
+		const existingPropertyNames = new Set( statements.value.map( ( stmt ) => stmt.propertyName.toString() ) );
+
+		const missingStatements = Array.from( schema.getPropertyDefinitions() )
+			.filter( ( propertyDef ) => !existingPropertyNames.has( propertyDef.name.toString() ) )
+			.map( ( propertyDef ) => new Statement(
+				propertyDef.name,
+				propertyDef.format,
+				undefined
+			)
+			);
+		statements.value = [ ...statements.value, ...missingStatements ];
+	}
+};
 
 const openDialog = (): void => {
 	isOpen.value = true;
-	name.value = props.selectedType || '';
-	statements.value = props.initialStatements ? [ ...props.initialStatements ] : [];
+	if ( props.subject ) {
+		localSubject.value = new Subject(
+			props.subject.getId(),
+			props.subject.getLabel(),
+			props.subject.getSchemaName(),
+			props.subject.getStatements(),
+			props.subject.getPageIdentifiers()
+		);
+		statements.value = [ ...props.subject.getStatements() ];
+		addMissingStatements();
+
+	} else {
+		localSubject.value = new Subject(
+			new SubjectId( '12345678-0000-0000-0000-000000000123' ),
+			'',
+			props.selectedSchemaType as SchemaName,
+			new StatementList( [] ),
+			new PageIdentifiers( 1, 'page-title' )
+		);
+		statements.value = [];
+	}
 };
 
-const addStatement = (): void => {
-	statements.value.push( { property: '', value: '' } );
+const isDropdownOpen = ref( false );
+const currentSchemaName = ref( '' );
+
+const statementTypes = [
+	{ value: 'text', label: 'Text', icon: cdxIconTextA },
+	{ value: 'url', label: 'URL', icon: cdxIconLink },
+	{ value: 'number', label: 'Number', icon: cdxIconStringInteger }
+];
+
+const editProperty = ( propertyName: PropertyName ): void => {
+	if ( localSubject.value ) {
+		const schema = schemaStore.getSchema( localSubject.value.getSchemaName() );
+		const property = schema.getPropertyDefinitions().get( propertyName );
+		if ( property ) {
+			currentSchemaName.value = schema.getName();
+			editingProperty.value = property as PropertyDefinition;
+			propertyDefinitionEditorInfo.value?.openDialog();
+		}
+	}
+};
+
+const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
+	const schemaName = currentSchemaName.value;
+	const propertyName = editingProperty.value?.name;
+
+	if ( !propertyName ) {
+		console.error( 'No property name found to update' );
+		return;
+	}
+
+	const schema = schemaStore.getSchema( schemaName );
+
+	const currentProperties = schema.getPropertyDefinitions();
+
+	const updatedProperties = Array.from( currentProperties ).map( ( prop ) => prop.name.toString() === propertyName.toString() ? savedProperty : prop
+	);
+	const newPropertyList = new PropertyDefinitionList( updatedProperties );
+
+	const updatedSchema = new Schema(
+		schema.getName(),
+		schema.getDescription(),
+		newPropertyList
+	);
+	schemaStore.schemas.set( schemaName, updatedSchema );
+
+	const updatedStatements = statements.value.map( ( statement ) => statement.propertyName.toString() === editingProperty.value?.name.toString() ?
+		new Statement(
+			new PropertyName( savedProperty.name.toString() ),
+			savedProperty.format,
+			statement.value
+		) :
+		statement
+	);
+
+	// Update statements
+	statements.value = updatedStatements;
+
+	console.log( updatedStatements );
+
+	console.log( localSubject.value );
+
+	editingProperty.value = null;
+};
+
+const toggleDropdown = (): void => {
+	isDropdownOpen.value = !isDropdownOpen.value;
+};
+
+const addStatement = ( type: string ): void => {
+	emit( 'addStatement', type );
+	isDropdownOpen.value = false;
+};
+
+const updateStatement = ( index: number, updatedStatement: Statement ): void => {
+	statements.value[ index ] = updatedStatement;
 };
 
 const removeStatement = ( index: number ): void => {
@@ -94,26 +226,51 @@ const removeStatement = ( index: number ): void => {
 const handleValidation = ( isValid: boolean ): void => {
 	console.log( isValid );
 };
-const submit = (): void => {
-	console.log(
-		`${ props.isEditMode ? 'Updating' : 'Creating' } ${ props.selectedType || 'subject' }: ${ name.value }`
-	);
-	console.log( 'Statements:', statements.value );
-	isOpen.value = false;
-	emit( 'complete', statements.value );
-};
 
 const goBack = (): void => {
 	emit( 'back' );
 	isOpen.value = false;
 };
 
-defineExpose( { openDialog } );
+const submit = (): void => {
+	if ( localSubject.value ) {
+		const properStatements = statements.value.map( ( stmt ) => {
+			console.log( 'Statement:', stmt );
+			return new Statement(
+				new PropertyName( stmt.propertyName.toString() ),
+				stmt.format,
+				stmt.value
+			);
+		} );
+
+		localSubject.value = new Subject(
+			localSubject.value.getId(),
+			localSubject.value.getLabel(),
+			localSubject.value.getSchemaName(),
+			new StatementList( properStatements ),
+			localSubject.value.getPageIdentifiers()
+		);
+	}
+	emit( 'save', localSubject.value );
+	isOpen.value = false;
+};
+
+defineExpose( { openDialog, addMissingStatements } );
 </script>
 
-<style>
+<style lang="scss">
+@import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+
 .cdx-dialog.infobox-editor {
-	max-width: 500px;
+	max-width: $size-5600;
+	max-height: 90vh;
+	display: flex;
+	flex-direction: column;
+
+	.cdx-dialog__body {
+		flex-grow: 1;
+		overflow-y: auto;
+	}
 
 	footer {
 		display: flex;
@@ -122,9 +279,48 @@ defineExpose( { openDialog } );
 	}
 }
 
-.statement-editor {
-	margin-bottom: 10px;
-	padding-bottom: 10px;
-	border-bottom: 1px solid #eaecf0;
+.infobox-editor__content {
+	overflow-y: auto;
+	max-height: calc( 90vh - #{$size-800} );
+	padding-right: $spacing-100;
+}
+
+.add-statement-section {
+	margin: $spacing-100 0;
+	position: relative;
+	cursor: $cursor-base--hover;
+	float: right;
+}
+
+.add-statement-placeholder {
+	display: flex;
+	align-items: center;
+	padding: $spacing-50 $spacing-75;
+	background-color: $background-color-interactive-subtle;
+	border: $border-width-base $border-style-dashed $border-color-base;
+	border-radius: $border-radius-base;
+	transition: all $transition-duration-base $transition-timing-function-system;
+
+	&:hover {
+		background-color: $background-color-interactive;
+		border-color: $border-color-interactive;
+	}
+
+	.add-icon {
+		margin-right: $spacing-50;
+		color: $color-success;
+	}
+
+	span {
+		color: $color-subtle;
+		font-size: $font-size-small;
+	}
+}
+
+.neo-type-select-dropdown {
+	margin-top: $spacing-25;
+	width: $size-full;
+	position: absolute;
+	z-index: $z-index-dropdown;
 }
 </style>

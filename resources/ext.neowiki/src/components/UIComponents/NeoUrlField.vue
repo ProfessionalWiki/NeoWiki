@@ -3,6 +3,7 @@
 		:status="validationStatus"
 		:messages="validationMessages"
 		:required="required"
+		class="neo-url-field neo-text-field"
 	>
 		<template #label>
 			{{ label }}
@@ -10,6 +11,7 @@
 		<CdxTextInput
 			v-model="inputValue"
 			input-type="url"
+			:start-icon="cdxIconLink"
 			@input="validateInput"
 		/>
 	</CdxField>
@@ -18,6 +20,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
+import { cdxIconLink } from '@wikimedia/codex-icons';
 
 const props = defineProps( {
 	modelValue: {
@@ -76,3 +79,18 @@ watch( () => props.modelValue, ( newValue ) => {
 	inputValue.value = newValue;
 } );
 </script>
+
+<style lang="scss" scoped>
+.neo-url-field {
+	.cdx-text-input {
+		&__input {
+			padding-left: 36px; // Make room for the icon
+		}
+
+		&__start-icon {
+			left: 8px;
+			color: #54595d;
+		}
+	}
+}
+</style>

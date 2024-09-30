@@ -154,7 +154,10 @@
 				"CdxTextInput",
 				"CdxSearchInput",
 				"CdxTypeaheadSearch",
-				"CdxTooltip"
+				"CdxTooltip",
+				"CdxSelect",
+				"CdxCheckbox",
+				"CdxTextArea"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",
@@ -165,7 +168,10 @@
 						"cdxIconAdd",
 						"cdxIconTrash",
 						"cdxIconArrowPrevious",
-						"cdxIconInfoFilled"
+						"cdxIconInfoFilled",
+						"cdxIconEdit",
+						"cdxIconLink",
+						"cdxIconCheck"
 					]
 				}
 			],
@@ -180,6 +186,7 @@
 				"neowiki-infobox-editor-dialog-title-edit",
 				"neowiki-infobox-editor-subject-label",
 				"neowiki-infobox-editor-property-label",
+				"neowiki-infobox-editor-add-property",
 				"neowiki-infobox-editor-value-label",
 				"neowiki-infobox-editor-remove-statement",
 				"neowiki-infobox-editor-add-statement",
@@ -195,9 +202,18 @@
 				"neowiki-field-max-value",
 				"neowiki-field-invalid-url",
 				"neowiki-infobox-edit-link",
+				"neowiki-create-subject-dialog-schema",
 				"neowiki-create-subject-dialog-select-schema",
 				"neowiki-create-subject-dialog-start-blank-description",
-				"neowiki-create-subject-dialog-go-back"
+				"neowiki-create-subject-dialog-go-back",
+				"neowiki-infobox-editor-save-property",
+				"neowiki-infobox-editor-no-property-selected",
+				"neowiki-infobox-editor-property-description",
+				"neowiki-infobox-editor-property-format",
+				"neowiki-infobox-editor-property-required",
+				"neowiki-infobox-editor-format-text",
+				"neowiki-infobox-editor-format-url",
+				"neowiki-infobox-editor-format-number"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

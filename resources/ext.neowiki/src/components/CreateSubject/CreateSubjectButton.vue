@@ -10,7 +10,7 @@
 		/>
 		<InfoboxEditor
 			ref="infoboxEditorDialog"
-			:selected-type="selectedType"
+			:selected-schema-type="selectedSchemaType"
 			:is-edit-mode="false"
 			@complete="onCreationComplete"
 			@back="onInfoboxBack"
@@ -27,7 +27,7 @@ import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
 
 const createSubjectDialog = ref<typeof CreateSubjectDialog|null>( null );
 const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
-const selectedType = ref( '' );
+const selectedSchemaType = ref( '' );
 
 const openDialog = (): void => {
 	if ( createSubjectDialog.value === null ) {
@@ -42,13 +42,13 @@ const onSubjectTypeSelected = ( type: string ): void => {
 		return;
 	}
 
-	selectedType.value = type;
+	selectedSchemaType.value = type;
 	infoboxEditorDialog.value.openDialog();
 };
 
 const onCreationComplete = (): void => {
 	console.log( 'Creation process completed' );
-	selectedType.value = '';
+	selectedSchemaType.value = '';
 };
 
 const onInfoboxBack = (): void => {

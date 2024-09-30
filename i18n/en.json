@@ -19,6 +19,7 @@
 	"neowiki-create-subject-dialog-start-blank-description": "Tooltip for Start blank description",
 	"neowiki-create-subject-dialog-or-select": "Or use a schema",
 	"neowiki-create-subject-dialog-select-schema": "Select a schema",
+	"neowiki-create-subject-dialog-schema": "Schema",
 	"neowiki-create-subject-dialog-go-back": "Go back",
 
 	"neowiki-infobox-editor-dialog-title-create": "Create new $1",
@@ -26,6 +27,8 @@
 	"neowiki-infobox-editor-dialog-title-edit": "Edit $1",
 	"neowiki-infobox-editor-subject-label": "Subject label",
 	"neowiki-infobox-editor-property-label": "Property",
+	"neowiki-infobox-editor-add-property": "Add Property",
+	"neowiki-infobox-editor-save-property": "Save Property",
 	"neowiki-infobox-editor-value-label": "Value",
 	"neowiki-infobox-editor-remove-statement": "Remove",
 	"neowiki-infobox-editor-add-statement": "Add statement",
@@ -41,5 +44,13 @@
 	"neowiki-field-invalid-number": "Please enter a valid number.",
 	"neowiki-field-min-value": "Minimum value is $1.",
 	"neowiki-field-max-value": "Maximum value is $1.",
-	"neowiki-field-invalid-url": "Please enter a valid URL."
+	"neowiki-field-invalid-url": "Please enter a valid URL.",
+
+	"neowiki-infobox-editor-no-property-selected": "No property selected",
+	"neowiki-infobox-editor-property-description": "Description",
+	"neowiki-infobox-editor-property-format": "Format",
+	"neowiki-infobox-editor-property-required": "Make it a required field",
+	"neowiki-infobox-editor-format-text": "Text",
+	"neowiki-infobox-editor-format-url": "URL",
+	"neowiki-infobox-editor-format-number": "Number"
 }
