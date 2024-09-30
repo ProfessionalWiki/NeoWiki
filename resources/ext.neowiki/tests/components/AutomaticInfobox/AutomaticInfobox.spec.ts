@@ -66,7 +66,7 @@ describe( 'AutomaticInfobox', () => {
 			props: {
 				subject: mockSubject,
 				schema: mockSchema,
-				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry()
+				componentRegistry: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
 			},
 			global: {
 				mocks: {
@@ -83,7 +83,7 @@ describe( 'AutomaticInfobox', () => {
 			props: {
 				subject: mockSubject,
 				schema: mockSchema,
-				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry()
+				componentRegistry: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
 			},
 			global: {
 				mocks: {
@@ -123,7 +123,7 @@ describe( 'AutomaticInfobox', () => {
 			props: {
 				subject: emptySubject,
 				schema: mockSchema,
-				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry()
+				componentRegistry: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
 			},
 			global: {
 				mocks: {
@@ -143,7 +143,7 @@ describe( 'AutomaticInfobox', () => {
 			props: {
 				subject: mockSubject,
 				schema: mockSchema,
-				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry(),
+				componentRegistry: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry(),
 				canEdit: false
 			},
 			global: {
@@ -161,7 +161,7 @@ describe( 'AutomaticInfobox', () => {
 			props: {
 				subject: mockSubject,
 				schema: mockSchema,
-				valueFormatComponentRegistry: NeoWikiExtension.getInstance().getValueFormatComponentRegistry(),
+				componentRegistry: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry(),
 				canEdit: true
 			},
 			global: {

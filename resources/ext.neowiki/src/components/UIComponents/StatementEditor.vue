@@ -12,7 +12,7 @@
 			</div>
 			<div class="statement-editor__field-wrapper">
 				<component
-					:is="getFieldComponent( localStatement.format )"
+					:is="componentRegistry.getValueEditingComponent( localStatement.format )"
 					:model-value="getStatementValue( localStatement.value )"
 					:label="$i18n( 'neowiki-infobox-editor-value-label' ).text()"
 					class="statement-editor__value"
@@ -43,18 +43,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, Component } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconTrash, cdxIconEdit } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
-import NeoUrlField from '@/components/UIComponents/NeoUrlField.vue';
-import NeoNumberField from '@/components/UIComponents/NeoNumberField.vue';
 import { Statement } from '@neo/domain/Statement';
 import { Value, ValueType, StringValue, NumberValue, newStringValue, newNumberValue } from '@neo/domain/Value';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
 
 const props = defineProps<{
 	statement: Statement;
+	componentRegistry: FormatSpecificComponentRegistry;
 }>();
 
 const emit = defineEmits( [ 'update', 'remove', 'edit' ] );
@@ -65,20 +65,7 @@ watch( () => props.statement, ( newStatement ) => {
 	localStatement.value = newStatement;
 }, { deep: true } );
 
-const getFieldComponent = ( format: string ): typeof NeoTextField | typeof NeoUrlField | typeof NeoNumberField => {
-	switch ( format ) {
-		case 'text':
-			return NeoTextField;
-		case 'url':
-			return NeoUrlField;
-		case 'number':
-			return NeoNumberField;
-		default:
-			return NeoTextField;
-	}
-};
-
-const getStatementValue = ( value: Value | undefined ): string => {
+const getStatementValue = ( value: Value | undefined ): string => { // TODO: use value format plugin system
 	if ( !value ) {
 		return '';
 	}
@@ -102,7 +89,7 @@ const updatePropertyName = ( newName: string ): void => {
 
 const updateStatementValue = ( newValue: string ): void => {
 	let updatedValue: Value;
-	switch ( localStatement.value.format ) {
+	switch ( localStatement.value.format ) { // TODO: use value format plugin system
 		case 'text':
 		case 'url':
 			updatedValue = newStringValue( newValue );

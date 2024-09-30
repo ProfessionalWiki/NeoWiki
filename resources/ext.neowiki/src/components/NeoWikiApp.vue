@@ -8,7 +8,7 @@
 		<AutomaticInfobox
 			:subject="infobox.subject as Subject"
 			:schema="infobox.schema as Schema"
-			:value-format-component-registry="valueFormatComponentRegistry"
+			:component-registry="componentRegistry"
 			:can-edit="infobox.canEdit"
 		/>
 	</teleport>
@@ -41,8 +41,7 @@ const infoboxData = ref<InfoboxData[]>( [] );
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
 
-const valueFormatComponentRegistry = computed( () => NeoWikiExtension.getInstance().getValueFormatComponentRegistry()
-);
+const componentRegistry = computed( () => NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry() );
 
 onMounted( async (): Promise<void> => {
 	const elements = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
