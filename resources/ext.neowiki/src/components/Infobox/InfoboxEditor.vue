@@ -31,7 +31,7 @@
 		</div>
 		<StatementEditor
 			v-for="( statement, index ) in statements"
-			:key="index"
+			:key="`index${statement.propertyName.toString()}`"
 			class="statement-editor-row"
 			:statement="<Statement>statement"
 			@update="updateStatement( index, $event )"
@@ -82,6 +82,7 @@ import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefiniti
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
+import { newSubject } from '@neo/TestHelpers.ts';
 
 const props = defineProps<{
 	selectedSchemaType?: string;
@@ -108,9 +109,23 @@ const openDialog = (): void => {
 			props.subject.getPageIdentifiers()
 		);
 		statements.value = [ ...props.subject.getStatements() ];
+
+		const schema = schemaStore.getSchema( props.subject.getSchemaName() );
+
+		const existingPropertyNames = new Set( statements.value.map( ( stmt ) => stmt.propertyName.toString() ) );
+
+		const missingStatements = Array.from( schema.getPropertyDefinitions() )
+			.filter( ( propertyDef ) => !existingPropertyNames.has( propertyDef.name.toString() ) )
+			.map( ( propertyDef ) => new Statement(
+				propertyDef.name,
+				propertyDef.format,
+				undefined
+			)
+			);
+		statements.value = [ ...statements.value, ...missingStatements ];
 	} else {
 		localSubject.value = new Subject(
-			new SubjectId( '00000000-0000-0000-0000-0000000007895' ), // Temporary ID
+			new SubjectId( '12345678-0000-0000-0000-000000000123' ),
 			'',
 			props.selectedSchemaType as SchemaName,
 			new StatementList( [] ),
@@ -121,6 +136,7 @@ const openDialog = (): void => {
 };
 
 const isDropdownOpen = ref( false );
+const currentSchemaName = ref( '' );
 
 const statementTypes = [
 	{ value: 'text', label: 'Text', icon: cdxIconTextA },
@@ -133,6 +149,7 @@ const editProperty = ( propertyName: PropertyName ): void => {
 		const schema = schemaStore.getSchema( localSubject.value.getSchemaName() );
 		const property = schema.getPropertyDefinitions().get( propertyName );
 		if ( property ) {
+			currentSchemaName.value = schema.getName();
 			editingProperty.value = property as PropertyDefinition;
 			propertyDefinitionEditorInfo.value?.openDialog();
 		}
@@ -140,7 +157,38 @@ const editProperty = ( propertyName: PropertyName ): void => {
 };
 
 const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
+	const schemaName = currentSchemaName.value;
+	const propertyName = editingProperty.value?.name;
 
+	if ( !propertyName ) {
+		console.error( 'No property name found to update' );
+		return;
+	}
+
+	const schema = schemaStore.getSchema( schemaName );
+
+	const currentProperties = schema.getPropertyDefinitions();
+
+	const updatedProperties = Array.from( currentProperties ).map( ( prop ) => prop.name.toString() === propertyName.toString() ? savedProperty : prop
+	);
+	const newPropertyList = new PropertyDefinitionList( updatedProperties );
+
+	const updatedSchema = new Schema(
+		schema.getName(),
+		schema.getDescription(),
+		newPropertyList
+	);
+	schemaStore.schemas.set( schemaName, updatedSchema );
+
+	statements.value = statements.value.map( ( statement ) => statement.propertyName.toString() === editingProperty.value?.name.toString() ?
+		new Statement(
+			new PropertyName( savedProperty.name.toString() ),
+			savedProperty.format,
+			statement.value
+		) :
+		statement
+	);
+	editingProperty.value = null;
 };
 
 const toggleDropdown = (): void => {

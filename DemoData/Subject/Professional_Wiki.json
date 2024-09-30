@@ -28,10 +28,6 @@
 							"target": "s1demo6sssssss1"
 						}
 					]
-				},
-				"World domination progress": {
-					"format": "number",
-					"value": 42
 				}
 			}
 		}

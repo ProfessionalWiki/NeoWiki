@@ -16,10 +16,6 @@
 						"https://acme.example"
 					]
 				},
-				"World domination progress": {
-					"format": "number",
-					"value": 42
-				},
 				"Products": {
 					"format": "relation",
 					"value": [

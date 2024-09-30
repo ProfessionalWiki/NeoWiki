@@ -67,6 +67,7 @@ import { newNumberValue, newStringValue, ValueType } from '@neo/domain/Value.ts'
 import { Statement } from '@neo/domain/Statement.ts';
 import { Value } from 'sass-embedded';
 import { StatementList } from '@neo/domain/StatementList.ts';
+import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 
 const props = defineProps( {
 	subject: {
@@ -129,6 +130,27 @@ const addStatement = ( type: string ): void => {
 	} );
 };
 const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
+	const schemaName = props.subject?.getSchemaName();
+	if ( schemaName ) {
+		const schema = schemaStore.getSchema( schemaName );
+
+		// Get the current property definitions
+		const currentProperties = schema.getPropertyDefinitions();
+
+		// Create a new array of property definitions with the updated property
+		const updatedProperties = [ ...currentProperties, savedProperty ];
+
+		// Create a new PropertyDefinitionList with the updated properties
+		const newPropertyList = new PropertyDefinitionList( updatedProperties );
+
+		// Create a new Schema with the updated PropertyDefinitionList
+		const updatedSchema = new Schema(
+			schema.getName(),
+			schema.getDescription(),
+			newPropertyList
+		);
+		schemaStore.schemas.set( schemaName, updatedSchema );
+	}
 
 };
 

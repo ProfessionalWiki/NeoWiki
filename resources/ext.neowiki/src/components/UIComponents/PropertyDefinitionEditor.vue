@@ -8,15 +8,17 @@
 		<div v-if="localProperty" class="editor-content">
 			<div class="inline-fields">
 				<NeoTextField
-					v-model="localPropertyName"
+					:model-value="localProperty.name.toString()"
 					label="Property Name"
 					:required="true"
+					@update:model-value="updateForm( 'name', $event )"
 				/>
 				<div class="field-group format-select">
-					<label for="format-select">Type</label>
+					<label for="format-select">Format</label>
 					<CdxSelect
 						v-model:selected="localProperty.format"
 						:menu-items="formatOptions"
+						@update:selected="updateForm( 'format', $event )"
 					/>
 				</div>
 			</div>
@@ -24,12 +26,14 @@
 				v-model="localProperty.description"
 				class="property-description"
 				label="Description"
+				@update:model-value="updateForm( 'description', $event )"
 			/>
 			<div class="required-checkbox">
 				<CdxCheckbox
 					v-model="localProperty.required"
 					class="neo-round-checkbox"
 					label="Required"
+					@update:model-value="updateForm( 'required', $event )"
 				>
 					<small>Make it a required field</small>
 				</CdxCheckbox>
@@ -62,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch } from 'vue';
 import { CdxDialog, CdxButton, CdxSelect, CdxCheckbox } from '@wikimedia/codex';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
@@ -76,21 +80,25 @@ const emit = defineEmits( [ 'cancel', 'save' ] );
 const isOpen = ref( false );
 const localProperty = ref<PropertyDefinition | null>( null );
 
-const localPropertyName = computed( {
-	get: () => localProperty.value?.name.toString() || '',
-	set: ( value: string ) => {
-		if ( localProperty.value ) {
+const updateForm = ( field: string, value: any ): void => {
+	if ( localProperty.value ) {
+		if ( field === 'name' ) {
 			localProperty.value = {
 				...localProperty.value,
 				name: new PropertyName( value )
 			};
+		} else {
+			localProperty.value = {
+				...localProperty.value,
+				[ field ]: value
+			};
 		}
 	}
-} );
+};
 
 watch( () => props.property, ( newProperty ) => {
 	localProperty.value = newProperty ? { ...newProperty } : null;
-} );
+}, { deep: true, immediate: true } );
 
 const formatOptions = [
 	{ value: 'text', label: 'Text' },
@@ -100,8 +108,6 @@ const formatOptions = [
 
 const openDialog = (): void => {
 	isOpen.value = true;
-	localProperty.value = props.property ? { ...props.property } : null;
-	console.log( props.property );
 };
 
 const cancel = (): void => {
