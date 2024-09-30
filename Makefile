@@ -51,5 +51,8 @@ ts-test:
 ts-test-watch:
 	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm run test:watch
 
+ts-coverage:
+	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm run coverage
+
 ts-lint:
 	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm run lint
