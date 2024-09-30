@@ -99,7 +99,7 @@ const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionE
 const editingProperty = ref<PropertyDefinition | null>( null );
 
 const addMissingStatements = (): void => {
-	if ( props.subject ) {
+	if ( props.subject !== undefined ) {
 		const schemaName = props.subject.getSchemaName();
 		const schema = schemaStore.getSchema( schemaName );
 

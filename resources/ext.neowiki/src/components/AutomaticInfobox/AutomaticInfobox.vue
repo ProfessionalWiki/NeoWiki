@@ -39,7 +39,7 @@
 		</div>
 
 		<InfoboxEditor
-			v-if="canEdit"
+			v-if="canEditSubjects"
 			ref="infoboxEditorDialog"
 			:is-edit-mode="true"
 			:subject="subjectRef as Subject"
@@ -47,7 +47,7 @@
 			@add-statement="addStatement"
 		/>
 		<PropertyDefinitionEditor
-			v-if="canEdit && editingProperty !== null"
+			v-if="canEditSchemas && editingProperty !== null"
 			:key="`property-editor-${editingProperty ? editingProperty.name : 'null'}`"
 			ref="propertyDefinitionEditor"
 			:property="editingProperty as PropertyDefinition"
@@ -152,9 +152,12 @@ const addStatement = ( type: string ): void => {
 		propertyDefinitionEditor.value?.openDialog();
 	} );
 };
+
+const canEditSubjects = computed( (): boolean => props.canEdit ); // TODO: add right checks
+const canEditSchemas = computed( (): boolean => props.canEdit ); // TODO: add right checks
 const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 
-	if ( props.subject ) {
+	if ( props.subject !== undefined ) {
 		const schemaName = props.subject.getSchemaName();
 		const schema = schemaStore.getSchema( schemaName );
 
