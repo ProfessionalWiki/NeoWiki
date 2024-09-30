@@ -38,8 +38,7 @@
 	}
 }
 
-// Styling for number inputs
-input[type='number'] {
+input[ type='number' ] {
 	-moz-appearance: textfield;
 
 	&::-webkit-inner-spin-button,
@@ -79,8 +78,7 @@ input[type='number'] {
 	}
 }
 
-// Improve accessibility
-@media (prefers-reduced-motion: reduce) {
+@media ( prefers-reduced-motion: reduce ) {
 	.neo-cdx-field-inline *,
 	input[ type='number' ]::-webkit-inner-spin-button,
 	input[ type='number' ]::-webkit-outer-spin-button {
@@ -94,20 +92,6 @@ input {
 
 .neo-float-right {
 	float: right;
-}
-
-@keyframes success-pulse {
-	0% {
-		transform: scale( 1 );
-	}
-
-	50% {
-		transform: scale( 1.01 );
-	}
-
-	100% {
-		transform: scale( 1 );
-	}
 }
 
 .cdx-text-input {
@@ -124,16 +108,16 @@ input {
 
 	small {
 		cursor: pointer !important;
-		font-size: 12px !important;
+		font-size: $font-size-x-small !important;
 	}
 
 	small:hover {
 		color: $color-notice !important;
-		font-size: 12.2px !important;
+		font-size: $font-size-small !important;
 	}
 }
 
-$background-color-backdrop-light: rgb( 108, 117, 125, 0.75 );
+$background-color-backdrop-light: #6c757dbf;
 
 .cdx-dialog-backdrop {
 	background-color: $background-color-backdrop-light !important;
@@ -175,7 +159,7 @@ $background-color-backdrop-light: rgb( 108, 117, 125, 0.75 );
 	&--action-progressive {
 		background-color: $background-color-progressive;
 		color: $color-inverted;
-		border: none;
+		border: 0;
 
 		&:hover {
 			background-color: $background-color-progressive--hover;

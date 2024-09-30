@@ -24,7 +24,8 @@
 					<div class="infobox-statement-value">
 						<component
 							:is="getComponent( propertyDefinition.format )"
-							:value="subject.getStatementValue( propertyDefinition.name )"
+							:key="`${propertyDefinition.name}${subjectRef?.getStatementValue( propertyDefinition.name )}-automatic-infobox`"
+							:value="subjectRef?.getStatementValue( propertyDefinition.name )"
 							:property="propertyDefinition"
 						/>
 					</div>
@@ -41,7 +42,8 @@
 		<InfoboxEditor
 			ref="infoboxEditorDialog"
 			:is-edit-mode="true"
-			:subject="subjectRef"
+			:subject="subjectRef as Subject"
+			@save="saveSubject"
 			@add-statement="addStatement"
 		/>
 		<PropertyDefinitionEditor
@@ -90,18 +92,7 @@ const props = defineProps( {
 } );
 
 const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
-const subjectRef = computed( () => props.subject );
-
-const getComponent = ( formatName: string ): Component => props.valueFormatComponentRegistry.getComponent( formatName ).getInfoboxValueComponent();
-
-const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => props.schema.getPropertyDefinitions()
-	.withNames( props.subject.getNamesOfNonEmptyProperties() )
-	.asRecord() );
-
-const editInfoBox = (): void => {
-	infoboxEditorDialog.value?.openDialog();
-	console.log( props.subject?.getId() );
-};
+const subjectRef = ref( props.subject );
 
 const propertyDefinitionEditor = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const schemaStore = useSchemaStore();
@@ -111,8 +102,43 @@ const selectedPropertyType = ref<string | null>( null );
 
 const editingProperty = ref<PropertyDefinition | null>( null );
 
+const getComponent = ( formatName: string ): Component => props.valueFormatComponentRegistry.getComponent( formatName ).getInfoboxValueComponent();
+
+const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => {
+	if ( !subjectRef.value ) {
+		console.log( 'subjectRef is null or undefined' );
+		return {};
+	}
+
+	const schemaName = subjectRef.value.getSchemaName();
+	const schema = schemaStore.getSchema( schemaName );
+
+	if ( !schema ) {
+		console.error( `Schema not found for name: ${ schemaName }` );
+		return {};
+	}
+
+	const nonEmptyProperties = subjectRef.value.getNamesOfNonEmptyProperties();
+
+	return schema.getPropertyDefinitions()
+		.withNames( nonEmptyProperties )
+		.asRecord();
+} );
+
+const editInfoBox = (): void => {
+	infoboxEditorDialog.value?.openDialog();
+	console.log( props.subject?.getId() );
+};
+
+const saveSubject = ( savedSubject: Subject ): void => {
+	console.log( 'Saved Subject:', savedSubject );
+	console.log( 'Saved Subject Statements:', savedSubject.getStatements() );
+	subjectRef.value = savedSubject;
+	console.log( 'Updated subjectRef:', subjectRef.value );
+};
+
 const addStatement = ( type: string ): void => {
-	selectedPropertyName.value = ''; // Set a default empty string or generate a unique name
+	selectedPropertyName.value = '';
 	selectedPropertyType.value = type;
 
 	editingProperty.value = {
@@ -130,8 +156,9 @@ const addStatement = ( type: string ): void => {
 	} );
 };
 const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
-	const schemaName = props.subject?.getSchemaName();
-	if ( schemaName ) {
+
+	if ( props.subject ) {
+		const schemaName = props.subject.getSchemaName();
 		const schema = schemaStore.getSchema( schemaName );
 
 		// Get the current property definitions
@@ -150,6 +177,8 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 			newPropertyList
 		);
 		schemaStore.schemas.set( schemaName, updatedSchema );
+
+		infoboxEditorDialog.value?.addMissingStatements();
 	}
 
 };

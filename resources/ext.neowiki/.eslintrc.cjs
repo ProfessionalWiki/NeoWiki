@@ -25,6 +25,7 @@ module.exports = {
 		'@typescript-eslint/member-delimiter-style': 'off',
 		'@typescript-eslint/type-annotation-spacing': 'off',
 		'@typescript-eslint/semi': 'off',
+		'es-x/no-rest-spread-properties': 'off',
 		// These @stylistic rules are the same as the above disabled rules defined in @wmde/wikimedia-typescript.
 		'@stylistic/indent': [ 'error', 'tab', { SwitchCase: 1 } ],
 		'@stylistic/member-delimiter-style': 'error',

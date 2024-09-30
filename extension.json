@@ -205,7 +205,15 @@
 				"neowiki-create-subject-dialog-schema",
 				"neowiki-create-subject-dialog-select-schema",
 				"neowiki-create-subject-dialog-start-blank-description",
-				"neowiki-create-subject-dialog-go-back"
+				"neowiki-create-subject-dialog-go-back",
+				"neowiki-infobox-editor-save-property",
+				"neowiki-infobox-editor-no-property-selected",
+				"neowiki-infobox-editor-property-description",
+				"neowiki-infobox-editor-property-format",
+				"neowiki-infobox-editor-property-required",
+				"neowiki-infobox-editor-format-text",
+				"neowiki-infobox-editor-format-url",
+				"neowiki-infobox-editor-format-number"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

@@ -91,11 +91,11 @@ const validateInput = ( event: Event ): void => {
 	emit( 'validation', Object.keys( messages ).length === 0 || validationStatus.value === 'success' );
 };
 
-const onFocus = () => {
+const onFocus = (): void => {
 	isFocused.value = true;
 };
 
-const onBlur = () => {
+const onBlur = (): void => {
 	isFocused.value = false;
 };
 
@@ -110,6 +110,20 @@ watch( () => props.modelValue, ( newValue ) => {
 
 <style lang="scss" scoped>
 @import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+
+@keyframes success-pulse {
+	0% {
+		transform: scale( 1 );
+	}
+
+	50% {
+		transform: scale( 1.01 );
+	}
+
+	100% {
+		transform: scale( 1 );
+	}
+}
 
 .neo-text-field {
 	&--success {
@@ -140,7 +154,7 @@ watch( () => props.modelValue, ( newValue ) => {
 				left: 0;
 				width: 0;
 				height: 1px;
-				background-color: rgb( 0, 69, 220 );
+				background-color: rgba( 0, 69, 220 );
 				transition: width 0.3s ease;
 				border-radius: 5px;
 			}

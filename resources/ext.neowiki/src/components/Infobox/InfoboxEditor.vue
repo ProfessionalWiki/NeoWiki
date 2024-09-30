@@ -31,7 +31,7 @@
 		</div>
 		<StatementEditor
 			v-for="( statement, index ) in statements"
-			:key="`index${statement.propertyName.toString()}`"
+			:key="index"
 			class="statement-editor-row"
 			:statement="<Statement>statement"
 			@update="updateStatement( index, $event )"
@@ -41,6 +41,7 @@
 		<PropertyDefinitionEditor
 			:key="localSubject.getId().text + 'info'"
 			ref="propertyDefinitionEditorInfo"
+			:edit-mode="true"
 			:property="editingProperty as PropertyDefinition"
 			@save="handlePropertySave"
 		/>
@@ -87,10 +88,9 @@ import { newSubject } from '@neo/TestHelpers.ts';
 const props = defineProps<{
 	selectedSchemaType?: string;
 	subject?: Subject;
-	isEditMode: boolean;
 }>();
 
-const emit = defineEmits( [ 'complete', 'back', 'addStatement' ] );
+const emit = defineEmits( [ 'save', 'back', 'addStatement' ] );
 const isOpen = ref( false );
 const localSubject = ref<Subject | null>( null );
 const statements = ref<Statement[]>( [] );
@@ -98,19 +98,10 @@ const schemaStore = useSchemaStore();
 const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const editingProperty = ref<PropertyDefinition | null>( null );
 
-const openDialog = (): void => {
-	isOpen.value = true;
+const addMissingStatements = (): void => {
 	if ( props.subject ) {
-		localSubject.value = new Subject(
-			props.subject.getId(),
-			props.subject.getLabel(),
-			props.subject.getSchemaName(),
-			props.subject.getStatements(),
-			props.subject.getPageIdentifiers()
-		);
-		statements.value = [ ...props.subject.getStatements() ];
-
-		const schema = schemaStore.getSchema( props.subject.getSchemaName() );
+		const schemaName = props.subject.getSchemaName();
+		const schema = schemaStore.getSchema( schemaName );
 
 		const existingPropertyNames = new Set( statements.value.map( ( stmt ) => stmt.propertyName.toString() ) );
 
@@ -123,6 +114,22 @@ const openDialog = (): void => {
 			)
 			);
 		statements.value = [ ...statements.value, ...missingStatements ];
+	}
+};
+
+const openDialog = (): void => {
+	isOpen.value = true;
+	if ( props.subject ) {
+		localSubject.value = new Subject(
+			props.subject.getId(),
+			props.subject.getLabel(),
+			props.subject.getSchemaName(),
+			props.subject.getStatements(),
+			props.subject.getPageIdentifiers()
+		);
+		statements.value = [ ...props.subject.getStatements() ];
+		addMissingStatements();
+
 	} else {
 		localSubject.value = new Subject(
 			new SubjectId( '12345678-0000-0000-0000-000000000123' ),
@@ -180,7 +187,7 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 	);
 	schemaStore.schemas.set( schemaName, updatedSchema );
 
-	statements.value = statements.value.map( ( statement ) => statement.propertyName.toString() === editingProperty.value?.name.toString() ?
+	const updatedStatements = statements.value.map( ( statement ) => statement.propertyName.toString() === editingProperty.value?.name.toString() ?
 		new Statement(
 			new PropertyName( savedProperty.name.toString() ),
 			savedProperty.format,
@@ -188,6 +195,14 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 		) :
 		statement
 	);
+
+	// Update statements
+	statements.value = updatedStatements;
+
+	console.log( updatedStatements );
+
+	console.log( localSubject.value );
+
 	editingProperty.value = null;
 };
 
@@ -218,14 +233,29 @@ const goBack = (): void => {
 };
 
 const submit = (): void => {
+	if ( localSubject.value ) {
+		const properStatements = statements.value.map( ( stmt ) => {
+			console.log( 'Statement:', stmt );
+			return new Statement(
+				new PropertyName( stmt.propertyName.toString() ),
+				stmt.format,
+				stmt.value
+			);
+		} );
+
+		localSubject.value = new Subject(
+			localSubject.value.getId(),
+			localSubject.value.getLabel(),
+			localSubject.value.getSchemaName(),
+			new StatementList( properStatements ),
+			localSubject.value.getPageIdentifiers()
+		);
+	}
+	emit( 'save', localSubject.value );
+	isOpen.value = false;
 };
 
-const updateSubject = ( newSubject: Subject ): void => {
-	localSubject.value = newSubject;
-	statements.value = [ ...newSubject.getStatements() ];
-};
-
-defineExpose( { openDialog, updateSubject } );
+defineExpose( { openDialog, addMissingStatements } );
 </script>
 
 <style lang="scss">
@@ -259,6 +289,7 @@ defineExpose( { openDialog, updateSubject } );
 	margin: $spacing-100 0;
 	position: relative;
 	cursor: $cursor-base--hover;
+	float: right;
 }
 
 .add-statement-placeholder {
@@ -284,13 +315,6 @@ defineExpose( { openDialog, updateSubject } );
 		color: $color-subtle;
 		font-size: $font-size-small;
 	}
-}
-
-.add-statement-section {
-	margin: $spacing-150 0;
-	position: relative;
-	width: 18%;
-	float: right;
 }
 
 .neo-type-select-dropdown {
