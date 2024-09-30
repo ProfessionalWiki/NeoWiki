@@ -8,7 +8,7 @@
 		<div v-if="localProperty" class="editor-content">
 			<div class="inline-fields">
 				<NeoTextField
-					v-model="localProperty.name"
+					v-model="localPropertyName"
 					label="Property Name"
 					:required="true"
 				/>
@@ -62,19 +62,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { CdxDialog, CdxButton, CdxSelect, CdxCheckbox, CdxTextArea } from '@wikimedia/codex';
+import { ref, watch, computed } from 'vue';
+import { CdxDialog, CdxButton, CdxSelect, CdxCheckbox } from '@wikimedia/codex';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
-import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 
 const props = defineProps<{
 	property: PropertyDefinition | null;
 }>();
 
-const emit = defineEmits( [ 'save', 'cancel' ] );
+const emit = defineEmits( [ 'cancel', 'save' ] );
 
 const isOpen = ref( false );
 const localProperty = ref<PropertyDefinition | null>( null );
+
+const localPropertyName = computed( {
+	get: () => localProperty.value?.name.toString() || '',
+	set: ( value: string ) => {
+		if ( localProperty.value ) {
+			localProperty.value = {
+				...localProperty.value,
+				name: new PropertyName( value )
+			};
+		}
+	}
+} );
 
 watch( () => props.property, ( newProperty ) => {
 	localProperty.value = newProperty ? { ...newProperty } : null;
@@ -84,12 +96,12 @@ const formatOptions = [
 	{ value: 'text', label: 'Text' },
 	{ value: 'url', label: 'URL' },
 	{ value: 'number', label: 'Number' }
-	// Add more format options as needed
 ];
 
 const openDialog = (): void => {
 	isOpen.value = true;
 	localProperty.value = props.property ? { ...props.property } : null;
+	console.log( props.property );
 };
 
 const cancel = (): void => {
@@ -100,7 +112,7 @@ const cancel = (): void => {
 const save = (): void => {
 	if ( localProperty.value ) {
 		isOpen.value = false;
-		emit( 'save', { ...localProperty.value } );
+		emit( 'save', localProperty.value as PropertyDefinition );
 	}
 	console.log( localProperty.value );
 };

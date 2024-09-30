@@ -1,20 +1,20 @@
 <template>
 	<CdxDialog
+		v-if="localSubject"
 		v-model:open="isOpen"
 		:use-close-button="true"
 		title="Manage Infobox"
-		class="infobox-editor">
+		class="infobox-editor"
+	>
 		<NeoTextField
-			v-model="localSubject.label"
+			:model-value="localSubject.getLabel()"
 			:required="true"
 			:label="$i18n( 'neowiki-infobox-editor-subject-label' ).text()"
 			@validation="handleValidation"
 		/>
 		<NeoTextField
-			v-model="localSubject.schemaName"
+			:model-value="localSubject.getSchemaName()"
 			:required="true"
-			:min-length="3"
-			:max-length="50"
 			:label="$i18n( 'neowiki-create-subject-dialog-schema' ).text()"
 			disabled
 		/>
@@ -33,14 +33,15 @@
 			v-for="( statement, index ) in statements"
 			:key="index"
 			class="statement-editor-row"
-			:statement="statement"
+			:statement="<Statement>statement"
 			@update="updateStatement( index, $event )"
 			@remove="removeStatement( index )"
 			@edit="editProperty"
 		/>
 		<PropertyDefinitionEditor
-			ref="propertyDefinitionEditor"
-			:property="editingProperty"
+			:key="localSubject.getId().text + 'info'"
+			ref="propertyDefinitionEditorInfo"
+			:property="editingProperty as PropertyDefinition"
 			@save="handlePropertySave"
 		/>
 		<template #footer>
@@ -69,7 +70,7 @@ import { cdxIconAdd, cdxIconArrowPrevious, cdxIconLink } from '@wikimedia/codex-
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
 import StatementEditor from '@/components/UIComponents/StatementEditor.vue';
 import { Subject } from '@neo/domain/Subject.ts';
-import type { SubjectId } from '@neo/domain/SubjectId';
+import { SubjectId } from '@neo/domain/SubjectId';
 import { Schema, SchemaName } from '@neo/domain/Schema';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { StatementList } from '@neo/domain/StatementList.ts';
@@ -80,6 +81,7 @@ import { useSchemaStore } from '@/stores/SchemaStore';
 import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefinitionEditor.vue';
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
+import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
 
 const props = defineProps<{
 	selectedSchemaType?: string;
@@ -92,7 +94,7 @@ const isOpen = ref( false );
 const localSubject = ref<Subject | null>( null );
 const statements = ref<Statement[]>( [] );
 const schemaStore = useSchemaStore();
-const propertyDefinitionEditor = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
+const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const editingProperty = ref<PropertyDefinition | null>( null );
 
 const openDialog = (): void => {
@@ -108,11 +110,11 @@ const openDialog = (): void => {
 		statements.value = [ ...props.subject.getStatements() ];
 	} else {
 		localSubject.value = new Subject(
-			'' as SubjectId, // Temporary ID
+			new SubjectId( '00000000-0000-0000-0000-0000000007895' ), // Temporary ID
 			'',
 			props.selectedSchemaType as SchemaName,
 			new StatementList( [] ),
-			{}
+			new PageIdentifiers( 1, 'page-title' )
 		);
 		statements.value = [];
 	}
@@ -131,8 +133,8 @@ const editProperty = ( propertyName: PropertyName ): void => {
 		const schema = schemaStore.getSchema( localSubject.value.getSchemaName() );
 		const property = schema.getPropertyDefinitions().get( propertyName );
 		if ( property ) {
-			editingProperty.value = property;
-			propertyDefinitionEditor.value?.openDialog();
+			editingProperty.value = property as PropertyDefinition;
+			propertyDefinitionEditorInfo.value?.openDialog();
 		}
 	}
 };
@@ -168,17 +170,6 @@ const goBack = (): void => {
 };
 
 const submit = (): void => {
-	if ( localSubject.value ) {
-		const updatedSubject = new Subject(
-			localSubject.value.getId(),
-			localSubject.value.getLabel(),
-			localSubject.value.getSchemaName(),
-			new StatementList( statements.value ),
-			localSubject.value.getPageIdentifiers()
-		);
-		isOpen.value = false;
-		emit( 'complete', updatedSubject );
-	}
 };
 
 const updateSubject = ( newSubject: Subject ): void => {

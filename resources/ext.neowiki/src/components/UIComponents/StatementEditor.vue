@@ -1,9 +1,9 @@
 <template>
 	<div class="statement-editor">
-		<div class="statement-editor__fields">
+		<div v-if="localStatement" class="statement-editor__fields">
 			<div class="statement-editor__field-wrapper">
 				<NeoTextField
-					v-model="localStatement.propertyName"
+					:model-value="localStatement.propertyName.toString()"
 					:required="true"
 					:label="$i18n( 'neowiki-infobox-editor-property-label' ).text()"
 					class="statement-editor__property"
@@ -15,7 +15,6 @@
 					:is="getFieldComponent( localStatement.format )"
 					:model-value="getStatementValue( localStatement.value )"
 					:label="$i18n( 'neowiki-infobox-editor-value-label' ).text()"
-					:required="localStatement.required"
 					class="statement-editor__value"
 					@validation="handleValidation"
 					@update:model-value="updateStatementValue"
@@ -60,7 +59,7 @@ const props = defineProps<{
 
 const emit = defineEmits( [ 'update', 'remove', 'edit' ] );
 
-const localStatement = ref( props.statement );
+const localStatement = ref<Statement>( props.statement );
 
 watch( () => props.statement, ( newStatement ) => {
 	localStatement.value = newStatement;
@@ -75,23 +74,21 @@ const getFieldComponent = ( format: string ): typeof NeoTextField | typeof NeoUr
 		case 'number':
 			return NeoNumberField;
 		default:
-			return NeoTextField; // Default to text field if format is unknown
+			return NeoTextField;
 	}
 };
 
-const getStatementValue = ( value: Value | undefined ): string | number | undefined => {
+const getStatementValue = ( value: Value | undefined ): string => {
 	if ( !value ) {
-		return undefined;
+		return '';
 	}
-
-	switch ( value.type ) {
-		case ValueType.String:
-			return ( value as StringValue ).strings[ 0 ] || '';
-		case ValueType.Number:
-			return ( value as NumberValue ).number;
-		default:
-			return undefined;
+	if ( value.type === ValueType.String ) {
+		return ( value as StringValue ).strings[ 0 ] || '';
 	}
+	if ( value.type === ValueType.Number ) {
+		return ( value as NumberValue ).number.toString();
+	}
+	return '';
 };
 
 const updatePropertyName = ( newName: string ): void => {
@@ -103,28 +100,28 @@ const updatePropertyName = ( newName: string ): void => {
 	emit( 'update', localStatement.value );
 };
 
-const updateStatementValue = ( newValue: string | number ): void => {
+const updateStatementValue = ( newValue: string ): void => {
 	let updatedValue: Value;
 	switch ( localStatement.value.format ) {
 		case 'text':
 		case 'url':
-			updatedValue = newStringValue( newValue as string );
+			updatedValue = newStringValue( newValue );
 			break;
 		case 'number':
-			updatedValue = newNumberValue( newValue as number );
+			updatedValue = newNumberValue( Number( newValue ) );
 			break;
 		default:
-			updatedValue = newStringValue( newValue as string );
+			updatedValue = newStringValue( newValue );
 	}
 	localStatement.value = new Statement(
-		localStatement.value.propertyName,
+		localStatement.value.propertyName as PropertyName,
 		localStatement.value.format,
 		updatedValue
 	);
 	emit( 'update', localStatement.value );
 };
 
-const handleValidation = ( isValid ): void => {
+const handleValidation = ( isValid: boolean ): void => {
 	console.log( isValid );
 };
 </script>

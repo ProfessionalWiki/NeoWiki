@@ -45,15 +45,16 @@
 			@add-statement="addStatement"
 		/>
 		<PropertyDefinitionEditor
+			:key="`property-editor-${editingProperty ? JSON.stringify( editingProperty ) : 'null'}`"
 			ref="propertyDefinitionEditor"
-			:property="editingProperty"
+			:property="editingProperty as PropertyDefinition"
 			@save="handlePropertySave"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, PropType } from 'vue';
+import { computed, ref, PropType, nextTick } from 'vue';
 import { Subject } from '@neo/domain/Subject';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition.ts';
 import { ValueFormatComponentRegistry } from '@/presentation/ValueFormatComponentRegistry';
@@ -97,7 +98,7 @@ const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => 
 	.asRecord() );
 
 const editInfoBox = (): void => {
-	infoboxEditorDialog.value.openDialog();
+	infoboxEditorDialog.value?.openDialog();
 	console.log( props.subject?.getId() );
 };
 
@@ -107,81 +108,28 @@ const schemaStore = useSchemaStore();
 const selectedPropertyName = ref<string | null>( null );
 const selectedPropertyType = ref<string | null>( null );
 
-const editingProperty = computed<PropertyDefinition | null>( () => {
-	if ( selectedPropertyName.value === null ) {
-		return null;
-	}
-
-	const existingProperty = props.schema.getPropertyDefinitions().get( new PropertyName( selectedPropertyName.value ) );
-
-	if ( existingProperty ) {
-		return existingProperty;
-	}
-
-	if ( selectedPropertyType.value ) {
-		return {
-			name: new PropertyName( selectedPropertyName.value ),
-			type: ValueType[ selectedPropertyType.value as keyof typeof ValueType ],
-			format: selectedPropertyType.value,
-			description: '',
-			required: false
-		};
-	}
-
-	return null;
-} );
+const editingProperty = ref<PropertyDefinition | null>( null );
 
 const addStatement = ( type: string ): void => {
-	selectedPropertyName.value = ' ';
+	selectedPropertyName.value = ''; // Set a default empty string or generate a unique name
 	selectedPropertyType.value = type;
-	propertyDefinitionEditor.value?.openDialog();
-};
 
-const editProperty = ( propertyName: string ): void => {
-	selectedPropertyName.value = propertyName;
-	selectedPropertyType.value = null;
-	propertyDefinitionEditor.value?.openDialog();
-};
+	editingProperty.value = {
+		name: new PropertyName( ' ' ),
+		type: ValueType[ type as keyof typeof ValueType ],
+		format: type,
+		description: '',
+		required: false
+	};
 
+	console.log( editingProperty.value );
+
+	nextTick( () => {
+		propertyDefinitionEditor.value?.openDialog();
+	} );
+};
 const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
-	let defaultValue: Value;
 
-	switch ( savedProperty.format ) {
-		case 'text':
-		case 'url':
-			defaultValue = newStringValue( '' );
-			break;
-		case 'number':
-			defaultValue = newNumberValue( 0 );
-			break;
-		default:
-			defaultValue = newStringValue( '' );
-	}
-
-	const statement = new Statement(
-		savedProperty.name,
-		savedProperty.format,
-		defaultValue
-	);
-
-	const updatedStatements = new StatementList( [
-		...subjectRef.value.getStatements(),
-		statement
-	] );
-
-	// Create a new Subject with the updated StatementList
-	const updatedSubject = new Subject(
-		subjectRef.value.getId(),
-		subjectRef.value.getLabel(),
-		subjectRef.value.getSchemaName(),
-		updatedStatements,
-		subjectRef.value.getPageIdentifiers()
-	);
-
-	// Update the subjectRef with the new Subject
-	subjectRef.value = updatedSubject;
-	infoboxEditorDialog.value.updateSubject( updatedSubject );
-	console.log( updatedSubject.getStatements() );
 };
 
 </script>
