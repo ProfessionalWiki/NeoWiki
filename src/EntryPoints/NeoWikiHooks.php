@@ -43,9 +43,9 @@ class NeoWikiHooks {
 		self::addCreateSubjectButton( $out );
 
 		// TODO: remove examples
-		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="s11111111111111"></div>' );
-		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="s11111111111112"></div>' );
-		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="s11111111111113"></div>' );
+		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="s1demo5sssssss1"></div>' );
+		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="s1demo6sssssss1"></div>' );
+		$out->addHtml( '<div class="neowiki-infobox" data-subject-id="s1demo2sssssss1"></div>' );
 	}
 
 	private static function isContentPage( OutputPage $out ): bool {
