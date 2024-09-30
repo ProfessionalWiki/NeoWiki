@@ -86,7 +86,7 @@ import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
 import { newSubject } from '@neo/TestHelpers.ts';
 
 const props = defineProps<{
-	selectedSchemaType?: string;
+	selectedSchema?: string;
 	subject?: Subject;
 }>();
 
@@ -134,7 +134,7 @@ const openDialog = (): void => {
 		localSubject.value = new Subject(
 			new SubjectId( '12345678-0000-0000-0000-000000000123' ),
 			'',
-			props.selectedSchemaType as SchemaName,
+			props.selectedSchema as SchemaName,
 			new StatementList( [] ),
 			new PageIdentifiers( 1, 'page-title' )
 		);
