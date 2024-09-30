@@ -7,14 +7,17 @@
 			"statements": {
 				"Founded at": {
 					"format": "number",
-					"value": 2005,
-					"required": true
+					"value": 2005
 				},
 				"Websites": {
 					"format": "url",
 					"value": [
 						"https://acme.example"
 					]
+				},
+				"World domination progress": {
+					"format": "number",
+					"value": 42
 				},
 				"Products": {
 					"format": "relation",

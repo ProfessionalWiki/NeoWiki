@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import AutomaticInfobox from '@/components/AutomaticInfobox/AutomaticInfobox.vue';
 import { Subject } from '@neo/domain/Subject';
 import { SubjectId } from '@neo/domain/SubjectId';
@@ -15,12 +15,17 @@ import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { Schema } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition';
+import { setActivePinia, createPinia } from 'pinia';
+import { useSchemaStore } from '@/stores/SchemaStore';
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 	text: () => key
 } ) );
 
 describe( 'AutomaticInfobox', () => {
+	let pinia: ReturnType<typeof createPinia>;
+	let schemaStore;
+
 	const mockSchema = new Schema(
 		'TestSchema',
 		'A test schema',
@@ -32,7 +37,7 @@ describe( 'AutomaticInfobox', () => {
 	);
 
 	const mockSubject = new Subject(
-		new SubjectId( 's11111111111111' ),
+		new SubjectId( 's1demo5sssssss1' ),
 		'Test Subject',
 		'TestSchema',
 		new StatementList( [
@@ -48,6 +53,13 @@ describe( 'AutomaticInfobox', () => {
 		] ),
 		new PageIdentifiers( 1, 'Test_Subject' )
 	);
+
+	beforeEach( () => {
+		pinia = createPinia();
+		setActivePinia( pinia );
+		schemaStore = useSchemaStore();
+		schemaStore.setSchema( 'TestSchema', mockSchema );
+	} );
 
 	it( 'renders the title correctly', () => {
 		const wrapper = mount( AutomaticInfobox, {
@@ -100,7 +112,7 @@ describe( 'AutomaticInfobox', () => {
 
 	it( 'renders without statements when subject has no statements', () => {
 		const emptySubject = new Subject(
-			new SubjectId( 's11111111111112' ),
+			new SubjectId( 's1demo6sssssss1' ),
 			'Empty Subject',
 			'TestSchema',
 			new StatementList( [] ),
@@ -141,7 +153,7 @@ describe( 'AutomaticInfobox', () => {
 			}
 		} );
 
-		expect( wrapper.find( '.cdx-button' ).exists() ).toBe( false );
+		expect( wrapper.find( '.cdx-docs-link' ).exists() ).toBe( false );
 	} );
 
 	it( 'renders edit button when canEdit is true', () => {
@@ -159,7 +171,7 @@ describe( 'AutomaticInfobox', () => {
 			}
 		} );
 
-		const editButton = wrapper.find( '.cdx-button' );
+		const editButton = wrapper.find( '.cdx-docs-link' );
 		expect( editButton.exists() ).toBe( true );
 		expect( editButton.text() ).toBe( 'neowiki-infobox-edit-link' );
 	} );

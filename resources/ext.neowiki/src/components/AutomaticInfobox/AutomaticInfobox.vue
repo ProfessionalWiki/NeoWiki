@@ -33,12 +33,13 @@
 				<a
 					v-if="canEdit"
 					class="cdx-docs-link"
-					@click="editInfoBox">Edit</a>
+					@click="editInfoBox">{{ $i18n( 'neowiki-infobox-edit-link' ).text() }}</a>
 				<!-- TODO: statements not in schema -->
 			</div>
 		</div>
 
 		<InfoboxEditor
+			v-if="canEdit"
 			ref="infoboxEditorDialog"
 			:is-edit-mode="true"
 			:subject="subjectRef as Subject"
@@ -46,7 +47,8 @@
 			@add-statement="addStatement"
 		/>
 		<PropertyDefinitionEditor
-			:key="`property-editor-${editingProperty ? JSON.stringify( editingProperty ) : 'null'}`"
+			v-if="canEdit && editingProperty !== null"
+			:key="`property-editor-${editingProperty ? editingProperty.name : 'null'}`"
 			ref="propertyDefinitionEditor"
 			:property="editingProperty as PropertyDefinition"
 			@save="handlePropertySave"
@@ -82,7 +84,6 @@ const props = defineProps( {
 	},
 	canEdit: {
 		type: Boolean,
-		required: false,
 		default: false
 	}
 } );
@@ -157,16 +158,12 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 		const schemaName = props.subject.getSchemaName();
 		const schema = schemaStore.getSchema( schemaName );
 
-		// Get the current property definitions
 		const currentProperties = schema.getPropertyDefinitions();
 
-		// Create a new array of property definitions with the updated property
 		const updatedProperties = [ ...currentProperties, savedProperty ];
 
-		// Create a new PropertyDefinitionList with the updated properties
 		const newPropertyList = new PropertyDefinitionList( updatedProperties );
 
-		// Create a new Schema with the updated PropertyDefinitionList
 		const updatedSchema = new Schema(
 			schema.getName(),
 			schema.getDescription(),

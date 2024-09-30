@@ -7,7 +7,6 @@
 					:required="true"
 					:label="$i18n( 'neowiki-infobox-editor-property-label' ).text()"
 					class="statement-editor__property"
-					disabled
 					@update:model-value="updatePropertyName"
 				/>
 			</div>
