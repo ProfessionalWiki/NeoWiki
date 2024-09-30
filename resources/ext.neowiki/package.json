@@ -12,7 +12,8 @@
 		"lint:code": "eslint . --ext .vue,.ts --ignore-path .gitignore",
 		"lint:styles": "NODE_NO_WARNINGS=1 stylelint \"src/**/*.{vue,scss}\"",
 		"lint": "npm-run-all lint:code lint:styles",
-		"test": "vitest run --coverage",
+		"test": "vitest run",
+		"coverage": "vitest run --coverage",
 		"test:watch": "vitest --coverage"
 	},
 	"devDependencies": {
