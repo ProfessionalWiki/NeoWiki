@@ -13,7 +13,7 @@
 		/>
 	</teleport>
 
-	<teleport to="#mw-indicator-neowiki-create-button">
+	<teleport v-if="canCreateSubject" to="#mw-indicator-neowiki-create-button">
 		<CreateSubjectButton />
 	</teleport>
 </template>
@@ -43,6 +43,8 @@ const schemaStore = useSchemaStore();
 
 const componentRegistry = computed( () => NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry() );
 
+const canCreateSubject = ref( false );
+
 onMounted( async (): Promise<void> => {
 	const elements = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
 
@@ -60,6 +62,8 @@ onMounted( async (): Promise<void> => {
 			};
 		} )
 	) );
+
+	canCreateSubject.value = document.querySelector( '#mw-indicator-neowiki-create-button' ) !== null;
 } );
 
 function getSubject( subjectId: string ): Subject {
