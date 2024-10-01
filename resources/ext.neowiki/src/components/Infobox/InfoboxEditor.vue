@@ -34,6 +34,7 @@
 			:key="index"
 			class="statement-editor-row"
 			:statement="<Statement>statement"
+			:component-registry="componentRegistry"
 			@update="updateStatement( index, $event )"
 			@remove="removeStatement( index )"
 			@edit="editProperty"
@@ -84,10 +85,12 @@ import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
 import { newSubject } from '@neo/TestHelpers.ts';
+import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
 
 const props = defineProps<{
 	selectedSchema?: string;
 	subject?: Subject;
+	componentRegistry: FormatSpecificComponentRegistry;
 }>();
 
 const emit = defineEmits( [ 'save', 'back', 'addStatement' ] );

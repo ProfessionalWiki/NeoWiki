@@ -43,6 +43,7 @@
 			ref="infoboxEditorDialog"
 			:is-edit-mode="true"
 			:subject="subjectRef as Subject"
+			:component-registry="componentRegistry"
 			@save="saveSubject"
 			@add-statement="addStatement"
 		/>
@@ -60,7 +61,6 @@
 import { computed, ref, PropType, nextTick } from 'vue';
 import { Subject } from '@neo/domain/Subject';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition.ts';
-import { ValueFormatComponentRegistry } from '@/presentation/ValueFormatComponentRegistry';
 import { Schema } from '@neo/domain/Schema';
 import { Component } from 'vue';
 import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
@@ -68,6 +68,7 @@ import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefiniti
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { ValueType } from '@neo/domain/Value.ts';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
+import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
 
 const props = defineProps( {
 	subject: {
@@ -78,8 +79,8 @@ const props = defineProps( {
 		type: Object as PropType<Schema>,
 		required: true
 	},
-	valueFormatComponentRegistry: {
-		type: Object as PropType<ValueFormatComponentRegistry>,
+	componentRegistry: {
+		type: Object as PropType<FormatSpecificComponentRegistry>,
 		required: true
 	},
 	canEdit: {
@@ -99,7 +100,7 @@ const selectedPropertyType = ref<string | null>( null );
 
 const editingProperty = ref<PropertyDefinition | null>( null );
 
-const getComponent = ( formatName: string ): Component => props.valueFormatComponentRegistry.getComponent( formatName ).getInfoboxValueComponent();
+const getComponent = ( formatName: string ): Component => props.componentRegistry?.getValueDisplayComponent( formatName );
 
 const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => {
 	if ( !subjectRef.value ) {
