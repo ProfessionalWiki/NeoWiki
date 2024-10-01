@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
-import { CdxField, CdxTextInput } from '@wikimedia/codex';
+import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 
 const props = defineProps( {
@@ -50,7 +50,7 @@ const props = defineProps( {
 } );
 
 const emit = defineEmits( [ 'update:modelValue', 'validation' ] );
-const validationStatus = ref<'default' | 'error' | 'success'>( 'default' );
+const validationStatus = ref<ValidationStatusType>( 'default' );
 
 interface ValidationMessages {
 	[key: string]: string;

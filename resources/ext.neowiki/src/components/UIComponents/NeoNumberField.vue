@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { CdxField, CdxTextInput } from '@wikimedia/codex';
+import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
 
 const props = defineProps( {
 	modelValue: {
@@ -43,7 +43,7 @@ const props = defineProps( {
 } );
 
 const emit = defineEmits( [ 'update:modelValue', 'validation' ] );
-const validationStatus = ref<'default' | 'error'>( 'default' );
+const validationStatus = ref<ValidationStatusType>( 'default' );
 
 interface ValidationMessages {
 	[key: string]: string;
