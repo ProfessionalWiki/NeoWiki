@@ -54,12 +54,14 @@ module.exports = {
 		'es-x/no-array-prototype-includes': 'off',
 		'no-use-before-define': 'off',
 		'n/no-unsupported-features/node-builtins': 'off', // To avoid: "XYZ is not supported until Node.js x.y.z."
-    'es-x/no-async-functions': 'off'
+		'es-x/no-async-functions': 'off',
+		'@typescript-eslint/no-empty-object-type': 'off'
 	},
 	overrides: [
 		{
 			files: [
-				'src/infrastructure/**/*.ts'
+				'src/infrastructure/**/*.ts',
+				'src/persistence/RestSchemaRepository.ts'
 			],
 			rules: {
 				'@typescript-eslint/no-explicit-any': 'off'
