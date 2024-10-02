@@ -4,11 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content;
 
-use Content;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use ParserOutput;
 
-class SubjectContentHandler extends \JsonContentHandler {
+class SubjectContentHandler extends JsonContentHandler {
 
 	protected function getContentClass(): string {
 		return SubjectContent::class;

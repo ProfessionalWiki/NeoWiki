@@ -1,6 +1,11 @@
 parameters:
 	ignoreErrors:
 		-
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Application\\\\Actions\\\\ImportPages\\\\ImportPagesAction\\:\\:fileNameAndSourceToContent\\(\\) should return MediaWiki\\\\Content\\\\Content but returns MediaWiki\\\\Extension\\\\Scribunto\\\\ScribuntoContent\\.$#"
+			count: 1
+			path: src/Application/Actions/ImportPages/ImportPagesAction.php
+
+		-
 			message: "#^Call to static method getMain\\(\\) on an unknown class RequestContext\\.$#"
 			count: 1
 			path: src/NeoWikiExtension.php
@@ -121,82 +126,12 @@ parameters:
 			path: src/Persistence/MediaWiki/PageContentSaver.php
 
 		-
-			message: "#^Parameter \\#1 \\$summary of method MediaWiki\\\\Storage\\\\PageUpdater\\:\\:saveRevision\\(\\) expects MediaWiki\\\\CommentStore\\\\CommentStoreComment, CommentStoreComment given\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/PageContentSaver.php
-
-		-
-			message: "#^Parameter \\#2 \\$content of method MediaWiki\\\\Storage\\\\PageUpdater\\:\\:setContent\\(\\) expects MediaWiki\\\\Content\\\\Content, Content given\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/PageContentSaver.php
-
-		-
-			message: "#^Parameter \\$comment of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContent\\(\\) has invalid type CommentStoreComment\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/PageContentSaver.php
-
-		-
-			message: "#^Parameter \\$comment of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContentViaUpdater\\(\\) has invalid type CommentStoreComment\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/PageContentSaver.php
-
-		-
-			message: "#^Parameter \\$contentBySlot of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContent\\(\\) has invalid type Content\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/PageContentSaver.php
-
-		-
-			message: "#^Parameter \\$contentBySlot of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContentViaUpdater\\(\\) has invalid type Content\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/PageContentSaver.php
-
-		-
 			message: "#^Using nullsafe method call on non\\-nullable type MediaWiki\\\\Storage\\\\PageUpdateStatus\\. Use \\-\\> instead\\.$#"
 			count: 1
 			path: src/Persistence/MediaWiki/PageContentSaver.php
 
 		-
 			message: "#^Call to static method newUnsavedComment\\(\\) on an unknown class CommentStoreComment\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/RevisionUpdater.php
-
-		-
-			message: "#^Call to static method now\\(\\) on an unknown class MWTimestamp\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/RevisionUpdater.php
-
-		-
-			message: "#^Parameter \\#1 \\$user of method MediaWiki\\\\Revision\\\\MutableRevisionRecord\\:\\:setUser\\(\\) expects MediaWiki\\\\User\\\\UserIdentity, User given\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/RevisionUpdater.php
-
-		-
-			message: "#^Parameter \\#2 \\$content of method MediaWiki\\\\Revision\\\\MutableRevisionRecord\\:\\:setContent\\(\\) expects MediaWiki\\\\Content\\\\Content, Content given\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/RevisionUpdater.php
-
-		-
-			message: "#^Parameter \\$contentBySlot of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater\\:\\:addSubjectsToRevision\\(\\) has invalid type Content\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/RevisionUpdater.php
-
-		-
-			message: "#^Parameter \\$performer of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater\\:\\:__construct\\(\\) has invalid type User\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/RevisionUpdater.php
-
-		-
-			message: "#^Property ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\RevisionUpdater\\:\\:\\$performer has unknown class User as its type\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/RevisionUpdater.php
-
-		-
-			message: "#^Call to static method newUnsavedComment\\(\\) on an unknown class CommentStoreComment\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/Subject/MediaWikiSubjectRepository.php
-
-		-
-			message: "#^Parameter \\#2 \\$contentBySlot of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContent\\(\\) expects array\\<string, Content\\>, array\\<string, ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\EntryPoints\\\\Content\\\\SubjectContent\\> given\\.$#"
 			count: 1
 			path: src/Persistence/MediaWiki/Subject/MediaWikiSubjectRepository.php
 
@@ -244,16 +179,6 @@ parameters:
 			message: "#^Call to static method newUnsavedComment\\(\\) on an unknown class CommentStoreComment\\.$#"
 			count: 1
 			path: src/Persistence/MediaWiki/Subject/SubjectContentRepository.php
-
-		-
-			message: "#^Parameter \\#2 \\$contentBySlot of method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\MediaWiki\\\\PageContentSaver\\:\\:saveContent\\(\\) expects array\\<string, Content\\>, array\\<string, ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\EntryPoints\\\\Content\\\\SubjectContent\\> given\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/Subject/SubjectContentRepository.php
-
-		-
-			message: "#^Call to an undefined method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\EntryPoints\\\\Content\\\\SchemaContent\\:\\:getText\\(\\)\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/WikiPageSchemaLookup.php
 
 		-
 			message: "#^Anonymous function should return Laudis\\\\Neo4j\\\\Databags\\\\SummarizedResult but returns mixed\\.$#"

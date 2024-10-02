@@ -367,4 +367,8 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function getNeoWikiRootDirectory(): string {
+		return __DIR__ . '/..';
+	}
+
 }
