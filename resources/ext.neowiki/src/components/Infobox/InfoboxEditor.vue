@@ -135,7 +135,7 @@ const openDialog = (): void => {
 
 	} else {
 		localSubject.value = new Subject(
-			new SubjectId( '12345678-0000-0000-0000-000000000123' ),
+			new SubjectId( 'stodotodotodo42' ),
 			'',
 			props.selectedSchema as SchemaName,
 			new StatementList( [] ),
