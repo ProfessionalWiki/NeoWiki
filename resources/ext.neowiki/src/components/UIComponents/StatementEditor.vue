@@ -2,7 +2,7 @@
 	<div class="statement-editor">
 		<div v-if="localStatement" class="statement-editor__fields">
 			<div class="statement-editor__field-wrapper">
-				<PropertyMenu
+				<PropertyNameField
 					:model-value="localStatement.propertyName.toString()"
 					:required="true"
 					class="statement-editor__property"
@@ -30,7 +30,7 @@ import { Statement } from '@neo/domain/Statement';
 import { Value, ValueType, StringValue, NumberValue, newStringValue, newNumberValue } from '@neo/domain/Value';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
-import PropertyMenu from '@/components/UIComponents/PropertyMenu.vue';
+import PropertyNameField from '@/components/UIComponents/PropertyNameField.vue';
 
 const props = defineProps<{
 	statement: Statement;
