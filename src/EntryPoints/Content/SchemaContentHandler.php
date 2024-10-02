@@ -4,7 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content;
 
-class SchemaContentHandler extends \JsonContentHandler {
+use MediaWiki\Content\JsonContentHandler;
+
+class SchemaContentHandler extends JsonContentHandler {
 
 	protected function getContentClass(): string {
 		return SchemaContent::class;

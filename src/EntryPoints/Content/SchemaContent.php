@@ -4,7 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content;
 
-class SchemaContent extends \JsonContent {
+use MediaWiki\Content\JsonContent;
+
+class SchemaContent extends JsonContent {
 
 	public const string CONTENT_MODEL_ID = 'NeoWikiSchema';
 

@@ -22,7 +22,8 @@
 		"opis/json-schema": "^2.3.0",
 		"laudis/neo4j-php-client": "^3.1.2",
 		"twig/twig": "^3.5.1",
-		"jeroen/psr-log-test-doubles": "^3.0.0"
+		"jeroen/psr-log-test-doubles": "^3.0.0",
+		"jeroen/file-fetcher": "^6.1.0"
 	},
 	"require-dev": {
 		"vimeo/psalm": "^5.25.0",
