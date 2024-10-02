@@ -26,8 +26,8 @@ import { Subject } from '@neo/domain/Subject';
 import AutomaticInfobox from '@/components/AutomaticInfobox/AutomaticInfobox.vue';
 import CreateSubjectButton from '@/components/CreateSubject/CreateSubjectButton.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@neo/domain/Schema.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 interface InfoboxData {
 	id: string;
@@ -52,12 +52,14 @@ onMounted( async (): Promise<void> => {
 		elements.map( async ( element ): Promise<InfoboxData> => {
 			const subjectId = element.getAttribute( 'data-subject-id' )!;
 			const subject = getSubject( subjectId );
+			await schemaStore.fetchSchema( subject.getSchemaName() );
+			// TODO: handle schema not found
 
 			return {
 				id: subjectId,
 				element,
 				subject: subject,
-				schema: getSchema( subject.getSchemaName() ),
+				schema: schemaStore.getSchema( subject.getSchemaName() ),
 				canEdit: await canEdit( subjectId )
 			};
 		} )
@@ -68,10 +70,6 @@ onMounted( async (): Promise<void> => {
 
 function getSubject( subjectId: string ): Subject {
 	return subjectStore.getSubject( new SubjectId( subjectId ) );
-}
-
-function getSchema( schemaName: string ): Schema {
-	return schemaStore.getSchema( schemaName );
 }
 
 async function canEdit( subjectId: string ): Promise<boolean> {

@@ -13,6 +13,12 @@ import NeoNumberField from '@/components/UIComponents/NeoNumberField.vue';
 import { RelationFormat } from '@neo/domain/valueFormats/Relation.ts';
 import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
 import RelationValue from '@/components/AutomaticInfobox/Values/RelationValue.vue';
+import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
+import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
+import { RestSchemaRepository } from '@/persistence/RestSchemaRepository.ts';
+import { SchemaRepository } from '@/application/SchemaRepository.ts';
+import { CsrfSendingHttpClient } from '@/infrastructure/HttpClient/CsrfSendingHttpClient.ts';
+
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
 
@@ -50,4 +56,18 @@ export class NeoWikiExtension {
 		}
 		return this.rightsFetcher;
 	}
+
+	public getSchemaRepository(): SchemaRepository {
+		return new RestSchemaRepository(
+			this.getMediaWiki().util.wikiScript( 'rest' ),
+			this.newHttpClient()
+		);
+	}
+
+	private newHttpClient(): HttpClient {
+		return new CsrfSendingHttpClient(
+			new ProductionHttpClient()
+		);
+	}
+
 }
