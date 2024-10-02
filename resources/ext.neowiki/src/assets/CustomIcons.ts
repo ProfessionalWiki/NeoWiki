@@ -11,3 +11,7 @@ export const cdxIconStringInteger = `<svg fill="currentColor" width="24" height=
   <path d="M19,22H13V18a2.002,2.002,0,0,1,2-2h2V14H13V12h4a2.0023,2.0023,0,0,1,2,2v2a2.0023,2.0023,0,0,1-2,2H15v2h4Z"/>
   <polygon points="8 20 8 12 6 12 6 13 4 13 4 15 6 15 6 20 4 20 4 22 10 22 10 20 8 20"/>
 </svg>`;
+
+export const cdxIconMenu = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+<path d="M4 6H20M4 12H14M4 18H9" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;

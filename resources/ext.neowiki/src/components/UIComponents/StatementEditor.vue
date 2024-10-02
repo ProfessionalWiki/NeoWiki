@@ -2,11 +2,12 @@
 	<div class="statement-editor">
 		<div v-if="localStatement" class="statement-editor__fields">
 			<div class="statement-editor__field-wrapper">
-				<NeoTextField
+				<PropertyMenu
 					:model-value="localStatement.propertyName.toString()"
 					:required="true"
-					:label="$i18n( 'neowiki-infobox-editor-property-label' ).text()"
 					class="statement-editor__property"
+					@edit="$emit( 'edit', statement.propertyName )"
+					@delete="$emit( 'remove' )"
 					@update:model-value="updatePropertyName"
 				/>
 			</div>
@@ -14,43 +15,22 @@
 				<component
 					:is="componentRegistry.getValueEditingComponent( localStatement.format )"
 					:model-value="getStatementValue( localStatement.value )"
-					:label="$i18n( 'neowiki-infobox-editor-value-label' ).text()"
 					class="statement-editor__value"
 					@validation="handleValidation"
 					@update:model-value="updateStatementValue"
 				/>
 			</div>
 		</div>
-		<div class="statement-editor__actions">
-			<CdxButton
-				action="progressive"
-				weight="quiet"
-				class="statement-editor__action edit-icon"
-				@click="$emit( 'edit', statement.propertyName )"
-			>
-				<CdxIcon :icon="cdxIconEdit" />
-			</CdxButton>
-			<CdxButton
-				action="destructive"
-				weight="quiet"
-				class="statement-editor__action"
-				@click="$emit( 'remove' )"
-			>
-				<CdxIcon :icon="cdxIconTrash" />
-			</CdxButton>
-		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, Component } from 'vue';
-import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconTrash, cdxIconEdit } from '@wikimedia/codex-icons';
-import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
 import { Statement } from '@neo/domain/Statement';
 import { Value, ValueType, StringValue, NumberValue, newStringValue, newNumberValue } from '@neo/domain/Value';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
+import PropertyMenu from '@/components/UIComponents/PropertyMenu.vue';
 
 const props = defineProps<{
 	statement: Statement;
