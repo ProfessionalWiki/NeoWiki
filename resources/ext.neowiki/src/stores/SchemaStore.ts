@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia';
-import { createExampleSchemas } from '@/ExampleData.ts';
 import { Schema } from '@neo/domain/Schema.ts';
+import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
 export const useSchemaStore = defineStore( 'schema', {
 	state: () => ( {
-		schemas: createExampleSchemas()
+		schemas: new Map<string, Schema>()
 	} ),
 	getters: {
 		getSchemas: ( state ) => state.schemas,
@@ -18,8 +18,12 @@ export const useSchemaStore = defineStore( 'schema', {
 		}
 	},
 	actions: {
-		setSchema( name: string, schema: Schema ) {
+		setSchema( name: string, schema: Schema ): void {
 			this.schemas.set( name, schema );
+		},
+		async fetchSchema( name: string ): Promise<void> {
+			const schema = await NeoWikiExtension.getInstance().getSchemaRepository().getSchema( name );
+			this.setSchema( name, schema );
 		}
 	}
 } );
