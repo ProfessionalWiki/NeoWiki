@@ -18,16 +18,14 @@
 			:label="$i18n( 'neowiki-create-subject-dialog-schema' ).text()"
 			disabled
 		/>
-		<div class="add-statement-section">
-			<div class="add-statement-placeholder" @click="toggleDropdown">
-				<CdxIcon :icon="cdxIconAdd" class="add-icon" />
-				<span>{{ $i18n( 'neowiki-infobox-editor-add-property' ).text() }}</span>
-			</div>
-			<NeoTypeSelectDropdown
-				v-if="isDropdownOpen"
-				:types="statementTypes"
-				@select="addStatement"
-			/>
+
+		<div v-if="statements.length > 0" class="statement-editor-heading">
+			<h4 class="property">
+				{{ $i18n( 'neowiki-infobox-editor-property-label' ).text() }}
+			</h4>
+			<h4 class="value">
+				{{ $i18n( 'neowiki-infobox-editor-value-label' ).text() }}
+			</h4>
 		</div>
 		<StatementEditor
 			v-for="( statement, index ) in statements"
@@ -39,6 +37,17 @@
 			@remove="removeStatement( index )"
 			@edit="editProperty"
 		/>
+		<div class="add-statement-section">
+			<div class="add-statement-placeholder" @click="toggleDropdown">
+				<CdxIcon :icon="cdxIconAdd" class="add-icon" />
+				<span>{{ $i18n( 'neowiki-infobox-editor-add-property' ).text() }}</span>
+			</div>
+			<NeoTypeSelectDropdown
+				v-if="isDropdownOpen"
+				:types="statementTypes"
+				@select="addStatement"
+			/>
+		</div>
 		<PropertyDefinitionEditor
 			:key="localSubject.getId().text + 'info'"
 			ref="propertyDefinitionEditorInfo"
@@ -270,6 +279,21 @@ defineExpose( { openDialog, addMissingStatements } );
 	display: flex;
 	flex-direction: column;
 
+	.statement-editor-heading {
+		margin-top: $spacing-100;
+		display: grid;
+		grid-template-columns: 1fr 1fr 4fr;
+		padding-right: 1.2rem;
+
+		.property {
+			grid-column: 1;
+		}
+
+		.value {
+			grid-column: 3;
+		}
+	}
+
 	.cdx-dialog__body {
 		flex-grow: 1;
 		overflow-y: auto;
@@ -322,8 +346,8 @@ defineExpose( { openDialog, addMissingStatements } );
 
 .neo-type-select-dropdown {
 	margin-top: $spacing-25;
-	width: $size-full;
-	position: absolute;
+	width: 137px;
+	position: fixed;
 	z-index: $z-index-dropdown;
 }
 </style>
