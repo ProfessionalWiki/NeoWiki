@@ -36,7 +36,7 @@
 			@remove="removeStatement( index )"
 			@edit="editProperty"
 		/>
-		<div class="add-statement-section">
+		<div v-if="canEditSchema" class="add-statement-section">
 			<div class="add-statement-placeholder" @click="toggleDropdown">
 				<CdxIcon :icon="cdxIconAdd" class="add-icon" />
 				<span>{{ $i18n( 'neowiki-infobox-editor-add-property' ).text() }}</span>
@@ -44,13 +44,14 @@
 			<NeoTypeSelectDropdown
 				v-if="isDropdownOpen"
 				:types="statementTypes"
-				@select="addStatement"
+				@select="addProperty"
 			/>
 		</div>
 		<PropertyDefinitionEditor
+			v-if="canEditSchema"
 			:key="localSubject.getId().text + 'info'"
 			ref="propertyDefinitionEditorInfo"
-			:edit-mode="true"
+			:edit-mode="isEditingProperty"
 			:property="editingProperty as PropertyDefinition"
 			@save="handlePropertySave"
 		/>
@@ -74,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { CdxDialog, CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconArrowPrevious, cdxIconLink } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
@@ -92,20 +93,22 @@ import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefiniti
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
-import { newSubject } from '@neo/TestHelpers.ts';
+import { ValueType } from '@neo/domain/Value.ts';
 
 const props = defineProps<{
 	selectedSchema?: string;
 	subject?: Subject;
+	canEditSchema?: boolean;
 }>();
 
-const emit = defineEmits( [ 'save', 'back', 'addStatement' ] );
+const emit = defineEmits( [ 'save', 'back' ] );
 const isOpen = ref( false );
 const localSubject = ref<Subject | null>( null );
 const statements = ref<Statement[]>( [] );
 const schemaStore = useSchemaStore();
 const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const editingProperty = ref<PropertyDefinition | null>( null );
+const { canEditSchema = false } = props;
 
 const addMissingStatements = (): void => {
 	if ( props.subject !== undefined ) {
@@ -152,6 +155,7 @@ const openDialog = (): void => {
 };
 
 const isDropdownOpen = ref( false );
+const isEditingProperty = ref( false );
 const currentSchemaName = ref( '' );
 
 const statementTypes = [
@@ -161,6 +165,7 @@ const statementTypes = [
 ];
 
 const editProperty = ( propertyName: PropertyName ): void => {
+	isEditingProperty.value = true;
 	if ( localSubject.value ) {
 		const schema = schemaStore.getSchema( localSubject.value.getSchemaName() );
 		const property = schema.getPropertyDefinitions().get( propertyName );
@@ -178,6 +183,11 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 
 	if ( !propertyName ) {
 		console.error( 'No property name found to update' );
+		return;
+	}
+
+	if ( isEditingProperty.value === false ) {
+		handleAddProperty( savedProperty );
 		return;
 	}
 
@@ -215,13 +225,39 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 	editingProperty.value = null;
 };
 
+const handleAddProperty = ( savedProperty: PropertyDefinition ): void => {
+	if ( props.subject !== undefined ) {
+		const schema = schemaStore.getSchema( props.subject.getSchemaName() );
+		const updatedProperties = [ ...schema.getPropertyDefinitions(), savedProperty ];
+
+		const newPropertyList = new PropertyDefinitionList( updatedProperties );
+
+		const updatedSchema = new Schema(
+			schema.getName(),
+			schema.getDescription(),
+			newPropertyList
+		);
+		schemaStore.schemas.set( props.subject.getSchemaName(), updatedSchema );
+
+		addMissingStatements();
+	}
+};
+
 const toggleDropdown = (): void => {
 	isDropdownOpen.value = !isDropdownOpen.value;
 };
 
-const addStatement = ( type: string ): void => {
-	emit( 'addStatement', type );
+const addProperty = ( type: string ): void => {
 	isDropdownOpen.value = false;
+	isEditingProperty.value = false;
+	editingProperty.value = {
+		name: new PropertyName( ' ' ),
+		type: ValueType[ type as keyof typeof ValueType ],
+		format: type,
+		description: '',
+		required: false
+	};
+	propertyDefinitionEditorInfo.value?.openDialog();
 };
 
 const updateStatement = ( index: number, updatedStatement: Statement ): void => {
@@ -264,7 +300,7 @@ const submit = (): void => {
 	isOpen.value = false;
 };
 
-defineExpose( { openDialog, addMissingStatements } );
+defineExpose( { openDialog } );
 </script>
 
 <style lang="scss">
