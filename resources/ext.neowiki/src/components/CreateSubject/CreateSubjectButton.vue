@@ -12,7 +12,6 @@
 			ref="infoboxEditorDialog"
 			:selected-schema="selectedSchema"
 			:is-edit-mode="false"
-			:component-registry="NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()"
 			@complete="onCreationComplete"
 			@back="onInfoboxBack"
 		/>

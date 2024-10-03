@@ -23,17 +23,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, Component } from 'vue';
+import { ref, watch, Component, inject } from 'vue';
 import { Statement } from '@neo/domain/Statement';
 import { Value, ValueType, StringValue, NumberValue, newStringValue, newNumberValue } from '@neo/domain/Value';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
 import PropertyNameField from '@/components/UIComponents/PropertyNameField.vue';
+import { injectComponentRegistry } from '@/Service.ts';
 
 const props = defineProps<{
 	statement: Statement;
-	componentRegistry: FormatSpecificComponentRegistry;
 }>();
+
+const componentRegistry = injectComponentRegistry();
 
 const emit = defineEmits( [ 'update', 'remove', 'edit' ] );
 

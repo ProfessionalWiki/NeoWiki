@@ -2,12 +2,11 @@ import { createMwApp } from 'vue';
 import { createPinia } from 'pinia';
 import '@/assets/scss/global.scss';
 import NeoWikiApp from '@/components/NeoWikiApp.vue';
-import { Neo } from '@neo/Neo.ts';
 import { CdxTooltip } from '@wikimedia/codex';
+import { Service } from '@/Service.ts';
+import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
 const app = createMwApp( NeoWikiApp ).directive( 'tooltip', CdxTooltip );
 app.use( createPinia() );
 app.mount( '#neowiki' );
-
-// TODO: this is just to include Neo code in the build. Remove when actually using it.
-Neo.getInstance();
+app.provide( Service.ComponentRegistry, NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry() );

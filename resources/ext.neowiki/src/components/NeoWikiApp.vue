@@ -8,7 +8,6 @@
 		<AutomaticInfobox
 			:subject="infobox.subject as Subject"
 			:schema="infobox.schema as Schema"
-			:component-registry="componentRegistry"
 			:can-edit="infobox.canEdit"
 		/>
 	</teleport>
@@ -19,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useSubjectStore } from '@/stores/SubjectStore';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { Subject } from '@neo/domain/Subject';
@@ -40,8 +39,6 @@ interface InfoboxData {
 const infoboxData = ref<InfoboxData[]>( [] );
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
-
-const componentRegistry = computed( () => NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry() );
 
 const canCreateSubject = ref( false );
 
