@@ -194,6 +194,10 @@ defineExpose( { openDialog } );
 		}
 	}
 
+	.cdx-menu {
+		border-radius: 5px !important;
+	}
+
 	.no-property {
 		display: flex;
 		justify-content: center;

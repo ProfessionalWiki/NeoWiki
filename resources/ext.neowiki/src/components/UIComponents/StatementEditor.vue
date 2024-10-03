@@ -7,7 +7,6 @@
 					class="statement-editor__property"
 					@edit="$emit( 'edit', statement.propertyName )"
 					@delete="$emit( 'remove' )"
-					@update:model-value="updatePropertyName"
 				/>
 			</div>
 			<div class="statement-editor__field-wrapper">
@@ -55,15 +54,6 @@ const getStatementValue = ( value: Value | undefined ): string => { // TODO: use
 		return ( value as NumberValue ).number.toString();
 	}
 	return '';
-};
-
-const updatePropertyName = ( newName: string ): void => {
-	localStatement.value = new Statement(
-		new PropertyName( newName ),
-		localStatement.value.format,
-		localStatement.value.value
-	);
-	emit( 'update', localStatement.value );
 };
 
 const updateStatementValue = ( newValue: string ): void => {
