@@ -3,12 +3,14 @@ import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { SchemaRepository } from '@/application/SchemaRepository';
+import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 
 export class RestSchemaRepository implements SchemaRepository {
 
 	public constructor(
 		private readonly mediaWikiRestApiUrl: string,
-		private readonly httpClient: HttpClient
+		private readonly httpClient: HttpClient,
+		private readonly serializer: SchemaSerializer
 	) {
 	}
 
@@ -57,5 +59,22 @@ export class RestSchemaRepository implements SchemaRepository {
 		return await response.json();
 	}
 
-	// TODO: createSchema()
+	public async saveSchema( schema: Schema ): Promise<void> {
+		const response = await this.httpClient.post(
+			`${ this.mediaWikiRestApiUrl }/v1/page/Schema:${ encodeURIComponent( schema.getName() ) }`,
+			{
+				source: this.serializeSchema( schema ),
+				comment: 'Update schema via NeoWiki UI',
+				content_model: 'json'
+			}
+		);
+
+		if ( !response.ok ) {
+			throw new Error( `Error saving schema: ${ response.statusText }` );
+		}
+	}
+
+	private serializeSchema( schema: Schema ): string {
+		return this.serializer.serializeSchema( schema );
+	}
 }

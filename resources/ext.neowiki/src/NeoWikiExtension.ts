@@ -18,6 +18,7 @@ import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttp
 import { RestSchemaRepository } from '@/persistence/RestSchemaRepository.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
 import { CsrfSendingHttpClient } from '@/infrastructure/HttpClient/CsrfSendingHttpClient.ts';
+import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -60,7 +61,8 @@ export class NeoWikiExtension {
 	public getSchemaRepository(): SchemaRepository {
 		return new RestSchemaRepository(
 			this.getMediaWiki().util.wikiScript( 'rest' ),
-			this.newHttpClient()
+			this.newHttpClient(),
+			new SchemaSerializer()
 		);
 	}
 

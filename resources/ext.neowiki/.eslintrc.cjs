@@ -47,6 +47,7 @@ module.exports = {
 		// Overrides.
 		'n/no-missing-import': 'off',
 		'max-len': 'off',
+		camelcase: 'off',
 		'vue/no-v-model-argument': 'off',
 		'es-x/no-optional-chaining': 'off',
 		'no-unused-vars': 'off',
@@ -61,7 +62,7 @@ module.exports = {
 		{
 			files: [
 				'src/infrastructure/**/*.ts',
-				'src/persistence/RestSchemaRepository.ts'
+				'src/persistence/*.ts'
 			],
 			rules: {
 				'@typescript-eslint/no-explicit-any': 'off'
