@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, Component, inject } from 'vue';
+import { ref, watch } from 'vue';
 import { Statement } from '@neo/domain/Statement';
 import { Value, ValueType, StringValue, NumberValue, newStringValue, newNumberValue } from '@neo/domain/Value';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
