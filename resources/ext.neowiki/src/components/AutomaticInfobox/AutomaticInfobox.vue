@@ -43,30 +43,20 @@
 			ref="infoboxEditorDialog"
 			:is-edit-mode="true"
 			:subject="subjectRef as Subject"
-			@save="saveSubject"
-			@add-statement="addStatement"
-		/>
-		<PropertyDefinitionEditor
-			v-if="canEditSchemas && editingProperty !== null"
-			:key="`property-editor-${editingProperty ? editingProperty.name : 'null'}`"
-			ref="propertyDefinitionEditor"
-			:property="editingProperty as PropertyDefinition"
-			@save="handlePropertySave"
-		/>
+			:can-edit-schema="canEditSchemas"
+			@save="saveSubject" />
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, PropType, nextTick } from 'vue';
+import { computed, ref, PropType } from 'vue';
 import { Subject } from '@neo/domain/Subject';
-import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition.ts';
+import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
 import { Schema } from '@neo/domain/Schema';
 import { Component } from 'vue';
 import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
 import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefinitionEditor.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
-import { ValueType } from '@neo/domain/Value.ts';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { injectComponentRegistry } from '@/Service.ts';
 
 const props = defineProps( {
@@ -87,11 +77,7 @@ const props = defineProps( {
 const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
 const subjectRef = ref( props.subject );
 
-const propertyDefinitionEditor = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const schemaStore = useSchemaStore();
-
-const selectedPropertyName = ref<string | null>( null );
-const selectedPropertyType = ref<string | null>( null );
 
 const editingProperty = ref<PropertyDefinition | null>( null );
 
@@ -130,50 +116,8 @@ const saveSubject = ( savedSubject: Subject ): void => {
 	console.log( 'Updated subjectRef:', subjectRef.value );
 };
 
-const addStatement = ( type: string ): void => {
-	selectedPropertyName.value = '';
-	selectedPropertyType.value = type;
-
-	editingProperty.value = {
-		name: new PropertyName( ' ' ),
-		type: ValueType[ type as keyof typeof ValueType ],
-		format: type,
-		description: '',
-		required: false
-	};
-
-	console.log( editingProperty.value );
-
-	nextTick( () => {
-		propertyDefinitionEditor.value?.openDialog();
-	} );
-};
-
 const canEditSubjects = computed( (): boolean => props.canEdit ); // TODO: add right checks
 const canEditSchemas = computed( (): boolean => props.canEdit ); // TODO: add right checks
-const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
-
-	if ( props.subject !== undefined ) {
-		const schemaName = props.subject.getSchemaName();
-		const schema = schemaStore.getSchema( schemaName );
-
-		const currentProperties = schema.getPropertyDefinitions();
-
-		const updatedProperties = [ ...currentProperties, savedProperty ];
-
-		const newPropertyList = new PropertyDefinitionList( updatedProperties );
-
-		const updatedSchema = new Schema(
-			schema.getName(),
-			schema.getDescription(),
-			newPropertyList
-		);
-		schemaStore.schemas.set( schemaName, updatedSchema );
-
-		infoboxEditorDialog.value?.addMissingStatements();
-	}
-
-};
 
 </script>
 
