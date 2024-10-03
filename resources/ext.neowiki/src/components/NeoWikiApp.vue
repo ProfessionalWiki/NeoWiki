@@ -49,14 +49,13 @@ onMounted( async (): Promise<void> => {
 		elements.map( async ( element ): Promise<InfoboxData> => {
 			const subjectId = element.getAttribute( 'data-subject-id' )!;
 			const subject = getSubject( subjectId );
-			await schemaStore.fetchSchema( subject.getSchemaName() );
 			// TODO: handle schema not found
 
 			return {
 				id: subjectId,
 				element,
 				subject: subject,
-				schema: schemaStore.getSchema( subject.getSchemaName() ),
+				schema: await schemaStore.getOrFetchSchema( subject.getSchemaName() ),
 				canEdit: await canEdit( subjectId )
 			};
 		} )

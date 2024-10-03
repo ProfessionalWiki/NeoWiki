@@ -54,21 +54,20 @@ const isOpen = ref( false );
 const searchQuery = ref( '' );
 const searchInputId = 'create-subject-search';
 const schemaStore = useSchemaStore();
-const schemas = computed( () => schemaStore.getSchemas );
+const searchedSchemaNames = ref<string[]>( [] );
 
-const searchResults = computed<SearchResult[]>( () => {
-	const query = searchQuery.value.toLowerCase();
-	return Array.from( schemas.value.values() )
-		.filter( ( schema ) => schema.getName().toLowerCase().includes( query ) )
-		.map( ( schema ) => ( {
-			value: schema.getName(),
-			label: schema.getName(),
-			description: schema.getDescription(),
-			url: '#'
-		} ) );
-} );
+const searchResults = computed<SearchResult[]>( () => searchedSchemaNames.value.map( ( schemaName ) => {
+	const schema = schemaStore.getSchema( schemaName );
+	return {
+		value: schemaName,
+		label: schemaName,
+		description: schema.getDescription(),
+		url: '#'
+	};
+} ) );
 
-const openDialog = (): void => {
+const openDialog = async (): Promise<void> => {
+	searchedSchemaNames.value = await schemaStore.searchAndFetchMissingSchemas( '' );
 	isOpen.value = true;
 	searchQuery.value = '';
 };
@@ -78,8 +77,9 @@ const proceedWithBlank = (): void => {
 	emit( 'next', '' );
 };
 
-const handleInput = ( value: string ): void => {
+const handleInput = async ( value: string ): Promise<void> => {
 	searchQuery.value = value;
+	searchedSchemaNames.value = await schemaStore.searchAndFetchMissingSchemas( value );
 };
 
 const handleSearchResultClick = ( result: SearchResultClickEvent ): void => {
