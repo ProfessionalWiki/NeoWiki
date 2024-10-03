@@ -5,6 +5,7 @@
 			{{ modelValue }}
 		</span>
 		<CdxMenuButton
+			class="neo-property-name__menu-button"
 			:selected="null"
 			:menu-items="menuItems"
 			@update:selected="onMenuSelect"
@@ -64,6 +65,7 @@ const onMenuSelect = ( value: string ): void => {
 	border-radius: $border-radius-base;
 	border: $border-width-base solid rgba( $border-color-disabled, 0.55 );
 	margin-top: 5px;
+	padding-right: -2px;
 
 	.property-name {
 		width: 210px;
@@ -94,6 +96,11 @@ const onMenuSelect = ( value: string ): void => {
 				fill: #54595d !important;
 			}
 		}
+	}
+
+	.neo-property-name__menu-button {
+		background-color: #c8ccd147;
+		margin-right: -1px;
 	}
 }
 </style>
