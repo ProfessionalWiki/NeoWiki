@@ -43,7 +43,6 @@
 			ref="infoboxEditorDialog"
 			:is-edit-mode="true"
 			:subject="subjectRef as Subject"
-			:component-registry="componentRegistry"
 			@save="saveSubject"
 			@add-statement="addStatement"
 		/>
@@ -68,7 +67,7 @@ import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefiniti
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { ValueType } from '@neo/domain/Value.ts';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
-import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
+import { injectComponentRegistry } from '@/Service.ts';
 
 const props = defineProps( {
 	subject: {
@@ -77,10 +76,6 @@ const props = defineProps( {
 	},
 	schema: {
 		type: Object as PropType<Schema>,
-		required: true
-	},
-	componentRegistry: {
-		type: Object as PropType<FormatSpecificComponentRegistry>,
 		required: true
 	},
 	canEdit: {
@@ -100,7 +95,7 @@ const selectedPropertyType = ref<string | null>( null );
 
 const editingProperty = ref<PropertyDefinition | null>( null );
 
-const getComponent = ( formatName: string ): Component => props.componentRegistry?.getValueDisplayComponent( formatName );
+const getComponent = ( formatName: string ): Component => injectComponentRegistry().getValueDisplayComponent( formatName );
 
 const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => {
 	if ( !subjectRef.value ) {

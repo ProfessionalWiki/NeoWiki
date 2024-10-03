@@ -17,6 +17,7 @@ import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition';
 import { setActivePinia, createPinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore';
+import { Service } from '@/Service';
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 	text: () => key
@@ -65,12 +66,14 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: mockSubject,
-				schema: mockSchema,
-				componentRegistry: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
+				schema: mockSchema
 			},
 			global: {
 				mocks: {
 					$i18n
+				},
+				provide: {
+					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
 				}
 			}
 		} );
@@ -82,12 +85,14 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: mockSubject,
-				schema: mockSchema,
-				componentRegistry: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
+				schema: mockSchema
 			},
 			global: {
 				mocks: {
 					$i18n
+				},
+				provide: {
+					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
 				}
 			}
 		} );
@@ -122,12 +127,14 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: emptySubject,
-				schema: mockSchema,
-				componentRegistry: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
+				schema: mockSchema
 			},
 			global: {
 				mocks: {
 					$i18n
+				},
+				provide: {
+					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
 				}
 			}
 		} );
@@ -143,12 +150,14 @@ describe( 'AutomaticInfobox', () => {
 			props: {
 				subject: mockSubject,
 				schema: mockSchema,
-				componentRegistry: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry(),
 				canEdit: false
 			},
 			global: {
 				mocks: {
 					$i18n
+				},
+				provide: {
+					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
 				}
 			}
 		} );
@@ -161,12 +170,14 @@ describe( 'AutomaticInfobox', () => {
 			props: {
 				subject: mockSubject,
 				schema: mockSchema,
-				componentRegistry: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry(),
 				canEdit: true
 			},
 			global: {
 				mocks: {
 					$i18n
+				},
+				provide: {
+					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
 				}
 			}
 		} );
