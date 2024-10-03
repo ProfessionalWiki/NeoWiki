@@ -24,6 +24,17 @@ export const useSchemaStore = defineStore( 'schema', {
 		async fetchSchema( name: string ): Promise<void> {
 			const schema = await NeoWikiExtension.getInstance().getSchemaRepository().getSchema( name );
 			this.setSchema( name, schema );
+		},
+		async getOrFetchSchema( name: string ): Promise<Schema> {
+			if ( !this.schemas.has( name ) ) {
+				await this.fetchSchema( name );
+			}
+			return this.getSchema( name );
+		},
+		async searchAndFetchMissingSchemas( search: string ): Promise<string[]> {
+			const schemaNames = await NeoWikiExtension.getInstance().getSchemaRepository().getSchemaNames( search );
+			await Promise.all( schemaNames.map( ( name ) => this.getOrFetchSchema( name ) ) );
+			return schemaNames;
 		}
 	}
 } );
