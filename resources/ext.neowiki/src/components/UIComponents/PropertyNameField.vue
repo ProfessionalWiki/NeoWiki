@@ -147,6 +147,7 @@ watch( () => props.modelValue, ( newValue ) => {
 	transform: translateY( -50% );
 	cursor: pointer;
 	z-index: 1;
+	padding: 1px;
 	background-color: #c8ccd147;
 }
 </style>
