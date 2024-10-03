@@ -188,6 +188,8 @@
 				"neowiki-infobox-editor-subject-label",
 				"neowiki-infobox-editor-property-label",
 				"neowiki-infobox-editor-add-property",
+				"neowiki-infobox-editor-edit-property",
+				"neowiki-infobox-editor-delete-property",
 				"neowiki-infobox-editor-value-label",
 				"neowiki-infobox-editor-remove-statement",
 				"neowiki-infobox-editor-add-statement",

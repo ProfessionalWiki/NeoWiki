@@ -2,22 +2,20 @@
 	<CdxField
 		:status="validationStatus"
 		:messages="validationMessages"
-		:required="required"
-		class="neo-text-field"
-		:class="{ 'neo-text-field--success': validationStatus === 'success' }"
+		class="neo-property-name-field"
 	>
-		<div class="neo-text-field__wrapper">
+		<div class="neo-property-name-field__wrapper">
 			<CdxTextInput
 				v-model="inputValue"
 				input-type="text"
-				:class="{ 'cdx-text-input--status-success': validationStatus === 'success' }"
+				:status="validationStatus"
 				@input="validateInput"
 			/>
-			<div class="neo-text-field__end-icon">
+			<div class="neo-property-name-field__end-icon">
 				<CdxMenuButton
 					:selected="null"
 					:menu-items="menuItems"
-					class="neo-text-field__menu-button"
+					class="neo-property-name-field__menu-button"
 					@update:selected="onMenuSelect"
 				>
 					<CdxIcon :icon="cdxIconMenu" />
@@ -44,10 +42,6 @@ const props = defineProps( {
 	modelValue: {
 		type: String,
 		required: true
-	},
-	required: {
-		type: Boolean,
-		default: false
 	}
 } );
 
@@ -67,7 +61,7 @@ const validateInput = ( event: Event ): void => {
 
 	const messages: { [key: string]: string } = {};
 
-	if ( props.required && !value ) {
+	if ( !value ) {
 		messages.error = mw.message( 'neowiki-field-required' ).text();
 	}
 
@@ -84,12 +78,12 @@ const validateInput = ( event: Event ): void => {
 const menuItems = computed<MenuButtonItemData[]>( () => [
 	{
 		value: 'edit',
-		label: 'Edit Property',
+		label: mw.message( 'neowiki-infobox-editor-edit-property' ).text(),
 		icon: cdxIconEdit
 	},
 	{
 		value: 'delete',
-		label: 'Delete Property',
+		label: mw.message( 'neowiki-infobox-editor-delete-property' ).text(),
 		icon: cdxIconTrash,
 		action: 'destructive'
 	}
@@ -114,7 +108,7 @@ watch( () => props.modelValue, ( newValue ) => {
 <style lang="scss">
 @import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
 
-.neo-text-field__wrapper {
+.neo-property-name-field__wrapper {
 	position: relative;
 	display: flex;
 
@@ -146,14 +140,13 @@ watch( () => props.modelValue, ( newValue ) => {
 	}
 }
 
-.neo-text-field__end-icon {
+.neo-property-name-field__end-icon {
 	position: absolute;
 	right: 0;
 	top: 50%;
 	transform: translateY( -50% );
 	cursor: pointer;
 	z-index: 1;
-	padding: 1px;
 	background-color: #c8ccd147;
 }
 </style>

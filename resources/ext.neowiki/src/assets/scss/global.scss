@@ -86,15 +86,17 @@ input[ type='number' ] {
 	}
 }
 
-input {
-	border: $border-width-base solid rgba( $border-color-disabled, 0.55 ) !important;
-}
-
 .neo-float-right {
 	float: right;
 }
 
 .cdx-text-input {
+	&--status-default {
+		input {
+			border: $border-width-base solid rgba( $border-color-disabled, 0.55 ) !important;
+		}
+	}
+
 	&__end-icon {
 		svg {
 			color: $color-success !important;
