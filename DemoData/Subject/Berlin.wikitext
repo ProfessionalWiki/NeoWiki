@@ -1,4 +1,4 @@
-{{#infobox:}}
+<div class="neowiki-infobox" data-subject-id="s1demo2sssssss1"></div>
 
 Because NeoWiki supports adding as many Subjects as you want to a single page, it is possible to emulate Wikibase Statements.
 
