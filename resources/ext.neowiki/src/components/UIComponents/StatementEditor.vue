@@ -4,7 +4,6 @@
 			<div class="statement-editor__field-wrapper">
 				<PropertyNameField
 					:model-value="localStatement.propertyName.toString()"
-					:required="true"
 					class="statement-editor__property"
 					@edit="$emit( 'edit', statement.propertyName )"
 					@delete="$emit( 'remove' )"

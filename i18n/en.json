@@ -28,6 +28,8 @@
 	"neowiki-infobox-editor-subject-label": "Subject label",
 	"neowiki-infobox-editor-property-label": "Property",
 	"neowiki-infobox-editor-add-property": "Add Property",
+	"neowiki-infobox-editor-edit-property": "Edit Property",
+	"neowiki-infobox-editor-delete-property": "Delete Property",
 	"neowiki-infobox-editor-save-property": "Save Property",
 	"neowiki-infobox-editor-value-label": "Value",
 	"neowiki-infobox-editor-remove-statement": "Remove",
