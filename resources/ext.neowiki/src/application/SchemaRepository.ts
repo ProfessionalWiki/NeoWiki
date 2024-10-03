@@ -1,5 +1,8 @@
 import type { SchemaLookup } from '@/application/SchemaLookup';
+import { Schema } from '@neo/domain/Schema.ts';
 
 export interface SchemaRepository extends SchemaLookup {
-	// TODO: createSchema()
+
+	saveSchema( schema: Schema ): Promise<void>;
+
 }
