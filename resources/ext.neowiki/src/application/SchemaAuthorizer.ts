@@ -1,5 +1,5 @@
 export interface SchemaAuthorizer {
 
-	canEditSchema(): Promise<boolean>;
+	canEditSchema( schemaName: string ): Promise<boolean>;
 
 }
