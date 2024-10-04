@@ -25,7 +25,7 @@ import {
 import { cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { cdxIconMenu } from '@/assets/CustomIcons';
 
-const props = defineProps( {
+defineProps( {
 	modelValue: {
 		type: String,
 		required: true

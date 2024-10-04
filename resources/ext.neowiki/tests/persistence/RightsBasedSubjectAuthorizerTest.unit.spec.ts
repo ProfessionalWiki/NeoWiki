@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { RightsBasedSubjectAuthorizer } from '@/persistence/RightsBasedSubjectAuthorizer';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { TestUserObjectBasedRightsFetcher } from './UserObjectBasedRightsFetcher.unit.spec';
