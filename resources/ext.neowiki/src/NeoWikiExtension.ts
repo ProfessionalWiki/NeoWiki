@@ -3,13 +3,10 @@ import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
 import { RightsFetcher, UserObjectBasedRightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher.ts';
 import { TextFormat } from '@neo/domain/valueFormats/Text.ts';
 import TextValue from '@/components/AutomaticInfobox/Values/TextValue.vue';
-import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
-import NeoUrlField from '@/components/UIComponents/NeoUrlField.vue';
 import { UrlFormat } from '@neo/domain/valueFormats/Url.ts';
 import UrlValue from '@/components/AutomaticInfobox/Values/UrlValue.vue';
 import { NumberFormat } from '@neo/domain/valueFormats/Number.ts';
 import NumberValue from '@/components/AutomaticInfobox/Values/NumberValue.vue';
-import NeoNumberField from '@/components/UIComponents/NeoNumberField.vue';
 import { RelationFormat } from '@neo/domain/valueFormats/Relation.ts';
 import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
 import RelationValue from '@/components/AutomaticInfobox/Values/RelationValue.vue';
@@ -24,6 +21,9 @@ import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
 import { SubjectRepository } from '@neo/domain/SubjectRepository.ts';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
 import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
+import TextInput from '@/components/Value/TextInput.vue';
+import UrlInput from '@/components/Value/UrlInput.vue';
+import NumberInput from '@/components/Value/NumberInput.vue';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -38,10 +38,10 @@ export class NeoWikiExtension {
 	public getFormatSpecificComponentRegistry(): FormatSpecificComponentRegistry {
 		const registry = new FormatSpecificComponentRegistry();
 
-		registry.registerComponents( TextFormat.formatName, TextValue, NeoTextField );
-		registry.registerComponents( UrlFormat.formatName, UrlValue, NeoUrlField );
-		registry.registerComponents( NumberFormat.formatName, NumberValue, NeoNumberField );
-		registry.registerComponents( RelationFormat.formatName, RelationValue, NeoTextField ); // TODO
+		registry.registerComponents( TextFormat.formatName, TextValue, TextInput );
+		registry.registerComponents( UrlFormat.formatName, UrlValue, UrlInput );
+		registry.registerComponents( NumberFormat.formatName, NumberValue, NumberInput );
+		registry.registerComponents( RelationFormat.formatName, RelationValue, TextInput ); // TODO
 
 		return registry;
 	}

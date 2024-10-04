@@ -1,9 +1,10 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import NeoNumberField from '@/components/UIComponents/NeoNumberField.vue';
+import TextInput from '@/components/Value/TextInput.vue';
 import { CdxField } from '@wikimedia/codex';
+import { newStringValue } from '@neo/domain/Value';
 
-describe( 'NeoNumberField', () => {
+describe( 'TextInput', () => {
 	beforeEach( () => {
 		vi.stubGlobal( 'mw', {
 			message: vi.fn( ( str: string ) => ( {
@@ -14,13 +15,13 @@ describe( 'NeoNumberField', () => {
 	} );
 
 	it( 'renders correctly', () => {
-		const wrapper = mount( NeoNumberField, {
+		const wrapper = mount( TextInput, {
 			props: {
 				required: true,
-				minValue: 2,
-				maxValue: 50,
+				minLength: 2,
+				maxLength: 50,
 				label: 'Test Label',
-				modelValue: 10
+				modelValue: newStringValue( 'Test' )
 			}
 		} );
 
@@ -30,95 +31,90 @@ describe( 'NeoNumberField', () => {
 	} );
 
 	it( 'validates required field', async () => {
-		const wrapper = mount( NeoNumberField, {
+		const wrapper = mount( TextInput, {
 			props: {
 				required: true,
-				minValue: 2,
-				maxValue: 50,
+				minLength: 2,
+				maxLength: 50,
 				label: 'Test Label',
-				modelValue: 10
+				modelValue: newStringValue( 'Test' )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
 		await input.setValue( '' );
-		await input.trigger( 'input' );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-required' );
 	} );
 
-	it( 'validates maxValue for the number', async () => {
-		const wrapper = mount( NeoNumberField, {
+	it( 'validates maxLength for the text', async () => {
+		const wrapper = mount( TextInput, {
 			props: {
 				required: true,
-				minValue: 2,
-				maxValue: 50,
+				minLength: 2,
+				maxLength: 10,
 				label: 'Test Label',
-				modelValue: 10
+				modelValue: newStringValue( 'Test' )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
-		await input.setValue( 55 );
-		await input.trigger( 'input' );
+		await input.setValue( 'This is a very long text' );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-max-value' );
+		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-max-length' );
 	} );
 
-	it( 'validates minValue for the number', async () => {
-		const wrapper = mount( NeoNumberField, {
+	it( 'validates minLength for the text', async () => {
+		const wrapper = mount( TextInput, {
 			props: {
 				required: true,
-				minValue: 2,
-				maxValue: 50,
+				minLength: 5,
+				maxLength: 50,
 				label: 'Test Label',
-				modelValue: 10
+				modelValue: newStringValue( 'Test' )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
-		await input.setValue( 1 );
-		await input.trigger( 'input' );
+		await input.setValue( 'A' );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-min-value' );
+		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-min-length' );
 	} );
 
 	it( 'emits valid field', async () => {
-		const wrapper = mount( NeoNumberField, {
+		const wrapper = mount( TextInput, {
 			props: {
 				required: true,
-				minValue: 2,
-				maxValue: 50,
+				minLength: 2,
+				maxLength: 50,
 				label: 'Test Label',
-				modelValue: 10
+				modelValue: newStringValue( 'Test' )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
 
-		await input.setValue( 45 );
-		await input.trigger( 'input' );
+		await input.setValue( 'Valid Text' );
 		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ true ] );
 	} );
 
 	it( 'emits invalid field', async () => {
-		const wrapper = mount( NeoNumberField, {
+		const wrapper = mount( TextInput, {
 			props: {
 				required: true,
-				minValue: 2,
-				maxValue: 50,
+				minLength: 2,
+				maxLength: 50,
 				label: 'Test Label',
-				modelValue: 10
+				modelValue: newStringValue( 'Test' )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
 
-		await input.setValue( 55 );
-		await input.trigger( 'input' );
+		await input.setValue( '' );
 		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ false ] );
 	} );
 } );

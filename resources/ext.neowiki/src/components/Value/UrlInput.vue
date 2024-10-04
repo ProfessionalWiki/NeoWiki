@@ -9,22 +9,24 @@
 			{{ label }}
 		</template>
 		<CdxTextInput
-			v-model="inputValue"
+			:model-value="inputValue"
 			input-type="url"
 			:start-icon="cdxIconLink"
-			@input="validateInput"
+			@input="onInput"
 		/>
 	</CdxField>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch, PropType } from 'vue';
 import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
 import { cdxIconLink } from '@wikimedia/codex-icons';
+import { newStringValue, ValueType, StringValue } from '@neo/domain/Value';
+import type { Value } from '@neo/domain/Value';
 
 const props = defineProps( {
 	modelValue: {
-		type: String,
+		type: Object as PropType<Value>,
 		required: true
 	},
 	label: {
@@ -47,37 +49,50 @@ interface ValidationMessages {
 
 const validationMessages = ref<ValidationMessages>( {} );
 
-const inputValue = ref( props.modelValue );
+const inputValue = computed( () => {
+	if ( props.modelValue.type === ValueType.String ) {
+		// TODO: support multiple strings in the UI: https://github.com/ProfessionalWiki/NeoExtension/issues/117
+		return ( props.modelValue as StringValue ).strings[ 0 ] || '';
+	}
 
-const validateInput = ( event: Event ): void => {
-	const value = ( event.target as HTMLInputElement ).value;
+	return '';
+} );
+
+const onInput = ( event: Event ): void => {
+	const value = getStringValueInputEvent( event );
+
 	emit( 'update:modelValue', value );
+	updateValidationStatus( validate( value ) );
+};
 
-	const messages: { [key: string]: string } = {};
+const getStringValueInputEvent = ( event: Event ): StringValue => newStringValue( [ ( event.target as HTMLInputElement ).value ] );
 
-	if ( props.required && !value ) {
+const validate = ( value: StringValue ): ValidationMessages => {
+	const messages: ValidationMessages = {};
+
+	if ( props.required && value.strings[ 0 ] === '' ) {
 		messages.error = mw.message( 'neowiki-field-required' ).text();
-	} else if ( value ) {
+	} else if ( value.strings[ 0 ] !== '' ) {
 		try {
 			// eslint-disable-next-line no-new
-			new URL( value );
+			new URL( value.strings[ 0 ] );
 		} catch ( _error ) {
 			messages.error = mw.message( 'neowiki-field-invalid-url' ).text();
 		}
 	}
 
+	return messages;
+};
+
+const updateValidationStatus = ( messages: ValidationMessages ): void => {
 	validationMessages.value = messages;
 	validationStatus.value = Object.keys( messages ).length > 0 ? 'error' : 'default';
 
 	emit( 'validation', Object.keys( messages ).length === 0 );
 };
 
-watch( validationMessages, ( newMessages ) => {
+watch( validationMessages, ( newMessages ) => { // TODO: this can probably be removed
 	emit( 'validation', Object.keys( newMessages ).length === 0 );
-} );
-
-watch( () => props.modelValue, ( newValue ) => {
-	inputValue.value = newValue;
 } );
 </script>
 

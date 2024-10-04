@@ -12,7 +12,7 @@
 			<div class="statement-editor__field-wrapper">
 				<component
 					:is="componentRegistry.getValueEditingComponent( localStatement.format )"
-					:model-value="getStatementValue( localStatement.value )"
+					:model-value="localStatement.value"
 					class="statement-editor__value"
 					@validation="handleValidation"
 					@update:model-value="updateStatementValue"
@@ -25,10 +25,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { Statement } from '@neo/domain/Statement';
-import { Value, ValueType, StringValue, NumberValue, newStringValue, newNumberValue } from '@neo/domain/Value';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { Value } from '@neo/domain/Value';
 import PropertyNameField from '@/components/UIComponents/PropertyNameField.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { PropertyName } from '@neo/domain/PropertyDefinition.ts';
 
 const props = defineProps<{
 	statement: Statement;
@@ -44,36 +44,11 @@ watch( () => props.statement, ( newStatement ) => {
 	localStatement.value = newStatement;
 }, { deep: true } );
 
-const getStatementValue = ( value: Value | undefined ): string => { // TODO: use value format plugin system
-	if ( !value ) {
-		return '';
-	}
-	if ( value.type === ValueType.String ) {
-		return ( value as StringValue ).strings[ 0 ] || '';
-	}
-	if ( value.type === ValueType.Number ) {
-		return ( value as NumberValue ).number.toString();
-	}
-	return '';
-};
-
-const updateStatementValue = ( newValue: string ): void => {
-	let updatedValue: Value;
-	switch ( localStatement.value.format ) { // TODO: use value format plugin system
-		case 'text':
-		case 'url':
-			updatedValue = newStringValue( newValue );
-			break;
-		case 'number':
-			updatedValue = newNumberValue( Number( newValue ) );
-			break;
-		default:
-			updatedValue = newStringValue( newValue );
-	}
+const updateStatementValue = ( newValue: Value | undefined ): void => {
 	localStatement.value = new Statement(
 		localStatement.value.propertyName as PropertyName,
 		localStatement.value.format,
-		updatedValue
+		newValue
 	);
 	emit( 'update', localStatement.value );
 };
