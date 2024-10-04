@@ -21,6 +21,9 @@ import { CsrfSendingHttpClient } from '@/infrastructure/HttpClient/CsrfSendingHt
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 import { RightsBasedSchemaAuthorizer } from '@/persistence/RightsBasedSchemaAuthorizer.ts';
 import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
+import { SubjectRepository } from '@neo/domain/SubjectRepository.ts';
+import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
+import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -80,4 +83,12 @@ export class NeoWikiExtension {
 		);
 	}
 
+	public getSubjectRepository(): SubjectRepository {
+		return new RestSubjectRepository(
+			this.getMediaWiki().util.wikiScript( 'rest' ),
+			this.newHttpClient(),
+			this.getSchemaRepository(),
+			new SubjectDeserializer( this.getSchemaRepository() )
+		);
+	}
 }
