@@ -1,51 +1,51 @@
 <template>
-	<div>
-		<div class="infobox">
-			<div class="infobox-title">
+	<div class="fancy-infobox">
+		<div class="fancy-infobox__header">
+			<h2 class="fancy-infobox__title">
 				{{ subject.getLabel() }}
-			</div>
-			<div class="infobox-statements">
-				<div class="infobox-statement">
-					<div class="infobox-statement-property">
-						{{ $i18n( 'neowiki-infobox-type' ).text() }}
-					</div>
-					<div class="infobox-statement-value">
-						{{ schema.getName() }}
-					</div>
+			</h2>
+			<CdxInfoChip class="fancy-infobox__schema-badge">
+				{{ schema.getName() }}
+			</CdxInfoChip>
+		</div>
+		<div class="fancy-infobox__content">
+			<div
+				v-for="( propertyDefinition, propertyName ) in propertiesToDisplay"
+				:key="propertyName"
+				class="fancy-infobox__item"
+			>
+				<div class="fancy-infobox__property">
+					{{ propertyName }}
 				</div>
-				<div
-					v-for="( propertyDefinition, propertyName ) in propertiesToDisplay"
-					:key="propertyName"
-					class="infobox-statement"
-				>
-					<div class="infobox-statement-property">
-						{{ propertyName }}
-					</div>
-					<div class="infobox-statement-value">
-						<component
-							:is="getComponent( propertyDefinition.format )"
-							:key="`${propertyDefinition.name}${subjectRef?.getStatementValue( propertyDefinition.name )}-automatic-infobox`"
-							:value="subjectRef?.getStatementValue( propertyDefinition.name )"
-							:property="propertyDefinition"
-						/>
-					</div>
+				<div class="fancy-infobox__value">
+					<component
+						:is="getComponent( propertyDefinition.format )"
+						:key="`${propertyDefinition.name}${subjectRef?.getStatementValue( propertyDefinition.name )}-fancy-infobox`"
+						:value="subjectRef?.getStatementValue( propertyDefinition.name )"
+						:property="propertyDefinition"
+					/>
 				</div>
-				<a
-					v-if="canEditSubject"
-					class="cdx-docs-link"
-					@click="editInfoBox">{{ $i18n( 'neowiki-infobox-edit-link' ).text() }}</a>
-				<!-- TODO: statements not in schema -->
 			</div>
 		</div>
-
-		<InfoboxEditor
-			v-if="canEditSubject"
-			ref="infoboxEditorDialog"
-			:is-edit-mode="true"
-			:subject="subjectRef as Subject"
-			:can-edit-schema="canEditSchema"
-			@save="saveSubject" />
+		<div v-if="canEditSubject" class="fancy-infobox__footer">
+			<CdxButton
+				action="progressive"
+				weight="quiet"
+				class=""
+				@click="editInfoBox">
+				{{ $i18n( 'neowiki-infobox-edit-link' ).text() }}
+			</CdxButton>
+		</div>
 	</div>
+
+	<InfoboxEditor
+		v-if="canEditSubject"
+		ref="infoboxEditorDialog"
+		:is-edit-mode="true"
+		:subject="subjectRef as Subject"
+		:can-edit-schema="canEditSchema"
+		@save="saveSubject"
+	/>
 </template>
 
 <script setup lang="ts">
@@ -121,46 +121,97 @@ onMounted( async (): Promise<void> => {
 
 </script>
 
-<style scoped lang="scss">
-@import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+<style lang="scss">
+.fancy-infobox {
+	margin-bottom: 16px;
+	max-width: 450px;
+	border-radius: 8px;
+	background-color: #f8f9fa;
+	box-shadow: 0 1px 3px rgb(255, 255, 255);
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Lato', 'Helvetica', 'Arial', sans-serif;
+	overflow: hidden;
+	transition: all 0.3s ease;
 
-.infobox {
-	border: $border-base;
-	max-width: 300px;
-}
+	&__header {
+		background-color: #eaecf0; // Changed to a light gray color similar to MediaWiki/Codex
+		color: #202122; // Adjusted text color for better contrast
+		padding: 20px;
+		position: relative;
+		overflow: hidden;
 
-.cdx-docs-link {
-	margin-left: 40%;
-	margin-top: 15px;
-	margin-bottom: 15px;
-}
+		&::after {
+			content: '';
+			position: absolute;
+			top: -50%;
+			left: -50%;
+			width: 200%;
+			height: 200%;
+		}
+	}
 
-.infobox-title {
-	text-align: center;
-	font-weight: bold;
-	padding: 5px;
-}
+	&__title {
+		font-size: 1.5em;
+		margin: 0;
+		position: relative;
+		z-index: 1;
+		border: none;
+	}
 
-.infobox-statement {
-	display: flex;
-	padding: 5px;
-}
+	&__schema-badge {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		border: 1px solid #202122b5;
 
-.infobox-statement-property {
-	font-weight: bold;
-	margin-right: 5px;
-}
+		.cdx-info-chip--text {
+			color: #202122b5;
 
-.infobox-statement-value {
-	flex: 1;
-}
+		}
+	}
 
-a {
-	color: $color-progressive;
-	text-decoration: none;
+	&__content {
+		padding: 20px;
+	}
 
-	&:hover {
-		text-decoration: underline;
+	&__item {
+		display: flex;
+		align-items: flex-start;
+		margin-bottom: 15px;
+		padding-bottom: 15px;
+		border-bottom: 1px solid #e0e0e0;
+
+		&:last-child {
+			border-bottom: none;
+			margin-bottom: 0;
+			padding-bottom: 0;
+		}
+	}
+
+	&__property {
+		flex: 0 0 40%;
+		font-weight: bold;
+		color: #333;
+		font-size: 0.9em;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	&__value {
+		flex: 1;
+		color: #555;
+		font-size: 0.95em;
+		line-height: 1.4;
+	}
+
+	&__footer {
+		background-color: #f8f9fa;
+		padding: 15px 20px;
+		text-align: right;
+	}
+
+	&__edit-icon {
+		margin-right: 8px;
+		font-size: 1.1em;
 	}
 }
 </style>

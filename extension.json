@@ -158,7 +158,8 @@
 				"CdxSelect",
 				"CdxCheckbox",
 				"CdxTextArea",
-				"CdxMenuButton"
+				"CdxMenuButton",
+				"CdxInfoChip"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",
