@@ -1,9 +1,10 @@
 import { mount } from '@vue/test-utils';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import NeoUrlField from '@/components/UIComponents/NeoUrlField.vue';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CdxField } from '@wikimedia/codex';
+import { newNumberValue } from '@neo/domain/Value';
+import NumberInput from '@/components/Value/NumberInput.vue';
 
-describe( 'NeoUrlField', () => {
+describe( 'NumberInput', () => {
 	beforeEach( () => {
 		vi.stubGlobal( 'mw', {
 			message: vi.fn( ( str: string ) => ( {
@@ -14,11 +15,13 @@ describe( 'NeoUrlField', () => {
 	} );
 
 	it( 'renders correctly', () => {
-		const wrapper = mount( NeoUrlField, {
+		const wrapper = mount( NumberInput, {
 			props: {
 				required: true,
+				minValue: 2,
+				maxValue: 50,
 				label: 'Test Label',
-				modelValue: 'https://example.com'
+				modelValue: newNumberValue( 10 )
 			}
 		} );
 
@@ -28,85 +31,90 @@ describe( 'NeoUrlField', () => {
 	} );
 
 	it( 'validates required field', async () => {
-		const wrapper = mount( NeoUrlField, {
+		const wrapper = mount( NumberInput, {
 			props: {
 				required: true,
+				minValue: 2,
+				maxValue: 50,
 				label: 'Test Label',
-				modelValue: 'https://example.com'
+				modelValue: newNumberValue( 10 )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
 		await input.setValue( '' );
-		await input.trigger( 'input' );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-required' );
 	} );
 
-	it( 'validates valid URL', async () => {
-		const wrapper = mount( NeoUrlField, {
+	it( 'validates maxValue for the number', async () => {
+		const wrapper = mount( NumberInput, {
 			props: {
 				required: true,
+				minValue: 2,
+				maxValue: 50,
 				label: 'Test Label',
-				modelValue: 'https://example.com'
+				modelValue: newNumberValue( 10 )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
-		await input.setValue( 'https://valid-url.com' );
-		await input.trigger( 'input' );
-
-		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'default' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toEqual( {} );
-	} );
-
-	it( 'validates invalid URL', async () => {
-		const wrapper = mount( NeoUrlField, {
-			props: {
-				required: true,
-				label: 'Test Label',
-				modelValue: 'https://example.com'
-			}
-		} );
-
-		const input = wrapper.find( 'input' );
-		await input.setValue( 'invalid-url' );
-		await input.trigger( 'input' );
+		await input.setValue( 55 );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-invalid-url' );
+		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-max-value' );
+	} );
+
+	it( 'validates minValue for the number', async () => {
+		const wrapper = mount( NumberInput, {
+			props: {
+				required: true,
+				minValue: 2,
+				maxValue: 50,
+				label: 'Test Label',
+				modelValue: newNumberValue( 10 )
+			}
+		} );
+
+		const input = wrapper.find( 'input' );
+		await input.setValue( 1 );
+
+		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
+		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-min-value' );
 	} );
 
 	it( 'emits valid field', async () => {
-		const wrapper = mount( NeoUrlField, {
+		const wrapper = mount( NumberInput, {
 			props: {
 				required: true,
+				minValue: 2,
+				maxValue: 50,
 				label: 'Test Label',
-				modelValue: 'https://example.com'
+				modelValue: newNumberValue( 10 )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
 
-		await input.setValue( 'https://valid-url.com' );
-		await input.trigger( 'input' );
+		await input.setValue( 45 );
 		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ true ] );
 	} );
 
 	it( 'emits invalid field', async () => {
-		const wrapper = mount( NeoUrlField, {
+		const wrapper = mount( NumberInput, {
 			props: {
 				required: true,
+				minValue: 2,
+				maxValue: 50,
 				label: 'Test Label',
-				modelValue: 'https://example.com'
+				modelValue: newNumberValue( 10 )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
 
-		await input.setValue( 'invalid-url' );
-		await input.trigger( 'input' );
+		await input.setValue( 55 );
 		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ false ] );
 	} );
 } );

@@ -1,9 +1,10 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
+import UrlInput from '@/components/Value/UrlInput.vue';
 import { CdxField } from '@wikimedia/codex';
+import { newStringValue } from '@neo/domain/Value';
 
-describe( 'NeoTextField', () => {
+describe( 'UrlInput', () => {
 	beforeEach( () => {
 		vi.stubGlobal( 'mw', {
 			message: vi.fn( ( str: string ) => ( {
@@ -14,13 +15,11 @@ describe( 'NeoTextField', () => {
 	} );
 
 	it( 'renders correctly', () => {
-		const wrapper = mount( NeoTextField, {
+		const wrapper = mount( UrlInput, {
 			props: {
 				required: true,
-				minLength: 2,
-				maxLength: 50,
 				label: 'Test Label',
-				modelValue: 'Test'
+				modelValue: newStringValue( 'https://example.com' )
 			}
 		} );
 
@@ -30,95 +29,80 @@ describe( 'NeoTextField', () => {
 	} );
 
 	it( 'validates required field', async () => {
-		const wrapper = mount( NeoTextField, {
+		const wrapper = mount( UrlInput, {
 			props: {
 				required: true,
-				minLength: 2,
-				maxLength: 50,
 				label: 'Test Label',
-				modelValue: 'Test'
+				modelValue: newStringValue( 'https://example.com' )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
 		await input.setValue( '' );
-		await input.trigger( 'input' );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-required' );
 	} );
 
-	it( 'validates maxLength for the text', async () => {
-		const wrapper = mount( NeoTextField, {
+	it( 'validates valid URL', async () => {
+		const wrapper = mount( UrlInput, {
 			props: {
 				required: true,
-				minLength: 2,
-				maxLength: 10,
 				label: 'Test Label',
-				modelValue: 'Test'
+				modelValue: newStringValue( 'https://example.com' )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
-		await input.setValue( 'This is a very long text' );
-		await input.trigger( 'input' );
+		await input.setValue( 'https://valid-url.com' );
 
-		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-max-length' );
+		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'default' );
+		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toEqual( {} );
 	} );
 
-	it( 'validates minLength for the text', async () => {
-		const wrapper = mount( NeoTextField, {
+	it( 'validates invalid URL', async () => {
+		const wrapper = mount( UrlInput, {
 			props: {
 				required: true,
-				minLength: 5,
-				maxLength: 50,
 				label: 'Test Label',
-				modelValue: 'Test'
+				modelValue: newStringValue( 'https://example.com' )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
-		await input.setValue( 'A' );
-		await input.trigger( 'input' );
+		await input.setValue( 'invalid-url' );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-min-length' );
+		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-invalid-url' );
 	} );
 
 	it( 'emits valid field', async () => {
-		const wrapper = mount( NeoTextField, {
+		const wrapper = mount( UrlInput, {
 			props: {
 				required: true,
-				minLength: 2,
-				maxLength: 50,
 				label: 'Test Label',
-				modelValue: 'Test'
+				modelValue: newStringValue( 'https://example.com' )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
 
-		await input.setValue( 'Valid Text' );
-		await input.trigger( 'input' );
+		await input.setValue( 'https://valid-url.com' );
 		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ true ] );
 	} );
 
 	it( 'emits invalid field', async () => {
-		const wrapper = mount( NeoTextField, {
+		const wrapper = mount( UrlInput, {
 			props: {
 				required: true,
-				minLength: 2,
-				maxLength: 50,
 				label: 'Test Label',
-				modelValue: 'Test'
+				modelValue: newStringValue( 'https://example.com' )
 			}
 		} );
 
 		const input = wrapper.find( 'input' );
 
-		await input.setValue( '' );
-		await input.trigger( 'input' );
+		await input.setValue( 'invalid-url' );
 		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ false ] );
 	} );
 } );

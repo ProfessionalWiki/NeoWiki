@@ -8,20 +8,22 @@
 			{{ label }}
 		</template>
 		<CdxTextInput
-			v-model="inputValue"
+			:model-value="inputValue"
 			input-type="number"
-			@input="validateInput"
+			@update:model-value="onInput"
 		/>
 	</CdxField>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed, PropType } from 'vue';
 import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
+import { newNumberValue, ValueType, NumberValue } from '@neo/domain/Value';
+import type { Value } from '@neo/domain/Value';
 
 const props = defineProps( {
 	modelValue: {
-		type: Number,
+		type: Object as PropType<Value>,
 		required: true
 	},
 	label: {
@@ -52,36 +54,44 @@ interface ValidationMessages {
 
 const validationMessages = ref<ValidationMessages>( {} );
 
-const inputValue = ref( props.modelValue.toString() );
+const inputValue = computed( () => {
+	if ( props.modelValue.type === ValueType.Number ) {
+		return ( props.modelValue as NumberValue ).number.toString();
+	}
+	return '';
+} );
 
-const validateInput = ( event: Event ): void => {
-	const value = ( event.target as HTMLInputElement ).value;
-	const numValue = value === '' ? null : Number( value );
-	emit( 'update:modelValue', numValue );
+const onInput = ( newValue: string ): void => {
+	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );
 
-	const messages: { [key: string]: string } = {};
+	emit( 'update:modelValue', value );
+	updateValidationStatus( validate( value ) );
+};
 
-	if ( props.required && ( value === '' || numValue === null ) ) {
+const validate = ( value: NumberValue | undefined ): ValidationMessages => {
+	const messages: ValidationMessages = {};
+
+	if ( props.required && value === undefined ) {
 		messages.error = mw.message( 'neowiki-field-required' ).text();
-	} else if ( numValue !== null ) {
-		if ( numValue < props.minValue ) {
+	} else if ( value !== undefined ) {
+		if ( value.number < props.minValue ) {
 			messages.error = mw.message( 'neowiki-field-min-value', props.minValue ).text();
-		} else if ( numValue > props.maxValue ) {
+		} else if ( value.number > props.maxValue ) {
 			messages.error = mw.message( 'neowiki-field-max-value', props.maxValue ).text();
 		}
 	}
 
+	return messages;
+};
+
+const updateValidationStatus = ( messages: ValidationMessages ): void => {
 	validationMessages.value = messages;
 	validationStatus.value = Object.keys( messages ).length > 0 ? 'error' : 'default';
 
 	emit( 'validation', Object.keys( messages ).length === 0 );
 };
 
-watch( validationMessages, ( newMessages ) => {
+watch( validationMessages, ( newMessages ) => { // TODO: this can probably be removed
 	emit( 'validation', Object.keys( newMessages ).length === 0 );
-} );
-
-watch( () => props.modelValue, ( newValue ) => {
-	inputValue.value = newValue !== null && newValue !== undefined ? newValue.toString() : '';
 } );
 </script>
