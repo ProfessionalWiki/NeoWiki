@@ -4,13 +4,15 @@ import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { SchemaRepository } from '@/application/SchemaRepository';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
+import { PageSaver } from '@/persistence/PageSaver.ts';
 
 export class RestSchemaRepository implements SchemaRepository {
 
 	public constructor(
 		private readonly mediaWikiRestApiUrl: string,
 		private readonly httpClient: HttpClient,
-		private readonly serializer: SchemaSerializer
+		private readonly serializer: SchemaSerializer,
+		private readonly pageSaver: PageSaver
 	) {
 	}
 
@@ -60,21 +62,20 @@ export class RestSchemaRepository implements SchemaRepository {
 	}
 
 	public async saveSchema( schema: Schema ): Promise<void> {
-		const response = await this.httpClient.post(
-			`${ this.mediaWikiRestApiUrl }/v1/page/Schema:${ encodeURIComponent( schema.getName() ) }`,
-			{
-				source: this.serializeSchema( schema ),
-				comment: 'Update schema via NeoWiki UI',
-				content_model: 'json'
-			}
+		const status = await this.pageSaver.savePage(
+			`Schema:${ encodeURIComponent( schema.getName() ) }`,
+			this.serializeSchema( schema ),
+			'Update schema via NeoWiki UI',
+			'json'
 		);
 
-		if ( !response.ok ) {
-			throw new Error( `Error saving schema: ${ response.statusText }` );
+		if ( !status.success ) {
+			throw new Error( `Error saving schema: ${ status.message }` );
 		}
 	}
 
 	private serializeSchema( schema: Schema ): string {
 		return this.serializer.serializeSchema( schema );
 	}
+
 }

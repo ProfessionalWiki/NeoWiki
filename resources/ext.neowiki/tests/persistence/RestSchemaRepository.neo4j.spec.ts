@@ -1,19 +1,20 @@
 import { RestSchemaRepository } from '@/persistence/RestSchemaRepository';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer';
-import { describe, expect, it, vi, beforeEach, Mock } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { Schema } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
 import { TextFormat } from '@neo/domain/valueFormats/Text';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
+import { FailingPageSaver, PageSaver, SucceedingPageSaver } from '@/persistence/PageSaver.ts';
 
 describe( 'RestSchemaRepository', () => {
 
 	describe( 'getSchema', () => {
 
 		function newSchemaRepository( httpClient: HttpClient ): RestSchemaRepository {
-			return new RestSchemaRepository( 'https://example.com/rest.php', httpClient, new SchemaSerializer() );
+			return new RestSchemaRepository( 'https://example.com/rest.php', httpClient, new SchemaSerializer(), new SucceedingPageSaver() );
 		}
 
 		it( 'throws error when the API call fails', async () => {
@@ -71,6 +72,7 @@ describe( 'RestSchemaRepository', () => {
 		let repository: RestSchemaRepository;
 		let mockHttpClient: HttpClient;
 		let mockSerializer: SchemaSerializer;
+		let pageSaver: PageSaver;
 		const apiUrl = 'https://test.api.url';
 
 		beforeEach( () => {
@@ -87,46 +89,49 @@ describe( 'RestSchemaRepository', () => {
 				)
 			} as unknown as SchemaSerializer;
 
-			repository = new RestSchemaRepository( apiUrl, mockHttpClient, mockSerializer );
+			pageSaver = new SucceedingPageSaver();
+
+			repository = new RestSchemaRepository( apiUrl, mockHttpClient, mockSerializer, pageSaver );
 		} );
 
 		const testSchema = new Schema( 'TestSchema', 'Test Description', new PropertyDefinitionList( [] ) );
 
 		it( 'should call the correct API endpoint with the right parameters', async () => {
-			( mockHttpClient.post as Mock ).mockResolvedValue( { ok: true } );
+			vi.spyOn( pageSaver, 'savePage' );
 
 			await repository.saveSchema( testSchema );
 
-			expect( mockHttpClient.post ).toHaveBeenCalledWith(
-				`${ apiUrl }/v1/page/Schema:TestSchema`,
-				{
-					source: '{"serialized":"TestSchema"}',
-					comment: 'Update schema via NeoWiki UI',
-					content_model: 'json'
-				}
+			expect( pageSaver.savePage ).toHaveBeenCalledWith(
+				'Schema:TestSchema',
+				'{"serialized":"TestSchema"}',
+				'Update schema via NeoWiki UI',
+				'json'
 			);
 		} );
 
-		it( 'should throw an error if the API response is not ok', async () => {
-			( mockHttpClient.post as Mock ).mockResolvedValue( { ok: false, statusText: 'Not Found' } );
+		it( 'should throw an error if the API response failed', async () => {
+			repository = new RestSchemaRepository( apiUrl, mockHttpClient, mockSerializer, new FailingPageSaver() );
 
 			await expect( repository.saveSchema( testSchema ) )
 				.rejects
-				.toThrow( 'Error saving schema: Not Found' );
+				.toThrow( 'Error saving schema: Some reason' );
 		} );
 
-		it( 'should encode the schema name in the URL', async () => {
+		it( 'should encode the schema name', async () => {
 			const schemaWithSpecialChars = new Schema(
 				'Test/Schema With:Spaces',
 				'Description',
 				new PropertyDefinitionList( [] )
 			);
 
-			( mockHttpClient.post as Mock ).mockResolvedValue( { ok: true } );
+			vi.spyOn( pageSaver, 'savePage' );
+
 			await repository.saveSchema( schemaWithSpecialChars );
 
-			expect( mockHttpClient.post ).toHaveBeenCalledWith(
-				`${ apiUrl }/v1/page/Schema:Test%2FSchema%20With%3ASpaces`,
+			expect( pageSaver.savePage ).toHaveBeenCalledWith(
+				'Schema:Test%2FSchema%20With%3ASpaces',
+				expect.anything(),
+				expect.anything(),
 				expect.anything()
 			);
 		} );

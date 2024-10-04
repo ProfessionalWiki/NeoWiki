@@ -35,6 +35,10 @@ export const useSchemaStore = defineStore( 'schema', {
 			const schemaNames = await NeoWikiExtension.getInstance().getSchemaRepository().getSchemaNames( search );
 			await Promise.all( schemaNames.map( ( name ) => this.getOrFetchSchema( name ) ) );
 			return schemaNames;
+		},
+		async saveSchema( schema: Schema ): Promise<void> {
+			await NeoWikiExtension.getInstance().getSchemaRepository().saveSchema( schema );
+			this.setSchema( schema.getName(), schema );
 		}
 	}
 } );
