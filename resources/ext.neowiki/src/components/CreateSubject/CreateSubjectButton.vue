@@ -12,6 +12,7 @@
 			ref="infoboxEditorDialog"
 			:selected-schema="selectedSchema"
 			:is-edit-mode="false"
+			:can-edit-schema="canEditSchema"
 			@complete="onCreationComplete"
 			@back="onInfoboxBack"
 		/>
@@ -28,6 +29,8 @@ import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
 const createSubjectDialog = ref<typeof CreateSubjectDialog|null>( null );
 const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
 const selectedSchema = ref( '' );
+
+const canEditSchema = true; // TODO: add right checks
 
 const openDialog = (): void => {
 	if ( createSubjectDialog.value === null ) {
