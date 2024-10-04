@@ -49,14 +49,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, PropType } from 'vue';
+import { computed, ref, PropType, onMounted } from 'vue';
 import { Subject } from '@neo/domain/Subject';
 import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
 import { Schema } from '@neo/domain/Schema';
 import { Component } from 'vue';
 import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
-import { injectComponentRegistry } from '@/Service.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps( {
 	subject: {
@@ -70,19 +70,17 @@ const props = defineProps( {
 	canEditSubject: {
 		type: Boolean,
 		required: true
-	},
-	canEditSchema: {
-		type: Boolean,
-		required: true
 	}
 } );
+
+const canEditSchema = ref( false );
 
 const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
 const subjectRef = ref( props.subject );
 
 const schemaStore = useSchemaStore();
 
-const getComponent = ( formatName: string ): Component => injectComponentRegistry().getValueDisplayComponent( formatName );
+const getComponent = ( formatName: string ): Component => NeoWikiServices.getComponentRegistry().getValueDisplayComponent( formatName );
 
 const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => {
 	if ( !subjectRef.value ) {
@@ -116,6 +114,10 @@ const saveSubject = ( savedSubject: Subject ): void => {
 	subjectRef.value = savedSubject;
 	console.log( 'Updated subjectRef:', subjectRef.value );
 };
+
+onMounted( async (): Promise<void> => {
+	canEditSchema.value = await NeoWikiServices.getSchemaAuthorizer().canEditSchema( props.schema.getName() );
+} );
 
 </script>
 

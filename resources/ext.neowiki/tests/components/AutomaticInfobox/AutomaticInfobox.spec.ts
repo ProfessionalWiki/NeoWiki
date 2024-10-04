@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils';
+import { mount, VueWrapper } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import AutomaticInfobox from '@/components/AutomaticInfobox/AutomaticInfobox.vue';
 import { Subject } from '@neo/domain/Subject';
@@ -17,7 +17,7 @@ import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition';
 import { setActivePinia, createPinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore';
-import { Service } from '@/Service';
+import { Service } from '@/NeoWikiServices.ts';
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 	text: () => key
@@ -55,6 +55,23 @@ describe( 'AutomaticInfobox', () => {
 		new PageIdentifiers( 1, 'Test_Subject' )
 	);
 
+	const mountComponent = ( subject: Subject, schema: Schema, canEditSubject: boolean ): VueWrapper => mount( AutomaticInfobox, {
+		props: {
+			subject: subject,
+			schema: schema,
+			canEditSubject: canEditSubject
+		},
+		global: {
+			mocks: {
+				$i18n
+			},
+			provide: {
+				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry(),
+				[ Service.SchemaAuthorizer ]: NeoWikiExtension.getInstance().newSchemaAuthorizer()
+			}
+		}
+	} );
+
 	beforeEach( () => {
 		pinia = createPinia();
 		setActivePinia( pinia );
@@ -63,43 +80,13 @@ describe( 'AutomaticInfobox', () => {
 	} );
 
 	it( 'renders the title correctly', () => {
-		const wrapper = mount( AutomaticInfobox, {
-			props: {
-				subject: mockSubject,
-				schema: mockSchema,
-				canEditSubject: false,
-				canEditSchema: false
-			},
-			global: {
-				mocks: {
-					$i18n
-				},
-				provide: {
-					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
-				}
-			}
-		} );
+		const wrapper = mountComponent( mockSubject, mockSchema, false );
 
 		expect( wrapper.find( '.infobox-title' ).text() ).toBe( 'Test Subject' );
 	} );
 
 	it( 'renders statements correctly', () => {
-		const wrapper = mount( AutomaticInfobox, {
-			props: {
-				subject: mockSubject,
-				schema: mockSchema,
-				canEditSubject: false,
-				canEditSchema: false
-			},
-			global: {
-				mocks: {
-					$i18n
-				},
-				provide: {
-					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
-				}
-			}
-		} );
+		const wrapper = mountComponent( mockSubject, mockSchema, false );
 
 		const statementElements = wrapper.findAll( '.infobox-statement' );
 		expect( statementElements ).toHaveLength( 4 ); // 3 properties + 1 for schema type
@@ -128,22 +115,7 @@ describe( 'AutomaticInfobox', () => {
 			new PageIdentifiers( 2, 'Empty_Subject' )
 		);
 
-		const wrapper = mount( AutomaticInfobox, {
-			props: {
-				subject: emptySubject,
-				schema: mockSchema,
-				canEditSubject: false,
-				canEditSchema: false
-			},
-			global: {
-				mocks: {
-					$i18n
-				},
-				provide: {
-					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
-				}
-			}
-		} );
+		const wrapper = mountComponent( emptySubject, mockSchema, false );
 
 		const statementElements = wrapper.findAll( '.infobox-statement' );
 		expect( statementElements ).toHaveLength( 1 ); // Only the schema type statement
@@ -152,43 +124,13 @@ describe( 'AutomaticInfobox', () => {
 	} );
 
 	it( 'does not render edit button when canEditSubject is false', () => {
-		const wrapper = mount( AutomaticInfobox, {
-			props: {
-				subject: mockSubject,
-				schema: mockSchema,
-				canEditSubject: false,
-				canEditSchema: false
-			},
-			global: {
-				mocks: {
-					$i18n
-				},
-				provide: {
-					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
-				}
-			}
-		} );
+		const wrapper = mountComponent( mockSubject, mockSchema, false );
 
 		expect( wrapper.find( '.cdx-docs-link' ).exists() ).toBe( false );
 	} );
 
 	it( 'renders edit button when canEditSubject is true', () => {
-		const wrapper = mount( AutomaticInfobox, {
-			props: {
-				subject: mockSubject,
-				schema: mockSchema,
-				canEditSubject: true,
-				canEditSchema: true
-			},
-			global: {
-				mocks: {
-					$i18n
-				},
-				provide: {
-					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
-				}
-			}
-		} );
+		const wrapper = mountComponent( mockSubject, mockSchema, true );
 
 		const editButton = wrapper.find( '.cdx-docs-link' );
 		expect( editButton.exists() ).toBe( true );

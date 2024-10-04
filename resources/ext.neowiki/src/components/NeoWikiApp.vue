@@ -9,7 +9,6 @@
 			:subject="infobox.subject as Subject"
 			:schema="infobox.schema as Schema"
 			:can-edit-subject="infobox.canEditSubject"
-			:can-edit-schema="infobox.canEditSchema"
 		/>
 	</teleport>
 
@@ -25,9 +24,9 @@ import { SubjectId } from '@neo/domain/SubjectId';
 import { Subject } from '@neo/domain/Subject';
 import AutomaticInfobox from '@/components/AutomaticInfobox/AutomaticInfobox.vue';
 import CreateSubjectButton from '@/components/CreateSubject/CreateSubjectButton.vue';
-import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Schema } from '@neo/domain/Schema.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 interface InfoboxData {
 	id: string;
@@ -35,7 +34,6 @@ interface InfoboxData {
 	subject: Subject;
 	schema: Schema;
 	canEditSubject: boolean;
-	canEditSchema: boolean;
 }
 
 const infoboxData = ref<InfoboxData[]>( [] );
@@ -43,6 +41,7 @@ const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
 
 const canCreateSubject = ref( false );
+const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
 
 onMounted( async (): Promise<void> => {
 	const elements = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
@@ -58,20 +57,11 @@ onMounted( async (): Promise<void> => {
 				element,
 				subject: subject,
 				schema: await schemaStore.getOrFetchSchema( subject.getSchemaName() ),
-				canEditSubject: await canEditSubject( subjectId ),
-				canEditSchema: await canEditSchema( subjectId )
+				canEditSubject: await subjectAuthorizer.canEditSubject( new SubjectId( subjectId ) )
 			};
 		} )
 	) );
 
 	canCreateSubject.value = document.querySelector( '#mw-indicator-neowiki-create-button' ) !== null;
 } );
-
-async function canEditSubject( subjectId: string ): Promise<boolean> {
-	return await NeoWikiExtension.getInstance().newSubjectAuthorizer().canEditSubject( new SubjectId( subjectId ) );
-}
-
-async function canEditSchema( schemaName: string ): Promise<boolean> {
-	return await NeoWikiExtension.getInstance().newSchemaAuthorizer().canEditSchema( schemaName );
-}
 </script>

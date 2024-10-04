@@ -28,13 +28,13 @@ import { Statement } from '@neo/domain/Statement';
 import { Value, ValueType, StringValue, NumberValue, newStringValue, newNumberValue } from '@neo/domain/Value';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import PropertyNameField from '@/components/UIComponents/PropertyNameField.vue';
-import { injectComponentRegistry } from '@/Service.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps<{
 	statement: Statement;
 }>();
 
-const componentRegistry = injectComponentRegistry();
+const componentRegistry = NeoWikiServices.getComponentRegistry();
 
 const emit = defineEmits( [ 'update', 'remove', 'edit' ] );
 
