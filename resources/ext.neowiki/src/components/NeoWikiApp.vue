@@ -8,7 +8,8 @@
 		<AutomaticInfobox
 			:subject="infobox.subject as Subject"
 			:schema="infobox.schema as Schema"
-			:can-edit="infobox.canEdit"
+			:can-edit-subject="infobox.canEditSubject"
+			:can-edit-schema="infobox.canEditSchema"
 		/>
 	</teleport>
 
@@ -33,7 +34,8 @@ interface InfoboxData {
 	element: Element;
 	subject: Subject;
 	schema: Schema;
-	canEdit: boolean;
+	canEditSubject: boolean;
+	canEditSchema: boolean;
 }
 
 const infoboxData = ref<InfoboxData[]>( [] );
@@ -56,7 +58,8 @@ onMounted( async (): Promise<void> => {
 				element,
 				subject: subject,
 				schema: await schemaStore.getOrFetchSchema( subject.getSchemaName() ),
-				canEdit: await canEdit( subjectId )
+				canEditSubject: await canEditSubject( subjectId ),
+				canEditSchema: await canEditSchema( subjectId )
 			};
 		} )
 	) );
@@ -68,7 +71,11 @@ function getSubject( subjectId: string ): Subject {
 	return subjectStore.getSubject( new SubjectId( subjectId ) );
 }
 
-async function canEdit( subjectId: string ): Promise<boolean> {
+async function canEditSubject( subjectId: string ): Promise<boolean> {
 	return await NeoWikiExtension.getInstance().newSubjectAuthorizer().canEditSubject( new SubjectId( subjectId ) );
+}
+
+async function canEditSchema( schemaName: string ): Promise<boolean> {
+	return await NeoWikiExtension.getInstance().newSchemaAuthorizer().canEditSchema( schemaName );
 }
 </script>

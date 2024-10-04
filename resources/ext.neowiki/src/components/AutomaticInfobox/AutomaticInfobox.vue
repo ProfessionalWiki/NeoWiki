@@ -31,7 +31,7 @@
 					</div>
 				</div>
 				<a
-					v-if="canEdit"
+					v-if="canEditSubject"
 					class="cdx-docs-link"
 					@click="editInfoBox">{{ $i18n( 'neowiki-infobox-edit-link' ).text() }}</a>
 				<!-- TODO: statements not in schema -->
@@ -39,11 +39,11 @@
 		</div>
 
 		<InfoboxEditor
-			v-if="canEditSubjects"
+			v-if="canEditSubject"
 			ref="infoboxEditorDialog"
 			:is-edit-mode="true"
 			:subject="subjectRef as Subject"
-			:can-edit-schema="canEditSchemas"
+			:can-edit-schema="canEditSchema"
 			@save="saveSubject" />
 	</div>
 </template>
@@ -67,9 +67,13 @@ const props = defineProps( {
 		type: Object as PropType<Schema>,
 		required: true
 	},
-	canEdit: {
+	canEditSubject: {
 		type: Boolean,
-		default: false
+		required: true
+	},
+	canEditSchema: {
+		type: Boolean,
+		required: true
 	}
 } );
 
@@ -112,9 +116,6 @@ const saveSubject = ( savedSubject: Subject ): void => {
 	subjectRef.value = savedSubject;
 	console.log( 'Updated subjectRef:', subjectRef.value );
 };
-
-const canEditSubjects = computed( (): boolean => props.canEdit ); // TODO: add right checks
-const canEditSchemas = computed( (): boolean => props.canEdit ); // TODO: add right checks
 
 </script>
 
