@@ -66,7 +66,9 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: mockSubject,
-				schema: mockSchema
+				schema: mockSchema,
+				canEditSubject: false,
+				canEditSchema: false
 			},
 			global: {
 				mocks: {
@@ -85,7 +87,9 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: mockSubject,
-				schema: mockSchema
+				schema: mockSchema,
+				canEditSubject: false,
+				canEditSchema: false
 			},
 			global: {
 				mocks: {
@@ -127,7 +131,9 @@ describe( 'AutomaticInfobox', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: emptySubject,
-				schema: mockSchema
+				schema: mockSchema,
+				canEditSubject: false,
+				canEditSchema: false
 			},
 			global: {
 				mocks: {
@@ -145,12 +151,13 @@ describe( 'AutomaticInfobox', () => {
 		expect( statementElements[ 0 ].find( '.infobox-statement-value' ).text() ).toBe( 'TestSchema' );
 	} );
 
-	it( 'does not render edit button when canEdit is false', () => {
+	it( 'does not render edit button when canEditSubject is false', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: mockSubject,
 				schema: mockSchema,
-				canEdit: false
+				canEditSubject: false,
+				canEditSchema: false
 			},
 			global: {
 				mocks: {
@@ -165,12 +172,13 @@ describe( 'AutomaticInfobox', () => {
 		expect( wrapper.find( '.cdx-docs-link' ).exists() ).toBe( false );
 	} );
 
-	it( 'renders edit button when canEdit is true', () => {
+	it( 'renders edit button when canEditSubject is true', () => {
 		const wrapper = mount( AutomaticInfobox, {
 			props: {
 				subject: mockSubject,
 				schema: mockSchema,
-				canEdit: true
+				canEditSubject: true,
+				canEditSchema: true
 			},
 			global: {
 				mocks: {
