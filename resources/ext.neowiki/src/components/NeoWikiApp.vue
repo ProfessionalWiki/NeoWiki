@@ -50,7 +50,7 @@ onMounted( async (): Promise<void> => {
 	infoboxData.value = ( await Promise.all(
 		elements.map( async ( element ): Promise<InfoboxData> => {
 			const subjectId = element.getAttribute( 'data-subject-id' )!;
-			const subject = getSubject( subjectId );
+			const subject = await subjectStore.getOrFetchSubject( new SubjectId( subjectId ) );
 			// TODO: handle schema not found
 
 			return {
@@ -66,10 +66,6 @@ onMounted( async (): Promise<void> => {
 
 	canCreateSubject.value = document.querySelector( '#mw-indicator-neowiki-create-button' ) !== null;
 } );
-
-function getSubject( subjectId: string ): Subject {
-	return subjectStore.getSubject( new SubjectId( subjectId ) );
-}
 
 async function canEditSubject( subjectId: string ): Promise<boolean> {
 	return await NeoWikiExtension.getInstance().newSubjectAuthorizer().canEditSubject( new SubjectId( subjectId ) );
