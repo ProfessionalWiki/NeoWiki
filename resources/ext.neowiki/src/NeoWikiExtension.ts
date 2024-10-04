@@ -24,6 +24,7 @@ import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import TextInput from '@/components/Value/TextInput.vue';
 import UrlInput from '@/components/Value/UrlInput.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
+import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -67,7 +68,8 @@ export class NeoWikiExtension {
 		return new RestSchemaRepository(
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
-			new SchemaSerializer()
+			new SchemaSerializer(),
+			new MediaWikiPageSaver( this.getMediaWiki() )
 		);
 	}
 
