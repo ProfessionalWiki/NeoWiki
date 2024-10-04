@@ -98,7 +98,7 @@ import { ValueType } from '@neo/domain/Value.ts';
 const props = defineProps<{
 	selectedSchema?: string;
 	subject?: Subject;
-	canEditSchema?: boolean;
+	canEditSchema: boolean;
 }>();
 
 const emit = defineEmits( [ 'save', 'back' ] );
@@ -108,7 +108,6 @@ const statements = ref<Statement[]>( [] );
 const schemaStore = useSchemaStore();
 const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const editingProperty = ref<PropertyDefinition | null>( null );
-const { canEditSchema = false } = props;
 
 const addMissingStatements = (): void => {
 	if ( props.subject !== undefined ) {
