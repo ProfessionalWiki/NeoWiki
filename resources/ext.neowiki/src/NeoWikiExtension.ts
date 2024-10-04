@@ -19,6 +19,8 @@ import { RestSchemaRepository } from '@/persistence/RestSchemaRepository.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
 import { CsrfSendingHttpClient } from '@/infrastructure/HttpClient/CsrfSendingHttpClient.ts';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
+import { RightsBasedSchemaAuthorizer } from '@/persistence/RightsBasedSchemaAuthorizer.ts';
+import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -69,6 +71,12 @@ export class NeoWikiExtension {
 	private newHttpClient(): HttpClient {
 		return new CsrfSendingHttpClient(
 			new ProductionHttpClient()
+		);
+	}
+
+	public newSchemaAuthorizer(): SchemaAuthorizer {
+		return new RightsBasedSchemaAuthorizer(
+			this.getUserObjectBasedRightsFetcher()
 		);
 	}
 
