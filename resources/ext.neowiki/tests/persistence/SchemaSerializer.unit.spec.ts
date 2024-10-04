@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer';
 import { Schema } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
+import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { ValueType } from '@neo/domain/Value';
 import { TextFormat, TextProperty } from '@neo/domain/valueFormats/Text';
 import { UrlFormat, UrlProperty } from '@neo/domain/valueFormats/Url';

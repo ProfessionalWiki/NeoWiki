@@ -24,7 +24,6 @@ import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import CreateSubjectDialog from '@/components/CreateSubject/CreateSubjectDialog.vue';
 import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
-import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
 const createSubjectDialog = ref<typeof CreateSubjectDialog|null>( null );
 const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );

@@ -61,7 +61,7 @@ const validateInput = ( event: Event ): void => {
 		try {
 			// eslint-disable-next-line no-new
 			new URL( value );
-		} catch ( error ) {
+		} catch ( _error ) {
 			messages.error = mw.message( 'neowiki-field-invalid-url' ).text();
 		}
 	}

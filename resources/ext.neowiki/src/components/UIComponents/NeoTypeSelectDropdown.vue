@@ -21,7 +21,7 @@ interface TypeOption {
 	icon: string;
 }
 
-const props = defineProps<{
+defineProps<{
 	types: TypeOption[];
 }>();
 

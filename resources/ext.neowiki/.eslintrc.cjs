@@ -51,7 +51,18 @@ module.exports = {
 		'vue/no-v-model-argument': 'off',
 		'es-x/no-optional-chaining': 'off',
 		'no-unused-vars': 'off',
-		'@typescript-eslint/no-unused-vars': 'off',
+		'@typescript-eslint/no-unused-vars': [
+			'error',
+			{
+				args: 'all',
+				argsIgnorePattern: '^_',
+				caughtErrors: 'all',
+				caughtErrorsIgnorePattern: '^_',
+				destructuredArrayIgnorePattern: '^_',
+				varsIgnorePattern: '^_',
+				ignoreRestSiblings: true
+			}
+		],
 		'es-x/no-array-prototype-includes': 'off',
 		'no-use-before-define': 'off',
 		'n/no-unsupported-features/node-builtins': 'off', // To avoid: "XYZ is not supported until Node.js x.y.z."

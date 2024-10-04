@@ -55,7 +55,6 @@ import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
 import { Schema } from '@neo/domain/Schema';
 import { Component } from 'vue';
 import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
-import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefinitionEditor.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { injectComponentRegistry } from '@/Service.ts';
 
@@ -78,8 +77,6 @@ const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
 const subjectRef = ref( props.subject );
 
 const schemaStore = useSchemaStore();
-
-const editingProperty = ref<PropertyDefinition | null>( null );
 
 const getComponent = ( formatName: string ): Component => injectComponentRegistry().getValueDisplayComponent( formatName );
 
