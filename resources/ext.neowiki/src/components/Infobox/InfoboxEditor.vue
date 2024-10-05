@@ -32,6 +32,7 @@
 			:key="index"
 			class="statement-editor-row"
 			:statement="<Statement>statement"
+			:can-edit-schema="canEditSchema"
 			@update="updateStatement( index, $event )"
 			@remove="removeStatement( index )"
 			@edit="editProperty"
