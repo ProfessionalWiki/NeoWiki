@@ -5,6 +5,7 @@
 				<PropertyNameField
 					:model-value="localStatement.propertyName.toString()"
 					class="statement-editor__property"
+					:can-edit-schema="canEditSchema"
 					@edit="$emit( 'edit', statement.propertyName )"
 					@delete="$emit( 'remove' )"
 				/>
@@ -32,6 +33,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps<{
 	statement: Statement;
+	canEditSchema: boolean;
 }>();
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();

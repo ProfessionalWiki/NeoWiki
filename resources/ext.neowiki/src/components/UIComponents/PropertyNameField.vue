@@ -5,6 +5,7 @@
 			{{ modelValue }}
 		</span>
 		<CdxMenuButton
+			v-if="canEditSchema"
 			class="neo-property-name__menu-button"
 			:selected="null"
 			:menu-items="menuItems"
@@ -28,6 +29,10 @@ import { cdxIconMenu } from '@/assets/CustomIcons';
 defineProps( {
 	modelValue: {
 		type: String,
+		required: true
+	},
+	canEditSchema: {
+		type: Boolean,
 		required: true
 	}
 } );
