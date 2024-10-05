@@ -9,6 +9,7 @@
 			class="neo-property-name__menu-button"
 			:selected="null"
 			:menu-items="menuItems"
+			aria-label=" "
 			@update:selected="onMenuSelect"
 		>
 			<CdxIcon :icon="cdxIconMenu" />
