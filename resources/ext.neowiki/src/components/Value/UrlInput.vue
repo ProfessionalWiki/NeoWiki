@@ -12,7 +12,7 @@
 			:model-value="inputValue"
 			input-type="url"
 			:start-icon="cdxIconLink"
-			@input="onInput"
+			@update:model-value="onInput"
 		/>
 	</CdxField>
 </template>
@@ -58,14 +58,12 @@ const inputValue = computed( () => {
 	return '';
 } );
 
-const onInput = ( event: Event ): void => {
-	const value = getStringValueInputEvent( event );
+const onInput = ( newValue: string ): void => {
+	const value = newStringValue( newValue );
 
 	emit( 'update:modelValue', value );
 	updateValidationStatus( validate( value ) );
 };
-
-const getStringValueInputEvent = ( event: Event ): StringValue => newStringValue( [ ( event.target as HTMLInputElement ).value ] );
 
 const validate = ( value: StringValue ): ValidationMessages => {
 	const messages: ValidationMessages = {};
