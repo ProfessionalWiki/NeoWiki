@@ -14,7 +14,7 @@
 			input-type="text"
 			:class="{ 'cdx-text-input--status-success': validationStatus === 'success' }"
 			:end-icon="endIcon"
-			@input="onInput"
+			@update:model-value="onInput"
 			@focus="onFocus"
 			@blur="onBlur"
 		/>
@@ -74,14 +74,12 @@ const inputValue = computed( () => {
 
 const endIcon = computed( () => validationStatus.value === 'success' && hasHadError.value ? cdxIconCheck : undefined );
 
-const onInput = ( event: Event ): void => {
-	const value = getStringValueInputEvent( event );
+const onInput = ( newValue: string ): void => {
+	const value = newStringValue( newValue );
 
 	emit( 'update:modelValue', value );
 	updateValidationStatus( validate( value ) );
 };
-
-const getStringValueInputEvent = ( event: Event ): StringValue => newStringValue( [ ( event.target as HTMLInputElement ).value ] );
 
 const validate = ( value: StringValue ): ValidationMessages => {
 	const messages: ValidationMessages = {};
