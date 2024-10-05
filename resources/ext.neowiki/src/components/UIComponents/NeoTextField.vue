@@ -39,14 +39,6 @@ const props = defineProps( {
 	required: {
 		type: Boolean,
 		default: false
-	},
-	minLength: {
-		type: Number,
-		default: 0
-	},
-	maxLength: {
-		type: Number,
-		default: Infinity
 	}
 } );
 
@@ -68,14 +60,10 @@ const validateInput = ( event: Event ): void => {
 	const value = ( event.target as HTMLInputElement ).value;
 	emit( 'update:modelValue', value );
 
-	const messages: { [key: string]: string } = {};
+	const messages: ValidationMessages = {};
 
 	if ( props.required && !value ) {
 		messages.error = mw.message( 'neowiki-field-required' ).text();
-	} else if ( value.length < props.minLength ) {
-		messages.error = mw.message( 'neowiki-field-min-length', props.minLength ).text();
-	} else if ( value.length > props.maxLength ) {
-		messages.error = mw.message( 'neowiki-field-max-length', props.maxLength ).text();
 	}
 
 	if ( Object.keys( messages ).length > 0 ) {
@@ -171,5 +159,4 @@ watch( () => props.modelValue, ( newValue ) => {
 	border-color: #36c !important;
 	box-shadow: inset 0 0 0 1px #36c;
 }
-
 </style>
