@@ -1,6 +1,7 @@
-import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import { createPropertyDefinitionFromJson, PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 import type { Value } from '@neo/domain/Value';
 import { ValueType } from '@neo/domain/Value';
+import { Neo } from '@neo/Neo';
 
 export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Value> {
 

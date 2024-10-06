@@ -1,5 +1,6 @@
 import type { ValueType } from '@neo/domain/Value';
 import { Neo } from '@neo/Neo';
+import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
 
 export class PropertyName {
 
@@ -37,17 +38,31 @@ export interface MultiStringProperty extends PropertyDefinition {
 
 }
 
-// FIXME: avoid global access by putting this on the global factory or ValueFormatRegistry
+/**
+ * In production code, prefer using an instance of PropertyDefinitionDeserializer
+ */
 export function createPropertyDefinitionFromJson( id: string, json: any ): PropertyDefinition {
-	return Neo.getInstance().getValueFormatRegistry().getFormat( json.format ).createPropertyDefinitionFromJson(
-		{
-			name: new PropertyName( id ),
-			type: json.type as ValueType,
-			format: json.format as string,
-			description: json.description ?? '',
-			required: json.required ?? false,
-			default: json.default
-		} as PropertyDefinition,
-		json
-	);
+	return Neo.getInstance().getPropertyDefinitionDeserializer().propertyDefinitionFromJson( id, json );
+}
+
+export class PropertyDefinitionDeserializer {
+
+	public constructor(
+		private readonly registry: ValueFormatRegistry
+	) {}
+
+	public propertyDefinitionFromJson( name: string | PropertyName, json: any ): PropertyDefinition {
+		return this.registry.getFormat( json.format ).createPropertyDefinitionFromJson(
+			{
+				name: typeof name === 'string' ? new PropertyName( name ) : name,
+				type: json.type as ValueType,
+				format: json.format as string,
+				description: json.description ?? '',
+				required: json.required ?? false,
+				default: json.default
+			} as PropertyDefinition,
+			json
+		);
+	}
+
 }

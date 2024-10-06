@@ -44,7 +44,9 @@ module.exports = {
 		'@typescript-eslint/explicit-module-boundary-types': 'off',
 		'no-shadow': 'off',
 		'no-bitwise': [ 'off' ],
-		'@typescript-eslint/no-unused-vars': 'off'
+		'@typescript-eslint/no-unused-vars': 'off',
+		'jsdoc/require-param': 'off',
+		'jsdoc/require-returns': 'off'
 	},
 	overrides: [
 		{
