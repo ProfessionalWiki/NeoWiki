@@ -26,28 +26,7 @@ describe( 'Schema', () => {
 		it( 'returns known property definition', () => {
 			const property = schema.getPropertyDefinition( 'test' );
 
-			expect( property.type ).toBe( ValueType.String );
 			expect( property.format ).toBe( TextFormat.formatName );
-		} );
-
-	} );
-
-	describe( 'getTypeOf', () => {
-
-		const schema = newSchema( {
-			properties: new PropertyDefinitionList( [
-				newTextProperty( 'One' ),
-				newNumberProperty( 'Two' ),
-				newTextProperty( 'Three' )
-			] )
-		} );
-
-		it( 'returns type of present property', () => {
-			expect( schema.getTypeOf( new PropertyName( 'Two' ) ) ).toBe( ValueType.Number );
-		} );
-
-		it( 'returns undefined for unknown property', () => {
-			expect( schema.getTypeOf( new PropertyName( 'Four' ) ) ).toBeUndefined();
 		} );
 
 	} );

@@ -13,7 +13,6 @@ const serializer = new PropertyDefinitionDeserializer( Neo.getInstance().getValu
 
 it( 'creates a property definition with defaults omitted', () => {
 	const json = {
-		type: 'number',
 		format: 'number'
 	};
 
@@ -27,7 +26,6 @@ it( 'creates a property definition with defaults omitted', () => {
 
 it( 'creates a property definition with defaults specified', () => {
 	const json = {
-		type: 'number',
 		format: 'number',
 		description: 'Foo',
 		required: true
@@ -41,7 +39,6 @@ it( 'creates a property definition with defaults specified', () => {
 
 it( 'creates a string property definition', () => {
 	const json = {
-		type: 'string',
 		format: 'text',
 		multiple: true,
 		uniqueItems: false
@@ -49,7 +46,6 @@ it( 'creates a string property definition', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as TextProperty;
 
-	expect( property.type ).toBe( ValueType.String );
 	expect( property.format ).toBe( TextFormat.formatName );
 
 	expect( property.multiple ).toBe( true );
@@ -58,13 +54,11 @@ it( 'creates a string property definition', () => {
 
 it( 'creates a number property definition with defaults', () => {
 	const json = {
-		type: 'number',
 		format: 'number'
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as NumberProperty;
 
-	expect( property.type ).toBe( ValueType.Number );
 	expect( property.format ).toBe( NumberFormat.formatName );
 
 	expect( property.minimum ).toBe( undefined );
@@ -74,7 +68,6 @@ it( 'creates a number property definition with defaults', () => {
 
 it( 'creates a number property definition with all fields', () => {
 	const json = {
-		type: 'number',
 		format: 'number',
 		minimum: 42,
 		maximum: 1337,
@@ -83,7 +76,6 @@ it( 'creates a number property definition with all fields', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as NumberProperty;
 
-	expect( property.type ).toBe( ValueType.Number );
 	expect( property.format ).toBe( NumberFormat.formatName );
 
 	expect( property.minimum ).toBe( 42 );
@@ -93,7 +85,6 @@ it( 'creates a number property definition with all fields', () => {
 
 it( 'creates a relation property definition with defaults', () => {
 	const json = {
-		type: 'relation',
 		format: 'relation',
 		relation: 'Employer',
 		targetSchema: 'Company'
@@ -101,7 +92,6 @@ it( 'creates a relation property definition with defaults', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as RelationProperty;
 
-	expect( property.type ).toBe( ValueType.Relation );
 	expect( property.format ).toBe( RelationFormat.formatName );
 
 	expect( property.relation ).toBe( 'Employer' );
@@ -111,7 +101,6 @@ it( 'creates a relation property definition with defaults', () => {
 
 it( 'creates a relation property definition with all fields', () => {
 	const json = {
-		type: 'relation',
 		format: 'relation',
 		relation: 'Employer',
 		targetSchema: 'Company',
@@ -121,14 +110,11 @@ it( 'creates a relation property definition with all fields', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as RelationProperty;
 
-	expect( property.type ).toBe( ValueType.Relation );
-
 	expect( property.multiple ).toBe( true );
 } );
 
 it( 'throws an error for an unsupported format', () => {
 	const json = {
-		type: 'string',
 		format: 'unsupported'
 	};
 
@@ -139,7 +125,6 @@ it( 'creates definitions without default value', () => {
 	const property = serializer.propertyDefinitionFromJson(
 		'test',
 		{
-			type: 'string',
 			format: 'text'
 		}
 	);
@@ -151,7 +136,6 @@ it( 'creates definitions with default value', () => {
 	const property = serializer.propertyDefinitionFromJson(
 		'test',
 		{
-			type: 'string',
 			format: 'text',
 			default: 'foo'
 		}
