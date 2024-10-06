@@ -94,7 +94,6 @@ import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefiniti
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
-import { ValueType } from '@neo/domain/Value.ts';
 
 const props = defineProps<{
 	selectedSchema?: string;
@@ -252,8 +251,7 @@ const addProperty = ( type: string ): void => {
 	isEditingProperty.value = false;
 	editingProperty.value = {
 		name: new PropertyName( ' ' ),
-		type: ValueType[ type as keyof typeof ValueType ],
-		format: type,
+		format: type, // TODO: is this correct? Name mismatch
 		description: '',
 		required: false
 	};
