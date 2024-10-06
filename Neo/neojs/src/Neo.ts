@@ -3,6 +3,7 @@ import { NumberFormat } from '@neo/domain/valueFormats/Number';
 import { RelationFormat } from '@neo/domain/valueFormats/Relation';
 import { UrlFormat } from '@neo/domain/valueFormats/Url';
 import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
+import { PropertyDefinitionDeserializer } from '@neo/domain/PropertyDefinition';
 
 export class Neo {
 	private static instance: Neo;
@@ -21,5 +22,9 @@ export class Neo {
 		registry.registerFormat( new UrlFormat() );
 
 		return registry;
+	}
+
+	public getPropertyDefinitionDeserializer(): PropertyDefinitionDeserializer {
+		return new PropertyDefinitionDeserializer( this.getValueFormatRegistry() );
 	}
 }
