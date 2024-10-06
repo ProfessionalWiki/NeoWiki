@@ -267,7 +267,7 @@ class NeoWikiExtension {
 		return new GetSchemaQuery(
 			presenter: $presenter,
 			schemaLookup: $this->getSchemaLookup(),
-			serializer: $this->getPersistenceSchemaSerializer()
+			serializer: $this->getSchemaPresentationSerializer()
 		);
 	}
 
@@ -279,7 +279,7 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function getPersistenceSchemaSerializer(): SchemaPresentationSerializer {
+	public function getSchemaPresentationSerializer(): SchemaPresentationSerializer {
 		return new SchemaPresentationSerializer();
 	}
 
