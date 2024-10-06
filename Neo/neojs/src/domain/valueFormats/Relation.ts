@@ -41,7 +41,6 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 export function newRelationProperty( name: string, targetSchema?: string, multiple?: boolean ): RelationProperty {
 	return {
 		name: new PropertyName( name ),
-		type: ValueType.Relation,
 		format: RelationFormat.formatName,
 		description: '',
 		required: false,

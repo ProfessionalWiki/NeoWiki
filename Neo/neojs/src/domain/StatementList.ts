@@ -6,6 +6,7 @@ import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { jsonToValue, RelationValue, type Value, valueToJson } from '@neo/domain/Value';
 import type { Schema } from '@neo/domain/Schema';
 import type { Subject } from '@neo/domain/Subject';
+import { Neo } from '@neo/Neo';
 
 export class StatementList implements Iterable<Statement> {
 
@@ -76,15 +77,18 @@ export class StatementList implements Iterable<Statement> {
 		return record;
 	}
 
+	// TODO: move into deserialization service
 	public static fromJsonValues( record: Record<string, unknown>, schema: Schema ): StatementList {
 		return new StatementList(
 			Object.entries( record )
 				.map( ( [ key, statementJson ] ) => new Statement(
 					new PropertyName( key ),
 					schema.getPropertyDefinition( key ).format,
-					jsonToValue(
+					jsonToValue( // TODO: remove global access
 						isJsonStatement( statementJson ) ? statementJson.value : null,
-						schema.getTypeOf( new PropertyName( key ) )
+						Neo.getInstance().getValueFormatRegistry().getFormat(
+							schema.getPropertyDefinition( new PropertyName( key ) ).format
+						).getValueType()
 					)
 				) )
 		);

@@ -32,8 +32,4 @@ export class Schema {
 		);
 	}
 
-	public getTypeOf( propertyName: PropertyName ): ValueType|undefined {
-		return this.properties.has( propertyName ) ? this.properties.get( propertyName ).type : undefined;
-	}
-
 }

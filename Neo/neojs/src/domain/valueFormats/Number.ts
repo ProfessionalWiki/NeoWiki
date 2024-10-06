@@ -13,7 +13,7 @@ export interface NumberProperty extends PropertyDefinition {
 
 export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
 
-	public static readonly valueType = ValueType.Number;
+	public readonly valueType = ValueType.Number;
 
 	public static readonly formatName = 'number';
 
@@ -35,7 +35,6 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
 export function newNumberProperty( name = 'MyNumberProperty' ): NumberProperty {
 	return {
 		name: new PropertyName( name ),
-		type: ValueType.Number,
 		format: NumberFormat.formatName,
 		description: '',
 		required: false

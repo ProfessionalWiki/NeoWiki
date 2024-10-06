@@ -29,7 +29,6 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
 export function newTextProperty( name = 'MyTextProperty', multiple = false, format = TextFormat.formatName ): TextProperty {
 	return {
 		name: new PropertyName( name ),
-		type: ValueType.String,
 		format: format,
 		description: '',
 		required: false,

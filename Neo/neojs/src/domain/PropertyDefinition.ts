@@ -1,4 +1,3 @@
-import type { ValueType } from '@neo/domain/Value';
 import { Neo } from '@neo/Neo';
 import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
 
@@ -22,7 +21,6 @@ export class PropertyName {
 export interface PropertyDefinition {
 
 	readonly name: PropertyName;
-	readonly type: ValueType;
 	readonly format: string;
 	readonly description: string;
 	readonly required: boolean;
@@ -32,7 +30,6 @@ export interface PropertyDefinition {
 
 export interface MultiStringProperty extends PropertyDefinition {
 
-	readonly type: ValueType.String;
 	readonly multiple: boolean;
 	readonly uniqueItems: boolean;
 
@@ -52,10 +49,10 @@ export class PropertyDefinitionDeserializer {
 	) {}
 
 	public propertyDefinitionFromJson( name: string | PropertyName, json: any ): PropertyDefinition {
-		return this.registry.getFormat( json.format ).createPropertyDefinitionFromJson(
+		const format = this.registry.getFormat( json.format );
+		return format.createPropertyDefinitionFromJson(
 			{
 				name: typeof name === 'string' ? new PropertyName( name ) : name,
-				type: json.type as ValueType,
 				format: json.format as string,
 				description: json.description ?? '',
 				required: json.required ?? false,

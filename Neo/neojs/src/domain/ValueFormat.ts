@@ -12,6 +12,10 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 		return ( this.constructor as typeof BaseValueFormat ).formatName;
 	}
 
+	public getValueType(): ValueType {
+		return ( this.constructor as typeof BaseValueFormat ).valueType;
+	}
+
 	public abstract createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): T;
 
 	public abstract getExampleValue( property: T ): V;

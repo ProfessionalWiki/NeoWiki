@@ -115,7 +115,6 @@ describe( 'UrlFormatter', () => {
 function newUrlProperty(): UrlProperty {
 	return {
 		name: new PropertyName( 'url' ),
-		type: ValueType.String,
 		format: UrlFormat.formatName,
 		description: 'URL',
 		required: false
