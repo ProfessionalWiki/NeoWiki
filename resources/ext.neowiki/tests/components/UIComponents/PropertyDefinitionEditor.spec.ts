@@ -6,6 +6,8 @@ import { CdxDialog } from '@wikimedia/codex';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
 import { ValueType } from '@neo/domain/Value';
 import { ComponentPublicInstance, DefineComponent } from 'vue';
+import { Service } from '../../../src/NeoWikiServices';
+import { NeoWikiExtension } from '../../../src/NeoWikiExtension';
 
 type PropertyDefinitionEditorProps = {
 	property: PropertyDefinition | null;
@@ -33,14 +35,6 @@ const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 	text: () => key
 } ) );
 
-vi.mock( '@/NeoWikiServices.ts', () => ( {
-	NeoWikiServices: {
-		getComponentRegistry: vi.fn().mockReturnValue( {
-			getValueEditingComponent: vi.fn().mockReturnValue( 'div' )
-		} )
-	}
-} ) );
-
 describe( 'PropertyDefinitionEditor', () => {
 	beforeEach( () => {
 		vi.stubGlobal( 'mw', {
@@ -56,6 +50,9 @@ describe( 'PropertyDefinitionEditor', () => {
 		global: {
 			mocks: {
 				$i18n
+			},
+			provide: {
+				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
 			}
 		}
 	} );
