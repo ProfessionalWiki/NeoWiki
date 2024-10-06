@@ -137,7 +137,7 @@ const save = (): void => {
 	console.log( localProperty.value );
 };
 
-defineExpose( { openDialog } );
+defineExpose( { openDialog, updateForm, save, isOpen, cancel, localProperty } );
 </script>
 
 <style lang="scss">
