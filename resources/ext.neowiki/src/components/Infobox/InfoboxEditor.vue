@@ -77,21 +77,21 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { CdxDialog, CdxButton, CdxIcon } from '@wikimedia/codex';
+import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconArrowPrevious, cdxIconLink } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
 import StatementEditor from '@/components/UIComponents/StatementEditor.vue';
 import { Subject } from '@neo/domain/Subject.ts';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { Schema, SchemaName } from '@neo/domain/Schema';
+import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { StatementList } from '@neo/domain/StatementList.ts';
 import { Statement } from '@neo/domain/Statement';
 import NeoTypeSelectDropdown from '@/components/UIComponents/NeoTypeSelectDropdown.vue';
-import { cdxIconTextA, cdxIconStringInteger } from '@/assets/CustomIcons';
+import { cdxIconStringInteger, cdxIconTextA } from '@/assets/CustomIcons';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefinitionEditor.vue';
-import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
 
@@ -104,19 +104,17 @@ const props = defineProps<{
 const emit = defineEmits( [ 'save', 'back' ] );
 const isOpen = ref( false );
 const localSubject = ref<Subject | null>( null );
+const localSchema = ref<Schema | null>( null );
 const statements = ref<Statement[]>( [] );
 const schemaStore = useSchemaStore();
 const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const editingProperty = ref<PropertyDefinition | null>( null );
 
 const addMissingStatements = (): void => {
-	if ( props.subject !== undefined ) {
-		const schemaName = props.subject.getSchemaName();
-		const schema = schemaStore.getSchema( schemaName );
-
+	if ( props.subject !== undefined && localSchema.value !== null ) {
 		const existingPropertyNames = new Set( statements.value.map( ( stmt ) => stmt.propertyName.toString() ) );
 
-		const missingStatements = Array.from( schema.getPropertyDefinitions() )
+		const missingStatements = Array.from( localSchema.value.getPropertyDefinitions() )
 			.filter( ( propertyDef ) => !existingPropertyNames.has( propertyDef.name.toString() ) )
 			.map( ( propertyDef ) => new Statement(
 				propertyDef.name,
@@ -130,7 +128,9 @@ const addMissingStatements = (): void => {
 
 const openDialog = (): void => {
 	isOpen.value = true;
-	if ( props.subject ) {
+	if ( props.subject !== undefined ) {
+		currentSchemaName.value = props.subject.getSchemaName();
+		localSchema.value = schemaStore.getSchema( currentSchemaName.value );
 		localSubject.value = new Subject(
 			props.subject.getId(),
 			props.subject.getLabel(),
@@ -140,7 +140,6 @@ const openDialog = (): void => {
 		);
 		statements.value = [ ...props.subject.getStatements() ];
 		addMissingStatements();
-
 	} else {
 		localSubject.value = new Subject(
 			new SubjectId( 'stodotodotodo42' ),
@@ -165,11 +164,9 @@ const statementTypes = [
 
 const editProperty = ( propertyName: PropertyName ): void => {
 	isEditingProperty.value = true;
-	if ( localSubject.value ) {
-		const schema = schemaStore.getSchema( localSubject.value.getSchemaName() );
-		const property = schema.getPropertyDefinitions().get( propertyName );
+	if ( localSubject.value && localSchema.value !== null ) {
+		const property = localSchema.value.getPropertyDefinitions().get( propertyName );
 		if ( property ) {
-			currentSchemaName.value = schema.getName();
 			editingProperty.value = property as PropertyDefinition;
 			propertyDefinitionEditorInfo.value?.openDialog();
 		}
@@ -177,10 +174,9 @@ const editProperty = ( propertyName: PropertyName ): void => {
 };
 
 const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
-	const schemaName = currentSchemaName.value;
 	const propertyName = editingProperty.value?.name;
 
-	if ( !propertyName ) {
+	if ( !propertyName || localSchema.value === null ) {
 		console.error( 'No property name found to update' );
 		return;
 	}
@@ -190,22 +186,19 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 		return;
 	}
 
-	const schema = schemaStore.getSchema( schemaName );
-
-	const currentProperties = schema.getPropertyDefinitions();
+	const currentProperties = localSchema.value.getPropertyDefinitions();
 
 	const updatedProperties = Array.from( currentProperties ).map( ( prop ) => prop.name.toString() === propertyName.toString() ? savedProperty : prop
 	);
 	const newPropertyList = new PropertyDefinitionList( updatedProperties );
 
-	const updatedSchema = new Schema(
-		schema.getName(),
-		schema.getDescription(),
+	localSchema.value = new Schema(
+		localSchema.value.getName(),
+		localSchema.value.getDescription(),
 		newPropertyList
 	);
-	schemaStore.schemas.set( schemaName, updatedSchema );
 
-	const updatedStatements = statements.value.map( ( statement ) => statement.propertyName.toString() === editingProperty.value?.name.toString() ?
+	statements.value = statements.value.map( ( statement ) => statement.propertyName.toString() === editingProperty.value?.name.toString() ?
 		new Statement(
 			new PropertyName( savedProperty.name.toString() ),
 			savedProperty.format,
@@ -214,32 +207,24 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 		statement
 	);
 
-	// Update statements
-	statements.value = updatedStatements;
-
-	console.log( updatedStatements );
-
-	console.log( localSubject.value );
-
 	editingProperty.value = null;
 };
 
 const handleAddProperty = ( savedProperty: PropertyDefinition ): void => {
-	if ( props.subject !== undefined ) {
-		const schema = schemaStore.getSchema( props.subject.getSchemaName() );
-		const updatedProperties = [ ...schema.getPropertyDefinitions(), savedProperty ];
+	if ( props.subject !== undefined && localSchema.value !== null ) {
+		const updatedProperties = [ ...localSchema.value.getPropertyDefinitions(), savedProperty ];
 
 		const newPropertyList = new PropertyDefinitionList( updatedProperties );
 
-		const updatedSchema = new Schema(
-			schema.getName(),
-			schema.getDescription(),
+		localSchema.value = new Schema(
+			localSchema.value.getName(),
+			localSchema.value.getDescription(),
 			newPropertyList
 		);
-		schemaStore.schemas.set( props.subject.getSchemaName(), updatedSchema );
 
 		addMissingStatements();
 	}
+	editingProperty.value = null;
 };
 
 const toggleDropdown = (): void => {
@@ -293,6 +278,16 @@ const submit = (): void => {
 			new StatementList( properStatements ),
 			localSubject.value.getPageIdentifiers()
 		);
+	}
+	if ( localSchema.value !== null ) {
+		const updatedSchema = new Schema(
+			localSchema.value.getName(),
+			localSchema.value.getDescription(),
+			localSchema.value.getPropertyDefinitions()
+		);
+
+		// Update the schema in the store
+		schemaStore.setSchema( updatedSchema.getName(), updatedSchema );
 	}
 	emit( 'save', localSubject.value );
 	isOpen.value = false;

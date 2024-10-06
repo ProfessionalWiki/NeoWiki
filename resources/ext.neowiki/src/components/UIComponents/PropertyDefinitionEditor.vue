@@ -14,7 +14,7 @@
 					@update:model-value="updateForm( 'name', $event as never )"
 				/>
 				<div class="field-group format-select">
-					<label for="format-select">{{ $i18n( 'neowiki-infobox-editor-property-format' ).text() }}</label>
+					<label for="format-select">{{ $i18n( 'neowiki-infobox-type' ).text() }}</label>
 					<CdxSelect
 						v-model:selected="localProperty.format"
 						:menu-items="formatOptions"
@@ -70,6 +70,7 @@ import { PropType, ref, watch } from 'vue';
 import { CdxDialog, CdxButton, CdxSelect, CdxCheckbox } from '@wikimedia/codex';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
+import { ValueType } from '@neo/domain/Value.ts';
 
 const props = defineProps( {
 	property: {
@@ -100,6 +101,11 @@ const updateForm = ( field: string, value: never ): void => {
 				[ field ]: value
 			};
 		}
+
+		localProperty.value = {
+			...localProperty.value,
+			type: localProperty.value.format as ValueType
+		};
 	}
 };
 
