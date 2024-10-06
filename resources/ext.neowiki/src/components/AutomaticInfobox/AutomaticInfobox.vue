@@ -188,6 +188,7 @@ onMounted( async (): Promise<void> => {
 		color: $color-subtle;
 		font-size: $font-size-small;
 		line-height: $line-height-xx-small;
+		overflow-wrap: anywhere;
 	}
 
 	&__footer {
