@@ -82,26 +82,26 @@ describe( 'AutomaticInfobox', () => {
 	it( 'renders the title correctly', () => {
 		const wrapper = mountComponent( mockSubject, mockSchema, false );
 
-		expect( wrapper.find( '.infobox-title' ).text() ).toBe( 'Test Subject' );
+		expect( wrapper.find( '.auto-infobox__title' ).text() ).toBe( 'Test Subject' );
 	} );
 
 	it( 'renders statements correctly', () => {
 		const wrapper = mountComponent( mockSubject, mockSchema, false );
 
-		const statementElements = wrapper.findAll( '.infobox-statement' );
-		expect( statementElements ).toHaveLength( 4 ); // 3 properties + 1 for schema type
+		const statementElements = wrapper.findAll( '.auto-infobox__item' );
+		expect( statementElements ).toHaveLength( 4 ); // 3 properties + schema
 
-		expect( statementElements[ 0 ].find( '.infobox-statement-property' ).text() ).toBe( 'neowiki-infobox-type' );
-		expect( statementElements[ 0 ].find( '.infobox-statement-value' ).text() ).toBe( 'TestSchema' );
+		expect( statementElements[ 0 ].find( '.auto-infobox__property' ).text() ).toBe( 'neowiki-infobox-type' );
+		expect( statementElements[ 0 ].find( '.auto-infobox__value' ).text() ).toBe( 'TestSchema' );
 
-		expect( statementElements[ 1 ].find( '.infobox-statement-property' ).text() ).toBe( 'name' );
-		expect( statementElements[ 1 ].find( '.infobox-statement-value' ).text() ).toBe( 'John Doe, Jane Doe' );
+		expect( statementElements[ 1 ].find( '.auto-infobox__property' ).text() ).toBe( 'name' );
+		expect( statementElements[ 1 ].find( '.auto-infobox__value' ).text() ).toBe( 'John Doe, Jane Doe' );
 
-		expect( statementElements[ 2 ].find( '.infobox-statement-property' ).text() ).toBe( 'age' );
-		expect( statementElements[ 2 ].find( '.infobox-statement-value' ).text() ).toBe( '30' );
+		expect( statementElements[ 2 ].find( '.auto-infobox__property' ).text() ).toBe( 'age' );
+		expect( statementElements[ 2 ].find( '.auto-infobox__value' ).text() ).toBe( '30' );
 
-		expect( statementElements[ 3 ].find( '.infobox-statement-property' ).text() ).toBe( 'website' );
-		const linkElement = statementElements[ 3 ].find( '.infobox-statement-value a' );
+		expect( statementElements[ 3 ].find( '.auto-infobox__property' ).text() ).toBe( 'website' );
+		const linkElement = statementElements[ 3 ].find( '.auto-infobox__value a' );
 		expect( linkElement.attributes( 'href' ) ).toBe( 'https://example.com' );
 		expect( linkElement.text() ).toBe( 'https://example.com' );
 	} );
@@ -117,22 +117,20 @@ describe( 'AutomaticInfobox', () => {
 
 		const wrapper = mountComponent( emptySubject, mockSchema, false );
 
-		const statementElements = wrapper.findAll( '.infobox-statement' );
-		expect( statementElements ).toHaveLength( 1 ); // Only the schema type statement
-		expect( statementElements[ 0 ].find( '.infobox-statement-property' ).text() ).toBe( 'neowiki-infobox-type' );
-		expect( statementElements[ 0 ].find( '.infobox-statement-value' ).text() ).toBe( 'TestSchema' );
+		const statementElements = wrapper.findAll( '.auto-infobox__item' );
+		expect( statementElements ).toHaveLength( 1 ); // Only schema badge
 	} );
 
 	it( 'does not render edit button when canEditSubject is false', () => {
 		const wrapper = mountComponent( mockSubject, mockSchema, false );
 
-		expect( wrapper.find( '.cdx-docs-link' ).exists() ).toBe( false );
+		expect( wrapper.find( '.auto-infobox__footer' ).exists() ).toBe( false );
 	} );
 
 	it( 'renders edit button when canEditSubject is true', () => {
 		const wrapper = mountComponent( mockSubject, mockSchema, true );
 
-		const editButton = wrapper.find( '.cdx-docs-link' );
+		const editButton = wrapper.find( '.auto-infobox__footer button' );
 		expect( editButton.exists() ).toBe( true );
 		expect( editButton.text() ).toBe( 'neowiki-infobox-edit-link' );
 	} );
