@@ -31,7 +31,7 @@ import type { Value } from '@neo/domain/Value';
 const props = defineProps( {
 	modelValue: {
 		type: Object as PropType<Value>,
-		required: true
+		default: () => newStringValue( '' )
 	},
 	label: {
 		type: String,
