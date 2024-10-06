@@ -11,14 +11,14 @@
 					:model-value="localProperty.name.toString()"
 					:label="$i18n( 'neowiki-infobox-editor-property-label' ).text()"
 					:required="true"
-					@update:model-value="updateForm( 'name', $event as never )"
+					@update:model-value="updateForm( 'name', $event )"
 				/>
 				<div class="field-group format-select">
 					<label for="format-select">{{ $i18n( 'neowiki-infobox-editor-property-format' ).text() }}</label>
 					<CdxSelect
 						v-model:selected="localProperty.format"
 						:menu-items="formatOptions"
-						@update:selected="updateForm( 'format', $event as never )"
+						@update:selected="updateForm( 'format', $event )"
 					/>
 				</div>
 			</div>
@@ -31,14 +31,14 @@
 				v-model="localProperty.description"
 				class="property-description"
 				label="Description"
-				@update:model-value="updateForm( 'description', $event as never )"
+				@update:model-value="updateForm( 'description', $event )"
 			/>
 			<div class="required-checkbox">
 				<CdxCheckbox
 					v-model="localProperty.required"
 					class="neo-round-checkbox"
 					:label="$i18n( 'neowiki-field-required' ).text()"
-					@update:model-value="updateForm( 'required', $event as never )"
+					@update:model-value="updateForm( 'required', $event )"
 				>
 					<small>{{ $i18n( 'neowiki-field-required' ).text() }}</small>
 				</CdxCheckbox>
@@ -94,7 +94,8 @@ const isOpen = ref( false );
 const localProperty = ref<PropertyDefinition | null>( null );
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
-const updateForm = ( field: string, value: never ): void => {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const updateForm = ( field: string, value: any ): void => {
 	if ( localProperty.value ) {
 		if ( field === 'name' ) {
 			localProperty.value = {
