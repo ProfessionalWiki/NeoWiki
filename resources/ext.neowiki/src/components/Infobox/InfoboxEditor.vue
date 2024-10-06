@@ -286,7 +286,6 @@ const submit = (): void => {
 			localSchema.value.getPropertyDefinitions()
 		);
 
-		// Update the schema in the store
 		schemaStore.setSchema( updatedSchema.getName(), updatedSchema );
 	}
 	emit( 'save', localSubject.value );
