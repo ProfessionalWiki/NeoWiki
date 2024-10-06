@@ -37,7 +37,6 @@ describe( 'RestSchemaRepository', () => {
 				description: 'Employee foo bar baz',
 				propertyDefinitions: {
 					LegalName: {
-						type: 'string',
 						format: TextFormat.formatName,
 						required: true
 					}
@@ -57,7 +56,6 @@ describe( 'RestSchemaRepository', () => {
 			expect( schema.getPropertyDefinitions().asRecord() ).toEqual( {
 				LegalName: {
 					name: new PropertyName( 'LegalName' ),
-					type: 'string',
 					format: TextFormat.formatName,
 					description: '',
 					required: true,

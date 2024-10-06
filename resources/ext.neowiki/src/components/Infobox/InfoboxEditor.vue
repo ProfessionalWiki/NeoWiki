@@ -252,8 +252,7 @@ const addProperty = ( type: string ): void => {
 	isEditingProperty.value = false;
 	editingProperty.value = {
 		name: new PropertyName( ' ' ),
-		type: ValueType[ type as keyof typeof ValueType ],
-		format: type,
+		format: type, // TODO: is this correct? Name mismatch
 		description: '',
 		required: false
 	};
