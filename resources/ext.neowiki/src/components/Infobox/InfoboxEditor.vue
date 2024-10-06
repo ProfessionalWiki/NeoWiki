@@ -129,8 +129,7 @@ const addMissingStatements = (): void => {
 const openDialog = (): void => {
 	isOpen.value = true;
 	if ( props.subject !== undefined ) {
-		currentSchemaName.value = props.subject.getSchemaName();
-		localSchema.value = schemaStore.getSchema( currentSchemaName.value );
+		localSchema.value = schemaStore.getSchema( props.subject.getSchemaName() );
 		localSubject.value = new Subject(
 			props.subject.getId(),
 			props.subject.getLabel(),
@@ -154,7 +153,6 @@ const openDialog = (): void => {
 
 const isDropdownOpen = ref( false );
 const isEditingProperty = ref( false );
-const currentSchemaName = ref( '' );
 
 const statementTypes = [
 	{ value: 'text', label: 'Text', icon: cdxIconTextA },
