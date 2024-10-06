@@ -22,6 +22,11 @@
 					/>
 				</div>
 			</div>
+			<component
+				:is="componentRegistry.getValueEditingComponent( localProperty.format )"
+				v-model="localProperty.default"
+				:label="$i18n( 'neowiki-infobox-editor-default-value-label' ).text()"
+			/>
 			<NeoTextField
 				v-model="localProperty.description"
 				class="property-description"
@@ -70,6 +75,7 @@ import { PropType, ref, watch } from 'vue';
 import { CdxDialog, CdxButton, CdxSelect, CdxCheckbox } from '@wikimedia/codex';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps( {
 	property: {
@@ -86,6 +92,7 @@ const emit = defineEmits( [ 'cancel', 'save' ] );
 
 const isOpen = ref( false );
 const localProperty = ref<PropertyDefinition | null>( null );
+const componentRegistry = NeoWikiServices.getComponentRegistry();
 
 const updateForm = ( field: string, value: never ): void => {
 	if ( localProperty.value ) {

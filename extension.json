@@ -216,7 +216,8 @@
 				"neowiki-infobox-editor-property-required",
 				"neowiki-infobox-editor-format-text",
 				"neowiki-infobox-editor-format-url",
-				"neowiki-infobox-editor-format-number"
+				"neowiki-infobox-editor-format-number",
+				"neowiki-infobox-editor-default-value-label"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

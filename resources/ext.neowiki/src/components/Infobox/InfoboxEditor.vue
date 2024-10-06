@@ -94,7 +94,7 @@ import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefiniti
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
-import { ValueType } from '@neo/domain/Value.ts';
+import { Value, ValueType } from '@neo/domain/Value.ts';
 
 const props = defineProps<{
 	selectedSchema?: string;
@@ -122,7 +122,7 @@ const addMissingStatements = (): void => {
 			.map( ( propertyDef ) => new Statement(
 				propertyDef.name,
 				propertyDef.format,
-				undefined
+				propertyDef.default as Value
 			)
 			);
 		statements.value = [ ...statements.value, ...missingStatements ];
@@ -210,7 +210,7 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 		new Statement(
 			new PropertyName( savedProperty.name.toString() ),
 			savedProperty.format,
-			statement.value
+			statement.value || savedProperty.default as Value
 		) :
 		statement
 	);
