@@ -1,7 +1,6 @@
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import type { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import type { ValueType } from '@neo/domain/Value';
 
 export type SchemaName = string;
 
