@@ -4,11 +4,16 @@
 			<h2 class="auto-infobox__title">
 				{{ subject.getLabel() }}
 			</h2>
-			<CdxInfoChip class="auto-infobox__schema-badge">
-				{{ schema.getName() }}
-			</CdxInfoChip>
 		</div>
 		<div class="auto-infobox__content">
+			<div class="auto-infobox__item auto-infobox__schema-badge">
+				<div class="auto-infobox__property">
+					{{ $i18n( 'neowiki-infobox-type' ).text() }}
+				</div>
+				<div class="auto-infobox__value">
+					{{ schema.getName() }}
+				</div>
+			</div>
 			<div
 				v-for="( propertyDefinition, propertyName ) in propertiesToDisplay"
 				:key="propertyName"
@@ -56,6 +61,7 @@ import { Component } from 'vue';
 import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { CdxButton } from '@wikimedia/codex';
 
 const props = defineProps( {
 	subject: {
@@ -124,40 +130,29 @@ onMounted( async (): Promise<void> => {
 @import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
 
 .auto-infobox {
+	margin-left: $spacing-100;
 	margin-bottom: $spacing-100;
-	max-width: $size-2800;
+	max-width: 325px;
 	border-radius: 5px;
-	background-color: $background-color-interactive-subtle;
-	border: 1px solid #c8ccd1bf;
+	background-color: $background-color-interactive-subtle !important;
+	border: 1px solid $border-color-base;
+	float: right;
 
 	&__header {
-		background-color: #eaecf0a8;
-		position: relative;
+		background-color: #eaecf0a8 !important;
 		border-top-left-radius: 5px;
 		border-top-right-radius: 5px;
-		padding-top: $spacing-30;
+		padding-top: $spacing-125;
 		padding-left: $spacing-125;
 		padding-bottom: $spacing-30;
 	}
 
 	&__title {
 		font-size: $font-size-xx-large;
-		margin: $spacing-0;
+		margin: $spacing-0 !important;
 		position: relative;
 		z-index: $z-index-stacking-1;
 		border: none;
-	}
-
-	&__schema-badge,
-	.cdx-info-chip {
-		position: absolute;
-		top: $spacing-100;
-		right: $spacing-75;
-		border: $border-width-base $border-style-base $color-base;
-
-		.cdx-info-chip--text {
-			color: $color-base;
-		}
 	}
 
 	&__content {
