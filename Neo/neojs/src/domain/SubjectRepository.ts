@@ -29,7 +29,7 @@ export interface SubjectRepository extends SubjectLookup {
 
 export class StubSubjectRepository extends InMemorySubjectLookup implements SubjectRepository {
 
-	public createMainSubject( pageId: number, label: string, schemaName: string, statements: StatementList ): Promise<SubjectId> {
+	public createMainSubject( _pageId: number, _label: string, _schemaName: string, _statements: StatementList ): Promise<SubjectId> {
 		return Promise.resolve( new SubjectId( 's11111111111111' ) );
 	}
 
@@ -37,7 +37,7 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		return Promise.resolve( new SubjectId( 's11111111111112' ) );
 	}
 
-	public updateSubject( id: SubjectId, statements: StatementList ): Promise<object> {
+	public updateSubject( _id: SubjectId, _statements: StatementList ): Promise<object> {
 		return Promise.resolve( {} );
 	}
 
