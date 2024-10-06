@@ -70,7 +70,6 @@ import { PropType, ref, watch } from 'vue';
 import { CdxDialog, CdxButton, CdxSelect, CdxCheckbox } from '@wikimedia/codex';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
-import { ValueType } from '@neo/domain/Value.ts';
 
 const props = defineProps( {
 	property: {
@@ -101,11 +100,6 @@ const updateForm = ( field: string, value: never ): void => {
 				[ field ]: value
 			};
 		}
-
-		localProperty.value = {
-			...localProperty.value,
-			type: localProperty.value.format as ValueType
-		};
 	}
 };
 
@@ -133,7 +127,6 @@ const save = (): void => {
 		isOpen.value = false;
 		emit( 'save', Object.assign( {}, localProperty.value ) as PropertyDefinition );
 	}
-	console.log( localProperty.value );
 };
 
 defineExpose( { openDialog } );
