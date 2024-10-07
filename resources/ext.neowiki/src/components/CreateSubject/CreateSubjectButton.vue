@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue';
+import { ref } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import CreateSubjectDialog from '@/components/CreateSubject/CreateSubjectDialog.vue';
@@ -46,9 +46,7 @@ const onSubjectTypeSelected = ( type: string ): void => {
 	}
 
 	selectedSchema.value = type;
-	nextTick( () => {
-		infoboxEditorDialog.value?.openDialog();
-	} );
+	infoboxEditorDialog.value?.openDialog();
 };
 
 const onCreationComplete = (): void => {
