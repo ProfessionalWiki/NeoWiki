@@ -4,6 +4,7 @@ import { RelationFormat } from '@neo/domain/valueFormats/Relation';
 import { UrlFormat } from '@neo/domain/valueFormats/Url';
 import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
 import { PropertyDefinitionDeserializer } from '@neo/domain/PropertyDefinition';
+import { ValueDeserializer } from '@neo/domain/Value';
 
 export class Neo {
 	private static instance: Neo;
@@ -26,5 +27,9 @@ export class Neo {
 
 	public getPropertyDefinitionDeserializer(): PropertyDefinitionDeserializer {
 		return new PropertyDefinitionDeserializer( this.getValueFormatRegistry() );
+	}
+
+	public getValueDeserializer(): ValueDeserializer {
+		return new ValueDeserializer( this.getValueFormatRegistry() );
 	}
 }
