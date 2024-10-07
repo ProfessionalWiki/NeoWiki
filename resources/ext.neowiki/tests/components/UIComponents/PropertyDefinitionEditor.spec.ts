@@ -4,7 +4,7 @@ import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefiniti
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 import { CdxDialog } from '@wikimedia/codex';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
-import { ValueType } from '@neo/domain/Value';
+import { newTextProperty } from '@neo/domain/valueFormats/Text';
 import { ComponentPublicInstance, DefineComponent } from 'vue';
 import { Service } from '../../../src/NeoWikiServices';
 import { NeoWikiExtension } from '../../../src/NeoWikiExtension';
@@ -63,42 +63,20 @@ describe( 'PropertyDefinitionEditor', () => {
 	} );
 
 	it( 'renders correctly when a property is provided', async () => {
-		const property: PropertyDefinition = {
-			name: new PropertyName( 'testProperty' ),
-			type: ValueType.String,
-			format: 'text',
-			required: false,
-			default: '',
-			description: ''
-		};
-		const wrapper = createWrapper( { property, editMode: true } );
+		const wrapper = createWrapper( { property: newTextProperty(), editMode: true } );
 		await wrapper.vm.openDialog();
 		expect( wrapper.findComponent( NeoTextField ).exists() ).toBe( true );
 	} );
 
 	it( 'updates local property when prop changes', async () => {
 		const wrapper = createWrapper( { property: null, editMode: false } );
-		const newProperty: PropertyDefinition = {
-			name: new PropertyName( 'newProperty' ),
-			type: ValueType.String,
-			format: 'text',
-			required: false,
-			default: 'default value',
-			description: 'description'
-		};
+		const newProperty = newTextProperty();
 		await wrapper.setProps( { property: newProperty } );
 		expect( wrapper.vm.localProperty ).toEqual( newProperty );
 	} );
 
-	it( 'emits save event with updated property', async () => {
-		const property: PropertyDefinition = {
-			name: new PropertyName( 'testProperty' ),
-			type: ValueType.String,
-			format: 'text',
-			required: false,
-			default: '',
-			description: ''
-		};
+	it( 'emits save event with updated default property', async () => {
+		const property = newTextProperty();
 		const wrapper = createWrapper( { property, editMode: true } );
 		await wrapper.vm.updateForm( 'default', 'new default value' );
 		await wrapper.vm.save();
@@ -109,14 +87,7 @@ describe( 'PropertyDefinitionEditor', () => {
 	} );
 
 	it( 'handles form updates correctly', async () => {
-		const property: PropertyDefinition = {
-			name: new PropertyName( 'testProperty' ),
-			format: 'number',
-			type: ValueType.Number,
-			required: false,
-			default: 5,
-			description: ''
-		};
+		const property: PropertyDefinition = newTextProperty();
 		const wrapper = createWrapper( { property, editMode: true } );
 		await wrapper.vm.updateForm( 'name', 'newName' );
 		await wrapper.vm.updateForm( 'format', 'number' );
@@ -126,11 +97,12 @@ describe( 'PropertyDefinitionEditor', () => {
 
 		expect( wrapper.vm.localProperty ).toEqual( {
 			name: new PropertyName( 'newName' ),
-			type: ValueType.Number,
 			format: 'number',
 			required: true,
 			default: 42,
-			description: 'New description'
+			description: 'New description',
+			multiple: false,
+			uniqueItems: true
 		} );
 	} );
 
@@ -146,7 +118,6 @@ describe( 'PropertyDefinitionEditor', () => {
 	it( 'renders correct title based on editMode', async () => {
 		const property: PropertyDefinition = {
 			name: new PropertyName( 'testProperty' ),
-			type: ValueType.String,
 			format: 'text',
 			required: false,
 			default: '',
