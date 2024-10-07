@@ -7,38 +7,16 @@ import { StatementList } from '@neo/domain/StatementList';
 import { Statement } from '@neo/domain/Statement';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue } from '@neo/domain/Value';
-import { InMemorySchemaLookup } from '@/application/SchemaLookup';
-import { Schema } from '@neo/domain/Schema';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import { newTextProperty, TextFormat } from '@neo/domain/valueFormats/Text';
+import { TextFormat } from '@neo/domain/valueFormats/Text';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
-import { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
 import { UrlFormat } from '@neo/domain/valueFormats/Url';
+import { NeoWikiExtension } from '@/NeoWikiExtension';
 
 function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSubjectRepository {
 	return new RestSubjectRepository(
 		apiUrl,
 		httpClient,
-		new InMemorySchemaLookup( [
-			new Schema(
-				'Employee',
-				'',
-				new PropertyDefinitionList( [
-					newTextProperty( 'WorkUrl' ),
-					newTextProperty( 'label' )
-				] )
-			)
-		] ),
-		new SubjectDeserializer( new InMemorySchemaLookup( [
-			new Schema(
-				'Employee',
-				'',
-				new PropertyDefinitionList( [
-					newTextProperty( 'WorkUrl' ),
-					newTextProperty( 'label' )
-				] )
-			)
-		] ) )
+		NeoWikiExtension.getInstance().getSubjectDeserializer()
 	);
 }
 
@@ -102,7 +80,7 @@ describe( 'RestSubjectRepository', () => {
 				subjectResponse.schema,
 				new StatementList( [
 					new Statement( new PropertyName( 'label' ), 'text', newStringValue( 'John Doe' ) ),
-					new Statement( new PropertyName( 'WorkUrl' ), 'text', newStringValue( 'https://pro.wiki' ) )
+					new Statement( new PropertyName( 'WorkUrl' ), 'url', newStringValue( 'https://pro.wiki' ) )
 				] ),
 				new PageIdentifiers( subjectResponse.pageId, subjectResponse.pageTitle )
 			) );
