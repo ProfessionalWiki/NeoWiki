@@ -95,7 +95,6 @@ import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefiniti
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { Value, ValueType } from '@neo/domain/Value.ts';
 
 const props = defineProps<{
 	selectedSchema?: string;
