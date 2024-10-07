@@ -2,22 +2,34 @@ import { SubjectId } from '@neo/domain/SubjectId';
 import { Subject } from '@neo/domain/Subject';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
 import { StatementList } from '@neo/domain/StatementList';
+import { StatementDeserializer } from '@neo/persistence/StatementDeserializer';
 
 export class SubjectDeserializer {
 
-	public async deserialize( data: any ): Promise<Subject> {
-		const id = new SubjectId( data.id );
-		const label = data.label;
-		const schema = data.schema;
+	public constructor(
+		private readonly statementDeserializer: StatementDeserializer
+	) {
+	}
 
-		const pageIdentifiers = new PageIdentifiers( data.pageId, data.pageTitle );
-		const statementList = await this.buildStatementList( data );
+	public deserialize( json: any ): Subject {
+		const id = new SubjectId( json.id );
+		const label = json.label;
+		const schema = json.schema;
+
+		const pageIdentifiers = new PageIdentifiers( json.pageId, json.pageTitle );
+		const statementList = this.buildStatementList( json.statements );
 
 		return new Subject( id, label, schema, statementList, pageIdentifiers );
 	}
 
-	private async buildStatementList( data: any ): Promise<StatementList> {
-		return StatementList.fromJsonValues( data.statements ); // TODO: use StatementDeserializer and remove this static function
+	private buildStatementList( json: any ): StatementList {
+		return new StatementList(
+			Object.entries( json )
+				.map( ( [ key, statementJson ] ) => this.statementDeserializer.deserialize(
+					key,
+					statementJson
+				) )
+		);
 	}
 
 }
