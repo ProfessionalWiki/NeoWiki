@@ -6,8 +6,10 @@ import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
 import { PropertyDefinitionDeserializer } from '@neo/domain/PropertyDefinition';
 import { ValueDeserializer } from '@neo/persistence/ValueDeserializer';
 import { StatementDeserializer } from '@neo/persistence/StatementDeserializer';
+import { SubjectDeserializer } from '@neo/persistence/SubjectDeserializer';
 
 export class Neo {
+
 	private static instance: Neo;
 
 	public static getInstance(): Neo {
@@ -37,4 +39,9 @@ export class Neo {
 	public getStatementDeserializer(): StatementDeserializer {
 		return new StatementDeserializer( this.getValueDeserializer() );
 	}
+
+	public getSubjectDeserializer(): SubjectDeserializer {
+		return new SubjectDeserializer( this.getStatementDeserializer() );
+	}
+
 }
