@@ -30,6 +30,10 @@ export const useSubjectStore = defineStore( 'subject', {
 				await this.fetchSubject( id );
 			}
 			return this.getSubject( id );
+		},
+		async updateSubject( subject: Subject ): Promise<void> {
+			await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject( subject.getId(), subject.getStatements() );
+			this.setSubject( subject.getId(), subject );
 		}
 	}
 } );
