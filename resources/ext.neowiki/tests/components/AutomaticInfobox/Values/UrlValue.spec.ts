@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect } from 'vitest';
 import UrlValue from '@/components/AutomaticInfobox/Values/UrlValue.vue';
-import { newStringValue } from '@neo/domain/Value';
+import { newNumberValue, newStringValue } from '@neo/domain/Value';
 
 describe( 'UrlValue', () => {
 	it( 'renders a single URL correctly', () => {
@@ -63,5 +63,14 @@ describe( 'UrlValue', () => {
 		} );
 
 		expect( wrapper.find( 'a' ).exists() ).toBe( false );
+	} );
+
+	it( 'returns no links for wrong value type', () => {
+		const wrapper = mount( UrlValue, {
+			props: {
+				value: newNumberValue( 42 )
+			}
+		} );
+		expect( wrapper.findAll( 'a' ) ).toHaveLength( 0 );
 	} );
 } );

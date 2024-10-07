@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect } from 'vitest';
 import NumberValue from '@/components/AutomaticInfobox/Values/NumberValue.vue';
-import { newNumberValue } from '@neo/domain/Value';
+import { newNumberValue, newStringValue } from '@neo/domain/Value';
 import { NumberProperty } from '@neo/domain/valueFormats/Number';
 
 describe( 'NumberValue', () => {
@@ -69,5 +69,15 @@ describe( 'NumberValue', () => {
 		} );
 
 		expect( wrapper.text() ).toBe( '3.14000' );
+	} );
+
+	it( 'returns empty string for wrong value type', () => {
+		const wrapper = mount( NumberValue, {
+			props: {
+				value: newStringValue( 'not a number' ),
+				property: {} as NumberProperty
+			}
+		} );
+		expect( wrapper.text() ).toBe( '' );
 	} );
 } );

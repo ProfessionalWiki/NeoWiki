@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect } from 'vitest';
 import TextValue from '@/components/AutomaticInfobox/Values/TextValue.vue';
-import { newStringValue } from '@neo/domain/Value';
+import { newNumberValue, newStringValue } from '@neo/domain/Value';
 
 describe( 'TextValue', () => {
 	it( 'renders a single text value correctly', () => {
@@ -52,6 +52,15 @@ describe( 'TextValue', () => {
 			}
 		} );
 
+		expect( wrapper.text() ).toBe( '' );
+	} );
+
+	it( 'returns empty string for wrong value type', () => {
+		const wrapper = mount( TextValue, {
+			props: {
+				value: newNumberValue( 42 )
+			}
+		} );
 		expect( wrapper.text() ).toBe( '' );
 	} );
 } );
