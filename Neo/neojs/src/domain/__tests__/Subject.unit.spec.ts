@@ -6,6 +6,7 @@ import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
 import { StatementList } from '@neo/domain/StatementList';
 import { TextFormat } from '../valueFormats/Text';
 import { RelationFormat } from '../valueFormats/Relation';
+import { Neo } from '@neo/Neo';
 
 describe( 'Subject', () => {
 
@@ -48,7 +49,7 @@ describe( 'Subject', () => {
 
 			const subject = newSubject( {
 				id: DEFAULT_SUBJECT_ID,
-				statements: StatementList.fromJsonValues(
+				statements: Neo.getInstance().getSubjectDeserializer().deserializeStatements(
 					{
 						Property1: {
 							value: [ 'foo' ],
@@ -81,7 +82,7 @@ describe( 'Subject', () => {
 
 			const subject = newSubject( {
 				id: DEFAULT_SUBJECT_ID,
-				statements: StatementList.fromJsonValues(
+				statements: Neo.getInstance().getSubjectDeserializer().deserializeStatements(
 					{
 						Property1: {
 							value: [ 'foo' ],

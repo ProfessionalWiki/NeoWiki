@@ -17,12 +17,12 @@ export class SubjectDeserializer {
 		const schema = json.schema;
 
 		const pageIdentifiers = new PageIdentifiers( json.pageId, json.pageTitle );
-		const statementList = this.buildStatementList( json.statements );
+		const statementList = this.deserializeStatements( json.statements );
 
 		return new Subject( id, label, schema, statementList, pageIdentifiers );
 	}
 
-	private buildStatementList( json: any ): StatementList {
+	public deserializeStatements( json: any ): StatementList {
 		return new StatementList(
 			Object.entries( json )
 				.map( ( [ key, statementJson ] ) => this.statementDeserializer.deserialize(

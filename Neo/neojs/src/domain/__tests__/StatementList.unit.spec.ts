@@ -7,6 +7,7 @@ import { newNumberValue, newStringValue, Relation, RelationValue } from '../Valu
 import { TextFormat } from '../valueFormats/Text';
 import { NumberFormat } from '../valueFormats/Number';
 import { RelationFormat } from '../valueFormats/Relation';
+import { Neo } from '@neo/Neo';
 
 describe( 'StatementList', () => {
 
@@ -111,7 +112,7 @@ describe( 'StatementList', () => {
 	} );
 
 	it( 'constructs from a property-value record correctly', () => {
-		const statementList = StatementList.fromJsonValues(
+		const statementList = Neo.getInstance().getSubjectDeserializer().deserializeStatements(
 			{
 				property1: {
 					value: 'value1',
@@ -132,7 +133,7 @@ describe( 'StatementList', () => {
 
 	it( 'throws an error when constructing from record with invalid property name', () => {
 
-		expect( () => StatementList.fromJsonValues(
+		expect( () => Neo.getInstance().getSubjectDeserializer().deserializeStatements(
 			{
 				'': {
 					value: 'value1',
@@ -148,7 +149,7 @@ describe( 'StatementList', () => {
 	} );
 
 	it( 'from JSON values', () => {
-		const statementList = StatementList.fromJsonValues(
+		const statementList = Neo.getInstance().getSubjectDeserializer().deserializeStatements(
 			{
 				p1: {
 					value: 'hello',
