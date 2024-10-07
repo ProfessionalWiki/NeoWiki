@@ -5,7 +5,6 @@ import { Statement } from '@neo/domain/Statement';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { RelationValue, type Value, valueToJson } from '@neo/domain/Value';
 import type { Subject } from '@neo/domain/Subject';
-import { Neo } from '@neo/Neo';
 
 export class StatementList implements Iterable<Statement> {
 
@@ -74,17 +73,6 @@ export class StatementList implements Iterable<Statement> {
 		}
 
 		return record;
-	}
-
-	// TODO: move into deserialization service
-	public static fromJsonValues( record: Record<string, unknown> ): StatementList {
-		return new StatementList(
-			Object.entries( record )
-				.map( ( [ key, statementJson ] ) => Neo.getInstance().getStatementDeserializer().deserialize(
-					key,
-					statementJson
-				) )
-		);
 	}
 
 	public async getReferencedSubjects( lookup: SubjectLookup ): Promise<SubjectMap> {
