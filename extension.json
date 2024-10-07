@@ -144,7 +144,8 @@
 			"class": "MediaWiki\\ResourceLoader\\CodexModule",
 			"dependencies": [
 				"vue",
-				"pinia"
+				"pinia",
+				"mediawiki.user"
 			],
 			"codexComponents": [
 				"CdxButton",
