@@ -1,10 +1,9 @@
 import type { SubjectLookup } from '@neo/domain/SubjectLookup';
 import { SubjectMap } from '@neo/domain/SubjectMap';
 import { SubjectId } from '@neo/domain/SubjectId';
-import { isJsonStatement, Statement } from '@neo/domain/Statement';
+import { Statement } from '@neo/domain/Statement';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { jsonToValue, RelationValue, type Value, valueToJson } from '@neo/domain/Value';
-import type { Schema } from '@neo/domain/Schema';
+import { RelationValue, type Value, valueToJson } from '@neo/domain/Value';
 import type { Subject } from '@neo/domain/Subject';
 import { Neo } from '@neo/Neo';
 
@@ -78,18 +77,12 @@ export class StatementList implements Iterable<Statement> {
 	}
 
 	// TODO: move into deserialization service
-	public static fromJsonValues( record: Record<string, unknown>, schema: Schema ): StatementList {
+	public static fromJsonValues( record: Record<string, unknown> ): StatementList {
 		return new StatementList(
 			Object.entries( record )
-				.map( ( [ key, statementJson ] ) => new Statement(
-					new PropertyName( key ),
-					schema.getPropertyDefinition( key ).format,
-					jsonToValue( // TODO: remove global access
-						isJsonStatement( statementJson ) ? statementJson.value : null,
-						Neo.getInstance().getValueFormatRegistry().getFormat(
-							schema.getPropertyDefinition( new PropertyName( key ) ).format
-						).getValueType()
-					)
+				.map( ( [ key, statementJson ] ) => Neo.getInstance().getStatementDeserializer().deserialize(
+					key,
+					statementJson
 				) )
 		);
 	}

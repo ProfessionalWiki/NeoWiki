@@ -13,7 +13,7 @@ export interface RelationProperty extends PropertyDefinition {
 
 export class RelationFormat extends BaseValueFormat<RelationProperty, RelationValue> {
 
-	public static readonly valueType = ValueType.String;
+	public static readonly valueType = ValueType.Relation;
 
 	public static readonly formatName = 'relation';
 

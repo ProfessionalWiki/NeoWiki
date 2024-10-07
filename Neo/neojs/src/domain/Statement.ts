@@ -1,5 +1,5 @@
-import type { PropertyName } from '@neo/domain/PropertyDefinition';
-import type { Value } from '@neo/domain/Value';
+import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { Value } from '@neo/domain/Value';
 
 export class Statement {
 
@@ -16,18 +16,3 @@ export class Statement {
 
 }
 
-// TODO: move somewhere else
-export interface StatementJson {
-
-	value: unknown;
-	format: string;
-
-}
-
-// TODO: move somewhere else
-export function isJsonStatement( json: unknown ): json is StatementJson {
-	return typeof json === 'object' &&
-		json !== null &&
-		'value' in json &&
-		'format' in json;
-}
