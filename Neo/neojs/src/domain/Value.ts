@@ -1,3 +1,6 @@
+import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
+import { Neo } from '@neo/Neo';
+
 export enum ValueType {
 
 	String = 'string',
@@ -51,56 +54,72 @@ export class Relation {
 
 export type Value = StringValue | NumberValue | BooleanValue | RelationValue;
 
-// Note: if we add type info as per ADR 11, then we should use that type info here.
-// TODO: even without ADR 11, we should probably use the types from the Schema here.
-export function jsonToValue( json: any, type: ValueType|undefined = undefined ): Value { // TODO: unit tests. Including tests that verify errors are caught
-	if ( Array.isArray( json ) ) {
-		if ( json.length === 0 ) {
-			if ( type === ValueType.String ) {
-				return newStringValue();
+export class ValueDeserializer {
+
+	public constructor(
+		private readonly registry: ValueFormatRegistry
+	) {}
+
+	// Note: if we add type info as per ADR 11, then we should use that type info here.
+	// TODO: even without ADR 11, we should probably use the types from the Schema here.
+	// TODO: unit tests. Including tests that verify errors are caught
+	public deserialize( json: any, type: ValueType|undefined = undefined ): Value {
+		if ( Array.isArray( json ) ) {
+			if ( json.length === 0 ) {
+				if ( type === ValueType.String ) {
+					return newStringValue();
+				}
+
+				if ( type === ValueType.Relation ) {
+					return new RelationValue( [] );
+				}
+
+				throw new Error( 'Invalid array value: ' + JSON.stringify( json ) );
 			}
 
-			if ( type === ValueType.Relation ) {
-				return new RelationValue( [] );
+			if ( typeof json[ 0 ] === 'string' ) {
+				return {
+					type: ValueType.String,
+					strings: json
+				} as StringValue;
 			}
 
-			throw new Error( 'Invalid array value: ' + JSON.stringify( json ) );
+			if ( typeof json[ 0 ] === 'object' && typeof json[ 0 ].target === 'string' ) {
+				return new RelationValue( json.map( ( relationJson: any ) => new Relation( relationJson.id, relationJson.target ) ) );
+			}
+
+			throw new Error( 'Invalid value array: ' + JSON.stringify( json ) );
 		}
 
-		if ( typeof json[ 0 ] === 'string' ) {
+		if ( typeof json === 'number' ) {
+			return newNumberValue( json );
+		}
+
+		if ( typeof json === 'boolean' ) {
+			return newBooleanValue( json );
+		}
+
+		if ( typeof json === 'string' ) {
 			return {
 				type: ValueType.String,
-				strings: json
+				strings: [ json ]
 			} as StringValue;
 		}
 
-		if ( typeof json[ 0 ] === 'object' && typeof json[ 0 ].target === 'string' ) {
-			return new RelationValue( json.map( ( relationJson: any ) => new Relation( relationJson.id, relationJson.target ) ) );
+		if ( typeof json === 'object' && typeof json.target === 'string' ) {
+			return new RelationValue( [ new Relation( json.id, json.target ) ] );
 		}
 
-		throw new Error( 'Invalid value array: ' + JSON.stringify( json ) );
+		throw new Error( 'Invalid value: ' + JSON.stringify( json ) );
 	}
 
-	if ( typeof json === 'number' ) {
-		return newNumberValue( json );
-	}
+}
 
-	if ( typeof json === 'boolean' ) {
-		return newBooleanValue( json );
-	}
-
-	if ( typeof json === 'string' ) {
-		return {
-			type: ValueType.String,
-			strings: [ json ]
-		} as StringValue;
-	}
-
-	if ( typeof json === 'object' && typeof json.target === 'string' ) {
-		return new RelationValue( [ new Relation( json.id, json.target ) ] );
-	}
-
-	throw new Error( 'Invalid value: ' + JSON.stringify( json ) );
+/**
+ * @deprecated Use {@link ValueDeserializer} instead.
+ */
+export function jsonToValue( json: any, type: ValueType|undefined = undefined ): Value {
+	return Neo.getInstance().getValueDeserializer().deserialize( json, type );
 }
 
 export function newStringValue( ...strings: string[] | [ string[] ] ): StringValue {
