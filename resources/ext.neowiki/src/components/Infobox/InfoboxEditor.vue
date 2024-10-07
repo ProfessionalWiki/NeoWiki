@@ -68,7 +68,7 @@
 				class="neo-button"
 				action="progressive"
 				weight="primary"
-				@click="submit">
+				@click="async () => await submit()">
 				{{ $i18n( 'neowiki-infobox-editor-save-button' ).text() }}
 			</CdxButton>
 		</template>
@@ -258,7 +258,7 @@ const goBack = (): void => {
 	isOpen.value = false;
 };
 
-const submit = (): void => {
+const submit = async (): Promise<void> => {
 	if ( localSubject.value ) {
 		const properStatements = statements.value.map( ( stmt ) => {
 			console.log( 'Statement:', stmt );
@@ -284,7 +284,7 @@ const submit = (): void => {
 			localSchema.value.getPropertyDefinitions()
 		);
 
-		schemaStore.setSchema( updatedSchema.getName(), updatedSchema );
+		await schemaStore.saveSchema( updatedSchema );
 	}
 	emit( 'save', localSubject.value );
 	isOpen.value = false;
