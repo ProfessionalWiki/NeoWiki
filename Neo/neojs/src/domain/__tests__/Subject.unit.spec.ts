@@ -1,12 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { newSchema, newSubject, DEFAULT_SUBJECT_ID } from '@neo/TestHelpers';
+import { DEFAULT_SUBJECT_ID, newSubject } from '@neo/TestHelpers';
 import { SubjectMap } from '@neo/domain/SubjectMap';
 import { InMemorySubjectLookup } from '@neo/domain/SubjectLookup';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
 import { StatementList } from '@neo/domain/StatementList';
-import { PropertyDefinitionList } from '../PropertyDefinitionList';
-import { createPropertyDefinitionFromJson } from '../PropertyDefinition';
-import { ValueType } from '../Value';
 import { TextFormat } from '../valueFormats/Text';
 import { RelationFormat } from '../valueFormats/Relation';
 
@@ -69,39 +66,7 @@ describe( 'Subject', () => {
 							value: [ 'bar' ],
 							format: TextFormat.formatName
 						}
-					},
-					newSchema( {
-						properties: new PropertyDefinitionList( [
-							createPropertyDefinitionFromJson(
-								'Property1',
-								{
-									type: ValueType.String,
-									format: TextFormat.formatName
-								}
-							),
-							createPropertyDefinitionFromJson(
-								'Property2',
-								{
-									type: ValueType.Relation,
-									format: RelationFormat.formatName
-								}
-							),
-							createPropertyDefinitionFromJson(
-								'Property3',
-								{
-									type: ValueType.String,
-									format: RelationFormat.formatName
-								}
-							),
-							createPropertyDefinitionFromJson(
-								'Property4',
-								{
-									type: ValueType.String,
-									format: TextFormat.formatName
-								}
-							)
-						] )
-					} )
+					}
 				)
 			} );
 
@@ -134,39 +99,7 @@ describe( 'Subject', () => {
 							value: [ 'bar' ],
 							format: TextFormat.formatName
 						}
-					},
-					newSchema( {
-						properties: new PropertyDefinitionList( [
-							createPropertyDefinitionFromJson(
-								'Property1',
-								{
-									type: ValueType.String,
-									format: TextFormat.formatName
-								}
-							),
-							createPropertyDefinitionFromJson(
-								'Property2',
-								{
-									type: ValueType.Relation,
-									format: RelationFormat.formatName
-								}
-							),
-							createPropertyDefinitionFromJson(
-								'Property3',
-								{
-									type: ValueType.String,
-									format: RelationFormat.formatName
-								}
-							),
-							createPropertyDefinitionFromJson(
-								'Property4',
-								{
-									type: ValueType.String,
-									format: TextFormat.formatName
-								}
-							)
-						] )
-					} )
+					}
 				)
 			} );
 

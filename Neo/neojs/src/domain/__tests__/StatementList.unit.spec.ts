@@ -3,12 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { StatementList, statementsToJson } from '@neo/domain/StatementList';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { Relation, RelationValue, newStringValue, newNumberValue } from '../Value';
-import { PropertyDefinitionList } from '../PropertyDefinitionList';
-import { newTextProperty, TextFormat } from '../valueFormats/Text';
-import { newNumberProperty, NumberFormat } from '../valueFormats/Number';
+import { newNumberValue, newStringValue, Relation, RelationValue } from '../Value';
+import { TextFormat } from '../valueFormats/Text';
+import { NumberFormat } from '../valueFormats/Number';
 import { RelationFormat } from '../valueFormats/Relation';
-import { newSchema } from '@neo/TestHelpers';
 
 describe( 'StatementList', () => {
 
@@ -123,13 +121,7 @@ describe( 'StatementList', () => {
 					value: 'value2',
 					format: TextFormat.formatName
 				}
-			},
-			newSchema( {
-				properties: new PropertyDefinitionList( [
-					newTextProperty( 'property1' ),
-					newTextProperty( 'property2' )
-				] )
-			} )
+			}
 		);
 
 		expect( statementList.get( new PropertyName( 'property1' ) ) )
@@ -150,8 +142,7 @@ describe( 'StatementList', () => {
 					value: 'value2',
 					format: TextFormat.formatName
 				}
-			},
-			newSchema()
+			}
 		) )
 			.toThrow( 'Invalid PropertyName' );
 	} );
@@ -171,14 +162,7 @@ describe( 'StatementList', () => {
 					value: [ 'foo', 'bar' ],
 					format: TextFormat.formatName
 				}
-			},
-			newSchema( {
-				properties: new PropertyDefinitionList( [
-					newTextProperty( 'p1' ),
-					newNumberProperty( 'p2' ),
-					newTextProperty( 'p3' )
-				] )
-			} )
+			}
 		);
 
 		expect( statementList ).toStrictEqual( new StatementList( [

@@ -63,6 +63,7 @@ module.exports = {
 	overrides: [
 		{
 			files: [
+				'src/persistence/**/*.ts',
 				'src/domain/valueFormats/**/*.ts',
 				'src/domain/PropertyDefinition.ts',
 				'src/domain/StatementList.ts',
