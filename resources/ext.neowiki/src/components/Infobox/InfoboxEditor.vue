@@ -94,6 +94,7 @@ import { useSchemaStore } from '@/stores/SchemaStore';
 import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefinitionEditor.vue';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
 
 const props = defineProps<{
 	selectedSchema?: string;
@@ -107,6 +108,7 @@ const localSubject = ref<Subject | null>( null );
 const localSchema = ref<Schema | null>( null );
 const statements = ref<Statement[]>( [] );
 const schemaStore = useSchemaStore();
+const subjectStore = useSubjectStore();
 const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const editingProperty = ref<PropertyDefinition | null>( null );
 const selectedSchema = computed( () => props.selectedSchema );
@@ -284,6 +286,15 @@ const goBack = (): void => {
 };
 
 const submit = async (): Promise<void> => {
+	if ( localSchema.value !== null ) {
+		const updatedSchema = new Schema(
+			localSchema.value.getName(),
+			localSchema.value.getDescription(),
+			localSchema.value.getPropertyDefinitions()
+		);
+
+		await schemaStore.saveSchema( updatedSchema );
+	}
 	if ( localSubject.value ) {
 		const properStatements = statements.value.map( ( stmt ) => {
 			console.log( 'Statement:', stmt );
@@ -301,16 +312,11 @@ const submit = async (): Promise<void> => {
 			new StatementList( properStatements ),
 			localSubject.value.getPageIdentifiers()
 		);
-	}
-	if ( localSchema.value !== null ) {
-		const updatedSchema = new Schema(
-			localSchema.value.getName(),
-			localSchema.value.getDescription(),
-			localSchema.value.getPropertyDefinitions()
-		);
 
-		await schemaStore.saveSchema( updatedSchema );
+		// TODO: handle new subject creation.
+		await subjectStore.updateSubject( localSubject.value as Subject );
 	}
+
 	emit( 'save', localSubject.value );
 	isOpen.value = false;
 };
