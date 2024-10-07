@@ -1,10 +1,8 @@
 import type { SubjectRepository } from '@neo/domain/SubjectRepository';
 import { SubjectId } from '@neo/domain/SubjectId';
-import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
+import type { SubjectDeserializer } from '@neo/persistence/SubjectDeserializer';
 import { StatementList, statementsToJson } from '@neo/domain/StatementList';
-import type { SchemaLookup } from '@/application/SchemaLookup';
-import { Schema, type SchemaName } from '@neo/domain/Schema';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
+import { type SchemaName } from '@neo/domain/Schema';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { Subject } from '@neo/domain/Subject';
 
@@ -20,10 +18,10 @@ export type SubjectJson = {
 };
 
 export class RestSubjectRepository implements SubjectRepository {
+
 	public constructor(
 		private readonly mediaWikiRestApiUrl: string,
 		private readonly httpClient: HttpClient,
-		private readonly schemaLookup: SchemaLookup,
 		private readonly subjectDeserializer: SubjectDeserializer
 	) {
 	}
@@ -46,14 +44,6 @@ export class RestSubjectRepository implements SubjectRepository {
 		const subjectData = data.subjects[ data.requestedId ];
 
 		return this.subjectDeserializer.deserialize( subjectData );
-	}
-
-	private async getSchema( schemaName: string ): Promise<Schema> {
-		try {
-			return this.schemaLookup.getSchema( schemaName );
-		} catch ( _error ) {
-			return new Schema( schemaName, '', new PropertyDefinitionList( [] ) );
-		}
 	}
 
 	public async createMainSubject(

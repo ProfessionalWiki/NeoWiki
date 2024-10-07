@@ -20,11 +20,12 @@ import { RightsBasedSchemaAuthorizer } from '@/persistence/RightsBasedSchemaAuth
 import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
 import { SubjectRepository } from '@neo/domain/SubjectRepository.ts';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
-import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import TextInput from '@/components/Value/TextInput.vue';
 import UrlInput from '@/components/Value/UrlInput.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
+import { SubjectDeserializer } from '@neo/persistence/SubjectDeserializer.ts';
+import { Neo } from '@neo/Neo.ts';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -89,8 +90,15 @@ export class NeoWikiExtension {
 		return new RestSubjectRepository(
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
-			this.getSchemaRepository(),
-			new SubjectDeserializer( this.getSchemaRepository() )
+			this.getSubjectDeserializer()
 		);
+	}
+
+	public getSubjectDeserializer(): SubjectDeserializer {
+		return this.getNeo().getSubjectDeserializer();
+	}
+
+	private getNeo(): Neo {
+		return Neo.getInstance();
 	}
 }
