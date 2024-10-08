@@ -46,7 +46,7 @@ const onSubjectTypeSelected = ( type: string ): void => {
 	}
 
 	selectedSchema.value = type;
-	infoboxEditorDialog.value?.openDialog();
+	infoboxEditorDialog.value.openDialog();
 };
 
 const onCreationComplete = (): void => {
