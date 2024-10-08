@@ -8,6 +8,7 @@ import { newTextProperty } from '@neo/domain/valueFormats/Text';
 import { ComponentPublicInstance, DefineComponent } from 'vue';
 import { Service } from '../../../src/NeoWikiServices';
 import { NeoWikiExtension } from '../../../src/NeoWikiExtension';
+import { newStringValue, newNumberValue } from '@neo/domain/Value';
 
 type PropertyDefinitionEditorProps = {
 	property: PropertyDefinition | null;
@@ -78,11 +79,11 @@ describe( 'PropertyDefinitionEditor', () => {
 	it( 'emits save event with updated default property', async () => {
 		const property = newTextProperty();
 		const wrapper = createWrapper( { property, editMode: true } );
-		await wrapper.vm.updateForm( 'default', 'new default value' );
+		await wrapper.vm.updateForm( 'default', newStringValue( 'new default value' ) );
 		await wrapper.vm.save();
 		expect( wrapper.emitted( 'save' )?.[ 0 ][ 0 ] ).toEqual( {
 			...property,
-			default: 'new default value'
+			default: newStringValue( 'new default value' )
 		} );
 	} );
 
@@ -92,14 +93,14 @@ describe( 'PropertyDefinitionEditor', () => {
 		await wrapper.vm.updateForm( 'name', 'newName' );
 		await wrapper.vm.updateForm( 'format', 'number' );
 		await wrapper.vm.updateForm( 'required', true );
-		await wrapper.vm.updateForm( 'default', 42 );
+		await wrapper.vm.updateForm( 'default', newNumberValue( 42 ) );
 		await wrapper.vm.updateForm( 'description', 'New description' );
 
 		expect( wrapper.vm.localProperty ).toEqual( {
 			name: new PropertyName( 'newName' ),
 			format: 'number',
 			required: true,
-			default: 42,
+			default: newNumberValue( 42 ),
 			description: 'New description',
 			multiple: false,
 			uniqueItems: true
@@ -120,7 +121,7 @@ describe( 'PropertyDefinitionEditor', () => {
 			name: new PropertyName( 'testProperty' ),
 			format: 'text',
 			required: false,
-			default: '',
+			default: newStringValue( '' ),
 			description: ''
 		};
 		const editWrapper = createWrapper( { property, editMode: true } );
