@@ -28,7 +28,7 @@ export class SchemaSerializer {
 		const { name, ...propertyWithoutName } = property;
 		return {
 			...propertyWithoutName,
-			default: property.default ? valueToJson( property.default ) : undefined
+			default: property.default !== undefined ? valueToJson( property.default ) : undefined
 		};
 	}
 }
