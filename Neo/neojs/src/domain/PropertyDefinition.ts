@@ -1,5 +1,7 @@
 import { Neo } from '@neo/Neo';
 import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
+import { Value } from '@neo/domain/Value';
+import { ValueDeserializer } from '@neo/persistence/ValueDeserializer';
 
 export class PropertyName {
 
@@ -24,7 +26,7 @@ export interface PropertyDefinition {
 	readonly format: string;
 	readonly description: string;
 	readonly required: boolean;
-	readonly default?: unknown;
+	readonly default?: Value;
 
 }
 
@@ -45,7 +47,8 @@ export function createPropertyDefinitionFromJson( id: string, json: any ): Prope
 export class PropertyDefinitionDeserializer {
 
 	public constructor(
-		private readonly registry: ValueFormatRegistry
+		private readonly registry: ValueFormatRegistry,
+		private readonly valueDeserializer: ValueDeserializer
 	) {}
 
 	public propertyDefinitionFromJson( name: string | PropertyName, json: any ): PropertyDefinition {
@@ -56,7 +59,7 @@ export class PropertyDefinitionDeserializer {
 				format: json.format as string,
 				description: json.description ?? '',
 				required: json.required ?? false,
-				default: json.default
+				default: json.default ? this.valueDeserializer.deserialize( json.default, json.format ) : undefined
 			} as PropertyDefinition,
 			json
 		);
