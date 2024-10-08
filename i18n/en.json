@@ -32,6 +32,7 @@
 	"neowiki-infobox-editor-delete-property": "Delete Property",
 	"neowiki-infobox-editor-save-property": "Save Property",
 	"neowiki-infobox-editor-value-label": "Value",
+	"neowiki-infobox-editor-default-value-label": "Default value",
 	"neowiki-infobox-editor-remove-statement": "Remove",
 	"neowiki-infobox-editor-add-statement": "Add statement",
 	"neowiki-infobox-editor-create-button": "Create",
