@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconArrowPrevious, cdxIconLink } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
@@ -109,9 +109,10 @@ const statements = ref<Statement[]>( [] );
 const schemaStore = useSchemaStore();
 const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const editingProperty = ref<PropertyDefinition | null>( null );
+const selectedSchema = computed( () => props.selectedSchema );
 
 const addMissingStatements = (): void => {
-	if ( props.subject !== undefined && localSchema.value !== null ) {
+	if ( localSubject.value !== undefined && localSchema.value !== null ) {
 		const existingPropertyNames = new Set( statements.value.map( ( stmt ) => stmt.propertyName.toString() ) );
 
 		const missingStatements = Array.from( localSchema.value.getPropertyDefinitions() )
@@ -126,29 +127,53 @@ const addMissingStatements = (): void => {
 	}
 };
 
-const openDialog = (): void => {
+const openDialog = async (): Promise<void> => {
+	await nextTick();
+
 	isOpen.value = true;
 	if ( props.subject !== undefined ) {
-		localSchema.value = schemaStore.getSchema( props.subject.getSchemaName() );
-		localSubject.value = new Subject(
-			props.subject.getId(),
-			props.subject.getLabel(),
-			props.subject.getSchemaName(),
-			props.subject.getStatements(),
-			props.subject.getPageIdentifiers()
-		);
-		statements.value = [ ...props.subject.getStatements() ];
-		addMissingStatements();
+		setupExistingSubject( props.subject );
+	} else if ( selectedSchema.value !== undefined ) {
+		setupNewSubject( selectedSchema.value );
 	} else {
-		localSubject.value = new Subject(
-			new SubjectId( 'stodotodotodo42' ),
-			'',
-			props.selectedSchema as SchemaName,
-			new StatementList( [] ),
-			new PageIdentifiers( 1, 'page-title' )
-		);
-		statements.value = [];
+		throw new Error( 'No subject and no schema' );
 	}
+};
+
+const setupExistingSubject = ( subject: Subject ): void => {
+	localSchema.value = schemaStore.getSchema( subject.getSchemaName() );
+	localSubject.value = new Subject(
+		subject.getId(),
+		subject.getLabel(),
+		subject.getSchemaName(),
+		subject.getStatements(),
+		subject.getPageIdentifiers()
+	);
+	statements.value = [ ...subject.getStatements() ];
+	addMissingStatements();
+};
+
+const setupNewSubject = ( schemaName: string ): void => {
+	if ( schemaName === '' ) {
+		// TODO: handle new Schema creation
+		localSchema.value = new Schema(
+			'TodoTodoTodo' as SchemaName,
+			'',
+			new PropertyDefinitionList( [] )
+		);
+	} else {
+		localSchema.value = schemaStore.getSchema( schemaName );
+	}
+
+	localSubject.value = new Subject(
+		new SubjectId( 'stodotodotodo42' ),
+		'',
+		schemaName as SchemaName,
+		new StatementList( [] ),
+		new PageIdentifiers( 1, 'page-title' )
+	);
+	statements.value = [];
+	addMissingStatements();
 };
 
 const isDropdownOpen = ref( false );
@@ -209,7 +234,7 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 };
 
 const handleAddProperty = ( savedProperty: PropertyDefinition ): void => {
-	if ( props.subject !== undefined && localSchema.value !== null ) {
+	if ( localSubject.value !== undefined && localSchema.value !== null ) {
 		const updatedProperties = [ ...localSchema.value.getPropertyDefinitions(), savedProperty ];
 
 		const newPropertyList = new PropertyDefinitionList( updatedProperties );
