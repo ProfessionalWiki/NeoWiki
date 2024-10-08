@@ -32,7 +32,7 @@ export function newTextProperty( name = 'MyTextProperty', multiple = false, form
 		format: format,
 		description: '',
 		required: false,
-		default: '',
+		default: newStringValue( '' ),
 		multiple: multiple,
 		uniqueItems: true
 	};

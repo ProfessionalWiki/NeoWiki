@@ -29,7 +29,7 @@ export class Neo {
 	}
 
 	public getPropertyDefinitionDeserializer(): PropertyDefinitionDeserializer {
-		return new PropertyDefinitionDeserializer( this.getValueFormatRegistry() );
+		return new PropertyDefinitionDeserializer( this.getValueFormatRegistry(), this.getValueDeserializer() );
 	}
 
 	public getValueDeserializer(): ValueDeserializer {

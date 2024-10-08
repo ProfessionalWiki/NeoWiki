@@ -44,7 +44,7 @@ export function newRelationProperty( name: string, targetSchema?: string, multip
 		format: RelationFormat.formatName,
 		description: '',
 		required: false,
-		default: '',
+		default: undefined,
 		relation: 'MyRelation',
 		targetSchema: targetSchema ?? 'MyTargetSchema',
 		multiple: multiple ?? false

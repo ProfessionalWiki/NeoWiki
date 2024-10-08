@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { PropertyDefinitionDeserializer } from '@neo/domain/PropertyDefinition';
-import { ValueType } from '../Value';
+import { newStringValue } from '../Value';
 import type { TextProperty } from '../valueFormats/Text';
 import { TextFormat } from '../valueFormats/Text';
 import type { NumberProperty } from '../valueFormats/Number';
@@ -9,7 +9,7 @@ import type { RelationProperty } from '../valueFormats/Relation';
 import { RelationFormat } from '../valueFormats/Relation';
 import { Neo } from '@neo/Neo';
 
-const serializer = new PropertyDefinitionDeserializer( Neo.getInstance().getValueFormatRegistry() );
+const serializer = new PropertyDefinitionDeserializer( Neo.getInstance().getValueFormatRegistry(), Neo.getInstance().getValueDeserializer() );
 
 it( 'creates a property definition with defaults omitted', () => {
 	const json = {
@@ -141,5 +141,17 @@ it( 'creates definitions with default value', () => {
 		}
 	);
 
-	expect( property.default ).toBe( 'foo' );
+	expect( property.default ).toEqual( newStringValue( 'foo' ) );
+} );
+
+it( 'creates definitions with explicitly undefined default value', () => {
+	const property = serializer.propertyDefinitionFromJson(
+		'test',
+		{
+			format: 'text',
+			default: undefined
+		}
+	);
+
+	expect( property.default ).toBeUndefined();
 } );
