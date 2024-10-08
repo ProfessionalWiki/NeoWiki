@@ -1,6 +1,7 @@
 import { Schema } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import { valueToJson } from '@neo/domain/Value';
 
 export class SchemaSerializer {
 
@@ -25,6 +26,9 @@ export class SchemaSerializer {
 
 	private serializePropertyDefinition( property: PropertyDefinition ): any {
 		const { name, ...propertyWithoutName } = property;
-		return propertyWithoutName;
+		return {
+			...propertyWithoutName,
+			default: property.default ? valueToJson( property.default ) : undefined
+		};
 	}
 }
