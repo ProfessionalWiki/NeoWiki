@@ -1,11 +1,11 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect } from 'vitest';
-import TextValue from '@/components/AutomaticInfobox/Values/TextValue.vue';
+import TextDisplay from '@/components/Value/TextDisplay.vue';
 import { newNumberValue, newStringValue } from '@neo/domain/Value';
 
 describe( 'TextValue', () => {
 	it( 'renders a single text value correctly', () => {
-		const wrapper = mount( TextValue, {
+		const wrapper = mount( TextDisplay, {
 			props: {
 				value: newStringValue( 'John Doe' )
 			}
@@ -15,7 +15,7 @@ describe( 'TextValue', () => {
 	} );
 
 	it( 'renders multiple text values correctly', () => {
-		const wrapper = mount( TextValue, {
+		const wrapper = mount( TextDisplay, {
 			props: {
 				value: newStringValue( 'John Doe', 'Johnny' )
 			}
@@ -26,7 +26,7 @@ describe( 'TextValue', () => {
 
 	it( 'renders nothing when a single empty value is present', () => {
 
-		const wrapper = mount( TextValue, {
+		const wrapper = mount( TextDisplay, {
 			props: {
 				value: newStringValue( '' )
 			}
@@ -36,7 +36,7 @@ describe( 'TextValue', () => {
 	} );
 
 	it( 'skips empty values when rendering multiple values', () => {
-		const wrapper = mount( TextValue, {
+		const wrapper = mount( TextDisplay, {
 			props: {
 				value: newStringValue( 'John', '', 'Doe', '', 'Johnny' )
 			}
@@ -46,7 +46,7 @@ describe( 'TextValue', () => {
 	} );
 
 	it( 'renders nothing when all values are empty', () => {
-		const wrapper = mount( TextValue, {
+		const wrapper = mount( TextDisplay, {
 			props: {
 				value: newStringValue( '', '', '' )
 			}
@@ -56,7 +56,7 @@ describe( 'TextValue', () => {
 	} );
 
 	it( 'returns empty string for wrong value type', () => {
-		const wrapper = mount( TextValue, {
+		const wrapper = mount( TextDisplay, {
 			props: {
 				value: newNumberValue( 42 )
 			}

@@ -2,14 +2,14 @@ import { RightsBasedSubjectAuthorizer } from '@/persistence/RightsBasedSubjectAu
 import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
 import { RightsFetcher, UserObjectBasedRightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher.ts';
 import { TextFormat } from '@neo/domain/valueFormats/Text.ts';
-import TextValue from '@/components/AutomaticInfobox/Values/TextValue.vue';
+import TextDisplay from '@/components/Value/TextDisplay.vue';
 import { UrlFormat } from '@neo/domain/valueFormats/Url.ts';
-import UrlValue from '@/components/AutomaticInfobox/Values/UrlValue.vue';
+import UrlDisplay from '@/components/Value/UrlDisplay.vue';
 import { NumberFormat } from '@neo/domain/valueFormats/Number.ts';
-import NumberValue from '@/components/AutomaticInfobox/Values/NumberValue.vue';
+import NumberDisplay from '@/components/Value/NumberDisplay.vue';
 import { RelationFormat } from '@neo/domain/valueFormats/Relation.ts';
 import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
-import RelationValue from '@/components/AutomaticInfobox/Values/RelationValue.vue';
+import RelationDisplay from '@/components/Value/RelationDisplay.vue';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
 import { RestSchemaRepository } from '@/persistence/RestSchemaRepository.ts';
@@ -40,10 +40,10 @@ export class NeoWikiExtension {
 	public getFormatSpecificComponentRegistry(): FormatSpecificComponentRegistry {
 		const registry = new FormatSpecificComponentRegistry();
 
-		registry.registerComponents( TextFormat.formatName, TextValue, TextInput );
-		registry.registerComponents( UrlFormat.formatName, UrlValue, UrlInput );
-		registry.registerComponents( NumberFormat.formatName, NumberValue, NumberInput );
-		registry.registerComponents( RelationFormat.formatName, RelationValue, TextInput ); // TODO
+		registry.registerComponents( TextFormat.formatName, TextDisplay, TextInput );
+		registry.registerComponents( UrlFormat.formatName, UrlDisplay, UrlInput );
+		registry.registerComponents( NumberFormat.formatName, NumberDisplay, NumberInput );
+		registry.registerComponents( RelationFormat.formatName, RelationDisplay, TextInput ); // TODO
 
 		return registry;
 	}
