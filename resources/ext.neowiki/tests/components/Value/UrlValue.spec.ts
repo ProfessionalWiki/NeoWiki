@@ -1,11 +1,11 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect } from 'vitest';
-import UrlValue from '@/components/AutomaticInfobox/Values/UrlValue.vue';
+import UrlDisplay from '@/components/Value/UrlDisplay.vue';
 import { newNumberValue, newStringValue } from '@neo/domain/Value';
 
 describe( 'UrlValue', () => {
 	it( 'renders a single URL correctly', () => {
-		const wrapper = mount( UrlValue, {
+		const wrapper = mount( UrlDisplay, {
 			props: {
 				value: newStringValue( 'https://example.com' )
 			}
@@ -18,7 +18,7 @@ describe( 'UrlValue', () => {
 
 	it( 'renders multiple URLs correctly', () => {
 
-		const wrapper = mount( UrlValue, {
+		const wrapper = mount( UrlDisplay, {
 			props: {
 				value: newStringValue( 'https://foo.com/example', 'https://bar.com/example' )
 			}
@@ -33,7 +33,7 @@ describe( 'UrlValue', () => {
 	} );
 
 	it( 'renders nothing when a single empty URL is present', () => {
-		const wrapper = mount( UrlValue, {
+		const wrapper = mount( UrlDisplay, {
 			props: {
 				value: newStringValue( '' )
 			}
@@ -43,7 +43,7 @@ describe( 'UrlValue', () => {
 	} );
 
 	it( 'skips empty URLs when rendering multiple URLs', () => {
-		const wrapper = mount( UrlValue, {
+		const wrapper = mount( UrlDisplay, {
 			props: {
 				value: newStringValue( 'https://foo.com/example', '', 'https://bar.com/example', '  ' )
 			}
@@ -56,7 +56,7 @@ describe( 'UrlValue', () => {
 	} );
 
 	it( 'renders nothing when all URLs are empty', () => {
-		const wrapper = mount( UrlValue, {
+		const wrapper = mount( UrlDisplay, {
 			props: {
 				value: newStringValue( '', '  ', '' )
 			}
@@ -66,7 +66,7 @@ describe( 'UrlValue', () => {
 	} );
 
 	it( 'returns no links for wrong value type', () => {
-		const wrapper = mount( UrlValue, {
+		const wrapper = mount( UrlDisplay, {
 			props: {
 				value: newNumberValue( 42 )
 			}

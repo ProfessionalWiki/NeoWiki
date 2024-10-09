@@ -1,12 +1,12 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect } from 'vitest';
-import NumberValue from '@/components/AutomaticInfobox/Values/NumberValue.vue';
+import NumberDisplay from '@/components/Value/NumberDisplay.vue';
 import { newNumberValue, newStringValue } from '@neo/domain/Value';
 import { NumberProperty } from '@neo/domain/valueFormats/Number';
 
 describe( 'NumberValue', () => {
 	it( 'handles integers without precision', () => {
-		const wrapper = mount( NumberValue, {
+		const wrapper = mount( NumberDisplay, {
 			props: {
 				value: newNumberValue( 30 ),
 				property: {} as NumberProperty
@@ -17,7 +17,7 @@ describe( 'NumberValue', () => {
 	} );
 
 	it( 'handles decimal numbers without precision', () => {
-		const wrapper = mount( NumberValue, {
+		const wrapper = mount( NumberDisplay, {
 			props: {
 				value: newNumberValue( 19.99 ),
 				property: {} as NumberProperty
@@ -28,7 +28,7 @@ describe( 'NumberValue', () => {
 	} );
 
 	it( 'handles negative numbers without precision', () => {
-		const wrapper = mount( NumberValue, {
+		const wrapper = mount( NumberDisplay, {
 			props: {
 				value: newNumberValue( -5 ),
 				property: {} as NumberProperty
@@ -39,7 +39,7 @@ describe( 'NumberValue', () => {
 	} );
 
 	it( 'applies precision when specified', () => {
-		const wrapper = mount( NumberValue, {
+		const wrapper = mount( NumberDisplay, {
 			props: {
 				value: newNumberValue( 3.14159 ),
 				property: { precision: 2 } as NumberProperty
@@ -50,7 +50,7 @@ describe( 'NumberValue', () => {
 	} );
 
 	it( 'handles zero precision', () => {
-		const wrapper = mount( NumberValue, {
+		const wrapper = mount( NumberDisplay, {
 			props: {
 				value: newNumberValue( 3.14159 ),
 				property: { precision: 0 } as NumberProperty
@@ -61,7 +61,7 @@ describe( 'NumberValue', () => {
 	} );
 
 	it( 'handles high precision', () => {
-		const wrapper = mount( NumberValue, {
+		const wrapper = mount( NumberDisplay, {
 			props: {
 				value: newNumberValue( 3.14 ),
 				property: { precision: 5 } as NumberProperty
@@ -72,7 +72,7 @@ describe( 'NumberValue', () => {
 	} );
 
 	it( 'returns empty string for wrong value type', () => {
-		const wrapper = mount( NumberValue, {
+		const wrapper = mount( NumberDisplay, {
 			props: {
 				value: newStringValue( 'not a number' ),
 				property: {} as NumberProperty
