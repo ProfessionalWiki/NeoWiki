@@ -1,6 +1,6 @@
 import { mount, VueWrapper } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefinitionEditor.vue';
+import PropertyDefinitionEditor from '@/components/Editor/PropertyDefinitionEditor.vue';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 import { CdxDialog } from '@wikimedia/codex';
 import NeoTextField from '@/components/NeoTextField.vue';
