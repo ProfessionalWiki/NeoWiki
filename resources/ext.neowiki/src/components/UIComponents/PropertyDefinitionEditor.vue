@@ -73,7 +73,7 @@
 <script setup lang="ts">
 import { PropType, ref, watch } from 'vue';
 import { CdxDialog, CdxButton, CdxSelect, CdxCheckbox } from '@wikimedia/codex';
-import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
+import NeoTextField from '@/components/NeoTextField.vue';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 

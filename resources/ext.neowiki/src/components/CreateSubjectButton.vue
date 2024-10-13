@@ -23,7 +23,7 @@
 import { ref } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
-import CreateSubjectDialog from '@/components/CreateSubject/CreateSubjectDialog.vue';
+import CreateSubjectDialog from '@/components/CreateSubjectDialog.vue';
 import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
 
 const createSubjectDialog = ref<typeof CreateSubjectDialog|null>( null );

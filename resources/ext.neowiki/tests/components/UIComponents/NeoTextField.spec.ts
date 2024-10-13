@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CdxField } from '@wikimedia/codex';
-import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
+import NeoTextField from '@/components/NeoTextField.vue';
 
 describe( 'NeoTextField', () => {
 	beforeEach( () => {
