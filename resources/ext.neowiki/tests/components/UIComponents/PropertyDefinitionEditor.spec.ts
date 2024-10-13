@@ -3,11 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import PropertyDefinitionEditor from '@/components/UIComponents/PropertyDefinitionEditor.vue';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 import { CdxDialog } from '@wikimedia/codex';
-import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
+import NeoTextField from '@/components/NeoTextField.vue';
 import { newTextProperty } from '@neo/domain/valueFormats/Text';
 import { ComponentPublicInstance, DefineComponent } from 'vue';
-import { Service } from '../../../src/NeoWikiServices';
-import { NeoWikiExtension } from '../../../src/NeoWikiExtension';
+import { Service } from '@/NeoWikiServices';
+import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { newStringValue, newNumberValue } from '@neo/domain/Value';
 
 type PropertyDefinitionEditorProps = {

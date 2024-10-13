@@ -79,7 +79,7 @@
 import { computed, nextTick, ref } from 'vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconArrowPrevious, cdxIconLink } from '@wikimedia/codex-icons';
-import NeoTextField from '@/components/UIComponents/NeoTextField.vue';
+import NeoTextField from '@/components/NeoTextField.vue';
 import StatementEditor from '@/components/UIComponents/StatementEditor.vue';
 import { Subject } from '@neo/domain/Subject.ts';
 import { SubjectId } from '@neo/domain/SubjectId';

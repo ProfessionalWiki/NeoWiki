@@ -1,6 +1,6 @@
 import { mount, VueWrapper } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import AutomaticInfobox from '@/components/AutomaticInfobox/AutomaticInfobox.vue';
+import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
 import { Subject } from '@neo/domain/Subject';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { StatementList } from '@neo/domain/StatementList';
