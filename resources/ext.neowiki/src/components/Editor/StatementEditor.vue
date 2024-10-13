@@ -27,7 +27,7 @@
 import { ref, watch } from 'vue';
 import { Statement } from '@neo/domain/Statement';
 import { Value } from '@neo/domain/Value';
-import PropertyNameField from '@/components/UIComponents/PropertyNameField.vue';
+import PropertyNameField from '@/components/Editor/PropertyNameField.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { PropertyName } from '@neo/domain/PropertyDefinition.ts';
 

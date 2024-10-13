@@ -58,7 +58,7 @@ import { Subject } from '@neo/domain/Subject';
 import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
 import { Schema } from '@neo/domain/Schema';
 import { Component } from 'vue';
-import InfoboxEditor from '@/components/Infobox/InfoboxEditor.vue';
+import InfoboxEditor from '@/components/Editor/InfoboxEditor.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { CdxButton } from '@wikimedia/codex';
