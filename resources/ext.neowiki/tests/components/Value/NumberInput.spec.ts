@@ -1,8 +1,19 @@
-import { mount } from '@vue/test-utils';
+import { mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CdxField } from '@wikimedia/codex';
-import { newNumberValue } from '@neo/domain/Value';
+import { newNumberValue, Value } from '@neo/domain/Value';
 import NumberInput from '@/components/Value/NumberInput.vue';
+import { newNumberProperty, NumberProperty } from '@neo/domain/valueFormats/Number';
+import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
+
+// TODO: move to sane place
+export interface InputComponentProps<T extends PropertyDefinition = PropertyDefinition> {
+	modelValue: Value;
+	label: string;
+	property: T;
+}
+
+type NumberInputProps = InputComponentProps<NumberProperty>;
 
 describe( 'NumberInput', () => {
 	beforeEach( () => {
@@ -14,107 +25,71 @@ describe( 'NumberInput', () => {
 		} );
 	} );
 
-	it( 'renders correctly', () => {
-		const wrapper = mount( NumberInput, {
+	function newWrapper( props: Partial<NumberInputProps> = {} ): VueWrapper {
+		return mount( NumberInput, {
 			props: {
-				required: true,
-				minValue: 2,
-				maxValue: 50,
+				modelValue: newNumberValue( 10 ),
 				label: 'Test Label',
-				modelValue: newNumberValue( 10 )
+				property: newNumberProperty( {} ),
+				...props
 			}
 		} );
+	}
+
+	it( 'renders correctly', () => {
+		const wrapper = newWrapper();
 
 		expect( wrapper.findComponent( CdxField ).exists() ).toBe( true );
 		expect( wrapper.find( 'input' ).exists() ).toBe( true );
 		expect( wrapper.text() ).toContain( 'Test Label' );
 	} );
 
-	it( 'validates required field', async () => {
-		const wrapper = mount( NumberInput, {
-			props: {
-				required: true,
-				minValue: 2,
-				maxValue: 50,
-				label: 'Test Label',
-				modelValue: newNumberValue( 10 )
-			}
-		} );
+	it( 'validates required field', async () => { // TODO: also test non-required field
+		const wrapper = newWrapper( { property: newNumberProperty( { required: true } ) } );
 
-		const input = wrapper.find( 'input' );
-		await input.setValue( '' );
+		await wrapper.find( 'input' ).setValue( '' );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-required' );
 	} );
 
 	it( 'validates maxValue for the number', async () => {
-		const wrapper = mount( NumberInput, {
-			props: {
-				required: true,
-				minValue: 2,
-				maxValue: 50,
-				label: 'Test Label',
-				modelValue: newNumberValue( 10 )
-			}
+		const wrapper = newWrapper( {
+			property: newNumberProperty( { minimum: 42, maximum: 50 } )
 		} );
 
-		const input = wrapper.find( 'input' );
-		await input.setValue( 55 );
+		await wrapper.find( 'input' ).setValue( 51 );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-max-value' );
 	} );
 
 	it( 'validates minValue for the number', async () => {
-		const wrapper = mount( NumberInput, {
-			props: {
-				required: true,
-				minValue: 2,
-				maxValue: 50,
-				label: 'Test Label',
-				modelValue: newNumberValue( 10 )
-			}
+		const wrapper = newWrapper( {
+			property: newNumberProperty( { minimum: 42, maximum: 50 } )
 		} );
 
-		const input = wrapper.find( 'input' );
-		await input.setValue( 1 );
+		await wrapper.find( 'input' ).setValue( 41 );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-min-value' );
 	} );
 
-	it( 'emits valid field', async () => {
-		const wrapper = mount( NumberInput, {
-			props: {
-				required: true,
-				minValue: 2,
-				maxValue: 50,
-				label: 'Test Label',
-				modelValue: newNumberValue( 10 )
-			}
+	it( 'emits valid field when value within min and max', async () => {
+		const wrapper = newWrapper( {
+			property: newNumberProperty( { minimum: 42, maximum: 42 } )
 		} );
 
-		const input = wrapper.find( 'input' );
-
-		await input.setValue( 45 );
+		await wrapper.find( 'input' ).setValue( 42 );
 		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ true ] );
 	} );
 
-	it( 'emits invalid field', async () => {
-		const wrapper = mount( NumberInput, {
-			props: {
-				required: true,
-				minValue: 2,
-				maxValue: 50,
-				label: 'Test Label',
-				modelValue: newNumberValue( 10 )
-			}
+	it( 'emits invalid field when validation fails', async () => {
+		const wrapper = newWrapper( {
+			property: newNumberProperty( { minimum: 42, maximum: 42 } )
 		} );
 
-		const input = wrapper.find( 'input' );
-
-		await input.setValue( 55 );
+		await wrapper.find( 'input' ).setValue( 43 );
 		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ false ] );
 	} );
 } );

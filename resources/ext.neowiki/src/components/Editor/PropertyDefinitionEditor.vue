@@ -26,6 +26,7 @@
 				:is="componentRegistry.getValueEditingComponent( localProperty.format )"
 				v-model="localProperty.default"
 				:label="$i18n( 'neowiki-infobox-editor-default-value-label' ).text()"
+				:property="localProperty"
 			/>
 			<NeoTextField
 				v-model="localProperty.description"

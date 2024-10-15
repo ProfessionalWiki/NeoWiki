@@ -19,6 +19,9 @@ export class FormatSpecificComponentRegistry {
 		return this.componentMap.get( formatName )!.valueDisplayComponent;
 	}
 
+	/**
+	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
+	 */
 	public getValueEditingComponent( formatName: string ): Component {
 		if ( !this.componentMap.has( formatName ) ) {
 			throw new Error( `No value editing component registered for format: ${ formatName }` );

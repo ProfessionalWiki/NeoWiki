@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import TextDisplay from '@/components/Value/TextDisplay.vue';
 import { newNumberValue, newStringValue } from '@neo/domain/Value';
 
-describe( 'TextValue', () => {
+describe( 'TextDisplay', () => {
 	it( 'renders a single text value correctly', () => {
 		const wrapper = mount( TextDisplay, {
 			props: {

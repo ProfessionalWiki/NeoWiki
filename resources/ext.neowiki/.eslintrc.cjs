@@ -68,7 +68,9 @@ module.exports = {
 		'n/no-unsupported-features/node-builtins': 'off', // To avoid: "XYZ is not supported until Node.js x.y.z."
 		'es-x/no-async-functions': 'off',
 		'@typescript-eslint/no-empty-object-type': 'off',
-		'no-shadow': 'off'
+		'no-shadow': 'off',
+		'jsdoc/require-param': 'off',
+		'jsdoc/require-returns': 'off'
 	},
 	overrides: [
 		{

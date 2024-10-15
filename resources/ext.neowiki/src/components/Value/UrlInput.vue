@@ -2,7 +2,7 @@
 	<CdxField
 		:status="validationStatus"
 		:messages="validationMessages"
-		:required="required"
+		:required="property.required"
 		class="neo-url-field neo-text-field"
 	>
 		<template #label>
@@ -18,11 +18,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, PropType } from 'vue';
+import { computed, PropType, ref, watch } from 'vue';
 import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
 import { cdxIconLink } from '@wikimedia/codex-icons';
-import { newStringValue, ValueType, StringValue } from '@neo/domain/Value';
 import type { Value } from '@neo/domain/Value';
+import { newStringValue, StringValue, ValueType } from '@neo/domain/Value';
+import { UrlProperty } from '@neo/domain/valueFormats/Url.ts';
 
 const props = defineProps( {
 	modelValue: {
@@ -34,9 +35,9 @@ const props = defineProps( {
 		required: false,
 		default: ''
 	},
-	required: {
-		type: Boolean,
-		default: false
+	property: {
+		type: Object as PropType<UrlProperty>,
+		required: true
 	}
 } );
 
@@ -68,7 +69,7 @@ const onInput = ( newValue: string ): void => {
 const validate = ( value: StringValue ): ValidationMessages => {
 	const messages: ValidationMessages = {};
 
-	if ( props.required && value.strings[ 0 ] === '' ) {
+	if ( props.property.required && value.strings[ 0 ] === '' ) {
 		messages.error = mw.message( 'neowiki-field-required' ).text();
 	} else if ( value.strings[ 0 ] !== '' ) {
 		try {
