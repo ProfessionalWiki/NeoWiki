@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify';
 
 export interface UrlProperty extends MultiStringProperty {
 
-	// TODO: add link target (_blank, _self, etc.)
+	// readonly linkTarget?: '_blank' | '_self' | '_parent' | '_top';
 
 }
 
