@@ -27,16 +27,19 @@
 				{{ $i18n( 'neowiki-infobox-editor-value-label' ).text() }}
 			</h4>
 		</div>
-		<StatementEditor
-			v-for="( statement, index ) in statements"
-			:key="index"
-			class="statement-editor-row"
-			:statement="<Statement>statement"
-			:can-edit-schema="canEditSchema"
-			@update="updateStatement( index, $event )"
-			@remove="removeStatement( index )"
-			@edit="editProperty"
-		/>
+		<template v-for="( statement, index ) in statements">
+			<StatementEditor
+				v-if="getPropertyDefinition( statement.propertyName as PropertyName )"
+				:key="index"
+				class="statement-editor-row"
+				:statement="statement as Statement"
+				:can-edit-schema="canEditSchema"
+				:property-definition="getPropertyDefinition( statement.propertyName as PropertyName )!"
+				@update="updateStatement( index, $event )"
+				@remove="removeStatement( index )"
+				@edit="editProperty"
+			/>
+		</template>
 		<div v-if="canEditSchema" class="add-statement-section">
 			<div class="add-statement-placeholder" @click="toggleDropdown">
 				<CdxIcon :icon="cdxIconAdd" class="add-icon" />
@@ -113,6 +116,15 @@ const subjectStore = useSubjectStore();
 const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const editingProperty = ref<PropertyDefinition | null>( null );
 const selectedSchema = computed( () => props.selectedSchema );
+
+const getPropertyDefinition = ( propertyName: PropertyName ): PropertyDefinition | undefined => {
+	if ( localSchema.value instanceof Schema ) {
+		if ( localSchema.value.getPropertyDefinitions().has( propertyName ) ) {
+			return localSchema.value.getPropertyDefinition( propertyName );
+		}
+	}
+	return undefined;
+};
 
 const addMissingStatements = (): void => {
 	if ( localSubject.value !== undefined && localSchema.value !== null ) {

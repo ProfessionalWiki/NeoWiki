@@ -2,7 +2,7 @@
 	<CdxField
 		:status="validationStatus"
 		:messages="validationMessages"
-		:required="required"
+		:required="property.required"
 	>
 		<template #label>
 			{{ label }}
@@ -20,6 +20,7 @@ import { ref, watch, computed, PropType } from 'vue';
 import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
 import { newNumberValue, ValueType, NumberValue } from '@neo/domain/Value';
 import type { Value } from '@neo/domain/Value';
+import { NumberProperty } from '@neo/domain/valueFormats/Number.ts';
 
 const props = defineProps( {
 	modelValue: {
@@ -31,17 +32,9 @@ const props = defineProps( {
 		required: false,
 		default: ''
 	},
-	required: {
-		type: Boolean,
-		default: false
-	},
-	minValue: {
-		type: Number,
-		default: -Infinity
-	},
-	maxValue: {
-		type: Number,
-		default: Infinity
+	property: {
+		type: Object as PropType<NumberProperty>,
+		required: true
 	}
 } );
 
@@ -71,13 +64,14 @@ const onInput = ( newValue: string ): void => {
 const validate = ( value: NumberValue | undefined ): ValidationMessages => {
 	const messages: ValidationMessages = {};
 
-	if ( props.required && value === undefined ) {
+	if ( props.property.required && value === undefined ) {
 		messages.error = mw.message( 'neowiki-field-required' ).text();
 	} else if ( value !== undefined ) {
-		if ( value.number < props.minValue ) {
-			messages.error = mw.message( 'neowiki-field-min-value', props.minValue ).text();
-		} else if ( value.number > props.maxValue ) {
-			messages.error = mw.message( 'neowiki-field-max-value', props.maxValue ).text();
+		if ( props.property.minimum !== undefined && value.number < props.property.minimum ) {
+			messages.error = mw.message( 'neowiki-field-min-value', props.property.minimum ).text();
+		}
+		if ( props.property.maximum !== undefined && value.number > props.property.maximum ) {
+			messages.error = mw.message( 'neowiki-field-max-value', props.property.maximum ).text();
 		}
 	}
 

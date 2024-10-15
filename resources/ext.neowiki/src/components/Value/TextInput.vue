@@ -2,7 +2,7 @@
 	<CdxField
 		:status="validationStatus"
 		:messages="validationMessages"
-		:required="required"
+		:required="property.required"
 		class="neo-text-field"
 		:class="{ 'neo-text-field--success': validationStatus === 'success' }"
 	>
@@ -27,6 +27,7 @@ import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 import { newStringValue, ValueType, StringValue } from '@neo/domain/Value';
 import type { Value } from '@neo/domain/Value';
+import { TextProperty } from '@neo/domain/valueFormats/Text.ts';
 
 const props = defineProps( {
 	modelValue: {
@@ -38,17 +39,9 @@ const props = defineProps( {
 		required: false,
 		default: ''
 	},
-	required: {
-		type: Boolean,
-		default: false
-	},
-	minLength: {
-		type: Number,
-		default: 0
-	},
-	maxLength: {
-		type: Number,
-		default: Infinity
+	property: {
+		type: Object as PropType<TextProperty>,
+		required: true
 	}
 } );
 
@@ -84,12 +77,12 @@ const onInput = ( newValue: string ): void => {
 const validate = ( value: StringValue ): ValidationMessages => {
 	const messages: ValidationMessages = {};
 
-	if ( props.required && value.strings[ 0 ] === '' ) {
+	if ( props.property.required && value.strings[ 0 ] === '' ) {
 		messages.error = mw.message( 'neowiki-field-required' ).text();
-	} else if ( value.strings[ 0 ].length < props.minLength ) {
-		messages.error = mw.message( 'neowiki-field-min-length', props.minLength ).text();
-	} else if ( value.strings[ 0 ].length > props.maxLength ) {
-		messages.error = mw.message( 'neowiki-field-max-length', props.maxLength ).text();
+	} else if ( props.property.minLength !== undefined && value.strings[ 0 ].length < props.property.minLength ) {
+		messages.error = mw.message( 'neowiki-field-min-length', props.property.minLength ).text();
+	} else if ( props.property.maxLength !== undefined && value.strings[ 0 ].length > props.property.maxLength ) {
+		messages.error = mw.message( 'neowiki-field-max-length', props.property.maxLength ).text();
 	}
 
 	return messages;

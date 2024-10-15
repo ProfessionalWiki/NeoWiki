@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import UrlDisplay from '@/components/Value/UrlDisplay.vue';
 import { newNumberValue, newStringValue } from '@neo/domain/Value';
 
-describe( 'UrlValue', () => {
+describe( 'UrlDisplay', () => {
 	it( 'renders a single URL correctly', () => {
 		const wrapper = mount( UrlDisplay, {
 			props: {

@@ -4,7 +4,7 @@ import NumberDisplay from '@/components/Value/NumberDisplay.vue';
 import { newNumberValue, newStringValue } from '@neo/domain/Value';
 import { NumberProperty } from '@neo/domain/valueFormats/Number';
 
-describe( 'NumberValue', () => {
+describe( 'NumberDisplay', () => {
 	it( 'handles integers without precision', () => {
 		const wrapper = mount( NumberDisplay, {
 			props: {

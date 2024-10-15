@@ -14,6 +14,7 @@
 				<component
 					:is="componentRegistry.getValueEditingComponent( localStatement.format )"
 					:model-value="localStatement.value"
+					:property="propertyDefinition"
 					class="statement-editor__value"
 					@validation="handleValidation"
 					@update:model-value="updateStatementValue"
@@ -29,11 +30,13 @@ import { Statement } from '@neo/domain/Statement';
 import { Value } from '@neo/domain/Value';
 import PropertyNameField from '@/components/Editor/PropertyNameField.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { PropertyName } from '@neo/domain/PropertyDefinition.ts';
+import { PropertyName, PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
 
+// The caller is responsible for providing a PropertyDefinition of the right type matching the statement's property name.
 const props = defineProps<{
 	statement: Statement;
 	canEditSchema: boolean;
+	propertyDefinition: PropertyDefinition;
 }>();
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();
