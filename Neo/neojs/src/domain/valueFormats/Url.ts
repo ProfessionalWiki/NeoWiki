@@ -1,4 +1,4 @@
-import type { MultiStringProperty, PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import { MultiStringProperty, PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@neo/domain/Value';
 import { BaseValueFormat } from '@neo/domain/ValueFormat';
 import DOMPurify from 'dompurify';
@@ -78,4 +78,16 @@ export function isValidUrl( url: string ): boolean {
 	);
 
 	return pattern.test( url );
+}
+
+export function newUrlProperty( options: Partial<UrlProperty> = {} ): UrlProperty {
+	return {
+		name: options.name instanceof PropertyName ? options.name : new PropertyName( options.name || 'url' ),
+		format: UrlFormat.formatName,
+		description: options.description || '',
+		required: options.required || false,
+		default: options.default || undefined,
+		multiple: options.multiple || false,
+		uniqueItems: options.uniqueItems ?? true
+	};
 }
