@@ -1,6 +1,6 @@
 <template>
 	<div class="neo-url-field">
-		<b>{{ label }}</b>
+		<label>{{ label }}</label>
 		<div
 			v-for="( url, index ) in inputValues"
 			:key="index"
@@ -154,6 +154,10 @@ defineExpose( {
 @import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
 
 .neo-url-field {
+	label {
+		font-weight: bold;
+	}
+
 	.url-input-wrapper {
 		display: flex;
 		align-items: center;
