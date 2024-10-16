@@ -6,6 +6,7 @@
 		</CdxButton>
 		<CreateSubjectDialog
 			ref="createSubjectDialog"
+			:can-create-schemas="canCreateSchemas"
 			@next="onSubjectTypeSelected"
 		/>
 		<InfoboxEditor
@@ -20,17 +21,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import CreateSubjectDialog from '@/components/CreateSubjectDialog.vue';
 import InfoboxEditor from '@/components/Editor/InfoboxEditor.vue';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const createSubjectDialog = ref<typeof CreateSubjectDialog|null>( null );
 const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
 const selectedSchema = ref( '' );
 
-const canEditSchema = true; // TODO: add right checks
+const schemaAuthorizer = NeoWikiServices.getSchemaAuthorizer();
+const canCreateSchemas = ref( false );
+const canEditSchema = ref( false );
+
+onMounted( async (): Promise<void> => {
+	canCreateSchemas.value = await schemaAuthorizer.canCreateSchemas();
+} );
 
 const openDialog = (): void => {
 	if ( createSubjectDialog.value === null ) {
@@ -40,18 +48,20 @@ const openDialog = (): void => {
 	createSubjectDialog.value.openDialog();
 };
 
-const onSubjectTypeSelected = ( type: string ): void => {
+const onSubjectTypeSelected = async ( type: string ): Promise<void> => {
 	if ( infoboxEditorDialog.value === null ) {
 		return;
 	}
 
 	selectedSchema.value = type;
+	canEditSchema.value = await schemaAuthorizer.canEditSchema( type );
 	infoboxEditorDialog.value.openDialog();
 };
 
 const onCreationComplete = (): void => {
 	console.log( 'Creation process completed' );
 	selectedSchema.value = '';
+	canEditSchema.value = false;
 };
 
 const onInfoboxBack = (): void => {
