@@ -2,18 +2,8 @@ import { mount, VueWrapper } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import UrlInput from '@/components/Value/UrlInput.vue';
 import { CdxField } from '@wikimedia/codex';
-import { newStringValue, Value } from '@neo/domain/Value';
-import { newUrlProperty, UrlProperty } from '@neo/domain/valueFormats/Url.ts';
-import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
-
-// TODO: move to sane place
-export interface InputComponentProps<T extends PropertyDefinition = PropertyDefinition> {
-	modelValue: Value;
-	label: string;
-	property: T;
-}
-
-export type UrlInputProps = InputComponentProps<UrlProperty>;
+import { newStringValue } from '@neo/domain/Value';
+import { newUrlProperty } from '@neo/domain/valueFormats/Url.ts';
 
 describe( 'UrlInput', () => {
 	beforeEach( () => {
@@ -25,63 +15,111 @@ describe( 'UrlInput', () => {
 		} );
 	} );
 
-	function newWrapper( props: Partial<UrlInputProps> = {} ): VueWrapper {
-		return mount( UrlInput, {
-			props: {
-				modelValue: newStringValue( 'https://example.com' ),
-				label: 'Test Label',
-				property: newUrlProperty(),
-				...props
-			}
+	const createWrapper = ( propsData: Partial<InstanceType<typeof UrlInput>['$props']> = {} ): VueWrapper<InstanceType<typeof UrlInput>> => mount( UrlInput, {
+		props: {
+			modelValue: newStringValue( 'https://example.com' ),
+			property: newUrlProperty(),
+			...propsData
+		}
+	} );
+
+	it( 'renders correctly with single URL', () => {
+		const wrapper = createWrapper();
+
+		expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 1 );
+		expect( wrapper.findAll( 'input' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'renders correctly with multiple URLs', () => {
+		const wrapper = createWrapper( {
+			modelValue: newStringValue( 'https://example1.com', 'https://example2.com' )
 		} );
-	}
 
-	it( 'renders correctly', () => {
-		const wrapper = newWrapper();
-
-		expect( wrapper.findComponent( CdxField ).exists() ).toBe( true );
-		expect( wrapper.find( 'input' ).exists() ).toBe( true );
-		expect( wrapper.text() ).toContain( 'Test Label' );
+		expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 2 );
+		expect( wrapper.findAll( 'input' ) ).toHaveLength( 2 );
 	} );
 
-	it( 'validates required field', async () => { // TODO: also test non-required field
-		const wrapper = newWrapper( { property: newUrlProperty( { required: true } ) } );
+	it( 'adds new URL field when add button is clicked', async () => {
+		const wrapper = createWrapper();
 
-		await wrapper.find( 'input' ).setValue( '' );
+		expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 1 );
+		expect( wrapper.findAll( 'input' ) ).toHaveLength( 1 );
 
-		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-required' );
+		const addButton = wrapper.find( 'button.add-url-button' );
+		expect( addButton.exists() ).toBe( true );
+
+		await addButton.trigger( 'click' );
+
+		expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 2 );
+		expect( wrapper.findAll( 'input' ) ).toHaveLength( 2 );
+
+		const emittedValues = wrapper.emitted( 'update:modelValue' );
+		expect( emittedValues ).toBeTruthy();
+		expect( emittedValues![ 0 ][ 0 ] ).toEqual( newStringValue( 'https://example.com', '' ) );
 	} );
 
-	it( 'validates valid URL', async () => {
-		const wrapper = newWrapper();
+	it( 'removes URL field when delete button is clicked', async () => {
+		const wrapper = createWrapper( {
+			modelValue: newStringValue( 'https://example1.com', 'https://example2.com' )
+		} );
 
-		await wrapper.find( 'input' ).setValue( 'https://valid-url.com' );
+		await wrapper.findAll( '.delete-button' )[ 0 ].trigger( 'click' );
 
-		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'default' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toEqual( {} );
+		expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 1 );
+		expect( wrapper.findAll( 'input' ) ).toHaveLength( 1 );
 	} );
 
-	it( 'validates invalid URL', async () => {
-		const wrapper = newWrapper();
+	it( 'validates required field when multiple URLs', async () => {
+		const wrapper = createWrapper( {
+			property: newUrlProperty( { required: true } ),
+			modelValue: newStringValue( 'https://example1.com', '' )
+		} );
 
-		await wrapper.find( 'input' ).setValue( 'invalid-url' );
+		await wrapper.findAll( 'input' )[ 0 ].setValue( '' );
 
-		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-invalid-url' );
+		const fields = wrapper.findAllComponents( CdxField );
+		expect( fields[ 0 ].props( 'status' ) ).toBe( 'error' );
+		expect( fields[ 0 ].props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-required' );
 	} );
 
-	it( 'emits valid field', async () => {
-		const wrapper = newWrapper();
+	it( 'validates valid URLs in multiple fields', async () => {
+		const wrapper = createWrapper( {
+			modelValue: newStringValue( 'https://example1.com', '' )
+		} );
 
-		await wrapper.find( 'input' ).setValue( 'https://valid-url.com' );
-		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ true ] );
+		await wrapper.findAll( 'input' )[ 1 ].setValue( 'https://valid-url.com' );
+
+		const fields = wrapper.findAllComponents( CdxField );
+		expect( fields[ 0 ].props( 'status' ) ).toBe( 'success' );
+		expect( fields[ 1 ].props( 'status' ) ).toBe( 'success' );
+		expect( fields[ 0 ].props( 'messages' ) ).toEqual( {} );
+		expect( fields[ 1 ].props( 'messages' ) ).toEqual( {} );
 	} );
 
-	it( 'emits invalid field', async () => {
-		const wrapper = newWrapper();
+	it( 'validates invalid URLs in multiple fields', async () => {
+		const wrapper = createWrapper( {
+			modelValue: newStringValue( 'https://example1.com', '' )
+		} );
 
-		await wrapper.find( 'input' ).setValue( 'invalid-url' );
-		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ false ] );
+		await wrapper.findAll( 'input' )[ 1 ].setValue( 'invalid-url' );
+
+		const fields = wrapper.findAllComponents( CdxField );
+		expect( fields[ 0 ].props( 'status' ) ).toBe( 'success' );
+		expect( fields[ 1 ].props( 'status' ) ).toBe( 'error' );
+		expect( fields[ 1 ].props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-invalid-url' );
+	} );
+
+	it( 'emits validation for multiple fields', async () => {
+		const wrapper = createWrapper( {
+			modelValue: newStringValue( 'https://example1.com', '' )
+		} );
+
+		await wrapper.vm.onInput( 'https://valid-url.com', 1 );
+		expect( wrapper.vm.validationMessages[ 1 ] ).toEqual( {} );
+		expect( wrapper.vm.inputStatuses[ 1 ] ).toEqual( 'success' );
+
+		await wrapper.vm.onInput( 'invalid-url', 1 );
+		expect( wrapper.vm.validationMessages[ 1 ].error ).toEqual( 'neowiki-field-invalid-url' );
+		expect( wrapper.vm.inputStatuses[ 1 ] ).toEqual( 'error' );
 	} );
 } );
