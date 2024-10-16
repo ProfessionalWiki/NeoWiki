@@ -70,7 +70,9 @@ module.exports = {
 		'@typescript-eslint/no-empty-object-type': 'off',
 		'no-shadow': 'off',
 		'jsdoc/require-param': 'off',
-		'jsdoc/require-returns': 'off'
+		'jsdoc/require-returns': 'off',
+		'no-new': 'off',
+		'es-x/no-optional-catch-binding': 'off'
 	},
 	overrides: [
 		{
