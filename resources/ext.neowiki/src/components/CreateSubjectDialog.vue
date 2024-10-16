@@ -53,13 +53,7 @@ import {
 } from '@wikimedia/codex';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { cdxIconAdd, cdxIconInfoFilled } from '@wikimedia/codex-icons';
-
-defineProps( {
-	canCreateSchemas: {
-		type: Boolean,
-		required: true
-	}
-} );
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const emit = defineEmits<( e: 'next', schemaName: string ) => void>();
 
@@ -68,6 +62,9 @@ const searchQuery = ref( '' );
 const searchInputId = 'create-subject-search';
 const schemaStore = useSchemaStore();
 const searchedSchemaNames = ref<string[]>( [] );
+
+const schemaAuthorizer = NeoWikiServices.getSchemaAuthorizer();
+const canCreateSchemas = ref( false );
 
 const searchResults = computed<SearchResult[]>( () => searchedSchemaNames.value.map( ( schemaName ) => {
 	const schema = schemaStore.getSchema( schemaName );
@@ -81,6 +78,7 @@ const searchResults = computed<SearchResult[]>( () => searchedSchemaNames.value.
 
 const openDialog = async (): Promise<void> => {
 	searchedSchemaNames.value = await schemaStore.searchAndFetchMissingSchemas( '' );
+	canCreateSchemas.value = await schemaAuthorizer.canCreateSchemas();
 	isOpen.value = true;
 	searchQuery.value = '';
 };

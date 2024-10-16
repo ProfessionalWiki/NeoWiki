@@ -6,7 +6,6 @@
 		</CdxButton>
 		<CreateSubjectDialog
 			ref="createSubjectDialog"
-			:can-create-schemas="canCreateSchemas"
 			@next="onSubjectTypeSelected"
 		/>
 		<InfoboxEditor
@@ -21,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import CreateSubjectDialog from '@/components/CreateSubjectDialog.vue';
@@ -33,12 +32,7 @@ const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
 const selectedSchema = ref( '' );
 
 const schemaAuthorizer = NeoWikiServices.getSchemaAuthorizer();
-const canCreateSchemas = ref( false );
 const canEditSchema = ref( false );
-
-onMounted( async (): Promise<void> => {
-	canCreateSchemas.value = await schemaAuthorizer.canCreateSchemas();
-} );
 
 const openDialog = (): void => {
 	if ( createSubjectDialog.value === null ) {
