@@ -5,7 +5,10 @@
 		class="create-subject-dialog"
 	>
 		<div class="create-subject-dialog__content">
-			<div class="create-subject-dialog__blank-button-container">
+			<div
+				v-if="canCreateSchemas"
+				class="create-subject-dialog__blank-button-container"
+			>
 				<CdxButton
 					weight="primary"
 					class="create-subject-dialog__blank-button"
@@ -20,7 +23,10 @@
 						:icon="cdxIconInfoFilled" />
 				</div>
 			</div>
-			<div class="create-subject-dialog__separator">
+			<div
+				v-if="canCreateSchemas"
+				class="create-subject-dialog__separator"
+			>
 				<span>{{ $i18n( 'neowiki-create-subject-dialog-or-select' ).text() }}</span>
 			</div>
 			<CdxTypeaheadSearch
@@ -47,6 +53,13 @@ import {
 } from '@wikimedia/codex';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { cdxIconAdd, cdxIconInfoFilled } from '@wikimedia/codex-icons';
+
+defineProps( {
+	canCreateSchemas: {
+		type: Boolean,
+		required: true
+	}
+} );
 
 const emit = defineEmits<( e: 'next', schemaName: string ) => void>();
 
