@@ -10,13 +10,16 @@
 			:model-value="localSubject.getLabel()"
 			:required="true"
 			:label="$i18n( 'neowiki-infobox-editor-subject-label' ).text()"
+			:disabled="!isNewSubject"
 			@validation="handleValidation"
+			@update:model-value="updateSubjectLabel"
 		/>
 		<NeoTextField
 			:model-value="localSubject.getSchemaName()"
 			:required="true"
 			:label="$i18n( 'neowiki-create-subject-dialog-schema' ).text()"
-			disabled
+			:disabled="!isNewSchema"
+			@update:model-value="updateSchemaName"
 		/>
 
 		<div v-if="statements.length > 0" class="statement-editor-heading">
@@ -116,6 +119,8 @@ const subjectStore = useSubjectStore();
 const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const editingProperty = ref<PropertyDefinition | null>( null );
 const selectedSchema = computed( () => props.selectedSchema );
+const isNewSchema = computed( () => props.selectedSchema === '' );
+const isNewSubject = computed( () => props.subject === undefined );
 
 const getPropertyDefinition = ( propertyName: PropertyName ): PropertyDefinition | undefined => {
 	if ( localSchema.value instanceof Schema ) {
@@ -172,7 +177,7 @@ const setupNewSubject = ( schemaName: string ): void => {
 	if ( schemaName === '' ) {
 		// TODO: handle new Schema creation
 		localSchema.value = new Schema(
-			'TodoTodoTodo' as SchemaName,
+			'' as SchemaName,
 			'',
 			new PropertyDefinitionList( [] )
 		);
@@ -185,7 +190,7 @@ const setupNewSubject = ( schemaName: string ): void => {
 		'',
 		schemaName as SchemaName,
 		new StatementList( [] ),
-		new PageIdentifiers( 1, 'page-title' )
+		new PageIdentifiers( mw.config.get( 'wgArticleId' ), 'page-title' )
 	);
 	statements.value = [];
 	addMissingStatements();
@@ -300,39 +305,37 @@ const goBack = (): void => {
 };
 
 const submit = async (): Promise<void> => {
-	if ( localSchema.value !== null ) {
-		const updatedSchema = new Schema(
-			localSchema.value.getName(),
-			localSchema.value.getDescription(),
-			localSchema.value.getPropertyDefinitions()
-		);
-
-		await schemaStore.saveSchema( updatedSchema );
+	if ( localSchema.value === null || localSubject.value === null ) {
+		throw new Error( 'Schema or Subject is missing' );
 	}
-	if ( localSubject.value ) {
-		const properStatements = statements.value.map( ( stmt ) => {
-			console.log( 'Statement:', stmt );
-			return new Statement(
-				new PropertyName( stmt.propertyName.toString() ),
-				stmt.format,
-				stmt.value
-			);
-		} );
 
-		localSubject.value = new Subject(
-			localSubject.value.getId(),
-			localSubject.value.getLabel(),
-			localSubject.value.getSchemaName(),
-			new StatementList( properStatements ),
-			localSubject.value.getPageIdentifiers()
-		);
+	await schemaStore.saveSchema( localSchema.value as Schema );
 
-		// TODO: handle new subject creation.
+	const properStatements = statements.value.map( ( stmt ) => new Statement(
+		new PropertyName( stmt.propertyName.toString() ),
+		stmt.format,
+		stmt.value
+	) );
+
+	localSubject.value = localSubject.value.withStatements( new StatementList( properStatements ) );
+
+	if ( isNewSubject.value ) {
+		await subjectStore.createMainSubject( localSubject.value as Subject );
+	} else {
 		await subjectStore.updateSubject( localSubject.value as Subject );
 	}
 
 	emit( 'save', localSubject.value );
 	isOpen.value = false;
+};
+
+const updateSubjectLabel = ( label: string ): void => {
+	localSubject.value = localSubject.value!.withLabel( label );
+};
+
+const updateSchemaName = ( name: string ): void => {
+	localSchema.value = localSchema.value!.withName( name );
+	localSubject.value = localSubject.value!.withSchemaName( name as SchemaName );
 };
 
 defineExpose( { openDialog } );
