@@ -5,7 +5,6 @@ import { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { CdxDialog } from '@wikimedia/codex';
 import NeoTextField from '@/components/NeoTextField.vue';
 import { newTextProperty } from '@neo/domain/valueFormats/Text';
-import { ComponentPublicInstance, DefineComponent } from 'vue';
 import { Service } from '@/NeoWikiServices';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { newNumberProperty } from '@neo/domain/valueFormats/Number.ts';
@@ -14,22 +13,6 @@ type PropertyDefinitionEditorProps = {
 	property: PropertyDefinition;
 	editMode: boolean;
 };
-
-type PropertyDefinitionEditorVmMethods = {
-	isOpen: boolean;
-	localProperty: PropertyDefinition;
-	openDialog: () => void;
-	cancel: () => void;
-	save: () => void;
-};
-
-type PropertyDefinitionEditorComponent = DefineComponent<
-	PropertyDefinitionEditorProps,
-	{},
-	PropertyDefinitionEditorVmMethods
->;
-
-type TestWrapper = VueWrapper<ComponentPublicInstance<PropertyDefinitionEditorProps, PropertyDefinitionEditorVmMethods>>;
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 	text: () => key
@@ -45,8 +28,7 @@ describe( 'PropertyDefinitionEditor', () => {
 		} );
 	} );
 
-	// TODO: why not return just VueWrapper?
-	const createWrapper = ( props: Partial<PropertyDefinitionEditorProps> = {} ): TestWrapper => mount<PropertyDefinitionEditorComponent>( PropertyDefinitionEditor as PropertyDefinitionEditorComponent, {
+	const createWrapper = ( props: Partial<PropertyDefinitionEditorProps> = {} ): VueWrapper => mount( PropertyDefinitionEditor, {
 		props: {
 			property: newTextProperty(),
 			editMode: false,
