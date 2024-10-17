@@ -11,7 +11,7 @@
 					:model-value="localProperty.name.toString()"
 					:label="$i18n( 'neowiki-property-editor-name' ).text()"
 					:required="true"
-					@update:model-value="updatePropertyName( $event as never )"
+					@update:model-value="( value ) => localProperty = { ...localProperty, name: new PropertyName( value ) }"
 				/>
 				<div class="field-group format-select">
 					<label for="format-select">{{ $i18n( 'neowiki-property-editor-type' ).text() }}</label>
@@ -88,13 +88,6 @@ const emit = defineEmits( [ 'cancel', 'save' ] );
 const isOpen = ref( false );
 const localProperty = ref<PropertyDefinition>( { ...props.property } );
 const componentRegistry = NeoWikiServices.getComponentRegistry();
-
-const updatePropertyName = ( value: never ): void => {
-	localProperty.value = {
-		...localProperty.value,
-		name: new PropertyName( value )
-	};
-};
 
 watch( () => props.property, ( newProperty ) => {
 	localProperty.value = Object.assign( {}, newProperty );
