@@ -175,7 +175,7 @@ onMounted( async (): Promise<void> => {
 	}
 
 	&__property {
-		flex: 0 0 50%;
+		flex: 0 0 40%;
 		font-weight: $font-weight-bold;
 		color: $color-emphasized;
 		font-size: $font-size-small;
@@ -184,7 +184,7 @@ onMounted( async (): Promise<void> => {
 	}
 
 	&__value {
-		flex: 1;
+		flex: 0 0 60%;
 		color: $color-subtle;
 		font-size: $font-size-small;
 		line-height: $line-height-xx-small;
