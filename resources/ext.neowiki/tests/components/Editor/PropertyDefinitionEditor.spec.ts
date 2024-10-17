@@ -1,8 +1,8 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PropertyDefinitionEditor from '@/components/Editor/PropertyDefinitionEditor.vue';
 import { PropertyDefinition } from '@neo/domain/PropertyDefinition';
-import { CdxDialog } from '@wikimedia/codex';
+import { CdxDialog, CdxSelect } from '@wikimedia/codex';
 import NeoTextField from '@/components/NeoTextField.vue';
 import { newTextProperty } from '@neo/domain/valueFormats/Text';
 import { Service } from '@/NeoWikiServices';
@@ -28,7 +28,8 @@ describe( 'PropertyDefinitionEditor', () => {
 		} );
 	} );
 
-	const createWrapper = ( props: Partial<PropertyDefinitionEditorProps> = {} ): VueWrapper => mount( PropertyDefinitionEditor, {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const createWrapper = ( props: Partial<PropertyDefinitionEditorProps> = {} ): any => mount( PropertyDefinitionEditor, {
 		props: {
 			property: newTextProperty(),
 			editMode: false,
@@ -72,5 +73,30 @@ describe( 'PropertyDefinitionEditor', () => {
 
 		expect( editWrapper.findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-property-editor-dialog-title-edit' );
 		expect( addWrapper.findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-property-editor-dialog-title-create' );
+	} );
+
+	it( 'restores the original PropertyDefinition when discardChanges is called', async () => {
+		const originalProperty = newTextProperty();
+		const wrapper = createWrapper( { property: originalProperty } );
+
+		wrapper.vm.localProperty = newNumberProperty();
+		wrapper.vm.discardChanges();
+
+		expect( wrapper.vm.localProperty ).toEqual( originalProperty );
+	} );
+
+	it( 'renders the initial value component based on the selected format', async () => {
+		const wrapper = createWrapper( {} );
+		await wrapper.vm.openDialog();
+
+		await wrapper.findComponent( CdxSelect ).vm.$emit( 'update:selected', 'number' );
+
+		expect( wrapper.findComponent( { name: 'TextInput' } ).exists() ).toBe( false );
+		expect( wrapper.findComponent( { name: 'NumberInput' } ).exists() ).toBe( true );
+
+		await wrapper.findComponent( CdxSelect ).vm.$emit( 'update:selected', 'text' );
+
+		expect( wrapper.findComponent( { name: 'TextInput' } ).exists() ).toBe( true );
+		expect( wrapper.findComponent( { name: 'NumberInput' } ).exists() ).toBe( false );
 	} );
 } );
