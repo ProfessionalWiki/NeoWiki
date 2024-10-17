@@ -9,9 +9,9 @@
 			<div class="inline-fields">
 				<NeoTextField
 					:model-value="localProperty.name.toString()"
-					@update:model-value="updatePropertyName( $event as never )"
 					:label="$i18n( 'neowiki-property-editor-name' ).text()"
 					:required="true"
+					@update:model-value="updatePropertyName( $event as never )"
 				/>
 				<div class="field-group format-select">
 					<label for="format-select">{{ $i18n( 'neowiki-property-editor-type' ).text() }}</label>
