@@ -194,7 +194,7 @@ const setupNewSubject = ( schemaName: string ): void => {
 const isDropdownOpen = ref( false );
 const isEditingProperty = ref( false );
 
-const statementTypes = [
+const statementTypes = [ // FIXME: use plugin system
 	{ value: 'text', label: 'Text', icon: cdxIconTextA },
 	{ value: 'url', label: 'URL', icon: cdxIconLink },
 	{ value: 'number', label: 'Number', icon: cdxIconStringInteger }
@@ -250,6 +250,7 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 
 const handleAddProperty = ( savedProperty: PropertyDefinition ): void => {
 	if ( localSubject.value !== undefined && localSchema.value !== null ) {
+		// TODO: replace the below lines with a localSchema.value.addPropertyDefinition( savedProperty );
 		const updatedProperties = [ ...localSchema.value.getPropertyDefinitions(), savedProperty ];
 
 		const newPropertyList = new PropertyDefinitionList( updatedProperties );
@@ -272,7 +273,7 @@ const toggleDropdown = (): void => {
 const addProperty = ( type: string ): void => {
 	isDropdownOpen.value = false;
 	isEditingProperty.value = false;
-	editingProperty.value = {
+	editingProperty.value = { // TODO: do we need to get a basic property definition via the plugin system?
 		name: new PropertyName( ' ' ),
 		format: type, // TODO: is this correct? Name mismatch
 		description: '',
