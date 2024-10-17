@@ -2,7 +2,7 @@
 	<CdxDialog
 		v-model:open="isOpen"
 		:use-close-button="true"
-		:title="editMode ? $i18n( 'neowiki-property-editor-dialog-title-edit', property?.name.toString() ).text() : $i18n( 'neowiki-infobox-editor-add-property' ).text()"
+		:title="editMode ? $i18n( 'neowiki-property-editor-dialog-title-edit', property?.name.toString() ).text() : $i18n( 'neowiki-property-editor-dialog-title-create' ).text()"
 		class="property-definition-editor"
 	>
 		<div class="editor-content">
@@ -110,16 +110,24 @@ const openDialog = (): void => {
 	isOpen.value = true;
 };
 
-const cancel = (): void => {
+const closeDialog = (): void => {
 	isOpen.value = false;
+};
+
+const cancel = (): void => {
+	closeDialog();
+	discardChanges();
 	emit( 'cancel' );
 };
 
+const discardChanges = (): void => {
+	localProperty.value = Object.assign( {}, props.property );
+};
+
 const save = (): void => {
-	if ( localProperty.value ) {
-		isOpen.value = false;
-		emit( 'save', Object.assign( {}, localProperty.value ) as PropertyDefinition );
-	}
+	// TODO: validation
+	closeDialog();
+	emit( 'save', Object.assign( {}, localProperty.value ) as PropertyDefinition );
 };
 
 defineExpose( { openDialog } );

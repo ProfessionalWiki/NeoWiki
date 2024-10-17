@@ -1,5 +1,5 @@
 import { mount, VueWrapper } from '@vue/test-utils';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PropertyDefinitionEditor from '@/components/Editor/PropertyDefinitionEditor.vue';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 import { CdxDialog } from '@wikimedia/codex';
@@ -8,17 +8,17 @@ import { newTextProperty } from '@neo/domain/valueFormats/Text';
 import { ComponentPublicInstance, DefineComponent } from 'vue';
 import { Service } from '@/NeoWikiServices';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
-import { newStringValue, newNumberValue } from '@neo/domain/Value';
+import { newStringValue } from '@neo/domain/Value';
+import { newNumberProperty } from '@neo/domain/valueFormats/Number.ts';
 
 type PropertyDefinitionEditorProps = {
-	property: PropertyDefinition | null;
+	property: PropertyDefinition;
 	editMode: boolean;
 };
 
 type PropertyDefinitionEditorVmMethods = {
 	isOpen: boolean;
-	localProperty: PropertyDefinition | null;
-	updateForm: ( field: string, value: unknown ) => void;
+	localProperty: PropertyDefinition;
 	openDialog: () => void;
 	cancel: () => void;
 	save: () => void;
@@ -58,11 +58,6 @@ describe( 'PropertyDefinitionEditor', () => {
 		}
 	} );
 
-	it( 'renders correctly when no property is provided', async () => {
-		const wrapper = createWrapper( { property: null, editMode: false } );
-		expect( wrapper.findComponent( NeoTextField ).exists() ).toBe( false );
-	} );
-
 	it( 'renders correctly when a property is provided', async () => {
 		const wrapper = createWrapper( { property: newTextProperty(), editMode: true } );
 		await wrapper.vm.openDialog();
@@ -70,45 +65,14 @@ describe( 'PropertyDefinitionEditor', () => {
 	} );
 
 	it( 'updates local property when prop changes', async () => {
-		const wrapper = createWrapper( { property: null, editMode: false } );
+		const wrapper = createWrapper( { property: newNumberProperty(), editMode: false } );
 		const newProperty = newTextProperty();
 		await wrapper.setProps( { property: newProperty } );
 		expect( wrapper.vm.localProperty ).toEqual( newProperty );
 	} );
 
-	it( 'emits save event with updated default property', async () => {
-		const property = newTextProperty();
-		const wrapper = createWrapper( { property, editMode: true } );
-		await wrapper.vm.updateForm( 'default', newStringValue( 'new default value' ) );
-		await wrapper.vm.save();
-		expect( wrapper.emitted( 'save' )?.[ 0 ][ 0 ] ).toEqual( {
-			...property,
-			default: newStringValue( 'new default value' )
-		} );
-	} );
-
-	it( 'handles form updates correctly', async () => {
-		const property: PropertyDefinition = newTextProperty();
-		const wrapper = createWrapper( { property, editMode: true } );
-		await wrapper.vm.updateForm( 'name', 'newName' );
-		await wrapper.vm.updateForm( 'format', 'number' );
-		await wrapper.vm.updateForm( 'required', true );
-		await wrapper.vm.updateForm( 'default', newNumberValue( 42 ) );
-		await wrapper.vm.updateForm( 'description', 'New description' );
-
-		expect( wrapper.vm.localProperty ).toEqual( {
-			name: new PropertyName( 'newName' ),
-			format: 'number',
-			required: true,
-			default: newNumberValue( 42 ),
-			description: 'New description',
-			multiple: false,
-			uniqueItems: true
-		} );
-	} );
-
 	it( 'closes dialog and emits cancel event when cancel is called', async () => {
-		const wrapper = createWrapper( { property: null, editMode: false } );
+		const wrapper = createWrapper( { property: newTextProperty(), editMode: false } );
 		await wrapper.vm.openDialog();
 		expect( wrapper.vm.isOpen ).toBe( true );
 		await wrapper.vm.cancel();
@@ -127,7 +91,7 @@ describe( 'PropertyDefinitionEditor', () => {
 		const editWrapper = createWrapper( { property, editMode: true } );
 		const addWrapper = createWrapper( { property, editMode: false } );
 
-		expect( editWrapper.findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-infobox-editor-dialog-title-edit' );
-		expect( addWrapper.findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-infobox-editor-add-property' );
+		expect( editWrapper.findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-property-editor-dialog-title-edit' );
+		expect( addWrapper.findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-property-editor-dialog-title-create' );
 	} );
 } );
