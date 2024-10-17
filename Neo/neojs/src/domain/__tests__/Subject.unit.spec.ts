@@ -7,6 +7,9 @@ import { StatementList } from '@neo/domain/StatementList';
 import { TextFormat } from '../valueFormats/Text';
 import { RelationFormat } from '../valueFormats/Relation';
 import { Neo } from '@neo/Neo';
+import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { newStringValue } from '@neo/domain/Value';
+import { Statement } from '@neo/domain/Statement';
 
 describe( 'Subject', () => {
 
@@ -109,6 +112,53 @@ describe( 'Subject', () => {
 			expect( subjectMap ).toEqual( new SubjectMap( referencedSubject ) );
 		} );
 
+	} );
+
+	describe( 'withLabel', () => {
+		it( 'returns a new Subject with the updated label', () => {
+			const originalSubject = newSubject();
+
+			const updatedSubject = originalSubject.withLabel( 'Updated Label' );
+
+			expect( updatedSubject.getLabel() ).toBe( 'Updated Label' );
+			expect( updatedSubject.getSchemaName() ).toBe( originalSubject.getSchemaName() );
+			expect( updatedSubject.getStatements() ).toEqual( originalSubject.getStatements() );
+			expect( updatedSubject ).not.toBe( originalSubject );
+		} );
+	} );
+
+	describe( 'withStatements', () => {
+		it( 'returns a new Subject with the updated statements', () => {
+			const originalSubject = newSubject();
+
+			const newStatements = new StatementList( [
+				{
+					propertyName: new PropertyName( 'testProperty' ),
+					format: TextFormat.formatName,
+					value: newStringValue( 'Test Value' )
+				} as Statement
+			] );
+
+			const updatedSubject = originalSubject.withStatements( newStatements );
+
+			expect( updatedSubject.getLabel() ).toBe( originalSubject.getLabel() );
+			expect( updatedSubject.getSchemaName() ).toBe( originalSubject.getSchemaName() );
+			expect( updatedSubject.getStatements() ).toEqual( newStatements );
+			expect( updatedSubject ).not.toBe( originalSubject );
+		} );
+	} );
+
+	describe( 'withSchemaName', () => {
+		it( 'returns a new Subject with the updated schema name', () => {
+			const originalSubject = newSubject();
+
+			const updatedSubject = originalSubject.withSchemaName( 'NewSchema' );
+
+			expect( updatedSubject.getLabel() ).toBe( originalSubject.getLabel() );
+			expect( updatedSubject.getSchemaName() ).toBe( 'NewSchema' );
+			expect( updatedSubject.getStatements() ).toEqual( originalSubject.getStatements() );
+			expect( updatedSubject ).not.toBe( originalSubject );
+		} );
 	} );
 
 } );

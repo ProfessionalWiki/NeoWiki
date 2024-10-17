@@ -31,4 +31,8 @@ export class Schema {
 		);
 	}
 
+	public withName( name: SchemaName ): Schema {
+		return new Schema( name, this.description, this.properties );
+	}
+
 }

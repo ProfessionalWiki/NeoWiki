@@ -31,4 +31,19 @@ describe( 'Schema', () => {
 
 	} );
 
+	describe( 'withName', () => {
+
+		it( 'returns a new Schema with the updated name', () => {
+			const originalSchema = newSchema();
+
+			const updatedSchema = originalSchema.withName( 'Updated Schema' );
+
+			expect( updatedSchema.getName() ).toBe( 'Updated Schema' );
+			expect( updatedSchema.getDescription() ).toBe( originalSchema.getDescription() );
+			expect( updatedSchema.getPropertyDefinitions() ).toEqual( originalSchema.getPropertyDefinitions() );
+			expect( updatedSchema ).not.toBe( originalSchema );
+		} );
+
+	} );
+
 } );

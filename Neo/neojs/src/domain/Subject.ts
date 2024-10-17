@@ -56,4 +56,16 @@ export class Subject {
 		return this.statements.withNonEmptyValues().getPropertyNames();
 	}
 
+	public withLabel( label: string ): Subject {
+		return new Subject( this.id, label, this.schemaName, this.statements, this.pageIdentifiers );
+	}
+
+	public withStatements( statements: StatementList ): Subject {
+		return new Subject( this.id, this.label, this.schemaName, statements, this.pageIdentifiers );
+	}
+
+	public withSchemaName( schemaName: SchemaName ): Subject {
+		return new Subject( this.id, this.label, schemaName, this.statements, this.pageIdentifiers );
+	}
+
 }
