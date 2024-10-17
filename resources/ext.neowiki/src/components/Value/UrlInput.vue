@@ -80,33 +80,56 @@ const isValidUrl = ( url: string ): boolean => {
 	}
 };
 
-const validateAndUpdateFields = ( fieldValues: string[] ): boolean => {
+const validateFields = ( fieldValues: string[] ): boolean => {
 	let isValid = true;
+	if ( fieldValues.length === 1 ) {
+		return isRequiredValid( fieldValues );
+	}
+
 	fieldValues.forEach( ( value, index ) => {
-		const fieldValid = isValidUrl( value );
-		inputStatuses.value[ index ] = value.trim() === '' ? 'default' : ( fieldValid ? 'success' : 'error' );
-		validationMessages.value[ index ] = fieldValid ? {} : { error: mw.message( 'neowiki-field-invalid-url' ).text() };
-		isValid = isValid && fieldValid;
+		const isEmpty = value.trim() === '';
+		const isFieldValid: boolean = !isEmpty && isValidUrl( value );
+		const message = isFieldValid ? {} : { error: getErrorMessage( isEmpty ) };
+		const status = isFieldValid ? 'success' : 'error';
+
+		isValid = isValid && ( isFieldValid || isEmpty );
+		updateFieldStatus( index, status, message );
 	} );
+
 	return isValid;
 };
 
-const isRequiredValid = ( values: string[] ): boolean => {
-	if ( props.property.required && values.every( ( url ) => url.trim() === '' ) ) {
-		inputStatuses.value = [ 'error' ];
-		validationMessages.value = [ { error: mw.message( 'neowiki-field-required' ).text() } ];
-		return false;
-	}
-	return true;
+const updateFieldStatus = ( index: number, status: ValidationStatusType, message: ValidationMessages ): void => {
+	inputStatuses.value[ index ] = status;
+	validationMessages.value[ index ] = status === 'success' ? {} : message;
 };
+
+const isRequiredValid = ( values: string[] ): boolean => {
+	const url = values[ 0 ];
+	const isEmpty = url.trim() === '';
+	const isValid: boolean = !isEmpty && isValidUrl( url );
+
+	if ( props.property.required === false && isEmpty ) {
+		updateFieldStatus( 0, 'success', {} );
+		return true;
+	}
+
+	const status = isValid ? 'success' : 'error';
+	const message = isValid ? {} : { error: getErrorMessage( isEmpty ) };
+	updateFieldStatus( 0, status, message );
+
+	return isValid;
+};
+
+const getErrorMessage = ( isEmpty: boolean ): string => isEmpty ?
+	mw.message( 'neowiki-field-required' ).text() :
+	mw.message( 'neowiki-field-invalid-url' ).text();
 
 const onInput = ( newValue: string, index: number ): void => {
 	const updatedValues = inputValues.value.map( ( value, i ) => i === index ? newValue : value );
+	const fieldsValid = validateFields( updatedValues );
 
 	emit( 'update:modelValue', newStringValue( ...updatedValues ) );
-
-	const fieldsValid = isRequiredValid( updatedValues ) === true ? validateAndUpdateFields( updatedValues ) : false;
-
 	emit( 'validation', fieldsValid );
 };
 
@@ -118,6 +141,7 @@ const addUrl = async (): Promise<void> => {
 	await nextTick();
 	const inputRef = `${ inputValues.value.length - 1 }-${ props.property.name.toString() }-url-input`;
 	focusInput( inputRef );
+	emit( 'validation', false );
 };
 
 const focusInput = ( inputRef: string ): void => {
@@ -130,6 +154,7 @@ const removeUrl = ( index: number ): void => {
 	inputValues.value.splice( index, 1 );
 	const value = newStringValue( ...inputValues.value );
 	emit( 'update:modelValue', value );
+	emit( 'validation', validateFields( inputValues.value ) );
 };
 
 watch( () => props.modelValue, ( newValue ) => {
@@ -173,7 +198,7 @@ defineExpose( {
 
 			&__start-icon {
 				left: 8px;
-				color: #54595d;
+				color: $color-subtle;
 			}
 		}
 
