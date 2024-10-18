@@ -66,7 +66,7 @@ export class RestSchemaRepository implements SchemaRepository {
 			`Schema:${ encodeURIComponent( schema.getName() ) }`,
 			this.serializeSchema( schema ),
 			'Update schema via NeoWiki UI',
-			'json'
+			'NeoWikiSchema'
 		);
 
 		if ( !status.success ) {
