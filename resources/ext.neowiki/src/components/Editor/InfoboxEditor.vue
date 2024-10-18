@@ -316,13 +316,7 @@ const submit = async (): Promise<void> => {
 
 	await schemaStore.saveSchema( localSchema.value as Schema );
 
-	const properStatements = statements.value.map( ( stmt ) => new Statement(
-		new PropertyName( stmt.propertyName.toString() ),
-		stmt.format,
-		stmt.value
-	) );
-
-	localSubject.value = localSubject.value.withStatements( new StatementList( properStatements ) );
+	localSubject.value = localSubject.value.withStatements( new StatementList( statements.value as Statement[] ) );
 
 	if ( isNewSubject.value ) {
 		await subjectStore.createMainSubject( localSubject.value as Subject );
