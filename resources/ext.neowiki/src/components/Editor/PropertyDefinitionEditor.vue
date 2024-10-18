@@ -2,51 +2,45 @@
 	<CdxDialog
 		v-model:open="isOpen"
 		:use-close-button="true"
-		:title="editMode ? $i18n( 'neowiki-infobox-editor-dialog-title-edit', property?.name.toString() ).text() : $i18n( 'neowiki-infobox-editor-add-property' ).text()"
+		:title="editMode ? $i18n( 'neowiki-property-editor-dialog-title-edit', property?.name.toString() ).text() : $i18n( 'neowiki-property-editor-dialog-title-create' ).text()"
 		class="property-definition-editor"
 	>
-		<div v-if="localProperty" class="editor-content">
+		<div class="editor-content">
 			<div class="inline-fields">
 				<NeoTextField
 					:model-value="localProperty.name.toString()"
-					:label="$i18n( 'neowiki-infobox-editor-property-label' ).text()"
+					:label="$i18n( 'neowiki-property-editor-name' ).text()"
 					:required="true"
-					@update:model-value="updateForm( 'name', $event as never )"
+					@update:model-value="( value ) => localProperty = { ...localProperty, name: new PropertyName( value ) }"
 				/>
 				<div class="field-group format-select">
-					<label for="format-select">{{ $i18n( 'neowiki-infobox-type' ).text() }}</label>
+					<label for="format-select">{{ $i18n( 'neowiki-property-editor-type' ).text() }}</label>
 					<CdxSelect
 						v-model:selected="localProperty.format"
 						:menu-items="formatOptions"
-						@update:selected="updateForm( 'format', $event as never )"
 					/>
 				</div>
 			</div>
 			<component
 				:is="componentRegistry.getValueEditingComponent( localProperty.format )"
 				v-model="localProperty.default"
-				:label="$i18n( 'neowiki-infobox-editor-default-value-label' ).text()"
+				:label="$i18n( 'neowiki-property-editor-initial-value' ).text()"
 				:property="localProperty"
 			/>
 			<NeoTextField
 				v-model="localProperty.description"
 				class="property-description"
 				label="Description"
-				@update:model-value="updateForm( 'description', $event as never )"
 			/>
 			<div class="required-checkbox">
 				<CdxCheckbox
 					v-model="localProperty.required"
 					class="neo-round-checkbox"
 					:label="$i18n( 'neowiki-field-required' ).text()"
-					@update:model-value="updateForm( 'required', $event as never )"
 				>
 					<small>{{ $i18n( 'neowiki-field-required' ).text() }}</small>
 				</CdxCheckbox>
 			</div>
-		</div>
-		<div v-else class="no-property">
-			<p>{{ $i18n( 'neowiki-infobox-editor-no-property-selected' ).text() }}</p>
 		</div>
 
 		<template #footer>
@@ -64,7 +58,7 @@
 					weight="primary"
 					:disabled="!localProperty"
 					@click="save">
-					{{ $i18n( 'neowiki-infobox-editor-save-property' ).text() }}
+					{{ $i18n( 'neowiki-property-editor-save' ).text() }}
 				</CdxButton>
 			</div>
 		</template>
@@ -80,7 +74,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps( {
 	property: {
-		type: Object as PropType<PropertyDefinition | null>,
+		type: Object as PropType<PropertyDefinition>,
 		required: true
 	},
 	editMode: {
@@ -92,30 +86,14 @@ const props = defineProps( {
 const emit = defineEmits( [ 'cancel', 'save' ] );
 
 const isOpen = ref( false );
-const localProperty = ref<PropertyDefinition | null>( null );
+const localProperty = ref<PropertyDefinition>( { ...props.property } );
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
-const updateForm = ( field: string, value: never ): void => {
-	if ( localProperty.value ) {
-		if ( field === 'name' ) {
-			localProperty.value = {
-				...localProperty.value,
-				name: new PropertyName( value )
-			};
-		} else {
-			localProperty.value = {
-				...localProperty.value,
-				[ field ]: value
-			};
-		}
-	}
-};
-
 watch( () => props.property, ( newProperty ) => {
-	localProperty.value = newProperty ? Object.assign( {}, newProperty ) : null;
+	localProperty.value = Object.assign( {}, newProperty );
 }, { deep: true, immediate: true } );
 
-const formatOptions = [
+const formatOptions = [ // FIXME: use plugin system
 	{ value: 'text', label: mw.message( 'neowiki-infobox-editor-format-text' ).text() },
 	{ value: 'url', label: mw.message( 'neowiki-infobox-editor-format-url' ).text() },
 	{ value: 'number', label: mw.message( 'neowiki-infobox-editor-format-number' ).text() }
@@ -125,16 +103,24 @@ const openDialog = (): void => {
 	isOpen.value = true;
 };
 
-const cancel = (): void => {
+const closeDialog = (): void => {
 	isOpen.value = false;
+};
+
+const cancel = (): void => {
+	closeDialog();
+	discardChanges();
 	emit( 'cancel' );
 };
 
+const discardChanges = (): void => {
+	localProperty.value = Object.assign( {}, props.property );
+};
+
 const save = (): void => {
-	if ( localProperty.value ) {
-		isOpen.value = false;
-		emit( 'save', Object.assign( {}, localProperty.value ) as PropertyDefinition );
-	}
+	// TODO: validation
+	closeDialog();
+	emit( 'save', Object.assign( {}, localProperty.value ) as PropertyDefinition );
 };
 
 defineExpose( { openDialog } );
