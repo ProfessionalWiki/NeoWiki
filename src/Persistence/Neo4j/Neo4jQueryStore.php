@@ -106,19 +106,23 @@ readonly class Neo4jQueryStore implements QueryStore, QueryEngine, WriteQueryEng
 	}
 
 	/**
+	 * FIXME: tests still pass if this function returns an empty array
 	 * @return string[]
 	 */
 	private function getSubjectIdsByPageId( TransactionInterface $transaction, PageId $pageId ): array {
 		/**
-		 * @var SummarizedResult $result
+		 * @var SummarizedResult $results
 		 */
-		$result = $transaction->run(
+		$results = $transaction->run(
 			'MATCH (page:Page {id: $pageId})-[:HasSubject]->(subject:Subject)
 				RETURN subject.id AS id, subject AS properties, labels(subject) AS labels',
 			[ 'pageId' => $pageId->id ]
 		);
 
-		return $result->toArray();
+		return array_map(
+			fn( $record ) => $record->get('id'),
+			$results->toArray()
+		);
 	}
 
 	private function deleteSubject( TransactionInterface $transaction, SubjectId $subjectId ): void {
