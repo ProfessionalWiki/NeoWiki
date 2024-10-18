@@ -1,9 +1,10 @@
 <template>
 	<CdxDialog
-		v-model:open="isOpen"
+		:open="isOpen"
 		:use-close-button="true"
 		:title="editMode ? $i18n( 'neowiki-property-editor-dialog-title-edit', property?.name.toString() ).text() : $i18n( 'neowiki-property-editor-dialog-title-create' ).text()"
 		class="property-definition-editor"
+		@update:open="$emit( 'cancel' )"
 	>
 		<div class="editor-content">
 			<div class="inline-fields">
@@ -48,7 +49,7 @@
 				<CdxButton
 					class="cancel-button neo-button"
 					weight="quiet"
-					@click="cancel">
+					@click="$emit( 'cancel' )">
 					{{ $i18n( 'neowiki-create-subject-dialog-go-back' ).text() }}
 				</CdxButton>
 				<CdxButton
@@ -77,6 +78,10 @@ const props = defineProps( {
 		type: Object as PropType<PropertyDefinition>,
 		required: true
 	},
+	isOpen: {
+		type: Boolean,
+		default: false
+	},
 	editMode: {
 		type: Boolean,
 		default: false
@@ -85,7 +90,6 @@ const props = defineProps( {
 
 const emit = defineEmits( [ 'cancel', 'save' ] );
 
-const isOpen = ref( false );
 const localProperty = ref<PropertyDefinition>( { ...props.property } );
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
@@ -99,31 +103,10 @@ const formatOptions = [ // FIXME: use plugin system
 	{ value: 'number', label: mw.message( 'neowiki-infobox-editor-format-number' ).text() }
 ];
 
-const openDialog = (): void => {
-	isOpen.value = true;
-};
-
-const closeDialog = (): void => {
-	isOpen.value = false;
-};
-
-const cancel = (): void => {
-	closeDialog();
-	discardChanges();
-	emit( 'cancel' );
-};
-
-const discardChanges = (): void => {
-	localProperty.value = Object.assign( {}, props.property );
-};
-
 const save = (): void => {
 	// TODO: validation
-	closeDialog();
 	emit( 'save', Object.assign( {}, localProperty.value ) as PropertyDefinition );
 };
-
-defineExpose( { openDialog } );
 </script>
 
 <style lang="scss">

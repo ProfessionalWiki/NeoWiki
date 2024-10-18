@@ -55,11 +55,13 @@
 			/>
 		</div>
 		<PropertyDefinitionEditor
-			v-if="canEditSchema"
+			v-if="canEditSchema && isPropertyEditorOpen"
 			:key="localSubject.getId().text + 'info'"
 			ref="propertyDefinitionEditorInfo"
+			:is-open="isPropertyEditorOpen"
 			:edit-mode="isEditingProperty"
 			:property="editingProperty as PropertyDefinition"
+			@cancel="isPropertyEditorOpen = false"
 			@save="handlePropertySave"
 		/>
 		<template #footer>
@@ -121,6 +123,7 @@ const editingProperty = ref<PropertyDefinition | null>( null );
 const selectedSchema = computed( () => props.selectedSchema );
 const isNewSchema = computed( () => props.selectedSchema === '' );
 const isNewSubject = computed( () => props.subject === undefined );
+const isPropertyEditorOpen = ref( false );
 
 const getPropertyDefinition = ( propertyName: PropertyName ): PropertyDefinition | undefined => {
 	if ( localSchema.value instanceof Schema ) {
@@ -211,7 +214,7 @@ const editProperty = ( propertyName: PropertyName ): void => {
 		const property = localSchema.value.getPropertyDefinitions().get( propertyName );
 		if ( property ) {
 			editingProperty.value = property as PropertyDefinition;
-			propertyDefinitionEditorInfo.value?.openDialog();
+			isPropertyEditorOpen.value = true;
 		}
 	}
 };
@@ -226,6 +229,7 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 
 	if ( isEditingProperty.value === false ) {
 		handleAddProperty( savedProperty );
+		isPropertyEditorOpen.value = false;
 		return;
 	}
 
@@ -251,6 +255,7 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 	);
 
 	editingProperty.value = null;
+	isPropertyEditorOpen.value = false;
 };
 
 const handleAddProperty = ( savedProperty: PropertyDefinition ): void => {
@@ -284,7 +289,7 @@ const addProperty = ( type: string ): void => {
 		description: '',
 		required: false
 	};
-	propertyDefinitionEditorInfo.value?.openDialog();
+	isPropertyEditorOpen.value = true;
 };
 
 const updateStatement = ( index: number, updatedStatement: Statement ): void => {
