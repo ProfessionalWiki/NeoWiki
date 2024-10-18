@@ -11,6 +11,7 @@ import { newNumberProperty } from '@neo/domain/valueFormats/Number.ts';
 
 type PropertyDefinitionEditorProps = {
 	property: PropertyDefinition;
+	isOpen: boolean;
 	editMode: boolean;
 };
 
@@ -32,6 +33,7 @@ describe( 'PropertyDefinitionEditor', () => {
 	const createWrapper = ( props: Partial<PropertyDefinitionEditorProps> = {} ): any => mount( PropertyDefinitionEditor, {
 		props: {
 			property: newTextProperty(),
+			isOpen: true,
 			editMode: false,
 			...props
 		},
@@ -45,9 +47,8 @@ describe( 'PropertyDefinitionEditor', () => {
 		}
 	} );
 
-	it( 'renders correctly when a property is provided', async () => {
-		const wrapper = createWrapper( {} );
-		await wrapper.vm.openDialog();
+	it( 'renders correctly when a property is provided', () => {
+		const wrapper = createWrapper();
 		expect( wrapper.findComponent( NeoTextField ).exists() ).toBe( true );
 	} );
 
@@ -58,16 +59,13 @@ describe( 'PropertyDefinitionEditor', () => {
 		expect( wrapper.vm.localProperty ).toEqual( newProperty );
 	} );
 
-	it( 'closes dialog and emits cancel event when cancel is called', async () => {
-		const wrapper = createWrapper( {} );
-		await wrapper.vm.openDialog();
-		expect( wrapper.vm.isOpen ).toBe( true );
-		await wrapper.vm.cancel();
-		expect( wrapper.vm.isOpen ).toBe( false );
+	it( 'emits cancel event when dialog is closed', async () => {
+		const wrapper = createWrapper();
+		await wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open' );
 		expect( wrapper.emitted( 'cancel' ) ).toBeTruthy();
 	} );
 
-	it( 'renders correct title based on editMode', async () => {
+	it( 'renders correct title based on editMode', () => {
 		const editWrapper = createWrapper( { editMode: true } );
 		const addWrapper = createWrapper( { editMode: false } );
 
@@ -75,19 +73,15 @@ describe( 'PropertyDefinitionEditor', () => {
 		expect( addWrapper.findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-property-editor-dialog-title-create' );
 	} );
 
-	it( 'restores the original PropertyDefinition when discardChanges is called', async () => {
-		const originalProperty = newTextProperty();
-		const wrapper = createWrapper( { property: originalProperty } );
-
-		wrapper.vm.localProperty = newNumberProperty();
-		wrapper.vm.discardChanges();
-
-		expect( wrapper.vm.localProperty ).toEqual( originalProperty );
+	it( 'emits save event with updated property when save is called', async () => {
+		const wrapper = createWrapper();
+		await wrapper.vm.save();
+		expect( wrapper.emitted( 'save' ) ).toBeTruthy();
+		expect( wrapper.emitted( 'save' )?.[ 0 ][ 0 ] ).toEqual( wrapper.vm.localProperty );
 	} );
 
 	it( 'renders the initial value component based on the selected format', async () => {
-		const wrapper = createWrapper( {} );
-		await wrapper.vm.openDialog();
+		const wrapper = createWrapper();
 
 		await wrapper.findComponent( CdxSelect ).vm.$emit( 'update:selected', 'number' );
 

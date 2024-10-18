@@ -22,7 +22,7 @@
 			<CdxButton
 				v-if="index > 0"
 				weight="quiet"
-				aria-label=""
+				aria-hidden="false"
 				class="delete-button"
 				@click="removeUrl( index )"
 			>
@@ -31,8 +31,8 @@
 		</div>
 		<CdxButton
 			weight="quiet"
+			aria-hidden="false"
 			class="add-url-button"
-			aria-label=""
 			@click="addUrl"
 		>
 			<CdxIcon :icon="cdxIconAdd" />
