@@ -1,11 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Application\\\\Actions\\\\ImportPages\\\\ImportPagesAction\\:\\:fileNameAndSourceToContent\\(\\) should return MediaWiki\\\\Content\\\\Content but returns MediaWiki\\\\Extension\\\\Scribunto\\\\ScribuntoContent\\.$#"
-			count: 1
-			path: src/Application/Actions/ImportPages/ImportPagesAction.php
-
-		-
 			message: "#^Call to static method getMain\\(\\) on an unknown class RequestContext\\.$#"
 			count: 1
 			path: src/NeoWikiExtension.php
@@ -186,12 +181,12 @@ parameters:
 			path: src/Persistence/Neo4j/Neo4jQueryStore.php
 
 		-
-			message: "#^Cannot call method isEmpty\\(\\) on mixed\\.$#"
+			message: "#^Cannot call method get\\(\\) on mixed\\.$#"
 			count: 1
 			path: src/Persistence/Neo4j/Neo4jQueryStore.php
 
 		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\MediaWiki\\\\Persistence\\\\Neo4j\\\\Neo4jQueryStore\\:\\:getSubjectIdsByPageId\\(\\) should return array\\<string\\> but returns array\\<int, mixed\\>\\.$#"
+			message: "#^Cannot call method isEmpty\\(\\) on mixed\\.$#"
 			count: 1
 			path: src/Persistence/Neo4j/Neo4jQueryStore.php
 

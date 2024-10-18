@@ -47,7 +47,11 @@ class WikiPageSchemaLookup implements SchemaLookup {
 			return $content;
 		}
 
-		return null;
+		if ( $content === null ) {
+			return null;
+		}
+
+		throw new \LogicException( 'Unexpected content type: not a SchemaContent' );
 	}
 
 }
