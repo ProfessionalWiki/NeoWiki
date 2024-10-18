@@ -105,7 +105,7 @@ describe( 'RestSchemaRepository', () => {
 				'Schema:TestSchema',
 				'{"serialized":"TestSchema"}',
 				'Update schema via NeoWiki UI',
-				'json'
+				'NeoWikiSchema'
 			);
 		} );
 
