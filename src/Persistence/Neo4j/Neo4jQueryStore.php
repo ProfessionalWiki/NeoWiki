@@ -120,7 +120,7 @@ readonly class Neo4jQueryStore implements QueryStore, QueryEngine, WriteQueryEng
 		);
 
 		return array_map(
-			fn( $record ) => $record->get('id'),
+			fn( $record ) => $record->get( 'id' ),
 			$results->toArray()
 		);
 	}
