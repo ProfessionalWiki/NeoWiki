@@ -28,6 +28,8 @@ import { SubjectDeserializer } from '@neo/persistence/SubjectDeserializer.ts';
 import { Neo } from '@neo/Neo.ts';
 import { cdxIconStringInteger, cdxIconTextA } from '@/assets/CustomIcons.ts';
 import { cdxIconLink } from '@wikimedia/codex-icons';
+import TextAttributesEditor from '@/components/Editor/Property/TextAttributesEditor.vue';
+import NumberAttributesEditor from '@/components/Editor/Property/NumberAttributesEditor.vue';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -42,10 +44,37 @@ export class NeoWikiExtension {
 	public getFormatSpecificComponentRegistry(): FormatSpecificComponentRegistry {
 		const registry = new FormatSpecificComponentRegistry();
 
-		registry.registerComponents( TextFormat.formatName, TextDisplay, TextInput, 'neowiki-format-text', cdxIconTextA );
-		registry.registerComponents( UrlFormat.formatName, UrlDisplay, UrlInput, 'neowiki-format-url', cdxIconLink );
-		registry.registerComponents( NumberFormat.formatName, NumberDisplay, NumberInput, 'neowiki-format-number', cdxIconStringInteger );
-		registry.registerComponents( RelationFormat.formatName, RelationDisplay, TextInput, 'neowiki-format-relation', cdxIconLink ); // TODO
+		registry.registerFormat( TextFormat.formatName, {
+			valueDisplayComponent: TextDisplay,
+			valueEditor: TextInput,
+			attributesEditor: TextAttributesEditor,
+			label: 'neowiki-format-text',
+			icon: cdxIconTextA
+		} );
+
+		registry.registerFormat( UrlFormat.formatName, {
+			valueDisplayComponent: UrlDisplay,
+			valueEditor: UrlInput,
+			attributesEditor: TextAttributesEditor, // TODO
+			label: 'neowiki-format-url',
+			icon: cdxIconLink
+		} );
+
+		registry.registerFormat( NumberFormat.formatName, {
+			valueDisplayComponent: NumberDisplay,
+			valueEditor: NumberInput,
+			attributesEditor: NumberAttributesEditor,
+			label: 'neowiki-format-number',
+			icon: cdxIconStringInteger
+		} );
+
+		registry.registerFormat( RelationFormat.formatName, {
+			valueDisplayComponent: RelationDisplay,
+			valueEditor: TextInput, // TODO
+			attributesEditor: TextAttributesEditor, // TODO
+			label: 'neowiki-format-relation',
+			icon: cdxIconLink // TODO
+		} );
 
 		return registry;
 	}

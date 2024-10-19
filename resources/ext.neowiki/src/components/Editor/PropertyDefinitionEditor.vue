@@ -37,6 +37,10 @@
 				</CdxCheckbox>
 			</div>
 			<component
+				:is="componentRegistry.getAttributesEditor( localProperty.format )"
+				:property="localProperty"
+			/>
+			<component
 				:is="componentRegistry.getValueEditingComponent( localProperty.format )"
 				v-model="localProperty.default"
 				:label="$i18n( 'neowiki-property-editor-initial-value' ).text()"

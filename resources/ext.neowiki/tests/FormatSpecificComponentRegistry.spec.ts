@@ -1,12 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
+import { FormatSpecificComponentRegistry, FormatSpecificStuff } from '@/FormatSpecificComponentRegistry.ts';
 
 describe( 'FormatSpecificComponentRegistry', () => {
 
-	const registerComponent = ( registry: FormatSpecificComponentRegistry, format: string ): void => {
+	const registerComponent = (
+		registry: FormatSpecificComponentRegistry,
+		format: string,
+		stuff: Partial<FormatSpecificStuff> = {}
+	): void => {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const mockComponent = {} as any;
-		registry.registerComponents( format, mockComponent, mockComponent, 'Label', 'Icon' );
+
+		const defaultStuff: FormatSpecificStuff = {
+			valueDisplayComponent: mockComponent,
+			valueEditor: mockComponent,
+			attributesEditor: mockComponent,
+			label: 'Default Label',
+			icon: 'Default Icon'
+		};
+
+		registry.registerFormat( format, { ...defaultStuff, ...stuff } );
 	};
 
 	describe( 'getValueFormats', () => {
@@ -41,20 +54,71 @@ describe( 'FormatSpecificComponentRegistry', () => {
 
 		it( 'returns labels and icons for all registered formats', () => {
 			const registry = new FormatSpecificComponentRegistry();
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const mockComponent = {} as any;
+			registerComponent( registry, 'string', { label: 'String', icon: 'string-icon' } );
+			registerComponent( registry, 'number', { label: 'Number', icon: 'number-icon' } );
+			registerComponent( registry, 'boolean', { label: 'Boolean', icon: 'boolean-icon' } );
 
-			registry.registerComponents( 'string', mockComponent, mockComponent, 'String', 'string-icon' );
-			registry.registerComponents( 'number', mockComponent, mockComponent, 'Number', 'number-icon' );
-			registry.registerComponents( 'boolean', mockComponent, mockComponent, 'Boolean', 'boolean-icon' );
-
-			expect( registry.getLabelsAndIcons() ).toEqual( [
+			expect( registry.getLabelsAndIcons() ).toStrictEqual( [
 				{ value: 'string', label: 'String', icon: 'string-icon' },
 				{ value: 'number', label: 'Number', icon: 'number-icon' },
 				{ value: 'boolean', label: 'Boolean', icon: 'boolean-icon' }
 			] );
 		} );
 
+	} );
+
+	describe( 'getValueDisplayComponent', () => {
+		it( 'returns the correct value display component for a registered format', () => {
+			const registry = new FormatSpecificComponentRegistry();
+			registerComponent( registry, 'url', { valueDisplayComponent: { name: 'UrlWrong' } } );
+			registerComponent( registry, 'string', { valueDisplayComponent: { name: 'StringRight' } } );
+			registerComponent( registry, 'number', { valueDisplayComponent: { name: 'NumberWrong' } } );
+
+			const result = registry.getValueDisplayComponent( 'string' );
+			expect( result ).toStrictEqual( { name: 'StringRight' } );
+		} );
+
+		it( 'throws an error for an unregistered format', () => {
+			const registry = new FormatSpecificComponentRegistry();
+			expect( () => registry.getValueDisplayComponent( 'unregistered' ) )
+				.toThrow( 'No value display component registered for format: unregistered' );
+		} );
+	} );
+
+	describe( 'getValueEditingComponent', () => {
+		it( 'returns the correct value editing component for a registered format', () => {
+			const registry = new FormatSpecificComponentRegistry();
+			registerComponent( registry, 'url', { valueEditor: { name: 'UrlWrong' } } );
+			registerComponent( registry, 'string', { valueEditor: { name: 'StringRight' } } );
+			registerComponent( registry, 'number', { valueEditor: { name: 'NumberWrong' } } );
+
+			const result = registry.getValueEditingComponent( 'string' );
+			expect( result ).toStrictEqual( { name: 'StringRight' } );
+		} );
+
+		it( 'throws an error for an unregistered format', () => {
+			const registry = new FormatSpecificComponentRegistry();
+			expect( () => registry.getValueEditingComponent( 'unregistered' ) )
+				.toThrow( 'No value editing component registered for format: unregistered' );
+		} );
+	} );
+
+	describe( 'getAttributesEditor', () => {
+		it( 'returns the correct attributes editor component for a registered format', () => {
+			const registry = new FormatSpecificComponentRegistry();
+			registerComponent( registry, 'url', { attributesEditor: { name: 'UrlWrong' } } );
+			registerComponent( registry, 'string', { attributesEditor: { name: 'StringRight' } } );
+			registerComponent( registry, 'number', { attributesEditor: { name: 'NumberWrong' } } );
+
+			const result = registry.getAttributesEditor( 'string' );
+			expect( result ).toStrictEqual( { name: 'StringRight' } );
+		} );
+
+		it( 'throws an error for an unregistered format', () => {
+			const registry = new FormatSpecificComponentRegistry();
+			expect( () => registry.getAttributesEditor( 'unregistered' ) )
+				.toThrow( 'No attributes editor component registered for format: unregistered' );
+		} );
 	} );
 
 } );
