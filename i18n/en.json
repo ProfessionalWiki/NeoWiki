@@ -40,6 +40,7 @@
 	"neowiki-property-editor-name": "Name",
 	"neowiki-property-editor-type": "Type",
 	"neowiki-property-editor-initial-value": "Initial value",
+	"neowiki-property-editor-required": "Require a value",
 	"neowiki-property-editor-save": "Save Property",
 
 	"neowiki-infobox-type": "Type",

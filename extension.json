@@ -220,6 +220,7 @@
 				"neowiki-property-editor-name",
 				"neowiki-property-editor-type",
 				"neowiki-property-editor-initial-value",
+				"neowiki-property-editor-required",
 				"neowiki-property-editor-save"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
