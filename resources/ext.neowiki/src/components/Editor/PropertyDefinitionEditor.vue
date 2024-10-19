@@ -97,11 +97,10 @@ watch( () => props.property, ( newProperty ) => {
 	localProperty.value = Object.assign( {}, newProperty );
 }, { deep: true, immediate: true } );
 
-const formatOptions = [ // FIXME: use plugin system
-	{ value: 'text', label: mw.message( 'neowiki-infobox-editor-format-text' ).text() },
-	{ value: 'url', label: mw.message( 'neowiki-infobox-editor-format-url' ).text() },
-	{ value: 'number', label: mw.message( 'neowiki-infobox-editor-format-number' ).text() }
-];
+const formatOptions = componentRegistry.getValueFormats().map( ( format ) => ( {
+	value: format,
+	label: mw.message( `neowiki-infobox-editor-format-${ format }` ).text()
+} ) );
 
 const save = (): void => {
 	// TODO: validation

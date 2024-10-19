@@ -6,6 +6,7 @@ interface Components {
 }
 
 export class FormatSpecificComponentRegistry {
+
 	private componentMap: Map<string, Components> = new Map();
 
 	public registerComponents( valueFormat: string, valueDisplayComponent: Component, valueEditingComponent: Component ): void {
@@ -28,4 +29,9 @@ export class FormatSpecificComponentRegistry {
 		}
 		return this.componentMap.get( formatName )!.valueEditingComponent;
 	}
+
+	public getValueFormats(): string[] {
+		return Array.from( this.componentMap.keys() );
+	}
+
 }
