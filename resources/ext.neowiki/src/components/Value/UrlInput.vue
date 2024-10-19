@@ -7,16 +7,16 @@
 			class="url-input-wrapper"
 		>
 			<CdxField
-				:status="inputStatuses[index]"
-				:messages="validationMessages[index]"
+				:status="validationState.statuses[index]"
+				:messages="validationState.messages[index]"
 			>
 				<CdxTextInput
 					:input-ref="`${index}-${property.name.toString()}-url-input`"
 					:model-value="url"
 					input-type="url"
 					:start-icon="cdxIconLink"
-					:status="inputStatuses[index]"
-					@update:model-value="( value ) => onInput( value, index )"
+					:status="validationState.statuses[index]"
+					@update:model-value="value => onInput( value, index )"
 				/>
 			</CdxField>
 			<CdxButton
@@ -48,6 +48,12 @@ import type { Value } from '@neo/domain/Value';
 import { newStringValue, StringValue, ValueType } from '@neo/domain/Value';
 import { UrlProperty } from '@neo/domain/valueFormats/Url.ts';
 
+type ValidationResult = {
+	isValid: boolean;
+	statuses: ValidationStatusType[];
+	messages: ValidationMessages[];
+};
+
 const props = defineProps( {
 	modelValue: {
 		type: Object as PropType<Value>,
@@ -66,10 +72,13 @@ const props = defineProps( {
 
 const emit = defineEmits( [ 'update:modelValue', 'validation' ] );
 
-const inputStatuses = ref<ValidationStatusType[]>( [] );
-const validationMessages = ref<ValidationMessages[]>( [] );
-
 const inputValues = ref<string[]>( [] );
+
+const validationState = ref<ValidationResult>( {
+	isValid: true,
+	statuses: [] as ValidationStatusType[],
+	messages: [] as ValidationMessages[]
+} );
 
 const isValidUrl = ( url: string ): boolean => {
 	try {
@@ -80,81 +89,65 @@ const isValidUrl = ( url: string ): boolean => {
 	}
 };
 
-const validateFields = ( fieldValues: string[] ): boolean => {
-	let isValid = true;
-	if ( fieldValues.length === 1 ) {
-		return isRequiredValid( fieldValues );
-	}
-
-	fieldValues.forEach( ( value, index ) => {
-		const isEmpty = value.trim() === '';
-		const isFieldValid: boolean = !isEmpty && isValidUrl( value );
-		const message = isFieldValid ? {} : { error: getErrorMessage( isEmpty ) };
-		const status = isFieldValid ? 'success' : 'error';
-
-		isValid = isValid && ( isFieldValid || isEmpty );
-		updateFieldStatus( index, status, message );
-	} );
-
-	return isValid;
-};
-
-const updateFieldStatus = ( index: number, status: ValidationStatusType, message: ValidationMessages ): void => {
-	inputStatuses.value[ index ] = status;
-	validationMessages.value[ index ] = status === 'success' ? {} : message;
-};
-
-const isRequiredValid = ( values: string[] ): boolean => {
-	const url = values[ 0 ];
-	const isEmpty = url.trim() === '';
-	const isValid: boolean = !isEmpty && isValidUrl( url );
-
-	if ( props.property.required === false && isEmpty ) {
-		updateFieldStatus( 0, 'success', {} );
-		return true;
-	}
-
-	const status = isValid ? 'success' : 'error';
-	const message = isValid ? {} : { error: getErrorMessage( isEmpty ) };
-	updateFieldStatus( 0, status, message );
-
-	return isValid;
-};
-
 const getErrorMessage = ( isEmpty: boolean ): string => isEmpty ?
 	mw.message( 'neowiki-field-required' ).text() :
 	mw.message( 'neowiki-field-invalid-url' ).text();
 
-const onInput = ( newValue: string, index: number ): void => {
-	const updatedValues = inputValues.value.map( ( value, i ) => i === index ? newValue : value );
-	const fieldsValid = validateFields( updatedValues );
+const validateFields = ( fieldValues: string[] ): ValidationResult => {
+	const validation: ValidationResult = { isValid: true, statuses: [], messages: [] };
+	const isSingleFieldOptional: boolean = fieldValues.length === 1 && !props.property.required;
 
-	emit( 'update:modelValue', newStringValue( ...updatedValues ) );
-	emit( 'validation', fieldsValid );
+	fieldValues.forEach( ( value: string ): void => {
+		const url = value.trim();
+		const isEmpty: boolean = url === '';
+		let fieldIsValid: boolean = !isEmpty && isValidUrl( url );
+
+		if ( isEmpty && isSingleFieldOptional ) {
+			fieldIsValid = true;
+		}
+
+		validation.statuses.push( fieldIsValid ? 'success' : 'error' );
+		validation.messages.push( fieldIsValid ? {} : { error: getErrorMessage( isEmpty ) } );
+		validation.isValid = validation.isValid && fieldIsValid;
+	} );
+
+	return validation;
+};
+
+const onInput = ( newValue: string, index: number ): void => {
+	inputValues.value[ index ] = newValue;
+
+	const validation = validateFields( inputValues.value );
+	validationState.value = validation;
+
+	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
+	emit( 'validation', validation.isValid );
 };
 
 const addUrl = async (): Promise<void> => {
 	inputValues.value.push( '' );
-	const value = newStringValue( ...inputValues.value );
-	emit( 'update:modelValue', value );
 
-	await nextTick();
-	const inputRef = `${ inputValues.value.length - 1 }-${ props.property.name.toString() }-url-input`;
-	focusInput( inputRef );
+	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
 	emit( 'validation', false );
+	await nextTick();
+
+	const inputRef = `${ inputValues.value.length - 1 }-${ props.property.name }-url-input`;
+	focusInput( inputRef );
+};
+
+const removeUrl = ( index: number ): void => {
+	inputValues.value.splice( index, 1 );
+
+	const validation = validateFields( inputValues.value );
+	validationState.value = validation;
+
+	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
+	emit( 'validation', validation.isValid );
 };
 
 const focusInput = ( inputRef: string ): void => {
 	const input = document.querySelector( `[input-ref="${ inputRef }"]` ) as HTMLInputElement | null;
-	if ( input ) {
-		input.focus();
-	}
-};
-const removeUrl = ( index: number ): void => {
-	inputValues.value.splice( index, 1 );
-	const value = newStringValue( ...inputValues.value );
-	emit( 'update:modelValue', value );
-	emit( 'validation', validateFields( inputValues.value ) );
+	input?.focus();
 };
 
 watch( () => props.modelValue, ( newValue ) => {
@@ -167,8 +160,7 @@ watch( () => props.modelValue, ( newValue ) => {
 
 defineExpose( {
 	inputValues,
-	inputStatuses,
-	validationMessages,
+	validationState,
 	onInput,
 	addUrl,
 	removeUrl

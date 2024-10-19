@@ -115,11 +115,26 @@ describe( 'UrlInput', () => {
 		} );
 
 		await wrapper.vm.onInput( 'https://valid-url.com', 1 );
-		expect( wrapper.vm.validationMessages[ 1 ] ).toEqual( {} );
-		expect( wrapper.vm.inputStatuses[ 1 ] ).toEqual( 'success' );
+		expect( wrapper.vm.validationState.messages[ 1 ] ).toEqual( {} );
+		expect( wrapper.vm.validationState.statuses[ 1 ] ).toEqual( 'success' );
 
 		await wrapper.vm.onInput( 'invalid-url', 1 );
-		expect( wrapper.vm.validationMessages[ 1 ].error ).toEqual( 'neowiki-field-invalid-url' );
-		expect( wrapper.vm.inputStatuses[ 1 ] ).toEqual( 'error' );
+		expect( wrapper.vm.validationState.messages[ 1 ].error ).toEqual( 'neowiki-field-invalid-url' );
+		expect( wrapper.vm.validationState.statuses[ 1 ] ).toEqual( 'error' );
+	} );
+
+	it( 'validates optional single field correctly', async () => {
+		const wrapper = createWrapper( {
+			property: newUrlProperty( { required: false } ),
+			modelValue: newStringValue( '' )
+		} );
+
+		const fields = wrapper.findAllComponents( CdxField );
+		expect( fields[ 0 ].props( 'status' ) ).toBe( 'default' );
+		expect( fields[ 0 ].props( 'messages' ) ).toEqual( {} );
+
+		await wrapper.findAll( 'input' )[ 0 ].setValue( 'invalid-url' );
+		expect( fields[ 0 ].props( 'status' ) ).toBe( 'error' );
+		expect( fields[ 0 ].props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-invalid-url' );
 	} );
 } );
