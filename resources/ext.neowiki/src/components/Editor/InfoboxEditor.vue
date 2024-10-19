@@ -50,7 +50,7 @@
 			</div>
 			<NeoTypeSelectDropdown
 				v-if="isDropdownOpen"
-				:types="statementTypes"
+				:types="propertyTypes"
 				@select="addProperty"
 			/>
 		</div>
@@ -86,7 +86,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconArrowPrevious, cdxIconLink } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconArrowPrevious } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/NeoTextField.vue';
 import StatementEditor from '@/components/Editor/StatementEditor.vue';
 import { Subject } from '@neo/domain/Subject.ts';
@@ -97,13 +97,13 @@ import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { StatementList } from '@neo/domain/StatementList.ts';
 import { Statement } from '@neo/domain/Statement';
 import NeoTypeSelectDropdown from '@/components/Editor/NeoTypeSelectDropdown.vue';
-import { cdxIconStringInteger, cdxIconTextA } from '@/assets/CustomIcons';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import PropertyDefinitionEditor from '@/components/Editor/PropertyDefinitionEditor.vue';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Value } from '@neo/domain/Value.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps<{
 	selectedSchema?: string;
@@ -124,6 +124,12 @@ const selectedSchema = computed( () => props.selectedSchema );
 const isNewSchema = computed( () => props.selectedSchema === '' );
 const isNewSubject = computed( () => props.subject === undefined );
 const isPropertyEditorOpen = ref( false );
+
+const propertyTypes = NeoWikiServices.getComponentRegistry().getLabelsAndIcons().map( ( { value, label, icon } ) => ( {
+	value: value,
+	label: mw.message( label ).text(),
+	icon: icon
+} ) );
 
 const getPropertyDefinition = ( propertyName: PropertyName ): PropertyDefinition | undefined => {
 	if ( localSchema.value instanceof Schema ) {
@@ -201,12 +207,6 @@ const setupNewSubject = ( schemaName: string ): void => {
 
 const isDropdownOpen = ref( false );
 const isEditingProperty = ref( false );
-
-const statementTypes = [ // FIXME: use plugin system
-	{ value: 'text', label: 'Text', icon: cdxIconTextA },
-	{ value: 'url', label: 'URL', icon: cdxIconLink },
-	{ value: 'number', label: 'Number', icon: cdxIconStringInteger }
-];
 
 const editProperty = ( propertyName: PropertyName ): void => {
 	isEditingProperty.value = true;

@@ -22,12 +22,6 @@
 					/>
 				</div>
 			</div>
-			<component
-				:is="componentRegistry.getValueEditingComponent( localProperty.format )"
-				v-model="localProperty.default"
-				:label="$i18n( 'neowiki-property-editor-initial-value' ).text()"
-				:property="localProperty"
-			/>
 			<NeoTextField
 				v-model="localProperty.description"
 				class="property-description"
@@ -37,11 +31,17 @@
 				<CdxCheckbox
 					v-model="localProperty.required"
 					class="neo-round-checkbox"
-					:label="$i18n( 'neowiki-field-required' ).text()"
+					:label="$i18n( 'neowiki-property-editor-required' ).text()"
 				>
-					<small>{{ $i18n( 'neowiki-field-required' ).text() }}</small>
+					<small>{{ $i18n( 'neowiki-property-editor-required' ).text() }}</small>
 				</CdxCheckbox>
 			</div>
+			<component
+				:is="componentRegistry.getValueEditingComponent( localProperty.format )"
+				v-model="localProperty.default"
+				:label="$i18n( 'neowiki-property-editor-initial-value' ).text()"
+				:property="localProperty"
+			/>
 		</div>
 
 		<template #footer>
@@ -97,9 +97,9 @@ watch( () => props.property, ( newProperty ) => {
 	localProperty.value = Object.assign( {}, newProperty );
 }, { deep: true, immediate: true } );
 
-const formatOptions = componentRegistry.getValueFormats().map( ( format ) => ( {
-	value: format,
-	label: mw.message( `neowiki-infobox-editor-format-${ format }` ).text()
+const formatOptions = componentRegistry.getLabelsAndIcons().map( ( { value, label } ) => ( {
+	value: value,
+	label: mw.message( label ).text()
 } ) );
 
 const save = (): void => {
