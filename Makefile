@@ -3,6 +3,7 @@
 ci: test cs
 test: phpunit
 cs: phpcs stan #TODO: psalm
+tsci: ts-ci
 
 phpunit:
 ifdef filter
@@ -44,6 +45,9 @@ ts-build:
 
 ts-build-watch:
 	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm run build:watch
+
+ts-ci:
+	$(MAKE) ts-test && $(MAKE) ts-build && $(MAKE) ts-lint
 
 ts-test:
 	docker run -it --rm -v "$(CURDIR)":/home/node/app -w /home/node/app/resources/ext.neowiki -u node node:20 npm run test
