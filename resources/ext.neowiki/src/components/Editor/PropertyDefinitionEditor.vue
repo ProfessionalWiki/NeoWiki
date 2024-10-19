@@ -99,7 +99,7 @@ watch( () => props.property, ( newProperty ) => {
 
 const formatOptions = componentRegistry.getValueFormats().map( ( format ) => ( {
 	value: format,
-	label: mw.message( `neowiki-infobox-editor-format-${ format }` ).text()
+	label: mw.message( `neowiki-format-${ format }` ).text()
 } ) );
 
 const save = (): void => {

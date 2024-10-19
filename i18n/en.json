@@ -10,6 +10,11 @@
 	"neowiki-name": "NeoWiki",
 	"neowiki-description": "TODO",
 
+	"neowiki-format-text": "Text",
+	"neowiki-format-url": "URL",
+	"neowiki-format-number": "Number",
+	"neowiki-format-relation": "Relation",
+
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 
 	"neowiki-create-button": "Add infobox",
@@ -56,8 +61,5 @@
 
 	"neowiki-infobox-editor-property-description": "Description",
 	"neowiki-infobox-editor-property-format": "Format",
-	"neowiki-infobox-editor-property-required": "Make it a required field",
-	"neowiki-infobox-editor-format-text": "Text",
-	"neowiki-infobox-editor-format-url": "URL",
-	"neowiki-infobox-editor-format-number": "Number"
+	"neowiki-infobox-editor-property-required": "Make it a required field"
 }
