@@ -26,6 +26,8 @@ import NumberInput from '@/components/Value/NumberInput.vue';
 import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { SubjectDeserializer } from '@neo/persistence/SubjectDeserializer.ts';
 import { Neo } from '@neo/Neo.ts';
+import { cdxIconStringInteger, cdxIconTextA } from '@/assets/CustomIcons.ts';
+import { cdxIconLink } from '@wikimedia/codex-icons';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -40,10 +42,10 @@ export class NeoWikiExtension {
 	public getFormatSpecificComponentRegistry(): FormatSpecificComponentRegistry {
 		const registry = new FormatSpecificComponentRegistry();
 
-		registry.registerComponents( TextFormat.formatName, TextDisplay, TextInput );
-		registry.registerComponents( UrlFormat.formatName, UrlDisplay, UrlInput );
-		registry.registerComponents( NumberFormat.formatName, NumberDisplay, NumberInput );
-		registry.registerComponents( RelationFormat.formatName, RelationDisplay, TextInput ); // TODO
+		registry.registerComponents( TextFormat.formatName, TextDisplay, TextInput, 'neowiki-format-text', cdxIconTextA );
+		registry.registerComponents( UrlFormat.formatName, UrlDisplay, UrlInput, 'neowiki-format-url', cdxIconLink );
+		registry.registerComponents( NumberFormat.formatName, NumberDisplay, NumberInput, 'neowiki-format-number', cdxIconStringInteger );
+		registry.registerComponents( RelationFormat.formatName, RelationDisplay, TextInput, 'neowiki-format-relation', cdxIconLink ); // TODO
 
 		return registry;
 	}

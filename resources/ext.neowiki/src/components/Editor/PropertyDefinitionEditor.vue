@@ -97,9 +97,9 @@ watch( () => props.property, ( newProperty ) => {
 	localProperty.value = Object.assign( {}, newProperty );
 }, { deep: true, immediate: true } );
 
-const formatOptions = componentRegistry.getValueFormats().map( ( format ) => ( {
-	value: format,
-	label: mw.message( `neowiki-format-${ format }` ).text()
+const formatOptions = componentRegistry.getLabelsAndIcons().map( ( { value, label } ) => ( {
+	value: value,
+	label: mw.message( label ).text()
 } ) );
 
 const save = (): void => {

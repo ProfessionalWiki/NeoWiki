@@ -24,6 +24,15 @@ const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 } ) );
 
 describe( 'AutomaticInfobox', () => {
+	beforeEach( () => {
+		vi.stubGlobal( 'mw', {
+			message: vi.fn( ( str: string ) => ( {
+				text: () => str,
+				parse: () => str
+			} ) )
+		} );
+	} );
+
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore;
 
