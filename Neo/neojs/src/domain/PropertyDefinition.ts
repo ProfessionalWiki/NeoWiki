@@ -11,7 +11,7 @@ export class PropertyName {
 		if ( name === '' ) {
 			throw new Error( 'Invalid PropertyName' );
 		}
-		this.name = name;
+		this.name = name.trim();
 	}
 
 	public toString(): string {
