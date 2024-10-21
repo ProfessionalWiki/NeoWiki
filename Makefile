@@ -31,7 +31,6 @@ psalm-baseline:
 	vendor/bin/psalm --config=psalm.xml --set-baseline=psalm-baseline.xml
 
 get-neo:
-	git clone git@github.com:ProfessionalWiki/Neo.git
 	cd Neo && $(MAKE) neojs-install neojs-build
 
 ts-install:
