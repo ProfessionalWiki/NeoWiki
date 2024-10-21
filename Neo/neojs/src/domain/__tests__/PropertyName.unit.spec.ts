@@ -12,4 +12,17 @@ describe( 'PropertyName constructor', () => {
 		expect( () => new PropertyName( '' ) ).toThrow( 'Invalid PropertyName' );
 	} );
 
+	describe( 'normalizes', () => {
+
+		it( 'by removing leading spaces', () => {
+			const id = new PropertyName( ' test test' );
+			expect( id.toString() ).toBe( 'test test' );
+		} );
+
+		it( 'by removing tailing spaces', () => {
+			const id = new PropertyName( 'test test ' );
+			expect( id.toString() ).toBe( 'test test' );
+		} );
+	} );
+
 } );
