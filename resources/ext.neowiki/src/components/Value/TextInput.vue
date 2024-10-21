@@ -77,11 +77,13 @@ const onInput = ( newValue: string ): void => {
 const validate = ( value: StringValue ): ValidationMessages => {
 	const messages: ValidationMessages = {};
 
-	if ( props.property.required && value.strings[ 0 ] === '' ) {
+	if ( props.property.required && value.strings.length === 0 ) {
 		messages.error = mw.message( 'neowiki-field-required' ).text();
-	} else if ( props.property.minLength !== undefined && value.strings[ 0 ].length < props.property.minLength ) {
+	} else if ( props.property.minLength !== undefined &&
+		value.strings.length > 0 && value.strings[ 0 ].length < props.property.minLength ) { // TODO: adjust for multiple parts
 		messages.error = mw.message( 'neowiki-field-min-length', props.property.minLength ).text();
-	} else if ( props.property.maxLength !== undefined && value.strings[ 0 ].length > props.property.maxLength ) {
+	} else if ( props.property.maxLength !== undefined &&
+		value.strings.length > 0 && value.strings[ 0 ].length > props.property.maxLength ) { // TODO: adjust for multiple parts
 		messages.error = mw.message( 'neowiki-field-max-length', props.property.maxLength ).text();
 	}
 

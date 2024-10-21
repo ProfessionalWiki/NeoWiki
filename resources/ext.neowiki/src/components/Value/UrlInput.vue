@@ -97,12 +97,12 @@ const getErrorMessage = ( isEmpty: boolean ): string => isEmpty ?
 	mw.message( 'neowiki-field-required' ).text() :
 	mw.message( 'neowiki-field-invalid-url' ).text();
 
-const validateFields = ( fieldValues: string[] ): ValidationResult => {
+const validateFields = ( valueParts: string[] ): ValidationResult => {
 	const validation: ValidationResult = { isValid: true, statuses: [], messages: [] };
-	const isSingleFieldRequired: boolean = fieldValues.length === 1 && props.property.required;
+	const isSingleFieldRequired: boolean = valueParts.length === 1 && props.property.required;
 
-	fieldValues.forEach( ( value: string ): void => {
-		const url = value.trim();
+	valueParts.forEach( ( valuePart: string ): void => {
+		const url = valuePart.trim();
 		const isEmpty: boolean = url === '';
 		let fieldIsValid: boolean = isEmpty || isValidUrl( url );
 

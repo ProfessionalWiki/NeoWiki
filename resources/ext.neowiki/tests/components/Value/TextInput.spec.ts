@@ -84,10 +84,10 @@ describe( 'TextInput', () => {
 
 	it( 'emits invalid field when validation fails', async () => {
 		const wrapper = newWrapper( {
-			property: newTextProperty( { minLength: 1 } )
+			property: newTextProperty( { minLength: 2 } )
 		} );
 
-		await wrapper.find( 'input' ).setValue( '' );
+		await wrapper.find( 'input' ).setValue( 'a' );
 		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ false ] );
 	} );
 } );

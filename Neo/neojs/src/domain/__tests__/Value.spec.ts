@@ -86,4 +86,17 @@ describe( 'newStringValue', () => {
 		expect( newStringValue( 'foo', 'bar' ) ).toEqual( newStringValue( [ 'foo', 'bar' ] ) );
 	} );
 
+	it( 'omits empty strings', () => {
+		expect( newStringValue( '', 'foo', '', 'bar', '' ) ).toEqual( newStringValue( 'foo', 'bar' ) );
+	} );
+
+	it( 'omits space-only strings', () => {
+		expect( newStringValue( ' ', 'foo', ' ', 'bar', ' ' ) ).toEqual( newStringValue( 'foo', 'bar' ) );
+	} );
+
+	it( 'trims strings', () => {
+		expect( newStringValue( '   preceding', 'tailing ', ' both    ', ' keeps middle spaces ' ) )
+			.toEqual( newStringValue( 'preceding', 'tailing', 'both', 'keeps middle spaces' ) );
+	} );
+
 } );

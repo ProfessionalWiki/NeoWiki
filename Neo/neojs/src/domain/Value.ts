@@ -51,10 +51,14 @@ export class Relation {
 
 export type Value = StringValue | NumberValue | BooleanValue | RelationValue;
 
-export function newStringValue( ...strings: string[] | [ string[] ] ): StringValue {
+export function newStringValue( ...parts: string[] | [ string[] ] ): StringValue {
+	const strings = Array.isArray( parts[ 0 ] ) ? parts[ 0 ] : parts as string[];
+
 	return {
 		type: ValueType.String,
-		strings: Array.isArray( strings[ 0 ] ) ? strings[ 0 ] : strings
+		strings: strings
+			.map( ( part ) => part.trim() )
+			.filter( ( part ) => part !== '' )
 	} as StringValue;
 }
 
