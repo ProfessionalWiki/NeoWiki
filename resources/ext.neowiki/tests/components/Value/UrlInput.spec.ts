@@ -78,8 +78,8 @@ describe( 'UrlInput', () => {
 		await wrapper.findAll( 'input' )[ 0 ].setValue( '' );
 
 		const fields = wrapper.findAllComponents( CdxField );
-		expect( fields[ 0 ].props( 'status' ) ).toBe( 'error' );
-		expect( fields[ 0 ].props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-required' );
+		expect( fields[ 0 ].props( 'status' ) ).toBe( 'success' );
+		expect( fields[ 0 ].props( 'messages' ) ).toEqual( {} );
 	} );
 
 	it( 'validates valid URLs in multiple fields', async () => {

@@ -81,6 +81,10 @@ const validationState = ref<ValidationResult>( {
 } );
 
 const isValidUrl = ( url: string ): boolean => {
+	if ( url === '' ) {
+		return true;
+	}
+
 	try {
 		new URL( url );
 		return true;
@@ -95,15 +99,15 @@ const getErrorMessage = ( isEmpty: boolean ): string => isEmpty ?
 
 const validateFields = ( fieldValues: string[] ): ValidationResult => {
 	const validation: ValidationResult = { isValid: true, statuses: [], messages: [] };
-	const isSingleFieldOptional: boolean = fieldValues.length === 1 && !props.property.required;
+	const isSingleFieldRequired: boolean = fieldValues.length === 1 && props.property.required;
 
 	fieldValues.forEach( ( value: string ): void => {
 		const url = value.trim();
 		const isEmpty: boolean = url === '';
-		let fieldIsValid: boolean = !isEmpty && isValidUrl( url );
+		let fieldIsValid: boolean = isValidUrl( url );
 
-		if ( isEmpty && isSingleFieldOptional ) {
-			fieldIsValid = true;
+		if ( isEmpty && isSingleFieldRequired ) {
+			fieldIsValid = false;
 		}
 
 		validation.statuses.push( fieldIsValid ? 'success' : 'error' );
