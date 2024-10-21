@@ -113,7 +113,7 @@ const save = (): void => {
 </script>
 
 <style lang="scss">
-@import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
 .property-definition-editor {
 	max-width: 600px !important;

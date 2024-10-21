@@ -103,7 +103,7 @@ defineExpose( { openDialog } );
 </script>
 
 <style lang="scss">
-@import '@/assets/scss/variables';
+@use '@/assets/scss/variables' as *;
 
 .create-subject-dialog {
 	padding-bottom: 50px;

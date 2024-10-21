@@ -86,7 +86,7 @@ watch( () => props.modelValue, ( newValue ) => {
 </script>
 
 <style lang="scss" scoped>
-@import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
 @keyframes success-pulse {
 	0% {

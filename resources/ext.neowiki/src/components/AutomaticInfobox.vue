@@ -127,7 +127,7 @@ onMounted( async (): Promise<void> => {
 </script>
 
 <style lang="scss">
-@import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
 .auto-infobox {
 	margin-left: $spacing-100;

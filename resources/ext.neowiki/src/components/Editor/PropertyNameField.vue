@@ -64,7 +64,7 @@ const onMenuSelect = ( value: string ): void => {
 </script>
 
 <style lang="scss">
-@import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
 .neo-property-name__wrapper {
 	display: flex;

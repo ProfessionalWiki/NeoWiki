@@ -1,4 +1,4 @@
-@import '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss';
+@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
 .neo-cdx-field-inline {
 	display: grid;
