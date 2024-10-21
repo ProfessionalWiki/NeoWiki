@@ -1,14 +1,16 @@
-name: CI (TypeScript)
+name: NeoWiki CI (TypeScript)
 
 on:
   push:
     paths:
       - '.github/workflows/ci-ts.yml'
       - 'resources/**'
+      - 'Neo/neojs/**'
   pull_request:
     paths:
       - '.github/workflows/ci-ts.yml'
       - 'resources/**'
+      - 'Neo/neojs/**'
 
 jobs:
   build:
@@ -23,15 +25,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - uses: actions/checkout@v4
-        with:
-          repository: ProfessionalWiki/Neo
-          path: Neo
-          token: ${{ secrets.NEO_READ_FPAT }}
-          # Expected to expire on Sep 12 2025
-          # https://github.com/organizations/ProfessionalWiki/settings/secrets/actions/NEO_READ_FPAT (enter new value)
-          # (Re)generate token with contents read access for Neo and NeoExtension at https://github.com/settings/tokens?type=beta
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -64,15 +57,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - uses: actions/checkout@v4
-        with:
-          repository: ProfessionalWiki/Neo
-          path: Neo
-          token: ${{ secrets.NEO_READ_FPAT }}
-          # Expected to expire on Sep 12 2025
-          # https://github.com/organizations/ProfessionalWiki/settings/secrets/actions/NEO_READ_FPAT (enter new value)
-          # (Re)generate token with contents read access for Neo and NeoExtension at https://github.com/settings/tokens?type=beta
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

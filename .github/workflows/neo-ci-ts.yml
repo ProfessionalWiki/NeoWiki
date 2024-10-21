@@ -1,14 +1,14 @@
-name: CI (TypeScript)
+name: Neo CI (TypeScript)
 
 on:
   push:
     paths:
-      - '.github/workflows/ci-ts.yml'
-      - 'neojs/**'
+      - '.github/workflows/neo-ci-ts.yml'
+      - 'Neo/neojs/**'
   pull_request:
     paths:
-      - '.github/workflows/ci-ts.yml'
-      - 'neojs/**'
+      - '.github/workflows/neo-ci-ts.yml'
+      - 'Neo/neojs/**'
 
 jobs:
   build:
@@ -18,7 +18,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./neojs
+        working-directory: ./Neo/neojs
 
     steps:
       - name: Checkout
@@ -42,7 +42,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./neojs
+        working-directory: ./Neo/neojs
 
     steps:
       - name: Checkout
@@ -66,7 +66,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./neojs
+        working-directory: ./Neo/neojs
 
     steps:
       - name: Checkout
