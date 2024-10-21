@@ -33,6 +33,8 @@
 			weight="quiet"
 			aria-hidden="false"
 			class="add-url-button"
+			:class="{ 'add-btn-disabled': isAddButtonDisabled }"
+			:disabled="isAddButtonDisabled"
 			@click="addUrl"
 		>
 			<CdxIcon :icon="cdxIconAdd" />
@@ -41,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch, PropType, ref, nextTick } from 'vue';
+import { watch, PropType, ref, nextTick, computed } from 'vue';
 import { CdxField, CdxTextInput, CdxButton, CdxIcon, ValidationStatusType, ValidationMessages } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconLink, cdxIconTrash } from '@wikimedia/codex-icons';
 import type { Value } from '@neo/domain/Value';
@@ -74,6 +76,8 @@ const emit = defineEmits( [ 'update:modelValue', 'validation' ] );
 
 const inputValues = ref<string[]>( [] );
 
+const isAddButtonDisabled = computed( (): boolean => inputValues.value.some( ( value: string ) => value.trim() === '' || !validationState.value.isValid ) );
+
 const validationState = ref<ValidationResult>( {
 	isValid: true,
 	statuses: [] as ValidationStatusType[],
@@ -95,15 +99,15 @@ const getErrorMessage = ( isEmpty: boolean ): string => isEmpty ?
 
 const validateFields = ( fieldValues: string[] ): ValidationResult => {
 	const validation: ValidationResult = { isValid: true, statuses: [], messages: [] };
-	const isSingleFieldOptional: boolean = fieldValues.length === 1 && !props.property.required;
+	const isSingleFieldRequired: boolean = fieldValues.length === 1 && props.property.required;
 
 	fieldValues.forEach( ( value: string ): void => {
 		const url = value.trim();
 		const isEmpty: boolean = url === '';
-		let fieldIsValid: boolean = !isEmpty && isValidUrl( url );
+		let fieldIsValid: boolean = isEmpty || isValidUrl( url );
 
-		if ( isEmpty && isSingleFieldOptional ) {
-			fieldIsValid = true;
+		if ( isEmpty && isSingleFieldRequired ) {
+			fieldIsValid = false;
 		}
 
 		validation.statuses.push( fieldIsValid ? 'success' : 'error' );
@@ -210,6 +214,13 @@ defineExpose( {
 
 		.cdx-icon {
 			color: $color-success;
+		}
+	}
+
+	.add-btn-disabled {
+		.cdx-icon {
+			opacity: 0.35;
+			cursor: $cursor-base--disabled;
 		}
 	}
 }
