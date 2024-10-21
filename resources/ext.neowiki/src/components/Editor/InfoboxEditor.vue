@@ -220,12 +220,12 @@ const editProperty = ( propertyName: PropertyName ): void => {
 };
 
 const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
-	const propertyName = editingProperty.value?.name;
-
-	if ( !propertyName || localSchema.value === null ) {
+	if ( editingProperty.value === null || localSchema.value === null ) {
 		console.error( 'No property name found to update' );
 		return;
 	}
+
+	const propertyName = editingProperty.value?.name;
 
 	if ( isEditingProperty.value === false ) {
 		handleAddProperty( savedProperty );
