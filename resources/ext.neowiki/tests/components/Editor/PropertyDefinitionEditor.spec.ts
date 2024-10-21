@@ -29,7 +29,6 @@ describe( 'PropertyDefinitionEditor', () => {
 		} );
 	} );
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const createWrapper = ( props: Partial<PropertyDefinitionEditorProps> = {} ): any => mount( PropertyDefinitionEditor, {
 		props: {
 			property: newTextProperty(),

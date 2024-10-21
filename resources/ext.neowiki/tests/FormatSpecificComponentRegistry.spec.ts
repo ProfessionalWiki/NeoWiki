@@ -8,7 +8,6 @@ describe( 'FormatSpecificComponentRegistry', () => {
 		format: string,
 		stuff: Partial<FormatSpecificStuff> = {}
 	): void => {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const mockComponent = {} as any;
 
 		const defaultStuff: FormatSpecificStuff = {
@@ -54,6 +53,7 @@ describe( 'FormatSpecificComponentRegistry', () => {
 
 		it( 'returns labels and icons for all registered formats', () => {
 			const registry = new FormatSpecificComponentRegistry();
+
 			registerComponent( registry, 'string', { label: 'String', icon: 'string-icon' } );
 			registerComponent( registry, 'number', { label: 'Number', icon: 'number-icon' } );
 			registerComponent( registry, 'boolean', { label: 'Boolean', icon: 'boolean-icon' } );
