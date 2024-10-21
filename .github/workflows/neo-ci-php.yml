@@ -1,14 +1,16 @@
-name: CI (PHP)
+name: Neo CI (PHP)
 
 on:
   push:
-    paths-ignore:
-      - '.github/workflows/ci-ts.yml'
-      - 'neojs/**'
+    paths:
+      - '.github/workflows/neo-ci-php.yml'
+      - 'Neo/**'
+      - '!Neo/neojs/**'
   pull_request:
-    paths-ignore:
-      - '.github/workflows/ci-ts.yml'
-      - 'neojs/**'
+    paths:
+      - '.github/workflows/neo-ci-php.yml'
+      - 'Neo/**'
+      - '!Neo/neojs/**'
 
 jobs:
   PHPUnit:
@@ -20,6 +22,10 @@ jobs:
           - php: '8.3'
 
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: Neo
 
     steps:
       - name: Setup PHP
@@ -37,6 +43,10 @@ jobs:
 
   PHPCS:
     name: "PHPCS with PHP ${{ matrix.php }}"
+
+    defaults:
+      run:
+        working-directory: Neo
 
     strategy:
       matrix:
@@ -61,6 +71,10 @@ jobs:
 
   PHPStan:
     name: "PHPStan with PHP ${{ matrix.php }}"
+
+    defaults:
+      run:
+        working-directory: Neo
 
     strategy:
       matrix:
