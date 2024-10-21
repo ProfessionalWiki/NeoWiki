@@ -4,7 +4,6 @@ import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegist
 describe( 'FormatSpecificComponentRegistry', () => {
 
 	const registerComponent = ( registry: FormatSpecificComponentRegistry, format: string ): void => {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const mockComponent = {} as any;
 		registry.registerComponents( format, mockComponent, mockComponent, 'Label', 'Icon' );
 	};
@@ -41,7 +40,6 @@ describe( 'FormatSpecificComponentRegistry', () => {
 
 		it( 'returns labels and icons for all registered formats', () => {
 			const registry = new FormatSpecificComponentRegistry();
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const mockComponent = {} as any;
 
 			registry.registerComponents( 'string', mockComponent, mockComponent, 'String', 'string-icon' );
