@@ -1,6 +1,6 @@
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
-import type { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
+import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 
 export type SchemaName = string;
 
@@ -33,6 +33,14 @@ export class Schema {
 
 	public withName( name: SchemaName ): Schema {
 		return new Schema( name, this.description, this.properties );
+	}
+
+	public withAddedPropertyDefinition( property: PropertyDefinition ): Schema {
+		return new Schema(
+			this.name,
+			this.description,
+			new PropertyDefinitionList( [ ...this.properties, property ] )
+		);
 	}
 
 }

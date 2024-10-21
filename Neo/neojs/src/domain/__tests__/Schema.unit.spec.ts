@@ -46,4 +46,46 @@ describe( 'Schema', () => {
 
 	} );
 
+	describe( 'withAddedPropertyDefinition', () => {
+
+		it( 'adds a Property Definition when Schema has no properties', () => {
+			const originalSchema = newSchema();
+
+			const addedProperty = createPropertyDefinitionFromJson( 'addedProperty', {
+				type: 'string',
+				format: 'text'
+			} );
+
+			const updatedSchema = originalSchema.withAddedPropertyDefinition( addedProperty );
+
+			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
+				addedProperty: addedProperty
+			} );
+		} );
+
+		it( 'adds a Property Definition when Schema has properties', () => {
+			const existingProperty = createPropertyDefinitionFromJson( 'existingProperty', {
+				type: 'string',
+				format: 'text'
+			} );
+
+			const originalSchema = newSchema( {
+				properties: new PropertyDefinitionList( [ existingProperty ] )
+			} );
+
+			const addedProperty = createPropertyDefinitionFromJson( 'addedProperty', {
+				type: 'number',
+				format: 'number'
+			} );
+
+			const updatedSchema = originalSchema.withAddedPropertyDefinition( addedProperty );
+
+			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
+				existingProperty: existingProperty,
+				addedProperty: addedProperty
+			} );
+		} );
+
+	} );
+
 } );
