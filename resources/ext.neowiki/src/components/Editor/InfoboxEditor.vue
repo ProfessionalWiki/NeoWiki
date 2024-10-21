@@ -284,7 +284,7 @@ const addProperty = ( type: string ): void => {
 	isDropdownOpen.value = false;
 	isEditingProperty.value = false;
 	editingProperty.value = { // TODO: do we need to get a basic property definition via the plugin system?
-		name: new PropertyName( ' ' ),
+		name: '' as unknown as PropertyName,
 		format: type, // TODO: is this correct? Name mismatch
 		description: '',
 		required: false
