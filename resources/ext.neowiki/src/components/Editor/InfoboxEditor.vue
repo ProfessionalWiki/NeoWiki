@@ -259,7 +259,7 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 };
 
 const handleAddProperty = ( savedProperty: PropertyDefinition ): void => {
-	if ( localSubject.value !== undefined && localSchema.value !== null ) {
+	if ( localSubject.value !== null && localSchema.value !== null ) {
 		// TODO: replace the below lines with a localSchema.value.addPropertyDefinition( savedProperty );
 		const updatedProperties = [ ...localSchema.value.getPropertyDefinitions(), savedProperty ];
 
