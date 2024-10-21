@@ -260,17 +260,7 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 
 const handleAddProperty = ( savedProperty: PropertyDefinition ): void => {
 	if ( localSubject.value !== null && localSchema.value !== null ) {
-		// TODO: replace the below lines with a localSchema.value.addPropertyDefinition( savedProperty );
-		const updatedProperties = [ ...localSchema.value.getPropertyDefinitions(), savedProperty ];
-
-		const newPropertyList = new PropertyDefinitionList( updatedProperties );
-
-		localSchema.value = new Schema(
-			localSchema.value.getName(),
-			localSchema.value.getDescription(),
-			newPropertyList
-		);
-
+		localSchema.value = localSchema.value.withAddedPropertyDefinition( savedProperty );
 		addMissingStatements();
 	}
 	editingProperty.value = null;
