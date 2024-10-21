@@ -137,4 +137,26 @@ describe( 'UrlInput', () => {
 		expect( fields[ 0 ].props( 'status' ) ).toBe( 'error' );
 		expect( fields[ 0 ].props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-invalid-url' );
 	} );
+
+	it( 'add Button is disabled when URL fields are valid', async () => {
+		const wrapper = createWrapper( {
+			modelValue: newStringValue( 'https://example.com', 'https://validurl' )
+		} );
+
+		const addButton = wrapper.find( 'button.add-url-button' );
+		await wrapper.findAll( 'input' )[ 1 ].setValue( 'invalid-url.com' );
+		expect( addButton.attributes( 'disabled' ) ).toBeDefined();
+
+	} );
+
+	it( 'add Button is enabled when URL fields are valid', async () => {
+		const wrapper = createWrapper( {
+			modelValue: newStringValue( 'https://example.com', 'invalid-url' )
+		} );
+
+		const addButton = wrapper.find( 'button.add-url-button' );
+		await wrapper.findAll( 'input' )[ 1 ].setValue( 'https://valid-url.com' );
+		expect( addButton.attributes( 'disabled' ) ).toBeUndefined();
+
+	} );
 } );
