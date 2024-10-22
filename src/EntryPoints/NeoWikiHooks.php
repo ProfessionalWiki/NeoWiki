@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints;
 
 use InvalidArgumentException;
 use MediaWiki\EditPage\EditPage;
+use MediaWiki\Html\Html;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
@@ -94,7 +95,13 @@ class NeoWikiHooks {
 			return '';
 		}
 
-		return '<div class="neowiki-infobox" data-subject-id="' . $subject->getId()->text . '"></div>';
+		return Html::element(
+			'div',
+			[
+				'class' => 'neowiki-infobox',
+				'data-subject-id' => $subject->getId()->text,
+			]
+		);
 	}
 
 	public static function onMediaWikiServices( MediaWikiServices $services ): void {
