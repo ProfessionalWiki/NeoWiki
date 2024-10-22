@@ -1,31 +1,59 @@
 <template>
-	<CdxField
-		:status="validationStatus"
-		:messages="validationMessages"
-		:required="property.required"
-		class="neo-text-field"
-		:class="{ 'neo-text-field--success': validationStatus === 'success' }"
-	>
-		<template #label>
-			{{ label }}
-		</template>
-		<CdxTextInput
-			:model-value="inputValue"
-			input-type="text"
-			:class="{ 'cdx-text-input--status-success': validationStatus === 'success' }"
-			:end-icon="endIcon"
-			@update:model-value="onInput"
-		/>
-	</CdxField>
+	<div class="neo-text-field">
+		<label>{{ label }}</label>
+		<div
+			v-for="( text, index ) in inputValues"
+			:key="index"
+			class="text-input-wrapper"
+		>
+			<CdxField
+				:status="validationState.statuses[index]"
+				:messages="validationState.messages[index]"
+			>
+				<CdxTextInput
+					:model-value="text"
+					:input-ref="`${index}-${property.name.toString()}-text-input`"
+					input-type="text"
+					:status="validationState.statuses[index]"
+					@update:model-value="value => onInput( value, index )"
+				/>
+			</CdxField>
+			<CdxButton
+				v-if="index > 0"
+				weight="quiet"
+				aria-hidden="false"
+				class="delete-button"
+				@click="removeText( index )"
+			>
+				<CdxIcon :icon="cdxIconTrash" />
+			</CdxButton>
+		</div>
+		<CdxButton
+			weight="quiet"
+			aria-hidden="false"
+			class="add-text-button"
+			:class="{ 'add-btn-disabled': isAddButtonDisabled }"
+			:disabled="isAddButtonDisabled"
+			@click="addText"
+		>
+			<CdxIcon :icon="cdxIconAdd" />
+		</CdxButton>
+	</div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, PropType } from 'vue';
-import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
-import { cdxIconCheck } from '@wikimedia/codex-icons';
+import { ref, watch, computed, PropType, nextTick } from 'vue';
+import { CdxField, CdxTextInput, CdxButton, CdxIcon, ValidationStatusType, ValidationMessages } from '@wikimedia/codex';
+import { cdxIconTrash, cdxIconAdd } from '@wikimedia/codex-icons';
 import { newStringValue, ValueType, StringValue } from '@neo/domain/Value';
 import type { Value } from '@neo/domain/Value';
 import { TextProperty } from '@neo/domain/valueFormats/Text.ts';
+
+type ValidationResult = {
+	isValid: boolean;
+	statuses: ValidationStatusType[];
+	messages: ValidationMessages[];
+};
 
 const props = defineProps( {
 	modelValue: {
@@ -44,130 +72,148 @@ const props = defineProps( {
 } );
 
 const emit = defineEmits( [ 'update:modelValue', 'validation' ] );
-const validationStatus = ref<ValidationStatusType>( 'default' );
 
-interface ValidationMessages {
-	[key: string]: string;
-}
+const inputValues = ref<string[]>( [ '' ] );
 
-const validationMessages = ref<ValidationMessages>( {} );
-const hasHadError = ref( false );
-
-const inputValue = computed( () => {
-	if ( props.modelValue.type === ValueType.String ) {
-		// TODO: support multiple strings in the UI: https://github.com/ProfessionalWiki/NeoExtension/issues/117
-		return ( props.modelValue as StringValue ).strings[ 0 ] || '';
-	}
-
-	return '';
+const validationState = ref<ValidationResult>( {
+	isValid: true,
+	statuses: [] as ValidationStatusType[],
+	messages: [] as ValidationMessages[]
 } );
 
-const endIcon = computed( () => validationStatus.value === 'success' && hasHadError.value ? cdxIconCheck : undefined );
+const isAddButtonDisabled = computed( (): boolean => inputValues.value.some( ( value: string ) => value.trim() === '' || !validationState.value.isValid )
+);
 
-const onInput = ( newValue: string ): void => {
-	const value = newStringValue( newValue );
+const getErrorMessage = ( value: string, isSingleField: boolean ): ValidationMessages => {
+	const isEmpty: boolean = value.trim() === '';
+	const errors = [
+		{
+			condition: isEmpty && isSingleField && props.property.required,
+			message: mw.message( 'neowiki-field-required' ).text()
+		},
+		{
+			condition: !isEmpty && props.property.minLength && value.trim().length < props.property.minLength,
+			message: mw.message( 'neowiki-field-min-length', props.property.minLength ).text()
+		},
+		{
+			condition: props.property.maxLength && value.trim().length > props.property.maxLength,
+			message: mw.message( 'neowiki-field-max-length', props.property.maxLength ).text()
+		}
+	];
 
-	emit( 'update:modelValue', value );
-	updateValidationStatus( validate( value ) );
+	const error = errors.find( ( check ) => check.condition );
+
+	return error !== undefined ? { error: error.message } : {};
 };
 
-const validate = ( value: StringValue ): ValidationMessages => {
-	const messages: ValidationMessages = {};
+const validateFields = ( fieldValues: string[] ): ValidationResult => {
+	const validation: ValidationResult = { isValid: true, statuses: [], messages: [] };
+	const isSingleField: boolean = fieldValues.length === 1;
 
-	if ( props.property.required && value.strings.length === 0 ) {
-		messages.error = mw.message( 'neowiki-field-required' ).text();
-	} else if ( props.property.minLength !== undefined &&
-		value.strings.length > 0 && value.strings[ 0 ].length < props.property.minLength ) { // TODO: adjust for multiple parts
-		messages.error = mw.message( 'neowiki-field-min-length', props.property.minLength ).text();
-	} else if ( props.property.maxLength !== undefined &&
-		value.strings.length > 0 && value.strings[ 0 ].length > props.property.maxLength ) { // TODO: adjust for multiple parts
-		messages.error = mw.message( 'neowiki-field-max-length', props.property.maxLength ).text();
-	}
+	fieldValues.forEach( ( value: string ) => {
+		const messages: ValidationMessages = getErrorMessage( value, isSingleField );
+		const status: ValidationStatusType = 'error' in messages ? 'error' : 'success';
 
-	return messages;
+		validation.statuses.push( status );
+		validation.messages.push( messages );
+		validation.isValid = validation.isValid && status !== 'error';
+	} );
+
+	return validation;
+};
+const onInput = ( newValue: string, index: number ): void => {
+	inputValues.value[ index ] = newValue;
+
+	const validation = validateFields( inputValues.value );
+	validationState.value = validation;
+
+	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
+	emit( 'validation', validation.isValid );
 };
 
-const updateValidationStatus = ( messages: ValidationMessages ): void => {
-	if ( Object.keys( messages ).length > 0 ) {
-		validationStatus.value = 'error';
-		hasHadError.value = true;
-	} else if ( hasHadError.value ) {
-		validationStatus.value = 'success';
-		messages.success = '';
+const addText = async (): Promise<void> => {
+	inputValues.value.push( '' );
+
+	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
+	emit( 'validation', false );
+	await nextTick();
+
+	const inputRef = `${ inputValues.value.length - 1 }-${ props.property.name }-text-input`;
+	focusInput( inputRef );
+};
+
+const removeText = ( index: number ): void => {
+	inputValues.value.splice( index, 1 );
+
+	const validation = validateFields( inputValues.value );
+	validationState.value = validation;
+
+	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
+	emit( 'validation', validation.isValid );
+};
+
+const focusInput = ( inputRef: string ): void => {
+	const input = document.querySelector( `[input-ref="${ inputRef }"]` ) as HTMLInputElement | null;
+	input?.focus();
+};
+
+watch( () => props.modelValue, ( newValue ) => {
+	if ( newValue.type === ValueType.String ) {
+		inputValues.value = ( newValue as StringValue ).strings;
 	} else {
-		validationStatus.value = 'default';
+		inputValues.value = [ '' ];
 	}
+}, { immediate: true, deep: true } );
 
-	validationMessages.value = messages;
-	emit( 'validation', Object.keys( messages ).length === 0 || validationStatus.value === 'success' );
-};
-
-watch( validationMessages, ( newMessages ) => { // TODO: this can probably be removed
-	emit( 'validation', Object.keys( newMessages ).length === 0 || validationStatus.value === 'success' );
+defineExpose( {
+	inputValues,
+	validationState,
+	onInput,
+	addText,
+	removeText
 } );
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 @use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
-@keyframes success-pulse {
-	0% {
-		transform: scale( 1 );
-	}
-
-	50% {
-		transform: scale( 1.01 );
-	}
-
-	100% {
-		transform: scale( 1 );
-	}
-}
-
 .neo-text-field {
-	&--success {
-		animation: success-pulse 0.5s ease-in-out;
+	label {
+		font-weight: bold;
 	}
 
-	:deep( .cdx-text-input__input ) {
-		transition: border-color 0.3s ease, box-shadow 0.3s ease;
-	}
+	.text-input-wrapper {
+		display: flex;
+		align-items: center;
+		margin-bottom: 8px;
 
-	:deep( .cdx-text-input--status-success .cdx-text-input__input ) {
-		border-color: #14866d !important;
-		box-shadow: inset 0 0 0 1px #14866d;
-	}
+		.cdx-text-input {
+			flex: 1;
+		}
 
-	:deep( .cdx-field__help-text--status-success ) {
-		color: #14866d;
-	}
+		.delete-button {
+			margin-left: 8px;
 
-	:deep( .cdx-field__control ) {
-		.cdx-text-input--with-focus-effect {
-			position: relative;
-
-			&::after {
-				content: '';
-				position: absolute;
-				bottom: 0;
-				left: 0;
-				width: 0;
-				height: 1px;
-				background-color: rgba( 0, 69, 220 );
-				transition: width 0.3s ease;
-				border-radius: 5px;
-			}
-
-			&:focus-within::after {
-				width: 100%;
+			.cdx-icon {
+				color: $color-destructive;
 			}
 		}
 	}
-}
 
-:deep( .cdx-text-input__input:focus ) {
-	border-color: #36c !important;
-	box-shadow: inset 0 0 0 1px #36c;
-}
+	.add-text-button {
+		float: right;
+		margin-top: 8px;
 
+		.cdx-icon {
+			color: $color-success;
+		}
+	}
+
+	.add-btn-disabled {
+		.cdx-icon {
+			opacity: 0.35;
+			cursor: $cursor-base--disabled;
+		}
+	}
+}
 </style>
