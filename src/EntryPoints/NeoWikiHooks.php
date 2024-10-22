@@ -42,6 +42,7 @@ class NeoWikiHooks {
 		$out->addHtml( '<div id="neowiki"></div>' );
 
 		self::addCreateSubjectButton( $out );
+		self::injectMainSubject( $out );
 	}
 
 	private static function isContentPage( OutputPage $out ): bool {
@@ -75,6 +76,25 @@ class NeoWikiHooks {
 		return NeoWikiExtension::getInstance()->newSubjectContentRepository()
 			->getSubjectContentByPageTitle( $title )
 			?->hasSubjects() === true;
+	}
+
+	private static function injectMainSubject( OutputPage $out ): void {
+		$html = $out->getHTML();
+		$out->clearHTML();
+		$out->addHTML( self::getMainSubjectHtml( $out ) );
+		$out->addHTML( $html );
+	}
+
+	private static function getMainSubjectHtml( OutputPage $out ): string {
+		$subject = NeoWikiExtension::getInstance()->newSubjectContentRepository()
+			->getSubjectContentByPageTitle( $out->getTitle() )
+			?->getPageSubjects()->getMainSubject();
+
+		if ( $subject === null ) {
+			return '';
+		}
+
+		return '<div class="neowiki-infobox" data-subject-id="' . $subject->getId()->text . '"></div>';
 	}
 
 	public static function onMediaWikiServices( MediaWikiServices $services ): void {

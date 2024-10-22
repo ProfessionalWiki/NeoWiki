@@ -1,5 +1,3 @@
-<div class="neowiki-infobox" data-subject-id="s1demo1aaaaaaa1"></div>
-
 The Main Subject of this page is the Company ACME Inc, shown in the infobox.
 
 The page also contains Child Subjects which are Products.
