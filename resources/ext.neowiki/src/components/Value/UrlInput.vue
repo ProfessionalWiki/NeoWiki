@@ -43,11 +43,11 @@
 </template>
 
 <script setup lang="ts">
-import { watch, PropType, ref, nextTick, computed } from 'vue';
+import { PropType, ref, nextTick, computed } from 'vue';
 import { CdxField, CdxTextInput, CdxButton, CdxIcon, ValidationStatusType, ValidationMessages } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconLink, cdxIconTrash } from '@wikimedia/codex-icons';
-import type { Value } from '@neo/domain/Value';
-import { newStringValue, StringValue, ValueType } from '@neo/domain/Value';
+import { StringValue, Value, ValueType } from '@neo/domain/Value';
+import { newStringValue } from '@neo/domain/Value';
 import { UrlProperty } from '@neo/domain/valueFormats/Url.ts';
 
 type ValidationResult = {
@@ -74,7 +74,16 @@ const props = defineProps( {
 
 const emit = defineEmits( [ 'update:modelValue', 'validation' ] );
 
-const inputValues = ref<string[]>( [] );
+const buildInitialInputValues = ( value: Value ): string[] => {
+	if ( value.type === ValueType.String ) {
+		const strings = ( value as StringValue ).strings;
+		return strings.length > 0 ? strings : [ '' ];
+	}
+
+	return [ '' ];
+};
+
+const inputValues = ref<string[]>( buildInitialInputValues( props.modelValue ) );
 
 const isAddButtonDisabled = computed( (): boolean => inputValues.value.some( ( value: string ) => value.trim() === '' || !validationState.value.isValid ) );
 
@@ -153,15 +162,6 @@ const focusInput = ( inputRef: string ): void => {
 	const input = document.querySelector( `[input-ref="${ inputRef }"]` ) as HTMLInputElement | null;
 	input?.focus();
 };
-
-watch( () => props.modelValue, ( newValue ) => {
-	if ( newValue.type === ValueType.String ) {
-		const parts = ( newValue as StringValue ).strings;
-		inputValues.value = parts.length === 0 ? [ '' ] : parts;
-	} else {
-		inputValues.value = [ '' ];
-	}
-}, { immediate: true, deep: true } );
 
 defineExpose( {
 	inputValues,
