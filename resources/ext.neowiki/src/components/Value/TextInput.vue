@@ -84,13 +84,9 @@ const validationState = ref<ValidationResult>( {
 const isAddButtonDisabled = computed( (): boolean => inputValues.value.some( ( value: string ) => value.trim() === '' || !validationState.value.isValid )
 );
 
-const getErrorMessage = ( value: string, isSingleField: boolean ): ValidationMessages => {
+const getErrorMessage = ( value: string ): ValidationMessages => {
 	const isEmpty: boolean = value.trim() === '';
 	const errors = [
-		{
-			condition: isEmpty && isSingleField && props.property.required,
-			message: mw.message( 'neowiki-field-required' ).text()
-		},
 		{
 			condition: !isEmpty && props.property.minLength && value.trim().length < props.property.minLength,
 			message: mw.message( 'neowiki-field-min-length', props.property.minLength ).text()
@@ -108,11 +104,17 @@ const getErrorMessage = ( value: string, isSingleField: boolean ): ValidationMes
 
 const validateFields = ( fieldValues: string[] ): ValidationResult => {
 	const validation: ValidationResult = { isValid: true, statuses: [], messages: [] };
-	const isSingleField: boolean = fieldValues.length === 1;
+	const areAllFieldsEmpty = fieldValues.every( ( value ) => value.trim() === '' );
+	const isRequiredFieldValid = areAllFieldsEmpty && props.property.required;
 
-	fieldValues.forEach( ( value: string ) => {
-		const messages: ValidationMessages = getErrorMessage( value, isSingleField );
-		const status: ValidationStatusType = 'error' in messages ? 'error' : 'success';
+	fieldValues.forEach( ( value: string, index: number ) => {
+		let messages: ValidationMessages = getErrorMessage( value );
+		let status: ValidationStatusType = 'error' in messages ? 'error' : 'success';
+
+		if ( isRequiredFieldValid && index === 0 ) {
+			messages = { error: mw.message( 'neowiki-field-required' ).text() };
+			status = 'error';
+		}
 
 		validation.statuses.push( status );
 		validation.messages.push( messages );
