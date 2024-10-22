@@ -12,6 +12,10 @@ describe( 'PropertyName constructor', () => {
 		expect( () => new PropertyName( '' ) ).toThrow( 'Invalid PropertyName' );
 	} );
 
+	it( 'throws an error for a string with spaces', () => {
+		expect( () => new PropertyName( '     ' ) ).toThrow( 'Invalid PropertyName' );
+	} );
+
 	describe( 'normalizes', () => {
 
 		it( 'by removing leading spaces', () => {

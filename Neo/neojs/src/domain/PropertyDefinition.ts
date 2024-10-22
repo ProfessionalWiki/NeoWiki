@@ -8,10 +8,11 @@ export class PropertyName {
 	private readonly name: string;
 
 	public constructor( name: string ) {
-		if ( name === '' ) {
+		this.name = name.trim();
+
+		if ( this.name === '' ) {
 			throw new Error( 'Invalid PropertyName' );
 		}
-		this.name = name.trim();
 	}
 
 	public toString(): string {
