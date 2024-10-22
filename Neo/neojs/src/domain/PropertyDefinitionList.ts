@@ -50,6 +50,11 @@ export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 		return this.filter( ( property ): boolean => stringNames.includes( property.name.toString() ) );
 	}
 
+	public withoutNames( names: PropertyName[] ): PropertyDefinitionList {
+		const stringNames = names.map( ( name ): string => name.toString() );
+		return this.filter( ( property ): boolean => !stringNames.includes( property.name.toString() ) );
+	}
+
 	private filter( callback: ( property: PropertyDefinition ) => boolean ): PropertyDefinitionList {
 		return new PropertyDefinitionList(
 			Object.values( this.properties ).filter( callback )

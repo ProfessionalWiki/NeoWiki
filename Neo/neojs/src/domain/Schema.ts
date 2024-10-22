@@ -43,4 +43,12 @@ export class Schema {
 		);
 	}
 
+	public withRemovedPropertyDefinition( propertyName: PropertyName ): Schema {
+		return new Schema(
+			this.name,
+			this.description,
+			this.properties.withoutNames( [ propertyName ] )
+		);
+	}
+
 }

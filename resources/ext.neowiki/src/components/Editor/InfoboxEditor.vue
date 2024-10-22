@@ -287,6 +287,9 @@ const updateStatement = ( index: number, updatedStatement: Statement ): void => 
 };
 
 const removeStatement = ( index: number ): void => {
+	if ( localSchema.value !== null ) {
+		localSchema.value = localSchema.value.withRemovedPropertyDefinition( statements.value[ index ].propertyName as PropertyName );
+	}
 	statements.value.splice( index, 1 );
 };
 
