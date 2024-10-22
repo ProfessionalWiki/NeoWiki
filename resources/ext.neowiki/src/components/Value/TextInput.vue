@@ -15,8 +15,6 @@
 			:class="{ 'cdx-text-input--status-success': validationStatus === 'success' }"
 			:end-icon="endIcon"
 			@update:model-value="onInput"
-			@focus="onFocus"
-			@blur="onBlur"
 		/>
 	</CdxField>
 </template>
@@ -54,7 +52,6 @@ interface ValidationMessages {
 
 const validationMessages = ref<ValidationMessages>( {} );
 const hasHadError = ref( false );
-const isFocused = ref( false );
 
 const inputValue = computed( () => {
 	if ( props.modelValue.type === ValueType.String ) {
@@ -101,14 +98,6 @@ const updateValidationStatus = ( messages: ValidationMessages ): void => {
 
 	validationMessages.value = messages;
 	emit( 'validation', Object.keys( messages ).length === 0 || validationStatus.value === 'success' );
-};
-
-const onFocus = (): void => {
-	isFocused.value = true;
-};
-
-const onBlur = (): void => {
-	isFocused.value = false;
 };
 
 watch( validationMessages, ( newMessages ) => { // TODO: this can probably be removed
