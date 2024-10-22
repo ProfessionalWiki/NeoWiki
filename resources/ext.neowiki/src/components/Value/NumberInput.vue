@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, PropType } from 'vue';
+import { ref, computed, PropType } from 'vue';
 import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
 import { newNumberValue, ValueType, NumberValue } from '@neo/domain/Value';
 import type { Value } from '@neo/domain/Value';
@@ -84,8 +84,4 @@ const updateValidationStatus = ( messages: ValidationMessages ): void => {
 
 	emit( 'validation', Object.keys( messages ).length === 0 );
 };
-
-watch( validationMessages, ( newMessages ) => { // TODO: this can probably be removed
-	emit( 'validation', Object.keys( newMessages ).length === 0 );
-} );
 </script>
