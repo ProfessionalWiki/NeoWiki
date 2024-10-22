@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createPropertyDefinitionFromJson, PropertyName } from '@neo/domain/PropertyDefinition';
+import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import { ValueType } from '../Value';
-import { newTextProperty, TextFormat } from '../valueFormats/Text';
-import { newNumberProperty } from '../valueFormats/Number';
+import { newTextProperty, TextFormat } from '@neo/domain/valueFormats/Text';
 import { newSchema } from '@neo/TestHelpers';
+import { newNumberProperty } from '@neo/domain/valueFormats/Number';
 
 describe( 'Schema', () => {
 
@@ -83,6 +82,25 @@ describe( 'Schema', () => {
 			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
 				existingProperty: existingProperty,
 				addedProperty: addedProperty
+			} );
+		} );
+
+	} );
+
+	describe( 'withRemovedPropertyDefinition', () => {
+
+		it( 'removes a Property Definition', () => {
+			const property1 = newTextProperty();
+			const property2 = newNumberProperty();
+
+			const originalSchema = newSchema( {
+				properties: new PropertyDefinitionList( [ property1, property2 ] )
+			} );
+
+			const updatedSchema = originalSchema.withRemovedPropertyDefinition( property1.name );
+
+			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
+				[ property2.name.toString() ]: property2
 			} );
 		} );
 

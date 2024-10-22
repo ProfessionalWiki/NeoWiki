@@ -14,6 +14,11 @@ describe( 'PropertyDefinitionCollection', () => {
 		format: 'text'
 	} );
 
+	const property3 = createPropertyDefinitionFromJson( 'test3', {
+		type: 'string',
+		format: 'text'
+	} );
+
 	it( 'constructs a collection from an array of property definitions', () => {
 		const collection = new PropertyDefinitionList( [ property1, property2 ] );
 
@@ -73,6 +78,35 @@ describe( 'PropertyDefinitionCollection', () => {
 					new PropertyName( 'test2' )
 				] )
 			).toEqual( new PropertyDefinitionList( [ property1, property2 ] ) );
+		} );
+
+	} );
+
+	describe( 'withoutNames', () => {
+
+		const collection = new PropertyDefinitionList( [ property1, property2, property3 ] );
+
+		it( 'creates a new collection without the specified property names', () => {
+			const newCollection = collection.withoutNames( [ new PropertyName( 'test1' ), new PropertyName( 'test3' ) ] );
+
+			expect( newCollection.has( new PropertyName( 'test1' ) ) ).toBe( false );
+			expect( newCollection.get( new PropertyName( 'test2' ) ) ).toEqual( property2 );
+			expect( newCollection.has( new PropertyName( 'test3' ) ) ).toBe( false );
+		} );
+
+		it( 'ignores unknown property names when creating a new collection', () => {
+			const newCollection = collection.withoutNames( [ new PropertyName( 'test1' ), new PropertyName( 'test4' ) ] );
+
+			expect( newCollection.has( new PropertyName( 'test1' ) ) ).toBe( false );
+			expect( newCollection.get( new PropertyName( 'test2' ) ) ).toEqual( property2 );
+			expect( newCollection.get( new PropertyName( 'test3' ) ) ).toEqual( property3 );
+			expect( newCollection.has( new PropertyName( 'test4' ) ) ).toBe( false );
+		} );
+
+		it( 'returns a new collection with the same order as the input names', () => {
+			expect(
+				collection.withoutNames( [ new PropertyName( 'test2' ) ] )
+			).toEqual( new PropertyDefinitionList( [ property1, property3 ] ) );
 		} );
 
 	} );
