@@ -39,6 +39,7 @@
 			<component
 				:is="componentRegistry.getAttributesEditor( localProperty.format )"
 				:property="localProperty"
+				@update:property="updatePropertyAttributes"
 			/>
 			<component
 				:is="componentRegistry.getValueEditingComponent( localProperty.format )"
@@ -96,6 +97,13 @@ const emit = defineEmits( [ 'cancel', 'save' ] );
 
 const localProperty = ref<PropertyDefinition>( { ...props.property } );
 const componentRegistry = NeoWikiServices.getComponentRegistry();
+
+const updatePropertyAttributes = <T extends PropertyDefinition>( updatedAttributes: Partial<T> ): void => {
+	localProperty.value = {
+		...localProperty.value,
+		...updatedAttributes
+	};
+};
 
 watch( () => props.property, ( newProperty ) => {
 	localProperty.value = Object.assign( {}, newProperty );
