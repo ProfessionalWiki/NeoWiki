@@ -156,7 +156,8 @@ const focusInput = ( inputRef: string ): void => {
 
 watch( () => props.modelValue, ( newValue ) => {
 	if ( newValue.type === ValueType.String ) {
-		inputValues.value = ( newValue as StringValue ).strings;
+		const parts = ( newValue as StringValue ).strings;
+		inputValues.value = parts.length === 0 ? [ '' ] : parts;
 	} else {
 		inputValues.value = [ '' ];
 	}
