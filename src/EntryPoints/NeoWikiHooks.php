@@ -23,6 +23,7 @@ use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\SchemaContentValida
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\JsonSchemaErrorFormatter;
 use Skin;
+use Status;
 use WikiPage;
 
 class NeoWikiHooks {
@@ -161,6 +162,12 @@ class NeoWikiHooks {
 	public static function onSpecialPageInitList( array &$specialPages ): void {
 		if ( !NeoWikiExtension::getInstance()->isDevelopmentUIEnabled() ) {
 			unset( $specialPages['NeoJson'] );
+		}
+	}
+
+	public static function onContentModelCanBeUsedOn( string $modelId, Title $title, bool &$ok ): void {
+		if ( $title->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
+			$ok = $modelId === SchemaContent::CONTENT_MODEL_ID;
 		}
 	}
 

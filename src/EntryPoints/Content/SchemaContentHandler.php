@@ -5,6 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content;
 
 use MediaWiki\Content\JsonContentHandler;
+use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
 
 class SchemaContentHandler extends JsonContentHandler {
 
@@ -21,6 +23,10 @@ class SchemaContentHandler extends JsonContentHandler {
 }
 JSON
 		);
+	}
+
+	public function canBeUsedOn( Title $title ) {
+		return $title->getNamespace() === NeoWikiExtension::NS_SCHEMA;
 	}
 
 }
