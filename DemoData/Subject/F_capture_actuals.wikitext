@@ -1,5 +1,3 @@
-<div class="neowiki-infobox" data-subject-id="s1demo3sssssss1"></div>
-
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed lectus elit, consequat id lacus in, iaculis semper elit. Sed at cursus risus. Donec gravida imperdiet sem, sed fermentum magna gravida id. Etiam dui leo, lobortis vitae eros et, lacinia maximus elit. Morbi sagittis congue ante, at gravida libero. In euismod interdum dolor, non facilisis turpis sodales quis. Fusce mollis eget mi sit amet ullamcorper. In ornare viverra neque, non varius quam auctor id.
 
 Nam pulvinar lectus velit, vel commodo diam rutrum eget. Vivamus convallis ligula metus, at rhoncus nisl placerat nec. Proin eu fringilla felis. Mauris ut rutrum nisi. Maecenas non vestibulum lorem. Donec fringilla lectus pretium arcu semper egestas. Donec congue leo lectus, non aliquam dolor ullamcorper vel. Quisque et eros eget erat iaculis egestas.

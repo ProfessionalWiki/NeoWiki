@@ -1,5 +1,3 @@
-<div class="neowiki-infobox" data-subject-id="s1demo2sssssss1"></div>
-
 Because NeoWiki supports adding as many Subjects as you want to a single page, it is possible to emulate Wikibase Statements.
 
 We did not optimize for this use case yet. In particular, the required Subject title field (first column in the table)
