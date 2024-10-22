@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, PropType, nextTick } from 'vue';
+import { ref, computed, PropType, nextTick } from 'vue';
 import { CdxField, CdxTextInput, CdxButton, CdxIcon, ValidationStatusType, ValidationMessages } from '@wikimedia/codex';
 import { cdxIconTrash, cdxIconAdd } from '@wikimedia/codex-icons';
 import { newStringValue, ValueType, StringValue } from '@neo/domain/Value';
@@ -73,7 +73,16 @@ const props = defineProps( {
 
 const emit = defineEmits( [ 'update:modelValue', 'validation' ] );
 
-const inputValues = ref<string[]>( [ '' ] );
+const buildInitialInputValues = ( value: Value ): string[] => {
+	if ( value.type === ValueType.String ) {
+		const strings = ( value as StringValue ).strings;
+		return strings.length > 0 ? strings : [ '' ];
+	}
+
+	return [ '' ];
+};
+
+const inputValues = ref<string[]>( buildInitialInputValues( props.modelValue ) );
 
 const validationState = ref<ValidationResult>( {
 	isValid: true,
@@ -105,13 +114,13 @@ const getErrorMessage = ( value: string ): ValidationMessages => {
 const validateFields = ( fieldValues: string[] ): ValidationResult => {
 	const validation: ValidationResult = { isValid: true, statuses: [], messages: [] };
 	const areAllFieldsEmpty = fieldValues.every( ( value ) => value.trim() === '' );
-	const isRequiredFieldValid = areAllFieldsEmpty && props.property.required;
+	const isRequiredFieldInValid = areAllFieldsEmpty && props.property.required;
 
 	fieldValues.forEach( ( value: string, index: number ) => {
 		let messages: ValidationMessages = getErrorMessage( value );
 		let status: ValidationStatusType = 'error' in messages ? 'error' : 'success';
 
-		if ( isRequiredFieldValid && index === 0 ) {
+		if ( isRequiredFieldInValid && index === 0 ) {
 			messages = { error: mw.message( 'neowiki-field-required' ).text() };
 			status = 'error';
 		}
@@ -158,14 +167,6 @@ const focusInput = ( inputRef: string ): void => {
 	const input = document.querySelector( `[input-ref="${ inputRef }"]` ) as HTMLInputElement | null;
 	input?.focus();
 };
-
-watch( () => props.modelValue, ( newValue ) => {
-	if ( newValue.type === ValueType.String ) {
-		inputValues.value = ( newValue as StringValue ).strings;
-	} else {
-		inputValues.value = [ '' ];
-	}
-}, { immediate: true, deep: true } );
 
 defineExpose( {
 	inputValues,

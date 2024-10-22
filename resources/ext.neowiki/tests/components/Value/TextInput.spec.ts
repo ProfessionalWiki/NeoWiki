@@ -76,9 +76,10 @@ describe( 'TextInput', () => {
 		it( 'does not allow all empty fields when property value is required', async () => {
 			const wrapper = createWrapper( {
 				property: newTextProperty( { required: true } ),
-				modelValue: newStringValue( 'Text1', '' )
+				modelValue: newStringValue( 'Text1', 'Text2' )
 			} );
 			await wrapper.findAll( 'input' )[ 0 ].setValue( '' );
+			await wrapper.findAll( 'input' )[ 1 ].setValue( '' );
 
 			const fields = wrapper.findAllComponents( CdxField );
 			assertFieldStatus( fields[ 0 ], 'error', { error: 'neowiki-field-required' } );
@@ -87,7 +88,7 @@ describe( 'TextInput', () => {
 		it( 'validates minimum length in multiple fields', async () => {
 			const wrapper = createWrapper( {
 				property: newTextProperty( { minLength: 5 } ),
-				modelValue: newStringValue( 'Text1', '' )
+				modelValue: newStringValue( 'Text1', '12345' )
 			} );
 
 			await wrapper.findAll( 'input' )[ 1 ].setValue( '1234' );
@@ -98,7 +99,7 @@ describe( 'TextInput', () => {
 		it( 'validates maximum length in multiple fields', async () => {
 			const wrapper = createWrapper( {
 				property: newTextProperty( { maxLength: 5 } ),
-				modelValue: newStringValue( 'Text1', '' )
+				modelValue: newStringValue( 'Text1', '12345' )
 			} );
 
 			await wrapper.findAll( 'input' )[ 1 ].setValue( '123456' );
@@ -136,7 +137,7 @@ describe( 'TextInput', () => {
 		it( 'disables add button when any text field is invalid', async () => {
 			const wrapper = createWrapper( {
 				property: newTextProperty( { minLength: 3 } ),
-				modelValue: newStringValue( 'Valid', '' )
+				modelValue: newStringValue( 'Valid', '123' )
 			} );
 
 			await wrapper.findAll( 'input' )[ 1 ].setValue( 'in' );
