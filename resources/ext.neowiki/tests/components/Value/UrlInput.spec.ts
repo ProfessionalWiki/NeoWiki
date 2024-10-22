@@ -101,7 +101,7 @@ describe( 'UrlInput', () => {
 			assertFieldIsValid( fields[ 0 ] );
 		} );
 
-		it( 'succeeds for single empty value parts when the value is required but there are valid parts', async () => {
+		it( 'succeeds for empty value parts when the value is required but there are valid non-empty parts', async () => {
 			const wrapper = createWrapper( {
 				property: newUrlProperty( { required: true } ),
 				modelValue: newStringValue( 'https://valid1.com', 'https://valid2.com', 'https://valid3.com' )
