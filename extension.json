@@ -44,9 +44,7 @@
 
 		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",
 
-		"EditFilter": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFilter",
-
-		"SpecialPage_initList": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSpecialPageInitList"
+		"EditFilter": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFilter"
 	},
 
 	"ContentHandlers": {

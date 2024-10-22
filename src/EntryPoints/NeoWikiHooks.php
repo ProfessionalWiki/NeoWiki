@@ -158,10 +158,4 @@ class NeoWikiHooks {
 		}
 	}
 
-	public static function onSpecialPageInitList( array &$specialPages ): void {
-		if ( !NeoWikiExtension::getInstance()->isDevelopmentUIEnabled() ) {
-			unset( $specialPages['NeoJson'] );
-		}
-	}
-
 }
