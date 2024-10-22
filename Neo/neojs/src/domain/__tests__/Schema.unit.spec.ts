@@ -1,21 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import { newTextProperty, TextFormat } from '@neo/domain/valueFormats/Text';
+import { newTextProperty } from '@neo/domain/valueFormats/Text';
 import { newSchema } from '@neo/TestHelpers';
 import { newNumberProperty } from '@neo/domain/valueFormats/Number';
+import { UrlFormat } from '@neo/domain/valueFormats/Url';
 
 describe( 'Schema', () => {
 
 	describe( 'getPropertyDefinition', () => {
 
 		const schema = newSchema( {
-			properties: new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'test', {
-					type: 'string',
-					format: 'text'
-				} )
-			] )
+			properties: new PropertyDefinitionList( [ newTextProperty() ] )
 		} );
 
 		it( 'returns undefined for unknown property', () => {
@@ -23,9 +18,9 @@ describe( 'Schema', () => {
 		} );
 
 		it( 'returns known property definition', () => {
-			const property = schema.getPropertyDefinition( 'test' );
+			const property = schema.getPropertyDefinition( 'text' );
 
-			expect( property.format ).toBe( TextFormat.formatName );
+			expect( property.format ).toBe( UrlFormat.formatName );
 		} );
 
 	} );
@@ -50,38 +45,29 @@ describe( 'Schema', () => {
 		it( 'adds a Property Definition when Schema has no properties', () => {
 			const originalSchema = newSchema();
 
-			const addedProperty = createPropertyDefinitionFromJson( 'addedProperty', {
-				type: 'string',
-				format: 'text'
-			} );
+			const addedProperty = newTextProperty();
 
 			const updatedSchema = originalSchema.withAddedPropertyDefinition( addedProperty );
 
 			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
-				addedProperty: addedProperty
+				[ addedProperty.name.toString() ]: addedProperty
 			} );
 		} );
 
 		it( 'adds a Property Definition when Schema has properties', () => {
-			const existingProperty = createPropertyDefinitionFromJson( 'existingProperty', {
-				type: 'string',
-				format: 'text'
-			} );
+			const existingProperty = newTextProperty();
 
 			const originalSchema = newSchema( {
 				properties: new PropertyDefinitionList( [ existingProperty ] )
 			} );
 
-			const addedProperty = createPropertyDefinitionFromJson( 'addedProperty', {
-				type: 'number',
-				format: 'number'
-			} );
+			const addedProperty = newNumberProperty();
 
 			const updatedSchema = originalSchema.withAddedPropertyDefinition( addedProperty );
 
 			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
-				existingProperty: existingProperty,
-				addedProperty: addedProperty
+				[ existingProperty.name.toString() ]: existingProperty,
+				[ addedProperty.name.toString() ]: addedProperty
 			} );
 		} );
 
