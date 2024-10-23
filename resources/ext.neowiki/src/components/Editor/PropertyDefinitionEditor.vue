@@ -25,7 +25,7 @@
 			<NeoTextField
 				v-model="localProperty.description"
 				class="property-description"
-				label="Description"
+				:label="$i18n( 'neowiki-infobox-editor-property-description' ).text()"
 			/>
 			<div class="required-checkbox">
 				<CdxCheckbox
