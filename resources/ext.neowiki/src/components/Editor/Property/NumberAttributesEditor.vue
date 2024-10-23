@@ -1,26 +1,29 @@
 <template>
 	<div class="number-attributes">
-		<CdxField
-			:label="$i18n( 'neowiki-property-editor-minimum' ).text()"
-		>
+		<CdxField>
+			<template #label>
+				{{ $i18n( 'neowiki-property-editor-minimum' ).text() }}
+			</template>
 			<CdxTextInput
 				:model-value="property.minimum?.toString()"
 				input-type="number"
 				@update:model-value="updateMinimum"
 			/>
 		</CdxField>
-		<CdxField
-			:label="$i18n( 'neowiki-property-editor-maximum' ).text()"
-		>
+		<CdxField>
+			<template #label>
+				{{ $i18n( 'neowiki-property-editor-maximum' ).text() }}
+			</template>
 			<CdxTextInput
 				:model-value="property.maximum?.toString()"
 				input-type="number"
 				@update:model-value="updateMaximum"
 			/>
 		</CdxField>
-		<CdxField
-			:label="$i18n( 'neowiki-property-editor-precision' ).text()"
-		>
+		<CdxField>
+			<template #label>
+				{{ $i18n( 'neowiki-property-editor-precision' ).text() }}
+			</template>
 			<CdxTextInput
 				:model-value="property.precision?.toString()"
 				input-type="number"

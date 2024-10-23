@@ -224,7 +224,10 @@
 				"neowiki-property-editor-type",
 				"neowiki-property-editor-initial-value",
 				"neowiki-property-editor-required",
-				"neowiki-property-editor-save"
+				"neowiki-property-editor-save",
+				"neowiki-property-editor-minimum",
+				"neowiki-property-editor-maximum",
+				"neowiki-property-editor-precision"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
