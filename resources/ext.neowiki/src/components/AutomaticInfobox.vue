@@ -89,7 +89,7 @@ const getComponent = ( formatName: string ): Component => NeoWikiServices.getCom
 
 const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => {
 	if ( !subjectRef.value ) {
-		console.log( 'subjectRef is null or undefined' );
+		console.error( 'subjectRef is null or undefined' );
 		return {};
 	}
 
@@ -114,10 +114,7 @@ const editInfoBox = (): void => {
 };
 
 const saveSubject = ( savedSubject: Subject ): void => {
-	console.log( 'Saved Subject:', savedSubject );
-	console.log( 'Saved Subject Statements:', savedSubject.getStatements() );
 	subjectRef.value = savedSubject;
-	console.log( 'Updated subjectRef:', subjectRef.value );
 };
 
 onMounted( async (): Promise<void> => {

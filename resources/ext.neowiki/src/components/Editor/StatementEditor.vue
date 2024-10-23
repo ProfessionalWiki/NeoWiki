@@ -59,7 +59,7 @@ const updateStatementValue = ( newValue: Value | undefined ): void => {
 };
 
 const handleValidation = ( isValid: boolean ): void => {
-	console.log( isValid );
+	console.log( isValid ); // TODO: Handle Validation
 };
 </script>
 
