@@ -13,7 +13,7 @@
 			:selected-schema="selectedSchema"
 			:is-edit-mode="false"
 			:can-edit-schema="canEditSchema"
-			@complete="onCreationComplete"
+			@save="onCreationComplete"
 			@back="onInfoboxBack"
 		/>
 	</div>
@@ -53,9 +53,10 @@ const onSubjectTypeSelected = async ( type: string ): Promise<void> => {
 };
 
 const onCreationComplete = (): void => {
-	console.log( 'Creation process completed' );
 	selectedSchema.value = '';
 	canEditSchema.value = false;
+	// TODO: inject the new infobox instead
+	window.location.reload();
 };
 
 const onInfoboxBack = (): void => {
