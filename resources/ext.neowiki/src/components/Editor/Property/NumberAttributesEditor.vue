@@ -31,28 +31,22 @@
 </template>
 
 <script setup lang="ts">
-import { PropType } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { NumberProperty } from '@neo/domain/valueFormats/Number.ts';
+import { AttributesEditorEmits, AttributesEditorProps } from '@/components/Editor/Property/AttributesEditorContract.ts';
 
-const props = defineProps( {
-	property: {
-		type: Object as PropType<NumberProperty>,
-		required: true
-	}
-} );
-
-const emit = defineEmits( [ 'update:property' ] );
+defineProps<AttributesEditorProps<NumberProperty>>();
+const emit = defineEmits<AttributesEditorEmits<NumberProperty>>();
 
 const updateMinimum = ( value: string ): void => {
-	emit( 'update:property', { ...props.property, minimum: value ? Number( value ) : null } );
+	emit( 'update:property', { minimum: value ? Number( value ) : undefined } );
 };
 
 const updateMaximum = ( value: string ): void => {
-	emit( 'update:property', { ...props.property, maximum: value ? Number( value ) : null } );
+	emit( 'update:property', { maximum: value ? Number( value ) : undefined } );
 };
 
 const updatePrecision = ( value: string ): void => {
-	emit( 'update:property', { ...props.property, precision: value ? Number( value ) : null } );
+	emit( 'update:property', { precision: value ? Number( value ) : undefined } );
 };
 </script>

@@ -1,16 +1,14 @@
 <template>
 	<div />
+	<!-- TODO -->
 </template>
 
 <script setup lang="ts">
-import { PropType } from 'vue';
-import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
+import { MultiStringProperty } from '@neo/domain/PropertyDefinition.ts';
+import { AttributesEditorEmits, AttributesEditorProps } from '@/components/Editor/Property/AttributesEditorContract.ts';
 
-defineProps( {
-	// eslint-disable-next-line vue/no-unused-properties
-	property: {
-		type: Object as PropType<PropertyDefinition>,
-		required: true
-	}
-} );
+defineProps<AttributesEditorProps<MultiStringProperty>>();
+defineEmits<AttributesEditorEmits<MultiStringProperty>>();
+
+// TODO: emit like in NumberAttributesEditor.vue
 </script>
