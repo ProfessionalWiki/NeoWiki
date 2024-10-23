@@ -5,7 +5,7 @@
 		>
 			<CdxTextInput
 				:model-value="property.minimum?.toString()"
-				type="number"
+				input-type="number"
 				@update:model-value="updateMinimum"
 			/>
 		</CdxField>
@@ -14,7 +14,7 @@
 		>
 			<CdxTextInput
 				:model-value="property.maximum?.toString()"
-				type="number"
+				input-type="number"
 				@update:model-value="updateMaximum"
 			/>
 		</CdxField>
@@ -23,7 +23,7 @@
 		>
 			<CdxTextInput
 				:model-value="property.precision?.toString()"
-				type="number"
+				input-type="number"
 				@update:model-value="updatePrecision"
 			/>
 		</CdxField>
