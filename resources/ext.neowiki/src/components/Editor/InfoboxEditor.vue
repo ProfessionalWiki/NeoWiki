@@ -294,7 +294,7 @@ const removeStatement = ( index: number ): void => {
 };
 
 const handleValidation = ( isValid: boolean ): void => {
-	console.log( isValid );
+	console.log( isValid ); // TODO: handle Validation
 };
 
 const goBack = (): void => {
