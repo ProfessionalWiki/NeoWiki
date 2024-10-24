@@ -43,20 +43,16 @@
 </template>
 
 <script setup lang="ts">
-import { PropType, ref, nextTick, computed } from 'vue';
-import { CdxField, CdxTextInput, CdxButton, CdxIcon, ValidationStatusType, ValidationMessages } from '@wikimedia/codex';
+import { type PropType } from 'vue';
+import { CdxField, CdxTextInput, CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconLink, cdxIconTrash } from '@wikimedia/codex-icons';
-import { StringValue, Value, ValueType } from '@neo/domain/Value';
+import { type Value } from '@neo/domain/Value';
 import { newStringValue } from '@neo/domain/Value';
-import { UrlProperty } from '@neo/domain/valueFormats/Url.ts';
-
-type ValidationResult = {
-	isValid: boolean;
-	statuses: ValidationStatusType[];
-	messages: ValidationMessages[];
-};
+import { type UrlProperty, isValidUrl } from '@neo/domain/valueFormats/Url.ts';
+import { useMultiStringInput, type ValidationResult } from '@/composables/useMultiStringInput';
 
 const props = defineProps( {
+	// eslint-disable-next-line vue/no-unused-properties
 	modelValue: {
 		type: Object as PropType<Value>,
 		default: () => newStringValue( '' )
@@ -74,33 +70,15 @@ const props = defineProps( {
 
 const emit = defineEmits( [ 'update:modelValue', 'validation' ] );
 
-const buildInitialInputValues = ( value: Value ): string[] => {
-	if ( value.type === ValueType.String ) {
-		const strings = ( value as StringValue ).strings;
-		return strings.length > 0 ? strings : [ '' ];
-	}
-
-	return [ '' ];
-};
-
-const inputValues = ref<string[]>( buildInitialInputValues( props.modelValue ) );
-
-const isAddButtonDisabled = computed( (): boolean => inputValues.value.some( ( value: string ) => value.trim() === '' || !validationState.value.isValid ) );
-
-const validationState = ref<ValidationResult>( {
-	isValid: true,
-	statuses: [] as ValidationStatusType[],
-	messages: [] as ValidationMessages[]
-} );
-
-const isValidUrl = ( url: string ): boolean => {
-	try {
-		new URL( url );
-		return true;
-	} catch {
-		return false;
-	}
-};
+const {
+	inputValues,
+	validationState,
+	isAddButtonDisabled,
+	isRequiredFieldInValid,
+	handleInput,
+	handleAdd,
+	handleRemove
+} = useMultiStringInput( props, emit );
 
 const getErrorMessage = ( isEmpty: boolean ): string => isEmpty ?
 	mw.message( 'neowiki-field-required' ).text() :
@@ -108,14 +86,13 @@ const getErrorMessage = ( isEmpty: boolean ): string => isEmpty ?
 
 const validateFields = ( valueParts: string[] ): ValidationResult => {
 	const validation: ValidationResult = { isValid: true, statuses: [], messages: [] };
-	const isSingleFieldRequired: boolean = valueParts.length === 1 && props.property.required;
 
-	valueParts.forEach( ( valuePart: string ): void => {
+	valueParts.forEach( ( valuePart: string, index: number ): void => {
 		const url = valuePart.trim();
 		const isEmpty: boolean = url === '';
 		let fieldIsValid: boolean = isEmpty || isValidUrl( url );
 
-		if ( isEmpty && isSingleFieldRequired ) {
+		if ( isEmpty && isRequiredFieldInValid.value && index === 0 ) {
 			fieldIsValid = false;
 		}
 
@@ -127,41 +104,9 @@ const validateFields = ( valueParts: string[] ): ValidationResult => {
 	return validation;
 };
 
-const onInput = ( newValue: string, index: number ): void => {
-	inputValues.value[ index ] = newValue;
-
-	const validation = validateFields( inputValues.value );
-	validationState.value = validation;
-
-	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
-	emit( 'validation', validation.isValid );
-};
-
-const addUrl = async (): Promise<void> => {
-	inputValues.value.push( '' );
-
-	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
-	emit( 'validation', false );
-	await nextTick();
-
-	const inputRef = `${ inputValues.value.length - 1 }-${ props.property.name }-url-input`;
-	focusInput( inputRef );
-};
-
-const removeUrl = ( index: number ): void => {
-	inputValues.value.splice( index, 1 );
-
-	const validation = validateFields( inputValues.value );
-	validationState.value = validation;
-
-	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
-	emit( 'validation', validation.isValid );
-};
-
-const focusInput = ( inputRef: string ): void => {
-	const input = document.querySelector( `[input-ref="${ inputRef }"]` ) as HTMLInputElement | null;
-	input?.focus();
-};
+const onInput = ( value: string, index: number ): void => handleInput( value, index, validateFields );
+const addUrl = (): Promise<void> => handleAdd( 'url' );
+const removeUrl = ( index: number ): void => handleRemove( index, validateFields );
 
 defineExpose( {
 	inputValues,
