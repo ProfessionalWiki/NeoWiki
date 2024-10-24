@@ -48,6 +48,10 @@
 	"neowiki-property-editor-required": "Require a value",
 	"neowiki-property-editor-save": "Save Property",
 
+	"neowiki-property-editor-minimum": "Minimum",
+	"neowiki-property-editor-maximum": "Maximum",
+	"neowiki-property-editor-precision": "Precision",
+
 	"neowiki-infobox-type": "Type",
 	"neowiki-infobox-edit-link": "Edit",
 
