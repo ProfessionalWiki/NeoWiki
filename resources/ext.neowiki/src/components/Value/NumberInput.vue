@@ -16,35 +16,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, PropType } from 'vue';
+import { computed, ref } from 'vue';
 import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
-import { newNumberValue, ValueType, NumberValue } from '@neo/domain/Value';
-import type { Value } from '@neo/domain/Value';
+import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
 import { NumberProperty } from '@neo/domain/valueFormats/Number.ts';
+import { ValidationMessages, ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 
-const props = defineProps( {
-	modelValue: {
-		type: Object as PropType<Value>,
-		default: () => newNumberValue( NaN )
-	},
-	label: {
-		type: String,
-		required: false,
-		default: ''
-	},
-	property: {
-		type: Object as PropType<NumberProperty>,
-		required: true
+const props = withDefaults(
+	defineProps<ValueInputProps<NumberProperty>>(),
+	{
+		modelValue: () => newNumberValue( NaN ),
+		label: ''
 	}
-} );
+);
+const emit = defineEmits<ValueInputEmits>();
 
-const emit = defineEmits( [ 'update:modelValue', 'validation' ] );
 const validationStatus = ref<ValidationStatusType>( 'default' );
-
-interface ValidationMessages {
-	[key: string]: string;
-}
-
 const validationMessages = ref<ValidationMessages>( {} );
 
 const inputValue = computed( () => {
@@ -84,8 +71,4 @@ const updateValidationStatus = ( messages: ValidationMessages ): void => {
 
 	emit( 'validation', Object.keys( messages ).length === 0 );
 };
-
-watch( validationMessages, ( newMessages ) => { // TODO: this can probably be removed
-	emit( 'validation', Object.keys( newMessages ).length === 0 );
-} );
 </script>

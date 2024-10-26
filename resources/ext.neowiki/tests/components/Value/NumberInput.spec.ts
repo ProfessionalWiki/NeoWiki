@@ -75,13 +75,23 @@ describe( 'NumberInput', () => {
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-min-value' );
 	} );
 
+	const assertEmitted = (
+		wrapper: VueWrapper,
+		eventName: string,
+		expected: unknown[]
+	): void => {
+		const emits = wrapper.emitted( eventName );
+		expect( emits ).toBeDefined();
+		expect( emits![ emits!.length - 1 ] ).toEqual( expected );
+	};
+
 	it( 'emits valid field when value within min and max', async () => {
 		const wrapper = newWrapper( {
 			property: newNumberProperty( { minimum: 42, maximum: 42 } )
 		} );
 
 		await wrapper.find( 'input' ).setValue( 42 );
-		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ true ] );
+		assertEmitted( wrapper, 'validation', [ true ] );
 	} );
 
 	it( 'emits invalid field when validation fails', async () => {
@@ -90,6 +100,6 @@ describe( 'NumberInput', () => {
 		} );
 
 		await wrapper.find( 'input' ).setValue( 43 );
-		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ false ] );
+		assertEmitted( wrapper, 'validation', [ false ] );
 	} );
 } );
