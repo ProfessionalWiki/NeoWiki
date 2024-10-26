@@ -3,7 +3,8 @@ import type { Ref, ComputedRef } from 'vue';
 import type { StringValue, Value } from '@neo/domain/Value';
 import { ValueType } from '@neo/domain/Value';
 import { newStringValue } from '@neo/domain/Value';
-import { ValidationState } from '@/components/Value/ValueInputContract.ts';
+import { ValidationState, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
+import { TextProperty } from '@neo/domain/valueFormats/Text.ts';
 
 export interface MultiStringInputReturn {
 	inputValues: Ref<string[]>;
@@ -15,9 +16,11 @@ export interface MultiStringInputReturn {
 	handleRemove: ( index: number, validateFn: ( values: string[] ) => ValidationState ) => void;
 }
 
-// TODO: use prop and emit types e.g. AttributesEditorContract
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-export const useMultiStringInput = ( props: any, emit: any ): MultiStringInputReturn => {
+export const useMultiStringInput = (
+	props: ValueInputProps<TextProperty>,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
+	emit: any
+): MultiStringInputReturn => {
 	const buildInitialInputValues = ( value: Value ): string[] => {
 		if ( value.type === ValueType.String ) {
 			const strings = ( value as StringValue ).strings;
