@@ -27,14 +27,12 @@ describe( 'TextInput', () => {
 	const assertFieldStatus = (
 		field: VueWrapper<InstanceType<typeof CdxField>>,
 		expectedStatus: ValidationStatusType,
-		expectedErrorMessage?: ValidationMessages
+		expectedErrorMessage: ValidationMessages = {}
 	): void => {
 		expect( field.props( 'status' ) ).toBe( expectedStatus );
-		if ( expectedErrorMessage ) {
-			expect( field.props( 'messages' ) ).toHaveProperty( 'error', expectedErrorMessage.error );
-		} else {
-			expect( field.props( 'messages' ) ).toEqual( {} );
-		}
+		expect( field.props( 'messages' ) ).toEqual( {
+			...expectedErrorMessage
+		} );
 	};
 
 	describe( 'Rendering component', () => {

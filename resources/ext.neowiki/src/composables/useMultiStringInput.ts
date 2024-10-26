@@ -22,7 +22,7 @@ export interface MultiStringInputReturn {
 }
 
 // TODO: use prop and emit types e.g. AttributesEditorContract
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
 export const useMultiStringInput = ( props: any, emit: any ): MultiStringInputReturn => {
 	const buildInitialInputValues = ( value: Value ): string[] => {
 		if ( value.type === ValueType.String ) {
