@@ -43,32 +43,22 @@
 </template>
 
 <script setup lang="ts">
-import { type PropType } from 'vue';
 import { CdxField, CdxTextInput, CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconLink, cdxIconTrash } from '@wikimedia/codex-icons';
-import { type Value } from '@neo/domain/Value';
 import { newStringValue } from '@neo/domain/Value';
-import { type UrlProperty, isValidUrl } from '@neo/domain/valueFormats/Url.ts';
-import { useMultiStringInput, type ValidationResult } from '@/composables/useMultiStringInput';
+import { UrlProperty, isValidUrl } from '@neo/domain/valueFormats/Url.ts';
+import { useMultiStringInput } from '@/composables/useMultiStringInput';
+import { ValueInputEmits, ValueInputProps, ValidationState } from '@/components/Value/ValueInputContract';
 
-const props = defineProps( {
-	// eslint-disable-next-line vue/no-unused-properties
-	modelValue: {
-		type: Object as PropType<Value>,
-		default: () => newStringValue( '' )
-	},
-	label: {
-		type: String,
-		required: false,
-		default: ''
-	},
-	property: {
-		type: Object as PropType<UrlProperty>,
-		required: true
+const props = withDefaults(
+	defineProps<ValueInputProps<UrlProperty>>(),
+	{
+		modelValue: () => newStringValue( '' ),
+		label: ''
 	}
-} );
+);
 
-const emit = defineEmits( [ 'update:modelValue', 'validation' ] );
+const emit = defineEmits<ValueInputEmits>();
 
 const {
 	inputValues,
@@ -84,8 +74,8 @@ const getErrorMessage = ( isEmpty: boolean ): string => isEmpty ?
 	mw.message( 'neowiki-field-required' ).text() :
 	mw.message( 'neowiki-field-invalid-url' ).text();
 
-const validateFields = ( valueParts: string[] ): ValidationResult => {
-	const validation: ValidationResult = { isValid: true, statuses: [], messages: [] };
+const validateFields = ( valueParts: string[] ): ValidationState => {
+	const validation: ValidationState = { isValid: true, statuses: [], messages: [] };
 
 	valueParts.forEach( ( valuePart: string, index: number ): void => {
 		const url = valuePart.trim();

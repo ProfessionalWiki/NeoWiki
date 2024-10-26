@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { nextTick } from 'vue';
 import { useMultiStringInput, type MultiStringInputReturn } from '@/composables/useMultiStringInput';
 import { ValueType, newStringValue, type StringValue } from '@neo/domain/Value';
-import { type ValidationResult } from '@/composables/useMultiStringInput';
+import { ValidationState } from '@/components/Value/ValueInputContract.ts';
 
 interface MockProps {
 	modelValue: StringValue;
@@ -21,7 +21,7 @@ describe( 'useMultiStringInput', () => {
 	const mockEmit = vi.fn() as EmitType;
 	let mockProps: MockProps;
 
-	const createValidationMock = ( isValid = true ): ValidationResult => ( {
+	const createValidationMock = ( isValid = true ): ValidationState => ( {
 		isValid,
 		statuses: [],
 		messages: []

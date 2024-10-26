@@ -42,32 +42,27 @@
 </template>
 
 <script setup lang="ts">
-import { PropType } from 'vue';
-import { CdxField, CdxTextInput, CdxButton, CdxIcon, ValidationStatusType, ValidationMessages } from '@wikimedia/codex';
+import { CdxField, CdxTextInput, CdxButton, CdxIcon, ValidationStatusType } from '@wikimedia/codex';
 import { cdxIconTrash, cdxIconAdd } from '@wikimedia/codex-icons';
-import { Value } from '@neo/domain/Value';
 import { newStringValue } from '@neo/domain/Value';
 import { TextProperty } from '@neo/domain/valueFormats/Text.ts';
-import { useMultiStringInput, ValidationResult } from '@/composables/useMultiStringInput';
+import { useMultiStringInput } from '@/composables/useMultiStringInput';
+import {
+	ValidationMessages,
+	ValidationState,
+	ValueInputEmits,
+	ValueInputProps
+} from '@/components/Value/ValueInputContract';
 
-const props = defineProps( {
-	// eslint-disable-next-line vue/no-unused-properties
-	modelValue: {
-		type: Object as PropType<Value>,
-		default: () => newStringValue( '' )
-	},
-	label: {
-		type: String,
-		required: false,
-		default: ''
-	},
-	property: {
-		type: Object as PropType<TextProperty>,
-		required: true
+const props = withDefaults(
+	defineProps<ValueInputProps<TextProperty>>(),
+	{
+		modelValue: () => newStringValue( '' ),
+		label: ''
 	}
-} );
+);
 
-const emit = defineEmits( [ 'update:modelValue', 'validation' ] );
+const emit = defineEmits<ValueInputEmits>();
 
 const {
 	inputValues,
@@ -96,8 +91,8 @@ const getErrorMessage = ( value: string ): ValidationMessages => {
 	return error !== undefined ? { error: error.message } : {};
 };
 
-const validateFields = ( fieldValues: string[] ): ValidationResult => {
-	const validation: ValidationResult = { isValid: true, statuses: [], messages: [] };
+const validateFields = ( fieldValues: string[] ): ValidationState => {
+	const validation: ValidationState = { isValid: true, statuses: [], messages: [] };
 
 	fieldValues.forEach( ( value: string, index: number ) => {
 		let messages: ValidationMessages = getErrorMessage( value );

@@ -1,24 +1,18 @@
 import { ref, computed, nextTick } from 'vue';
 import type { Ref, ComputedRef } from 'vue';
-import type { ValidationStatusType, ValidationMessages } from '@wikimedia/codex';
 import type { StringValue, Value } from '@neo/domain/Value';
 import { ValueType } from '@neo/domain/Value';
 import { newStringValue } from '@neo/domain/Value';
-
-export type ValidationResult = {
-	isValid: boolean;
-	statuses: ValidationStatusType[];
-	messages: ValidationMessages[];
-};
+import { ValidationState } from '@/components/Value/ValueInputContract.ts';
 
 export interface MultiStringInputReturn {
 	inputValues: Ref<string[]>;
-	validationState: Ref<ValidationResult>;
+	validationState: Ref<ValidationState>;
 	isAddButtonDisabled: ComputedRef<boolean>;
 	isRequiredFieldInValid: ComputedRef<boolean>;
-	handleInput: ( value: string, index: number, validateFn: ( values: string[] ) => ValidationResult ) => void;
+	handleInput: ( value: string, index: number, validateFn: ( values: string[] ) => ValidationState ) => void;
 	handleAdd: ( fieldType: string ) => Promise<void>;
-	handleRemove: ( index: number, validateFn: ( values: string[] ) => ValidationResult ) => void;
+	handleRemove: ( index: number, validateFn: ( values: string[] ) => ValidationState ) => void;
 }
 
 // TODO: use prop and emit types e.g. AttributesEditorContract
@@ -33,7 +27,7 @@ export const useMultiStringInput = ( props: any, emit: any ): MultiStringInputRe
 	};
 
 	const inputValues = ref<string[]>( buildInitialInputValues( props.modelValue ) );
-	const validationState = ref<ValidationResult>( {
+	const validationState = ref<ValidationState>( {
 		isValid: true,
 		statuses: [],
 		messages: []
@@ -47,7 +41,7 @@ export const useMultiStringInput = ( props: any, emit: any ): MultiStringInputRe
 		return areAllFieldsEmpty && props.property.required;
 	} );
 
-	const handleInput = ( newValue: string, index: number, validateFn: ( values: string[] ) => ValidationResult ): void => {
+	const handleInput = ( newValue: string, index: number, validateFn: ( values: string[] ) => ValidationState ): void => {
 		inputValues.value[ index ] = newValue;
 		const validation = validateFn( inputValues.value );
 		validationState.value = validation;
@@ -70,7 +64,7 @@ export const useMultiStringInput = ( props: any, emit: any ): MultiStringInputRe
 		input?.focus();
 	};
 
-	const handleRemove = ( index: number, validateFn: ( values: string[] ) => ValidationResult ): void => {
+	const handleRemove = ( index: number, validateFn: ( values: string[] ) => ValidationState ): void => {
 		inputValues.value.splice( index, 1 );
 		const validation = validateFn( inputValues.value );
 		validationState.value = validation;
