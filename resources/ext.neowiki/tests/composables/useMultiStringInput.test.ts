@@ -2,15 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { nextTick } from 'vue';
 import { useMultiStringInput, type MultiStringInputReturn } from '@/composables/useMultiStringInput';
 import { ValueType, newStringValue, type StringValue } from '@neo/domain/Value';
-import { ValidationState } from '@/components/Value/ValueInputContract.ts';
+import { ValidationState, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
+import { newTextProperty, TextProperty } from '@neo/domain/valueFormats/Text.ts';
 
-interface MockProps {
-	modelValue: StringValue;
-	property: {
-		name: string;
-		required: boolean;
-	};
-}
+type MockProps = ValueInputProps<TextProperty>;
 
 type EmitType = {
 	( event: 'update:modelValue', payload: StringValue ): void;
@@ -45,10 +40,7 @@ describe( 'useMultiStringInput', () => {
 		vi.clearAllMocks();
 		mockProps = {
 			modelValue: newStringValue( 'initial value' ),
-			property: {
-				name: 'testField',
-				required: false
-			}
+			property: newTextProperty( {} )
 		};
 	} );
 
@@ -84,7 +76,7 @@ describe( 'useMultiStringInput', () => {
 
 		describe( 'required field validation', () => {
 			beforeEach( () => {
-				mockProps.property.required = true;
+				mockProps.property = newTextProperty( { required: true } );
 			} );
 
 			it( 'should be valid with non-empty values', () => {
