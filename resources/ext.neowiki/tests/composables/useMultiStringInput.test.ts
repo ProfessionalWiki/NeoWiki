@@ -1,19 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
-import { useMultiStringInput, type MultiStringInputReturn } from '@/composables/useMultiStringInput';
-import { ValueType, newStringValue, type StringValue } from '@neo/domain/Value';
-import { ValidationState, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
+import { type MultiStringInputReturn, useMultiStringInput } from '@/composables/useMultiStringInput';
+import { newStringValue, ValueType } from '@neo/domain/Value';
+import { ValidationState, ValueInputEmitFunction, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { newTextProperty, TextProperty } from '@neo/domain/valueFormats/Text.ts';
 
 type MockProps = ValueInputProps<TextProperty>;
 
-type EmitType = {
-	( event: 'update:modelValue', payload: StringValue ): void;
-	( event: 'validation', payload: boolean ): void;
-};
-
 describe( 'useMultiStringInput', () => {
-	const mockEmit = vi.fn() as EmitType;
+	const mockEmit = vi.fn() as ValueInputEmitFunction;
 	let mockProps: MockProps;
 
 	const createValidationMock = ( isValid = true ): ValidationState => ( {

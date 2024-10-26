@@ -13,6 +13,11 @@ export type ValueInputEmits = {
 	'validation': [boolean];
 };
 
+export type ValueInputEmitFunction = {
+	( event: 'update:modelValue', value: Value ): void;
+	( event: 'validation', valid: boolean ): void;
+};
+
 export interface ValidationState {
 	isValid: boolean;
 	statuses: ValidationStatusType[];
