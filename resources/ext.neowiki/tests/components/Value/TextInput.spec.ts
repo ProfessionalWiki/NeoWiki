@@ -1,19 +1,9 @@
 import { mount, VueWrapper } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TextInput from '@/components/Value/TextInput.vue';
-import { CdxField } from '@wikimedia/codex';
-import { newStringValue, Value } from '@neo/domain/Value';
-import { newTextProperty, TextProperty } from '@neo/domain/valueFormats/Text';
-import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
-
-// TODO: move to sane place
-export interface InputComponentProps<T extends PropertyDefinition = PropertyDefinition> {
-	modelValue: Value;
-	label: string;
-	property: T;
-}
-
-type TextInputProps = InputComponentProps<TextProperty>;
+import { CdxField, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
+import { newStringValue } from '@neo/domain/Value';
+import { newTextProperty } from '@neo/domain/valueFormats/Text';
 
 describe( 'TextInput', () => {
 	beforeEach( () => {
@@ -25,69 +15,143 @@ describe( 'TextInput', () => {
 		} );
 	} );
 
-	function newWrapper( props: Partial<TextInputProps> = {} ): VueWrapper {
-		return mount( TextInput, {
-			props: {
-				modelValue: newStringValue( 'Test' ),
-				label: 'Test Label',
-				property: newTextProperty( {} ),
-				...props
-			}
+	const createWrapper = ( propsData: Partial<InstanceType<typeof TextInput>['$props']> = {} ): VueWrapper<InstanceType<typeof TextInput>> => mount( TextInput, {
+		props: {
+			modelValue: newStringValue( 'Test' ),
+			label: 'Test Label',
+			property: newTextProperty( {} ),
+			...propsData
+		}
+	} );
+
+	const assertFieldStatus = (
+		field: VueWrapper<InstanceType<typeof CdxField>>,
+		expectedStatus: ValidationStatusType,
+		expectedErrorMessage: ValidationMessages = {}
+	): void => {
+		expect( field.props( 'status' ) ).toBe( expectedStatus );
+		expect( field.props( 'messages' ) ).toEqual( {
+			...expectedErrorMessage
 		} );
-	}
+	};
 
-	it( 'renders correctly', () => {
-		const wrapper = newWrapper();
-
-		expect( wrapper.findComponent( CdxField ).exists() ).toBe( true );
-		expect( wrapper.find( 'input' ).exists() ).toBe( true );
-		expect( wrapper.text() ).toContain( 'Test Label' );
-	} );
-
-	it( 'validates required field', async () => { // TODO: also test non-required field
-		const wrapper = newWrapper( { property: newTextProperty( { required: true } ) } );
-
-		await wrapper.find( 'input' ).setValue( '' );
-
-		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-required' );
-	} );
-
-	it( 'fails validation when maxLength is exceeded', async () => { // TODO: also test success (including boundary condition)
-		const wrapper = newWrapper( {
-			property: newTextProperty( { maxLength: 10 } )
+	describe( 'Rendering component', () => {
+		it( 'renders single text field correctly', () => {
+			const wrapper = createWrapper();
+			expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 1 );
+			expect( wrapper.findAll( 'input' ) ).toHaveLength( 1 );
+			expect( wrapper.text() ).toContain( 'Test Label' );
 		} );
 
-		await wrapper.find( 'input' ).setValue( '01234567890' );
-
-		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-max-length' );
+		it( 'renders multiple text fields correctly', () => {
+			const wrapper = createWrapper( {
+				modelValue: newStringValue( 'Text1', 'Text2' )
+			} );
+			expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 2 );
+			expect( wrapper.findAll( 'input' ) ).toHaveLength( 2 );
+		} );
 	} );
 
-	it( 'fails validation when minLength is not reached', async () => { // TODO: also test success (including boundary condition)
-		const wrapper = newWrapper( {
-			property: newTextProperty( { minLength: 5 } )
+	describe( 'Adding and Deleting Text Values', () => {
+		it( 'adds new text field when add button is clicked', async () => {
+			const wrapper = createWrapper();
+			const addButton = wrapper.find( 'button.add-text-button' );
+			await addButton.trigger( 'click' );
+			expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 2 );
+			expect( wrapper.emitted( 'update:modelValue' )?.[ 0 ][ 0 ] ).toEqual( newStringValue( 'Test', '' ) );
 		} );
 
-		await wrapper.find( 'input' ).setValue( '1234' );
-
-		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-min-length' );
+		it( 'removes text field when delete button is clicked', async () => {
+			const wrapper = createWrapper( {
+				modelValue: newStringValue( 'Text1', 'Text2' )
+			} );
+			await wrapper.findAll( '.delete-button' )[ 0 ].trigger( 'click' );
+			expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 1 );
+		} );
 	} );
 
-	it( 'emits valid field', async () => {
-		const wrapper = newWrapper();
+	describe( 'Validation', () => {
+		it( 'does not allow all empty fields when property value is required', async () => {
+			const wrapper = createWrapper( {
+				property: newTextProperty( { required: true } ),
+				modelValue: newStringValue( 'Text1', 'Text2' )
+			} );
+			await wrapper.findAll( 'input' )[ 0 ].setValue( '' );
+			await wrapper.findAll( 'input' )[ 1 ].setValue( '' );
 
-		await wrapper.find( 'input' ).setValue( 'Valid Text' );
-		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ true ] );
-	} );
-
-	it( 'emits invalid field when validation fails', async () => {
-		const wrapper = newWrapper( {
-			property: newTextProperty( { minLength: 2 } )
+			const fields = wrapper.findAllComponents( CdxField );
+			assertFieldStatus( fields[ 0 ], 'error', { error: 'neowiki-field-required' } );
 		} );
 
-		await wrapper.find( 'input' ).setValue( 'a' );
-		expect( wrapper.emitted( 'validation' )![ 1 ] ).toEqual( [ false ] );
+		it( 'validates minimum length in multiple fields', async () => {
+			const wrapper = createWrapper( {
+				property: newTextProperty( { minLength: 5 } ),
+				modelValue: newStringValue( 'Text1', '12345' )
+			} );
+
+			await wrapper.findAll( 'input' )[ 1 ].setValue( '1234' );
+			const fields = wrapper.findAllComponents( CdxField );
+			assertFieldStatus( fields[ 1 ], 'error', { error: 'neowiki-field-min-length' } );
+		} );
+
+		it( 'validates maximum length in multiple fields', async () => {
+			const wrapper = createWrapper( {
+				property: newTextProperty( { maxLength: 5 } ),
+				modelValue: newStringValue( 'Text1', '12345' )
+			} );
+
+			await wrapper.findAll( 'input' )[ 1 ].setValue( '123456' );
+			const fields = wrapper.findAllComponents( CdxField );
+			assertFieldStatus( fields[ 1 ], 'error', { error: 'neowiki-field-max-length' } );
+		} );
+
+		it( 'emits validation events for field changes', async () => {
+			const wrapper = createWrapper( {
+				property: newTextProperty( { minLength: 3 } ),
+				modelValue: newStringValue( 'Text1', '' )
+			} );
+
+			await wrapper.vm.onInput( 'Valid', 1 );
+			expect( wrapper.emitted( 'validation' )?.[ 0 ] ).toEqual( [ true ] );
+
+			await wrapper.vm.onInput( '12', 1 );
+			expect( wrapper.emitted( 'validation' )?.[ 1 ] ).toEqual( [ false ] );
+		} );
+
+		it( 'allows empty input for optional single field', async () => {
+			const wrapper = createWrapper( {
+				property: newTextProperty( { required: false } ),
+				modelValue: newStringValue( '' )
+			} );
+
+			await wrapper.findAll( 'input' )[ 0 ].setValue( '' );
+
+			const fields = wrapper.findAllComponents( CdxField );
+			assertFieldStatus( fields[ 0 ], 'success' );
+		} );
+	} );
+
+	describe( 'Add button state', () => {
+		it( 'disables add button when any text field is invalid', async () => {
+			const wrapper = createWrapper( {
+				property: newTextProperty( { minLength: 3 } ),
+				modelValue: newStringValue( 'Valid', '123' )
+			} );
+
+			await wrapper.findAll( 'input' )[ 1 ].setValue( 'in' );
+			const addButton = wrapper.find( 'button.add-text-button' );
+			expect( addButton.attributes( 'disabled' ) ).toBeDefined();
+		} );
+
+		it( 'enables add button when all text fields are valid', async () => {
+			const wrapper = createWrapper( {
+				property: newTextProperty( { minLength: 8 } ),
+				modelValue: newStringValue( 'ValidValue', 'InValid' )
+			} );
+
+			await wrapper.findAll( 'input' )[ 1 ].setValue( 'Valid-value' );
+			const addButton = wrapper.find( 'button.add-text-button' );
+			expect( addButton.attributes( 'disabled' ) ).toBeUndefined();
+		} );
 	} );
 } );
