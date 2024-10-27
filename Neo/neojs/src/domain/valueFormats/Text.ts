@@ -3,6 +3,7 @@ import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@neo/domain/Value';
 import { BaseValueFormat } from '@neo/domain/ValueFormat';
 import { UrlFormat } from '@neo/domain/valueFormats/Url';
+import { NumberProperty } from '@neo/domain/valueFormats/Number';
 
 export interface TextProperty extends MultiStringProperty {
 
@@ -31,13 +32,17 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
 
 }
 
+type TextPropertyAttributes = Omit<Partial<TextProperty>, 'name'> & {
+	name?: string | PropertyName;
+};
+
 export function newTextProperty(
-	options: string|Partial<TextProperty> = {},
+	attributes: string|TextPropertyAttributes = {},
 	name = 'MyTextProperty',
 	multiple = false,
 	format = TextFormat.formatName
 ): TextProperty {
-	if ( typeof options === 'string' ) { // TODO: remove deprecated form
+	if ( typeof attributes === 'string' ) { // TODO: remove deprecated form
 		return {
 			name: new PropertyName( name ),
 			format: format,
@@ -50,14 +55,14 @@ export function newTextProperty(
 	}
 
 	return {
-		name: options.name instanceof PropertyName ? options.name : new PropertyName( options.name || 'text' ),
-		format: UrlFormat.formatName,
-		description: options.description || '',
-		required: options.required || false,
-		default: options.default || undefined,
-		multiple: options.multiple || false,
-		uniqueItems: options.uniqueItems ?? true,
-		maxLength: options.maxLength || undefined,
-		minLength: options.minLength || undefined
+		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Text' ),
+		format: TextFormat.formatName,
+		description: attributes.description ?? '',
+		required: attributes.required ?? false,
+		default: attributes.default,
+		multiple: attributes.multiple ?? false,
+		uniqueItems: attributes.uniqueItems ?? true,
+		maxLength: attributes.maxLength,
+		minLength: attributes.minLength
 	};
 }

@@ -33,10 +33,14 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
 
 }
 
-export function newNumberProperty( options: string|Partial<NumberProperty> = {} ): NumberProperty {
-	if ( typeof options === 'string' ) { // TODO: remove deprecated form
+type NumberPropertyAttributes = Omit<Partial<NumberProperty>, 'name'> & {
+	name?: string | PropertyName;
+};
+
+export function newNumberProperty( attributes: string|NumberPropertyAttributes = {} ): NumberProperty {
+	if ( typeof attributes === 'string' ) { // TODO: remove deprecated form
 		return {
-			name: new PropertyName( options ),
+			name: new PropertyName( attributes ),
 			format: NumberFormat.formatName,
 			description: '',
 			required: false
@@ -44,13 +48,13 @@ export function newNumberProperty( options: string|Partial<NumberProperty> = {} 
 	}
 
 	return {
-		name: options.name instanceof PropertyName ? options.name : new PropertyName( options.name || 'number' ),
-		format: UrlFormat.formatName,
-		description: options.description || '',
-		required: options.required || false,
-		default: options.default || undefined,
-		precision: options.precision || undefined,
-		minimum: options.minimum || undefined,
-		maximum: options.maximum || undefined
+		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Number' ),
+		format: NumberFormat.formatName,
+		description: attributes.description ?? '',
+		required: attributes.required ?? false,
+		default: attributes.default,
+		precision: attributes.precision,
+		minimum: attributes.minimum,
+		maximum: attributes.maximum
 	};
 }

@@ -5,15 +5,12 @@
 </template>
 
 <script setup lang="ts">
-import { Value, ValueType } from '@neo/domain/Value.ts';
-import { PropType, computed } from 'vue';
+import { ValueType } from '@neo/domain/Value.ts';
+import { computed } from 'vue';
+import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
+import { TextProperty } from '@neo/domain/valueFormats/Text.ts';
 
-const props = defineProps( {
-	value: {
-		type: Object as PropType<Value>,
-		required: true
-	}
-} );
+const props = defineProps<ValueDisplayProps<TextProperty>>();
 
 const values = computed( () => {
 	if ( props.value.type !== ValueType.String ) {

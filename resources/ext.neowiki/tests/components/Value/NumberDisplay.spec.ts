@@ -1,74 +1,71 @@
 import { mount } from '@vue/test-utils';
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import NumberDisplay from '@/components/Value/NumberDisplay.vue';
 import { newNumberValue, newStringValue } from '@neo/domain/Value';
-import { NumberProperty } from '@neo/domain/valueFormats/Number';
+import { newNumberProperty, NumberProperty } from '@neo/domain/valueFormats/Number';
+import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
+
+function createWrapperWithNumber( number: number ): ReturnType<typeof mount> {
+	return createWrapper( { value: newNumberValue( number ) } );
+}
+
+function createWrapper( props: Partial<ValueDisplayProps<NumberProperty>> ): ReturnType<typeof mount> {
+	const defaultProps: ValueDisplayProps<NumberProperty> = {
+		value: newNumberValue( 0 ),
+		property: newNumberProperty()
+	};
+
+	return mount( NumberDisplay, {
+		props: {
+			...defaultProps,
+			...props
+		}
+	} );
+}
 
 describe( 'NumberDisplay', () => {
 	it( 'handles integers without precision', () => {
-		const wrapper = mount( NumberDisplay, {
-			props: {
-				value: newNumberValue( 30 ),
-				property: {} as NumberProperty
-			}
-		} );
+		const wrapper = createWrapperWithNumber( 30 );
 
 		expect( wrapper.text() ).toBe( '30' );
 	} );
 
-	it( 'handles decimal numbers without precision', () => {
-		const wrapper = mount( NumberDisplay, {
-			props: {
-				value: newNumberValue( 19.99 ),
-				property: {} as NumberProperty
-			}
-		} );
+	it( 'handles decimal numbers', () => {
+		const wrapper = createWrapperWithNumber( 19.99 );
 
 		expect( wrapper.text() ).toBe( '19.99' );
 	} );
 
-	it( 'handles negative numbers without precision', () => {
-		const wrapper = mount( NumberDisplay, {
-			props: {
-				value: newNumberValue( -5 ),
-				property: {} as NumberProperty
-			}
-		} );
+	it( 'handles negative numbers', () => {
+		const wrapper = createWrapperWithNumber( -5 );
 
 		expect( wrapper.text() ).toBe( '-5' );
 	} );
 
-	it( 'applies precision when specified', () => {
-		const wrapper = mount( NumberDisplay, {
-			props: {
-				value: newNumberValue( 3.14159 ),
-				property: { precision: 2 } as NumberProperty
-			}
+	test.each( [
+		[ 3.14159, 2, '3.14' ],
+		[ 3.14159, 0, '3' ],
+		[ 3.14, 5, '3.14000' ],
+
+		[ -3.14159, 2, '-3.14' ],
+		[ -3.14159, 0, '-3' ],
+		[ -3.14, 5, '-3.14000' ],
+
+		[ 0, 0, '0' ],
+		[ 0, 3, '0.000' ],
+		[ -0, 2, '0.00' ],
+
+		// Rounding
+		[ 0.51, 0, '1' ],
+		[ 9999999.99, 1, '10000000.0' ],
+		[ 0.000001, 4, '0.0000' ]
+	] )( '%s with precision %s should be %s', ( number: number, precision: number, expected: string ): void => {
+		const wrapper = createWrapper( {
+			value: newNumberValue( number ),
+			property: newNumberProperty( { precision: precision } )
 		} );
 
-		expect( wrapper.text() ).toBe( '3.14' );
-	} );
-
-	it( 'handles zero precision', () => {
-		const wrapper = mount( NumberDisplay, {
-			props: {
-				value: newNumberValue( 3.14159 ),
-				property: { precision: 0 } as NumberProperty
-			}
-		} );
-
-		expect( wrapper.text() ).toBe( '3' );
-	} );
-
-	it( 'handles high precision', () => {
-		const wrapper = mount( NumberDisplay, {
-			props: {
-				value: newNumberValue( 3.14 ),
-				property: { precision: 5 } as NumberProperty
-			}
-		} );
-
-		expect( wrapper.text() ).toBe( '3.14000' );
+		expect( wrapper.text() ).toBe( expected );
 	} );
 
 	it( 'returns empty string for wrong value type', () => {

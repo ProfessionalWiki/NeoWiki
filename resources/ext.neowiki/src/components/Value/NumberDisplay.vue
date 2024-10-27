@@ -5,20 +5,12 @@
 </template>
 
 <script setup lang="ts">
-import { Value, ValueType } from '@neo/domain/Value.ts';
-import { computed, PropType } from 'vue';
+import { ValueType } from '@neo/domain/Value.ts';
+import { computed } from 'vue';
 import { NumberProperty } from '@neo/domain/valueFormats/Number.ts';
+import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
 
-const props = defineProps( {
-	value: {
-		type: Object as PropType<Value>,
-		required: true
-	},
-	property: {
-		type: Object as PropType<NumberProperty>,
-		required: true
-	}
-} );
+const props = defineProps<ValueDisplayProps<NumberProperty>>();
 
 const value = computed( (): string => {
 	if ( props.value.type !== ValueType.Number ) {

@@ -2,6 +2,7 @@ import { MultiStringProperty, PropertyDefinition, PropertyName } from '@neo/doma
 import { newStringValue, type StringValue, ValueType } from '@neo/domain/Value';
 import { BaseValueFormat } from '@neo/domain/ValueFormat';
 import DOMPurify from 'dompurify';
+import { TextProperty } from '@neo/domain/valueFormats/Text';
 
 export interface UrlProperty extends MultiStringProperty {
 
@@ -80,14 +81,18 @@ export function isValidUrl( url: string ): boolean {
 	return pattern.test( url );
 }
 
-export function newUrlProperty( options: Partial<UrlProperty> = {} ): UrlProperty {
+type UrlPropertyAttributes = Omit<Partial<UrlProperty>, 'name'> & {
+	name?: string | PropertyName;
+};
+
+export function newUrlProperty( attributes: UrlPropertyAttributes = {} ): UrlProperty {
 	return {
-		name: options.name instanceof PropertyName ? options.name : new PropertyName( options.name || 'url' ),
+		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Url' ),
 		format: UrlFormat.formatName,
-		description: options.description || '',
-		required: options.required || false,
-		default: options.default || undefined,
-		multiple: options.multiple || false,
-		uniqueItems: options.uniqueItems ?? true
+		description: attributes.description ?? '',
+		required: attributes.required ?? false,
+		default: attributes.default,
+		multiple: attributes.multiple ?? false,
+		uniqueItems: attributes.uniqueItems ?? true
 	};
 }
