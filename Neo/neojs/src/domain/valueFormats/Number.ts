@@ -2,7 +2,6 @@ import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newNumberValue, type NumberValue, ValueType } from '@neo/domain/Value';
 import { BaseValueFormat } from '@neo/domain/ValueFormat';
-import { UrlFormat } from '@neo/domain/valueFormats/Url';
 
 export interface NumberProperty extends PropertyDefinition {
 

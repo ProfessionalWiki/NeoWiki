@@ -2,8 +2,6 @@ import type { MultiStringProperty, PropertyDefinition } from '@neo/domain/Proper
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@neo/domain/Value';
 import { BaseValueFormat } from '@neo/domain/ValueFormat';
-import { UrlFormat } from '@neo/domain/valueFormats/Url';
-import { NumberProperty } from '@neo/domain/valueFormats/Number';
 
 export interface TextProperty extends MultiStringProperty {
 
