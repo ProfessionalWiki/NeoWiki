@@ -38,15 +38,36 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 
 }
 
-export function newRelationProperty( name: string, targetSchema?: string, multiple?: boolean ): RelationProperty {
+type RelationPropertyAttributes = Omit<Partial<RelationProperty>, 'name'> & {
+	name?: string | PropertyName;
+};
+
+export function newRelationProperty(
+	attributes: string|RelationPropertyAttributes = {},
+	targetSchema: string = 'MyTargetSchema',
+	multiple: boolean = false
+): RelationProperty {
+	if ( typeof attributes === 'string' ) { // TODO: remove deprecated form
+		return {
+			name: new PropertyName( attributes ),
+			format: RelationFormat.formatName,
+			description: '',
+			required: false,
+			default: undefined,
+			relation: 'MyRelation',
+			targetSchema: targetSchema,
+			multiple: multiple
+		};
+	}
+
 	return {
-		name: new PropertyName( name ),
+		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Relation' ),
 		format: RelationFormat.formatName,
-		description: '',
-		required: false,
-		default: undefined,
-		relation: 'MyRelation',
-		targetSchema: targetSchema ?? 'MyTargetSchema',
-		multiple: multiple ?? false
+		description: attributes.description ?? '',
+		required: attributes.required ?? false,
+		default: attributes.default,
+		relation: attributes.relation || 'MyRelation',
+		targetSchema: attributes.targetSchema || 'MyTargetSchema',
+		multiple: attributes.multiple ?? false
 	};
 }
