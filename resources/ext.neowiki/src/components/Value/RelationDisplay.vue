@@ -1,17 +1,22 @@
 <template>
 	<div>
-		TODO: {{ value.targetIds.join( ', ' ) }}
+		{{ todo }}
 	</div>
 </template>
 
 <script setup lang="ts">
-import { PropType } from 'vue';
+import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
+import { RelationProperty } from '@neo/domain/valueFormats/Relation.ts';
+import { computed } from 'vue';
 import { RelationValue } from '@neo/domain/Value.ts';
 
-defineProps( {
-	value: {
-		type: Object as PropType<RelationValue>,
-		required: true
+const props = defineProps<ValueDisplayProps<RelationProperty>>();
+
+const todo = computed( (): string => {
+	if ( props.value instanceof RelationValue ) {
+		return 'TODO:' + props.value.targetIds.join( ', ' );
 	}
+
+	return '';
 } );
 </script>

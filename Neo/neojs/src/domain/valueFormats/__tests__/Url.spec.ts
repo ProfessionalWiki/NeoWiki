@@ -1,7 +1,7 @@
 import { test, expect, describe, it } from 'vitest';
-import { isValidUrl, UrlFormat, UrlFormatter, type UrlProperty } from '../Url';
-import { PropertyName } from '../../PropertyDefinition';
-import { ValueType } from '../../Value';
+import { newUrlProperty, UrlFormat, isValidUrl, UrlFormatter } from '@neo/domain/valueFormats/Url';
+import { newStringValue } from '@neo/domain/Value';
+import { PropertyName } from '@neo/domain/PropertyDefinition';
 
 test.each( [
 	[ '', false ],
@@ -112,11 +112,68 @@ describe( 'UrlFormatter', () => {
 
 } );
 
-function newUrlProperty(): UrlProperty {
-	return {
-		name: new PropertyName( 'url' ),
-		format: UrlFormat.formatName,
-		description: 'URL',
-		required: false
-	} as UrlProperty;
-}
+describe( 'newUrlProperty', () => {
+	it( 'creates property with default values when no attributes provided', () => {
+		const property = newUrlProperty();
+
+		expect( property.name ).toEqual( new PropertyName( 'Url' ) );
+		expect( property.format ).toBe( UrlFormat.formatName );
+		expect( property.description ).toBe( '' );
+		expect( property.required ).toBe( false );
+		expect( property.default ).toBeUndefined();
+		expect( property.multiple ).toBe( false );
+		expect( property.uniqueItems ).toBe( true );
+	} );
+
+	it( 'creates property with custom name as string', () => {
+		const property = newUrlProperty( {
+			name: 'CustomUrl'
+		} );
+
+		expect( property.name ).toEqual( new PropertyName( 'CustomUrl' ) );
+	} );
+
+	it( 'accepts PropertyName instance for name', () => {
+		const propertyName = new PropertyName( 'customUrl' );
+		const property = newUrlProperty( {
+			name: propertyName
+		} );
+
+		expect( property.name ).toBe( propertyName );
+	} );
+
+	it( 'creates property with all optional fields', () => {
+		const property = newUrlProperty( {
+			name: 'FullUrl',
+			description: 'A URL property',
+			required: true,
+			default: newStringValue( 'https://example.com' ),
+			multiple: true,
+			uniqueItems: false
+		} );
+
+		expect( property.name ).toEqual( new PropertyName( 'FullUrl' ) );
+		expect( property.format ).toBe( UrlFormat.formatName );
+		expect( property.description ).toBe( 'A URL property' );
+		expect( property.required ).toBe( true );
+		expect( property.default ).toStrictEqual( newStringValue( 'https://example.com' ) );
+		expect( property.multiple ).toBe( true );
+		expect( property.uniqueItems ).toBe( false );
+	} );
+
+	it( 'creates property with some optional fields', () => {
+		const property = newUrlProperty( {
+			name: 'PartialUrl',
+			description: 'A partial URL property',
+			multiple: true
+		} );
+
+		expect( property.name ).toEqual( new PropertyName( 'PartialUrl' ) );
+		expect( property.format ).toBe( UrlFormat.formatName );
+		expect( property.description ).toBe( 'A partial URL property' );
+		expect( property.required ).toBe( false );
+		expect( property.default ).toBeUndefined();
+		expect( property.multiple ).toBe( true );
+		expect( property.uniqueItems ).toBe( true );
+	} );
+} );

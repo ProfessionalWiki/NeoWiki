@@ -3,14 +3,17 @@ import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { newTextProperty } from '@neo/domain/valueFormats/Text';
 import { newSchema } from '@neo/TestHelpers';
 import { newNumberProperty } from '@neo/domain/valueFormats/Number';
-import { UrlFormat } from '@neo/domain/valueFormats/Url';
 
 describe( 'Schema', () => {
 
 	describe( 'getPropertyDefinition', () => {
 
 		const schema = newSchema( {
-			properties: new PropertyDefinitionList( [ newTextProperty() ] )
+			properties: new PropertyDefinitionList( [
+				newTextProperty( { name: 'Wrong' } ),
+				newTextProperty( { name: 'MyText' } ),
+				newTextProperty( { name: 'AlsoWrong' } )
+			] )
 		} );
 
 		it( 'returns undefined for unknown property', () => {
@@ -18,9 +21,9 @@ describe( 'Schema', () => {
 		} );
 
 		it( 'returns known property definition', () => {
-			const property = schema.getPropertyDefinition( 'text' );
+			const property = schema.getPropertyDefinition( 'MyText' );
 
-			expect( property.format ).toBe( UrlFormat.formatName );
+			expect( property ).toStrictEqual( newTextProperty( { name: 'MyText' } ) );
 		} );
 
 	} );

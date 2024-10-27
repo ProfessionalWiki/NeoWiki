@@ -19,6 +19,9 @@ export class FormatSpecificComponentRegistry {
 		this.formatMap.set( valueFormat, stuff );
 	}
 
+	/**
+	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
+	 */
 	public getValueDisplayComponent( formatName: string ): Component {
 		if ( !this.formatMap.has( formatName ) ) {
 			throw new Error( `No value display component registered for format: ${ formatName }` );
