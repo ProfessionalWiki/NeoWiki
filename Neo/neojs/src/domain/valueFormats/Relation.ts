@@ -42,24 +42,7 @@ type RelationPropertyAttributes = Omit<Partial<RelationProperty>, 'name'> & {
 	name?: string | PropertyName;
 };
 
-export function newRelationProperty(
-	attributes: string|RelationPropertyAttributes = {},
-	targetSchema: string = 'MyTargetSchema',
-	multiple: boolean = false
-): RelationProperty {
-	if ( typeof attributes === 'string' ) { // TODO: remove deprecated form
-		return {
-			name: new PropertyName( attributes ),
-			format: RelationFormat.formatName,
-			description: '',
-			required: false,
-			default: undefined,
-			relation: 'MyRelation',
-			targetSchema: targetSchema,
-			multiple: multiple
-		};
-	}
-
+export function newRelationProperty( attributes: RelationPropertyAttributes = {} ): RelationProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Relation' ),
 		format: RelationFormat.formatName,
