@@ -51,6 +51,8 @@
 	"neowiki-property-editor-minimum": "Minimum",
 	"neowiki-property-editor-maximum": "Maximum",
 	"neowiki-property-editor-precision": "Precision",
+	"neowiki-property-editor-multiple": "Allow multiple values",
+	"neowiki-property-editor-unique-items": "Values must be unique",
 
 	"neowiki-infobox-type": "Type",
 	"neowiki-infobox-edit-link": "Edit",
