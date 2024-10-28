@@ -36,16 +36,7 @@ type NumberPropertyAttributes = Omit<Partial<NumberProperty>, 'name'> & {
 	name?: string | PropertyName;
 };
 
-export function newNumberProperty( attributes: string|NumberPropertyAttributes = {} ): NumberProperty {
-	if ( typeof attributes === 'string' ) { // TODO: remove deprecated form
-		return {
-			name: new PropertyName( attributes ),
-			format: NumberFormat.formatName,
-			description: '',
-			required: false
-		};
-	}
-
+export function newNumberProperty( attributes: NumberPropertyAttributes = {} ): NumberProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Number' ),
 		format: NumberFormat.formatName,

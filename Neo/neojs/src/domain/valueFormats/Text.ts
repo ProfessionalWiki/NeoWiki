@@ -34,24 +34,7 @@ type TextPropertyAttributes = Omit<Partial<TextProperty>, 'name'> & {
 	name?: string | PropertyName;
 };
 
-export function newTextProperty(
-	attributes: string|TextPropertyAttributes = {},
-	name = 'MyTextProperty',
-	multiple = false,
-	format = TextFormat.formatName
-): TextProperty {
-	if ( typeof attributes === 'string' ) { // TODO: remove deprecated form
-		return {
-			name: new PropertyName( name ),
-			format: format,
-			description: '',
-			required: false,
-			default: newStringValue( '' ),
-			multiple: multiple,
-			uniqueItems: true
-		};
-	}
-
+export function newTextProperty( attributes: TextPropertyAttributes = {} ): TextProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Text' ),
 		format: TextFormat.formatName,
