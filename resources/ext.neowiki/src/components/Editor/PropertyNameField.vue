@@ -1,9 +1,9 @@
 <template>
 	<div class="neo-property-name__wrapper">
-		<span class="property-name"
-		>
+		<span class="property-name">
 			{{ modelValue }}
 		</span>
+
 		<CdxMenuButton
 			v-if="canEditSchema"
 			class="neo-property-name__menu-button"
@@ -12,7 +12,7 @@
 			aria-label=" "
 			@update:selected="onMenuSelect"
 		>
-			<CdxIcon :icon="cdxIconMenu" />
+			<CdxIcon :icon="cdxIconMenu" class="menu-icon" />
 		</CdxMenuButton>
 	</div>
 </template>
@@ -68,45 +68,31 @@ const onMenuSelect = ( value: string ): void => {
 
 .neo-property-name__wrapper {
 	display: flex;
-	border-radius: $border-radius-base;
-	border: $border-width-base solid rgba( $border-color-disabled, 0.55 );
 	margin-top: 5px;
-	padding-right: -2px;
 
 	.property-name {
-		width: 210px;
-		padding-top: 5px;
-		padding-left: 8px;
+		width: 230px;
+		padding-top: 3px;
+		padding-left: 4px;
+		font-weight: $font-weight-semi-bold;
+		font-size: 14px;
+		color: #202122c4;
 	}
 
-	.cdx-menu {
-		max-width: 150px !important;
+	.menu-icon {
+		float: right;
 
-		.cdx-menu-item__text__label {
-			bdi {
-				font-size: $font-size-x-small !important;
-			}
+		svg {
+			fill: #404244b3;
 		}
 	}
 
-	.cdx-menu-item {
-		.cdx-icon {
+	&:hover {
+		.menu-icon {
 			svg {
-				height: 15px !important;
-				width: 15px !important;
+				fill: black !important;
 			}
 		}
-
-		&:nth-child( 1 ) {
-			.cdx-icon svg {
-				fill: #54595d !important;
-			}
-		}
-	}
-
-	.neo-property-name__menu-button {
-		background-color: #c8ccd147;
-		margin-right: -1px;
 	}
 }
 </style>

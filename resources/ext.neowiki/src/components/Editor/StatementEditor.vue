@@ -84,53 +84,8 @@ const handleValidation = ( isValid: boolean ): void => {
 		align-items: flex-start;
 	}
 
-	&__field-wrapper {
-		display: flex;
-		flex-direction: column;
-
-		:deep( .cdx-text-input__input ),
-		:deep( .cdx-select__handle ) {
-			border: $border-width-base solid $border-color-subtle;
-			background-color: $background-color-transparent;
-			border-radius: $border-radius-base;
-			transition: border-color $transition-duration-base $transition-timing-function-system, background-color $transition-duration-base $transition-timing-function-system;
-
-			&:hover,
-			&:focus {
-				border-color: $border-color-interactive;
-				background-color: $background-color-interactive-subtle;
-			}
-		}
-
-		.cdx-label {
-			font-weight: $font-weight-semi-bold !important;
-			color: $color-base-fixed !important;
-		}
-
-		:deep( .cdx-message ) {
-			margin-top: $spacing-25 !important;
-		}
-	}
-
-	&__property {
-		width: $size-full;
-	}
-
 	&__value {
-		width: $size-full;
-	}
-
-	&__actions {
-		display: flex;
-		gap: $spacing-50;
-		align-self: flex-start;
-		margin-top: $spacing-150; // Adjust this value to align with the input fields
-	}
-
-	&__action {
-		padding: $spacing-25;
-		min-height: $size-200;
-		min-width: $size-200;
+		width: 400px;
 	}
 }
 
