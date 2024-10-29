@@ -72,7 +72,7 @@ jobs:
         working-directory: Neo/neojs
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Test
         run: npm run test
@@ -96,7 +96,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Lint
         run: npm run lint
