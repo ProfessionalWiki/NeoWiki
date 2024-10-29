@@ -44,6 +44,7 @@
 			<component
 				:is="componentRegistry.getValueEditingComponent( localProperty.format )"
 				v-model="localProperty.default"
+				class="property-definition-editor__default"
 				:label="$i18n( 'neowiki-property-editor-initial-value' ).text()"
 				:property="localProperty"
 			/>
@@ -150,6 +151,12 @@ const save = (): void => {
 	.inline-fields {
 		display: flex;
 		gap: $spacing-75;
+	}
+
+	.property-definition-editor__default {
+		.cdx-field {
+			flex: 0 0 90%;
+		}
 	}
 
 	.cdx-label {

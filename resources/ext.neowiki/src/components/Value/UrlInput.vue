@@ -120,10 +120,11 @@ defineExpose( {
 		align-items: center;
 		margin-bottom: 8px;
 
-		.cdx-text-input {
-			flex: 1;
-			width: 100%;
+		.cdx-field {
+			flex: 0 0 100%;
+		}
 
+		.cdx-text-input {
 			&__input {
 				padding-left: 36px;
 			}

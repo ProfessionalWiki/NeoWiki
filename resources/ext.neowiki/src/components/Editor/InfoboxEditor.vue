@@ -347,6 +347,7 @@ defineExpose( { openDialog } );
 		display: grid;
 		grid-template-columns: 1fr 1fr 4fr;
 		padding-right: 1.2rem;
+		margin-bottom: 11px;
 
 		.property {
 			grid-column: 1;
