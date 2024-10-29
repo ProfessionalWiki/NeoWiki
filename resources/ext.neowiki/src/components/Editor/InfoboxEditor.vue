@@ -408,10 +408,4 @@ defineExpose( { openDialog } );
 	}
 }
 
-.neo-type-select-dropdown {
-	margin-top: $spacing-25;
-	width: 137px;
-	position: fixed;
-	z-index: $z-index-dropdown;
-}
 </style>
