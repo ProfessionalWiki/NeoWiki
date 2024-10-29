@@ -101,6 +101,36 @@ jobs:
       - name: Lint
         run: npm run lint
 
+  security-audit:
+    name: "Security Audit"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./resources/ext.neowiki
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Run security audit
+        run: |
+          exit_code=0
+          npm audit || exit_code=$?
+          if [ $exit_code -eq 0 ]; then
+            echo "✅ No vulnerabilities found"
+          else
+            echo "❌ Vulnerabilities detected"
+            exit 1
+          fi
+
 #  i18n:
 #    name: "i18n"
 #
