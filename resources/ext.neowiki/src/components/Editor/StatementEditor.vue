@@ -85,7 +85,7 @@ const handleValidation = ( isValid: boolean ): void => {
 	}
 
 	&__value {
-		width: 400px;
+		width: $size-2400;
 	}
 }
 

@@ -121,7 +121,7 @@ defineExpose( {
 		margin-bottom: 8px;
 
 		.cdx-field {
-			flex: 0 0 90%;
+			flex: 0 0 100%;
 		}
 
 		.cdx-text-input {

@@ -75,8 +75,8 @@ const onMenuSelect = ( value: string ): void => {
 		padding-top: 3px;
 		padding-left: 4px;
 		font-weight: $font-weight-semi-bold;
-		font-size: 14px;
-		color: #202122c4;
+		font-size: $font-size-small;
+		color: $color-base;
 	}
 
 	.menu-icon {
@@ -84,13 +84,18 @@ const onMenuSelect = ( value: string ): void => {
 
 		svg {
 			fill: #404244b3;
+
+			&:hover {
+				box-shadow: 0 1px 2px rgba( 0, 0, 0, 0.05 );
+				border-radius: 5px;
+			}
 		}
 	}
 
 	&:hover {
 		.menu-icon {
 			svg {
-				fill: black !important;
+				fill: $color-emphasized !important;
 			}
 		}
 	}
