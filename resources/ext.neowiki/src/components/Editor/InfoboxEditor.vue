@@ -50,6 +50,8 @@
 			</div>
 			<NeoTypeSelectDropdown
 				v-if="isDropdownOpen"
+				class="neo-type-select-dropdown"
+				:class="statements.length === 0 ? '' : 'neo-type-select-drop-up'"
 				:types="propertyTypes"
 				@select="addProperty"
 			/>
@@ -408,4 +410,17 @@ defineExpose( { openDialog } );
 	}
 }
 
+.neo-type-select-dropdown {
+	margin-top: $spacing-25;
+	width: 137px;
+	position: fixed;
+	z-index: $z-index-dropdown;
+}
+
+.neo-type-select-drop-up {
+	position: absolute;
+	bottom: 100%;
+	left: 0;
+	margin-bottom: $spacing-25;
+}
 </style>

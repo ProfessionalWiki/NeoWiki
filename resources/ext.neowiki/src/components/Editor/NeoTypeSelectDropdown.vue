@@ -1,5 +1,5 @@
 <template>
-	<div class="neo-type-select-dropdown">
+	<div>
 		<ul>
 			<li
 				v-for="type in types"
@@ -36,12 +36,6 @@ const selectType = ( value: string ): void => {
 @use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
 .neo-type-select-dropdown {
-	width: 137px;
-	position: absolute;
-	bottom: 100%;
-	left: 0;
-	z-index: $z-index-dropdown;
-	margin-bottom: $spacing-50;
 	background: #fff;
 	border: 1px solid #eaecf0;
 	border-radius: 8px;
