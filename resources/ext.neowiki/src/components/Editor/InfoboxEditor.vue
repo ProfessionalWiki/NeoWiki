@@ -30,19 +30,21 @@
 				{{ $i18n( 'neowiki-infobox-editor-value-label' ).text() }}
 			</h4>
 		</div>
-		<template v-for="( statement, index ) in statements">
-			<StatementEditor
-				v-if="getPropertyDefinition( statement.propertyName as PropertyName )"
-				:key="index"
-				class="statement-editor-row"
-				:statement="statement as Statement"
-				:can-edit-schema="canEditSchema"
-				:property-definition="getPropertyDefinition( statement.propertyName as PropertyName )!"
-				@update="updateStatement( index, $event )"
-				@remove="removeStatement( index )"
-				@edit="editProperty"
-			/>
-		</template>
+		<div ref="statementEditorBody">
+			<template v-for="( statement, index ) in statements">
+				<StatementEditor
+					v-if="getPropertyDefinition( statement.propertyName as PropertyName )"
+					:key="index"
+					class="statement-editor-row"
+					:statement="statement as Statement"
+					:can-edit-schema="canEditSchema"
+					:property-definition="getPropertyDefinition( statement.propertyName as PropertyName )!"
+					@update="updateStatement( index, $event )"
+					@remove="removeStatement( index )"
+					@edit="editProperty"
+				/>
+			</template>
+		</div>
 		<div v-if="canEditSchema" class="add-statement-section">
 			<div class="add-statement-placeholder" @click="toggleDropdown">
 				<CdxIcon :icon="cdxIconAdd" class="add-icon" />
@@ -51,7 +53,7 @@
 			<NeoTypeSelectDropdown
 				v-if="isDropdownOpen"
 				class="neo-type-select-dropdown"
-				:class="statements.length === 0 ? '' : 'neo-type-select-drop-up'"
+				:class="shouldDropUp ? 'neo-type-select-drop-up' : ''"
 				:types="propertyTypes"
 				@select="addProperty"
 			/>
@@ -87,7 +89,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
-import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
+import { CdxButton, CdxDialog, CdxIcon, useResizeObserver } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconArrowPrevious } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/NeoTextField.vue';
 import StatementEditor from '@/components/Editor/StatementEditor.vue';
@@ -126,6 +128,14 @@ const selectedSchema = computed( () => props.selectedSchema );
 const isNewSchema = computed( () => props.selectedSchema === '' );
 const isNewSubject = computed( () => props.subject === undefined );
 const isPropertyEditorOpen = ref( false );
+const statementEditorBody = ref<Element | undefined>( undefined );
+const statementEditorDimensions = useResizeObserver( statementEditorBody );
+const shouldDropUp = computed( () => {
+	if ( statementEditorDimensions.value.height !== undefined ) {
+		return statementEditorDimensions.value.height > 600;
+	}
+	return false;
+} );
 
 const propertyTypes = NeoWikiServices.getComponentRegistry().getLabelsAndIcons().map( ( { value, label, icon } ) => ( {
 	value: value,
