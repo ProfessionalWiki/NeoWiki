@@ -1,5 +1,5 @@
 <template>
-	<div class="neo-type-select-dropdown">
+	<div>
 		<ul>
 			<li
 				v-for="type in types"
@@ -33,6 +33,8 @@ const selectType = ( value: string ): void => {
 </script>
 
 <style lang="scss" scoped>
+@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
+
 .neo-type-select-dropdown {
 	background: #fff;
 	border: 1px solid #eaecf0;
