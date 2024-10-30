@@ -349,7 +349,7 @@ defineExpose( { openDialog } );
 @use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
 .cdx-dialog.infobox-editor {
-	max-width: $size-5600;
+	max-width: 54rem;
 	max-height: 90vh;
 	display: flex;
 	flex-direction: column;
