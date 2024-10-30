@@ -30,6 +30,7 @@
 			</CdxButton>
 		</div>
 		<CdxButton
+			v-if="property.multiple"
 			weight="quiet"
 			aria-hidden="false"
 			class="add-url-button"

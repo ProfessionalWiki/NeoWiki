@@ -19,7 +19,7 @@ describe( 'TextInput', () => {
 		props: {
 			modelValue: newStringValue( 'Test' ),
 			label: 'Test Label',
-			property: newTextProperty( {} ),
+			property: newTextProperty( { multiple: true } ),
 			...propsData
 		}
 	} );
@@ -73,7 +73,7 @@ describe( 'TextInput', () => {
 	describe( 'Validation', () => {
 		it( 'does not allow all empty fields when property value is required', async () => {
 			const wrapper = createWrapper( {
-				property: newTextProperty( { required: true } ),
+				property: newTextProperty( { required: true, multiple: true } ),
 				modelValue: newStringValue( 'Text1', 'Text2' )
 			} );
 			await wrapper.findAll( 'input' )[ 0 ].setValue( '' );
@@ -134,7 +134,7 @@ describe( 'TextInput', () => {
 	describe( 'Add button state', () => {
 		it( 'disables add button when any text field is invalid', async () => {
 			const wrapper = createWrapper( {
-				property: newTextProperty( { minLength: 3 } ),
+				property: newTextProperty( { minLength: 3, multiple: true } ),
 				modelValue: newStringValue( 'Valid', '123' )
 			} );
 
@@ -145,7 +145,7 @@ describe( 'TextInput', () => {
 
 		it( 'enables add button when all text fields are valid', async () => {
 			const wrapper = createWrapper( {
-				property: newTextProperty( { minLength: 8 } ),
+				property: newTextProperty( { minLength: 8, multiple: true } ),
 				modelValue: newStringValue( 'ValidValue', 'InValid' )
 			} );
 
