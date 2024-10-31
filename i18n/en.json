@@ -66,5 +66,10 @@
 
 	"neowiki-infobox-editor-property-description": "Description",
 	"neowiki-infobox-editor-property-format": "Format",
-	"neowiki-infobox-editor-property-required": "Make it a required field"
+	"neowiki-infobox-editor-property-required": "Make it a required field",
+
+	"neowiki-delete-dialog": "Delete $1",
+	"neowiki-delete-dialog-confirmation-message": "Are you sure you want to delete <b>$1</b>?",
+	"neowiki-delete-dialog-button-primary-text": "Delete",
+	"neowiki-delete-dialog-button-cancel-text": "Cancel"
 }

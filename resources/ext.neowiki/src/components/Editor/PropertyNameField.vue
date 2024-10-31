@@ -14,11 +14,17 @@
 		>
 			<CdxIcon :icon="cdxIconMenu" class="menu-icon" />
 		</CdxMenuButton>
+		<DeleteDialog
+			:is-open="isDeleteDialogOpen"
+			:item-name="modelValue"
+			@delete="onDelete"
+			@close="isDeleteDialogOpen = false"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import {
 	CdxMenuButton,
 	MenuButtonItemData,
@@ -26,6 +32,7 @@ import {
 } from '@wikimedia/codex';
 import { cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { cdxIconMenu } from '@/assets/CustomIcons';
+import DeleteDialog from '@/components/Editor/DeleteDialog.vue';
 
 defineProps( {
 	modelValue: {
@@ -40,6 +47,8 @@ defineProps( {
 
 const emit = defineEmits( [ 'edit', 'delete' ] );
 
+const isDeleteDialogOpen = ref( false );
+
 const menuItems = computed<MenuButtonItemData[]>( () => [
 	{
 		value: 'edit',
@@ -53,14 +62,19 @@ const menuItems = computed<MenuButtonItemData[]>( () => [
 		action: 'destructive'
 	}
 ] );
+
 const onMenuSelect = ( value: string ): void => {
 	if ( value === 'edit' ) {
 		emit( 'edit' );
 	} else if ( value === 'delete' ) {
-		emit( 'delete' );
+		isDeleteDialogOpen.value = true;
 	}
 };
 
+const onDelete = (): void => {
+	emit( 'delete' );
+	isDeleteDialogOpen.value = false;
+};
 </script>
 
 <style lang="scss">
