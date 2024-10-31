@@ -3,7 +3,7 @@
 		v-if="localSubject"
 		v-model:open="isOpen"
 		:use-close-button="true"
-		title="Manage Infobox"
+		:title="$i18n( 'neowiki-infobox-editor-dialog-title' ).text()"
 		class="infobox-editor"
 	>
 		<NeoTextField
