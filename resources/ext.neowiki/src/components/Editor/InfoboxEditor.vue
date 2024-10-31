@@ -357,13 +357,9 @@ defineExpose( { openDialog } );
 	.statement-editor-heading {
 		margin-top: $spacing-100;
 		display: grid;
-		grid-template-columns: 1fr 1fr 4fr;
-		padding-right: 1.2rem;
+		grid-template-columns: 1fr 1fr 3fr;
 		margin-bottom: 11px;
-
-		.property {
-			grid-column: 1;
-		}
+		padding-right: $size-75;
 
 		.value {
 			grid-column: 3;
