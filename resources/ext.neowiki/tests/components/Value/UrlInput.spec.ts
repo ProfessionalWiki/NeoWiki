@@ -20,7 +20,7 @@ describe( 'UrlInput', () => {
 	const createWrapper = ( propsData: Partial<InstanceType<typeof UrlInput>['$props']> = {} ): VueWrapper<InstanceType<typeof UrlInput>> => mount( UrlInput, {
 		props: {
 			modelValue: newStringValueWithUrls(),
-			property: newUrlProperty(),
+			property: newUrlProperty( { multiple: true } ),
 			...propsData
 		}
 	} );
@@ -103,7 +103,7 @@ describe( 'UrlInput', () => {
 
 		it( 'succeeds for empty value parts when the value is required but there are valid non-empty parts', async () => {
 			const wrapper = createWrapper( {
-				property: newUrlProperty( { required: true } ),
+				property: newUrlProperty( { required: true, multiple: true } ),
 				modelValue: newStringValue( 'https://valid1.com', 'https://valid2.com', 'https://valid3.com' )
 			} );
 
