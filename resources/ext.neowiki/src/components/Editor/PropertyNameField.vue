@@ -16,15 +16,17 @@
 		</CdxMenuButton>
 		<DeleteDialog
 			:is-open="isDeleteDialogOpen"
-			:item-name="modelValue"
 			@delete="onDelete"
 			@close="isDeleteDialogOpen = false"
-		/>
+		>
+			<p v-html="$i18n( 'neowiki-delete-dialog-confirmation-message', schemaName.toString(), modelValue ).text()" />
+		</DeleteDialog>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, PropType } from 'vue';
+import { type SchemaName } from '@neo/domain/Schema.ts';
 import {
 	CdxMenuButton,
 	MenuButtonItemData,
@@ -41,6 +43,10 @@ defineProps( {
 	},
 	canEditSchema: {
 		type: Boolean,
+		required: true
+	},
+	schemaName: {
+		type: String as PropType<SchemaName>,
 		required: true
 	}
 } );
