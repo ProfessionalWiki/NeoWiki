@@ -132,7 +132,7 @@ const statementEditorBody = ref<Element | undefined>( undefined );
 const statementEditorDimensions = useResizeObserver( statementEditorBody );
 const shouldDropUp = computed( () => {
 	if ( statementEditorDimensions.value.height !== undefined ) {
-		return statementEditorDimensions.value.height > 600;
+		return statementEditorDimensions.value.height > 320;
 	}
 	return false;
 } );
