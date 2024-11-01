@@ -136,6 +136,7 @@ const shouldDropUp = computed( () => {
 	}
 	return false;
 } );
+const shouldSaveSchema = ref( false );
 
 const propertyTypes = NeoWikiServices.getComponentRegistry().getLabelsAndIcons().map( ( { value, label, icon } ) => ( {
 	value: value,
@@ -172,6 +173,8 @@ const openDialog = async (): Promise<void> => {
 	await nextTick();
 
 	isOpen.value = true;
+	shouldSaveSchema.value = false;
+
 	if ( props.subject !== undefined ) {
 		setupExistingSubject( props.subject );
 	} else if ( selectedSchema.value !== undefined ) {
@@ -196,7 +199,7 @@ const setupExistingSubject = ( subject: Subject ): void => {
 
 const setupNewSubject = ( schemaName: string ): void => {
 	if ( schemaName === '' ) {
-		// TODO: handle new Schema creation
+		shouldSaveSchema.value = true;
 		localSchema.value = new Schema(
 			'' as SchemaName,
 			'',
@@ -236,6 +239,8 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 		console.error( 'No property name found to update' );
 		return;
 	}
+
+	shouldSaveSchema.value = true;
 
 	const propertyName = editingProperty.value?.name;
 
@@ -300,6 +305,7 @@ const updateStatement = ( index: number, updatedStatement: Statement ): void => 
 
 const removeStatement = ( index: number ): void => {
 	if ( localSchema.value !== null ) {
+		shouldSaveSchema.value = true;
 		localSchema.value = localSchema.value.withRemovedPropertyDefinition( statements.value[ index ].propertyName as PropertyName );
 	}
 	statements.value.splice( index, 1 );
@@ -319,7 +325,9 @@ const submit = async (): Promise<void> => {
 		throw new Error( 'Schema or Subject is missing' );
 	}
 
-	await schemaStore.saveSchema( localSchema.value as Schema );
+	if ( shouldSaveSchema.value ) {
+		await schemaStore.saveSchema( localSchema.value as Schema );
+	}
 
 	localSubject.value = localSubject.value.withStatements( new StatementList( statements.value as Statement[] ) );
 
