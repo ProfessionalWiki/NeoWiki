@@ -230,9 +230,9 @@
 				"neowiki-property-editor-precision",
 				"neowiki-property-editor-multiple",
 				"neowiki-property-editor-unique-items",
-				"neowiki-delete-dialog-confirmation-message",
-				"neowiki-delete-dialog-button-primary-text",
-				"neowiki-delete-dialog-button-cancel-text"
+				"neowiki-delete-property-confirmation-message",
+				"neowiki-delete-dialog-button",
+				"neowiki-delete-dialog-cancel-button"
 
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",

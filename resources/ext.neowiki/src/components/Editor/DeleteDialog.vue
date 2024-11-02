@@ -23,12 +23,12 @@ defineProps<{
 const emit = defineEmits( [ 'delete', 'close' ] );
 
 const primaryAction: PrimaryDialogAction = {
-	label: mw.message( 'neowiki-delete-dialog-button-primary-text' ).text(),
+	label: mw.message( 'neowiki-delete-dialog-button' ).text(),
 	actionType: 'destructive'
 };
 
 const defaultAction: DialogAction = {
-	label: mw.message( 'neowiki-delete-dialog-button-cancel-text' ).text()
+	label: mw.message( 'neowiki-delete-dialog-cancel-button' ).text()
 };
 
 const onPrimaryAction = (): void => {

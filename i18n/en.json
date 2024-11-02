@@ -69,6 +69,6 @@
 	"neowiki-infobox-editor-property-format": "Format",
 	"neowiki-infobox-editor-property-required": "Make it a required field",
 
-	"neowiki-delete-dialog-button-primary-text": "Delete",
-	"neowiki-delete-dialog-button-cancel-text": "Cancel"
+	"neowiki-delete-dialog-button": "Delete",
+	"neowiki-delete-dialog-cancel-button": "Cancel"
 }

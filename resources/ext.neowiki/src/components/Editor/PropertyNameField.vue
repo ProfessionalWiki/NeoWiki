@@ -19,7 +19,7 @@
 			@delete="onDelete"
 			@close="isDeleteDialogOpen = false"
 		>
-			<p v-html="$i18n( 'neowiki-delete-dialog-confirmation-message', schemaName.toString(), modelValue ).text()" />
+			<p v-html="$i18n( 'neowiki-delete-property-confirmation-message', schemaName.toString(), modelValue ).text()" />
 		</DeleteDialog>
 	</div>
 </template>
