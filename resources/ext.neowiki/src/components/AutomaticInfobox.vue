@@ -130,6 +130,7 @@ onMounted( async (): Promise<void> => {
 	margin-left: $spacing-100;
 	margin-bottom: $spacing-100;
 	max-width: 325px;
+	width: 100%;
 	border-radius: 5px;
 	background-color: $background-color-interactive-subtle !important;
 	border: 1px solid $border-color-base;
