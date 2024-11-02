@@ -33,6 +33,7 @@
 	"neowiki-infobox-editor-add-property": "Add Property",
 	"neowiki-infobox-editor-edit-property": "Edit Property",
 	"neowiki-infobox-editor-delete-property": "Delete Property",
+	"neowiki-delete-property-confirmation-message": "Are you sure you want to delete <b>$1</b> schema property <b>$2</b>?</br></br>Values for <b>$2</b> will no longer be shown on any <b>$1</b> within the whole wiki. These values will not be automatically deleted, so they will reappear if you restore the $2 property.",
 	"neowiki-infobox-editor-value-label": "Value",
 	"neowiki-infobox-editor-remove-statement": "Remove",
 	"neowiki-infobox-editor-add-statement": "Add statement",
@@ -66,5 +67,8 @@
 
 	"neowiki-infobox-editor-property-description": "Description",
 	"neowiki-infobox-editor-property-format": "Format",
-	"neowiki-infobox-editor-property-required": "Make it a required field"
+	"neowiki-infobox-editor-property-required": "Make it a required field",
+
+	"neowiki-delete-dialog-button": "Delete",
+	"neowiki-delete-dialog-cancel-button": "Cancel"
 }

@@ -5,6 +5,7 @@
 				<PropertyNameField
 					:model-value="localStatement.propertyName.toString()"
 					class="statement-editor__property"
+					:schema-name="schemaName"
 					:can-edit-schema="canEditSchema"
 					@edit="$emit( 'edit', statement.propertyName )"
 					@delete="$emit( 'remove' )"
@@ -30,11 +31,13 @@ import { Statement } from '@neo/domain/Statement';
 import { Value } from '@neo/domain/Value';
 import PropertyNameField from '@/components/Editor/PropertyNameField.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { PropertyName, PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
+import type { PropertyName, PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
+import { type SchemaName } from '@neo/domain/Schema.ts';
 
 // The caller is responsible for providing a PropertyDefinition of the right type matching the statement's property name.
 const props = defineProps<{
 	statement: Statement;
+	schemaName: SchemaName;
 	canEditSchema: boolean;
 	propertyDefinition: PropertyDefinition;
 }>();

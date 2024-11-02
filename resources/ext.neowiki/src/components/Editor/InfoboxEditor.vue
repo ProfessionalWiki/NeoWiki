@@ -37,6 +37,7 @@
 					:key="index"
 					class="statement-editor-row"
 					:statement="statement as Statement"
+					:schema-name="localSchema !== null ? localSchema.getName() : ''"
 					:can-edit-schema="canEditSchema"
 					:property-definition="getPropertyDefinition( statement.propertyName as PropertyName )!"
 					@update="updateStatement( index, $event )"

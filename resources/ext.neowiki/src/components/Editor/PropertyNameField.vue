@@ -14,11 +14,19 @@
 		>
 			<CdxIcon :icon="cdxIconMenu" class="menu-icon" />
 		</CdxMenuButton>
+		<DeleteDialog
+			:is-open="isDeleteDialogOpen"
+			@delete="onDelete"
+			@close="isDeleteDialogOpen = false"
+		>
+			<p v-html="$i18n( 'neowiki-delete-property-confirmation-message', schemaName.toString(), modelValue ).text()" />
+		</DeleteDialog>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, PropType } from 'vue';
+import { type SchemaName } from '@neo/domain/Schema.ts';
 import {
 	CdxMenuButton,
 	MenuButtonItemData,
@@ -26,6 +34,7 @@ import {
 } from '@wikimedia/codex';
 import { cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { cdxIconMenu } from '@/assets/CustomIcons';
+import DeleteDialog from '@/components/Editor/DeleteDialog.vue';
 
 defineProps( {
 	modelValue: {
@@ -35,10 +44,16 @@ defineProps( {
 	canEditSchema: {
 		type: Boolean,
 		required: true
+	},
+	schemaName: {
+		type: String as PropType<SchemaName>,
+		required: true
 	}
 } );
 
 const emit = defineEmits( [ 'edit', 'delete' ] );
+
+const isDeleteDialogOpen = ref( false );
 
 const menuItems = computed<MenuButtonItemData[]>( () => [
 	{
@@ -53,14 +68,19 @@ const menuItems = computed<MenuButtonItemData[]>( () => [
 		action: 'destructive'
 	}
 ] );
+
 const onMenuSelect = ( value: string ): void => {
 	if ( value === 'edit' ) {
 		emit( 'edit' );
 	} else if ( value === 'delete' ) {
-		emit( 'delete' );
+		isDeleteDialogOpen.value = true;
 	}
 };
 
+const onDelete = (): void => {
+	emit( 'delete' );
+	isDeleteDialogOpen.value = false;
+};
 </script>
 
 <style lang="scss">
