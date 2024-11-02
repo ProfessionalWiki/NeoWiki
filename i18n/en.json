@@ -21,9 +21,10 @@
 
 	"neowiki-create-subject-dialog-title": "Add infobox",
 	"neowiki-create-subject-dialog-start-blank": "Start blank",
-	"neowiki-create-subject-dialog-start-blank-description": "Tooltip for Start blank description",
+	"neowiki-create-subject-dialog-start-blank-description": "Create a new subject and a new schema. Schemas define what properties a subject can have.",
 	"neowiki-create-subject-dialog-or-select": "Or use a schema",
 	"neowiki-create-subject-dialog-select-schema": "Select a schema",
+	"neowiki-create-subject-dialog-select-schema-description": "Create a new subject with an existing schema. Schemas define what properties a subject can have.",
 	"neowiki-create-subject-dialog-go-back": "Go back",
 
 	"neowiki-infobox-editor-dialog-title": "Manage Infobox",
