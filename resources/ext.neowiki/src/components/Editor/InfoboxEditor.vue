@@ -19,7 +19,7 @@
 			v-if="isNewSchema"
 			:model-value="localSubject.getSchemaName()"
 			:required="true"
-			:label="$i18n( 'neowiki-create-subject-dialog-schema' ).text()"
+			:label="$i18n( 'neowiki-infobox-editor-schema-label' ).text()"
 			@update:model-value="updateSchemaName"
 		/>
 
