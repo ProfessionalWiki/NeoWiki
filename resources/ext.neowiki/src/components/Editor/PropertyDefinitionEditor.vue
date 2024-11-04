@@ -154,6 +154,8 @@ const save = (): void => {
 	}
 
 	.property-definition-editor__default {
+		margin-top: 0;
+
 		.cdx-field {
 			flex: 0 0 90%;
 		}
