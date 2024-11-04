@@ -14,13 +14,21 @@
 			@validation="handleValidation"
 			@update:model-value="updateSubjectLabel"
 		/>
+
 		<NeoTextField
+			v-if="isNewSchema"
 			:model-value="localSubject.getSchemaName()"
 			:required="true"
-			:label="$i18n( 'neowiki-create-subject-dialog-schema' ).text()"
-			:disabled="!isNewSchema"
+			:label="$i18n( 'neowiki-infobox-editor-schema-label' ).text()"
 			@update:model-value="updateSchemaName"
 		/>
+
+		<div v-else class="infobox-editor-schema-name">
+			<h4 class="schema-name-label">
+				{{ $i18n( 'neowiki-infobox-editor-schema-label' ).text() }}
+			</h4>
+			<span class="schema-name-value">{{ localSubject.getSchemaName() }}</span>
+		</div>
 
 		<div v-if="statements.length > 0" class="statement-editor-heading">
 			<h4 class="property">
@@ -357,18 +365,36 @@ defineExpose( { openDialog } );
 <style lang="scss">
 @use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
+@mixin grid-header {
+	margin-top: $spacing-100;
+	display: grid;
+	grid-template-columns: 1fr 1fr 3fr;
+	margin-bottom: 11px;
+	padding-right: $size-75;
+}
+
 .cdx-dialog.infobox-editor {
 	max-width: 48rem;
 	max-height: 90vh;
 	display: flex;
 	flex-direction: column;
 
+	.infobox-editor-schema-name {
+		@include grid-header;
+		margin-top: $spacing-150;
+
+		.schema-name-label {
+			padding: 0;
+			margin: 0;
+		}
+
+		.schema-name-value {
+			grid-column: 3;
+		}
+	}
+
 	.statement-editor-heading {
-		margin-top: $spacing-100;
-		display: grid;
-		grid-template-columns: 1fr 1fr 3fr;
-		margin-bottom: 11px;
-		padding-right: $size-75;
+		@include grid-header;
 
 		.value {
 			grid-column: 3;
