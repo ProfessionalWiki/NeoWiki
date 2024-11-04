@@ -176,7 +176,8 @@
 						"cdxIconInfoFilled",
 						"cdxIconEdit",
 						"cdxIconLink",
-						"cdxIconCheck"
+						"cdxIconCheck",
+						"cdxIconClear"
 					]
 				}
 			],
@@ -232,7 +233,8 @@
 				"neowiki-property-editor-unique-items",
 				"neowiki-delete-property-confirmation-message",
 				"neowiki-delete-dialog-button",
-				"neowiki-delete-dialog-cancel-button"
+				"neowiki-delete-dialog-cancel-button",
+				"neowiki-statement-editor-delete-statement"
 
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",

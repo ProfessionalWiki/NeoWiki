@@ -50,6 +50,7 @@
 					:property-definition="getPropertyDefinition( statement.propertyName as PropertyName )!"
 					@update="updateStatement( index, $event )"
 					@remove="removeStatement( index )"
+					@delete-property="deleteProperty( index )"
 					@edit="editProperty"
 				/>
 			</template>
@@ -313,11 +314,14 @@ const updateStatement = ( index: number, updatedStatement: Statement ): void => 
 };
 
 const removeStatement = ( index: number ): void => {
+	statements.value = statements.value.filter( ( _, i ) => i !== index );
+};
+
+const deleteProperty = ( index: number ): void => {
 	if ( localSchema.value !== null ) {
 		shouldSaveSchema.value = true;
 		localSchema.value = localSchema.value.withRemovedPropertyDefinition( statements.value[ index ].propertyName as PropertyName );
 	}
-	statements.value.splice( index, 1 );
 };
 
 const handleValidation = ( isValid: boolean ): void => {
@@ -339,6 +343,8 @@ const submit = async (): Promise<void> => {
 	}
 
 	localSubject.value = localSubject.value.withStatements( new StatementList( statements.value as Statement[] ) );
+
+	console.log( localSubject.value );
 
 	if ( isNewSubject.value ) {
 		await subjectStore.createMainSubject( localSubject.value as Subject );
@@ -368,13 +374,13 @@ defineExpose( { openDialog } );
 @mixin grid-header {
 	margin-top: $spacing-100;
 	display: grid;
-	grid-template-columns: 1fr 1fr 3fr;
+	grid-template-columns: 1fr 1fr 4fr;
 	margin-bottom: 11px;
 	padding-right: $size-75;
 }
 
 .cdx-dialog.infobox-editor {
-	max-width: 48rem;
+	max-width: $size-5600;
 	max-height: 90vh;
 	display: flex;
 	flex-direction: column;
@@ -390,6 +396,7 @@ defineExpose( { openDialog } );
 
 		.schema-name-value {
 			grid-column: 3;
+			margin-left: $spacing-50;
 		}
 	}
 
@@ -398,6 +405,7 @@ defineExpose( { openDialog } );
 
 		.value {
 			grid-column: 3;
+			margin-left: $spacing-50;
 		}
 	}
 

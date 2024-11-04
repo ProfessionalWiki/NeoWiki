@@ -8,7 +8,7 @@
 					:schema-name="schemaName"
 					:can-edit-schema="canEditSchema"
 					@edit="$emit( 'edit', statement.propertyName )"
-					@delete="$emit( 'remove' )"
+					@delete="$emit( 'deleteProperty' )"
 				/>
 			</div>
 			<div class="statement-editor__field-wrapper">
@@ -21,6 +21,17 @@
 					@update:model-value="updateStatementValue"
 				/>
 			</div>
+			<div class="statement-editor__actions">
+				<CdxButton
+					:title="$i18n( 'neowiki-statement-editor-delete-statement', localStatement.propertyName.toString() ).text()"
+					weight="quiet"
+					:aria-label="$i18n( 'neowiki-statement-editor-delete-statement', localStatement.propertyName.toString() ).text()"
+					action="destructive"
+					@click="$emit( 'remove' )"
+				>
+					<CdxIcon :icon="cdxIconClear" />
+				</CdxButton>
+			</div>
 		</div>
 	</div>
 </template>
@@ -29,6 +40,8 @@
 import { ref, watch } from 'vue';
 import { Statement } from '@neo/domain/Statement';
 import { Value } from '@neo/domain/Value';
+import { CdxButton, CdxIcon } from '@wikimedia/codex';
+import { cdxIconClear } from '@wikimedia/codex-icons';
 import PropertyNameField from '@/components/Editor/PropertyNameField.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import type { PropertyName, PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
@@ -44,7 +57,7 @@ const props = defineProps<{
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
-const emit = defineEmits( [ 'update', 'remove', 'edit' ] );
+const emit = defineEmits( [ 'update', 'remove', 'edit', 'deleteProperty' ] );
 
 const localStatement = ref<Statement>( props.statement );
 
@@ -89,6 +102,11 @@ const handleValidation = ( isValid: boolean ): void => {
 
 	&__value {
 		width: $size-2400;
+	}
+
+	&__actions {
+		margin: auto;
+		padding-left: 27px;
 	}
 }
 
