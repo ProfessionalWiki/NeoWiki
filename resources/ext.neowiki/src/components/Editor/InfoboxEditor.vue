@@ -30,7 +30,7 @@
 			<span class="schema-name-value">{{ localSubject.getSchemaName() }}</span>
 		</div>
 
-		<div v-if="statements.length > 0" class="statement-editor-heading">
+		<div v-if="statements.length > 0 && schemaHasPropertyDefinitions" class="statement-editor-heading">
 			<h4 class="property">
 				{{ $i18n( 'neowiki-infobox-editor-property-label' ).text() }}
 			</h4>
@@ -161,6 +161,13 @@ const getPropertyDefinition = ( propertyName: PropertyName ): PropertyDefinition
 	}
 	return undefined;
 };
+
+const schemaHasPropertyDefinitions = computed( (): boolean => {
+	if ( !localSchema.value ) {
+		return false;
+	}
+	return Object.keys( localSchema.value.getPropertyDefinitions().asRecord() ).length > 0;
+} );
 
 const addMissingStatements = (): void => {
 	if ( localSubject.value !== undefined && localSchema.value !== null ) {
