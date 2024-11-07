@@ -29,18 +29,23 @@
 			>
 				<span>{{ $i18n( 'neowiki-create-subject-dialog-or-select' ).text() }}</span>
 			</div>
-			<CdxTypeaheadSearch
-				:id="searchInputId"
-				form-action=""
-				:search-results="searchResults"
-				:placeholder="$i18n( 'neowiki-create-subject-dialog-select-schema' ).text()"
-				:initial-input-value="searchQuery"
-				:show-thumbnail="false"
-				:highlight-query="true"
-				class="create-subject-dialog__search"
-				@input="handleInput"
-				@search-result-click="handleSearchResultClick"
-			/>
+			<div class="create-subject-dialog__search-container">
+				<CdxTypeaheadSearch
+					:id="searchInputId"
+					form-action=""
+					:search-results="searchResults"
+					:placeholder="$i18n( 'neowiki-create-subject-dialog-select-schema' ).text()"
+					:initial-input-value="searchQuery"
+					:show-thumbnail="false"
+					:highlight-query="true"
+					class="create-subject-dialog__search"
+					@input="handleInput"
+					@search-result-click="handleSearchResultClick"
+				/>
+				<CdxIcon
+					v-tooltip:right="$i18n( 'neowiki-create-subject-dialog-select-schema-description' ).text()"
+					:icon="cdxIconInfoFilled" />
+			</div>
 		</div>
 	</CdxDialog>
 </template>
@@ -106,7 +111,7 @@ defineExpose( { openDialog } );
 @use '@/assets/scss/variables' as *;
 
 .create-subject-dialog {
-	padding-bottom: 50px;
+	padding-bottom: 10px;
 	max-width: 500px;
 
 	&__content {
@@ -146,6 +151,16 @@ defineExpose( { openDialog } );
 			padding: 0 10px;
 			font-style: italic;
 			color: $neo-secondary;
+		}
+	}
+
+	&__search-container {
+		display: flex;
+		align-items: center;
+		height: 41px;
+
+		& .cdx-icon {
+			margin-left: auto;
 		}
 	}
 
