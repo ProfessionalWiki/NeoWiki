@@ -34,7 +34,7 @@ class PatchSubjectApi extends SimpleHandler {
 			NeoWikiExtension::getInstance()->newPatchSubjectAction( $this->getAuthority() )->patch(
 				new SubjectId( $subjectId ),
 				$request['label'] ?? null,
-				$request['statements'] // TODO: support property removal. Maybe second list. Maybe null values. Maybe other approach?
+				$request['statements'] // TODO: support property removal. https://github.com/ProfessionalWiki/NeoWiki/issues/280
 			);
 		} catch ( \RuntimeException $e ) {
 			return $this->getResponseFactory()->createHttpError( 403, [
