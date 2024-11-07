@@ -10,7 +10,6 @@
 			:model-value="localSubject.getLabel()"
 			:required="true"
 			:label="$i18n( 'neowiki-infobox-editor-subject-label' ).text()"
-			:disabled="!isNewSubject"
 			@validation="handleValidation"
 			@update:model-value="updateSubjectLabel"
 		/>

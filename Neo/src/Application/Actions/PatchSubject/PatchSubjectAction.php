@@ -8,6 +8,7 @@ use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 
 readonly class PatchSubjectAction {
 
@@ -23,22 +24,27 @@ readonly class PatchSubjectAction {
 	 * This follows the JSON Merge Patch specification (RFC 7396).
 	 *
 	 * @param SubjectId $subjectId
+	 * @param string|null $label
 	 * @param array<string, mixed> $patch
 	 */
-	public function patch( SubjectId $subjectId, array $patch ): void {
-		if ( !$this->subjectActionAuthorizer->canEditSubject() ) {
-			throw new \RuntimeException( 'You do not have the necessary permissions to edit this subject' );
+	public function patch(SubjectId $subjectId, ?string $label, array $patch): void {
+		if (!$this->subjectActionAuthorizer->canEditSubject()) {
+			throw new \RuntimeException('You do not have the necessary permissions to edit this subject');
 		}
 
-		$subject = $this->subjectRepository->getSubject( $subjectId );
+		$subject = $this->subjectRepository->getSubject($subjectId);
 
-		if ( $subject === null ) {
-			throw new \RuntimeException( 'Subject not found: ' . $subjectId->text );
+		if ($subject === null) {
+			throw new \RuntimeException('Subject not found: ' . $subjectId->text);
 		}
 
-		$subject->patchStatements( $this->patcher, $patch );
+		if ($label !== null) {
+			$subject->patchLabel( new SubjectLabel($label) );
+		}
 
-		$this->subjectRepository->updateSubject( $subject );
+		$subject->patchStatements($this->patcher, $patch);
+
+		$this->subjectRepository->updateSubject($subject);
 	}
 
 }

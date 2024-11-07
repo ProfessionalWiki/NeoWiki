@@ -21,7 +21,7 @@ export interface SubjectRepository extends SubjectLookup {
 	): Promise<SubjectId>;
 
 	// TODO: return something to indicate status
-	updateSubject( id: SubjectId, statements: StatementList ): Promise<object>;
+	updateSubject( id: SubjectId, label: string, statements: StatementList ): Promise<object>;
 
 	deleteSubject( id: SubjectId ): Promise<boolean>;
 
@@ -37,7 +37,7 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		return Promise.resolve( new SubjectId( 's11111111111112' ) );
 	}
 
-	public updateSubject( _id: SubjectId, _statements: StatementList ): Promise<object> {
+	public updateSubject( _id: SubjectId, _label: string, _statements: StatementList ): Promise<object> {
 		return Promise.resolve( {} );
 	}
 

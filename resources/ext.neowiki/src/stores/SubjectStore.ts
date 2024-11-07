@@ -32,7 +32,7 @@ export const useSubjectStore = defineStore( 'subject', {
 			return this.getSubject( id );
 		},
 		async updateSubject( subject: Subject ): Promise<void> {
-			await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject( subject.getId(), subject.getStatements() );
+			await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject( subject.getId(), subject.getLabel(), subject.getStatements() );
 			this.setSubject( subject.getId(), subject );
 		},
 		async createMainSubject( subject: Subject ): Promise<void> {

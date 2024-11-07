@@ -10,6 +10,7 @@ use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\CsrfValidator;
+use RuntimeException;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class PatchSubjectApi extends SimpleHandler {
@@ -32,6 +33,7 @@ class PatchSubjectApi extends SimpleHandler {
 		try {
 			NeoWikiExtension::getInstance()->newPatchSubjectAction( $this->getAuthority() )->patch(
 				new SubjectId( $subjectId ),
+				$request['label'] ?? null,
 				$request['statements'] // TODO: support property removal. Maybe second list. Maybe null values. Maybe other approach?
 			);
 		} catch ( \RuntimeException $e ) {

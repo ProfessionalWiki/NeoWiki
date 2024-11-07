@@ -106,10 +106,11 @@ export class RestSubjectRepository implements SubjectRepository {
 		return new SubjectId( data.subjectId );
 	}
 
-	public async updateSubject( id: SubjectId, statements: StatementList ): Promise<object> {
+	public async updateSubject( id: SubjectId, label: string, statements: StatementList ): Promise<object> {
 		const response = await this.httpClient.patch(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
 			{
+				label,
 				statements: statementsToJson( statements )
 			},
 			{
