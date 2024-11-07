@@ -162,7 +162,7 @@ describe( 'RestSubjectRepository', () => {
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
 			await expect(
-				() => repository.updateSubject( new SubjectId( 's11111111111111' ), new StatementList( [] ) )
+				() => repository.updateSubject( new SubjectId( 's11111111111111' ), 'Updated Label', new StatementList( [] ) )
 			).rejects.toThrowError( 'Error updating subject' );
 		} );
 
@@ -183,6 +183,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const response = await repository.updateSubject(
 				new SubjectId( 's11111111111111' ),
+				'Subject label',
 				mockUpdateResponse.properties
 			);
 

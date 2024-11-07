@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Tests\MediaWiki\NeoWikiIntegrationTestCase;
  * @group Database
  */
 class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
+
 	use HandlerTestTrait;
 	use MockAuthorityTrait;
 
@@ -60,6 +61,7 @@ class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
 			],
 			'bodyContents' => <<<JSON
 {
+	"label": "Test subject sTestSA11111111",
 	"statements": {
 		"Founded at": {
 			"format": "number",
@@ -108,6 +110,30 @@ JSON,
 		$this->assertSame( 403, $response->getStatusCode() );
 		$this->assertSame( 'error', $responseData['status'] );
 		$this->assertSame( 'You do not have the necessary permissions to edit this subject', $responseData['message'] );
+	}
+
+	public function testLabelChange(): void {
+		$this->createPages();
+
+		$requestData = $this->createValidRequestData();
+		$requestBody = json_decode( $requestData->getBody()->getContents(), true );
+		$requestBody['label'] = 'Updated Test Subject sTestSA11111111';
+		$requestData = new RequestData( [
+			'method' => 'PATCH',
+			'pathParams' => $requestData->getPathParams(),
+			'bodyContents' => json_encode( $requestBody ),
+			'headers' => $requestData->getHeaders()
+		] );
+
+		$response = $this->executeHandler(
+			$this->newPatchSubjectApi(),
+			$requestData
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( 'Updated Test Subject sTestSA11111111', $responseData['label'] );
 	}
 
 }

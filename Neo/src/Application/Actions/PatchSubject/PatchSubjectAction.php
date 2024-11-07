@@ -8,6 +8,8 @@ use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use RuntimeException;
 
 readonly class PatchSubjectAction {
 
@@ -23,17 +25,22 @@ readonly class PatchSubjectAction {
 	 * This follows the JSON Merge Patch specification (RFC 7396).
 	 *
 	 * @param SubjectId $subjectId
+	 * @param string|null $label
 	 * @param array<string, mixed> $patch
 	 */
-	public function patch( SubjectId $subjectId, array $patch ): void {
+	public function patch( SubjectId $subjectId, ?string $label, array $patch ): void {
 		if ( !$this->subjectActionAuthorizer->canEditSubject() ) {
-			throw new \RuntimeException( 'You do not have the necessary permissions to edit this subject' );
+			throw new RuntimeException( 'You do not have the necessary permissions to edit this subject' );
 		}
 
 		$subject = $this->subjectRepository->getSubject( $subjectId );
 
 		if ( $subject === null ) {
-			throw new \RuntimeException( 'Subject not found: ' . $subjectId->text );
+			throw new RuntimeException( 'Subject not found: ' . $subjectId->text );
+		}
+
+		if ( $label !== null ) {
+			$subject->setLabel( new SubjectLabel( $label ) );
 		}
 
 		$subject->patchStatements( $this->patcher, $patch );

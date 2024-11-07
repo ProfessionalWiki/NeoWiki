@@ -2,7 +2,7 @@
 	<div class="auto-infobox">
 		<div class="auto-infobox__header">
 			<h2 class="auto-infobox__title">
-				{{ subject.getLabel() }}
+				{{ subjectRef.getLabel() }}
 			</h2>
 		</div>
 		<div class="auto-infobox__content">

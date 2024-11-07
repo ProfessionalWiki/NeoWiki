@@ -14,7 +14,7 @@ class Subject {
 
 	public function __construct(
 		public readonly SubjectId $id,
-		public readonly SubjectLabel $label,
+		public SubjectLabel $label,
 		private readonly SchemaName $schemaId,
 		private StatementList $statements,
 	) {
@@ -69,6 +69,10 @@ class Subject {
 
 	public function getReferencedSubjects(): SubjectIdList {
 		return $this->statements->getReferencedSubjects();
+	}
+
+	public function setLabel( SubjectLabel $newLabel ): void {
+		$this->label = $newLabel;
 	}
 
 	public function patchStatements( StatementListPatcher $patcher, array $patch ): void {
