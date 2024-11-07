@@ -71,7 +71,7 @@ class Subject {
 		return $this->statements->getReferencedSubjects();
 	}
 
-	public function patchLabel( SubjectLabel $newLabel ): void {
+	public function setLabel( SubjectLabel $newLabel ): void {
 		$this->label = $newLabel;
 	}
 

@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
@@ -50,7 +51,7 @@ class PatchSubjectActionTest extends TestCase {
 		$this->inMemorySubjectRepository->updateSubject( $subject );
 
 		$patchSubjectAction = $this->newPatchSubjectAction();
-		$patchSubjectAction->patch( $subject->getId(), [] );
+		$patchSubjectAction->patch( $subject->getId(), null, [] );
 
 		$patchedSubject = $this->inMemorySubjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) );
 
@@ -61,13 +62,36 @@ class PatchSubjectActionTest extends TestCase {
 		);
 	}
 
+	public function testPatchSubjectLabel(): void {
+		$subject = TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Original Label' )
+		);
+		$this->inMemorySubjectRepository->updateSubject( $subject );
+
+		$patchSubjectAction = $this->newPatchSubjectAction();
+		$patchSubjectAction->patch(
+			$subject->getId(),
+			'Updated Label',
+			[]
+		);
+
+		$patchedSubject = $this->inMemorySubjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) );
+
+		$this->assertSame(
+			'Updated Label',
+			$patchedSubject->getLabel()->text,
+			'Subject label was not updated correctly'
+		);
+	}
+
 	public function testPatchSubjectWithoutPermission(): void {
 		$patchSubjectAction = $this->newPatchSubjectAction( new FailingSubjectAuthorizer() );
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'You do not have the necessary permissions to edit this subject' );
 
-		$patchSubjectAction->patch( new SubjectId( self::SUBJECT_ID ), [] );
+		$patchSubjectAction->patch( new SubjectId( self::SUBJECT_ID ), null, [] );
 	}
 
 	public function testPatchNonExistentSubject(): void {
@@ -76,7 +100,7 @@ class PatchSubjectActionTest extends TestCase {
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'Subject not found: ' . self::SUBJECT_ID );
 
-		$patchSubjectAction->patch( new SubjectId( self::SUBJECT_ID ), [] );
+		$patchSubjectAction->patch( new SubjectId( self::SUBJECT_ID ), null, [] );
 	}
 
 	public function testNewRelationGetsGuid(): void {
@@ -87,6 +111,7 @@ class PatchSubjectActionTest extends TestCase {
 		$this->newPatchSubjectAction()
 			->patch(
 				$initialSubjectId,
+				null,
 				[
 					'Has product' => [
 						'format' => 'relation',
