@@ -170,7 +170,7 @@ const schemaHasPropertyDefinitions = computed( (): boolean => {
 } );
 
 const addMissingStatements = (): void => {
-	if ( localSubject.value !== undefined && localSchema.value !== null ) {
+	if ( localSubject.value !== null && localSchema.value !== null ) {
 		const existingPropertyNames = new Set( statements.value.map( ( stmt ) => stmt.propertyName.toString() ) );
 
 		const missingStatements = Array.from( localSchema.value.getPropertyDefinitions() )
