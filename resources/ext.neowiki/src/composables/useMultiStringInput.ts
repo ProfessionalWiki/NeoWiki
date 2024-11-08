@@ -39,16 +39,17 @@ export const useMultiStringInput = (
 	const isAddButtonDisabled = computed( (): boolean => inputValues.value.some( ( value ) => value.trim() === '' || !validationState.value.isValid )
 	);
 
+	const hasOnlyUniqueValues = (): boolean => {
+		const uniqueValues = new Set( inputValues.value );
+		return uniqueValues.size === inputValues.value.length;
+	};
+
 	const isUniqueFieldsValid = computed( () => {
-		const valuesSet = new Set();
-		const isUnique = inputValues.value.every( ( value ) => {
-			if ( valuesSet.has( value ) ) {
-				return false;
-			}
-			valuesSet.add( value );
+		if ( !props.property.uniqueItems ) {
 			return true;
-		} );
-		return props.property.uniqueItems && isUnique;
+		}
+
+		return hasOnlyUniqueValues();
 	} );
 
 	const isRequiredFieldInValid = computed( (): boolean => {
