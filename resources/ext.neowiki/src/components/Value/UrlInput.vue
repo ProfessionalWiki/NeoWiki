@@ -66,7 +66,7 @@ const {
 	validationState,
 	isAddButtonDisabled,
 	isRequiredFieldInValid,
-	isUniqueFieldsValid,
+	uniquenessRequirementIsMet,
 	handleInput,
 	handleAdd,
 	handleRemove
@@ -89,7 +89,7 @@ const validateFields = ( valueParts: string[] ): ValidationState => {
 			fieldIsValid = false;
 		} else {
 			// TODO: error should be shown on the field that caused error
-			if ( !isUniqueFieldsValid.value && index === valueParts.length - 1 ) {
+			if ( !uniquenessRequirementIsMet() && index === valueParts.length - 1 ) {
 				errorMessage = mw.message( 'neowiki-field-unique' ).text();
 				fieldIsValid = false;
 			}
