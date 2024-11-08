@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
 import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
 import { NumberProperty } from '@neo/domain/valueFormats/Number.ts';
@@ -71,4 +71,8 @@ const updateValidationStatus = ( messages: ValidationMessages ): void => {
 
 	emit( 'validation', Object.keys( messages ).length === 0 );
 };
+
+watch( () => props.property, () => {
+	updateValidationStatus( validate( props.modelValue ? props.modelValue as NumberValue : undefined ) );
+}, { immediate: true } );
 </script>

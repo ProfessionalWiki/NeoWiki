@@ -10,7 +10,7 @@
 			:model-value="localSubject.getLabel()"
 			:required="true"
 			:label="$i18n( 'neowiki-infobox-editor-subject-label' ).text()"
-			@validation="handleValidation"
+			@validation="handleSubjectLabelValidation"
 			@update:model-value="updateSubjectLabel"
 		/>
 
@@ -50,6 +50,7 @@
 					@update="updateStatement( index, $event )"
 					@remove="removeStatement( index )"
 					@edit="editProperty"
+					@validation="handleStatementValidation( index, $event )"
 				/>
 			</template>
 		</div>
@@ -88,6 +89,7 @@
 				class="neo-button"
 				action="progressive"
 				weight="primary"
+				:disabled="!canSubmit"
 				@click="submit">
 				{{ $i18n( 'neowiki-infobox-editor-save-button' ).text() }}
 			</CdxButton>
@@ -96,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, ref, reactive } from 'vue';
 import { CdxButton, CdxDialog, CdxIcon, useResizeObserver } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconArrowPrevious } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/NeoTextField.vue';
@@ -151,6 +153,10 @@ const propertyTypes = NeoWikiServices.getComponentRegistry().getLabelsAndIcons()
 	label: mw.message( label ).text(),
 	icon: icon
 } ) );
+
+const statementValidationState = reactive( statements.value.map( () => false ) );
+const isStatementsValid = computed( () => statementValidationState.every( Boolean ) );
+const canSubmit = ref( false );
 
 const getPropertyDefinition = ( propertyName: PropertyName ): PropertyDefinition | undefined => {
 	if ( localSchema.value instanceof Schema ) {
@@ -326,8 +332,13 @@ const removeStatement = ( index: number ): void => {
 	statements.value.splice( index, 1 );
 };
 
-const handleValidation = ( isValid: boolean ): void => {
-	console.log( isValid ); // TODO: handle Validation
+const handleSubjectLabelValidation = ( isValid: boolean ): void => {
+	canSubmit.value = isValid && isStatementsValid.value;
+};
+
+const handleStatementValidation = ( index: number, isValid: boolean ): void => {
+	statementValidationState[ index ] = isValid;
+	canSubmit.value = isStatementsValid.value;
 };
 
 const goBack = (): void => {

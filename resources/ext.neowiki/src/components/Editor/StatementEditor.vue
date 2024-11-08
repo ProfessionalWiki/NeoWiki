@@ -44,7 +44,7 @@ const props = defineProps<{
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
-const emit = defineEmits( [ 'update', 'remove', 'edit' ] );
+const emit = defineEmits( [ 'update', 'remove', 'edit', 'validation' ] );
 
 const localStatement = ref<Statement>( props.statement );
 
@@ -62,7 +62,7 @@ const updateStatementValue = ( newValue: Value | undefined ): void => {
 };
 
 const handleValidation = ( isValid: boolean ): void => {
-	console.log( isValid ); // TODO: Handle Validation
+	emit( 'validation', isValid );
 };
 </script>
 
