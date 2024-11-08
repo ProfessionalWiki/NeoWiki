@@ -66,6 +66,7 @@ const {
 	validationState,
 	isAddButtonDisabled,
 	isRequiredFieldInValid,
+	isUniqueFieldsValid,
 	handleInput,
 	handleAdd,
 	handleRemove
@@ -82,13 +83,20 @@ const validateFields = ( valueParts: string[] ): ValidationState => {
 		const url = valuePart.trim();
 		const isEmpty: boolean = url === '';
 		let fieldIsValid: boolean = isEmpty || isValidUrl( url );
+		let errorMessage = getErrorMessage( isEmpty );
 
 		if ( isEmpty && isRequiredFieldInValid.value && index === 0 ) {
 			fieldIsValid = false;
+		} else {
+			// TODO: error should be shown on the field that caused error
+			if ( !isUniqueFieldsValid.value && index === valueParts.length - 1 ) {
+				errorMessage = mw.message( 'neowiki-field-unique' ).text();
+				fieldIsValid = false;
+			}
 		}
 
 		validation.statuses.push( fieldIsValid ? 'success' : 'error' );
-		validation.messages.push( fieldIsValid ? {} : { error: getErrorMessage( isEmpty ) } );
+		validation.messages.push( fieldIsValid ? {} : { error: errorMessage } );
 		validation.isValid = validation.isValid && fieldIsValid;
 	} );
 

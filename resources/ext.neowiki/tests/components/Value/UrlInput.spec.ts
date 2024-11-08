@@ -107,7 +107,7 @@ describe( 'UrlInput', () => {
 				modelValue: newStringValue( 'https://valid1.com', 'https://valid2.com', 'https://valid3.com' )
 			} );
 
-			await wrapper.findAll( 'input' )[ 0 ].setValue( '' );
+			await wrapper.findAll( 'input' )[ 0 ].setValue( 'https://valid4.com' );
 			await wrapper.findAll( 'input' )[ 2 ].setValue( '' );
 
 			const fields = wrapper.findAllComponents( CdxField );
