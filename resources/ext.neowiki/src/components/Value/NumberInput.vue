@@ -74,5 +74,5 @@ const updateValidationStatus = ( messages: ValidationMessages ): void => {
 
 watch( () => props.property, () => {
 	updateValidationStatus( validate( props.modelValue ? props.modelValue as NumberValue : undefined ) );
-}, { immediate: true } );
+} );
 </script>
