@@ -20,6 +20,7 @@ export class FormatSpecificComponentRegistry {
 	}
 
 	/**
+	 * Returns a Component following ValueDisplayContract.vue.
 	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
 	 */
 	public getValueDisplayComponent( formatName: string ): Component {
@@ -30,6 +31,7 @@ export class FormatSpecificComponentRegistry {
 	}
 
 	/**
+	 * Returns a Component following ValueInputContract.vue.
 	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
 	 */
 	public getValueEditingComponent( formatName: string ): Component {
@@ -40,6 +42,7 @@ export class FormatSpecificComponentRegistry {
 	}
 
 	/**
+	 * Returns a Component following AttributesEditorContract.vue.
 	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
 	 */
 	public getAttributesEditor( formatName: string ): Component {
