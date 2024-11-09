@@ -67,7 +67,7 @@ const emit = defineEmits<ValueInputEmits>();
 
 const {
 	inputValues,
-	isUniqueFieldsValid,
+	uniquenessRequirementIsMet,
 	validationState,
 	isAddButtonDisabled,
 	isRequiredFieldInValid,
@@ -103,7 +103,7 @@ const validateFields = ( fieldValues: string[] ): ValidationState => {
 			messages = { error: mw.message( 'neowiki-field-required' ).text() };
 		} else {
 			// TODO: error should be shown on the field that caused error
-			if ( !isUniqueFieldsValid.value && index === fieldValues.length - 1 ) {
+			if ( !uniquenessRequirementIsMet() && index === fieldValues.length - 1 ) {
 				messages = { error: mw.message( 'neowiki-field-unique' ).text() };
 			}
 		}
