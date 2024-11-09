@@ -19,6 +19,7 @@
 			@delete="onDelete"
 			@close="isDeleteDialogOpen = false"
 		>
+			<!-- eslint-disable-next-line vue/no-v-html -->
 			<p v-html="$i18n( 'neowiki-delete-property-confirmation-message', schemaName.toString(), modelValue ).text()" />
 		</DeleteDialog>
 	</div>
