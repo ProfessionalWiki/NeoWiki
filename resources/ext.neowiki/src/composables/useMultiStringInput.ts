@@ -11,6 +11,7 @@ export interface MultiStringInputReturn {
 	validationState: Ref<ValidationState>;
 	isAddButtonDisabled: ComputedRef<boolean>;
 	isRequiredFieldInValid: ComputedRef<boolean>;
+	uniquenessRequirementIsMet: () => boolean;
 	handleInput: ( value: string, index: number, validateFn: ( values: string[] ) => ValidationState ) => void;
 	handleAdd: ( fieldType: string ) => Promise<void>;
 	handleRemove: ( index: number, validateFn: ( values: string[] ) => ValidationState ) => void;
@@ -37,6 +38,18 @@ export const useMultiStringInput = (
 
 	const isAddButtonDisabled = computed( (): boolean => inputValues.value.some( ( value ) => value.trim() === '' || !validationState.value.isValid )
 	);
+
+	const hasOnlyUniqueValues = (): boolean => {
+		const uniqueValues = new Set( inputValues.value );
+		return uniqueValues.size === inputValues.value.length;
+	};
+
+	const uniquenessRequirementIsMet = (): boolean => {
+		if ( !props.property.uniqueItems ) {
+			return true;
+		}
+		return hasOnlyUniqueValues();
+	};
 
 	const isRequiredFieldInValid = computed( (): boolean => {
 		const areAllFieldsEmpty = inputValues.value.every( ( value ) => value.trim() === '' );
@@ -76,6 +89,7 @@ export const useMultiStringInput = (
 
 	return {
 		inputValues,
+		uniquenessRequirementIsMet,
 		validationState,
 		isAddButtonDisabled,
 		isRequiredFieldInValid,
