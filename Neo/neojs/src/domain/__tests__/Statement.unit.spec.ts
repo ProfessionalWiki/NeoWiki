@@ -33,4 +33,29 @@ describe( 'Statement', () => {
 
 	} );
 
+	describe( 'withValue', () => {
+		it( 'returns new Statement with updated value', () => {
+			const property = new PropertyName( 'test' );
+			const originalStatement = new Statement( property, TextFormat.formatName, newStringValue( 'original' ) );
+			const newValue = newStringValue( 'updated' );
+
+			const updatedStatement = originalStatement.withValue( newValue );
+
+			expect( updatedStatement ).not.toBe( originalStatement );
+			expect( updatedStatement.propertyName ).toBe( originalStatement.propertyName );
+			expect( updatedStatement.format ).toBe( originalStatement.format );
+			expect( updatedStatement.value ).toEqual( newValue );
+		} );
+
+		it( 'can remove value by setting to undefined', () => {
+			const property = new PropertyName( 'test' );
+			const originalStatement = new Statement( property, TextFormat.formatName, newStringValue( 'original' ) );
+
+			const updatedStatement = originalStatement.withValue( undefined );
+
+			expect( updatedStatement.value ).toBeUndefined();
+			expect( updatedStatement.hasValue() ).toBe( false );
+		} );
+	} );
+
 } );
