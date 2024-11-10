@@ -58,7 +58,7 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
 		}
 
 		if ( property.uniqueItems && new Set( value.strings ).size !== value.strings.length ) {
-			errors.push( { code: 'unique' } );
+			errors.push( { code: 'unique' } );  // TODO: add source
 		}
 
 		return errors;
