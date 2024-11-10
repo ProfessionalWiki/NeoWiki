@@ -1,7 +1,7 @@
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { Relation, RelationValue, ValueType } from '@neo/domain/Value';
-import { BaseValueFormat } from '@neo/domain/ValueFormat';
+import { BaseValueFormat, ValueValidationError } from '@neo/domain/ValueFormat';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -34,6 +34,10 @@ export class RelationFormat extends BaseValueFormat<RelationProperty, RelationVa
 			multiple: json.multiple ?? false,
 			uniqueItems: json.uniqueItems ?? true
 		} as RelationProperty;
+	}
+
+	public validate( _value: RelationValue | undefined, _property: RelationProperty ): ValueValidationError[] {
+		return []; // TODO
 	}
 
 }

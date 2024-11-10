@@ -13,7 +13,7 @@ export interface BaseValueRepresentation {
 
 export interface StringValue extends BaseValueRepresentation {
 	readonly type: ValueType.String;
-	readonly strings: string[];
+	readonly strings: string[]; // TODO: rename to parts
 }
 
 export interface NumberValue extends BaseValueRepresentation {

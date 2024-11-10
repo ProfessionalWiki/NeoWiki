@@ -72,3 +72,75 @@ describe( 'newNumberProperty', () => {
 		expect( property.maximum ).toBeUndefined();
 	} );
 } );
+
+describe( 'validate', () => {
+	const numberFormat = new NumberFormat();
+
+	it( 'returns no errors for undefined value when optional', () => {
+		const property = newNumberProperty( {
+			required: false
+		} );
+
+		const errors = numberFormat.validate( undefined, property );
+
+		expect( errors ).toEqual( [] );
+	} );
+
+	it( 'returns required error for required undefined value', () => {
+		const property = newNumberProperty( {
+			required: true
+		} );
+
+		const errors = numberFormat.validate( undefined, property );
+
+		expect( errors ).toEqual( [ { code: 'required' } ] );
+	} );
+
+	it( 'returns no errors for valid number within bounds', () => {
+		const property = newNumberProperty( {
+			minimum: 0,
+			maximum: 100
+		} );
+
+		const errors = numberFormat.validate( newNumberValue( 50 ), property );
+
+		expect( errors ).toEqual( [] );
+	} );
+
+	it( 'returns no errors for number equal to bounds', () => {
+		const property = newNumberProperty( {
+			minimum: 42,
+			maximum: 42
+		} );
+
+		const errors = numberFormat.validate( newNumberValue( 42 ), property );
+
+		expect( errors ).toEqual( [] );
+	} );
+
+	it( 'returns min-value error when below minimum', () => {
+		const property = newNumberProperty( {
+			minimum: 0
+		} );
+
+		const errors = numberFormat.validate( newNumberValue( -1 ), property );
+
+		expect( errors ).toEqual( [ {
+			code: 'min-value',
+			args: [ 0 ]
+		} ] );
+	} );
+
+	it( 'returns max-value error when above maximum', () => {
+		const property = newNumberProperty( {
+			maximum: 100
+		} );
+
+		const errors = numberFormat.validate( newNumberValue( 101 ), property );
+
+		expect( errors ).toEqual( [ {
+			code: 'max-value',
+			args: [ 100 ]
+		} ] );
+	} );
+} );

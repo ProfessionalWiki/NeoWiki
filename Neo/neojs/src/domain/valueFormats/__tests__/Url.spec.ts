@@ -177,3 +177,105 @@ describe( 'newUrlProperty', () => {
 		expect( property.uniqueItems ).toBe( true );
 	} );
 } );
+
+describe( 'validate', () => {
+	const urlFormat = new UrlFormat();
+
+	it( 'returns no errors for empty value when optional', () => {
+		const property = newUrlProperty( {
+			required: false
+		} );
+
+		const errors = urlFormat.validate( newStringValue(), property );
+
+		expect( errors ).toEqual( [] );
+	} );
+
+	it( 'returns required error for required empty value', () => {
+		const property = newUrlProperty( {
+			required: true
+		} );
+
+		const errors = urlFormat.validate( newStringValue(), property );
+
+		expect( errors ).toEqual( [ { code: 'required' } ] );
+	} );
+
+	it( 'returns required error for required undefined value', () => {
+		const property = newUrlProperty( {
+			required: true
+		} );
+
+		const errors = urlFormat.validate( undefined, property );
+
+		expect( errors ).toEqual( [ { code: 'required' } ] );
+	} );
+
+	it( 'returns no errors for valid URL', () => {
+		const property = newUrlProperty();
+
+		const errors = urlFormat.validate(
+			newStringValue( [ 'https://example.com' ] ),
+			property
+		);
+
+		expect( errors ).toEqual( [] );
+	} );
+
+	it( 'returns invalid-url error for malformed URL', () => {
+		const property = newUrlProperty();
+
+		const errors = urlFormat.validate(
+			newStringValue( [ 'not-a-url' ] ),
+			property
+		);
+
+		expect( errors[ 0 ].code ).toEqual( 'invalid-url' );
+	} );
+
+	it( 'returns error for each invalid URL', () => {
+		const property = newUrlProperty();
+
+		const errors = urlFormat.validate(
+			newStringValue( [ 'https://example1.com', 'invalid-1', 'https://example2.com', 'invalid-2', 'https://example3.com' ] ),
+			property
+		);
+
+		expect( errors ).toEqual( [
+			{ code: 'invalid-url', source: 'invalid-1' },
+			{ code: 'invalid-url', source: 'invalid-2' }
+		] );
+	} );
+
+	it( 'returns unique error for duplicate URLs', () => {
+		const property = newUrlProperty( {
+			uniqueItems: true
+		} );
+
+		const errors = urlFormat.validate(
+			newStringValue( [
+				'https://foo.com',
+				'https://example.com',
+				'https://bar.com',
+				'https://example.com',
+				'https://baz.com'
+			] ),
+			property
+		);
+
+		expect( errors ).toEqual( [ { code: 'unique' } ] );
+	} );
+
+	it( 'returns no uniquerness errors for multiple distinct URLs', () => {
+		const property = newUrlProperty( {
+			uniqueItems: true
+		} );
+
+		const errors = urlFormat.validate(
+			newStringValue( [ 'https://example1.com', 'https://example2.com', 'https://example3.com' ] ),
+			property
+		);
+
+		expect( errors ).toEqual( [] );
+	} );
+} );

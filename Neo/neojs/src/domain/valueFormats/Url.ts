@@ -1,6 +1,6 @@
 import { MultiStringProperty, PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@neo/domain/Value';
-import { BaseValueFormat } from '@neo/domain/ValueFormat';
+import { BaseValueFormat, ValueValidationError } from '@neo/domain/ValueFormat';
 import DOMPurify from 'dompurify';
 
 export interface UrlProperty extends MultiStringProperty {
@@ -25,6 +25,32 @@ export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue> {
 			multiple: json.multiple ?? false,
 			uniqueItems: json.uniqueItems ?? true
 		} as UrlProperty;
+	}
+
+	public validate( value: StringValue | undefined, property: UrlProperty ): ValueValidationError[] {
+		const errors: ValueValidationError[] = [];
+		value = value === undefined ? newStringValue() : value;
+
+		if ( property.required && value.strings.length === 0 ) {
+			errors.push( { code: 'required' } );
+			return errors;
+		}
+
+		// TODO: check property.multiple
+
+		for ( const part of value.strings ) {
+			const url = part.trim();
+
+			if ( url !== '' && !isValidUrl( url ) ) {
+				errors.push( { code: 'invalid-url', source: part } );
+			}
+		}
+
+		if ( property.uniqueItems && new Set( value.strings ).size !== value.strings.length ) {
+			errors.push( { code: 'unique' } ); // TODO: add source
+		}
+
+		return errors;
 	}
 
 }

@@ -1,7 +1,7 @@
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newNumberValue, type NumberValue, ValueType } from '@neo/domain/Value';
-import { BaseValueFormat } from '@neo/domain/ValueFormat';
+import { BaseValueFormat, ValueValidationError } from '@neo/domain/ValueFormat';
 
 export interface NumberProperty extends PropertyDefinition {
 
@@ -28,6 +28,32 @@ export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
 			minimum: json.minimum,
 			maximum: json.maximum
 		} as NumberProperty;
+	}
+
+	public validate( value: NumberValue | undefined, property: NumberProperty ): ValueValidationError[] {
+		const errors: ValueValidationError[] = [];
+
+		if ( property.required && value === undefined ) {
+			errors.push( { code: 'required' } );
+			return errors;
+		}
+
+		if ( value !== undefined ) {
+			if ( property.minimum !== undefined && value.number < property.minimum ) {
+				errors.push( {
+					code: 'min-value',
+					args: [ property.minimum ]
+				} );
+			}
+			if ( property.maximum !== undefined && value.number > property.maximum ) {
+				errors.push( {
+					code: 'max-value',
+					args: [ property.maximum ]
+				} );
+			}
+		}
+
+		return errors;
 	}
 
 }
