@@ -14,4 +14,12 @@ export class Statement {
 		return this.value !== undefined;
 	}
 
+	public withValue( value: Value | undefined ): Statement {
+		return new Statement(
+			this.propertyName,
+			this.format,
+			value
+		);
+	}
+
 }
