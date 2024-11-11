@@ -115,5 +115,22 @@ describe( 'SubjectValidator', () => {
 
 			expect( validator.validate( subject, schema ) ).toBe( false );
 		} );
+
+		it( 'returns false when subject label is empty', () => {
+			const validator = new SubjectValidator( new ValueFormatRegistry() );
+
+			const subject = newSubject( { label: '' } );
+
+			expect( validator.validate( subject, newSchema( [] ) ) ).toBe( false );
+		} );
+
+		it( 'returns false when subject label contains only whitespace', () => {
+			const validator = new SubjectValidator( new ValueFormatRegistry() );
+
+			const subject = newSubject( { label: '   ' } );
+
+			expect( validator.validate( subject, newSchema( [] ) ) ).toBe( false );
+		} );
+
 	} );
 } );
