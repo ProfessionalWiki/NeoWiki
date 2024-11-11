@@ -17,7 +17,6 @@
 					:model-value="localStatement.value"
 					:property="propertyDefinition"
 					class="statement-editor__value"
-					@validation="handleValidation"
 					@update:model-value="updateStatementValue"
 				/>
 			</div>
@@ -44,7 +43,7 @@ const props = defineProps<{
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
-const emit = defineEmits( [ 'update', 'remove', 'edit', 'validation' ] );
+const emit = defineEmits( [ 'update', 'remove', 'edit' ] );
 
 const localStatement = ref<Statement>( props.statement );
 
@@ -59,10 +58,6 @@ const updateStatementValue = ( newValue: Value | undefined ): void => {
 		newValue
 	);
 	emit( 'update', localStatement.value );
-};
-
-const handleValidation = ( isValid: boolean ): void => {
-	emit( 'validation', isValid );
 };
 </script>
 

@@ -10,7 +10,6 @@
 			:model-value="localSubject.getLabel()"
 			:required="true"
 			:label="$i18n( 'neowiki-infobox-editor-subject-label' ).text()"
-			@validation="handleSubjectLabelValidation"
 			@update:model-value="updateSubjectLabel"
 		/>
 
@@ -50,7 +49,6 @@
 					@update="updateStatement( index, $event )"
 					@remove="removeStatement( index )"
 					@edit="editProperty"
-					@validation="handleStatementValidation( index, $event )"
 				/>
 			</template>
 		</div>
@@ -98,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, reactive } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { CdxButton, CdxDialog, CdxIcon, useResizeObserver } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconArrowPrevious } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/NeoTextField.vue';
@@ -154,9 +152,15 @@ const propertyTypes = NeoWikiServices.getComponentRegistry().getLabelsAndIcons()
 	icon: icon
 } ) );
 
-const statementValidationState = reactive( statements.value.map( () => false ) );
-const isStatementsValid = computed( () => statementValidationState.every( Boolean ) );
-const canSubmit = ref( false );
+const validator = NeoWikiServices.getSubjectValidator();
+
+const canSubmit = computed( () => {
+	if ( localSubject.value === null || localSchema.value === null ) {
+		return false;
+	}
+
+	return validator.validate( getCurrentSubject(), localSchema.value as Schema );
+} );
 
 const getPropertyDefinition = ( propertyName: PropertyName ): PropertyDefinition | undefined => {
 	if ( localSchema.value instanceof Schema ) {
@@ -332,19 +336,17 @@ const removeStatement = ( index: number ): void => {
 	statements.value.splice( index, 1 );
 };
 
-const handleSubjectLabelValidation = ( isValid: boolean ): void => {
-	canSubmit.value = isValid && isStatementsValid.value;
-};
-
-const handleStatementValidation = ( index: number, isValid: boolean ): void => {
-	statementValidationState[ index ] = isValid;
-	canSubmit.value = isStatementsValid.value;
-};
-
 const goBack = (): void => {
 	emit( 'back' );
 	isOpen.value = false;
 };
+
+function getCurrentSubject(): Subject {
+	if ( localSubject.value === null ) {
+		throw new Error( 'Subject is missing' );
+	}
+	return localSubject.value.withStatements( new StatementList( statements.value as Statement[] ) );
+}
 
 const submit = async (): Promise<void> => {
 	if ( localSchema.value === null || localSubject.value === null ) {
@@ -355,7 +357,7 @@ const submit = async (): Promise<void> => {
 		await schemaStore.saveSchema( localSchema.value as Schema );
 	}
 
-	localSubject.value = localSubject.value.withStatements( new StatementList( statements.value as Statement[] ) );
+	localSubject.value = getCurrentSubject();
 
 	if ( isNewSubject.value ) {
 		await subjectStore.createMainSubject( localSubject.value as Subject );
