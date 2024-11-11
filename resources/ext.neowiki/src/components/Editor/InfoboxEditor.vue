@@ -154,12 +154,11 @@ const propertyTypes = NeoWikiServices.getComponentRegistry().getLabelsAndIcons()
 
 const validator = NeoWikiServices.getSubjectValidator();
 
+// eslint-disable-next-line arrow-body-style
 const canSubmit = computed( () => {
-	if ( localSubject.value === null || localSchema.value === null ) {
-		return false;
-	}
-
-	return validator.validate( getCurrentSubject(), localSchema.value as Schema );
+	return localSubject.value !== null &&
+		localSchema.value !== null &&
+		validator.validate( getCurrentSubject(), localSchema.value as Schema );
 } );
 
 const getPropertyDefinition = ( propertyName: PropertyName ): PropertyDefinition | undefined => {
