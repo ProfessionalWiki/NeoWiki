@@ -30,6 +30,7 @@ import { cdxIconStringInteger, cdxIconTextA } from '@/assets/CustomIcons.ts';
 import { cdxIconLink } from '@wikimedia/codex-icons';
 import TextAttributesEditor from '@/components/Editor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/Editor/Property/NumberAttributesEditor.vue';
+import { SubjectValidator } from '@neo/domain/SubjectValidator.ts';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -131,5 +132,11 @@ export class NeoWikiExtension {
 
 	private getNeo(): Neo {
 		return Neo.getInstance();
+	}
+
+	public newSubjectValidator(): SubjectValidator {
+		return new SubjectValidator(
+			this.getNeo().getValueFormatRegistry()
+		);
 	}
 }

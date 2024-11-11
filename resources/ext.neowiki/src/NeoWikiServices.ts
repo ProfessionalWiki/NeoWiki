@@ -3,11 +3,13 @@ import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegist
 import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
 import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
+import { SubjectValidator } from '@neo/domain/SubjectValidator.ts';
 
 export enum Service {
 	ComponentRegistry = 'ComponentRegistry',
 	SchemaAuthorizer = 'SchemaAuthorizer',
-	SubjectAuthorizer = 'SubjectAuthorizer'
+	SubjectAuthorizer = 'SubjectAuthorizer',
+	SubjectValidator = 'SubjectValidator'
 }
 
 export class NeoWikiServices {
@@ -16,6 +18,7 @@ export class NeoWikiServices {
 		app.provide( Service.ComponentRegistry, NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry() );
 		app.provide( Service.SchemaAuthorizer, NeoWikiExtension.getInstance().newSchemaAuthorizer() );
 		app.provide( Service.SubjectAuthorizer, NeoWikiExtension.getInstance().newSubjectAuthorizer() );
+		app.provide( Service.SubjectValidator, NeoWikiExtension.getInstance().newSubjectValidator() );
 	}
 
 	public static getComponentRegistry(): FormatSpecificComponentRegistry {
@@ -28,6 +31,10 @@ export class NeoWikiServices {
 
 	public static getSubjectAuthorizer(): SubjectAuthorizer {
 		return inject( Service.SubjectAuthorizer ) as SubjectAuthorizer;
+	}
+
+	public static getSubjectValidator(): SubjectValidator {
+		return inject( Service.SubjectValidator ) as SubjectValidator;
 	}
 
 }
