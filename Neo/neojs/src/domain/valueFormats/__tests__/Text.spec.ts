@@ -90,3 +90,132 @@ describe( 'newTextProperty', () => {
 		expect( property.minLength ).toBeUndefined();
 	} );
 } );
+
+describe( 'validate', () => {
+	const textFormat = new TextFormat();
+
+	it( 'returns no errors for empty value when optional', () => {
+		const property = newTextProperty( {
+			required: false
+		} );
+
+		const errors = textFormat.validate( newStringValue(), property );
+
+		expect( errors ).toEqual( [] );
+	} );
+
+	it( 'returns required error for required empty value', () => {
+		const property = newTextProperty( {
+			required: true
+		} );
+
+		const errors = textFormat.validate( newStringValue(), property );
+
+		expect( errors ).toEqual( [ { code: 'required' } ] );
+	} );
+
+	it( 'returns required error for required undefined value', () => {
+		const property = newTextProperty( {
+			required: true
+		} );
+
+		const errors = textFormat.validate( undefined, property );
+
+		expect( errors ).toEqual( [ { code: 'required' } ] );
+	} );
+
+	it( 'returns min-length error for text below minimum length', () => {
+		const property = newTextProperty( {
+			minLength: 5
+		} );
+
+		const errors = textFormat.validate(
+			newStringValue( [ 'abcd' ] ),
+			property
+		);
+
+		expect( errors ).toEqual( [ {
+			code: 'min-length',
+			args: [ 5 ],
+			source: 'abcd'
+		} ] );
+	} );
+
+	it( 'returns max-length error for text above maximum length', () => {
+		const property = newTextProperty( {
+			maxLength: 5
+		} );
+
+		const errors = textFormat.validate(
+			newStringValue( [ '123456' ] ),
+			property
+		);
+
+		expect( errors ).toEqual( [ {
+			code: 'max-length',
+			args: [ 5 ],
+			source: '123456'
+		} ] );
+	} );
+
+	it( 'returns errors for each text not meeting length requirements', () => {
+		const property = newTextProperty( {
+			minLength: 3,
+			maxLength: 5
+		} );
+
+		const errors = textFormat.validate(
+			newStringValue( [ 'valid', 'a', 'VALID', 'ab', '123456' ] ),
+			property
+		);
+
+		expect( errors ).toEqual( [
+			{ code: 'min-length', args: [ 3 ], source: 'a' },
+			{ code: 'min-length', args: [ 3 ], source: 'ab' },
+			{ code: 'max-length', args: [ 5 ], source: '123456' }
+		] );
+	} );
+
+	it( 'returns no errors for for text at the length boundaries', () => {
+		const property = newTextProperty( {
+			minLength: 3,
+			maxLength: 3
+		} );
+
+		const errors = textFormat.validate( newStringValue( [ '123' ] ), property );
+
+		expect( errors ).toEqual( [] );
+	} );
+
+	it( 'returns unique error for duplicate texts', () => {
+		const property = newTextProperty( {
+			uniqueItems: true
+		} );
+
+		const errors = textFormat.validate(
+			newStringValue( [
+				'foo',
+				'example',
+				'bar',
+				'example',
+				'baz'
+			] ),
+			property
+		);
+
+		expect( errors ).toEqual( [ { code: 'unique' } ] );
+	} );
+
+	it( 'returns no uniqueness errors for multiple distinct texts', () => {
+		const property = newTextProperty( {
+			uniqueItems: true
+		} );
+
+		const errors = textFormat.validate(
+			newStringValue( [ 'text1', 'text2', 'text3' ] ),
+			property
+		);
+
+		expect( errors ).toEqual( [] );
+	} );
+} );

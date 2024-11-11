@@ -2,7 +2,7 @@ import { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import type { Value } from '@neo/domain/Value';
 import { ValueType } from '@neo/domain/Value';
 
-export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Value> {
+export abstract class BaseValueFormat<P extends PropertyDefinition, V extends Value> {
 
 	public static readonly valueType: ValueType;
 
@@ -16,9 +16,31 @@ export abstract class BaseValueFormat<T extends PropertyDefinition, V extends Va
 		return ( this.constructor as typeof BaseValueFormat ).valueType;
 	}
 
-	public abstract createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): T;
+	public abstract createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): P;
 
-	public abstract getExampleValue( property: T ): V;
+	public abstract getExampleValue( property: P ): V;
+
+	// TODO: do we need to allow undefined for value?
+	public abstract validate( value: V | undefined, property: P ): ValueValidationError[];
+
+}
+
+export interface ValueValidationError {
+
+	/**
+	 * Can be used to construct a message key for i18n by prefixing it with 'neowiki-field-'
+	 */
+	code: string;
+
+	/**
+	 * Arguments for the message
+	 */
+	args?: unknown[];
+
+	/**
+	 * The source/cause of the error
+	 */
+	source?: unknown;
 
 }
 

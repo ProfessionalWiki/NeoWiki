@@ -1,7 +1,7 @@
 import type { MultiStringProperty, PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@neo/domain/Value';
-import { BaseValueFormat } from '@neo/domain/ValueFormat';
+import { BaseValueFormat, ValueValidationError } from '@neo/domain/ValueFormat';
 
 export interface TextProperty extends MultiStringProperty {
 
@@ -26,6 +26,42 @@ export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
 			multiple: json.multiple ?? false,
 			uniqueItems: json.uniqueItems ?? true
 		} as TextProperty;
+	}
+
+	public validate( value: StringValue | undefined, property: TextProperty ): ValueValidationError[] {
+		const errors: ValueValidationError[] = [];
+		value = value === undefined ? newStringValue() : value;
+
+		if ( property.required && value.strings.length === 0 ) {
+			errors.push( { code: 'required' } );
+			return errors;
+		}
+
+		// TODO: check property.multiple
+
+		for ( const part of value.strings ) {
+			if ( property.minLength !== undefined && part.trim().length < property.minLength ) {
+				errors.push( {
+					code: 'min-length',
+					args: [ property.minLength ],
+					source: part
+				} );
+			}
+
+			if ( property.maxLength !== undefined && part.trim().length > property.maxLength ) {
+				errors.push( {
+					code: 'max-length',
+					args: [ property.maxLength ],
+					source: part
+				} );
+			}
+		}
+
+		if ( property.uniqueItems && new Set( value.strings ).size !== value.strings.length ) {
+			errors.push( { code: 'unique' } );  // TODO: add source
+		}
+
+		return errors;
 	}
 
 }
