@@ -10,6 +10,10 @@ export class SubjectValidator {
 	) {}
 
 	public validate( subject: Subject, schema: Schema ): boolean {
+		if ( subject.getLabel().trim() === '' ) {
+			return false;
+		}
+
 		for ( const statement of subject.getStatements() ) {
 			if ( !this.statementIsValid( statement, schema ) ) {
 				return false;
