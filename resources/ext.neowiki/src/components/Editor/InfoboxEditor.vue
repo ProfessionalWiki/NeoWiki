@@ -6,6 +6,17 @@
 		:title="$i18n( 'neowiki-infobox-editor-dialog-title' ).text()"
 		class="infobox-editor"
 	>
+		<DeleteDialog
+			v-if="props.subject !== undefined"
+			class="delete-subject-dialog"
+			:is-open="isDeleteDialogOpen"
+			@delete="deleteSubject( props.subject.getId() )"
+			@close="isDeleteDialogOpen = false"
+		>
+			<!-- eslint-disable-next-line vue/no-v-html -->
+			<p v-html="$i18n( 'neowiki-infobox-editor-delete-subject-confirmation-message', props.subject.getLabel() ).text()" />
+		</DeleteDialog>
+
 		<NeoTextField
 			:model-value="localSubject.getLabel()"
 			:required="true"
@@ -77,10 +88,21 @@
 		/>
 		<template #footer>
 			<CdxButton
+				v-if="props.subject === undefined"
 				:aria-label="$i18n( 'neowiki-create-subject-dialog-go-back' ).text()"
 				weight="quiet"
 				@click="goBack">
 				<CdxIcon :icon="cdxIconArrowPrevious" />
+			</CdxButton>
+			<CdxButton
+				v-else
+				test-id="delete-subject-button"
+				action="destructive"
+				weight="quiet"
+				@click="isDeleteDialogOpen = true"
+			>
+				<CdxIcon :icon="cdxIconTrash" />
+				{{ $i18n( 'neowiki-infobox-editor-delete-subject' ).text() }}
 			</CdxButton>
 
 			<CdxButton
@@ -98,7 +120,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
 import { CdxButton, CdxDialog, CdxIcon, useResizeObserver } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconArrowPrevious } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconArrowPrevious, cdxIconTrash } from '@wikimedia/codex-icons';
 import NeoTextField from '@/components/NeoTextField.vue';
 import StatementEditor from '@/components/Editor/StatementEditor.vue';
 import { Subject } from '@neo/domain/Subject.ts';
@@ -109,6 +131,7 @@ import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { StatementList } from '@neo/domain/StatementList.ts';
 import { Statement } from '@neo/domain/Statement';
 import NeoTypeSelectDropdown from '@/components/Editor/NeoTypeSelectDropdown.vue';
+import DeleteDialog from '@/components/Editor/DeleteDialog.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import PropertyDefinitionEditor from '@/components/Editor/PropertyDefinitionEditor.vue';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
@@ -125,6 +148,7 @@ const props = defineProps<{
 
 const emit = defineEmits( [ 'save', 'back' ] );
 const isOpen = ref( false );
+const isDeleteDialogOpen = ref( false );
 const localSubject = ref<Subject | null>( null );
 const localSchema = ref<Schema | null>( null );
 const statements = ref<Statement[]>( [] );
@@ -366,6 +390,16 @@ const submit = async (): Promise<void> => {
 
 	emit( 'save', localSubject.value );
 	isOpen.value = false;
+};
+
+const deleteSubject = async ( subjectId: SubjectId ): Promise<void> => {
+	try {
+		await subjectStore.deleteSubject( subjectId );
+		isOpen.value = false;
+		emit( 'save', null );
+	} catch ( e ) {
+		console.error( e );
+	}
 };
 
 const updateSubjectLabel = ( label: string ): void => {

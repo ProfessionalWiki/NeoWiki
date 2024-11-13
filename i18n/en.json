@@ -29,6 +29,8 @@
 
 	"neowiki-infobox-editor-dialog-title": "Manage Infobox",
 	"neowiki-infobox-editor-subject-label": "Subject label",
+	"neowiki-infobox-editor-delete-subject": "Delete subject",
+	"neowiki-infobox-editor-delete-subject-confirmation-message": "Are you sure you want to delete <strong>$1</strong>?",
 	"neowiki-infobox-editor-schema-label": "Schema",
 	"neowiki-infobox-editor-property-label": "Property",
 	"neowiki-infobox-editor-add-property": "Add Property",
