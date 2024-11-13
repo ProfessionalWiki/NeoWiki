@@ -1,5 +1,5 @@
 <template>
-	<div class="auto-infobox">
+	<div v-if="subjectRef !== null" class="auto-infobox">
 		<div class="auto-infobox__header">
 			<h2 class="auto-infobox__title">
 				{{ subjectRef.getLabel() }}
