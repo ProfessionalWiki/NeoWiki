@@ -5,6 +5,7 @@
 			v-for="( url, index ) in inputValues"
 			:key="index"
 			class="url-input-wrapper"
+			:class="validationState.statuses[index] === 'error' ? 'field-has-error' : ''"
 		>
 			<CdxField
 				:status="validationState.statuses[index]"
