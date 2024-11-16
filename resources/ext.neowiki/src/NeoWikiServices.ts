@@ -6,7 +6,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SubjectValidator } from '@neo/domain/SubjectValidator.ts';
 import { ValueFormatRegistry } from '@neo/domain/ValueFormat.ts';
 
-export enum Service {
+export enum Service { // TODO: make private
 	ComponentRegistry = 'ComponentRegistry',
 	SchemaAuthorizer = 'SchemaAuthorizer',
 	SubjectAuthorizer = 'SubjectAuthorizer',
@@ -17,11 +17,21 @@ export enum Service {
 export class NeoWikiServices {
 
 	public static registerServices( app: App ): void {
-		app.provide( Service.ComponentRegistry, NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry() );
-		app.provide( Service.SchemaAuthorizer, NeoWikiExtension.getInstance().newSchemaAuthorizer() );
-		app.provide( Service.SubjectAuthorizer, NeoWikiExtension.getInstance().newSubjectAuthorizer() );
-		app.provide( Service.SubjectValidator, NeoWikiExtension.getInstance().newSubjectValidator() );
-		app.provide( Service.ValueFormatRegistry, NeoWikiExtension.getInstance().getValueFormatRegistry() );
+		Object.entries( NeoWikiServices.getServices() ).forEach( ( [ key, service ] ) => {
+			app.provide( key, service );
+		} );
+	}
+
+	public static getServices(): Record<string, unknown> {
+		const neoWiki = NeoWikiExtension.getInstance();
+
+		return {
+			[ Service.ComponentRegistry ]: neoWiki.getFormatSpecificComponentRegistry(),
+			[ Service.SchemaAuthorizer ]: neoWiki.newSchemaAuthorizer(),
+			[ Service.SubjectAuthorizer ]: neoWiki.newSubjectAuthorizer(),
+			[ Service.SubjectValidator ]: neoWiki.newSubjectValidator(),
+			[ Service.ValueFormatRegistry ]: neoWiki.getValueFormatRegistry()
+		};
 	}
 
 	public static getComponentRegistry(): FormatSpecificComponentRegistry {

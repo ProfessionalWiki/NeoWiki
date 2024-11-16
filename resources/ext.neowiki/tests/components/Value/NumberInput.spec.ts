@@ -5,8 +5,7 @@ import { newNumberValue } from '@neo/domain/Value';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { newNumberProperty, NumberProperty } from '@neo/domain/valueFormats/Number';
 import { ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { Service } from '@/NeoWikiServices.ts';
-import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 describe( 'NumberInput', () => {
 	beforeEach( () => {
@@ -27,9 +26,7 @@ describe( 'NumberInput', () => {
 				...props
 			},
 			global: {
-				provide: {
-					[ Service.ValueFormatRegistry ]: NeoWikiExtension.getInstance().getValueFormatRegistry()
-				}
+				provide: NeoWikiServices.getServices()
 			}
 		} );
 	}
