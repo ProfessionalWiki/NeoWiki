@@ -5,8 +5,7 @@ import { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { CdxDialog, CdxSelect } from '@wikimedia/codex';
 import NeoTextField from '@/components/NeoTextField.vue';
 import { newTextProperty } from '@neo/domain/valueFormats/Text';
-import { Service } from '@/NeoWikiServices';
-import { NeoWikiExtension } from '@/NeoWikiExtension';
+import { NeoWikiServices } from '@/NeoWikiServices';
 import { newNumberProperty } from '@neo/domain/valueFormats/Number.ts';
 
 type PropertyDefinitionEditorProps = {
@@ -14,10 +13,6 @@ type PropertyDefinitionEditorProps = {
 	isOpen: boolean;
 	editMode: boolean;
 };
-
-const $i18n = vi.fn().mockImplementation( ( key ) => ( {
-	text: () => key
-} ) );
 
 describe( 'PropertyDefinitionEditor', () => {
 	beforeEach( () => {
@@ -38,12 +33,11 @@ describe( 'PropertyDefinitionEditor', () => {
 		},
 		global: {
 			mocks: {
-				$i18n
+				$i18n: vi.fn().mockImplementation( ( key ) => ( {
+					text: () => key
+				} ) )
 			},
-			provide: {
-				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry(),
-				[ Service.ValueFormatRegistry ]: NeoWikiExtension.getInstance().getValueFormatRegistry()
-			}
+			provide: NeoWikiServices.getServices()
 		}
 	} );
 
