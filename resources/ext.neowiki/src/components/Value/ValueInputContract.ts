@@ -10,12 +10,12 @@ export interface ValueInputProps<T extends PropertyDefinition> {
 
 export type ValueInputEmits = {
 	'update:modelValue': [Value | undefined];
-	'validation': [boolean];
+	'validation': [boolean]; // TODO: remove
 };
 
 export type ValueInputEmitFunction = {
 	( event: 'update:modelValue', value: Value ): void;
-	( event: 'validation', valid: boolean ): void;
+	( event: 'validation', valid: boolean ): void; // TODO: remove
 };
 
 export interface ValidationState {
