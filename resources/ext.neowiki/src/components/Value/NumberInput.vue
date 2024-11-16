@@ -1,7 +1,7 @@
 <template>
 	<CdxField
-		:status="validationStatus"
-		:messages="validationMessages"
+		:status="validationError ? 'error' : 'default'"
+		:messages="validationError ? { error: validationError } : {}"
 		:required="property.required"
 	>
 		<template #label>
@@ -17,10 +17,11 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { CdxField, CdxTextInput, ValidationStatusType } from '@wikimedia/codex';
+import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
 import { NumberProperty } from '@neo/domain/valueFormats/Number.ts';
-import { ValidationMessages, ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
+import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<NumberProperty>>(),
@@ -31,8 +32,7 @@ const props = withDefaults(
 );
 const emit = defineEmits<ValueInputEmits>();
 
-const validationStatus = ref<ValidationStatusType>( 'default' );
-const validationMessages = ref<ValidationMessages>( {} );
+const validationError = ref<string | null>( null );
 
 const inputValue = computed( () => {
 	if ( props.modelValue.type === ValueType.Number ) {
@@ -41,38 +41,22 @@ const inputValue = computed( () => {
 	return '';
 } );
 
-const onInput = ( newValue: string ): void => {
+const valueFormat = NeoWikiServices.getValueFormatRegistry().getFormat( 'number' );
+
+function onInput( newValue: string ): void {
 	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );
-
 	emit( 'update:modelValue', value );
-	updateValidationStatus( validate( value ) );
-};
+	validate( value );
+}
 
-const validate = ( value: NumberValue | undefined ): ValidationMessages => {
-	const messages: ValidationMessages = {};
-
-	if ( props.property.required && value === undefined ) {
-		messages.error = mw.message( 'neowiki-field-required' ).text();
-	} else if ( value !== undefined ) {
-		if ( props.property.minimum !== undefined && value.number < props.property.minimum ) {
-			messages.error = mw.message( 'neowiki-field-min-value', props.property.minimum ).text();
-		}
-		if ( props.property.maximum !== undefined && value.number > props.property.maximum ) {
-			messages.error = mw.message( 'neowiki-field-max-value', props.property.maximum ).text();
-		}
-	}
-
-	return messages;
-};
-
-const updateValidationStatus = ( messages: ValidationMessages ): void => {
-	validationMessages.value = messages;
-	validationStatus.value = Object.keys( messages ).length > 0 ? 'error' : 'default';
-
-	emit( 'validation', Object.keys( messages ).length === 0 );
-};
+function validate( value: NumberValue | undefined ): void {
+	const errors = valueFormat.validate( value, props.property );
+	validationError.value = errors.length === 0 ? null :
+		// eslint-disable-next-line es-x/no-nullish-coalescing-operators
+		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
+}
 
 watch( () => props.property, () => {
-	updateValidationStatus( validate( props.modelValue ? props.modelValue as NumberValue : undefined ) );
+	validate( props.modelValue ? props.modelValue as NumberValue : undefined );
 } );
 </script>

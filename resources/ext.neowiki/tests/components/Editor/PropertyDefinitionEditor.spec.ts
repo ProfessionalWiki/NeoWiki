@@ -41,7 +41,8 @@ describe( 'PropertyDefinitionEditor', () => {
 				$i18n
 			},
 			provide: {
-				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry()
+				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry(),
+				[ Service.ValueFormatRegistry ]: NeoWikiExtension.getInstance().getValueFormatRegistry()
 			}
 		}
 	} );
