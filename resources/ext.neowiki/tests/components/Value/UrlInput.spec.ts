@@ -1,9 +1,10 @@
-import { mount, VueWrapper } from '@vue/test-utils';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { VueWrapper } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import UrlInput from '@/components/Value/UrlInput.vue';
 import { CdxField } from '@wikimedia/codex';
 import { newStringValue, StringValue } from '@neo/domain/Value';
 import { newUrlProperty } from '@neo/domain/valueFormats/Url.ts';
+import { createTestWrapper } from '../../VueTestHelpers.ts';
 
 describe( 'UrlInput', () => {
 	beforeEach( () => {
@@ -17,13 +18,13 @@ describe( 'UrlInput', () => {
 
 	const newStringValueWithUrls = (): StringValue => newStringValue( 'https://example.com', 'https://example2.com' );
 
-	const createWrapper = ( propsData: Partial<InstanceType<typeof UrlInput>['$props']> = {} ): VueWrapper<InstanceType<typeof UrlInput>> => mount( UrlInput, {
-		props: {
+	function createWrapper( props: Partial<InstanceType<typeof UrlInput>['$props']> = {} ): VueWrapper<InstanceType<typeof UrlInput>> {
+		return createTestWrapper( UrlInput, {
 			modelValue: newStringValueWithUrls(),
 			property: newUrlProperty( { multiple: true } ),
-			...propsData
-		}
-	} );
+			...props
+		} );
+	}
 
 	it( 'renders correctly with single URL', () => {
 		const wrapper = createWrapper( {

@@ -1,12 +1,11 @@
-import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PropertyDefinitionEditor from '@/components/Editor/PropertyDefinitionEditor.vue';
 import { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { CdxDialog, CdxSelect } from '@wikimedia/codex';
 import NeoTextField from '@/components/NeoTextField.vue';
 import { newTextProperty } from '@neo/domain/valueFormats/Text';
-import { NeoWikiServices } from '@/NeoWikiServices';
 import { newNumberProperty } from '@neo/domain/valueFormats/Number.ts';
+import { createTestWrapper } from '../../VueTestHelpers.ts';
 
 type PropertyDefinitionEditorProps = {
 	property: PropertyDefinition;
@@ -24,22 +23,14 @@ describe( 'PropertyDefinitionEditor', () => {
 		} );
 	} );
 
-	const createWrapper = ( props: Partial<PropertyDefinitionEditorProps> = {} ): any => mount( PropertyDefinitionEditor, {
-		props: {
+	function createWrapper( props: Partial<PropertyDefinitionEditorProps> = {} ): any {
+		return createTestWrapper( PropertyDefinitionEditor, {
 			property: newTextProperty(),
 			isOpen: true,
 			editMode: false,
 			...props
-		},
-		global: {
-			mocks: {
-				$i18n: vi.fn().mockImplementation( ( key ) => ( {
-					text: () => key
-				} ) )
-			},
-			provide: NeoWikiServices.getServices()
-		}
-	} );
+		} );
+	}
 
 	it( 'renders correctly when a property is provided', () => {
 		const wrapper = createWrapper();
