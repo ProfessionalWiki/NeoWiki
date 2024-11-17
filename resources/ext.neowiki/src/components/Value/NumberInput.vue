@@ -1,7 +1,7 @@
 <template>
 	<CdxField
-		:status="validationError ? 'error' : 'default'"
-		:messages="validationError ? { error: validationError } : {}"
+		:status="validationError === null ? 'default' : 'error'"
+		:messages="validationError === null ? {} : { error: validationError }"
 		:required="property.required"
 	>
 		<template #label>
