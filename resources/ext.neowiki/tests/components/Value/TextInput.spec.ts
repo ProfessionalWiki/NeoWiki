@@ -1,9 +1,10 @@
-import { mount, VueWrapper } from '@vue/test-utils';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { VueWrapper } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TextInput from '@/components/Value/TextInput.vue';
 import { CdxField, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { newStringValue } from '@neo/domain/Value';
 import { newTextProperty } from '@neo/domain/valueFormats/Text';
+import { createTestWrapper } from '../../VueTestHelpers.ts';
 
 describe( 'TextInput', () => {
 	beforeEach( () => {
@@ -15,14 +16,14 @@ describe( 'TextInput', () => {
 		} );
 	} );
 
-	const createWrapper = ( propsData: Partial<InstanceType<typeof TextInput>['$props']> = {} ): VueWrapper<InstanceType<typeof TextInput>> => mount( TextInput, {
-		props: {
+	function createWrapper( props: Partial<InstanceType<typeof TextInput>['$props']> = {} ): VueWrapper<InstanceType<typeof TextInput>> {
+		return createTestWrapper( TextInput, {
 			modelValue: newStringValue( 'Test' ),
 			label: 'Test Label',
 			property: newTextProperty( { multiple: true } ),
-			...propsData
-		}
-	} );
+			...props
+		} );
+	}
 
 	const assertFieldStatus = (
 		field: VueWrapper<InstanceType<typeof CdxField>>,

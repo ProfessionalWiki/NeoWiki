@@ -1,11 +1,11 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CdxField } from '@wikimedia/codex';
 import { newNumberValue } from '@neo/domain/Value';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { newNumberProperty, NumberProperty } from '@neo/domain/valueFormats/Number';
 import { ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { createTestWrapper } from '../../VueTestHelpers.ts';
 
 describe( 'NumberInput', () => {
 	beforeEach( () => {
@@ -18,16 +18,11 @@ describe( 'NumberInput', () => {
 	} );
 
 	function newWrapper( props: Partial<ValueInputProps<NumberProperty>> = {} ): VueWrapper {
-		return mount( NumberInput, {
-			props: {
-				modelValue: newNumberValue( 10 ),
-				label: 'Test Label',
-				property: newNumberProperty( {} ),
-				...props
-			},
-			global: {
-				provide: NeoWikiServices.getServices()
-			}
+		return createTestWrapper( NumberInput, {
+			modelValue: newNumberValue( 10 ),
+			label: 'Test Label',
+			property: newNumberProperty( {} ),
+			...props
 		} );
 	}
 
