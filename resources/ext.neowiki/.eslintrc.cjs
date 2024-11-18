@@ -72,6 +72,8 @@ module.exports = {
 		'jsdoc/require-param': 'off',
 		'jsdoc/require-returns': 'off',
 		'no-new': 'off',
+		'implicit-arrow-linebreak': 'off',
+		'es-x/no-nullish-coalescing-operators': 'off',
 		'es-x/no-optional-catch-binding': 'off'
 	},
 	overrides: [

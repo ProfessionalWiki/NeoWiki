@@ -52,7 +52,6 @@ function onInput( newValue: string ): void {
 function validate( value: NumberValue | undefined ): void {
 	const errors = valueFormat.validate( value, props.property );
 	validationError.value = errors.length === 0 ? null :
-		// eslint-disable-next-line es-x/no-nullish-coalescing-operators
 		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
 }
 

@@ -1,27 +1,22 @@
-import { mount, VueWrapper } from '@vue/test-utils';
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { VueWrapper } from '@vue/test-utils';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import InfoboxEditor from '@/components/Editor/InfoboxEditor.vue';
 import DeleteDialog from '@/components/Editor/DeleteDialog.vue';
 import { Subject } from '@neo/domain/Subject';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { StatementList } from '@neo/domain/StatementList';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
-import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { Schema, SchemaName } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition';
-import { setActivePinia, createPinia } from 'pinia';
+import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore';
-import { Service } from '@/NeoWikiServices';
+import { createTestWrapper } from '../../VueTestHelpers.ts';
 
 vi.mock( '@/stores/SubjectStore', () => ( {
 	useSubjectStore: () => ( {
 		deleteSubject: vi.fn().mockImplementation( () => Promise.resolve() )
 	} )
-} ) );
-
-const $i18n = vi.fn().mockImplementation( ( key ) => ( {
-	text: () => key
 } ) );
 
 describe( 'InfoboxEditor - Delete Subject', () => {
@@ -45,21 +40,10 @@ describe( 'InfoboxEditor - Delete Subject', () => {
 	);
 
 	const mountComponent = async ( subject?: Subject ): Promise<VueWrapper> => {
-		const wrapper = mount( InfoboxEditor, {
-			props: {
-				subject: subject,
-				canEditSchema: false,
-				selectedSchema: 'TestSchema'
-			},
-			global: {
-				mocks: {
-					$i18n
-				},
-				provide: {
-					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry(),
-					[ Service.SubjectValidator ]: NeoWikiExtension.getInstance().newSubjectValidator()
-				}
-			}
+		const wrapper = createTestWrapper( InfoboxEditor, {
+			subject: subject,
+			canEditSchema: false,
+			selectedSchema: 'TestSchema'
 		} );
 
 		await wrapper.vm.openDialog();
