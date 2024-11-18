@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { CdxField, CdxTextInput, CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconTrash, cdxIconAdd } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, Value, ValueType } from '@neo/domain/Value';
@@ -136,6 +136,19 @@ function addValue(): void {
 	inputValues.value.push( '' );
 	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
 	validate();
+
+	nextTick( () => {
+		focusLastInput();
+	} );
+}
+
+function focusLastInput(): void {
+	focusInput( `${ inputValues.value.length - 1 }-${ props.property.name }-${ props.inputType }-input` );
+}
+
+function focusInput( inputRef: string ): void {
+	const input = document.querySelector( `[input-ref="${ inputRef }"]` ) as HTMLInputElement | null;
+	input?.focus();
 }
 
 function removeValue( index: number ): void {
