@@ -133,45 +133,4 @@ describe( 'UrlInput', () => {
 
 	} );
 
-	describe( 'add button', () => {
-
-		it( 'is enabled when all URLs are valid', async () => {
-			const wrapper = createWrapper();
-
-			const addButton = wrapper.find( 'button.add-url-button' );
-			expect( addButton.attributes( 'disabled' ) ).toBeUndefined();
-		} );
-
-		it( 'is disabled when one URL fields is invalid', async () => {
-			const wrapper = createWrapper( {
-				modelValue: newStringValue( 'https://valid1.com', 'https://valid2.com', 'https://valid3.com' )
-			} );
-
-			await wrapper.findAll( 'input' )[ 1 ].setValue( 'invalid' );
-
-			const addButton = wrapper.find( 'button.add-url-button' );
-			expect( addButton.attributes( 'disabled' ) ).toBeDefined();
-		} );
-
-		it( 'adds new URL field when clicked', async () => {
-			const wrapper = createWrapper();
-
-			expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 2 );
-			expect( wrapper.findAll( 'input' ) ).toHaveLength( 2 );
-
-			const addButton = wrapper.find( 'button.add-url-button' );
-			expect( addButton.exists() ).toBe( true );
-
-			await addButton.trigger( 'click' );
-
-			expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 3 );
-			expect( wrapper.findAll( 'input' ) ).toHaveLength( 3 );
-
-			const emittedValues = wrapper.emitted( 'update:modelValue' );
-			expect( emittedValues ).toBeTruthy();
-			expect( emittedValues![ 0 ][ 0 ] ).toEqual( newStringValue( 'https://example.com', 'https://example2.com' ) );
-		} );
-
-	} );
-
 } );

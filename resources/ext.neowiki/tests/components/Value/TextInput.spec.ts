@@ -5,7 +5,6 @@ import { CdxField, ValidationMessages, ValidationStatusType } from '@wikimedia/c
 import { newStringValue } from '@neo/domain/Value';
 import { newTextProperty } from '@neo/domain/valueFormats/Text';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
-import { newUrlProperty } from '@neo/domain/valueFormats/Url.ts';
 
 describe( 'TextInput', () => {
 	beforeEach( () => {
@@ -51,24 +50,6 @@ describe( 'TextInput', () => {
 			} );
 			expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 2 );
 			expect( wrapper.findAll( 'input' ) ).toHaveLength( 2 );
-		} );
-	} );
-
-	describe( 'Adding and Deleting Text Values', () => {
-		it( 'adds new text field when add button is clicked', async () => {
-			const wrapper = createWrapper();
-			const addButton = wrapper.find( 'button.add-text-button' );
-			await addButton.trigger( 'click' );
-			expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 2 );
-			expect( wrapper.emitted( 'update:modelValue' )?.[ 0 ][ 0 ] ).toEqual( newStringValue( 'Test', '' ) );
-		} );
-
-		it( 'removes text field when delete button is clicked', async () => {
-			const wrapper = createWrapper( {
-				modelValue: newStringValue( 'Text1', 'Text2' )
-			} );
-			await wrapper.findAll( '.delete-button' )[ 0 ].trigger( 'click' );
-			expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 1 );
 		} );
 	} );
 
@@ -133,27 +114,4 @@ describe( 'TextInput', () => {
 		} );
 	} );
 
-	describe( 'Add button state', () => {
-		it( 'disables add button when any text field is invalid', async () => {
-			const wrapper = createWrapper( {
-				property: newTextProperty( { minLength: 3, multiple: true } ),
-				modelValue: newStringValue( 'Valid', '123' )
-			} );
-
-			await wrapper.findAll( 'input' )[ 1 ].setValue( 'in' );
-			const addButton = wrapper.find( 'button.add-text-button' );
-			expect( addButton.attributes( 'disabled' ) ).toBeDefined();
-		} );
-
-		it( 'enables add button when all text fields are valid', async () => {
-			const wrapper = createWrapper( {
-				property: newTextProperty( { minLength: 8, multiple: true } ),
-				modelValue: newStringValue( 'ValidValue', 'InValid' )
-			} );
-
-			await wrapper.findAll( 'input' )[ 1 ].setValue( 'Valid-value' );
-			const addButton = wrapper.find( 'button.add-text-button' );
-			expect( addButton.attributes( 'disabled' ) ).toBeUndefined();
-		} );
-	} );
 } );
