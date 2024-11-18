@@ -117,17 +117,18 @@ describe( 'UrlInput', () => {
 			assertFieldIsValid( fields[ 2 ] );
 		} );
 
-		it( 'emits validation for multiple fields', async () => {
-			const wrapper = createWrapper();
+		it( 'shows error on duplicate URLs when uniqueness is required', async () => {
+			const wrapper = createWrapper( {
+				property: newUrlProperty( { multiple: true, uniqueItems: true } ),
+				modelValue: newStringValue( 'https://valid1.com', 'https://valid2.com' )
+			} );
 
-			await wrapper.vm.onInput( 'https://valid-url.com', 1 );
+			await wrapper.findAll( 'input' )[ 1 ].setValue( 'https://valid1.com' );
 
-			expect( wrapper.vm.validationState.messages[ 1 ] ).toEqual( {} );
-			expect( wrapper.vm.validationState.statuses[ 1 ] ).toEqual( 'success' );
-
-			await wrapper.vm.onInput( 'invalid-url', 1 );
-			expect( wrapper.vm.validationState.messages[ 1 ].error ).toEqual( 'neowiki-field-invalid-url' );
-			expect( wrapper.vm.validationState.statuses[ 1 ] ).toEqual( 'error' );
+			const fields = wrapper.findAllComponents( CdxField );
+			assertFieldIsValid( fields[ 0 ] );
+			expect( fields[ 1 ].props( 'status' ) ).toBe( 'error' );
+			expect( fields[ 1 ].props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-unique' );
 		} );
 
 	} );

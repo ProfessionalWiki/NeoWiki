@@ -5,6 +5,7 @@ import { CdxField, ValidationMessages, ValidationStatusType } from '@wikimedia/c
 import { newStringValue } from '@neo/domain/Value';
 import { newTextProperty } from '@neo/domain/valueFormats/Text';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
+import { newUrlProperty } from '@neo/domain/valueFormats/Url.ts';
 
 describe( 'TextInput', () => {
 	beforeEach( () => {
@@ -106,19 +107,6 @@ describe( 'TextInput', () => {
 			assertFieldStatus( fields[ 1 ], 'error', { error: 'neowiki-field-max-length' } );
 		} );
 
-		it( 'emits validation events for field changes', async () => {
-			const wrapper = createWrapper( {
-				property: newTextProperty( { minLength: 3 } ),
-				modelValue: newStringValue( 'Text1', '' )
-			} );
-
-			await wrapper.vm.onInput( 'Valid', 1 );
-			expect( wrapper.emitted( 'validation' )?.[ 0 ] ).toEqual( [ true ] );
-
-			await wrapper.vm.onInput( '12', 1 );
-			expect( wrapper.emitted( 'validation' )?.[ 1 ] ).toEqual( [ false ] );
-		} );
-
 		it( 'allows empty input for optional single field', async () => {
 			const wrapper = createWrapper( {
 				property: newTextProperty( { required: false } ),
@@ -129,6 +117,19 @@ describe( 'TextInput', () => {
 
 			const fields = wrapper.findAllComponents( CdxField );
 			assertFieldStatus( fields[ 0 ], 'success' );
+		} );
+
+		it( 'shows error on duplicate when uniqueness is required', async () => {
+			const wrapper = createWrapper( {
+				property: newTextProperty( { multiple: true, uniqueItems: true } ),
+				modelValue: newStringValue( 'Text1', 'Text2', 'Text3' )
+			} );
+
+			await wrapper.findAll( 'input' )[ 0 ].setValue( 'Text2' );
+
+			const fields = wrapper.findAllComponents( CdxField );
+			expect( fields[ 1 ].props( 'status' ) ).toBe( 'error' );
+			expect( fields[ 1 ].props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-unique' );
 		} );
 	} );
 

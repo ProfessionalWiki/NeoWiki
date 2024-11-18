@@ -5,17 +5,15 @@
 			v-for="( text, index ) in inputValues"
 			:key="index"
 			class="text-input-wrapper"
-			:class="validationState.statuses[index] === 'error' ? 'field-has-error' : ''"
 		>
 			<CdxField
-				:status="validationState.statuses[index]"
-				:messages="validationState.messages[index]"
+				:status="errors[index] === null ? 'success' : 'error'"
+				:messages="errors[index] === null ? {} : { error: errors[index] }"
 			>
 				<CdxTextInput
 					:model-value="text"
 					:input-ref="`${index}-${property.name.toString()}-text-input`"
 					input-type="text"
-					:status="validationState.statuses[index]"
 					@update:model-value="value => onInput( value, index )"
 				/>
 			</CdxField>
@@ -24,7 +22,7 @@
 				weight="quiet"
 				aria-hidden="false"
 				class="delete-button"
-				@click="removeText( index )"
+				@click="() => removeValue( index )"
 			>
 				<CdxIcon :icon="cdxIconTrash" />
 			</CdxButton>
@@ -34,9 +32,9 @@
 			weight="quiet"
 			aria-hidden="false"
 			class="add-text-button"
-			:class="{ 'add-btn-disabled': isAddButtonDisabled }"
-			:disabled="isAddButtonDisabled"
-			@click="addText"
+			:disabled="hasInvalidField"
+			:class="{ 'add-btn-disabled': hasInvalidField }"
+			@click="addValue"
 		>
 			<CdxIcon :icon="cdxIconAdd" />
 		</CdxButton>
@@ -44,17 +42,13 @@
 </template>
 
 <script setup lang="ts">
-import { CdxField, CdxTextInput, CdxButton, CdxIcon, ValidationStatusType } from '@wikimedia/codex';
+import { computed, ref, watch } from 'vue';
+import { CdxField, CdxTextInput, CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconTrash, cdxIconAdd } from '@wikimedia/codex-icons';
-import { newStringValue } from '@neo/domain/Value';
+import { newStringValue, StringValue, Value, ValueType } from '@neo/domain/Value';
 import { TextProperty } from '@neo/domain/valueFormats/Text.ts';
-import { useMultiStringInput } from '@/composables/useMultiStringInput';
-import {
-	ValidationMessages,
-	ValidationState,
-	ValueInputEmits,
-	ValueInputProps
-} from '@/components/Value/ValueInputContract';
+import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<TextProperty>>(),
@@ -66,69 +60,82 @@ const props = withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
-const {
-	inputValues,
-	uniquenessRequirementIsMet,
-	validationState,
-	isAddButtonDisabled,
-	isRequiredFieldInValid,
-	handleInput,
-	handleAdd,
-	handleRemove
-} = useMultiStringInput( props, emit );
-
-const getErrorMessage = ( value: string ): ValidationMessages => {
-	const isEmpty: boolean = value.trim() === '';
-	const errors = [
-		{
-			condition: !isEmpty && props.property.minLength && value.trim().length < props.property.minLength,
-			message: mw.message( 'neowiki-field-min-length', props.property.minLength ).text()
-		},
-		{
-			condition: props.property.maxLength && value.trim().length > props.property.maxLength,
-			message: mw.message( 'neowiki-field-max-length', props.property.maxLength ).text()
-		}
-	];
-
-	const error = errors.find( ( check ) => check.condition );
-	return error !== undefined ? { error: error.message } : {};
+const buildInitialInputValues = ( value: Value ): string[] => {
+	if ( value.type === ValueType.String ) {
+		const strings = ( value as StringValue ).strings;
+		return strings.length > 0 ? strings : [ '' ];
+	}
+	return [ '' ];
 };
 
-const validateFields = ( fieldValues: string[] ): ValidationState => {
-	const validation: ValidationState = { isValid: true, statuses: [], messages: [] };
+const inputValues = ref<string[]>( buildInitialInputValues( props.modelValue ) );
+const errors = ref<( string | null )[]>( inputValues.value.map( () => null ) );
 
-	fieldValues.forEach( ( value: string, index: number ) => {
-		let messages: ValidationMessages = getErrorMessage( value );
+const hasInvalidField = computed( () =>
+	inputValues.value.some( ( value ) => value.trim() === '' ) || errors.value.some( ( error ) => error !== null )
+);
 
-		if ( isRequiredFieldInValid.value && index === 0 ) {
-			messages = { error: mw.message( 'neowiki-field-required' ).text() };
-		} else {
-			// TODO: error should be shown on the field that caused error
-			if ( !uniquenessRequirementIsMet() && index === fieldValues.length - 1 ) {
-				messages = { error: mw.message( 'neowiki-field-unique' ).text() };
+const valueFormat = NeoWikiServices.getValueFormatRegistry().getFormat( 'text' );
+
+function validate(): void {
+	// First validate the whole array
+	const allValues = newStringValue( ...inputValues.value );
+	const allErrors = valueFormat.validate( allValues, props.property );
+	const hasValidValue = allErrors.length === 0;
+
+	// Reset all errors
+	errors.value = inputValues.value.map( () => null );
+
+	// If we have uniqueness errors, show them on the duplicates
+	if ( allErrors.some( ( error ) => error.code === 'unique' ) ) {
+		const seen = new Set<string>();
+		inputValues.value.forEach( ( url, index ) => {
+			const trimmed = url.trim();
+			if ( trimmed !== '' && seen.has( trimmed ) ) {
+				errors.value[ index ] = mw.message( 'neowiki-field-unique' ).text();
 			}
+			seen.add( trimmed );
+		} );
+		return;
+	}
+
+	// Then validate individual fields, but ignore empty fields if we have valid values
+	inputValues.value.forEach( ( url, index ) => {
+		if ( hasValidValue && url.trim() === '' ) {
+			return;
 		}
 
-		const status: ValidationStatusType = 'error' in messages ? 'error' : 'success';
-		validation.statuses.push( status );
-		validation.messages.push( messages );
-		validation.isValid = validation.isValid && status !== 'error';
+		const value = newStringValue( url );
+		const validationErrors = valueFormat.validate( value, props.property );
+
+		if ( validationErrors.length > 0 ) {
+			errors.value[ index ] = mw.message(
+				`neowiki-field-${ validationErrors[ 0 ].code }`,
+				...( validationErrors[ 0 ].args ?? [] )
+			).text();
+		}
 	} );
+}
 
-	return validation;
-};
+function onInput( value: string, index: number ): void {
+	inputValues.value[ index ] = value;
+	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
+	validate();
+}
 
-const onInput = ( value: string, index: number ): void => handleInput( value, index, validateFields );
-const addText = (): Promise<void> => handleAdd( 'text' );
-const removeText = ( index: number ): void => handleRemove( index, validateFields );
+function addValue(): void {
+	inputValues.value.push( '' );
+	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
+	validate();
+}
 
-defineExpose( {
-	inputValues,
-	validationState,
-	onInput,
-	addText,
-	removeText
-} );
+function removeValue( index: number ): void {
+	inputValues.value.splice( index, 1 );
+	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
+	validate();
+}
+
+watch( () => props.property, validate );
 </script>
 
 <style lang="scss">
