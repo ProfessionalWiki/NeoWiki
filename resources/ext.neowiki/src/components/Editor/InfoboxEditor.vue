@@ -462,6 +462,7 @@ defineExpose( { openDialog } );
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
+		border-top: $border-subtle;
 	}
 }
 
