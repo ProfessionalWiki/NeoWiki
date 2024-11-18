@@ -14,6 +14,7 @@ module.exports = {
 		sourceType: 'module'
 	},
 	rules: {
+		'func-style': [ 'warn', 'declaration', { allowArrowFunctions: false } ],
 		// These @typescript-eslint rules are disabled because they are replaced by the @stylistic rules.
 		'@typescript-eslint/indent': 'off',
 		'@typescript-eslint/member-delimiter-style': 'off',
