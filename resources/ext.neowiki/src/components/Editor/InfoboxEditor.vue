@@ -106,7 +106,6 @@
 			</CdxButton>
 
 			<CdxButton
-				class="neo-button"
 				action="progressive"
 				weight="primary"
 				:disabled="!canSubmit"
@@ -460,7 +459,6 @@ defineExpose( { openDialog } );
 
 	footer {
 		display: flex;
-		align-items: baseline;
 		justify-content: space-between;
 		border-top: $border-subtle;
 	}
