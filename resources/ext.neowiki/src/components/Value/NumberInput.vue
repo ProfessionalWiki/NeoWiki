@@ -43,11 +43,11 @@ const inputValue = computed( () => {
 
 const valueFormat = NeoWikiServices.getValueFormatRegistry().getFormat( 'number' );
 
-function onInput( newValue: string ): void {
+const onInput = ( newValue: string ): void => { // For lint test, TODO: REMOVE
 	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );
 	emit( 'update:modelValue', value );
 	validate( value );
-}
+};
 
 function validate( value: NumberValue | undefined ): void {
 	const errors = valueFormat.validate( value, props.property );
