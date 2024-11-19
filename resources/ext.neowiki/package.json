@@ -10,7 +10,7 @@
 		"vite:watch": "vite build --watch",
 		"build:watch": "npm-run-all --parallel tsc:watch vite:watch",
 		"lint:code": "eslint . --ext .vue,.ts --ignore-path .gitignore && npm run lint:diff",
-		"lint:diff": "git diff --name-only HEAD | sed 's|resources/ext.neowiki/||' | grep -E '\\.(vue|ts|js)$' | xargs -r eslint --config .eslintrc.diff.cjs",
+		"lint:diff": "git diff --name-only master | sed 's|resources/ext.neowiki/||' | grep -E '\\.(vue|ts|js)$' | xargs -r eslint --config .eslintrc.diff.cjs",
 		"lint:styles": "NODE_NO_WARNINGS=1 stylelint \"src/**/*.{vue,scss}\"",
 		"lint": "npm-run-all lint:code lint:styles",
 		"test": "vitest run",
