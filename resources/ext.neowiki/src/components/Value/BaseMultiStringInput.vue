@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
-import { CdxField, CdxTextInput, CdxButton, CdxIcon } from '@wikimedia/codex';
+import { CdxField, CdxTextInput, CdxButton, CdxIcon, TextInputType } from '@wikimedia/codex';
 import { cdxIconTrash, cdxIconAdd } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, Value, ValueType } from '@neo/domain/Value';
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
@@ -56,7 +56,7 @@ import { MultiStringProperty } from '@neo/domain/PropertyDefinition';
 const props = withDefaults(
 	defineProps<ValueInputProps<MultiStringProperty> & {
 		formatName: string;
-		inputType: 'number' | 'text' | 'search' | 'email' | 'month' | 'password' | 'tel' | 'url' | 'week' | 'date' | 'datetime-local' | 'time';
+		inputType: TextInputType;
 		rootClass: string;
 		startIcon?: string;
 	}>(),
