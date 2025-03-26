@@ -152,6 +152,8 @@ const isDeleteDialogOpen = ref( false );
 const localSubject = ref<Subject | null>( null );
 const localSchema = ref<Schema | null>( null );
 const statements = ref<Statement[]>( [] );
+const initialSubject = ref<Subject | null>( null );
+const initialStatements = ref<Statement[]>( [] );
 const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
@@ -182,6 +184,11 @@ const validator = NeoWikiServices.getSubjectValidator();
 const canSubmit = computed( () => {
 	return localSubject.value !== null &&
 		localSchema.value !== null &&
+		(
+			localSubject.value.getLabel() !== initialSubject.value?.getLabel() ||
+			localSubject.value.getSchemaName() !== initialSubject.value?.getSchemaName() ||
+			JSON.stringify( statements.value ) !== JSON.stringify( initialStatements.value )
+		) &&
 		validator.validate( getCurrentSubject(), localSchema.value as Schema );
 } );
 
@@ -230,6 +237,8 @@ const openDialog = async (): Promise<void> => {
 	} else {
 		throw new Error( 'No subject and no schema' );
 	}
+
+	setupInitialState();
 };
 
 const setupExistingSubject = ( subject: Subject ): void => {
@@ -266,6 +275,11 @@ const setupNewSubject = ( schemaName: string ): void => {
 	);
 	statements.value = [];
 	addMissingStatements();
+};
+
+const setupInitialState = (): void => {
+	initialSubject.value = getCurrentSubject();
+	initialStatements.value = [ ...statements.value ];
 };
 
 const isDropdownOpen = ref( false );
