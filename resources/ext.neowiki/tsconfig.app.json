@@ -24,5 +24,10 @@
 			"@neo/*": ["../../Neo/neojs/src/*"]
 		}
 	},
-	"include": ["src/**/*.ts", "src/**/*.vue", "../../Neo/neojs/src/**/*.ts"]
+	"include": [
+		"./node_modules/types-mediawiki",
+		"src/**/*.ts",
+		"src/**/*.vue",
+		"../../Neo/neojs/src/**/*.ts"
+	]
 }

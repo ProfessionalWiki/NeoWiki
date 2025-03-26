@@ -1,6 +1,12 @@
 {
 	"extends": "./tsconfig.app.json",
-	"include": ["src/**/*.ts", "src/**/*.vue", "../../Neo/neojs/src/**/*.ts", "tests/**/*.ts"],
+	"include": [
+		"./node_modules/types-mediawiki",
+		"src/**/*.ts",
+		"src/**/*.vue",
+		"../../Neo/neojs/src/**/*.ts",
+		"tests/**/*.ts"
+	],
 	"exclude": [],
 	"compilerOptions": {
 		"composite": true,
