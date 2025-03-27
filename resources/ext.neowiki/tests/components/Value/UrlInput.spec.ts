@@ -133,4 +133,31 @@ describe( 'UrlInput', () => {
 
 	} );
 
+	describe( 'Event handling', () => {
+		it( 'emits update:modelValue event when input changes', async () => {
+			const wrapper = createWrapper( {
+				modelValue: newStringValue( 'http://one.com' )
+			} );
+
+			await wrapper.findAll( 'input' )[ 0 ].setValue( 'http://two.com' );
+
+			const emitted = wrapper.emitted( 'update:modelValue' );
+			expect( emitted ).toBeTruthy();
+			expect( emitted![ 0 ][ 0 ] ).toEqual( newStringValue( 'http://two.com' ) );
+		} );
+
+		it( 'handles multiple input changes correctly', async () => {
+			const wrapper = createWrapper( {
+				property: newUrlProperty( { multiple: true } ),
+				modelValue: newStringValue( 'http://one.com', 'http://two.com' )
+			} );
+
+			await wrapper.findAll( 'input' )[ 1 ].setValue( 'http://three.com' );
+
+			const emitted = wrapper.emitted( 'update:modelValue' );
+			expect( emitted ).toBeTruthy();
+			expect( emitted![ 0 ][ 0 ] ).toEqual( newStringValue( 'http://one.com', 'http://three.com' ) );
+		} );
+	} );
+
 } );

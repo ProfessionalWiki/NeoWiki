@@ -114,4 +114,31 @@ describe( 'TextInput', () => {
 		} );
 	} );
 
+	describe( 'Event handling', () => {
+		it( 'emits update:modelValue event when input changes', async () => {
+			const wrapper = createWrapper( {
+				modelValue: newStringValue( 'Initial' )
+			} );
+
+			await wrapper.findAll( 'input' )[ 0 ].setValue( 'New Value' );
+
+			const emitted = wrapper.emitted( 'update:modelValue' );
+			expect( emitted ).toBeTruthy();
+			expect( emitted![ 0 ][ 0 ] ).toEqual( newStringValue( 'New Value' ) );
+		} );
+
+		it( 'handles multiple input changes correctly', async () => {
+			const wrapper = createWrapper( {
+				property: newTextProperty( { multiple: true } ),
+				modelValue: newStringValue( 'Text1', 'Text2' )
+			} );
+
+			await wrapper.findAll( 'input' )[ 1 ].setValue( 'Updated Text2' );
+
+			const emitted = wrapper.emitted( 'update:modelValue' );
+			expect( emitted ).toBeTruthy();
+			expect( emitted![ 0 ][ 0 ] ).toEqual( newStringValue( 'Text1', 'Updated Text2' ) );
+		} );
+	} );
+
 } );
