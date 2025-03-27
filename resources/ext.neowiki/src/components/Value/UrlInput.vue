@@ -5,6 +5,7 @@
 		input-type="url"
 		root-class="neo-url-field"
 		:start-icon="cdxIconLink"
+		@update:model-value="value => onInput( value )"
 	/>
 </template>
 
@@ -12,8 +13,8 @@
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
 import { cdxIconLink } from '@wikimedia/codex-icons';
 import { UrlProperty } from '@neo/domain/valueFormats/Url.ts';
-import { ValueInputProps } from '@/components/Value/ValueInputContract';
-import { newStringValue } from '@neo/domain/Value.ts';
+import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
+import { newStringValue, Value } from '@neo/domain/Value.ts';
 
 withDefaults(
 	defineProps<ValueInputProps<UrlProperty>>(),
@@ -22,6 +23,12 @@ withDefaults(
 		label: ''
 	}
 );
+
+const emit = defineEmits<ValueInputEmits>();
+
+function onInput( value: Value | undefined ): void {
+	emit( 'update:modelValue', value );
+}
 </script>
 
 <style lang="scss">

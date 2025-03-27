@@ -4,14 +4,15 @@
 		format-name="text"
 		input-type="text"
 		root-class="neo-text-field"
+		@update:model-value="value => onInput( value )"
 	/>
 </template>
 
 <script setup lang="ts">
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
 import { TextProperty } from '@neo/domain/valueFormats/Text.ts';
-import { ValueInputProps } from '@/components/Value/ValueInputContract';
-import { newStringValue } from '@neo/domain/Value.ts';
+import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
+import { newStringValue, Value } from '@neo/domain/Value.ts';
 
 withDefaults(
 	defineProps<ValueInputProps<TextProperty>>(),
@@ -20,6 +21,12 @@ withDefaults(
 		label: ''
 	}
 );
+
+const emit = defineEmits<ValueInputEmits>();
+
+function onInput( value: Value | undefined ): void {
+	emit( 'update:modelValue', value );
+}
 </script>
 
 <style lang="scss">
