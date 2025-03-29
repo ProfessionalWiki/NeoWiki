@@ -28,11 +28,17 @@ export class SubjectValidator {
 			return true; // Statements for unknown properties are considered valid
 		}
 
+		const property = schema.getPropertyDefinitions().get( statement.propertyName );
+
+		if ( property.format !== statement.format ) {
+			return false; // Values in the wrong format are considered invalid
+		}
+
 		const errors =
 			this.getValueFormat( statement )
-				.validate(
+				.validate( // TODO: maybe we need to verify the statement value matches the statement format
 					statement.value,
-					schema.getPropertyDefinitions().get( statement.propertyName )
+					property
 				);
 
 		return errors.length === 0;
