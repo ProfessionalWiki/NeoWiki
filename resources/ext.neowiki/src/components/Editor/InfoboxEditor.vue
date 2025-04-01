@@ -328,7 +328,7 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 		new Statement(
 			new PropertyName( savedProperty.name.toString() ),
 			savedProperty.format,
-			statement.value || savedProperty.default as Value
+			savedProperty.default
 		) :
 		statement
 	);
