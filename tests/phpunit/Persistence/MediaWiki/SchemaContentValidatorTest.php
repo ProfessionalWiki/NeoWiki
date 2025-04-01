@@ -104,7 +104,7 @@ JSON
 
 		$this->assertSame(
 			[
-				'/propertyDefinitions/someRelation/format' => 'The data must must match the const value',
+				'/propertyDefinitions/someRelation/format' => 'The data must match the const value',
 				'/propertyDefinitions/someRelation' => 'The required properties (relation, targetSchema) are missing'
 			],
 			$validator->getErrors()
