@@ -41,9 +41,9 @@
 			</CdxButton>
 		</div>
 
-		<InfoboxEditor
+		<SubjectEditor
 			v-if="canEditSubject"
-			ref="infoboxEditorDialog"
+			ref="subjectEditor"
 			:is-edit-mode="true"
 			:subject="subjectRef as Subject"
 			:can-edit-schema="canEditSchema"
@@ -58,7 +58,7 @@ import { Subject } from '@neo/domain/Subject';
 import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
 import { Schema } from '@neo/domain/Schema';
 import { Component } from 'vue';
-import InfoboxEditor from '@/components/Editor/InfoboxEditor.vue';
+import SubjectEditor from '@/components/Editor/SubjectEditor.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { CdxButton } from '@wikimedia/codex';
@@ -80,7 +80,7 @@ const props = defineProps( {
 
 const canEditSchema = ref( false );
 
-const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
+const subjectEditor = ref<typeof SubjectEditor|null>( null );
 const subjectRef = ref( props.subject );
 
 const schemaStore = useSchemaStore();
@@ -109,7 +109,7 @@ const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => 
 } );
 
 const editInfoBox = (): void => {
-	infoboxEditorDialog.value?.openDialog();
+	subjectEditor.value?.openDialog();
 	console.log( props.subject?.getId() );
 };
 
