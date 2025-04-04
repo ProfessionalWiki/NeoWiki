@@ -296,7 +296,7 @@ const editProperty = ( propertyName: PropertyName ): void => {
 	}
 };
 
-const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
+const handlePropertySave = ( newProperty: PropertyDefinition ): void => {
 	if ( editingProperty.value === null || localSchema.value === null ) {
 		console.error( 'No property name found to update' );
 		return;
@@ -307,28 +307,28 @@ const handlePropertySave = ( savedProperty: PropertyDefinition ): void => {
 	const propertyName = editingProperty.value?.name;
 
 	if ( isEditingProperty.value === false ) {
-		handleAddProperty( savedProperty );
+		handleAddProperty( newProperty );
 		isPropertyEditorOpen.value = false;
 		return;
 	}
 
 	const currentProperties = localSchema.value.getPropertyDefinitions();
 
-	const updatedProperties = Array.from( currentProperties ).map( ( prop ) => prop.name.toString() === propertyName.toString() ? savedProperty : prop
+	const updatedProperties = Array.from( currentProperties ).map(
+		( prop ) => prop.name.toString() === propertyName.toString() ? newProperty : prop
 	);
-	const newPropertyList = new PropertyDefinitionList( updatedProperties );
 
 	localSchema.value = new Schema(
 		localSchema.value.getName(),
 		localSchema.value.getDescription(),
-		newPropertyList
+		new PropertyDefinitionList( updatedProperties )
 	);
 
 	statements.value = statements.value.map( ( statement ) => statement.propertyName.toString() === editingProperty.value?.name.toString() ?
 		new Statement(
-			new PropertyName( savedProperty.name.toString() ),
-			savedProperty.format,
-			savedProperty.default
+			new PropertyName( newProperty.name.toString() ),
+			newProperty.format,
+			newProperty.default
 		) :
 		statement
 	);
