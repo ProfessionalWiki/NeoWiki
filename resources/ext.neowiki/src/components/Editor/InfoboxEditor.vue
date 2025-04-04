@@ -324,14 +324,19 @@ const handlePropertySave = ( newProperty: PropertyDefinition ): void => {
 		new PropertyDefinitionList( updatedProperties )
 	);
 
-	statements.value = statements.value.map( ( statement ) => statement.propertyName.toString() === editingProperty.value?.name.toString() ?
-		new Statement(
-			new PropertyName( newProperty.name.toString() ),
-			newProperty.format,
-			newProperty.default
-		) :
-		statement
-	);
+	statements.value = statements.value.map( ( statement ) => {
+		const isEditingProperty = statement.propertyName.toString() === editingProperty.value?.name.toString();
+
+		if ( isEditingProperty ) {
+			return new Statement(
+				new PropertyName( newProperty.name.toString() ),
+				newProperty.format,
+				newProperty.default
+			);
+		}
+
+		return statement;
+	} );
 
 	editingProperty.value = null;
 	isPropertyEditorOpen.value = false;
