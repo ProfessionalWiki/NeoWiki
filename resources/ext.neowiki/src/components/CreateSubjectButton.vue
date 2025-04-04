@@ -8,8 +8,8 @@
 			ref="createSubjectDialog"
 			@next="onSubjectTypeSelected"
 		/>
-		<InfoboxEditor
-			ref="infoboxEditorDialog"
+		<SubjectEditor
+			ref="subjectEditor"
 			:selected-schema="selectedSchema"
 			:is-edit-mode="false"
 			:can-edit-schema="canEditSchema"
@@ -24,11 +24,11 @@ import { ref } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import CreateSubjectDialog from '@/components/CreateSubjectDialog.vue';
-import InfoboxEditor from '@/components/Editor/InfoboxEditor.vue';
+import SubjectEditor from '@/components/Editor/SubjectEditor.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const createSubjectDialog = ref<typeof CreateSubjectDialog|null>( null );
-const infoboxEditorDialog = ref<typeof InfoboxEditor|null>( null );
+const subjectEditor = ref<typeof SubjectEditor|null>( null );
 const selectedSchema = ref( '' );
 
 const schemaAuthorizer = NeoWikiServices.getSchemaAuthorizer();
@@ -43,13 +43,13 @@ const openDialog = (): void => {
 };
 
 const onSubjectTypeSelected = async ( type: string ): Promise<void> => {
-	if ( infoboxEditorDialog.value === null ) {
+	if ( subjectEditor.value === null ) {
 		return;
 	}
 
 	selectedSchema.value = type;
 	canEditSchema.value = await schemaAuthorizer.canEditSchema( type );
-	infoboxEditorDialog.value.openDialog();
+	subjectEditor.value.openDialog();
 };
 
 const onCreationComplete = (): void => {

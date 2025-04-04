@@ -1,6 +1,6 @@
 import { VueWrapper } from '@vue/test-utils';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import InfoboxEditor from '@/components/Editor/InfoboxEditor.vue';
+import SubjectEditor from '@/components/Editor/SubjectEditor.vue';
 import DeleteDialog from '@/components/Editor/DeleteDialog.vue';
 import { Subject } from '@neo/domain/Subject';
 import { SubjectId } from '@neo/domain/SubjectId';
@@ -19,7 +19,7 @@ vi.mock( '@/stores/SubjectStore', () => ( {
 	} )
 } ) );
 
-describe( 'InfoboxEditor - Delete Subject', () => {
+describe( 'SubjectEditor - Delete Subject', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore;
 
@@ -40,7 +40,7 @@ describe( 'InfoboxEditor - Delete Subject', () => {
 	);
 
 	const mountComponent = async ( subject?: Subject ): Promise<VueWrapper> => {
-		const wrapper = createTestWrapper( InfoboxEditor, {
+		const wrapper = createTestWrapper( SubjectEditor, {
 			subject: subject,
 			canEditSchema: false,
 			selectedSchema: 'TestSchema'
