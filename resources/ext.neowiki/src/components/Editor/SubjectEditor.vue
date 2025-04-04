@@ -25,7 +25,7 @@
 		/>
 
 		<NeoTextField
-			v-if="isNewSchema"
+			v-if="selectedSchema === ''"
 			:model-value="localSubject.getSchemaName()"
 			:required="true"
 			:label="$i18n( 'neowiki-infobox-editor-schema-label' ).text()"
@@ -158,9 +158,6 @@ const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
 const editingProperty = ref<PropertyDefinition | null>( null );
-const selectedSchema = computed( () => props.selectedSchema );
-const isNewSchema = computed( () => props.selectedSchema === '' );
-const isNewSubject = computed( () => props.subject === undefined );
 const isPropertyEditorOpen = ref( false );
 const statementEditorBody = ref<Element | undefined>( undefined );
 const statementEditorDimensions = useResizeObserver( statementEditorBody );
@@ -170,7 +167,7 @@ const shouldDropUp = computed( () => {
 	}
 	return false;
 } );
-const shouldSaveSchema = ref( false );
+let shouldSaveSchema = false;
 
 const propertyTypes = NeoWikiServices.getComponentRegistry().getLabelsAndIcons().map( ( { value, label, icon } ) => ( {
 	value: value,
@@ -228,12 +225,12 @@ const openDialog = async (): Promise<void> => {
 	await nextTick();
 
 	isOpen.value = true;
-	shouldSaveSchema.value = false;
+	shouldSaveSchema = false;
 
 	if ( props.subject !== undefined ) {
 		setupExistingSubject( props.subject );
-	} else if ( selectedSchema.value !== undefined ) {
-		setupNewSubject( selectedSchema.value );
+	} else if ( props.selectedSchema !== undefined ) {
+		setupNewSubject( props.selectedSchema );
 	} else {
 		throw new Error( 'No subject and no schema' );
 	}
@@ -256,7 +253,7 @@ const setupExistingSubject = ( subject: Subject ): void => {
 
 const setupNewSubject = ( schemaName: string ): void => {
 	if ( schemaName === '' ) {
-		shouldSaveSchema.value = true;
+		shouldSaveSchema = true;
 		localSchema.value = new Schema(
 			'' as SchemaName,
 			'',
@@ -302,7 +299,7 @@ const handlePropertySave = ( newProperty: PropertyDefinition ): void => {
 		return;
 	}
 
-	shouldSaveSchema.value = true;
+	shouldSaveSchema = true;
 
 	const propertyName = editingProperty.value?.name;
 
@@ -372,7 +369,7 @@ const updateStatement = ( index: number, updatedStatement: Statement ): void => 
 
 const removeStatement = ( index: number ): void => {
 	if ( localSchema.value !== null ) {
-		shouldSaveSchema.value = true;
+		shouldSaveSchema = true;
 		localSchema.value = localSchema.value.withRemovedPropertyDefinition( statements.value[ index ].propertyName as PropertyName );
 	}
 	statements.value.splice( index, 1 );
@@ -395,13 +392,13 @@ const submit = async (): Promise<void> => {
 		throw new Error( 'Schema or Subject is missing' );
 	}
 
-	if ( shouldSaveSchema.value ) {
+	if ( shouldSaveSchema ) {
 		await schemaStore.saveSchema( localSchema.value as Schema );
 	}
 
 	localSubject.value = getCurrentSubject();
 
-	if ( isNewSubject.value ) {
+	if ( props.subject === undefined ) {
 		await subjectStore.createMainSubject( localSubject.value as Subject );
 	} else {
 		await subjectStore.updateSubject( localSubject.value as Subject );
