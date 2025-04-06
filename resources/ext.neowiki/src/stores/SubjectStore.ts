@@ -39,7 +39,7 @@ export const useSubjectStore = defineStore( 'subject', {
 			await NeoWikiExtension.getInstance().getSubjectRepository().deleteSubject( subjectId );
 			this.subjects.delete( subjectId.text );
 		},
-		async createMainSubject( subject: Subject ): Promise<void> {
+		async createMainSubject( subject: Subject ): Promise<SubjectId> {
 			const subjectId = await NeoWikiExtension.getInstance().getSubjectRepository().createMainSubject(
 				subject.getPageIdentifiers().getPageId(),
 				subject.getLabel(),
@@ -47,6 +47,7 @@ export const useSubjectStore = defineStore( 'subject', {
 				subject.getStatements()
 			);
 			this.setSubject( subjectId, subject );
+			return subjectId;
 		}
 	}
 } );
