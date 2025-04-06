@@ -12,7 +12,7 @@
 				<CdxButton
 					weight="primary"
 					class="create-subject-dialog__blank-button"
-					@click="proceedWithBlank"
+					@click="proceedWithoutSchema"
 				>
 					<CdxIcon :icon="cdxIconAdd" />
 					{{ $i18n( 'neowiki-create-subject-dialog-start-blank' ).text() }}
@@ -88,7 +88,7 @@ const openDialog = async (): Promise<void> => {
 	searchQuery.value = '';
 };
 
-const proceedWithBlank = (): void => {
+const proceedWithoutSchema = (): void => {
 	isOpen.value = false;
 	emit( 'next', '' );
 };
