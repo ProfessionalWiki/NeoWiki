@@ -235,6 +235,9 @@ const openDialog = async (): Promise<void> => {
 		throw new Error( 'No subject and no schema' );
 	}
 
+	statements.value = [ ...localSubject!.value!.getStatements() ];
+	addMissingStatements();
+
 	setupInitialState();
 };
 
@@ -247,8 +250,6 @@ const setupExistingSubject = ( subject: Subject ): void => {
 		subject.getStatements(),
 		subject.getPageIdentifiers()
 	);
-	statements.value = [ ...subject.getStatements() ];
-	addMissingStatements();
 };
 
 const setupNewSubject = ( schemaName: string ): void => {
@@ -270,8 +271,6 @@ const setupNewSubject = ( schemaName: string ): void => {
 		new StatementList( [] ),
 		new PageIdentifiers( mw.config.get( 'wgArticleId' ), 'page-title' )
 	);
-	statements.value = [];
-	addMissingStatements();
 };
 
 const setupInitialState = (): void => {
