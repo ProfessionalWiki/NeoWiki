@@ -6,7 +6,7 @@
 		</CdxButton>
 		<CreateSubjectDialog
 			ref="createSubjectDialog"
-			@next="onSubjectTypeSelected"
+			@next="onSchemaNameSelected"
 		/>
 		<SubjectEditor
 			ref="subjectEditor"
@@ -42,13 +42,14 @@ const openDialog = (): void => {
 	createSubjectDialog.value.openDialog();
 };
 
-const onSubjectTypeSelected = async ( type: string ): Promise<void> => {
+const onSchemaNameSelected = async ( schemaName: string ): Promise<void> => {
+	// TODO: why is CreateSubjectDialog emitting an event handled here to open the subjectEditor???
 	if ( subjectEditor.value === null ) {
 		return;
 	}
 
-	selectedSchema.value = type;
-	canEditSchema.value = await schemaAuthorizer.canEditSchema( type );
+	selectedSchema.value = schemaName;
+	canEditSchema.value = await schemaAuthorizer.canEditSchema( schemaName );
 	subjectEditor.value.openDialog();
 };
 
