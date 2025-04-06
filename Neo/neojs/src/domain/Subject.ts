@@ -7,11 +7,6 @@ import type { StatementList } from '@neo/domain/StatementList';
 import type { PropertyName } from '@neo/domain/PropertyDefinition';
 import type { Value } from '@neo/domain/Value';
 
-/**
- * @deprecated Use {@link StatementList} instead.
- */
-export type SubjectProperties = Record<string, unknown>; // TODO: remove
-
 export class Subject {
 
 	public constructor(
