@@ -264,6 +264,7 @@ const setupNewSubject = ( schemaName: string ): void => {
 		localSchema.value = schemaStore.getSchema( schemaName );
 	}
 
+	// TODO: remove this. Replace localSubject with Subject constituents, and do so in class decoupled from Vue
 	localSubject.value = new Subject(
 		new SubjectId( 'stodotodotodo42' ),
 		'',
@@ -395,16 +396,25 @@ const submit = async (): Promise<void> => {
 		await schemaStore.saveSchema( localSchema.value as Schema );
 	}
 
-	localSubject.value = getCurrentSubject();
+	const subject = getCurrentSubject();
+	localSubject.value = subject;
+	await saveSubject( subject );
 
-	if ( props.subject === undefined ) {
-		await subjectStore.createMainSubject( localSubject.value as Subject );
-	} else {
-		await subjectStore.updateSubject( localSubject.value as Subject );
-	}
-
-	emit( 'save', localSubject.value );
+	emit( 'save', subject );
 	isOpen.value = false;
+};
+
+const saveSubject = async ( subject: Subject ): Promise<void> => {
+	if ( props.subject === undefined ) {
+		await subjectStore.createMainSubject(
+			mw.config.get( 'wgArticleId' ),
+			subject.getLabel(),
+			subject.getSchemaName(),
+			subject.getStatements()
+		);
+	} else {
+		await subjectStore.updateSubject( subject );
+	}
 };
 
 const deleteSubject = async ( subjectId: SubjectId ): Promise<void> => {

@@ -2,6 +2,9 @@ import { defineStore } from 'pinia';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { Subject } from '@neo/domain/Subject';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
+import { SchemaName } from '@neo/domain/Schema.ts';
+import { StatementList } from '@neo/domain/StatementList.ts';
+import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
 
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
@@ -39,14 +42,29 @@ export const useSubjectStore = defineStore( 'subject', {
 			await NeoWikiExtension.getInstance().getSubjectRepository().deleteSubject( subjectId );
 			this.subjects.delete( subjectId.text );
 		},
-		async createMainSubject( subject: Subject ): Promise<SubjectId> {
+		async createMainSubject( pageId: number, label: string, schemaName: SchemaName, statements: StatementList ): Promise<SubjectId> {
 			const subjectId = await NeoWikiExtension.getInstance().getSubjectRepository().createMainSubject(
-				subject.getPageIdentifiers().getPageId(),
-				subject.getLabel(),
-				subject.getSchemaName(),
-				subject.getStatements()
+				pageId,
+				label,
+				schemaName,
+				statements
 			);
-			this.setSubject( subjectId, subject );
+
+			this.setSubject(
+				subjectId,
+				new Subject(
+					subjectId,
+					label,
+					schemaName,
+					statements,
+					// FIXME: 'page-title', assuming we need to actually set the Subject here.
+					// Perhaps we are better off getting the entire thing from the backend.
+					// Maybe the backend should respond with the entire thing instead of just the ID.
+					// Getting the subject from the backend is safer, since we avoid inconsistencies in
+					// case normalization happened or someone else edited as well.
+					new PageIdentifiers( pageId, 'page-title' )
+				)
+			);
 			return subjectId;
 		}
 	}
