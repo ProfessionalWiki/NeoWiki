@@ -1,8 +1,8 @@
 import { SubjectId } from '@neo/domain/SubjectId';
-import { Subject } from '@neo/domain/Subject';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
 import { StatementList } from '@neo/domain/StatementList';
 import { StatementDeserializer } from '@neo/persistence/StatementDeserializer';
+import { SubjectWithContext } from '@neo/domain/SubjectWithContext';
 
 export class SubjectDeserializer {
 
@@ -11,7 +11,7 @@ export class SubjectDeserializer {
 	) {
 	}
 
-	public deserialize( json: any ): Subject {
+	public deserialize( json: any ): SubjectWithContext {
 		const id = new SubjectId( json.id );
 		const label = json.label;
 		const schema = json.schema;
@@ -19,7 +19,7 @@ export class SubjectDeserializer {
 		const pageIdentifiers = new PageIdentifiers( json.pageId, json.pageTitle );
 		const statementList = this.deserializeStatements( json.statements );
 
-		return new Subject( id, label, schema, statementList, pageIdentifiers );
+		return new SubjectWithContext( id, label, schema, statementList, pageIdentifiers );
 	}
 
 	public deserializeStatements( json: any ): StatementList {

@@ -1,9 +1,9 @@
-import { Subject } from '@neo/domain/Subject';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
 import { Schema } from '@neo/domain/Schema';
 import { StatementList } from '@neo/domain/StatementList';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
+import { SubjectWithContext } from '@neo/domain/SubjectWithContext';
 
 export const DEFAULT_SUBJECT_ID = 's11111111111111';
 export const DEFAULT_TEST_SUBJECT_LABEL = 'Test subject';
@@ -23,8 +23,8 @@ export function newSubject( {
 	schemaId = DEFAULT_TEST_SCHEMA_ID,
 	statements = new StatementList( [] ),
 	pageIdentifiers = new PageIdentifiers( 0, 'TestSubjectPage' )
-}: NewTestSubjectOptions = {} ): Subject {
-	return new Subject(
+}: NewTestSubjectOptions = {} ): SubjectWithContext {
+	return new SubjectWithContext(
 		id instanceof SubjectId ? id : new SubjectId( id ),
 		label,
 		schemaId,

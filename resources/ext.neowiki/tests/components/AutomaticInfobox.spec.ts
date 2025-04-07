@@ -1,21 +1,19 @@
 import { mount, VueWrapper } from '@vue/test-utils';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
 import { Subject } from '@neo/domain/Subject';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { StatementList } from '@neo/domain/StatementList';
 import { Statement } from '@neo/domain/Statement';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { createPropertyDefinitionFromJson, PropertyName } from '@neo/domain/PropertyDefinition';
 import { TextFormat } from '@neo/domain/valueFormats/Text';
 import { NumberFormat } from '@neo/domain/valueFormats/Number';
 import { UrlFormat } from '@neo/domain/valueFormats/Url';
-import { newStringValue, newNumberValue } from '@neo/domain/Value';
-import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
+import { newNumberValue, newStringValue } from '@neo/domain/Value';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { Schema } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition';
-import { setActivePinia, createPinia } from 'pinia';
+import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { Service } from '@/NeoWikiServices.ts';
 
@@ -60,8 +58,7 @@ describe( 'AutomaticInfobox', () => {
 			new Statement(
 				new PropertyName( 'website' ), UrlFormat.formatName, newStringValue( 'https://example.com' )
 			)
-		] ),
-		new PageIdentifiers( 1, 'Test_Subject' )
+		] )
 	);
 
 	const mountComponent = ( subject: Subject, schema: Schema, canEditSubject: boolean ): VueWrapper => mount( AutomaticInfobox, {
@@ -120,8 +117,7 @@ describe( 'AutomaticInfobox', () => {
 			new SubjectId( 's1demo6sssssss1' ),
 			'Empty Subject',
 			'TestSchema',
-			new StatementList( [] ),
-			new PageIdentifiers( 2, 'Empty_Subject' )
+			new StatementList( [] )
 		);
 
 		const wrapper = mountComponent( emptySubject, mockSchema, false );

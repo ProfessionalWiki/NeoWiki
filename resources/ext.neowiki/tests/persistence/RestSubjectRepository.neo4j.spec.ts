@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository';
 import { SubjectId } from '@neo/domain/SubjectId';
-import { Subject } from '@neo/domain/Subject';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
 import { StatementList } from '@neo/domain/StatementList';
 import { Statement } from '@neo/domain/Statement';
@@ -11,6 +10,7 @@ import { TextFormat } from '@neo/domain/valueFormats/Text';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
 import { UrlFormat } from '@neo/domain/valueFormats/Url';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
+import { SubjectWithContext } from '@neo/domain/SubjectWithContext.ts';
 
 function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSubjectRepository {
 	return new RestSubjectRepository(
@@ -74,7 +74,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const subject = await repository.getSubject( new SubjectId( 's11111111111111' ) );
 
-			expect( subject ).toEqual( new Subject(
+			expect( subject ).toEqual( new SubjectWithContext(
 				new SubjectId( subjectResponse.id ),
 				subjectResponse.label,
 				subjectResponse.schema,

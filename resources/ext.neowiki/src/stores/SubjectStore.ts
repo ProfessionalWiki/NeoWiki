@@ -5,6 +5,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { SchemaName } from '@neo/domain/Schema.ts';
 import { StatementList } from '@neo/domain/StatementList.ts';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
+import { SubjectWithContext } from '@neo/domain/SubjectWithContext.ts';
 
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
@@ -52,7 +53,7 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			this.setSubject(
 				subjectId,
-				new Subject(
+				new SubjectWithContext(
 					subjectId,
 					label,
 					schemaName,
