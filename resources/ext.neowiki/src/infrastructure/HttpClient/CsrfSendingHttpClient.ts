@@ -70,7 +70,7 @@ export class CsrfSendingHttpClient implements HttpClient {
 				return this.httpClient.getAxiosInstance().request( error.config );
 			}
 		}
-		return Promise.reject( error );
+		throw error;
 	}
 
 	private async updateCsrfToken(): Promise<boolean> {
