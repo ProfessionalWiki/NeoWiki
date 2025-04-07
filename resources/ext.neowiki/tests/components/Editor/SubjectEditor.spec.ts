@@ -5,7 +5,6 @@ import DeleteDialog from '@/components/Editor/DeleteDialog.vue';
 import { Subject } from '@neo/domain/Subject';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { StatementList } from '@neo/domain/StatementList';
-import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
 import { Schema, SchemaName } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition';
@@ -35,8 +34,7 @@ describe( 'SubjectEditor - Delete Subject', () => {
 		new SubjectId( 's1demo1aaaaaaa1' ),
 		'Test Subject',
 		'TestSchema' as SchemaName,
-		new StatementList( [] ),
-		new PageIdentifiers( 1, 'Test_Subject' )
+		new StatementList( [] )
 	);
 
 	const mountComponent = async ( subject?: Subject ): Promise<VueWrapper> => {

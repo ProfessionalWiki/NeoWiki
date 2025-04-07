@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { Neo } from '@neo/Neo';
-import { Subject } from '@neo/domain/Subject';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { StatementList } from '@neo/domain/StatementList';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
@@ -9,6 +8,7 @@ import { Statement } from '@neo/domain/Statement';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newNumberValue, newStringValue } from '@neo/domain/Value';
 import { NumberFormat } from '@neo/domain/valueFormats/Number';
+import { SubjectWithContext } from '@neo/domain/SubjectWithContext';
 
 describe( 'SubjectDeserializer', () => {
 
@@ -26,7 +26,7 @@ describe( 'SubjectDeserializer', () => {
 
 		const subject = deserializer.deserialize( json );
 
-		expect( subject ).toEqual( new Subject(
+		expect( subject ).toEqual( new SubjectWithContext(
 			new SubjectId( 's13333333333337' ),
 			'SubjectDeserializer',
 			'SDSchema',
@@ -56,7 +56,7 @@ describe( 'SubjectDeserializer', () => {
 
 		const subject = deserializer.deserialize( json );
 
-		expect( subject ).toEqual( new Subject(
+		expect( subject ).toEqual( new SubjectWithContext(
 			new SubjectId( 's13333333333337' ),
 			'SubjectDeserializer',
 			'SDSchema',

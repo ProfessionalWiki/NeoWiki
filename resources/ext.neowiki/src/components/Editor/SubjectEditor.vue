@@ -135,7 +135,6 @@ import DeleteDialog from '@/components/Editor/DeleteDialog.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import PropertyDefinitionEditor from '@/components/Editor/PropertyDefinitionEditor.vue';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
-import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Value } from '@neo/domain/Value.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -247,8 +246,7 @@ const setupExistingSubject = ( subject: Subject ): void => {
 		subject.getId(),
 		subject.getLabel(),
 		subject.getSchemaName(),
-		subject.getStatements(),
-		subject.getPageIdentifiers()
+		subject.getStatements()
 	);
 };
 
@@ -269,8 +267,7 @@ const setupNewSubject = ( schemaName: string ): void => {
 		new SubjectId( 'stodotodotodo42' ),
 		'',
 		schemaName as SchemaName,
-		new StatementList( [] ),
-		new PageIdentifiers( mw.config.get( 'wgArticleId' ), 'page-title' )
+		new StatementList( [] )
 	);
 };
 
