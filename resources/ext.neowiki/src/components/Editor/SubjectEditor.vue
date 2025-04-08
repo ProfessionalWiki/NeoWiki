@@ -72,7 +72,6 @@
 				v-if="isDropdownOpen"
 				class="neo-type-select-dropdown"
 				:class="shouldDropUp ? 'neo-type-select-drop-up' : ''"
-				:types="propertyTypes"
 				@select="addProperty"
 			/>
 		</div>
@@ -167,12 +166,6 @@ const shouldDropUp = computed( () => {
 	return false;
 } );
 let shouldSaveSchema = false;
-
-const propertyTypes = NeoWikiServices.getComponentRegistry().getLabelsAndIcons().map( ( { value, label, icon } ) => ( {
-	value: value,
-	label: mw.message( label ).text(),
-	icon: icon
-} ) );
 
 const validator = NeoWikiServices.getSubjectValidator();
 

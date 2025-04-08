@@ -2,11 +2,11 @@
 	<div>
 		<ul>
 			<li
-				v-for="type in types"
-				:key="type.value"
-				@click="selectType( type.value )">
-				<CdxIcon :icon="type.icon" />
-				<span class="item-label">{{ type.label }}</span>
+				v-for="format in getFormats()"
+				:key="format.name"
+				@click="selectFormat( format.name )">
+				<CdxIcon :icon="format.icon" />
+				<span class="item-label">{{ format.label }}</span>
 			</li>
 		</ul>
 	</div>
@@ -14,20 +14,27 @@
 
 <script setup lang="ts">
 import { CdxIcon } from '@wikimedia/codex';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
-interface TypeOption {
-	value: string;
+interface Format {
+	name: string;
 	label: string;
 	icon: string;
 }
 
-defineProps<{
-	types: TypeOption[];
-}>();
+function getFormats(): Format[] {
+	return NeoWikiServices.getComponentRegistry().getLabelsAndIcons().map(
+		( { value, label, icon } ) => ( {
+			name: value,
+			label: mw.message( label ).text(),
+			icon: icon
+		} )
+	);
+}
 
 const emit = defineEmits( [ 'select' ] );
 
-const selectType = ( value: string ): void => {
+const selectFormat = ( value: string ): void => {
 	emit( 'select', value );
 };
 </script>
