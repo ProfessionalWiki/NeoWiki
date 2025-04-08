@@ -341,17 +341,21 @@ const toggleDropdown = (): void => {
 	isDropdownOpen.value = !isDropdownOpen.value;
 };
 
-const addProperty = ( type: string ): void => {
+const addProperty = ( format: string ): void => {
 	isDropdownOpen.value = false;
 	isEditingExistingProperty.value = false;
-	editingProperty.value = { // TODO: do we need to get a basic property definition via the plugin system?
-		name: '' as unknown as PropertyName,
-		format: type, // TODO: is this correct? Name mismatch
+	editingProperty.value = createEmptyPropertyDefinition( format );
+	isPropertyEditorOpen.value = true;
+};
+
+function createEmptyPropertyDefinition( format: string ): PropertyDefinition {
+	return { // TODO: do we need to get a basic property definition via the plugin system?
+		name: new PropertyName( '' ),
+		format: format,
 		description: '',
 		required: false
 	};
-	isPropertyEditorOpen.value = true;
-};
+}
 
 const updateStatement = ( index: number, updatedStatement: Statement ): void => {
 	statements.value[ index ] = updatedStatement;
