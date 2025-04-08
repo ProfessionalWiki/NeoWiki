@@ -68,7 +68,7 @@
 				<CdxIcon :icon="cdxIconAdd" class="add-icon" />
 				<span>{{ $i18n( 'neowiki-infobox-editor-add-property' ).text() }}</span>
 			</div>
-			<NeoTypeSelectDropdown
+			<FormatSelector
 				v-if="isDropdownOpen"
 				class="neo-type-select-dropdown"
 				:class="shouldDropUp ? 'neo-type-select-drop-up' : ''"
@@ -129,7 +129,7 @@ import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { StatementList } from '@neo/domain/StatementList.ts';
 import { Statement } from '@neo/domain/Statement';
-import NeoTypeSelectDropdown from '@/components/Editor/NeoTypeSelectDropdown.vue';
+import FormatSelector from '@/components/Editor/FormatSelector.vue';
 import DeleteDialog from '@/components/Editor/DeleteDialog.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import PropertyDefinitionEditor from '@/components/Editor/PropertyDefinitionEditor.vue';
