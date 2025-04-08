@@ -59,7 +59,7 @@ export class FormatSpecificComponentRegistry {
 	public getLabelsAndIcons(): { value: string; label: string; icon: string }[] {
 		return Array.from( this.formatMap.entries() )
 			.map( ( [ value, { label, icon } ] ) => ( {
-				value: value,
+				value: value, // TODO: rename to name or formatName
 				label: label,
 				icon: icon
 			} ) );
