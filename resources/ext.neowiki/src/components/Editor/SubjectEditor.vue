@@ -81,7 +81,7 @@
 			:key="localSubject.getId().text + 'info'"
 			ref="propertyDefinitionEditorInfo"
 			:is-open="isPropertyEditorOpen"
-			:edit-mode="isEditingProperty"
+			:edit-mode="isEditingExistingProperty"
 			:property="editingProperty as PropertyDefinition"
 			@cancel="isPropertyEditorOpen = false"
 			@save="handlePropertySave"
@@ -277,10 +277,10 @@ const setupInitialState = (): void => {
 };
 
 const isDropdownOpen = ref( false );
-const isEditingProperty = ref( false );
+const isEditingExistingProperty = ref( false );
 
 const editProperty = ( propertyName: PropertyName ): void => {
-	isEditingProperty.value = true;
+	isEditingExistingProperty.value = true;
 	if ( localSubject.value && localSchema.value !== null ) {
 		const property = localSchema.value.getPropertyDefinitions().get( propertyName );
 		if ( property ) {
@@ -300,7 +300,7 @@ const handlePropertySave = ( newProperty: PropertyDefinition ): void => {
 
 	const propertyName = editingProperty.value?.name;
 
-	if ( isEditingProperty.value === false ) {
+	if ( isEditingExistingProperty.value === false ) {
 		handleAddProperty( newProperty );
 		isPropertyEditorOpen.value = false;
 		return;
@@ -350,7 +350,7 @@ const toggleDropdown = (): void => {
 
 const addProperty = ( type: string ): void => {
 	isDropdownOpen.value = false;
-	isEditingProperty.value = false;
+	isEditingExistingProperty.value = false;
 	editingProperty.value = { // TODO: do we need to get a basic property definition via the plugin system?
 		name: '' as unknown as PropertyName,
 		format: type, // TODO: is this correct? Name mismatch

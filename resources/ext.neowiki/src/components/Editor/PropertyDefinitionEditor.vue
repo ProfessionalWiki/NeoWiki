@@ -88,7 +88,7 @@ const props = defineProps( {
 		type: Boolean,
 		default: false
 	},
-	editMode: {
+	editMode: { // TODO: better name. Indicates if an existing property is being edited. False means a new prop is being created
 		type: Boolean,
 		default: false
 	}
