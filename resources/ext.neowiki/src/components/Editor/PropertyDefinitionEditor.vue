@@ -19,6 +19,7 @@
 					<CdxSelect
 						v-model:selected="localProperty.format"
 						:menu-items="formatOptions"
+						@update:selected="updateFormat"
 					/>
 				</div>
 			</div>
@@ -98,6 +99,15 @@ const emit = defineEmits( [ 'cancel', 'save' ] );
 
 const localProperty = ref<PropertyDefinition>( { ...props.property } );
 const componentRegistry = NeoWikiServices.getComponentRegistry();
+
+const updateFormat = (): void => {
+	localProperty.value = {
+		name: localProperty.value.name,
+		format: localProperty.value.format,
+		description: localProperty.value.description,
+		required: localProperty.value.required
+	};
+};
 
 const updatePropertyAttributes = <T extends PropertyDefinition>( updatedAttributes: Partial<T> ): void => {
 	localProperty.value = {
