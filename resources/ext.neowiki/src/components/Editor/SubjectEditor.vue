@@ -150,8 +150,6 @@ const isDeleteDialogOpen = ref( false );
 const localSubject = ref<Subject | null>( null );
 const localSchema = ref<Schema | null>( null );
 const statements = ref<Statement[]>( [] );
-const initialSubject = ref<Subject | null>( null );
-const initialStatements = ref<Statement[]>( [] );
 const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 const propertyDefinitionEditorInfo = ref<InstanceType<typeof PropertyDefinitionEditor> | null>( null );
@@ -169,17 +167,31 @@ let shouldSaveSchema = false;
 
 const validator = NeoWikiServices.getSubjectValidator();
 
+const initialSubjectValues = {
+	label: '',
+	schemaName: '',
+	statements: ''
+};
+
 // eslint-disable-next-line arrow-body-style
 const canSubmit = computed( () => {
 	return localSubject.value !== null &&
 		localSchema.value !== null &&
-		(
-			localSubject.value.getLabel() !== initialSubject.value?.getLabel() ||
-			localSubject.value.getSchemaName() !== initialSubject.value?.getSchemaName() ||
-			JSON.stringify( statements.value ) !== JSON.stringify( initialStatements.value )
-		) &&
+		hasSubjectChanged() &&
 		validator.validate( getCurrentSubject(), localSchema.value as Schema );
 } );
+
+const hasSubjectChanged = (): boolean => {
+	if ( localSubject.value === null ) {
+		return false;
+	}
+
+	const labelChanged = localSubject.value.getLabel() !== initialSubjectValues.label;
+	const schemaNameChanged = localSubject.value.getSchemaName() !== initialSubjectValues.schemaName;
+	const statementsChanged = JSON.stringify( statements.value ) !== initialSubjectValues.statements;
+
+	return labelChanged || schemaNameChanged || statementsChanged;
+};
 
 const getPropertyDefinition = ( propertyName: PropertyName ): PropertyDefinition | undefined => {
 	if ( localSchema.value instanceof Schema ) {
@@ -230,7 +242,7 @@ const openDialog = async (): Promise<void> => {
 	statements.value = [ ...localSubject!.value!.getStatements() ];
 	addMissingStatements();
 
-	setupInitialState();
+	saveInitialSubjectValues();
 };
 
 const setupExistingSubject = ( subject: Subject ): void => {
@@ -264,9 +276,10 @@ const setupNewSubject = ( schemaName: string ): void => {
 	);
 };
 
-const setupInitialState = (): void => {
-	initialSubject.value = getCurrentSubject();
-	initialStatements.value = [ ...statements.value ];
+const saveInitialSubjectValues = (): void => {
+	initialSubjectValues.label = localSubject.value?.getLabel() ?? '';
+	initialSubjectValues.schemaName = localSchema.value?.getName() ?? '';
+	initialSubjectValues.statements = JSON.stringify( statements.value );
 };
 
 const isDropdownOpen = ref( false );
