@@ -1,41 +1,41 @@
 <template>
-	<div v-if="subjectRef !== null" class="auto-infobox">
-		<div class="auto-infobox__header">
+	<div v-if="subjectRef !== null" class="ext-neowiki-auto-infobox">
+		<div class="ext-neowiki-auto-infobox__header">
 			<div
-				class="auto-infobox__title"
+				class="ext-neowiki-auto-infobox__title"
 				role="heading"
 				aria-level="2"
 			>
 				{{ subjectRef.getLabel() }}
 			</div>
 			<div
-				class="auto-infobox__schema"
+				class="ext-neowiki-auto-infobox__schema"
 				role="heading"
 				aria-level="3"
 			>
 				{{ schema.getName() }}
 			</div>
 		</div>
-		<div class="auto-infobox__content">
+		<div class="ext-neowiki-auto-infobox__content">
 			<div
 				v-for="( propertyDefinition, propertyName ) in propertiesToDisplay"
 				:key="propertyName"
-				class="auto-infobox__item"
+				class="ext-neowiki-auto-infobox__item"
 			>
-				<div class="auto-infobox__property">
+				<div class="ext-neowiki-auto-infobox__property">
 					{{ propertyName }}
 				</div>
-				<div class="auto-infobox__value">
+				<div class="ext-neowiki-auto-infobox__value">
 					<component
 						:is="getComponent( propertyDefinition.format )"
-						:key="`${propertyDefinition.name}${subjectRef?.getStatementValue( propertyDefinition.name )}-auto-infobox`"
+						:key="`${propertyDefinition.name}${subjectRef?.getStatementValue( propertyDefinition.name )}-ext-neowiki-auto-infobox`"
 						:value="subjectRef?.getStatementValue( propertyDefinition.name )"
 						:property="propertyDefinition"
 					/>
 				</div>
 			</div>
 		</div>
-		<div v-if="canEditSubject" class="auto-infobox__footer">
+		<div v-if="canEditSubject" class="ext-neowiki-auto-infobox__footer">
 			<CdxButton
 				class="cdx-docs-link"
 				weight="quiet"
@@ -129,7 +129,7 @@ onMounted( async (): Promise<void> => {
 <style lang="scss">
 @use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
-.auto-infobox {
+.ext-neowiki-auto-infobox {
 	margin-inline: auto;
 	margin-bottom: $spacing-100;
 	padding: $spacing-75;
