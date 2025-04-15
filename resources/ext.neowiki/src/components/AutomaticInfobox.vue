@@ -1,20 +1,31 @@
 <template>
 	<div v-if="subjectRef !== null" class="ext-neowiki-auto-infobox">
 		<div class="ext-neowiki-auto-infobox__header">
-			<div
-				class="ext-neowiki-auto-infobox__title"
-				role="heading"
-				aria-level="2"
-			>
-				{{ subjectRef.getLabel() }}
+			<div class="ext-neowiki-auto-infobox__header__text">
+				<div
+					class="ext-neowiki-auto-infobox__title"
+					role="heading"
+					aria-level="2"
+				>
+					{{ subjectRef.getLabel() }}
+				</div>
+				<div
+					class="ext-neowiki-auto-infobox__schema"
+					role="heading"
+					aria-level="3"
+				>
+					{{ schema.getName() }}
+				</div>
 			</div>
-			<div
-				class="ext-neowiki-auto-infobox__schema"
-				role="heading"
-				aria-level="3"
+			<CdxButton
+				v-if="canEditSubject"
+				class="ext-neowiki-auto-infobox__edit"
+				weight="quiet"
+				:aria-label="$i18n( 'neowiki-infobox-edit-link' ).text()"
+				@click="editInfoBox"
 			>
-				{{ schema.getName() }}
-			</div>
+				<CdxIcon :icon="cdxIconEdit" />
+			</CdxButton>
 		</div>
 		<div class="ext-neowiki-auto-infobox__content">
 			<div
@@ -34,14 +45,6 @@
 					/>
 				</div>
 			</div>
-		</div>
-		<div v-if="canEditSubject" class="ext-neowiki-auto-infobox__footer">
-			<CdxButton
-				class="cdx-docs-link"
-				weight="quiet"
-				@click="editInfoBox">
-				{{ $i18n( 'neowiki-infobox-edit-link' ).text() }}
-			</CdxButton>
 		</div>
 
 		<SubjectEditor
@@ -64,7 +67,8 @@ import { Component } from 'vue';
 import SubjectEditor from '@/components/Editor/SubjectEditor.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { CdxButton } from '@wikimedia/codex';
+import { CdxButton, CdxIcon } from '@wikimedia/codex';
+import { cdxIconEdit } from '@wikimedia/codex-icons';
 
 const props = defineProps( {
 	subject: {
@@ -132,7 +136,6 @@ onMounted( async (): Promise<void> => {
 .ext-neowiki-auto-infobox {
 	margin-inline: auto;
 	margin-bottom: $spacing-100;
-	padding: $spacing-75;
 	max-width: 20rem;
 	width: 100%;
 	border: $border-base;
@@ -140,14 +143,21 @@ onMounted( async (): Promise<void> => {
 	color: $color-base;
 	background-color: $background-color-base;
 	line-height: $line-height-small;
-	display: flex;
-	flex-direction: column;
-	row-gap: $spacing-100;
 
 	@media ( min-width: $min-width-breakpoint-tablet ) {
 		clear: both;
 		float: right;
 		margin-inline: $spacing-100 $spacing-0;
+	}
+
+	&__header {
+		padding: $spacing-100 $spacing-75;
+		display: flex;
+		align-items: flex-start;
+
+		&__text {
+			flex-grow: 1;
+		}
 	}
 
 	&__title {
@@ -158,6 +168,14 @@ onMounted( async (): Promise<void> => {
 	&__schema {
 		color: $color-subtle;
 		font-size: $font-size-small;
+	}
+
+	&__edit {
+		flex-shrink: 0;
+	}
+
+	&__content {
+		padding: $spacing-75;
 	}
 
 	&__item {
@@ -184,25 +202,6 @@ onMounted( async (): Promise<void> => {
 	&__value {
 		flex: 0 1 60%;
 		overflow-wrap: anywhere;
-	}
-
-	&__footer {
-		text-align: right;
-
-		button {
-			color: $color-progressive !important;
-			font-size: $font-size-medium;
-		}
-
-		.cdx-button:enabled:focus:not( :active ):not( .cdx-button--is-active ) {
-			border: none;
-			box-shadow: none;
-		}
-	}
-
-	&__edit-icon {
-		margin-right: $spacing-50;
-		font-size: $font-size-large;
 	}
 }
 </style>
