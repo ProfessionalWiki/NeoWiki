@@ -1,19 +1,22 @@
 <template>
 	<div v-if="subjectRef !== null" class="auto-infobox">
 		<div class="auto-infobox__header">
-			<h2 class="auto-infobox__title">
+			<div
+				class="auto-infobox__title"
+				role="heading"
+				aria-level="2"
+			>
 				{{ subjectRef.getLabel() }}
-			</h2>
+			</div>
+			<div
+				class="auto-infobox__schema"
+				role="heading"
+				aria-level="3"
+			>
+				{{ schema.getName() }}
+			</div>
 		</div>
 		<div class="auto-infobox__content">
-			<div class="auto-infobox__item auto-infobox__schema-badge">
-				<div class="auto-infobox__property">
-					{{ $i18n( 'neowiki-infobox-type' ).text() }}
-				</div>
-				<div class="auto-infobox__value">
-					{{ schema.getName() }}
-				</div>
-			</div>
 			<div
 				v-for="( propertyDefinition, propertyName ) in propertiesToDisplay"
 				:key="propertyName"
@@ -127,34 +130,34 @@ onMounted( async (): Promise<void> => {
 @use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
 .auto-infobox {
-	margin-left: $spacing-100;
+	margin-inline: auto;
 	margin-bottom: $spacing-100;
-	max-width: 325px;
+	padding: $spacing-75;
+	max-width: 20rem;
 	width: 100%;
-	border-radius: 5px;
-	background-color: $background-color-interactive-subtle !important;
-	border: 1px solid $border-color-base;
-	float: right;
+	border: $border-base;
+	border-radius: $border-radius-base;
+	color: $color-base;
+	background-color: $background-color-base;
+	line-height: $line-height-small;
+	display: flex;
+	flex-direction: column;
+	row-gap: $spacing-100;
 
-	&__header {
-		background-color: #eaecf0a8 !important;
-		border-top-left-radius: 5px;
-		border-top-right-radius: 5px;
-		padding-top: $spacing-125;
-		padding-left: $spacing-125;
-		padding-bottom: $spacing-30;
+	@media ( min-width: $min-width-breakpoint-tablet ) {
+		clear: both;
+		float: right;
+		margin-inline: $spacing-100 $spacing-0;
 	}
 
 	&__title {
-		font-size: $font-size-xx-large;
-		margin: $spacing-0 !important;
-		position: relative;
-		z-index: $z-index-stacking-1;
-		border: none;
+		font-size: $font-size-x-large;
+		font-weight: $font-weight-bold;
 	}
 
-	&__content {
-		padding: $spacing-125;
+	&__schema {
+		color: $color-subtle;
+		font-size: $font-size-small;
 	}
 
 	&__item {
@@ -162,11 +165,11 @@ onMounted( async (): Promise<void> => {
 		align-items: flex-start;
 		margin-bottom: $spacing-75;
 		padding-bottom: $spacing-75;
-		border-bottom: $border-width-base $border-style-base $border-color-subtle;
-		gap: $spacing-50;
+		border-bottom: $border-subtle;
+		column-gap: $spacing-150;
 
 		&:last-child {
-			border-bottom: none !important;
+			border-bottom: none;
 			margin-bottom: $spacing-0;
 			padding-bottom: $spacing-0;
 		}
@@ -176,21 +179,14 @@ onMounted( async (): Promise<void> => {
 		flex: 0 0 40%;
 		font-weight: $font-weight-bold;
 		color: $color-emphasized;
-		font-size: $font-size-small;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
 	}
 
 	&__value {
-		flex: 0 0 60%;
-		color: $color-subtle;
-		font-size: $font-size-small;
-		line-height: $line-height-xx-small;
+		flex: 0 1 60%;
 		overflow-wrap: anywhere;
 	}
 
 	&__footer {
-		padding: $spacing-75 $spacing-125;
 		text-align: right;
 
 		button {
