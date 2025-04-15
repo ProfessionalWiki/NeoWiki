@@ -202,6 +202,7 @@ onMounted( async (): Promise<void> => {
 	&__value {
 		flex: 0 1 60%;
 		overflow-wrap: anywhere;
+		word-break: break-word;
 	}
 }
 </style>
