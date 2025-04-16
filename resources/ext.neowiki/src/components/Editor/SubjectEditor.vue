@@ -363,7 +363,7 @@ const addProperty = ( format: string ): void => {
 
 function createEmptyPropertyDefinition( format: string ): PropertyDefinition {
 	return { // TODO: do we need to get a basic property definition via the plugin system?
-		name: new PropertyName( '' ),
+		name: new PropertyName( '', true ),
 		format: format,
 		description: '',
 		required: false

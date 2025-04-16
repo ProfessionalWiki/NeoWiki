@@ -7,10 +7,14 @@ export class PropertyName {
 
 	private readonly name: string;
 
-	public constructor( name: string ) {
+	/**
+	 * @param name - The name of the property.
+	 * @param placeholder - Whether the name is a placeholder, used when creating a new property.
+	 */
+	public constructor( name: string, placeholder: boolean = false ) {
 		this.name = name.trim();
 
-		if ( this.name === '' ) {
+		if ( this.name === '' && !placeholder ) {
 			throw new Error( 'Invalid PropertyName' );
 		}
 	}
