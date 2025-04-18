@@ -51,11 +51,11 @@
 
 <script setup lang="ts">
 import { computed, ref, PropType, onMounted } from 'vue';
-import { Subject } from '@neo/domain/Subject';
+import { Subject } from '@neo/domain/Subject.ts';
 import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
-import { Schema } from '@neo/domain/Schema';
+import { Schema } from '@neo/domain/Schema.ts';
 import { Component } from 'vue';
-import { useSchemaStore } from '@/stores/SchemaStore';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';
@@ -111,7 +111,7 @@ onMounted( async (): Promise<void> => {
 </script>
 
 <style lang="scss">
-@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
+@use '../../../node_modules/@wikimedia/codex-design-tokens/theme-wikimedia-ui' as *;
 
 .ext-neowiki-auto-infobox {
 	margin-inline: auto;

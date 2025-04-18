@@ -1,20 +1,20 @@
 import { mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
-import { Subject } from '@neo/domain/Subject';
-import { SubjectId } from '@neo/domain/SubjectId';
-import { StatementList } from '@neo/domain/StatementList';
-import { Statement } from '@neo/domain/Statement';
-import { createPropertyDefinitionFromJson, PropertyName } from '@neo/domain/PropertyDefinition';
-import { TextFormat } from '@neo/domain/valueFormats/Text';
-import { NumberFormat } from '@neo/domain/valueFormats/Number';
-import { UrlFormat } from '@neo/domain/valueFormats/Url';
-import { newNumberValue, newStringValue } from '@neo/domain/Value';
-import { NeoWikiExtension } from '@/NeoWikiExtension';
-import { Schema } from '@neo/domain/Schema';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
+import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
+import { Subject } from '@neo/domain/Subject.ts';
+import { SubjectId } from '@neo/domain/SubjectId.ts';
+import { StatementList } from '@neo/domain/StatementList.ts';
+import { Statement } from '@neo/domain/Statement.ts';
+import { createPropertyDefinitionFromJson, PropertyName } from '@neo/domain/PropertyDefinition.ts';
+import { TextFormat } from '@neo/domain/valueFormats/Text.ts';
+import { NumberFormat } from '@neo/domain/valueFormats/Number.ts';
+import { UrlFormat } from '@neo/domain/valueFormats/Url.ts';
+import { newNumberValue, newStringValue } from '@neo/domain/Value.ts';
+import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
+import { Schema } from '@neo/domain/Schema.ts';
+import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { createPinia, setActivePinia } from 'pinia';
-import { useSchemaStore } from '@/stores/SchemaStore';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
