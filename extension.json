@@ -236,8 +236,8 @@
 				"neowiki-property-editor-unique-items",
 				"neowiki-delete-property-confirmation-message",
 				"neowiki-delete-dialog-button",
-				"neowiki-delete-dialog-cancel-button"
-
+				"neowiki-delete-dialog-cancel-button",
+				"neowiki-edit-schema"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
