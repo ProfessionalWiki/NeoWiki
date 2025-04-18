@@ -28,8 +28,8 @@ import { SubjectDeserializer } from '@neo/persistence/SubjectDeserializer.ts';
 import { Neo } from '@neo/Neo.ts';
 import { cdxIconStringInteger, cdxIconTextA } from '@/assets/CustomIcons.ts';
 import { cdxIconLink } from '@wikimedia/codex-icons';
-import TextAttributesEditor from '@/components/Editor/Property/TextAttributesEditor.vue';
-import NumberAttributesEditor from '@/components/Editor/Property/NumberAttributesEditor.vue';
+import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
+import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import { SubjectValidator } from '@neo/domain/SubjectValidator.ts';
 import { ValueFormatRegistry } from '@neo/domain/ValueFormat.ts';
 
