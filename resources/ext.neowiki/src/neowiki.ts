@@ -5,7 +5,10 @@ import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { CdxTooltip } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
-const app = createMwApp( NeoWikiApp ).directive( 'tooltip', CdxTooltip );
-app.use( createPinia() );
-NeoWikiServices.registerServices( app );
-app.mount( '#neowiki' );
+const automaticInfobox = document.querySelector( '#neowiki' );
+if ( automaticInfobox !== null ) {
+	const app = createMwApp( NeoWikiApp ).directive( 'tooltip', CdxTooltip );
+	app.use( createPinia() );
+	NeoWikiServices.registerServices( app );
+	app.mount( automaticInfobox );
+}
