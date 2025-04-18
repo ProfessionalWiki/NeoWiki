@@ -30,10 +30,17 @@ use WikiPage;
 class NeoWikiHooks {
 
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
-		if ( !self::isContentPage( $out ) ) {
-			return;
+		if ( self::isContentPage( $out ) ) {
+			self::handleContentPage( $out );
 		}
+	}
 
+	private static function isContentPage( OutputPage $out ): bool {
+		return $out->isArticle()
+			&& MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $out->getTitle()->getNamespace() );
+	}
+
+	private static function handleContentPage( OutputPage $out ): void {
 		if ( NeoWikiExtension::getInstance()->isDevelopmentUIEnabled() ) {
 			$out->addHTML( NeoWikiExtension::getInstance()->getFactBox()->htmlFor( $out->getTitle() ) );
 		}
@@ -44,11 +51,6 @@ class NeoWikiHooks {
 
 		self::addCreateSubjectButton( $out );
 		self::injectMainSubject( $out );
-	}
-
-	private static function isContentPage( OutputPage $out ): bool {
-		return $out->isArticle()
-			&& MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $out->getTitle()->getNamespace() );
 	}
 
 	private static function addCreateSubjectButton( OutputPage $out ): void {
