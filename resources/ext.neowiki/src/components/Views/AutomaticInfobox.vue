@@ -111,7 +111,7 @@ onMounted( async (): Promise<void> => {
 </script>
 
 <style lang="scss">
-@use '../../../node_modules/@wikimedia/codex-design-tokens/theme-wikimedia-ui' as *;
+@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
 .ext-neowiki-auto-infobox {
 	margin-inline: auto;
