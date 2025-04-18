@@ -22,7 +22,7 @@ import { ref, onMounted } from 'vue';
 import { useSubjectStore } from '@/stores/SubjectStore';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { Subject } from '@neo/domain/Subject';
-import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
+import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
 import { Schema } from '@neo/domain/Schema.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
