@@ -13,7 +13,7 @@
 	</teleport>
 
 	<teleport v-if="canCreateSubject" to="#mw-indicator-neowiki-create-button">
-		<CreateSubjectButton />
+		<!-- TODO: reimplement or remove -->
 	</teleport>
 </template>
 
@@ -23,7 +23,6 @@ import { useSubjectStore } from '@/stores/SubjectStore';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { Subject } from '@neo/domain/Subject';
 import AutomaticInfobox from '@/components/AutomaticInfobox.vue';
-import CreateSubjectButton from '@/components/CreateSubjectButton.vue';
 import { Schema } from '@neo/domain/Schema.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';

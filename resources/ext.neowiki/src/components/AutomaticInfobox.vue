@@ -22,7 +22,7 @@
 				class="ext-neowiki-auto-infobox__edit"
 				weight="quiet"
 				:aria-label="$i18n( 'neowiki-infobox-edit-link' ).text()"
-				@click="editInfoBox"
+				@click="() => console.log( 'TODO' )"
 			>
 				<CdxIcon :icon="cdxIconEdit" />
 			</CdxButton>
@@ -46,15 +46,6 @@
 				</div>
 			</div>
 		</div>
-
-		<SubjectEditor
-			v-if="canEditSubject"
-			ref="subjectEditor"
-			:is-edit-mode="true"
-			:subject="subjectRef as Subject"
-			:can-edit-schema="canEditSchema"
-			@save="saveSubject"
-		/>
 	</div>
 </template>
 
@@ -64,7 +55,6 @@ import { Subject } from '@neo/domain/Subject';
 import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
 import { Schema } from '@neo/domain/Schema';
 import { Component } from 'vue';
-import SubjectEditor from '@/components/Editor/SubjectEditor.vue';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
@@ -87,7 +77,6 @@ const props = defineProps( {
 
 const canEditSchema = ref( false );
 
-const subjectEditor = ref<typeof SubjectEditor|null>( null );
 const subjectRef = ref( props.subject );
 
 const schemaStore = useSchemaStore();
@@ -114,15 +103,6 @@ const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => 
 		.withNames( nonEmptyProperties )
 		.asRecord();
 } );
-
-const editInfoBox = (): void => {
-	subjectEditor.value?.openDialog();
-	console.log( props.subject?.getId() );
-};
-
-const saveSubject = ( savedSubject: Subject ): void => {
-	subjectRef.value = savedSubject;
-};
 
 onMounted( async (): Promise<void> => {
 	canEditSchema.value = await NeoWikiServices.getSchemaAuthorizer().canEditSchema( props.schema.getName() );
