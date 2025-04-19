@@ -113,7 +113,7 @@ type UrlPropertyAttributes = Omit<Partial<UrlProperty>, 'name'> & {
 export function newUrlProperty( attributes: UrlPropertyAttributes = {} ): UrlProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Url' ),
-		format: UrlType.typeName,
+		type: UrlType.typeName,
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,

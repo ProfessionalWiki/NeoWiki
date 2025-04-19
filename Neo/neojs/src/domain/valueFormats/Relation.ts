@@ -49,7 +49,7 @@ type RelationPropertyAttributes = Omit<Partial<RelationProperty>, 'name'> & {
 export function newRelationProperty( attributes: RelationPropertyAttributes = {} ): RelationProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Relation' ),
-		format: RelationType.typeName,
+		type: RelationType.typeName,
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,

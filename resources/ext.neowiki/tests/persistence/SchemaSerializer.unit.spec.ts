@@ -3,11 +3,10 @@ import { SchemaSerializer } from '@/persistence/SchemaSerializer';
 import { Schema } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { ValueType } from '@neo/domain/Value';
-import { TextType, TextProperty } from '@neo/domain/valueFormats/Text';
-import { UrlType, UrlProperty } from '@neo/domain/valueFormats/Url';
-import { NumberType, NumberProperty } from '@neo/domain/valueFormats/Number';
-import { RelationType, RelationProperty } from '@neo/domain/valueFormats/Relation';
+import { newTextProperty } from '@neo/domain/valueFormats/Text';
+import { newUrlProperty } from '@neo/domain/valueFormats/Url';
+import { newNumberProperty } from '@neo/domain/valueFormats/Number';
+import { newRelationProperty } from '@neo/domain/valueFormats/Relation';
 
 describe( 'SchemaSerializer', () => {
 	const serializer = new SchemaSerializer();
@@ -30,51 +29,41 @@ describe( 'SchemaSerializer', () => {
 		} );
 
 		it( 'serializes a schema with all property types', () => {
-			const propertyDefinitions = new PropertyDefinitionList( [
-				{
-					name: new PropertyName( 'textProperty' ),
-					type: ValueType.String,
-					format: TextType.typeName,
-					description: 'Text property',
-					required: true,
-					multiple: true,
-					uniqueItems: false
-				} as TextProperty,
-				{
-					name: new PropertyName( 'urlProperty' ),
-					type: ValueType.String,
-					format: UrlType.typeName,
-					description: 'URL property',
-					required: false,
-					multiple: false,
-					uniqueItems: true
-				} as UrlProperty,
-				{
-					name: new PropertyName( 'numberProperty' ),
-					type: ValueType.Number,
-					format: NumberType.typeName,
-					description: 'Number property',
-					required: true,
-					precision: 2,
-					minimum: 0,
-					maximum: 100
-				} as NumberProperty,
-				{
-					name: new PropertyName( 'relationProperty' ),
-					type: ValueType.Relation,
-					format: RelationType.typeName,
-					description: 'Relation property',
-					required: false,
-					relation: 'TestRelation',
-					targetSchema: 'TestTargetSchema',
-					multiple: true
-				} as RelationProperty
-			] );
-
 			const schema = new Schema(
 				'TestSchema',
 				'Test Description',
-				propertyDefinitions
+				new PropertyDefinitionList( [
+					newTextProperty( {
+						name: 'textProperty',
+						description: 'Text property',
+						required: true,
+						multiple: true,
+						uniqueItems: false
+					} ),
+					newUrlProperty( {
+						name: new PropertyName( 'urlProperty' ),
+						description: 'URL property',
+						required: false,
+						multiple: false,
+						uniqueItems: true
+					} ),
+					newNumberProperty( {
+						name: new PropertyName( 'numberProperty' ),
+						description: 'Number property',
+						required: true,
+						precision: 2,
+						minimum: 0,
+						maximum: 100
+					} ),
+					newRelationProperty( {
+						name: new PropertyName( 'relationProperty' ),
+						description: 'Relation property',
+						required: false,
+						relation: 'TestRelation',
+						targetSchema: 'TestTargetSchema',
+						multiple: true
+					} )
+				] )
 			);
 
 			const serialized = serializer.serializeSchema( schema );
@@ -84,16 +73,14 @@ describe( 'SchemaSerializer', () => {
 				description: 'Test Description',
 				propertyDefinitions: {
 					textProperty: {
-						type: 'string',
-						format: 'text',
+						type: 'text',
 						description: 'Text property',
 						required: true,
 						multiple: true,
 						uniqueItems: false
 					},
 					urlProperty: {
-						type: 'string',
-						format: 'url',
+						type: 'url',
 						description: 'URL property',
 						required: false,
 						multiple: false,
@@ -101,7 +88,6 @@ describe( 'SchemaSerializer', () => {
 					},
 					numberProperty: {
 						type: 'number',
-						format: 'number',
 						description: 'Number property',
 						required: true,
 						precision: 2,
@@ -110,7 +96,6 @@ describe( 'SchemaSerializer', () => {
 					},
 					relationProperty: {
 						type: 'relation',
-						format: 'relation',
 						description: 'Relation property',
 						required: false,
 						relation: 'TestRelation',
