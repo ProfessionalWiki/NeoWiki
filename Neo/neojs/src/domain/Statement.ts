@@ -5,7 +5,7 @@ export class Statement {
 
 	public constructor(
 		public readonly propertyName: PropertyName,
-		public readonly format: string,
+		public readonly propertyType: string,
 		public readonly value: Value | undefined
 	) {
 	}
@@ -17,7 +17,7 @@ export class Statement {
 	public withValue( value: Value | undefined ): Statement {
 		return new Statement(
 			this.propertyName,
-			this.format,
+			this.propertyType,
 			value
 		);
 	}

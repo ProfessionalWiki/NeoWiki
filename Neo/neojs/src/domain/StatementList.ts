@@ -125,7 +125,7 @@ export function statementsToJson( statements: StatementList ): Record<string, un
 
 		valuesJson[ statement.propertyName.toString() ] = {
 			value: value,
-			format: statement.format
+			propertyType: statement.propertyType
 		};
 	}
 

@@ -43,7 +43,7 @@ describe( 'Statement', () => {
 
 			expect( updatedStatement ).not.toBe( originalStatement );
 			expect( updatedStatement.propertyName ).toBe( originalStatement.propertyName );
-			expect( updatedStatement.format ).toBe( originalStatement.format );
+			expect( updatedStatement.propertyType ).toBe( originalStatement.propertyType );
 			expect( updatedStatement.value ).toEqual( newValue );
 		} );
 
