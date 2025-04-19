@@ -2,7 +2,7 @@ import { TextFormat } from '@neo/domain/valueFormats/Text';
 import { NumberFormat } from '@neo/domain/valueFormats/Number';
 import { RelationFormat } from '@neo/domain/valueFormats/Relation';
 import { UrlFormat } from '@neo/domain/valueFormats/Url';
-import { ValueFormatRegistry } from '@neo/domain/PropertyType';
+import { PropertyTypeRegistry } from '@neo/domain/PropertyType';
 import { PropertyDefinitionDeserializer } from '@neo/domain/PropertyDefinition';
 import { ValueDeserializer } from '@neo/persistence/ValueDeserializer';
 import { StatementDeserializer } from '@neo/persistence/StatementDeserializer';
@@ -17,13 +17,13 @@ export class Neo {
 		return Neo.instance;
 	}
 
-	public getValueFormatRegistry(): ValueFormatRegistry {
-		const registry = new ValueFormatRegistry();
+	public getValueFormatRegistry(): PropertyTypeRegistry {
+		const registry = new PropertyTypeRegistry();
 
-		registry.registerFormat( new TextFormat() );
-		registry.registerFormat( new NumberFormat() );
-		registry.registerFormat( new RelationFormat() );
-		registry.registerFormat( new UrlFormat() );
+		registry.registerType( new TextFormat() );
+		registry.registerType( new NumberFormat() );
+		registry.registerType( new RelationFormat() );
+		registry.registerType( new UrlFormat() );
 
 		return registry;
 	}

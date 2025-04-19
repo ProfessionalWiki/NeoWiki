@@ -1,4 +1,4 @@
-import { PropertyType, ValueFormatRegistry } from '@neo/domain/PropertyType';
+import { PropertyType, PropertyTypeRegistry } from '@neo/domain/PropertyType';
 import { Subject } from '@neo/domain/Subject';
 import { Schema } from '@neo/domain/Schema';
 import { Statement } from '@neo/domain/Statement';
@@ -6,7 +6,7 @@ import { Statement } from '@neo/domain/Statement';
 export class SubjectValidator {
 
 	public constructor(
-		private readonly formatRegistry: ValueFormatRegistry
+		private readonly formatRegistry: PropertyTypeRegistry
 	) {}
 
 	public validate( subject: Subject, schema: Schema ): boolean {
@@ -39,7 +39,7 @@ export class SubjectValidator {
 	}
 
 	private getValueFormat( statement: Statement ): PropertyType {
-		return this.formatRegistry.getFormat( statement.format );
+		return this.formatRegistry.getType( statement.format );
 	}
 
 }

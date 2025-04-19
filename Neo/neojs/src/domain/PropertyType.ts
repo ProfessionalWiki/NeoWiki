@@ -46,29 +46,29 @@ export interface ValueValidationError {
 
 export type PropertyType = BaseValueFormat<PropertyDefinition, Value>;
 
-export class ValueFormatRegistry {
+export class PropertyTypeRegistry {
 
 	private propertyTypes: Map<string, PropertyType> = new Map();
 
-	public registerFormat( format: PropertyType ): void {
+	public registerType( format: PropertyType ): void {
 		this.propertyTypes.set( format.getFormatName(), format );
 	}
 
-	public getFormat( formatName: string ): PropertyType {
-		const format = this.propertyTypes.get( formatName );
+	public getType( typeName: string ): PropertyType {
+		const type = this.propertyTypes.get( typeName );
 
-		if ( format === undefined ) {
-			throw new Error( 'Unknown value format: ' + formatName );
+		if ( type === undefined ) {
+			throw new Error( 'Unknown property type: ' + typeName );
 		}
 
-		return format;
+		return type;
 	}
 
-	public getFormatNames(): string[] {
+	public getTypeNames(): string[] {
 		return Array.from( this.propertyTypes.keys() );
 	}
 
-	public getFormats(): PropertyType[] {
+	public getTypes(): PropertyType[] {
 		return Array.from( this.propertyTypes.values() );
 	}
 

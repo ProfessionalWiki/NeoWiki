@@ -41,7 +41,7 @@ const inputValue = computed( () => {
 	return '';
 } );
 
-const valueFormat = NeoWikiServices.getValueFormatRegistry().getFormat( NumberFormat.formatName );
+const valueFormat = NeoWikiServices.getValueFormatRegistry().getType( NumberFormat.formatName );
 
 function onInput( newValue: string ): void {
 	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );
