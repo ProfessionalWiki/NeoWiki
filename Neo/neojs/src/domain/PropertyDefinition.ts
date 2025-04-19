@@ -1,5 +1,5 @@
 import { Neo } from '@neo/Neo';
-import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
+import { ValueFormatRegistry } from '@neo/domain/PropertyType';
 import { Value } from '@neo/domain/Value';
 import { ValueDeserializer } from '@neo/persistence/ValueDeserializer';
 

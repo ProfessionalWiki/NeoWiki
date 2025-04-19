@@ -1,7 +1,7 @@
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { Relation, RelationValue, ValueType } from '@neo/domain/Value';
-import { BaseValueFormat, ValueValidationError } from '@neo/domain/ValueFormat';
+import { BaseValueFormat, ValueValidationError } from '@neo/domain/PropertyType';
 
 export interface RelationProperty extends PropertyDefinition {
 

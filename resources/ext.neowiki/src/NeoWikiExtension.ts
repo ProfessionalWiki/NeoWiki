@@ -31,7 +31,7 @@ import { cdxIconLink } from '@wikimedia/codex-icons';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import { SubjectValidator } from '@neo/domain/SubjectValidator.ts';
-import { ValueFormatRegistry } from '@neo/domain/ValueFormat.ts';
+import { ValueFormatRegistry } from '@neo/domain/PropertyType.ts';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
