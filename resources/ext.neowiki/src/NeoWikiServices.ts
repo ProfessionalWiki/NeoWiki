@@ -11,7 +11,7 @@ export enum Service { // TODO: make private
 	SchemaAuthorizer = 'SchemaAuthorizer',
 	SubjectAuthorizer = 'SubjectAuthorizer',
 	SubjectValidator = 'SubjectValidator',
-	ValueFormatRegistry = 'ValueFormatRegistry'
+	PropertyTypeRegistry = 'PropertyTypeRegistry'
 }
 
 export class NeoWikiServices {
@@ -26,11 +26,11 @@ export class NeoWikiServices {
 		const neoWiki = NeoWikiExtension.getInstance();
 
 		return {
-			[ Service.ComponentRegistry ]: neoWiki.getFormatSpecificComponentRegistry(),
+			[ Service.ComponentRegistry ]: neoWiki.getTypeSpecificComponentRegistry(),
 			[ Service.SchemaAuthorizer ]: neoWiki.newSchemaAuthorizer(),
 			[ Service.SubjectAuthorizer ]: neoWiki.newSubjectAuthorizer(),
 			[ Service.SubjectValidator ]: neoWiki.newSubjectValidator(),
-			[ Service.ValueFormatRegistry ]: neoWiki.getValueFormatRegistry()
+			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry()
 		};
 	}
 
@@ -38,8 +38,8 @@ export class NeoWikiServices {
 		return inject( Service.ComponentRegistry ) as TypeSpecificComponentRegistry;
 	}
 
-	public static getValueFormatRegistry(): PropertyTypeRegistry {
-		return inject( Service.ValueFormatRegistry ) as PropertyTypeRegistry;
+	public static getPropertyTypeRegistry(): PropertyTypeRegistry {
+		return inject( Service.PropertyTypeRegistry ) as PropertyTypeRegistry;
 	}
 
 	public static getSchemaAuthorizer(): SchemaAuthorizer {

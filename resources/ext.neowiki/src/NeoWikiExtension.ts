@@ -43,7 +43,7 @@ export class NeoWikiExtension {
 
 	private rightsFetcher: RightsFetcher|undefined;
 
-	public getFormatSpecificComponentRegistry(): TypeSpecificComponentRegistry {
+	public getTypeSpecificComponentRegistry(): TypeSpecificComponentRegistry {
 		const registry = new TypeSpecificComponentRegistry();
 
 		registry.registerType( TextType.typeName, {
@@ -137,11 +137,11 @@ export class NeoWikiExtension {
 
 	public newSubjectValidator(): SubjectValidator {
 		return new SubjectValidator(
-			this.getValueFormatRegistry()
+			this.getPropertyTypeRegistry()
 		);
 	}
 
-	public getValueFormatRegistry(): PropertyTypeRegistry {
+	public getPropertyTypeRegistry(): PropertyTypeRegistry {
 		return this.getNeo().getPropertyTypeRegistry();
 	}
 }

@@ -84,7 +84,7 @@ const hasInvalidField = computed( () =>
 	inputValues.value.some( ( value ) => value.trim() === '' ) || errors.value.some( ( error ) => error !== null )
 );
 
-const valueFormat = NeoWikiServices.getValueFormatRegistry().getType( props.formatName );
+const valueFormat = NeoWikiServices.getPropertyTypeRegistry().getType( props.formatName );
 
 function validate(): void {
 	// First validate the whole array
