@@ -3,14 +3,14 @@ import { newTextProperty, TextType } from '@neo/domain/propertyTypes/Text';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue } from '@neo/domain/Value';
 
-describe( 'TextFormat', () => {
+describe( 'TextType', () => {
 
-	const format = new TextType();
+	const type = new TextType();
 
 	describe( 'getFormatName', () => {
 
 		it( 'returns "text"', () => {
-			expect( format.getTypeName() ).toBe( 'text' );
+			expect( type.getTypeName() ).toBe( 'text' );
 		} );
 
 	} );
@@ -92,14 +92,14 @@ describe( 'newTextProperty', () => {
 } );
 
 describe( 'validate', () => {
-	const textFormat = new TextType();
+	const textType = new TextType();
 
 	it( 'returns no errors for empty value when optional', () => {
 		const property = newTextProperty( {
 			required: false
 		} );
 
-		const errors = textFormat.validate( newStringValue(), property );
+		const errors = textType.validate( newStringValue(), property );
 
 		expect( errors ).toEqual( [] );
 	} );
@@ -109,7 +109,7 @@ describe( 'validate', () => {
 			required: true
 		} );
 
-		const errors = textFormat.validate( newStringValue(), property );
+		const errors = textType.validate( newStringValue(), property );
 
 		expect( errors ).toEqual( [ { code: 'required' } ] );
 	} );
@@ -119,7 +119,7 @@ describe( 'validate', () => {
 			required: true
 		} );
 
-		const errors = textFormat.validate( undefined, property );
+		const errors = textType.validate( undefined, property );
 
 		expect( errors ).toEqual( [ { code: 'required' } ] );
 	} );
@@ -129,7 +129,7 @@ describe( 'validate', () => {
 			minLength: 5
 		} );
 
-		const errors = textFormat.validate(
+		const errors = textType.validate(
 			newStringValue( [ 'abcd' ] ),
 			property
 		);
@@ -146,7 +146,7 @@ describe( 'validate', () => {
 			maxLength: 5
 		} );
 
-		const errors = textFormat.validate(
+		const errors = textType.validate(
 			newStringValue( [ '123456' ] ),
 			property
 		);
@@ -164,7 +164,7 @@ describe( 'validate', () => {
 			maxLength: 5
 		} );
 
-		const errors = textFormat.validate(
+		const errors = textType.validate(
 			newStringValue( [ 'valid', 'a', 'VALID', 'ab', '123456' ] ),
 			property
 		);
@@ -182,7 +182,7 @@ describe( 'validate', () => {
 			maxLength: 3
 		} );
 
-		const errors = textFormat.validate( newStringValue( [ '123' ] ), property );
+		const errors = textType.validate( newStringValue( [ '123' ] ), property );
 
 		expect( errors ).toEqual( [] );
 	} );
@@ -192,7 +192,7 @@ describe( 'validate', () => {
 			uniqueItems: true
 		} );
 
-		const errors = textFormat.validate(
+		const errors = textType.validate(
 			newStringValue( [
 				'foo',
 				'example',
@@ -211,7 +211,7 @@ describe( 'validate', () => {
 			uniqueItems: true
 		} );
 
-		const errors = textFormat.validate(
+		const errors = textType.validate(
 			newStringValue( [ 'text1', 'text2', 'text3' ] ),
 			property
 		);

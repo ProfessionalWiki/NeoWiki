@@ -142,6 +142,6 @@ export class NeoWikiExtension {
 	}
 
 	public getValueFormatRegistry(): PropertyTypeRegistry {
-		return this.getNeo().getValueFormatRegistry();
+		return this.getNeo().getPropertyTypeRegistry();
 	}
 }

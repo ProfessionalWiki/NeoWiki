@@ -74,14 +74,14 @@ describe( 'newNumberProperty', () => {
 } );
 
 describe( 'validate', () => {
-	const numberFormat = new NumberType();
+	const numberType = new NumberType();
 
 	it( 'returns no errors for undefined value when optional', () => {
 		const property = newNumberProperty( {
 			required: false
 		} );
 
-		const errors = numberFormat.validate( undefined, property );
+		const errors = numberType.validate( undefined, property );
 
 		expect( errors ).toEqual( [] );
 	} );
@@ -91,7 +91,7 @@ describe( 'validate', () => {
 			required: true
 		} );
 
-		const errors = numberFormat.validate( undefined, property );
+		const errors = numberType.validate( undefined, property );
 
 		expect( errors ).toEqual( [ { code: 'required' } ] );
 	} );
@@ -102,7 +102,7 @@ describe( 'validate', () => {
 			maximum: 100
 		} );
 
-		const errors = numberFormat.validate( newNumberValue( 50 ), property );
+		const errors = numberType.validate( newNumberValue( 50 ), property );
 
 		expect( errors ).toEqual( [] );
 	} );
@@ -113,7 +113,7 @@ describe( 'validate', () => {
 			maximum: 42
 		} );
 
-		const errors = numberFormat.validate( newNumberValue( 42 ), property );
+		const errors = numberType.validate( newNumberValue( 42 ), property );
 
 		expect( errors ).toEqual( [] );
 	} );
@@ -123,7 +123,7 @@ describe( 'validate', () => {
 			minimum: 0
 		} );
 
-		const errors = numberFormat.validate( newNumberValue( -1 ), property );
+		const errors = numberType.validate( newNumberValue( -1 ), property );
 
 		expect( errors ).toEqual( [ {
 			code: 'min-value',
@@ -136,7 +136,7 @@ describe( 'validate', () => {
 			maximum: 100
 		} );
 
-		const errors = numberFormat.validate( newNumberValue( 101 ), property );
+		const errors = numberType.validate( newNumberValue( 101 ), property );
 
 		expect( errors ).toEqual( [ {
 			code: 'max-value',
