@@ -8,7 +8,7 @@ import UrlDisplay from '@/components/Value/UrlDisplay.vue';
 import { NumberType } from '@neo/domain/propertyTypes/Number.ts';
 import NumberDisplay from '@/components/Value/NumberDisplay.vue';
 import { RelationType } from '@neo/domain/propertyTypes/Relation.ts';
-import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
+import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry.ts';
 import RelationDisplay from '@/components/Value/RelationDisplay.vue';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
@@ -43,10 +43,10 @@ export class NeoWikiExtension {
 
 	private rightsFetcher: RightsFetcher|undefined;
 
-	public getFormatSpecificComponentRegistry(): FormatSpecificComponentRegistry {
-		const registry = new FormatSpecificComponentRegistry();
+	public getFormatSpecificComponentRegistry(): TypeSpecificComponentRegistry {
+		const registry = new TypeSpecificComponentRegistry();
 
-		registry.registerFormat( TextType.typeName, {
+		registry.registerType( TextType.typeName, {
 			valueDisplayComponent: TextDisplay,
 			valueEditor: TextInput,
 			attributesEditor: TextAttributesEditor,
@@ -54,7 +54,7 @@ export class NeoWikiExtension {
 			icon: cdxIconTextA
 		} );
 
-		registry.registerFormat( UrlType.typeName, {
+		registry.registerType( UrlType.typeName, {
 			valueDisplayComponent: UrlDisplay,
 			valueEditor: UrlInput,
 			attributesEditor: TextAttributesEditor, // TODO
@@ -62,7 +62,7 @@ export class NeoWikiExtension {
 			icon: cdxIconLink
 		} );
 
-		registry.registerFormat( NumberType.typeName, {
+		registry.registerType( NumberType.typeName, {
 			valueDisplayComponent: NumberDisplay,
 			valueEditor: NumberInput,
 			attributesEditor: NumberAttributesEditor,
@@ -70,7 +70,7 @@ export class NeoWikiExtension {
 			icon: cdxIconStringInteger
 		} );
 
-		registry.registerFormat( RelationType.typeName, {
+		registry.registerType( RelationType.typeName, {
 			valueDisplayComponent: RelationDisplay,
 			valueEditor: TextInput, // TODO
 			attributesEditor: TextAttributesEditor, // TODO

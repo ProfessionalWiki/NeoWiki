@@ -1,5 +1,5 @@
 import { App, inject } from 'vue';
-import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
+import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry.ts';
 import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
 import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
@@ -34,8 +34,8 @@ export class NeoWikiServices {
 		};
 	}
 
-	public static getComponentRegistry(): FormatSpecificComponentRegistry {
-		return inject( Service.ComponentRegistry ) as FormatSpecificComponentRegistry;
+	public static getComponentRegistry(): TypeSpecificComponentRegistry {
+		return inject( Service.ComponentRegistry ) as TypeSpecificComponentRegistry;
 	}
 
 	public static getValueFormatRegistry(): PropertyTypeRegistry {
