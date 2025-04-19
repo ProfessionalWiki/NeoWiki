@@ -72,7 +72,7 @@ describe( 'AutomaticInfobox', () => {
 				$i18n
 			},
 			provide: {
-				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getFormatSpecificComponentRegistry(),
+				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
 				[ Service.SchemaAuthorizer ]: NeoWikiExtension.getInstance().newSchemaAuthorizer()
 			}
 		}
