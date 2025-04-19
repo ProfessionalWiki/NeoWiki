@@ -9,7 +9,7 @@ export interface UrlProperty extends MultiStringProperty {
 
 }
 
-export class UrlFormat extends BasePropertyType<UrlProperty, StringValue> {
+export class UrlType extends BasePropertyType<UrlProperty, StringValue> {
 
 	public static readonly valueType = ValueType.String;
 
@@ -113,7 +113,7 @@ type UrlPropertyAttributes = Omit<Partial<UrlProperty>, 'name'> & {
 export function newUrlProperty( attributes: UrlPropertyAttributes = {} ): UrlProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Url' ),
-		format: UrlFormat.typeName,
+		format: UrlType.typeName,
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,

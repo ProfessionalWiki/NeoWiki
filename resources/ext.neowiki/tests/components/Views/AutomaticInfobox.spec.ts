@@ -6,9 +6,9 @@ import { SubjectId } from '@neo/domain/SubjectId.ts';
 import { StatementList } from '@neo/domain/StatementList.ts';
 import { Statement } from '@neo/domain/Statement.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@neo/domain/PropertyDefinition.ts';
-import { TextFormat } from '@neo/domain/valueFormats/Text.ts';
-import { NumberFormat } from '@neo/domain/valueFormats/Number.ts';
-import { UrlFormat } from '@neo/domain/valueFormats/Url.ts';
+import { TextType } from '@neo/domain/valueFormats/Text.ts';
+import { NumberType } from '@neo/domain/valueFormats/Number.ts';
+import { UrlType } from '@neo/domain/valueFormats/Url.ts';
 import { newNumberValue, newStringValue } from '@neo/domain/Value.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Schema } from '@neo/domain/Schema.ts';
@@ -38,9 +38,9 @@ describe( 'AutomaticInfobox', () => {
 		'TestSchema',
 		'A test schema',
 		new PropertyDefinitionList( [
-			createPropertyDefinitionFromJson( 'name', { type: 'string', format: TextFormat.typeName } ),
-			createPropertyDefinitionFromJson( 'age', { type: 'number', format: NumberFormat.typeName } ),
-			createPropertyDefinitionFromJson( 'website', { type: 'string', format: UrlFormat.typeName } )
+			createPropertyDefinitionFromJson( 'name', { type: 'string', format: TextType.typeName } ),
+			createPropertyDefinitionFromJson( 'age', { type: 'number', format: NumberType.typeName } ),
+			createPropertyDefinitionFromJson( 'website', { type: 'string', format: UrlType.typeName } )
 		] )
 	);
 
@@ -50,13 +50,13 @@ describe( 'AutomaticInfobox', () => {
 		'TestSchema',
 		new StatementList( [
 			new Statement(
-				new PropertyName( 'name' ), TextFormat.typeName, newStringValue( 'John Doe', 'Jane Doe' )
+				new PropertyName( 'name' ), TextType.typeName, newStringValue( 'John Doe', 'Jane Doe' )
 			),
 			new Statement(
-				new PropertyName( 'age' ), NumberFormat.typeName, newNumberValue( 30 )
+				new PropertyName( 'age' ), NumberType.typeName, newNumberValue( 30 )
 			),
 			new Statement(
-				new PropertyName( 'website' ), UrlFormat.typeName, newStringValue( 'https://example.com' )
+				new PropertyName( 'website' ), UrlType.typeName, newStringValue( 'https://example.com' )
 			)
 		] )
 	);

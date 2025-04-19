@@ -1,13 +1,13 @@
 import { RightsBasedSubjectAuthorizer } from '@/persistence/RightsBasedSubjectAuthorizer.ts';
 import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
 import { RightsFetcher, UserObjectBasedRightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher.ts';
-import { TextFormat } from '@neo/domain/valueFormats/Text.ts';
+import { TextType } from '@neo/domain/valueFormats/Text.ts';
 import TextDisplay from '@/components/Value/TextDisplay.vue';
-import { UrlFormat } from '@neo/domain/valueFormats/Url.ts';
+import { UrlType } from '@neo/domain/valueFormats/Url.ts';
 import UrlDisplay from '@/components/Value/UrlDisplay.vue';
-import { NumberFormat } from '@neo/domain/valueFormats/Number.ts';
+import { NumberType } from '@neo/domain/valueFormats/Number.ts';
 import NumberDisplay from '@/components/Value/NumberDisplay.vue';
-import { RelationFormat } from '@neo/domain/valueFormats/Relation.ts';
+import { RelationType } from '@neo/domain/valueFormats/Relation.ts';
 import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
 import RelationDisplay from '@/components/Value/RelationDisplay.vue';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
@@ -46,7 +46,7 @@ export class NeoWikiExtension {
 	public getFormatSpecificComponentRegistry(): FormatSpecificComponentRegistry {
 		const registry = new FormatSpecificComponentRegistry();
 
-		registry.registerFormat( TextFormat.typeName, {
+		registry.registerFormat( TextType.typeName, {
 			valueDisplayComponent: TextDisplay,
 			valueEditor: TextInput,
 			attributesEditor: TextAttributesEditor,
@@ -54,7 +54,7 @@ export class NeoWikiExtension {
 			icon: cdxIconTextA
 		} );
 
-		registry.registerFormat( UrlFormat.typeName, {
+		registry.registerFormat( UrlType.typeName, {
 			valueDisplayComponent: UrlDisplay,
 			valueEditor: UrlInput,
 			attributesEditor: TextAttributesEditor, // TODO
@@ -62,7 +62,7 @@ export class NeoWikiExtension {
 			icon: cdxIconLink
 		} );
 
-		registry.registerFormat( NumberFormat.typeName, {
+		registry.registerFormat( NumberType.typeName, {
 			valueDisplayComponent: NumberDisplay,
 			valueEditor: NumberInput,
 			attributesEditor: NumberAttributesEditor,
@@ -70,7 +70,7 @@ export class NeoWikiExtension {
 			icon: cdxIconStringInteger
 		} );
 
-		registry.registerFormat( RelationFormat.typeName, {
+		registry.registerFormat( RelationType.typeName, {
 			valueDisplayComponent: RelationDisplay,
 			valueEditor: TextInput, // TODO
 			attributesEditor: TextAttributesEditor, // TODO

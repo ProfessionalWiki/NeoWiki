@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PropertyTypeRegistry } from '@neo/domain/PropertyType';
-import { TextFormat } from '../valueFormats/Text';
-import { NumberFormat } from '../valueFormats/Number';
+import { TextType } from '../valueFormats/Text';
+import { NumberType } from '../valueFormats/Number';
 
 describe( 'PropertyTypeRegistry', () => {
 
@@ -9,8 +9,8 @@ describe( 'PropertyTypeRegistry', () => {
 
 	function newRegistryWithTypes(): PropertyTypeRegistry {
 		const registry = new PropertyTypeRegistry();
-		registry.registerType( new TextFormat() );
-		registry.registerType( new NumberFormat() );
+		registry.registerType( new TextType() );
+		registry.registerType( new NumberType() );
 		return registry;
 	}
 
@@ -22,8 +22,8 @@ describe( 'PropertyTypeRegistry', () => {
 		} );
 
 		it( 'returns known types', () => {
-			expect( newRegistryWithTypes().getType( TextFormat.typeName ) ).toBeInstanceOf( TextFormat );
-			expect( newRegistryWithTypes().getType( NumberFormat.typeName ) ).toBeInstanceOf( NumberFormat );
+			expect( newRegistryWithTypes().getType( TextType.typeName ) ).toBeInstanceOf( TextType );
+			expect( newRegistryWithTypes().getType( NumberType.typeName ) ).toBeInstanceOf( NumberType );
 		} );
 
 	} );
@@ -35,7 +35,7 @@ describe( 'PropertyTypeRegistry', () => {
 		} );
 
 		it( 'returns names of all registered types', () => {
-			expect( newRegistryWithTypes().getTypeNames() ).toEqual( [ TextFormat.typeName, NumberFormat.typeName ] );
+			expect( newRegistryWithTypes().getTypeNames() ).toEqual( [ TextType.typeName, NumberType.typeName ] );
 		} );
 
 	} );

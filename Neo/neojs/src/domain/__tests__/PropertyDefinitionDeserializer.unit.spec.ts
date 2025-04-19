@@ -2,11 +2,11 @@ import { expect, it } from 'vitest';
 import { PropertyDefinitionDeserializer } from '@neo/domain/PropertyDefinition';
 import { newStringValue } from '../Value';
 import type { TextProperty } from '../valueFormats/Text';
-import { TextFormat } from '../valueFormats/Text';
+import { TextType } from '../valueFormats/Text';
 import type { NumberProperty } from '../valueFormats/Number';
-import { NumberFormat } from '../valueFormats/Number';
+import { NumberType } from '../valueFormats/Number';
 import type { RelationProperty } from '../valueFormats/Relation';
-import { RelationFormat } from '../valueFormats/Relation';
+import { RelationType } from '../valueFormats/Relation';
 import { Neo } from '@neo/Neo';
 
 const serializer = new PropertyDefinitionDeserializer( Neo.getInstance().getValueFormatRegistry(), Neo.getInstance().getValueDeserializer() );
@@ -46,7 +46,7 @@ it( 'creates a string property definition', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as TextProperty;
 
-	expect( property.format ).toBe( TextFormat.typeName );
+	expect( property.format ).toBe( TextType.typeName );
 
 	expect( property.multiple ).toBe( true );
 	expect( property.uniqueItems ).toBe( false );
@@ -59,7 +59,7 @@ it( 'creates a number property definition with defaults', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as NumberProperty;
 
-	expect( property.format ).toBe( NumberFormat.typeName );
+	expect( property.format ).toBe( NumberType.typeName );
 
 	expect( property.minimum ).toBe( undefined );
 	expect( property.maximum ).toBe( undefined );
@@ -76,7 +76,7 @@ it( 'creates a number property definition with all fields', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as NumberProperty;
 
-	expect( property.format ).toBe( NumberFormat.typeName );
+	expect( property.format ).toBe( NumberType.typeName );
 
 	expect( property.minimum ).toBe( 42 );
 	expect( property.maximum ).toBe( 1337 );
@@ -92,7 +92,7 @@ it( 'creates a relation property definition with defaults', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as RelationProperty;
 
-	expect( property.format ).toBe( RelationFormat.typeName );
+	expect( property.format ).toBe( RelationType.typeName );
 
 	expect( property.relation ).toBe( 'Employer' );
 	expect( property.targetSchema ).toBe( 'Company' );

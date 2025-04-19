@@ -10,7 +10,7 @@ export interface TextProperty extends MultiStringProperty {
 
 }
 
-export class TextFormat extends BasePropertyType<TextProperty, StringValue> {
+export class TextType extends BasePropertyType<TextProperty, StringValue> {
 
 	public static readonly valueType = ValueType.String;
 
@@ -73,7 +73,7 @@ type TextPropertyAttributes = Omit<Partial<TextProperty>, 'name'> & {
 export function newTextProperty( attributes: TextPropertyAttributes = {} ): TextProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Text' ),
-		format: TextFormat.typeName,
+		format: TextType.typeName,
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,

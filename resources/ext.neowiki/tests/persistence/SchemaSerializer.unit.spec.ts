@@ -4,10 +4,10 @@ import { Schema } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { ValueType } from '@neo/domain/Value';
-import { TextFormat, TextProperty } from '@neo/domain/valueFormats/Text';
-import { UrlFormat, UrlProperty } from '@neo/domain/valueFormats/Url';
-import { NumberFormat, NumberProperty } from '@neo/domain/valueFormats/Number';
-import { RelationFormat, RelationProperty } from '@neo/domain/valueFormats/Relation';
+import { TextType, TextProperty } from '@neo/domain/valueFormats/Text';
+import { UrlType, UrlProperty } from '@neo/domain/valueFormats/Url';
+import { NumberType, NumberProperty } from '@neo/domain/valueFormats/Number';
+import { RelationType, RelationProperty } from '@neo/domain/valueFormats/Relation';
 
 describe( 'SchemaSerializer', () => {
 	const serializer = new SchemaSerializer();
@@ -34,7 +34,7 @@ describe( 'SchemaSerializer', () => {
 				{
 					name: new PropertyName( 'textProperty' ),
 					type: ValueType.String,
-					format: TextFormat.typeName,
+					format: TextType.typeName,
 					description: 'Text property',
 					required: true,
 					multiple: true,
@@ -43,7 +43,7 @@ describe( 'SchemaSerializer', () => {
 				{
 					name: new PropertyName( 'urlProperty' ),
 					type: ValueType.String,
-					format: UrlFormat.typeName,
+					format: UrlType.typeName,
 					description: 'URL property',
 					required: false,
 					multiple: false,
@@ -52,7 +52,7 @@ describe( 'SchemaSerializer', () => {
 				{
 					name: new PropertyName( 'numberProperty' ),
 					type: ValueType.Number,
-					format: NumberFormat.typeName,
+					format: NumberType.typeName,
 					description: 'Number property',
 					required: true,
 					precision: 2,
@@ -62,7 +62,7 @@ describe( 'SchemaSerializer', () => {
 				{
 					name: new PropertyName( 'relationProperty' ),
 					type: ValueType.Relation,
-					format: RelationFormat.typeName,
+					format: RelationType.typeName,
 					description: 'Relation property',
 					required: false,
 					relation: 'TestRelation',

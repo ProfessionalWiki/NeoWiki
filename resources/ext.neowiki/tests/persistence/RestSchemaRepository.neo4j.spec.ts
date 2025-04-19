@@ -5,7 +5,7 @@ import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { Schema } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
-import { TextFormat } from '@neo/domain/valueFormats/Text';
+import { TextType } from '@neo/domain/valueFormats/Text';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { FailingPageSaver, PageSaver, SucceedingPageSaver } from '@/persistence/PageSaver.ts';
 
@@ -38,7 +38,7 @@ describe( 'RestSchemaRepository', () => {
 				description: 'Employee foo bar baz',
 				propertyDefinitions: {
 					LegalName: {
-						format: TextFormat.typeName,
+						format: TextType.typeName,
 						required: true
 					}
 				}
@@ -57,7 +57,7 @@ describe( 'RestSchemaRepository', () => {
 			expect( schema.getPropertyDefinitions().asRecord() ).toEqual( {
 				LegalName: {
 					name: new PropertyName( 'LegalName' ),
-					format: TextFormat.typeName,
+					format: TextType.typeName,
 					description: '',
 					required: true,
 					multiple: false,

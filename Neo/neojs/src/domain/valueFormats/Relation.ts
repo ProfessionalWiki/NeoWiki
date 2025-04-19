@@ -11,7 +11,7 @@ export interface RelationProperty extends PropertyDefinition {
 
 }
 
-export class RelationFormat extends BasePropertyType<RelationProperty, RelationValue> {
+export class RelationType extends BasePropertyType<RelationProperty, RelationValue> {
 
 	public static readonly valueType = ValueType.Relation;
 
@@ -49,7 +49,7 @@ type RelationPropertyAttributes = Omit<Partial<RelationProperty>, 'name'> & {
 export function newRelationProperty( attributes: RelationPropertyAttributes = {} ): RelationProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Relation' ),
-		format: RelationFormat.typeName,
+		format: RelationType.typeName,
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,

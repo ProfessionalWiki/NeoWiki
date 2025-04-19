@@ -6,9 +6,9 @@ import { StatementList } from '@neo/domain/StatementList';
 import { Statement } from '@neo/domain/Statement';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue } from '@neo/domain/Value';
-import { TextFormat } from '@neo/domain/valueFormats/Text';
+import { TextType } from '@neo/domain/valueFormats/Text';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
-import { UrlFormat } from '@neo/domain/valueFormats/Url';
+import { UrlType } from '@neo/domain/valueFormats/Url';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { SubjectWithContext } from '@neo/domain/SubjectWithContext.ts';
 
@@ -29,11 +29,11 @@ const subjectResponse = {
 	statements: {
 		label: {
 			value: 'John Doe',
-			format: TextFormat.typeName
+			format: TextType.typeName
 		},
 		WorkUrl: {
 			value: 'https://pro.wiki',
-			format: UrlFormat.typeName
+			format: UrlType.typeName
 		}
 	}
 };
@@ -124,8 +124,8 @@ describe( 'RestSubjectRepository', () => {
 					label: 'John Doe',
 					schema: 'Employee',
 					properties: new StatementList( [
-						new Statement( new PropertyName( 'label' ), TextFormat.typeName, newStringValue( 'John Doe' ) ),
-						new Statement( new PropertyName( 'WorkUrl' ), UrlFormat.typeName, newStringValue( 'https://pro.wiki' ) )
+						new Statement( new PropertyName( 'label' ), TextType.typeName, newStringValue( 'John Doe' ) ),
+						new Statement( new PropertyName( 'WorkUrl' ), UrlType.typeName, newStringValue( 'https://pro.wiki' ) )
 					] )
 				}
 			};
@@ -169,8 +169,8 @@ describe( 'RestSubjectRepository', () => {
 		it( 'returns original request', async () => {
 			const mockUpdateResponse = {
 				properties: new StatementList( [
-					new Statement( new PropertyName( 'label' ), TextFormat.typeName, newStringValue( 'John Doe' ) ),
-					new Statement( new PropertyName( 'WorkUrl' ), UrlFormat.typeName, newStringValue( 'https://pro.wiki' ) )
+					new Statement( new PropertyName( 'label' ), TextType.typeName, newStringValue( 'John Doe' ) ),
+					new Statement( new PropertyName( 'WorkUrl' ), UrlType.typeName, newStringValue( 'https://pro.wiki' ) )
 				] )
 			};
 
@@ -246,8 +246,8 @@ describe( 'RestSubjectRepository', () => {
 					label: 'John Doe',
 					schema: 'Employee',
 					properties: new StatementList( [
-						new Statement( new PropertyName( 'label' ), TextFormat.typeName, newStringValue( 'John Doe' ) ),
-						new Statement( new PropertyName( 'WorkUrl' ), UrlFormat.typeName, newStringValue( 'https://pro.wiki' ) )
+						new Statement( new PropertyName( 'label' ), TextType.typeName, newStringValue( 'John Doe' ) ),
+						new Statement( new PropertyName( 'WorkUrl' ), UrlType.typeName, newStringValue( 'https://pro.wiki' ) )
 					] )
 				}
 			};
