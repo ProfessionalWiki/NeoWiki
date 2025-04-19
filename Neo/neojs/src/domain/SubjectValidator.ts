@@ -39,7 +39,7 @@ export class SubjectValidator {
 	}
 
 	private getValueFormat( statement: Statement ): PropertyType {
-		return this.formatRegistry.getType( statement.format );
+		return this.formatRegistry.getType( statement.propertyType );
 	}
 
 }

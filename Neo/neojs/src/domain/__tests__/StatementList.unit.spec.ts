@@ -189,17 +189,17 @@ describe( 'statementsToJson', () => {
 		expect( json ).toEqual( {
 			value1: {
 				value: [ 'test' ],
-				format: TextType.typeName
+				propertyType: TextType.typeName
 			},
 			value2: {
 				value: 123,
-				format: NumberType.typeName
+				propertyType: NumberType.typeName
 			},
 			value4: {
 				value: [
 					{ id: 'testId', target: 'testTarget' }
 				],
-				format: RelationType.typeName
+				propertyType: RelationType.typeName
 			}
 		} );
 	} );

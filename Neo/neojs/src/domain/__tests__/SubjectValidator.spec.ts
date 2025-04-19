@@ -94,7 +94,7 @@ describe( 'SubjectValidator', () => {
 			expect( validator.validate( subject, schema ) ).toBe( true );
 		} );
 
-		it( 'returns true when all statements are valid according to their formats', () => {
+		it( 'returns true when all statements are valid according to their property types', () => {
 			const validator = new SubjectValidator(
 				getFormatRegistryWithMockFormat( true )
 			);
@@ -105,7 +105,7 @@ describe( 'SubjectValidator', () => {
 			expect( validator.validate( subject, schema ) ).toBe( true );
 		} );
 
-		it( 'returns false when a statement is invalid according to its format', () => {
+		it( 'returns false when a statement is invalid according to its property type', () => {
 			const validator = new SubjectValidator(
 				getFormatRegistryWithMockFormat( false )
 			);

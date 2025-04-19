@@ -110,7 +110,7 @@ it( 'creates a relation property definition with all fields', () => {
 	expect( property.multiple ).toBe( true );
 } );
 
-it( 'throws an error for an unsupported format', () => {
+it( 'throws an error for an unsupported type', () => {
 	const json = {
 		format: 'unsupported'
 	};

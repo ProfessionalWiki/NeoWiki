@@ -134,7 +134,7 @@ describe( 'Subject', () => {
 			const newStatements = new StatementList( [
 				{
 					propertyName: new PropertyName( 'testProperty' ),
-					format: TextType.typeName,
+					propertyType: TextType.typeName,
 					value: newStringValue( 'Test Value' )
 				} as Statement
 			] );

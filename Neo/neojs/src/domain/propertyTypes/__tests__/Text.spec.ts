@@ -7,7 +7,7 @@ describe( 'TextType', () => {
 
 	const type = new TextType();
 
-	describe( 'getFormatName', () => {
+	describe( 'getTypeName', () => {
 
 		it( 'returns "text"', () => {
 			expect( type.getTypeName() ).toBe( 'text' );
