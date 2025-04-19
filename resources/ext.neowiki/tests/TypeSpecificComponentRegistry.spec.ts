@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { FormatSpecificComponentRegistry, FormatSpecificStuff } from '@/FormatSpecificComponentRegistry.ts';
+import { TypeSpecificComponentRegistry, TypeSpecificStuff } from '@/TypeSpecificComponentRegistry.ts';
 
-describe( 'FormatSpecificComponentRegistry', () => {
+describe( 'TypeSpecificComponentRegistry', () => {
 
 	const registerComponent = (
-		registry: FormatSpecificComponentRegistry,
-		format: string,
-		stuff: Partial<FormatSpecificStuff> = {}
+		registry: TypeSpecificComponentRegistry,
+		type: string,
+		stuff: Partial<TypeSpecificStuff> = {}
 	): void => {
 		const mockComponent = {} as any;
 
-		const defaultStuff: FormatSpecificStuff = {
+		const defaultStuff: TypeSpecificStuff = {
 			valueDisplayComponent: mockComponent,
 			valueEditor: mockComponent,
 			attributesEditor: mockComponent,
@@ -18,41 +18,41 @@ describe( 'FormatSpecificComponentRegistry', () => {
 			icon: 'Default Icon'
 		};
 
-		registry.registerFormat( format, { ...defaultStuff, ...stuff } );
+		registry.registerType( type, { ...defaultStuff, ...stuff } );
 	};
 
-	describe( 'getValueFormats', () => {
+	describe( 'getPropertyTypes', () => {
 
-		it( 'returns an empty array when no formats are registered', () => {
-			const registry = new FormatSpecificComponentRegistry();
+		it( 'returns an empty array when no types are registered', () => {
+			const registry = new TypeSpecificComponentRegistry();
 
-			expect( registry.getValueFormats() ).toEqual( [] );
+			expect( registry.getPropertyTypes() ).toEqual( [] );
 		} );
 
-		it( 'returns all registered formats', () => {
-			const registry = new FormatSpecificComponentRegistry();
+		it( 'returns all registered types', () => {
+			const registry = new TypeSpecificComponentRegistry();
 
 			registerComponent( registry, 'string' );
 			registerComponent( registry, 'number' );
 			registerComponent( registry, 'boolean' );
 
-			expect( registry.getValueFormats() ).toEqual( [ 'string', 'number', 'boolean' ] );
+			expect( registry.getPropertyTypes() ).toEqual( [ 'string', 'number', 'boolean' ] );
 		} );
 
 	} );
 
 	describe( 'getLabelsAndIcons', () => {
 
-		it( 'returns an empty array when no formats are registered', () => {
-			const registry = new FormatSpecificComponentRegistry();
+		it( 'returns an empty array when no types are registered', () => {
+			const registry = new TypeSpecificComponentRegistry();
 
 			const labelsAndIcons = registry.getLabelsAndIcons();
 
 			expect( labelsAndIcons ).toEqual( [] );
 		} );
 
-		it( 'returns labels and icons for all registered formats', () => {
-			const registry = new FormatSpecificComponentRegistry();
+		it( 'returns labels and icons for all registered types', () => {
+			const registry = new TypeSpecificComponentRegistry();
 
 			registerComponent( registry, 'string', { label: 'String', icon: 'string-icon' } );
 			registerComponent( registry, 'number', { label: 'Number', icon: 'number-icon' } );
@@ -68,8 +68,8 @@ describe( 'FormatSpecificComponentRegistry', () => {
 	} );
 
 	describe( 'getValueDisplayComponent', () => {
-		it( 'returns the correct value display component for a registered format', () => {
-			const registry = new FormatSpecificComponentRegistry();
+		it( 'returns the correct value display component for a registered type', () => {
+			const registry = new TypeSpecificComponentRegistry();
 			registerComponent( registry, 'url', { valueDisplayComponent: { name: 'UrlWrong' } } );
 			registerComponent( registry, 'string', { valueDisplayComponent: { name: 'StringRight' } } );
 			registerComponent( registry, 'number', { valueDisplayComponent: { name: 'NumberWrong' } } );
@@ -78,16 +78,16 @@ describe( 'FormatSpecificComponentRegistry', () => {
 			expect( result ).toStrictEqual( { name: 'StringRight' } );
 		} );
 
-		it( 'throws an error for an unregistered format', () => {
-			const registry = new FormatSpecificComponentRegistry();
+		it( 'throws an error for an unregistered type', () => {
+			const registry = new TypeSpecificComponentRegistry();
 			expect( () => registry.getValueDisplayComponent( 'unregistered' ) )
-				.toThrow( 'No value display component registered for format: unregistered' );
+				.toThrow( 'No value display component registered for property type: unregistered' );
 		} );
 	} );
 
 	describe( 'getValueEditingComponent', () => {
-		it( 'returns the correct value editing component for a registered format', () => {
-			const registry = new FormatSpecificComponentRegistry();
+		it( 'returns the correct value editing component for a registered type', () => {
+			const registry = new TypeSpecificComponentRegistry();
 			registerComponent( registry, 'url', { valueEditor: { name: 'UrlWrong' } } );
 			registerComponent( registry, 'string', { valueEditor: { name: 'StringRight' } } );
 			registerComponent( registry, 'number', { valueEditor: { name: 'NumberWrong' } } );
@@ -96,16 +96,16 @@ describe( 'FormatSpecificComponentRegistry', () => {
 			expect( result ).toStrictEqual( { name: 'StringRight' } );
 		} );
 
-		it( 'throws an error for an unregistered format', () => {
-			const registry = new FormatSpecificComponentRegistry();
+		it( 'throws an error for an unregistered type', () => {
+			const registry = new TypeSpecificComponentRegistry();
 			expect( () => registry.getValueEditingComponent( 'unregistered' ) )
-				.toThrow( 'No value editing component registered for format: unregistered' );
+				.toThrow( 'No value editing component registered for property type: unregistered' );
 		} );
 	} );
 
 	describe( 'getAttributesEditor', () => {
-		it( 'returns the correct attributes editor component for a registered format', () => {
-			const registry = new FormatSpecificComponentRegistry();
+		it( 'returns the correct attributes editor component for a registered type', () => {
+			const registry = new TypeSpecificComponentRegistry();
 			registerComponent( registry, 'url', { attributesEditor: { name: 'UrlWrong' } } );
 			registerComponent( registry, 'string', { attributesEditor: { name: 'StringRight' } } );
 			registerComponent( registry, 'number', { attributesEditor: { name: 'NumberWrong' } } );
@@ -114,10 +114,10 @@ describe( 'FormatSpecificComponentRegistry', () => {
 			expect( result ).toStrictEqual( { name: 'StringRight' } );
 		} );
 
-		it( 'throws an error for an unregistered format', () => {
-			const registry = new FormatSpecificComponentRegistry();
+		it( 'throws an error for an unregistered type', () => {
+			const registry = new TypeSpecificComponentRegistry();
 			expect( () => registry.getAttributesEditor( 'unregistered' ) )
-				.toThrow( 'No attributes editor component registered for format: unregistered' );
+				.toThrow( 'No attributes editor component registered for property type: unregistered' );
 		} );
 	} );
 
