@@ -21,7 +21,7 @@ describe( 'newTextProperty', () => {
 		const property = newTextProperty();
 
 		expect( property.name ).toEqual( new PropertyName( 'Text' ) );
-		expect( property.format ).toBe( TextType.typeName );
+		expect( property.type ).toBe( TextType.typeName );
 		expect( property.description ).toBe( '' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
@@ -61,7 +61,7 @@ describe( 'newTextProperty', () => {
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'FullText' ) );
-		expect( property.format ).toBe( TextType.typeName );
+		expect( property.type ).toBe( TextType.typeName );
 		expect( property.description ).toBe( 'A text property' );
 		expect( property.required ).toBe( true );
 		expect( property.default ).toStrictEqual( newStringValue( 'default text' ) );
@@ -80,7 +80,7 @@ describe( 'newTextProperty', () => {
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'PartialText' ) );
-		expect( property.format ).toBe( TextType.typeName );
+		expect( property.type ).toBe( TextType.typeName );
 		expect( property.description ).toBe( 'A partial text property' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();

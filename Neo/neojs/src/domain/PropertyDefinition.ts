@@ -28,7 +28,7 @@ export class PropertyName {
 export interface PropertyDefinition {
 
 	readonly name: PropertyName;
-	readonly format: string;
+	readonly type: string;
 	readonly description: string;
 	readonly required: boolean;
 	readonly default?: Value;
@@ -61,7 +61,7 @@ export class PropertyDefinitionDeserializer {
 		return format.createPropertyDefinitionFromJson(
 			{
 				name: typeof name === 'string' ? new PropertyName( name ) : name,
-				format: json.format as string,
+				type: json.format as string,
 				description: json.description ?? '',
 				required: json.required ?? false,
 				default: json.default ? this.valueDeserializer.deserialize( json.default, json.format ) : undefined

@@ -73,7 +73,7 @@ type TextPropertyAttributes = Omit<Partial<TextProperty>, 'name'> & {
 export function newTextProperty( attributes: TextPropertyAttributes = {} ): TextProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Text' ),
-		format: TextType.typeName,
+		type: TextType.typeName,
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,

@@ -38,7 +38,7 @@
 				</div>
 				<div class="ext-neowiki-auto-infobox__value">
 					<component
-						:is="getComponent( propertyDefinition.format )"
+						:is="getComponent( propertyDefinition.type )"
 						:key="`${propertyDefinition.name}${subjectRef?.getStatementValue( propertyDefinition.name )}-ext-neowiki-auto-infobox`"
 						:value="subjectRef?.getStatementValue( propertyDefinition.name )"
 						:property="propertyDefinition"

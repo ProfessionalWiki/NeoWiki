@@ -53,7 +53,7 @@ describe( 'SubjectValidator', () => {
 			new PropertyDefinitionList(
 				propertyNames.map( ( name ) => ( {
 					name: new PropertyName( name ),
-					format: 'mock-format',
+					type: 'mock-format',
 					description: '',
 					required: false
 				} ) )

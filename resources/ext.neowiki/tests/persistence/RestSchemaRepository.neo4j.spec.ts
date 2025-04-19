@@ -57,7 +57,7 @@ describe( 'RestSchemaRepository', () => {
 			expect( schema.getPropertyDefinitions().asRecord() ).toEqual( {
 				LegalName: {
 					name: new PropertyName( 'LegalName' ),
-					format: TextType.typeName,
+					type: TextType.typeName,
 					description: '',
 					required: true,
 					multiple: false,
