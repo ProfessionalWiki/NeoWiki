@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TextInput from '@/components/Value/TextInput.vue';
 import { CdxField, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { newStringValue } from '@neo/domain/Value';
-import { newTextProperty } from '@neo/domain/valueFormats/Text';
+import { newTextProperty } from '@neo/domain/propertyTypes/Text';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
 
 describe( 'TextInput', () => {

@@ -1,12 +1,9 @@
 import { expect, it } from 'vitest';
 import { PropertyDefinitionDeserializer } from '@neo/domain/PropertyDefinition';
 import { newStringValue } from '../Value';
-import type { TextProperty } from '../valueFormats/Text';
-import { TextType } from '../valueFormats/Text';
-import type { NumberProperty } from '../valueFormats/Number';
-import { NumberType } from '../valueFormats/Number';
-import type { RelationProperty } from '../valueFormats/Relation';
-import { RelationType } from '../valueFormats/Relation';
+import { TextProperty, TextType } from '@neo/domain/propertyTypes/Text';
+import { NumberProperty, NumberType } from '@neo/domain/propertyTypes/Number';
+import { RelationProperty, RelationType } from '@neo/domain/propertyTypes/Relation';
 import { Neo } from '@neo/Neo';
 
 const serializer = new PropertyDefinitionDeserializer( Neo.getInstance().getValueFormatRegistry(), Neo.getInstance().getValueDeserializer() );

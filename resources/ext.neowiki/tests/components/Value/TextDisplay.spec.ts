@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { newNumberValue, newStringValue, Value } from '@neo/domain/Value';
-import { newTextProperty } from '@neo/domain/valueFormats/Text.ts';
+import { newTextProperty } from '@neo/domain/propertyTypes/Text.ts';
 import TextDisplay from '@/components/Value/TextDisplay.vue';
 
 function createWrapper( ...parts: string[] ): ReturnType<typeof mount> {

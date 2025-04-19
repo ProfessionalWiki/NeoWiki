@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newRelationProperty, RelationType } from '@neo/domain/valueFormats/Relation';
+import { newRelationProperty, RelationType } from '@neo/domain/propertyTypes/Relation';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { RelationValue } from '@neo/domain/Value';
 import { Relation } from '@neo/domain/Value';

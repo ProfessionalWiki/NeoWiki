@@ -5,7 +5,7 @@ import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { Schema } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
-import { TextType } from '@neo/domain/valueFormats/Text';
+import { TextType } from '@neo/domain/propertyTypes/Text';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { FailingPageSaver, PageSaver, SucceedingPageSaver } from '@/persistence/PageSaver.ts';
 

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import UrlInput from '@/components/Value/UrlInput.vue';
 import { CdxField } from '@wikimedia/codex';
 import { newStringValue, StringValue } from '@neo/domain/Value';
-import { newUrlProperty } from '@neo/domain/valueFormats/Url.ts';
+import { newUrlProperty } from '@neo/domain/propertyTypes/Url.ts';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
 
 describe( 'UrlInput', () => {

@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
-import { TextProperty } from '@neo/domain/valueFormats/Text.ts';
+import { TextProperty } from '@neo/domain/propertyTypes/Text.ts';
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { newStringValue, Value } from '@neo/domain/Value.ts';
 

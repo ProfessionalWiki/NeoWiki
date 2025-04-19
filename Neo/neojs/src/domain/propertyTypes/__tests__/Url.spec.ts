@@ -1,5 +1,5 @@
 import { test, expect, describe, it } from 'vitest';
-import { newUrlProperty, UrlType, isValidUrl, UrlFormatter } from '@neo/domain/valueFormats/Url';
+import { newUrlProperty, UrlType, isValidUrl, UrlFormatter } from '@neo/domain/propertyTypes/Url';
 import { newStringValue } from '@neo/domain/Value';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 

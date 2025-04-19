@@ -1,13 +1,13 @@
 import { RightsBasedSubjectAuthorizer } from '@/persistence/RightsBasedSubjectAuthorizer.ts';
 import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
 import { RightsFetcher, UserObjectBasedRightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher.ts';
-import { TextType } from '@neo/domain/valueFormats/Text.ts';
+import { TextType } from '@neo/domain/propertyTypes/Text.ts';
 import TextDisplay from '@/components/Value/TextDisplay.vue';
-import { UrlType } from '@neo/domain/valueFormats/Url.ts';
+import { UrlType } from '@neo/domain/propertyTypes/Url.ts';
 import UrlDisplay from '@/components/Value/UrlDisplay.vue';
-import { NumberType } from '@neo/domain/valueFormats/Number.ts';
+import { NumberType } from '@neo/domain/propertyTypes/Number.ts';
 import NumberDisplay from '@/components/Value/NumberDisplay.vue';
-import { RelationType } from '@neo/domain/valueFormats/Relation.ts';
+import { RelationType } from '@neo/domain/propertyTypes/Relation.ts';
 import { FormatSpecificComponentRegistry } from '@/FormatSpecificComponentRegistry.ts';
 import RelationDisplay from '@/components/Value/RelationDisplay.vue';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';

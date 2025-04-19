@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newNumberProperty, NumberType } from '@neo/domain/valueFormats/Number';
+import { newNumberProperty, NumberType } from '@neo/domain/propertyTypes/Number';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newNumberValue } from '@neo/domain/Value';
 
