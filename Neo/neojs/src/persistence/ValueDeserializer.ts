@@ -1,4 +1,4 @@
-import { ValueFormatRegistry } from '@neo/domain/PropertyType';
+import { PropertyTypeRegistry } from '@neo/domain/PropertyType';
 import {
 	newBooleanValue,
 	newNumberValue,
@@ -12,7 +12,7 @@ import {
 export class ValueDeserializer {
 
 	public constructor(
-		private readonly registry: ValueFormatRegistry
+		private readonly registry: PropertyTypeRegistry
 	) {
 	}
 
@@ -37,7 +37,7 @@ export class ValueDeserializer {
 	}
 
 	private formatToType( format: string ): ValueType {
-		return this.registry.getFormat( format ).getValueType();
+		return this.registry.getType( format ).getValueType();
 	}
 
 }

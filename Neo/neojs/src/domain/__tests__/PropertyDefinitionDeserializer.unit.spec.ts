@@ -118,7 +118,7 @@ it( 'throws an error for an unsupported format', () => {
 		format: 'unsupported'
 	};
 
-	expect( () => serializer.propertyDefinitionFromJson( 'test', json ) ).toThrow( 'Unknown value format: unsupported' );
+	expect( () => serializer.propertyDefinitionFromJson( 'test', json ) ).toThrow( 'Unknown property type: unsupported' );
 } );
 
 it( 'creates definitions without default value', () => {

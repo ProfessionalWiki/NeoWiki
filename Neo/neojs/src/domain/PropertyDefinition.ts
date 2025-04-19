@@ -1,5 +1,5 @@
 import { Neo } from '@neo/Neo';
-import { ValueFormatRegistry } from '@neo/domain/PropertyType';
+import { PropertyTypeRegistry } from '@neo/domain/PropertyType';
 import { Value } from '@neo/domain/Value';
 import { ValueDeserializer } from '@neo/persistence/ValueDeserializer';
 
@@ -52,12 +52,12 @@ export function createPropertyDefinitionFromJson( id: string, json: any ): Prope
 export class PropertyDefinitionDeserializer {
 
 	public constructor(
-		private readonly registry: ValueFormatRegistry,
+		private readonly registry: PropertyTypeRegistry,
 		private readonly valueDeserializer: ValueDeserializer
 	) {}
 
 	public propertyDefinitionFromJson( name: string | PropertyName, json: any ): PropertyDefinition {
-		const format = this.registry.getFormat( json.format );
+		const format = this.registry.getType( json.format );
 		return format.createPropertyDefinitionFromJson(
 			{
 				name: typeof name === 'string' ? new PropertyName( name ) : name,

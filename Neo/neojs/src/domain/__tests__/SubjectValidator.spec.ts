@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SubjectValidator } from '@neo/domain/SubjectValidator';
-import { BaseValueFormat, ValueFormatRegistry, ValueValidationError } from '@neo/domain/PropertyType';
+import { BaseValueFormat, PropertyTypeRegistry, ValueValidationError } from '@neo/domain/PropertyType';
 import { Subject } from '@neo/domain/Subject';
 import { Schema } from '@neo/domain/Schema';
 import { StatementList } from '@neo/domain/StatementList';
@@ -40,9 +40,9 @@ describe( 'SubjectValidator', () => {
 
 	}
 
-	function getFormatRegistryWithMockFormat( isValid: boolean ): ValueFormatRegistry {
-		const registry = new ValueFormatRegistry();
-		registry.registerFormat( new MockValueFormat( isValid ) );
+	function getFormatRegistryWithMockFormat( isValid: boolean ): PropertyTypeRegistry {
+		const registry = new PropertyTypeRegistry();
+		registry.registerType( new MockValueFormat( isValid ) );
 		return registry;
 	}
 
@@ -75,7 +75,7 @@ describe( 'SubjectValidator', () => {
 
 	describe( 'validate', () => {
 		it( 'returns true when subject has no statements', () => {
-			const validator = new SubjectValidator( new ValueFormatRegistry() );
+			const validator = new SubjectValidator( new PropertyTypeRegistry() );
 
 			const subject = newSubject();
 			const schema = newSchema( [] );
@@ -117,7 +117,7 @@ describe( 'SubjectValidator', () => {
 		} );
 
 		it( 'returns false when subject label is empty', () => {
-			const validator = new SubjectValidator( new ValueFormatRegistry() );
+			const validator = new SubjectValidator( new PropertyTypeRegistry() );
 
 			const subject = newSubject( { label: '' } );
 
@@ -125,7 +125,7 @@ describe( 'SubjectValidator', () => {
 		} );
 
 		it( 'returns false when subject label contains only whitespace', () => {
-			const validator = new SubjectValidator( new ValueFormatRegistry() );
+			const validator = new SubjectValidator( new PropertyTypeRegistry() );
 
 			const subject = newSubject( { label: '   ' } );
 
