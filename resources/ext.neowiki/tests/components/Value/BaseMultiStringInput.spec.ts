@@ -20,7 +20,7 @@ describe( 'BaseMultiStringInput', () => {
 		return createTestWrapper( BaseMultiStringInput, {
 			modelValue: newStringValue( 'value1', 'value2' ),
 			property: newTextProperty( { multiple: true } ),
-			formatName: 'text',
+			propertyTypeName: 'text',
 			inputType: 'text',
 			rootClass: 'test-field',
 			...props

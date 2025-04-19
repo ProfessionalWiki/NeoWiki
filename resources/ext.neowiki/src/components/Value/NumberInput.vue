@@ -41,7 +41,7 @@ const inputValue = computed( () => {
 	return '';
 } );
 
-const valueFormat = NeoWikiServices.getPropertyTypeRegistry().getType( NumberType.typeName );
+const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( NumberType.typeName );
 
 function onInput( newValue: string ): void {
 	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );
@@ -50,7 +50,7 @@ function onInput( newValue: string ): void {
 }
 
 function validate( value: NumberValue | undefined ): void {
-	const errors = valueFormat.validate( value, props.property );
+	const errors = propertyType.validate( value, props.property );
 	validationError.value = errors.length === 0 ? null :
 		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
 }

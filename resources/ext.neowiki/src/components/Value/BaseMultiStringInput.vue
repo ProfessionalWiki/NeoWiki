@@ -55,7 +55,7 @@ import { MultiStringProperty } from '@neo/domain/PropertyDefinition';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<MultiStringProperty> & {
-		formatName: string;
+		propertyTypeName: string;
 		inputType: TextInputType;
 		rootClass: string;
 		startIcon?: string;
@@ -84,12 +84,12 @@ const hasInvalidField = computed( () =>
 	inputValues.value.some( ( value ) => value.trim() === '' ) || errors.value.some( ( error ) => error !== null )
 );
 
-const valueFormat = NeoWikiServices.getPropertyTypeRegistry().getType( props.formatName );
+const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( props.propertyTypeName );
 
 function validate(): void {
 	// First validate the whole array
 	const allValues = newStringValue( ...inputValues.value );
-	const allErrors = valueFormat.validate( allValues, props.property );
+	const allErrors = propertyType.validate( allValues, props.property );
 	const hasValidValue = allErrors.length === 0;
 
 	// Reset all errors
@@ -115,7 +115,7 @@ function validate(): void {
 		}
 
 		const value = newStringValue( text );
-		const validationErrors = valueFormat.validate( value, props.property );
+		const validationErrors = propertyType.validate( value, props.property );
 
 		if ( validationErrors.length > 0 ) {
 			errors.value[ index ] = mw.message(

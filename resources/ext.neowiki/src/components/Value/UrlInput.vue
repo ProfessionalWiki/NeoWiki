@@ -1,7 +1,7 @@
 <template>
 	<BaseMultiStringInput
 		v-bind="$props"
-		format-name="url"
+		property-type-name="url"
 		input-type="url"
 		root-class="neo-url-field"
 		:start-icon="cdxIconLink"
