@@ -1,7 +1,7 @@
 import type { MultiStringProperty, PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@neo/domain/Value';
-import { BaseValueFormat, ValueValidationError } from '@neo/domain/PropertyType';
+import { BasePropertyType, ValueValidationError } from '@neo/domain/PropertyType';
 
 export interface TextProperty extends MultiStringProperty {
 
@@ -10,11 +10,11 @@ export interface TextProperty extends MultiStringProperty {
 
 }
 
-export class TextFormat extends BaseValueFormat<TextProperty, StringValue> {
+export class TextFormat extends BasePropertyType<TextProperty, StringValue> {
 
 	public static readonly valueType = ValueType.String;
 
-	public static readonly formatName = 'text';
+	public static readonly typeName = 'text';
 
 	public getExampleValue(): StringValue {
 		return newStringValue( 'Some Text' );
@@ -73,7 +73,7 @@ type TextPropertyAttributes = Omit<Partial<TextProperty>, 'name'> & {
 export function newTextProperty( attributes: TextPropertyAttributes = {} ): TextProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Text' ),
-		format: TextFormat.formatName,
+		format: TextFormat.typeName,
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,

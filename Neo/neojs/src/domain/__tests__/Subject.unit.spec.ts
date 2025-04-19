@@ -56,19 +56,19 @@ describe( 'Subject', () => {
 					{
 						Property1: {
 							value: [ 'foo' ],
-							format: TextFormat.formatName
+							format: TextFormat.typeName
 						},
 						Property2: {
 							value: [ { target: 's11111111111111' } ],
-							format: RelationFormat.formatName
+							format: RelationFormat.typeName
 						},
 						Property3: {
 							value: [ { target: 's11111111111112' }, { target: 's11111111111113' } ],
-							format: RelationFormat.formatName
+							format: RelationFormat.typeName
 						},
 						Property4: {
 							value: [ 'bar' ],
-							format: TextFormat.formatName
+							format: TextFormat.typeName
 						}
 					}
 				)
@@ -89,19 +89,19 @@ describe( 'Subject', () => {
 					{
 						Property1: {
 							value: [ 'foo' ],
-							format: TextFormat.formatName
+							format: TextFormat.typeName
 						},
 						Property2: {
 							value: [ { target: 's11111111111118' } ],
-							format: RelationFormat.formatName
+							format: RelationFormat.typeName
 						},
 						Property3: {
 							value: [ { target: 's11111111111111' }, { target: 's11111111111119' } ],
-							format: RelationFormat.formatName
+							format: RelationFormat.typeName
 						},
 						Property4: {
 							value: [ 'bar' ],
-							format: TextFormat.formatName
+							format: TextFormat.typeName
 						}
 					}
 				)
@@ -134,7 +134,7 @@ describe( 'Subject', () => {
 			const newStatements = new StatementList( [
 				{
 					propertyName: new PropertyName( 'testProperty' ),
-					format: TextFormat.formatName,
+					format: TextFormat.typeName,
 					value: newStringValue( 'Test Value' )
 				} as Statement
 			] );

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SubjectValidator } from '@neo/domain/SubjectValidator';
-import { BaseValueFormat, PropertyTypeRegistry, ValueValidationError } from '@neo/domain/PropertyType';
+import { BasePropertyType, PropertyTypeRegistry, ValueValidationError } from '@neo/domain/PropertyType';
 import { Subject } from '@neo/domain/Subject';
 import { Schema } from '@neo/domain/Schema';
 import { StatementList } from '@neo/domain/StatementList';
@@ -14,11 +14,11 @@ describe( 'SubjectValidator', () => {
 
 	const exampleProperty: string = 'exampleProperty';
 
-	class MockValueFormat extends BaseValueFormat<PropertyDefinition, Value> {
+	class MockValueFormat extends BasePropertyType<PropertyDefinition, Value> {
 
 		public static readonly valueType = ValueType.String;
 
-		public static readonly formatName = 'mock-format';
+		public static readonly typeName = 'mock-format';
 
 		public constructor(
 			private readonly shouldBeValid: boolean = true

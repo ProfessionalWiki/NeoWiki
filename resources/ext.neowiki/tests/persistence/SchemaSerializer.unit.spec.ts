@@ -34,7 +34,7 @@ describe( 'SchemaSerializer', () => {
 				{
 					name: new PropertyName( 'textProperty' ),
 					type: ValueType.String,
-					format: TextFormat.formatName,
+					format: TextFormat.typeName,
 					description: 'Text property',
 					required: true,
 					multiple: true,
@@ -43,7 +43,7 @@ describe( 'SchemaSerializer', () => {
 				{
 					name: new PropertyName( 'urlProperty' ),
 					type: ValueType.String,
-					format: UrlFormat.formatName,
+					format: UrlFormat.typeName,
 					description: 'URL property',
 					required: false,
 					multiple: false,
@@ -52,7 +52,7 @@ describe( 'SchemaSerializer', () => {
 				{
 					name: new PropertyName( 'numberProperty' ),
 					type: ValueType.Number,
-					format: NumberFormat.formatName,
+					format: NumberFormat.typeName,
 					description: 'Number property',
 					required: true,
 					precision: 2,
@@ -62,7 +62,7 @@ describe( 'SchemaSerializer', () => {
 				{
 					name: new PropertyName( 'relationProperty' ),
 					type: ValueType.Relation,
-					format: RelationFormat.formatName,
+					format: RelationFormat.typeName,
 					description: 'Relation property',
 					required: false,
 					relation: 'TestRelation',

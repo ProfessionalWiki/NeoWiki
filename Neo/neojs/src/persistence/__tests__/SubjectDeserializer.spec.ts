@@ -61,8 +61,8 @@ describe( 'SubjectDeserializer', () => {
 			'SubjectDeserializer',
 			'SDSchema',
 			new StatementList( [
-				new Statement( new PropertyName( 'Property1' ), TextFormat.formatName, newStringValue( 'foo' ) ),
-				new Statement( new PropertyName( 'Property2' ), NumberFormat.formatName, newNumberValue( 1337 ) )
+				new Statement( new PropertyName( 'Property1' ), TextFormat.typeName, newStringValue( 'foo' ) ),
+				new Statement( new PropertyName( 'Property2' ), NumberFormat.typeName, newNumberValue( 1337 ) )
 			] ),
 			new PageIdentifiers( 42, 'SDPageTitle' )
 		) );

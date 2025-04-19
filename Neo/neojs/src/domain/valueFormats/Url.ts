@@ -1,6 +1,6 @@
 import { MultiStringProperty, PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@neo/domain/Value';
-import { BaseValueFormat, ValueValidationError } from '@neo/domain/PropertyType';
+import { BasePropertyType, ValueValidationError } from '@neo/domain/PropertyType';
 import DOMPurify from 'dompurify';
 
 export interface UrlProperty extends MultiStringProperty {
@@ -9,11 +9,11 @@ export interface UrlProperty extends MultiStringProperty {
 
 }
 
-export class UrlFormat extends BaseValueFormat<UrlProperty, StringValue> {
+export class UrlFormat extends BasePropertyType<UrlProperty, StringValue> {
 
 	public static readonly valueType = ValueType.String;
 
-	public static readonly formatName = 'url';
+	public static readonly typeName = 'url';
 
 	public getExampleValue(): StringValue {
 		return newStringValue( 'https://example.com' );
@@ -113,7 +113,7 @@ type UrlPropertyAttributes = Omit<Partial<UrlProperty>, 'name'> & {
 export function newUrlProperty( attributes: UrlPropertyAttributes = {} ): UrlProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Url' ),
-		format: UrlFormat.formatName,
+		format: UrlFormat.typeName,
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,

@@ -13,8 +13,8 @@ describe( 'StatementList', () => {
 
 	const property1 = new PropertyName( 'property1' );
 	const property2 = new PropertyName( 'property2' );
-	const statement1 = new Statement( property1, TextFormat.formatName, newStringValue( 'value1' ) );
-	const statement2 = new Statement( property2, TextFormat.formatName, newStringValue( 'value2' ) );
+	const statement1 = new Statement( property1, TextFormat.typeName, newStringValue( 'value1' ) );
+	const statement2 = new Statement( property2, TextFormat.typeName, newStringValue( 'value2' ) );
 
 	it( 'constructs a StatementList from an array of Statements', () => {
 		const statementList = new StatementList( [ statement1, statement2 ] );
@@ -48,7 +48,7 @@ describe( 'StatementList', () => {
 	} );
 
 	it( 'filters out Statements with empty values', () => {
-		const emptyStatement = new Statement( new PropertyName( 'emptyProperty' ), TextFormat.formatName, undefined );
+		const emptyStatement = new Statement( new PropertyName( 'emptyProperty' ), TextFormat.typeName, undefined );
 		const statementList = new StatementList( [ statement1, emptyStatement, statement2 ] );
 
 		const nonEmptyStatementList = statementList.withNonEmptyValues();
@@ -74,23 +74,23 @@ describe( 'StatementList', () => {
 
 		it( 'should return a list of referenced SubjectIds when relations exist', () => {
 			const statements = new StatementList( [
-				new Statement( new PropertyName( 'Property1' ), TextFormat.formatName, newStringValue( 'foo' ) ),
+				new Statement( new PropertyName( 'Property1' ), TextFormat.typeName, newStringValue( 'foo' ) ),
 				new Statement(
 					new PropertyName( 'Property2' ),
-					RelationFormat.formatName,
+					RelationFormat.typeName,
 					new RelationValue( [
 						new Relation( undefined, 's11111111111111' )
 					] )
 				),
 				new Statement(
 					new PropertyName( 'Property3' ),
-					RelationFormat.formatName,
+					RelationFormat.typeName,
 					new RelationValue( [
 						new Relation( undefined, 's11111111111112' ),
 						new Relation( undefined, 's11111111111113' )
 					] )
 				),
-				new Statement( new PropertyName( 'Property4' ), TextFormat.formatName, newStringValue( 'bar' ) )
+				new Statement( new PropertyName( 'Property4' ), TextFormat.typeName, newStringValue( 'bar' ) )
 			] );
 
 			expect( statements.getIdsOfReferencedSubjects() ).toEqual( new Set( [
@@ -116,19 +116,19 @@ describe( 'StatementList', () => {
 			{
 				property1: {
 					value: 'value1',
-					format: TextFormat.formatName
+					format: TextFormat.typeName
 				},
 				property2: {
 					value: 'value2',
-					format: TextFormat.formatName
+					format: TextFormat.typeName
 				}
 			}
 		);
 
 		expect( statementList.get( new PropertyName( 'property1' ) ) )
-			.toEqual( new Statement( new PropertyName( 'property1' ), TextFormat.formatName, newStringValue( 'value1' ) ) );
+			.toEqual( new Statement( new PropertyName( 'property1' ), TextFormat.typeName, newStringValue( 'value1' ) ) );
 		expect( statementList.get( new PropertyName( 'property2' ) ) )
-			.toEqual( new Statement( new PropertyName( 'property2' ), TextFormat.formatName, newStringValue( 'value2' ) ) );
+			.toEqual( new Statement( new PropertyName( 'property2' ), TextFormat.typeName, newStringValue( 'value2' ) ) );
 	} );
 
 	it( 'throws an error when constructing from record with invalid property name', () => {
@@ -137,11 +137,11 @@ describe( 'StatementList', () => {
 			{
 				'': {
 					value: 'value1',
-					format: TextFormat.formatName
+					format: TextFormat.typeName
 				}, // An empty string is not a valid PropertyName
 				property2: {
 					value: 'value2',
-					format: TextFormat.formatName
+					format: TextFormat.typeName
 				}
 			}
 		) )
@@ -153,23 +153,23 @@ describe( 'StatementList', () => {
 			{
 				p1: {
 					value: 'hello',
-					format: TextFormat.formatName
+					format: TextFormat.typeName
 				},
 				p2: {
 					value: 42,
-					format: NumberFormat.formatName
+					format: NumberFormat.typeName
 				},
 				p3: {
 					value: [ 'foo', 'bar' ],
-					format: TextFormat.formatName
+					format: TextFormat.typeName
 				}
 			}
 		);
 
 		expect( statementList ).toStrictEqual( new StatementList( [
-			new Statement( new PropertyName( 'p1' ), TextFormat.formatName, newStringValue( 'hello' ) ),
-			new Statement( new PropertyName( 'p2' ), NumberFormat.formatName, newNumberValue( 42 ) ),
-			new Statement( new PropertyName( 'p3' ), TextFormat.formatName, newStringValue( 'foo', 'bar' ) )
+			new Statement( new PropertyName( 'p1' ), TextFormat.typeName, newStringValue( 'hello' ) ),
+			new Statement( new PropertyName( 'p2' ), NumberFormat.typeName, newNumberValue( 42 ) ),
+			new Statement( new PropertyName( 'p3' ), TextFormat.typeName, newStringValue( 'foo', 'bar' ) )
 		] ) );
 	} );
 
@@ -179,9 +179,9 @@ describe( 'statementsToJson', () => {
 
 	it( 'converts all values into JSON representations', () => {
 		const values = new StatementList( [
-			new Statement( new PropertyName( 'value1' ), TextFormat.formatName, newStringValue( 'test' ) ),
-			new Statement( new PropertyName( 'value2' ), NumberFormat.formatName, newNumberValue( 123 ) ),
-			new Statement( new PropertyName( 'value4' ), RelationFormat.formatName, new RelationValue( [ new Relation( 'testId', 'testTarget' ) ] ) )
+			new Statement( new PropertyName( 'value1' ), TextFormat.typeName, newStringValue( 'test' ) ),
+			new Statement( new PropertyName( 'value2' ), NumberFormat.typeName, newNumberValue( 123 ) ),
+			new Statement( new PropertyName( 'value4' ), RelationFormat.typeName, new RelationValue( [ new Relation( 'testId', 'testTarget' ) ] ) )
 		] );
 
 		const json = statementsToJson( values );
@@ -189,24 +189,24 @@ describe( 'statementsToJson', () => {
 		expect( json ).toEqual( {
 			value1: {
 				value: [ 'test' ],
-				format: TextFormat.formatName
+				format: TextFormat.typeName
 			},
 			value2: {
 				value: 123,
-				format: NumberFormat.formatName
+				format: NumberFormat.typeName
 			},
 			value4: {
 				value: [
 					{ id: 'testId', target: 'testTarget' }
 				],
-				format: RelationFormat.formatName
+				format: RelationFormat.typeName
 			}
 		} );
 	} );
 
 	it( 'converts an empty number to null', () => {
 		const values = new StatementList( [
-			new Statement( new PropertyName( 'EmptyValue' ), NumberFormat.formatName, newNumberValue( NaN ) )
+			new Statement( new PropertyName( 'EmptyValue' ), NumberFormat.typeName, newNumberValue( NaN ) )
 		] );
 
 		const json = statementsToJson( values );
