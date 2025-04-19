@@ -4,8 +4,8 @@ import { SubjectMap } from '@neo/domain/SubjectMap';
 import { InMemorySubjectLookup } from '@neo/domain/SubjectLookup';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
 import { StatementList } from '@neo/domain/StatementList';
-import { TextFormat } from '../valueFormats/Text';
-import { RelationFormat } from '../valueFormats/Relation';
+import { TextType } from '../valueFormats/Text';
+import { RelationType } from '../valueFormats/Relation';
 import { Neo } from '@neo/Neo';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue } from '@neo/domain/Value';
@@ -56,19 +56,19 @@ describe( 'Subject', () => {
 					{
 						Property1: {
 							value: [ 'foo' ],
-							format: TextFormat.typeName
+							format: TextType.typeName
 						},
 						Property2: {
 							value: [ { target: 's11111111111111' } ],
-							format: RelationFormat.typeName
+							format: RelationType.typeName
 						},
 						Property3: {
 							value: [ { target: 's11111111111112' }, { target: 's11111111111113' } ],
-							format: RelationFormat.typeName
+							format: RelationType.typeName
 						},
 						Property4: {
 							value: [ 'bar' ],
-							format: TextFormat.typeName
+							format: TextType.typeName
 						}
 					}
 				)
@@ -89,19 +89,19 @@ describe( 'Subject', () => {
 					{
 						Property1: {
 							value: [ 'foo' ],
-							format: TextFormat.typeName
+							format: TextType.typeName
 						},
 						Property2: {
 							value: [ { target: 's11111111111118' } ],
-							format: RelationFormat.typeName
+							format: RelationType.typeName
 						},
 						Property3: {
 							value: [ { target: 's11111111111111' }, { target: 's11111111111119' } ],
-							format: RelationFormat.typeName
+							format: RelationType.typeName
 						},
 						Property4: {
 							value: [ 'bar' ],
-							format: TextFormat.typeName
+							format: TextType.typeName
 						}
 					}
 				)
@@ -134,7 +134,7 @@ describe( 'Subject', () => {
 			const newStatements = new StatementList( [
 				{
 					propertyName: new PropertyName( 'testProperty' ),
-					format: TextFormat.typeName,
+					format: TextType.typeName,
 					value: newStringValue( 'Test Value' )
 				} as Statement
 			] );

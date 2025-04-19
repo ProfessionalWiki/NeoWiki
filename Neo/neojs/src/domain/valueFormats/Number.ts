@@ -11,7 +11,7 @@ export interface NumberProperty extends PropertyDefinition {
 
 }
 
-export class NumberFormat extends BasePropertyType<NumberProperty, NumberValue> {
+export class NumberType extends BasePropertyType<NumberProperty, NumberValue> {
 
 	public static readonly valueType = ValueType.Number;
 
@@ -65,7 +65,7 @@ type NumberPropertyAttributes = Omit<Partial<NumberProperty>, 'name'> & {
 export function newNumberProperty( attributes: NumberPropertyAttributes = {} ): NumberProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Number' ),
-		format: NumberFormat.typeName,
+		format: NumberType.typeName,
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,

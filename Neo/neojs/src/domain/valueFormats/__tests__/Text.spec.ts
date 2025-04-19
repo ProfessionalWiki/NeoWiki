@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { newTextProperty, TextFormat } from '@neo/domain/valueFormats/Text';
+import { newTextProperty, TextType } from '@neo/domain/valueFormats/Text';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue } from '@neo/domain/Value';
 
 describe( 'TextFormat', () => {
 
-	const format = new TextFormat();
+	const format = new TextType();
 
 	describe( 'getFormatName', () => {
 
@@ -21,7 +21,7 @@ describe( 'newTextProperty', () => {
 		const property = newTextProperty();
 
 		expect( property.name ).toEqual( new PropertyName( 'Text' ) );
-		expect( property.format ).toBe( TextFormat.typeName );
+		expect( property.format ).toBe( TextType.typeName );
 		expect( property.description ).toBe( '' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
@@ -61,7 +61,7 @@ describe( 'newTextProperty', () => {
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'FullText' ) );
-		expect( property.format ).toBe( TextFormat.typeName );
+		expect( property.format ).toBe( TextType.typeName );
 		expect( property.description ).toBe( 'A text property' );
 		expect( property.required ).toBe( true );
 		expect( property.default ).toStrictEqual( newStringValue( 'default text' ) );
@@ -80,7 +80,7 @@ describe( 'newTextProperty', () => {
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'PartialText' ) );
-		expect( property.format ).toBe( TextFormat.typeName );
+		expect( property.format ).toBe( TextType.typeName );
 		expect( property.description ).toBe( 'A partial text property' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
@@ -92,7 +92,7 @@ describe( 'newTextProperty', () => {
 } );
 
 describe( 'validate', () => {
-	const textFormat = new TextFormat();
+	const textFormat = new TextType();
 
 	it( 'returns no errors for empty value when optional', () => {
 		const property = newTextProperty( {

@@ -3,11 +3,11 @@ import { Neo } from '@neo/Neo';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { StatementList } from '@neo/domain/StatementList';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
-import { TextFormat } from '@neo/domain/valueFormats/Text';
+import { TextType } from '@neo/domain/valueFormats/Text';
 import { Statement } from '@neo/domain/Statement';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newNumberValue, newStringValue } from '@neo/domain/Value';
-import { NumberFormat } from '@neo/domain/valueFormats/Number';
+import { NumberType } from '@neo/domain/valueFormats/Number';
 import { SubjectWithContext } from '@neo/domain/SubjectWithContext';
 
 describe( 'SubjectDeserializer', () => {
@@ -61,8 +61,8 @@ describe( 'SubjectDeserializer', () => {
 			'SubjectDeserializer',
 			'SDSchema',
 			new StatementList( [
-				new Statement( new PropertyName( 'Property1' ), TextFormat.typeName, newStringValue( 'foo' ) ),
-				new Statement( new PropertyName( 'Property2' ), NumberFormat.typeName, newNumberValue( 1337 ) )
+				new Statement( new PropertyName( 'Property1' ), TextType.typeName, newStringValue( 'foo' ) ),
+				new Statement( new PropertyName( 'Property2' ), NumberType.typeName, newNumberValue( 1337 ) )
 			] ),
 			new PageIdentifiers( 42, 'SDPageTitle' )
 		) );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newNumberProperty, NumberFormat } from '@neo/domain/valueFormats/Number';
+import { newNumberProperty, NumberType } from '@neo/domain/valueFormats/Number';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newNumberValue } from '@neo/domain/Value';
 
@@ -8,7 +8,7 @@ describe( 'newNumberProperty', () => {
 		const property = newNumberProperty();
 
 		expect( property.name ).toEqual( new PropertyName( 'Number' ) );
-		expect( property.format ).toBe( NumberFormat.typeName );
+		expect( property.format ).toBe( NumberType.typeName );
 		expect( property.description ).toBe( '' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
@@ -46,7 +46,7 @@ describe( 'newNumberProperty', () => {
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'FullNumber' ) );
-		expect( property.format ).toBe( NumberFormat.typeName );
+		expect( property.format ).toBe( NumberType.typeName );
 		expect( property.description ).toBe( 'A number property' );
 		expect( property.required ).toBe( true );
 		expect( property.default ).toStrictEqual( newNumberValue( 42 ) );
@@ -63,7 +63,7 @@ describe( 'newNumberProperty', () => {
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'PartialNumber' ) );
-		expect( property.format ).toBe( NumberFormat.typeName );
+		expect( property.format ).toBe( NumberType.typeName );
 		expect( property.description ).toBe( 'A partial number property' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
@@ -74,7 +74,7 @@ describe( 'newNumberProperty', () => {
 } );
 
 describe( 'validate', () => {
-	const numberFormat = new NumberFormat();
+	const numberFormat = new NumberType();
 
 	it( 'returns no errors for undefined value when optional', () => {
 		const property = newNumberProperty( {

@@ -2,13 +2,13 @@ import { Statement } from '@neo/domain/Statement';
 import { describe, expect, it } from 'vitest';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue } from '../Value';
-import { TextFormat } from '../valueFormats/Text';
+import { TextType } from '../valueFormats/Text';
 
 describe( 'Statement', () => {
 
 	it( 'constructor creates a Statement with given property and value', () => {
 		const property = new PropertyName( 'test' );
-		const statement = new Statement( property, TextFormat.typeName, newStringValue( 'value' ) );
+		const statement = new Statement( property, TextType.typeName, newStringValue( 'value' ) );
 
 		expect( statement.propertyName.toString() ).toBe( 'test' );
 		expect( statement.value ).toEqual( newStringValue( 'value' ) );
@@ -17,17 +17,17 @@ describe( 'Statement', () => {
 	describe( 'hasValue', () => {
 
 		it( 'returns false for undefined', () => {
-			const statement = new Statement( new PropertyName( 'test' ), TextFormat.typeName, undefined );
+			const statement = new Statement( new PropertyName( 'test' ), TextType.typeName, undefined );
 			expect( statement.hasValue() ).toBe( false );
 		} );
 
 		it( 'returns true for values, even when they are empty strings', () => {
-			const statement = new Statement( new PropertyName( 'test' ), TextFormat.typeName, newStringValue( '' ) );
+			const statement = new Statement( new PropertyName( 'test' ), TextType.typeName, newStringValue( '' ) );
 			expect( statement.hasValue() ).toBe( true );
 		} );
 
 		it( 'returns true values, even when they are empty arrays', () => {
-			const statement = new Statement( new PropertyName( 'test' ), TextFormat.typeName, newStringValue() );
+			const statement = new Statement( new PropertyName( 'test' ), TextType.typeName, newStringValue() );
 			expect( statement.hasValue() ).toBe( true );
 		} );
 
@@ -36,7 +36,7 @@ describe( 'Statement', () => {
 	describe( 'withValue', () => {
 		it( 'returns new Statement with updated value', () => {
 			const property = new PropertyName( 'test' );
-			const originalStatement = new Statement( property, TextFormat.typeName, newStringValue( 'original' ) );
+			const originalStatement = new Statement( property, TextType.typeName, newStringValue( 'original' ) );
 			const newValue = newStringValue( 'updated' );
 
 			const updatedStatement = originalStatement.withValue( newValue );
@@ -49,7 +49,7 @@ describe( 'Statement', () => {
 
 		it( 'can remove value by setting to undefined', () => {
 			const property = new PropertyName( 'test' );
-			const originalStatement = new Statement( property, TextFormat.typeName, newStringValue( 'original' ) );
+			const originalStatement = new Statement( property, TextType.typeName, newStringValue( 'original' ) );
 
 			const updatedStatement = originalStatement.withValue( undefined );
 

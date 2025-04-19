@@ -19,7 +19,7 @@
 import { computed, ref, watch } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
-import { NumberFormat, NumberProperty } from '@neo/domain/valueFormats/Number.ts';
+import { NumberType, NumberProperty } from '@neo/domain/valueFormats/Number.ts';
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
@@ -41,7 +41,7 @@ const inputValue = computed( () => {
 	return '';
 } );
 
-const valueFormat = NeoWikiServices.getValueFormatRegistry().getType( NumberFormat.typeName );
+const valueFormat = NeoWikiServices.getValueFormatRegistry().getType( NumberType.typeName );
 
 function onInput( newValue: string ): void {
 	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );

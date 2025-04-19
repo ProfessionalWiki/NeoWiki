@@ -1,5 +1,5 @@
 import { test, expect, describe, it } from 'vitest';
-import { newUrlProperty, UrlFormat, isValidUrl, UrlFormatter } from '@neo/domain/valueFormats/Url';
+import { newUrlProperty, UrlType, isValidUrl, UrlFormatter } from '@neo/domain/valueFormats/Url';
 import { newStringValue } from '@neo/domain/Value';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 
@@ -117,7 +117,7 @@ describe( 'newUrlProperty', () => {
 		const property = newUrlProperty();
 
 		expect( property.name ).toEqual( new PropertyName( 'Url' ) );
-		expect( property.format ).toBe( UrlFormat.typeName );
+		expect( property.format ).toBe( UrlType.typeName );
 		expect( property.description ).toBe( '' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
@@ -153,7 +153,7 @@ describe( 'newUrlProperty', () => {
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'FullUrl' ) );
-		expect( property.format ).toBe( UrlFormat.typeName );
+		expect( property.format ).toBe( UrlType.typeName );
 		expect( property.description ).toBe( 'A URL property' );
 		expect( property.required ).toBe( true );
 		expect( property.default ).toStrictEqual( newStringValue( 'https://example.com' ) );
@@ -169,7 +169,7 @@ describe( 'newUrlProperty', () => {
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'PartialUrl' ) );
-		expect( property.format ).toBe( UrlFormat.typeName );
+		expect( property.format ).toBe( UrlType.typeName );
 		expect( property.description ).toBe( 'A partial URL property' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
@@ -179,7 +179,7 @@ describe( 'newUrlProperty', () => {
 } );
 
 describe( 'validate', () => {
-	const urlFormat = new UrlFormat();
+	const urlFormat = new UrlType();
 
 	it( 'returns no errors for empty value when optional', () => {
 		const property = newUrlProperty( {

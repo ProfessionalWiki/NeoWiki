@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newRelationProperty, RelationFormat } from '@neo/domain/valueFormats/Relation';
+import { newRelationProperty, RelationType } from '@neo/domain/valueFormats/Relation';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { RelationValue } from '@neo/domain/Value';
 import { Relation } from '@neo/domain/Value';
@@ -9,7 +9,7 @@ describe( 'newRelationProperty', () => {
 		const property = newRelationProperty();
 
 		expect( property.name ).toEqual( new PropertyName( 'Relation' ) );
-		expect( property.format ).toBe( RelationFormat.typeName );
+		expect( property.format ).toBe( RelationType.typeName );
 		expect( property.description ).toBe( '' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
@@ -51,7 +51,7 @@ describe( 'newRelationProperty', () => {
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'FullRelation' ) );
-		expect( property.format ).toBe( RelationFormat.typeName );
+		expect( property.format ).toBe( RelationType.typeName );
 		expect( property.description ).toBe( 'A relation property' );
 		expect( property.required ).toBe( true );
 		expect( property.default ).toStrictEqual( relation );
@@ -68,7 +68,7 @@ describe( 'newRelationProperty', () => {
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'PartialRelation' ) );
-		expect( property.format ).toBe( RelationFormat.typeName );
+		expect( property.format ).toBe( RelationType.typeName );
 		expect( property.description ).toBe( 'A partial relation property' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
