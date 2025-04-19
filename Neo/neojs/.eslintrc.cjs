@@ -64,7 +64,7 @@ module.exports = {
 		{
 			files: [
 				'src/persistence/**/*.ts',
-				'src/domain/valueFormats/**/*.ts',
+				'src/domain/propertyTypes/**/*.ts',
 				'src/domain/PropertyDefinition.ts',
 				'src/domain/StatementList.ts',
 				'src/domain/Value.ts',
