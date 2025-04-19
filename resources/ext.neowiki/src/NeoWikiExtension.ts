@@ -50,7 +50,7 @@ export class NeoWikiExtension {
 			valueDisplayComponent: TextDisplay,
 			valueEditor: TextInput,
 			attributesEditor: TextAttributesEditor,
-			label: 'neowiki-format-text',
+			label: 'neowiki-property-type-text',
 			icon: cdxIconTextA
 		} );
 
@@ -58,7 +58,7 @@ export class NeoWikiExtension {
 			valueDisplayComponent: UrlDisplay,
 			valueEditor: UrlInput,
 			attributesEditor: TextAttributesEditor, // TODO
-			label: 'neowiki-format-url',
+			label: 'neowiki-property-type-url',
 			icon: cdxIconLink
 		} );
 
@@ -66,7 +66,7 @@ export class NeoWikiExtension {
 			valueDisplayComponent: NumberDisplay,
 			valueEditor: NumberInput,
 			attributesEditor: NumberAttributesEditor,
-			label: 'neowiki-format-number',
+			label: 'neowiki-property-type-number',
 			icon: cdxIconStringInteger
 		} );
 
@@ -74,7 +74,7 @@ export class NeoWikiExtension {
 			valueDisplayComponent: RelationDisplay,
 			valueEditor: TextInput, // TODO
 			attributesEditor: TextAttributesEditor, // TODO
-			label: 'neowiki-format-relation',
+			label: 'neowiki-property-type-relation',
 			icon: cdxIconLink // TODO
 		} );
 
