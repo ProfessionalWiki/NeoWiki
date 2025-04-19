@@ -1,4 +1,4 @@
-import { ValueFormat, ValueFormatRegistry } from '@neo/domain/ValueFormat';
+import { PropertyType, ValueFormatRegistry } from '@neo/domain/PropertyType';
 import { Subject } from '@neo/domain/Subject';
 import { Schema } from '@neo/domain/Schema';
 import { Statement } from '@neo/domain/Statement';
@@ -38,7 +38,7 @@ export class SubjectValidator {
 		return errors.length === 0;
 	}
 
-	private getValueFormat( statement: Statement ): ValueFormat {
+	private getValueFormat( statement: Statement ): PropertyType {
 		return this.formatRegistry.getFormat( statement.format );
 	}
 

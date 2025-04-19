@@ -2,7 +2,7 @@ import { TextFormat } from '@neo/domain/valueFormats/Text';
 import { NumberFormat } from '@neo/domain/valueFormats/Number';
 import { RelationFormat } from '@neo/domain/valueFormats/Relation';
 import { UrlFormat } from '@neo/domain/valueFormats/Url';
-import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
+import { ValueFormatRegistry } from '@neo/domain/PropertyType';
 import { PropertyDefinitionDeserializer } from '@neo/domain/PropertyDefinition';
 import { ValueDeserializer } from '@neo/persistence/ValueDeserializer';
 import { StatementDeserializer } from '@neo/persistence/StatementDeserializer';

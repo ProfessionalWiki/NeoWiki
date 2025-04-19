@@ -1,4 +1,4 @@
-import { ValueFormatRegistry } from '@neo/domain/ValueFormat';
+import { ValueFormatRegistry } from '@neo/domain/PropertyType';
 import {
 	newBooleanValue,
 	newNumberValue,

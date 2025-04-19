@@ -4,7 +4,7 @@ import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
 import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SubjectValidator } from '@neo/domain/SubjectValidator.ts';
-import { ValueFormatRegistry } from '@neo/domain/ValueFormat.ts';
+import { ValueFormatRegistry } from '@neo/domain/PropertyType.ts';
 
 export enum Service { // TODO: make private
 	ComponentRegistry = 'ComponentRegistry',

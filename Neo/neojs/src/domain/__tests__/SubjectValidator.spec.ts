@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SubjectValidator } from '@neo/domain/SubjectValidator';
-import { BaseValueFormat, ValueFormatRegistry, ValueValidationError } from '@neo/domain/ValueFormat';
+import { BaseValueFormat, ValueFormatRegistry, ValueValidationError } from '@neo/domain/PropertyType';
 import { Subject } from '@neo/domain/Subject';
 import { Schema } from '@neo/domain/Schema';
 import { StatementList } from '@neo/domain/StatementList';

@@ -44,17 +44,17 @@ export interface ValueValidationError {
 
 }
 
-export type ValueFormat = BaseValueFormat<PropertyDefinition, Value>;
+export type PropertyType = BaseValueFormat<PropertyDefinition, Value>;
 
 export class ValueFormatRegistry {
 
-	private propertyTypes: Map<string, ValueFormat> = new Map();
+	private propertyTypes: Map<string, PropertyType> = new Map();
 
-	public registerFormat( format: ValueFormat ): void {
+	public registerFormat( format: PropertyType ): void {
 		this.propertyTypes.set( format.getFormatName(), format );
 	}
 
-	public getFormat( formatName: string ): ValueFormat {
+	public getFormat( formatName: string ): PropertyType {
 		const format = this.propertyTypes.get( formatName );
 
 		if ( format === undefined ) {
@@ -68,7 +68,7 @@ export class ValueFormatRegistry {
 		return Array.from( this.propertyTypes.keys() );
 	}
 
-	public getFormats(): ValueFormat[] {
+	public getFormats(): PropertyType[] {
 		return Array.from( this.propertyTypes.values() );
 	}
 
