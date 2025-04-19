@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
 import { CdxField } from '@wikimedia/codex';
 import { newStringValue } from '@neo/domain/Value';
-import { newTextProperty } from '@neo/domain/valueFormats/Text.ts';
+import { newTextProperty } from '@neo/domain/propertyTypes/Text.ts';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
 
 describe( 'BaseMultiStringInput', () => {

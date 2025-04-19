@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PropertyTypeRegistry } from '@neo/domain/PropertyType';
-import { TextType } from '../valueFormats/Text';
-import { NumberType } from '../valueFormats/Number';
+import { TextType } from '@neo/domain/propertyTypes/Text';
+import { NumberType } from '@neo/domain/propertyTypes/Number';
 
 describe( 'PropertyTypeRegistry', () => {
 

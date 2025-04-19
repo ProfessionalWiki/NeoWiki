@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
 import { cdxIconLink } from '@wikimedia/codex-icons';
-import { UrlProperty } from '@neo/domain/valueFormats/Url.ts';
+import { UrlProperty } from '@neo/domain/propertyTypes/Url.ts';
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { newStringValue, Value } from '@neo/domain/Value.ts';
 

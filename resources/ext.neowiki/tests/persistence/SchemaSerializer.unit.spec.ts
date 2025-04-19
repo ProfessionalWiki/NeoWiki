@@ -3,10 +3,10 @@ import { SchemaSerializer } from '@/persistence/SchemaSerializer';
 import { Schema } from '@neo/domain/Schema';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newTextProperty } from '@neo/domain/valueFormats/Text';
-import { newUrlProperty } from '@neo/domain/valueFormats/Url';
-import { newNumberProperty } from '@neo/domain/valueFormats/Number';
-import { newRelationProperty } from '@neo/domain/valueFormats/Relation';
+import { newTextProperty } from '@neo/domain/propertyTypes/Text';
+import { newUrlProperty } from '@neo/domain/propertyTypes/Url';
+import { newNumberProperty } from '@neo/domain/propertyTypes/Number';
+import { newRelationProperty } from '@neo/domain/propertyTypes/Relation';
 
 describe( 'SchemaSerializer', () => {
 	const serializer = new SchemaSerializer();

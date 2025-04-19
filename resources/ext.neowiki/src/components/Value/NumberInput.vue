@@ -19,7 +19,7 @@
 import { computed, ref, watch } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
-import { NumberType, NumberProperty } from '@neo/domain/valueFormats/Number.ts';
+import { NumberType, NumberProperty } from '@neo/domain/propertyTypes/Number.ts';
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 

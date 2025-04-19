@@ -8,7 +8,7 @@
 import { ValueType } from '@neo/domain/Value.ts';
 import { computed } from 'vue';
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
-import { TextProperty } from '@neo/domain/valueFormats/Text.ts';
+import { TextProperty } from '@neo/domain/propertyTypes/Text.ts';
 
 const props = defineProps<ValueDisplayProps<TextProperty>>();
 

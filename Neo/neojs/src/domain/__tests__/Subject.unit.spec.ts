@@ -4,12 +4,12 @@ import { SubjectMap } from '@neo/domain/SubjectMap';
 import { InMemorySubjectLookup } from '@neo/domain/SubjectLookup';
 import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
 import { StatementList } from '@neo/domain/StatementList';
-import { TextType } from '../valueFormats/Text';
-import { RelationType } from '../valueFormats/Relation';
 import { Neo } from '@neo/Neo';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue } from '@neo/domain/Value';
 import { Statement } from '@neo/domain/Statement';
+import { TextType } from '@neo/domain/propertyTypes/Text';
+import { RelationType } from '@neo/domain/propertyTypes/Relation';
 
 describe( 'Subject', () => {
 

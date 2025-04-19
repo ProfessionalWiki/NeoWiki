@@ -4,10 +4,10 @@ import { SubjectId } from '@neo/domain/SubjectId';
 import { StatementList, statementsToJson } from '@neo/domain/StatementList';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newNumberValue, newStringValue, Relation, RelationValue } from '../Value';
-import { TextType } from '../valueFormats/Text';
-import { NumberType } from '../valueFormats/Number';
-import { RelationType } from '../valueFormats/Relation';
 import { Neo } from '@neo/Neo';
+import { TextType } from '@neo/domain/propertyTypes/Text';
+import { NumberType } from '@neo/domain/propertyTypes/Number';
+import { RelationType } from '@neo/domain/propertyTypes/Relation';
 
 describe( 'StatementList', () => {
 

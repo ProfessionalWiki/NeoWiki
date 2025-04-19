@@ -6,9 +6,9 @@ import { StatementList } from '@neo/domain/StatementList';
 import { Statement } from '@neo/domain/Statement';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newStringValue } from '@neo/domain/Value';
-import { TextType } from '@neo/domain/valueFormats/Text';
+import { TextType } from '@neo/domain/propertyTypes/Text';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
-import { UrlType } from '@neo/domain/valueFormats/Url';
+import { UrlType } from '@neo/domain/propertyTypes/Url';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { SubjectWithContext } from '@neo/domain/SubjectWithContext.ts';
 

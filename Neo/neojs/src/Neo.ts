@@ -1,7 +1,7 @@
-import { TextType } from '@neo/domain/valueFormats/Text';
-import { NumberType } from '@neo/domain/valueFormats/Number';
-import { RelationType } from '@neo/domain/valueFormats/Relation';
-import { UrlType } from '@neo/domain/valueFormats/Url';
+import { TextType } from '@neo/domain/propertyTypes/Text';
+import { NumberType } from '@neo/domain/propertyTypes/Number';
+import { RelationType } from '@neo/domain/propertyTypes/Relation';
+import { UrlType } from '@neo/domain/propertyTypes/Url';
 import { PropertyTypeRegistry } from '@neo/domain/PropertyType';
 import { PropertyDefinitionDeserializer } from '@neo/domain/PropertyDefinition';
 import { ValueDeserializer } from '@neo/persistence/ValueDeserializer';

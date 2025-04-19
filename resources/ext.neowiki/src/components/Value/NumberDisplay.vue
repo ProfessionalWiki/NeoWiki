@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ValueType } from '@neo/domain/Value.ts';
 import { computed } from 'vue';
-import { NumberProperty } from '@neo/domain/valueFormats/Number.ts';
+import { NumberProperty } from '@neo/domain/propertyTypes/Number.ts';
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
 
 const props = defineProps<ValueDisplayProps<NumberProperty>>();
