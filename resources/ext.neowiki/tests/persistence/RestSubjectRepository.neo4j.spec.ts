@@ -29,11 +29,11 @@ const subjectResponse = {
 	statements: {
 		label: {
 			value: 'John Doe',
-			format: TextFormat.formatName
+			format: TextFormat.typeName
 		},
 		WorkUrl: {
 			value: 'https://pro.wiki',
-			format: UrlFormat.formatName
+			format: UrlFormat.typeName
 		}
 	}
 };
@@ -124,8 +124,8 @@ describe( 'RestSubjectRepository', () => {
 					label: 'John Doe',
 					schema: 'Employee',
 					properties: new StatementList( [
-						new Statement( new PropertyName( 'label' ), TextFormat.formatName, newStringValue( 'John Doe' ) ),
-						new Statement( new PropertyName( 'WorkUrl' ), UrlFormat.formatName, newStringValue( 'https://pro.wiki' ) )
+						new Statement( new PropertyName( 'label' ), TextFormat.typeName, newStringValue( 'John Doe' ) ),
+						new Statement( new PropertyName( 'WorkUrl' ), UrlFormat.typeName, newStringValue( 'https://pro.wiki' ) )
 					] )
 				}
 			};
@@ -169,8 +169,8 @@ describe( 'RestSubjectRepository', () => {
 		it( 'returns original request', async () => {
 			const mockUpdateResponse = {
 				properties: new StatementList( [
-					new Statement( new PropertyName( 'label' ), TextFormat.formatName, newStringValue( 'John Doe' ) ),
-					new Statement( new PropertyName( 'WorkUrl' ), UrlFormat.formatName, newStringValue( 'https://pro.wiki' ) )
+					new Statement( new PropertyName( 'label' ), TextFormat.typeName, newStringValue( 'John Doe' ) ),
+					new Statement( new PropertyName( 'WorkUrl' ), UrlFormat.typeName, newStringValue( 'https://pro.wiki' ) )
 				] )
 			};
 
@@ -246,8 +246,8 @@ describe( 'RestSubjectRepository', () => {
 					label: 'John Doe',
 					schema: 'Employee',
 					properties: new StatementList( [
-						new Statement( new PropertyName( 'label' ), TextFormat.formatName, newStringValue( 'John Doe' ) ),
-						new Statement( new PropertyName( 'WorkUrl' ), UrlFormat.formatName, newStringValue( 'https://pro.wiki' ) )
+						new Statement( new PropertyName( 'label' ), TextFormat.typeName, newStringValue( 'John Doe' ) ),
+						new Statement( new PropertyName( 'WorkUrl' ), UrlFormat.typeName, newStringValue( 'https://pro.wiki' ) )
 					] )
 				}
 			};

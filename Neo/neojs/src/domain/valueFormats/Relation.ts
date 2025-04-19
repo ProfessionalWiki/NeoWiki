@@ -1,7 +1,7 @@
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { Relation, RelationValue, ValueType } from '@neo/domain/Value';
-import { BaseValueFormat, ValueValidationError } from '@neo/domain/PropertyType';
+import { BasePropertyType, ValueValidationError } from '@neo/domain/PropertyType';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -11,11 +11,11 @@ export interface RelationProperty extends PropertyDefinition {
 
 }
 
-export class RelationFormat extends BaseValueFormat<RelationProperty, RelationValue> {
+export class RelationFormat extends BasePropertyType<RelationProperty, RelationValue> {
 
 	public static readonly valueType = ValueType.Relation;
 
-	public static readonly formatName = 'relation';
+	public static readonly typeName = 'relation';
 
 	public getExampleValue( property: RelationProperty ): RelationValue {
 		const relations = [ new Relation( undefined, 's11111111111111' ) ];
@@ -49,7 +49,7 @@ type RelationPropertyAttributes = Omit<Partial<RelationProperty>, 'name'> & {
 export function newRelationProperty( attributes: RelationPropertyAttributes = {} ): RelationProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Relation' ),
-		format: RelationFormat.formatName,
+		format: RelationFormat.typeName,
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,

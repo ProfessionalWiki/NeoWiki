@@ -38,9 +38,9 @@ describe( 'AutomaticInfobox', () => {
 		'TestSchema',
 		'A test schema',
 		new PropertyDefinitionList( [
-			createPropertyDefinitionFromJson( 'name', { type: 'string', format: TextFormat.formatName } ),
-			createPropertyDefinitionFromJson( 'age', { type: 'number', format: NumberFormat.formatName } ),
-			createPropertyDefinitionFromJson( 'website', { type: 'string', format: UrlFormat.formatName } )
+			createPropertyDefinitionFromJson( 'name', { type: 'string', format: TextFormat.typeName } ),
+			createPropertyDefinitionFromJson( 'age', { type: 'number', format: NumberFormat.typeName } ),
+			createPropertyDefinitionFromJson( 'website', { type: 'string', format: UrlFormat.typeName } )
 		] )
 	);
 
@@ -50,13 +50,13 @@ describe( 'AutomaticInfobox', () => {
 		'TestSchema',
 		new StatementList( [
 			new Statement(
-				new PropertyName( 'name' ), TextFormat.formatName, newStringValue( 'John Doe', 'Jane Doe' )
+				new PropertyName( 'name' ), TextFormat.typeName, newStringValue( 'John Doe', 'Jane Doe' )
 			),
 			new Statement(
-				new PropertyName( 'age' ), NumberFormat.formatName, newNumberValue( 30 )
+				new PropertyName( 'age' ), NumberFormat.typeName, newNumberValue( 30 )
 			),
 			new Statement(
-				new PropertyName( 'website' ), UrlFormat.formatName, newStringValue( 'https://example.com' )
+				new PropertyName( 'website' ), UrlFormat.typeName, newStringValue( 'https://example.com' )
 			)
 		] )
 	);

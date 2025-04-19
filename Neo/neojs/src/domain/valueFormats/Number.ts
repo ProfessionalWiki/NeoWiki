@@ -1,7 +1,7 @@
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
 import { newNumberValue, type NumberValue, ValueType } from '@neo/domain/Value';
-import { BaseValueFormat, ValueValidationError } from '@neo/domain/PropertyType';
+import { BasePropertyType, ValueValidationError } from '@neo/domain/PropertyType';
 
 export interface NumberProperty extends PropertyDefinition {
 
@@ -11,11 +11,11 @@ export interface NumberProperty extends PropertyDefinition {
 
 }
 
-export class NumberFormat extends BaseValueFormat<NumberProperty, NumberValue> {
+export class NumberFormat extends BasePropertyType<NumberProperty, NumberValue> {
 
 	public static readonly valueType = ValueType.Number;
 
-	public static readonly formatName = 'number';
+	public static readonly typeName = 'number';
 
 	public getExampleValue(): NumberValue {
 		return newNumberValue( 42 );
@@ -65,7 +65,7 @@ type NumberPropertyAttributes = Omit<Partial<NumberProperty>, 'name'> & {
 export function newNumberProperty( attributes: NumberPropertyAttributes = {} ): NumberProperty {
 	return {
 		name: attributes.name instanceof PropertyName ? attributes.name : new PropertyName( attributes.name || 'Number' ),
-		format: NumberFormat.formatName,
+		format: NumberFormat.typeName,
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,

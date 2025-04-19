@@ -22,8 +22,8 @@ describe( 'PropertyTypeRegistry', () => {
 		} );
 
 		it( 'returns known types', () => {
-			expect( newRegistryWithTypes().getType( TextFormat.formatName ) ).toBeInstanceOf( TextFormat );
-			expect( newRegistryWithTypes().getType( NumberFormat.formatName ) ).toBeInstanceOf( NumberFormat );
+			expect( newRegistryWithTypes().getType( TextFormat.typeName ) ).toBeInstanceOf( TextFormat );
+			expect( newRegistryWithTypes().getType( NumberFormat.typeName ) ).toBeInstanceOf( NumberFormat );
 		} );
 
 	} );
@@ -35,7 +35,7 @@ describe( 'PropertyTypeRegistry', () => {
 		} );
 
 		it( 'returns names of all registered types', () => {
-			expect( newRegistryWithTypes().getTypeNames() ).toEqual( [ TextFormat.formatName, NumberFormat.formatName ] );
+			expect( newRegistryWithTypes().getTypeNames() ).toEqual( [ TextFormat.typeName, NumberFormat.typeName ] );
 		} );
 
 	} );

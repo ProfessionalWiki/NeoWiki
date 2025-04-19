@@ -46,7 +46,7 @@ it( 'creates a string property definition', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as TextProperty;
 
-	expect( property.format ).toBe( TextFormat.formatName );
+	expect( property.format ).toBe( TextFormat.typeName );
 
 	expect( property.multiple ).toBe( true );
 	expect( property.uniqueItems ).toBe( false );
@@ -59,7 +59,7 @@ it( 'creates a number property definition with defaults', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as NumberProperty;
 
-	expect( property.format ).toBe( NumberFormat.formatName );
+	expect( property.format ).toBe( NumberFormat.typeName );
 
 	expect( property.minimum ).toBe( undefined );
 	expect( property.maximum ).toBe( undefined );
@@ -76,7 +76,7 @@ it( 'creates a number property definition with all fields', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as NumberProperty;
 
-	expect( property.format ).toBe( NumberFormat.formatName );
+	expect( property.format ).toBe( NumberFormat.typeName );
 
 	expect( property.minimum ).toBe( 42 );
 	expect( property.maximum ).toBe( 1337 );
@@ -92,7 +92,7 @@ it( 'creates a relation property definition with defaults', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as RelationProperty;
 
-	expect( property.format ).toBe( RelationFormat.formatName );
+	expect( property.format ).toBe( RelationFormat.typeName );
 
 	expect( property.relation ).toBe( 'Employer' );
 	expect( property.targetSchema ).toBe( 'Company' );

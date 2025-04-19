@@ -46,7 +46,7 @@ export class NeoWikiExtension {
 	public getFormatSpecificComponentRegistry(): FormatSpecificComponentRegistry {
 		const registry = new FormatSpecificComponentRegistry();
 
-		registry.registerFormat( TextFormat.formatName, {
+		registry.registerFormat( TextFormat.typeName, {
 			valueDisplayComponent: TextDisplay,
 			valueEditor: TextInput,
 			attributesEditor: TextAttributesEditor,
@@ -54,7 +54,7 @@ export class NeoWikiExtension {
 			icon: cdxIconTextA
 		} );
 
-		registry.registerFormat( UrlFormat.formatName, {
+		registry.registerFormat( UrlFormat.typeName, {
 			valueDisplayComponent: UrlDisplay,
 			valueEditor: UrlInput,
 			attributesEditor: TextAttributesEditor, // TODO
@@ -62,7 +62,7 @@ export class NeoWikiExtension {
 			icon: cdxIconLink
 		} );
 
-		registry.registerFormat( NumberFormat.formatName, {
+		registry.registerFormat( NumberFormat.typeName, {
 			valueDisplayComponent: NumberDisplay,
 			valueEditor: NumberInput,
 			attributesEditor: NumberAttributesEditor,
@@ -70,7 +70,7 @@ export class NeoWikiExtension {
 			icon: cdxIconStringInteger
 		} );
 
-		registry.registerFormat( RelationFormat.formatName, {
+		registry.registerFormat( RelationFormat.typeName, {
 			valueDisplayComponent: RelationDisplay,
 			valueEditor: TextInput, // TODO
 			attributesEditor: TextAttributesEditor, // TODO

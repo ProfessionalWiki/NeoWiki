@@ -2,18 +2,18 @@ import { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import type { Value } from '@neo/domain/Value';
 import { ValueType } from '@neo/domain/Value';
 
-export abstract class BaseValueFormat<P extends PropertyDefinition, V extends Value> {
+export abstract class BasePropertyType<P extends PropertyDefinition, V extends Value> {
 
 	public static readonly valueType: ValueType;
 
-	public static readonly formatName: string;
+	public static readonly typeName: string;
 
-	public getFormatName(): string {
-		return ( this.constructor as typeof BaseValueFormat ).formatName;
+	public getTypeName(): string {
+		return ( this.constructor as typeof BasePropertyType ).typeName;
 	}
 
 	public getValueType(): ValueType {
-		return ( this.constructor as typeof BaseValueFormat ).valueType;
+		return ( this.constructor as typeof BasePropertyType ).valueType;
 	}
 
 	public abstract createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): P;
@@ -44,14 +44,14 @@ export interface ValueValidationError {
 
 }
 
-export type PropertyType = BaseValueFormat<PropertyDefinition, Value>;
+export type PropertyType = BasePropertyType<PropertyDefinition, Value>;
 
 export class PropertyTypeRegistry {
 
 	private propertyTypes: Map<string, PropertyType> = new Map();
 
-	public registerType( format: PropertyType ): void {
-		this.propertyTypes.set( format.getFormatName(), format );
+	public registerType( type: PropertyType ): void {
+		this.propertyTypes.set( type.getTypeName(), type );
 	}
 
 	public getType( typeName: string ): PropertyType {
@@ -66,10 +66,6 @@ export class PropertyTypeRegistry {
 
 	public getTypeNames(): string[] {
 		return Array.from( this.propertyTypes.keys() );
-	}
-
-	public getTypes(): PropertyType[] {
-		return Array.from( this.propertyTypes.values() );
 	}
 
 }
