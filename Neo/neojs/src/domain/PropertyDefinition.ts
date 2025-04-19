@@ -57,8 +57,8 @@ export class PropertyDefinitionDeserializer {
 	) {}
 
 	public propertyDefinitionFromJson( name: string | PropertyName, json: any ): PropertyDefinition {
-		const format = this.registry.getType( json.format );
-		return format.createPropertyDefinitionFromJson(
+		const propertyType = this.registry.getType( json.format );
+		return propertyType.createPropertyDefinitionFromJson(
 			{
 				name: typeof name === 'string' ? new PropertyName( name ) : name,
 				type: json.format as string,

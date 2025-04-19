@@ -6,7 +6,7 @@ import { NumberProperty, NumberType } from '@neo/domain/propertyTypes/Number';
 import { RelationProperty, RelationType } from '@neo/domain/propertyTypes/Relation';
 import { Neo } from '@neo/Neo';
 
-const serializer = new PropertyDefinitionDeserializer( Neo.getInstance().getValueFormatRegistry(), Neo.getInstance().getValueDeserializer() );
+const serializer = new PropertyDefinitionDeserializer( Neo.getInstance().getPropertyTypeRegistry(), Neo.getInstance().getValueDeserializer() );
 
 it( 'creates a property definition with defaults omitted', () => {
 	const json = {

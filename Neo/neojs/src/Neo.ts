@@ -17,7 +17,7 @@ export class Neo {
 		return Neo.instance;
 	}
 
-	public getValueFormatRegistry(): PropertyTypeRegistry {
+	public getPropertyTypeRegistry(): PropertyTypeRegistry {
 		const registry = new PropertyTypeRegistry();
 
 		registry.registerType( new TextType() );
@@ -29,11 +29,11 @@ export class Neo {
 	}
 
 	public getPropertyDefinitionDeserializer(): PropertyDefinitionDeserializer {
-		return new PropertyDefinitionDeserializer( this.getValueFormatRegistry(), this.getValueDeserializer() );
+		return new PropertyDefinitionDeserializer( this.getPropertyTypeRegistry(), this.getValueDeserializer() );
 	}
 
 	public getValueDeserializer(): ValueDeserializer {
-		return new ValueDeserializer( this.getValueFormatRegistry() );
+		return new ValueDeserializer( this.getPropertyTypeRegistry() );
 	}
 
 	public getStatementDeserializer(): StatementDeserializer {
