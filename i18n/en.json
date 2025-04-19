@@ -10,10 +10,10 @@
 	"neowiki-name": "NeoWiki",
 	"neowiki-description": "TODO",
 
-	"neowiki-format-text": "Text",
-	"neowiki-format-url": "URL",
-	"neowiki-format-number": "Number",
-	"neowiki-format-relation": "Relation",
+	"neowiki-property-type-text": "Text",
+	"neowiki-property-type-url": "URL",
+	"neowiki-property-type-number": "Number",
+	"neowiki-property-type-relation": "Relation",
 
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 
