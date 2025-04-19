@@ -81,7 +81,7 @@ const subjectRef = ref( props.subject );
 
 const schemaStore = useSchemaStore();
 
-const getComponent = ( formatName: string ): Component => NeoWikiServices.getComponentRegistry().getValueDisplayComponent( formatName );
+const getComponent = ( propertyType: string ): Component => NeoWikiServices.getComponentRegistry().getValueDisplayComponent( propertyType );
 
 const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => {
 	if ( !subjectRef.value ) {

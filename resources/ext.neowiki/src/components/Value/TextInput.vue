@@ -1,7 +1,7 @@
 <template>
 	<BaseMultiStringInput
 		v-bind="$props"
-		format-name="text"
+		property-type-name="text"
 		input-type="text"
 		root-class="neo-text-field"
 		@update:model-value="value => onInput( value )"
