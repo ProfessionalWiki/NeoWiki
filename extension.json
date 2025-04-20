@@ -48,7 +48,13 @@
 
 		"SpecialPage_initList": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSpecialPageInitList",
 
-		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn"
+		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn",
+
+		"SkinTemplateNavigation::Universal": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onSkinTemplateNavigationUniversal"
+	},
+
+	"Actions": {
+		"edit-schema": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\EditSchemaAction"
 	},
 
 	"ContentHandlers": {
@@ -237,7 +243,7 @@
 				"neowiki-delete-property-confirmation-message",
 				"neowiki-delete-dialog-button",
 				"neowiki-delete-dialog-cancel-button",
-				"neowiki-edit-schema"
+				"neowiki-save-schema"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

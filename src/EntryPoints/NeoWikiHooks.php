@@ -24,15 +24,14 @@ use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\SchemaContentValida
 use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\JsonSchemaErrorFormatter;
 use Skin;
+use SkinTemplate;
 use Status;
 use WikiPage;
 
 class NeoWikiHooks {
 
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
-		if ( self::isSchemaPage( $out ) ) {
-			self::handleSchemaPage( $out );
-		} elseif ( self::isContentPage( $out ) ) {
+		if ( self::isContentPage( $out ) ) {
 			self::handleContentPage( $out );
 		}
 	}
@@ -106,35 +105,6 @@ class NeoWikiHooks {
 				'data-subject-id' => $subject->getId()->text,
 			]
 		);
-	}
-
-	private static function isSchemaPage( OutputPage $out ): bool {
-		return $out->getTitle()->getNamespace() === NeoWikiExtension::NS_SCHEMA;
-	}
-
-	private static function handleSchemaPage( OutputPage $out ): void {
-		if ( !MediaWikiServices::getInstance()->getPermissionManager()->userCan( 'edit', $out->getUser(), $out->getTitle() ) ) {
-			return;
-		}
-
-		$out->addModules( 'ext.neowiki' );
-		$out->addModuleStyles( 'ext.neowiki.styles' );
-
-		self::addEditSchemaButton( $out );
-	}
-
-	private static function addEditSchemaButton( OutputPage $out ): void {
-		$html = $out->getHTML();
-		$out->clearHTML();
-		$out->addHtml(
-			Html::element(
-				'div',
-				[
-					'id' => 'ext-neowiki-edit-schema',
-				]
-			)
-		);
-		$out->addHTML( $html );
 	}
 
 	public static function onMediaWikiServices( MediaWikiServices $services ): void {
@@ -229,6 +199,31 @@ class NeoWikiHooks {
 		if ( $title->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
 			$ok = $modelId === SchemaContent::CONTENT_MODEL_ID;
 		}
+	}
+
+	public static function onSkinTemplateNavigationUniversal( SkinTemplate $skinTemplate, array &$links ) {
+		if ( !self::isSchemaPage( $skinTemplate->getOutput() ) || !self::userCanEditCurrentPage( $skinTemplate ) ) {
+			return;
+		}
+
+		// TODO: Rearrange link order.
+		$links['views']['edit-schema'] = [
+			'class' => ( $skinTemplate->getRequest()->getVal( 'action' ) == 'edit-schema' ) ? 'selected' : '',
+			'href' => $skinTemplate->getTitle()->getLocalUrl( 'action=edit-schema' ),
+			'text' => $skinTemplate->msg( 'neowiki-edit-with-form' )->text(),
+		];
+	}
+
+	private static function isSchemaPage( OutputPage $out ): bool {
+		return $out->getTitle()->getNamespace() === NeoWikiExtension::NS_SCHEMA;
+	}
+
+	private static function userCanEditCurrentPage( SkinTemplate $skinTemplate ): bool {
+		return MediaWikiServices::getInstance()->getPermissionManager()->userCan(
+			'edit',
+			$skinTemplate->getUser(),
+			$skinTemplate->getTitle()
+		);
 	}
 
 }

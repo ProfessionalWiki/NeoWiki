@@ -76,5 +76,8 @@
 	"neowiki-delete-dialog-button": "Delete",
 	"neowiki-delete-dialog-cancel-button": "Cancel",
 
-	"neowiki-edit-schema": "Edit Schema"
+	"neowiki-editing-schema": "Editing $1 schema",
+	"neowiki-edit-with-form": "Edit with form",
+	"neowiki-save-schema": "Save schema"
+
 }
