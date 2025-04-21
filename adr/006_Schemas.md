@@ -2,6 +2,8 @@
 
 Date: April 2023
 
+Status: Accepted
+
 ## Context
 
 Users should be able to define properties and also specify which properties are expected for a given type of Subject.

@@ -2,6 +2,8 @@
 
 Date: April 2023
 
+Status: Accepted but modified by ADR 14
+
 ## Context
 
 We need unique identifiers for Subjects.

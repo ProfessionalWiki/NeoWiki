@@ -1,6 +1,7 @@
 # Backend Validation
 
 Date: 2024-09-10
+
 Status: Accepted
 
 ## Context

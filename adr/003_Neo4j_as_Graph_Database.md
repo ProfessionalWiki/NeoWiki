@@ -2,6 +2,8 @@
 
 Date: March 2023
 
+Status: Accepted
+
 ## Context
 
 We need to store our structured data in a database that allows efficient querying.

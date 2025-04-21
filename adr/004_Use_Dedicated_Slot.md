@@ -2,6 +2,8 @@
 
 Date: March 2023
 
+Status: Accepted
+
 ## Context
 
 We need to store our structured data JSON somewhere in MediaWiki revisions.

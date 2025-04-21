@@ -2,6 +2,8 @@
 
 Date: April 2023
 
+Status: Accepted
+
 ## Requirements
 
 * Native support for "subobjects" like in Semantic MediaWiki

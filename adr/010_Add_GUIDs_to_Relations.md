@@ -2,6 +2,8 @@
 
 Date: 2023-06-17
 
+Status: Accepted but modified by ADR 14
+
 ## Context
 
 In our domain model, relations do not currently have an ID.

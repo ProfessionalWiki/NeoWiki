@@ -2,6 +2,8 @@
 
 Date: May 2023
 
+Status: Accepted
+
 ## Context
 
 In ADR 006 we decided to use JSON Schema for our schemas. However, we have since found that using

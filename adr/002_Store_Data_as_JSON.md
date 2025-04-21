@@ -2,6 +2,8 @@
 
 Date: March 2023
 
+Status: Accepted
+
 ## Context
 
 We need to store structured data that can be viewed and edited in wiki pages.

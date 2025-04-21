@@ -1,6 +1,7 @@
 # Restrict Neo4j Access
 
 Date: 2024-09-16
+
 Status: Accepted
 
 ## Context

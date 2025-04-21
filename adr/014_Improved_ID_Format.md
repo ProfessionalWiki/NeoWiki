@@ -1,6 +1,7 @@
 # Improved ID Format
 
 Date: 2024-09-16
+
 Status: Accepted
 
 ## Context

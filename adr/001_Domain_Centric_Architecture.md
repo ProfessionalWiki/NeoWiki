@@ -2,6 +2,8 @@
 
 Date: March 2023
 
+Status: Accepted
+
 ## Context
 
 We are building a non-trivial application on top of MediaWiki. We need to decide how to structure the code.

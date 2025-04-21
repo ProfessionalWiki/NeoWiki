@@ -2,6 +2,8 @@
 
 Date: May 2023
 
+Status: Accepted
+
 ## Decision
 
 * Subjects can only have one type/schema
