@@ -2,7 +2,7 @@
 
 Date: 2023-06-22
 
-Status: Implemented (https://github.com/ProfessionalWiki/NeoWiki/issues/402)
+Status: [Implemented](https://github.com/ProfessionalWiki/NeoWiki/commit/07a9c75b665cede0270c9300ea6f813e1c8ada9c) (https://github.com/ProfessionalWiki/LegacyNeoWiki/issues/402)
 
 ## Context
 
