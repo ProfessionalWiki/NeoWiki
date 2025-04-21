@@ -16,7 +16,11 @@ if ( automaticInfobox !== null ) {
 
 const editSchema = document.querySelector( '#ext-neowiki-edit-schema' );
 if ( editSchema !== null ) {
-	const app = createMwApp( EditSchemaAction );
+	const app = createMwApp(
+		EditSchemaAction,
+		{ schemaName: editSchema.getAttribute( 'data-schema-name' ) }
+	);
+	app.use( createPinia() );
 	NeoWikiServices.registerServices( app );
 	app.mount( editSchema );
 }
