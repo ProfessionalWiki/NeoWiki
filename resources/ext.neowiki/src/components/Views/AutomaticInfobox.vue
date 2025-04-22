@@ -17,15 +17,11 @@
 					{{ schema.getName() }}
 				</div>
 			</div>
-			<CdxButton
+			<SubjectEditorDialog
 				v-if="canEditSubject"
-				class="ext-neowiki-auto-infobox__edit"
-				weight="quiet"
-				:aria-label="$i18n( 'neowiki-infobox-edit-link' ).text()"
-				@click="() => console.log( 'TODO' )"
-			>
-				<CdxIcon :icon="cdxIconEdit" />
-			</CdxButton>
+				:label="props.subject.getLabel()"
+				:statements="props.subject.getStatements()"
+			/>
 		</div>
 		<div class="ext-neowiki-auto-infobox__content">
 			<div
@@ -57,8 +53,7 @@ import { Schema } from '@neo/domain/Schema.ts';
 import { Component } from 'vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconEdit } from '@wikimedia/codex-icons';
+import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 
 const props = defineProps( {
 	subject: {
@@ -148,10 +143,6 @@ onMounted( async (): Promise<void> => {
 	&__schema {
 		color: $color-subtle;
 		font-size: $font-size-small;
-	}
-
-	&__edit {
-		flex-shrink: 0;
 	}
 
 	&__content {

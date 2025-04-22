@@ -243,7 +243,13 @@
 				"neowiki-delete-property-confirmation-message",
 				"neowiki-delete-dialog-button",
 				"neowiki-delete-dialog-cancel-button",
-				"neowiki-save-schema"
+				"neowiki-save-schema",
+				"neowiki-edit-summary-label",
+				"neowiki-edit-summary-placeholder",
+				"neowiki-edit-summary-help-text-subject",
+				"neowiki-edit-summary-help-text-schema",
+				"neowiki-subject-editor-title",
+				"neowiki-subject-editor-save"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
