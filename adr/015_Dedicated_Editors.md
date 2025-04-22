@@ -17,7 +17,8 @@ Additionally, the InfoboxEditor implementation is full of technical issues and i
 
 ## Decision
 
-We delete InfoboxEditor and child components and implement freshly designed dedicated Subject editing and Schema UIs from scratch.
+We implement freshly designed dedicated Subject editing and Schema UIs from scratch
+and delete InfoboxEditor and its child components.
 
 ## Consequences
 
@@ -30,6 +31,8 @@ We delete InfoboxEditor and child components and implement freshly designed dedi
 * We can use the dedicated Schema editor on pages in the Schema namespace
 
 ## Alternatives Considered
+
+Also see the [Mattermost thread](https://chat.professional.wiki/pro-wiki/pl/quyjcga9mpra8r54j7e6u1f57h)
 
 ### Refactoring InfoboxEditor
 
