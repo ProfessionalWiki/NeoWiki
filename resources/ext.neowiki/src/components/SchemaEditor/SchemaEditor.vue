@@ -28,8 +28,8 @@
 
 <script setup lang="ts">
 import { CdxCard } from '@wikimedia/codex';
-import { SchemaEditorData } from '@/components/SchemaEditor/SchemaEditorContract.ts';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
+import { SchemaEditorData } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 
 const props = defineProps<{
 	schemaName: string;

@@ -29,8 +29,8 @@ import { CdxButton, CdxDialog, CdxIcon, CdxTextArea } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 import { Schema } from '@neo/domain/Schema.ts';
 import { ref } from 'vue';
-import { SchemaEditorData } from '@/components/SchemaEditor/SchemaEditorContract.ts';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
+import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
 
 // TODO: Does the dialog need the full schema?
 const props = defineProps<{ schema: Schema }>();
@@ -50,5 +50,10 @@ const handleSchemaUpdate = ( schemaEditorData: SchemaEditorData ): void => {
 
 const saveSchema = async (): Promise<void> => {
 	// TODO: emit event
+};
+
+export type SchemaEditorData = {
+	description: string;
+	properties: PropertyDefinition[];
 };
 </script>

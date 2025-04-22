@@ -28,8 +28,8 @@ import { cdxIconCheck } from '@wikimedia/codex-icons';
 import { onMounted, ref } from 'vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema, SchemaName } from '@neo/domain/Schema.ts';
-import { SchemaEditorData } from '@/components/SchemaEditor/SchemaEditorContract.ts';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
+import { SchemaEditorData } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 
 const props = defineProps<{ schemaName: SchemaName }>();
 
