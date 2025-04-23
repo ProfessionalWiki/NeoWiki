@@ -125,9 +125,7 @@ export function statementsToJson( statements: StatementList ): Record<string, un
 
 		valuesJson[ statement.propertyName.toString() ] = {
 			value: value,
-			// TODO: Use 'format' key for backend compatibility
-			// This needs to be removed once the backend is updated (#340)
-			format: statement.propertyType
+			propertyType: statement.propertyType
 		};
 	}
 

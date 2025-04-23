@@ -40,12 +40,12 @@ readonly class StatementListPatcher {
 
 		foreach ( $patch as $propertyName => $requestStatement ) {
 			if ( $requestStatement !== null ) {
-				$value = $this->deserializeValue( $requestStatement['format'], $requestStatement['value'] );
+				$value = $this->deserializeValue( $requestStatement['propertyType'], $requestStatement['value'] );
 
 				if ( !$value->isEmpty() ) {
 					$newStatements[$propertyName] = new Statement(
 						property: new PropertyName( $propertyName ),
-						format: $requestStatement['format'], // TODO: handle missing format
+						format: $requestStatement['propertyType'], // TODO: handle missing format
 						value: $value
 					);
 

@@ -64,18 +64,18 @@ class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
 	"label": "Test subject sTestSA11111111",
 	"statements": {
 		"Founded at": {
-			"format": "number",
+			"propertyType": "number",
 			"value": 2019
 		},
 		"Websites": {
-			"format": "url",
+			"propertyType": "url",
 			"value": [
 				"https://professional.wiki",
 				"https://wikibase.consulting"
 			]
 		},
 		"Products": {
-			"format": "relation",
+			"propertyType": "relation",
 			"value": [
 				{
 					"id": "rTestSA11111rr1",

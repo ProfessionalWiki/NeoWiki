@@ -124,7 +124,7 @@ class CreateSubjectActionTest extends TestCase {
 				schemaId: '00000000-8888-0000-0000-000000000022',
 				statements: [
 					'Has product' => [
-						'format' => 'relation',
+						'propertyType' => 'relation',
 						'value' => [
 							[
 								// No ID

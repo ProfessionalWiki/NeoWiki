@@ -1,7 +1,7 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Cannot access offset 'format' on mixed\\.$#"
+			message: "#^Cannot access offset 'propertyType' on mixed\\.$#"
 			count: 2
 			path: src/Application/StatementListPatcher.php
 
