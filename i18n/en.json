@@ -84,6 +84,6 @@
 	"neowiki-edit-summary-placeholder": "Describe what you changed",
 	"neowiki-edit-summary-help-text-subject": "Changes will be applied to all instances of the subject.",
 
-	"neowiki-subject-editor-title": "Edit subject",
+	"neowiki-subject-editor-title": "Editing $1",
 	"neowiki-subject-editor-save": "Save changes"
 }

@@ -1,9 +1,5 @@
 <template>
 	<div class="ext-neowiki-subject-editor">
-		<div class="ext-neowiki-subject-editor__label">
-			{{ props.initialLabel }}
-		</div>
-
 		<CdxField
 			v-for="statement in props.initialStatements"
 			:key="statement.propertyName.toString()"
@@ -30,7 +26,6 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { Statement } from '@neo/domain/Statement.ts';
 
 const props = defineProps<{
-	initialLabel: string;
 	initialStatements: StatementList;
 }>();
 
@@ -66,14 +61,3 @@ defineExpose( {
 } );
 
 </script>
-
-<!-- Add some basic styling for the label display -->
-<style lang="scss">
-@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
-
-.ext-neowiki-subject-editor__label {
-	margin-block-end: $spacing-150;
-	font-size: $font-size-large;
-	font-weight: $font-weight-bold;
-}
-</style>

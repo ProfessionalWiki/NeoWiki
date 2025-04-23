@@ -10,13 +10,12 @@
 		<CdxDialog
 			v-model:open="open"
 			class="ext-neowiki-dialog"
-			:title="$i18n( 'neowiki-subject-editor-title' ).text()"
+			:title="$i18n( 'neowiki-subject-editor-title', props.subject.getLabel() ).text()"
 			:use-close-button="true"
 			@default="open = false"
 		>
 			<SubjectEditor
 				ref="subjectEditorRef"
-				:initial-label="props.subject.getLabel()"
 				:initial-statements="props.subject.getStatements()"
 			/>
 
