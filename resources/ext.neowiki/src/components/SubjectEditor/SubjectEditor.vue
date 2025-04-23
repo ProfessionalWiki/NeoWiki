@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { CdxField } from '@wikimedia/codex'; // Removed CdxTextInput
 import { StatementList } from '@neo/domain/StatementList.ts';
 import { Value } from '@neo/domain/Value.ts';
@@ -34,13 +34,7 @@ const props = defineProps<{
 	initialStatements: StatementList;
 }>();
 
-const emit = defineEmits<{
-	'update:isModified': [ value: boolean ];
-}>();
-
 const formData = ref<Record<string, Value | undefined>>( {} );
-// TODO: Implement proper change detection
-const isModified = ref( true );
 
 const updateStatementValue = ( propertyName: string, newValue: Value | undefined ): void => {
 	formData.value[ propertyName ] = newValue;
@@ -54,10 +48,6 @@ if ( props.initialStatements ) {
 	}
 }
 formData.value = initialData;
-
-onMounted( () => {
-	emit( 'update:isModified', isModified.value );
-} );
 
 const getSubjectData = (): StatementList => {
 	const newStatements: Statement[] = [];

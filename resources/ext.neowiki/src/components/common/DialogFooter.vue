@@ -18,7 +18,6 @@
 			<CdxButton
 				action="progressive"
 				weight="primary"
-				:disabled="props.saveDisabled"
 				@click="onSaveClick"
 			>
 				<CdxIcon :icon="cdxIconCheck" />
@@ -32,10 +31,6 @@
 import { ref } from 'vue';
 import { CdxButton, CdxField, CdxIcon, CdxTextArea } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
-
-const props = defineProps<{
-	saveDisabled?: boolean;
-}>();
 
 const editSummary = ref( '' );
 
