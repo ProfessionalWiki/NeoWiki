@@ -19,8 +19,8 @@
 			</div>
 			<SubjectEditorDialog
 				v-if="canEditSubject"
-				:label="props.subject.getLabel()"
-				:statements="props.subject.getStatements()"
+				:subject="subjectRef as Subject"
+				@update:subject="handleSubjectUpdate"
 			/>
 		</div>
 		<div class="ext-neowiki-auto-infobox__content">
@@ -75,6 +75,10 @@ const canEditSchema = ref( false );
 const subjectRef = ref( props.subject );
 
 const schemaStore = useSchemaStore();
+
+const handleSubjectUpdate = ( newSubject: Subject ): void => {
+	subjectRef.value = newSubject;
+};
 
 const getComponent = ( propertyType: string ): Component => NeoWikiServices.getComponentRegistry().getValueDisplayComponent( propertyType );
 

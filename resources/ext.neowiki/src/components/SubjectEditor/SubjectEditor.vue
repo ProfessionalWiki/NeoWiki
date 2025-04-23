@@ -27,6 +27,7 @@ import { CdxField } from '@wikimedia/codex'; // Removed CdxTextInput
 import { StatementList } from '@neo/domain/StatementList.ts';
 import { Value } from '@neo/domain/Value.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { Statement } from '@neo/domain/Statement.ts';
 
 const props = defineProps<{
 	initialLabel: string;
@@ -58,7 +59,17 @@ onMounted( () => {
 	emit( 'update:isModified', isModified.value );
 } );
 
-const getSubjectData = (): Record<string, Value | undefined> => formData.value;
+const getSubjectData = (): StatementList => {
+	const newStatements: Statement[] = [];
+	for ( const initialStatement of props.initialStatements ) {
+		const propName = initialStatement.propertyName;
+		const propType = initialStatement.propertyType;
+		const currentValue = formData.value[ propName.toString() ];
+
+		newStatements.push( new Statement( propName, propType, currentValue ) );
+	}
+	return new StatementList( newStatements );
+};
 
 defineExpose( {
 	getSubjectData

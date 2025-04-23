@@ -16,8 +16,8 @@
 		>
 			<SubjectEditor
 				ref="subjectEditorRef"
-				:initial-label="props.label"
-				:initial-statements="props.statements"
+				:initial-label="props.subject.getLabel()"
+				:initial-statements="props.subject.getStatements()"
 				@update:is-modified="handleModifiedUpdate"
 			/>
 
@@ -36,15 +36,19 @@ import DialogFooter from '@/components/common/DialogFooter.vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';
 import { StatementList } from '@neo/domain/StatementList.ts';
-import { Value } from '@neo/domain/Value.ts';
+import { Subject } from '@neo/domain/Subject.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
 
 const props = defineProps<{
-	label: string;
-	statements: StatementList;
+	subject: Subject;
 }>();
 
+const emit = defineEmits<( e: 'update:subject', subject: Subject ) => void>();
+
+const subjectStore = useSubjectStore();
+
 interface SubjectEditorInstance {
-	getSubjectData: () => Record<string, Value | undefined>;
+	getSubjectData: () => StatementList;
 }
 
 const open = ref( false );
@@ -56,28 +60,34 @@ const handleModifiedUpdate = ( isModified: boolean ): void => {
 };
 
 const handleSave = async ( summary: string ): Promise<void> => {
-	let modifiedStatements: Record<string, Value | undefined> | null = null;
-
-	console.debug( 'Passed to SubjectEditor:', { label: props.label, statements: props.statements } );
-
 	await nextTick();
 
-	if ( subjectEditorRef.value ) {
-		modifiedStatements = subjectEditorRef.value.getSubjectData();
-
-		console.log( 'Received from SubjectEditor:', modifiedStatements );
-	} else {
-		console.warn( 'SubjectEditor ref not available on save.' );
+	if ( !subjectEditorRef.value ) {
+		return;
 	}
 
-	mw.notify(
-		summary || 'No edit summary provided',
-		{
-			title: '[SubjectEditorDialog] onSave',
-			type: 'success'
-		}
-	);
-	open.value = false;
+	const updatedSubject = props.subject.withStatements( subjectEditorRef.value.getSubjectData() );
+	const subjectName = updatedSubject.getLabel();
+	try {
+		await subjectStore.updateSubject( updatedSubject );
+		mw.notify(
+			summary || 'No edit summary provided.',
+			{
+				title: `Updated ${ subjectName }`,
+				type: 'success'
+			}
+		);
+		emit( 'update:subject', updatedSubject );
+		open.value = false;
+	} catch ( error ) {
+		mw.notify(
+			error instanceof Error ? error.message : String( error ),
+			{
+				title: `Failed to update ${ subjectName }.`,
+				type: 'error'
+			}
+		);
+	}
 };
 
 </script>
