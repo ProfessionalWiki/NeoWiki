@@ -18,11 +18,12 @@
 				ref="subjectEditorRef"
 				:initial-label="props.label"
 				:initial-statements="props.statements"
+				@update:is-modified="handleModifiedUpdate"
 			/>
 
 			<!-- TODO: We should make this into a component-->
 			<template #footer>
-				<DialogFooter @save="handleSave" />
+				<DialogFooter :save-disabled="!isSubjectModified" @save="handleSave" />
 			</template>
 		</CdxDialog>
 	</div>
@@ -48,6 +49,11 @@ interface SubjectEditorInstance {
 
 const open = ref( false );
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
+const isSubjectModified = ref( false );
+
+const handleModifiedUpdate = ( isModified: boolean ): void => {
+	isSubjectModified.value = isModified;
+};
 
 const handleSave = async ( summary: string ): Promise<void> => {
 	let modifiedStatements: Record<string, Value | undefined> | null = null;

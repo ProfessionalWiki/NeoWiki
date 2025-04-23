@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue';
+import { ref, onMounted } from 'vue';
 import { CdxField } from '@wikimedia/codex'; // Removed CdxTextInput
 import { StatementList } from '@neo/domain/StatementList.ts';
 import { Value } from '@neo/domain/Value.ts';
@@ -33,23 +33,29 @@ const props = defineProps<{
 	initialStatements: StatementList;
 }>();
 
-// Only statements are stored in the formData for now
+const emit = defineEmits<{
+	'update:isModified': [ value: boolean ];
+}>();
+
 const formData = ref<Record<string, Value | undefined>>( {} );
+// TODO: Implement proper change detection
+const isModified = ref( true );
 
 const updateStatementValue = ( propertyName: string, newValue: Value | undefined ): void => {
 	formData.value[ propertyName ] = newValue;
 };
 
-watchEffect( () => {
-	const initialData: Record<string, Value | undefined> = {};
-
-	if ( props.initialStatements ) {
-		for ( const statement of props.initialStatements ) {
-			const propName = statement.propertyName.toString();
-			initialData[ propName ] = statement.value;
-		}
+const initialData: Record<string, Value | undefined> = {};
+if ( props.initialStatements ) {
+	for ( const statement of props.initialStatements ) {
+		const propName = statement.propertyName.toString();
+		initialData[ propName ] = statement.value;
 	}
-	formData.value = initialData;
+}
+formData.value = initialData;
+
+onMounted( () => {
+	emit( 'update:isModified', isModified.value );
 } );
 
 const getSubjectData = (): Record<string, Value | undefined> => formData.value;
