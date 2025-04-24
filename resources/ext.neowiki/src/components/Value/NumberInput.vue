@@ -17,10 +17,6 @@
 
 <script lang="ts">
 import type { Value } from '@neo/domain/Value';
-
-export interface NumberInputExposed {
-	getCurrentValue(): Value | undefined;
-}
 </script>
 
 <script setup lang="ts">
@@ -28,7 +24,7 @@ import { ref, watch } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
 import { NumberType, NumberProperty } from '@neo/domain/propertyTypes/Number.ts';
-import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
+import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = withDefaults(
@@ -85,7 +81,7 @@ const isValueEmpty = ( inputString: string ): boolean =>
 const getCurrentValue = (): Value | undefined =>
 	!isValueEmpty( internalInputValue.value ) ? newNumberValue( Number( internalInputValue.value ) ) : undefined;
 
-defineExpose<NumberInputExposed>( {
+defineExpose<ValueInputExposes>( {
 	getCurrentValue
 } );
 

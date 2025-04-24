@@ -10,17 +10,13 @@
 
 <script lang="ts">
 import { Value } from '@neo/domain/Value.ts';
-
-export interface TextInputExposed {
-	getCurrentValue(): Value | undefined;
-}
 </script>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
 import { TextProperty } from '@neo/domain/propertyTypes/Text.ts';
-import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
+import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { newStringValue, ValueType, StringValue } from '@neo/domain/Value.ts';
 
 const props = withDefaults(
@@ -50,7 +46,7 @@ const isValueEmpty = ( val: Value | undefined ): boolean =>
 const getCurrentValue = (): Value | undefined =>
 	!isValueEmpty( internalValue.value ) ? internalValue.value : undefined;
 
-defineExpose<TextInputExposed>( {
+defineExpose<ValueInputExposes>( {
 	getCurrentValue
 } );
 </script>

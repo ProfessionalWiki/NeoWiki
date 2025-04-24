@@ -11,6 +11,10 @@ export type ValueInputEmits = {
 	'update:modelValue': [Value | undefined];
 };
 
+export interface ValueInputExposes {
+	getCurrentValue(): Value | undefined;
+}
+
 export type ValueInputEmitFunction = {
 	// eslint-disable-next-line @typescript-eslint/prefer-function-type
 	( event: 'update:modelValue', value: Value ): void;
