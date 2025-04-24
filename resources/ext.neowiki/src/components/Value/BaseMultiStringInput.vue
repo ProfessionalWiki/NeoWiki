@@ -128,13 +128,15 @@ function validate(): void {
 
 function onInput( value: string, index: number ): void {
 	inputValues.value[ index ] = value;
-	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
+	const newValue = newStringValue( ...inputValues.value );
+	emit( 'update:modelValue', newValue.strings.length > 0 ? newValue : undefined );
 	validate();
 }
 
 function addValue(): void {
 	inputValues.value.push( '' );
-	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
+	const newValue = newStringValue( ...inputValues.value );
+	emit( 'update:modelValue', newValue.strings.length > 0 ? newValue : undefined );
 	validate();
 
 	nextTick( () => {
@@ -153,7 +155,8 @@ function focusInput( inputRef: string ): void {
 
 function removeValue( index: number ): void {
 	inputValues.value.splice( index, 1 );
-	emit( 'update:modelValue', newStringValue( ...inputValues.value ) );
+	const newValue = newStringValue( ...inputValues.value );
+	emit( 'update:modelValue', newValue.strings.length > 0 ? newValue : undefined );
 	validate();
 }
 

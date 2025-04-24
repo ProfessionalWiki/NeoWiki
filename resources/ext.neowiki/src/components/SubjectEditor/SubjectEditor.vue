@@ -1,7 +1,7 @@
 <template>
 	<div class="ext-neowiki-subject-editor">
 		<CdxField
-			v-for="( statement, index ) in props.initialStatements"
+			v-for="( statement, index ) in props.schemaStatements"
 			:key="statement.propertyName.toString()"
 		>
 			<template #label>
@@ -30,7 +30,7 @@ interface ValueEditorComponent {
 }
 
 const props = defineProps<{
-	initialStatements: StatementList;
+	schemaStatements: StatementList;
 }>();
 
 onBeforeUpdate( () => {
@@ -40,7 +40,7 @@ onBeforeUpdate( () => {
 const valueEditors = ref<ValueEditorComponent[]>( [] );
 
 const getSubjectData = (): StatementList => {
-	const newStatements = [ ...props.initialStatements ].map( ( statement, index ) =>
+	const newStatements = [ ...props.schemaStatements ].map( ( statement, index ) =>
 		new Statement(
 			statement.propertyName,
 			statement.propertyType,

@@ -180,5 +180,12 @@ describe( 'UrlInput', () => {
 			await wrapper.findAll( 'input' )[ 1 ].setValue( 'https://updated-second.io' );
 			expect( ( wrapper.vm as unknown as UrlInputExposed ).getCurrentValue() ).toEqual( newStringValue( 'https://first.com', 'https://updated-second.io' ) );
 		} );
+
+		it( 'returns undefined for empty input', () => {
+			const wrapper = createWrapper( {
+				modelValue: newStringValue( '' )
+			} );
+			expect( ( wrapper.vm as unknown as UrlInputExposed ).getCurrentValue() ).toBeUndefined();
+		} );
 	} );
 } );

@@ -21,7 +21,7 @@ import { ref, watch } from 'vue';
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
 import { TextProperty } from '@neo/domain/propertyTypes/Text.ts';
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
-import { newStringValue } from '@neo/domain/Value.ts';
+import { newStringValue, ValueType, StringValue } from '@neo/domain/Value.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<TextProperty>>(),
@@ -44,7 +44,11 @@ function onInput( value: Value | undefined ): void {
 	emit( 'update:modelValue', value );
 }
 
-const getCurrentValue = (): Value | undefined => internalValue.value;
+const isValueEmpty = ( val: Value | undefined ): boolean =>
+	!val || ( val.type === ValueType.String && ( val as StringValue ).strings.length === 0 );
+
+const getCurrentValue = (): Value | undefined =>
+	!isValueEmpty( internalValue.value ) ? internalValue.value : undefined;
 
 defineExpose<TextInputExposed>( {
 	getCurrentValue

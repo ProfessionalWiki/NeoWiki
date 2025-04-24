@@ -160,6 +160,13 @@ describe( 'TextInput', () => {
 			await wrapper.findAll( 'input' )[ 1 ].setValue( 'Updated Second' );
 			expect( ( wrapper.vm as unknown as TextInputExposed ).getCurrentValue() ).toEqual( newStringValue( 'First', 'Updated Second' ) );
 		} );
+
+		it( 'returns undefined for empty input', () => {
+			const wrapper = createWrapper( {
+				modelValue: newStringValue( '' )
+			} );
+			expect( ( wrapper.vm as unknown as TextInputExposed ).getCurrentValue() ).toBeUndefined();
+		} );
 	} );
 
 } );

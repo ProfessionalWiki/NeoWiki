@@ -79,10 +79,11 @@ watch( () => props.property, () => {
 	validate( props.modelValue && props.modelValue.type === ValueType.Number ? props.modelValue as NumberValue : undefined );
 } );
 
-const getCurrentValue = (): Value | undefined => {
-	const num = Number( internalInputValue.value );
-	return internalInputValue.value === '' || isNaN( num ) ? undefined : newNumberValue( num );
-};
+const isValueEmpty = ( inputString: string ): boolean =>
+	inputString === '' || isNaN( Number( inputString ) );
+
+const getCurrentValue = (): Value | undefined =>
+	!isValueEmpty( internalInputValue.value ) ? newNumberValue( Number( internalInputValue.value ) ) : undefined;
 
 defineExpose<NumberInputExposed>( {
 	getCurrentValue
