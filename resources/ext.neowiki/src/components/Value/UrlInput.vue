@@ -45,11 +45,10 @@ function onInput( value: Value | undefined ): void {
 const isValueEmpty = ( val: Value | undefined ): boolean =>
 	!val || ( val.type === ValueType.String && ( val as StringValue ).strings.length === 0 );
 
-const getCurrentValue = (): Value | undefined =>
-	!isValueEmpty( internalValue.value ) ? internalValue.value : undefined;
-
 defineExpose<ValueInputExposes>( {
-	getCurrentValue
+	getCurrentValue: function(): Value | undefined {
+		return isValueEmpty( internalValue.value ) ? undefined : internalValue.value;
+	}
 } );
 </script>
 
