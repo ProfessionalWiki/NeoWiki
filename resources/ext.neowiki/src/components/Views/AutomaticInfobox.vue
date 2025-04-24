@@ -20,7 +20,7 @@
 			<SubjectEditorDialog
 				v-if="canEditSubject"
 				:subject="subjectRef as Subject"
-				@update:subject="handleSubjectUpdate"
+				@update:subject="onSubjectUpdated"
 			/>
 		</div>
 		<div class="ext-neowiki-auto-infobox__content">
@@ -76,7 +76,8 @@ const subjectRef = ref( props.subject );
 
 const schemaStore = useSchemaStore();
 
-const handleSubjectUpdate = ( newSubject: Subject ): void => {
+const onSubjectUpdated = ( newSubject: Subject ): void => {
+	// TODO: We need to somehow update the other views that are using the same subject
 	subjectRef.value = newSubject;
 };
 
