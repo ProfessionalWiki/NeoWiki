@@ -9,12 +9,13 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue';
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
 import { TextProperty } from '@neo/domain/propertyTypes/Text.ts';
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { newStringValue, Value } from '@neo/domain/Value.ts';
 
-withDefaults(
+const props = withDefaults(
 	defineProps<ValueInputProps<TextProperty>>(),
 	{
 		modelValue: () => newStringValue( '' ),
@@ -24,9 +25,22 @@ withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
+const internalValue = ref<Value | undefined>( props.modelValue );
+
+watch( () => props.modelValue, ( newValue ) => {
+	internalValue.value = newValue;
+} );
+
 function onInput( value: Value | undefined ): void {
+	internalValue.value = value;
 	emit( 'update:modelValue', value );
 }
+
+const getCurrentValue = (): Value | undefined => internalValue.value;
+
+defineExpose( {
+	getCurrentValue
+} );
 </script>
 
 <style lang="scss">

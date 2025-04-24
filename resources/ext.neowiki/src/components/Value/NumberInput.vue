@@ -8,7 +8,7 @@
 			{{ label }}
 		</template>
 		<CdxTextInput
-			:model-value="inputValue"
+			:model-value="internalInputValue"
 			input-type="number"
 			@update:model-value="onInput"
 		/>
@@ -16,9 +16,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
-import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
+import { newNumberValue, NumberValue, ValueType, Value } from '@neo/domain/Value';
 import { NumberType, NumberProperty } from '@neo/domain/propertyTypes/Number.ts';
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -34,18 +34,30 @@ const emit = defineEmits<ValueInputEmits>();
 
 const validationError = ref<string | null>( null );
 
-const inputValue = computed( () => {
-	if ( props.modelValue.type === ValueType.Number ) {
-		return ( props.modelValue as NumberValue ).number.toString();
+const internalInputValue = ref<string>( '' );
+
+const initializeInputValue = ( value: Value | undefined ): void => {
+	if ( value && value.type === ValueType.Number ) {
+		const num = ( value as NumberValue ).number;
+		internalInputValue.value = isNaN( num ) ? '' : num.toString();
+	} else {
+		internalInputValue.value = '';
 	}
-	return '';
+};
+
+initializeInputValue( props.modelValue );
+
+watch( () => props.modelValue, ( newValue ) => {
+	initializeInputValue( newValue );
+	validate( newValue && newValue.type === ValueType.Number ? newValue as NumberValue : undefined );
 } );
 
 const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( NumberType.typeName );
 
 function onInput( newValue: string ): void {
+	internalInputValue.value = newValue; // Update local state
 	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );
-	emit( 'update:modelValue', value );
+	emit( 'update:modelValue', value ); // Emit for potential v-model usage
 	validate( value );
 }
 
@@ -56,6 +68,19 @@ function validate( value: NumberValue | undefined ): void {
 }
 
 watch( () => props.property, () => {
-	validate( props.modelValue ? props.modelValue as NumberValue : undefined );
+	validate( props.modelValue && props.modelValue.type === ValueType.Number ? props.modelValue as NumberValue : undefined );
 } );
+
+const getCurrentValue = (): Value | undefined => {
+	const num = Number( internalInputValue.value );
+	return internalInputValue.value === '' || isNaN( num ) ? undefined : newNumberValue( num );
+};
+
+defineExpose( {
+	getCurrentValue
+} );
+
+// Initial validation (call after internalInputValue is set)
+validate( props.modelValue && props.modelValue.type === ValueType.Number ? props.modelValue as NumberValue : undefined );
+
 </script>
