@@ -6,6 +6,8 @@ import { newStringValue, StringValue } from '@neo/domain/Value';
 import { newUrlProperty } from '@neo/domain/propertyTypes/Url.ts';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
 
+import type { UrlInputExposed } from '@/components/Value/UrlInput.vue';
+
 describe( 'UrlInput', () => {
 	beforeEach( () => {
 		vi.stubGlobal( 'mw', {
@@ -160,4 +162,23 @@ describe( 'UrlInput', () => {
 		} );
 	} );
 
+	describe( 'getCurrentValue', () => {
+		it( 'returns updated value after input (single)', async () => {
+			const wrapper = createWrapper( {
+				property: newUrlProperty( { multiple: false } ),
+				modelValue: newStringValue( 'https://initial.com' )
+			} );
+			await wrapper.find( 'input' ).setValue( 'https://updated.net' );
+			expect( ( wrapper.vm as unknown as UrlInputExposed ).getCurrentValue() ).toEqual( newStringValue( 'https://updated.net' ) );
+		} );
+
+		it( 'returns updated values after input (multiple)', async () => {
+			const wrapper = createWrapper( {
+				property: newUrlProperty( { multiple: true } ),
+				modelValue: newStringValue( 'https://first.com', 'https://second.org' )
+			} );
+			await wrapper.findAll( 'input' )[ 1 ].setValue( 'https://updated-second.io' );
+			expect( ( wrapper.vm as unknown as UrlInputExposed ).getCurrentValue() ).toEqual( newStringValue( 'https://first.com', 'https://updated-second.io' ) );
+		} );
+	} );
 } );

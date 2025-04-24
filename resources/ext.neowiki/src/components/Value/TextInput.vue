@@ -8,12 +8,20 @@
 	/>
 </template>
 
+<script lang="ts">
+import { Value } from '@neo/domain/Value.ts';
+
+export interface TextInputExposed {
+	getCurrentValue(): Value | undefined;
+}
+</script>
+
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
 import { TextProperty } from '@neo/domain/propertyTypes/Text.ts';
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
-import { newStringValue, Value } from '@neo/domain/Value.ts';
+import { newStringValue } from '@neo/domain/Value.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<TextProperty>>(),
@@ -38,7 +46,7 @@ function onInput( value: Value | undefined ): void {
 
 const getCurrentValue = (): Value | undefined => internalValue.value;
 
-defineExpose( {
+defineExpose<TextInputExposed>( {
 	getCurrentValue
 } );
 </script>

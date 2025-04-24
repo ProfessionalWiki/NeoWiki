@@ -9,13 +9,21 @@
 	/>
 </template>
 
+<script lang="ts">
+import type { Value } from '@neo/domain/Value.ts';
+
+export interface UrlInputExposed {
+	getCurrentValue(): Value | undefined;
+}
+</script>
+
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
 import { cdxIconLink } from '@wikimedia/codex-icons';
 import { UrlProperty } from '@neo/domain/propertyTypes/Url.ts';
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
-import { newStringValue, Value } from '@neo/domain/Value.ts';
+import { newStringValue } from '@neo/domain/Value.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<UrlProperty>>(),

@@ -15,10 +15,18 @@
 	</CdxField>
 </template>
 
+<script lang="ts">
+import type { Value } from '@neo/domain/Value';
+
+export interface NumberInputExposed {
+	getCurrentValue(): Value | undefined;
+}
+</script>
+
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
-import { newNumberValue, NumberValue, ValueType, Value } from '@neo/domain/Value';
+import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
 import { NumberType, NumberProperty } from '@neo/domain/propertyTypes/Number.ts';
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -76,7 +84,7 @@ const getCurrentValue = (): Value | undefined => {
 	return internalInputValue.value === '' || isNaN( num ) ? undefined : newNumberValue( num );
 };
 
-defineExpose( {
+defineExpose<NumberInputExposed>( {
 	getCurrentValue
 } );
 

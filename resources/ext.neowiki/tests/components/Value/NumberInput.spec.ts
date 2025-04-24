@@ -7,6 +7,8 @@ import { newNumberProperty, NumberProperty } from '@neo/domain/propertyTypes/Num
 import { ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
 
+import type { NumberInputExposed } from '@/components/Value/NumberInput.vue';
+
 describe( 'NumberInput', () => {
 	beforeEach( () => {
 		vi.stubGlobal( 'mw', {
@@ -45,5 +47,45 @@ describe( 'NumberInput', () => {
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-max-value' );
+	} );
+
+	describe( 'getCurrentValue', () => {
+		it( 'returns initial value', () => {
+			const wrapper = newWrapper( {
+				modelValue: newNumberValue( 42 )
+			} );
+
+			expect( ( wrapper.vm as unknown as NumberInputExposed ).getCurrentValue() ).toEqual( newNumberValue( 42 ) );
+		} );
+
+		it( 'returns updated value after input', async () => {
+			const wrapper = newWrapper( {
+				modelValue: newNumberValue( 10 )
+			} );
+
+			await wrapper.find( 'input' ).setValue( '99' );
+
+			expect( ( wrapper.vm as unknown as NumberInputExposed ).getCurrentValue() ).toEqual( newNumberValue( 99 ) );
+		} );
+
+		it( 'returns undefined for empty input', async () => {
+			const wrapper = newWrapper( {
+				modelValue: newNumberValue( 10 )
+			} );
+
+			await wrapper.find( 'input' ).setValue( '' );
+
+			expect( ( wrapper.vm as unknown as NumberInputExposed ).getCurrentValue() ).toBeUndefined();
+		} );
+
+		it( 'returns undefined for non-numeric input', async () => {
+			const wrapper = newWrapper( {
+				modelValue: newNumberValue( 10 )
+			} );
+
+			await wrapper.find( 'input' ).setValue( 'abc' );
+
+			expect( ( wrapper.vm as unknown as NumberInputExposed ).getCurrentValue() ).toBeUndefined();
+		} );
 	} );
 } );
