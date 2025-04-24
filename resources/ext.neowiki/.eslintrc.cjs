@@ -74,7 +74,8 @@ module.exports = {
 		'no-new': 'off',
 		'implicit-arrow-linebreak': 'off',
 		'es-x/no-nullish-coalescing-operators': 'off',
-		'es-x/no-optional-catch-binding': 'off'
+		'es-x/no-optional-catch-binding': 'off',
+		'space-before-function-paren': 'off'
 	},
 	overrides: [
 		{

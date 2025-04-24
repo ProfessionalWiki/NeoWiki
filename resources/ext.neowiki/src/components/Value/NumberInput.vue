@@ -78,11 +78,10 @@ watch( () => props.property, () => {
 const isValueEmpty = ( inputString: string ): boolean =>
 	inputString === '' || isNaN( Number( inputString ) );
 
-const getCurrentValue = (): Value | undefined =>
-	!isValueEmpty( internalInputValue.value ) ? newNumberValue( Number( internalInputValue.value ) ) : undefined;
-
 defineExpose<ValueInputExposes>( {
-	getCurrentValue
+	getCurrentValue: function(): Value | undefined {
+		return isValueEmpty( internalInputValue.value ) ? undefined : newNumberValue( Number( internalInputValue.value ) );
+	}
 } );
 
 // Initial validation (call after internalInputValue is set)
