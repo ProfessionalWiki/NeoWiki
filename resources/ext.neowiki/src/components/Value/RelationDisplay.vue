@@ -3,7 +3,7 @@
 		<!-- TODO: Placeholder display -->
 		<div v-for="( value, key ) in values" :key="key">
 			<a href="#">
-				{{ value }}
+				{{ value.text }}
 			</a>
 		</div>
 	</div>

@@ -67,7 +67,6 @@ onMounted( async () => {
 			loadedSchema.value = await schemaStore.getOrFetchSchema( props.subject.getSchemaName() );
 		} catch ( error ) {
 			console.error( 'Failed to load schema:', error );
-			// Optionally notify the user
 			mw.notify(
 				`Failed to load schema ${ props.subject.getSchemaName() }: ${ error instanceof Error ? error.message : String( error ) }`,
 				{ type: 'error' }
@@ -86,7 +85,6 @@ const schemaStatements = computed( (): StatementList | null => {
 	const allStatements: Statement[] = [];
 
 	for ( const propDef of schemaProperties ) {
-		// Find existing statement by iterating (assuming StatementList is iterable)
 		let existingStatement: Statement | undefined;
 		for ( const stmt of existingStatements ) {
 			if ( stmt.propertyName.toString() === propDef.name.toString() ) {
@@ -101,9 +99,9 @@ const schemaStatements = computed( (): StatementList | null => {
 			// Create a new empty statement based on the schema definition
 			allStatements.push(
 				new Statement(
-					propDef.name, // Use the PropertyName object directly
-					propDef.type, // Use the type string directly
-					undefined // Or potentially a default Value based on propDef.type?
+					propDef.name,
+					propDef.type,
+					undefined
 				)
 			);
 		}
