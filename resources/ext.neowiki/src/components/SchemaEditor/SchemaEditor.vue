@@ -1,14 +1,14 @@
 <template>
 	<div class="ext-neowiki-schema-editor">
 		<div class="ext-neowiki-schema-editor__schema">
-			Schema: {{ schemaName }}
+			Schema: {{ schema.getName() }}
 
 			<div class="ext-neowiki-schema-editor__properties__list">
 				<CdxCard
-					v-for="( property, index ) in localProperties"
+					v-for="( property ) in properties"
 					:key="property.name.toString()"
 					url="#"
-					@click="selectProperty( index )"
+					@click="selectProperty( property.name )"
 				>
 					<template #title>
 						{{ property.name.toString() }}
@@ -29,39 +29,43 @@
 <script setup lang="ts">
 import { CdxCard } from '@wikimedia/codex';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
-import { SchemaEditorData } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import { Schema } from '@neo/domain/Schema.ts';
 
 const props = defineProps<{
-	schemaName: string;
-	description: string;
-	properties: PropertyDefinition[];
+	schema: Schema;
 }>();
 
-const emit = defineEmits<{
-	'update:schema': [ SchemaEditorData ];
-}>();
+let properties = props.schema.getPropertyDefinitions(); // TODO: should probably be reactive
 
-const localProperties = props.properties;
-
-const selectProperty = ( index: number ): void => {
-	// TODO: construct the correct property type class
-	localProperties[ index ] = {
-		name: new PropertyName( localProperties[ index ].name + 'x' ), // TODO: random junk to trigger a change
-		type: localProperties[ index ].type,
-		description: localProperties[ index ].description,
-		required: localProperties[ index ].required,
-		default: localProperties[ index ].default
-	} as PropertyDefinition;
+function selectProperty( name: PropertyName ): void {
+	properties = properties.withPropertyDefinition(
+		{ // TODO: construct the correct property type class
+			name: new PropertyName( properties.get( name ).name + 'x' ), // TODO: random junk to trigger a change
+			type: properties.get( name ).type,
+			description: properties.get( name ).description,
+			required: properties.get( name ).required,
+			default: properties.get( name ).default
+		} as PropertyDefinition
+	);
 
 	emitUpdatedSchema();
-};
+}
 
-const emitUpdatedSchema = (): void => {
-	emit( 'update:schema', {
-		description: props.description,
-		properties: localProperties
-	} );
-};
+function getSchema(): Schema {
+	return new Schema(
+		props.schema.getName(),
+		props.schema.getDescription(), // TODO: make editable via UI
+		properties
+	);
+}
+
+const emit = defineEmits<{
+	'update:schema': [ Schema ];
+}>();
+
+function emitUpdatedSchema(): void {
+	emit( 'update:schema', getSchema() );
+}
 
 </script>
 

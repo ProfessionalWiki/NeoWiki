@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createPropertyDefinitionFromJson, PropertyName } from '@neo/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
+import { newTextProperty } from '@neo/domain/propertyTypes/Text';
 
-describe( 'PropertyDefinitionCollection', () => {
+describe( 'PropertyDefinitionList', () => {
 
 	const property1 = createPropertyDefinitionFromJson( 'test1', {
 		type: 'number',
@@ -107,6 +108,30 @@ describe( 'PropertyDefinitionCollection', () => {
 			expect(
 				collection.withoutNames( [ new PropertyName( 'test2' ) ] )
 			).toEqual( new PropertyDefinitionList( [ property1, property3 ] ) );
+		} );
+
+	} );
+
+	describe( 'withPropertyDefinition', () => {
+
+		it( 'replaces existing property definition', () => {
+			const collection = new PropertyDefinitionList( [ property1, property2, property3 ] );
+			const newTest2Property = newTextProperty( { name: 'test2', description: 'New description' } );
+
+			const newCollection = collection.withPropertyDefinition( newTest2Property );
+
+			expect( newCollection.get( new PropertyName( 'test1' ) ) ).toEqual( property1 );
+			expect( newCollection.get( new PropertyName( 'test2' ) ) ).toEqual( newTest2Property );
+			expect( newCollection.get( new PropertyName( 'test3' ) ) ).toEqual( property3 );
+		} );
+
+		it( 'adds new property definition', () => {
+			const collection = new PropertyDefinitionList( [ property1 ] );
+
+			const newCollection = collection.withPropertyDefinition( property2 );
+
+			expect( newCollection.get( new PropertyName( 'test1' ) ) ).toEqual( property1 );
+			expect( newCollection.get( new PropertyName( 'test2' ) ) ).toEqual( property2 );
 		} );
 
 	} );

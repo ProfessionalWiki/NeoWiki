@@ -61,4 +61,13 @@ export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 		);
 	}
 
+	/**
+	 * Adds a Property Definition, replacing any existing definition with the same name.
+	 */
+	public withPropertyDefinition( property: PropertyDefinition ): PropertyDefinitionList {
+		return new PropertyDefinitionList(
+			[ ...this.withoutNames( [ property.name ] ), property ]
+		);
+	}
+
 }
