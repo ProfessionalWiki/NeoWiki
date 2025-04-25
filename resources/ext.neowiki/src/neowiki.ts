@@ -4,7 +4,7 @@ import '@/assets/scss/global.scss';
 import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { CdxTooltip } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import EditSchemaAction from '@/components/SchemaEditor/EditSchemaAction.vue';
+import EditSchemaPage from '@/components/SchemaEditor/EditSchemaPage.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@neo/domain/Schema.ts';
 
@@ -24,7 +24,7 @@ async function initializeSchemaEditor(): Promise<void> {
 
 	if ( editSchema !== null ) {
 		const app = createMwApp(
-			EditSchemaAction,
+			EditSchemaPage,
 			{
 				schema: await NeoWikiExtension.getInstance().getSchemaRepository().getSchema(
 					editSchema.getAttribute( 'data-schema-name' ) as SchemaName
