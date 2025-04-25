@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newRelationProperty, RelationType } from '@neo/domain/propertyTypes/Relation';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { RelationValue } from '@neo/domain/Value';
-import { Relation } from '@neo/domain/Value';
+import { newRelation, Relation, RelationValue } from '@neo/domain/Value';
 
 describe( 'newRelationProperty', () => {
 	it( 'creates property with default values when no attributes provided', () => {
@@ -37,7 +36,7 @@ describe( 'newRelationProperty', () => {
 
 	it( 'creates property with all optional fields', () => {
 		const relation = new RelationValue( [
-			new Relation( 'r11111111111111', 's11111111111111' )
+			newRelation( 'r11111111111111', 's11111111111111' )
 		] );
 
 		const property = newRelationProperty( {

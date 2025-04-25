@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
 	newBooleanValue,
 	newNumberValue,
+	newRelation,
 	newStringValue,
-	Relation,
 	RelationValue,
 	type Value,
 	valueToJson,
@@ -46,27 +46,27 @@ describe( 'valueToJson', () => {
 
 	it( 'converts a RelationValue with a single relation into an array of objects', () => {
 		const value = new RelationValue( [
-			new Relation( 'testId', 'testTarget' )
+			newRelation( 'testId', 's11111111111111' )
 		] );
 
 		const json = valueToJson( value );
 
 		expect( json ).toEqual( [
-			{ id: 'testId', target: 'testTarget' }
+			{ id: 'testId', target: 's11111111111111' }
 		] );
 	} );
 
 	it( 'converts a RelationValue with multiple relations into an array of objects', () => {
 		const value = new RelationValue( [
-			new Relation( 'testId1', 'testTarget1' ),
-			new Relation( 'testId2', 'testTarget2' )
+			newRelation( 'testId1', 's11111111111111' ),
+			newRelation( 'testId2', 's11111111111112' )
 		] );
 
 		const json = valueToJson( value );
 
 		expect( json ).toEqual( [
-			{ id: 'testId1', target: 'testTarget1' },
-			{ id: 'testId2', target: 'testTarget2' }
+			{ id: 'testId1', target: 's11111111111111' },
+			{ id: 'testId2', target: 's11111111111112' }
 		] );
 	} );
 

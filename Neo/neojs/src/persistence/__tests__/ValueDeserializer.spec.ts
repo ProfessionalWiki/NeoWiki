@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newNumberValue, newStringValue, Relation, RelationValue } from '@neo/domain/Value';
+import { newNumberValue, newRelation, newStringValue, RelationValue } from '@neo/domain/Value';
 import { Neo } from '@neo/Neo';
 
 describe( 'ValueDeserializer', () => {
@@ -26,15 +26,15 @@ describe( 'ValueDeserializer', () => {
 
 	it( 'deserializes RelationValue with multiple relations', () => {
 		const json = [
-			{ id: 'r1vd1111rrrrrrr1', target: 's1vd1111sssssss1' },
-			{ id: 'r1vd1111rrrrrrr2', target: 's1vd1111sssssss2' }
+			{ id: 'r1vd1111rrrrrr1', target: 's1vd1111ssssss1' },
+			{ id: 'r1vd1111rrrrrr2', target: 's1vd1111ssssss2' }
 		];
 
 		const value = deserializer.deserialize( json, 'relation' );
 
 		expect( value ).toEqual( new RelationValue( [
-			new Relation( 'r1vd1111rrrrrrr1', 's1vd1111sssssss1' ),
-			new Relation( 'r1vd1111rrrrrrr2', 's1vd1111sssssss2' )
+			newRelation( 'r1vd1111rrrrrr1', 's1vd1111ssssss1' ),
+			newRelation( 'r1vd1111rrrrrr2', 's1vd1111ssssss2' )
 		] ) );
 	} );
 
