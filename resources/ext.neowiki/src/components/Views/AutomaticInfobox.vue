@@ -17,15 +17,11 @@
 					{{ schema.getName() }}
 				</div>
 			</div>
-			<CdxButton
+			<SubjectEditorDialog
 				v-if="canEditSubject"
-				class="ext-neowiki-auto-infobox__edit"
-				weight="quiet"
-				:aria-label="$i18n( 'neowiki-infobox-edit-link' ).text()"
-				@click="() => console.log( 'TODO' )"
-			>
-				<CdxIcon :icon="cdxIconEdit" />
-			</CdxButton>
+				:subject="subjectRef as Subject"
+				@update:subject="onSubjectUpdated"
+			/>
 		</div>
 		<div class="ext-neowiki-auto-infobox__content">
 			<div
@@ -57,8 +53,7 @@ import { Schema } from '@neo/domain/Schema.ts';
 import { Component } from 'vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconEdit } from '@wikimedia/codex-icons';
+import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 
 const props = defineProps( {
 	subject: {
@@ -80,6 +75,11 @@ const canEditSchema = ref( false );
 const subjectRef = ref( props.subject );
 
 const schemaStore = useSchemaStore();
+
+const onSubjectUpdated = ( newSubject: Subject ): void => {
+	// TODO: We need to somehow update the other views that are using the same subject
+	subjectRef.value = newSubject;
+};
 
 const getComponent = ( propertyType: string ): Component => NeoWikiServices.getComponentRegistry().getValueDisplayComponent( propertyType );
 
@@ -148,10 +148,6 @@ onMounted( async (): Promise<void> => {
 	&__schema {
 		color: $color-subtle;
 		font-size: $font-size-small;
-	}
-
-	&__edit {
-		flex-shrink: 0;
 	}
 
 	&__content {

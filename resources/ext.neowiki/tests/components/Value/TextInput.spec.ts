@@ -5,6 +5,7 @@ import { CdxField, ValidationMessages, ValidationStatusType } from '@wikimedia/c
 import { newStringValue } from '@neo/domain/Value';
 import { newTextProperty } from '@neo/domain/propertyTypes/Text';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
+import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
 
 describe( 'TextInput', () => {
 	beforeEach( () => {
@@ -138,6 +139,33 @@ describe( 'TextInput', () => {
 			const emitted = wrapper.emitted( 'update:modelValue' );
 			expect( emitted ).toBeTruthy();
 			expect( emitted![ 0 ][ 0 ] ).toEqual( newStringValue( 'Text1', 'Updated Text2' ) );
+		} );
+	} );
+
+	describe( 'getCurrentValue', () => {
+		it( 'returns updated value after input (single)', async () => {
+			const wrapper = createWrapper( {
+				property: newTextProperty( { multiple: false } ),
+				modelValue: newStringValue( 'Initial' )
+			} );
+			await wrapper.find( 'input' ).setValue( 'Updated' );
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newStringValue( 'Updated' ) );
+		} );
+
+		it( 'returns updated values after input (multiple)', async () => {
+			const wrapper = createWrapper( {
+				property: newTextProperty( { multiple: true } ),
+				modelValue: newStringValue( 'First', 'Second' )
+			} );
+			await wrapper.findAll( 'input' )[ 1 ].setValue( 'Updated Second' );
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newStringValue( 'First', 'Updated Second' ) );
+		} );
+
+		it( 'returns undefined for empty input', () => {
+			const wrapper = createWrapper( {
+				modelValue: newStringValue( '' )
+			} );
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
 		} );
 	} );
 

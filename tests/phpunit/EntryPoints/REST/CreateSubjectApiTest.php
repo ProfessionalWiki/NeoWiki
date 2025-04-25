@@ -74,11 +74,11 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 				'schema' => 'Employee',
 				'statements' => [
 					'animal' => [
-						'format' => 'text',
+						'propertyType' => 'text',
 						'value' => 'bunny'
 					],
 					'fluff' => [
-						'format' => 'number',
+						'propertyType' => 'number',
 						'value' => 9001
 					],
 				]

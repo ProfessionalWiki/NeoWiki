@@ -5,6 +5,7 @@ import { CdxField } from '@wikimedia/codex';
 import { newStringValue, StringValue } from '@neo/domain/Value';
 import { newUrlProperty } from '@neo/domain/propertyTypes/Url.ts';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
+import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
 
 describe( 'UrlInput', () => {
 	beforeEach( () => {
@@ -160,4 +161,30 @@ describe( 'UrlInput', () => {
 		} );
 	} );
 
+	describe( 'getCurrentValue', () => {
+		it( 'returns updated value after input (single)', async () => {
+			const wrapper = createWrapper( {
+				property: newUrlProperty( { multiple: false } ),
+				modelValue: newStringValue( 'https://initial.com' )
+			} );
+			await wrapper.find( 'input' ).setValue( 'https://updated.net' );
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newStringValue( 'https://updated.net' ) );
+		} );
+
+		it( 'returns updated values after input (multiple)', async () => {
+			const wrapper = createWrapper( {
+				property: newUrlProperty( { multiple: true } ),
+				modelValue: newStringValue( 'https://first.com', 'https://second.org' )
+			} );
+			await wrapper.findAll( 'input' )[ 1 ].setValue( 'https://updated-second.io' );
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newStringValue( 'https://first.com', 'https://updated-second.io' ) );
+		} );
+
+		it( 'returns undefined for empty input', () => {
+			const wrapper = createWrapper( {
+				modelValue: newStringValue( '' )
+			} );
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
+		} );
+	} );
 } );

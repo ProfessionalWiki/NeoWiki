@@ -8,19 +8,23 @@
 			{{ label }}
 		</template>
 		<CdxTextInput
-			:model-value="inputValue"
+			:model-value="internalInputValue"
 			input-type="number"
 			@update:model-value="onInput"
 		/>
 	</CdxField>
 </template>
 
+<script lang="ts">
+import type { Value } from '@neo/domain/Value';
+</script>
+
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
 import { NumberType, NumberProperty } from '@neo/domain/propertyTypes/Number.ts';
-import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
+import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = withDefaults(
@@ -34,18 +38,30 @@ const emit = defineEmits<ValueInputEmits>();
 
 const validationError = ref<string | null>( null );
 
-const inputValue = computed( () => {
-	if ( props.modelValue.type === ValueType.Number ) {
-		return ( props.modelValue as NumberValue ).number.toString();
+const internalInputValue = ref<string>( '' );
+
+const initializeInputValue = ( value: Value | undefined ): void => {
+	if ( value && value.type === ValueType.Number ) {
+		const num = ( value as NumberValue ).number;
+		internalInputValue.value = isNaN( num ) ? '' : num.toString();
+	} else {
+		internalInputValue.value = '';
 	}
-	return '';
+};
+
+initializeInputValue( props.modelValue );
+
+watch( () => props.modelValue, ( newValue ) => {
+	initializeInputValue( newValue );
+	validate( newValue && newValue.type === ValueType.Number ? newValue as NumberValue : undefined );
 } );
 
 const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( NumberType.typeName );
 
 function onInput( newValue: string ): void {
+	internalInputValue.value = newValue; // Update local state
 	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );
-	emit( 'update:modelValue', value );
+	emit( 'update:modelValue', value ); // Emit for potential v-model usage
 	validate( value );
 }
 
@@ -56,6 +72,19 @@ function validate( value: NumberValue | undefined ): void {
 }
 
 watch( () => props.property, () => {
-	validate( props.modelValue ? props.modelValue as NumberValue : undefined );
+	validate( props.modelValue && props.modelValue.type === ValueType.Number ? props.modelValue as NumberValue : undefined );
 } );
+
+const isValueEmpty = ( inputString: string ): boolean =>
+	inputString === '' || isNaN( Number( inputString ) );
+
+defineExpose<ValueInputExposes>( {
+	getCurrentValue: function(): Value | undefined {
+		return isValueEmpty( internalInputValue.value ) ? undefined : newNumberValue( Number( internalInputValue.value ) );
+	}
+} );
+
+// Initial validation (call after internalInputValue is set)
+validate( props.modelValue && props.modelValue.type === ValueType.Number ? props.modelValue as NumberValue : undefined );
+
 </script>

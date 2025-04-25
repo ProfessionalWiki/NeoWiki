@@ -114,7 +114,7 @@ class PatchSubjectActionTest extends TestCase {
 				null,
 				[
 					'Has product' => [
-						'format' => 'relation',
+						'propertyType' => 'relation',
 						'value' => [ [ 'target' => self::SUBJECT_ID ] ]
 					]
 				]

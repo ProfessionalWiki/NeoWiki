@@ -8,13 +8,18 @@
 	/>
 </template>
 
+<script lang="ts">
+import { Value } from '@neo/domain/Value.ts';
+</script>
+
 <script setup lang="ts">
+import { ref, watch } from 'vue';
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
 import { TextProperty } from '@neo/domain/propertyTypes/Text.ts';
-import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
-import { newStringValue, Value } from '@neo/domain/Value.ts';
+import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
+import { newStringValue, ValueType, StringValue } from '@neo/domain/Value.ts';
 
-withDefaults(
+const props = withDefaults(
 	defineProps<ValueInputProps<TextProperty>>(),
 	{
 		modelValue: () => newStringValue( '' ),
@@ -24,9 +29,26 @@ withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
+const internalValue = ref<Value | undefined>( props.modelValue );
+
+watch( () => props.modelValue, ( newValue ) => {
+	internalValue.value = newValue;
+} );
+
 function onInput( value: Value | undefined ): void {
+	internalValue.value = value;
 	emit( 'update:modelValue', value );
 }
+
+const isValueEmpty = ( val: Value | undefined ): boolean =>
+	!val || ( val.type === ValueType.String && ( val as StringValue ).strings.length === 0 );
+
+defineExpose<ValueInputExposes>( {
+	getCurrentValue: function(): Value | undefined {
+		return isValueEmpty( internalValue.value ) ? undefined : internalValue.value;
+	}
+} );
+
 </script>
 
 <style lang="scss">

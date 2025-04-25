@@ -126,16 +126,16 @@ describe( 'AutomaticInfobox', () => {
 		expect( statementElements ).toHaveLength( 0 );
 	} );
 
-	it( 'does not render edit button when canEditSubject is false', () => {
+	it( 'does not render SubjectEditor when canEditSubject is false', () => {
 		const wrapper = mountComponent( mockSubject, mockSchema, false );
 
-		expect( wrapper.find( '.ext-neowiki-auto-infobox__edit' ).exists() ).toBe( false );
+		expect( wrapper.find( '.ext-neowiki-subject-editor-container' ).exists() ).toBe( false );
 	} );
 
-	it( 'renders edit button when canEditSubject is true', () => {
+	it( 'renders SubjectEditor when canEditSubject is true', () => {
 		const wrapper = mountComponent( mockSubject, mockSchema, true );
 
-		const editButton = wrapper.find( '.ext-neowiki-auto-infobox__edit' );
+		const editButton = wrapper.find( '.ext-neowiki-subject-editor-container' );
 		expect( editButton.exists() ).toBe( true );
 	} );
 } );
