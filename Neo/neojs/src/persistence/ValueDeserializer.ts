@@ -2,8 +2,8 @@ import { PropertyTypeRegistry } from '@neo/domain/PropertyType';
 import {
 	newBooleanValue,
 	newNumberValue,
+	newRelation,
 	newStringValue,
-	Relation,
 	RelationValue,
 	Value,
 	ValueType
@@ -32,7 +32,7 @@ export class ValueDeserializer {
 					throw new Error( 'Invalid relation value: ' + JSON.stringify( json ) );
 				}
 
-				return new RelationValue( json.map( ( relationJson: any ) => new Relation( relationJson.id, relationJson.target ) ) );
+				return new RelationValue( json.map( ( relationJson: any ) => newRelation( relationJson.id, relationJson.target ) ) );
 		}
 	}
 

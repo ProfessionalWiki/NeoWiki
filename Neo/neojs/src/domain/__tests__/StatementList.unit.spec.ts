@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SubjectId } from '@neo/domain/SubjectId';
 import { StatementList, statementsToJson } from '@neo/domain/StatementList';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newNumberValue, newStringValue, Relation, RelationValue } from '../Value';
+import { newNumberValue, newRelation, newStringValue, RelationValue } from '../Value';
 import { Neo } from '@neo/Neo';
 import { TextType } from '@neo/domain/propertyTypes/Text';
 import { NumberType } from '@neo/domain/propertyTypes/Number';
@@ -79,15 +79,15 @@ describe( 'StatementList', () => {
 					new PropertyName( 'Property2' ),
 					RelationType.typeName,
 					new RelationValue( [
-						new Relation( undefined, 's11111111111111' )
+						newRelation( undefined, 's11111111111111' )
 					] )
 				),
 				new Statement(
 					new PropertyName( 'Property3' ),
 					RelationType.typeName,
 					new RelationValue( [
-						new Relation( undefined, 's11111111111112' ),
-						new Relation( undefined, 's11111111111113' )
+						newRelation( undefined, 's11111111111112' ),
+						newRelation( undefined, 's11111111111113' )
 					] )
 				),
 				new Statement( new PropertyName( 'Property4' ), TextType.typeName, newStringValue( 'bar' ) )
@@ -181,7 +181,7 @@ describe( 'statementsToJson', () => {
 		const values = new StatementList( [
 			new Statement( new PropertyName( 'value1' ), TextType.typeName, newStringValue( 'test' ) ),
 			new Statement( new PropertyName( 'value2' ), NumberType.typeName, newNumberValue( 123 ) ),
-			new Statement( new PropertyName( 'value4' ), RelationType.typeName, new RelationValue( [ new Relation( 'testId', 'testTarget' ) ] ) )
+			new Statement( new PropertyName( 'value4' ), RelationType.typeName, new RelationValue( [ newRelation( 'testId', 's11111111111111' ) ] ) )
 		] );
 
 		const json = statementsToJson( values );
@@ -197,7 +197,7 @@ describe( 'statementsToJson', () => {
 			},
 			value4: {
 				value: [
-					{ id: 'testId', target: 'testTarget' }
+					{ id: 'testId', target: 's11111111111111' }
 				],
 				propertyType: RelationType.typeName
 			}

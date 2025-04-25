@@ -1,3 +1,5 @@
+import { SubjectId } from '@neo/domain/SubjectId';
+
 export enum ValueType {
 
 	String = 'string',
@@ -34,7 +36,7 @@ export class RelationValue implements BaseValueRepresentation {
 	) {
 	}
 
-	public get targetIds(): string[] {
+	public get targetIds(): SubjectId[] {
 		return this.relations.map( ( relation ) => relation.target );
 	}
 }
@@ -43,7 +45,8 @@ export class Relation {
 
 	public constructor(
 		public readonly id: string | undefined,
-		public readonly target: string
+		public readonly target: SubjectId
+		// TODO: add relation properties (like on backend)
 	) {
 	}
 
@@ -76,6 +79,13 @@ export function newBooleanValue( boolean: boolean ): BooleanValue {
 	} as BooleanValue;
 }
 
+export function newRelation( id: string | undefined, target: SubjectId | string ): Relation {
+	return new Relation(
+		id,
+		typeof target === 'string' ? new SubjectId( target ) : target
+	);
+}
+
 export function valueToJson( value: Value ): unknown {
 	switch ( value.type ) {
 		case ValueType.String:
@@ -85,7 +95,9 @@ export function valueToJson( value: Value ): unknown {
 		case ValueType.Boolean:
 			return ( value as BooleanValue ).boolean;
 		case ValueType.Relation:
-			return ( value as RelationValue ).relations.map( ( relation ) => ( { id: relation.id, target: relation.target } ) );
+			return ( value as RelationValue ).relations.map(
+				( relation ) => ( { id: relation.id, target: relation.target.text } )
+			);
 		default:
 			throw new Error( `Unsupported value type: ${ ( value as Value ).type }` );
 	}

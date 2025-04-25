@@ -95,7 +95,7 @@ export class StatementList implements Iterable<Statement> {
 	public getIdsOfReferencedSubjects(): Set<SubjectId> {
 		const relationValues = this.getValuesOfType( RelationValue );
 		return new Set(
-			relationValues.flatMap( ( value ) => value.targetIds.map( ( id ) => new SubjectId( id ) ) )
+			relationValues.flatMap( ( value ) => value.targetIds )
 		);
 	}
 

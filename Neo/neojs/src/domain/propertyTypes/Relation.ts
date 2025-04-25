@@ -1,6 +1,6 @@
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { Relation, RelationValue, ValueType } from '@neo/domain/Value';
+import { newRelation, Relation, RelationValue, ValueType } from '@neo/domain/Value';
 import { BasePropertyType, ValueValidationError } from '@neo/domain/PropertyType';
 
 export interface RelationProperty extends PropertyDefinition {
@@ -18,9 +18,9 @@ export class RelationType extends BasePropertyType<RelationProperty, RelationVal
 	public static readonly typeName = 'relation';
 
 	public getExampleValue( property: RelationProperty ): RelationValue {
-		const relations = [ new Relation( undefined, 's11111111111111' ) ];
+		const relations = [ newRelation( undefined, 's11111111111111' ) ];
 		if ( property !== undefined && property.multiple ) {
-			relations.push( new Relation( undefined, 's11111111111111' ) );
+			relations.push( newRelation( undefined, 's11111111111111' ) );
 		}
 
 		return new RelationValue( relations );
