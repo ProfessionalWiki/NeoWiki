@@ -30,32 +30,33 @@
 import { CdxCard } from '@wikimedia/codex';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 import { Schema } from '@neo/domain/Schema.ts';
+import { computed } from 'vue';
 
 const props = defineProps<{
 	schema: Schema;
 }>();
 
-let properties = props.schema.getPropertyDefinitions(); // TODO: should probably be reactive
+const properties = computed( () => props.schema.getPropertyDefinitions() );
 
-function selectProperty( name: PropertyName ): void {
-	properties = properties.withPropertyDefinition(
-		{ // TODO: construct the correct property type class
-			name: new PropertyName( properties.get( name ).name + 'x' ), // TODO: random junk to trigger a change
-			type: properties.get( name ).type,
-			description: properties.get( name ).description,
-			required: properties.get( name ).required,
-			default: properties.get( name ).default
-		} as PropertyDefinition
-	);
+function getPropertyDefinitionWithAdjustedName( name: PropertyName ): PropertyDefinition {
+	const property = properties.value.get( name );
 
-	emitUpdatedSchema();
+	return { // TODO: construct the correct property type class
+		name: new PropertyName( property.name + 'x' ), // TODO: random junk to trigger a change
+		type: property.type,
+		description: property.description,
+		required: property.required,
+		default: property.default
+	} as PropertyDefinition;
 }
 
-function getSchema(): Schema {
-	return new Schema(
-		props.schema.getName(),
-		props.schema.getDescription(), // TODO: make editable via UI
-		properties
+function selectProperty( name: PropertyName ): void {
+	emitUpdatedSchema(
+		new Schema(
+			props.schema.getName(),
+			props.schema.getDescription(), // TODO: make editable via UI
+			properties.value.withPropertyDefinition( getPropertyDefinitionWithAdjustedName( name ) )
+		)
 	);
 }
 
@@ -63,8 +64,8 @@ const emit = defineEmits<{
 	'update:schema': [ Schema ];
 }>();
 
-function emitUpdatedSchema(): void {
-	emit( 'update:schema', getSchema() );
+function emitUpdatedSchema( schema: Schema ): void {
+	emit( 'update:schema', schema );
 }
 
 </script>

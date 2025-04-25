@@ -2,8 +2,7 @@
 	<div>
 		<CdxDialog title="TODO">
 			<SchemaEditor
-				:schema="schema"
-				@update:schema="handleSchemaUpdate"
+				v-model:schema="schema"
 			/>
 
 			<CdxTextArea />
@@ -25,14 +24,14 @@ import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import { CdxButton, CdxDialog, CdxIcon, CdxTextArea } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 import { Schema } from '@neo/domain/Schema.ts';
+import { ref } from 'vue';
 
-defineProps<{ schema: Schema }>();
+const props = defineProps<{ initialSchema: Schema }>();
 
-const handleSchemaUpdate = ( updatedSchema: Schema ): void => {
-	console.log( 'Schema updated', updatedSchema );
-};
+const schema = ref( props.initialSchema );
 
 const saveSchema = async (): Promise<void> => {
+	console.log( 'TODO: saving schema', schema );
 	// TODO: emit event
 };
 </script>

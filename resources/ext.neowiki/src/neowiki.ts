@@ -26,7 +26,7 @@ async function initializeSchemaEditor(): Promise<void> {
 		const app = createMwApp(
 			EditSchemaPage,
 			{
-				schema: await NeoWikiExtension.getInstance().getSchemaRepository().getSchema(
+				initialSchema: await NeoWikiExtension.getInstance().getSchemaRepository().getSchema(
 					editSchema.getAttribute( 'data-schema-name' ) as SchemaName
 				)
 			}
