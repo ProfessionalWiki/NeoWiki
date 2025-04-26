@@ -168,7 +168,8 @@
 				"CdxCheckbox",
 				"CdxTextArea",
 				"CdxMenuButton",
-				"useResizeObserver"
+				"useResizeObserver",
+				"CdxMessage"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",
