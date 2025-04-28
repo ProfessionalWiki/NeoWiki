@@ -157,6 +157,7 @@
 			],
 			"codexComponents": [
 				"CdxButton",
+				"CdxCard",
 				"CdxDialog",
 				"CdxField",
 				"CdxIcon",

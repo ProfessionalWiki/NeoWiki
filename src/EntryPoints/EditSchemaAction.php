@@ -32,6 +32,7 @@ class EditSchemaAction extends Action {
 				'div',
 				[
 					'id' => 'ext-neowiki-edit-schema',
+					'data-schema-name' => $this->getTitle()->getText(),
 				]
 			)
 		);

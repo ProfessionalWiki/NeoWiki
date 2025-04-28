@@ -1,28 +1,26 @@
 <template>
-	<div>
-		<CdxDialog title="TODO">
-			<SchemaEditor
-				:schema="schema"
-				@update:schema="handleSchemaUpdate"
-			/>
+	<div class="ext-neowiki-edit-schema-action">
+		<SchemaEditor
+			:schema="schema"
+			@update:schema="handleSchemaUpdate"
+		/>
 
-			<CdxTextArea />
+		<CdxTextArea />
 
-			<CdxButton
-				action="progressive"
-				weight="primary"
-				@click="saveSchema"
-			>
-				<CdxIcon :icon="cdxIconCheck" />
-				{{ $i18n( 'neowiki-save-schema' ).text() }}
-			</CdxButton>
-		</CdxDialog>
+		<CdxButton
+			action="progressive"
+			weight="primary"
+			@click="saveSchema"
+		>
+			<CdxIcon :icon="cdxIconCheck" />
+			{{ $i18n( 'neowiki-save-schema' ).text() }}
+		</CdxButton>
 	</div>
 </template>
 
 <script setup lang="ts">
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
-import { CdxButton, CdxDialog, CdxIcon, CdxTextArea } from '@wikimedia/codex';
+import { CdxButton, CdxIcon, CdxTextArea } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 import { Schema } from '@neo/domain/Schema.ts';
 
@@ -33,6 +31,6 @@ const handleSchemaUpdate = ( updatedSchema: Schema ): void => {
 };
 
 const saveSchema = async (): Promise<void> => {
-	// TODO: emit event
+	console.log( 'TODO: save schema' );
 };
 </script>
