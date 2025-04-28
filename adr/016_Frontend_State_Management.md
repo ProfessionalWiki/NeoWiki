@@ -1,4 +1,4 @@
-# Frontend Sate Management
+# Frontend State Management
 
 Date: 2025-04-17
 
