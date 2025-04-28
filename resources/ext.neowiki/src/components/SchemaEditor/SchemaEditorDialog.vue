@@ -2,7 +2,7 @@
 	<div>
 		<CdxDialog title="TODO">
 			<SchemaEditor
-				v-model:schema="schema"
+				v-model:schema="schema as Schema"
 			/>
 
 			<CdxTextArea />
