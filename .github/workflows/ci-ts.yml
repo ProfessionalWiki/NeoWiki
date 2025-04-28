@@ -95,6 +95,11 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Silence warnings
+        run: |
+          echo "::remove-matcher owner=eslint-compact::"
+          echo "::remove-matcher owner=eslint-stylish::"
+
       - name: Install dependencies
         run: npm install
 
