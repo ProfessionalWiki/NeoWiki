@@ -1,7 +1,7 @@
 <template>
 	<div class="ext-neowiki-edit-schema-action">
 		<SchemaEditor
-			v-model:schema="schema"
+			v-model:schema="schema as Schema"
 		/>
 
 		<CdxTextArea />
