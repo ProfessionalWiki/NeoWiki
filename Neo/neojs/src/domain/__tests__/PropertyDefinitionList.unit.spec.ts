@@ -125,6 +125,15 @@ describe( 'PropertyDefinitionList', () => {
 			expect( newCollection.get( new PropertyName( 'test3' ) ) ).toEqual( property3 );
 		} );
 
+		it( 'maintains existing order', () => {
+			const collection = new PropertyDefinitionList( [ property1, property2, property3 ] );
+			const newTest2Property = newTextProperty( { name: 'test2', description: 'New description' } );
+
+			const newCollection = collection.withPropertyDefinition( newTest2Property );
+
+			expect( Object.keys( newCollection.asRecord() ) ).toEqual( [ 'test1', 'test2', 'test3' ] );
+		} );
+
 		it( 'adds new property definition', () => {
 			const collection = new PropertyDefinitionList( [ property1 ] );
 
@@ -132,6 +141,14 @@ describe( 'PropertyDefinitionList', () => {
 
 			expect( newCollection.get( new PropertyName( 'test1' ) ) ).toEqual( property1 );
 			expect( newCollection.get( new PropertyName( 'test2' ) ) ).toEqual( property2 );
+		} );
+
+		it( 'appends new property definition', () => {
+			const collection = new PropertyDefinitionList( [ property1 ] );
+
+			const newCollection = collection.withPropertyDefinition( property2 );
+
+			expect( Object.keys( newCollection.asRecord() ) ).toEqual( [ 'test1', 'test2' ] );
 		} );
 
 	} );
