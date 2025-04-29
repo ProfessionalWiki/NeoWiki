@@ -1,8 +1,7 @@
 <template>
 	<div class="ext-neowiki-edit-schema-action">
 		<SchemaEditor
-			:schema="schema"
-			@update:schema="handleSchemaUpdate"
+			v-model:schema="schema as Schema"
 		/>
 
 		<CdxTextArea />
@@ -23,14 +22,13 @@ import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import { CdxButton, CdxIcon, CdxTextArea } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 import { Schema } from '@neo/domain/Schema.ts';
+import { ref } from 'vue';
 
-defineProps<{ schema: Schema }>();
+const props = defineProps<{ initialSchema: Schema }>();
 
-const handleSchemaUpdate = ( updatedSchema: Schema ): void => {
-	console.log( 'Schema updated', updatedSchema );
-};
+const schema = ref( props.initialSchema );
 
 const saveSchema = async (): Promise<void> => {
-	console.log( 'TODO: save schema' );
+	console.log( 'TODO: save schema', schema );
 };
 </script>
