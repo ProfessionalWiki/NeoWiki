@@ -23,6 +23,7 @@ import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
 import TextInput from '@/components/Value/TextInput.vue';
 import UrlInput from '@/components/Value/UrlInput.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
+import RelationInput from '@/components/Value/RelationInput.vue';
 import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { SubjectDeserializer } from '@neo/persistence/SubjectDeserializer.ts';
 import { Neo } from '@neo/Neo.ts';
@@ -72,7 +73,7 @@ export class NeoWikiExtension {
 
 		registry.registerType( RelationType.typeName, {
 			valueDisplayComponent: RelationDisplay,
-			valueEditor: TextInput, // TODO
+			valueEditor: RelationInput,
 			attributesEditor: TextAttributesEditor, // TODO
 			label: 'neowiki-property-type-relation',
 			icon: cdxIconLink // TODO

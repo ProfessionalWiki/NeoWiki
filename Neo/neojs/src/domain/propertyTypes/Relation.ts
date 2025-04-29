@@ -1,7 +1,8 @@
 import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
 import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newRelation, Relation, RelationValue, ValueType } from '@neo/domain/Value';
+import { newRelation, RelationValue, ValueType } from '@neo/domain/Value';
 import { BasePropertyType, ValueValidationError } from '@neo/domain/PropertyType';
+import { SubjectId } from '@neo/domain/SubjectId';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -36,8 +37,26 @@ export class RelationType extends BasePropertyType<RelationProperty, RelationVal
 		} as RelationProperty;
 	}
 
-	public validate( _value: RelationValue | undefined, _property: RelationProperty ): ValueValidationError[] {
-		return []; // TODO
+	public validate( value: RelationValue | undefined, property: RelationProperty ): ValueValidationError[] {
+		const errors: ValueValidationError[] = [];
+		const valueIsEmpty = !value || value.relations.length === 0;
+
+		if ( property.required && valueIsEmpty ) {
+			errors.push( { code: 'required' } );
+			return errors;
+		}
+
+		if ( valueIsEmpty ) {
+			return errors;
+		}
+
+		for ( const relation of value.relations ) {
+			if ( !SubjectId.isValid( relation.target.text ) ) {
+				errors.push( { code: 'invalid-subject-id', args: [ relation.target.text ] } );
+			}
+		}
+
+		return errors;
 	}
 
 }

@@ -10,7 +10,7 @@ export class SubjectId {
 		this.text = text;
 	}
 
-	private static isValid( text: string ): boolean {
+	public static isValid( text: string ): boolean {
 		return /^s[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{14}$/.test( text );
 	}
 

@@ -1,6 +1,11 @@
 <template>
 	<div>
-		{{ todo }}
+		<!-- TODO: Placeholder display -->
+		<div v-for="( value, key ) in values" :key="key">
+			<a href="#">
+				{{ value.text }}
+			</a>
+		</div>
 	</div>
 </template>
 
@@ -12,11 +17,11 @@ import { RelationValue } from '@neo/domain/Value.ts';
 
 const props = defineProps<ValueDisplayProps<RelationProperty>>();
 
-const todo = computed( (): string => {
+const values = computed( () => {
 	if ( props.value instanceof RelationValue ) {
-		return 'TODO:' + props.value.targetIds.join( ', ' );
+		return props.value.relations.map( ( relation ) => relation.target );
 	}
 
-	return '';
+	return [];
 } );
 </script>
