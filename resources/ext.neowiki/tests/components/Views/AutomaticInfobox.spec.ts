@@ -71,6 +71,7 @@ describe( 'AutomaticInfobox', () => {
 			mocks: {
 				$i18n
 			},
+			plugins: [ pinia ],
 			provide: {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
 				[ Service.SchemaAuthorizer ]: NeoWikiExtension.getInstance().newSchemaAuthorizer()
