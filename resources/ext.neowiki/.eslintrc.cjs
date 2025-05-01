@@ -75,7 +75,10 @@ module.exports = {
 		'implicit-arrow-linebreak': 'off',
 		'es-x/no-nullish-coalescing-operators': 'off',
 		'es-x/no-optional-catch-binding': 'off',
-		'space-before-function-paren': 'off'
+		'space-before-function-paren': 'off',
+		'prefer-arrow-callback': 'off',
+		'spaced-comment': 'off',
+		'no-tabs': 'off'
 	},
 	overrides: [
 		{

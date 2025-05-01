@@ -12,8 +12,9 @@ export const useSubjectStore = defineStore( 'subject', {
 		subjects: new Map<string, Subject>()
 	} ),
 	getters: {
-		getSubject: ( state ) => function ( id: SubjectId ): Subject {
+		getSubject: ( state ) => function ( id: SubjectId ): Subject | undefined {
 			const subject = state.subjects.get( id.text );
+
 			if ( subject === undefined ) {
 				throw new Error( 'Unknown subject: ' + id.text );
 			}
@@ -22,14 +23,14 @@ export const useSubjectStore = defineStore( 'subject', {
 		}
 	},
 	actions: {
-		setSubject( id: SubjectId, subject: Subject ): void {
+		setSubject( id: SubjectId, subject: Subject ): void { // TODO: just take Subject
 			this.subjects.set( id.text, subject );
 		},
 		async fetchSubject( id: SubjectId ): Promise<void> {
 			const subject = await NeoWikiExtension.getInstance().getSubjectRepository().getSubject( id );
 			this.setSubject( id, subject );
 		},
-		async getOrFetchSubject( id: SubjectId ): Promise<Subject> {
+		async getOrFetchSubject( id: SubjectId ): Promise<Subject | undefined> {
 			if ( !this.subjects.has( id.text ) ) {
 				await this.fetchSubject( id );
 			}

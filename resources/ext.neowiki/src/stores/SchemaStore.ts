@@ -18,7 +18,7 @@ export const useSchemaStore = defineStore( 'schema', {
 		}
 	},
 	actions: {
-		setSchema( name: string, schema: Schema ): void {
+		setSchema( name: string, schema: Schema ): void { // TODO: just take Schema
 			this.schemas.set( name, schema );
 		},
 		async fetchSchema( name: string ): Promise<void> {
