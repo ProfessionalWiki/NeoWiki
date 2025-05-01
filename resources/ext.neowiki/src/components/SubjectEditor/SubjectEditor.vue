@@ -22,12 +22,8 @@ import { ref, onBeforeUpdate } from 'vue';
 import { CdxField } from '@wikimedia/codex';
 import { StatementList } from '@neo/domain/StatementList.ts';
 import { Statement } from '@neo/domain/Statement.ts';
-import { Value } from '@neo/domain/Value.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-
-interface ValueEditorComponent {
-	getCurrentValue: () => Value | undefined;
-}
+import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
 
 const props = defineProps<{
 	schemaStatements: StatementList;
@@ -37,7 +33,7 @@ onBeforeUpdate( () => {
 	valueEditors.value = [];
 } );
 
-const valueEditors = ref<ValueEditorComponent[]>( [] );
+const valueEditors = ref<ValueInputExposes[]>( [] );
 
 const getSubjectData = (): StatementList => {
 	const newStatements = [ ...props.schemaStatements ].map( ( statement, index ) =>
