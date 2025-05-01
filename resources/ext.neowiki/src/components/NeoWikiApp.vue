@@ -21,9 +21,7 @@ import { onMounted, ref } from 'vue';
 import { SubjectId } from '@neo/domain/SubjectId';
 import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 interface InfoboxData {
 	id: string;
@@ -37,28 +35,12 @@ const infoboxData = ref<InfoboxData[]>( [] );
 const canCreateSubject = ref( false );
 const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
 
-async function loadSubjectsIntoStore(): Promise<void> { // TODO: extract service
-	const elements = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
-	const subjectIds = elements.map( ( element ) => new SubjectId( element.getAttribute( 'data-subject-id' )! ) );
-	const subjectStore = useSubjectStore();
-	const schemaStore = useSchemaStore();
-
-	await Promise.all( subjectIds.map( async ( subjectId ): Promise<void> => {
-		const subject = await NeoWikiExtension.getInstance().getSubjectRepository().getSubject( subjectId );
-
-		if ( subject !== undefined ) {
-			subjectStore.setSubject( subject.getId(), subject );
-		}
-
-		const schema = await NeoWikiExtension.getInstance().getSchemaRepository().getSchema( subject.getSchemaName() );
-		schemaStore.setSchema( subject.getSchemaName(), schema );
-	} ) );
-}
-
 onMounted( async (): Promise<void> => {
-	await loadSubjectsIntoStore();
-
 	const elements = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
+
+	await NeoWikiExtension.getInstance().getStoreStateLoader().loadSubjectsAndSchemas(
+		new Set( elements.map( ( element ) => element.getAttribute( 'data-subject-id' )! ) )
+	);
 
 	infoboxData.value = ( await Promise.all(
 		elements.map( async ( element ): Promise<InfoboxData> => {
