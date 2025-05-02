@@ -1,7 +1,8 @@
 import { VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import UrlInput from '@/components/Value/UrlInput.vue';
-import { CdxField } from '@wikimedia/codex';
+import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
+import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { newStringValue, StringValue } from '@neo/domain/Value';
 import { newUrlProperty } from '@neo/domain/propertyTypes/Url.ts';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
@@ -33,7 +34,12 @@ describe( 'UrlInput', () => {
 		} );
 
 		expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 1 );
-		expect( wrapper.findAll( 'input' ) ).toHaveLength( 1 );
+		expect( wrapper.findAllComponents( NeoMultiTextInput ) ).toHaveLength( 1 );
+		expect( wrapper.findAllComponents( CdxTextInput ) ).toHaveLength( 2 );
+
+		const inputs = wrapper.findAll( 'input' );
+		expect( inputs[ 0 ].element.value ).toBe( 'https://example.com' );
+		expect( inputs[ 1 ].element.value ).toBe( '' );
 	} );
 
 	it( 'renders correctly with multiple URLs', () => {
@@ -41,8 +47,14 @@ describe( 'UrlInput', () => {
 			modelValue: newStringValue( 'https://example1.com', 'https://example2.com' )
 		} );
 
-		expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 2 );
-		expect( wrapper.findAll( 'input' ) ).toHaveLength( 2 );
+		expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 1 );
+		expect( wrapper.findAllComponents( NeoMultiTextInput ) ).toHaveLength( 1 );
+		expect( wrapper.findAllComponents( CdxTextInput ) ).toHaveLength( 3 );
+
+		const inputs = wrapper.findAll( 'input' );
+		expect( inputs[ 0 ].element.value ).toBe( 'https://example1.com' );
+		expect( inputs[ 1 ].element.value ).toBe( 'https://example2.com' );
+		expect( inputs[ 2 ].element.value ).toBe( '' );
 	} );
 
 	it( 'removes URL field when delete button is clicked', async () => {
@@ -50,22 +62,26 @@ describe( 'UrlInput', () => {
 			modelValue: newStringValue( 'https://example1.com', 'https://example2.com' )
 		} );
 
-		await wrapper.findAll( '.delete-button' )[ 0 ].trigger( 'click' );
+		await wrapper.findAll( 'input' )[ 1 ].setValue( '' );
 
-		expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 1 );
-		expect( wrapper.findAll( 'input' ) ).toHaveLength( 1 );
+		expect( wrapper.findAllComponents( CdxTextInput ) ).toHaveLength( 2 );
 	} );
 
 	describe( 'validation', () => {
 
 		const assertFieldIsValid = ( field: any ): void => {
-			expect( field.props( 'status' ) ).toBe( 'success' );
+			expect( field.props( 'status' ) ).toBe( 'default' );
 			expect( field.props( 'messages' ) ).toEqual( {} );
 		};
 
-		const assertFieldIsInvalid = ( field: any ): void => {
-			expect( field.props( 'status' ) ).toBe( 'error' );
-			expect( field.props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-invalid-url' );
+		const assertMultiInputIsValid = ( neoMultiTextInput: any, index: number ): void => {
+			expect( neoMultiTextInput.findAllComponents( CdxTextInput )[ index ].props( 'status' ) ).toBe( 'default' );
+			expect( neoMultiTextInput.props( 'messages' )[ index ] ).toEqual( {} );
+		};
+
+		const assertMultiInputIsInvalid = ( neoMultiTextInput: any, index: number ): void => {
+			expect( neoMultiTextInput.findAllComponents( CdxTextInput )[ index ].props( 'status' ) ).toBe( 'error' );
+			expect( neoMultiTextInput.props( 'messages' )[ index ] ).toEqual( { error: 'neowiki-field-invalid-url' } );
 		};
 
 		it( 'succeeds for multiple valid URLs', async () => {
@@ -73,9 +89,10 @@ describe( 'UrlInput', () => {
 
 			await wrapper.findAll( 'input' )[ 1 ].setValue( 'https://valid-url.com' );
 
-			const fields = wrapper.findAllComponents( CdxField );
-			assertFieldIsValid( fields[ 0 ] );
-			assertFieldIsValid( fields[ 1 ] );
+			const neoMultiTextInput = wrapper.findAllComponents( NeoMultiTextInput )[ 0 ];
+
+			assertMultiInputIsValid( neoMultiTextInput, 0 );
+			assertMultiInputIsValid( neoMultiTextInput, 1 );
 		} );
 
 		it( 'fails for all invalid URLs', async () => {
@@ -86,10 +103,11 @@ describe( 'UrlInput', () => {
 			await wrapper.findAll( 'input' )[ 0 ].setValue( 'invalid-url1' );
 			await wrapper.findAll( 'input' )[ 2 ].setValue( 'invalid-url3' );
 
-			const fields = wrapper.findAllComponents( CdxField );
-			assertFieldIsInvalid( fields[ 0 ] );
-			assertFieldIsValid( fields[ 1 ] );
-			assertFieldIsInvalid( fields[ 2 ] );
+			const neoMultiTextInput = wrapper.findAllComponents( NeoMultiTextInput )[ 0 ];
+
+			assertMultiInputIsInvalid( neoMultiTextInput, 0 );
+			assertMultiInputIsValid( neoMultiTextInput, 1 );
+			assertMultiInputIsInvalid( neoMultiTextInput, 2 );
 		} );
 
 		it( 'succeeds for single empty value part when the value is optional', async () => {
@@ -97,7 +115,7 @@ describe( 'UrlInput', () => {
 				property: newUrlProperty( { required: false } )
 			} );
 
-			await wrapper.findAll( 'input' )[ 1 ].setValue( '' );
+			await wrapper.findAll( 'input' )[ 0 ].setValue( '' );
 
 			const fields = wrapper.findAllComponents( CdxField );
 			assertFieldIsValid( fields[ 0 ] );
@@ -112,10 +130,9 @@ describe( 'UrlInput', () => {
 			await wrapper.findAll( 'input' )[ 0 ].setValue( 'https://valid4.com' );
 			await wrapper.findAll( 'input' )[ 2 ].setValue( '' );
 
-			const fields = wrapper.findAllComponents( CdxField );
-			assertFieldIsValid( fields[ 0 ] );
-			assertFieldIsValid( fields[ 1 ] );
-			assertFieldIsValid( fields[ 2 ] );
+			const neoMultiTextInput = wrapper.findAllComponents( NeoMultiTextInput )[ 0 ];
+			assertMultiInputIsValid( neoMultiTextInput, 0 );
+			assertMultiInputIsValid( neoMultiTextInput, 1 );
 		} );
 
 		it( 'shows error on duplicate URLs when uniqueness is required', async () => {
@@ -126,10 +143,10 @@ describe( 'UrlInput', () => {
 
 			await wrapper.findAll( 'input' )[ 1 ].setValue( 'https://valid1.com' );
 
-			const fields = wrapper.findAllComponents( CdxField );
-			assertFieldIsValid( fields[ 0 ] );
-			expect( fields[ 1 ].props( 'status' ) ).toBe( 'error' );
-			expect( fields[ 1 ].props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-unique' );
+			const neoMultiTextInput = wrapper.findAllComponents( NeoMultiTextInput )[ 0 ];
+
+			expect( neoMultiTextInput.findAllComponents( CdxTextInput )[ 1 ].props( 'status' ) ).toBe( 'error' );
+			expect( neoMultiTextInput.props( 'messages' )?.[ 1 ] ).toHaveProperty( 'error', 'neowiki-field-unique' );
 		} );
 
 	} );
@@ -144,7 +161,7 @@ describe( 'UrlInput', () => {
 
 			const emitted = wrapper.emitted( 'update:modelValue' );
 			expect( emitted ).toBeTruthy();
-			expect( emitted![ 0 ][ 0 ] ).toEqual( newStringValue( 'http://two.com' ) );
+			expect( emitted![ 1 ][ 0 ] ).toEqual( newStringValue( 'http://two.com' ) );
 		} );
 
 		it( 'handles multiple input changes correctly', async () => {
@@ -157,7 +174,7 @@ describe( 'UrlInput', () => {
 
 			const emitted = wrapper.emitted( 'update:modelValue' );
 			expect( emitted ).toBeTruthy();
-			expect( emitted![ 0 ][ 0 ] ).toEqual( newStringValue( 'http://one.com', 'http://three.com' ) );
+			expect( emitted![ 1 ][ 0 ] ).toEqual( newStringValue( 'http://one.com', 'http://three.com' ) );
 		} );
 	} );
 
