@@ -102,7 +102,7 @@ class NeoWikiHooks {
 			'div',
 			[
 				'class' => 'neowiki-infobox',
-				'data-subject-id' => $subject->getId()->text,
+				'data-mw-subject-id' => $subject->getId()->text,
 			]
 		);
 	}
