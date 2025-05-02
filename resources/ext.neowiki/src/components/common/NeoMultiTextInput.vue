@@ -7,16 +7,17 @@
 			<CdxTextInput
 				:model-value="inputValue"
 				:aria-label="`${props.label} item ${index + 1}`"
-				:status="props.invalidValues?.has( inputValue ) ? 'error' : 'default'"
+				:status="getStatusForIndex( index )"
 				@update:model-value="( newValue ) => onInput( index, newValue )"
+				@blur="() => onBlur( index )"
 			/>
+			<!-- Can't use CdxField because we need to show validation message under the input field -->
 			<CdxMessage
-				v-if="props.invalidValues?.has( inputValue )"
-				type="error"
+				v-if="getMessageTextForIndex( index ) && touchedInputs.has( index )"
+				:type="getMessageTypeForIndex( index )"
 				inline
 			>
-				<!-- TODO: Get validation message from property type instead of hardcoding -->
-				Invalid format
+				{{ getMessageTextForIndex( index ) }}
 			</CdxMessage>
 		</div>
 	</div>
@@ -24,13 +25,18 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { CdxTextInput, CdxMessage } from '@wikimedia/codex';
+import { CdxTextInput, CdxMessage, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 
-// Define Props
+// Define allowed message types locally (matching CdxMessage)
+// Because ValidationMessagesType is not exported, and ValidationStatusType does not match exactly
+type ValidationMessageType = 'error' | 'warning' | 'success' | 'notice';
+
+// TODO: Should we move this somewhere else?
+// This is different from the ValueInputProps because this is only used for presentation
 interface MultiTextInputProps {
 	modelValue?: string[];
 	label: string;
-	invalidValues?: Set<string>;
+	messages?: ValidationMessages[];
 }
 
 const props = withDefaults(
@@ -38,17 +44,45 @@ const props = withDefaults(
 	{
 		modelValue: () => [ '' ],
 		label: '',
-		invalidValues: () => new Set()
+		messages: () => []
 	}
 );
 
-// Define Emits
 type UpdateModelValueEmit = ( e: 'update:modelValue', value: string[] ) => void;
 
 const emit = defineEmits<UpdateModelValueEmit>();
 
-// Internal state
 const internalValues = ref<string[]>( [ ...props.modelValue ] );
+const touchedInputs = ref<Set<number>>( new Set() );
+
+function getMessageForIndex( index: number ): ValidationMessages | undefined {
+	return props.messages?.[ index ];
+}
+
+function getStatusForIndex( index: number ): ValidationStatusType | 'default' {
+	const messages = getMessageForIndex( index );
+	if ( !messages ) {
+		return 'default';
+	}
+	return Object.keys( messages )[ 0 ] as keyof ValidationMessages;
+}
+
+function getMessageTypeForIndex( index: number ): ValidationMessageType | undefined {
+	const messages = getMessageForIndex( index );
+	if ( !messages ) {
+		return undefined;
+	}
+	return Object.keys( messages )[ 0 ] as ValidationMessageType;
+}
+
+function getMessageTextForIndex( index: number ): string | undefined {
+	const messages = getMessageForIndex( index );
+	if ( !messages ) {
+		return undefined;
+	}
+	const keys = Object.keys( messages ) as ( keyof ValidationMessages )[];
+	return keys.length > 0 ? messages[ keys[ 0 ] ] : undefined;
+}
 
 // Ensure there's always at least one input, preferably an empty one at the end
 watch( internalValues, ( newValues, _oldValues ) => { // Ignore oldValues for emit logic
@@ -85,6 +119,10 @@ if ( internalValues.value.length === 0 || internalValues.value[ internalValues.v
 
 function onInput( index: number, newValue: string ): void {
 	internalValues.value[ index ] = newValue;
+}
+
+function onBlur( index: number ): void {
+	touchedInputs.value.add( index );
 }
 
 </script>
