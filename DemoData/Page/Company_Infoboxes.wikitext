@@ -1,13 +1,13 @@
-<div class="neowiki-infobox" data-subject-id="s1demo1aaaaaaa1"></div>
-<div class="neowiki-infobox" data-subject-id="s1demo5sssssss1"></div>
+<div class="neowiki-infobox" data-mw-subject-id="s1demo1aaaaaaa1"></div>
+<div class="neowiki-infobox" data-mw-subject-id="s1demo5sssssss1"></div>
 
 This page shows infoboxes with data from the [[Professional Wiki]] and [[ACME Inc]] pages.
 
 This is achieved with the following wikitext that references the IDs of the subjects:
 
 <pre>
-<div class="neowiki-infobox" data-subject-id="s1demo1aaaaaaa1"></div>
-<div class="neowiki-infobox" data-subject-id="s1demo5sssssss1"></div>
+<div class="neowiki-infobox" data-mw-subject-id="s1demo1aaaaaaa1"></div>
+<div class="neowiki-infobox" data-mw-subject-id="s1demo5sssssss1"></div>
 </pre>
 
 
