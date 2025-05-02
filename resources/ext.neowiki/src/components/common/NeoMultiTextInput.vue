@@ -37,8 +37,7 @@ type ValidationMessageType = 'error' | 'warning' | 'success' | 'notice';
 // This is different from the ValueInputProps because this is only used for presentation
 interface MultiTextInputProps {
 	modelValue?: string[];
-	// This is only used for aria-label
-	label: string;
+	label: string; // This is only used for aria-label
 	startIcon?: Icon;
 	messages?: ValidationMessages[];
 }
@@ -66,7 +65,7 @@ function getMessageForIndex( index: number ): ValidationMessages | undefined {
 
 function getStatusForIndex( index: number ): ValidationStatusType | 'default' {
 	const messages = getMessageForIndex( index );
-	if ( !messages ) {
+	if ( messages === undefined ) {
 		return 'default';
 	}
 	return Object.keys( messages )[ 0 ] as keyof ValidationMessages;
@@ -74,7 +73,7 @@ function getStatusForIndex( index: number ): ValidationStatusType | 'default' {
 
 function getMessageTypeForIndex( index: number ): ValidationMessageType | undefined {
 	const messages = getMessageForIndex( index );
-	if ( !messages ) {
+	if ( messages === undefined ) {
 		return undefined;
 	}
 	return Object.keys( messages )[ 0 ] as ValidationMessageType;
@@ -82,7 +81,7 @@ function getMessageTypeForIndex( index: number ): ValidationMessageType | undefi
 
 function getMessageTextForIndex( index: number ): string | undefined {
 	const messages = getMessageForIndex( index );
-	if ( !messages ) {
+	if ( messages === undefined ) {
 		return undefined;
 	}
 	const keys = Object.keys( messages ) as ( keyof ValidationMessages )[];
