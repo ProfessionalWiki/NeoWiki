@@ -27,8 +27,8 @@ import RelationInput from '@/components/Value/RelationInput.vue';
 import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { SubjectDeserializer } from '@neo/persistence/SubjectDeserializer.ts';
 import { Neo } from '@neo/Neo.ts';
-import { cdxIconStringInteger, cdxIconTextA } from '@/assets/CustomIcons.ts';
-import { cdxIconLink } from '@wikimedia/codex-icons';
+// import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
+import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListNumbered } from '@wikimedia/codex-icons';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import { SubjectValidator } from '@neo/domain/SubjectValidator.ts';
@@ -52,7 +52,7 @@ export class NeoWikiExtension {
 			valueEditor: TextInput,
 			attributesEditor: TextAttributesEditor,
 			label: 'neowiki-property-type-text',
-			icon: cdxIconTextA
+			icon: cdxIconSearchCaseSensitive
 		} );
 
 		registry.registerType( UrlType.typeName, {
@@ -68,7 +68,7 @@ export class NeoWikiExtension {
 			valueEditor: NumberInput,
 			attributesEditor: NumberAttributesEditor,
 			label: 'neowiki-property-type-number',
-			icon: cdxIconStringInteger
+			icon: cdxIconListNumbered // TOOD: Add a custom icon
 		} );
 
 		registry.registerType( RelationType.typeName, {
@@ -76,7 +76,7 @@ export class NeoWikiExtension {
 			valueEditor: RelationInput,
 			attributesEditor: TextAttributesEditor, // TODO
 			label: 'neowiki-property-type-relation',
-			icon: cdxIconLink // TODO
+			icon: cdxIconArticles
 		} );
 
 		return registry;

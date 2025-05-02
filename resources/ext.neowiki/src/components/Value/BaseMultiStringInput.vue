@@ -52,13 +52,14 @@ import { newStringValue, StringValue, Value, ValueType } from '@neo/domain/Value
 import { ValueInputEmits, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { MultiStringProperty } from '@neo/domain/PropertyDefinition';
+import type { Icon } from '@wikimedia/codex-icons';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<MultiStringProperty> & {
 		propertyTypeName: string;
 		inputType: TextInputType;
 		rootClass: string;
-		startIcon?: string;
+		startIcon?: Icon;
 	}>(),
 	{
 		modelValue: () => newStringValue( '' ),

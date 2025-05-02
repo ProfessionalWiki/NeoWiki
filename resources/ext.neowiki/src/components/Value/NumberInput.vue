@@ -9,6 +9,7 @@
 		</template>
 		<CdxTextInput
 			:model-value="internalInputValue"
+			:start-icon="startIcon"
 			input-type="number"
 			@update:model-value="onInput"
 		/>
@@ -20,7 +21,7 @@ import type { Value } from '@neo/domain/Value';
 </script>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
 import { NumberType, NumberProperty } from '@neo/domain/propertyTypes/Number.ts';
@@ -34,6 +35,9 @@ const props = withDefaults(
 		label: ''
 	}
 );
+
+const startIcon = computed( () => NeoWikiServices.getComponentRegistry().getIcon( NumberType.typeName ) );
+
 const emit = defineEmits<ValueInputEmits>();
 
 const validationError = ref<string | null>( null );

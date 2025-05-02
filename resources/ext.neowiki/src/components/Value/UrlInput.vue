@@ -13,11 +13,13 @@
 			:model-value="displayValues"
 			:label="props.label"
 			:messages="inputMessages"
+			:start-icon="startIcon"
 			@update:model-value="onInput"
 		/>
 		<CdxTextInput
 			v-else
 			:model-value="displayValues[ 0 ]"
+			:start-icon="startIcon"
 			@update:model-value="onInput"
 		/>
 	</CdxField>
@@ -44,6 +46,8 @@ const props = withDefaults(
 		label: ''
 	}
 );
+
+const startIcon = computed( () => NeoWikiServices.getComponentRegistry().getIcon( UrlType.typeName ) );
 
 const emit = defineEmits<ValueInputEmits>();
 

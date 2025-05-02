@@ -6,6 +6,7 @@
 		>
 			<CdxTextInput
 				:model-value="inputValue"
+				:start-icon="props.startIcon"
 				:aria-label="`${props.label} item ${index + 1}`"
 				:status="getStatusForIndex( index )"
 				@update:model-value="( newValue ) => onInput( index, newValue )"
@@ -26,6 +27,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { CdxTextInput, CdxMessage, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
+import type { Icon } from '@wikimedia/codex-icons';
 
 // Define allowed message types locally (matching CdxMessage)
 // Because ValidationMessagesType is not exported, and ValidationStatusType does not match exactly
@@ -35,7 +37,9 @@ type ValidationMessageType = 'error' | 'warning' | 'success' | 'notice';
 // This is different from the ValueInputProps because this is only used for presentation
 interface MultiTextInputProps {
 	modelValue?: string[];
+	// This is only used for aria-label
 	label: string;
+	startIcon?: Icon;
 	messages?: ValidationMessages[];
 }
 
@@ -44,6 +48,7 @@ const props = withDefaults(
 	{
 		modelValue: () => [ '' ],
 		label: '',
+		startIcon: undefined,
 		messages: () => []
 	}
 );
