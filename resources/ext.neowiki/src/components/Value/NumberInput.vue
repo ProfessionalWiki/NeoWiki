@@ -2,7 +2,7 @@
 	<CdxField
 		:status="validationError === null ? 'default' : 'error'"
 		:messages="validationError === null ? {} : { error: validationError }"
-		:required="property.required"
+		:optional="props.property.required === false"
 	>
 		<template #label>
 			{{ label }}

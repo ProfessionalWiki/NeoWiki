@@ -18,6 +18,7 @@
 				v-if="schemaStatements"
 				ref="subjectEditorRef"
 				:schema-statements="schemaStatements"
+				:schema-properties="schemaProperties"
 			/>
 			<div v-else>
 				Loading schema... <!-- Or some other loading indicator -->
@@ -43,6 +44,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@neo/domain/Schema.ts';
 import { Statement } from '@neo/domain/Statement.ts';
+import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 
 const props = defineProps<{
 	subject: Subject;
@@ -75,16 +77,19 @@ onMounted( async () => {
 	}
 } );
 
+const schemaProperties = computed( (): PropertyDefinitionList =>
+	loadedSchema.value?.getPropertyDefinitions() ?? new PropertyDefinitionList( [] )
+);
+
 const schemaStatements = computed( (): StatementList | null => {
-	if ( !loadedSchema.value ) {
-		return null; // Return null or an empty StatementList while loading/if error
+	if ( !schemaProperties.value ) {
+		return null;
 	}
 
-	const schemaProperties = loadedSchema.value.getPropertyDefinitions();
 	const existingStatements = props.subject.getStatements();
 	const allStatements: Statement[] = [];
 
-	for ( const propDef of schemaProperties ) {
+	for ( const propDef of schemaProperties.value ) {
 		let existingStatement: Statement | undefined;
 		for ( const stmt of existingStatements ) {
 			if ( stmt.propertyName.toString() === propDef.name.toString() ) {

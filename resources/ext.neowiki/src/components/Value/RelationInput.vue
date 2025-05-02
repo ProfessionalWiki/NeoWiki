@@ -1,8 +1,8 @@
 <template>
 	<CdxField
-		:required="props.property.required"
 		:is-fieldset="true"
 		:messages="fieldMessages"
+		:optional="props.property.required === false"
 	>
 		<template #label>
 			{{ props.label }}
@@ -10,7 +10,6 @@
 		<NeoMultiTextInput
 			:model-value="displayValues"
 			:label="props.label"
-			:required="props.property.required"
 			:messages="inputMessages"
 			@update:model-value="onInput"
 		/>
