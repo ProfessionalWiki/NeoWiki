@@ -39,12 +39,12 @@ onMounted( async (): Promise<void> => {
 	const elements = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
 
 	await NeoWikiExtension.getInstance().getStoreStateLoader().loadSubjectsAndSchemas(
-		new Set( elements.map( ( element ) => element.getAttribute( 'data-subject-id' )! ) )
+		new Set( elements.map( ( element ) => element.getAttribute( 'data-mw-subject-id' )! ) )
 	);
 
 	infoboxData.value = ( await Promise.all(
 		elements.map( async ( element ): Promise<InfoboxData> => {
-			const subjectId = element.getAttribute( 'data-subject-id' )!;
+			const subjectId = element.getAttribute( 'data-mw-subject-id' )!;
 
 			return {
 				id: subjectId,
