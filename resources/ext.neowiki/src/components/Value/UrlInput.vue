@@ -90,7 +90,7 @@ function validate( inputValues: string[] ): { errors: ValidationMessages[]; vali
 
 	inputValues.forEach( ( inputValue, index ) => {
 		if ( props.property.uniqueItems && validStrings.includes( inputValue ) ) {
-			perInputErrors[ index ] = { error: 'neowiki-field-unique' };
+			perInputErrors[ index ] = { error: mw.message( 'neowiki-field-unique' ).text() };
 		} else {
 			const value = newStringValue( inputValue );
 			const validationErrors = validateValue( value, propertyType, props.property );
