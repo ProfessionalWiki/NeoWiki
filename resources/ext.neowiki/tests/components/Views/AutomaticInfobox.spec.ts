@@ -16,6 +16,7 @@ import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 	text: () => key
@@ -33,6 +34,7 @@ describe( 'AutomaticInfobox', () => {
 
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore;
+	let subjectStore: any;
 
 	const mockSchema = new Schema(
 		'TestSchema',
@@ -61,10 +63,9 @@ describe( 'AutomaticInfobox', () => {
 		] )
 	);
 
-	const mountComponent = ( subject: Subject, schema: Schema, canEditSubject: boolean ): VueWrapper => mount( AutomaticInfobox, {
+	const mountComponent = ( subject: Subject, canEditSubject: boolean ): VueWrapper => mount( AutomaticInfobox, {
 		props: {
-			subject: subject,
-			schema: schema,
+			subjectId: subject.getId(),
 			canEditSubject: canEditSubject
 		},
 		global: {
@@ -82,18 +83,22 @@ describe( 'AutomaticInfobox', () => {
 	beforeEach( () => {
 		pinia = createPinia();
 		setActivePinia( pinia );
+
 		schemaStore = useSchemaStore();
 		schemaStore.setSchema( 'TestSchema', mockSchema );
+
+		subjectStore = useSubjectStore();
+		subjectStore.setSubject( mockSubject.getId(), mockSubject );
 	} );
 
 	it( 'renders the title correctly', () => {
-		const wrapper = mountComponent( mockSubject, mockSchema, false );
+		const wrapper = mountComponent( mockSubject, false );
 
 		expect( wrapper.find( '.ext-neowiki-auto-infobox__title' ).text() ).toBe( 'Test Subject' );
 	} );
 
 	it( 'renders statements correctly', () => {
-		const wrapper = mountComponent( mockSubject, mockSchema, false );
+		const wrapper = mountComponent( mockSubject, false );
 
 		const schema = wrapper.find( '.ext-neowiki-auto-infobox__schema' );
 		expect( schema.text() ).toBe( 'TestSchema' );
@@ -121,20 +126,22 @@ describe( 'AutomaticInfobox', () => {
 			new StatementList( [] )
 		);
 
-		const wrapper = mountComponent( emptySubject, mockSchema, false );
+		subjectStore.setSubject( emptySubject.getId(), emptySubject );
+
+		const wrapper = mountComponent( emptySubject, false );
 
 		const statementElements = wrapper.findAll( '.ext-neowiki-auto-infobox__item' );
 		expect( statementElements ).toHaveLength( 0 );
 	} );
 
 	it( 'does not render SubjectEditor when canEditSubject is false', () => {
-		const wrapper = mountComponent( mockSubject, mockSchema, false );
+		const wrapper = mountComponent( mockSubject, false );
 
 		expect( wrapper.find( '.ext-neowiki-subject-editor-container' ).exists() ).toBe( false );
 	} );
 
 	it( 'renders SubjectEditor when canEditSubject is true', () => {
-		const wrapper = mountComponent( mockSubject, mockSchema, true );
+		const wrapper = mountComponent( mockSubject, true );
 
 		const editButton = wrapper.find( '.ext-neowiki-subject-editor-container' );
 		expect( editButton.exists() ).toBe( true );

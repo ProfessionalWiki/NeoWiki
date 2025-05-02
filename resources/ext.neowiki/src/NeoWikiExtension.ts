@@ -33,6 +33,7 @@ import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttribu
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import { SubjectValidator } from '@neo/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@neo/domain/PropertyType.ts';
+import { StoreStateLoader } from '@/persistence/StoreStateLoader.ts';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -145,4 +146,12 @@ export class NeoWikiExtension {
 	public getPropertyTypeRegistry(): PropertyTypeRegistry {
 		return this.getNeo().getPropertyTypeRegistry();
 	}
+
+	public getStoreStateLoader(): StoreStateLoader {
+		return new StoreStateLoader(
+			this.getSubjectRepository(),
+			this.getSchemaRepository()
+		);
+	}
+
 }

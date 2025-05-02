@@ -1,5 +1,5 @@
 <template>
-	<div v-if="subjectRef !== null" class="ext-neowiki-auto-infobox">
+	<div v-if="subject !== null" class="ext-neowiki-auto-infobox">
 		<div class="ext-neowiki-auto-infobox__header">
 			<div class="ext-neowiki-auto-infobox__header__text">
 				<div
@@ -7,7 +7,7 @@
 					role="heading"
 					aria-level="2"
 				>
-					{{ subjectRef.getLabel() }}
+					{{ subject.getLabel() }}
 				</div>
 				<div
 					class="ext-neowiki-auto-infobox__schema"
@@ -19,7 +19,7 @@
 			</div>
 			<SubjectEditorDialog
 				v-if="canEditSubject"
-				:subject="subjectRef as Subject"
+				:subject="subject as Subject"
 				@update:subject="onSubjectUpdated"
 			/>
 		</div>
@@ -35,8 +35,8 @@
 				<div class="ext-neowiki-auto-infobox__value">
 					<component
 						:is="getComponent( propertyDefinition.type )"
-						:key="`${propertyDefinition.name}${subjectRef?.getStatementValue( propertyDefinition.name )}-ext-neowiki-auto-infobox`"
-						:value="subjectRef?.getStatementValue( propertyDefinition.name )"
+						:key="`${propertyDefinition.name}${subject?.getStatementValue( propertyDefinition.name )}-ext-neowiki-auto-infobox`"
+						:value="subject?.getStatementValue( propertyDefinition.name )"
 						:property="propertyDefinition"
 					/>
 				</div>
@@ -46,22 +46,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, PropType, onMounted } from 'vue';
+import { Component, computed } from 'vue';
 import { Subject } from '@neo/domain/Subject.ts';
 import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
-import { Schema } from '@neo/domain/Schema.ts';
-import { Component } from 'vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { SubjectId } from '@neo/domain/SubjectId.ts';
 
 const props = defineProps( {
-	subject: {
-		type: Object as PropType<Subject>,
-		required: true
-	},
-	schema: {
-		type: Object as PropType<Schema>,
+	subjectId: {
+		type: SubjectId,
 		required: true
 	},
 	canEditSubject: {
@@ -70,44 +66,28 @@ const props = defineProps( {
 	}
 } );
 
-const canEditSchema = ref( false );
+const subjectStore = useSubjectStore();
 
-const subjectRef = ref( props.subject );
+const subject = computed( () => subjectStore.getSubject( props.subjectId ) as Subject ); // TODO: handle not found
+const schema = useSchemaStore().getSchema( subject.value.getSchemaName() ); // TODO: handle not found
 
-const schemaStore = useSchemaStore();
+if ( !schema ) {
+	console.error( `Schema not found for name: ${ subject.value.getSchemaName() }` );
+}
 
 const onSubjectUpdated = ( newSubject: Subject ): void => {
-	// TODO: We need to somehow update the other views that are using the same subject
-	subjectRef.value = newSubject;
+	subjectStore.updateSubject( newSubject );
 };
 
-const getComponent = ( propertyType: string ): Component => NeoWikiServices.getComponentRegistry().getValueDisplayComponent( propertyType );
+function getComponent( propertyType: string ): Component {
+	return NeoWikiServices.getComponentRegistry().getValueDisplayComponent( propertyType );
+}
 
-const propertiesToDisplay = computed( (): Record<string, PropertyDefinition> => {
-	if ( !subjectRef.value ) {
-		console.error( 'subjectRef is null or undefined' );
-		return {};
-	}
-
-	const schemaName = subjectRef.value.getSchemaName();
-	const schema = schemaStore.getSchema( schemaName );
-
-	if ( !schema ) {
-		console.error( `Schema not found for name: ${ schemaName }` );
-		return {};
-	}
-
-	const nonEmptyProperties = subjectRef.value.getNamesOfNonEmptyProperties();
-
+const propertiesToDisplay = computed( function(): Record<string, PropertyDefinition> {
 	return schema.getPropertyDefinitions()
-		.withNames( nonEmptyProperties )
+		.withNames( subject.value.getNamesOfNonEmptyProperties() )
 		.asRecord();
 } );
-
-onMounted( async (): Promise<void> => {
-	canEditSchema.value = await NeoWikiServices.getSchemaAuthorizer().canEditSchema( props.schema.getName() );
-} );
-
 </script>
 
 <style lang="scss">
