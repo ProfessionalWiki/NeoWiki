@@ -1,11 +1,12 @@
 import type { Component } from 'vue';
+import type { Icon } from '@wikimedia/codex-icons';
 
 export interface TypeSpecificStuff {
 	valueDisplayComponent: Component;
 	valueEditor: Component;
 	attributesEditor: Component;
 	label: string;
-	icon: string;
+	icon: Icon;
 }
 
 export class TypeSpecificComponentRegistry {
@@ -56,13 +57,20 @@ export class TypeSpecificComponentRegistry {
 		return Array.from( this.typeMap.keys() );
 	}
 
-	public getLabelsAndIcons(): { value: string; label: string; icon: string }[] {
+	public getLabelsAndIcons(): { value: string; label: string; icon: Icon }[] {
 		return Array.from( this.typeMap.entries() )
 			.map( ( [ value, { label, icon } ] ) => ( {
 				value: value, // TODO: rename to name or formatName
 				label: label,
 				icon: icon
 			} ) );
+	}
+
+	public getIcon( propertyType: string ): Icon {
+		if ( !this.typeMap.has( propertyType ) ) {
+			throw new Error( `No icon registered for property type: ${ propertyType }` );
+		}
+		return this.typeMap.get( propertyType )!.icon;
 	}
 
 }

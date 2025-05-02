@@ -1,6 +1,7 @@
 <template>
 	<BaseMultiStringInput
 		v-bind="$props"
+		:start-icon="startIcon"
 		property-type-name="text"
 		input-type="text"
 		root-class="neo-text-field"
@@ -15,10 +16,10 @@ import { Value } from '@neo/domain/Value.ts';
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
-import { TextProperty } from '@neo/domain/propertyTypes/Text.ts';
+import { TextProperty, TextType } from '@neo/domain/propertyTypes/Text.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { newStringValue, ValueType, StringValue } from '@neo/domain/Value.ts';
-
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 const props = withDefaults(
 	defineProps<ValueInputProps<TextProperty>>(),
 	{
@@ -26,6 +27,8 @@ const props = withDefaults(
 		label: ''
 	}
 );
+
+const startIcon = NeoWikiServices.getComponentRegistry().getIcon( TextType.typeName );
 
 const emit = defineEmits<ValueInputEmits>();
 

@@ -1,8 +1,8 @@
 <template>
 	<CdxField
-		:required="props.property.required"
-		:status="validationError === null ? 'default' : 'error'"
 		:is-fieldset="true"
+		:messages="fieldMessages"
+		:optional="props.property.required === false"
 	>
 		<template #label>
 			{{ props.label }}
@@ -10,8 +10,8 @@
 		<NeoMultiTextInput
 			:model-value="displayValues"
 			:label="props.label"
-			:required="props.property.required"
-			:invalid-values="invalidTargetTexts"
+			:messages="inputMessages"
+			:start-icon="startIcon"
 			@update:model-value="onInput"
 		/>
 	</CdxField>
@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { ref, watch, defineExpose, computed } from 'vue';
-import { CdxField } from '@wikimedia/codex';
+import { CdxField, ValidationMessages } from '@wikimedia/codex';
 import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
 import { ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
 import { RelationProperty, RelationType } from '@neo/domain/propertyTypes/Relation.ts';
@@ -34,11 +34,13 @@ const props = withDefaults(
 	}
 );
 
+const startIcon = NeoWikiServices.getComponentRegistry().getIcon( RelationType.typeName );
+
 const emit = defineEmits<ValueInputEmits>();
 
 const internalValue = ref<RelationValue | undefined>( undefined );
-const validationError = ref<string | null>( null );
-const invalidTargetTexts = ref<Set<string>>( new Set() );
+const fieldMessages = ref<ValidationMessages>( {} );
+const inputMessages = ref<ValidationMessages[]>( [] );
 
 function initializeInternalValue( value: Value | undefined ): void {
 	if ( value && value.type === ValueType.Relation ) {
@@ -56,7 +58,10 @@ initializeInternalValue( props.modelValue );
 
 watch( () => props.modelValue, ( newValue ) => {
 	initializeInternalValue( newValue );
-	validate( internalValue.value );
+	// Use validate after model updates
+	const { errors, overallErrorMessage } = validate( displayValues.value );
+	inputMessages.value = errors;
+	fieldMessages.value = overallErrorMessage ? { error: overallErrorMessage } : {};
 } );
 
 // Computed property to feed NeoMultiTextInput
@@ -67,19 +72,62 @@ const displayValues = computed( (): string[] => {
 	return internalValue.value.relations.map( ( r ) => r.target.text );
 } );
 
-function onInput( newTargetStrings: string[] ): void {
-	const targets = newTargetStrings.filter( ( s ) => s.trim() !== '' );
-	const creationInvalidTargets = new Set<string>();
+// Get the RelationType instance from the registry
+const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( RelationType.typeName );
+
+function validate( targetStrings: string[] ): {
+	errors: ValidationMessages[];
+	validRelations: Relation[];
+	overallErrorMessage: string | null;
+} {
+	const perInputErrors: ValidationMessages[] = Array( targetStrings.length ).fill( {} );
 	const validRelations: Relation[] = [];
 
-	for ( const target of targets ) {
-		try {
-			const relation = newRelation( undefined, target );
-			validRelations.push( relation );
-		} catch ( _error ) {
-			creationInvalidTargets.add( target );
+	targetStrings.forEach( ( target, index ) => {
+		if ( target.trim() === '' ) {
+			return;
 		}
+
+		let relation: Relation | null = null;
+		try {
+			relation = newRelation( undefined, target );
+		} catch ( error: unknown ) {
+			const message = ( error as Error ).message || mw.message( 'neowiki-error-relation-creation' ).text();
+			perInputErrors[ index ] = { error: message };
+		}
+
+		if ( relation ) {
+			validRelations.push( relation );
+		}
+	} );
+
+	// Perform ONE final validation on the *complete* set of potentially valid relations
+	const finalDomainErrors = propertyType.validate(
+		validRelations.length > 0 ? new RelationValue( validRelations ) : undefined,
+		props.property
+	);
+
+	// Determine overall error message if the final validation fails
+	let overallErrorMessage: string | null = null;
+	const firstDomainError = finalDomainErrors[ 0 ];
+	if ( firstDomainError ) {
+		overallErrorMessage = mw.message(
+			`neowiki-field-${ firstDomainError.code }`, ...( firstDomainError.args ?? [] )
+		).text();
 	}
+
+	return {
+		errors: perInputErrors,
+		validRelations: validRelations,
+		overallErrorMessage: overallErrorMessage
+	};
+}
+
+function onInput( newTargetStrings: string[] ): void {
+	const { errors, validRelations, overallErrorMessage } = validate( newTargetStrings );
+
+	inputMessages.value = errors;
+	fieldMessages.value = overallErrorMessage ? { error: overallErrorMessage } : {};
 
 	let newRelationValue: RelationValue | undefined;
 	if ( validRelations.length > 0 ) {
@@ -88,53 +136,29 @@ function onInput( newTargetStrings: string[] ): void {
 		newRelationValue = undefined;
 	}
 
-	internalValue.value = newRelationValue;
-	emit( 'update:modelValue', newRelationValue );
-	validate( newRelationValue, creationInvalidTargets );
-}
-
-// Get the RelationType instance from the registry
-const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( RelationType.typeName );
-
-function validate(
-	value: RelationValue | undefined,
-	creationInvalidTargets: Set<string> = new Set()
-): void {
-	const domainErrors = propertyType.validate( value, props.property );
-
-	let firstDomainErrorMessage: string | null = null;
-	const domainInvalidTargets = new Set<string>();
-
-	for ( let i = 0; i < domainErrors.length; i++ ) {
-		const error = domainErrors[ i ];
-		if ( i === 0 ) {
-			// Store message from the first domain error for CdxField status
-			firstDomainErrorMessage = mw.message(
-				`neowiki-field-${ error.code }`, ...( error.args ?? [] )
-			).text();
-		}
-		if ( error.code === 'invalid-subject-id' && error.args && error.args.length > 0 ) {
-			domainInvalidTargets.add( String( error.args[ 0 ] ) );
-		}
+	// Update internal state WITHOUT triggering the props.modelValue watcher again
+	// This assumes initializeInternalValue correctly handles undefined/'empty' RelationValues
+	if ( JSON.stringify( internalValue.value ) !== JSON.stringify( newRelationValue ) ) {
+		internalValue.value = newRelationValue;
 	}
 
-	// Merge creation and domain invalid targets
-	const allInvalidTargets = new Set( [
-		...creationInvalidTargets,
-		...domainInvalidTargets
-	] );
-	invalidTargetTexts.value = allInvalidTargets;
-
-	// Set overall field status based ONLY on domain errors
-	validationError.value = firstDomainErrorMessage;
+	emit( 'update:modelValue', newRelationValue );
 }
 
 watch( () => props.property, () => {
-	validate( internalValue.value );
+	// Re-validate using the current display values when property changes
+	const { errors, overallErrorMessage } = validate( displayValues.value );
+	inputMessages.value = errors;
+	fieldMessages.value = overallErrorMessage ? { error: overallErrorMessage } : {};
 }, { deep: true } );
 
-// Initial validation
-validate( internalValue.value );
+// Initial validation based on the starting modelValue
+// Use validate for initial validation
+const initialValidationResult = validate( displayValues.value );
+inputMessages.value = initialValidationResult.errors;
+fieldMessages.value = initialValidationResult.overallErrorMessage ?
+	{ error: initialValidationResult.overallErrorMessage } :
+	{};
 
 defineExpose<ValueInputExposes>( {
 	getCurrentValue: function(): Value | undefined {

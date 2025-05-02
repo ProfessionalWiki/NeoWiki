@@ -2,13 +2,14 @@
 	<CdxField
 		:status="validationError === null ? 'default' : 'error'"
 		:messages="validationError === null ? {} : { error: validationError }"
-		:required="property.required"
+		:optional="props.property.required === false"
 	>
 		<template #label>
 			{{ label }}
 		</template>
 		<CdxTextInput
 			:model-value="internalInputValue"
+			:start-icon="startIcon"
 			input-type="number"
 			@update:model-value="onInput"
 		/>
@@ -34,6 +35,9 @@ const props = withDefaults(
 		label: ''
 	}
 );
+
+const startIcon = NeoWikiServices.getComponentRegistry().getIcon( NumberType.typeName );
+
 const emit = defineEmits<ValueInputEmits>();
 
 const validationError = ref<string | null>( null );

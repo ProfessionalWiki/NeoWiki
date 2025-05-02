@@ -184,7 +184,10 @@
 						"cdxIconInfoFilled",
 						"cdxIconEdit",
 						"cdxIconLink",
-						"cdxIconCheck"
+						"cdxIconCheck",
+						"cdxIconSearchCaseSensitive",
+						"cdxIconArticles",
+						"cdxIconListNumbered"
 					]
 				}
 			],
