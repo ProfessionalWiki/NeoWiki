@@ -34,7 +34,7 @@ const props = withDefaults(
 	}
 );
 
-const startIcon = computed( () => NeoWikiServices.getComponentRegistry().getIcon( RelationType.typeName ) );
+const startIcon = NeoWikiServices.getComponentRegistry().getIcon( RelationType.typeName );
 
 const emit = defineEmits<ValueInputEmits>();
 

@@ -14,7 +14,7 @@ import { Value } from '@neo/domain/Value.ts';
 </script>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch } from 'vue';
 import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
 import { TextProperty, TextType } from '@neo/domain/propertyTypes/Text.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
@@ -28,7 +28,7 @@ const props = withDefaults(
 	}
 );
 
-const startIcon = computed( () => NeoWikiServices.getComponentRegistry().getIcon( TextType.typeName ) );
+const startIcon = NeoWikiServices.getComponentRegistry().getIcon( TextType.typeName );
 
 const emit = defineEmits<ValueInputEmits>();
 

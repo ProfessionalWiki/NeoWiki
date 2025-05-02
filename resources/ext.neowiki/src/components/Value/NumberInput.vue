@@ -21,7 +21,7 @@ import type { Value } from '@neo/domain/Value';
 </script>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
 import { NumberType, NumberProperty } from '@neo/domain/propertyTypes/Number.ts';
@@ -36,7 +36,7 @@ const props = withDefaults(
 	}
 );
 
-const startIcon = computed( () => NeoWikiServices.getComponentRegistry().getIcon( NumberType.typeName ) );
+const startIcon = NeoWikiServices.getComponentRegistry().getIcon( NumberType.typeName );
 
 const emit = defineEmits<ValueInputEmits>();
 

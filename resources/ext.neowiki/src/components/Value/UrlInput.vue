@@ -47,7 +47,7 @@ const props = withDefaults(
 	}
 );
 
-const startIcon = computed( () => NeoWikiServices.getComponentRegistry().getIcon( UrlType.typeName ) );
+const startIcon = NeoWikiServices.getComponentRegistry().getIcon( UrlType.typeName );
 
 const emit = defineEmits<ValueInputEmits>();
 
