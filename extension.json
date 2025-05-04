@@ -170,7 +170,8 @@
 				"CdxTextArea",
 				"CdxMenuButton",
 				"useResizeObserver",
-				"CdxMessage"
+				"CdxMessage",
+				"CdxToggleSwitch"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",
@@ -230,7 +231,7 @@
 				"neowiki-create-subject-dialog-start-blank-description",
 				"neowiki-create-subject-dialog-select-schema-description",
 				"neowiki-create-subject-dialog-go-back",
-				"neowiki-infobox-editor-property-description",
+				"neowiki-property-editor-description",
 				"neowiki-infobox-editor-property-format",
 				"neowiki-infobox-editor-property-required",
 				"neowiki-property-editor-dialog-title-edit",
