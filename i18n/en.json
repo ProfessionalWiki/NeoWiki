@@ -69,7 +69,7 @@
 	"neowiki-field-max-value": "Maximum value is $1.",
 	"neowiki-field-invalid-url": "Please enter a valid URL.",
 
-	"neowiki-infobox-editor-property-description": "Description",
+	"neowiki-property-editor-description": "Description",
 	"neowiki-infobox-editor-property-format": "Format",
 	"neowiki-infobox-editor-property-required": "Make it a required field",
 

@@ -1,72 +1,53 @@
 <template>
 	<div class="ext-neowiki-schema-editor">
-		<div class="ext-neowiki-schema-editor__schema">
-			Schema: {{ schema.getName() }}
-
-			<div class="ext-neowiki-schema-editor__properties__list">
-				<CdxCard
-					v-for="( property ) in properties"
-					:key="property.name.toString()"
-					url="#"
-					@click="selectProperty( property.name )"
-				>
-					<template #title>
-						{{ property.name.toString() }}
-					</template>
-					<template #description>
-						{{ property.type }}
-					</template>
-				</CdxCard>
-			</div>
-		</div>
-
-		<div class="ext-neowiki-schema-editor__property-editor">
-			PropertyDefinitionEditor
-		</div>
+		<PropertyList
+			:properties="properties"
+			@property-selected="selectProperty"
+		/>
+		<PropertyDefinitionEditor
+			v-if="selectedProperty !== undefined"
+			:property="selectedProperty"
+			@update:property-definition="onPropertyUpdated"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { CdxCard } from '@wikimedia/codex';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
 import { Schema } from '@neo/domain/Schema.ts';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
+import PropertyDefinitionEditor from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 
 const props = defineProps<{
 	schema: Schema;
 }>();
 
 const properties = computed( () => props.schema.getPropertyDefinitions() );
-
-function getPropertyDefinitionWithAdjustedName( name: PropertyName ): PropertyDefinition {
-	const property = properties.value.get( name );
-
-	return { // TODO: construct the correct property type class
-		name: new PropertyName( property.name + 'x' ), // TODO: random junk to trigger a change
-		type: property.type,
-		description: property.description,
-		required: property.required,
-		default: property.default
-	} as PropertyDefinition;
-}
+const selectedProperty = ref<PropertyDefinition>();
 
 function selectProperty( name: PropertyName ): void {
-	emitUpdatedSchema(
-		new Schema(
-			props.schema.getName(),
-			props.schema.getDescription(), // TODO: make editable via UI
-			properties.value.withPropertyDefinition( getPropertyDefinitionWithAdjustedName( name ) )
-		)
-	);
+	console.log('selectedProperty', name.toString());
+	if ( name.toString() !== '' ) {
+		selectedProperty.value = properties.value.get( name );
+	} else {
+		selectedProperty.value = {
+			name: new PropertyName( 'New Property ' + Object.keys( props.schema.getPropertyDefinitions().asRecord() ).length, true ),
+			type: 'text',
+			description: '',
+			required: false,
+			default: undefined
+		} as PropertyDefinition;
+	}
+}
+
+function onPropertyUpdated( property: PropertyDefinition ): void {
+	// TODO: replace the property in props.schema?
 }
 
 const emit = defineEmits<{
 	'update:schema': [ Schema ];
 }>();
-
-function emitUpdatedSchema( schema: Schema ): void {
-	emit( 'update:schema', schema );
-}
 
 </script>
 
