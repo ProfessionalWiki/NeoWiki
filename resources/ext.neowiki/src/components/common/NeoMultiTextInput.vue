@@ -59,6 +59,29 @@ const emit = defineEmits<UpdateModelValueEmit>();
 const internalValues = ref<string[]>( [ ...props.modelValue ] );
 const touchedInputs = ref<Set<number>>( new Set() );
 
+internalValues.value = normalizeInputValues( internalValues.value );
+
+watch( internalValues, ( newValues ) => {
+	const valuesToEmit = newValues.filter( ( value, index ) =>
+		!( index === newValues.length - 1 && value === '' && newValues.length > 1 )
+	);
+	emit( 'update:modelValue', valuesToEmit );
+
+	const nextInternalValues = normalizeInputValues( newValues );
+
+	if ( !areArraysEqual( internalValues.value, nextInternalValues ) ) {
+		internalValues.value = nextInternalValues;
+	}
+}, { deep: true } );
+
+function onInput( index: number, newValue: string ): void {
+	internalValues.value[ index ] = newValue;
+}
+
+function onBlur( index: number ): void {
+	touchedInputs.value.add( index );
+}
+
 function getMessageForIndex( index: number ): ValidationMessages | undefined {
 	return props.messages?.[ index ];
 }
@@ -88,47 +111,32 @@ function getMessageTextForIndex( index: number ): string | undefined {
 	return keys.length > 0 ? messages[ keys[ 0 ] ] : undefined;
 }
 
-// Ensure there's always at least one input, preferably an empty one at the end
-watch( internalValues, ( newValues, _oldValues ) => { // Ignore oldValues for emit logic
+function normalizeInputValues( values: string[] ): string[] {
+	let normalized = [ ...values ];
 
-	const lastValue = newValues[ newValues.length - 1 ];
-	const secondLastValue = newValues.length > 1 ? newValues[ newValues.length - 2 ] : undefined;
-
-	// Filter out the final empty string if it exists and is not the only item
-	const valuesToEmit = newValues.filter( ( value, index ) =>
-		!( index === newValues.length - 1 && value === '' && newValues.length > 1 )
+	const lastIndex = normalized.length - 1;
+	normalized = normalized.filter( ( value, index ) =>
+		value !== '' || index === lastIndex
 	);
 
-	emit( 'update:modelValue', valuesToEmit );
-
-	if ( lastValue !== '' ) {
-		internalValues.value.push( '' );
+	if ( normalized.length === 0 || normalized[ normalized.length - 1 ] !== '' ) {
+		normalized.push( '' );
 	}
 
-	// Remove the last empty input if the second-to-last one also becomes empty
-	if (
-		newValues.length > 1 &&
-		lastValue === '' &&
-		secondLastValue === ''
-	) {
-		internalValues.value.pop();
+	return normalized;
+}
+
+function areArraysEqual( arr1: string[], arr2: string[] ): boolean {
+	if ( arr1.length !== arr2.length ) {
+		return false;
 	}
-
-}, { deep: true } );
-
-// Initial check in case modelValue starts empty or invalid
-if ( internalValues.value.length === 0 || internalValues.value[ internalValues.value.length - 1 ] !== '' ) {
-	internalValues.value.push( '' );
+	for ( let i = 0; i < arr1.length; i++ ) {
+		if ( arr1[ i ] !== arr2[ i ] ) {
+			return false;
+		}
+	}
+	return true;
 }
-
-function onInput( index: number, newValue: string ): void {
-	internalValues.value[ index ] = newValue;
-}
-
-function onBlur( index: number ): void {
-	touchedInputs.value.add( index );
-}
-
 </script>
 
 <style lang="scss">
