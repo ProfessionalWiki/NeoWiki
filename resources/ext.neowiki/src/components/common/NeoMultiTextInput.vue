@@ -114,9 +114,8 @@ function getMessageTextForIndex( index: number ): string | undefined {
 function normalizeInputValues( values: string[] ): string[] {
 	let normalized = [ ...values ];
 
-	const lastIndex = normalized.length - 1;
 	normalized = normalized.filter( ( value, index ) =>
-		value !== '' || index === lastIndex
+		value !== '' || index === normalized.length - 1
 	);
 
 	if ( normalized.length === 0 || normalized[ normalized.length - 1 ] !== '' ) {
