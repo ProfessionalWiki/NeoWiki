@@ -161,7 +161,7 @@ describe( 'UrlInput', () => {
 
 			const emitted = wrapper.emitted( 'update:modelValue' );
 			expect( emitted ).toBeTruthy();
-			expect( emitted![ 1 ][ 0 ] ).toEqual( newStringValue( 'http://two.com' ) );
+			expect( emitted![ 0 ][ 0 ] ).toEqual( newStringValue( 'http://two.com' ) );
 		} );
 
 		it( 'handles multiple input changes correctly', async () => {
@@ -174,7 +174,7 @@ describe( 'UrlInput', () => {
 
 			const emitted = wrapper.emitted( 'update:modelValue' );
 			expect( emitted ).toBeTruthy();
-			expect( emitted![ 1 ][ 0 ] ).toEqual( newStringValue( 'http://one.com', 'http://three.com' ) );
+			expect( emitted![ 0 ][ 0 ] ).toEqual( newStringValue( 'http://one.com', 'http://three.com' ) );
 		} );
 	} );
 
