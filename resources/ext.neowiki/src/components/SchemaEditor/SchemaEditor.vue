@@ -1,7 +1,7 @@
 <template>
 	<div class="ext-neowiki-schema-editor">
 		<PropertyList
-			:properties="properties"
+			:properties="currentSchema.getPropertyDefinitions()"
 			@property-selected="onPropertySelected"
 			@property-created="onPropertyCreated"
 		/>
@@ -23,59 +23,72 @@ import PropertyDefinitionEditor from '@/components/SchemaEditor/PropertyDefiniti
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 
 const props = defineProps<{
-	schema: Schema;
+	initialSchema: Schema;
 }>();
 
-const properties = computed( () => props.schema.getPropertyDefinitions() );
-const selectedProperty = ref<PropertyDefinition | undefined>( undefined );
-let selectedPropertyName: string | undefined;
+const currentSchema = ref<Schema>( props.initialSchema );
+const selectedPropertyName = ref<string | undefined>( undefined );
+
+const selectedProperty = computed( () => {
+	if ( selectedPropertyName.value === undefined ) {
+		return undefined;
+	}
+
+	return currentSchema.value.getPropertyDefinitions().get(
+		new PropertyName( selectedPropertyName.value )
+	);
+} );
 
 function onPropertySelected( name: PropertyName ): void {
-	selectedPropertyName = name.toString();
-	selectedProperty.value = properties.value.get( name );
+	selectedPropertyName.value = name.toString();
 }
 
 function onPropertyCreated( newProperty: PropertyDefinition ): void {
-	doStuffWithUpdatedSchema( props.schema.withAddedPropertyDefinition( newProperty ) );
+	currentSchema.value = buildUpdatedSchema( newProperty );
 }
 
 function onPropertyUpdated( updatedProperty: PropertyDefinition ): void {
-	const updatedSchema = buildUpdatedSchema( updatedProperty );
+	currentSchema.value = buildUpdatedSchema( updatedProperty );
 
-	selectedPropertyName = updatedProperty.name.toString();
-	selectedProperty.value = updatedProperty;
-
-	doStuffWithUpdatedSchema( updatedSchema );
+	selectedPropertyName.value = updatedProperty.name.toString();
 }
 
-function doStuffWithUpdatedSchema( schema: Schema ): void {
-	// This function is a placeholder
-	// TODO: keep track of the Schema and only emit the update event when appropriate (maybe no event and just pull on save)
-	emit( 'update:schema', schema );
+function propertyExists( name: string | undefined ): boolean {
+	return name !== undefined &&
+		currentSchema.value.getPropertyDefinitions().has( new PropertyName( name ) );
 }
 
 function buildUpdatedSchema( updatedProperty: PropertyDefinition ): Schema {
-	if ( selectedPropertyName === undefined || !properties.value.has( new PropertyName( selectedPropertyName ) ) ) {
-		return props.schema.withAddedPropertyDefinition( updatedProperty );
+	if ( !propertyExists( selectedPropertyName.value ) ) {
+		return currentSchema.value.withAddedPropertyDefinition( updatedProperty );
 	}
 
-	const updatedProperties = Array.from( properties.value ).map(
-		function( prop: PropertyDefinition ) {
-			return prop.name.toString() === selectedPropertyName ? updatedProperty : prop;
-		}
-	);
-
 	return new Schema(
-		props.schema.getName(),
-		props.schema.getDescription(),
-		new PropertyDefinitionList( updatedProperties )
+		currentSchema.value.getName(),
+		currentSchema.value.getDescription(),
+		replacePropertyDefinition( updatedProperty )
 	);
 }
 
-const emit = defineEmits<{
-	'update:schema': [ Schema ];
-}>();
+function replacePropertyDefinition( updatedProperty: PropertyDefinition ): PropertyDefinitionList {
+	return new PropertyDefinitionList(
+		Array.from( currentSchema.value.getPropertyDefinitions() ).map(
+			function( property: PropertyDefinition ) {
+				return property.name.toString() === selectedPropertyName.value ? updatedProperty : property;
+			}
+		)
+	);
+}
 
+export interface SchemaEditorExposes {
+	getSchema: () => Schema;
+}
+
+defineExpose( {
+	getSchema: function(): Schema {
+		return currentSchema.value as Schema;
+	}
+} );
 </script>
 
 <style scoped>
