@@ -44,7 +44,7 @@ function onPropertySelected( name: PropertyName ): void {
 }
 
 function onPropertyCreated( newProperty: PropertyDefinition ): void {
-	currentSchema.value = buildUpdatedSchema( newProperty );
+	currentSchema.value = currentSchema.value.withAddedPropertyDefinition( newProperty );
 }
 
 function onPropertyUpdated( updatedProperty: PropertyDefinition ): void {
