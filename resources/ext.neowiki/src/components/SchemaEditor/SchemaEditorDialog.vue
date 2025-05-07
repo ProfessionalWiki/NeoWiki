@@ -2,7 +2,8 @@
 	<div>
 		<CdxDialog title="TODO">
 			<SchemaEditor
-				v-model:schema="schema as Schema"
+				ref="schemaEditor"
+				:initial-schema="initialSchema"
 			/>
 
 			<CdxTextArea />
@@ -20,18 +21,18 @@
 </template>
 
 <script setup lang="ts">
-import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
+import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import { CdxButton, CdxDialog, CdxIcon, CdxTextArea } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 import { Schema } from '@neo/domain/Schema.ts';
 import { ref } from 'vue';
 
-const props = defineProps<{ initialSchema: Schema }>();
+defineProps<{ initialSchema: Schema }>();
 
-const schema = ref( props.initialSchema );
+const schemaEditor = ref<SchemaEditorExposes | null>( null );
 
 const saveSchema = async (): Promise<void> => {
-	console.log( 'TODO: saving schema', schema );
+	console.log( 'TODO: saving schema', schemaEditor.value!.getSchema() );
 	// TODO: emit event
 };
 </script>
