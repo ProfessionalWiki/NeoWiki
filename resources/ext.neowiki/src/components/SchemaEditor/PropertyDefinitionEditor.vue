@@ -5,9 +5,9 @@
 				{{ $i18n( 'neowiki-property-editor-name' ).text() }}
 			</template>
 			<CdxTextInput
-				:model-value="property.name.toString()"
+				:model-value="localProperty.name.toString()"
 				input-type="text"
-				@update:model-value="updateName"
+				@update:model-value="updatePropertyName"
 			/>
 		</CdxField>
 
@@ -16,7 +16,7 @@
 				{{ $i18n( 'neowiki-property-editor-type' ).text() }}
 			</template>
 			<CdxSelect
-				v-model:selected="props.property.type"
+				v-model:selected="localProperty.type"
 				:menu-items="typeOptions"
 			/>
 		</CdxField>
@@ -26,28 +26,28 @@
 				{{ $i18n( 'neowiki-property-editor-description' ).text() }}
 			</template>
 			<CdxTextArea
-				:model-value="property.description"
+				v-model="localProperty.description"
 			/>
 		</CdxField>
 
 		<CdxField>
 			<CdxToggleSwitch
-				:model-value="property.required">
+				v-model="localProperty.required">
 				{{ $i18n( 'neowiki-property-editor-required' ).text() }}
 			</CdxToggleSwitch>
 		</CdxField>
 
 		<component
-			:is="componentRegistry.getAttributesEditor( property.type )"
-			:property="property"
-			@update:property="console.log( 'update:property', property )"
+			:is="componentRegistry.getAttributesEditor( localProperty.type )"
+			:property="localProperty"
+			@update:property="updatePropertyAttributes"
 		/>
 		<component
-			:is="componentRegistry.getValueEditingComponent( property.type )"
-			v-model="property.default"
+			:is="componentRegistry.getValueEditingComponent( localProperty.type )"
+			v-model="localProperty.default"
 			class="property-definition-editor__default"
 			:label="$i18n( 'neowiki-property-editor-initial-value' ).text()"
-			:property="property"
+			:property="localProperty"
 		/>
 	</div>
 </template>
@@ -56,6 +56,7 @@
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition.ts';
 import { CdxField, CdxSelect, CdxTextArea, CdxTextInput, CdxToggleSwitch } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { ref, watch } from 'vue';
 
 const props = defineProps<{
 	property: PropertyDefinition;
@@ -65,26 +66,39 @@ const emit = defineEmits<{
 	'update:property-definition': [ PropertyDefinition ];
 }>();
 
+const localProperty = ref<PropertyDefinition>( { ...props.property } );
+
+watch(
+	localProperty,
+	( newValue ) => {
+		emit( 'update:property-definition', newValue as PropertyDefinition );
+	},
+	{ deep: true }
+);
+
+function updatePropertyName( name: string ): void {
+	if ( !PropertyName.isValid( name ) ) {
+		console.log( 'TODO: show error' );
+		return;
+	}
+
+	localProperty.value = {
+		...localProperty.value,
+		name: new PropertyName( name )
+	};
+}
+
+function updatePropertyAttributes<T extends PropertyDefinition>( attributes: Partial<T> ): void {
+	localProperty.value = {
+		...localProperty.value,
+		...attributes
+	};
+}
+
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
 const typeOptions = componentRegistry.getLabelsAndIcons().map( ( { value, label } ) => ( {
 	value: value,
 	label: mw.message( label ).text()
 } ) );
-
-function updateName( name: string ): void {
-	emit( 'update:property-definition', { ...props.property, name: new PropertyName( name ) } );
-}
-
-function updateType( type: string ): void {
-	emit( 'update:property-definition', { ...props.property, type: type } );
-}
-
-function updateDescription( description: string ): void {
-	emit( 'update:property-definition', { ...props.property, description: description } );
-}
-
-function updateRequired( required: boolean ): void {
-	emit( 'update:property-definition', { ...props.property, required: required } );
-}
 </script>

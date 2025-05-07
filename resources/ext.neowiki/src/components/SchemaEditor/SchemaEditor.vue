@@ -2,11 +2,13 @@
 	<div class="ext-neowiki-schema-editor">
 		<PropertyList
 			:properties="properties"
-			@property-selected="selectProperty"
+			@property-selected="onPropertySelected"
+			@property-created="onPropertyCreated"
 		/>
 		<PropertyDefinitionEditor
 			v-if="selectedProperty !== undefined"
-			:property="selectedProperty"
+			:key="selectedPropertyName"
+			:property="selectedProperty as PropertyDefinition"
 			@update:property-definition="onPropertyUpdated"
 		/>
 	</div>
@@ -18,31 +20,56 @@ import { Schema } from '@neo/domain/Schema.ts';
 import { computed, ref } from 'vue';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import PropertyDefinitionEditor from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
+import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 
 const props = defineProps<{
 	schema: Schema;
 }>();
 
 const properties = computed( () => props.schema.getPropertyDefinitions() );
-const selectedProperty = ref<PropertyDefinition>();
+const selectedProperty = ref<PropertyDefinition | undefined>( undefined );
+let selectedPropertyName: string | undefined;
 
-function selectProperty( name: PropertyName ): void {
-	console.log('selectedProperty', name.toString());
-	if ( name.toString() !== '' ) {
-		selectedProperty.value = properties.value.get( name );
-	} else {
-		selectedProperty.value = {
-			name: new PropertyName( 'New Property ' + Object.keys( props.schema.getPropertyDefinitions().asRecord() ).length, true ),
-			type: 'text',
-			description: '',
-			required: false,
-			default: undefined
-		} as PropertyDefinition;
-	}
+function onPropertySelected( name: PropertyName ): void {
+	selectedPropertyName = name.toString();
+	selectedProperty.value = properties.value.get( name );
 }
 
-function onPropertyUpdated( property: PropertyDefinition ): void {
-	// TODO: replace the property in props.schema?
+function onPropertyCreated( newProperty: PropertyDefinition ): void {
+	doStuffWithUpdatedSchema( props.schema.withAddedPropertyDefinition( newProperty ) );
+}
+
+function onPropertyUpdated( updatedProperty: PropertyDefinition ): void {
+	const updatedSchema = buildUpdatedSchema( updatedProperty );
+
+	selectedPropertyName = updatedProperty.name.toString();
+	selectedProperty.value = updatedProperty;
+
+	doStuffWithUpdatedSchema( updatedSchema );
+}
+
+function doStuffWithUpdatedSchema( schema: Schema ): void {
+	// This function is a placeholder
+	// TODO: keep track of the Schema and only emit the update event when appropriate (maybe no event and just pull on save)
+	emit( 'update:schema', schema );
+}
+
+function buildUpdatedSchema( updatedProperty: PropertyDefinition ): Schema {
+	if ( selectedPropertyName === undefined || !properties.value.has( new PropertyName( selectedPropertyName ) ) ) {
+		return props.schema.withAddedPropertyDefinition( updatedProperty );
+	}
+
+	const updatedProperties = Array.from( properties.value ).map(
+		function( prop: PropertyDefinition ) {
+			return prop.name.toString() === selectedPropertyName ? updatedProperty : prop;
+		}
+	);
+
+	return new Schema(
+		props.schema.getName(),
+		props.schema.getDescription(),
+		new PropertyDefinitionList( updatedProperties )
+	);
 }
 
 const emit = defineEmits<{

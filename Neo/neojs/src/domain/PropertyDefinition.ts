@@ -14,13 +14,17 @@ export class PropertyName {
 	public constructor( name: string, placeholder: boolean = false ) {
 		this.name = name.trim();
 
-		if ( this.name === '' && !placeholder ) {
+		if ( !PropertyName.isValid( name ) && !placeholder ) {
 			throw new Error( 'Invalid PropertyName' );
 		}
 	}
 
 	public toString(): string {
 		return this.name;
+	}
+
+	public static isValid( name: string ): boolean {
+		return name.trim() !== '';
 	}
 
 }
