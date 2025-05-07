@@ -5,6 +5,7 @@
 				{{ $i18n( 'neowiki-property-editor-name' ).text() }}
 			</template>
 			<CdxTextInput
+				ref="nameInput"
 				:model-value="localProperty.name.toString()"
 				input-type="text"
 				@update:model-value="updatePropertyName"
@@ -56,7 +57,7 @@
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition.ts';
 import { CdxField, CdxSelect, CdxTextArea, CdxTextInput, CdxToggleSwitch } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { ref, watch } from 'vue';
+import { nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
 	property: PropertyDefinition;
@@ -75,6 +76,16 @@ watch(
 	},
 	{ deep: true }
 );
+
+const nameInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
+
+onMounted( () => {
+	nextTick( () => {
+		if ( nameInput.value !== null ) {
+			nameInput.value.focus();
+		}
+	} );
+} );
 
 function updatePropertyName( name: string ): void {
 	if ( !PropertyName.isValid( name ) ) {
