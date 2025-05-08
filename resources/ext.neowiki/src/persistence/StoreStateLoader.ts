@@ -32,10 +32,17 @@ export class StoreStateLoader {
 		const subject = await this.subjectRepo.getSubject( subjectId );
 
 		if ( subject !== undefined ) {
-			subjectStore.setSubject( subject.getId(), subject );
+			subjectStore.setSubject( subject );
 
 			const schema = await this.schemaRepo.getSchema( subject.getSchemaName() ); // TODO: handle not found
 			schemaStore.setSchema( subject.getSchemaName(), schema );
+
+			const referencedSubjects = await subject.getReferencedSubjects( this.subjectRepo );
+			if ( referencedSubjects.size() > 0 ) {
+				for ( const referencedSubject of referencedSubjects ) {
+					subjectStore.setSubject( referencedSubject );
+				}
+			}
 
 			// TODO: we can just call await schemaStore.getOrFetchSchema().
 			// Shall we remvoe the getOrFetch methods from the Stores?

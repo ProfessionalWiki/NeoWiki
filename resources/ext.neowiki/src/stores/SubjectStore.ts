@@ -23,12 +23,12 @@ export const useSubjectStore = defineStore( 'subject', {
 		}
 	},
 	actions: {
-		setSubject( id: SubjectId, subject: Subject ): void { // TODO: just take Subject
-			this.subjects.set( id.text, subject );
+		setSubject( subject: Subject ): void { // TODO: just take Subject
+			this.subjects.set( subject.getId().text, subject );
 		},
 		async fetchSubject( id: SubjectId ): Promise<void> {
 			const subject = await NeoWikiExtension.getInstance().getSubjectRepository().getSubject( id );
-			this.setSubject( id, subject );
+			this.setSubject( subject );
 		},
 		async getOrFetchSubject( id: SubjectId ): Promise<Subject | undefined> {
 			if ( !this.subjects.has( id.text ) ) {
@@ -38,7 +38,7 @@ export const useSubjectStore = defineStore( 'subject', {
 		},
 		async updateSubject( subject: Subject ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject( subject.getId(), subject.getLabel(), subject.getStatements() );
-			this.setSubject( subject.getId(), subject );
+			this.setSubject( subject );
 		},
 		async deleteSubject( subjectId: SubjectId ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSubjectRepository().deleteSubject( subjectId );
@@ -53,7 +53,6 @@ export const useSubjectStore = defineStore( 'subject', {
 			);
 
 			this.setSubject(
-				subjectId,
 				new SubjectWithContext(
 					subjectId,
 					label,

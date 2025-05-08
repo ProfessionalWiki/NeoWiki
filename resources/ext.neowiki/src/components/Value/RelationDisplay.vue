@@ -1,10 +1,22 @@
 <template>
 	<div>
-		<!-- TODO: Placeholder display -->
-		<div v-for="( value, key ) in values" :key="key">
-			<a href="#">
+		<div
+			v-for="( value, key ) in displayedValues"
+			:key="key"
+		>
+			<a
+				v-if="value.url"
+				:href="value.url"
+			>
 				{{ value.text }}
 			</a>
+			<span
+				v-else
+				:class="value.error ? 'error' : ''"
+				:title="value.error ? value.error : ''"
+			>
+				{{ value.text }}
+			</span>
 		</div>
 	</div>
 </template>
@@ -12,16 +24,59 @@
 <script setup lang="ts">
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
 import { RelationProperty } from '@neo/domain/propertyTypes/Relation.ts';
-import { computed } from 'vue';
-import { RelationValue } from '@neo/domain/Value.ts';
+import { ref, watch } from 'vue';
+import { RelationValue, Relation } from '@neo/domain/Value.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { SubjectWithContext } from '@neo/domain/SubjectWithContext.ts';
+
+interface RelationDisplayValue {
+	text: string;
+	url?: string;
+	error?: string;
+}
 
 const props = defineProps<ValueDisplayProps<RelationProperty>>();
 
-const values = computed( () => {
-	if ( props.value instanceof RelationValue ) {
-		return props.value.relations.map( ( relation ) => relation.target );
-	}
+const subjectStore = useSubjectStore();
+const displayedValues = ref<RelationDisplayValue[]>( [] );
 
-	return [];
-} );
+watch( () => props.value, ( newValue ) => {
+	if ( newValue instanceof RelationValue ) {
+		displayedValues.value = newValue.relations.map( ( relation: Relation ): RelationDisplayValue => {
+			let subject: SubjectWithContext | undefined;
+			try {
+				subject = subjectStore.getSubject( relation.target ) as SubjectWithContext;
+				if ( !subject ) {
+					return getInvalidValueDisplay(
+						relation.target.text,
+						`Subject not found: ${ relation.target.text }`
+					);
+				}
+				return getValueDisplay( subject );
+			} catch ( error: unknown ) {
+				return getInvalidValueDisplay(
+					relation.target.text,
+					`${ error instanceof Error ? error.name : 'Unknown error' }: ${ error instanceof Error ? error.message : String( error ) }`
+				);
+			}
+		} );
+	} else {
+		displayedValues.value = [];
+	}
+}, { immediate: true } );
+
+function getValueDisplay( subject: SubjectWithContext ): RelationDisplayValue {
+	return {
+		text: subject.getLabel(),
+		url: mw.util.getUrl( subject.getPageIdentifiers().getPageName() )
+	};
+}
+
+function getInvalidValueDisplay( text: string, error?: string ): RelationDisplayValue {
+	return {
+		text: text,
+		error: error
+	};
+}
+
 </script>

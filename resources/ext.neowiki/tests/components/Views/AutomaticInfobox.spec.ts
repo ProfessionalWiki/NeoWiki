@@ -88,7 +88,7 @@ describe( 'AutomaticInfobox', () => {
 		schemaStore.setSchema( 'TestSchema', mockSchema );
 
 		subjectStore = useSubjectStore();
-		subjectStore.setSubject( mockSubject.getId(), mockSubject );
+		subjectStore.setSubject( mockSubject );
 	} );
 
 	it( 'renders the title correctly', () => {
@@ -126,7 +126,7 @@ describe( 'AutomaticInfobox', () => {
 			new StatementList( [] )
 		);
 
-		subjectStore.setSubject( emptySubject.getId(), emptySubject );
+		subjectStore.setSubject( emptySubject );
 
 		const wrapper = mountComponent( emptySubject, false );
 
