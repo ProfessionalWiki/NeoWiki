@@ -40,12 +40,12 @@ const props = defineProps<ValueDisplayProps<RelationProperty>>();
 const subjectStore = useSubjectStore();
 const displayedValues = ref<RelationDisplayValue[]>( [] );
 
-watch( () => props.value, async ( newValue ) => {
+watch( () => props.value, ( newValue ) => {
 	if ( newValue instanceof RelationValue ) {
-		const promises = newValue.relations.map( async ( relation: Relation ): Promise<RelationDisplayValue> => {
+		displayedValues.value = newValue.relations.map( ( relation: Relation ): RelationDisplayValue => {
 			let subject: SubjectWithContext | undefined;
 			try {
-				subject = await subjectStore.getOrFetchSubject( relation.target ) as SubjectWithContext;
+				subject = subjectStore.getSubject( relation.target ) as SubjectWithContext;
 				if ( !subject ) {
 					return getInvalidValueDisplay(
 						relation.target.text,
@@ -60,7 +60,6 @@ watch( () => props.value, async ( newValue ) => {
 				);
 			}
 		} );
-		displayedValues.value = await Promise.all( promises );
 	} else {
 		displayedValues.value = [];
 	}
