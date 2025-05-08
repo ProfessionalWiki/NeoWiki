@@ -22,9 +22,6 @@ function createSubject( id: string, label: string, pageName: string ): SubjectWi
 
 async function createWrapper( ...relations: Relation[] ): Promise<ReturnType<typeof mount>> {
 	const wrapper = createWrapperWithValue( new RelationValue( relations ) );
-	await wrapper.vm.$nextTick();
-	await Promise.resolve();
-	await wrapper.vm.$nextTick();
 	return wrapper;
 }
 
@@ -38,14 +35,14 @@ function createWrapperWithValue( value: RelationValue ): ReturnType<typeof mount
 }
 
 describe( 'RelationDisplay.vue', () => {
-	let mockGetOrFetchSubject: ReturnType<typeof vi.fn>;
+	let mockGetSubject: ReturnType<typeof vi.fn>;
 	let mockGetUrl: ReturnType<typeof vi.fn>;
 
 	beforeEach( () => {
-		mockGetOrFetchSubject = vi.fn();
+		mockGetSubject = vi.fn();
 		vi.mocked( useSubjectStore ).mockReturnValue( {
 			$id: 'subject',
-			getOrFetchSubject: mockGetOrFetchSubject
+			getSubject: mockGetSubject
 		} as any );
 
 		mockGetUrl = vi.fn();
@@ -60,120 +57,70 @@ describe( 'RelationDisplay.vue', () => {
 		} );
 	} );
 
-	it.each( [
-		{
-			description: 'renders a single relation correctly as a link',
-			targetId: 's1111111111111A',
-			pageName: 'Page_Name_1',
-			subjectLabel: 'Test Subject 1',
-			mockSetup: {
-				fetchResult: () => createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ),
-				shouldReject: false
-			},
-			mockUrlResult: '/wiki/Page_Name_1',
-			expectedTagName: 'a',
-			expectedText: 'Test Subject 1',
-			expectedHref: '/wiki/Page_Name_1',
-			expectedTitle: undefined,
-			expectErrorClass: false
-		},
-		{
-			description: 'renders a span with error info when subject is not found',
-			targetId: 's1111111111111B',
-			pageName: 'NonExistent_Page',
-			subjectLabel: null,
-			mockSetup: {
-				fetchResult: () => undefined,
-				shouldReject: false
-			},
-			mockUrlResult: undefined,
-			expectedTagName: 'span',
-			expectedText: 's1111111111111B',
-			expectedHref: undefined,
-			expectedTitle: 'Subject not found: s1111111111111B',
-			expectErrorClass: true
-		},
-		{
-			description: 'renders a span with error info when fetching subject fails',
-			targetId: 's1111111111111C',
-			pageName: 'Error_Fetch_Page',
-			subjectLabel: null,
-			mockSetup: {
-				fetchResult: () => {
-					const err = new Error( 'Network Connection Error' );
-					err.name = 'NetworkError';
-					throw err;
-				},
-				shouldReject: true
-			},
-			mockUrlResult: undefined,
-			expectedTagName: 'span',
-			expectedText: 's1111111111111C',
-			expectedHref: undefined,
-			expectedTitle: 'NetworkError: Network Connection Error',
-			expectErrorClass: true
-		},
-		{
-			description: 'renders a span (not link) if mw.util.getUrl returns undefined for a subject',
-			targetId: 's1111111111111D',
-			pageName: 'No_Url_Page',
-			subjectLabel: 'No Valid Url Subject',
-			mockSetup: {
-				fetchResult: () => createSubject( 's1111111111111D', 'No Valid Url Subject', 'No_Url_Page' ),
-				shouldReject: false
-			},
-			mockUrlResult: undefined,
-			expectedTagName: 'span',
-			expectedText: 'No Valid Url Subject',
-			expectedHref: undefined,
-			expectedTitle: '',
-			expectErrorClass: false
-		}
-	] )( '$description', async ( testCaseData: any ) => {
-		const targetId = testCaseData.targetId;
-		const pageName = testCaseData.pageName;
-		const { fetchResult, shouldReject } = testCaseData.mockSetup;
-		const mockUrlResult = testCaseData.mockUrlResult;
-		const expectedTagName = testCaseData.expectedTagName;
-		const expectedText = testCaseData.expectedText;
-		const expectedHref = testCaseData.expectedHref;
-		const expectedTitle = testCaseData.expectedTitle;
-		const expectErrorClass = testCaseData.expectErrorClass;
+	it( 'renders a single relation correctly as a link', async () => {
+		mockGetSubject.mockReturnValue( createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ) );
+		mockGetUrl.mockReturnValue( '/wiki/Page_Name_1' );
 
-		const subjectId = new SubjectId( targetId );
+		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) );
 
-		if ( shouldReject ) {
-			mockGetOrFetchSubject.mockImplementation( fetchResult as () => never );
-		} else {
-			mockGetOrFetchSubject.mockResolvedValue( ( fetchResult as () => SubjectWithContext | undefined )() );
-		}
-
-		mockGetUrl.mockReturnValue( mockUrlResult );
-
-		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( targetId ) ) );
-
-		const element = wrapper.find( expectedTagName );
+		const element = wrapper.find( 'a' );
 		expect( element.exists() ).toBe( true );
-		expect( element.text() ).toBe( expectedText );
+		expect( element.text() ).toBe( 'Test Subject 1' );
+		expect( element.attributes( 'href' ) ).toBe( '/wiki/Page_Name_1' );
+		expect( element.classes().includes( 'error' ) ).toBe( false );
 
-		if ( expectedHref !== undefined ) {
-			expect( element.attributes( 'href' ) ).toBe( expectedHref );
-		}
+		expect( mockGetSubject ).toHaveBeenCalledWith( new SubjectId( 's1111111111111A' ) );
+		expect( mockGetUrl ).toHaveBeenCalledWith( 'Page_Name_1' );
+	} );
 
-		if ( expectedTitle !== undefined ) {
-			expect( element.attributes( 'title' ) ).toContain( expectedTitle );
-		}
+	it( 'renders a span with error info when subject is not found', async () => {
+		mockGetSubject.mockReturnValue( undefined );
+		mockGetUrl.mockReturnValue( undefined );
 
-		if ( expectErrorClass ) {
-			expect( element.classes() ).toContain( 'error' );
-		} else {
-			expect( element.classes().includes( 'error' ) ).toBe( false );
-		}
+		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111B' ) ) );
 
-		expect( mockGetOrFetchSubject ).toHaveBeenCalledWith( subjectId );
-		if ( mockUrlResult !== undefined && expectedTagName === 'a' ) {
-			expect( mockGetUrl ).toHaveBeenCalledWith( pageName );
-		}
+		const element = wrapper.find( 'span' );
+		expect( element.exists() ).toBe( true );
+		expect( element.text() ).toBe( 's1111111111111B' );
+		expect( element.attributes( 'title' ) ).toContain( 'Subject not found: s1111111111111B' );
+		expect( element.classes() ).toContain( 'error' );
+
+		expect( mockGetSubject ).toHaveBeenCalledWith( new SubjectId( 's1111111111111B' ) );
+	} );
+
+	it( 'renders a span with error info when fetching subject fails', async () => {
+		mockGetSubject.mockImplementation( () => {
+			const err = new Error( 'Network Connection Error' );
+			err.name = 'NetworkError';
+			throw err;
+		} );
+		mockGetUrl.mockReturnValue( undefined );
+
+		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111C' ) ) );
+
+		const element = wrapper.find( 'span' );
+		expect( element.exists() ).toBe( true );
+		expect( element.text() ).toBe( 's1111111111111C' );
+		expect( element.attributes( 'title' ) ).toContain( 'NetworkError: Network Connection Error' );
+		expect( element.classes() ).toContain( 'error' );
+
+		expect( mockGetSubject ).toHaveBeenCalledWith( new SubjectId( 's1111111111111C' ) );
+	} );
+
+	it( 'renders a span (not link) if mw.util.getUrl returns undefined for a subject', async () => {
+		mockGetSubject.mockReturnValue( createSubject( 's1111111111111D', 'No Valid Url Subject', 'No_Url_Page' ) );
+		mockGetUrl.mockReturnValue( undefined );
+
+		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111D' ) ) );
+
+		const element = wrapper.find( 'span' );
+		expect( element.exists() ).toBe( true );
+		expect( element.text() ).toBe( 'No Valid Url Subject' );
+		expect( element.attributes( 'title' ) ).toContain( '' );
+		expect( element.classes().includes( 'error' ) ).toBe( false );
+
+		expect( mockGetSubject ).toHaveBeenCalledWith( new SubjectId( 's1111111111111D' ) );
+		expect( mockGetUrl ).toHaveBeenCalledWith( 'No_Url_Page' );
 	} );
 
 	it( 'renders multiple relations correctly as links', async () => {
@@ -192,11 +139,11 @@ describe( 'RelationDisplay.vue', () => {
 			}
 		];
 
-		mockGetOrFetchSubject
-			.mockResolvedValueOnce(
+		mockGetSubject
+			.mockReturnValueOnce(
 				createSubject( TEST_DATA[ 0 ].ID, TEST_DATA[ 0 ].LABEL, TEST_DATA[ 0 ].PAGE_NAME )
 			)
-			.mockResolvedValueOnce(
+			.mockReturnValueOnce(
 				createSubject( TEST_DATA[ 1 ].ID, TEST_DATA[ 1 ].LABEL, TEST_DATA[ 1 ].PAGE_NAME )
 			);
 		mockGetUrl
@@ -223,7 +170,8 @@ describe( 'RelationDisplay.vue', () => {
 		expect( wrapper.find( 'span' ).exists() ).toBe( false );
 	} );
 
-	it( 'handles a mix of successful fetches, not found, and errors correctly', async () => {
+	describe( 'when rendering a mix of relation types', () => {
+		let wrapper: ReturnType<typeof mount>;
 		const TEST_DATA = {
 			LINKABLE: {
 				ID: 's3333333333333A',
@@ -233,12 +181,10 @@ describe( 'RelationDisplay.vue', () => {
 			},
 			ERROR_FETCH: {
 				ID: 's3333333333333B',
-				PAGE_NAME: 'Error_Mixed_Page',
 				MESSAGE: 'Fetch s3333333333333B Failed'
 			},
 			NOT_FOUND: {
 				ID: 's3333333333333C',
-				PAGE_NAME: 'NotFound_Mixed_Page',
 				MESSAGE: 'Subject not found: s3333333333333C'
 			},
 			NO_URL: {
@@ -248,67 +194,85 @@ describe( 'RelationDisplay.vue', () => {
 			}
 		};
 
-		const subjectLink = createSubject( TEST_DATA.LINKABLE.ID, TEST_DATA.LINKABLE.LABEL, TEST_DATA.LINKABLE.PAGE_NAME );
-		const noUrlSubject = createSubject( TEST_DATA.NO_URL.ID, TEST_DATA.NO_URL.LABEL, TEST_DATA.NO_URL.PAGE_NAME );
+		beforeEach( async () => {
+			const subjectLink = createSubject( TEST_DATA.LINKABLE.ID, TEST_DATA.LINKABLE.LABEL, TEST_DATA.LINKABLE.PAGE_NAME );
+			const noUrlSubject = createSubject( TEST_DATA.NO_URL.ID, TEST_DATA.NO_URL.LABEL, TEST_DATA.NO_URL.PAGE_NAME );
 
-		mockGetOrFetchSubject.mockImplementation( async ( target: SubjectId ) => {
-			if ( target.text === TEST_DATA.LINKABLE.ID ) {
-				return subjectLink;
-			}
-			if ( target.text === TEST_DATA.ERROR_FETCH.ID ) {
-				throw new Error( TEST_DATA.ERROR_FETCH.MESSAGE );
-			}
-			if ( target.text === TEST_DATA.NOT_FOUND.ID ) {
+			mockGetSubject.mockImplementation( ( target: SubjectId ) => {
+				if ( target.text === TEST_DATA.LINKABLE.ID ) {
+					return subjectLink;
+				}
+				if ( target.text === TEST_DATA.ERROR_FETCH.ID ) {
+					const err = new Error( TEST_DATA.ERROR_FETCH.MESSAGE );
+					err.name = 'Error';
+					throw err;
+				}
+				if ( target.text === TEST_DATA.NOT_FOUND.ID ) {
+					return undefined;
+				}
+				if ( target.text === TEST_DATA.NO_URL.ID ) {
+					return noUrlSubject;
+				}
 				return undefined;
-			}
-			if ( target.text === TEST_DATA.NO_URL.ID ) {
-				return noUrlSubject;
-			}
-			return undefined;
+			} );
+
+			mockGetUrl.mockImplementation( ( pageName: string ) => {
+				if ( pageName === TEST_DATA.LINKABLE.PAGE_NAME ) {
+					return TEST_DATA.LINKABLE.URL;
+				}
+				if ( pageName === TEST_DATA.NO_URL.PAGE_NAME ) {
+					return undefined;
+				}
+				return '/wiki/' + pageName;
+			} );
+
+			wrapper = await createWrapper(
+				new Relation( 'not-important', new SubjectId( TEST_DATA.LINKABLE.ID ) ),
+				new Relation( 'not-important', new SubjectId( TEST_DATA.ERROR_FETCH.ID ) ),
+				new Relation( 'not-important', new SubjectId( TEST_DATA.NOT_FOUND.ID ) ),
+				new Relation( 'not-important', new SubjectId( TEST_DATA.NO_URL.ID ) )
+			);
 		} );
 
-		mockGetUrl.mockImplementation( ( pageName: string ) => {
-			if ( pageName === TEST_DATA.LINKABLE.PAGE_NAME ) {
-				return TEST_DATA.LINKABLE.URL;
-			}
-			if ( pageName === TEST_DATA.NO_URL.PAGE_NAME ) {
-				return undefined;
-			}
-			return '/wiki/' + pageName;
+		it( 'renders the linkable subject correctly', () => {
+			const children = wrapper.findAll( 'div > div > :is(a, span)' );
+			const linkChild = children[ 0 ];
+			expect( linkChild.element.tagName ).toBe( 'A' );
+			expect( linkChild.attributes( 'href' ) ).toBe( TEST_DATA.LINKABLE.URL );
+			expect( linkChild.text() ).toBe( TEST_DATA.LINKABLE.LABEL );
 		} );
 
-		const wrapper = await createWrapper(
-			new Relation( 'not-important', new SubjectId( TEST_DATA.LINKABLE.ID ) ),
-			new Relation( 'not-important', new SubjectId( TEST_DATA.ERROR_FETCH.ID ) ),
-			new Relation( 'not-important', new SubjectId( TEST_DATA.NOT_FOUND.ID ) ),
-			new Relation( 'not-important', new SubjectId( TEST_DATA.NO_URL.ID ) )
-		);
+		it( 'renders the subject that causes a fetch error correctly', () => {
+			const children = wrapper.findAll( 'div > div > :is(a, span)' );
+			const errorChild = children[ 1 ];
+			expect( errorChild.element.tagName ).toBe( 'SPAN' );
+			expect( errorChild.text() ).toBe( TEST_DATA.ERROR_FETCH.ID );
+			expect( errorChild.classes() ).toContain( 'error' );
+			expect( errorChild.attributes( 'title' ) ).toContain( 'Error: ' + TEST_DATA.ERROR_FETCH.MESSAGE );
+		} );
 
-		const children = wrapper.findAll( 'div > div > :is(a, span)' );
-		expect( children ).toHaveLength( 4 );
+		it( 'renders the not-found subject correctly', () => {
+			const children = wrapper.findAll( 'div > div > :is(a, span)' );
+			const notFoundChild = children[ 2 ];
+			expect( notFoundChild.element.tagName ).toBe( 'SPAN' );
+			expect( notFoundChild.text() ).toBe( TEST_DATA.NOT_FOUND.ID );
+			expect( notFoundChild.classes() ).toContain( 'error' );
+			expect( notFoundChild.attributes( 'title' ) ).toContain( TEST_DATA.NOT_FOUND.MESSAGE );
+		} );
 
-		const linkChild = children[ 0 ];
-		expect( linkChild.element.tagName ).toBe( 'A' );
-		expect( linkChild.attributes( 'href' ) ).toBe( TEST_DATA.LINKABLE.URL );
-		expect( linkChild.text() ).toBe( TEST_DATA.LINKABLE.LABEL );
+		it( 'renders the subject with no URL correctly', () => {
+			const children = wrapper.findAll( 'div > div > :is(a, span)' );
+			const noUrlChild = children[ 3 ];
+			expect( noUrlChild.element.tagName ).toBe( 'SPAN' );
+			expect( noUrlChild.text() ).toBe( TEST_DATA.NO_URL.LABEL );
+			expect( noUrlChild.classes().includes( 'error' ) ).toBe( false );
+			expect( noUrlChild.attributes( 'title' ) ).toBe( '' );
+		} );
 
-		const errorChild = children[ 1 ];
-		expect( errorChild.element.tagName ).toBe( 'SPAN' );
-		expect( errorChild.text() ).toBe( TEST_DATA.ERROR_FETCH.ID );
-		expect( errorChild.classes() ).toContain( 'error' );
-		expect( errorChild.attributes( 'title' ) ).toContain( 'Error: ' + TEST_DATA.ERROR_FETCH.MESSAGE );
-
-		const notFoundChild = children[ 2 ];
-		expect( notFoundChild.element.tagName ).toBe( 'SPAN' );
-		expect( notFoundChild.text() ).toBe( TEST_DATA.NOT_FOUND.ID );
-		expect( notFoundChild.classes() ).toContain( 'error' );
-		expect( notFoundChild.attributes( 'title' ) ).toContain( TEST_DATA.NOT_FOUND.MESSAGE );
-
-		const noUrlChild = children[ 3 ];
-		expect( noUrlChild.element.tagName ).toBe( 'SPAN' );
-		expect( noUrlChild.text() ).toBe( TEST_DATA.NO_URL.LABEL );
-		expect( noUrlChild.classes().includes( 'error' ) ).toBe( false );
-		expect( noUrlChild.attributes( 'title' ) ).toBe( '' );
+		it( 'renders all four items', () => {
+			const children = wrapper.findAll( 'div > div > :is(a, span)' );
+			expect( children ).toHaveLength( 4 );
+		} );
 	} );
 
 	it( 'does not render items if value prop is not a RelationValue', async () => {
