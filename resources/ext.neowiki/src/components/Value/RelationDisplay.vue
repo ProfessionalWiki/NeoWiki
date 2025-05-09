@@ -25,7 +25,7 @@
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
 import { RelationProperty } from '@neo/domain/propertyTypes/Relation.ts';
 import { ref, watch } from 'vue';
-import { RelationValue, Relation } from '@neo/domain/Value.ts';
+import { Value, RelationValue, Relation } from '@neo/domain/Value.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectWithContext } from '@neo/domain/SubjectWithContext.ts';
 
@@ -41,29 +41,33 @@ const subjectStore = useSubjectStore();
 const displayedValues = ref<RelationDisplayValueData[]>( [] );
 
 watch( () => props.value, ( newValue ) => {
-	if ( newValue instanceof RelationValue ) {
-		displayedValues.value = newValue.relations.map( ( relation: Relation ): RelationDisplayValueData => {
-			let subject: SubjectWithContext | undefined;
-			try {
-				subject = subjectStore.getSubject( relation.target ) as SubjectWithContext;
-				if ( !subject ) {
-					return getInvalidValueDisplay(
-						relation.target.text,
-						`Subject not found: ${ relation.target.text }`
-					);
-				}
-				return getValueDisplay( subject );
-			} catch ( error: unknown ) {
+	displayedValues.value = getDisplayedValues( newValue );
+}, { immediate: true } );
+
+function getDisplayedValues( value: Value | undefined ): RelationDisplayValueData[] {
+	if ( !( value instanceof RelationValue ) ) {
+		return [];
+	}
+
+	return value.relations.map( ( relation: Relation ): RelationDisplayValueData => {
+		let subject: SubjectWithContext | undefined;
+		try {
+			subject = subjectStore.getSubject( relation.target ) as SubjectWithContext;
+			if ( !subject ) {
 				return getInvalidValueDisplay(
 					relation.target.text,
-					`${ error instanceof Error ? error.name : 'Unknown error' }: ${ error instanceof Error ? error.message : String( error ) }`
+					`Subject not found: ${ relation.target.text }`
 				);
 			}
-		} );
-	} else {
-		displayedValues.value = [];
-	}
-}, { immediate: true } );
+			return getValueDisplay( subject );
+		} catch ( error: unknown ) {
+			return getInvalidValueDisplay(
+				relation.target.text,
+				`${ error instanceof Error ? error.name : 'Unknown error' }: ${ error instanceof Error ? error.message : String( error ) }`
+			);
+		}
+	} );
+}
 
 function getValueDisplay( subject: SubjectWithContext ): RelationDisplayValueData {
 	return {
