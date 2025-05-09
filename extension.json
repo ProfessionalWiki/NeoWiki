@@ -255,7 +255,8 @@
 				"neowiki-edit-summary-help-text-subject",
 				"neowiki-edit-summary-help-text-schema",
 				"neowiki-subject-editor-title",
-				"neowiki-subject-editor-save"
+				"neowiki-subject-editor-save",
+				"neowiki-schema-editor-new-property"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

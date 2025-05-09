@@ -19,7 +19,7 @@
 			@click="addNewProperty"
 		>
 			<template #title>
-				+ New property
+				{{ $i18n( 'neowiki-schema-editor-new-property' ).text() }}
 			</template>
 		</CdxCard>
 	</div>
