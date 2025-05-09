@@ -10,7 +10,7 @@
 				{{ property.name.toString() }}
 			</template>
 			<template #description>
-				{{ property.type }}
+				{{ $i18n( NeoWikiServices.getComponentRegistry().getLabel( property.type ) ).text() }}
 			</template>
 		</CdxCard>
 
@@ -19,7 +19,7 @@
 			@click="addNewProperty"
 		>
 			<template #title>
-				+ New property
+				{{ $i18n( 'neowiki-schema-editor-new-property' ).text() }}
 			</template>
 		</CdxCard>
 	</div>
@@ -29,6 +29,7 @@
 import { CdxCard } from '@wikimedia/codex';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps<{
 	properties: PropertyDefinitionList;

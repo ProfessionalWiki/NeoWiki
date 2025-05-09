@@ -121,4 +121,22 @@ describe( 'TypeSpecificComponentRegistry', () => {
 		} );
 	} );
 
+	describe( 'getLabel', () => {
+		it( 'returns the label for a registered type', () => {
+			const registry = new TypeSpecificComponentRegistry();
+			registerComponent( registry, 'url', { label: 'UrlWrong' } );
+			registerComponent( registry, 'string', { label: 'StringRight' } );
+			registerComponent( registry, 'number', { label: 'NumberWrong' } );
+
+			const result = registry.getLabel( 'string' );
+			expect( result ).toEqual( 'StringRight' );
+		} );
+
+		it( 'throws an error for an unregistered type', () => {
+			const registry = new TypeSpecificComponentRegistry();
+			expect( () => registry.getLabel( 'unregistered' ) )
+				.toThrow( 'No label registered for property type: unregistered' );
+		} );
+	} );
+
 } );

@@ -85,5 +85,7 @@
 	"neowiki-edit-summary-help-text-subject": "Changes will be applied to all instances of the subject.",
 
 	"neowiki-subject-editor-title": "Editing $1",
-	"neowiki-subject-editor-save": "Save changes"
+	"neowiki-subject-editor-save": "Save changes",
+
+	"neowiki-schema-editor-new-property": "Add new property"
 }
