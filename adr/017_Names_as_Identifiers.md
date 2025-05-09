@@ -1,4 +1,4 @@
-## Names as Identifiers
+# Names as Identifiers
 
 Date: 2025-05-02
 
