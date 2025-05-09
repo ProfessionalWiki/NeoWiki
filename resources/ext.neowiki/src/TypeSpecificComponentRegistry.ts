@@ -73,4 +73,11 @@ export class TypeSpecificComponentRegistry {
 		return this.typeMap.get( propertyType )!.icon;
 	}
 
+	public getLabel( propertyType: string ): string {
+		if ( !this.typeMap.has( propertyType ) ) {
+			throw new Error( `No label registered for property type: ${ propertyType }` );
+		}
+		return this.typeMap.get( propertyType )!.label;
+	}
+
 }
