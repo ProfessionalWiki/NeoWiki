@@ -1,13 +1,14 @@
 <!-- eslint-disable vue/no-multiple-template-root -->
 <template>
 	<teleport
-		v-for="infobox in infoboxData"
-		:key="`infobox-${infobox.id}`"
-		:to="infobox.element"
+		v-for="view in viewsData"
+		:key="`view-${view.id}`"
+		:to="view.element"
 	>
 		<AutomaticInfobox
-			:subject-id="infobox.subjectId"
-			:can-edit-subject="infobox.canEditSubject"
+			v-if="view.type === 'infobox'"
+			:subject-id="view.subjectId"
+			:can-edit-subject="view.canEditSubject"
 		/>
 	</teleport>
 
@@ -23,38 +24,67 @@ import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
-interface InfoboxData {
+interface ViewData {
 	id: string;
-	element: Element;
+	type: string;
+	element: HTMLElement;
 	subjectId: SubjectId;
 	canEditSubject: boolean;
 }
 
-const infoboxData = ref<InfoboxData[]>( [] );
+const viewsData = ref<ViewData[]>( [] );
 
 const canCreateSubject = ref( false );
 const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
 
 onMounted( async (): Promise<void> => {
-	const elements = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
+	// TODO: This should look for a generic class for views, not just infoboxes.
+	const localViewsData = await getViewsData( document.querySelectorAll( '.neowiki-infobox[data-mw-neowiki-view-type]' ) );
 
 	await NeoWikiExtension.getInstance().getStoreStateLoader().loadSubjectsAndSchemas(
-		new Set( elements.map( ( element ) => element.getAttribute( 'data-subject-id' )! ) )
+		new Set( localViewsData.map( ( viewData ) => viewData.subjectId.text ) )
 	);
 
-	infoboxData.value = ( await Promise.all(
-		elements.map( async ( element ): Promise<InfoboxData> => {
-			const subjectId = element.getAttribute( 'data-subject-id' )!;
-
-			return {
-				id: subjectId,
-				element,
-				subjectId: new SubjectId( subjectId ),
-				canEditSubject: await subjectAuthorizer.canEditSubject( new SubjectId( subjectId ) )
-			};
-		} )
-	) );
+	viewsData.value = localViewsData;
 
 	canCreateSubject.value = document.querySelector( '#mw-indicator-neowiki-create-button' ) !== null;
 } );
+
+// eslint-disable-next-line no-undef
+async function getViewsData( elements: NodeListOf<Element> ): Promise<ViewData[]> {
+	const viewsData: ViewData[] = [];
+
+	for ( const element of elements ) {
+		if ( !( element instanceof HTMLElement ) ) {
+			continue;
+		}
+
+		const viewData = await getViewData( element );
+		if ( viewData ) {
+			viewsData.push( viewData );
+		}
+	}
+	return viewsData;
+}
+
+async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
+	if ( !element.dataset.mwNeowikiViewType || !element.dataset.mwSubjectId ) {
+		return null;
+	}
+
+	try {
+		const subjectId = new SubjectId( element.dataset.mwSubjectId );
+		return {
+			id: subjectId.text,
+			type: element.dataset.mwNeowikiViewType,
+			element: element,
+			subjectId: subjectId,
+			canEditSubject: await subjectAuthorizer.canEditSubject( subjectId )
+		};
+	} catch ( error ) {
+		console.error( error );
+		return null;
+	}
+}
+
 </script>
