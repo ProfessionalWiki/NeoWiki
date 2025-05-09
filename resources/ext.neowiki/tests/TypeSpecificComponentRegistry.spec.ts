@@ -81,7 +81,7 @@ describe( 'TypeSpecificComponentRegistry', () => {
 		it( 'throws an error for an unregistered type', () => {
 			const registry = new TypeSpecificComponentRegistry();
 			expect( () => registry.getValueDisplayComponent( 'unregistered' ) )
-				.toThrow( 'No value display component registered for property type: unregistered' );
+				.toThrow( 'Unknown property type: unregistered' );
 		} );
 	} );
 
@@ -99,7 +99,7 @@ describe( 'TypeSpecificComponentRegistry', () => {
 		it( 'throws an error for an unregistered type', () => {
 			const registry = new TypeSpecificComponentRegistry();
 			expect( () => registry.getValueEditingComponent( 'unregistered' ) )
-				.toThrow( 'No value editing component registered for property type: unregistered' );
+				.toThrow( 'Unknown property type: unregistered' );
 		} );
 	} );
 
@@ -117,7 +117,7 @@ describe( 'TypeSpecificComponentRegistry', () => {
 		it( 'throws an error for an unregistered type', () => {
 			const registry = new TypeSpecificComponentRegistry();
 			expect( () => registry.getAttributesEditor( 'unregistered' ) )
-				.toThrow( 'No attributes editor component registered for property type: unregistered' );
+				.toThrow( 'Unknown property type: unregistered' );
 		} );
 	} );
 
@@ -135,7 +135,7 @@ describe( 'TypeSpecificComponentRegistry', () => {
 		it( 'throws an error for an unregistered type', () => {
 			const registry = new TypeSpecificComponentRegistry();
 			expect( () => registry.getLabel( 'unregistered' ) )
-				.toThrow( 'No label registered for property type: unregistered' );
+				.toThrow( 'Unknown property type: unregistered' );
 		} );
 	} );
 
