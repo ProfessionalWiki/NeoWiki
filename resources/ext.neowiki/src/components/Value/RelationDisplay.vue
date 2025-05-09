@@ -29,7 +29,7 @@ import { RelationValue, Relation } from '@neo/domain/Value.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectWithContext } from '@neo/domain/SubjectWithContext.ts';
 
-interface RelationDisplayValue {
+interface RelationDisplayValueData {
 	text: string;
 	url?: string;
 	error?: string;
@@ -38,11 +38,11 @@ interface RelationDisplayValue {
 const props = defineProps<ValueDisplayProps<RelationProperty>>();
 
 const subjectStore = useSubjectStore();
-const displayedValues = ref<RelationDisplayValue[]>( [] );
+const displayedValues = ref<RelationDisplayValueData[]>( [] );
 
 watch( () => props.value, ( newValue ) => {
 	if ( newValue instanceof RelationValue ) {
-		displayedValues.value = newValue.relations.map( ( relation: Relation ): RelationDisplayValue => {
+		displayedValues.value = newValue.relations.map( ( relation: Relation ): RelationDisplayValueData => {
 			let subject: SubjectWithContext | undefined;
 			try {
 				subject = subjectStore.getSubject( relation.target ) as SubjectWithContext;
@@ -65,14 +65,14 @@ watch( () => props.value, ( newValue ) => {
 	}
 }, { immediate: true } );
 
-function getValueDisplay( subject: SubjectWithContext ): RelationDisplayValue {
+function getValueDisplay( subject: SubjectWithContext ): RelationDisplayValueData {
 	return {
 		text: subject.getLabel(),
 		url: mw.util.getUrl( subject.getPageIdentifiers().getPageName() )
 	};
 }
 
-function getInvalidValueDisplay( text: string, error?: string ): RelationDisplayValue {
+function getInvalidValueDisplay( text: string, error?: string ): RelationDisplayValueData {
 	return {
 		text: text,
 		error: error
