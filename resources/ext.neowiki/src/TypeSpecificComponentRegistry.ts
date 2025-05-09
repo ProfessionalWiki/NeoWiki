@@ -25,10 +25,14 @@ export class TypeSpecificComponentRegistry {
 	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
 	 */
 	public getValueDisplayComponent( propertyType: string ): Component {
+		return this.getTypeOrThrow( propertyType ).valueDisplayComponent;
+	}
+
+	private getTypeOrThrow( propertyType: string ): TypeSpecificStuff {
 		if ( !this.typeMap.has( propertyType ) ) {
-			throw new Error( `No value display component registered for property type: ${ propertyType }` );
+			throw new Error( `Unknown property type: ${ propertyType }` );
 		}
-		return this.typeMap.get( propertyType )!.valueDisplayComponent;
+		return this.typeMap.get( propertyType )!;
 	}
 
 	/**
@@ -36,10 +40,7 @@ export class TypeSpecificComponentRegistry {
 	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
 	 */
 	public getValueEditingComponent( propertyType: string ): Component {
-		if ( !this.typeMap.has( propertyType ) ) {
-			throw new Error( `No value editing component registered for property type: ${ propertyType }` );
-		}
-		return this.typeMap.get( propertyType )!.valueEditor;
+		return this.getTypeOrThrow( propertyType ).valueEditor;
 	}
 
 	/**
@@ -47,10 +48,7 @@ export class TypeSpecificComponentRegistry {
 	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
 	 */
 	public getAttributesEditor( propertyType: string ): Component {
-		if ( !this.typeMap.has( propertyType ) ) {
-			throw new Error( `No attributes editor component registered for property type: ${ propertyType }` );
-		}
-		return this.typeMap.get( propertyType )!.attributesEditor;
+		return this.getTypeOrThrow( propertyType ).attributesEditor;
 	}
 
 	public getPropertyTypes(): string[] {
@@ -67,17 +65,11 @@ export class TypeSpecificComponentRegistry {
 	}
 
 	public getIcon( propertyType: string ): Icon {
-		if ( !this.typeMap.has( propertyType ) ) {
-			throw new Error( `No icon registered for property type: ${ propertyType }` );
-		}
-		return this.typeMap.get( propertyType )!.icon;
+		return this.getTypeOrThrow( propertyType ).icon;
 	}
 
 	public getLabel( propertyType: string ): string {
-		if ( !this.typeMap.has( propertyType ) ) {
-			throw new Error( `No label registered for property type: ${ propertyType }` );
-		}
-		return this.typeMap.get( propertyType )!.label;
+		return this.getTypeOrThrow( propertyType ).label;
 	}
 
 }
