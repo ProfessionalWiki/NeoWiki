@@ -108,8 +108,9 @@ function updatePropertyAttributes<T extends PropertyDefinition>( attributes: Par
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
-const typeOptions = componentRegistry.getLabelsAndIcons().map( ( { value, label } ) => ( {
+const typeOptions = componentRegistry.getLabelsAndIcons().map( ( { value, label, icon } ) => ( {
 	value: value,
-	label: mw.message( label ).text()
+	label: mw.message( label ).text(),
+	icon: icon
 } ) );
 </script>
