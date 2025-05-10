@@ -96,7 +96,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			expect( repository.getSubject( new SubjectId( ID ) ) )
+			await expect( repository.getSubject( new SubjectId( ID ) ) )
 				.rejects.toThrow( 'No response found for URL: ' + url );
 		} );
 

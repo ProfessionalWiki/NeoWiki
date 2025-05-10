@@ -1,14 +1,52 @@
 import { VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ref } from 'vue';
 import TextInput from '@/components/Value/TextInput.vue';
-import { CdxField, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
+import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
+import { CdxField, CdxTextInput, ValidationMessages } from '@wikimedia/codex';
+import { Icon } from '@wikimedia/codex-icons';
 import { newStringValue } from '@neo/domain/Value';
-import { newTextProperty } from '@neo/domain/propertyTypes/Text';
+import { TextProperty, newTextProperty } from '@neo/domain/propertyTypes/Text';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
-import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
+import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
+import { useStringValueInput } from '@/composables/useStringValueInput.ts';
+
+const mockOnInput = vi.fn();
+const mockGetCurrentValue = vi.fn();
+const mockDisplayValues = ref<string[]>( [] );
+const mockFieldMessages = ref<ValidationMessages>( {} );
+const mockInputMessages = ref<ValidationMessages[]>( [] );
+const mockStartIcon = ref<Icon | undefined>( undefined ); // Text inputs might not use startIcon
+
+vi.mock( '@/composables/useStringValueInput.ts', () => ( {
+	useStringValueInput: vi.fn( () => ( {
+		displayValues: mockDisplayValues,
+		fieldMessages: mockFieldMessages,
+		inputMessages: mockInputMessages,
+		onInput: mockOnInput,
+		getCurrentValue: mockGetCurrentValue,
+		startIcon: mockStartIcon
+	} ) )
+} ) );
 
 describe( 'TextInput', () => {
+	function newWrapper( props: Partial<ValueInputProps<TextProperty>> = {} ): VueWrapper<InstanceType<typeof TextInput>> {
+		return createTestWrapper( TextInput, {
+			modelValue: undefined, // Default to undefined, composable handles initial state
+			label: 'Text Label',
+			property: newTextProperty( { name: 'testTextProp', multiple: false } ),
+			...props
+		} );
+	}
+
 	beforeEach( () => {
+		vi.clearAllMocks();
+		mockDisplayValues.value = [];
+		mockFieldMessages.value = {};
+		mockInputMessages.value = [];
+		mockStartIcon.value = undefined;
+		mockGetCurrentValue.mockReturnValue( undefined );
+
 		vi.stubGlobal( 'mw', {
 			message: vi.fn( ( str: string ) => ( {
 				text: () => str,
@@ -17,156 +55,129 @@ describe( 'TextInput', () => {
 		} );
 	} );
 
-	function createWrapper( props: Partial<InstanceType<typeof TextInput>['$props']> = {} ): VueWrapper<InstanceType<typeof TextInput>> {
-		return createTestWrapper( TextInput, {
-			modelValue: newStringValue( 'Test' ),
-			label: 'Test Label',
-			property: newTextProperty( { multiple: true } ),
-			...props
-		} );
-	}
-
-	const assertFieldStatus = (
-		field: VueWrapper<InstanceType<typeof CdxField>>,
-		expectedStatus: ValidationStatusType,
-		expectedErrorMessage: ValidationMessages = {}
-	): void => {
-		expect( field.props( 'status' ) ).toBe( expectedStatus );
-		expect( field.props( 'messages' ) ).toEqual( {
-			...expectedErrorMessage
-		} );
-	};
-
-	describe( 'Rendering component', () => {
-		it( 'renders single text field correctly', () => {
-			const wrapper = createWrapper();
-			expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 1 );
-			expect( wrapper.findAll( 'input' ) ).toHaveLength( 1 );
-			expect( wrapper.text() ).toContain( 'Test Label' );
-		} );
-
-		it( 'renders multiple text fields correctly', () => {
-			const wrapper = createWrapper( {
-				modelValue: newStringValue( 'Text1', 'Text2' )
+	describe( 'Initialization and Prop Passing', () => {
+		it( 'calls useStringValueInput with correct arguments', () => {
+			const testProperty = newTextProperty( { name: 'customTextProp', multiple: false, required: true } );
+			const testModelValue = newStringValue( 'initial' );
+			newWrapper( {
+				label: 'My Custom Text Label',
+				property: testProperty,
+				modelValue: testModelValue
 			} );
-			expect( wrapper.findAllComponents( CdxField ) ).toHaveLength( 2 );
-			expect( wrapper.findAll( 'input' ) ).toHaveLength( 2 );
+
+			expect( useStringValueInput ).toHaveBeenCalledTimes( 1 );
+			const useStringValueInputArgs = ( useStringValueInput as import( 'vitest' ).Mock ).mock.calls[ 0 ];
+
+			expect( useStringValueInputArgs[ 0 ].label ).toBe( 'My Custom Text Label' );
+			expect( useStringValueInputArgs[ 0 ].property ).toEqual( testProperty );
+			expect( useStringValueInputArgs[ 0 ].modelValue ).toEqual( testModelValue );
+			// TextProperty.name is 'text', which should be passed as the propertyType
+			expect( useStringValueInputArgs[ 2 ] ).toBe( 'text' );
 		} );
 	} );
 
-	describe( 'Validation', () => {
-		it( 'does not allow all empty fields when property value is required', async () => {
-			const wrapper = createWrapper( {
-				property: newTextProperty( { required: true, multiple: true } ),
-				modelValue: newStringValue( 'Text1', 'Text2' )
+	describe( 'Rendering based on props and composable state', () => {
+		it( 'renders a CdxField with the label and optional status', () => {
+			const wrapper = newWrapper( {
+				label: 'My Awesome Text Label',
+				property: newTextProperty( { required: false } )
 			} );
-			await wrapper.findAll( 'input' )[ 0 ].setValue( '' );
-			await wrapper.findAll( 'input' )[ 1 ].setValue( '' );
+			const field = wrapper.findComponent( CdxField );
 
-			const fields = wrapper.findAllComponents( CdxField );
-			assertFieldStatus( fields[ 0 ], 'error', { error: 'neowiki-field-required' } );
+			expect( field.exists() ).toBe( true );
+			expect( field.props( 'isFieldset' ) ).toBe( true );
+			expect( wrapper.text() ).toContain( 'My Awesome Text Label' );
+			expect( field.props( 'optional' ) ).toBe( true );
 		} );
 
-		it( 'validates minimum length in multiple fields', async () => {
-			const wrapper = createWrapper( {
-				property: newTextProperty( { minLength: 5 } ),
-				modelValue: newStringValue( 'Text1', '12345' )
+		it( 'renders CdxTextInput for single text value', () => {
+			mockDisplayValues.value = [ 'Some text' ];
+			// mockStartIcon.value = 'some-icon'; // If text inputs were to have icons
+			const wrapper = newWrapper( {
+				property: newTextProperty( { multiple: false } )
 			} );
 
-			await wrapper.findAll( 'input' )[ 1 ].setValue( '1234' );
-			const fields = wrapper.findAllComponents( CdxField );
-			assertFieldStatus( fields[ 1 ], 'error', { error: 'neowiki-field-min-length' } );
+			expect( wrapper.findComponent( CdxTextInput ).exists() ).toBe( true );
+			expect( wrapper.findComponent( NeoMultiTextInput ).exists() ).toBe( false );
+			const textInput = wrapper.findComponent( CdxTextInput );
+			expect( textInput.props( 'modelValue' ) ).toBe( 'Some text' );
 		} );
 
-		it( 'validates maximum length in multiple fields', async () => {
-			const wrapper = createWrapper( {
-				property: newTextProperty( { maxLength: 5 } ),
-				modelValue: newStringValue( 'Text1', '12345' )
+		it( 'renders NeoMultiTextInput for multiple text values', () => {
+			mockDisplayValues.value = [ 'Text 1', 'Text 2' ];
+			mockInputMessages.value = [ {}, { error: 'An error on Text 2' } ];
+			const wrapper = newWrapper( {
+				property: newTextProperty( { multiple: true } )
 			} );
 
-			await wrapper.findAll( 'input' )[ 1 ].setValue( '123456' );
-			const fields = wrapper.findAllComponents( CdxField );
-			assertFieldStatus( fields[ 1 ], 'error', { error: 'neowiki-field-max-length' } );
+			expect( wrapper.findComponent( NeoMultiTextInput ).exists() ).toBe( true );
+			const multiInput = wrapper.findComponent( NeoMultiTextInput );
+			expect( multiInput.props( 'modelValue' ) ).toEqual( [ 'Text 1', 'Text 2' ] );
+			expect( multiInput.props( 'messages' ) ).toEqual( [ {}, { error: 'An error on Text 2' } ] );
+			expect( multiInput.props( 'label' ) ).toBe( 'Text Label' ); // Passes down the main label
 		} );
 
-		it( 'allows empty input for optional single field', async () => {
-			const wrapper = createWrapper( {
-				property: newTextProperty( { required: false } ),
-				modelValue: newStringValue( '' )
+		it( 'passes fieldMessages to CdxField and sets status to error if fieldMessages.error exists (single input)', () => {
+			mockFieldMessages.value = { error: 'Main text field error' };
+			const wrapper = newWrapper( {
+				property: newTextProperty( { multiple: false } )
 			} );
+			const field = wrapper.findComponent( CdxField );
 
-			await wrapper.findAll( 'input' )[ 0 ].setValue( '' );
-
-			const fields = wrapper.findAllComponents( CdxField );
-			assertFieldStatus( fields[ 0 ], 'success' );
+			expect( field.props( 'messages' ) ).toEqual( { error: 'Main text field error' } );
+			expect( field.props( 'status' ) ).toBe( 'error' );
 		} );
 
-		it( 'shows error on duplicate when uniqueness is required', async () => {
-			const wrapper = createWrapper( {
-				property: newTextProperty( { multiple: true, uniqueItems: true } ),
-				modelValue: newStringValue( 'Text1', 'Text2', 'Text3' )
+		it( 'sets CdxField status to default if no fieldMessages.error (single input)', () => {
+			const wrapper = newWrapper( {
+				property: newTextProperty( { multiple: false } )
 			} );
+			const field = wrapper.findComponent( CdxField );
 
-			await wrapper.findAll( 'input' )[ 0 ].setValue( 'Text2' );
-
-			const fields = wrapper.findAllComponents( CdxField );
-			expect( fields[ 1 ].props( 'status' ) ).toBe( 'error' );
-			expect( fields[ 1 ].props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-unique' );
-		} );
-	} );
-
-	describe( 'Event handling', () => {
-		it( 'emits update:modelValue event when input changes', async () => {
-			const wrapper = createWrapper( {
-				modelValue: newStringValue( 'Initial' )
-			} );
-
-			await wrapper.findAll( 'input' )[ 0 ].setValue( 'New Value' );
-
-			const emitted = wrapper.emitted( 'update:modelValue' );
-			expect( emitted ).toBeTruthy();
-			expect( emitted![ 0 ][ 0 ] ).toEqual( newStringValue( 'New Value' ) );
+			expect( field.props( 'status' ) ).toBe( 'default' );
 		} );
 
-		it( 'handles multiple input changes correctly', async () => {
-			const wrapper = createWrapper( {
-				property: newTextProperty( { multiple: true } ),
-				modelValue: newStringValue( 'Text1', 'Text2' )
+		it( 'CdxField status remains default for multiple inputs even with fieldMessages.error', () => {
+			mockFieldMessages.value = { error: 'Error that should not set status for multiple' };
+			const wrapper = newWrapper( {
+				property: newTextProperty( { multiple: true } )
 			} );
+			const field = wrapper.findComponent( CdxField );
 
-			await wrapper.findAll( 'input' )[ 1 ].setValue( 'Updated Text2' );
-
-			const emitted = wrapper.emitted( 'update:modelValue' );
-			expect( emitted ).toBeTruthy();
-			expect( emitted![ 0 ][ 0 ] ).toEqual( newStringValue( 'Text1', 'Updated Text2' ) );
+			expect( field.props( 'status' ) ).toBe( 'default' );
+			expect( field.props( 'messages' ) ).toEqual( mockFieldMessages.value );
 		} );
 	} );
 
-	describe( 'getCurrentValue', () => {
-		it( 'returns updated value after input (single)', async () => {
-			const wrapper = createWrapper( {
-				property: newTextProperty( { multiple: false } ),
-				modelValue: newStringValue( 'Initial' )
+	describe( 'Event Handling', () => {
+		it( 'calls onInput from composable when CdxTextInput emits update:model-value (single)', async () => {
+			const wrapper = newWrapper( {
+				property: newTextProperty( { multiple: false } )
 			} );
-			await wrapper.find( 'input' ).setValue( 'Updated' );
-			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newStringValue( 'Updated' ) );
+			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:model-value', 'new single text' );
+
+			expect( mockOnInput ).toHaveBeenCalledWith( 'new single text' );
 		} );
 
-		it( 'returns updated values after input (multiple)', async () => {
-			const wrapper = createWrapper( {
-				property: newTextProperty( { multiple: true } ),
-				modelValue: newStringValue( 'First', 'Second' )
+		it( 'calls onInput from composable when NeoMultiTextInput emits update:model-value (multiple)', async () => {
+			const wrapper = newWrapper( {
+				property: newTextProperty( { multiple: true } )
 			} );
-			await wrapper.findAll( 'input' )[ 1 ].setValue( 'Updated Second' );
-			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newStringValue( 'First', 'Updated Second' ) );
-		} );
+			await wrapper.findComponent( NeoMultiTextInput ).vm.$emit( 'update:model-value', [ 'new text 1', 'new text 2' ] );
 
-		it( 'returns undefined for empty input', () => {
-			const wrapper = createWrapper( {
-				modelValue: newStringValue( '' )
-			} );
-			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
+			expect( mockOnInput ).toHaveBeenCalledWith( [ 'new text 1', 'new text 2' ] );
 		} );
 	} );
 
+	describe( 'Exposed Methods', () => {
+		it( 'exposes getCurrentValue from composable', () => {
+			const wrapper = newWrapper();
+			const expectedValue = newStringValue( 'exposed text value' );
+			mockGetCurrentValue.mockReturnValueOnce( expectedValue );
+
+			const exposedValue = ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue();
+			expect( mockGetCurrentValue ).toHaveBeenCalledTimes( 1 );
+			expect( exposedValue ).toEqual( expectedValue );
+		} );
+	} );
 } );
