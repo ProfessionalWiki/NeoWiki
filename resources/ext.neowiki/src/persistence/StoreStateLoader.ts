@@ -38,10 +38,8 @@ export class StoreStateLoader {
 			schemaStore.setSchema( subject.getSchemaName(), schema );
 
 			const referencedSubjects = await subject.getReferencedSubjects( this.subjectRepo );
-			if ( referencedSubjects.size() > 0 ) {
-				for ( const referencedSubject of referencedSubjects ) {
-					subjectStore.setSubject( referencedSubject );
-				}
+			for ( const referencedSubject of referencedSubjects ) {
+				subjectStore.setSubject( referencedSubject );
 			}
 
 			// TODO: we can just call await schemaStore.getOrFetchSchema().
