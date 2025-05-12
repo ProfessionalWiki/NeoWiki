@@ -2,16 +2,16 @@ This page shows Subjects defined on [[ACME Inc]].
 
 Data is displayed multiple times in different forms, demonstrating automatic and immediate update everywhere once you edit it in one location.
 
-<div class="neowiki-infobox" data-mw-subject-id="s1demo1aaaaaaa1"></div>
+<div class="neowiki-infobox" data-subject-id="s1demo1aaaaaaa1"></div>
 
 {{#table:Product|ACME Inc}}
 
 {{#table:Company|ACME Inc}}
 
-<div class="neowiki-infobox" data-mw-subject-id="s1demo1aaaaaaa4"></div>
-<div class="neowiki-infobox" data-mw-subject-id="s1demo1aaaaaaa3"></div>
-<div class="neowiki-infobox" data-mw-subject-id="s1demo1aaaaaaa2"></div>
-<div class="neowiki-infobox" data-mw-subject-id="s1demo1aaaaaaa1"></div>
+<div class="neowiki-infobox" data-subject-id="s1demo1aaaaaaa4"></div>
+<div class="neowiki-infobox" data-subject-id="s1demo1aaaaaaa3"></div>
+<div class="neowiki-infobox" data-subject-id="s1demo1aaaaaaa2"></div>
+<div class="neowiki-infobox" data-subject-id="s1demo1aaaaaaa1"></div>
 
 {{#table:Product|ACME Inc}}
 
