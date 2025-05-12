@@ -58,15 +58,18 @@ describe( 'UrlInput', () => {
 
 	describe( 'Initialization and Prop Passing', () => {
 		it( 'calls useStringValueInput with correct arguments', () => {
-			newWrapper();
+			const testProperty = newUrlProperty( { name: 'customUrlProp', multiple: true, required: true } );
+			const testModelValue = newStringValue( 'https://initial.url' );
+			newWrapper( {
+				property: testProperty,
+				modelValue: testModelValue
+			} );
 
 			expect( useStringValueInput ).toHaveBeenCalledTimes( 1 );
 			const useStringValueInputArgs = ( useStringValueInput as import( 'vitest' ).Mock ).mock.calls[ 0 ];
-
-			expect( useStringValueInputArgs[ 0 ].label ).toBe( 'URL Label' );
-			expect( useStringValueInputArgs[ 0 ].property ).toEqual( newUrlProperty( { name: 'testUrlProp', type: UrlType.typeName, multiple: false } ) );
-			expect( useStringValueInputArgs[ 0 ].modelValue ).toEqual( undefined );
-			expect( useStringValueInputArgs[ 2 ] ).toBe( UrlType.typeName );
+			expect( useStringValueInputArgs[ 0 ].value ).toEqual( testModelValue );
+			expect( useStringValueInputArgs[ 1 ].value ).toEqual( testProperty );
+			expect( useStringValueInputArgs[ 3 ] ).toBeInstanceOf( UrlType );
 		} );
 	} );
 

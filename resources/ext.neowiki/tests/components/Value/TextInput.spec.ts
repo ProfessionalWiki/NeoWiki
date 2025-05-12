@@ -6,7 +6,7 @@ import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
 import { CdxField, CdxTextInput, ValidationMessages } from '@wikimedia/codex';
 import { Icon } from '@wikimedia/codex-icons';
 import { newStringValue } from '@neo/domain/Value';
-import { TextProperty, newTextProperty } from '@neo/domain/propertyTypes/Text';
+import { TextProperty, newTextProperty, TextType } from '@neo/domain/propertyTypes/Text';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { useStringValueInput } from '@/composables/useStringValueInput.ts';
@@ -67,12 +67,9 @@ describe( 'TextInput', () => {
 
 			expect( useStringValueInput ).toHaveBeenCalledTimes( 1 );
 			const useStringValueInputArgs = ( useStringValueInput as import( 'vitest' ).Mock ).mock.calls[ 0 ];
-
-			expect( useStringValueInputArgs[ 0 ].label ).toBe( 'My Custom Text Label' );
-			expect( useStringValueInputArgs[ 0 ].property ).toEqual( testProperty );
-			expect( useStringValueInputArgs[ 0 ].modelValue ).toEqual( testModelValue );
-			// TextProperty.name is 'text', which should be passed as the propertyType
-			expect( useStringValueInputArgs[ 2 ] ).toBe( 'text' );
+			expect( useStringValueInputArgs[ 0 ].value ).toEqual( testModelValue );
+			expect( useStringValueInputArgs[ 1 ].value ).toEqual( testProperty );
+			expect( useStringValueInputArgs[ 3 ] ).toBeInstanceOf( TextType );
 		} );
 	} );
 

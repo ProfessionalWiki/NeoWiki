@@ -5,7 +5,6 @@ import { Value, StringValue } from '@neo/domain/Value.ts';
 import { newStringValue, ValueType } from '@neo/domain/Value.ts';
 import { MultiStringProperty } from '@neo/domain/PropertyDefinition.ts';
 import { PropertyType } from '@neo/domain/PropertyType.ts';
-import { ValueInputProps } from '@/components/Value/ValueInputContract';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { validateValue } from '@/composables/useValueValidation.ts';
 
@@ -15,25 +14,22 @@ interface UseStringValueInputReturn {
 	inputMessages: Ref<ValidationMessages[]>;
 	onInput: ( newValue: string | string[] ) => void;
 	getCurrentValue: () => Value | undefined;
-	startIcon: ComputedRef<Icon | undefined>;
+	startIcon: Icon | undefined;
 }
 
 export function useStringValueInput<P extends MultiStringProperty>(
-	props: ValueInputProps<P>,
+	modelValue: Ref<Value | undefined>,
+	property: Ref<P>,
 	emit: ( e: 'update:modelValue', value: Value | undefined ) => void,
-	propertyTypeName: string
+	propertyType: PropertyType
 ): UseStringValueInputReturn {
 	const internalValue: Ref<StringValue | undefined> = ref( undefined );
 	const fieldMessages: Ref<ValidationMessages> = ref( {} );
 	const inputMessages: Ref<ValidationMessages[]> = ref( [] );
 
-	const propertyType: ComputedRef<PropertyType> = computed( () =>
-		NeoWikiServices.getPropertyTypeRegistry().getType( propertyTypeName )
-	);
-
-	const startIcon: ComputedRef<Icon> = computed( () =>
-		NeoWikiServices.getComponentRegistry().getIcon( propertyTypeName )
-	);
+	const startIcon: Icon | undefined = propertyType ?
+		NeoWikiServices.getComponentRegistry().getIcon( propertyType.getTypeName() ) :
+		undefined;
 
 	function initializeInternalValue( value: Value | undefined ): void {
 		if ( value && value.type === ValueType.String ) {
@@ -48,7 +44,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		}
 	}
 
-	initializeInternalValue( props.modelValue );
+	initializeInternalValue( modelValue.value );
 
 	const displayValues: ComputedRef<string[]> = computed<string[]>( () =>
 		internalValue.value ? internalValue.value.strings : []
@@ -58,18 +54,11 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		const perInputErrors: ValidationMessages[] = Array( valuesToValidate.length ).fill( {} );
 		const currentValidStrings: string[] = [];
 
-		if ( !propertyType.value ) {
-			valuesToValidate.forEach( ( _, index ) => {
-				perInputErrors[ index ] = { error: 'Property type configuration error.' };
-			} );
-			return { errors: perInputErrors, validStrings: [] };
-		}
-
 		valuesToValidate.forEach( ( inputValue, index ) => {
-			if ( props.property.uniqueItems && inputValue !== '' && valuesToValidate.slice( 0, index ).includes( inputValue ) ) {
+			if ( property.value.uniqueItems && inputValue !== '' && valuesToValidate.slice( 0, index ).includes( inputValue ) ) {
 				perInputErrors[ index ] = { error: mw.message( 'neowiki-field-unique' ).text() };
 			} else {
-				perInputErrors[ index ] = validateValue( newStringValue( inputValue ), propertyType.value, props.property );
+				perInputErrors[ index ] = validateValue( newStringValue( inputValue ), propertyType, property.value );
 			}
 
 			if ( Object.keys( perInputErrors[ index ] ).length === 0 ) {
@@ -84,20 +73,24 @@ export function useStringValueInput<P extends MultiStringProperty>(
 	}
 
 	function getFieldMessagesForDisplay( errors: ValidationMessages[] ): ValidationMessages {
-		if ( !props.property.multiple ) {
-			const firstError = errors.find( ( error ) => error && Object.keys( error ).length > 0 );
-			return firstError || {};
+		if ( property.value.multiple ) {
+			// We don't show a summary message for multiple inputs.
+			return {};
 		}
-		// TODO: Do we have a use case for a summary message for multiple inputs?
-		return {};
+
+		return errors.find( ( error ) => error && Object.keys( error ).length > 0 ) || {};
+	}
+
+	function updateValidationMessages( errors: ValidationMessages[] ): void {
+		inputMessages.value = errors;
+		fieldMessages.value = getFieldMessagesForDisplay( errors );
 	}
 
 	function onInput( newValue: string | string[] ): void {
 		const currentInputValues = typeof newValue === 'string' ? [ newValue ] : newValue;
 		const { errors, validStrings } = doValidateInputs( currentInputValues );
 
-		inputMessages.value = errors;
-		fieldMessages.value = getFieldMessagesForDisplay( errors );
+		updateValidationMessages( errors );
 
 		let newStringValueInstance: StringValue | undefined;
 
@@ -120,24 +113,15 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		}
 	}
 
-	watch( () => props.modelValue, ( newModelValue ) => {
+	watch( modelValue, ( newModelValue ) => {
 		initializeInternalValue( newModelValue );
-		const validationResult = doValidateInputs( displayValues.value );
-		inputMessages.value = validationResult.errors;
-		fieldMessages.value = getFieldMessagesForDisplay( validationResult.errors );
-	} );
+		updateValidationMessages( doValidateInputs( displayValues.value ).errors );
+	}, { immediate: true } );
 
 	// Watch for changes in property configuration (e.g., required, uniqueItems)
-	// TODO: Do we need to monitor property configuration changes at all?
-	watch( () => props.property, () => {
-		const validationResult = doValidateInputs( displayValues.value ); // Re-validate with current values
-		inputMessages.value = validationResult.errors;
-		fieldMessages.value = getFieldMessagesForDisplay( validationResult.errors );
+	watch( property, () => {
+		updateValidationMessages( doValidateInputs( displayValues.value ).errors );
 	}, { deep: true } );
-
-	const initialValidation = doValidateInputs( displayValues.value );
-	inputMessages.value = initialValidation.errors;
-	fieldMessages.value = getFieldMessagesForDisplay( initialValidation.errors );
 
 	const getCurrentValue = (): Value | undefined =>
 		internalValue.value;
