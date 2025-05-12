@@ -5,8 +5,8 @@
 		:key="`view-${view.id}`"
 		:to="view.element"
 	>
+		<!-- TODO: Implement other views -->
 		<AutomaticInfobox
-			v-if="view.type === 'infobox'"
 			:subject-id="view.subjectId"
 			:can-edit-subject="view.canEditSubject"
 		/>
@@ -26,7 +26,6 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
 interface ViewData {
 	id: string;
-	type: string;
 	element: HTMLElement;
 	subjectId: SubjectId;
 	canEditSubject: boolean;
@@ -38,8 +37,7 @@ const canCreateSubject = ref( false );
 const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
 
 onMounted( async (): Promise<void> => {
-	// TODO: This should look for a generic class for views, not just infoboxes.
-	const localViewsData = await getViewsData( document.querySelectorAll( '.neowiki-infobox[data-mw-neowiki-view-type]' ) );
+	const localViewsData = await getViewsData( document.querySelectorAll( '.ext-neowiki-view' ) );
 
 	await NeoWikiExtension.getInstance().getStoreStateLoader().loadSubjectsAndSchemas(
 		new Set( localViewsData.map( ( viewData ) => viewData.subjectId.text ) )
@@ -51,14 +49,10 @@ onMounted( async (): Promise<void> => {
 } );
 
 // eslint-disable-next-line no-undef
-async function getViewsData( elements: NodeListOf<Element> ): Promise<ViewData[]> {
+async function getViewsData( elements: NodeListOf<HTMLElement> ): Promise<ViewData[]> {
 	const viewsData: ViewData[] = [];
 
 	for ( const element of elements ) {
-		if ( !( element instanceof HTMLElement ) ) {
-			continue;
-		}
-
 		const viewData = await getViewData( element );
 		if ( viewData ) {
 			viewsData.push( viewData );
@@ -68,15 +62,14 @@ async function getViewsData( elements: NodeListOf<Element> ): Promise<ViewData[]
 }
 
 async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
-	if ( !element.dataset.mwNeowikiViewType || !element.dataset.mwSubjectId ) {
+	if ( !element.dataset.subjectId ) {
 		return null;
 	}
 
 	try {
-		const subjectId = new SubjectId( element.dataset.mwSubjectId );
+		const subjectId = new SubjectId( element.dataset.subjectId );
 		return {
 			id: subjectId.text,
-			type: element.dataset.mwNeowikiViewType,
 			element: element,
 			subjectId: subjectId,
 			canEditSubject: await subjectAuthorizer.canEditSubject( subjectId )
