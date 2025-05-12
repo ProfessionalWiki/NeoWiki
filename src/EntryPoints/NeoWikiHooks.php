@@ -101,7 +101,7 @@ class NeoWikiHooks {
 		return Html::element(
 			'div',
 			[
-				'class' => 'neowiki-infobox',
+				'class' => 'ext-neowiki-view',
 				'data-subject-id' => $subject->getId()->text,
 			]
 		);

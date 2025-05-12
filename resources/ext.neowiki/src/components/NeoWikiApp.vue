@@ -1,13 +1,14 @@
 <!-- eslint-disable vue/no-multiple-template-root -->
 <template>
 	<teleport
-		v-for="infobox in infoboxData"
-		:key="`infobox-${infobox.id}`"
-		:to="infobox.element"
+		v-for="view in viewsData"
+		:key="`view-${view.id}`"
+		:to="view.element"
 	>
+		<!-- TODO: Implement other views -->
 		<AutomaticInfobox
-			:subject-id="infobox.subjectId"
-			:can-edit-subject="infobox.canEditSubject"
+			:subject-id="view.subjectId"
+			:can-edit-subject="view.canEditSubject"
 		/>
 	</teleport>
 
@@ -23,38 +24,60 @@ import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
-interface InfoboxData {
+interface ViewData {
 	id: string;
-	element: Element;
+	element: HTMLElement;
 	subjectId: SubjectId;
 	canEditSubject: boolean;
 }
 
-const infoboxData = ref<InfoboxData[]>( [] );
+const viewsData = ref<ViewData[]>( [] );
 
 const canCreateSubject = ref( false );
 const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
 
 onMounted( async (): Promise<void> => {
-	const elements = Array.from( document.querySelectorAll( '.neowiki-infobox' ) );
+	const localViewsData = await getViewsData( document.querySelectorAll( '.ext-neowiki-view' ) );
 
 	await NeoWikiExtension.getInstance().getStoreStateLoader().loadSubjectsAndSchemas(
-		new Set( elements.map( ( element ) => element.getAttribute( 'data-subject-id' )! ) )
+		new Set( localViewsData.map( ( viewData ) => viewData.subjectId.text ) )
 	);
 
-	infoboxData.value = ( await Promise.all(
-		elements.map( async ( element ): Promise<InfoboxData> => {
-			const subjectId = element.getAttribute( 'data-subject-id' )!;
-
-			return {
-				id: subjectId,
-				element,
-				subjectId: new SubjectId( subjectId ),
-				canEditSubject: await subjectAuthorizer.canEditSubject( new SubjectId( subjectId ) )
-			};
-		} )
-	) );
+	viewsData.value = localViewsData;
 
 	canCreateSubject.value = document.querySelector( '#mw-indicator-neowiki-create-button' ) !== null;
 } );
+
+// eslint-disable-next-line no-undef
+async function getViewsData( elements: NodeListOf<HTMLElement> ): Promise<ViewData[]> {
+	const viewsData: ViewData[] = [];
+
+	for ( const element of elements ) {
+		const viewData = await getViewData( element );
+		if ( viewData ) {
+			viewsData.push( viewData );
+		}
+	}
+	return viewsData;
+}
+
+async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
+	if ( !element.dataset.subjectId ) {
+		return null;
+	}
+
+	try {
+		const subjectId = new SubjectId( element.dataset.subjectId );
+		return {
+			id: subjectId.text,
+			element: element,
+			subjectId: subjectId,
+			canEditSubject: await subjectAuthorizer.canEditSubject( subjectId )
+		};
+	} catch ( error ) {
+		console.error( error );
+		return null;
+	}
+}
+
 </script>
