@@ -33,6 +33,25 @@ const schemaEditor = ref<SchemaEditorExposes | null>( null );
 const schemaRepository = NeoWikiServices.getSchemaRepository();
 
 const saveSchema = async (): Promise<void> => {
-	await schemaRepository.saveSchema( schemaEditor.value!.getSchema() )
+	const schema = schemaEditor.value!.getSchema();
+
+	try {
+		await schemaRepository.saveSchema( schema );
+		mw.notify(
+			'TODO: No edit summary provided.',
+			{
+				title: `Updated ${ schema.getName() } schema`,
+				type: 'success'
+			}
+		);
+	} catch ( error ) {
+		mw.notify(
+			error instanceof Error ? error.message : String( error ),
+			{
+				title: `Failed to update ${ schema.getName() } schema.`,
+				type: 'error'
+			}
+		);
+	}
 };
 </script>
