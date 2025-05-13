@@ -1,85 +1,61 @@
 <template>
-	<BaseMultiStringInput
-		v-bind="$props"
-		:start-icon="startIcon"
-		property-type-name="text"
-		input-type="text"
-		root-class="neo-text-field"
-		@update:model-value="value => onInput( value )"
-	/>
+	<CdxField
+		:is-fieldset="true"
+		:messages="fieldMessages"
+		:status="fieldMessages.error && !props.property.multiple ? 'error' : 'default'"
+		:optional="props.property.required === false"
+	>
+		<template #label>
+			{{ props.label }}
+		</template>
+		<NeoMultiTextInput
+			v-if="props.property.multiple"
+			:model-value="displayValues"
+			:label="props.label"
+			:messages="inputMessages"
+			:start-icon="startIcon"
+			@update:model-value="onInput"
+		/>
+		<CdxTextInput
+			v-else
+			:model-value="displayValues[0] === undefined ? '' : displayValues[0]"
+			:start-icon="startIcon"
+			@update:model-value="onInput"
+		/>
+	</CdxField>
 </template>
 
-<script lang="ts">
-import { Value } from '@neo/domain/Value.ts';
-</script>
-
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import BaseMultiStringInput from '@/components/Value/BaseMultiStringInput.vue';
+import { CdxField, CdxTextInput } from '@wikimedia/codex';
+import { toRef } from 'vue';
+import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
 import { TextProperty, TextType } from '@neo/domain/propertyTypes/Text.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
-import { newStringValue, ValueType, StringValue } from '@neo/domain/Value.ts';
+import { useStringValueInput } from '@/composables/useStringValueInput.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 const props = withDefaults(
 	defineProps<ValueInputProps<TextProperty>>(),
 	{
-		modelValue: () => newStringValue( '' ),
+		modelValue: undefined,
 		label: ''
 	}
 );
 
-const startIcon = NeoWikiServices.getComponentRegistry().getIcon( TextType.typeName );
-
 const emit = defineEmits<ValueInputEmits>();
 
-const internalValue = ref<Value | undefined>( props.modelValue );
+const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( TextType.typeName );
 
-watch( () => props.modelValue, ( newValue ) => {
-	internalValue.value = newValue;
-} );
-
-function onInput( value: Value | undefined ): void {
-	internalValue.value = value;
-	emit( 'update:modelValue', value );
-}
-
-const isValueEmpty = ( val: Value | undefined ): boolean =>
-	!val || ( val.type === ValueType.String && ( val as StringValue ).strings.length === 0 );
+const {
+	displayValues,
+	fieldMessages,
+	inputMessages,
+	startIcon,
+	onInput,
+	getCurrentValue
+} = useStringValueInput( toRef( props, 'modelValue' ), toRef( props, 'property' ), emit, propertyType );
 
 defineExpose<ValueInputExposes>( {
-	getCurrentValue: function(): Value | undefined {
-		return isValueEmpty( internalValue.value ) ? undefined : internalValue.value;
-	}
+	getCurrentValue: getCurrentValue
 } );
 
 </script>
-
-<style lang="scss">
-@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
-
-// Only text-specific styles
-.neo-text-field {
-	label {
-		font-weight: bold;
-	}
-
-	&__input-wrapper {
-		display: flex;
-		align-items: center;
-		margin-bottom: 8px;
-
-		.cdx-field {
-			flex: 0 0 100%;
-		}
-	}
-
-	&__add-button {
-		float: right;
-		margin-top: 8px;
-
-		.cdx-icon {
-			color: $color-success;
-		}
-	}
-}
-</style>
