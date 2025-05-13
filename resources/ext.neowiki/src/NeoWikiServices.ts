@@ -5,13 +5,15 @@ import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SubjectValidator } from '@neo/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@neo/domain/PropertyType.ts';
+import { SchemaRepository } from '@/application/SchemaRepository.ts';
 
 export enum Service { // TODO: make private
 	ComponentRegistry = 'ComponentRegistry',
 	SchemaAuthorizer = 'SchemaAuthorizer',
 	SubjectAuthorizer = 'SubjectAuthorizer',
 	SubjectValidator = 'SubjectValidator',
-	PropertyTypeRegistry = 'PropertyTypeRegistry'
+	PropertyTypeRegistry = 'PropertyTypeRegistry',
+	SchemaRepository = 'SchemaRepository'
 }
 
 export class NeoWikiServices {
@@ -30,7 +32,8 @@ export class NeoWikiServices {
 			[ Service.SchemaAuthorizer ]: neoWiki.newSchemaAuthorizer(),
 			[ Service.SubjectAuthorizer ]: neoWiki.newSubjectAuthorizer(),
 			[ Service.SubjectValidator ]: neoWiki.newSubjectValidator(),
-			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry()
+			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry(),
+			[ Service.SchemaRepository ]: neoWiki.getSchemaRepository()
 		};
 	}
 
@@ -52,6 +55,10 @@ export class NeoWikiServices {
 
 	public static getSubjectValidator(): SubjectValidator {
 		return inject( Service.SubjectValidator ) as SubjectValidator;
+	}
+
+	public static getSchemaRepository(): SchemaRepository {
+		return inject( Service.SchemaRepository ) as SchemaRepository;
 	}
 
 }

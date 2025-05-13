@@ -24,12 +24,15 @@ import { CdxButton, CdxIcon, CdxTextArea } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 import { Schema } from '@neo/domain/Schema.ts';
 import { ref } from 'vue';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 defineProps<{ initialSchema: Schema }>();
 
 const schemaEditor = ref<SchemaEditorExposes | null>( null );
 
+const schemaRepository = NeoWikiServices.getSchemaRepository();
+
 const saveSchema = async (): Promise<void> => {
-	console.log( 'TODO: save schema', schemaEditor.value!.getSchema() );
+	await schemaRepository.saveSchema( schemaEditor.value!.getSchema() )
 };
 </script>
