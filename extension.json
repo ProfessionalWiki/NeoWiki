@@ -171,7 +171,8 @@
 				"CdxMenuButton",
 				"useResizeObserver",
 				"CdxMessage",
-				"CdxToggleSwitch"
+				"CdxToggleSwitch",
+				"CdxMenu"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",
@@ -256,7 +257,8 @@
 				"neowiki-edit-summary-help-text-schema",
 				"neowiki-subject-editor-title",
 				"neowiki-subject-editor-save",
-				"neowiki-schema-editor-new-property"
+				"neowiki-schema-editor-new-property",
+				"neowiki-schema-editor-optional"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

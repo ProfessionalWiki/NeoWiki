@@ -1,28 +1,37 @@
 <template>
-	<div class="text-attributes">
-		<CdxCheckbox
-			:model-value="property.multiple"
-			:label="$i18n( 'neowiki-property-editor-multiple' ).text()"
-			@update:model-value="updateMultiple"
-		>
-			<small>{{ $i18n( 'neowiki-property-editor-multiple' ).text() }}</small>
-		</CdxCheckbox>
+	<!-- cdx-field class is used for spacing -->
+	<div class="text-attributes cdx-field">
+		<CdxField :hide-label="true">
+			<CdxToggleSwitch
+				:model-value="property.multiple"
+				:align-switch="true"
+				:label="$i18n( 'neowiki-property-editor-multiple' ).text()"
+				@update:model-value="updateMultiple"
+			>
+				{{ $i18n( 'neowiki-property-editor-multiple' ).text() }}
+			</CdxToggleSwitch>
+		</CdxField>
 
-		<CdxCheckbox
+		<CdxField
 			v-if="property.multiple"
-			:model-value="property.uniqueItems"
-			:label="$i18n( 'neowiki-property-editor-unique-items' ).text()"
-			@update:model-value="updateUniqueItems"
+			:hide-label="true"
 		>
-			<small>{{ $i18n( 'neowiki-property-editor-unique-items' ).text() }}</small>
-		</CdxCheckbox>
+			<CdxToggleSwitch
+				:model-value="property.uniqueItems"
+				:align-switch="true"
+				:label="$i18n( 'neowiki-property-editor-unique-items' ).text()"
+				@update:model-value="updateUniqueItems"
+			>
+				{{ $i18n( 'neowiki-property-editor-unique-items' ).text() }}
+			</CdxToggleSwitch>
+		</CdxField>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { MultiStringProperty } from '@neo/domain/PropertyDefinition.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { CdxCheckbox } from '@wikimedia/codex';
+import { CdxToggleSwitch, CdxField } from '@wikimedia/codex';
 
 defineProps<AttributesEditorProps<MultiStringProperty>>();
 const emit = defineEmits<AttributesEditorEmits<MultiStringProperty>>();

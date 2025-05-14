@@ -1,5 +1,6 @@
 <template>
-	<div class="number-attributes">
+	<!-- cdx-field class is used for spacing -->
+	<div class="number-attributes cdx-field">
 		<CdxField>
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-minimum' ).text() }}

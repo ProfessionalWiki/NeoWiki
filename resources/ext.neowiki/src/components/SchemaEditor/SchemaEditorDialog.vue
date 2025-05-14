@@ -6,24 +6,20 @@
 				:initial-schema="initialSchema"
 			/>
 
-			<CdxTextArea />
-
-			<CdxButton
-				action="progressive"
-				weight="primary"
-				@click="saveSchema"
-			>
-				<CdxIcon :icon="cdxIconCheck" />
-				{{ $i18n( 'neowiki-save-schema' ).text() }}
-			</CdxButton>
+			<template #footer>
+				<EditSummary
+					:save-button-label="$i18n( 'neowiki-save-schema' ).text()"
+					@save="saveSchema"
+				/>
+			</template>
 		</CdxDialog>
 	</div>
 </template>
 
 <script setup lang="ts">
 import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
-import { CdxButton, CdxDialog, CdxIcon, CdxTextArea } from '@wikimedia/codex';
-import { cdxIconCheck } from '@wikimedia/codex-icons';
+import EditSummary from '@/components/common/EditSummary.vue';
+import { CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@neo/domain/Schema.ts';
 import { ref } from 'vue';
 

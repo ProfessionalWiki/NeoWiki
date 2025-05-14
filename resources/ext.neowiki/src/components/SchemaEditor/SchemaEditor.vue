@@ -1,5 +1,8 @@
 <template>
-	<div class="ext-neowiki-schema-editor">
+	<div
+		class="ext-neowiki-schema-editor"
+		:class="{ 'ext-neowiki-schema-editor--has-selected-property': selectedProperty !== undefined }"
+	>
 		<PropertyList
 			:properties="currentSchema.getPropertyDefinitions()"
 			@property-selected="onPropertySelected"
@@ -91,8 +94,86 @@ defineExpose( {
 } );
 </script>
 
-<style scoped>
+<style lang="scss">
+@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
+
 .ext-neowiki-schema-editor {
-	display: flex;
+	display: grid;
+
+	.ext-neowiki-schema-editor {
+		&__property-list,
+		&__property-editor {
+			padding: $spacing-100;
+
+			@media ( min-width: $min-width-breakpoint-desktop ) {
+				padding: $spacing-150;
+			}
+		}
+
+		&__property-list__menu {
+			width: auto;
+
+			@media ( min-width: $min-width-breakpoint-desktop ) {
+				margin: (-$spacing-50) (-$spacing-75);
+
+				.cdx-menu-item {
+					border-top-right-radius: 0;
+					border-bottom-right-radius: 0;
+				}
+			}
+		}
+	}
+
+	.cdx-select-vue {
+		display: block; /* Make the select element take the full width of the parent element */
+	}
+
+	&--has-selected-property {
+		/*
+			TODO: Temporary solution for responsive layout.
+			Property list and editor should be in multiple steps for mobile.
+		*/
+		@media ( max-width: $max-width-breakpoint-tablet ) {
+			.ext-neowiki-schema-editor {
+				&__property-list {
+					overflow-x: auto;
+					padding: 0;
+				}
+
+				&__property-list__menu {
+					.cdx-menu__listbox {
+						display: flex;
+						white-space: nowrap;
+					}
+
+					&.cdx-menu--has-footer .cdx-menu-item:last-of-type:not( :first-of-type ) {
+						margin-top: 0;
+					}
+
+					.cdx-menu-item {
+						border-radius: 0;
+					}
+				}
+
+				&__property-editor {
+					border-block-start: $border-subtle;
+				}
+			}
+		}
+
+		@media ( min-width: $min-width-breakpoint-desktop ) {
+			grid-template-columns: minmax( 0, 20rem ) auto;
+
+			.ext-neowiki-schema-editor {
+				&__property-list__menu {
+					margin-inline-end: -$spacing-150;
+				}
+
+				&__property-editor {
+					border-inline-start: $border-subtle;
+				}
+			}
+		}
+	}
 }
 </style>
