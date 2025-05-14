@@ -9,9 +9,9 @@ export interface SchemaLookup {
 
 export class InMemorySchemaLookup implements SchemaLookup {
 
-	private readonly schemas: Map<SchemaName, Schema> = new Map<SchemaName, Schema>();
+	protected readonly schemas: Map<SchemaName, Schema> = new Map<SchemaName, Schema>();
 
-	private readonly schemaNames: Set<string> = new Set<string>();
+	protected readonly schemaNames: Set<string> = new Set<string>();
 
 	public constructor( schemas: Schema[] ) {
 		for ( const schema of schemas ) {

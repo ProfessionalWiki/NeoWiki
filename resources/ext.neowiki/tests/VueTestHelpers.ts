@@ -1,7 +1,7 @@
 import { mount, VueWrapper } from '@vue/test-utils';
-import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { Component, DefineComponent } from 'vue';
 import { vi } from 'vitest';
+import { NeoWikiTestServices } from './NeoWikiTestServices.ts';
 
 export function createTestWrapper<TComponent extends DefineComponent<any, any, any>>(
 	component: Component,
@@ -12,7 +12,7 @@ export function createTestWrapper<TComponent extends DefineComponent<any, any, a
 		{
 			props: props,
 			global: {
-				provide: NeoWikiServices.getServices(),
+				provide: NeoWikiTestServices.getServices(),
 				mocks: {
 					$i18n: vi.fn().mockImplementation( ( key ) => ( {
 						text: () => key
