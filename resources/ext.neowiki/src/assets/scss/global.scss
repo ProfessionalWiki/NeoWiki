@@ -1,43 +1,5 @@
 @use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
-.neo-cdx-field-inline {
-	display: grid;
-	grid-template-columns: auto 1fr;
-	grid-column-gap: $spacing-75;
-
-	.cdx-label {
-		width: $size-1600;
-	}
-
-	.cdx-field__control {
-		grid-column: 2 / 3;
-		grid-row: 1 / 2;
-
-		.cdx-select-vue {
-			display: block;
-		}
-	}
-
-	.cdx-label__description {
-		margin-top: $spacing-25;
-	}
-
-	.cdx-field__help-text {
-		grid-column: 2 / 3;
-		grid-row: 3 / 4;
-		margin-top: 0;
-		display: block;
-	}
-
-	:has( .cdx-label__description:empty ) .cdx-field__control {
-		margin-bottom: $spacing-35;
-	}
-
-	:has( .cdx-field__help-text:empty ) {
-		grid-template-rows: auto auto;
-	}
-}
-
 input[ type='number' ] {
 	-moz-appearance: textfield;
 
@@ -53,15 +15,6 @@ input[ type='number' ] {
 
 		&:hover {
 			background: $background-color-interactive;
-		}
-	}
-}
-
-.cdx-field {
-	&__validation-message {
-		svg {
-			height: $size-icon-small !important;
-			width: $size-icon-small !important;
 		}
 	}
 }
@@ -88,46 +41,6 @@ input[ type='number' ] {
 
 .neo-float-right {
 	float: right;
-}
-
-.cdx-text-input {
-	&--status-default {
-		input {
-			border: $border-width-base solid rgba( $border-color-disabled, 0.55 ) !important;
-		}
-	}
-
-	&__end-icon {
-		svg {
-			color: $color-success !important;
-		}
-	}
-}
-
-.cdx-checkbox {
-	cursor: pointer !important;
-	padding: 5px;
-
-	small {
-		cursor: pointer !important;
-		font-size: $font-size-small !important;
-	}
-}
-
-$background-color-backdrop-light: #6c757dbf;
-
-.cdx-dialog-backdrop {
-	background-color: $background-color-backdrop-light !important;
-}
-
-.cdx-dialog {
-	border-radius: 10px !important;
-}
-
-.cdx-select-vue--enabled .cdx-select-vue__handle {
-	border-radius: 5px !important;
-	background-color: #fff !important;
-	border: $border-width-base solid rgba( $border-color-disabled, 0.55 ) !important;
 }
 
 .neo-button {

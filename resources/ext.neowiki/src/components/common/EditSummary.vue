@@ -1,5 +1,5 @@
 <template>
-	<div class="ext-neowiki-dialog-footer">
+	<div class="ext-neowiki-edit-summary">
 		<CdxField
 			:optional="true"
 		>
@@ -14,14 +14,14 @@
 				{{ $i18n( 'neowiki-edit-summary-help-text-subject' ).text() }}
 			</template>
 		</CdxField>
-		<div class="ext-neowiki-dialog-footer__actions">
+		<div class="ext-neowiki-edit-summary__actions">
 			<CdxButton
 				action="progressive"
 				weight="primary"
 				@click="onSaveClick"
 			>
 				<CdxIcon :icon="cdxIconCheck" />
-				{{ $i18n( 'neowiki-subject-editor-save' ).text() }}
+				{{ props.saveButtonLabel }}
 			</CdxButton>
 		</div>
 	</div>
@@ -31,6 +31,10 @@
 import { ref } from 'vue';
 import { CdxButton, CdxField, CdxIcon, CdxTextArea } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
+
+const props = defineProps<{
+	saveButtonLabel: string;
+}>();
 
 const editSummary = ref( '' );
 
@@ -47,7 +51,7 @@ const onSaveClick = (): void => {
 <style lang="scss">
 @use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
 
-.ext-neowiki-dialog-footer {
+.ext-neowiki-edit-summary {
 	display: flex;
 	flex-direction: column;
 	gap: $spacing-50;

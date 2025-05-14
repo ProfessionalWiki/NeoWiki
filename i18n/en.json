@@ -87,5 +87,6 @@
 	"neowiki-subject-editor-title": "Editing $1",
 	"neowiki-subject-editor-save": "Save changes",
 
-	"neowiki-schema-editor-new-property": "Add new property"
+	"neowiki-schema-editor-new-property": "Add new property",
+	"neowiki-schema-editor-optional": "Optional"
 }

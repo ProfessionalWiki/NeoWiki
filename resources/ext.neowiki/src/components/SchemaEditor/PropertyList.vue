@@ -1,32 +1,20 @@
 <template>
 	<div class="ext-neowiki-schema-editor__property-list">
-		<CdxCard
-			v-for="( property ) in properties"
-			:key="property.name.toString()"
-			url="#"
-			@click="emit( 'propertySelected', property.name )"
-		>
-			<template #title>
-				{{ property.name.toString() }}
-			</template>
-			<template #description>
-				{{ $i18n( NeoWikiServices.getComponentRegistry().getLabel( property.type ) ).text() }}
-			</template>
-		</CdxCard>
-
-		<CdxCard
-			url="#"
-			@click="addNewProperty"
-		>
-			<template #title>
-				{{ $i18n( 'neowiki-schema-editor-new-property' ).text() }}
-			</template>
-		</CdxCard>
+		<CdxMenu
+			v-model:selected="selectedValue"
+			:expanded="true"
+			class="ext-neowiki-schema-editor__property-list__menu"
+			:menu-items="menuItems"
+			:footer="menuFooter"
+			@update:selected="onMenuSelect"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { CdxCard } from '@wikimedia/codex';
+import { ref, computed } from 'vue';
+import { CdxMenu, MenuItemData } from '@wikimedia/codex';
+import { cdxIconAdd } from '@wikimedia/codex-icons';
 import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
 import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -40,8 +28,40 @@ const emit = defineEmits<{
 	propertyCreated: [ property: PropertyDefinition ];
 }>();
 
+const componentRegistry = NeoWikiServices.getComponentRegistry();
+
+// CdxMenu doesn't support passing a PropertyName as a value, so we use a string instead.
+const selectedValue = ref( '' );
+
+const menuItems = computed( (): MenuItemData[] => [ ...props.properties ].map( ( property: PropertyDefinition ): MenuItemData => ( {
+	label: property.name.toString(),
+	value: property.name.toString(),
+	description: getMenuDescription( property ),
+	icon: componentRegistry.getIcon( property.type )
+} ) ) );
+
+const menuFooter: MenuItemData = {
+	label: mw.msg( 'neowiki-schema-editor-new-property' ),
+	value: 'new-property',
+	icon: cdxIconAdd
+};
+
+function getMenuDescription( property: PropertyDefinition ): string {
+	const typeLabel = mw.msg( componentRegistry.getLabel( property.type ) );
+	return property.required ? typeLabel : `${ typeLabel }・${ mw.msg( 'neowiki-schema-editor-optional' ) }`;
+}
+
+function onMenuSelect( payload: string ): void {
+	if ( payload === menuFooter.value ) {
+		addNewProperty();
+	} else {
+		emit( 'propertySelected', new PropertyName( payload ) );
+	}
+}
+
 function addNewProperty(): void {
 	const newProperty = createNewProperty();
+	selectedValue.value = newProperty.name.toString();
 	emit( 'propertyCreated', newProperty );
 	emit( 'propertySelected', newProperty.name );
 }
@@ -69,3 +89,64 @@ function generateUniquePropertyName(): PropertyName {
 	return new PropertyName( name );
 }
 </script>
+
+<style lang="scss">
+@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
+
+.ext-neowiki-schema-editor__property-list {
+	&__menu {
+		&.cdx-menu {
+			position: relative;
+			border: 0;
+			box-shadow: none;
+
+			// HACK: The menu footer is sticky on the initial state for unknown reasons.
+			// It behaves correctly after a new property is created, so we use this
+			// workaround to make it behave as expected.
+			&--has-footer {
+				.cdx-menu-item:last-of-type {
+					position: relative;
+
+					&:not( :first-of-type ) {
+						border-top: 0;
+						margin-top: $spacing-100;
+					}
+				}
+
+				.cdx-menu__listbox {
+					margin-bottom: 0 !important;
+				}
+			}
+
+			.cdx-menu-item {
+				border-radius: $border-radius-base;
+			}
+		}
+
+		.cdx-menu-item__icon.cdx-icon {
+			background-position: $background-position-base;
+			background-repeat: no-repeat;
+			background-size: $background-size-search-figure;
+			background-color: $background-color-interactive-subtle;
+			// Thumbnail should never shrink when it's in a flex layout with other elements.
+			flex-shrink: 0;
+			box-sizing: $box-sizing-base;
+			// Values of thumbnail as declared within the MenuItem component, f.e. in TypeaheadSearch.
+			min-width: $min-size-search-figure;
+			min-height: $min-size-search-figure;
+			width: $size-search-figure;
+			height: $size-search-figure;
+			border: $border-subtle;
+			border-radius: $border-radius-base;
+			color: $color-subtle;
+
+			svg {
+				min-width: $min-size-icon-medium;
+				min-height: $min-size-icon-medium;
+				width: $size-icon-medium;
+				height: $size-icon-medium;
+			}
+		}
+	}
+}
+</style>

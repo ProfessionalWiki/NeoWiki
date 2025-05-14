@@ -31,9 +31,11 @@
 			/>
 		</CdxField>
 
-		<CdxField>
+		<CdxField :hide-label="true">
 			<CdxToggleSwitch
-				v-model="localProperty.required">
+				v-model="localProperty.required"
+				:align-switch="true"
+			>
 				{{ $i18n( 'neowiki-property-editor-required' ).text() }}
 			</CdxToggleSwitch>
 		</CdxField>

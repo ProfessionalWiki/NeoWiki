@@ -26,7 +26,10 @@
 
 			<!-- TODO: We should make this into a component-->
 			<template #footer>
-				<DialogFooter @save="handleSave" />
+				<EditSummary
+					:save-button-label="$i18n( 'neowiki-subject-editor-save' ).text()"
+					@save="handleSave"
+				/>
 			</template>
 		</CdxDialog>
 	</div>
@@ -35,7 +38,7 @@
 <script setup lang="ts">
 import { ref, nextTick, computed, onMounted } from 'vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
-import DialogFooter from '@/components/common/DialogFooter.vue';
+import EditSummary from '@/components/common/EditSummary.vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';
 import { StatementList } from '@neo/domain/StatementList.ts';

@@ -5,23 +5,16 @@
 			:initial-schema="initialSchema as Schema"
 		/>
 
-		<CdxTextArea />
-
-		<CdxButton
-			action="progressive"
-			weight="primary"
-			@click="saveSchema"
-		>
-			<CdxIcon :icon="cdxIconCheck" />
-			{{ $i18n( 'neowiki-save-schema' ).text() }}
-		</CdxButton>
+		<EditSummary
+			:save-button-label="$i18n( 'neowiki-save-schema' ).text()"
+			@save="saveSchema"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
 import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
-import { CdxButton, CdxIcon, CdxTextArea } from '@wikimedia/codex';
-import { cdxIconCheck } from '@wikimedia/codex-icons';
+import EditSummary from '@/components/common/EditSummary.vue';
 import { Schema } from '@neo/domain/Schema.ts';
 import { ref } from 'vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -55,3 +48,21 @@ const saveSchema = async (): Promise<void> => {
 	}
 };
 </script>
+
+<style lang="scss">
+@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
+
+.ext-neowiki-edit-schema-action {
+	border: $border-base;
+	border-radius: $border-radius-base;
+
+	.ext-neowiki-edit-summary {
+		border-block-start: $border-subtle;
+		padding: $spacing-100;
+
+		@media ( min-width: $min-width-breakpoint-desktop ) {
+			padding: $spacing-150;
+		}
+	}
+}
+</style>
