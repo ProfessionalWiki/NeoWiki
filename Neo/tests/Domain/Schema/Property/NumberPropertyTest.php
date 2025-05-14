@@ -15,7 +15,7 @@ class NumberPropertyTest extends PropertyTestCase {
 		$this->assertJsonStringEqualsJsonString(
 			<<<JSON
 {
-	"format": "number",
+	"type": "number",
 	"description": "",
 	"required": false,
 	"default": null,
@@ -27,7 +27,7 @@ JSON,
 			$this->deserializeAndReserialize(
 				<<<JSON
 {
-	"format": "number"
+	"type": "number"
 }
 JSON
 			)
@@ -38,7 +38,7 @@ JSON
 		$this->assertSerializationDoesNotChange(
 			<<<JSON
 {
-	"format": "number",
+	"type": "number",
 	"description": "foo",
 	"required": true,
 	"default": 42,
@@ -54,7 +54,7 @@ JSON
 		$this->assertSerializationDoesNotChange(
 			<<<JSON
 {
-	"format": "number",
+	"type": "number",
 	"description": "",
 	"required": false,
 	"default": null,
@@ -71,7 +71,7 @@ JSON
 		$this->fromJson(
 			<<<JSON
 {
-	"format": "number",
+	"type": "number",
 	"precision": "yes"
 }
 JSON
@@ -83,7 +83,7 @@ JSON
 		$this->fromJson(
 			<<<JSON
 {
-	"format": "number",
+	"type": "number",
 	"maximum": "yes"
 }
 JSON
@@ -95,7 +95,7 @@ JSON
 		$this->fromJson(
 			<<<JSON
 {
-	"format": "number",
+	"type": "number",
 	"minimum": "yes"
 }
 JSON

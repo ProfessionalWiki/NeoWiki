@@ -29,11 +29,11 @@ const subjectResponse = {
 	statements: {
 		label: {
 			value: 'John Doe',
-			format: TextType.typeName
+			type: TextType.typeName
 		},
 		WorkUrl: {
 			value: 'https://pro.wiki',
-			format: UrlType.typeName
+			type: UrlType.typeName
 		}
 	}
 };

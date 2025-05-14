@@ -38,7 +38,7 @@ describe( 'RestSchemaRepository', () => {
 				description: 'Employee foo bar baz',
 				propertyDefinitions: {
 					LegalName: {
-						format: TextType.typeName,
+						type: TextType.typeName,
 						required: true
 					}
 				}

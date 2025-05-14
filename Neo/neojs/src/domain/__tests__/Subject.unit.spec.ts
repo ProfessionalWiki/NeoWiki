@@ -56,19 +56,19 @@ describe( 'Subject', () => {
 					{
 						Property1: {
 							value: [ 'foo' ],
-							format: TextType.typeName
+							type: TextType.typeName
 						},
 						Property2: {
 							value: [ { target: 's11111111111111' } ],
-							format: RelationType.typeName
+							type: RelationType.typeName
 						},
 						Property3: {
 							value: [ { target: 's11111111111112' }, { target: 's11111111111113' } ],
-							format: RelationType.typeName
+							type: RelationType.typeName
 						},
 						Property4: {
 							value: [ 'bar' ],
-							format: TextType.typeName
+							type: TextType.typeName
 						}
 					}
 				)
@@ -89,19 +89,19 @@ describe( 'Subject', () => {
 					{
 						Property1: {
 							value: [ 'foo' ],
-							format: TextType.typeName
+							type: TextType.typeName
 						},
 						Property2: {
 							value: [ { target: 's11111111111118' } ],
-							format: RelationType.typeName
+							type: RelationType.typeName
 						},
 						Property3: {
 							value: [ { target: 's11111111111111' }, { target: 's11111111111119' } ],
-							format: RelationType.typeName
+							type: RelationType.typeName
 						},
 						Property4: {
 							value: [ 'bar' ],
-							format: TextType.typeName
+							type: TextType.typeName
 						}
 					}
 				)

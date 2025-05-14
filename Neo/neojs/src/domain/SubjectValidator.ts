@@ -6,7 +6,7 @@ import { Statement } from '@neo/domain/Statement';
 export class SubjectValidator {
 
 	public constructor(
-		private readonly formatRegistry: PropertyTypeRegistry
+		private readonly propertyTypeRegistry: PropertyTypeRegistry
 	) {}
 
 	public validate( subject: Subject, schema: Schema ): boolean {
@@ -29,7 +29,7 @@ export class SubjectValidator {
 		}
 
 		const errors =
-			this.getValueFormat( statement )
+			this.getPropertyType( statement )
 				.validate(
 					statement.value,
 					schema.getPropertyDefinitions().get( statement.propertyName )
@@ -38,8 +38,8 @@ export class SubjectValidator {
 		return errors.length === 0;
 	}
 
-	private getValueFormat( statement: Statement ): PropertyType {
-		return this.formatRegistry.getType( statement.propertyType );
+	private getPropertyType( statement: Statement ): PropertyType {
+		return this.propertyTypeRegistry.getType( statement.propertyType );
 	}
 
 }

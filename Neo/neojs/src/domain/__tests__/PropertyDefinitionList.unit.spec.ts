@@ -6,18 +6,15 @@ import { newTextProperty } from '@neo/domain/propertyTypes/Text';
 describe( 'PropertyDefinitionList', () => {
 
 	const property1 = createPropertyDefinitionFromJson( 'test1', {
-		type: 'number',
-		format: 'number'
+		type: 'number'
 	} );
 
 	const property2 = createPropertyDefinitionFromJson( 'test2', {
-		type: 'string',
-		format: 'text'
+		type: 'text'
 	} );
 
 	const property3 = createPropertyDefinitionFromJson( 'test3', {
-		type: 'string',
-		format: 'text'
+		type: 'text'
 	} );
 
 	it( 'constructs a collection from an array of property definitions', () => {

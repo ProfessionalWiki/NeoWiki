@@ -65,7 +65,7 @@ class GetSchemaQueryTest extends TestCase {
     "description": "test",
     "propertyDefinitions": {
         "property1": {
-            "format": "text",
+            "type": "text",
             "description": "A string property",
             "required": false,
             "default": null,

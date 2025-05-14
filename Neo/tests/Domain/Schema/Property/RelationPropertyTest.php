@@ -40,7 +40,7 @@ class RelationPropertyTest extends PropertyTestCase {
 		$this->assertJsonStringEqualsJsonString(
 			<<<JSON
 {
-	"format": "relation",
+	"type": "relation",
 	"description": "",
 	"required": false,
 	"default": null,
@@ -52,7 +52,7 @@ JSON,
 			$this->deserializeAndReserialize(
 				<<<JSON
 {
-	"format": "relation",
+	"type": "relation",
 	"relation": "type",
 	"targetSchema": "schema"
 }
@@ -65,7 +65,7 @@ JSON
 		$this->assertSerializationDoesNotChange(
 			<<<JSON
 {
-	"format": "relation",
+	"type": "relation",
 	"description": "foo",
 	"required": true,
 	"default": null,
@@ -81,7 +81,7 @@ JSON
 		$this->assertSerializationDoesNotChange(
 			<<<JSON
 {
-	"format": "relation",
+	"type": "relation",
 	"description": "",
 	"required": false,
 	"default": null,
@@ -98,7 +98,7 @@ JSON
 		$this->fromJson(
 			<<<JSON
 {
-	"format": "relation",
+	"type": "relation",
 	"targetSchema": "schema"
 }
 JSON
@@ -110,7 +110,7 @@ JSON
 		$this->fromJson(
 			<<<JSON
 {
-	"format": "relation",
+	"type": "relation",
 	"relation": "type"
 }
 JSON
@@ -122,7 +122,7 @@ JSON
 		$this->fromJson(
 			<<<JSON
 {
-	"format": "relation",
+	"type": "relation",
 	"relation": "type",
 	"targetSchema": ""
 }
