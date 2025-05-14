@@ -6,18 +6,18 @@
 			"schema": "Company",
 			"statements": {
 				"Founded at": {
-					"format": "number",
+					"type": "number",
 					"value": 2019
 				},
 				"Websites": {
-					"format": "url",
+					"type": "url",
 					"value": [
 						"https://professional.wiki",
 						"https://wikibase.consulting"
 					]
 				},
 				"Products": {
-					"format": "relation",
+					"type": "relation",
 					"value": [
 						{
 							"id": "r1demo5rrrrrrr1",
@@ -30,7 +30,7 @@
 					]
 				},
 				"World domination progress": {
-					"format": "number",
+					"type": "number",
 					"value": 42
 				}
 			}

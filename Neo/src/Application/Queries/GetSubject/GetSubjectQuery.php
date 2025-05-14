@@ -71,7 +71,7 @@ readonly class GetSubjectQuery {
 
 		foreach ( $statements->asArray() as $statement ) {
 			$array[$statement->getPropertyName()->text] = [
-				'format' => $statement->getFormat(),
+				'type' => $statement->getFormat(),
 				'value' => $statement->getValue()->toScalars()
 			];
 		}

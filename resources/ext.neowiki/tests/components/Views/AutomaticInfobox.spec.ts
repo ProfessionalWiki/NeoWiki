@@ -40,9 +40,9 @@ describe( 'AutomaticInfobox', () => {
 		'TestSchema',
 		'A test schema',
 		new PropertyDefinitionList( [
-			createPropertyDefinitionFromJson( 'name', { type: 'string', format: TextType.typeName } ),
-			createPropertyDefinitionFromJson( 'age', { type: 'number', format: NumberType.typeName } ),
-			createPropertyDefinitionFromJson( 'website', { type: 'string', format: UrlType.typeName } )
+			createPropertyDefinitionFromJson( 'name', { type: TextType.typeName } ),
+			createPropertyDefinitionFromJson( 'age', { type: NumberType.typeName } ),
+			createPropertyDefinitionFromJson( 'website', { type: UrlType.typeName } )
 		] )
 	);
 

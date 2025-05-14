@@ -116,11 +116,11 @@ describe( 'StatementList', () => {
 			{
 				property1: {
 					value: 'value1',
-					format: TextType.typeName
+					type: TextType.typeName
 				},
 				property2: {
 					value: 'value2',
-					format: TextType.typeName
+					type: TextType.typeName
 				}
 			}
 		);
@@ -137,11 +137,11 @@ describe( 'StatementList', () => {
 			{
 				'': {
 					value: 'value1',
-					format: TextType.typeName
+					type: TextType.typeName
 				}, // An empty string is not a valid PropertyName
 				property2: {
 					value: 'value2',
-					format: TextType.typeName
+					type: TextType.typeName
 				}
 			}
 		) )
@@ -153,15 +153,15 @@ describe( 'StatementList', () => {
 			{
 				p1: {
 					value: 'hello',
-					format: TextType.typeName
+					type: TextType.typeName
 				},
 				p2: {
 					value: 42,
-					format: NumberType.typeName
+					type: NumberType.typeName
 				},
 				p3: {
 					value: [ 'foo', 'bar' ],
-					format: TextType.typeName
+					type: TextType.typeName
 				}
 			}
 		);

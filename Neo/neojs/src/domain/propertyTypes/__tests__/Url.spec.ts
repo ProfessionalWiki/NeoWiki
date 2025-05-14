@@ -179,14 +179,14 @@ describe( 'newUrlProperty', () => {
 } );
 
 describe( 'validate', () => {
-	const urlFormat = new UrlType();
+	const urlType = new UrlType();
 
 	it( 'returns no errors for empty value when optional', () => {
 		const property = newUrlProperty( {
 			required: false
 		} );
 
-		const errors = urlFormat.validate( newStringValue(), property );
+		const errors = urlType.validate( newStringValue(), property );
 
 		expect( errors ).toEqual( [] );
 	} );
@@ -196,7 +196,7 @@ describe( 'validate', () => {
 			required: true
 		} );
 
-		const errors = urlFormat.validate( newStringValue(), property );
+		const errors = urlType.validate( newStringValue(), property );
 
 		expect( errors ).toEqual( [ { code: 'required' } ] );
 	} );
@@ -206,7 +206,7 @@ describe( 'validate', () => {
 			required: true
 		} );
 
-		const errors = urlFormat.validate( undefined, property );
+		const errors = urlType.validate( undefined, property );
 
 		expect( errors ).toEqual( [ { code: 'required' } ] );
 	} );
@@ -214,7 +214,7 @@ describe( 'validate', () => {
 	it( 'returns no errors for valid URL', () => {
 		const property = newUrlProperty();
 
-		const errors = urlFormat.validate(
+		const errors = urlType.validate(
 			newStringValue( [ 'https://example.com' ] ),
 			property
 		);
@@ -225,7 +225,7 @@ describe( 'validate', () => {
 	it( 'returns invalid-url error for malformed URL', () => {
 		const property = newUrlProperty();
 
-		const errors = urlFormat.validate(
+		const errors = urlType.validate(
 			newStringValue( [ 'not-a-url' ] ),
 			property
 		);
@@ -236,7 +236,7 @@ describe( 'validate', () => {
 	it( 'returns error for each invalid URL', () => {
 		const property = newUrlProperty();
 
-		const errors = urlFormat.validate(
+		const errors = urlType.validate(
 			newStringValue( [ 'https://example1.com', 'invalid-1', 'https://example2.com', 'invalid-2', 'https://example3.com' ] ),
 			property
 		);
@@ -252,7 +252,7 @@ describe( 'validate', () => {
 			uniqueItems: true
 		} );
 
-		const errors = urlFormat.validate(
+		const errors = urlType.validate(
 			newStringValue( [
 				'https://foo.com',
 				'https://example.com',
@@ -271,7 +271,7 @@ describe( 'validate', () => {
 			uniqueItems: true
 		} );
 
-		const errors = urlFormat.validate(
+		const errors = urlType.validate(
 			newStringValue( [ 'https://example1.com', 'https://example2.com', 'https://example3.com' ] ),
 			property
 		);

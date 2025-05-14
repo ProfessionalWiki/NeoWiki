@@ -78,13 +78,13 @@ class SubjectContentDataSerializerTest extends TestCase {
             "schema": "Employee",
             "statements": {
                 "founded": {
-                    "format": "text",
+                    "type": "text",
                     "value": [
                         "2019-01-01"
                     ]
                 },
                 "founder": {
-                    "format": "string",
+                    "type": "string",
                     "value": [
                         "John Doe"
                     ]
@@ -101,7 +101,7 @@ class SubjectContentDataSerializerTest extends TestCase {
             "schema": "TestSubjectSchemaId",
             "statements": {
                 "Has skill": {
-                    "format": "relation",
+                    "type": "relation",
                     "value": [
                         {
                             "id": "rTestSCDST11rr2",
@@ -114,7 +114,7 @@ class SubjectContentDataSerializerTest extends TestCase {
                     ]
                 },
                 "Likes": {
-                    "format": "relation",
+                    "type": "relation",
                     "value": [
                         {
                             "id": "rTestSCDST11rr5",

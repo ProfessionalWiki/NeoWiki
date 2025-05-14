@@ -17,10 +17,10 @@ export class ValueDeserializer {
 	}
 
 	/**
-	 * Mismatch between the format and the value structure will cause errors.
+	 * Mismatch between the property type and the value structure will cause errors.
 	 */
-	public deserialize( json: any, format: string ): Value {
-		switch ( this.formatToType( format ) ) {
+	public deserialize( json: any, propertyTypeName: string ): Value {
+		switch ( this.propertyTypeNameToValueType( propertyTypeName ) ) {
 			case ValueType.String:
 				return newStringValue( json );
 			case ValueType.Number:
@@ -36,8 +36,8 @@ export class ValueDeserializer {
 		}
 	}
 
-	private formatToType( format: string ): ValueType {
-		return this.registry.getType( format ).getValueType();
+	private propertyTypeNameToValueType( propertyTypeName: string ): ValueType {
+		return this.registry.getType( propertyTypeName ).getValueType();
 	}
 
 }

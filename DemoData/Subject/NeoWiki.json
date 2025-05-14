@@ -6,11 +6,11 @@
 			"schema": "Product",
 			"statements": {
 				"Available since": {
-					"format": "number",
+					"type": "number",
 					"value": 2023
 				},
 				"Website": {
-					"format": "url",
+					"type": "url",
 					"value": [
 						"https://neo.wiki"
 					]

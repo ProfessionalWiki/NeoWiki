@@ -39,7 +39,7 @@ abstract class PropertyDefinition {
 	public function toJson(): array {
 		return array_merge(
 			[
-				'format' => $this->getFormat(),
+				'type' => $this->getFormat(),
 				'description' => $this->getDescription(),
 				'required' => $this->isRequired(),
 				'default' => $this->getDefault(),
@@ -54,10 +54,10 @@ abstract class PropertyDefinition {
 	 * @throws InvalidArgumentException
 	 */
 	public static function fromJson( array $json, ValueFormatLookup $formatLookup ): self {
-		$format = $formatLookup->getFormat( $json['format'] );
+		$format = $formatLookup->getFormat( $json['type'] );
 
 		if ( $format === null ) {
-			throw new InvalidArgumentException( 'Unknown format: ' . $json['format'] );
+			throw new InvalidArgumentException( 'Unknown format: ' . $json['type'] );
 		}
 
 		$propertyCore = new PropertyCore(

@@ -15,7 +15,7 @@ class TextPropertyTest extends PropertyTestCase {
 		$this->assertJsonStringEqualsJsonString(
 			<<<JSON
 {
-	"format": "text",
+	"type": "text",
 	"description": "",
 	"required": false,
 	"default": null,
@@ -26,7 +26,7 @@ JSON,
 			$this->deserializeAndReserialize(
 				<<<JSON
 {
-	"format": "text"
+	"type": "text"
 }
 JSON
 			)
@@ -37,7 +37,7 @@ JSON
 		$this->assertSerializationDoesNotChange(
 			<<<JSON
 {
-	"format": "text",
+	"type": "text",
 	"description": "foo",
 	"required": true,
 	"default": 42,
@@ -52,7 +52,7 @@ JSON
 		$this->assertSerializationDoesNotChange(
 			<<<JSON
 {
-	"format": "text",
+	"type": "text",
 	"description": "",
 	"required": false,
 	"default": null,
@@ -68,7 +68,7 @@ JSON
 		$this->fromJson(
 			<<<JSON
 {
-	"format": "text",
+	"type": "text",
 	"multiple": 42
 }
 JSON
@@ -80,7 +80,7 @@ JSON
 		$this->fromJson(
 			<<<JSON
 {
-	"format": "text",
+	"type": "text",
 	"uniqueItems": "maybe"
 }
 JSON

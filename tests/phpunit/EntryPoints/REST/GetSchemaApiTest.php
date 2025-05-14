@@ -28,7 +28,7 @@ class GetSchemaApiTest extends NeoWikiIntegrationTestCase {
 	"description": "This is a test schema",
 	"propertyDefinitions": {
 		"MyRelation": {
-			"format": "relation",
+			"type": "relation",
 			"relation": "MyRelation",
 			"targetSchema": "TestSchema",
 			"description": "This is a test schema"
@@ -61,7 +61,7 @@ JSON
                 "required": false,
                 "default": null,
                 "multiple": false,
-                "format": "relation",
+                "type": "relation",
                 "relation": "MyRelation",
                 "targetSchema": "TestSchema"
             }

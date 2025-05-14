@@ -12,13 +12,13 @@
 					"type": "object",
 					"additionalProperties": true,
 					"required": [
-						"format"
+						"type"
 					],
 					"properties": {
 						"description": {
 							"type": "string"
 						},
-						"format": {
+						"type": {
 							"type": "string",
 							"enum": [
 								"text",
@@ -49,91 +49,91 @@
 					"oneOf": [
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "text"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "email"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "url"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "phoneNumber"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "date"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "time"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "dateTime"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "duration"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "number"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "currency"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "progress"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "checkbox"
 								}
 							}
 						},
 						{
 							"properties": {
-								"format": {
+								"type": {
 									"const": "relation"
 								},
 								"relation": {

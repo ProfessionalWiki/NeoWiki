@@ -47,7 +47,7 @@ class SubjectContentDataSerializer {
 
 	private function serializeStatement( Statement $statement ): array {
 		return [
-			'format' => $statement->getFormat(),
+			'type' => $statement->getFormat(),
 			'value' => $statement->getValue()->toScalars(),
 		];
 	}

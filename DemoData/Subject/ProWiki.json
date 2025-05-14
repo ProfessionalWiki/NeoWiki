@@ -6,11 +6,11 @@
 			"schema": "Product",
 			"statements": {
 				"Available since": {
-					"format": "number",
+					"type": "number",
 					"value": 2022
 				},
 				"Website": {
-					"format": "url",
+					"type": "url",
 					"value": [
 						"https://pro.wiki"
 					]

@@ -1,7 +1,7 @@
 {
 	"propertyDefinitions": {
 		"Country": {
-			"format": "text"
+			"type": "text"
 		}
 	}
 }

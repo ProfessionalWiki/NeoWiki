@@ -71,7 +71,7 @@ class SchemaContentValidatorTest extends TestCase {
 {
 	"propertyDefinitions": {
 		"someRelation": {
-			"format": "not a real format"
+			"type": "not a real format"
 		}
 	}
 }
@@ -80,7 +80,7 @@ JSON
 		);
 
 		$this->assertSame(
-			[ '/propertyDefinitions/someRelation/format' => 'The data should match one item from enum' ],
+			[ '/propertyDefinitions/someRelation/type' => 'The data should match one item from enum' ],
 			$validator->getErrors()
 		);
 	}
@@ -94,7 +94,7 @@ JSON
 {
 	"propertyDefinitions": {
 		"someRelation": {
-			"format": "relation"
+			"type": "relation"
 		}
 	}
 }
@@ -104,7 +104,7 @@ JSON
 
 		$this->assertSame(
 			[
-				'/propertyDefinitions/someRelation/format' => 'The data must match the const value',
+				'/propertyDefinitions/someRelation/type' => 'The data must match the const value',
 				'/propertyDefinitions/someRelation' => 'The required properties (relation, targetSchema) are missing'
 			],
 			$validator->getErrors()

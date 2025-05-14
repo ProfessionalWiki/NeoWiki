@@ -6,21 +6,21 @@
 			"schema": "Company",
 			"statements": {
 				"Founded at": {
-					"format": "number",
+					"type": "number",
 					"value": 2005
 				},
 				"Websites": {
-					"format": "url",
+					"type": "url",
 					"value": [
 						"https://acme.example"
 					]
 				},
 				"World domination progress": {
-					"format": "number",
+					"type": "number",
 					"value": 42
 				},
 				"Products": {
-					"format": "relation",
+					"type": "relation",
 					"value": [
 						{
 							"id": "r1demo1aaaaaar1",
@@ -43,11 +43,11 @@
 			"schema": "Product",
 			"statements": {
 				"Available since": {
-					"format": "number",
+					"type": "number",
 					"value": 2006
 				},
 				"Website": {
-					"format": "url",
+					"type": "url",
 					"value": [
 						"https://acme.example/product/foo"
 					]
@@ -59,11 +59,11 @@
 			"schema": "Product",
 			"statements": {
 				"Available since": {
-					"format": "number",
+					"type": "number",
 					"value": 2010
 				},
 				"Website": {
-					"format": "url",
+					"type": "url",
 					"value": [
 						"https://acme.example/product/bar"
 					]
@@ -75,11 +75,11 @@
 			"schema": "Product",
 			"statements": {
 				"Available since": {
-					"format": "number",
+					"type": "number",
 					"value": 2015
 				},
 				"Website": {
-					"format": "url",
+					"type": "url",
 					"value": [
 						"https://acme.example/product/baz"
 					]

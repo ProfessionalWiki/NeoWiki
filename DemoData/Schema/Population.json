@@ -2,16 +2,16 @@
 	"description": "A population measurement",
 	"propertyDefinitions": {
 		"Population": {
-			"format": "number"
+			"type": "number"
 		},
 		"Date": {
-			"format": "text"
+			"type": "text"
 		},
 		"Measurer": {
-			"format": "text"
+			"type": "text"
 		},
 		"References": {
-			"format": "url",
+			"type": "url",
 			"multiple": true
 		}
 	}

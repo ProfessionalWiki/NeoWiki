@@ -5,7 +5,7 @@ import { Statement } from '@neo/domain/Statement';
 interface StatementJson {
 
 	value: unknown;
-	format: string;
+	type: string;
 
 }
 
@@ -13,7 +13,7 @@ function isJsonStatement( json: unknown ): json is StatementJson {
 	return typeof json === 'object' &&
 		json !== null &&
 		'value' in json &&
-		'format' in json;
+		'type' in json;
 }
 
 export class StatementDeserializer {
@@ -30,8 +30,8 @@ export class StatementDeserializer {
 
 		return new Statement(
 			new PropertyName( propertyName ),
-			json.format,
-			this.valueDeserializer.deserialize( json.value, json.format )
+			json.type,
+			this.valueDeserializer.deserialize( json.value, json.type )
 		);
 	}
 
