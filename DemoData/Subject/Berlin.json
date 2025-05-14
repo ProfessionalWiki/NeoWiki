@@ -6,7 +6,7 @@
 			"schema": "City",
 			"statements": {
 				"Country": {
-					"format": "text",
+					"type": "text",
 					"value": [ "Germany" ]
 				}
 			}
@@ -16,19 +16,19 @@
 			"schema": "Population",
 			"statements": {
 				"Population": {
-					"format": "number",
+					"type": "number",
 					"value": 3677472
 				},
 				"Date": {
-					"format": "text",
+					"type": "text",
 					"value": [ "2020-12-31" ]
 				},
 				"Measurer": {
-					"format": "text",
+					"type": "text",
 					"value": [ "register of municipalities" ]
 				},
 				"References": {
-					"format": "url",
+					"type": "url",
 					"value": [ "https://example.com/Pop2020" ]
 				}
 			}
@@ -38,19 +38,19 @@
 			"schema": "Population",
 			"statements": {
 				"Population": {
-					"format": "number",
+					"type": "number",
 					"value": 3574830
 				},
 				"Date": {
-					"format": "text",
+					"type": "text",
 					"value": [ "2016-12-31" ]
 				},
 				"Measurer": {
-					"format": "text",
+					"type": "text",
 					"value": [ "register of municipalities" ]
 				},
 				"References": {
-					"format": "url",
+					"type": "url",
 					"value": [ "https://example.com/Pop2016" ]
 				}
 			}
@@ -60,15 +60,15 @@
 			"schema": "Population",
 			"statements": {
 				"Population": {
-					"format": "number",
+					"type": "number",
 					"value": 401972
 				},
 				"Date": {
-					"format": "text",
+					"type": "text",
 					"value": [ "1852-01-01" ]
 				},
 				"Measurer": {
-					"format": "text",
+					"type": "text",
 					"value": [ "unknown" ]
 				}
 			}

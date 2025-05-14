@@ -6,11 +6,11 @@
 			"schema": "Table",
 			"statements": {
 				"Has personal data": {
-					"format": "text",
+					"type": "text",
 					"value": [ "yes" ]
 				},
 				"Part of": {
-					"format": "text",
+					"type": "text",
 					"value": [ "Data Warehouse", "Forecast Model" ]
 				}
 			}
@@ -20,15 +20,15 @@
 			"schema": "Column",
 			"statements": {
 				"Has data type": {
-					"format": "text",
+					"type": "text",
 					"value": [ "Date" ]
 				},
 				"Has personal data": {
-					"format": "text",
+					"type": "text",
 					"value": [ "no" ]
 				},
 				"Sample value": {
-					"format": "text",
+					"type": "text",
 					"value": [ "2022-07-01", "2021-10-13" ]
 				}
 			}
@@ -38,15 +38,15 @@
 			"schema": "Column",
 			"statements": {
 				"Has data type": {
-					"format": "text",
+					"type": "text",
 					"value": [ "String" ]
 				},
 				"Has personal data": {
-					"format": "text",
+					"type": "text",
 					"value": [ "no" ]
 				},
 				"Sample value": {
-					"format": "text",
+					"type": "text",
 					"value": [ "Direct Bank Transfer", "Other" ]
 				}
 			}
@@ -56,15 +56,15 @@
 			"schema": "Column",
 			"statements": {
 				"Has data type": {
-					"format": "text",
+					"type": "text",
 					"value": [ "String" ]
 				},
 				"Has personal data": {
-					"format": "text",
+					"type": "text",
 					"value": [ "no" ]
 				},
 				"Sample value": {
-					"format": "text",
+					"type": "text",
 					"value": [ "KRED", "SOFORT", "TXEU" ]
 				}
 			}

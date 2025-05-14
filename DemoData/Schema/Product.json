@@ -1,11 +1,11 @@
 {
 	"propertyDefinitions": {
 		"Available since": {
-			"format": "number",
+			"type": "number",
 			"description": "The year the product was first released"
 		},
 		"Website": {
-			"format": "url",
+			"type": "url",
 			"description": "The product's website"
 		}
 	}

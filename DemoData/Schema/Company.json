@@ -1,25 +1,25 @@
 {
 	"propertyDefinitions": {
 		"Founded at": {
-			"format": "number"
+			"type": "number"
 		},
 		"Websites": {
-			"format": "url",
+			"type": "url",
 			"multiple": true
 		},
 		"Main product": {
-			"format": "relation",
+			"type": "relation",
 			"relation": "Has main product",
 			"targetSchema": "Product"
 		},
 		"Products": {
-			"format": "relation",
+			"type": "relation",
 			"relation": "Has product",
 			"targetSchema": "Product",
 			"multiple": true
 		},
 		"World domination progress": {
-			"format": "number",
+			"type": "number",
 			"default": 0
 		}
 	}
