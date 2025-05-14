@@ -121,7 +121,7 @@ JSON
 			"schema": "Company",
 			"statements": {
 				"Products": {
-					"format": "relation",
+					"type": "relation",
 					"value": [
 						{
 							"id": "rTestSCDDrrrrr1",

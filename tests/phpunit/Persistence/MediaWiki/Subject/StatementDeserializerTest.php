@@ -33,7 +33,7 @@ class StatementDeserializerTest extends TestCase {
 			$this->newDeserializer()->deserialize(
 				'MyNumber',
 				[
-					'format' => 'number',
+					'type' => 'number',
 					'value' => 42,
 				]
 			)
@@ -54,7 +54,7 @@ class StatementDeserializerTest extends TestCase {
 			$this->newDeserializer()->deserialize(
 				'MyText',
 				[
-					'format' => 'text',
+					'type' => 'text',
 					'value' => [ 'Foo', 'Bar', 'Baz' ],
 				]
 			)
@@ -82,7 +82,7 @@ class StatementDeserializerTest extends TestCase {
 			$this->newDeserializer()->deserialize(
 				'MyRelation',
 				[
-					'format' => 'relation',
+					'type' => 'relation',
 					'value' => [
 						[
 							'id' => 'rTestSDT1111rr1',

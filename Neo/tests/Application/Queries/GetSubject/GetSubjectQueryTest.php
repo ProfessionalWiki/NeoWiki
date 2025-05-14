@@ -73,15 +73,15 @@ class GetSubjectQueryTest extends TestCase {
 						schemaId: 'GetSubjectQueryTestSchema',
 						statements: [
 							'expected property 1' => [
-								'format' => 'text',
+								'type' => 'text',
 								'value' => [ 'expected value 1' ]
 							],
 							'expected property 2' => [
-								'format' => 'number',
+								'type' => 'number',
 								'value' => 2
 							],
 							'FriendOf' => [
-								'format' => 'relation',
+								'type' => 'relation',
 								'value' => [
 									[
 										'id' => 'r11111111111129',

@@ -55,7 +55,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 					'multiple' => false,
 					'default' => 'foo',
 					'uniqueItems' => false,
-					'format' => TextFormat::NAME,
+					'type' => TextFormat::NAME,
 				]
 			]
 		] );
@@ -85,7 +85,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 					'description' => 'Test number property',
 					'required' => false,
 					'default' => 0,
-					'format' => NumberFormat::NAME,
+					'type' => NumberFormat::NAME,
 					'maximum' => null,
 					'minimum' => null,
 					'precision' => null,
@@ -122,7 +122,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 					'relation' => 'testRelationType',
 					'targetSchema' => 'targetSchema',
 					'multiple' => false,
-					'format' => 'relation'
+					'type' => 'relation'
 				]
 			]
 		] );
@@ -151,7 +151,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 					'description' => 'Test string property',
 					'required' => true,
 					'default' => 'default',
-					'format' => 'text',
+					'type' => 'text',
 					'multiple' => false,
 					'uniqueItems' => false,
 				]

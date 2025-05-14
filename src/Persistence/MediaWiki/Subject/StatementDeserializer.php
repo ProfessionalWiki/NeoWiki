@@ -34,8 +34,8 @@ class StatementDeserializer {
 	public function deserialize( string $propertyName, array $json ): Statement {
 		return new Statement(
 			property: new PropertyName( $propertyName ),
-			format: $json['format'],
-			value: $this->deserializeValue( $json['format'], $json['value'] ),
+			format: $json['type'],
+			value: $this->deserializeValue( $json['type'], $json['value'] ),
 		);
 	}
 

@@ -34,7 +34,7 @@ class GetSubjectApiTest extends NeoWikiIntegrationTestCase {
 	"title": "GetSubjectApiTestSchema",
 	"propertyDefinitions": {
 		"MyRelation": {
-			"format": "relation",
+			"type": "relation",
 			"relation": "MyRelation",
 			"targetSchema": "GetSubjectApiTestSchema"
 		}
@@ -167,7 +167,7 @@ JSON,
             "pageTitle": "GetSubjectApiTest0000",
             "statements": {
                 "MyRelation": {
-                	"format": "relation",
+                	"type": "relation",
                 	"value": [
 						{
 							"id": "rTestGSA1111rr1",
@@ -197,7 +197,7 @@ JSON,
             "pageTitle": "GetSubjectApiTest0002",
             "statements": {
                 "MyRelation": {
-                "format": "relation",
+                "type": "relation",
 				"value": [
 						{
 							"id": "rTestGSA1111rr3",
