@@ -8,6 +8,7 @@
 
 			<template #footer>
 				<EditSummary
+					:help-text="$i18n( 'neowiki-edit-summary-help-text-schema' ).text()"
 					:save-button-label="$i18n( 'neowiki-save-schema' ).text()"
 					@save="saveSchema"
 				/>

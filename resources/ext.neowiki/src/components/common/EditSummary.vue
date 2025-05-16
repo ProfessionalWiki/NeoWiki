@@ -11,7 +11,7 @@
 				:placeholder="$i18n( 'neowiki-edit-summary-placeholder' ).text()"
 			/>
 			<template #help-text>
-				{{ $i18n( 'neowiki-edit-summary-help-text-subject' ).text() }}
+				{{ props.helpText }}
 			</template>
 		</CdxField>
 		<div class="ext-neowiki-edit-summary__actions">
@@ -33,6 +33,7 @@ import { CdxButton, CdxField, CdxIcon, CdxTextArea } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 
 const props = defineProps<{
+	helpText: string;
 	saveButtonLabel: string;
 }>();
 
