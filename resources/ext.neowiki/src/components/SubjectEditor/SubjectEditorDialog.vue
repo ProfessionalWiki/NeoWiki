@@ -27,7 +27,7 @@
 			<!-- TODO: We should make this into a component-->
 			<template #footer>
 				<EditSummary
-					:help-text="$i18n( 'neowiki-edit-summary-help-text-subject' ).text()"
+					help-text=""
 					:save-button-label="$i18n( 'neowiki-subject-editor-save' ).text()"
 					@save="handleSave"
 				/>
