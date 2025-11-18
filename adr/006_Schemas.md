@@ -24,5 +24,5 @@ or enforce those schemas.
 * We can build forms to create and edit subjects based on their schema.
 * We can validate subjects against their schema.
 * We can build UIs for creating and editing schemas.
-* Properties are namespaces within their schema instead of global. Thus different types/schemas can have properties with
+* Properties are namespaced within their schema instead of global. Thus, different types/schemas can have properties with
   the same name but a different definition.
