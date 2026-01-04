@@ -4,11 +4,11 @@ services:
 #    depends_on:
 #      - graph
     volumes:
-      - ./:/app
+      - ./:/app:Z
     working_dir: /app
 
   graph:
-    image: neo4j
+    image: docker.io/library/neo4j
     restart: unless-stopped
     ports:
       - "127.0.0.1:7474:7474"
@@ -19,11 +19,11 @@ services:
       - NEO4J_AUTH=neo4j/neo4j
 
   node:
-    image: node:20-alpine
+    image: docker.io/library/node:20-alpine
     user: "node"
     working_dir: /home/node/app
     volumes:
-      - ./neojs:/home/node/app
+      - ./neojs:/home/node/app:Z
 
 volumes:
   neo4j-data:
