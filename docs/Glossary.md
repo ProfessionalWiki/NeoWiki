@@ -10,12 +10,12 @@ Data about one thing. Similar to an Item in Wikibase or a Page/SubObject in SMW.
 
 Subjects have
 
-- An `id`: persistent identifier. Subject IDs start with `s` and is always 15 characters long ([ADR 14](../docs/014_Improved_ID_Format.md))
+- An `id`: persistent identifier. Subject IDs start with `s` and is always 15 characters long ([ADR 14](adr/014_Improved_ID_Format.md))
 - A `type`: reference to a Schema. Example: Person, Company, Product, etc.
 - A `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
 - `statements`: a list of Statements
 
-Pages can have multiple Subjects ([ADR 7](../docs/007_Multiple_Subjects_Per_Page.md)). They can only have a single **Main Subject**. This Subject represents the same entity as the page itself. All other Subjects stored on a page are called **Child Subjects**.
+Pages can have multiple Subjects ([ADR 7](adr/007_Multiple_Subjects_Per_Page.md)). They can only have a single **Main Subject**. This Subject represents the same entity as the page itself. All other Subjects stored on a page are called **Child Subjects**.
 
 TODO: The label of a main subject is the same as the page title.
 
@@ -54,7 +54,7 @@ Each Relation has
 
 ## Schema
 
-A Schema ([ADR 6](../adr/006_Schemas.md)) defined a type of Subject. Examples: Person, Company, Product, etc.
+A Schema ([ADR 6](adr/006_Schemas.md)) defined a type of Subject. Examples: Person, Company, Product, etc.
 
 Schemas have a name, description, and a list of Property Definitions
 
@@ -75,7 +75,7 @@ They always have a Property Name and a Property Type. Depending on the Type, the
 
 ## View
 
-A View ([ADR 18](../adr/018_Views.md)) is linked to a Schema, and allows customized display of Subjects that use that Schema.
+A View ([ADR 18](adr/018_Views.md)) is linked to a Schema, and allows customized display of Subjects that use that Schema.
 
 Example: A company Schema has many properties. You want to display only some of them in your “Finances” page section. Thus, you create a finances View for that company Schema that hides all properties except for Revenue, Profit, and Assets.
 
