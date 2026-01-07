@@ -2,6 +2,8 @@
 
 NeoWiki terms definitions. Concepts are capitalized. Used in the code and UI (Ubiquitous Language).
 
+
+
 ## Subject
 
 Data about one thing. Similar to an Item in Wikibase or a Page/SubObject in SMW.
@@ -48,11 +50,13 @@ Each Relation has
 - A `target`: Subject ID of the referenced Subject
 - `properties`: Possibly empty collection of property-value pairs. TODO: rename like we did with statements
 
-###
+
 
 ## Schema
 
 Defines a type of Subject. Examples: Person, Company, Product, etc.
+
+Schemas are introduced via [ADR 6](../adr/006_Schemas.md)
 
 Schemas have a name, description, and a list of Property Definitions
 
@@ -73,11 +77,11 @@ They always have a Property Name and a Property Type. Depending on the Type, the
 
 ## View
 
-Views are introduced via [ADR 18](../adr/018_Views.md)
-
 A View is linked to a Schema, and allows customized display of Subjects that use that Schema.
 
 Example: A company Schema has many properties. You want to display only some of them in your “Finances” page section. Thus, you create a finances View for that company Schema that hides all properties except for Revenue, Profit, and Assets.
+
+Views are introduced via [ADR 18](../adr/018_Views.md)
 
 Views have a View Type, such as "infobox", "factbox", or "table". The View Type affects what View Attributes can be set.
 
