@@ -58,7 +58,7 @@ export class TextType extends BasePropertyType<TextProperty, StringValue> {
 		}
 
 		if ( property.uniqueItems && new Set( value.strings ).size !== value.strings.length ) {
-			errors.push( { code: 'unique' } );  // TODO: add source
+			errors.push( { code: 'unique' } ); // TODO: add source
 		}
 
 		return errors;

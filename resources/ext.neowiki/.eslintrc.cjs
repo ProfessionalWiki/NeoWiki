@@ -78,7 +78,8 @@ module.exports = {
 		'space-before-function-paren': 'off',
 		'prefer-arrow-callback': 'off',
 		'spaced-comment': 'off',
-		'no-tabs': 'off'
+		'no-tabs': 'off',
+		'@typescript-eslint/explicit-module-boundary-types': 'off',
 	},
 	overrides: [
 		{
@@ -93,6 +94,19 @@ module.exports = {
 		{
 			files: [
 				'tests/**/*.ts'
+			],
+			rules: {
+				'@typescript-eslint/no-explicit-any': 'off'
+			}
+		},
+		{
+			files: [
+				'src/persistence/**/*.ts',
+				'src/domain/propertyTypes/**/*.ts',
+				'src/domain/PropertyDefinition.ts',
+				'src/domain/StatementList.ts',
+				'src/domain/Value.ts',
+				'src/domain/PropertyType.ts'
 			],
 			rules: {
 				'@typescript-eslint/no-explicit-any': 'off'
