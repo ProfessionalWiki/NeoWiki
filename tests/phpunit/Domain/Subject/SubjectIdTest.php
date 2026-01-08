@@ -4,15 +4,17 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-#[CoversClass( SubjectId::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId
+ */
 class SubjectIdTest extends TestCase {
 
-	#[DataProvider( 'validGuidProvider' )]
+	/**
+	 * @dataProvider validGuidProvider
+	 */
 	public function testInitialisationWithCorrectUuid( string $validGuid ): void {
 		$subjectId = new SubjectId( $validGuid );
 		$this->assertSame( $validGuid, $subjectId->text );
@@ -26,7 +28,9 @@ class SubjectIdTest extends TestCase {
 		yield [ 'sZzZzZzZzZzZzZz' ];
 	}
 
-	#[DataProvider( 'validGuidProvider' )]
+	/**
+	 * @dataProvider validGuidProvider
+	 */
 	public function testEquals( string $validGuid ): void {
 		$this->assertTrue( ( new SubjectId( $validGuid ) )->equals( new SubjectId( $validGuid ) ) );
 		$this->assertFalse(
@@ -34,7 +38,9 @@ class SubjectIdTest extends TestCase {
 		);
 	}
 
-	#[DataProvider( 'invalidGuidProvider' )]
+	/**
+	 * @dataProvider invalidGuidProvider
+	 */
 	public function testInitialisationWithInvalidUuid( string $invalidGuid ): void {
 		$this->expectException( \InvalidArgumentException::class );
 		new SubjectId( $invalidGuid );
@@ -51,12 +57,16 @@ class SubjectIdTest extends TestCase {
 		yield 'definitely invalid' => [ '~=[,,_,,]:3' ];
 	}
 
-	#[DataProvider( 'invalidGuidProvider' )]
+	/**
+	 * @dataProvider invalidGuidProvider
+	 */
 	public function testIsValidFails( string $invalidGuid ): void {
 		$this->assertFalse( SubjectId::isValid( $invalidGuid ) );
 	}
 
-	#[DataProvider( 'validGuidProvider' )]
+	/**
+	 * @dataProvider validGuidProvider
+	 */
 	public function testIsValidPasses( string $validGuid ): void {
 		$this->assertTrue( SubjectId::isValid( $validGuid ) );
 	}

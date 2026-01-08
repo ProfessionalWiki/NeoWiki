@@ -4,12 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\ValueFormat\Formats;
 
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\UrlFormat;
 
-#[CoversClass( UrlFormat::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\UrlFormat
+ */
 class UrlFormatTest extends TestCase {
 
 	public function testBuildNeo4jValueForOneString(): void {

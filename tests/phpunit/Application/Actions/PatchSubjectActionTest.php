@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
@@ -22,7 +21,9 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 
-#[CoversClass( PatchSubjectAction::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction
+ */
 class PatchSubjectActionTest extends TestCase {
 
 	private const string SUBJECT_ID = 's11111111111127';

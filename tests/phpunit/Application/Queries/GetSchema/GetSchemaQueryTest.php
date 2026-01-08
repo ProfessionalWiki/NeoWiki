@@ -4,7 +4,6 @@ declare( strict_types=1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Queries\GetSchema;
 
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
@@ -14,7 +13,9 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
-#[CoversClass( GetSchemaQuery::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery
+ */
 class GetSchemaQueryTest extends TestCase {
 
 	private InMemorySchemaLookup $schemaLookup;

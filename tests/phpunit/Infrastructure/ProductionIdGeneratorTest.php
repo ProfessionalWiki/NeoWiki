@@ -11,7 +11,9 @@ use Random\Engine;
 use Random\Randomizer;
 use WMDE\Clock\StubClock;
 
-#[CoversClass( ProductionIdGenerator::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator
+ */
 class ProductionIdGeneratorTest extends TestCase {
 
 	public function testGeneratesFixedLengthIds(): void {

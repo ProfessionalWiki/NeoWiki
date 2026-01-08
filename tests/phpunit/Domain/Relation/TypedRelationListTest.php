@@ -4,13 +4,14 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Relation;
 
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 
-#[CoversClass( TypedRelationList::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList
+ */
 class TypedRelationListTest extends TestCase {
 
 	public function testGetIdsAsStringArray(): void {

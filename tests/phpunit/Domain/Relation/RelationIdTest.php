@@ -4,15 +4,17 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Relation;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 
-#[CoversClass( RelationId::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Relation\RelationId
+ */
 class RelationIdTest extends TestCase {
 
-	#[DataProvider( 'validGuidProvider' )]
+	/**
+	 * @dataProvider validGuidProvider
+	 */
 	public function testInitialisationWithCorrectUuid( string $validGuid ): void {
 		$RelationId = new RelationId( $validGuid );
 		$this->assertSame( $validGuid, $RelationId->asString() );
@@ -26,13 +28,17 @@ class RelationIdTest extends TestCase {
 		yield [ 'rZzZzZzZzZzZzZz' ];
 	}
 
-	#[DataProvider( 'validGuidProvider' )]
+	/**
+	 * @dataProvider validGuidProvider
+	 */
 	public function testEquals( string $validGuid ): void {
 		$this->assertTrue( ( new RelationId( $validGuid ) )->equals( new RelationId( $validGuid ) ) );
 		$this->assertFalse( ( new RelationId( $validGuid ) )->equals( new RelationId( 'rNyanCatNyanCat' ) ) );
 	}
 
-	#[DataProvider( 'invalidGuidProvider' )]
+	/**
+	 * @dataProvider invalidGuidProvider
+	 */
 	public function testInitialisationWithInvalidUuid( string $invalidGuid ): void {
 		$this->expectException( \InvalidArgumentException::class );
 		new RelationId( $invalidGuid );
@@ -49,12 +55,16 @@ class RelationIdTest extends TestCase {
 		yield 'definitely invalid' => [ '~=[,,_,,]:3' ];
 	}
 
-	#[DataProvider( 'invalidGuidProvider' )]
+	/**
+	 * @dataProvider invalidGuidProvider
+	 */
 	public function testIsValidFails( string $invalidGuid ): void {
 		$this->assertFalse( RelationId::isValid( $invalidGuid ) );
 	}
 
-	#[DataProvider( 'validGuidProvider' )]
+	/**
+	 * @dataProvider validGuidProvider
+	 */
 	public function testIsValidPasses( string $validGuid ): void {
 		$this->assertTrue( RelationId::isValid( $validGuid ) );
 	}

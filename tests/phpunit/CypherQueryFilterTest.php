@@ -4,11 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\CypherQueryFilter;
 
-#[CoversClass( CypherQueryFilter::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\CypherQueryFilter
+ */
 class CypherQueryFilterTest extends TestCase {
 
 	private function isReadQuery( string $query ): bool {
@@ -45,7 +46,9 @@ class CypherQueryFilterTest extends TestCase {
 		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow parentheses in strings' );
 	}
 
-	#[DataProvider( 'writeOperationProvider' )]
+	/**
+	 * @dataProvider writeOperationProvider
+	 */
 	public function testRejectsVariousWriteOperations( string $keyword ): void {
 		$query = "$keyword (n:Label)";
 		$this->assertFalse( $this->isReadQuery( $query ), "Filter should reject '$keyword' operation" );
@@ -114,14 +117,16 @@ class CypherQueryFilterTest extends TestCase {
 		);
 	}
 
-	#[DataProvider( 'maliciousQueryProvider' )]
+	/**
+	 * @dataProvider maliciousQueryProvider
+	 */
 	public function testRejectsMaliciousQueries( string $query ): void {
 		$this->assertFalse( $this->isReadQuery( $query ) );
 	}
 
 	public static function maliciousQueryProvider(): iterable {
 		yield 'Hiding in string literals' => [
-				'MATCH (n) 
+				'MATCH (n)
 WITH n, "CREATE (m:Malicious)" AS q
 CALL apoc.cypher.run(q, {}) YIELD value
 RETURN n, value'
@@ -133,7 +138,7 @@ RETURN n, value'
 
 		yield 'Subqueries' => [
 			'MATCH (n)
-WHERE n.id IN [x IN range(1,10) | 
+WHERE n.id IN [x IN range(1,10) |
   HEAD([(WITH x CREATE (m:Hidden) RETURN x)[0]])]
 RETURN n'
 		];
