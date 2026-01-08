@@ -2,19 +2,19 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\EntryPoints\REST;
+namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\DeleteSubjectApi;
-use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\MediaWiki\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\DeleteSubjectApi
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction
  * @group Database
  */

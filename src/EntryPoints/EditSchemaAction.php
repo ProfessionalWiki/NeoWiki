@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints;
+namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use Action;
 use MediaWiki\Html\Html;

@@ -2,11 +2,11 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content;
+namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
 
 use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Title\Title;
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class SchemaContentHandler extends JsonContentHandler {
 

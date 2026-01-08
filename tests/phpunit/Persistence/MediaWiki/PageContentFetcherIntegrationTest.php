@@ -2,17 +2,17 @@
 
 declare( strict_types=1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\Persistence\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use CommentStoreComment;
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Tests\MediaWiki\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use Title;
 use WikitextContent;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\PageContentFetcher
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\PageContentSaver
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver
  * @group Database
  */
 class PageContentFetcherIntegrationTest extends NeoWikiIntegrationTestCase {

@@ -2,7 +2,7 @@
 
 declare( strict_types=1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\Infrastructure;
+namespace ProfessionalWiki\NeoWiki\Infrastructure;
 
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;

@@ -23,41 +23,41 @@
 	},
 
 	"AutoloadNamespaces": {
-		"ProfessionalWiki\\NeoWiki\\MediaWiki\\": "src/"
+		"ProfessionalWiki\\NeoWiki\\": "src/"
 	},
 
 	"TestAutoloadNamespaces": {
-		"ProfessionalWiki\\NeoWiki\\Tests\\MediaWiki\\": "tests/phpunit"
+		"ProfessionalWiki\\NeoWiki\\Tests\\": "tests/phpunit"
 	},
 
 	"Hooks": {
-		"MediaWikiServices": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onMediaWikiServices",
+		"MediaWikiServices": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onMediaWikiServices",
 
-		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
-		"PageDeleteComplete": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onPageDeleteComplete",
-		"RevisionUndeleted": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onRevisionUndeleted",
-		"PageMoveComplete": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onPageMoveComplete",
+		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
+		"PageDeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageDeleteComplete",
+		"RevisionUndeleted": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionUndeleted",
+		"PageMoveComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageMoveComplete",
 
-		"CodeEditorGetPageLanguage": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onCodeEditorGetPageLanguage",
+		"CodeEditorGetPageLanguage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onCodeEditorGetPageLanguage",
 
-		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",
+		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",
 
 		"EditFilter": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFilter",
 
 		"SpecialPage_initList": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSpecialPageInitList",
 
-		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn",
+		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn",
 
-		"SkinTemplateNavigation::Universal": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\NeoWikiHooks::onSkinTemplateNavigationUniversal"
+		"SkinTemplateNavigation::Universal": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSkinTemplateNavigationUniversal"
 	},
 
 	"Actions": {
-		"edit-schema": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\EditSchemaAction"
+		"edit-schema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\EditSchemaAction"
 	},
 
 	"ContentHandlers": {
-		"NeoWikiSubject": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\Content\\SubjectContentHandler",
-		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\Content\\SchemaContentHandler"
+		"NeoWikiSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SubjectContentHandler",
+		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SchemaContentHandler"
 	},
 
 	"namespaces": [
@@ -87,7 +87,7 @@
 	},
 
 	"SpecialPages": {
-		"NeoJson": "ProfessionalWiki\\NeoWiki\\MediaWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson"
+		"NeoJson": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson"
 	},
 
 	"config": {
@@ -106,37 +106,37 @@
 		{
 			"path": "/neowiki/v0/page/{pageId}/mainSubject",
 			"method": [ "POST" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newCreateMainSubjectApi"
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCreateMainSubjectApi"
 		},
 		{
 			"path": "/neowiki/v0/page/{pageId}/childSubjects",
 			"method": [ "POST" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newCreateChildSubjectApi"
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCreateChildSubjectApi"
 		},
 		{
 			"path": "/neowiki/v0/subject/{subjectId}",
 			"method": [ "GET" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newGetSubjectApi"
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectApi"
 		},
 		{
 			"path": "/neowiki/v0/subject/{subjectId}",
 			"method": [ "PATCH" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newPatchSubjectApi"
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newPatchSubjectApi"
 		},
 		{
 			"path": "/neowiki/v0/subject/{subjectId}",
 			"method": [ "DELETE" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newDeleteSubjectApi"
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newDeleteSubjectApi"
 		},
 		{
 			"path": "/neowiki/v0/schema/{schemaName}",
 			"method": [ "GET" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newGetSchemaApi"
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaApi"
 		},
 		{
 			"path": "/neowiki/v0/schema-names/{search}",
 			"method": [ "GET" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\MediaWiki\\NeoWikiExtension::newGetSchemaNamesApi"
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaNamesApi"
 		}
 	],
 

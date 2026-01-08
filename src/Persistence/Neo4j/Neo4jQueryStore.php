@@ -2,15 +2,15 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j;
+namespace ProfessionalWiki\NeoWiki\Persistence\Neo4j;
 
 use DateTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\QueryEngine;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\QueryStore;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\WriteQueryEngine;
+use ProfessionalWiki\NeoWiki\Persistence\QueryEngine;
+use ProfessionalWiki\NeoWiki\Persistence\QueryStore;
+use ProfessionalWiki\NeoWiki\Persistence\WriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;

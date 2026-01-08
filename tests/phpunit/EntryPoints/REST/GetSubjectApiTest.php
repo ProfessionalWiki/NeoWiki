@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\EntryPoints\REST;
+namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
@@ -10,15 +10,15 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\GetSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\MediaWiki\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\GetSubjectApi
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Presentation\RestGetSubjectPresenter
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi
+ * @covers \ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter
  * @group Database
  */
 class GetSubjectApiTest extends NeoWikiIntegrationTestCase {

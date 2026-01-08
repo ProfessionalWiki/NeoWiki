@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\Presentation;
+namespace ProfessionalWiki\NeoWiki\Tests\Presentation;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
@@ -11,14 +11,14 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\NumberFormat;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TextFormat;
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
-use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\SchemaPresentationSerializer;
-use ProfessionalWiki\NeoWiki\Tests\MediaWiki\Data\TestData;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Presentation\SchemaPresentationSerializer
+ * @covers \ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer
  */
 class SchemaPresentationSerializerTest extends TestCase {
 

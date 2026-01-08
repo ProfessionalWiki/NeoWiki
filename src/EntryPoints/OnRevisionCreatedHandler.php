@@ -2,18 +2,18 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints;
+namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentity;
-use ProfessionalWiki\NeoWiki\MediaWiki\PagePropertiesBuilder;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\QueryStore;
+use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
+use ProfessionalWiki\NeoWiki\Persistence\QueryStore;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use WikiPage;
 
 class OnRevisionCreatedHandler {

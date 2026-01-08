@@ -1,12 +1,12 @@
 <?php
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\EntryPoints\SpecialPages;
+namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages;
 
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\SpecialPages\SpecialNeoJson;
+use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialNeoJson;
 use SpecialPageTestBase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\SpecialPages\SpecialNeoJson
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialNeoJson
  */
 class SpecialNeoJsonTest extends SpecialPageTestBase {
 

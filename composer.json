@@ -34,12 +34,12 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"ProfessionalWiki\\NeoWiki\\MediaWiki\\": "src/"
+			"ProfessionalWiki\\NeoWiki\\": "src/"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"ProfessionalWiki\\NeoWiki\\Tests\\MediaWiki\\": "tests/phpunit/"
+			"ProfessionalWiki\\NeoWiki\\Tests\\": "tests/phpunit/"
 		}
 	},
 	"config": {

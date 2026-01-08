@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki;
+namespace ProfessionalWiki\NeoWiki;
 
 use MediaWiki\Config\Config;
 use RuntimeException;
