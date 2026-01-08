@@ -18,28 +18,28 @@
 	"require": {
 		"php": "^8.3",
 		"composer/installers": "^2|^1.0.1",
-		"professional-wiki/neo": "@dev",
 		"opis/json-schema": "^2.3.0",
 		"laudis/neo4j-php-client": "^3.1.2",
 		"twig/twig": "^3.5.1",
 		"jeroen/psr-log-test-doubles": "^3.0.0",
-		"jeroen/file-fetcher": "^6.1.0"
+		"jeroen/file-fetcher": "^6.1.0",
+		"ext-json": "*",
+		"wmde/clock": "^1"
 	},
 	"require-dev": {
 		"vimeo/psalm": "^5.25.0",
 		"phpstan/phpstan": "^1.12.2",
-		"mediawiki/mediawiki-codesniffer": "44.0.0"
+		"mediawiki/mediawiki-codesniffer": "44.0.0",
+		"slevomat/coding-standard": "^v8.15.0"
 	},
 	"autoload": {
 		"psr-4": {
-			"ProfessionalWiki\\NeoWiki\\MediaWiki\\": "src/",
-			"ProfessionalWiki\\NeoWiki\\": "Neo/src"
+			"ProfessionalWiki\\NeoWiki\\MediaWiki\\": "src/"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"ProfessionalWiki\\NeoWiki\\Tests\\MediaWiki\\": "tests/phpunit/",
-			"ProfessionalWiki\\NeoWiki\\Tests\\": "Neo/tests/"
+			"ProfessionalWiki\\NeoWiki\\Tests\\MediaWiki\\": "tests/phpunit/"
 		}
 	},
 	"config": {
@@ -51,11 +51,5 @@
 	},
 	"extra": {
 		"installer-name": "NeoWiki"
-	},
-	"repositories": [
-		{
-			"type": "path",
-			"url": "Neo"
-		}
-	]
+	}
 }
