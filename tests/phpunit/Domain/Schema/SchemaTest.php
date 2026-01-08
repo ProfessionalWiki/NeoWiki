@@ -4,14 +4,15 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema;
 
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
-#[CoversClass( Schema::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Schema
+ */
 class SchemaTest extends TestCase {
 
 	public function testPropertyExists(): void {

@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
@@ -26,7 +25,9 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use RuntimeException;
 
-#[CoversClass( CreateSubjectAction::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction
+ */
 class CreateSubjectActionTest extends TestCase {
 
 	private const string STUB_ID = 'EVNrDCjgVpv9oC';

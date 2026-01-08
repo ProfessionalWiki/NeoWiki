@@ -4,14 +4,15 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\ValueFormat\Formats;
 
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormat;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 
-#[CoversClass( RelationFormat::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat
+ */
 class RelationFormatTest extends TestCase {
 
 	public function testBuildNeo4jValueReturnsSkipIndicator(): void {

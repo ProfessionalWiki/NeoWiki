@@ -5,10 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\CoversClass;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 
-#[CoversClass( NumberProperty::class )]
+/**
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty
+ */
 class NumberPropertyTest extends PropertyTestCase {
 
 	public function testMinimalSerialization(): void {
