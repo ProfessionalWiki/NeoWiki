@@ -25,7 +25,7 @@ JSON
 		);
 	}
 
-	public function canBeUsedOn( Title $title ) {
+	public function canBeUsedOn( Title $title ): bool {
 		return $title->getNamespace() === NeoWikiExtension::NS_SCHEMA;
 	}
 

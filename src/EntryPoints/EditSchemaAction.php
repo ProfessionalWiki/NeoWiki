@@ -13,7 +13,7 @@ class EditSchemaAction extends Action {
 		return 'edit-schema';
 	}
 
-	public function getRestriction() {
+	public function getRestriction(): string {
 		return 'edit';
 	}
 
