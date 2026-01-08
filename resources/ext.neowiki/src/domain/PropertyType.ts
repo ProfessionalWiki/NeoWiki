@@ -1,6 +1,6 @@
-import { PropertyDefinition } from '@neo/domain/PropertyDefinition';
-import type { Value } from '@neo/domain/Value';
-import { ValueType } from '@neo/domain/Value';
+import { PropertyDefinition } from '@/domain/PropertyDefinition';
+import type { Value } from '@/domain/Value';
+import { ValueType } from '@/domain/Value';
 
 export abstract class BasePropertyType<P extends PropertyDefinition, V extends Value> {
 

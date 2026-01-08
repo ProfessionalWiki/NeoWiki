@@ -1,8 +1,8 @@
-import { SubjectId } from '@neo/domain/SubjectId';
-import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
-import { StatementList } from '@neo/domain/StatementList';
-import { StatementDeserializer } from '@neo/persistence/StatementDeserializer';
-import { SubjectWithContext } from '@neo/domain/SubjectWithContext';
+import { SubjectId } from '@/domain/SubjectId';
+import { PageIdentifiers } from '@/domain/PageIdentifiers';
+import { StatementList } from '@/domain/StatementList';
+import { StatementDeserializer } from '@/persistence/StatementDeserializer';
+import { SubjectWithContext } from '@/domain/SubjectWithContext';
 
 export class SubjectDeserializer {
 

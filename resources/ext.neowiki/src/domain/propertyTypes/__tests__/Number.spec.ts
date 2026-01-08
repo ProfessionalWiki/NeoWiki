@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { newNumberProperty, NumberType } from '@neo/domain/propertyTypes/Number';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newNumberValue } from '@neo/domain/Value';
+import { newNumberProperty, NumberType } from '@/domain/propertyTypes/Number';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { newNumberValue } from '@/domain/Value';
 
 describe( 'newNumberProperty', () => {
 	it( 'creates property with default values when no options provided', () => {

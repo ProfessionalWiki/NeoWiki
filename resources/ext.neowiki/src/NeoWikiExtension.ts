@@ -1,13 +1,13 @@
 import { RightsBasedSubjectAuthorizer } from '@/persistence/RightsBasedSubjectAuthorizer.ts';
 import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
 import { RightsFetcher, UserObjectBasedRightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher.ts';
-import { TextType } from '@neo/domain/propertyTypes/Text.ts';
+import { TextType } from '@/domain/propertyTypes/Text.ts';
 import TextDisplay from '@/components/Value/TextDisplay.vue';
-import { UrlType } from '@neo/domain/propertyTypes/Url.ts';
+import { UrlType } from '@/domain/propertyTypes/Url.ts';
 import UrlDisplay from '@/components/Value/UrlDisplay.vue';
-import { NumberType } from '@neo/domain/propertyTypes/Number.ts';
+import { NumberType } from '@/domain/propertyTypes/Number.ts';
 import NumberDisplay from '@/components/Value/NumberDisplay.vue';
-import { RelationType } from '@neo/domain/propertyTypes/Relation.ts';
+import { RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry.ts';
 import RelationDisplay from '@/components/Value/RelationDisplay.vue';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
@@ -18,21 +18,21 @@ import { CsrfSendingHttpClient } from '@/infrastructure/HttpClient/CsrfSendingHt
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 import { RightsBasedSchemaAuthorizer } from '@/persistence/RightsBasedSchemaAuthorizer.ts';
 import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
-import { SubjectRepository } from '@neo/domain/SubjectRepository.ts';
+import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
 import TextInput from '@/components/Value/TextInput.vue';
 import UrlInput from '@/components/Value/UrlInput.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import RelationInput from '@/components/Value/RelationInput.vue';
 import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
-import { SubjectDeserializer } from '@neo/persistence/SubjectDeserializer.ts';
-import { Neo } from '@neo/Neo.ts';
+import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
+import { Neo } from '@/Neo.ts';
 // import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
 import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListNumbered } from '@wikimedia/codex-icons';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
-import { SubjectValidator } from '@neo/domain/SubjectValidator.ts';
-import { PropertyTypeRegistry } from '@neo/domain/PropertyType.ts';
+import { SubjectValidator } from '@/domain/SubjectValidator.ts';
+import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader.ts';
 
 export class NeoWikiExtension {

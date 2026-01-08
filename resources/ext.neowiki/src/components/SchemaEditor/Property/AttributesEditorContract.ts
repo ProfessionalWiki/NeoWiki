@@ -1,4 +1,4 @@
-import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 
 export interface AttributesEditorProps<T extends PropertyDefinition> {
 	property: T;

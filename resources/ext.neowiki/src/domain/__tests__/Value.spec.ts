@@ -8,7 +8,7 @@ import {
 	type Value,
 	valueToJson,
 	ValueType
-} from '@neo/domain/Value';
+} from '@/domain/Value';
 
 describe( 'valueToJson', () => {
 

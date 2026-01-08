@@ -1,10 +1,10 @@
-import type { SubjectRepository } from '@neo/domain/SubjectRepository';
-import { SubjectId } from '@neo/domain/SubjectId';
-import type { SubjectDeserializer } from '@neo/persistence/SubjectDeserializer';
-import { StatementList, statementsToJson } from '@neo/domain/StatementList';
-import { type SchemaName } from '@neo/domain/Schema';
+import type { SubjectRepository } from '@/domain/SubjectRepository';
+import { SubjectId } from '@/domain/SubjectId';
+import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
+import { StatementList, statementsToJson } from '@/domain/StatementList';
+import { type SchemaName } from '@/domain/Schema';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
-import type { Subject } from '@neo/domain/Subject';
+import type { Subject } from '@/domain/Subject';
 
 export type SubjectJson = {
 	id: string;

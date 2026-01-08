@@ -15,8 +15,8 @@
 import { ref, computed } from 'vue';
 import { CdxMenu, MenuItemData } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
-import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition.ts';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps<{

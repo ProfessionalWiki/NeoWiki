@@ -17,14 +17,14 @@
 </template>
 
 <script lang="ts">
-import type { Value } from '@neo/domain/Value';
+import type { Value } from '@/domain/Value';
 </script>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
-import { newNumberValue, NumberValue, ValueType } from '@neo/domain/Value';
-import { NumberType, NumberProperty } from '@neo/domain/propertyTypes/Number.ts';
+import { newNumberValue, NumberValue, ValueType } from '@/domain/Value';
+import { NumberType, NumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 

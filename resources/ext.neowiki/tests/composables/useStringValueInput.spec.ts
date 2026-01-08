@@ -16,9 +16,9 @@ vi.mock( '@/NeoWikiServices.ts', () => ( {
 
 import { validateValue } from '@/composables/useValueValidation.ts';
 import { useStringValueInput } from '@/composables/useStringValueInput.ts';
-import { Value, newStringValue, ValueType } from '@neo/domain/Value.ts';
-import { MultiStringProperty, PropertyName, PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
-import { PropertyType, ValueValidationError } from '@neo/domain/PropertyType.ts';
+import { Value, newStringValue, ValueType } from '@/domain/Value.ts';
+import { MultiStringProperty, PropertyName, PropertyDefinition } from '@/domain/PropertyDefinition.ts';
+import { PropertyType, ValueValidationError } from '@/domain/PropertyType.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const mockedValidateValue = validateValue as MockedFunction<typeof validateValue>;

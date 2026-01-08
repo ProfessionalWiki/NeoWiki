@@ -1,4 +1,4 @@
-import { PropertyTypeRegistry } from '@neo/domain/PropertyType';
+import { PropertyTypeRegistry } from '@/domain/PropertyType';
 import {
 	newBooleanValue,
 	newNumberValue,
@@ -7,7 +7,7 @@ import {
 	RelationValue,
 	Value,
 	ValueType
-} from '@neo/domain/Value';
+} from '@/domain/Value';
 
 export class ValueDeserializer {
 

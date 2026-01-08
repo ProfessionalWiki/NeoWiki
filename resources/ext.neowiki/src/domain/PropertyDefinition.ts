@@ -1,7 +1,7 @@
-import { Neo } from '@neo/Neo';
-import { PropertyTypeRegistry } from '@neo/domain/PropertyType';
-import { Value } from '@neo/domain/Value';
-import { ValueDeserializer } from '@neo/persistence/ValueDeserializer';
+import { Neo } from '@/Neo';
+import { PropertyTypeRegistry } from '@/domain/PropertyType';
+import { Value } from '@/domain/Value';
+import { ValueDeserializer } from '@/persistence/ValueDeserializer';
 
 export class PropertyName {
 

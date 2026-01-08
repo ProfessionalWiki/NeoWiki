@@ -1,12 +1,12 @@
-import { TextType } from '@neo/domain/propertyTypes/Text';
-import { NumberType } from '@neo/domain/propertyTypes/Number';
-import { RelationType } from '@neo/domain/propertyTypes/Relation';
-import { UrlType } from '@neo/domain/propertyTypes/Url';
-import { PropertyTypeRegistry } from '@neo/domain/PropertyType';
-import { PropertyDefinitionDeserializer } from '@neo/domain/PropertyDefinition';
-import { ValueDeserializer } from '@neo/persistence/ValueDeserializer';
-import { StatementDeserializer } from '@neo/persistence/StatementDeserializer';
-import { SubjectDeserializer } from '@neo/persistence/SubjectDeserializer';
+import { TextType } from '@/domain/propertyTypes/Text';
+import { NumberType } from '@/domain/propertyTypes/Number';
+import { RelationType } from '@/domain/propertyTypes/Relation';
+import { UrlType } from '@/domain/propertyTypes/Url';
+import { PropertyTypeRegistry } from '@/domain/PropertyType';
+import { PropertyDefinitionDeserializer } from '@/domain/PropertyDefinition';
+import { ValueDeserializer } from '@/persistence/ValueDeserializer';
+import { StatementDeserializer } from '@/persistence/StatementDeserializer';
+import { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
 
 export class Neo {
 

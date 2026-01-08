@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import { newTextProperty } from '@neo/domain/propertyTypes/Text';
-import { newSchema } from '@neo/TestHelpers';
-import { newNumberProperty } from '@neo/domain/propertyTypes/Number';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
+import { newTextProperty } from '@/domain/propertyTypes/Text';
+import { newSchema } from '@/TestHelpers';
+import { newNumberProperty } from '@/domain/propertyTypes/Number';
 
 describe( 'Schema', () => {
 

@@ -1,10 +1,10 @@
-import type { SubjectLookup } from '@neo/domain/SubjectLookup';
-import type { SchemaName } from '@neo/domain/Schema';
-import type { SubjectMap } from '@neo/domain/SubjectMap';
-import type { SubjectId } from '@neo/domain/SubjectId';
-import type { StatementList } from '@neo/domain/StatementList';
-import type { PropertyName } from '@neo/domain/PropertyDefinition';
-import type { Value } from '@neo/domain/Value';
+import type { SubjectLookup } from '@/domain/SubjectLookup';
+import type { SchemaName } from '@/domain/Schema';
+import type { SubjectMap } from '@/domain/SubjectMap';
+import type { SubjectId } from '@/domain/SubjectId';
+import type { StatementList } from '@/domain/StatementList';
+import type { PropertyName } from '@/domain/PropertyDefinition';
+import type { Value } from '@/domain/Value';
 
 export class Subject {
 

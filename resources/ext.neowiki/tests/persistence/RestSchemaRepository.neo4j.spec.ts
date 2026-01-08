@@ -1,11 +1,11 @@
 import { RestSchemaRepository } from '@/persistence/RestSchemaRepository';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { Schema } from '@neo/domain/Schema';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { Schema } from '@/domain/Schema';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
-import { TextType } from '@neo/domain/propertyTypes/Text';
+import { TextType } from '@/domain/propertyTypes/Text';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { FailingPageSaver, PageSaver, SucceedingPageSaver } from '@/persistence/PageSaver.ts';
 

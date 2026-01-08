@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer';
-import { Schema } from '@neo/domain/Schema';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newTextProperty } from '@neo/domain/propertyTypes/Text';
-import { newUrlProperty } from '@neo/domain/propertyTypes/Url';
-import { newNumberProperty } from '@neo/domain/propertyTypes/Number';
-import { newRelationProperty } from '@neo/domain/propertyTypes/Relation';
+import { Schema } from '@/domain/Schema';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { newTextProperty } from '@/domain/propertyTypes/Text';
+import { newUrlProperty } from '@/domain/propertyTypes/Url';
+import { newNumberProperty } from '@/domain/propertyTypes/Number';
+import { newRelationProperty } from '@/domain/propertyTypes/Relation';
 
 describe( 'SchemaSerializer', () => {
 	const serializer = new SchemaSerializer();

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { createPropertyDefinitionFromJson, PropertyName } from '@neo/domain/PropertyDefinition';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import { newTextProperty } from '@neo/domain/propertyTypes/Text';
+import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
+import { newTextProperty } from '@/domain/propertyTypes/Text';
 
 describe( 'PropertyDefinitionList', () => {
 

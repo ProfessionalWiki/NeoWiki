@@ -1,8 +1,8 @@
-import { Subject } from '@neo/domain/Subject';
-import type { SubjectId } from '@neo/domain/SubjectId';
-import type { SchemaName } from '@neo/domain/Schema';
-import type { StatementList } from '@neo/domain/StatementList';
-import type { PageIdentifiers } from '@neo/domain/PageIdentifiers';
+import { Subject } from '@/domain/Subject';
+import type { SubjectId } from '@/domain/SubjectId';
+import type { SchemaName } from '@/domain/Schema';
+import type { StatementList } from '@/domain/StatementList';
+import type { PageIdentifiers } from '@/domain/PageIdentifiers';
 
 export class SubjectWithContext extends Subject {
 

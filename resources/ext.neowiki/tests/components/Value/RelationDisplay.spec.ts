@@ -1,12 +1,12 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import RelationDisplay from '@/components/Value/RelationDisplay.vue';
-import { Relation, RelationValue } from '@neo/domain/Value.ts';
-import { SubjectId } from '@neo/domain/SubjectId.ts';
-import { newRelationProperty } from '@neo/domain/propertyTypes/Relation.ts';
+import { Relation, RelationValue } from '@/domain/Value.ts';
+import { SubjectId } from '@/domain/SubjectId.ts';
+import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { SubjectWithContext } from '@neo/domain/SubjectWithContext.ts';
-import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
+import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 
 vi.mock( '@/stores/SubjectStore.ts' );
 

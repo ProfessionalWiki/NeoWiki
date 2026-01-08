@@ -36,7 +36,7 @@
 
 <script setup lang="ts">
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
-import { NumberProperty } from '@neo/domain/propertyTypes/Number.ts';
+import { NumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 
 defineProps<AttributesEditorProps<NumberProperty>>();

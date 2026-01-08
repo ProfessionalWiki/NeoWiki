@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { Schema } from '@neo/domain/Schema.ts';
+import { Schema } from '@/domain/Schema.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
 export const useSchemaStore = defineStore( 'schema', {

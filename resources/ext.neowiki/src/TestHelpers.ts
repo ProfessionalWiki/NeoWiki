@@ -1,9 +1,9 @@
-import { SubjectId } from '@neo/domain/SubjectId';
-import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
-import { Schema } from '@neo/domain/Schema';
-import { StatementList } from '@neo/domain/StatementList';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import { SubjectWithContext } from '@neo/domain/SubjectWithContext';
+import { SubjectId } from '@/domain/SubjectId';
+import { PageIdentifiers } from '@/domain/PageIdentifiers';
+import { Schema } from '@/domain/Schema';
+import { StatementList } from '@/domain/StatementList';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
+import { SubjectWithContext } from '@/domain/SubjectWithContext';
 
 export const DEFAULT_SUBJECT_ID = 's11111111111111';
 export const DEFAULT_TEST_SUBJECT_LABEL = 'Test subject';

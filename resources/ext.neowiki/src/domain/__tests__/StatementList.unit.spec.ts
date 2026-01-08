@@ -1,13 +1,13 @@
-import { Statement } from '@neo/domain/Statement';
+import { Statement } from '@/domain/Statement';
 import { describe, expect, it } from 'vitest';
-import { SubjectId } from '@neo/domain/SubjectId';
-import { StatementList, statementsToJson } from '@neo/domain/StatementList';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { SubjectId } from '@/domain/SubjectId';
+import { StatementList, statementsToJson } from '@/domain/StatementList';
+import { PropertyName } from '@/domain/PropertyDefinition';
 import { newNumberValue, newRelation, newStringValue, RelationValue } from '../Value';
-import { Neo } from '@neo/Neo';
-import { TextType } from '@neo/domain/propertyTypes/Text';
-import { NumberType } from '@neo/domain/propertyTypes/Number';
-import { RelationType } from '@neo/domain/propertyTypes/Relation';
+import { Neo } from '@/Neo';
+import { TextType } from '@/domain/propertyTypes/Text';
+import { NumberType } from '@/domain/propertyTypes/Number';
+import { RelationType } from '@/domain/propertyTypes/Relation';
 
 describe( 'StatementList', () => {
 

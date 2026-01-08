@@ -1,7 +1,7 @@
-import { PropertyType, PropertyTypeRegistry } from '@neo/domain/PropertyType';
-import { Subject } from '@neo/domain/Subject';
-import { Schema } from '@neo/domain/Schema';
-import { Statement } from '@neo/domain/Statement';
+import { PropertyType, PropertyTypeRegistry } from '@/domain/PropertyType';
+import { Subject } from '@/domain/Subject';
+import { Schema } from '@/domain/Schema';
+import { Statement } from '@/domain/Statement';
 
 export class SubjectValidator {
 

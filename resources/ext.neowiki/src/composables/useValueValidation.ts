@@ -1,6 +1,6 @@
-import { Value } from '@neo/domain/Value';
-import { PropertyType } from '@neo/domain/PropertyType';
-import { PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import { Value } from '@/domain/Value';
+import { PropertyType } from '@/domain/PropertyType';
+import { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { ValidationMessages } from '@wikimedia/codex';
 
 export function validateValue( value: Value, propertyType: PropertyType, property: PropertyDefinition ): ValidationMessages {

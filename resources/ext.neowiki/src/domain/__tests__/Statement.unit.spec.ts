@@ -1,8 +1,8 @@
-import { Statement } from '@neo/domain/Statement';
+import { Statement } from '@/domain/Statement';
 import { describe, expect, it } from 'vitest';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { TextType } from '@neo/domain/propertyTypes/Text';
-import { newStringValue } from '@neo/domain/Value';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { TextType } from '@/domain/propertyTypes/Text';
+import { newStringValue } from '@/domain/Value';
 
 describe( 'Statement', () => {
 

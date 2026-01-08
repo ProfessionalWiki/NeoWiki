@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition.ts';
+import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { CdxField, CdxSelect, CdxTextArea, CdxTextInput, CdxToggleSwitch } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { nextTick, onMounted, ref, watch } from 'vue';

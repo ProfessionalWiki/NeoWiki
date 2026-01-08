@@ -1,7 +1,7 @@
 import { test, expect, describe, it } from 'vitest';
-import { newUrlProperty, UrlType, isValidUrl, UrlFormatter } from '@neo/domain/propertyTypes/Url';
-import { newStringValue } from '@neo/domain/Value';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { newUrlProperty, UrlType, isValidUrl, UrlFormatter } from '@/domain/propertyTypes/Url';
+import { newStringValue } from '@/domain/Value';
+import { PropertyName } from '@/domain/PropertyDefinition';
 
 test.each( [
 	[ '', false ],

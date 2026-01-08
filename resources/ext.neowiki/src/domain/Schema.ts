@@ -1,6 +1,6 @@
-import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
+import type { PropertyDefinition } from '@/domain/PropertyDefinition';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 
 export type SchemaName = string;
 

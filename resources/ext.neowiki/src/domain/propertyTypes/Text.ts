@@ -1,7 +1,7 @@
-import type { MultiStringProperty, PropertyDefinition } from '@neo/domain/PropertyDefinition';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newStringValue, type StringValue, ValueType } from '@neo/domain/Value';
-import { BasePropertyType, ValueValidationError } from '@neo/domain/PropertyType';
+import type { MultiStringProperty, PropertyDefinition } from '@/domain/PropertyDefinition';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
+import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
 
 export interface TextProperty extends MultiStringProperty {
 

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { Neo } from '@neo/Neo';
-import { SubjectId } from '@neo/domain/SubjectId';
-import { StatementList } from '@neo/domain/StatementList';
-import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
-import { TextType } from '@neo/domain/propertyTypes/Text';
-import { Statement } from '@neo/domain/Statement';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newNumberValue, newStringValue } from '@neo/domain/Value';
-import { NumberType } from '@neo/domain/propertyTypes/Number';
-import { SubjectWithContext } from '@neo/domain/SubjectWithContext';
+import { Neo } from '@/Neo';
+import { SubjectId } from '@/domain/SubjectId';
+import { StatementList } from '@/domain/StatementList';
+import { PageIdentifiers } from '@/domain/PageIdentifiers';
+import { TextType } from '@/domain/propertyTypes/Text';
+import { Statement } from '@/domain/Statement';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { newNumberValue, newStringValue } from '@/domain/Value';
+import { NumberType } from '@/domain/propertyTypes/Number';
+import { SubjectWithContext } from '@/domain/SubjectWithContext';
 
 describe( 'SubjectDeserializer', () => {
 

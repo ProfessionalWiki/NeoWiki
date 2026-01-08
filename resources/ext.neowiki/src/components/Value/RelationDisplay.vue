@@ -23,11 +23,11 @@
 
 <script setup lang="ts">
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
-import { RelationProperty } from '@neo/domain/propertyTypes/Relation.ts';
+import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { ref, watch } from 'vue';
-import { Value, RelationValue, Relation } from '@neo/domain/Value.ts';
+import { Value, RelationValue, Relation } from '@/domain/Value.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { SubjectWithContext } from '@neo/domain/SubjectWithContext.ts';
+import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 
 interface RelationDisplayValueData {
 	text: string;

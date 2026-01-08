@@ -1,6 +1,6 @@
-import { ValueDeserializer } from '@neo/persistence/ValueDeserializer';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { Statement } from '@neo/domain/Statement';
+import { ValueDeserializer } from '@/persistence/ValueDeserializer';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { Statement } from '@/domain/Statement';
 
 interface StatementJson {
 

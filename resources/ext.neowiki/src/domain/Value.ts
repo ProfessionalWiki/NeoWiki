@@ -1,4 +1,4 @@
-import { SubjectId } from '@neo/domain/SubjectId';
+import { SubjectId } from '@/domain/SubjectId';
 
 export enum ValueType {
 

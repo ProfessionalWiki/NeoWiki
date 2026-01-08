@@ -22,8 +22,8 @@ import { ref, watch, defineExpose, computed } from 'vue';
 import { CdxField, ValidationMessages } from '@wikimedia/codex';
 import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
 import { ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
-import { RelationProperty, RelationType } from '@neo/domain/propertyTypes/Relation.ts';
-import { Value, ValueType, RelationValue, Relation, newRelation } from '@neo/domain/Value';
+import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
+import { Value, ValueType, RelationValue, Relation, newRelation } from '@/domain/Value';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = withDefaults(

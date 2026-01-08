@@ -1,8 +1,8 @@
-import { SubjectId } from '@neo/domain/SubjectId';
-import type { SubjectLookup } from '@neo/domain/SubjectLookup';
-import { InMemorySubjectLookup } from '@neo/domain/SubjectLookup';
-import type { StatementList } from '@neo/domain/StatementList';
-import type { SchemaName } from '@neo/domain/Schema';
+import { SubjectId } from '@/domain/SubjectId';
+import type { SubjectLookup } from '@/domain/SubjectLookup';
+import { InMemorySubjectLookup } from '@/domain/SubjectLookup';
+import type { StatementList } from '@/domain/StatementList';
+import type { SchemaName } from '@/domain/Schema';
 
 export interface SubjectRepository extends SubjectLookup {
 

@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository';
-import { SubjectId } from '@neo/domain/SubjectId';
-import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
-import { StatementList } from '@neo/domain/StatementList';
-import { Statement } from '@neo/domain/Statement';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newStringValue } from '@neo/domain/Value';
-import { TextType } from '@neo/domain/propertyTypes/Text';
+import { SubjectId } from '@/domain/SubjectId';
+import { PageIdentifiers } from '@/domain/PageIdentifiers';
+import { StatementList } from '@/domain/StatementList';
+import { Statement } from '@/domain/Statement';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { newStringValue } from '@/domain/Value';
+import { TextType } from '@/domain/propertyTypes/Text';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
-import { UrlType } from '@neo/domain/propertyTypes/Url';
+import { UrlType } from '@/domain/propertyTypes/Url';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
-import { SubjectWithContext } from '@neo/domain/SubjectWithContext.ts';
+import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 
 function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSubjectRepository {
 	return new RestSubjectRepository(

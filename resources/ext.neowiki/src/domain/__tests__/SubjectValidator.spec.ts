@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { SubjectValidator } from '@neo/domain/SubjectValidator';
-import { BasePropertyType, PropertyTypeRegistry, ValueValidationError } from '@neo/domain/PropertyType';
-import { Subject } from '@neo/domain/Subject';
-import { Schema } from '@neo/domain/Schema';
-import { StatementList } from '@neo/domain/StatementList';
-import { Statement } from '@neo/domain/Statement';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
-import { newStringValue, Value, ValueType } from '@neo/domain/Value';
-import { newSubject } from '@neo/TestHelpers';
+import { SubjectValidator } from '@/domain/SubjectValidator';
+import { BasePropertyType, PropertyTypeRegistry, ValueValidationError } from '@/domain/PropertyType';
+import { Subject } from '@/domain/Subject';
+import { Schema } from '@/domain/Schema';
+import { StatementList } from '@/domain/StatementList';
+import { Statement } from '@/domain/Statement';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
+import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
+import { newStringValue, Value, ValueType } from '@/domain/Value';
+import { newSubject } from '@/TestHelpers';
 
 describe( 'SubjectValidator', () => {
 

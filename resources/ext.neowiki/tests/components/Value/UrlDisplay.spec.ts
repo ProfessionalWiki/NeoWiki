@@ -1,8 +1,8 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import UrlDisplay from '@/components/Value/UrlDisplay.vue';
-import { newNumberValue, newStringValue, Value } from '@neo/domain/Value';
-import { newUrlProperty } from '@neo/domain/propertyTypes/Url.ts';
+import { newNumberValue, newStringValue, Value } from '@/domain/Value';
+import { newUrlProperty } from '@/domain/propertyTypes/Url.ts';
 
 function createWrapper( ...urls: string[] ): ReturnType<typeof mount> {
 	return createWrapperWithValue( newStringValue( urls ) );

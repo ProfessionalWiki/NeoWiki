@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
+import { PropertyName } from '@/domain/PropertyDefinition';
 
 describe( 'PropertyName constructor', () => {
 

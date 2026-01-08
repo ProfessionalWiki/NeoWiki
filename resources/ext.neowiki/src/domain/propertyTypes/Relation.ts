@@ -1,8 +1,8 @@
-import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newRelation, RelationValue, ValueType } from '@neo/domain/Value';
-import { BasePropertyType, ValueValidationError } from '@neo/domain/PropertyType';
-import { SubjectId } from '@neo/domain/SubjectId';
+import type { PropertyDefinition } from '@/domain/PropertyDefinition';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { newRelation, RelationValue, ValueType } from '@/domain/Value';
+import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
+import { SubjectId } from '@/domain/SubjectId';
 
 export interface RelationProperty extends PropertyDefinition {
 

@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { SubjectId } from '@neo/domain/SubjectId';
+import { SubjectId } from '@/domain/SubjectId';
 import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';

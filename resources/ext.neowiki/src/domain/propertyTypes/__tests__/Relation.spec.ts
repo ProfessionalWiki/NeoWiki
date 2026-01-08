@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { newRelationProperty, RelationType } from '@neo/domain/propertyTypes/Relation';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newRelation, Relation, RelationValue } from '@neo/domain/Value';
+import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { newRelation, Relation, RelationValue } from '@/domain/Value';
 
 describe( 'newRelationProperty', () => {
 	it( 'creates property with default values when no attributes provided', () => {

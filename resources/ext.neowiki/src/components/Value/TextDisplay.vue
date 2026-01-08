@@ -5,10 +5,10 @@
 </template>
 
 <script setup lang="ts">
-import { ValueType } from '@neo/domain/Value.ts';
+import { ValueType } from '@/domain/Value.ts';
 import { computed } from 'vue';
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
-import { TextProperty } from '@neo/domain/propertyTypes/Text.ts';
+import { TextProperty } from '@/domain/propertyTypes/Text.ts';
 
 const props = defineProps<ValueDisplayProps<TextProperty>>();
 

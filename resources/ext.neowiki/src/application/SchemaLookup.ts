@@ -1,4 +1,4 @@
-import type { Schema, SchemaName } from '@neo/domain/Schema';
+import type { Schema, SchemaName } from '@/domain/Schema';
 
 export interface SchemaLookup {
 

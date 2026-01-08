@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { newNumberValue, newRelation, newStringValue, RelationValue } from '@neo/domain/Value';
-import { Neo } from '@neo/Neo';
+import { newNumberValue, newRelation, newStringValue, RelationValue } from '@/domain/Value';
+import { Neo } from '@/Neo';
 
 describe( 'ValueDeserializer', () => {
 

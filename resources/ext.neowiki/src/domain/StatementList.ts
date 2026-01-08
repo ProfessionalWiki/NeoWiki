@@ -1,10 +1,10 @@
-import type { SubjectLookup } from '@neo/domain/SubjectLookup';
-import { SubjectMap } from '@neo/domain/SubjectMap';
-import { SubjectId } from '@neo/domain/SubjectId';
-import { Statement } from '@neo/domain/Statement';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { RelationValue, type Value, valueToJson } from '@neo/domain/Value';
-import type { Subject } from '@neo/domain/Subject';
+import type { SubjectLookup } from '@/domain/SubjectLookup';
+import { SubjectMap } from '@/domain/SubjectMap';
+import { SubjectId } from '@/domain/SubjectId';
+import { Statement } from '@/domain/Statement';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { RelationValue, type Value, valueToJson } from '@/domain/Value';
+import type { Subject } from '@/domain/Subject';
 
 export class StatementList implements Iterable<Statement> {
 

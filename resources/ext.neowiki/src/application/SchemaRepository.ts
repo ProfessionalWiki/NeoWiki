@@ -1,5 +1,5 @@
 import { InMemorySchemaLookup, SchemaLookup } from '@/application/SchemaLookup';
-import { Schema } from '@neo/domain/Schema.ts';
+import { Schema } from '@/domain/Schema.ts';
 
 export interface SchemaRepository extends SchemaLookup {
 

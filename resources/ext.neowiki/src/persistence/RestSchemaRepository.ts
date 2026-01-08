@@ -1,6 +1,6 @@
-import { Schema, type SchemaName } from '@neo/domain/Schema';
-import { createPropertyDefinitionFromJson } from '@neo/domain/PropertyDefinition';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
+import { Schema, type SchemaName } from '@/domain/Schema';
+import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { SchemaRepository } from '@/application/SchemaRepository';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';

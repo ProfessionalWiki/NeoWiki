@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SUBJECT_ID, newSubject } from '@neo/TestHelpers';
-import { SubjectMap } from '@neo/domain/SubjectMap';
-import { InMemorySubjectLookup } from '@neo/domain/SubjectLookup';
-import { PageIdentifiers } from '@neo/domain/PageIdentifiers';
-import { StatementList } from '@neo/domain/StatementList';
-import { Neo } from '@neo/Neo';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newStringValue } from '@neo/domain/Value';
-import { Statement } from '@neo/domain/Statement';
-import { TextType } from '@neo/domain/propertyTypes/Text';
-import { RelationType } from '@neo/domain/propertyTypes/Relation';
+import { DEFAULT_SUBJECT_ID, newSubject } from '@/TestHelpers';
+import { SubjectMap } from '@/domain/SubjectMap';
+import { InMemorySubjectLookup } from '@/domain/SubjectLookup';
+import { PageIdentifiers } from '@/domain/PageIdentifiers';
+import { StatementList } from '@/domain/StatementList';
+import { Neo } from '@/Neo';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { newStringValue } from '@/domain/Value';
+import { Statement } from '@/domain/Statement';
+import { TextType } from '@/domain/propertyTypes/Text';
+import { RelationType } from '@/domain/propertyTypes/Relation';
 
 describe( 'Subject', () => {
 

@@ -1,7 +1,7 @@
-import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newNumberValue, type NumberValue, ValueType } from '@neo/domain/Value';
-import { BasePropertyType, ValueValidationError } from '@neo/domain/PropertyType';
+import type { PropertyDefinition } from '@/domain/PropertyDefinition';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { newNumberValue, type NumberValue, ValueType } from '@/domain/Value';
+import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
 
 export interface NumberProperty extends PropertyDefinition {
 

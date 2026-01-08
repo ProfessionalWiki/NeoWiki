@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { newTextProperty, TextType } from '@neo/domain/propertyTypes/Text';
-import { PropertyName } from '@neo/domain/PropertyDefinition';
-import { newStringValue } from '@neo/domain/Value';
+import { newTextProperty, TextType } from '@/domain/propertyTypes/Text';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { newStringValue } from '@/domain/Value';
 
 describe( 'TextType', () => {
 
