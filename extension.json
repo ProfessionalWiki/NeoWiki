@@ -23,13 +23,11 @@
 	},
 
 	"AutoloadNamespaces": {
-		"ProfessionalWiki\\NeoWiki\\MediaWiki\\": "src/",
-		"ProfessionalWiki\\NeoWiki\\": "Neo/src/"
+		"ProfessionalWiki\\NeoWiki\\MediaWiki\\": "src/"
 	},
 
 	"TestAutoloadNamespaces": {
-		"ProfessionalWiki\\NeoWiki\\Tests\\MediaWiki\\": "tests/phpunit",
-		"ProfessionalWiki\\NeoWiki\\Tests\\": "Neo/tests"
+		"ProfessionalWiki\\NeoWiki\\Tests\\MediaWiki\\": "tests/phpunit"
 	},
 
 	"Hooks": {

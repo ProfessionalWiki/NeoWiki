@@ -2,9 +2,9 @@
 
 declare( strict_types=1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\TestDoubles;
+namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
-use ProfessionalWiki\NeoWiki\Infrastructure\SchemaAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SchemaAuthorizer;
 
 class SucceedingSchemaAuthorizer implements SchemaAuthorizer {
 
