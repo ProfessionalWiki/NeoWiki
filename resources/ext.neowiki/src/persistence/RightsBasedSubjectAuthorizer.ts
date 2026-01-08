@@ -1,5 +1,5 @@
 import type { SubjectAuthorizer } from '@/application/SubjectAuthorizer';
-import type { SubjectId } from '@neo/domain/SubjectId';
+import type { SubjectId } from '@/domain/SubjectId';
 import type { RightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher';
 
 export class RightsBasedSubjectAuthorizer implements SubjectAuthorizer {

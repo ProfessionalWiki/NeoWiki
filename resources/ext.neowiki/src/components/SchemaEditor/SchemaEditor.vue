@@ -18,12 +18,12 @@
 </template>
 
 <script setup lang="ts">
-import { PropertyDefinition, PropertyName } from '@neo/domain/PropertyDefinition';
-import { Schema } from '@neo/domain/Schema.ts';
+import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
+import { Schema } from '@/domain/Schema.ts';
 import { computed, ref } from 'vue';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import PropertyDefinitionEditor from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 
 const props = defineProps<{
 	initialSchema: Schema;

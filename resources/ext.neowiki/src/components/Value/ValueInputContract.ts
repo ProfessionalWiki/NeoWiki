@@ -1,5 +1,5 @@
-import type { Value } from '@neo/domain/Value';
-import type { PropertyDefinition } from '@neo/domain/PropertyDefinition';
+import type { Value } from '@/domain/Value';
+import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 
 export interface ValueInputProps<T extends PropertyDefinition> {
 	modelValue: Value | undefined;

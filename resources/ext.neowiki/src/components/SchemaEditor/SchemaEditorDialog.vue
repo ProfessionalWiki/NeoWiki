@@ -21,7 +21,7 @@
 import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import { CdxDialog } from '@wikimedia/codex';
-import { Schema } from '@neo/domain/Schema.ts';
+import { Schema } from '@/domain/Schema.ts';
 import { ref } from 'vue';
 
 defineProps<{ initialSchema: Schema }>();

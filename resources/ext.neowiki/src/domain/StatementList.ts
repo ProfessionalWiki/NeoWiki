@@ -1,0 +1,133 @@
+import type { SubjectLookup } from '@/domain/SubjectLookup';
+import { SubjectMap } from '@/domain/SubjectMap';
+import { SubjectId } from '@/domain/SubjectId';
+import { Statement } from '@/domain/Statement';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { RelationValue, type Value, valueToJson } from '@/domain/Value';
+import type { Subject } from '@/domain/Subject';
+
+export class StatementList implements Iterable<Statement> {
+
+	private readonly statements: Record<string, Statement>;
+
+	public constructor( statements: Statement[] ) {
+		this.statements = {};
+
+		for ( const statement of statements ) {
+			const propertyName = statement.propertyName.toString();
+
+			if ( this.statements[ propertyName ] ) {
+				throw new Error( `Cannot have two statements with property name: ${ propertyName }` );
+			}
+
+			this.statements[ propertyName ] = statement;
+		}
+	}
+
+	public get( name: PropertyName ): Statement {
+		return this.statements[ name.toString() ];
+	}
+
+	public has( name: PropertyName ): boolean {
+		return name.toString() in this.statements;
+	}
+
+	public [ Symbol.iterator ](): Iterator<Statement> {
+		const statements = Object.values( this.statements );
+		let index = 0;
+
+		return {
+			next: (): IteratorResult<Statement> => {
+				if ( index < statements.length ) {
+					return { value: statements[ index++ ], done: false };
+				} else {
+					return { value: undefined, done: true };
+				}
+			}
+		};
+	}
+
+	public getPropertyNames(): PropertyName[] {
+		return Object.keys( this.statements ).map( ( name ) => new PropertyName( name ) );
+	}
+
+	public withNonEmptyValues(): StatementList {
+		return this.filter( ( statement ) => statement.hasValue() );
+	}
+
+	public withOnlyRelationValues(): StatementList {
+		return this.filter( ( statement ) => statement.value instanceof RelationValue );
+	}
+
+	private filter( callback: ( property: Statement ) => boolean ): StatementList {
+		return new StatementList(
+			Object.values( this.statements ).filter( callback )
+		);
+	}
+
+	public asPropertyValueRecord(): Record<string, Value|undefined> {
+		const record: Record<string, Value|undefined> = {};
+
+		for ( const statement of this ) {
+			record[ statement.propertyName.toString() ] = statement.value;
+		}
+
+		return record;
+	}
+
+	public async getReferencedSubjects( lookup: SubjectLookup ): Promise<SubjectMap> {
+		const ids = [ ...this.getIdsOfReferencedSubjects() ];
+
+		// TODO: Replace lookup with BatchSubjectLookup
+		return new SubjectMap(
+			...( await Promise.all(
+				ids.map( async ( id ) => {
+					try {
+						return await lookup.getSubject( id );
+					} catch ( _error ) {
+						return null;
+					}
+				} )
+			) ).filter( ( subject ): subject is Subject => subject !== null )
+		);
+	}
+
+	public getIdsOfReferencedSubjects(): Set<SubjectId> {
+		const relationValues = this.getValuesOfType( RelationValue );
+		return new Set(
+			relationValues.flatMap( ( value ) => value.targetIds )
+		);
+	}
+
+	private getValuesOfType<T extends Value>( type: new( ...args: any[] ) => T ): T[] {
+		return [ ...this ]
+			.map( ( statement ) => statement.value )
+			.filter( ( value ): value is T => value instanceof type );
+	}
+
+}
+
+export function statementsToJson( statements: StatementList ): Record<string, unknown> {
+	const valuesJson: Record<string, unknown> = {};
+
+	for ( const statement of statements ) {
+		if ( statement.value === undefined ) {
+			valuesJson[ statement.propertyName.toString() ] = null;
+			continue;
+		}
+
+		const value = valueToJson( statement.value );
+
+		if ( typeof value === 'number' && isNaN( value ) ) {
+			valuesJson[ statement.propertyName.toString() ] = null;
+			continue;
+		}
+
+		valuesJson[ statement.propertyName.toString() ] = {
+			value: value,
+			propertyType: statement.propertyType
+		};
+	}
+
+	return valuesJson;
+}

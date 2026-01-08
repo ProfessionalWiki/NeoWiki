@@ -1,4 +1,4 @@
-import type { SubjectId } from '@neo/domain/SubjectId';
+import type { SubjectId } from '@/domain/SubjectId';
 
 export interface SubjectAuthorizer {
 

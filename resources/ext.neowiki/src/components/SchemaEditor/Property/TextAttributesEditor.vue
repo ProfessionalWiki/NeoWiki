@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { MultiStringProperty } from '@neo/domain/PropertyDefinition.ts';
+import { MultiStringProperty } from '@/domain/PropertyDefinition.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { CdxToggleSwitch, CdxField } from '@wikimedia/codex';
 

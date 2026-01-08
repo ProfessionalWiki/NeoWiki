@@ -1,10 +1,10 @@
 import { ref, watch, computed, ComputedRef, Ref } from 'vue';
 import { Icon } from '@wikimedia/codex-icons';
 import { ValidationMessages } from '@wikimedia/codex';
-import { Value, StringValue } from '@neo/domain/Value.ts';
-import { newStringValue, ValueType } from '@neo/domain/Value.ts';
-import { MultiStringProperty } from '@neo/domain/PropertyDefinition.ts';
-import { PropertyType } from '@neo/domain/PropertyType.ts';
+import { Value, StringValue } from '@/domain/Value.ts';
+import { newStringValue, ValueType } from '@/domain/Value.ts';
+import { MultiStringProperty } from '@/domain/PropertyDefinition.ts';
+import { PropertyType } from '@/domain/PropertyType.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { validateValue } from '@/composables/useValueValidation.ts';
 

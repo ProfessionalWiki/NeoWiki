@@ -1,8 +1,8 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, test } from 'vitest';
 import NumberDisplay from '@/components/Value/NumberDisplay.vue';
-import { newNumberValue, newStringValue } from '@neo/domain/Value';
-import { newNumberProperty, NumberProperty } from '@neo/domain/propertyTypes/Number';
+import { newNumberValue, newStringValue } from '@/domain/Value';
+import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
 
 function createWrapperWithNumber( number: number ): ReturnType<typeof mount> {

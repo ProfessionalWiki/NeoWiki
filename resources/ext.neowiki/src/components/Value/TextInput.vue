@@ -29,7 +29,7 @@
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { toRef } from 'vue';
 import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
-import { TextProperty, TextType } from '@neo/domain/propertyTypes/Text.ts';
+import { TextProperty, TextType } from '@/domain/propertyTypes/Text.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { useStringValueInput } from '@/composables/useStringValueInput.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';

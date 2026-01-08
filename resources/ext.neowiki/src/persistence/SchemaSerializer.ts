@@ -1,7 +1,7 @@
-import { Schema } from '@neo/domain/Schema';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList';
-import { PropertyDefinition } from '@neo/domain/PropertyDefinition';
-import { valueToJson } from '@neo/domain/Value';
+import { Schema } from '@/domain/Schema';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
+import { PropertyDefinition } from '@/domain/PropertyDefinition';
+import { valueToJson } from '@/domain/Value';
 
 export class SchemaSerializer {
 

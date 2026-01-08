@@ -47,13 +47,13 @@
 
 <script setup lang="ts">
 import { Component, computed } from 'vue';
-import { Subject } from '@neo/domain/Subject.ts';
-import { PropertyDefinition } from '@neo/domain/PropertyDefinition.ts';
+import { Subject } from '@/domain/Subject.ts';
+import { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { SubjectId } from '@neo/domain/SubjectId.ts';
+import { SubjectId } from '@/domain/SubjectId.ts';
 
 const props = defineProps( {
 	subjectId: {

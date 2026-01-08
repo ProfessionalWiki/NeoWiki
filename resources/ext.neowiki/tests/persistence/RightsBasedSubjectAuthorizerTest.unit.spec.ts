@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RightsBasedSubjectAuthorizer } from '@/persistence/RightsBasedSubjectAuthorizer';
-import { SubjectId } from '@neo/domain/SubjectId';
+import { SubjectId } from '@/domain/SubjectId';
 import { TestUserObjectBasedRightsFetcher } from './UserObjectBasedRightsFetcher.unit.spec';
 
 describe( 'Rights Based Subject Authorizer', async () => {

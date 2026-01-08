@@ -6,7 +6,7 @@ import { CdxTooltip } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import EditSchemaPage from '@/components/SchemaEditor/EditSchemaPage.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
-import { SchemaName } from '@neo/domain/Schema.ts';
+import { SchemaName } from '@/domain/Schema.ts';
 
 async function initializeAutomaticInfobox(): Promise<void> {
 	const automaticInfobox = document.querySelector( '#neowiki' );

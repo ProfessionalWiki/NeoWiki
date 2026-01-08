@@ -7,8 +7,7 @@ export default defineConfig( {
 	plugins: [ vue(), mediawikiImportTransformer() ],
 	resolve: {
 		alias: {
-			'@': fileURLToPath( new URL( './src', import.meta.url ) ),
-			'@neo': fileURLToPath( new URL( '../../Neo/neojs/src', import.meta.url ) )
+			'@': fileURLToPath( new URL( './src', import.meta.url ) )
 		}
 	},
 	build: {

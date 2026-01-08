@@ -1,8 +1,8 @@
-import { SubjectRepository } from '@neo/domain/SubjectRepository.ts';
+import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { SubjectId } from '@neo/domain/SubjectId.ts';
+import { SubjectId } from '@/domain/SubjectId.ts';
 
 /**
  * Potential improvements:

@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia';
-import { SubjectId } from '@neo/domain/SubjectId';
-import { Subject } from '@neo/domain/Subject';
+import { SubjectId } from '@/domain/SubjectId';
+import { Subject } from '@/domain/Subject';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
-import { SchemaName } from '@neo/domain/Schema.ts';
-import { StatementList } from '@neo/domain/StatementList.ts';
-import { PageIdentifiers } from '@neo/domain/PageIdentifiers.ts';
-import { SubjectWithContext } from '@neo/domain/SubjectWithContext.ts';
+import { SchemaName } from '@/domain/Schema.ts';
+import { StatementList } from '@/domain/StatementList.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
+import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {

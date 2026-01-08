@@ -1,9 +1,9 @@
 import { VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CdxField } from '@wikimedia/codex';
-import { newNumberValue } from '@neo/domain/Value';
+import { newNumberValue } from '@/domain/Value';
 import NumberInput from '@/components/Value/NumberInput.vue';
-import { newNumberProperty, NumberProperty } from '@neo/domain/propertyTypes/Number';
+import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
 

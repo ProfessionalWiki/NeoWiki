@@ -42,13 +42,13 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';
-import { StatementList } from '@neo/domain/StatementList.ts';
-import { Subject } from '@neo/domain/Subject.ts';
+import { StatementList } from '@/domain/StatementList.ts';
+import { Subject } from '@/domain/Subject.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { Schema } from '@neo/domain/Schema.ts';
-import { Statement } from '@neo/domain/Statement.ts';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
+import { Schema } from '@/domain/Schema.ts';
+import { Statement } from '@/domain/Statement.ts';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 
 const props = defineProps<{
 	subject: Subject;

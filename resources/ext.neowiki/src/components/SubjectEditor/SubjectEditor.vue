@@ -18,11 +18,11 @@
 <script setup lang="ts">
 import { ref, onBeforeUpdate } from 'vue';
 import { CdxField } from '@wikimedia/codex';
-import { StatementList } from '@neo/domain/StatementList.ts';
-import { Statement } from '@neo/domain/Statement.ts';
+import { StatementList } from '@/domain/StatementList.ts';
+import { Statement } from '@/domain/Statement.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
-import { PropertyDefinitionList } from '@neo/domain/PropertyDefinitionList.ts';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 const props = defineProps<{
 	schemaStatements: StatementList;
 	schemaProperties: PropertyDefinitionList;
