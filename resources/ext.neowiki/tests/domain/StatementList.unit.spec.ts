@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SubjectId } from '@/domain/SubjectId';
 import { StatementList, statementsToJson } from '@/domain/StatementList';
 import { PropertyName } from '@/domain/PropertyDefinition';
-import { newNumberValue, newRelation, newStringValue, RelationValue } from '../Value';
+import { newNumberValue, newRelation, newStringValue, RelationValue } from '@/domain/Value';
 import { Neo } from '@/Neo';
 import { TextType } from '@/domain/propertyTypes/Text';
 import { NumberType } from '@/domain/propertyTypes/Number';

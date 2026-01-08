@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { PropertyDefinitionDeserializer } from '@/domain/PropertyDefinition';
-import { newStringValue } from '../Value';
+import { newStringValue } from '@/domain/Value';
 import { TextProperty, TextType } from '@/domain/propertyTypes/Text';
 import { NumberProperty, NumberType } from '@/domain/propertyTypes/Number';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
