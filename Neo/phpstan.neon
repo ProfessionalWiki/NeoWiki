@@ -1,9 +1,0 @@
-includes:
-	- phpstan-baseline.neon
-
-parameters:
-	level: 9
-	paths:
-		- src
-	ignoreErrors:
-		- '#no value type specified in iterable type array\.$#'

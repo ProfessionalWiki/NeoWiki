@@ -201,7 +201,7 @@ class NeoWikiHooks {
 		}
 	}
 
-	public static function onSkinTemplateNavigationUniversal( SkinTemplate $skinTemplate, array &$links ) {
+	public static function onSkinTemplateNavigationUniversal( SkinTemplate $skinTemplate, array &$links ): void {
 		if ( !self::isSchemaPage( $skinTemplate->getOutput() ) || !self::userCanEditCurrentPage( $skinTemplate ) ) {
 			return;
 		}

@@ -21,6 +21,7 @@
 		<exclude name="MediaWiki.PHPUnit.MockBoilerplate.ConstraintEqualTo" />
 		<exclude name="Squiz.WhiteSpace.SuperfluousWhitespace.EndLine" />
 		<exclude name="Squiz.ControlStructures.ControlSignature.SpaceAfterCloseBrace" />
+		<exclude name="MediaWiki.ControlStructures.IfElseStructure.SpaceBeforeElse" />
 		<exclude name="Universal.WhiteSpace.CommaSpacing.SpaceBeforeInFunctionCall" />
 	</rule>
 
@@ -28,5 +29,18 @@
 	<rule ref="Generic.Metrics.CyclomaticComplexity">
 	</rule>
 	<rule ref="Generic.Metrics.NestingLevel" />
+	<rule ref="Generic.WhiteSpace.ScopeIndent" tabIndent="true">
+		<properties>
+			<property name="ignoreIndentationTokens" type="array">
+				<element value="T_COMMENT"/>
+			</property>
+		</properties>
+	</rule>
 	<rule ref="Squiz.Operators.ValidLogicalOperators" />
+	<rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint">
+		<exclude name="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingTraversableTypeHintSpecification" />
+	</rule>
+	<rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint">
+		<exclude name="SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingTraversableTypeHintSpecification" />
+	</rule>
 </ruleset>
