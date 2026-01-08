@@ -2,11 +2,11 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\Application\Actions\ImportPages;
+namespace ProfessionalWiki\NeoWiki\Application\Actions\ImportPages;
 
 use DirectoryIterator;
 use FileFetcher\FileFetcher;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content\SchemaContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 
 class SchemaContentSource {
 

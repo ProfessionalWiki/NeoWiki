@@ -1,6 +1,6 @@
 <?php
 
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 $namespaceNames = [];
 

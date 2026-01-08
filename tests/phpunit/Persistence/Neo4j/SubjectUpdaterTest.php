@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\Persistence\Neo4j;
+namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use PHPUnit\Framework\TestCase;
@@ -17,8 +17,8 @@ use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TextFormat;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatLookup;
 use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\SubjectUpdater;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdater;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
@@ -26,7 +26,7 @@ use Psr\Log\LogLevel;
 use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\SubjectUpdater
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdater
  */
 class SubjectUpdaterTest extends TestCase {
 

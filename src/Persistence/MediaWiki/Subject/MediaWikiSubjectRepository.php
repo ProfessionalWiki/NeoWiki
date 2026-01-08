@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject;
+namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
 use CommentStoreComment;
 use MediaWiki\Revision\RevisionAccessException;
@@ -13,8 +13,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\PageContentSaver;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 
 class MediaWikiSubjectRepository implements SubjectRepository {
 

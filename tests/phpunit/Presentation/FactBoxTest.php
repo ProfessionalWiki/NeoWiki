@@ -4,12 +4,12 @@ declare( strict_types = 1 );
 
 namespace Presentation;
 
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\MediaWiki\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Presentation\FactBox
+ * @covers \ProfessionalWiki\NeoWiki\Presentation\FactBox
  * @group Database
  */
 class FactBoxTest extends NeoWikiIntegrationTestCase {

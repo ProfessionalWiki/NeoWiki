@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence;
+namespace ProfessionalWiki\NeoWiki\Persistence;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
 

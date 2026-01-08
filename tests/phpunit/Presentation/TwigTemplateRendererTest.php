@@ -7,14 +7,14 @@ namespace Presentation;
 use ErrorException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\TwigEnvironmentFactory;
-use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\TwigTemplateRenderer;
+use ProfessionalWiki\NeoWiki\Presentation\TwigEnvironmentFactory;
+use ProfessionalWiki\NeoWiki\Presentation\TwigTemplateRenderer;
 use Psr\Log\LogLevel;
 use Twig\Environment;
 use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Presentation\TwigTemplateRendererTest
+ * @covers \ProfessionalWiki\NeoWiki\Presentation\TwigTemplateRendererTest
  */
 class TwigTemplateRendererTest extends TestCase {
 	private const SUBJECT_COUNT = 100500;

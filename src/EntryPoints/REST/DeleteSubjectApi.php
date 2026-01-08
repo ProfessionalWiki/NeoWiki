@@ -2,14 +2,14 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST;
+namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class DeleteSubjectApi extends SimpleHandler {

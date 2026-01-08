@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use Content;
 use MalformedTitleException;

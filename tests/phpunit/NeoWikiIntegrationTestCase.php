@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\Tests;
 
 use CommentStoreComment;
 use MediaWiki\MediaWikiServices;
@@ -11,11 +11,11 @@ use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content\SchemaContent;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;

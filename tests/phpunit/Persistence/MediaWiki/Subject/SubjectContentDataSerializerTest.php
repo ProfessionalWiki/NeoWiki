@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\Persistence\MediaWiki\Subject;
+namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -18,16 +18,16 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer;
-use ProfessionalWiki\NeoWiki\Tests\MediaWiki\Data\TestData;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer
  */
 class SubjectContentDataSerializerTest extends TestCase {
 

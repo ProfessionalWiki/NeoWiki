@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\EntryPoints\REST;
+namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\RequestData;
@@ -11,15 +11,15 @@ use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\CreateSubjectApi;
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
-use ProfessionalWiki\NeoWiki\Tests\MediaWiki\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use Title;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\REST\CreateSubjectApi
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction
  * @group Database
  */

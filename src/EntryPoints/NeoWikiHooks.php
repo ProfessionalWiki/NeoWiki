@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints;
+namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use InvalidArgumentException;
 use MediaWiki\EditPage\EditPage;
@@ -17,12 +17,12 @@ use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content\SchemaContent;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\SchemaContentValidator;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
-use ProfessionalWiki\NeoWiki\MediaWiki\Presentation\JsonSchemaErrorFormatter;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaErrorFormatter;
 use Skin;
 use SkinTemplate;
 use Status;

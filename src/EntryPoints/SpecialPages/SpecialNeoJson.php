@@ -2,13 +2,13 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\SpecialPages;
+namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 
 use HTMLForm;
 use MediaWiki\Message\Message;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\MediaWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use SpecialPage;
 use Title;
 

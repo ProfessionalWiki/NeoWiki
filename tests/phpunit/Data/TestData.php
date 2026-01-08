@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\Data;
+namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
 class TestData {
 

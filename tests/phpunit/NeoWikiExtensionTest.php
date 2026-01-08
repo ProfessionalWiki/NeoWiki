@@ -2,14 +2,14 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\Tests;
 
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension
+ * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension
  */
 class NeoWikiExtensionTest extends TestCase {
 

@@ -2,20 +2,20 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\MediaWiki\Application\Actions;
+namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
 use MediaWiki\MediaWikiServices;
-use ProfessionalWiki\NeoWiki\MediaWiki\Application\Actions\ImportPages\ImportPagesAction;
-use ProfessionalWiki\NeoWiki\MediaWiki\Application\Actions\ImportPages\ImportPresenter;
-use ProfessionalWiki\NeoWiki\MediaWiki\Application\Actions\ImportPages\PageContentSource;
-use ProfessionalWiki\NeoWiki\MediaWiki\Application\Actions\ImportPages\SchemaContentSource;
-use ProfessionalWiki\NeoWiki\MediaWiki\Application\Actions\ImportPages\SubjectPageData;
-use ProfessionalWiki\NeoWiki\MediaWiki\Application\Actions\ImportPages\SubjectPageSource;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki\PageContentSaver;
+use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPagesAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPresenter;
+use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\PageContentSource;
+use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource;
+use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageData;
+use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use WikitextContent;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\MediaWiki\Application\Actions\ImportPages\ImportPagesAction
+ * @covers \ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPagesAction
  * @group Database
  */
 class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {

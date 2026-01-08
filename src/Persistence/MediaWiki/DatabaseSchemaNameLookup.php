@@ -1,9 +1,9 @@
 <?php
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence\MediaWiki;
+namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
-use ProfessionalWiki\NeoWiki\MediaWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\SchemaNameLookup;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use RuntimeException;
 use SearchEngine;
 use SearchSuggestion;

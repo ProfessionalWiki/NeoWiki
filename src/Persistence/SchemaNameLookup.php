@@ -1,6 +1,6 @@
 <?php
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence;
+namespace ProfessionalWiki\NeoWiki\Persistence;
 
 use TitleValue;
 

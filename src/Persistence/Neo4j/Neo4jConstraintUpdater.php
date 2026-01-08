@@ -2,9 +2,9 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\MediaWiki\Persistence\Neo4j;
+namespace ProfessionalWiki\NeoWiki\Persistence\Neo4j;
 
-use ProfessionalWiki\NeoWiki\MediaWiki\Persistence\WriteQueryEngine;
+use ProfessionalWiki\NeoWiki\Persistence\WriteQueryEngine;
 
 class Neo4jConstraintUpdater {
 
