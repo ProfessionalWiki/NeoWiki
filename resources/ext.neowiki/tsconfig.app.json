@@ -20,14 +20,12 @@
 
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./src/*"],
-			"@neo/*": ["../../Neo/neojs/src/*"]
+			"@/*": ["./src/*"]
 		}
 	},
 	"include": [
 		"./node_modules/types-mediawiki",
 		"src/**/*.ts",
-		"src/**/*.vue",
-		"../../Neo/neojs/src/**/*.ts"
+		"src/**/*.vue"
 	]
 }

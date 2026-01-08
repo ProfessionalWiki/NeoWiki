@@ -5,12 +5,10 @@ on:
     paths:
       - '.github/workflows/ci-ts.yml'
       - 'resources/**'
-      - 'Neo/neojs/**'
   pull_request:
     paths:
       - '.github/workflows/ci-ts.yml'
       - 'resources/**'
-      - 'Neo/neojs/**'
 
 jobs:
   build:
@@ -30,14 +28,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install NeoJS dependencies
-        run: npm install
-        working-directory: Neo/neojs
-
-      - name: Build NeoJS
-        run: npm run build
-        working-directory: Neo/neojs
 
       - name: Install dependencies
         run: npm install
@@ -62,14 +52,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install NeoJS dependencies
-        run: npm install
-        working-directory: Neo/neojs
-
-      - name: Build NeoJS
-        run: npm run build
-        working-directory: Neo/neojs
 
       - name: Install dependencies
         run: npm install
