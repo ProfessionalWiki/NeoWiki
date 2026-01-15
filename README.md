@@ -1,5 +1,11 @@
 # NeoWiki
 
+AI-ready knowledge management system that combines collaborative editing and knowledge graph.
+
+## Technical Documentation
+
+See [docs/](./docs/), especially [docs/Glossary.md](./docs/glossary.md).
+
 ## Development
 
 ### NeoWiki frontend
