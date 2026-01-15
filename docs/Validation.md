@@ -1,9 +1,11 @@
 # Validation Architecture
 
-## Current Status
+Written 2026-01-15
 
-In [ADR 12](adr/012_Backend_Validation.md) we decided to validate in the frontend only.
-As the scope of the project changed, we have to revisit this decision.
+## Current Status and Context
+
+In [ADR 12: Backend Validation](adr/012_Backend_Validation.md) we decided to validate in the frontend only.
+With ECHOLOT, the scope of the project changed, and we have to revisit this decision.
 
 All changes to Subjects and Schemas go through the REST API. This includes changes made
 by the NeoWiki UIs. These NeoWiki UIs validate Subjects based on their associated Schemas.
@@ -18,7 +20,14 @@ so it can be reused elsewhere. In particular, the TypeScript library contains re
 to interact with the REST API, providing read and write access to Subjects and Schemas.
 It also has a data model to represent Subjects and Schemas and validation services, allowing
 external applications to validate data before submitting it to the REST API without having
-to write their own validation logic.
+to write their own validation logic. Finally, the TypeScript library provides a UI component
+to display Subjects and Schemas.
+
+Clients not using the TypeScript library can still access the Schemas via the REST API.
+The Schemas are returned as JSON in a format optimized for our UIs and validation logic.
+We decided against using JSON Schema for Schemas internally in [ADR 9: Move Away from JSON Schema](adr/009_Move_Away_from_JSON_Schema.md)
+because this creates friction and complexity, while we can still easily create a JSON Schema
+from the internal representation for consumers that wish for such an API.
 
 ## Frontend-only Validation Motivations
 
@@ -35,7 +44,7 @@ API endpoint, but this comes with usability downsides we wish to avoid.)
 
 If there are substantial users of the REST APIs that do not use our TypeScript library,
 then we may need to add backend validation. This seems plausable for ECHOLOT, both in the form
-of external applications (for instance, for import) and for the end users of the software. 
+of external applications (for instance, for import) and for the end users of the software.
 
 ## Scenarios to Consider
 
@@ -48,7 +57,7 @@ Handling of invalid Subjects:
 * Edits to valid parts of invalid Subjects should still be allowed.
 * Users should be able to edit invalid parts of invalid Subjects to make them valid.
 * Invalid parts should not disappear on save.
-* The desired behavior for graph-based queries is unclear. Might depend on the usecase and perhaps call for storing but flagging invalid Subjects. 
+* The desired behavior for graph-based queries is unclear. Might depend on the usecase and perhaps call for storing but flagging invalid Subjects.
 
 ## Conclusion
 
