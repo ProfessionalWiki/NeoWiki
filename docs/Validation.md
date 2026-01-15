@@ -1,0 +1,59 @@
+# Validation Architecture
+
+## Current Status
+
+In [ADR 12](adr/012_Backend_Validation.md) we decided to validate in the frontend only.
+As the scope of the project changed, we have to revisit this decision.
+
+All changes to Subjects and Schemas go through the REST API. This includes changes made
+by the NeoWiki UIs. These NeoWiki UIs validate Subjects based on their associated Schemas.
+
+Concrete example: when editing an organization, the NeoWiki UI provides a form with fields
+based on the organization Schema. This Schema contains Property Definitions
+(i.e. "Name", "Founded at") which contain types and can contain further constraints.
+The UI form shows only fields for these Property Definitions.
+
+The NeoWiki UI is written in TypeScript and Vue, much of which is decoupled from MediaWiki
+so it can be reused elsewhere. In particular, the TypeScript library contains repositories
+to interact with the REST API, providing read and write access to Subjects and Schemas.
+It also has a data model to represent Subjects and Schemas and validation services, allowing
+external applications to validate data before submitting it to the REST API without having
+to write their own validation logic.
+
+## Frontend-only Validation Motivations
+
+It is appealing to avoid invalid Subjects in the persistence and UI layers as supporting
+this adds complexity. However, because Schemas can change after Subjects have been persisted,
+we cannot avoid having to support invalid Subjects. This neutralizes perhaps the most
+appealing benefit of backend validation.
+
+If editing and import happen via UIs in MediaWiki or UIs using our TypeScript library,
+then validation in the backend does not seem to justify its own cost. The cost comes from
+having two implementations of validation logic, one in TypeScript and one in PHP, which
+need to be kept in sync. (Aside: we could have the validation just in PHP and have a validation
+API endpoint, but this comes with usability downsides we wish to avoid.)
+
+If there are substantial users of the REST APIs that do not use our TypeScript library,
+then we may need to add backend validation. This seems plausable for ECHOLOT, both in the form
+of external applications (for instance, for import) and for the end users of the software. 
+
+## Scenarios to Consider
+
+* A new constraint is added to a Schema, making some existing Subjects invalid.
+* A Property Definition is removed from a Schema, perhaps by accident, perhaps later reverted. What happens to invalid Subjects?
+* Someone wants to import existing data which contains some invalid Subjects.
+
+Handling of invalid Subjects:
+* We need to be able to display the invalid Subjects in the UI.
+* Edits to valid parts of invalid Subjects should still be allowed.
+* Users should be able to edit invalid parts of invalid Subjects to make them valid.
+* Invalid parts should not disappear on save.
+* The desired behavior for graph-based queries is unclear. Might depend on the usecase and perhaps call for storing but flagging invalid Subjects. 
+
+## Conclusion
+
+We might need to add backend validation for ECHOLOT, depending on the use cases and degree to which
+external applications that do not use the TypeScript library are developed. Backend validation would
+presumably still have to be optional, as per the above scenarios.
+
+Key question: what API-based validation do ECHOLOT end users (not project participants) need?
