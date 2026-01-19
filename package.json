@@ -7,7 +7,6 @@
 		"lint:i18n": "banana-checker i18n/"
 	},
 	"devDependencies": {
-		"grunt-banana-checker": "0.13.0",
-		"less": "^4.5.1"
+		"grunt-banana-checker": "0.13.0"
 	}
 }
