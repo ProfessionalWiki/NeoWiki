@@ -1,7 +1,7 @@
 {
 	"name": "professional-wiki/neowiki",
 	"type": "mediawiki-extension",
-	"license": "proprietary",
+	"license": "GPL-2.0-or-later",
 	"description": "TODO",
 	"authors": [
 		{

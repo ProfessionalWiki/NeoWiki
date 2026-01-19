@@ -10,6 +10,8 @@
 
 	"url": "https://github.com/ProfessionalWiki/NeoWiki",
 
+	"license-name": "GPL-2.0-or-later",
+
 	"descriptionmsg": "neowiki-description",
 
 	"requires": {
