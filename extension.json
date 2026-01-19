@@ -189,7 +189,8 @@
 						"cdxIconCheck",
 						"cdxIconSearchCaseSensitive",
 						"cdxIconArticles",
-						"cdxIconListNumbered"
+						"cdxIconListNumbered",
+						"cdxIconClose"
 					]
 				}
 			],
@@ -257,7 +258,9 @@
 				"neowiki-subject-editor-title",
 				"neowiki-subject-editor-save",
 				"neowiki-schema-editor-new-property",
-				"neowiki-schema-editor-optional"
+				"neowiki-schema-editor-optional",
+				"neowiki-edit-schema",
+				"neowiki-editing-schema"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
