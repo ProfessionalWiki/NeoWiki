@@ -22,14 +22,14 @@ export function newSubject( {
 	label = DEFAULT_TEST_SUBJECT_LABEL,
 	schemaId = DEFAULT_TEST_SCHEMA_ID,
 	statements = new StatementList( [] ),
-	pageIdentifiers = new PageIdentifiers( 0, 'TestSubjectPage' )
+	pageIdentifiers = new PageIdentifiers( 0, 'TestSubjectPage' ),
 }: NewTestSubjectOptions = {} ): SubjectWithContext {
 	return new SubjectWithContext(
 		id instanceof SubjectId ? id : new SubjectId( id ),
 		label,
 		schemaId,
 		statements,
-		pageIdentifiers
+		pageIdentifiers,
 	);
 }
 
@@ -42,11 +42,11 @@ interface NewTestSchemaOptions {
 export function newSchema( {
 	title = 'TestSchema',
 	description = 'TestSchema description',
-	properties
+	properties,
 }: NewTestSchemaOptions = {} ): Schema {
 	return new Schema(
 		title,
 		description,
-		properties ?? new PropertyDefinitionList( [] )
+		properties ?? new PropertyDefinitionList( [] ),
 	);
 }

@@ -7,7 +7,7 @@ import {
 	RelationValue,
 	type Value,
 	valueToJson,
-	ValueType
+	ValueType,
 } from '@/domain/Value';
 
 describe( 'valueToJson', () => {
@@ -46,33 +46,33 @@ describe( 'valueToJson', () => {
 
 	it( 'converts a RelationValue with a single relation into an array of objects', () => {
 		const value = new RelationValue( [
-			newRelation( 'testId', 's11111111111111' )
+			newRelation( 'testId', 's11111111111111' ),
 		] );
 
 		const json = valueToJson( value );
 
 		expect( json ).toEqual( [
-			{ id: 'testId', target: 's11111111111111' }
+			{ id: 'testId', target: 's11111111111111' },
 		] );
 	} );
 
 	it( 'converts a RelationValue with multiple relations into an array of objects', () => {
 		const value = new RelationValue( [
 			newRelation( 'testId1', 's11111111111111' ),
-			newRelation( 'testId2', 's11111111111112' )
+			newRelation( 'testId2', 's11111111111112' ),
 		] );
 
 		const json = valueToJson( value );
 
 		expect( json ).toEqual( [
 			{ id: 'testId1', target: 's11111111111111' },
-			{ id: 'testId2', target: 's11111111111112' }
+			{ id: 'testId2', target: 's11111111111112' },
 		] );
 	} );
 
 	it( 'throws an error when value is of unexpected type', () => {
 		const value = {
-			type: 'test' as ValueType
+			type: 'test' as ValueType,
 		} as unknown as Value;
 
 		expect( () => valueToJson( value ) ).toThrow( 'Unsupported value type: test' );

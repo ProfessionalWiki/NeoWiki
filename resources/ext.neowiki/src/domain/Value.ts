@@ -32,7 +32,7 @@ export class RelationValue implements BaseValueRepresentation {
 	public readonly type = ValueType.Relation;
 
 	public constructor(
-		public readonly relations: Relation[]
+		public readonly relations: Relation[],
 	) {
 	}
 
@@ -45,7 +45,7 @@ export class Relation {
 
 	public constructor(
 		public readonly id: string | undefined,
-		public readonly target: SubjectId
+		public readonly target: SubjectId,
 		// TODO: add relation properties (like on backend)
 	) {
 	}
@@ -61,28 +61,28 @@ export function newStringValue( ...parts: string[] | [ string[] ] ): StringValue
 		type: ValueType.String,
 		strings: strings
 			.map( ( part ) => part.trim() )
-			.filter( ( part ) => part !== '' )
+			.filter( ( part ) => part !== '' ),
 	} as StringValue;
 }
 
 export function newNumberValue( number: number ): NumberValue {
 	return {
 		type: ValueType.Number,
-		number: number
+		number: number,
 	} as NumberValue;
 }
 
 export function newBooleanValue( boolean: boolean ): BooleanValue {
 	return {
 		type: ValueType.Boolean,
-		boolean: boolean
+		boolean: boolean,
 	} as BooleanValue;
 }
 
 export function newRelation( id: string | undefined, target: SubjectId | string ): Relation {
 	return new Relation(
 		id,
-		typeof target === 'string' ? new SubjectId( target ) : target
+		typeof target === 'string' ? new SubjectId( target ) : target,
 	);
 }
 
@@ -96,7 +96,7 @@ export function valueToJson( value: Value ): unknown {
 			return ( value as BooleanValue ).boolean;
 		case ValueType.Relation:
 			return ( value as RelationValue ).relations.map(
-				( relation ) => ( { id: relation.id, target: relation.target.text } )
+				( relation ) => ( { id: relation.id, target: relation.target.text } ),
 			);
 		default:
 			throw new Error( `Unsupported value type: ${ ( value as Value ).type }` );

@@ -6,7 +6,7 @@ describe( 'TypeSpecificComponentRegistry', () => {
 	const registerComponent = (
 		registry: TypeSpecificComponentRegistry,
 		type: string,
-		stuff: Partial<TypeSpecificStuff> = {}
+		stuff: Partial<TypeSpecificStuff> = {},
 	): void => {
 		const mockComponent = {} as any;
 
@@ -15,7 +15,7 @@ describe( 'TypeSpecificComponentRegistry', () => {
 			valueEditor: mockComponent,
 			attributesEditor: mockComponent,
 			label: 'Default Label',
-			icon: 'Default Icon'
+			icon: 'Default Icon',
 		};
 
 		registry.registerType( type, { ...defaultStuff, ...stuff } );
@@ -61,7 +61,7 @@ describe( 'TypeSpecificComponentRegistry', () => {
 			expect( registry.getLabelsAndIcons() ).toStrictEqual( [
 				{ value: 'string', label: 'String', icon: 'string-icon' },
 				{ value: 'number', label: 'Number', icon: 'number-icon' },
-				{ value: 'boolean', label: 'Boolean', icon: 'boolean-icon' }
+				{ value: 'boolean', label: 'Boolean', icon: 'boolean-icon' },
 			] );
 		} );
 

@@ -79,24 +79,24 @@ describe( 'StatementList', () => {
 					new PropertyName( 'Property2' ),
 					RelationType.typeName,
 					new RelationValue( [
-						newRelation( undefined, 's11111111111111' )
-					] )
+						newRelation( undefined, 's11111111111111' ),
+					] ),
 				),
 				new Statement(
 					new PropertyName( 'Property3' ),
 					RelationType.typeName,
 					new RelationValue( [
 						newRelation( undefined, 's11111111111112' ),
-						newRelation( undefined, 's11111111111113' )
-					] )
+						newRelation( undefined, 's11111111111113' ),
+					] ),
 				),
-				new Statement( new PropertyName( 'Property4' ), TextType.typeName, newStringValue( 'bar' ) )
+				new Statement( new PropertyName( 'Property4' ), TextType.typeName, newStringValue( 'bar' ) ),
 			] );
 
 			expect( statements.getIdsOfReferencedSubjects() ).toEqual( new Set( [
 				new SubjectId( 's11111111111111' ),
 				new SubjectId( 's11111111111112' ),
-				new SubjectId( 's11111111111113' )
+				new SubjectId( 's11111111111113' ),
 			] ) );
 		} );
 
@@ -107,7 +107,7 @@ describe( 'StatementList', () => {
 
 		expect( statementList.asPropertyValueRecord() ).toEqual( {
 			property1: newStringValue( 'value1' ),
-			property2: newStringValue( 'value2' )
+			property2: newStringValue( 'value2' ),
 		} );
 	} );
 
@@ -116,13 +116,13 @@ describe( 'StatementList', () => {
 			{
 				property1: {
 					value: 'value1',
-					type: TextType.typeName
+					type: TextType.typeName,
 				},
 				property2: {
 					value: 'value2',
-					type: TextType.typeName
-				}
-			}
+					type: TextType.typeName,
+				},
+			},
 		);
 
 		expect( statementList.get( new PropertyName( 'property1' ) ) )
@@ -137,13 +137,13 @@ describe( 'StatementList', () => {
 			{
 				'': {
 					value: 'value1',
-					type: TextType.typeName
+					type: TextType.typeName,
 				}, // An empty string is not a valid PropertyName
 				property2: {
 					value: 'value2',
-					type: TextType.typeName
-				}
-			}
+					type: TextType.typeName,
+				},
+			},
 		) )
 			.toThrow( 'Invalid PropertyName' );
 	} );
@@ -153,23 +153,23 @@ describe( 'StatementList', () => {
 			{
 				p1: {
 					value: 'hello',
-					type: TextType.typeName
+					type: TextType.typeName,
 				},
 				p2: {
 					value: 42,
-					type: NumberType.typeName
+					type: NumberType.typeName,
 				},
 				p3: {
 					value: [ 'foo', 'bar' ],
-					type: TextType.typeName
-				}
-			}
+					type: TextType.typeName,
+				},
+			},
 		);
 
 		expect( statementList ).toStrictEqual( new StatementList( [
 			new Statement( new PropertyName( 'p1' ), TextType.typeName, newStringValue( 'hello' ) ),
 			new Statement( new PropertyName( 'p2' ), NumberType.typeName, newNumberValue( 42 ) ),
-			new Statement( new PropertyName( 'p3' ), TextType.typeName, newStringValue( 'foo', 'bar' ) )
+			new Statement( new PropertyName( 'p3' ), TextType.typeName, newStringValue( 'foo', 'bar' ) ),
 		] ) );
 	} );
 
@@ -181,7 +181,7 @@ describe( 'statementsToJson', () => {
 		const values = new StatementList( [
 			new Statement( new PropertyName( 'value1' ), TextType.typeName, newStringValue( 'test' ) ),
 			new Statement( new PropertyName( 'value2' ), NumberType.typeName, newNumberValue( 123 ) ),
-			new Statement( new PropertyName( 'value4' ), RelationType.typeName, new RelationValue( [ newRelation( 'testId', 's11111111111111' ) ] ) )
+			new Statement( new PropertyName( 'value4' ), RelationType.typeName, new RelationValue( [ newRelation( 'testId', 's11111111111111' ) ] ) ),
 		] );
 
 		const json = statementsToJson( values );
@@ -189,30 +189,30 @@ describe( 'statementsToJson', () => {
 		expect( json ).toEqual( {
 			value1: {
 				value: [ 'test' ],
-				propertyType: TextType.typeName
+				propertyType: TextType.typeName,
 			},
 			value2: {
 				value: 123,
-				propertyType: NumberType.typeName
+				propertyType: NumberType.typeName,
 			},
 			value4: {
 				value: [
-					{ id: 'testId', target: 's11111111111111' }
+					{ id: 'testId', target: 's11111111111111' },
 				],
-				propertyType: RelationType.typeName
-			}
+				propertyType: RelationType.typeName,
+			},
 		} );
 	} );
 
 	it( 'converts an empty number to null', () => {
 		const values = new StatementList( [
-			new Statement( new PropertyName( 'EmptyValue' ), NumberType.typeName, newNumberValue( NaN ) )
+			new Statement( new PropertyName( 'EmptyValue' ), NumberType.typeName, newNumberValue( NaN ) ),
 		] );
 
 		const json = statementsToJson( values );
 
 		expect( json ).toEqual( {
-			EmptyValue: null
+			EmptyValue: null,
 		} );
 	} );
 

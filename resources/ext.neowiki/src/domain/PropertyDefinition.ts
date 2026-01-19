@@ -57,7 +57,7 @@ export class PropertyDefinitionDeserializer {
 
 	public constructor(
 		private readonly registry: PropertyTypeRegistry,
-		private readonly valueDeserializer: ValueDeserializer
+		private readonly valueDeserializer: ValueDeserializer,
 	) {}
 
 	public propertyDefinitionFromJson( name: string | PropertyName, json: any ): PropertyDefinition {
@@ -68,9 +68,9 @@ export class PropertyDefinitionDeserializer {
 				type: json.type as string,
 				description: json.description ?? '',
 				required: json.required ?? false,
-				default: json.default ? this.valueDeserializer.deserialize( json.default, json.type ) : undefined
+				default: json.default ? this.valueDeserializer.deserialize( json.default, json.type ) : undefined,
 			} as PropertyDefinition,
-			json
+			json,
 		);
 	}
 

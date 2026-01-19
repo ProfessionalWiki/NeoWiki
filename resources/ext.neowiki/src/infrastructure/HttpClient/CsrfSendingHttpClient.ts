@@ -50,7 +50,7 @@ export class CsrfSendingHttpClient implements HttpClient {
 
 		return new Response( JSON.stringify( response.data ), {
 			status: response.status,
-			statusText: response.statusText
+			statusText: response.statusText,
 		} );
 	}
 
@@ -77,7 +77,7 @@ export class CsrfSendingHttpClient implements HttpClient {
 		const response = await new mw.Api().get( {
 			action: 'query',
 			meta: 'tokens',
-			format: 'json'
+			format: 'json',
 		} );
 		const newToken = response?.query.tokens.csrftoken;
 

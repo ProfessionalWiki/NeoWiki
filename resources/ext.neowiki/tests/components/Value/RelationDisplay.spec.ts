@@ -16,7 +16,7 @@ function createSubject( id: string, label: string, pageName: string ): SubjectWi
 		label,
 		'' as any,
 		{} as any,
-		new PageIdentifiers( 42, pageName )
+		new PageIdentifiers( 42, pageName ),
 	);
 }
 
@@ -29,8 +29,8 @@ function createWrapperWithValue( value: RelationValue ): ReturnType<typeof mount
 	return mount( RelationDisplay, {
 		props: {
 			value: value,
-			property: newRelationProperty()
-		}
+			property: newRelationProperty(),
+		},
 	} );
 }
 
@@ -42,18 +42,18 @@ describe( 'RelationDisplay.vue', () => {
 		mockGetSubject = vi.fn();
 		vi.mocked( useSubjectStore ).mockReturnValue( {
 			$id: 'subject',
-			getSubject: mockGetSubject
+			getSubject: mockGetSubject,
 		} as any );
 
 		mockGetUrl = vi.fn();
 		vi.stubGlobal( 'mw', {
 			util: {
-				getUrl: mockGetUrl
+				getUrl: mockGetUrl,
 			},
 			message: vi.fn( ( str: string ) => ( {
 				text: () => str,
-				parse: () => str
-			} ) )
+				parse: () => str,
+			} ) ),
 		} );
 	} );
 
@@ -129,22 +129,22 @@ describe( 'RelationDisplay.vue', () => {
 				ID: 's2222222222222A',
 				LABEL: 'Subject Alpha',
 				PAGE_NAME: 'Page_Alpha',
-				URL: '/wiki/Page_Alpha'
+				URL: '/wiki/Page_Alpha',
 			},
 			{
 				ID: 's2222222222222B',
 				LABEL: 'Subject Beta',
 				PAGE_NAME: 'Page_Beta',
-				URL: '/wiki/Page_Beta'
-			}
+				URL: '/wiki/Page_Beta',
+			},
 		];
 
 		mockGetSubject
 			.mockReturnValueOnce(
-				createSubject( TEST_DATA[ 0 ].ID, TEST_DATA[ 0 ].LABEL, TEST_DATA[ 0 ].PAGE_NAME )
+				createSubject( TEST_DATA[ 0 ].ID, TEST_DATA[ 0 ].LABEL, TEST_DATA[ 0 ].PAGE_NAME ),
 			)
 			.mockReturnValueOnce(
-				createSubject( TEST_DATA[ 1 ].ID, TEST_DATA[ 1 ].LABEL, TEST_DATA[ 1 ].PAGE_NAME )
+				createSubject( TEST_DATA[ 1 ].ID, TEST_DATA[ 1 ].LABEL, TEST_DATA[ 1 ].PAGE_NAME ),
 			);
 		mockGetUrl
 			.mockReturnValueOnce( TEST_DATA[ 0 ].URL )
@@ -152,7 +152,7 @@ describe( 'RelationDisplay.vue', () => {
 
 		const wrapper = await createWrapper(
 			new Relation( 'not-important', new SubjectId( TEST_DATA[ 0 ].ID ) ),
-			new Relation( 'not-important', new SubjectId( TEST_DATA[ 1 ].ID ) )
+			new Relation( 'not-important', new SubjectId( TEST_DATA[ 1 ].ID ) ),
 		);
 
 		const links = wrapper.findAll( 'a' );
@@ -177,21 +177,21 @@ describe( 'RelationDisplay.vue', () => {
 				ID: 's3333333333333A',
 				LABEL: 'Linkable Subject',
 				PAGE_NAME: 'Link_Page',
-				URL: '/wiki/Link_Page'
+				URL: '/wiki/Link_Page',
 			},
 			ERROR_FETCH: {
 				ID: 's3333333333333B',
-				MESSAGE: 'Fetch s3333333333333B Failed'
+				MESSAGE: 'Fetch s3333333333333B Failed',
 			},
 			NOT_FOUND: {
 				ID: 's3333333333333C',
-				MESSAGE: 'Subject not found: s3333333333333C'
+				MESSAGE: 'Subject not found: s3333333333333C',
 			},
 			NO_URL: {
 				ID: 's3333333333333D',
 				LABEL: 'NoUrl Mixed Subject',
-				PAGE_NAME: 'NoUrl_Mixed_Page'
-			}
+				PAGE_NAME: 'NoUrl_Mixed_Page',
+			},
 		};
 
 		beforeEach( async () => {
@@ -230,7 +230,7 @@ describe( 'RelationDisplay.vue', () => {
 				new Relation( 'not-important', new SubjectId( TEST_DATA.LINKABLE.ID ) ),
 				new Relation( 'not-important', new SubjectId( TEST_DATA.ERROR_FETCH.ID ) ),
 				new Relation( 'not-important', new SubjectId( TEST_DATA.NOT_FOUND.ID ) ),
-				new Relation( 'not-important', new SubjectId( TEST_DATA.NO_URL.ID ) )
+				new Relation( 'not-important', new SubjectId( TEST_DATA.NO_URL.ID ) ),
 			);
 		} );
 
@@ -279,8 +279,8 @@ describe( 'RelationDisplay.vue', () => {
 		const wrapper = mount( RelationDisplay, {
 			props: {
 				value: { notARelationValue: true } as any,
-				property: newRelationProperty()
-			}
+				property: newRelationProperty(),
+			},
 		} );
 
 		await wrapper.vm.$nextTick();

@@ -23,7 +23,7 @@ export class UrlType extends BasePropertyType<UrlProperty, StringValue> {
 		return {
 			...base,
 			multiple: json.multiple ?? false,
-			uniqueItems: json.uniqueItems ?? true
+			uniqueItems: json.uniqueItems ?? true,
 		} as UrlProperty;
 	}
 
@@ -58,7 +58,7 @@ export class UrlType extends BasePropertyType<UrlProperty, StringValue> {
 export class UrlFormatter {
 
 	public constructor(
-		private readonly property: UrlProperty
+		private readonly property: UrlProperty,
 	) {
 	}
 
@@ -100,7 +100,7 @@ export function isValidUrl( url: string ): boolean {
 		'(\\/[-a-z\\d%_.~+]*)*' +
 		'(\\?[;&a-z\\d%_.~+=-]*)?' +
 		'(\\#[-a-z\\d_]*)?$',
-		'i'
+		'i',
 	);
 
 	return pattern.test( url );
@@ -118,6 +118,6 @@ export function newUrlProperty( attributes: UrlPropertyAttributes = {} ): UrlPro
 		required: attributes.required ?? false,
 		default: attributes.default,
 		multiple: attributes.multiple ?? false,
-		uniqueItems: attributes.uniqueItems ?? true
+		uniqueItems: attributes.uniqueItems ?? true,
 	};
 }

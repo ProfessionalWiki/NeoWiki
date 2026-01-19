@@ -12,8 +12,8 @@ function createWrapperWithValue( value: Value ): ReturnType<typeof mount> {
 	return mount( UrlDisplay, {
 		props: {
 			value: value,
-			property: newUrlProperty()
-		}
+			property: newUrlProperty(),
+		},
 	} );
 }
 

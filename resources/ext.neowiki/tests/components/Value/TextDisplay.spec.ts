@@ -12,8 +12,8 @@ function createWrapperWithValue( value: Value ): ReturnType<typeof mount> {
 	return mount( TextDisplay, {
 		props: {
 			value: value,
-			property: newTextProperty()
-		}
+			property: newTextProperty(),
+		},
 	} );
 }
 

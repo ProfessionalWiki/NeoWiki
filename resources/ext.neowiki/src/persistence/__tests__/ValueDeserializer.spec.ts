@@ -27,14 +27,14 @@ describe( 'ValueDeserializer', () => {
 	it( 'deserializes RelationValue with multiple relations', () => {
 		const json = [
 			{ id: 'r1vd1111rrrrrr1', target: 's1vd1111ssssss1' },
-			{ id: 'r1vd1111rrrrrr2', target: 's1vd1111ssssss2' }
+			{ id: 'r1vd1111rrrrrr2', target: 's1vd1111ssssss2' },
 		];
 
 		const value = deserializer.deserialize( json, 'relation' );
 
 		expect( value ).toEqual( new RelationValue( [
 			newRelation( 'r1vd1111rrrrrr1', 's1vd1111ssssss1' ),
-			newRelation( 'r1vd1111rrrrrr2', 's1vd1111ssssss2' )
+			newRelation( 'r1vd1111rrrrrr2', 's1vd1111ssssss2' ),
 		] ) );
 	} );
 

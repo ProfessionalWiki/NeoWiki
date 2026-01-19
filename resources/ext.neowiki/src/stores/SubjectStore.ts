@@ -9,7 +9,7 @@ import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
-		subjects: new Map<string, Subject>()
+		subjects: new Map<string, Subject>(),
 	} ),
 	getters: {
 		getSubject: ( state ) => function ( id: SubjectId ): Subject | undefined {
@@ -20,7 +20,7 @@ export const useSubjectStore = defineStore( 'subject', {
 			}
 
 			return subject as Subject;
-		}
+		},
 	},
 	actions: {
 		setSubject( subject: Subject ): void { // TODO: just take Subject
@@ -49,7 +49,7 @@ export const useSubjectStore = defineStore( 'subject', {
 				pageId,
 				label,
 				schemaName,
-				statements
+				statements,
 			);
 
 			this.setSubject(
@@ -63,10 +63,10 @@ export const useSubjectStore = defineStore( 'subject', {
 					// Maybe the backend should respond with the entire thing instead of just the ID.
 					// Getting the subject from the backend is safer, since we avoid inconsistencies in
 					// case normalization happened or someone else edited as well.
-					new PageIdentifiers( pageId, 'page-title' )
-				)
+					new PageIdentifiers( pageId, 'page-title' ),
+				),
 			);
 			return subjectId;
-		}
-	}
+		},
+	},
 } );

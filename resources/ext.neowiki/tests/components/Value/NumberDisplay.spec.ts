@@ -12,14 +12,14 @@ function createWrapperWithNumber( number: number ): ReturnType<typeof mount> {
 function createWrapper( props: Partial<ValueDisplayProps<NumberProperty>> ): ReturnType<typeof mount> {
 	const defaultProps: ValueDisplayProps<NumberProperty> = {
 		value: newNumberValue( 0 ),
-		property: newNumberProperty()
+		property: newNumberProperty(),
 	};
 
 	return mount( NumberDisplay, {
 		props: {
 			...defaultProps,
-			...props
-		}
+			...props,
+		},
 	} );
 }
 
@@ -58,11 +58,11 @@ describe( 'NumberDisplay', () => {
 		// Rounding
 		[ 0.51, 0, '1' ],
 		[ 9999999.99, 1, '10000000.0' ],
-		[ 0.000001, 4, '0.0000' ]
+		[ 0.000001, 4, '0.0000' ],
 	] )( '%s with precision %s should be %s', ( number: number, precision: number, expected: string ): void => {
 		const wrapper = createWrapper( {
 			value: newNumberValue( number ),
-			property: newNumberProperty( { precision: precision } )
+			property: newNumberProperty( { precision: precision } ),
 		} );
 
 		expect( wrapper.text() ).toBe( expected );
@@ -72,8 +72,8 @@ describe( 'NumberDisplay', () => {
 		const wrapper = mount( NumberDisplay, {
 			props: {
 				value: newStringValue( 'not a number' ),
-				property: {} as NumberProperty
-			}
+				property: {} as NumberProperty,
+			},
 		} );
 		expect( wrapper.text() ).toBe( '' );
 	} );

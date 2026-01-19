@@ -18,7 +18,7 @@ export class MediaWikiPageSaver implements PageSaver {
 			source: source,
 			comment: comment,
 			content_model: content_model,
-			token: await this.getEditToken()
+			token: await this.getEditToken(),
 		};
 
 		if ( revisionId !== undefined ) {
@@ -28,18 +28,18 @@ export class MediaWikiPageSaver implements PageSaver {
 		return new Promise<PageSaverStatus>( ( resolve, reject ) => {
 			this.rest.put(
 				`/v1/page/${ pageName }`,
-				data
+				data,
 			)
 				.done( ( _response ) => {
 					resolve( {
-						success: true
+						success: true,
 					} );
 				} )
 				.fail( ( _error, response ) => {
 					reject( {
 						success: false,
 						// TODO: find a better message in the response.
-						message: response.exception
+						message: response.exception,
 					} );
 				} );
 		} );

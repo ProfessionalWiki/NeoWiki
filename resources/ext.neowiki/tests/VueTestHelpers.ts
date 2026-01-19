@@ -5,7 +5,7 @@ import { NeoWikiTestServices } from './NeoWikiTestServices.ts';
 
 export function createTestWrapper<TComponent extends DefineComponent<any, any, any>>(
 	component: Component,
-	props: InstanceType<TComponent>['$props']
+	props: InstanceType<TComponent>['$props'],
 ): VueWrapper<InstanceType<TComponent>> {
 	return mount(
 		component,
@@ -15,10 +15,10 @@ export function createTestWrapper<TComponent extends DefineComponent<any, any, a
 				provide: NeoWikiTestServices.getServices(),
 				mocks: {
 					$i18n: vi.fn().mockImplementation( ( key ) => ( {
-						text: () => key
-					} ) )
-				}
-			}
-		}
+						text: () => key,
+					} ) ),
+				},
+			},
+		},
 	) as VueWrapper<InstanceType<TComponent>>;
 }

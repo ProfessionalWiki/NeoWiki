@@ -7,7 +7,7 @@ import { SubjectWithContext } from '@/domain/SubjectWithContext';
 export class SubjectDeserializer {
 
 	public constructor(
-		private readonly statementDeserializer: StatementDeserializer
+		private readonly statementDeserializer: StatementDeserializer,
 	) {
 	}
 
@@ -27,8 +27,8 @@ export class SubjectDeserializer {
 			Object.entries( json )
 				.map( ( [ key, statementJson ] ) => this.statementDeserializer.deserialize(
 					key,
-					statementJson
-				) )
+					statementJson,
+				) ),
 		);
 	}
 

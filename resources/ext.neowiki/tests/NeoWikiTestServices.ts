@@ -13,7 +13,7 @@ export class NeoWikiTestServices extends NeoWikiServices {
 			[ Service.SubjectAuthorizer ]: neoWiki.newSubjectAuthorizer(),
 			[ Service.SubjectValidator ]: neoWiki.newSubjectValidator(),
 			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry(),
-			[ Service.SchemaRepository ]: new InMemorySchemaRepository( [] )
+			[ Service.SchemaRepository ]: new InMemorySchemaRepository( [] ),
 		};
 	}
 

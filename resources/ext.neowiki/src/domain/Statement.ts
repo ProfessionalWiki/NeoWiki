@@ -6,7 +6,7 @@ export class Statement {
 	public constructor(
 		public readonly propertyName: PropertyName,
 		public readonly propertyType: string,
-		public readonly value: Value | undefined
+		public readonly value: Value | undefined,
 	) {
 	}
 
@@ -18,7 +18,7 @@ export class Statement {
 		return new Statement(
 			this.propertyName,
 			this.propertyType,
-			value
+			value,
 		);
 	}
 

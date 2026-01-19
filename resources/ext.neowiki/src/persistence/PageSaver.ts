@@ -10,7 +10,7 @@ export type PageSaverStatus ={
 export class SucceedingPageSaver implements PageSaver {
 	public async savePage( _pageName: string, _source: string, _comment: string, _content_model: string ): Promise<PageSaverStatus> {
 		return {
-			success: true
+			success: true,
 		};
 	}
 }
@@ -19,7 +19,7 @@ export class FailingPageSaver implements PageSaver {
 	public async savePage( _pageName: string, _source: string, _comment: string, _content_model: string ): Promise<PageSaverStatus> {
 		return {
 			success: false,
-			message: 'Some reason'
+			message: 'Some reason',
 		};
 	}
 }

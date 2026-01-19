@@ -33,7 +33,7 @@ export class NeoWikiServices {
 			[ Service.SubjectAuthorizer ]: neoWiki.newSubjectAuthorizer(),
 			[ Service.SubjectValidator ]: neoWiki.newSubjectValidator(),
 			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry(),
-			[ Service.SchemaRepository ]: neoWiki.getSchemaRepository()
+			[ Service.SchemaRepository ]: neoWiki.getSchemaRepository(),
 		};
 	}
 

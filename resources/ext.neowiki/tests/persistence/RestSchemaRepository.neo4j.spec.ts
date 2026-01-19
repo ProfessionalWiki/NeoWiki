@@ -20,7 +20,7 @@ describe( 'RestSchemaRepository', () => {
 		it( 'throws error when the API call fails', async () => {
 			const inMemoryHttpClient = new InMemoryHttpClient( {
 				'https://example.com/rest.php/v1/page/Schema:Employee':
-					new Response( JSON.stringify( { httpCode: 404, httpReason: 'Not Found' } ), { status: 404 } )
+					new Response( JSON.stringify( { httpCode: 404, httpReason: 'Not Found' } ), { status: 404 } ),
 			} );
 
 			const schemaRepository = newSchemaRepository( inMemoryHttpClient );
@@ -39,14 +39,14 @@ describe( 'RestSchemaRepository', () => {
 				propertyDefinitions: {
 					LegalName: {
 						type: TextType.typeName,
-						required: true
-					}
-				}
+						required: true,
+					},
+				},
 			};
 
 			const inMemoryHttpClient = new InMemoryHttpClient( {
 				'https://example.com/rest.php/v1/page/Schema:Employee':
-					new Response( JSON.stringify( { source: JSON.stringify( mockSchemaContent ) } ), { status: 200 } )
+					new Response( JSON.stringify( { source: JSON.stringify( mockSchemaContent ) } ), { status: 200 } ),
 			} );
 
 			const schemaRepository = newSchemaRepository( inMemoryHttpClient );
@@ -61,8 +61,8 @@ describe( 'RestSchemaRepository', () => {
 					description: '',
 					required: true,
 					multiple: false,
-					uniqueItems: true
-				}
+					uniqueItems: true,
+				},
 			} );
 		} );
 
@@ -80,13 +80,13 @@ describe( 'RestSchemaRepository', () => {
 				get: vi.fn(),
 				post: vi.fn(),
 				patch: vi.fn(),
-				delete: vi.fn()
+				delete: vi.fn(),
 			};
 
 			mockSerializer = {
 				serializeSchema: vi.fn().mockImplementation(
-					( schema: Schema ) => '{"serialized":"' + schema.getName() + '"}'
-				)
+					( schema: Schema ) => '{"serialized":"' + schema.getName() + '"}',
+				),
 			} as unknown as SchemaSerializer;
 
 			pageSaver = new SucceedingPageSaver();
@@ -105,7 +105,7 @@ describe( 'RestSchemaRepository', () => {
 				'Schema:TestSchema',
 				'{"serialized":"TestSchema"}',
 				'Update schema via NeoWiki UI',
-				'NeoWikiSchema'
+				'NeoWikiSchema',
 			);
 		} );
 
@@ -121,7 +121,7 @@ describe( 'RestSchemaRepository', () => {
 			const schemaWithSpecialChars = new Schema(
 				'Test/Schema With:Spaces',
 				'Description',
-				new PropertyDefinitionList( [] )
+				new PropertyDefinitionList( [] ),
 			);
 
 			vi.spyOn( pageSaver, 'savePage' );
@@ -132,7 +132,7 @@ describe( 'RestSchemaRepository', () => {
 				'Schema:Test%2FSchema%20With%3ASpaces',
 				expect.anything(),
 				expect.anything(),
-				expect.anything()
+				expect.anything(),
 			);
 		} );
 	} );

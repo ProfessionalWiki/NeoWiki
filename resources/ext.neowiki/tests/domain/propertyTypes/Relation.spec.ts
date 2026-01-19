@@ -19,7 +19,7 @@ describe( 'newRelationProperty', () => {
 
 	it( 'creates property with custom name as string', () => {
 		const property = newRelationProperty( {
-			name: 'CustomRelation'
+			name: 'CustomRelation',
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'CustomRelation' ) );
@@ -28,7 +28,7 @@ describe( 'newRelationProperty', () => {
 	it( 'accepts PropertyName instance for name', () => {
 		const propertyName = new PropertyName( 'customRelation' );
 		const property = newRelationProperty( {
-			name: propertyName
+			name: propertyName,
 		} );
 
 		expect( property.name ).toBe( propertyName );
@@ -36,7 +36,7 @@ describe( 'newRelationProperty', () => {
 
 	it( 'creates property with all optional fields', () => {
 		const relation = new RelationValue( [
-			newRelation( 'r11111111111111', 's11111111111111' )
+			newRelation( 'r11111111111111', 's11111111111111' ),
 		] );
 
 		const property = newRelationProperty( {
@@ -46,7 +46,7 @@ describe( 'newRelationProperty', () => {
 			default: relation,
 			relation: 'CustomRelation',
 			targetSchema: 'CustomSchema',
-			multiple: true
+			multiple: true,
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'FullRelation' ) );
@@ -63,7 +63,7 @@ describe( 'newRelationProperty', () => {
 		const property = newRelationProperty( {
 			name: 'PartialRelation',
 			description: 'A partial relation property',
-			relation: 'CustomRelation'
+			relation: 'CustomRelation',
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'PartialRelation' ) );

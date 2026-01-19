@@ -8,12 +8,12 @@ describe( 'SubjectMap', () => {
 	const subjects = new SubjectMap(
 		newSubject( {
 			id: 's11111111111111',
-			label: 'John Doe'
+			label: 'John Doe',
 		} ),
 		newSubject( {
 			id: 's11111111111112',
-			label: 'Foo Bar'
-		} )
+			label: 'Foo Bar',
+		} ),
 	);
 
 	it( 'should add elements in constructor', () => {
