@@ -39,28 +39,28 @@ psalm-baseline:
 	vendor/bin/psalm --config=psalm.xml --set-baseline=psalm-baseline.xml
 
 ts-install:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:20 npm install
+	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:24 npm install
 
 ts-update:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:20 npm update
+	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:24 npm update
 
 ts-build:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:20 npm run build
+	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:24 npm run build
 
 ts-build-watch:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:20 npm run build:watch
+	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:24 npm run build:watch
 
 ts-ci:
 	$(MAKE) ts-test && $(MAKE) ts-build && $(MAKE) ts-lint
 
 ts-test:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:20 npm run test
+	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:24 npm run test
 
 ts-test-watch:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:20 npm run test:watch
+	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:24 npm run test:watch
 
 ts-coverage:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:20 npm run coverage
+	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:24 npm run coverage
 
 ts-lint:
-	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:20 npm run lint
+	docker run -it --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:24 npm run lint
