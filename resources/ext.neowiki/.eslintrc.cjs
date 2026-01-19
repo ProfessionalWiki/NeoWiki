@@ -80,7 +80,8 @@ module.exports = {
 		'spaced-comment': 'off',
 		'no-tabs': 'off',
 		'@typescript-eslint/explicit-module-boundary-types': 'off',
-		'comma-dangle': 'warn'
+		'comma-dangle': 'warn',
+		'es-x/no-iterator': 'warn'
 	},
 	overrides: [
 		{
