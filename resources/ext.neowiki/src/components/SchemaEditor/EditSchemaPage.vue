@@ -8,7 +8,7 @@
 		<EditSummary
 			:help-text="$i18n( 'neowiki-edit-summary-help-text-schema' ).text()"
 			:save-button-label="$i18n( 'neowiki-save-schema' ).text()"
-			@save="saveSchema"
+			@save="handleSave"
 		/>
 	</div>
 </template>
@@ -18,35 +18,18 @@ import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/Sch
 import EditSummary from '@/components/common/EditSummary.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { ref } from 'vue';
-import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { useSchemaSaver } from '@/composables/useSchemaSaver.ts';
 
 defineProps<{ initialSchema: Schema }>();
 
 const schemaEditor = ref<SchemaEditorExposes | null>( null );
+const { saveSchema } = useSchemaSaver();
 
-const schemaRepository = NeoWikiServices.getSchemaRepository();
-
-const saveSchema = async (): Promise<void> => {
-	const schema = schemaEditor.value!.getSchema();
-
-	try {
-		await schemaRepository.saveSchema( schema );
-		mw.notify(
-			'TODO: No edit summary provided.',
-			{
-				title: `Updated ${ schema.getName() } schema`,
-				type: 'success'
-			}
-		);
-	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{
-				title: `Failed to update ${ schema.getName() } schema.`,
-				type: 'error'
-			}
-		);
+const handleSave = async ( summary: string ): Promise<void> => {
+	if ( !schemaEditor.value ) {
+		return;
 	}
+	await saveSchema( schemaEditor.value.getSchema(), summary );
 };
 </script>
 

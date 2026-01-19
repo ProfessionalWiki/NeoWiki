@@ -9,11 +9,39 @@
 		</CdxButton>
 		<CdxDialog
 			v-model:open="open"
-			class="ext-neowiki-dialog"
+			class="ext-neowiki-subject-editor-dialog"
 			:title="$i18n( 'neowiki-subject-editor-title', props.subject.getLabel() ).text()"
-			:use-close-button="true"
 			@default="open = false"
 		>
+			<template #header>
+				<div class="cdx-dialog__header__title-group">
+					<h2 class="cdx-dialog__header__title">
+						{{ $i18n( 'neowiki-subject-editor-title', props.subject.getLabel() ).text() }}
+					</h2>
+
+					<p class="cdx-dialog__header__subtitle">
+						{{ props.subject.getSchemaName() }}
+						<a
+							class="ext-neowiki-subject-editor-dialog__schema-link"
+							href="#"
+							@click.prevent="isSchemaEditorOpen = true"
+						>
+							{{ $i18n( 'neowiki-edit-schema' ).text() }}
+						</a>
+					</p>
+				</div>
+
+				<CdxButton
+					class="cdx-dialog__header__close-button"
+					weight="quiet"
+					type="button"
+					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
+					@click="open = false"
+				>
+					<CdxIcon :icon="cdxIconClose" />
+				</CdxButton>
+			</template>
+
 			<SubjectEditor
 				v-if="schemaStatements"
 				ref="subjectEditorRef"
@@ -33,6 +61,13 @@
 				/>
 			</template>
 		</CdxDialog>
+
+		<SchemaEditorDialog
+			v-if="loadedSchema"
+			v-model:open="isSchemaEditorOpen"
+			:initial-schema="loadedSchema as Schema"
+			@saved="onSchemaSaved"
+		/>
 	</div>
 </template>
 
@@ -41,7 +76,7 @@ import { ref, nextTick, computed, onMounted } from 'vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
-import { cdxIconEdit } from '@wikimedia/codex-icons';
+import { cdxIconEdit, cdxIconClose } from '@wikimedia/codex-icons';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -49,6 +84,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 
 const props = defineProps<{
 	subject: Subject;
@@ -64,6 +100,7 @@ interface SubjectEditorInstance {
 }
 
 const open = ref( false );
+const isSchemaEditorOpen = ref( false );
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
 const loadedSchema = ref<Schema | null>( null );
 
@@ -155,4 +192,28 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	}
 };
 
+const onSchemaSaved = ( schema: Schema ): void => {
+	loadedSchema.value = schema;
+};
+
 </script>
+
+<style lang="less">
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@wikimedia/codex/mixins/link.less';
+
+.ext-neowiki-subject-editor-dialog {
+	&__schema-link {
+		.cdx-mixin-link-base();
+	}
+
+	/* Replicate the Codex default dialog header styles */
+	.cdx-dialog__header {
+		display: flex;
+		align-items: baseline;
+		justify-content: flex-end;
+		box-sizing: @box-sizing-base;
+		width: @size-full;
+	}
+}
+</style>
