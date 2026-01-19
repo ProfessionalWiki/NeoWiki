@@ -9,10 +9,10 @@ export class SchemaSerializer {
 		return JSON.stringify(
 			{
 				description: schema.getDescription(),
-				propertyDefinitions: this.serializePropertyDefinitions( schema.getPropertyDefinitions() )
+				propertyDefinitions: this.serializePropertyDefinitions( schema.getPropertyDefinitions() ),
 			},
 			null,
-			4
+			4,
 		);
 	}
 
@@ -28,7 +28,7 @@ export class SchemaSerializer {
 		const { name, ...propertyWithoutName } = property;
 		return {
 			...propertyWithoutName,
-			default: property.default !== undefined ? valueToJson( property.default ) : undefined
+			default: property.default !== undefined ? valueToJson( property.default ) : undefined,
 		};
 	}
 }

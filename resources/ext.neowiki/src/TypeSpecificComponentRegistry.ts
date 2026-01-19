@@ -15,7 +15,7 @@ export class TypeSpecificComponentRegistry {
 
 	public registerType(
 		propertyType: string,
-		stuff: TypeSpecificStuff
+		stuff: TypeSpecificStuff,
 	): void {
 		this.typeMap.set( propertyType, stuff );
 	}
@@ -60,7 +60,7 @@ export class TypeSpecificComponentRegistry {
 			.map( ( [ value, { label, icon } ] ) => ( {
 				value: value, // TODO: rename to name or formatName
 				label: label,
-				icon: icon
+				icon: icon,
 			} ) );
 	}
 

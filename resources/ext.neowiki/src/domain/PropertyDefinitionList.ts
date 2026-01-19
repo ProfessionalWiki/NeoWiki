@@ -41,7 +41,7 @@ export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 				} else {
 					return { value: undefined, done: true };
 				}
-			}
+			},
 		};
 	}
 
@@ -57,7 +57,7 @@ export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 
 	private filter( callback: ( property: PropertyDefinition ) => boolean ): PropertyDefinitionList {
 		return new PropertyDefinitionList(
-			Object.values( this.properties ).filter( callback )
+			Object.values( this.properties ).filter( callback ),
 		);
 	}
 

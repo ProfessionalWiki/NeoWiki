@@ -27,9 +27,9 @@ async function initializeSchemaEditor(): Promise<void> {
 			EditSchemaPage,
 			{
 				initialSchema: await NeoWikiExtension.getInstance().getSchemaRepository().getSchema(
-					editSchema.getAttribute( 'data-schema-name' ) as SchemaName
-				)
-			}
+					editSchema.getAttribute( 'data-schema-name' ) as SchemaName,
+				),
+			},
 		);
 		app.use( createPinia() );
 		NeoWikiServices.registerServices( app );

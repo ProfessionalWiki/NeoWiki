@@ -33,7 +33,7 @@ export class RelationType extends BasePropertyType<RelationProperty, RelationVal
 			relation: json.relation,
 			targetSchema: json.targetSchema,
 			multiple: json.multiple ?? false,
-			uniqueItems: json.uniqueItems ?? true
+			uniqueItems: json.uniqueItems ?? true,
 		} as RelationProperty;
 	}
 
@@ -74,6 +74,6 @@ export function newRelationProperty( attributes: RelationPropertyAttributes = {}
 		default: attributes.default,
 		relation: attributes.relation || 'MyRelation',
 		targetSchema: attributes.targetSchema || 'MyTargetSchema',
-		multiple: attributes.multiple ?? false
+		multiple: attributes.multiple ?? false,
 	};
 }

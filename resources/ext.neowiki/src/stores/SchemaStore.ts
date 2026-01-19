@@ -4,7 +4,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
 export const useSchemaStore = defineStore( 'schema', {
 	state: () => ( {
-		schemas: new Map<string, Schema>()
+		schemas: new Map<string, Schema>(),
 	} ),
 	getters: {
 		getSchemas: ( state ) => state.schemas,
@@ -15,7 +15,7 @@ export const useSchemaStore = defineStore( 'schema', {
 			}
 
 			return schema as Schema;
-		}
+		},
 	},
 	actions: {
 		setSchema( name: string, schema: Schema ): void { // TODO: just take Schema
@@ -39,6 +39,6 @@ export const useSchemaStore = defineStore( 'schema', {
 		async saveSchema( schema: Schema ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSchemaRepository().saveSchema( schema );
 			this.setSchema( schema.getName(), schema );
-		}
-	}
+		},
+	},
 } );

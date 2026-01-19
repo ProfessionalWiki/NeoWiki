@@ -21,7 +21,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 	modelValue: Ref<Value | undefined>,
 	property: Ref<P>,
 	emit: ( e: 'update:modelValue', value: Value | undefined ) => void,
-	propertyType: PropertyType
+	propertyType: PropertyType,
 ): UseStringValueInputReturn {
 	const internalValue: Ref<StringValue | undefined> = ref( undefined );
 	const fieldMessages: Ref<ValidationMessages> = ref( {} );
@@ -47,7 +47,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 	initializeInternalValue( modelValue.value );
 
 	const displayValues: ComputedRef<string[]> = computed<string[]>( () =>
-		internalValue.value ? internalValue.value.strings : []
+		internalValue.value ? internalValue.value.strings : [],
 	);
 
 	function doValidateInputs( valuesToValidate: string[] ): { errors: ValidationMessages[]; validStrings: string[] } {
@@ -68,7 +68,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 
 		return {
 			errors: perInputErrors,
-			validStrings: currentValidStrings
+			validStrings: currentValidStrings,
 		};
 	}
 
@@ -131,6 +131,6 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		inputMessages: inputMessages,
 		onInput: onInput,
 		getCurrentValue: getCurrentValue,
-		startIcon: startIcon
+		startIcon: startIcon,
 	};
 }

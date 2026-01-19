@@ -12,8 +12,8 @@ describe( 'NumberInput', () => {
 		vi.stubGlobal( 'mw', {
 			message: vi.fn( ( str: string ) => ( {
 				text: () => str,
-				parse: () => str
-			} ) )
+				parse: () => str,
+			} ) ),
 		} );
 	} );
 
@@ -22,7 +22,7 @@ describe( 'NumberInput', () => {
 			modelValue: newNumberValue( 10 ),
 			label: 'Test Label',
 			property: newNumberProperty( {} ),
-			...props
+			...props,
 		} );
 	}
 
@@ -38,7 +38,7 @@ describe( 'NumberInput', () => {
 
 	it( 'validates maxValue for the number', async () => {
 		const wrapper = newWrapper( {
-			property: newNumberProperty( { minimum: 42, maximum: 50 } )
+			property: newNumberProperty( { minimum: 42, maximum: 50 } ),
 		} );
 
 		await wrapper.find( 'input' ).setValue( 51 );
@@ -50,7 +50,7 @@ describe( 'NumberInput', () => {
 	describe( 'getCurrentValue', () => {
 		it( 'returns initial value', () => {
 			const wrapper = newWrapper( {
-				modelValue: newNumberValue( 42 )
+				modelValue: newNumberValue( 42 ),
 			} );
 
 			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newNumberValue( 42 ) );
@@ -58,7 +58,7 @@ describe( 'NumberInput', () => {
 
 		it( 'returns updated value after input', async () => {
 			const wrapper = newWrapper( {
-				modelValue: newNumberValue( 10 )
+				modelValue: newNumberValue( 10 ),
 			} );
 
 			await wrapper.find( 'input' ).setValue( '99' );
@@ -68,7 +68,7 @@ describe( 'NumberInput', () => {
 
 		it( 'returns undefined for empty input', async () => {
 			const wrapper = newWrapper( {
-				modelValue: newNumberValue( 10 )
+				modelValue: newNumberValue( 10 ),
 			} );
 
 			await wrapper.find( 'input' ).setValue( '' );
@@ -78,7 +78,7 @@ describe( 'NumberInput', () => {
 
 		it( 'returns undefined for non-numeric input', async () => {
 			const wrapper = newWrapper( {
-				modelValue: newNumberValue( 10 )
+				modelValue: newNumberValue( 10 ),
 			} );
 
 			await wrapper.find( 'input' ).setValue( 'abc' );

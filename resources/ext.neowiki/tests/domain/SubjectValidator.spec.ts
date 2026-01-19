@@ -21,7 +21,7 @@ describe( 'SubjectValidator', () => {
 		public static readonly typeName = 'mock-type';
 
 		public constructor(
-			private readonly shouldBeValid: boolean = true
+			private readonly shouldBeValid: boolean = true,
 		) {
 			super();
 		}
@@ -55,9 +55,9 @@ describe( 'SubjectValidator', () => {
 					name: new PropertyName( name ),
 					type: 'mock-type',
 					description: '',
-					required: false
-				} ) )
-			)
+					required: false,
+				} ) ),
+			),
 		);
 	}
 
@@ -67,9 +67,9 @@ describe( 'SubjectValidator', () => {
 				new Statement(
 					new PropertyName( exampleProperty ),
 					'mock-type',
-					newStringValue( 'test' )
-				)
-			] )
+					newStringValue( 'test' ),
+				),
+			] ),
 		} );
 	}
 
@@ -85,7 +85,7 @@ describe( 'SubjectValidator', () => {
 
 		it( 'returns true when statements are for unknown properties', () => {
 			const validator = new SubjectValidator(
-				getFormatRegistryWithMockPropertyType( true )
+				getFormatRegistryWithMockPropertyType( true ),
 			);
 
 			const subject = newValidSubjectWithProperty();
@@ -96,7 +96,7 @@ describe( 'SubjectValidator', () => {
 
 		it( 'returns true when all statements are valid according to their property types', () => {
 			const validator = new SubjectValidator(
-				getFormatRegistryWithMockPropertyType( true )
+				getFormatRegistryWithMockPropertyType( true ),
 			);
 
 			const subject = newValidSubjectWithProperty();
@@ -107,7 +107,7 @@ describe( 'SubjectValidator', () => {
 
 		it( 'returns false when a statement is invalid according to its property type', () => {
 			const validator = new SubjectValidator(
-				getFormatRegistryWithMockPropertyType( false )
+				getFormatRegistryWithMockPropertyType( false ),
 			);
 
 			const subject = newValidSubjectWithProperty();

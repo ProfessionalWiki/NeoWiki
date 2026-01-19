@@ -11,7 +11,7 @@ export class SubjectWithContext extends Subject {
 		label: string,
 		schemaName: SchemaName,
 		statements: StatementList,
-		private readonly pageIdentifiers: PageIdentifiers
+		private readonly pageIdentifiers: PageIdentifiers,
 	) {
 		super( id, label, schemaName, statements );
 	}

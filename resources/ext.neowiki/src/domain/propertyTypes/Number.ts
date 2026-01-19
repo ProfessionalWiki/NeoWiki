@@ -26,7 +26,7 @@ export class NumberType extends BasePropertyType<NumberProperty, NumberValue> {
 			...base,
 			precision: json.precision,
 			minimum: json.minimum,
-			maximum: json.maximum
+			maximum: json.maximum,
 		} as NumberProperty;
 	}
 
@@ -42,13 +42,13 @@ export class NumberType extends BasePropertyType<NumberProperty, NumberValue> {
 			if ( property.minimum !== undefined && value.number < property.minimum ) {
 				errors.push( {
 					code: 'min-value',
-					args: [ property.minimum ]
+					args: [ property.minimum ],
 				} );
 			}
 			if ( property.maximum !== undefined && value.number > property.maximum ) {
 				errors.push( {
 					code: 'max-value',
-					args: [ property.maximum ]
+					args: [ property.maximum ],
 				} );
 			}
 		}
@@ -71,6 +71,6 @@ export function newNumberProperty( attributes: NumberPropertyAttributes = {} ): 
 		default: attributes.default,
 		precision: attributes.precision,
 		minimum: attributes.minimum,
-		maximum: attributes.maximum
+		maximum: attributes.maximum,
 	};
 }

@@ -13,7 +13,7 @@ export class ProductionHttpClient implements HttpClient {
 		// Convert Axios response to fetch-like Response
 		return new Response( JSON.stringify( response.data ), {
 			status: response.status,
-			statusText: response.statusText
+			statusText: response.statusText,
 		} );
 	}
 
@@ -21,7 +21,7 @@ export class ProductionHttpClient implements HttpClient {
 		const response = await this.axiosInstance.post( url, data, config );
 		return new Response( JSON.stringify( response.data ), {
 			status: response.status,
-			statusText: response.statusText
+			statusText: response.statusText,
 		} );
 	}
 
@@ -29,7 +29,7 @@ export class ProductionHttpClient implements HttpClient {
 		const response = await this.axiosInstance.patch( url, data, config );
 		return new Response( JSON.stringify( response.data ), {
 			status: response.status,
-			statusText: response.statusText
+			statusText: response.statusText,
 		} );
 	}
 
@@ -37,7 +37,7 @@ export class ProductionHttpClient implements HttpClient {
 		const response = await this.axiosInstance.delete( url, config );
 		return new Response( JSON.stringify( response.data ), {
 			status: response.status,
-			statusText: response.statusText
+			statusText: response.statusText,
 		} );
 	}
 

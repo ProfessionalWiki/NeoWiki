@@ -6,7 +6,7 @@ import { Statement } from '@/domain/Statement';
 export class SubjectValidator {
 
 	public constructor(
-		private readonly propertyTypeRegistry: PropertyTypeRegistry
+		private readonly propertyTypeRegistry: PropertyTypeRegistry,
 	) {}
 
 	public validate( subject: Subject, schema: Schema ): boolean {
@@ -32,7 +32,7 @@ export class SubjectValidator {
 			this.getPropertyType( statement )
 				.validate(
 					statement.value,
-					schema.getPropertyDefinitions().get( statement.propertyName )
+					schema.getPropertyDefinitions().get( statement.propertyName ),
 				);
 
 		return errors.length === 0;
