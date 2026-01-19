@@ -9,7 +9,7 @@ export default mergeConfig( viteConfig, defineConfig( {
 			provider: 'v8',
 			include: [ 'src' ],
 			reporter: [ 'text', 'json-summary', 'json' ],
-			reportOnFailure: true
-		}
-	}
+			reportOnFailure: true,
+		},
+	},
 } ) );

@@ -9,7 +9,7 @@ export class Schema {
 	public constructor(
 		private readonly name: SchemaName,
 		private readonly description: string,
-		private readonly properties: PropertyDefinitionList
+		private readonly properties: PropertyDefinitionList,
 	) {
 	}
 
@@ -27,7 +27,7 @@ export class Schema {
 
 	public getPropertyDefinition( propertyName: string|PropertyName ): PropertyDefinition {
 		return this.properties.get(
-			propertyName instanceof PropertyName ? propertyName : new PropertyName( propertyName )
+			propertyName instanceof PropertyName ? propertyName : new PropertyName( propertyName ),
 		);
 	}
 
@@ -39,7 +39,7 @@ export class Schema {
 		return new Schema(
 			this.name,
 			this.description,
-			new PropertyDefinitionList( [ ...this.properties, property ] )
+			new PropertyDefinitionList( [ ...this.properties, property ] ),
 		);
 	}
 
@@ -47,7 +47,7 @@ export class Schema {
 		return new Schema(
 			this.name,
 			this.description,
-			this.properties.withoutNames( [ propertyName ] )
+			this.properties.withoutNames( [ propertyName ] ),
 		);
 	}
 

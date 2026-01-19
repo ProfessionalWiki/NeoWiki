@@ -3,15 +3,15 @@ import { describe, it, expect, vi, beforeEach, type MockedFunction } from 'vites
 import { nextTick } from 'vue';
 
 vi.mock( '@/composables/useValueValidation.ts', () => ( {
-	validateValue: vi.fn()
+	validateValue: vi.fn(),
 } ) );
 
 vi.mock( '@/NeoWikiServices.ts', () => ( {
 	NeoWikiServices: {
 		getComponentRegistry: vi.fn().mockReturnValue( {
-			getIcon: vi.fn().mockReturnValue( undefined )
-		} )
-	}
+			getIcon: vi.fn().mockReturnValue( undefined ),
+		} ),
+	},
 } ) );
 
 import { validateValue } from '@/composables/useValueValidation.ts';
@@ -26,8 +26,8 @@ const mockedValidateValue = validateValue as MockedFunction<typeof validateValue
 vi.stubGlobal( 'mw', {
 	message: vi.fn( ( key: string ) => ( {
 		text: () => key,
-		parse: () => key
-	} ) )
+		parse: () => key,
+	} ) ),
 } );
 
 const createMockPropertyDefinition = ( options: Partial<MultiStringProperty> = {} ): MultiStringProperty => {
@@ -36,7 +36,7 @@ const createMockPropertyDefinition = ( options: Partial<MultiStringProperty> = {
 		type: 'TestStringProperty',
 		required: false,
 		multiple: false,
-		uniqueItems: false
+		uniqueItems: false,
 	};
 
 	const finalName = options.name instanceof PropertyName ?
@@ -46,7 +46,7 @@ const createMockPropertyDefinition = ( options: Partial<MultiStringProperty> = {
 	return {
 		...defaults,
 		...options,
-		name: finalName
+		name: finalName,
 	} as MultiStringProperty;
 };
 
@@ -56,7 +56,7 @@ const createMockPropertyType = ( typeName: string, options: Partial<PropertyType
 	createPropertyDefinitionFromJson: vi.fn(),
 	getExampleValue: vi.fn(),
 	validate: vi.fn( ( _value?: Value, _property?: PropertyDefinition ): ValueValidationError[] => [] ),
-	...( options as any )
+	...( options as any ),
 } );
 
 describe( 'useStringValueInput', () => {
@@ -87,7 +87,7 @@ describe( 'useStringValueInput', () => {
 			modelValueRef,
 			propertyRef,
 			emit,
-			mockPropertyType
+			mockPropertyType,
 		);
 	};
 
@@ -163,7 +163,7 @@ describe( 'useStringValueInput', () => {
 			const currentProperty = createMockPropertyDefinition( { multiple: false } );
 			mockedValidateValue.mockReturnValue( {} );
 			const { onInput, getCurrentValue, inputMessages, fieldMessages } = createComposable( {
-				property: currentProperty
+				property: currentProperty,
 			} );
 
 			onInput( 'new value' );
@@ -180,7 +180,7 @@ describe( 'useStringValueInput', () => {
 			const currentProperty = createMockPropertyDefinition( { multiple: true } );
 			mockedValidateValue.mockReturnValue( {} );
 			const { onInput, getCurrentValue, inputMessages, fieldMessages } = createComposable( {
-				property: currentProperty
+				property: currentProperty,
 			} );
 
 			onInput( [ 'val1', 'val2' ] );
@@ -199,7 +199,7 @@ describe( 'useStringValueInput', () => {
 			mockedValidateValue.mockReturnValue( {} );
 			const { onInput, getCurrentValue, inputMessages, fieldMessages } = createComposable( {
 				modelValue: newStringValue( 'initial' ),
-				property: currentProperty
+				property: currentProperty,
 			} );
 			mockedValidateValue.mockClear();
 
@@ -216,7 +216,7 @@ describe( 'useStringValueInput', () => {
 			const currentProperty = createMockPropertyDefinition( { multiple: true } );
 			mockedValidateValue.mockReturnValue( {} );
 			const { onInput, getCurrentValue, inputMessages, fieldMessages } = createComposable( {
-				property: currentProperty
+				property: currentProperty,
 			} );
 
 			onInput( [ 'val1', '', 'val3', '' ] );
@@ -239,7 +239,7 @@ describe( 'useStringValueInput', () => {
 			mockedValidateValue.mockReturnValue( {} );
 			const { onInput, getCurrentValue, inputMessages, fieldMessages } = createComposable( {
 				modelValue: newStringValue( 'initial' ),
-				property: currentProperty
+				property: currentProperty,
 			} );
 			mockedValidateValue.mockClear();
 
@@ -260,7 +260,7 @@ describe( 'useStringValueInput', () => {
 			mockedValidateValue.mockReturnValue( validationError );
 			const testProperty = createMockPropertyDefinition( { multiple: false } );
 			const { onInput, inputMessages, fieldMessages } = createComposable( {
-				property: testProperty
+				property: testProperty,
 			} );
 			mockedValidateValue.mockClear();
 
@@ -280,7 +280,7 @@ describe( 'useStringValueInput', () => {
 				.mockReturnValueOnce( validationError3 );
 			const testProperty = createMockPropertyDefinition( { multiple: true } );
 			const { onInput, inputMessages, fieldMessages } = createComposable( {
-				property: testProperty
+				property: testProperty,
 			} );
 			mockedValidateValue.mockClear();
 
@@ -297,7 +297,7 @@ describe( 'useStringValueInput', () => {
 			const testProperty = createMockPropertyDefinition( { multiple: true, uniqueItems: true } );
 			mockedValidateValue.mockReturnValue( {} );
 			const { onInput, inputMessages, fieldMessages } = createComposable( {
-				property: testProperty
+				property: testProperty,
 			} );
 			mockedValidateValue.mockClear();
 

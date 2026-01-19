@@ -25,8 +25,8 @@ vi.mock( '@/composables/useStringValueInput.ts', () => ( {
 		inputMessages: mockInputMessages,
 		onInput: mockOnInput,
 		getCurrentValue: mockGetCurrentValue,
-		startIcon: mockStartIcon
-	} ) )
+		startIcon: mockStartIcon,
+	} ) ),
 } ) );
 
 describe( 'TextInput', () => {
@@ -35,7 +35,7 @@ describe( 'TextInput', () => {
 			modelValue: undefined, // Default to undefined, composable handles initial state
 			label: 'Text Label',
 			property: newTextProperty( { name: 'testTextProp', multiple: false } ),
-			...props
+			...props,
 		} );
 	}
 
@@ -50,8 +50,8 @@ describe( 'TextInput', () => {
 		vi.stubGlobal( 'mw', {
 			message: vi.fn( ( str: string ) => ( {
 				text: () => str,
-				parse: () => str
-			} ) )
+				parse: () => str,
+			} ) ),
 		} );
 	} );
 
@@ -62,7 +62,7 @@ describe( 'TextInput', () => {
 			newWrapper( {
 				label: 'My Custom Text Label',
 				property: testProperty,
-				modelValue: testModelValue
+				modelValue: testModelValue,
 			} );
 
 			expect( useStringValueInput ).toHaveBeenCalledTimes( 1 );
@@ -77,7 +77,7 @@ describe( 'TextInput', () => {
 		it( 'renders a CdxField with the label and optional status', () => {
 			const wrapper = newWrapper( {
 				label: 'My Awesome Text Label',
-				property: newTextProperty( { required: false } )
+				property: newTextProperty( { required: false } ),
 			} );
 			const field = wrapper.findComponent( CdxField );
 
@@ -91,7 +91,7 @@ describe( 'TextInput', () => {
 			mockDisplayValues.value = [ 'Some text' ];
 			// mockStartIcon.value = 'some-icon'; // If text inputs were to have icons
 			const wrapper = newWrapper( {
-				property: newTextProperty( { multiple: false } )
+				property: newTextProperty( { multiple: false } ),
 			} );
 
 			expect( wrapper.findComponent( CdxTextInput ).exists() ).toBe( true );
@@ -104,7 +104,7 @@ describe( 'TextInput', () => {
 			mockDisplayValues.value = [ 'Text 1', 'Text 2' ];
 			mockInputMessages.value = [ {}, { error: 'An error on Text 2' } ];
 			const wrapper = newWrapper( {
-				property: newTextProperty( { multiple: true } )
+				property: newTextProperty( { multiple: true } ),
 			} );
 
 			expect( wrapper.findComponent( NeoMultiTextInput ).exists() ).toBe( true );
@@ -117,7 +117,7 @@ describe( 'TextInput', () => {
 		it( 'passes fieldMessages to CdxField and sets status to error if fieldMessages.error exists (single input)', () => {
 			mockFieldMessages.value = { error: 'Main text field error' };
 			const wrapper = newWrapper( {
-				property: newTextProperty( { multiple: false } )
+				property: newTextProperty( { multiple: false } ),
 			} );
 			const field = wrapper.findComponent( CdxField );
 
@@ -127,7 +127,7 @@ describe( 'TextInput', () => {
 
 		it( 'sets CdxField status to default if no fieldMessages.error (single input)', () => {
 			const wrapper = newWrapper( {
-				property: newTextProperty( { multiple: false } )
+				property: newTextProperty( { multiple: false } ),
 			} );
 			const field = wrapper.findComponent( CdxField );
 
@@ -137,7 +137,7 @@ describe( 'TextInput', () => {
 		it( 'CdxField status remains default for multiple inputs even with fieldMessages.error', () => {
 			mockFieldMessages.value = { error: 'Error that should not set status for multiple' };
 			const wrapper = newWrapper( {
-				property: newTextProperty( { multiple: true } )
+				property: newTextProperty( { multiple: true } ),
 			} );
 			const field = wrapper.findComponent( CdxField );
 
@@ -149,7 +149,7 @@ describe( 'TextInput', () => {
 	describe( 'Event Handling', () => {
 		it( 'calls onInput from composable when CdxTextInput emits update:model-value (single)', async () => {
 			const wrapper = newWrapper( {
-				property: newTextProperty( { multiple: false } )
+				property: newTextProperty( { multiple: false } ),
 			} );
 			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:model-value', 'new single text' );
 
@@ -158,7 +158,7 @@ describe( 'TextInput', () => {
 
 		it( 'calls onInput from composable when NeoMultiTextInput emits update:model-value (multiple)', async () => {
 			const wrapper = newWrapper( {
-				property: newTextProperty( { multiple: true } )
+				property: newTextProperty( { multiple: true } ),
 			} );
 			await wrapper.findComponent( NeoMultiTextInput ).vm.$emit( 'update:model-value', [ 'new text 1', 'new text 2' ] );
 

@@ -10,7 +10,7 @@ const serializer = new PropertyDefinitionDeserializer( Neo.getInstance().getProp
 
 it( 'creates a property definition with defaults omitted', () => {
 	const json = {
-		type: 'number'
+		type: 'number',
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json );
@@ -25,7 +25,7 @@ it( 'creates a property definition with defaults specified', () => {
 	const json = {
 		type: 'number',
 		description: 'Foo',
-		required: true
+		required: true,
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json );
@@ -38,7 +38,7 @@ it( 'creates a string property definition', () => {
 	const json = {
 		type: 'text',
 		multiple: true,
-		uniqueItems: false
+		uniqueItems: false,
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as TextProperty;
@@ -51,7 +51,7 @@ it( 'creates a string property definition', () => {
 
 it( 'creates a number property definition with defaults', () => {
 	const json = {
-		type: 'number'
+		type: 'number',
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as NumberProperty;
@@ -68,7 +68,7 @@ it( 'creates a number property definition with all fields', () => {
 		type: 'number',
 		minimum: 42,
 		maximum: 1337,
-		precision: 2
+		precision: 2,
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as NumberProperty;
@@ -84,7 +84,7 @@ it( 'creates a relation property definition with defaults', () => {
 	const json = {
 		type: 'relation',
 		relation: 'Employer',
-		targetSchema: 'Company'
+		targetSchema: 'Company',
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as RelationProperty;
@@ -102,7 +102,7 @@ it( 'creates a relation property definition with all fields', () => {
 		relation: 'Employer',
 		targetSchema: 'Company',
 		multiple: true,
-		uniqueItems: false
+		uniqueItems: false,
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as RelationProperty;
@@ -112,7 +112,7 @@ it( 'creates a relation property definition with all fields', () => {
 
 it( 'throws an error for an unsupported type', () => {
 	const json = {
-		type: 'unsupported'
+		type: 'unsupported',
 	};
 
 	expect( () => serializer.propertyDefinitionFromJson( 'test', json ) ).toThrow( 'Unknown property type: unsupported' );
@@ -122,8 +122,8 @@ it( 'creates definitions without default value', () => {
 	const property = serializer.propertyDefinitionFromJson(
 		'test',
 		{
-			type: 'text'
-		}
+			type: 'text',
+		},
 	);
 
 	expect( property.default ).toBeUndefined();
@@ -134,8 +134,8 @@ it( 'creates definitions with default value', () => {
 		'test',
 		{
 			type: 'text',
-			default: 'foo'
-		}
+			default: 'foo',
+		},
 	);
 
 	expect( property.default ).toEqual( newStringValue( 'foo' ) );
@@ -146,8 +146,8 @@ it( 'creates definitions with explicitly undefined default value', () => {
 		'test',
 		{
 			type: 'text',
-			default: undefined
-		}
+			default: undefined,
+		},
 	);
 
 	expect( property.default ).toBeUndefined();

@@ -43,7 +43,7 @@ export class StatementList implements Iterable<Statement> {
 				} else {
 					return { value: undefined, done: true };
 				}
-			}
+			},
 		};
 	}
 
@@ -61,7 +61,7 @@ export class StatementList implements Iterable<Statement> {
 
 	private filter( callback: ( property: Statement ) => boolean ): StatementList {
 		return new StatementList(
-			Object.values( this.statements ).filter( callback )
+			Object.values( this.statements ).filter( callback ),
 		);
 	}
 
@@ -87,15 +87,15 @@ export class StatementList implements Iterable<Statement> {
 					} catch ( _error ) {
 						return null;
 					}
-				} )
-			) ).filter( ( subject ): subject is Subject => subject !== null )
+				} ),
+			) ).filter( ( subject ): subject is Subject => subject !== null ),
 		);
 	}
 
 	public getIdsOfReferencedSubjects(): Set<SubjectId> {
 		const relationValues = this.getValuesOfType( RelationValue );
 		return new Set(
-			relationValues.flatMap( ( value ) => value.targetIds )
+			relationValues.flatMap( ( value ) => value.targetIds ),
 		);
 	}
 
@@ -125,7 +125,7 @@ export function statementsToJson( statements: StatementList ): Record<string, un
 
 		valuesJson[ statement.propertyName.toString() ] = {
 			value: value,
-			propertyType: statement.propertyType
+			propertyType: statement.propertyType,
 		};
 	}
 

@@ -2,7 +2,7 @@ export class PageIdentifiers {
 
 	public constructor(
 		private readonly pageId: number,
-		private readonly pageTitle: string
+		private readonly pageTitle: string,
 	) {
 	}
 

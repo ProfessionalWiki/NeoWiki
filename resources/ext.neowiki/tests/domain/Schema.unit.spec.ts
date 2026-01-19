@@ -12,8 +12,8 @@ describe( 'Schema', () => {
 			properties: new PropertyDefinitionList( [
 				newTextProperty( { name: 'Wrong' } ),
 				newTextProperty( { name: 'MyText' } ),
-				newTextProperty( { name: 'AlsoWrong' } )
-			] )
+				newTextProperty( { name: 'AlsoWrong' } ),
+			] ),
 		} );
 
 		it( 'returns undefined for unknown property', () => {
@@ -53,7 +53,7 @@ describe( 'Schema', () => {
 			const updatedSchema = originalSchema.withAddedPropertyDefinition( addedProperty );
 
 			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
-				[ addedProperty.name.toString() ]: addedProperty
+				[ addedProperty.name.toString() ]: addedProperty,
 			} );
 		} );
 
@@ -61,7 +61,7 @@ describe( 'Schema', () => {
 			const existingProperty = newTextProperty();
 
 			const originalSchema = newSchema( {
-				properties: new PropertyDefinitionList( [ existingProperty ] )
+				properties: new PropertyDefinitionList( [ existingProperty ] ),
 			} );
 
 			const addedProperty = newNumberProperty();
@@ -70,7 +70,7 @@ describe( 'Schema', () => {
 
 			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
 				[ existingProperty.name.toString() ]: existingProperty,
-				[ addedProperty.name.toString() ]: addedProperty
+				[ addedProperty.name.toString() ]: addedProperty,
 			} );
 		} );
 
@@ -83,13 +83,13 @@ describe( 'Schema', () => {
 			const property2 = newNumberProperty();
 
 			const originalSchema = newSchema( {
-				properties: new PropertyDefinitionList( [ property1, property2 ] )
+				properties: new PropertyDefinitionList( [ property1, property2 ] ),
 			} );
 
 			const updatedSchema = originalSchema.withRemovedPropertyDefinition( property1.name );
 
 			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
-				[ property2.name.toString() ]: property2
+				[ property2.name.toString() ]: property2,
 			} );
 		} );
 

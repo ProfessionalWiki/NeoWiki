@@ -12,13 +12,13 @@ export class RestSchemaRepository implements SchemaRepository {
 		private readonly mediaWikiRestApiUrl: string,
 		private readonly httpClient: HttpClient,
 		private readonly serializer: SchemaSerializer,
-		private readonly pageSaver: PageSaver
+		private readonly pageSaver: PageSaver,
 	) {
 	}
 
 	public async getSchema( schemaName: SchemaName ): Promise<Schema> {
 		const response = await this.httpClient.get(
-			`${ this.mediaWikiRestApiUrl }/v1/page/Schema:${ schemaName }`
+			`${ this.mediaWikiRestApiUrl }/v1/page/Schema:${ schemaName }`,
 		);
 
 		if ( !response.ok ) {
@@ -39,19 +39,19 @@ export class RestSchemaRepository implements SchemaRepository {
 		return new Schema(
 			schemaName,
 			schema.description,
-			this.propertyDefinitionsFromJson( schema.propertyDefinitions )
+			this.propertyDefinitionsFromJson( schema.propertyDefinitions ),
 		);
 	}
 
 	private propertyDefinitionsFromJson( definitions: Record<string, any> ): PropertyDefinitionList {
 		return new PropertyDefinitionList(
-			Object.keys( definitions ).map( ( key ) => createPropertyDefinitionFromJson( key, definitions[ key ] ) )
+			Object.keys( definitions ).map( ( key ) => createPropertyDefinitionFromJson( key, definitions[ key ] ) ),
 		);
 	}
 
 	public async getSchemaNames( search = '' ): Promise<string[]> {
 		const response = await this.httpClient.get(
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/schema-names/${ search }`
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/schema-names/${ search }`,
 		);
 
 		if ( !response.ok ) {
@@ -66,7 +66,7 @@ export class RestSchemaRepository implements SchemaRepository {
 			`Schema:${ encodeURIComponent( schema.getName() ) }`,
 			this.serializeSchema( schema ),
 			'Update schema via NeoWiki UI',
-			'NeoWikiSchema'
+			'NeoWikiSchema',
 		);
 
 		if ( !status.success ) {

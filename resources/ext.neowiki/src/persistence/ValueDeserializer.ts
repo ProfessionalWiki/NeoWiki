@@ -6,13 +6,13 @@ import {
 	newStringValue,
 	RelationValue,
 	Value,
-	ValueType
+	ValueType,
 } from '@/domain/Value';
 
 export class ValueDeserializer {
 
 	public constructor(
-		private readonly registry: PropertyTypeRegistry
+		private readonly registry: PropertyTypeRegistry,
 	) {
 	}
 

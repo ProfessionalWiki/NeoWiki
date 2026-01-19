@@ -19,7 +19,7 @@ import { Service } from '@/NeoWikiServices.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
-	text: () => key
+	text: () => key,
 } ) );
 
 describe( 'AutomaticInfobox', () => {
@@ -27,8 +27,8 @@ describe( 'AutomaticInfobox', () => {
 		vi.stubGlobal( 'mw', {
 			message: vi.fn( ( str: string ) => ( {
 				text: () => str,
-				parse: () => str
-			} ) )
+				parse: () => str,
+			} ) ),
 		} );
 	} );
 
@@ -42,8 +42,8 @@ describe( 'AutomaticInfobox', () => {
 		new PropertyDefinitionList( [
 			createPropertyDefinitionFromJson( 'name', { type: TextType.typeName } ),
 			createPropertyDefinitionFromJson( 'age', { type: NumberType.typeName } ),
-			createPropertyDefinitionFromJson( 'website', { type: UrlType.typeName } )
-		] )
+			createPropertyDefinitionFromJson( 'website', { type: UrlType.typeName } ),
+		] ),
 	);
 
 	const mockSubject = new Subject(
@@ -52,32 +52,32 @@ describe( 'AutomaticInfobox', () => {
 		'TestSchema',
 		new StatementList( [
 			new Statement(
-				new PropertyName( 'name' ), TextType.typeName, newStringValue( 'John Doe', 'Jane Doe' )
+				new PropertyName( 'name' ), TextType.typeName, newStringValue( 'John Doe', 'Jane Doe' ),
 			),
 			new Statement(
-				new PropertyName( 'age' ), NumberType.typeName, newNumberValue( 30 )
+				new PropertyName( 'age' ), NumberType.typeName, newNumberValue( 30 ),
 			),
 			new Statement(
-				new PropertyName( 'website' ), UrlType.typeName, newStringValue( 'https://example.com' )
-			)
-		] )
+				new PropertyName( 'website' ), UrlType.typeName, newStringValue( 'https://example.com' ),
+			),
+		] ),
 	);
 
 	const mountComponent = ( subject: Subject, canEditSubject: boolean ): VueWrapper => mount( AutomaticInfobox, {
 		props: {
 			subjectId: subject.getId(),
-			canEditSubject: canEditSubject
+			canEditSubject: canEditSubject,
 		},
 		global: {
 			mocks: {
-				$i18n
+				$i18n,
 			},
 			plugins: [ pinia ],
 			provide: {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
-				[ Service.SchemaAuthorizer ]: NeoWikiExtension.getInstance().newSchemaAuthorizer()
-			}
-		}
+				[ Service.SchemaAuthorizer ]: NeoWikiExtension.getInstance().newSchemaAuthorizer(),
+			},
+		},
 	} );
 
 	beforeEach( () => {
@@ -123,7 +123,7 @@ describe( 'AutomaticInfobox', () => {
 			new SubjectId( 's1demo6sssssss1' ),
 			'Empty Subject',
 			'TestSchema',
-			new StatementList( [] )
+			new StatementList( [] ),
 		);
 
 		subjectStore.setSubject( emptySubject );

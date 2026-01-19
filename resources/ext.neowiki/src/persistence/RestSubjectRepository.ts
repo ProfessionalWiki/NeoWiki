@@ -22,13 +22,13 @@ export class RestSubjectRepository implements SubjectRepository {
 	public constructor(
 		private readonly mediaWikiRestApiUrl: string,
 		private readonly httpClient: HttpClient,
-		private readonly subjectDeserializer: SubjectDeserializer
+		private readonly subjectDeserializer: SubjectDeserializer,
 	) {
 	}
 
 	public async getSubject( id: SubjectId ): Promise<Subject> {
 		const response = await this.httpClient.get(
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`,
 		);
 
 		if ( !response.ok ) {
@@ -50,12 +50,12 @@ export class RestSubjectRepository implements SubjectRepository {
 		pageId: number,
 		label: string,
 		schemaName: SchemaName,
-		statements: StatementList
+		statements: StatementList,
 	): Promise<SubjectId> {
 		const payload = {
 			label: label,
 			schema: schemaName,
-			statements: statementsToJson( statements )
+			statements: statementsToJson( statements ),
 		};
 
 		const response = await this.httpClient.post(
@@ -63,9 +63,9 @@ export class RestSubjectRepository implements SubjectRepository {
 			payload,
 			{
 				headers: {
-					'Content-Type': 'application/json'
-				}
-			}
+					'Content-Type': 'application/json',
+				},
+			},
 		);
 
 		if ( !response.ok ) {
@@ -80,12 +80,12 @@ export class RestSubjectRepository implements SubjectRepository {
 		pageId: number,
 		label: string,
 		schemaName: SchemaName,
-		statements: StatementList
+		statements: StatementList,
 	): Promise<SubjectId> {
 		const payload = {
 			label: label,
 			schema: schemaName,
-			statements: statementsToJson( statements )
+			statements: statementsToJson( statements ),
 		};
 
 		const response = await this.httpClient.post(
@@ -93,9 +93,9 @@ export class RestSubjectRepository implements SubjectRepository {
 			payload,
 			{
 				headers: {
-					'Content-Type': 'application/json'
-				}
-			}
+					'Content-Type': 'application/json',
+				},
+			},
 		);
 
 		if ( !response.ok ) {
@@ -111,13 +111,13 @@ export class RestSubjectRepository implements SubjectRepository {
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
 			{
 				label,
-				statements: statementsToJson( statements )
+				statements: statementsToJson( statements ),
 			},
 			{
 				headers: {
-					'Content-Type': 'application/json'
-				}
-			}
+					'Content-Type': 'application/json',
+				},
+			},
 		);
 
 		if ( !response.ok ) {
@@ -132,9 +132,9 @@ export class RestSubjectRepository implements SubjectRepository {
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
 			{
 				headers: {
-					'Content-Type': 'application/json'
-				}
-			}
+					'Content-Type': 'application/json',
+				},
+			},
 		);
 
 		if ( !response.ok ) {

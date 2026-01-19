@@ -16,7 +16,7 @@ describe( 'Subject', () => {
 	it( 'should be constructable via newSubject', () => {
 		const subject = newSubject( {
 			label: 'I am a tomato',
-			schemaId: 'Tomato'
+			schemaId: 'Tomato',
 		} );
 
 		expect( subject.getId().text ).toBe( DEFAULT_SUBJECT_ID );
@@ -29,7 +29,7 @@ describe( 'Subject', () => {
 		const identifiers = new PageIdentifiers( 123, 'TestPage' );
 
 		const subject = newSubject( {
-			pageIdentifiers: identifiers
+			pageIdentifiers: identifiers,
 		} );
 
 		expect( subject.getPageIdentifiers() ).toEqual( identifiers );
@@ -56,22 +56,22 @@ describe( 'Subject', () => {
 					{
 						Property1: {
 							value: [ 'foo' ],
-							type: TextType.typeName
+							type: TextType.typeName,
 						},
 						Property2: {
 							value: [ { target: 's11111111111111' } ],
-							type: RelationType.typeName
+							type: RelationType.typeName,
 						},
 						Property3: {
 							value: [ { target: 's11111111111112' }, { target: 's11111111111113' } ],
-							type: RelationType.typeName
+							type: RelationType.typeName,
 						},
 						Property4: {
 							value: [ 'bar' ],
-							type: TextType.typeName
-						}
-					}
-				)
+							type: TextType.typeName,
+						},
+					},
+				),
 			} );
 
 			const subjectMap = await subject.getReferencedSubjects( lookup );
@@ -89,22 +89,22 @@ describe( 'Subject', () => {
 					{
 						Property1: {
 							value: [ 'foo' ],
-							type: TextType.typeName
+							type: TextType.typeName,
 						},
 						Property2: {
 							value: [ { target: 's11111111111118' } ],
-							type: RelationType.typeName
+							type: RelationType.typeName,
 						},
 						Property3: {
 							value: [ { target: 's11111111111111' }, { target: 's11111111111119' } ],
-							type: RelationType.typeName
+							type: RelationType.typeName,
 						},
 						Property4: {
 							value: [ 'bar' ],
-							type: TextType.typeName
-						}
-					}
-				)
+							type: TextType.typeName,
+						},
+					},
+				),
 			} );
 
 			const subjectMap = await subject.getReferencedSubjects( lookup );
@@ -135,8 +135,8 @@ describe( 'Subject', () => {
 				{
 					propertyName: new PropertyName( 'testProperty' ),
 					propertyType: TextType.typeName,
-					value: newStringValue( 'Test Value' )
-				} as Statement
+					value: newStringValue( 'Test Value' ),
+				} as Statement,
 			] );
 
 			const updatedSubject = originalSubject.withStatements( newStatements );

@@ -21,7 +21,7 @@ describe( 'SubjectDeserializer', () => {
 			schema: 'SDSchema',
 			statements: {},
 			pageId: 42,
-			pageTitle: 'SDPageTitle'
+			pageTitle: 'SDPageTitle',
 		};
 
 		const subject = deserializer.deserialize( json );
@@ -31,7 +31,7 @@ describe( 'SubjectDeserializer', () => {
 			'SubjectDeserializer',
 			'SDSchema',
 			new StatementList( [] ),
-			new PageIdentifiers( 42, 'SDPageTitle' )
+			new PageIdentifiers( 42, 'SDPageTitle' ),
 		) );
 	} );
 
@@ -43,15 +43,15 @@ describe( 'SubjectDeserializer', () => {
 			statements: {
 				Property1: {
 					value: [ 'foo' ],
-					type: 'text'
+					type: 'text',
 				},
 				Property2: {
 					value: 1337,
-					type: 'number'
-				}
+					type: 'number',
+				},
 			},
 			pageId: 42,
-			pageTitle: 'SDPageTitle'
+			pageTitle: 'SDPageTitle',
 		};
 
 		const subject = deserializer.deserialize( json );
@@ -62,9 +62,9 @@ describe( 'SubjectDeserializer', () => {
 			'SDSchema',
 			new StatementList( [
 				new Statement( new PropertyName( 'Property1' ), TextType.typeName, newStringValue( 'foo' ) ),
-				new Statement( new PropertyName( 'Property2' ), NumberType.typeName, newNumberValue( 1337 ) )
+				new Statement( new PropertyName( 'Property2' ), NumberType.typeName, newNumberValue( 1337 ) ),
 			] ),
-			new PageIdentifiers( 42, 'SDPageTitle' )
+			new PageIdentifiers( 42, 'SDPageTitle' ),
 		) );
 	} );
 

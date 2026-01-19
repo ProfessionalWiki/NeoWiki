@@ -19,7 +19,7 @@ function isJsonStatement( json: unknown ): json is StatementJson {
 export class StatementDeserializer {
 
 	public constructor(
-		private readonly valueDeserializer: ValueDeserializer
+		private readonly valueDeserializer: ValueDeserializer,
 	) {
 	}
 
@@ -31,7 +31,7 @@ export class StatementDeserializer {
 		return new Statement(
 			new PropertyName( propertyName ),
 			json.type,
-			this.valueDeserializer.deserialize( json.value, json.type )
+			this.valueDeserializer.deserialize( json.value, json.type ),
 		);
 	}
 

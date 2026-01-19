@@ -26,8 +26,8 @@ vi.mock( '@/composables/useStringValueInput.ts', () => ( {
 		inputMessages: mockInputMessages,
 		onInput: mockOnInput,
 		getCurrentValue: mockGetCurrentValue,
-		startIcon: mockStartIcon
-	} ) )
+		startIcon: mockStartIcon,
+	} ) ),
 } ) );
 
 describe( 'UrlInput', () => {
@@ -36,7 +36,7 @@ describe( 'UrlInput', () => {
 			modelValue: undefined,
 			label: 'URL Label',
 			property: newUrlProperty( { name: 'testUrlProp', type: UrlType.typeName, multiple: false } ),
-			...props
+			...props,
 		} );
 	}
 
@@ -51,8 +51,8 @@ describe( 'UrlInput', () => {
 		vi.stubGlobal( 'mw', {
 			message: vi.fn( ( str: string ) => ( {
 				text: () => str,
-				parse: () => str
-			} ) )
+				parse: () => str,
+			} ) ),
 		} );
 	} );
 
@@ -62,7 +62,7 @@ describe( 'UrlInput', () => {
 			const testModelValue = newStringValue( 'https://initial.url' );
 			newWrapper( {
 				property: testProperty,
-				modelValue: testModelValue
+				modelValue: testModelValue,
 			} );
 
 			expect( useStringValueInput ).toHaveBeenCalledTimes( 1 );
@@ -77,7 +77,7 @@ describe( 'UrlInput', () => {
 		it( 'renders a CdxField with the label and optional status', () => {
 			const wrapper = newWrapper( {
 				label: 'My Awesome URL Label',
-				property: newUrlProperty( { required: false } )
+				property: newUrlProperty( { required: false } ),
 			} );
 			const field = wrapper.findComponent( CdxField );
 
@@ -91,7 +91,7 @@ describe( 'UrlInput', () => {
 			mockDisplayValues.value = [ 'https://single.url' ];
 			mockStartIcon.value = 'url-icon';
 			const wrapper = newWrapper( {
-				property: newUrlProperty( { multiple: false } )
+				property: newUrlProperty( { multiple: false } ),
 			} );
 
 			expect( wrapper.findComponent( CdxTextInput ).exists() ).toBe( true );
@@ -106,7 +106,7 @@ describe( 'UrlInput', () => {
 			mockInputMessages.value = [ {}, { error: 'An error' } ];
 			mockStartIcon.value = 'multi-url-icon';
 			const wrapper = newWrapper( {
-				property: newUrlProperty( { multiple: true } )
+				property: newUrlProperty( { multiple: true } ),
 			} );
 
 			expect( wrapper.findComponent( NeoMultiTextInput ).exists() ).toBe( true );
@@ -120,7 +120,7 @@ describe( 'UrlInput', () => {
 		it( 'passes fieldMessages to CdxField and sets status to error if fieldMessages.error exists (single input)', () => {
 			mockFieldMessages.value = { error: 'Main URL field error' };
 			const wrapper = newWrapper( {
-				property: newUrlProperty( { multiple: false } )
+				property: newUrlProperty( { multiple: false } ),
 			} );
 			const field = wrapper.findComponent( CdxField );
 
@@ -130,7 +130,7 @@ describe( 'UrlInput', () => {
 
 		it( 'sets CdxField status to default if no fieldMessages.error (single input)', () => {
 			const wrapper = newWrapper( {
-				property: newUrlProperty( { multiple: false } )
+				property: newUrlProperty( { multiple: false } ),
 			} );
 			const field = wrapper.findComponent( CdxField );
 
@@ -140,7 +140,7 @@ describe( 'UrlInput', () => {
 		it( 'CdxField status remains default for multiple inputs even with fieldMessages.error', () => {
 			mockFieldMessages.value = { error: 'Error that should not set status for multiple' };
 			const wrapper = newWrapper( {
-				property: newUrlProperty( { multiple: true } )
+				property: newUrlProperty( { multiple: true } ),
 			} );
 			const field = wrapper.findComponent( CdxField );
 
@@ -152,7 +152,7 @@ describe( 'UrlInput', () => {
 	describe( 'Event Handling', () => {
 		it( 'calls onInput from composable when CdxTextInput emits update:model-value (single)', async () => {
 			const wrapper = newWrapper( {
-				property: newUrlProperty( { multiple: false } )
+				property: newUrlProperty( { multiple: false } ),
 			} );
 			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:model-value', 'https://new.single.url' );
 
@@ -161,7 +161,7 @@ describe( 'UrlInput', () => {
 
 		it( 'calls onInput from composable when NeoMultiTextInput emits update:model-value (multiple)', async () => {
 			const wrapper = newWrapper( {
-				property: newUrlProperty( { multiple: true } )
+				property: newUrlProperty( { multiple: true } ),
 			} );
 			await wrapper.findComponent( NeoMultiTextInput ).vm.$emit( 'update:model-value', [ 'https://new1.url', 'https://new2.url' ] );
 

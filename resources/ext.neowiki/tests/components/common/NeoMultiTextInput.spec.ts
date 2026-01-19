@@ -9,14 +9,14 @@ function createWrapper( props: Partial<InstanceType<typeof NeoMultiTextInput>['$
 		props: {
 			label: 'Test Label', // Default label for aria-label generation
 			modelValue: [ '' ], // Default to a single empty input
-			...props
+			...props,
 		},
 		global: {
 			components: {
 				CdxTextInput,
-				CdxMessage
-			}
-		}
+				CdxMessage,
+			},
+		},
 	} );
 }
 
@@ -136,7 +136,7 @@ describe( 'NeoMultiTextInput', () => {
 		it( 'does not display message initially', () => {
 			const wrapper = createWrapper( {
 				modelValue: [ 'value1' ],
-				messages: [ { error: 'Error on first' } ]
+				messages: [ { error: 'Error on first' } ],
 			} );
 			expect( wrapper.findComponent( CdxMessage ).exists() ).toBe( false );
 		} );
@@ -144,7 +144,7 @@ describe( 'NeoMultiTextInput', () => {
 		it( 'displays message after input is blurred', async () => {
 			const wrapper = createWrapper( {
 				modelValue: [ 'value1' ],
-				messages: [ { error: 'Error on first' } ]
+				messages: [ { error: 'Error on first' } ],
 			} );
 			const textInput = wrapper.findComponent( CdxTextInput );
 
@@ -159,7 +159,7 @@ describe( 'NeoMultiTextInput', () => {
 		it( 'applies correct status to input based on message', async () => {
 			const wrapper = createWrapper( {
 				modelValue: [ 'value1', 'value2' ],
-				messages: [ {}, { warning: 'Warning on second' } ]
+				messages: [ {}, { warning: 'Warning on second' } ],
 			} );
 			const textInputs = wrapper.findAllComponents( CdxTextInput );
 
@@ -176,7 +176,7 @@ describe( 'NeoMultiTextInput', () => {
 		it( 'does not display message if input has no message entry, even after blur', async () => {
 			const wrapper = createWrapper( {
 				modelValue: [ 'value1' ],
-				messages: []
+				messages: [],
 			} );
 			const textInput = wrapper.findComponent( CdxTextInput );
 			await textInput.vm.$emit( 'blur' );
@@ -186,7 +186,7 @@ describe( 'NeoMultiTextInput', () => {
 		it( 'handles messages for the dynamically added input', async () => {
 			const wrapper = createWrapper( {
 				modelValue: [ 'v1' ],
-				messages: [ {}, { success: 'Good job!' } ]
+				messages: [ {}, { success: 'Good job!' } ],
 			} );
 			const textInputs = wrapper.findAllComponents( CdxTextInput );
 

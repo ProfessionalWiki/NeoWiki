@@ -53,7 +53,7 @@ export class NeoWikiExtension {
 			valueEditor: TextInput,
 			attributesEditor: TextAttributesEditor,
 			label: 'neowiki-property-type-text',
-			icon: cdxIconSearchCaseSensitive
+			icon: cdxIconSearchCaseSensitive,
 		} );
 
 		registry.registerType( UrlType.typeName, {
@@ -61,7 +61,7 @@ export class NeoWikiExtension {
 			valueEditor: UrlInput,
 			attributesEditor: TextAttributesEditor, // TODO
 			label: 'neowiki-property-type-url',
-			icon: cdxIconLink
+			icon: cdxIconLink,
 		} );
 
 		registry.registerType( NumberType.typeName, {
@@ -69,7 +69,7 @@ export class NeoWikiExtension {
 			valueEditor: NumberInput,
 			attributesEditor: NumberAttributesEditor,
 			label: 'neowiki-property-type-number',
-			icon: cdxIconListNumbered // TOOD: Add a custom icon
+			icon: cdxIconListNumbered, // TOOD: Add a custom icon
 		} );
 
 		registry.registerType( RelationType.typeName, {
@@ -77,7 +77,7 @@ export class NeoWikiExtension {
 			valueEditor: RelationInput,
 			attributesEditor: TextAttributesEditor, // TODO
 			label: 'neowiki-property-type-relation',
-			icon: cdxIconArticles
+			icon: cdxIconArticles,
 		} );
 
 		return registry;
@@ -89,7 +89,7 @@ export class NeoWikiExtension {
 
 	public newSubjectAuthorizer(): SubjectAuthorizer {
 		return new RightsBasedSubjectAuthorizer(
-			this.getUserObjectBasedRightsFetcher()
+			this.getUserObjectBasedRightsFetcher(),
 		);
 	}
 
@@ -105,19 +105,19 @@ export class NeoWikiExtension {
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
 			new SchemaSerializer(),
-			new MediaWikiPageSaver( this.getMediaWiki() )
+			new MediaWikiPageSaver( this.getMediaWiki() ),
 		);
 	}
 
 	private newHttpClient(): HttpClient {
 		return new CsrfSendingHttpClient(
-			new ProductionHttpClient()
+			new ProductionHttpClient(),
 		);
 	}
 
 	public newSchemaAuthorizer(): SchemaAuthorizer {
 		return new RightsBasedSchemaAuthorizer(
-			this.getUserObjectBasedRightsFetcher()
+			this.getUserObjectBasedRightsFetcher(),
 		);
 	}
 
@@ -125,7 +125,7 @@ export class NeoWikiExtension {
 		return new RestSubjectRepository(
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
-			this.getSubjectDeserializer()
+			this.getSubjectDeserializer(),
 		);
 	}
 
@@ -139,7 +139,7 @@ export class NeoWikiExtension {
 
 	public newSubjectValidator(): SubjectValidator {
 		return new SubjectValidator(
-			this.getPropertyTypeRegistry()
+			this.getPropertyTypeRegistry(),
 		);
 	}
 
@@ -150,7 +150,7 @@ export class NeoWikiExtension {
 	public getStoreStateLoader(): StoreStateLoader {
 		return new StoreStateLoader(
 			this.getSubjectRepository(),
-			this.getSchemaRepository()
+			this.getSchemaRepository(),
 		);
 	}
 

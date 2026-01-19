@@ -9,6 +9,6 @@ export function mediawikiImportTransformer(): Plugin {
 			code = code.replace( "'@wikimedia/codex-icons'", "'../../../icons.json'" );
 
 			return { code, map: null };
-		}
+		},
 	};
 }

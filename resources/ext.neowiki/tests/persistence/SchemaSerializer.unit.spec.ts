@@ -16,7 +16,7 @@ describe( 'SchemaSerializer', () => {
 			const schema = new Schema(
 				'TestSchema',
 				'Test Description',
-				new PropertyDefinitionList( [] )
+				new PropertyDefinitionList( [] ),
 			);
 
 			const serialized = serializer.serializeSchema( schema );
@@ -24,7 +24,7 @@ describe( 'SchemaSerializer', () => {
 
 			expect( parsed ).toEqual( {
 				description: 'Test Description',
-				propertyDefinitions: {}
+				propertyDefinitions: {},
 			} );
 		} );
 
@@ -38,14 +38,14 @@ describe( 'SchemaSerializer', () => {
 						description: 'Text property',
 						required: true,
 						multiple: true,
-						uniqueItems: false
+						uniqueItems: false,
 					} ),
 					newUrlProperty( {
 						name: new PropertyName( 'urlProperty' ),
 						description: 'URL property',
 						required: false,
 						multiple: false,
-						uniqueItems: true
+						uniqueItems: true,
 					} ),
 					newNumberProperty( {
 						name: new PropertyName( 'numberProperty' ),
@@ -53,7 +53,7 @@ describe( 'SchemaSerializer', () => {
 						required: true,
 						precision: 2,
 						minimum: 0,
-						maximum: 100
+						maximum: 100,
 					} ),
 					newRelationProperty( {
 						name: new PropertyName( 'relationProperty' ),
@@ -61,9 +61,9 @@ describe( 'SchemaSerializer', () => {
 						required: false,
 						relation: 'TestRelation',
 						targetSchema: 'TestTargetSchema',
-						multiple: true
-					} )
-				] )
+						multiple: true,
+					} ),
+				] ),
 			);
 
 			const serialized = serializer.serializeSchema( schema );
@@ -77,14 +77,14 @@ describe( 'SchemaSerializer', () => {
 						description: 'Text property',
 						required: true,
 						multiple: true,
-						uniqueItems: false
+						uniqueItems: false,
 					},
 					urlProperty: {
 						type: 'url',
 						description: 'URL property',
 						required: false,
 						multiple: false,
-						uniqueItems: true
+						uniqueItems: true,
 					},
 					numberProperty: {
 						type: 'number',
@@ -92,7 +92,7 @@ describe( 'SchemaSerializer', () => {
 						required: true,
 						precision: 2,
 						minimum: 0,
-						maximum: 100
+						maximum: 100,
 					},
 					relationProperty: {
 						type: 'relation',
@@ -100,9 +100,9 @@ describe( 'SchemaSerializer', () => {
 						required: false,
 						relation: 'TestRelation',
 						targetSchema: 'TestTargetSchema',
-						multiple: true
-					}
-				}
+						multiple: true,
+					},
+				},
 			} );
 		} );
 	} );
@@ -112,7 +112,7 @@ describe( 'SchemaSerializer', () => {
 			const schema = new Schema(
 				'TestSchema',
 				'Test Description',
-				new PropertyDefinitionList( [] )
+				new PropertyDefinitionList( [] ),
 			);
 
 			const serialized = serializer.serializeSchema( schema );

@@ -6,15 +6,15 @@ import { newTextProperty } from '@/domain/propertyTypes/Text';
 describe( 'PropertyDefinitionList', () => {
 
 	const property1 = createPropertyDefinitionFromJson( 'test1', {
-		type: 'number'
+		type: 'number',
 	} );
 
 	const property2 = createPropertyDefinitionFromJson( 'test2', {
-		type: 'text'
+		type: 'text',
 	} );
 
 	const property3 = createPropertyDefinitionFromJson( 'test3', {
-		type: 'text'
+		type: 'text',
 	} );
 
 	it( 'constructs a collection from an array of property definitions', () => {
@@ -27,7 +27,7 @@ describe( 'PropertyDefinitionList', () => {
 	it( 'throws an error when constructing a collection with duplicate property ids', () => {
 		expect( () => new PropertyDefinitionList( [
 			property1,
-			property1
+			property1,
 		] ) ).toThrow( 'Duplicate property name: test1' );
 	} );
 
@@ -73,8 +73,8 @@ describe( 'PropertyDefinitionList', () => {
 				collection.withNames( [
 					new PropertyName( 'test2' ),
 					new PropertyName( 'test1' ),
-					new PropertyName( 'test2' )
-				] )
+					new PropertyName( 'test2' ),
+				] ),
 			).toEqual( new PropertyDefinitionList( [ property1, property2 ] ) );
 		} );
 
@@ -103,7 +103,7 @@ describe( 'PropertyDefinitionList', () => {
 
 		it( 'returns a new collection with the same order as the input names', () => {
 			expect(
-				collection.withoutNames( [ new PropertyName( 'test2' ) ] )
+				collection.withoutNames( [ new PropertyName( 'test2' ) ] ),
 			).toEqual( new PropertyDefinitionList( [ property1, property3 ] ) );
 		} );
 

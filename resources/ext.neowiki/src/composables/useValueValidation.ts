@@ -10,8 +10,8 @@ export function validateValue( value: Value, propertyType: PropertyType, propert
 		return {
 			error: mw.message(
 				`neowiki-field-${ validationErrors[ 0 ].code }`,
-				...( validationErrors[ 0 ].args ?? [] )
-			).text()
+				...( validationErrors[ 0 ].args ?? [] ),
+			).text(),
 		};
 	}
 

@@ -12,7 +12,7 @@ export class Subject {
 		private readonly id: SubjectId,
 		private readonly label: string,
 		private readonly schemaName: SchemaName,
-		private readonly statements: StatementList
+		private readonly statements: StatementList,
 	) {
 	}
 

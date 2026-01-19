@@ -13,15 +13,15 @@ export class StoreStateLoader {
 
 	public constructor(
 		private readonly subjectRepo: SubjectRepository,
-		private readonly schemaRepo: SchemaRepository
+		private readonly schemaRepo: SchemaRepository,
 	) {
 	}
 
 	public async loadSubjectsAndSchemas( subjectIds: Set<string> ): Promise<void> {
 		await Promise.all(
 			Array.from( subjectIds ).map(
-				( subjectId ) => this.loadForSubject( new SubjectId( subjectId ) )
-			)
+				( subjectId ) => this.loadForSubject( new SubjectId( subjectId ) ),
+			),
 		);
 	}
 
