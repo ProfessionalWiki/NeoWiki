@@ -16,22 +16,22 @@ export function useSchemaSaver(): UseSchemaSaverReturn {
 				editSummary || 'No edit summary provided.',
 				{
 					title: `Updated ${ schema.getName() } schema`,
-					type: 'success'
-				}
+					type: 'success',
+				},
 			);
 		} catch ( error ) {
 			mw.notify(
 				error instanceof Error ? error.message : String( error ),
 				{
 					title: `Failed to update ${ schema.getName() } schema.`,
-					type: 'error'
-				}
+					type: 'error',
+				},
 			);
 			throw error;
 		}
 	};
 
 	return {
-		saveSchema
+		saveSchema,
 	};
 }

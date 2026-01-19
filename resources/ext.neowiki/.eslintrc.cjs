@@ -79,7 +79,6 @@ module.exports = {
 		'prefer-arrow-callback': 'off',
 		'spaced-comment': 'off',
 		'no-tabs': 'off',
-		'es-x/no-iterator': 'warn'
 		'@typescript-eslint/explicit-module-boundary-types': 'off'
 	},
 	overrides: [

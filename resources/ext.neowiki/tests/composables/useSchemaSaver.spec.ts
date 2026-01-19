@@ -6,8 +6,8 @@ import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 
 vi.mock( '@/NeoWikiServices', () => ( {
 	NeoWikiServices: {
-		getSchemaRepository: vi.fn()
-	}
+		getSchemaRepository: vi.fn(),
+	},
 } ) );
 
 describe( 'useSchemaSaver', () => {
@@ -16,18 +16,18 @@ describe( 'useSchemaSaver', () => {
 	beforeEach( () => {
 		vi.clearAllMocks();
 		( NeoWikiServices.getSchemaRepository as any ).mockReturnValue( {
-			saveSchema: mockSaveSchema
+			saveSchema: mockSaveSchema,
 		} );
 
 		vi.stubGlobal( 'mw', {
-			notify: vi.fn()
+			notify: vi.fn(),
 		} );
 	} );
 
 	const createMockSchema = (): Schema => new Schema(
 		'TestSchema',
 		'Description',
-		new PropertyDefinitionList( [] )
+		new PropertyDefinitionList( [] ),
 	);
 
 	it( 'saves schema successfully and notifies user', async () => {
@@ -42,8 +42,8 @@ describe( 'useSchemaSaver', () => {
 			summary,
 			expect.objectContaining( {
 				title: 'Updated TestSchema schema',
-				type: 'success'
-			} )
+				type: 'success',
+			} ),
 		);
 	} );
 
@@ -55,7 +55,7 @@ describe( 'useSchemaSaver', () => {
 
 		expect( mw.notify ).toHaveBeenCalledWith(
 			'No edit summary provided.',
-			expect.any( Object )
+			expect.any( Object ),
 		);
 	} );
 
@@ -72,8 +72,8 @@ describe( 'useSchemaSaver', () => {
 			'Save failed',
 			expect.objectContaining( {
 				title: 'Failed to update TestSchema schema.',
-				type: 'error'
-			} )
+				type: 'error',
+			} ),
 		);
 	} );
 } );
