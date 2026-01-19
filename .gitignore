@@ -4,3 +4,4 @@ vendor/
 .phpunit.result.cache
 composer.lock
 package-lock.json
+!resources/ext.neowiki/package-lock.json

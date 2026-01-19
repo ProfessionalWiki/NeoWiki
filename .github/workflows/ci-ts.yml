@@ -30,7 +30,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build
         run: npm run build
@@ -54,7 +54,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Test
         run: npm run test
@@ -83,7 +83,7 @@ jobs:
           echo "::remove-matcher owner=eslint-stylish::"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Lint
         run: npm run lint
@@ -103,7 +103,7 @@ jobs:
 #          node-version: '20'
 #
 #      - name: Install dependencies
-#        run: npm install
+#        run: npm ci
 #
 #      - name: Lint i18n
 #        run: npm run lint:i18n
