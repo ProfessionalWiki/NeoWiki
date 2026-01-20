@@ -22,6 +22,7 @@
 					<p class="cdx-dialog__header__subtitle">
 						{{ props.subject.getSchemaName() }}
 						<a
+							v-if="canEditSchema"
 							class="ext-neowiki-subject-editor-dialog__schema-link"
 							href="#"
 							@click.prevent="isSchemaEditorOpen = true"
@@ -85,6 +86,7 @@ import { Schema } from '@/domain/Schema.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps<{
 	subject: Subject;
@@ -103,20 +105,35 @@ const open = ref( false );
 const isSchemaEditorOpen = ref( false );
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
 const loadedSchema = ref<Schema | null>( null );
+const canEditSchema = ref( false );
 
 onMounted( async () => {
 	if ( props.subject ) {
-		try {
-			loadedSchema.value = await schemaStore.getOrFetchSchema( props.subject.getSchemaName() );
-		} catch ( error ) {
-			console.error( 'Failed to load schema:', error );
-			mw.notify(
-				`Failed to load schema ${ props.subject.getSchemaName() }: ${ error instanceof Error ? error.message : String( error ) }`,
-				{ type: 'error' }
-			);
-		}
+		await loadSchemaPermissions();
+		await loadSchema();
 	}
 } );
+
+async function loadSchemaPermissions(): Promise<void> {
+	try {
+		canEditSchema.value = await NeoWikiServices.getSchemaAuthorizer().canEditSchema( props.subject.getSchemaName() );
+	} catch ( error ) {
+		console.error( 'Failed to check schema permissions:', error );
+		canEditSchema.value = false;
+	}
+}
+
+async function loadSchema(): Promise<void> {
+	try {
+		loadedSchema.value = await schemaStore.getOrFetchSchema( props.subject.getSchemaName() );
+	} catch ( error ) {
+		console.error( 'Failed to load schema:', error );
+		mw.notify(
+			`Failed to load schema ${ props.subject.getSchemaName() }: ${ error instanceof Error ? error.message : String( error ) }`,
+			{ type: 'error' }
+		);
+	}
+}
 
 const schemaProperties = computed( (): PropertyDefinitionList =>
 	loadedSchema.value?.getPropertyDefinitions() ?? new PropertyDefinitionList( [] )
