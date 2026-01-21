@@ -3,7 +3,7 @@ import { Schema } from '@/domain/Schema.ts';
 
 export interface SchemaRepository extends SchemaLookup {
 
-	saveSchema( schema: Schema ): Promise<void>;
+	saveSchema( schema: Schema, comment?: string ): Promise<void>;
 
 }
 

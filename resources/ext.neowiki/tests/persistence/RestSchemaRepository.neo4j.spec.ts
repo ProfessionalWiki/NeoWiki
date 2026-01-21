@@ -99,12 +99,25 @@ describe( 'RestSchemaRepository', () => {
 		it( 'should call the correct API endpoint with the right parameters', async () => {
 			vi.spyOn( pageSaver, 'savePage' );
 
+			await repository.saveSchema( testSchema, 'Comment for the edit' );
+
+			expect( pageSaver.savePage ).toHaveBeenCalledWith(
+				'Schema:TestSchema',
+				'{"serialized":"TestSchema"}',
+				'Comment for the edit',
+				'NeoWikiSchema',
+			);
+		} );
+
+		it( 'should use default summary if none provided', async () => {
+			vi.spyOn( pageSaver, 'savePage' );
+
 			await repository.saveSchema( testSchema );
 
 			expect( pageSaver.savePage ).toHaveBeenCalledWith(
 				'Schema:TestSchema',
 				'{"serialized":"TestSchema"}',
-				'Update schema via NeoWiki UI',
+				'Update schema via NeoWiki REST API',
 				'NeoWikiSchema',
 			);
 		} );
@@ -112,7 +125,7 @@ describe( 'RestSchemaRepository', () => {
 		it( 'should throw an error if the API response failed', async () => {
 			repository = new RestSchemaRepository( apiUrl, mockHttpClient, mockSerializer, new FailingPageSaver() );
 
-			await expect( repository.saveSchema( testSchema ) )
+			await expect( repository.saveSchema( testSchema, 'Comment for the edit' ) )
 				.rejects
 				.toThrow( 'Error saving schema: Some reason' );
 		} );
@@ -126,12 +139,12 @@ describe( 'RestSchemaRepository', () => {
 
 			vi.spyOn( pageSaver, 'savePage' );
 
-			await repository.saveSchema( schemaWithSpecialChars );
+			await repository.saveSchema( schemaWithSpecialChars, 'Comment for the edit' );
 
 			expect( pageSaver.savePage ).toHaveBeenCalledWith(
 				'Schema:Test%2FSchema%20With%3ASpaces',
 				expect.anything(),
-				expect.anything(),
+				'Comment for the edit',
 				expect.anything(),
 			);
 		} );

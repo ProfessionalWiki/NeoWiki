@@ -30,6 +30,13 @@ describe( 'useSchemaSaver', () => {
 		new PropertyDefinitionList( [] ),
 	);
 
+	const expectSuccessNotification = ( schema: Schema ): void => expect( mw.notify ).toHaveBeenCalledWith(
+		`Updated ${ schema.getName() } schema`,
+		expect.objectContaining( {
+			type: 'success',
+		} ),
+	);
+
 	it( 'saves schema successfully and notifies user', async () => {
 		const { saveSchema } = useSchemaSaver();
 		const schema = createMockSchema();
@@ -37,26 +44,18 @@ describe( 'useSchemaSaver', () => {
 
 		await saveSchema( schema, summary );
 
-		expect( mockSaveSchema ).toHaveBeenCalledWith( schema );
-		expect( mw.notify ).toHaveBeenCalledWith(
-			summary,
-			expect.objectContaining( {
-				title: 'Updated TestSchema schema',
-				type: 'success',
-			} ),
-		);
+		expect( mockSaveSchema ).toHaveBeenCalledWith( schema, summary );
+		expectSuccessNotification( schema );
 	} );
 
 	it( 'uses default summary if none provided', async () => {
 		const { saveSchema } = useSchemaSaver();
 		const schema = createMockSchema();
 
-		await saveSchema( schema, '' );
+		await saveSchema( schema );
 
-		expect( mw.notify ).toHaveBeenCalledWith(
-			'No edit summary provided.',
-			expect.any( Object ),
-		);
+		expect( mockSaveSchema ).toHaveBeenCalledWith( schema, undefined );
+		expectSuccessNotification( schema );
 	} );
 
 	it( 'handles save error and notifies user', async () => {

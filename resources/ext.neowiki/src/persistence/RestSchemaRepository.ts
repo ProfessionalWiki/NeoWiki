@@ -61,11 +61,11 @@ export class RestSchemaRepository implements SchemaRepository {
 		return await response.json();
 	}
 
-	public async saveSchema( schema: Schema ): Promise<void> {
+	public async saveSchema( schema: Schema, comment?: string ): Promise<void> {
 		const status = await this.pageSaver.savePage(
 			`Schema:${ encodeURIComponent( schema.getName() ) }`,
 			this.serializeSchema( schema ),
-			'Update schema via NeoWiki UI',
+			comment || 'Update schema via NeoWiki REST API',
 			'NeoWikiSchema',
 		);
 
