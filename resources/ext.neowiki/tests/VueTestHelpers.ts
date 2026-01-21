@@ -24,7 +24,7 @@ export function createTestWrapper<TComponent extends DefineComponent<any, any, a
 }
 
 export function mockMwMessage(
-	messages: Record<string, string | ( ( ...params: string[] ) => string )>
+	messages: Record<string, string | ( ( ...params: string[] ) => string )>,
 ): void {
 	( global as any ).mw = {
 		message: vi.fn( ( key, ...params ) => ( {
