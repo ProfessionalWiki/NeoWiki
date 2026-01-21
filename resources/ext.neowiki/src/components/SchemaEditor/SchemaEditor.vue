@@ -5,6 +5,7 @@
 	>
 		<PropertyList
 			:properties="currentSchema.getPropertyDefinitions()"
+			:selected-property-name="selectedPropertyName"
 			@property-selected="onPropertySelected"
 			@property-created="onPropertyCreated"
 		/>
@@ -30,7 +31,9 @@ const props = defineProps<{
 }>();
 
 const currentSchema = ref<Schema>( props.initialSchema );
-const selectedPropertyName = ref<string | undefined>( undefined );
+
+const firstProperty = [ ...props.initialSchema.getPropertyDefinitions() ][ 0 ];
+const selectedPropertyName = ref<string | undefined>( firstProperty?.name.toString() );
 
 const selectedProperty = computed( () => {
 	if ( selectedPropertyName.value === undefined ) {
