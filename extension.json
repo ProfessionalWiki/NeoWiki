@@ -228,8 +228,8 @@
 				"neowiki-subject-editor-save",
 				"neowiki-schema-editor-new-property",
 				"neowiki-schema-editor-optional",
-				"neowiki-edit-schema",
-				"neowiki-editing-schema"
+				"neowiki-editing-schema",
+				"neowiki-schema-label"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

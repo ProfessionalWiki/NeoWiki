@@ -8,5 +8,6 @@
 		]
 	},
 	"neowiki-name": "{{Name}}",
-	"neowiki-description": "{{Desc|name=NeoWiki|url=https://github.com/ProfessionalWiki/NeoWiki}}"
+	"neowiki-description": "{{Desc|name=NeoWiki|url=https://github.com/ProfessionalWiki/NeoWiki}}",
+	"neowiki-schema-label": "Label used to identify the schema. $1 is the schema name or link."
 }
