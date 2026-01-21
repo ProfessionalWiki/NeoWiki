@@ -11,7 +11,8 @@
 
 ### Medium Priority
 
-* Are we sure we should switch to Global Properties? (90% likely)
+* Are we sure we should switch to Global Properties, replacing the current "[Local Properties](adr/006_Schemas.md)"
+  approach? (90% likely)
 * [Validation](Validation.md): do we need to add backend validation?
   (somewhat likely, but can be deferred)
 
