@@ -20,15 +20,26 @@
 					</h2>
 
 					<p class="cdx-dialog__header__subtitle">
-						{{ props.subject.getSchemaName() }}
-						<a
-							v-if="canEditSchema"
-							class="ext-neowiki-subject-editor-dialog__schema-link"
-							href="#"
-							@click.prevent="isSchemaEditorOpen = true"
+						<I18nSlot
+							message-key="neowiki-schema-label"
+							class="ext-neowiki-subject-editor-dialog-schema"
+							text-class="ext-neowiki-subject-editor-dialog-schema__label"
 						>
-							{{ $i18n( 'neowiki-edit-schema' ).text() }}
-						</a>
+							<a
+								v-if="canEditSchema"
+								class="ext-neowiki-subject-editor-dialog-schema__link"
+								href="#"
+								@click.prevent="isSchemaEditorOpen = true"
+							>
+								{{ props.subject.getSchemaName() }}
+							</a>
+							<span
+								v-else
+								class="ext-neowiki-subject-editor-dialog-schema__name"
+							>
+								{{ props.subject.getSchemaName() }}
+							</span>
+						</I18nSlot>
 					</p>
 				</div>
 
@@ -76,6 +87,7 @@
 import { ref, nextTick, computed, onMounted } from 'vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
+import I18nSlot from '@/components/common/I18nSlot.vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit, cdxIconClose } from '@wikimedia/codex-icons';
 import { StatementList } from '@/domain/StatementList.ts';
@@ -220,8 +232,14 @@ const onSchemaSaved = ( schema: Schema ): void => {
 @import ( reference ) '@wikimedia/codex/mixins/link.less';
 
 .ext-neowiki-subject-editor-dialog {
-	&__schema-link {
-		.cdx-mixin-link-base();
+	&-schema {
+		&__link {
+			.cdx-mixin-link-base();
+		}
+
+		&__name {
+			color: @color-base;
+		}
 	}
 
 	/* Replicate the Codex default dialog header styles */

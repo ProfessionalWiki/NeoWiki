@@ -28,6 +28,8 @@
 	"neowiki-property-editor-multiple": "Allow multiple values",
 	"neowiki-property-editor-unique-items": "Values must be unique",
 
+	"neowiki-schema-label": "Schema: $1",
+
 	"neowiki-infobox-type": "Type",
 	"neowiki-infobox-edit-link": "Edit",
 	"neowiki-field-unique": "All values must be unique.",
@@ -39,7 +41,6 @@
 	"neowiki-field-invalid-url": "Please enter a valid URL.",
 
 	"neowiki-property-editor-description": "Description",
-	"neowiki-edit-schema": "Edit schema",
 	"neowiki-editing-schema": "Editing $1 schema",
 	"neowiki-edit-with-form": "Edit with form",
 	"neowiki-save-schema": "Save schema",
