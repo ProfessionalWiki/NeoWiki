@@ -17,39 +17,10 @@
 
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 
-	"neowiki-create-button": "Add infobox",
-
-	"neowiki-create-subject-dialog-title": "Add infobox",
-	"neowiki-create-subject-dialog-start-blank": "Start blank",
-	"neowiki-create-subject-dialog-start-blank-description": "Create a new subject and a new schema. Schemas define what properties a subject can have.",
-	"neowiki-create-subject-dialog-or-select": "Or use a schema",
-	"neowiki-create-subject-dialog-select-schema": "Select a schema",
-	"neowiki-create-subject-dialog-select-schema-description": "Create a new subject with an existing schema. Schemas define what properties a subject can have.",
-	"neowiki-create-subject-dialog-go-back": "Go back",
-
-	"neowiki-infobox-editor-dialog-title": "Manage Infobox",
-	"neowiki-infobox-editor-subject-label": "Subject label",
-	"neowiki-infobox-editor-delete-subject": "Delete subject",
-	"neowiki-infobox-editor-delete-subject-confirmation-message": "Are you sure you want to delete <strong>$1</strong>?",
-	"neowiki-infobox-editor-schema-label": "Schema",
-	"neowiki-infobox-editor-property-label": "Property",
-	"neowiki-infobox-editor-add-property": "Add Property",
-	"neowiki-infobox-editor-edit-property": "Edit Property",
-	"neowiki-infobox-editor-delete-property": "Delete Property",
-	"neowiki-delete-property-confirmation-message": "Are you sure you want to delete <strong>$1</strong> schema property <strong>$2</strong>?<br><br>Values for <strong>$2</strong> will no longer be shown on any <strong>$1</strong> within the whole wiki. These values will not be automatically deleted, so they will reappear if you restore the $2 property.",
-	"neowiki-infobox-editor-value-label": "Value",
-	"neowiki-infobox-editor-remove-statement": "Remove",
-	"neowiki-infobox-editor-add-statement": "Add statement",
-	"neowiki-infobox-editor-create-button": "Create",
-	"neowiki-infobox-editor-save-button": "Save",
-
-	"neowiki-property-editor-dialog-title-edit": "Edit Property \"$1\"",
-	"neowiki-property-editor-dialog-title-create": "Create new property",
 	"neowiki-property-editor-name": "Name",
 	"neowiki-property-editor-type": "Type",
 	"neowiki-property-editor-initial-value": "Initial value",
 	"neowiki-property-editor-required": "Require a value",
-	"neowiki-property-editor-save": "Save Property",
 
 	"neowiki-property-editor-minimum": "Minimum",
 	"neowiki-property-editor-maximum": "Maximum",
@@ -59,8 +30,6 @@
 
 	"neowiki-infobox-type": "Type",
 	"neowiki-infobox-edit-link": "Edit",
-
-	"neowiki-field-required": "This field is required.",
 	"neowiki-field-unique": "All values must be unique.",
 	"neowiki-field-min-length": "Minimum length is $1 characters.",
 	"neowiki-field-max-length": "Maximum length is $1 characters.",
@@ -70,12 +39,6 @@
 	"neowiki-field-invalid-url": "Please enter a valid URL.",
 
 	"neowiki-property-editor-description": "Description",
-	"neowiki-infobox-editor-property-format": "Format",
-	"neowiki-infobox-editor-property-required": "Make it a required field",
-
-	"neowiki-delete-dialog-button": "Delete",
-	"neowiki-delete-dialog-cancel-button": "Cancel",
-
 	"neowiki-edit-schema": "Edit schema",
 	"neowiki-editing-schema": "Editing $1 schema",
 	"neowiki-edit-with-form": "Edit with form",
