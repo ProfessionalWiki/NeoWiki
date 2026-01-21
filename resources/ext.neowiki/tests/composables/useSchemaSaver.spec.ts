@@ -12,6 +12,7 @@ vi.mock( '@/NeoWikiServices', () => ( {
 
 describe( 'useSchemaSaver', () => {
 	const mockSaveSchema = vi.fn();
+	const mockGetUrl = vi.fn( ( pageName: string ) => `/wiki/${ pageName }` );
 
 	beforeEach( () => {
 		vi.clearAllMocks();
@@ -21,6 +22,14 @@ describe( 'useSchemaSaver', () => {
 
 		vi.stubGlobal( 'mw', {
 			notify: vi.fn(),
+			util: {
+				getUrl: mockGetUrl,
+			},
+		} );
+
+		Object.defineProperty( window, 'location', {
+			value: { href: '' },
+			writable: true,
 		} );
 	} );
 
@@ -30,7 +39,7 @@ describe( 'useSchemaSaver', () => {
 		new PropertyDefinitionList( [] ),
 	);
 
-	it( 'saves schema successfully and notifies user', async () => {
+	it( 'saves schema successfully, notifies user, and redirects to schema page', async () => {
 		const { saveSchema } = useSchemaSaver();
 		const schema = createMockSchema();
 		const summary = 'Test Summary';
@@ -45,6 +54,8 @@ describe( 'useSchemaSaver', () => {
 				type: 'success',
 			} ),
 		);
+		expect( mockGetUrl ).toHaveBeenCalledWith( 'Schema:TestSchema' );
+		expect( window.location.href ).toBe( '/wiki/Schema:TestSchema' );
 	} );
 
 	it( 'uses default summary if none provided', async () => {
