@@ -29,7 +29,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	if ( !schemaEditor.value ) {
 		return;
 	}
-	await saveSchema( schemaEditor.value.getSchema(), summary );
+	await saveSchema( schemaEditor.value.getSchema(), summary || 'Update schema via NeoWiki UI' );
 };
 </script>
 

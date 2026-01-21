@@ -2,23 +2,16 @@ import { NeoWikiServices } from '@/NeoWikiServices';
 import { Schema } from '@/domain/Schema';
 
 interface UseSchemaSaverReturn {
-	saveSchema: ( schema: Schema, editSummary: string ) => Promise<void>;
+	saveSchema: ( schema: Schema, comment?: string ) => Promise<void>;
 }
 
 export function useSchemaSaver(): UseSchemaSaverReturn {
 	const schemaRepository = NeoWikiServices.getSchemaRepository();
 
-	const saveSchema = async ( schema: Schema, editSummary: string ): Promise<void> => {
+	const saveSchema = async ( schema: Schema, comment?: string ): Promise<void> => {
 		try {
-			// TODO: Save edit summary to revision so it shows on the history page
-			await schemaRepository.saveSchema( schema );
-			mw.notify(
-				editSummary || 'No edit summary provided.',
-				{
-					title: `Updated ${ schema.getName() } schema`,
-					type: 'success',
-				},
-			);
+			await schemaRepository.saveSchema( schema, comment );
+			mw.notify( `Updated ${ schema.getName() } schema`, { type: 'success' } );
 		} catch ( error ) {
 			mw.notify(
 				error instanceof Error ? error.message : String( error ),
