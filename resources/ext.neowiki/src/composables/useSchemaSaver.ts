@@ -19,6 +19,7 @@ export function useSchemaSaver(): UseSchemaSaverReturn {
 					type: 'success',
 				},
 			);
+			window.location.href = mw.util.getUrl( `Schema:${ schema.getName() }` );
 		} catch ( error ) {
 			mw.notify(
 				error instanceof Error ? error.message : String( error ),
