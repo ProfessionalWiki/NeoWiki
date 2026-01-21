@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { CdxMenu, MenuItemData } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -21,6 +21,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps<{
 	properties: PropertyDefinitionList;
+	selectedPropertyName?: string;
 }>();
 
 const emit = defineEmits<{
@@ -31,7 +32,13 @@ const emit = defineEmits<{
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
 // CdxMenu doesn't support passing a PropertyName as a value, so we use a string instead.
-const selectedValue = ref( '' );
+const selectedValue = ref( props.selectedPropertyName ?? '' );
+
+watch( () => props.selectedPropertyName, ( newProperty ) => {
+	if ( newProperty !== undefined ) {
+		selectedValue.value = newProperty;
+	}
+} );
 
 const menuItems = computed( (): MenuItemData[] => [ ...props.properties ].map( ( property: PropertyDefinition ): MenuItemData => ( {
 	label: property.name.toString(),
