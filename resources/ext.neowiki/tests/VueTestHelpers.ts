@@ -22,3 +22,19 @@ export function createTestWrapper<TComponent extends DefineComponent<any, any, a
 		},
 	) as VueWrapper<InstanceType<TComponent>>;
 }
+
+export function mockMwMessage(
+	messages: Record<string, string | ( ( ...params: string[] ) => string )>
+): void {
+	( global as any ).mw = {
+		message: vi.fn( ( key, ...params ) => ( {
+			text: () => {
+				const message = messages[ key ];
+				if ( typeof message === 'function' ) {
+					return message( ...params );
+				}
+				return message ?? key;
+			},
+		} ) ),
+	};
+}
