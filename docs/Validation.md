@@ -94,8 +94,10 @@ Pros:
 * API users can potentially validate Subjects without editing via a new dedicated endpoint
 
 Cons:
+* Need to figure out those TDB details
 * Cost of implementation and cost of carry
     * Validation system in PHP
     * Strict-mode or similar for Subject writing APIs with validation status responses
     * Potentially dedicated REST validation endpoint
+
 
