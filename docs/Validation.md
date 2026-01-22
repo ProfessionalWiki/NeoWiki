@@ -15,13 +15,13 @@ based on the organization Schema. This Schema contains Property Definitions
 (i.e. "Name", "Founded at") which contain types and can contain further constraints.
 The UI form shows only fields for these Property Definitions.
 
-The NeoWiki UI is written in TypeScript and Vue, much of which is decoupled from MediaWiki
-so it can be reused elsewhere. In particular, the TypeScript library contains repositories
-to interact with the REST API, providing read and write access to Subjects and Schemas.
-It also has a data model to represent Subjects and Schemas and validation services, allowing
-external applications to validate data before submitting it to the REST API without having
-to write their own validation logic. Finally, the TypeScript library provides a UI component
-to display Subjects and Schemas.
+The NeoWiki UI is written in TypeScript and Vue, with much of it decoupled from MediaWiki 
+so it can be reused elsewhere. In particular, the TypeScript library includes repositories 
+for interacting with the REST API, providing read and write access to Subjects and Schemas. 
+It also includes a data model for Subjects and Schemas, along with a validation service that 
+validates Subjects based on their Schema. This allows external applications to validate data 
+before submitting it to the REST API without writing their own validation logic. Finally, 
+the TypeScript library provides a UI component to display Subjects and Schemas.
 
 Clients not using the TypeScript library can still access the Schemas via the REST API.
 The Schemas are returned as JSON in a format optimized for our UIs and validation logic.
