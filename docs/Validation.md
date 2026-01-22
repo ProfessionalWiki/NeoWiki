@@ -15,12 +15,12 @@ based on the organization Schema. This Schema contains Property Definitions
 (i.e. "Name", "Founded at") which contain types and can contain further constraints.
 The UI form shows only fields for these Property Definitions.
 
-The NeoWiki UI is written in TypeScript and Vue, with much of it decoupled from MediaWiki 
-so it can be reused elsewhere. In particular, the TypeScript library includes repositories 
-for interacting with the REST API, providing read and write access to Subjects and Schemas. 
-It also includes a data model for Subjects and Schemas, along with a validation service that 
-validates Subjects based on their Schema. This allows external applications to validate data 
-before submitting it to the REST API without writing their own validation logic. Finally, 
+The NeoWiki UI is written in TypeScript and Vue, with much of it decoupled from MediaWiki
+so it can be reused elsewhere. In particular, the TypeScript library includes repositories
+for interacting with the REST API, providing read and write access to Subjects and Schemas.
+It also includes a data model for Subjects and Schemas, along with a validation service that
+validates Subjects based on their Schema. This allows external applications to validate data
+before submitting it to the REST API without writing their own validation logic. Finally,
 the TypeScript library provides a UI component to display Subjects and Schemas.
 
 Clients not using the TypeScript library can still access the Schemas via the REST API.
@@ -68,11 +68,11 @@ Handling of invalid Subjects:
 
 ## Our Options
 
-Currently we assume we will have these:
+Currently, we assume we will have these:
 * REST APIs to read and write Subjects and Schemas identified by id. Both use NeoWiki-specific JSON formats
 * REST API to get a Schema in JSON-schema format
-* TypeScript library with validation service that takes a Subject and a Schema that can be used outside NeoWiki/MediaWiki
-* UIs that support display and editing of "invalid" Subjects. These are Subjects that do not meet all constaints in their linked Schema.
+* TypeScript library with a validation service that takes a Subject and a Schema that can be used outside NeoWiki/MediaWiki
+* UIs that support display and editing of "invalid" Subjects. These are Subjects that do not meet all constraints in their linked Schema.
 * Ability to write "invalid" Subjects to the backend. (Needed by the UI, and plausibly by various CH use cases)
 
 **Option 1: Keep validation frontend-only**
@@ -91,11 +91,11 @@ adding a dedicated validation endpoint and adding a strict mode to the subject w
 
 Pros:
 * API users can edit Subjects without prior validation without risking creating "invalid" Subjects
-* API users can potentially validate Subjects without editing via new dedicated endpoint
+* API users can potentially validate Subjects without editing via a new dedicated endpoint
 
 Cons:
 * Cost of implementation and cost of carry
     * Validation system in PHP
-    * Strict-mode or similar for subject writing APIs with validation status responses
+    * Strict-mode or similar for Subject writing APIs with validation status responses
     * Potentially dedicated REST validation endpoint
 
