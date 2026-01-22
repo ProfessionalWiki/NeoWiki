@@ -6,8 +6,6 @@ AI-ready knowledge management system that combines collaborative editing and kno
 
 See [docs/](./docs/), especially [docs/Glossary.md](./docs/glossary.md).
 
-REST API docs, including OpenAPI, will be created at some point. Till then, look for "RestRoutes" in [extension.json](extension.json).
-
 ## Development
 
 ### NeoWiki frontend
