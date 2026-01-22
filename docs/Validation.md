@@ -59,10 +59,43 @@ Handling of invalid Subjects:
 * Invalid parts should not disappear on save.
 * The desired behavior for graph-based queries is unclear. Might depend on the usecase and perhaps call for storing but flagging invalid Subjects.
 
-## Conclusion
+**Conclusions:**
 
-We might need to add backend validation for ECHOLOT, depending on the use cases and degree to which
-external applications that do not use the TypeScript library are developed. Backend validation would
-presumably still have to be optional, as per the above scenarios.
+* We might need to add backend validation for ECHOLOT, depending on the use cases and degree to which
+  external applications that do not use the TypeScript library are developed. Key question: what API-based
+  validation do ECHOLOT end users (not project participants) need?
+* Backend validation would still have to be optional, as per the above scenarios.
 
-Key question: what API-based validation do ECHOLOT end users (not project participants) need?
+## Our Options
+
+Currently we assume we will have these:
+* REST APIs to read and write Subjects and Schemas identified by id. Both use NeoWiki-specific JSON formats
+* REST API to get a Schema in JSON-schema format
+* TypeScript library with validation service that takes a Subject and a Schema that can be used outside NeoWiki/MediaWiki
+* UIs that support display and editing of "invalid" Subjects. These are Subjects that do not meet all constaints in their linked Schema.
+* Ability to write "invalid" Subjects to the backend. (Needed by the UI, and plausibly by various CH use cases)
+
+**Option 1: Keep validation frontend-only**
+
+Pros:
+* No cost of implementation, we can build other things instead
+* No cost of carry. Simpler system
+
+Cons:
+* API users have to validate their data before sending it to the API if they want to ensure correctness
+
+**Option 2: Add backend validation**
+
+We implement a backend validation service similar to the existing TypeScript one. We do some things like
+adding a dedicated validation endpoint and adding a strict mode to the subject writing API. Details TBD.
+
+Pros:
+* API users can edit Subjects without prior validation without risking creating "invalid" Subjects
+* API users can potentially validate Subjects without editing via new dedicated endpoint
+
+Cons:
+* Cost of implementation and cost of carry
+    * Validation system in PHP
+    * Strict-mode or similar for subject writing APIs with validation status responses
+    * Potentially dedicated REST validation endpoint
+
