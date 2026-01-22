@@ -1,6 +1,6 @@
 # Glossary
 
-NeoWiki terms definitions. Concepts are capitalized. Used in the code and UI
+Definitions of NeoWiki terms. Concepts are capitalized. Used in the code and UI
 ([Ubiquitous Language](https://softwaresystemdesign.com/domain-driven-design/ubiquitous-language/)).
 
 
