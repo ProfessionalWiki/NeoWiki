@@ -1,0 +1,63 @@
+services:
+  mediawiki:
+    image: ghcr.io/professionalwiki/neowiki:latest
+    ports:
+      - "${LOCAL_IP}:${MW_SERVER_PORT}:80"
+      - "${LOCAL_IP}:8486:8486"
+    depends_on:
+      - db
+      - neo
+    restart: unless-stopped
+    environment:
+      - MARIADB_DATABASE
+      - MARIADB_USER
+      - MARIADB_PASSWORD
+      - MW_SERVER
+      - LOCAL_HOST
+      - NEO4J_URL_EXTERNAL
+      - NEO4J_USERNAME
+      - NEO4J_PASSWORD
+      - NEO4J_USERNAME_READ
+      - NEO4J_PASSWORD_READ
+    healthcheck:
+      test: "curl -fsSL http://localhost:80/index.php/Special:Version | grep 'Jeroen De Dauw'"
+      interval: 60s
+      timeout: 5s
+      retries: 1
+
+  db:
+    image: mariadb:11.8
+    restart: unless-stopped
+    volumes:
+      - mediawiki-db-data:/var/lib/mysql
+    environment:
+      - MARIADB_ROOT_PASSWORD
+      - MARIADB_DATABASE
+      - MARIADB_USER
+      - MARIADB_PASSWORD
+    healthcheck:
+      test: ["CMD", "mariadb-admin" ,"ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 10s
+      retries: 4
+
+  neo:
+    image: neo4j:enterprise
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    volumes:
+      - neo4j-data:/data
+    environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=eval
+      - NEO4J_AUTH
+    healthcheck:
+      test: "wget http://localhost:7474/browser -O - | grep 'Neo4j Browser'"
+      interval: 5s
+      timeout: 1s
+      retries: 10
+
+volumes:
+  mediawiki-db-data:
+  neo4j-data:

@@ -1,0 +1,89 @@
+name: Build Docker image
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+
+  build_and_deploy_mediawiki:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install NeoWiki JavaScript dependencies
+        run: npm ci
+        working-directory: resources/ext.neowiki
+
+      - name: Build NeoWiki JavaScript
+        run: npm run build
+        working-directory: resources/ext.neowiki
+
+      - name: Get MediaWiki 1.43
+        uses: actions/checkout@v4
+        with:
+          repository: wikimedia/mediawiki
+          path: Docker/mediawiki
+          ref: REL1_43
+          fetch-depth: 1
+
+      - name: Shallow submodules
+        run: git submodule update --init --recursive --depth 1
+        working-directory: Docker/mediawiki
+
+      # TODO: additional extensions/skins?
+
+      - name: Copy built NeoWiki extension
+        run: rsync -a --exclude='Docker/' ./ Docker/mediawiki/extensions/NeoWiki/
+
+      - run: make wiki-production-image
+        working-directory: Docker
+
+      - name: Start containers
+        run: docker compose up -d
+        working-directory: Docker
+
+      - name: Wait for Neo4j
+        uses: iFaxity/wait-on-action@v1.1.0
+        with:
+          resource: http-get://localhost:7687
+          timeout: 60000
+
+      - name: Install MediaWiki
+        run: make install-db
+        working-directory: Docker
+
+      - name: Load Neo4j users
+        run: make load-neo4j-users
+        working-directory: Docker
+
+      - run: make test
+        working-directory: Docker
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT_write_packages }}
+        if: github.ref == 'refs/heads/master'
+
+      - name: Push Docker Image
+        run: docker push ghcr.io/professionalwiki/neowiki:latest
+        if: github.ref == 'refs/heads/master'
+
+      - name: Delete Older Images
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'neowiki'
+          package-type: 'container'
+          delete-only-untagged-versions: true
+        if: github.ref == 'refs/heads/master'
