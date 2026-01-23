@@ -73,7 +73,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.PAT_write_packages }}
         if: github.ref == 'refs/heads/master'
 
       - name: Push Docker Image
@@ -86,4 +86,5 @@ jobs:
           package-name: 'neowiki'
           package-type: 'container'
           delete-only-untagged-versions: true
+          token: ${{ secrets.PAT_write_packages }}
         if: github.ref == 'refs/heads/master'
