@@ -63,6 +63,20 @@ class PatchSubjectActionTest extends TestCase {
 		);
 	}
 
+	public function testPatchSubjectWithComment(): void {
+		$subject = TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) );
+		$this->inMemorySubjectRepository->updateSubject( $subject );
+
+		$patchSubjectAction = $this->newPatchSubjectAction();
+		$patchSubjectAction->patch( $subject->getId(), null, [], 'Edit comment' );
+
+		$this->assertSame(
+			'Edit comment',
+			$this->inMemorySubjectRepository->comments[self::SUBJECT_ID],
+			'Subject comment was not passed correctly'
+		);
+	}
+
 	public function testPatchSubjectLabel(): void {
 		$subject = TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),

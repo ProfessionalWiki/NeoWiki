@@ -96,6 +96,28 @@ JSON,
 		] );
 	}
 
+	public function testPatchSubjectWithComment(): void {
+		$this->createPages();
+
+		$requestData = $this->createValidRequestData();
+		$requestBody = json_decode( $requestData->getBody()->getContents(), true );
+		$requestBody['comment'] = 'My edit summary';
+		$requestData = new RequestData( [
+			'method' => 'PATCH',
+			'pathParams' => $requestData->getPathParams(),
+			'bodyContents' => json_encode( $requestBody ),
+			'headers' => $requestData->getHeaders()
+		] );
+
+		$response = $this->executeHandler(
+			$this->newPatchSubjectApi(),
+			$requestData
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		// TODO: Should we verify the comment was saved in the revision?
+	}
+
 	public function testPermissionDenied(): void {
 		$this->createPages();
 

@@ -28,7 +28,7 @@ readonly class PatchSubjectAction {
 	 * @param string|null $label
 	 * @param array<string, mixed> $patch
 	 */
-	public function patch( SubjectId $subjectId, ?string $label, array $patch ): void {
+	public function patch( SubjectId $subjectId, ?string $label, array $patch, ?string $comment = null ): void {
 		if ( !$this->subjectActionAuthorizer->canEditSubject() ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to edit this subject' );
 		}
@@ -45,7 +45,7 @@ readonly class PatchSubjectAction {
 
 		$subject->patchStatements( $this->patcher, $patch );
 
-		$this->subjectRepository->updateSubject( $subject );
+		$this->subjectRepository->updateSubject( $subject, $comment );
 	}
 
 }

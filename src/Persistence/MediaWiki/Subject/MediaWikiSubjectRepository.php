@@ -68,7 +68,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		throw new \RuntimeException( 'Content is not a SubjectContent' );
 	}
 
-	public function updateSubject( Subject $subject ): void {
+	public function updateSubject( Subject $subject, ?string $comment = null ): void {
 		$pageId = $this->getPageIdForSubject( $subject->id );
 
 		if ( $pageId === null ) {
@@ -79,7 +79,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 
 		if ( $content !== null ) {
 			$this->updateSubjectContent( $content, $subject );
-			$this->saveContent( $content, $pageId );
+			$this->saveContent( $content, $pageId, $comment );
 		}
 	}
 
@@ -89,13 +89,13 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		$content->setPageSubjects( $contentData );
 	}
 
-	private function saveContent( SubjectContent $content, PageId $pageId ): void {
+	private function saveContent( SubjectContent $content, PageId $pageId, ?string $comment = null ): void {
 		$this->pageContentSaver->saveContent(
 			$pageId,
 			[
 				self::SLOT_NAME => $content,
 			],
-			CommentStoreComment::newUnsavedComment( 'TODO' ) // TODO
+			CommentStoreComment::newUnsavedComment( $comment ?? 'Update NeoWiki subject' )
 		);
 
 		// TODO: expose failure information

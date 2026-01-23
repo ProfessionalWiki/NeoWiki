@@ -22,12 +22,18 @@ class InMemorySubjectRepository implements SubjectRepository {
 	 */
 	private array $subjectsByPage = [];
 
+	/**
+	 * @var array<string, string|null>
+	 */
+	public array $comments = [];
+
 	public function getSubject( SubjectId $subjectId ): ?Subject {
 		return $this->subjects[$subjectId->text] ?? null;
 	}
 
-	public function updateSubject( Subject $subject ): void {
+	public function updateSubject( Subject $subject, ?string $comment = null ): void {
 		$this->subjects[$subject->id->text] = $subject;
+		$this->comments[$subject->id->text] = $comment;
 	}
 
 	public function deleteSubject( SubjectId $id ): void {

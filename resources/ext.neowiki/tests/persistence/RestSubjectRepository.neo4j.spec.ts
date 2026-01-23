@@ -172,6 +172,7 @@ describe( 'RestSubjectRepository', () => {
 					new Statement( new PropertyName( 'label' ), TextType.typeName, newStringValue( 'John Doe' ) ),
 					new Statement( new PropertyName( 'WorkUrl' ), UrlType.typeName, newStringValue( 'https://pro.wiki' ) ),
 				] ),
+				comment: 'Edit comment',
 			};
 
 			const inMemoryHttpClient = new InMemoryHttpClient( {
@@ -185,6 +186,7 @@ describe( 'RestSubjectRepository', () => {
 				new SubjectId( 's11111111111111' ),
 				'Subject label',
 				mockUpdateResponse.properties,
+				mockUpdateResponse.comment,
 			);
 
 			expect( response ).toEqual( mockUpdateResponse );

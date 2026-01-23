@@ -16,7 +16,7 @@ interface SubjectRepository extends SubjectLookup {
 	 * TODO: throw exception on not found?
 	 * TODO: document exceptions
 	 */
-	public function updateSubject( Subject $subject ): void;
+	public function updateSubject( Subject $subject, ?string $comment = null ): void;
 
 	/**
 	 * TODO: document exceptions
