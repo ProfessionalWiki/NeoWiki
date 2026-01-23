@@ -92,13 +92,13 @@ import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit, cdxIconClose } from '@wikimedia/codex-icons';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
-import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { useSubjectSaver } from '@/composables/useSubjectSaver.ts';
 
 const props = defineProps<{
 	subject: Subject;
@@ -106,8 +106,8 @@ const props = defineProps<{
 
 const emit = defineEmits<( e: 'update:subject', subject: Subject ) => void>();
 
-const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
+const { saveSubject } = useSubjectSaver();
 
 interface SubjectEditorInstance {
 	getSubjectData: () => StatementList;
@@ -198,27 +198,18 @@ const handleSave = async ( summary: string ): Promise<void> => {
 
 	console.log( 'statementsToSave', statementsToSave );
 	const updatedSubject = props.subject.withStatements( new StatementList( statementsToSave ) );
-	const subjectName = updatedSubject.getLabel();
-	try {
-		await subjectStore.updateSubject( updatedSubject );
-		mw.notify(
-			summary || 'No edit summary provided.',
-			{
-				title: `Updated ${ subjectName }`,
-				type: 'success'
-			}
-		);
-		emit( 'update:subject', updatedSubject );
-		open.value = false;
-	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{
-				title: `Failed to update ${ subjectName }.`,
-				type: 'error'
-			}
-		);
+
+	const success = await saveSubject(
+		updatedSubject,
+		summary || 'Update subject via NeoWiki UI' // TODO: i18n
+	);
+
+	if ( !success ) {
+		return;
 	}
+
+	emit( 'update:subject', updatedSubject );
+	open.value = false;
 };
 
 const onSchemaSaved = ( schema: Schema ): void => {
