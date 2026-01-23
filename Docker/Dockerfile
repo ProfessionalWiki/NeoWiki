@@ -58,9 +58,4 @@ WORKDIR /var/www/html/w
 
 FROM production-mw AS final-mw
 
-LABEL org.opencontainers.image.source="https://github.com/ProfessionalWiki/NeoWiki"
-LABEL org.opencontainers.image.title="NeoWiki Experimental PoC Demo"
-LABEL org.opencontainers.image.licenses="GPL-2.0-or-later"
-LABEL org.opencontainers.image.authors="Professional Wiki <https://Professional.Wiki>"
-
 COPY SettingsTemplate.php /var/www/html/w/LocalSettings.php
