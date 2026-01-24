@@ -4,6 +4,7 @@
 		:class="{ 'ext-neowiki-schema-editor--has-selected-property': selectedProperty !== undefined }"
 	>
 		<PropertyList
+			ref="propertyList"
 			:properties="currentSchema.getPropertyDefinitions()"
 			:selected-property-name="selectedPropertyName"
 			@property-selected="onPropertySelected"
@@ -11,6 +12,7 @@
 		/>
 		<PropertyDefinitionEditor
 			v-if="selectedProperty !== undefined"
+			ref="propertyDefinitionEditor"
 			:key="selectedPropertyName"
 			:property="selectedProperty as PropertyDefinition"
 			@update:property-definition="onPropertyUpdated"
@@ -21,19 +23,33 @@
 <script setup lang="ts">
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
 import { Schema } from '@/domain/Schema.ts';
-import { computed, ref } from 'vue';
+import { ComponentPublicInstance, computed, onUpdated, ref, watch } from 'vue';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import PropertyDefinitionEditor from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { useOverflowDetection } from '@/composables/useOverflowDetection.ts';
 
 const props = defineProps<{
 	initialSchema: Schema;
+}>();
+
+const emit = defineEmits<{
+	overflow: [ hasOverflow: boolean ];
 }>();
 
 const currentSchema = ref<Schema>( props.initialSchema );
 
 const firstProperty = [ ...props.initialSchema.getPropertyDefinitions() ][ 0 ];
 const selectedPropertyName = ref<string | undefined>( firstProperty?.name.toString() );
+
+const propertyList = ref<ComponentPublicInstance | null>( null );
+const propertyDefinitionEditor = ref<ComponentPublicInstance | null>( null );
+
+const { hasOverflow, checkOverflow } = useOverflowDetection( [ propertyList, propertyDefinitionEditor ] );
+
+watch( hasOverflow, ( value ) => {
+	emit( 'overflow', value );
+} );
 
 const selectedProperty = computed( () => {
 	if ( selectedPropertyName.value === undefined ) {
@@ -85,6 +101,10 @@ function replacePropertyDefinition( updatedProperty: PropertyDefinition ): Prope
 		)
 	);
 }
+
+onUpdated( () => {
+	checkOverflow();
+} );
 
 export interface SchemaEditorExposes {
 	getSchema: () => Schema;
@@ -165,9 +185,16 @@ defineExpose( {
 		}
 
 		@media ( min-width: $min-width-breakpoint-desktop ) {
+			min-height: 0;
 			grid-template-columns: minmax( 0, 20rem ) auto;
+			grid-template-rows: minmax( 0, 1fr );
 
 			.ext-neowiki-schema-editor {
+				&__property-list,
+				&__property-editor {
+					overflow-y: auto;
+				}
+
 				&__property-list__menu {
 					margin-inline-end: -$spacing-150;
 				}

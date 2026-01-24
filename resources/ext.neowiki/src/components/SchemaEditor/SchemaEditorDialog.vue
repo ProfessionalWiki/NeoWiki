@@ -4,11 +4,13 @@
 			v-model:open="open"
 			:use-close-button="true"
 			class="ext-neowiki-schema-editor-dialog"
+			:class="{ 'cdx-dialog--dividers': hasOverflow }"
 			:title="$i18n( 'neowiki-editing-schema', props.initialSchema.getName() ).text()"
 		>
 			<SchemaEditor
 				ref="schemaEditor"
 				:initial-schema="initialSchema"
+				@overflow="onOverflow"
 			/>
 
 			<template #footer>
@@ -46,7 +48,12 @@ const open = computed( {
 } );
 
 const schemaEditor = ref<SchemaEditorExposes | null>( null );
+const hasOverflow = ref( false );
 const { saveSchema } = useSchemaSaver();
+
+function onOverflow( overflow: boolean ): void {
+	hasOverflow.value = overflow;
+}
 
 const handleSave = async ( summary: string ): Promise<void> => {
 	if ( !schemaEditor.value ) {
@@ -69,6 +76,8 @@ const handleSave = async ( summary: string ): Promise<void> => {
 
 		.cdx-dialog__body {
 			padding: 0;
+			display: grid;
+			overflow: hidden;
 		}
 	}
 }
