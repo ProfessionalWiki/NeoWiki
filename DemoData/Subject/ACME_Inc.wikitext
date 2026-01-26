@@ -2,13 +2,11 @@ The Main Subject of this page is the Company ACME Inc, shown in the infobox.
 
 The page also contains Child Subjects which are Products.
 
-{{#table:Product}}
+TODO: show a table here, for now see the "View or edit JSON" developer UI at the bottom
 
 You can have as many Child Subjects on a page as you want. For instance you could also define Employees.
 
-{{#table:Employee}}
+TODO: show a table here, for now see the "View or edit JSON" developer UI at the bottom
 
 It is up to you to choose if you define products, employees and other business objects on their own pages or if you
 define multiple subjects on a single page.
-
-For a similar example, see [[F_capture_actuals]].
