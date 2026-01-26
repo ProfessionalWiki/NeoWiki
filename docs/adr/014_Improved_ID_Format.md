@@ -15,6 +15,8 @@ at https://www.unkey.com/blog/uuid-ux, plus seeing nanoid style IDs in various p
 
 We switch to a nanoid-inspired ID format that retains the time-based sortability of our current format (UUID version 7).
 
+We do not provide backwards compatibility with or migration for the old format since there are no production systems yet.
+
 ## Consequences
 
 * We use the new `IdGenerator` service as implemented in the `ProductionIdGenerator` experiment
