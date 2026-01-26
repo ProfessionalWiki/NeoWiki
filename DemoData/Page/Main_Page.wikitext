@@ -1,50 +1,49 @@
 <div style="max-width:1200px; font-size: 1.15rem">
 Welcome to the NeoWiki demo wiki!
 
+NeoWiki turns your wiki into a collaborative graph database by letting you store and query structured information.
+Information is stored in versioned document form inside of wiki pages. The latest version is also stored in
+graph databases via which it can be queried.
+
 NeoWiki is in the experimental proof of concept phase. It is not production ready, public interfaces will change,
 big structural changes will happen, and key functionality is still missing.
 
 This demo exists to gather feedback to inform further development. ([https://professional.wiki/en/contact Contact Professional Wiki])
 
-NeoWiki turns your wiki into a collaborative graph database by letting you store and query structured information.
-Information is stored in versioned document form inside of wiki pages. The latest version is also stored in
-graph databases via which it can be queried.
+You can find [https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs technical documentation] in the
+[https://github.com/ProfessionalWiki/NeoWiki NeoWiki git repository].
 </div>
 
 == Discover NeoWiki Step by Step ==
 
-(This section is WIP. TODO: add links)
+Terminology is explained in [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/Glossary.md the glossary].
 
-As a reader:
+*As a reader:*
 
-* View a Subject
-* View a Schema
+* View a Subject: [[Professional Wiki]]
+* View a Schema: [[Schema:Company]]
 
-As an editor:
+*As an editor:*
 
-* Edit a Subject
-* Edit a Schema
-* Create a Subject
+* Edit a Subject: [[Professional Wiki]] (login required)
+* Edit a Schema: either via a Subject using it, i.e. [[Professional Wiki]], or directly on the Schema page, i.e. [[Schema:Company]]
+* Create a Subject: TODO
 
-As a developer:
+*As a developer:*
 
-* View Subject JSON
+* View Subject JSON: [[Special:NeoJson/ACME_Inc]] (developer UI, normal users will not see JSON. [ View docs])
 * [#Write_endpoints Explore the REST API]
 
 == Demo pages ==
 
 * Simple page with automatic infobox and edit form: [[NeoWiki]], [[ProWiki]]
 * Subject with relations: [[Professional Wiki]]
-* Multiple subjects per page: [[F_capture_actuals]], [[ACME Inc]]
+* Multiple subjects per page: [[ACME Inc]]
 * Wikibase Statement emulation: [[Berlin]]
 * Displaying data from other pages: [[Company Infoboxes]]
 * [[Reactive UI example]]
-* [[Cypher query examples]]
-* [[Lua examples]]
 
-=== Schemas ===
-
-Schemas allow you to define the structure of your data. For instance, you can define that a Employee has a
+**Schemas** allow you to define the structure of your data. For instance, you can define that a Employee has a
 compensation in EUR with a value between 0 and 1000000.
 
 * [[Schema:Company]]
@@ -52,13 +51,6 @@ compensation in EUR with a value between 0 and 1000000.
 * [[Schema:Employee]]
 * [[Schema:Everything]]
 * [{{fullurl:Special:AllPages|from=&to=&namespace=7474}} View all schemas]
-
-== How To ==
-
-* '''View or edit Subject JSON directly''': NeoWiki can be used without understanding what JSON is, and the
-  JSON is not normally shown. However, as a technical person, you can access it via the REST API or the
-  "View or edit JSON" link at the bottom of pages with Subjects. The latter is a development utility that
-  would not be available on production wikis. TODO: unify with "Discover NeoWiki Step by Step"
 
 == REST API endpoints ==
 
