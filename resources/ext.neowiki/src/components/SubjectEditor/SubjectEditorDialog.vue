@@ -26,7 +26,7 @@
 							text-class="ext-neowiki-subject-editor-dialog-schema__label"
 						>
 							<a
-								v-if="canEditSchema && props.onSaveSchema"
+								v-if="canEditSchema"
 								class="ext-neowiki-subject-editor-dialog-schema__link"
 								href="#"
 								@click.prevent="isSchemaEditorOpen = true"
@@ -75,7 +75,7 @@
 		</CdxDialog>
 
 		<SchemaEditorDialog
-			v-if="loadedSchema && props.onSaveSchema"
+			v-if="loadedSchema"
 			v-model:open="isSchemaEditorOpen"
 			:initial-schema="loadedSchema as Schema"
 			:on-save="props.onSaveSchema"
@@ -106,7 +106,7 @@ type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>
 const props = defineProps<{
 	subject: Subject;
 	onSave: SubjectSaveHandler;
-	onSaveSchema?: SchemaSaveHandler;
+	onSaveSchema: SchemaSaveHandler;
 }>();
 
 const schemaStore = useSchemaStore();
