@@ -18,18 +18,36 @@ import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/Sch
 import EditSummary from '@/components/common/EditSummary.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { ref } from 'vue';
-import { useSchemaSaver } from '@/composables/useSchemaSaver.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 defineProps<{ initialSchema: Schema }>();
 
 const schemaEditor = ref<SchemaEditorExposes | null>( null );
-const { saveSchema } = useSchemaSaver();
+const schemaStore = useSchemaStore();
 
 const handleSave = async ( summary: string ): Promise<void> => {
 	if ( !schemaEditor.value ) {
 		return;
 	}
-	await saveSchema( schemaEditor.value.getSchema(), summary || 'Update schema via NeoWiki UI' );
+
+	const schema = schemaEditor.value.getSchema();
+	const schemaName = schema.getName();
+	const editSummary = summary || 'Update schema via NeoWiki UI'; // TODO: i18n
+
+	try {
+		await schemaStore.saveSchema( schema, editSummary );
+		// TODO: i18n
+		mw.notify( editSummary, { title: `Updated ${ schemaName } schema`, type: 'success' } );
+	} catch ( error ) {
+		mw.notify(
+			error instanceof Error ? error.message : String( error ),
+			{
+				// TODO: i18n
+				title: `Failed to update ${ schemaName } schema.`,
+				type: 'error'
+			}
+		);
+	}
 };
 </script>
 

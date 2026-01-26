@@ -20,7 +20,8 @@
 			<SubjectEditorDialog
 				v-if="canEditSubject"
 				:subject="subject as Subject"
-				@update:subject="onSubjectUpdated"
+				:on-save="handleSaveSubject"
+				:on-save-schema="handleSaveSchema"
 			/>
 		</div>
 		<div class="ext-neowiki-auto-infobox__content">
@@ -48,6 +49,7 @@
 <script setup lang="ts">
 import { Component, computed } from 'vue';
 import { Subject } from '@/domain/Subject.ts';
+import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -67,16 +69,21 @@ const props = defineProps( {
 } );
 
 const subjectStore = useSubjectStore();
+const schemaStore = useSchemaStore();
 
 const subject = computed( () => subjectStore.getSubject( props.subjectId ) as Subject ); // TODO: handle not found
-const schema = useSchemaStore().getSchema( subject.value.getSchemaName() ); // TODO: handle not found
+const schema = schemaStore.getSchema( subject.value.getSchemaName() ); // TODO: handle not found
 
 if ( !schema ) {
 	console.error( `Schema not found for name: ${ subject.value.getSchemaName() }` );
 }
 
-const onSubjectUpdated = ( newSubject: Subject ): void => {
-	subjectStore.updateSubject( newSubject );
+const handleSaveSubject = async ( updatedSubject: Subject, comment: string ): Promise<void> => {
+	await subjectStore.updateSubject( updatedSubject, comment );
+};
+
+const handleSaveSchema = async ( updatedSchema: Schema, comment: string ): Promise<void> => {
+	await schemaStore.saveSchema( updatedSchema, comment );
 };
 
 function getComponent( propertyType: string ): Component {

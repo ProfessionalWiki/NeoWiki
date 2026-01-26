@@ -26,7 +26,7 @@
 							text-class="ext-neowiki-subject-editor-dialog-schema__label"
 						>
 							<a
-								v-if="canEditSchema"
+								v-if="canEditSchema && props.onSaveSchema"
 								class="ext-neowiki-subject-editor-dialog-schema__link"
 								href="#"
 								@click.prevent="isSchemaEditorOpen = true"
@@ -75,9 +75,10 @@
 		</CdxDialog>
 
 		<SchemaEditorDialog
-			v-if="loadedSchema"
+			v-if="loadedSchema && props.onSaveSchema"
 			v-model:open="isSchemaEditorOpen"
 			:initial-schema="loadedSchema as Schema"
+			:on-save="props.onSaveSchema"
 			@saved="onSchemaSaved"
 		/>
 	</div>
@@ -98,16 +99,17 @@ import { Statement } from '@/domain/Statement.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { useSubjectSaver } from '@/composables/useSubjectSaver.ts';
+
+type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
+type SchemaSaveHandler = ( schema: Schema, comment: string ) => Promise<void>;
 
 const props = defineProps<{
 	subject: Subject;
+	onSave: SubjectSaveHandler;
+	onSaveSchema?: SchemaSaveHandler;
 }>();
 
-const emit = defineEmits<( e: 'update:subject', subject: Subject ) => void>();
-
 const schemaStore = useSchemaStore();
-const { saveSubject } = useSubjectSaver();
 
 interface SubjectEditorInstance {
 	getSubjectData: () => StatementList;
@@ -198,18 +200,24 @@ const handleSave = async ( summary: string ): Promise<void> => {
 
 	console.log( 'statementsToSave', statementsToSave );
 	const updatedSubject = props.subject.withStatements( new StatementList( statementsToSave ) );
+	const subjectName = updatedSubject.getLabel();
+	const editSummary = summary || 'Update subject via NeoWiki UI'; // TODO: i18n
 
-	const success = await saveSubject(
-		updatedSubject,
-		summary || 'Update subject via NeoWiki UI' // TODO: i18n
-	);
-
-	if ( !success ) {
-		return;
+	try {
+		await props.onSave( updatedSubject, editSummary );
+		// TODO: i18n
+		mw.notify( editSummary, { title: `Updated ${ subjectName }`, type: 'success' } );
+		open.value = false;
+	} catch ( error ) {
+		mw.notify(
+			error instanceof Error ? error.message : String( error ),
+			{
+				// TODO: i18n
+				title: `Failed to update ${ subjectName }.`,
+				type: 'error'
+			}
+		);
 	}
-
-	emit( 'update:subject', updatedSubject );
-	open.value = false;
 };
 
 const onSchemaSaved = ( schema: Schema ): void => {

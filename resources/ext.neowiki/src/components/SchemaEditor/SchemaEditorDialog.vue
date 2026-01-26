@@ -30,11 +30,13 @@ import EditSummary from '@/components/common/EditSummary.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
 import { ref, computed } from 'vue';
-import { useSchemaSaver } from '@/composables/useSchemaSaver.ts';
+
+type SchemaSaveHandler = ( schema: Schema, comment: string ) => Promise<void>;
 
 const props = defineProps<{
 	initialSchema: Schema;
 	open: boolean;
+	onSave: SchemaSaveHandler;
 }>();
 
 const emit = defineEmits<{
@@ -49,7 +51,6 @@ const open = computed( {
 
 const schemaEditor = ref<SchemaEditorExposes | null>( null );
 const hasOverflow = ref( false );
-const { saveSchema } = useSchemaSaver();
 
 function onOverflow( overflow: boolean ): void {
 	hasOverflow.value = overflow;
@@ -61,9 +62,25 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	}
 
 	const schema = schemaEditor.value.getSchema();
-	await saveSchema( schema, summary || 'Update schema via NeoWiki UI' );
-	emit( 'saved', schema );
-	open.value = false;
+	const schemaName = schema.getName();
+	const editSummary = summary || 'Update schema via NeoWiki UI'; // TODO: i18n
+
+	try {
+		await props.onSave( schema, editSummary );
+		// TODO: i18n
+		mw.notify( editSummary, { title: `Updated ${ schemaName } schema`, type: 'success' } );
+		emit( 'saved', schema );
+		open.value = false;
+	} catch ( error ) {
+		mw.notify(
+			error instanceof Error ? error.message : String( error ),
+			{
+				// TODO: i18n
+				title: `Failed to update ${ schemaName } schema.`,
+				type: 'error'
+			}
+		);
+	}
 };
 </script>
 
