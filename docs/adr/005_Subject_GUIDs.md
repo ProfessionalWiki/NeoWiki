@@ -1,4 +1,4 @@
-# Use a Dedicated MediaWiki Revision Slot
+# Subject GUIDs
 
 Date: April 2023
 
