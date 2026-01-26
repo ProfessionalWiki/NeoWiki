@@ -1,10 +1,35 @@
 <div style="max-width:1200px; font-size: 1.15rem">
 Welcome to the NeoWiki demo wiki!
 
-NeoWiki turns your wiki into a collaborative graph database by letting you store and query structured information. It is thus similar to Wikibase and Semantic MediaWiki. NeoWiki was developed as a more user-friendly and sustainable alternative to those two softwares.
+NeoWiki is in the experimental proof of concept phase. It is not production ready, public interfaces will change,
+big structural changes will happen, and key functionality is still missing.
 
-NeoWiki is still alpha software. Various features are incomplete or missing. This demo wiki exists so you can see the current state of NeoWiki and imagine what you could do with a further developed version of the software.
+This demo exists to gather feedback to inform further development. ([https://professional.wiki/en/contact Contact Professional Wiki])
+
+NeoWiki turns your wiki into a collaborative graph database by letting you store and query structured information.
+Information is stored in versioned document form inside of wiki pages. The latest version is also stored in
+graph databases via which it can be queried.
 </div>
+
+== Discover NeoWiki Step by Step ==
+
+(This section is WIP. TODO: add links)
+
+As a reader:
+
+* View a Subject
+* View a Schema
+
+As an editor:
+
+* Edit a Subject
+* Edit a Schema
+* Create a Subject
+
+As a developer:
+
+* View Subject JSON
+* [#Write_endpoints Explore the REST API]
 
 == Demo pages ==
 
@@ -22,12 +47,6 @@ NeoWiki is still alpha software. Various features are incomplete or missing. Thi
 Schemas allow you to define the structure of your data. For instance, you can define that a Employee has a
 compensation in EUR with a value between 0 and 1000000.
 
-A finished version of NeoWiki would contain a dedicated editor for creating and modifying schemas. For now, you have
-to edit the JSON directly.
-
-You can create a new employee by doing to its schema page and clicking "create new employee" at the top. A finished
-version of NeoWiki would allow you to create new subjects directly from the Visual Editor when editing a page.
-
 * [[Schema:Company]]
 * [[Schema:Product]]
 * [[Schema:Employee]]
@@ -36,14 +55,16 @@ version of NeoWiki would allow you to create new subjects directly from the Visu
 
 == How To ==
 
-* '''Create a new Schema''': Create a new page with the prefix "Schema:" and the name of your schema. For instance, "Schema:MyExample". Creating and editing schemas requires elevated permissions. We can turn this off.
-
-Technical
-
-* '''View or edit Subject JSON directly''': NeoWiki can be used without understanding what JSON is, and the JSON is not normally shown. However, as a technical person, you can access it via the REST API or the "View or edit JSON" link at the bottom of pages with Subjects. The latter is a development utility that would not be available on production wikis.
-* '''View the data in Neo4j''': Head over to https://neo.professional.wiki:7474/
+* '''View or edit Subject JSON directly''': NeoWiki can be used without understanding what JSON is, and the
+  JSON is not normally shown. However, as a technical person, you can access it via the REST API or the
+  "View or edit JSON" link at the bottom of pages with Subjects. The latter is a development utility that
+  would not be available on production wikis. TODO: unify with "Discover NeoWiki Step by Step"
 
 == REST API endpoints ==
+
+We will have OpenAPI docs later. For now, you can find a complete and up-to-date list by looking at the
+[https://github.com/ProfessionalWiki/NeoWiki/blob/master/extension.json MediaWiki API route definitions].
+Search for "RestRoutes".
 
 Example URL: https://neo.professional.wiki/w/rest.php/neowiki/v0/subject/12345678-0000-0000-0000-000000000001
 

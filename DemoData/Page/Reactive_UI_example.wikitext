@@ -4,18 +4,12 @@ Data is displayed multiple times in different forms, demonstrating automatic and
 
 <div class="ext-neowiki-view" data-subject-id="s1demo1aaaaaaa1"></div>
 
-{{#table:Product|ACME Inc}}
-
-{{#table:Company|ACME Inc}}
-
 <div class="ext-neowiki-view" data-subject-id="s1demo1aaaaaaa4"></div>
 <div class="ext-neowiki-view" data-subject-id="s1demo1aaaaaaa3"></div>
 <div class="ext-neowiki-view" data-subject-id="s1demo1aaaaaaa2"></div>
 <div class="ext-neowiki-view" data-subject-id="s1demo1aaaaaaa1"></div>
 
-{{#table:Product|ACME Inc}}
-
-{{#table:Company|ACME Inc}}
+## Placeholder Text
 
 How to explain? How to describe? Even the omniscient viewpoint quails.
 
