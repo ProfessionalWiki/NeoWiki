@@ -37,7 +37,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	try {
 		await schemaStore.saveSchema( schema, editSummary );
 		// TODO: i18n
-		mw.notify( editSummary, { title: `Updated ${ schemaName } schema`, type: 'success' } );
+		mw.notify( `Updated ${ schemaName } schema`, { type: 'success' } );
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),

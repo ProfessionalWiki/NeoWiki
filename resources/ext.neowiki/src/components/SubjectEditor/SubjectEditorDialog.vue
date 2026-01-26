@@ -206,7 +206,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	try {
 		await props.onSave( updatedSubject, editSummary );
 		// TODO: i18n
-		mw.notify( editSummary, { title: `Updated ${ subjectName }`, type: 'success' } );
+		mw.notify( `Updated ${ subjectName }`, { type: 'success' } );
 		open.value = false;
 	} catch ( error ) {
 		mw.notify(

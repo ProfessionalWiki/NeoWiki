@@ -68,7 +68,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	try {
 		await props.onSave( schema, editSummary );
 		// TODO: i18n
-		mw.notify( editSummary, { title: `Updated ${ schemaName } schema`, type: 'success' } );
+		mw.notify( `Updated ${ schemaName } schema`, { type: 'success' } );
 		emit( 'saved', schema );
 		open.value = false;
 	} catch ( error ) {
