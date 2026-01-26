@@ -31,7 +31,7 @@ import { CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
 import { ref, computed } from 'vue';
 
-type SchemaSaveHandler = ( schema: Schema, comment: string ) => Promise<void>;
+export type SchemaSaveHandler = ( schema: Schema, comment: string ) => Promise<void>;
 
 const props = defineProps<{
 	initialSchema: Schema;
