@@ -8,21 +8,20 @@ Status: Accepted
 
 We are creating a good number of UIs using Vue and are relatively new to Vue. We want a clear state management strategy.
 
-Our UIs include "display UIs" such as the AutomaticInfobox and "editing UIs" such as the Schema editor.
+Our UIs include "display UIs" such as the AutomaticInfobox and "editing UIs" such as the SchemaEditorDialog.
 
 ## Decision
 
 We keep the existing `SubjectStore` and `SchemaStore`.
 
-We use the stores in our display UIs instead of passing Subjects and Schemas via props.
+In the "editing UIs", we use the Vue best practice "props down, events up". We do NOT use the stores 
+in these UIs.
 
-We do NOT use the stores in our editing UIs. We update the stores upon closure of the dialog if a save happened.
-
-Also see the [living State Management document](https://coda.io/d/NeoWiki_dMgp4yhUS-A/State-Management_sufNohUm#_luN-nIdb)
+In the "display UIs" we use the stores instead of passing Subjects and Schemas via props.
 
 ## Consequences
 
-* We need to refactor `AutomaticInfobox` to stop receiving Subject and Schema via props and instead us the stores.
+* We need to refactor `AutomaticInfobox` to stop receiving Subject and Schema via props and instead use the stores.
 * We need to refactor the editing dialogs to use props instead of the stores.
 * We end up with a conceptually simple approach that we can easily follow: one page-wide set of state in the form
   of SchemaStore and SubjectStore that is used by everything that needs to be fully reactive and avoided by other components.
