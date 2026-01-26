@@ -99,9 +99,9 @@ import { Statement } from '@/domain/Statement.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 
 type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
-type SchemaSaveHandler = ( schema: Schema, comment: string ) => Promise<void>;
 
 const props = defineProps<{
 	subject: Subject;
