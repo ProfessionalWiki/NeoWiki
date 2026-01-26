@@ -1,11 +1,12 @@
-Because NeoWiki supports adding as many Subjects as you want to a single page, it is possible to emulate Wikibase Statements.
+NeoWiki follows the Property Graph model.
 
-We did not optimize for this use case yet. In particular, the required Subject title field (first column in the table)
-does not make sense for such statements. Even so, this page demonstrates the core capability.
+NeoWiki Subjects have NeoWiki Statements that are simple property value pairs. Unlike Wikibase Statements,
+the data model does not force the presence of Qualifiers, References, and Rank.
 
-{{#table:Population}}
+Because NeoWiki supports adding as many Subjects to a single page, it is possible to emulate Wikibase Statements.
+You do this by adding one Subject for what would have been a Wikibase Statement. This has the additional benefit
+that your Wikibase Statement equivalent has a Schema, which allows you to force said equivalent into a specific
+shape. For instance, you can require that your Population records have a Date, a Measurer, and a list of References.
 
-Neo4j has excellent native support for properties on relations. NeoWiki already supports this in its backend, but we
-do not have a UI for it yet. Properties on relations are perfect for when the qualified value is a subject. For instance,
-if you have a Person (ie John Doe) that Works For (property) a Company (ie Professional Wiki), their "Works For" relation
-could have start date, end date, and compensation properties.
+We did not optimize for this use case yet. In particular, nice UIs are missing, such as showing the Population
+data in an (editable) table.
