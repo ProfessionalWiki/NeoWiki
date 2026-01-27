@@ -1,6 +1,7 @@
 name: NeoWiki CI (TypeScript)
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - '.github/workflows/ci-ts.yml'
