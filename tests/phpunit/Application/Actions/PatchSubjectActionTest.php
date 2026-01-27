@@ -11,8 +11,8 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -41,7 +41,7 @@ class PatchSubjectActionTest extends TestCase {
 			$this->inMemorySubjectRepository,
 			$authorizer ?? new SucceedingSubjectAuthorizer(),
 			new StatementListPatcher(
-				formatTypeLookup: new FormatTypeLookup( ValueFormatRegistry::withCoreFormats() ),
+				propertyTypeToValueType: new PropertyTypeToValueType( PropertyTypeRegistry::withCoreTypes() ),
 				idGenerator: $this->idGenerator
 			)
 		);

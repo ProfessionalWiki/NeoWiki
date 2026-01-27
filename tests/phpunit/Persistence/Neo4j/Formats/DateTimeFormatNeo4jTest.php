@@ -9,7 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\DateTimeFormat;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -34,7 +34,7 @@ class DateTimeFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 				statements: new StatementList( [
 					new Statement(
 						property: new PropertyName( 'MyProperty' ),
-						format: DateTimeFormat::NAME,
+						propertyType: DateTimeType::NAME,
 						value: new StringValue(
 							'2023-09-13T14:22:23.000Z',
 							'Ignored bad value',

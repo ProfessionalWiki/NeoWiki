@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
 use InvalidArgumentException;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatLookup;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 
 abstract class PropertyDefinition {
 
@@ -14,7 +14,7 @@ abstract class PropertyDefinition {
 	) {
 	}
 
-	abstract public function getFormat(): string;
+	abstract public function getPropertyType(): string;
 
 	public function getDescription(): string {
 		return $this->core->description;
@@ -39,7 +39,7 @@ abstract class PropertyDefinition {
 	public function toJson(): array {
 		return array_merge(
 			[
-				'type' => $this->getFormat(),
+				'type' => $this->getPropertyType(),
 				'description' => $this->getDescription(),
 				'required' => $this->isRequired(),
 				'default' => $this->getDefault(),
@@ -53,11 +53,11 @@ abstract class PropertyDefinition {
 	/**
 	 * @throws InvalidArgumentException
 	 */
-	public static function fromJson( array $json, ValueFormatLookup $formatLookup ): self {
-		$format = $formatLookup->getFormat( $json['type'] );
+	public static function fromJson( array $json, PropertyTypeLookup $propertyTypeLookup ): self {
+		$propertyType = $propertyTypeLookup->getType( $json['type'] );
 
-		if ( $format === null ) {
-			throw new InvalidArgumentException( 'Unknown format: ' . $json['type'] );
+		if ( $propertyType === null ) {
+			throw new InvalidArgumentException( 'Unknown property type: ' . $json['type'] );
 		}
 
 		$propertyCore = new PropertyCore(
@@ -67,7 +67,7 @@ abstract class PropertyDefinition {
 		);
 
 		try {
-			return $format->buildPropertyDefinitionFromJson( $propertyCore, $json );
+			return $propertyType->buildPropertyDefinitionFromJson( $propertyCore, $json );
 		} catch ( \Throwable $e ) {
 			throw new InvalidArgumentException( 'Invalid property definition: ' . json_encode( $json ), 0, $e );
 		}

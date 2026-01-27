@@ -47,7 +47,7 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertEquals(
 			new StatementList( [
 				TestStatement::build( property: 'animal', value: 'bunny' ),
-				TestStatement::build( property: 'fluff', value: new NumberValue( 9001 ), format: 'number' ),
+				TestStatement::build( property: 'fluff', value: new NumberValue( 9001 ), propertyType: 'number' ),
 			] ),
 			$subject->getStatements()
 		);

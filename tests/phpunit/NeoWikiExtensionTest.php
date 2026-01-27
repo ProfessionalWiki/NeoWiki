@@ -19,7 +19,7 @@ class NeoWikiExtensionTest extends TestCase {
 
 	public function testGetServiceFromPhpLibrary(): void {
 		$this->expectException( OutOfBoundsException::class );
-		NeoWikiExtension::getInstance()->getFormatRegistry()->getFormatOrThrow( 'does-not-exist' );
+		NeoWikiExtension::getInstance()->getPropertyTypeRegistry()->getTypeOrThrow( 'does-not-exist' );
 	}
 
 }

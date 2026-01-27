@@ -13,8 +13,8 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormat;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatLookup;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use Psr\Log\LoggerInterface;
 
 class SubjectUpdater {
@@ -23,7 +23,7 @@ class SubjectUpdater {
 		private readonly TransactionInterface $transaction,
 		private readonly PageId $pageId,
 		private readonly SchemaLookup $schemaRepository,
-		private readonly ValueFormatLookup $valueFormatLookup,
+		private readonly PropertyTypeLookup $propertyTypeLookup,
 		private readonly LoggerInterface $logger
 	) {
 	}
@@ -67,16 +67,16 @@ class SubjectUpdater {
 		$nodeProps = [];
 
 		foreach ( $statements->asArray() as $statement ) {
-			$format = $this->valueFormatLookup->getFormat( $statement->getFormat() );
+			$propertyType = $this->propertyTypeLookup->getType( $statement->getPropertyType() );
 
-			if ( $format === null ) {
+			if ( $propertyType === null ) {
 				// TODO: log warning
 				continue;
 			}
 
-			$neo4jValue = $format->buildNeo4jValue( $statement->getValue() );
+			$neo4jValue = $propertyType->buildNeo4jValue( $statement->getValue() );
 
-			if ( $neo4jValue !== ValueFormat::NO_NEO4J_VALUE ) {
+			if ( $neo4jValue !== PropertyType::NO_NEO4J_VALUE ) {
 				$nodeProps[$statement->getPropertyName()->text] = $neo4jValue;
 			}
 		}

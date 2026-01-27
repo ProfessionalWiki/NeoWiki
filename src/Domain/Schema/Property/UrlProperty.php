@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\UrlFormat;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\UrlType;
 
 class UrlProperty extends PropertyDefinition {
 
@@ -18,8 +18,8 @@ class UrlProperty extends PropertyDefinition {
 		parent::__construct( $core );
 	}
 
-	public function getFormat(): string {
-		return UrlFormat::NAME;
+	public function getPropertyType(): string {
+		return UrlType::NAME;
 	}
 
 	public function allowsMultipleValues(): bool {
