@@ -11,7 +11,7 @@ Data about one thing. Similar to an Item in Wikibase or a Page/SubObject in SMW.
 
 Subjects have
 
-- An `id`: persistent identifier. Subject IDs start with `s` and is always 15 characters long ([ADR 14](adr/014_Improved_ID_Format.md))
+- An `id`: persistent identifier. Subject IDs start with `s` and are always 15 characters long ([ADR 14](adr/014_Improved_ID_Format.md))
 - A `type`: reference to a Schema. Example: Person, Company, Product, etc.
 - A `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
 - `statements`: a list of Statements
@@ -47,7 +47,7 @@ Value Types:
 
 Each Relation has
 
-- An `id`: persistent identifier. Relation IDs start with `r` and is always 15 characters long
+- An `id`: persistent identifier. Relation IDs start with `r` and are always 15 characters long
 - A `target`: Subject ID of the referenced Subject
 - `properties`: Possibly empty collection of property-value pairs. TODO: rename like we did with statements
 
@@ -55,7 +55,7 @@ Each Relation has
 
 ## Schema
 
-A Schema ([ADR 6](adr/006_Schemas.md)) defined a type of Subject. Examples: Person, Company, Product, etc.
+A Schema ([ADR 6](adr/006_Schemas.md)) defines a type of Subject. Examples: Person, Company, Product, etc.
 
 Schemas have a name, description, and a list of Property Definitions
 
