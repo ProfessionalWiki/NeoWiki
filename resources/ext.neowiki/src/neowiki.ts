@@ -8,7 +8,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
 
 async function initializeNeoWikiApp(): Promise<void> {
-	const neowikiApp = document.querySelector( '#ext-neowiki-app' );
+	const neowikiApp = document.querySelector( '#mw-content-text > #ext-neowiki-app' );
 
 	if ( neowikiApp !== null ) {
 		const showSubjectCreator = ( neowikiApp as HTMLElement ).dataset.mwExtNeowikiCreateSubject === 'true';
