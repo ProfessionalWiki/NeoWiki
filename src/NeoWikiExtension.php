@@ -29,9 +29,9 @@ use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\WriteQueryEngine;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatLookup;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
@@ -65,7 +65,7 @@ class NeoWikiExtension {
 
 	public const int NS_SCHEMA = 7474;
 
-	private ValueFormatRegistry $formatRegistry;
+	private PropertyTypeRegistry $propertyTypeRegistry;
 	private SubjectRepository $subjectRepository;
 	private Neo4jQueryStore $queryStore;
 	private ClientInterface $neo4jClient;
@@ -87,24 +87,24 @@ class NeoWikiExtension {
 	) {
 	}
 
-	public function getFormatRegistry(): ValueFormatRegistry {
-		if ( !isset( $this->formatRegistry ) ) {
-			$this->formatRegistry = ValueFormatRegistry::withCoreFormats();
+	public function getPropertyTypeRegistry(): PropertyTypeRegistry {
+		if ( !isset( $this->propertyTypeRegistry ) ) {
+			$this->propertyTypeRegistry = PropertyTypeRegistry::withCoreTypes();
 		}
 
-		return $this->formatRegistry;
+		return $this->propertyTypeRegistry;
 	}
 
-	public function getValueFormatLookup(): ValueFormatLookup {
-		return $this->getFormatRegistry();
+	public function getPropertyTypeLookup(): PropertyTypeLookup {
+		return $this->getPropertyTypeRegistry();
 	}
 
-	public function getFormatTypeLookup(): FormatTypeLookup {
-		return new FormatTypeLookup( $this->getFormatRegistry() );
+	public function getPropertyTypeToValueType(): PropertyTypeToValueType {
+		return new PropertyTypeToValueType( $this->getPropertyTypeRegistry() );
 	}
 
 	public function newSubjectContentDataDeserializer(): SubjectContentDataDeserializer {
-		return new SubjectContentDataDeserializer( new StatementDeserializer( $this->getFormatTypeLookup() ) );
+		return new SubjectContentDataDeserializer( new StatementDeserializer( $this->getPropertyTypeToValueType() ) );
 	}
 
 	public function getStoreContentUC(): OnRevisionCreatedHandler {
@@ -131,7 +131,7 @@ class NeoWikiExtension {
 			readOnlyClient: $this->getReadOnlyNeo4jClient(),
 			subjectUpdaterFactory: new SubjectUpdaterFactory(
 				schemaLookup: $schemaLookup, // Note: this is a hack, we should have a proper test environment
-				valueFormatLookup: $this->getValueFormatLookup(),
+				propertyTypeLookup: $this->getPropertyTypeLookup(),
 				logger: LoggerFactory::getInstance( 'NeoWiki' )
 			),
 		);
@@ -241,7 +241,7 @@ class NeoWikiExtension {
 
 	public function getStatementListPatcher(): StatementListPatcher {
 		return new StatementListPatcher(
-			formatTypeLookup: $this->getFormatTypeLookup(),
+			propertyTypeToValueType: $this->getPropertyTypeToValueType(),
 			idGenerator: $this->getIdGenerator()
 		);
 	}
@@ -285,7 +285,7 @@ class NeoWikiExtension {
 
 	private function getPersistenceSchemaDeserializer(): SchemaPersistenceDeserializer {
 		return new SchemaPersistenceDeserializer(
-			formatLookup: $this->getValueFormatLookup(),
+			propertyTypeLookup: $this->getPropertyTypeLookup(),
 		);
 	}
 

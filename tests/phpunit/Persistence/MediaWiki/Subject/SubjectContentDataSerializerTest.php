@@ -142,7 +142,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 				statements: new StatementList( [
 					new Statement(
 						property: new PropertyName( 'Has skill' ),
-						format: 'relation',
+						propertyType: 'relation',
 						value: new RelationValue(
 							new Relation(
 								id: new RelationId( 'rTestSCDST11rr2' ),
@@ -156,7 +156,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 					),
 					new Statement(
 						property: new PropertyName( 'Likes' ),
-						format: 'relation',
+						propertyType: 'relation',
 						value: new RelationValue(
 							new Relation(
 								id: new RelationId( 'rTestSCDST11rr5' ),
@@ -177,12 +177,12 @@ class SubjectContentDataSerializerTest extends TestCase {
 				statements: new StatementList( [
 					new Statement(
 						property: new PropertyName( 'founded' ),
-						format: 'text',
+						propertyType: 'text',
 						value: new StringValue( '2019-01-01' )
 					),
 					new Statement(
 						property: new PropertyName( 'founder' ),
-						format: 'string',
+						propertyType: 'string',
 						value: new StringValue( 'John Doe' )
 					),
 				] )
@@ -195,7 +195,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 	 * @dataProvider exampleSubjectProvider
 	 */
 	public function testSerializationRoundTrip( string $contentJson ): void {
-		$deserializer = new SubjectContentDataDeserializer( new StatementDeserializer( NeoWikiExtension::getInstance()->getFormatTypeLookup() ) );
+		$deserializer = new SubjectContentDataDeserializer( new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeToValueType() ) );
 		$serializer = new SubjectContentDataSerializer();
 
 		$newJson = $serializer->serialize( $deserializer->deserialize( $contentJson ) );

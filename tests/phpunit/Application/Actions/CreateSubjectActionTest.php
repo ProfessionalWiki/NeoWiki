@@ -13,8 +13,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
@@ -51,7 +51,7 @@ class CreateSubjectActionTest extends TestCase {
 			$this->idGenerator,
 			$this->authorizer,
 			new StatementListPatcher(
-				new FormatTypeLookup( ValueFormatRegistry::withCoreFormats() ),
+				new PropertyTypeToValueType( PropertyTypeRegistry::withCoreTypes() ),
 				$this->idGenerator
 			)
 		);
@@ -157,7 +157,7 @@ class CreateSubjectActionTest extends TestCase {
 							targetId: 's11111111111112'
 						)
 					),
-					format: 'relation'
+					propertyType: 'relation'
 				)
 			] ),
 			$newSubject->getStatements()

@@ -16,7 +16,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 
 /**
  * Deserializes statements from persistence-type JSON.
@@ -27,20 +27,20 @@ use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
 class StatementDeserializer {
 
 	public function __construct(
-		private readonly FormatTypeLookup $formatTypeLookup
+		private readonly PropertyTypeToValueType $propertyTypeToValueType
 	) {
 	}
 
 	public function deserialize( string $propertyName, array $json ): Statement {
 		return new Statement(
 			property: new PropertyName( $propertyName ),
-			format: $json['type'],
+			propertyType: $json['type'],
 			value: $this->deserializeValue( $json['type'], $json['value'] ),
 		);
 	}
 
-	private function deserializeValue( string $format, mixed $value ): NeoValue {
-		return match ( $this->formatTypeLookup->formatToType( $format ) ) {
+	private function deserializeValue( string $propertyType, mixed $value ): NeoValue {
+		return match ( $this->propertyTypeToValueType->lookup( $propertyType ) ) {
 			ValueType::String => new StringValue( ...(array)$value ),
 			ValueType::Number => new NumberValue( $value ),
 			ValueType::Relation => $this->deserializeRelationValue( $value ),

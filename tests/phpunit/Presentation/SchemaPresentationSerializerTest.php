@@ -9,8 +9,8 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\NumberFormat;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TextFormat;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
@@ -55,7 +55,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 					'multiple' => false,
 					'default' => 'foo',
 					'uniqueItems' => false,
-					'type' => TextFormat::NAME,
+					'type' => TextType::NAME,
 				]
 			]
 		] );
@@ -85,7 +85,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 					'description' => 'Test number property',
 					'required' => false,
 					'default' => 0,
-					'type' => NumberFormat::NAME,
+					'type' => NumberType::NAME,
 					'maximum' => null,
 					'minimum' => null,
 					'precision' => null,
@@ -167,7 +167,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 	public function testSchemaIntegrityAfterRoundTripSerialization( string $schemaName, string $originalSchemaJson ): void {
 		$originalSchemaArray = json_decode( $originalSchemaJson, true );
 
-		$deserializer = new SchemaPersistenceDeserializer( NeoWikiExtension::getInstance()->getValueFormatLookup() );
+		$deserializer = new SchemaPersistenceDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup() );
 		$originalSchema = $deserializer->deserialize( new SchemaName( $schemaName ), json_encode( $originalSchemaArray ) );
 
 		$serialized = $this->serializer->serialize( $originalSchema );

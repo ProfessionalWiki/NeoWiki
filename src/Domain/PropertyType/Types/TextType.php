@@ -2,19 +2,19 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats;
+namespace ProfessionalWiki\NeoWiki\Domain\PropertyType\Types;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormat;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 
-class TextFormat implements ValueFormat {
+class TextType implements PropertyType {
 
 	public const NAME = 'text';
 
-	public function getFormatName(): string {
+	public function getTypeName(): string {
 		return self::NAME;
 	}
 

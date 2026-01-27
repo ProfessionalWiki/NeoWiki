@@ -36,7 +36,7 @@ class SubjectContentDataDeserializerTest extends TestCase {
 
 	private function newDeserializer(): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
-			new StatementDeserializer( NeoWikiExtension::getInstance()->getFormatTypeLookup() )
+			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeToValueType() )
 		);
 	}
 
@@ -144,7 +144,7 @@ JSON
 			[
 				'Products' => new Statement(
 					property: new PropertyName( 'Products' ),
-					format: 'relation',
+					propertyType: 'relation',
 					value: new RelationValue(
 						new Relation(
 							id: new RelationId( 'rTestSCDDrrrrr1' ),

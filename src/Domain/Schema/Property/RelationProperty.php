@@ -8,7 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType as RelationPropertyType;
 
 class RelationProperty extends PropertyDefinition {
 
@@ -22,8 +22,8 @@ class RelationProperty extends PropertyDefinition {
 		parent::__construct( $core );
 	}
 
-	public function getFormat(): string {
-		return RelationFormat::NAME;
+	public function getPropertyType(): string {
+		return RelationPropertyType::NAME;
 	}
 
 	public function getRelationType(): RelationType {

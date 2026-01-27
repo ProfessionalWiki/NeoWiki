@@ -17,13 +17,13 @@ use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\FormatTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 
 readonly class StatementListPatcher {
 
 	public function __construct(
-		private FormatTypeLookup $formatTypeLookup,
+		private PropertyTypeToValueType $propertyTypeToValueType,
 		private IdGenerator $idGenerator,
 	) {
 	}
@@ -39,13 +39,15 @@ readonly class StatementListPatcher {
 		$newStatements = $statements->asArray();
 
 		foreach ( $patch as $propertyName => $requestStatement ) {
-			if ( $requestStatement !== null ) {
-				$value = $this->deserializeValue( $requestStatement['propertyType'], $requestStatement['value'] );
+			if ( is_array( $requestStatement ) && isset( $requestStatement['propertyType'] ) ) {
+				/** @var string $propertyType TODO: handle missing propertyType */
+				$propertyType = $requestStatement['propertyType'];
+				$value = $this->deserializeValue( $propertyType, $requestStatement['value'] );
 
 				if ( !$value->isEmpty() ) {
 					$newStatements[$propertyName] = new Statement(
 						property: new PropertyName( $propertyName ),
-						format: $requestStatement['propertyType'], // TODO: handle missing format
+						propertyType: $propertyType,
 						value: $value
 					);
 
@@ -59,9 +61,9 @@ readonly class StatementListPatcher {
 		return new StatementList( $newStatements );
 	}
 
-	private function deserializeValue( string $format, mixed $value ): NeoValue {
+	private function deserializeValue( string $propertyType, mixed $value ): NeoValue {
 		// TODO: validate value integrity
-		return match ( $this->formatTypeLookup->formatToType( $format ) ) {
+		return match ( $this->propertyTypeToValueType->lookup( $propertyType ) ) {
 			ValueType::String => new StringValue( ...(array)$value ),
 			ValueType::Number => new NumberValue( $value ),
 			ValueType::Relation => $this->deserializeRelationValue( $value ),

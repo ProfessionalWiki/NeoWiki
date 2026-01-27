@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TextFormat;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 
 class TextProperty extends PropertyDefinition {
 
@@ -18,8 +18,8 @@ class TextProperty extends PropertyDefinition {
 		parent::__construct( $core );
 	}
 
-	public function getFormat(): string {
-		return TextFormat::NAME;
+	public function getPropertyType(): string {
+		return TextType::NAME;
 	}
 
 	public function allowsMultipleValues(): bool {

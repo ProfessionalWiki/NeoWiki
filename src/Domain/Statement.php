@@ -11,7 +11,7 @@ readonly class Statement {
 
 	public function __construct(
 		private PropertyName $property,
-		private string $format,
+		private string $propertyType,
 		private NeoValue $value
 	) {
 	}
@@ -20,8 +20,8 @@ readonly class Statement {
 		return $this->property;
 	}
 
-	public function getFormat(): string {
-		return $this->format;
+	public function getPropertyType(): string {
+		return $this->propertyType;
 	}
 
 	public function getValue(): NeoValue {

@@ -17,7 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -42,7 +42,7 @@ class GetSubjectQueryTest extends TestCase {
 					schemaId: new SchemaName( 'GetSubjectQueryTestSchema' ),
 					statements: new StatementList( [
 						TestStatement::build( 'expected property 1', 'expected value 1' ),
-						TestStatement::build( 'expected property 2', value: new NumberValue( 2 ), format: 'number' ),
+						TestStatement::build( 'expected property 2', value: new NumberValue( 2 ), propertyType: 'number' ),
 						TestStatement::build(
 							'FriendOf',
 							new RelationValue( TestRelation::build(
@@ -50,7 +50,7 @@ class GetSubjectQueryTest extends TestCase {
 								targetId: 's11111111111131',
 								properties: [ 'relation property' => 'relation value' ]
 							) ),
-							RelationFormat::NAME,
+							RelationType::NAME,
 						),
 					] ),
 				),
@@ -179,7 +179,7 @@ class GetSubjectQueryTest extends TestCase {
 						targetId: 's11111111111133',
 						properties: [ 'relation property' => 'relation value' ]
 					) ),
-					RelationFormat::NAME,
+					RelationType::NAME,
 				),
 			] )
 		);

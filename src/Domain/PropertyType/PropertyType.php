@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Domain\ValueFormat;
+namespace ProfessionalWiki\NeoWiki\Domain\PropertyType;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -10,11 +10,11 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
-interface ValueFormat {
+interface PropertyType {
 
 	public const NO_NEO4J_VALUE = null;
 
-	public function getFormatName(): string;
+	public function getTypeName(): string;
 
 	public function getValueType(): ValueType;
 

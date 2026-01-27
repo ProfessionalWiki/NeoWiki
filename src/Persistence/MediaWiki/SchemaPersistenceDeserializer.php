@@ -9,7 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatLookup;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 
 /**
@@ -20,7 +20,7 @@ use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 class SchemaPersistenceDeserializer {
 
 	public function __construct(
-		private readonly ValueFormatLookup $formatLookup,
+		private readonly PropertyTypeLookup $propertyTypeLookup,
 	) {
 	}
 
@@ -47,7 +47,7 @@ class SchemaPersistenceDeserializer {
 		foreach ( $json['propertyDefinitions'] ?? [] as $propertyName => $property ) {
 			if ( is_string( $propertyName ) ) {
 				try {
-					$properties[$propertyName] = PropertyDefinition::fromJson( $property, $this->formatLookup );
+					$properties[$propertyName] = PropertyDefinition::fromJson( $property, $this->propertyTypeLookup );
 				}
 				catch ( InvalidArgumentException ) {
 					// TODO: log error

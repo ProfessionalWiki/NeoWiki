@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 
 abstract class PropertyTestCase extends TestCase {
 
@@ -20,7 +20,7 @@ abstract class PropertyTestCase extends TestCase {
 	protected function fromJson( string $json ): PropertyDefinition {
 		return PropertyDefinition::fromJson(
 			json_decode( $json, true ),
-			ValueFormatRegistry::withCoreFormats()
+			PropertyTypeRegistry::withCoreTypes()
 		);
 	}
 

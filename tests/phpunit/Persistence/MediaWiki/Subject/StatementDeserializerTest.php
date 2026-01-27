@@ -27,7 +27,7 @@ class StatementDeserializerTest extends TestCase {
 		$this->assertEquals(
 			new Statement(
 				property: new PropertyName( 'MyNumber' ),
-				format: 'number',
+				propertyType: 'number',
 				value: new NumberValue( 42 )
 			),
 			$this->newDeserializer()->deserialize(
@@ -41,14 +41,14 @@ class StatementDeserializerTest extends TestCase {
 	}
 
 	private function newDeserializer(): StatementDeserializer {
-		return new StatementDeserializer( NeoWikiExtension::getInstance()->getFormatTypeLookup() );
+		return new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeToValueType() );
 	}
 
 	public function testDeserializesText(): void {
 		$this->assertEquals(
 			new Statement(
 				property: new PropertyName( 'MyText' ),
-				format: 'text',
+				propertyType: 'text',
 				value: new StringValue( 'Foo', 'Bar', 'Baz' )
 			),
 			$this->newDeserializer()->deserialize(
@@ -65,7 +65,7 @@ class StatementDeserializerTest extends TestCase {
 		$this->assertEquals(
 			new Statement(
 				property: new PropertyName( 'MyRelation' ),
-				format: 'relation',
+				propertyType: 'relation',
 				value: new RelationValue(
 					new Relation(
 						id: new RelationId( 'rTestSDT1111rr1' ),

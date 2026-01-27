@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\NumberFormat;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 
 class NumberProperty extends PropertyDefinition {
 
@@ -20,8 +20,8 @@ class NumberProperty extends PropertyDefinition {
 		parent::__construct( $core );
 	}
 
-	public function getFormat(): string {
-		return NumberFormat::NAME;
+	public function getPropertyType(): string {
+		return NumberType::NAME;
 	}
 
 	public function getPrecision(): float|int|null {

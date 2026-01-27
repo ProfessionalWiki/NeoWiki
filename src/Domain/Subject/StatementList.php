@@ -13,7 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 
 readonly class StatementList {
 
@@ -45,7 +45,7 @@ readonly class StatementList {
 		$relations = [];
 
 		foreach ( $this->statements as $statement ) {
-			if ( $statement->getFormat() === RelationFormat::NAME ) {
+			if ( $statement->getPropertyType() === RelationType::NAME ) {
 				/**
 				 * @var RelationValue $value
 				 */

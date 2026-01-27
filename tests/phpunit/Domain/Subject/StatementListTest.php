@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
@@ -55,7 +55,7 @@ class StatementListTest extends TestCase {
 			TestStatement::build(
 				property: 'P1',
 				value: new RelationValue( TestRelation::build( targetId: 's11111111111111' ) ),
-				format: RelationFormat::NAME
+				propertyType: RelationType::NAME
 			),
 			TestStatement::build(
 				property: 'P1 and a half',
@@ -66,7 +66,7 @@ class StatementListTest extends TestCase {
 					TestRelation::build( targetId: 's11111111111112' ),
 					TestRelation::build( targetId: 's11111111111113' )
 				),
-				format: RelationFormat::NAME
+				propertyType: RelationType::NAME
 			),
 			TestStatement::build(
 				property: 'P3',
@@ -74,7 +74,7 @@ class StatementListTest extends TestCase {
 					TestRelation::build( targetId: 's11111111111113' ), // Duplicate
 					TestRelation::build( targetId: 's11111111111114' )
 				),
-				format: RelationFormat::NAME
+				propertyType: RelationType::NAME
 			),
 		] );
 

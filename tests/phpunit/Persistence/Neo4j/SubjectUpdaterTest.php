@@ -14,9 +14,9 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\TextFormat;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatLookup;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\ValueFormatRegistry;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdater;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
@@ -54,12 +54,12 @@ class SubjectUpdaterTest extends TestCase {
 		);
 	}
 
-	private function newSubjectUpdater( ValueFormatLookup $valueFormatLookup = null ): SubjectUpdater {
+	private function newSubjectUpdater( PropertyTypeLookup $propertyTypeLookup = null ): SubjectUpdater {
 		return new SubjectUpdater(
 			$this->transaction,
 			$this->pageId,
 			$this->schemaLookup,
-			$valueFormatLookup ?? NeoWikiExtension::getInstance()->getValueFormatLookup(),
+			$propertyTypeLookup ?? NeoWikiExtension::getInstance()->getPropertyTypeLookup(),
 			$this->logger
 		);
 	}
@@ -85,14 +85,14 @@ class SubjectUpdaterTest extends TestCase {
 		);
 	}
 
-	public function testSkipsStatementsWithUnknownFormat(): void {
-		$lookup = new ValueFormatRegistry();
-		$lookup->registerFormat( new TextFormat() );
+	public function testSkipsStatementsWithUnknownPropertyType(): void {
+		$registry = new PropertyTypeRegistry();
+		$registry->registerType( new TextType() );
 
 		$statements = new StatementList( [
-			TestStatement::build( property: 'P1', value: new StringValue( 'foo' ), format: 'text' ),
-			TestStatement::build( property: 'P2', value: new StringValue( 'https://bar.com' ), format: 'url' ),
-			TestStatement::build( property: 'P3', value: new StringValue( 'baz' ), format: 'text' ),
+			TestStatement::build( property: 'P1', value: new StringValue( 'foo' ), propertyType: 'text' ),
+			TestStatement::build( property: 'P2', value: new StringValue( 'https://bar.com' ), propertyType: 'url' ),
+			TestStatement::build( property: 'P3', value: new StringValue( 'baz' ), propertyType: 'text' ),
 		] );
 
 		$this->assertEquals(
@@ -100,18 +100,18 @@ class SubjectUpdaterTest extends TestCase {
 				'P1' => [ 'foo' ],
 				'P3' => [ 'baz' ],
 			],
-			$this->newSubjectUpdater( $lookup )->statementsToNodeProperties( $statements )
+			$this->newSubjectUpdater( $registry )->statementsToNodeProperties( $statements )
 		);
 	}
 
-	public function testSkipsStatementsWithRelationFormat(): void {
-		$lookup = new ValueFormatRegistry();
-		$lookup->registerFormat( new TextFormat() );
+	public function testSkipsStatementsWithRelationType(): void {
+		$registry = new PropertyTypeRegistry();
+		$registry->registerType( new TextType() );
 
 		$statements = new StatementList( [
-			TestStatement::build( property: 'P1', value: new StringValue( 'foo' ), format: 'text' ),
-			TestStatement::build( property: 'P2', value: new RelationValue( TestRelation::build() ), format: 'relation' ),
-			TestStatement::build( property: 'P3', value: new StringValue( 'baz' ), format: 'text' ),
+			TestStatement::build( property: 'P1', value: new StringValue( 'foo' ), propertyType: 'text' ),
+			TestStatement::build( property: 'P2', value: new RelationValue( TestRelation::build() ), propertyType: 'relation' ),
+			TestStatement::build( property: 'P3', value: new StringValue( 'baz' ), propertyType: 'text' ),
 		] );
 
 		$this->assertEquals(
@@ -119,7 +119,7 @@ class SubjectUpdaterTest extends TestCase {
 				'P1' => [ 'foo' ],
 				'P3' => [ 'baz' ],
 			],
-			$this->newSubjectUpdater( $lookup )->statementsToNodeProperties( $statements )
+			$this->newSubjectUpdater( $registry )->statementsToNodeProperties( $statements )
 		);
 	}
 

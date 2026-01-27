@@ -10,18 +10,18 @@ use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\Domain\ValueFormat\Formats\RelationFormat;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 
 class TestStatement {
 
 	public static function build(
 		string|PropertyName $property = 'TestProperty',
 		string|NeoValue $value = 'TestValue',
-		string $format = 'text',
+		string $propertyType = 'text',
 	): Statement {
 		return new Statement(
 			property: new PropertyName( (string)$property ),
-			format: $format,
+			propertyType: $propertyType,
 			value: is_string( $value ) ? new StringValue( $value ) : $value
 		);
 	}
@@ -33,7 +33,7 @@ class TestStatement {
 		return self::build(
 			property: $property,
 			value: new RelationValue( ...$relations ),
-			format: RelationFormat::NAME
+			propertyType: RelationType::NAME
 		);
 	}
 
