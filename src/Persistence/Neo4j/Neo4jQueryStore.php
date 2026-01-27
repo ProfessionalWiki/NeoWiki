@@ -127,6 +127,8 @@ readonly class Neo4jQueryStore implements QueryStore, QueryEngine, WriteQueryEng
 
 	private function deleteSubject( TransactionInterface $transaction, SubjectId $subjectId ): void {
 		if ( $this->subjectHasIncomingRelations( $transaction, $subjectId ) ) {
+			// Only remove HasSubject relations and outgoing relations.
+			// Keep the subject node itself because other subjects still reference it.
 			$transaction->run(
 				'
 					MATCH ()-[hsRelation:HasSubject]->(subject {id: $subjectId})
@@ -153,7 +155,7 @@ readonly class Neo4jQueryStore implements QueryStore, QueryEngine, WriteQueryEng
 			WHERE NOT incomingRelation:HasSubject
 			RETURN incomingRelation',
 			[ 'subjectId' => $subjectId->text ]
-		)->isEmpty();
+		)->isEmpty() === false;
 	}
 
 	public function runReadQuery( string $cypher ): SummarizedResult {
