@@ -1,6 +1,7 @@
 name: NeoWiki CI (PHP)
 
 on:
+  workflow_dispatch:
   push:
     paths-ignore:
       - '.github/workflows/ci-ts.yml'
