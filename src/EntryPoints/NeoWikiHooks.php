@@ -55,7 +55,7 @@ class NeoWikiHooks {
 
 	private static function getNeoWikiAppHtml( OutputPage $out ): string {
 		$attrs = [
-			'id' => 'neowiki',
+			'id' => 'ext-neowiki-app',
 		];
 
 		if ( self::shouldShowSubjectCreator( $out ) ) {
