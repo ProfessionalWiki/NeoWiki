@@ -4,7 +4,7 @@ AI-ready knowledge management system that combines collaborative editing and kno
 
 ## Technical Documentation
 
-See [docs/](./docs/), especially [docs/Glossary.md](./docs/glossary.md).
+See [docs/](./docs/), especially [docs/Glossary.md](./docs/Glossary.md).
 
 ## Development
 
