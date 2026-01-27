@@ -19,6 +19,7 @@
 * Is multi-Subject support in the editor essential?
   Example: Person has a "Name" property. Name is a Subject with its own PersonName schema. The "Edit Person" form would show the
   PersonName fields and create or update both the Person Subject and linked PersonName Subject.
+* MediaWiki page data in the graph. Is this a problem? How should it be handled?
 
 ### Low Priority
 
