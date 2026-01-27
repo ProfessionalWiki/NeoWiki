@@ -44,11 +44,11 @@ class CypherRawParserFunction {
 	}
 
 	private function formatCodeBlock( string $content ): string {
-		return "<pre><code class=\"json\">\n" . htmlspecialchars( $content ) . "\n</code></pre>";
+		return '<pre><code class="json">' . "\n" . htmlspecialchars( $content ) . "\n" . '</code></pre>';
 	}
 
 	private function formatError( string $message ): string {
-		return "<div class=\"error\">" . htmlspecialchars( $message ) . "</div>";
+		return '<div class="error">' . htmlspecialchars( $message ) . '</div>';
 	}
 
 }
