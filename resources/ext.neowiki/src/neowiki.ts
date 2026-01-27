@@ -11,7 +11,11 @@ async function initializeAutomaticInfobox(): Promise<void> {
 	const automaticInfobox = document.querySelector( '#neowiki' );
 
 	if ( automaticInfobox !== null ) {
-		const app = createMwApp( NeoWikiApp ).directive( 'tooltip', CdxTooltip );
+		const showSubjectCreator = ( automaticInfobox as HTMLElement ).dataset.mwExtNeowikiCreateSubject === 'true';
+
+		const app = createMwApp( NeoWikiApp, {
+			showSubjectCreator,
+		} ).directive( 'tooltip', CdxTooltip );
 		app.use( createPinia() );
 		NeoWikiServices.registerServices( app );
 		app.mount( automaticInfobox );

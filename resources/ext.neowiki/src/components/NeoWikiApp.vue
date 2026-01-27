@@ -12,8 +12,8 @@
 		/>
 	</teleport>
 
-	<teleport v-if="canCreateSubject" to="#mw-indicator-neowiki-create-button">
-		<!-- TODO: reimplement or remove -->
+	<teleport v-if="shouldShowSubjectCreator" to="#mw-content-text">
+		<SubjectCreatorDialog />
 	</teleport>
 </template>
 
@@ -21,6 +21,7 @@
 import { onMounted, ref } from 'vue';
 import { SubjectId } from '@/domain/SubjectId';
 import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
+import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
@@ -31,9 +32,13 @@ interface ViewData {
 	canEditSubject: boolean;
 }
 
+const props = defineProps<{
+	showSubjectCreator: boolean;
+}>();
+
 const viewsData = ref<ViewData[]>( [] );
 
-const canCreateSubject = ref( false );
+const shouldShowSubjectCreator = ref( props.showSubjectCreator );
 const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
 
 onMounted( async (): Promise<void> => {
@@ -44,8 +49,6 @@ onMounted( async (): Promise<void> => {
 	);
 
 	viewsData.value = localViewsData;
-
-	canCreateSubject.value = document.querySelector( '#mw-indicator-neowiki-create-button' ) !== null;
 } );
 
 // eslint-disable-next-line no-undef

@@ -53,5 +53,11 @@
 	"neowiki-subject-editor-save": "Save changes",
 
 	"neowiki-schema-editor-new-property": "Add new property",
-	"neowiki-schema-editor-optional": "Optional"
+	"neowiki-schema-editor-optional": "Optional",
+
+	"neowiki-subject-creator-title": "Creating subject",
+	"neowiki-subject-creator-button-label": "Create subject",
+	"neowiki-subject-creator-schema-title": "Have an existing schema?",
+	"neowiki-subject-creator-existing-schema": "Use existing",
+	"neowiki-subject-creator-new-schema": "Create new"
 }
