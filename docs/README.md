@@ -7,4 +7,5 @@ Key docs:
 * [Architecture Decision Records](adr/)
 * [Planning docs](planning/) - Work-in-progress exploration and discussion documents
 
-REST API docs, including OpenAPI, will be created at some point. Till then, look for "RestRoutes" in [extension.json](../extension.json).
+REST API docs, including OpenAPI, will be created at some point. Till then, look for
+"RestRoutes" in [extension.json](../extension.json).
