@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 readonly class PropertyTypeToValueType {
 
 	public function __construct(
-		private PropertyTypeRegistry $registry
+		private PropertyTypeLookup $registry
 	) {
 	}
 
