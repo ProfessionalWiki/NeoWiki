@@ -7,11 +7,18 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherMap;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -265,6 +272,59 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 			42,
 			$store
 		);
+	}
+
+	public function testDeletingPagePreservesSubjectReferencedByOtherSubject(): void {
+		$relationPropertyName = 'locatedIn';
+		$relationType = 'LocatedIn';
+
+		$store = NeoWikiExtension::getInstance()->newNeo4jQueryStore(
+			new InMemorySchemaLookup(
+				TestSchema::build(
+					name: TestSubject::DEFAULT_SCHEMA_ID,
+					properties: new PropertyDefinitions( [
+						$relationPropertyName => new RelationProperty(
+							core: new PropertyCore( description: '', required: false, default: null ),
+							relationType: new RelationType( $relationType ),
+							targetSchema: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ),
+							multiple: false,
+						),
+					] ),
+				),
+			)
+		);
+
+		$store->savePage( TestPage::build( // The page with subject that will be deleted
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+		) );
+
+		$store->savePage( TestPage::build( // The page that has a subject with relation to the to-be-deleted subject
+			id: 2,
+			mainSubject: TestSubject::build(
+				id: self::GUID_2,
+				statements: new StatementList( [
+					TestStatement::buildRelation(
+						property: $relationPropertyName,
+						relations: [
+							TestRelation::build( id: 'rTestNQS1111rr1', targetId: self::GUID_1 ),
+						],
+					),
+				] ),
+			),
+		) );
+
+		$store->deletePage( new PageId( 1 ) );
+
+		$result = $store->runReadQuery(
+			'MATCH (subject {id: "' . self::GUID_1 . '"}) RETURN subject'
+		);
+		$this->assertFalse( $result->isEmpty(), 'Subject referenced by another subject should not be deleted' );
+
+		$relationResult = $store->runReadQuery(
+			'MATCH ({id: "' . self::GUID_2 . '"})-[r:' . $relationType . ']->({id: "' . self::GUID_1 . '"}) RETURN r'
+		);
+		$this->assertFalse( $relationResult->isEmpty(), 'Relation to preserved subject should still exist' );
 	}
 
 	private function assertPageHasSubjectsWithLabels( array $expectedSubjects, int $pageId, Neo4jQueryStore $store ): void {
