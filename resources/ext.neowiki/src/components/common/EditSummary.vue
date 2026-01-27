@@ -79,16 +79,16 @@ const onSaveClick = (): void => {
 
 </script>
 
-<style lang="scss">
-@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
+<style lang="less">
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-edit-summary {
 	.cdx-accordion {
 		border-bottom: 0;
 
 		> summary {
-			margin-top: -$spacing-50;
-			margin-inline: -$spacing-50;
+			margin-top: -@spacing-50;
+			margin-inline: -@spacing-50;
 		}
 
 		/* Reset the font size from accordion to match CdxField */
@@ -104,28 +104,30 @@ const onSaveClick = (): void => {
 	}
 
 	&__optional-flag {
-		color: $color-subtle;
-		font-weight: $font-weight-normal;
+		color: @color-subtle;
+		font-weight: @font-weight-normal;
 	}
 
 	&__help-text {
-		margin-top: $spacing-50;
-		color: $color-subtle;
-		line-height: $line-height-xx-small;
+		margin-top: @spacing-50;
+		color: @color-subtle;
+		line-height: @line-height-xx-small;
 
-		.cdx-accordion:not( [ open ] ) + & {
+		/* LESS has trouble with the spacing for the open attribute (Expected identifier but found whitespace [css-syntax-error]). */
+		/* stylelint-disable-next-line @stylistic/selector-attribute-brackets-space-inside */
+		.cdx-accordion:not( [open] ) + & {
 			margin-top: 0;
 		}
 	}
 
 	&__actions {
 		display: flex;
-		margin-top: $spacing-50;
-		gap: $spacing-75;
+		margin-top: @spacing-50;
+		gap: @spacing-75;
 
 		.cdx-button {
-			width: $size-full;
-			max-width: $max-width-base;
+			width: @size-full;
+			max-width: @max-width-base;
 		}
 	}
 }

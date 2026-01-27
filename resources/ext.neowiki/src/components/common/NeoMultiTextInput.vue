@@ -138,12 +138,12 @@ function areArraysEqual( arr1: string[], arr2: string[] ): boolean {
 }
 </script>
 
-<style lang="scss">
-@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
+<style lang="less">
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-multi-text-inputs {
 	display: flex;
 	flex-direction: column;
-	gap: $spacing-25;
+	gap: @spacing-25;
 }
 </style>

@@ -117,8 +117,8 @@ defineExpose( {
 } );
 </script>
 
-<style lang="scss">
-@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
+<style lang="less">
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-schema-editor {
 	display: grid;
@@ -126,18 +126,18 @@ defineExpose( {
 	.ext-neowiki-schema-editor {
 		&__property-list,
 		&__property-editor {
-			padding: $spacing-100;
+			padding: @spacing-100;
 
-			@media ( min-width: $min-width-breakpoint-desktop ) {
-				padding: $spacing-150;
+			@media ( min-width: @min-width-breakpoint-desktop ) {
+				padding: @spacing-150;
 			}
 		}
 
 		&__property-list__menu {
 			width: auto;
 
-			@media ( min-width: $min-width-breakpoint-desktop ) {
-				margin: (-$spacing-50) (-$spacing-75);
+			@media ( min-width: @min-width-breakpoint-desktop ) {
+				margin: (-@spacing-50) (-@spacing-75);
 
 				.cdx-menu-item {
 					border-top-right-radius: 0;
@@ -156,7 +156,7 @@ defineExpose( {
 			TODO: Temporary solution for responsive layout.
 			Property list and editor should be in multiple steps for mobile.
 		*/
-		@media ( max-width: $max-width-breakpoint-tablet ) {
+		@media ( max-width: @max-width-breakpoint-tablet ) {
 			.ext-neowiki-schema-editor {
 				&__property-list {
 					overflow-x: auto;
@@ -179,12 +179,12 @@ defineExpose( {
 				}
 
 				&__property-editor {
-					border-block-start: $border-subtle;
+					border-block-start: @border-subtle;
 				}
 			}
 		}
 
-		@media ( min-width: $min-width-breakpoint-desktop ) {
+		@media ( min-width: @min-width-breakpoint-desktop ) {
 			min-height: 0;
 			grid-template-columns: minmax( 0, 20rem ) auto;
 			grid-template-rows: minmax( 0, 1fr );
@@ -196,11 +196,11 @@ defineExpose( {
 				}
 
 				&__property-list__menu {
-					margin-inline-end: -$spacing-150;
+					margin-inline-end: -@spacing-150;
 				}
 
 				&__property-editor {
-					border-inline-start: $border-subtle;
+					border-inline-start: @border-subtle;
 				}
 			}
 		}
