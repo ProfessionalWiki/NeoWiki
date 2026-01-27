@@ -58,7 +58,7 @@ We will have OpenAPI docs later. For now, you can find a complete and up-to-date
 [https://github.com/ProfessionalWiki/NeoWiki/blob/master/extension.json MediaWiki API route definitions].
 Search for "RestRoutes".
 
-Example URL: https://neo.professional.wiki/w/rest.php/neowiki/v0/subject/s1demo4sssssss1
+Example URL: https://neowiki.dev/w/rest.php/neowiki/v0/subject/s1demo4sssssss1
 
 === Read endpoints ===
 
