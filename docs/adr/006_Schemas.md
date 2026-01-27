@@ -2,7 +2,7 @@
 
 Date: April 2023
 
-Status: Accepted
+Status: Accepted, format specification superseded by [ADR 009](009_Move_Away_from_JSON_Schema.md)
 
 ## Context
 
