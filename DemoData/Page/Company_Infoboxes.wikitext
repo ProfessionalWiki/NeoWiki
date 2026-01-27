@@ -9,3 +9,5 @@ This is achieved with the following wikitext that references the IDs of the subj
 <div class="ext-neowiki-view" data-subject-id="s1demo1aaaaaaa1"></div>
 <div class="ext-neowiki-view" data-subject-id="s1demo5sssssss1"></div>
 </pre>
+
+This syntax is temporary and will change as we move out of the proof-of-concept phase.
