@@ -32,7 +32,7 @@ Terminology is explained in [https://github.com/ProfessionalWiki/NeoWiki/blob/ma
 '''As a developer:'''
 
 * View Subject JSON: [[Special:NeoJson/ACME_Inc]] (developer UI, normal users will not see JSON. [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/SubjectFormat.md View docs])
-* [#Write_endpoints Explore the REST API]
+* [[#REST_API_endpoints|Explore the REST API]]
 
 == Demo pages ==
 
