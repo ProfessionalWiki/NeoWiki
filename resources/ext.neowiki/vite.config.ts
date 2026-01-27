@@ -41,11 +41,4 @@ export default defineConfig( {
 		sourcemap: true,
 		minify: true,
 	},
-	css: {
-		preprocessorOptions: {
-			scss: {
-				api: 'modern-compiler',
-			},
-		},
-	},
 } );
