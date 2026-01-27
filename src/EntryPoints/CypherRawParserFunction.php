@@ -8,6 +8,7 @@ use Exception;
 use MediaWiki\Parser\Parser;
 use ProfessionalWiki\NeoWiki\CypherQueryFilter;
 use ProfessionalWiki\NeoWiki\Persistence\QueryEngine;
+use RuntimeException;
 
 class CypherRawParserFunction {
 
@@ -21,20 +22,24 @@ class CypherRawParserFunction {
 		$cypherQuery = trim( $cypherQuery );
 
 		if ( $cypherQuery === '' ) {
-			return $this->formatError( 'Empty Cypher query provided' );
+			return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-empty-query' )->text() );
 		}
 
 		if ( !$this->queryFilter->isReadQuery( $cypherQuery ) ) {
-			return $this->formatError( 'Write queries are not allowed' );
+			return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-write-query' )->text() );
 		}
 
 		try {
 			$result = $this->queryEngine->runReadQuery( $cypherQuery );
 			$jsonOutput = json_encode( $result->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 
+			if ( $jsonOutput === false ) {
+				throw new RuntimeException( wfMessage( 'neowiki-cypher-raw-error-json-encode' )->text() );
+			}
+
 			return $this->formatCodeBlock( $jsonOutput );
 		} catch ( Exception $e ) {
-			return $this->formatError( 'Query execution failed: ' . $e->getMessage() );
+			return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-query-failed', $e->getMessage() )->text() );
 		}
 	}
 

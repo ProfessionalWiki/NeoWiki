@@ -59,5 +59,10 @@
 	"neowiki-subject-creator-button-label": "Create subject",
 	"neowiki-subject-creator-schema-title": "Have an existing schema?",
 	"neowiki-subject-creator-existing-schema": "Use existing",
-	"neowiki-subject-creator-new-schema": "Create new"
+	"neowiki-subject-creator-new-schema": "Create new",
+
+	"neowiki-cypher-raw-error-empty-query": "Empty Cypher query provided",
+	"neowiki-cypher-raw-error-write-query": "Write queries are not allowed",
+	"neowiki-cypher-raw-error-query-failed": "Query execution failed: $1",
+	"neowiki-cypher-raw-error-json-encode": "Failed to encode query result as JSON"
 }
