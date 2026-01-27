@@ -97,28 +97,28 @@ const propertiesToDisplay = computed( function(): Record<string, PropertyDefinit
 } );
 </script>
 
-<style lang="scss">
-@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
+<style lang="less">
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-auto-infobox {
 	margin-inline: auto;
-	margin-bottom: $spacing-100;
+	margin-bottom: @spacing-100;
 	max-width: 20rem;
 	width: 100%;
-	border: $border-base;
-	border-radius: $border-radius-base;
-	color: $color-base;
-	background-color: $background-color-base;
-	line-height: $line-height-small;
+	border: @border-base;
+	border-radius: @border-radius-base;
+	color: @color-base;
+	background-color: @background-color-base;
+	line-height: @line-height-small;
 
-	@media ( min-width: $min-width-breakpoint-tablet ) {
+	@media ( min-width: @min-width-breakpoint-tablet ) {
 		clear: both;
 		float: right;
-		margin-inline: $spacing-100 $spacing-0;
+		margin-inline: @spacing-100 @spacing-0;
 	}
 
 	&__header {
-		padding: $spacing-100 $spacing-75;
+		padding: @spacing-100 @spacing-75;
 		display: flex;
 		align-items: flex-start;
 
@@ -128,38 +128,38 @@ const propertiesToDisplay = computed( function(): Record<string, PropertyDefinit
 	}
 
 	&__title {
-		font-size: $font-size-x-large;
-		font-weight: $font-weight-bold;
+		font-size: @font-size-x-large;
+		font-weight: @font-weight-bold;
 	}
 
 	&__schema {
-		color: $color-subtle;
-		font-size: $font-size-small;
+		color: @color-subtle;
+		font-size: @font-size-small;
 	}
 
 	&__content {
-		padding: $spacing-75;
+		padding: @spacing-75;
 	}
 
 	&__item {
 		display: flex;
 		align-items: flex-start;
-		margin-bottom: $spacing-75;
-		padding-bottom: $spacing-75;
-		border-bottom: $border-subtle;
-		column-gap: $spacing-150;
+		margin-bottom: @spacing-75;
+		padding-bottom: @spacing-75;
+		border-bottom: @border-subtle;
+		column-gap: @spacing-150;
 
 		&:last-child {
 			border-bottom: none;
-			margin-bottom: $spacing-0;
-			padding-bottom: $spacing-0;
+			margin-bottom: @spacing-0;
+			padding-bottom: @spacing-0;
 		}
 	}
 
 	&__property {
 		flex: 0 0 40%;
-		font-weight: $font-weight-bold;
-		color: $color-emphasized;
+		font-weight: @font-weight-bold;
+		color: @color-emphasized;
 	}
 
 	&__value {

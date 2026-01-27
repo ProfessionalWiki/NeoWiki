@@ -97,8 +97,8 @@ function generateUniquePropertyName(): PropertyName {
 }
 </script>
 
-<style lang="scss">
-@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
+<style lang="less">
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-schema-editor__property-list {
 	&__menu {
@@ -116,7 +116,7 @@ function generateUniquePropertyName(): PropertyName {
 
 					&:not( :first-of-type ) {
 						border-top: 0;
-						margin-top: $spacing-100;
+						margin-top: @spacing-100;
 					}
 				}
 
@@ -126,32 +126,32 @@ function generateUniquePropertyName(): PropertyName {
 			}
 
 			.cdx-menu-item {
-				border-radius: $border-radius-base;
+				border-radius: @border-radius-base;
 			}
 		}
 
 		.cdx-menu-item__icon.cdx-icon {
-			background-position: $background-position-base;
+			background-position: @background-position-base;
 			background-repeat: no-repeat;
-			background-size: $background-size-search-figure;
-			background-color: $background-color-interactive-subtle;
+			background-size: @background-size-search-figure;
+			background-color: @background-color-interactive-subtle;
 			// Thumbnail should never shrink when it's in a flex layout with other elements.
 			flex-shrink: 0;
-			box-sizing: $box-sizing-base;
+			box-sizing: @box-sizing-base;
 			// Values of thumbnail as declared within the MenuItem component, f.e. in TypeaheadSearch.
-			min-width: $min-size-search-figure;
-			min-height: $min-size-search-figure;
-			width: $size-search-figure;
-			height: $size-search-figure;
-			border: $border-subtle;
-			border-radius: $border-radius-base;
-			color: $color-subtle;
+			min-width: @min-size-search-figure;
+			min-height: @min-size-search-figure;
+			width: @size-search-figure;
+			height: @size-search-figure;
+			border: @border-subtle;
+			border-radius: @border-radius-base;
+			color: @color-subtle;
 
 			svg {
-				min-width: $min-size-icon-medium;
-				min-height: $min-size-icon-medium;
-				width: $size-icon-medium;
-				height: $size-icon-medium;
+				min-width: @min-size-icon-medium;
+				min-height: @min-size-icon-medium;
+				width: @size-icon-medium;
+				height: @size-icon-medium;
 			}
 		}
 	}

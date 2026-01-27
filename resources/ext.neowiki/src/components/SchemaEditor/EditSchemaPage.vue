@@ -51,19 +51,19 @@ const handleSave = async ( summary: string ): Promise<void> => {
 };
 </script>
 
-<style lang="scss">
-@use '@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss' as *;
+<style lang="less">
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-edit-schema-action {
-	border: $border-base;
-	border-radius: $border-radius-base;
+	border: @border-base;
+	border-radius: @border-radius-base;
 
 	.ext-neowiki-edit-summary {
-		border-block-start: $border-subtle;
-		padding: $spacing-100;
+		border-block-start: @border-subtle;
+		padding: @spacing-100;
 
-		@media ( min-width: $min-width-breakpoint-desktop ) {
-			padding: $spacing-150;
+		@media ( min-width: @min-width-breakpoint-desktop ) {
+			padding: @spacing-150;
 		}
 	}
 }
