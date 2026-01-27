@@ -48,28 +48,27 @@ class NeoWikiHooks {
 
 		$out->addModules( 'ext.neowiki' );
 		$out->addModuleStyles( 'ext.neowiki.styles' );
-		$out->addHtml( '<div id="neowiki"></div>' );
+		$out->addHtml( self::getNeoWikiAppHtml( $out ) );
 
-		self::addCreateSubjectButton( $out );
 		self::injectMainSubject( $out );
 	}
 
-	private static function addCreateSubjectButton( OutputPage $out ): void {
-		if ( !NeoWikiExtension::getInstance()->newSubjectAuthorizer( $out->getAuthority() )->canCreateMainSubject() ) {
-			return;
+	private static function getNeoWikiAppHtml( OutputPage $out ): string {
+		$attrs = [
+			'id' => 'neowiki',
+		];
+
+		if ( self::shouldShowSubjectCreator( $out ) ) {
+			$attrs['data-mw-ext-neowiki-create-subject'] = 'true';
 		}
 
-		if ( !self::pageIsLatestRevision( $out ) ) {
-			return;
-		}
+		return Html::element( 'div', $attrs );
+	}
 
-		if ( self::pageHasSubjects( $out->getTitle() ) ) {
-			return;
-		}
-
-		$out->setIndicators( [
-			'neowiki-create-button' => '',
-		] );
+	private static function shouldShowSubjectCreator( OutputPage $out ): bool {
+		return NeoWikiExtension::getInstance()->newSubjectAuthorizer( $out->getAuthority() )->canCreateMainSubject()
+			&& self::pageIsLatestRevision( $out )
+			&& !self::pageHasSubjects( $out->getTitle() );
 	}
 
 	private static function pageIsLatestRevision( OutputPage $out ): bool {

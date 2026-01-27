@@ -173,7 +173,8 @@
 				"useResizeObserver",
 				"CdxMessage",
 				"CdxToggleSwitch",
-				"CdxMenu"
+				"CdxMenu",
+				"CdxToggleButtonGroup"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",
@@ -191,7 +192,8 @@
 						"cdxIconSearchCaseSensitive",
 						"cdxIconArticles",
 						"cdxIconListNumbered",
-						"cdxIconClose"
+						"cdxIconClose",
+						"cdxIconSearch"
 					]
 				}
 			],
@@ -229,7 +231,12 @@
 				"neowiki-schema-editor-new-property",
 				"neowiki-schema-editor-optional",
 				"neowiki-editing-schema",
-				"neowiki-schema-label"
+				"neowiki-schema-label",
+				"neowiki-subject-creator-title",
+				"neowiki-subject-creator-button-label",
+				"neowiki-subject-creator-schema-title",
+				"neowiki-subject-creator-existing-schema",
+				"neowiki-subject-creator-new-schema"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
