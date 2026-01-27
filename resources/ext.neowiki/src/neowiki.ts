@@ -7,18 +7,18 @@ import EditSchemaPage from '@/components/SchemaEditor/EditSchemaPage.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
 
-async function initializeAutomaticInfobox(): Promise<void> {
-	const automaticInfobox = document.querySelector( '#neowiki' );
+async function initializeNeoWikiApp(): Promise<void> {
+	const neowikiApp = document.querySelector( '#ext-neowiki-app' );
 
-	if ( automaticInfobox !== null ) {
-		const showSubjectCreator = ( automaticInfobox as HTMLElement ).dataset.mwExtNeowikiCreateSubject === 'true';
+	if ( neowikiApp !== null ) {
+		const showSubjectCreator = ( neowikiApp as HTMLElement ).dataset.mwExtNeowikiCreateSubject === 'true';
 
 		const app = createMwApp( NeoWikiApp, {
 			showSubjectCreator,
 		} ).directive( 'tooltip', CdxTooltip );
 		app.use( createPinia() );
 		NeoWikiServices.registerServices( app );
-		app.mount( automaticInfobox );
+		app.mount( neowikiApp );
 	}
 }
 
@@ -40,5 +40,5 @@ async function initializeSchemaEditor(): Promise<void> {
 	}
 }
 
-initializeAutomaticInfobox();
+initializeNeoWikiApp();
 initializeSchemaEditor();
