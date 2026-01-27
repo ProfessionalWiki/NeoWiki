@@ -18,18 +18,18 @@ You can find [https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs techn
 
 Terminology is explained in [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/Glossary.md the glossary].
 
-*As a reader:*
+'''As a reader:'''
 
 * View a Subject: [[Professional Wiki]]
 * View a Schema: [[Schema:Company]]
 
-*As an editor:*
+'''As an editor:'''
 
 * Edit a Subject: [[Professional Wiki]] (login required)
 * Edit a Schema: either via a Subject using it, i.e. [[Professional Wiki]], or directly on the Schema page, i.e. [[Schema:Company]]
 * Create a Subject: TODO
 
-*As a developer:*
+'''As a developer:'''
 
 * View Subject JSON: [[Special:NeoJson/ACME_Inc]] (developer UI, normal users will not see JSON. [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/SubjectFormat.md View docs])
 * [#Write_endpoints Explore the REST API]
@@ -43,7 +43,7 @@ Terminology is explained in [https://github.com/ProfessionalWiki/NeoWiki/blob/ma
 * Displaying data from other pages: [[Company Infoboxes]]
 * [[Reactive UI example]]
 
-**Schemas** allow you to define the structure of your data. For instance, you can define that a Employee has a
+'''Schemas''' allow you to define the structure of your data. For instance, you can define that a Employee has a
 compensation in EUR with a value between 0 and 1000000.
 
 * [[Schema:Company]]
