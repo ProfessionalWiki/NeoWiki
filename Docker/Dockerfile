@@ -51,7 +51,7 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 COPY --chown=www-data:www-data mediawiki /var/www/html/w
 COPY --chown=www-data:www-data composer.local.json /var/www/html/w/composer.local.json
 
-RUN cd w && composer update --no-interaction --optimize-autoloader
+RUN cd w && composer config --global audit.block-insecure false && composer update --no-interaction --optimize-autoloader
 
 WORKDIR /var/www/html/w
 
