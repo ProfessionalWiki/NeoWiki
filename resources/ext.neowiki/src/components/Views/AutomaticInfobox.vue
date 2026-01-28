@@ -14,7 +14,7 @@
 					role="heading"
 					aria-level="3"
 				>
-					{{ schema.getName() }}
+					{{ schema?.getName() }}
 				</div>
 			</div>
 			<CdxButton
@@ -85,11 +85,7 @@ const schemaStore = useSchemaStore();
 const isEditorOpen = ref( false );
 
 const subject = computed( () => subjectStore.getSubject( props.subjectId ) as Subject ); // TODO: handle not found
-const schema = schemaStore.getSchema( subject.value.getSchemaName() ); // TODO: handle not found
-
-if ( !schema ) {
-	console.error( `Schema not found for name: ${ subject.value.getSchemaName() }` );
-}
+const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) ); // TODO: handle not found
 
 const handleSaveSubject = async ( updatedSubject: Subject, comment: string ): Promise<void> => {
 	await subjectStore.updateSubject( updatedSubject, comment );
@@ -104,7 +100,7 @@ function getComponent( propertyType: string ): Component {
 }
 
 const propertiesToDisplay = computed( function(): Record<string, PropertyDefinition> {
-	return schema.getPropertyDefinitions()
+	return schema.value.getPropertyDefinitions()
 		.withNames( subject.value.getNamesOfNonEmptyProperties() )
 		.asRecord();
 } );
