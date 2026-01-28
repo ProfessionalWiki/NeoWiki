@@ -1,0 +1,28 @@
+This page demonstrates the <code>cypher_raw</code> parser function for executing read-only Cypher queries against the Neo4j graph database.
+
+The parser function allows you to query the graph database and display the raw JSON results directly on a wiki page.
+
+== Basic Query Example ==
+
+Query all companies in the database:
+
+{{#cypher_raw: MATCH (n:Company) RETURN n.label, n.id LIMIT 5}}
+
+== Query with Filtering ==
+
+Find companies founded after 2018:
+
+{{#cypher_raw: MATCH (n:Company) WHERE n.founded_at > 2018 RETURN n.label, n.founded_at}}
+
+== Query with Relations ==
+
+Find companies and their products:
+
+{{#cypher_raw: MATCH (company:Company)-[:Has_product]->(product:Product) RETURN company.label, product.label LIMIT 10}}
+
+== Notes ==
+
+* Only read-only queries are allowed. Write operations like <code>CREATE</code>, <code>SET</code>, <code>DELETE</code> are rejected.
+* Query results are displayed as formatted JSON.
+* This is a demo feature for exploring the graph database structure.
+* For more complex data visualization, use the standard NeoWiki Subject display features.
