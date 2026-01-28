@@ -6,17 +6,31 @@ This is a '''demo feature''' for the NeoWiki proof of concept demo. It will not 
 
 Query all companies in the database:
 
+<syntaxhighlight lang="cypher">
+MATCH (n:Company) RETURN n.label, n.id LIMIT 5
+</syntaxhighlight>
+
 {{#cypher_raw: MATCH (n:Company) RETURN n.label, n.id LIMIT 5}}
 
 == Query with Filtering ==
 
 Find companies founded after 2018:
 
+<syntaxhighlight lang="cypher">
+MATCH (n:Company) WHERE n.founded_at > 2018 RETURN n.label, n.founded_at
+</syntaxhighlight>
+
 {{#cypher_raw: MATCH (n:Company) WHERE n.founded_at > 2018 RETURN n.label, n.founded_at}}
 
 == Query with Relations ==
 
 Find companies and their products:
+
+<syntaxhighlight lang="cypher">
+MATCH (company:Company)-[:Has_product]->(product:Product)
+RETURN company.label, product.label
+LIMIT 10
+</syntaxhighlight>
 
 {{#cypher_raw: MATCH (company:Company)-[:Has_product]->(product:Product) RETURN company.label, product.label LIMIT 10}}
 
