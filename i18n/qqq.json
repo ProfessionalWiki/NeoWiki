@@ -9,5 +9,9 @@
 	},
 	"neowiki-name": "{{Name}}",
 	"neowiki-description": "{{Desc|name=NeoWiki|url=https://github.com/ProfessionalWiki/NeoWiki}}",
-	"neowiki-schema-label": "Label used to identify the schema. $1 is the schema name or link."
+	"neowiki-schema-label": "Label used to identify the schema. $1 is the schema name or link.",
+	"neowiki-cypher-raw-error-empty-query": "Error message shown when the cypher_raw parser function is called with an empty query.",
+	"neowiki-cypher-raw-error-write-query": "Error message shown when a write query is rejected by the cypher_raw parser function.",
+	"neowiki-cypher-raw-error-query-failed": "Error message shown when Cypher query execution fails. $1 is the exception message.",
+	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails."
 }
