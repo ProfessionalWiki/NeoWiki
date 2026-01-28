@@ -21,13 +21,17 @@
 				@update:model-value="updateMaximum"
 			/>
 		</CdxField>
-		<CdxField>
+		<CdxField
+			:status="precisionError === null ? 'default' : 'error'"
+			:messages="precisionError === null ? {} : { error: precisionError }"
+		>
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-precision' ).text() }}
 			</template>
 			<CdxTextInput
 				:model-value="property.precision?.toString()"
 				input-type="number"
+				min="0"
 				@update:model-value="updatePrecision"
 			/>
 		</CdxField>
@@ -35,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { NumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
@@ -42,15 +47,31 @@ import { AttributesEditorEmits, AttributesEditorProps } from '@/components/Schem
 defineProps<AttributesEditorProps<NumberProperty>>();
 const emit = defineEmits<AttributesEditorEmits<NumberProperty>>();
 
+const precisionError = ref<string | null>( null );
+
+const parseNumber = ( value: string ): number | undefined =>
+	value ? Number( value ) : undefined;
+
+const isValidPrecision = ( value: number | undefined ): boolean =>
+	value === undefined || value >= 0;
+
 const updateMinimum = ( value: string ): void => {
-	emit( 'update:property', { minimum: value ? Number( value ) : undefined } );
+	emit( 'update:property', { minimum: parseNumber( value ) } );
 };
 
 const updateMaximum = ( value: string ): void => {
-	emit( 'update:property', { maximum: value ? Number( value ) : undefined } );
+	emit( 'update:property', { maximum: parseNumber( value ) } );
 };
 
 const updatePrecision = ( value: string ): void => {
-	emit( 'update:property', { precision: value ? Number( value ) : undefined } );
+	const numValue = parseNumber( value );
+
+	if ( isValidPrecision( numValue ) ) {
+		precisionError.value = null;
+		emit( 'update:property', { precision: numValue } );
+		return;
+	}
+
+	precisionError.value = mw.message( 'neowiki-property-editor-precision-non-negative' ).text();
 };
 </script>
