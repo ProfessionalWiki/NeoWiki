@@ -22,14 +22,13 @@ MATCH (n:Product) RETURN n.name, n.id
 
 <syntaxhighlight lang="cypher">
 MATCH (source:Company)-[r]->(target)
-RETURN source.name, target.name, r.id
+RETURN source.name, type(r), target.name
 LIMIT 10
 </syntaxhighlight>
 
-{{#cypher_raw: MATCH (source:Company)-[r]->(target) RETURN source.name, target.name, r.id LIMIT 10}}
+{{#cypher_raw: MATCH (source:Company)-[r]->(target) RETURN source.name, type(r), target.name LIMIT 10}}
 
 == Notes ==
 
 * Only read-only queries are allowed. Write operations like <code>CREATE</code>, <code>SET</code>, <code>DELETE</code> are rejected.
-* Function calls are currently not supported.
 * Query results are displayed as formatted JSON.

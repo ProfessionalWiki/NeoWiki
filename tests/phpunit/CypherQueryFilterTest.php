@@ -26,14 +26,14 @@ class CypherQueryFilterTest extends TestCase {
 		$this->assertFalse( $this->isReadQuery( $query ), 'Filter should reject a complex write operation' );
 	}
 
-	public function testRejectsSimpleFunctionCall(): void {
+	public function testAllowsSimpleFunctionCall(): void {
 		$query = "RETURN toUpper('hello')";
-		$this->assertFalse( $this->isReadQuery( $query ), 'Filter should reject a simple function call' );
+		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow read-only function calls' );
 	}
 
-	public function testRejectsNestedFunctionCall(): void {
+	public function testAllowsNestedFunctionCall(): void {
 		$query = "RETURN size(split(toString(42), ''))";
-		$this->assertFalse( $this->isReadQuery( $query ), 'Filter should reject nested function calls' );
+		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow nested function calls' );
 	}
 
 	public function testAllowsValidReadQuery(): void {
@@ -62,6 +62,8 @@ class CypherQueryFilterTest extends TestCase {
 			[ 'REMOVE' ],
 			[ 'MERGE' ],
 			[ 'DROP' ],
+			[ 'CALL' ],
+			[ 'LOAD' ],
 		];
 	}
 
@@ -78,11 +80,11 @@ class CypherQueryFilterTest extends TestCase {
 		);
 	}
 
-	public function testRejectsFunctionCallWithEmptyParentheses(): void {
+	public function testAllowsFunctionCallWithEmptyParentheses(): void {
 		$query = 'RETURN rand()';
-		$this->assertFalse(
+		$this->assertTrue(
 			$this->isReadQuery( $query ),
-			'Filter should reject function calls with empty parentheses'
+			'Filter should allow read-only function calls'
 		);
 	}
 
@@ -109,52 +111,196 @@ class CypherQueryFilterTest extends TestCase {
 		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should handle comments correctly' );
 	}
 
-	public function testRejectsFunctionInWhereClause(): void {
+	public function testAllowsFunctionInWhereClause(): void {
 		$query = "MATCH (n:Person) WHERE toUpper(n.name) = 'ALICE' RETURN n";
-		$this->assertFalse(
+		$this->assertTrue(
 			$this->isReadQuery( $query ),
-			'Filter should reject function calls in WHERE clause'
+			'Filter should allow read-only function calls in WHERE clause'
 		);
 	}
 
 	/**
-	 * @dataProvider maliciousQueryProvider
+	 * @dataProvider writeQueryProvider
 	 */
-	public function testRejectsMaliciousQueries( string $query ): void {
-		$this->assertFalse( $this->isReadQuery( $query ) );
+	public function testRejectsWriteQueries( string $query, string $description ): void {
+		$this->assertFalse( $this->isReadQuery( $query ), $description );
 	}
 
-	public static function maliciousQueryProvider(): iterable {
-		yield 'Hiding in string literals' => [
-				'MATCH (n)
-WITH n, "CREATE (m:Malicious)" AS q
-CALL apoc.cypher.run(q, {}) YIELD value
-RETURN n, value'
+	public static function writeQueryProvider(): iterable {
+		// Standard write operations
+		yield 'Simple CREATE' => [
+			"CREATE (n:Person {name: 'Alice'})",
+			'Should reject simple CREATE'
 		];
 
-		yield 'Whitespace' => [
-			'MATCH (n) RETURN n\u000A\u000DCREATE (m:Malicious)'
+		yield 'CREATE with MATCH' => [
+			"MATCH (a:Person) CREATE (b:Person)-[:KNOWS]->(a)",
+			'Should reject CREATE after MATCH'
 		];
 
-		yield 'Subqueries' => [
-			'MATCH (n)
-WHERE n.id IN [x IN range(1,10) |
-  HEAD([(WITH x CREATE (m:Hidden) RETURN x)[0]])]
-RETURN n'
+		yield 'Simple SET' => [
+			"MATCH (n:Person) SET n.age = 30",
+			'Should reject SET operation'
 		];
 
-		yield 'Procedure calls' => [
-			"MATCH (n)
-CALL dbms.procedures() YIELD name
-WITH n, name WHERE name = 'dbms.security.changePassword'
-CALL dbms.security.changePassword('newpassword')
-RETURN n"
+		yield 'SET with multiple properties' => [
+			"MATCH (n) SET n.a = 1, n.b = 2",
+			'Should reject SET with multiple properties'
 		];
 
-		yield 'Dynamic property name' => [
-			'MATCH (n)
-SET n["RETURN"] = "Malicious"
-RETURN n'
+		yield 'Simple DELETE' => [
+			"MATCH (n:Person) DELETE n",
+			'Should reject DELETE operation'
+		];
+
+		yield 'DETACH DELETE' => [
+			"MATCH (n:Person) DETACH DELETE n",
+			'Should reject DETACH DELETE'
+		];
+
+		yield 'Simple REMOVE' => [
+			"MATCH (n:Person) REMOVE n.age",
+			'Should reject REMOVE operation'
+		];
+
+		yield 'REMOVE label' => [
+			"MATCH (n:Person) REMOVE n:Person",
+			'Should reject REMOVE label'
+		];
+
+		yield 'Simple MERGE' => [
+			"MERGE (n:Person {name: 'Alice'})",
+			'Should reject MERGE operation'
+		];
+
+		yield 'MERGE with ON CREATE' => [
+			"MERGE (n:Person {name: 'Alice'}) ON CREATE SET n.created = timestamp()",
+			'Should reject MERGE with ON CREATE'
+		];
+
+		yield 'Simple DROP' => [
+			"DROP CONSTRAINT constraint_name",
+			'Should reject DROP operation'
+		];
+
+		// Case variations
+		yield 'Lowercase create' => [
+			"create (n:Person)",
+			'Should reject lowercase create'
+		];
+
+		yield 'Mixed case CrEaTe' => [
+			"CrEaTe (n:Person)",
+			'Should reject mixed case create'
+		];
+
+		yield 'Lowercase set' => [
+			"match (n) set n.x = 1",
+			'Should reject lowercase set'
+		];
+
+		yield 'Lowercase delete' => [
+			"match (n) delete n",
+			'Should reject lowercase delete'
+		];
+
+		// CALL operations (procedure calls)
+		yield 'Simple CALL' => [
+			"CALL db.labels()",
+			'Should reject CALL operation'
+		];
+
+		yield 'CALL with YIELD' => [
+			"CALL db.labels() YIELD label RETURN label",
+			'Should reject CALL with YIELD'
+		];
+
+		yield 'CALL apoc procedure' => [
+			"CALL apoc.cypher.run('CREATE (n)', {})",
+			'Should reject APOC procedure calls'
+		];
+
+		yield 'CALL dbms procedure' => [
+			"CALL dbms.security.changePassword('newpass')",
+			'Should reject dbms procedure calls'
+		];
+
+		yield 'Lowercase call' => [
+			"call db.labels()",
+			'Should reject lowercase call'
+		];
+
+		// LOAD operations
+		yield 'LOAD CSV' => [
+			"LOAD CSV FROM 'file:///etc/passwd' AS row RETURN row",
+			'Should reject LOAD CSV'
+		];
+
+		yield 'LOAD CSV WITH HEADERS' => [
+			"LOAD CSV WITH HEADERS FROM 'http://example.com/data.csv' AS row RETURN row",
+			'Should reject LOAD CSV WITH HEADERS'
+		];
+
+		yield 'Lowercase load' => [
+			"load csv from 'file.csv' as row return row",
+			'Should reject lowercase load'
+		];
+
+		// Obfuscation attempts
+		yield 'Unicode escape before CREATE' => [
+			'MATCH (n) RETURN n\u000ACREATE (m:Malicious)',
+			'Should reject CREATE hidden after unicode escape'
+		];
+
+		yield 'Unicode escape CRLF before CREATE' => [
+			'MATCH (n) RETURN n\u000D\u000ACREATE (m:Malicious)',
+			'Should reject CREATE after CRLF unicode escapes'
+		];
+
+		yield 'Unicode escape before CALL' => [
+			'MATCH (n)\u000ACALL db.labels()',
+			'Should reject CALL hidden after unicode escape'
+		];
+
+		yield 'CREATE in subquery' => [
+			"MATCH (n) WHERE n.id IN [x IN range(1,10) | HEAD([(WITH x CREATE (m:Hidden) RETURN x)[0]])] RETURN n",
+			'Should reject CREATE in subquery'
+		];
+
+		yield 'CALL in complex query' => [
+			"MATCH (n) WITH n CALL apoc.cypher.run('CREATE (m)', {}) YIELD value RETURN n, value",
+			'Should reject CALL in complex query'
+		];
+
+		yield 'SET via dynamic property' => [
+			'MATCH (n) SET n["property"] = "value" RETURN n',
+			'Should reject SET with dynamic property'
+		];
+
+		yield 'Multiple statements with semicolon' => [
+			"MATCH (n) RETURN n; CREATE (m:Malicious)",
+			'Should reject multiple statements with CREATE'
+		];
+
+		yield 'FOREACH with SET' => [
+			"MATCH (n) FOREACH (x IN [1,2,3] | SET n.prop = x)",
+			'Should reject FOREACH with SET'
+		];
+
+		yield 'FOREACH with CREATE' => [
+			"FOREACH (name IN ['Alice', 'Bob'] | CREATE (:Person {name: name}))",
+			'Should reject FOREACH with CREATE'
+		];
+
+		// Comment-based attempts (should still be caught after comment removal)
+		yield 'CREATE after inline comment' => [
+			"MATCH (n) // comment\nCREATE (m)",
+			'Should reject CREATE after inline comment'
+		];
+
+		yield 'CREATE after block comment' => [
+			"MATCH (n) /* block comment */ CREATE (m)",
+			'Should reject CREATE after block comment'
 		];
 	}
 
