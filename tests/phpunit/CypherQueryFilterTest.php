@@ -64,6 +64,7 @@ class CypherQueryFilterTest extends TestCase {
 			[ 'DROP' ],
 			[ 'CALL' ],
 			[ 'LOAD' ],
+			[ 'FOREACH' ],
 		];
 	}
 
