@@ -25,6 +25,19 @@ describe( 'NumberAttributesEditor', () => {
 		} );
 	}
 
+	it( 'displays property values correctly', () => {
+		const wrapper = newWrapper( {
+			property: newNumberProperty( { minimum: 5, maximum: 100, precision: 2 } ),
+		} );
+
+		const inputs = wrapper.findAllComponents( CdxTextInput );
+		const modelValues = inputs.map( ( input ) => input.props( 'modelValue' ) );
+
+		expect( modelValues ).toContain( '5' );
+		expect( modelValues ).toContain( '100' );
+		expect( modelValues ).toContain( '2' );
+	} );
+
 	function getPrecisionFieldProps( wrapper: VueWrapper ): FieldProps {
 		const fields = wrapper.findAllComponents( CdxField );
 		return fields[ 2 ].props() as FieldProps;
@@ -51,19 +64,6 @@ describe( 'NumberAttributesEditor', () => {
 
 		await inputs[ 2 ].vm.$emit( 'update:model-value', '5' );
 		expect( getPrecisionFieldProps( wrapper ).status ).toBe( 'default' );
-	} );
-
-	it( 'displays property values correctly', () => {
-		const wrapper = newWrapper( {
-			property: newNumberProperty( { minimum: 5, maximum: 100, precision: 2 } ),
-		} );
-
-		const inputs = wrapper.findAllComponents( CdxTextInput );
-		const modelValues = inputs.map( ( input ) => input.props( 'modelValue' ) );
-
-		expect( modelValues ).toContain( '5' );
-		expect( modelValues ).toContain( '100' );
-		expect( modelValues ).toContain( '2' );
 	} );
 
 	it( 'emits update event when minimum is changed', async () => {
