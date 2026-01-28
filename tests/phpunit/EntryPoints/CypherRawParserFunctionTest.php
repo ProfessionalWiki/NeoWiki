@@ -25,6 +25,17 @@ class CypherRawParserFunctionTest extends TestCase {
 		return $this->createMock( QueryEngine::class );
 	}
 
+	private function createStubResult( array $data ): object {
+		return new class( $data ) {
+			public function __construct( private array $data ) {
+			}
+
+			public function toArray(): array {
+				return $this->data;
+			}
+		};
+	}
+
 	public function testEmptyQueryReturnsError(): void {
 		$parserFunction = new CypherRawParserFunction(
 			$this->createMockQueryEngine(),
@@ -48,8 +59,7 @@ class CypherRawParserFunctionTest extends TestCase {
 	}
 
 	public function testValidReadQueryReturnsFormattedResult(): void {
-		$mockResult = $this->createMock( SummarizedResult::class );
-		$mockResult->method( 'toArray' )->willReturn( [
+		$mockResult = $this->createStubResult( [
 			[ 'name' => 'Alice', 'age' => 30 ],
 			[ 'name' => 'Bob', 'age' => 25 ]
 		] );
@@ -91,8 +101,7 @@ class CypherRawParserFunctionTest extends TestCase {
 	}
 
 	public function testTrimWhitespaceFromQuery(): void {
-		$mockResult = $this->createMock( SummarizedResult::class );
-		$mockResult->method( 'toArray' )->willReturn( [] );
+		$mockResult = $this->createStubResult( [] );
 
 		$mockQueryEngine = $this->createMockQueryEngine();
 		$mockQueryEngine
@@ -112,8 +121,7 @@ class CypherRawParserFunctionTest extends TestCase {
 	}
 
 	public function testOutputIsHTMLEscaped(): void {
-		$mockResult = $this->createMock( SummarizedResult::class );
-		$mockResult->method( 'toArray' )->willReturn( [
+		$mockResult = $this->createStubResult( [
 			[ 'name' => '<script>alert("xss")</script>' ]
 		] );
 

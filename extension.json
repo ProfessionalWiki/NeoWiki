@@ -103,7 +103,8 @@
 
 	"ExtensionMessagesFiles": {
 		"NeoWikiAliases": "i18n/_Aliases.php",
-		"NeoWikiNamespaces": "i18n/_Namespaces.php"
+		"NeoWikiNamespaces": "i18n/_Namespaces.php",
+		"NeoWikiMagic": "i18n/_Magic.php"
 	},
 
 	"RestRoutes": [
