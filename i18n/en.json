@@ -26,6 +26,12 @@
 	"neowiki-property-editor-maximum": "Maximum",
 	"neowiki-property-editor-precision": "Precision",
 	"neowiki-property-editor-precision-non-negative": "Precision cannot be negative.",
+	"neowiki-property-editor-length-constraint": "Length constraint",
+	"neowiki-property-editor-length-between": "between",
+	"neowiki-property-editor-length-and": "and",
+	"neowiki-property-editor-length-characters": "characters",
+	"neowiki-property-editor-length-whole-number": "Must be a whole number of at least 1.",
+	"neowiki-property-editor-length-min-exceeds-max": "Minimum cannot exceed maximum.",
 	"neowiki-property-editor-multiple": "Allow multiple values",
 	"neowiki-property-editor-unique-items": "Values must be unique",
 
