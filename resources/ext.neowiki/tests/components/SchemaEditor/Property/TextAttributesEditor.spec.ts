@@ -4,7 +4,7 @@ import { CdxField, CdxTextInput, ValidationMessages, ValidationStatusType } from
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import { newTextProperty, TextProperty } from '@/domain/propertyTypes/Text';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, mockMwMessage } from '../../../VueTestHelpers.ts';
+import { createTestWrapper, setupMwMock } from '../../../VueTestHelpers.ts';
 
 interface FieldProps {
 	status: ValidationStatusType;
@@ -13,9 +13,12 @@ interface FieldProps {
 
 describe( 'TextAttributesEditor', () => {
 	beforeEach( () => {
-		mockMwMessage( {
-			'neowiki-property-editor-length-whole-number': 'Must be a whole number of at least 1.',
-			'neowiki-property-editor-length-min-exceeds-max': 'Minimum cannot exceed maximum.',
+		setupMwMock( {
+			messages: {
+				'neowiki-property-editor-length-whole-number': 'Must be a whole number of at least 1.',
+				'neowiki-property-editor-length-min-exceeds-max': 'Minimum cannot exceed maximum.',
+			},
+			functions: [ 'message' ],
 		} );
 	} );
 
