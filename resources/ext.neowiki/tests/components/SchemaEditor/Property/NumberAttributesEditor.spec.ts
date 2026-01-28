@@ -4,7 +4,7 @@ import { CdxField, CdxTextInput, ValidationMessages, ValidationStatusType } from
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, mockMwMessage } from '../../../VueTestHelpers.ts';
+import { createTestWrapper, setupMwMock } from '../../../VueTestHelpers.ts';
 
 interface FieldProps {
 	status: ValidationStatusType;
@@ -13,8 +13,11 @@ interface FieldProps {
 
 describe( 'NumberAttributesEditor', () => {
 	beforeEach( () => {
-		mockMwMessage( {
-			'neowiki-property-editor-precision-non-negative': 'Precision cannot be negative.',
+		setupMwMock( {
+			messages: {
+				'neowiki-property-editor-precision-non-negative': 'Precision cannot be negative.',
+			},
+			functions: [ 'message' ],
 		} );
 	} );
 

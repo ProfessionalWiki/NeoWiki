@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import I18nSlot from '@/components/common/I18nSlot.vue';
-import { mockMwMessage } from '../../VueTestHelpers.ts';
+import { setupMwMock } from '../../VueTestHelpers.ts';
 import { mount, VueWrapper } from '@vue/test-utils';
 
 function createWrapper( params: {
@@ -21,11 +21,14 @@ function createWrapper( params: {
 
 describe( 'I18nSlot', () => {
 	beforeEach( () => {
-		mockMwMessage( {
-			'simple-key': 'Simple Text',
-			'middle-key': ( param ) => `Prefix ${ param } Suffix`,
-			'start-key': ( param ) => `${ param } Suffix`,
-			'end-key': ( param ) => `Prefix ${ param }`,
+		setupMwMock( {
+			messages: {
+				'simple-key': 'Simple Text',
+				'middle-key': ( param ) => `Prefix ${ param } Suffix`,
+				'start-key': ( param ) => `${ param } Suffix`,
+				'end-key': ( param ) => `Prefix ${ param }`,
+			},
+			functions: [ 'message' ],
 		} );
 	} );
 

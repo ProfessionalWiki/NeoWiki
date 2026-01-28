@@ -23,18 +23,43 @@ export function createTestWrapper<TComponent extends DefineComponent<any, any, a
 	) as VueWrapper<InstanceType<TComponent>>;
 }
 
-export function mockMwMessage(
-	messages: Record<string, string | ( ( ...params: string[] ) => string )>,
+export interface MwMockOptions {
+	messages?: Record<string, string | ( ( ...params: string[] ) => string )>;
+	functions?: ( 'message' | 'msg' | 'notify' )[];
+}
+
+export function setupMwMock(
+	options: MwMockOptions = {},
 ): void {
-	( global as any ).mw = {
-		message: vi.fn( ( key, ...params ) => ( {
-			text: () => {
-				const message = messages[ key ];
-				if ( typeof message === 'function' ) {
-					return message( ...params );
-				}
-				return message ?? key;
-			},
-		} ) ),
+	const { messages: customMessages = {}, functions = [ 'message', 'msg', 'notify' ] } = options;
+
+	const mwMock: any = {};
+
+	const resolveMessage = ( key: string, params: string[] ): string => {
+		const message = customMessages[ key ];
+		if ( typeof message === 'function' ) {
+			return message( ...params );
+		}
+		if ( message !== undefined ) {
+			return message;
+		}
+		return key + params.join( '' );
 	};
+
+	const implementations: Record<string, any> = {
+		message: () => vi.fn( ( key: string, ...params: string[] ) => ( {
+			text: () => resolveMessage( key, params ),
+			parse: () => resolveMessage( key, params ),
+		} ) ),
+		msg: () => vi.fn( ( key: string, ...params: string[] ) => resolveMessage( key, params ) ),
+		notify: () => vi.fn(),
+	};
+
+	functions.forEach( ( funcName ) => {
+		if ( implementations[ funcName ] ) {
+			mwMock[ funcName ] = implementations[ funcName ]();
+		}
+	} );
+
+	vi.stubGlobal( 'mw', mwMock );
 }
