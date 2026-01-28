@@ -17,6 +17,9 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import { CdxButton } from '@wikimedia/codex';
+import { setupMwMock } from '../../VueTestHelpers.ts';
 
 const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 	text: () => key,
@@ -24,12 +27,7 @@ const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 
 describe( 'AutomaticInfobox', () => {
 	beforeEach( () => {
-		vi.stubGlobal( 'mw', {
-			message: vi.fn( ( str: string ) => ( {
-				text: () => str,
-				parse: () => str,
-			} ) ),
-		} );
+		setupMwMock( { functions: [ 'message' ] } );
 	} );
 
 	let pinia: ReturnType<typeof createPinia>;
@@ -76,6 +74,7 @@ describe( 'AutomaticInfobox', () => {
 			provide: {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
 				[ Service.SchemaAuthorizer ]: NeoWikiExtension.getInstance().newSchemaAuthorizer(),
+				[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
 			},
 		},
 	} );
@@ -134,16 +133,28 @@ describe( 'AutomaticInfobox', () => {
 		expect( statementElements ).toHaveLength( 0 );
 	} );
 
-	it( 'does not render SubjectEditor when canEditSubject is false', () => {
+	it( 'does not render SubjectEditor button when canEditSubject is false', () => {
 		const wrapper = mountComponent( mockSubject, false );
 
-		expect( wrapper.find( '.ext-neowiki-subject-editor-container' ).exists() ).toBe( false );
+		expect( wrapper.findComponent( CdxButton ).exists() ).toBe( false );
 	} );
 
-	it( 'renders SubjectEditor when canEditSubject is true', () => {
+	it( 'renders SubjectEditor button when canEditSubject is true', () => {
 		const wrapper = mountComponent( mockSubject, true );
 
-		const editButton = wrapper.find( '.ext-neowiki-subject-editor-container' );
+		const editButton = wrapper.findComponent( { name: 'CdxButton', props: { 'aria-label': 'neowiki-infobox-edit-link' } } );
 		expect( editButton.exists() ).toBe( true );
+	} );
+
+	it( 'opens the SubjectEditorDialog when edit button is clicked', async () => {
+		const wrapper = mountComponent( mockSubject, true );
+
+		const dialog = wrapper.findComponent( SubjectEditorDialog );
+		expect( dialog.props( 'open' ) ).toBe( false );
+
+		const editButton = wrapper.findComponent( { name: 'CdxButton', props: { 'aria-label': 'neowiki-infobox-edit-link' } } );
+		await editButton.trigger( 'click' );
+
+		expect( dialog.props( 'open' ) ).toBe( true );
 	} );
 } );
