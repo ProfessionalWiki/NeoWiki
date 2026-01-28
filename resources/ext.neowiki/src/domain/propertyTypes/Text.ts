@@ -25,6 +25,8 @@ export class TextType extends BasePropertyType<TextProperty, StringValue> {
 			...base,
 			multiple: json.multiple ?? false,
 			uniqueItems: json.uniqueItems ?? true,
+			minLength: json.minLength,
+			maxLength: json.maxLength,
 		} as TextProperty;
 	}
 
