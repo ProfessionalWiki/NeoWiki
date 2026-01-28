@@ -247,7 +247,7 @@ class CypherQueryFilterTest extends TestCase {
 			'Should reject lowercase load'
 		];
 
-		// Obfuscation attempts
+		// Unicode escape obfuscation attempts
 		yield 'Unicode escape before CREATE' => [
 			'MATCH (n) RETURN n\u000ACREATE (m:Malicious)',
 			'Should reject CREATE hidden after unicode escape'
@@ -261,6 +261,46 @@ class CypherQueryFilterTest extends TestCase {
 		yield 'Unicode escape before CALL' => [
 			'MATCH (n)\u000ACALL db.labels()',
 			'Should reject CALL hidden after unicode escape'
+		];
+
+		yield 'Unicode escape at start of query' => [
+			'\u000ACREATE (n:Malicious)',
+			'Should reject CREATE after unicode escape at query start'
+		];
+
+		yield 'Unicode escape before SET' => [
+			'MATCH (n)\u0009SET n.x = 1',
+			'Should reject SET hidden after unicode tab escape'
+		];
+
+		yield 'Unicode escape before DELETE' => [
+			'MATCH (n)\u000BDELETE n',
+			'Should reject DELETE hidden after unicode escape'
+		];
+
+		yield 'Multiple unicode escapes before keyword' => [
+			'MATCH (n)\u000A\u000D\u0009\u000BCREATE (m)',
+			'Should reject CREATE after multiple unicode escapes'
+		];
+
+		yield 'Unicode escape with uppercase hex' => [
+			'MATCH (n)\u000ACREATE (m)',
+			'Should reject with uppercase hex digits'
+		];
+
+		yield 'Unicode escape with lowercase hex' => [
+			'MATCH (n)\u000acreate (m)',
+			'Should reject with lowercase hex digits'
+		];
+
+		yield 'Unicode escape before LOAD' => [
+			"\u000ALOAD CSV FROM 'file.csv' AS row",
+			'Should reject LOAD hidden after unicode escape'
+		];
+
+		yield 'Unicode escape before FOREACH' => [
+			"MATCH (n)\u000AFOREACH (x IN [1] | SET n.x = x)",
+			'Should reject FOREACH hidden after unicode escape'
 		];
 
 		yield 'CREATE in subquery' => [
