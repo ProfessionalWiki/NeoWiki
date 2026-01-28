@@ -3,7 +3,7 @@ import type { SchemaName } from '@/domain/Schema';
 import type { SubjectMap } from '@/domain/SubjectMap';
 import type { SubjectId } from '@/domain/SubjectId';
 import type { StatementList } from '@/domain/StatementList';
-import type { PropertyName } from '@/domain/PropertyDefinition';
+import type { PropertyName } from '@/domain/PropertyName';
 import type { Value } from '@/domain/Value';
 
 export class Subject {
