@@ -21,23 +21,39 @@ class CypherRawParserFunctionTest extends TestCase {
 		return $this->createMock( Parser::class );
 	}
 
-	private function createStubQueryEngine( array $returnData = [], Exception $exception = null ): QueryEngine {
-		$stub = $this->createStub( QueryEngine::class );
-		
-		if ( $exception !== null ) {
-			$stub->method( 'runReadQuery' )->willThrowException( $exception );
-		} else {
-			$resultStub = $this->createStub( SummarizedResult::class );
-			$resultStub->method( 'toArray' )->willReturn( $returnData );
-			$stub->method( 'runReadQuery' )->willReturn( $resultStub );
-		}
-		
-		return $stub;
+	private function createDummyQueryEngine(): QueryEngine {
+		// Create a simple mock that won't be called
+		return $this->createMock( QueryEngine::class );
+	}
+
+	private function createQueryEngineWithData( array $returnData ): QueryEngine {
+		$queryEngine = $this->createMock( QueryEngine::class );
+		$queryEngine
+			->method( 'runReadQuery' )
+			->willReturnCallback( function() use ( $returnData ) {
+				// We need to return something that has a toArray() method
+				// Since SummarizedResult is final, we use an anonymous class
+				return new class( $returnData ) {
+					public function __construct( private array $data ) {}
+					public function toArray(): array {
+						return $this->data;
+					}
+				};
+			} );
+		return $queryEngine;
+	}
+
+	private function createQueryEngineWithException( Exception $exception ): QueryEngine {
+		$queryEngine = $this->createMock( QueryEngine::class );
+		$queryEngine
+			->method( 'runReadQuery' )
+			->willThrowException( $exception );
+		return $queryEngine;
 	}
 
 	public function testEmptyQueryReturnsError(): void {
 		$parserFunction = new CypherRawParserFunction(
-			$this->createStubQueryEngine(),
+			$this->createDummyQueryEngine(),
 			new CypherQueryFilter()
 		);
 
@@ -48,7 +64,7 @@ class CypherRawParserFunctionTest extends TestCase {
 
 	public function testWriteQueryIsRejected(): void {
 		$parserFunction = new CypherRawParserFunction(
-			$this->createStubQueryEngine(),
+			$this->createDummyQueryEngine(),
 			new CypherQueryFilter()
 		);
 
@@ -64,7 +80,7 @@ class CypherRawParserFunctionTest extends TestCase {
 		];
 
 		$parserFunction = new CypherRawParserFunction(
-			$this->createStubQueryEngine( $testData ),
+			$this->createQueryEngineWithData( $testData ),
 			new CypherQueryFilter()
 		);
 
@@ -77,7 +93,7 @@ class CypherRawParserFunctionTest extends TestCase {
 
 	public function testQueryExecutionExceptionReturnsError(): void {
 		$parserFunction = new CypherRawParserFunction(
-			$this->createStubQueryEngine( [], new Exception( 'Connection failed' ) ),
+			$this->createQueryEngineWithException( new Exception( 'Connection failed' ) ),
 			new CypherQueryFilter()
 		);
 
@@ -88,7 +104,7 @@ class CypherRawParserFunctionTest extends TestCase {
 
 	public function testTrimWhitespaceFromQuery(): void {
 		$parserFunction = new CypherRawParserFunction(
-			$this->createStubQueryEngine( [] ),
+			$this->createQueryEngineWithData( [] ),
 			new CypherQueryFilter()
 		);
 
@@ -103,7 +119,7 @@ class CypherRawParserFunctionTest extends TestCase {
 		];
 
 		$parserFunction = new CypherRawParserFunction(
-			$this->createStubQueryEngine( $testData ),
+			$this->createQueryEngineWithData( $testData ),
 			new CypherQueryFilter()
 		);
 
