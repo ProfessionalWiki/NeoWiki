@@ -17,8 +17,17 @@
 					{{ schema.getName() }}
 				</div>
 			</div>
+			<CdxButton
+				v-if="canEditSubject"
+				weight="quiet"
+				:aria-label="$i18n( 'neowiki-infobox-edit-link' ).text()"
+				@click="isEditorOpen = true"
+			>
+				<CdxIcon :icon="cdxIconEdit" />
+			</CdxButton>
 			<SubjectEditorDialog
 				v-if="canEditSubject"
+				v-model:open="isEditorOpen"
 				:subject="subject as Subject"
 				:on-save="handleSaveSubject"
 				:on-save-schema="handleSaveSchema"
@@ -47,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { Component, computed } from 'vue';
+import { Component, computed, ref } from 'vue';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
@@ -56,6 +65,8 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
+import { CdxButton, CdxIcon } from '@wikimedia/codex';
+import { cdxIconEdit } from '@wikimedia/codex-icons';
 
 const props = defineProps( {
 	subjectId: {
@@ -70,6 +81,8 @@ const props = defineProps( {
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
+
+const isEditorOpen = ref( false );
 
 const subject = computed( () => subjectStore.getSubject( props.subjectId ) as Subject ); // TODO: handle not found
 const schema = schemaStore.getSchema( subject.value.getSchemaName() ); // TODO: handle not found

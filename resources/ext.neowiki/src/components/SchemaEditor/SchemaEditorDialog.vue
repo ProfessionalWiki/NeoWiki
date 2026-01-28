@@ -1,27 +1,25 @@
 <template>
-	<div>
-		<CdxDialog
-			v-model:open="open"
-			:use-close-button="true"
-			class="ext-neowiki-schema-editor-dialog"
-			:class="{ 'cdx-dialog--dividers': hasOverflow }"
-			:title="$i18n( 'neowiki-editing-schema', props.initialSchema.getName() ).text()"
-		>
-			<SchemaEditor
-				ref="schemaEditor"
-				:initial-schema="initialSchema"
-				@overflow="onOverflow"
-			/>
+	<CdxDialog
+		v-model:open="open"
+		:use-close-button="true"
+		class="ext-neowiki-schema-editor-dialog"
+		:class="{ 'cdx-dialog--dividers': hasOverflow }"
+		:title="$i18n( 'neowiki-editing-schema', props.initialSchema.getName() ).text()"
+	>
+		<SchemaEditor
+			ref="schemaEditor"
+			:initial-schema="initialSchema"
+			@overflow="onOverflow"
+		/>
 
-			<template #footer>
-				<EditSummary
-					:help-text="$i18n( 'neowiki-edit-summary-help-text-schema' ).text()"
-					:save-button-label="$i18n( 'neowiki-save-schema' ).text()"
-					@save="handleSave"
-				/>
-			</template>
-		</CdxDialog>
-	</div>
+		<template #footer>
+			<EditSummary
+				:help-text="$i18n( 'neowiki-edit-summary-help-text-schema' ).text()"
+				:save-button-label="$i18n( 'neowiki-save-schema' ).text()"
+				@save="handleSave"
+			/>
+		</template>
+	</CdxDialog>
 </template>
 
 <script setup lang="ts">

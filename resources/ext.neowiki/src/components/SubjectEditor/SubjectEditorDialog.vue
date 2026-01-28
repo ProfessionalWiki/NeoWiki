@@ -1,17 +1,10 @@
 <template>
 	<div class="ext-neowiki-subject-editor-container">
-		<CdxButton
-			weight="quiet"
-			:aria-label="$i18n( 'neowiki-infobox-edit-link' ).text()"
-			@click="open = true"
-		>
-			<CdxIcon :icon="cdxIconEdit" />
-		</CdxButton>
 		<CdxDialog
-			v-model:open="open"
+			:open="open"
 			class="ext-neowiki-subject-editor-dialog"
 			:title="$i18n( 'neowiki-subject-editor-title', props.subject.getLabel() ).text()"
-			@default="open = false"
+			@update:open="emit( 'update:open', $event )"
 		>
 			<template #header>
 				<div class="cdx-dialog__header__title-group">
@@ -48,7 +41,7 @@
 					weight="quiet"
 					type="button"
 					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-					@click="open = false"
+					@click="emit( 'update:open', false )"
 				>
 					<CdxIcon :icon="cdxIconClose" />
 				</CdxButton>
@@ -76,10 +69,11 @@
 
 		<SchemaEditorDialog
 			v-if="loadedSchema"
-			v-model:open="isSchemaEditorOpen"
+			:open="isSchemaEditorOpen"
 			:initial-schema="loadedSchema as Schema"
 			:on-save="props.onSaveSchema"
 			@saved="onSchemaSaved"
+			@update:open="isSchemaEditorOpen = $event"
 		/>
 	</div>
 </template>
@@ -90,7 +84,7 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
-import { cdxIconEdit, cdxIconClose } from '@wikimedia/codex-icons';
+import { cdxIconClose } from '@wikimedia/codex-icons';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -107,7 +101,10 @@ const props = defineProps<{
 	subject: Subject;
 	onSave: SubjectSaveHandler;
 	onSaveSchema: SchemaSaveHandler;
+	open: boolean;
 }>();
+
+const emit = defineEmits( [ 'update:open' ] );
 
 const schemaStore = useSchemaStore();
 
@@ -115,7 +112,6 @@ interface SubjectEditorInstance {
 	getSubjectData: () => StatementList;
 }
 
-const open = ref( false );
 const isSchemaEditorOpen = ref( false );
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
 const loadedSchema = ref<Schema | null>( null );
@@ -207,7 +203,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		await props.onSave( updatedSubject, editSummary );
 		// TODO: i18n
 		mw.notify( `Updated ${ subjectName }`, { type: 'success' } );
-		open.value = false;
+		emit( 'update:open', false );
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),
