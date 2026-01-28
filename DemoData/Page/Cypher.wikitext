@@ -1,6 +1,6 @@
-This page demonstrates the <code>cypher_raw</code> parser function for executing read-only Cypher queries against the Neo4j graph database.
+This page demonstrates the <code>cypher_raw</code> parser function for executing Cypher queries against the Neo4j graph database.
 
-The parser function allows you to query the graph database and display the raw JSON results directly on a wiki page.
+This is a '''demo feature''' for the NeoWiki proof of concept demo. It will not be present as-is in a production version.
 
 == Basic Query Example ==
 
@@ -23,6 +23,4 @@ Find companies and their products:
 == Notes ==
 
 * Only read-only queries are allowed. Write operations like <code>CREATE</code>, <code>SET</code>, <code>DELETE</code> are rejected.
-* Query results are displayed as formatted JSON.
-* This is a demo feature for exploring the graph database structure.
-* For more complex data visualization, use the standard NeoWiki Subject display features.
+* Query results are displayed as formatted JSON. 
