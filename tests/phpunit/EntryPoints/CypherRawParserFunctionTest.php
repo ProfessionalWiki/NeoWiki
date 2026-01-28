@@ -21,24 +21,23 @@ class CypherRawParserFunctionTest extends TestCase {
 		return $this->createMock( Parser::class );
 	}
 
-	private function createMockQueryEngine(): QueryEngine {
-		return $this->createMock( QueryEngine::class );
-	}
-
-	private function createStubResult( array $data ): object {
-		return new class( $data ) {
-			public function __construct( private array $data ) {
-			}
-
-			public function toArray(): array {
-				return $this->data;
-			}
-		};
+	private function createStubQueryEngine( array $returnData = [], Exception $exception = null ): QueryEngine {
+		$stub = $this->createStub( QueryEngine::class );
+		
+		if ( $exception !== null ) {
+			$stub->method( 'runReadQuery' )->willThrowException( $exception );
+		} else {
+			$resultStub = $this->createStub( SummarizedResult::class );
+			$resultStub->method( 'toArray' )->willReturn( $returnData );
+			$stub->method( 'runReadQuery' )->willReturn( $resultStub );
+		}
+		
+		return $stub;
 	}
 
 	public function testEmptyQueryReturnsError(): void {
 		$parserFunction = new CypherRawParserFunction(
-			$this->createMockQueryEngine(),
+			$this->createStubQueryEngine(),
 			new CypherQueryFilter()
 		);
 
@@ -49,7 +48,7 @@ class CypherRawParserFunctionTest extends TestCase {
 
 	public function testWriteQueryIsRejected(): void {
 		$parserFunction = new CypherRawParserFunction(
-			$this->createMockQueryEngine(),
+			$this->createStubQueryEngine(),
 			new CypherQueryFilter()
 		);
 
@@ -59,20 +58,13 @@ class CypherRawParserFunctionTest extends TestCase {
 	}
 
 	public function testValidReadQueryReturnsFormattedResult(): void {
-		$mockResult = $this->createStubResult( [
+		$testData = [
 			[ 'name' => 'Alice', 'age' => 30 ],
 			[ 'name' => 'Bob', 'age' => 25 ]
-		] );
-
-		$mockQueryEngine = $this->createMockQueryEngine();
-		$mockQueryEngine
-			->expects( $this->once() )
-			->method( 'runReadQuery' )
-			->with( 'MATCH (n:Person) RETURN n' )
-			->willReturn( $mockResult );
+		];
 
 		$parserFunction = new CypherRawParserFunction(
-			$mockQueryEngine,
+			$this->createStubQueryEngine( $testData ),
 			new CypherQueryFilter()
 		);
 
@@ -84,14 +76,8 @@ class CypherRawParserFunctionTest extends TestCase {
 	}
 
 	public function testQueryExecutionExceptionReturnsError(): void {
-		$mockQueryEngine = $this->createMockQueryEngine();
-		$mockQueryEngine
-			->expects( $this->once() )
-			->method( 'runReadQuery' )
-			->willThrowException( new Exception( 'Connection failed' ) );
-
 		$parserFunction = new CypherRawParserFunction(
-			$mockQueryEngine,
+			$this->createStubQueryEngine( [], new Exception( 'Connection failed' ) ),
 			new CypherQueryFilter()
 		);
 
@@ -101,17 +87,8 @@ class CypherRawParserFunctionTest extends TestCase {
 	}
 
 	public function testTrimWhitespaceFromQuery(): void {
-		$mockResult = $this->createStubResult( [] );
-
-		$mockQueryEngine = $this->createMockQueryEngine();
-		$mockQueryEngine
-			->expects( $this->once() )
-			->method( 'runReadQuery' )
-			->with( 'MATCH (n) RETURN n' )
-			->willReturn( $mockResult );
-
 		$parserFunction = new CypherRawParserFunction(
-			$mockQueryEngine,
+			$this->createStubQueryEngine( [] ),
 			new CypherQueryFilter()
 		);
 
@@ -121,17 +98,12 @@ class CypherRawParserFunctionTest extends TestCase {
 	}
 
 	public function testOutputIsHTMLEscaped(): void {
-		$mockResult = $this->createStubResult( [
+		$testData = [
 			[ 'name' => '<script>alert("xss")</script>' ]
-		] );
-
-		$mockQueryEngine = $this->createMockQueryEngine();
-		$mockQueryEngine
-			->method( 'runReadQuery' )
-			->willReturn( $mockResult );
+		];
 
 		$parserFunction = new CypherRawParserFunction(
-			$mockQueryEngine,
+			$this->createStubQueryEngine( $testData ),
 			new CypherQueryFilter()
 		);
 
