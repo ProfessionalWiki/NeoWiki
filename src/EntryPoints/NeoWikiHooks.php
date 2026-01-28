@@ -11,11 +11,13 @@ use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Page\ProperPageIdentity;
+use MediaWiki\Parser\Parser;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
+use ProfessionalWiki\NeoWiki\CypherQueryFilter;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -119,6 +121,19 @@ class NeoWikiHooks {
 					model: SubjectContent::CONTENT_MODEL_ID,
 					layout: [ 'display' => 'none' ]
 				);
+			}
+		);
+	}
+
+	public static function onParserFirstCallInit( Parser $parser ): void {
+		$parser->setFunctionHook(
+			'cypher_raw',
+			static function ( Parser $parser, string $cypherQuery ): string {
+				$parserFunction = new CypherRawParserFunction(
+					NeoWikiExtension::getInstance()->getQueryStore(),
+					new CypherQueryFilter()
+				);
+				return $parserFunction->handle( $parser, $cypherQuery );
 			}
 		);
 	}
