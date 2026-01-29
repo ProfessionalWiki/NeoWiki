@@ -177,7 +177,8 @@
 				"CdxMessage",
 				"CdxToggleSwitch",
 				"CdxMenu",
-				"CdxToggleButtonGroup"
+				"CdxToggleButtonGroup",
+				"CdxLookup"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",
@@ -246,7 +247,8 @@
 				"neowiki-subject-creator-button-label",
 				"neowiki-subject-creator-schema-title",
 				"neowiki-subject-creator-existing-schema",
-				"neowiki-subject-creator-new-schema"
+				"neowiki-subject-creator-new-schema",
+				"neowiki-subject-creator-schema-search-placeholder"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
