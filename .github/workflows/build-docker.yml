@@ -49,6 +49,10 @@ jobs:
       - run: make wiki-production-image
         working-directory: Docker
 
+      - name: Use CI docker-compose
+        run: rm docker-compose.yml && mv docker-compose.ci.yml docker-compose.yml
+        working-directory: Docker
+
       - name: Start containers
         run: docker compose up -d
         working-directory: Docker

@@ -12,7 +12,7 @@ install-db:
 		php maintenance/install.php --dbuser ${MARIADB_USER} --dbpass ${MARIADB_PASSWORD} \
 			--dbname ${MARIADB_DATABASE} --dbserver db:3306 --lang en \
 			--pass ${MW_ADMIN_PASSWORD} \
-			--server http://${LOCAL_HOST}:${MW_SERVER_PORT} \
+			--server ${MW_SERVER} \
 			SiteName AdminName
 	${dockerCompose} exec -T mediawiki rm LocalSettings.php
 	${dockerCompose} exec -T mediawiki mv __LocalSettings.php LocalSettings.php
@@ -25,3 +25,10 @@ load-neo4j-users:
 
 test:
 	bash test.sh
+
+import-demo-data:
+	${dockerCompose} exec -T mediawiki php extensions/NeoWiki/maintenance/ImportDemoData.php
+
+update:
+	${dockerCompose} pull
+	${dockerCompose} up -d
