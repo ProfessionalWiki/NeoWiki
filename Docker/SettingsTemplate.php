@@ -202,3 +202,5 @@ $wgCrossSiteAJAXdomains = [
 ];
 
 $wgEmailConfirmToEdit = false;
+
+$wgGroupPermissions['*']['edit'] = false;
