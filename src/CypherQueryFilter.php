@@ -7,21 +7,14 @@ namespace ProfessionalWiki\NeoWiki;
 class CypherQueryFilter {
 
 	private const array WRITE_KEYWORDS = [
-		'CREATE', 'SET', 'DELETE', 'REMOVE', 'MERGE', 'DROP'
+		'CREATE', 'SET', 'DELETE', 'REMOVE', 'MERGE', 'DROP',
+		'CALL', 'LOAD', 'FOREACH'
 	];
 
 	public function isReadQuery( string $query ): bool {
 		$normalizedQuery = $this->normalizeQuery( $query );
 
-		if ( $this->containsWriteOperations( $normalizedQuery ) ) {
-			return false;
-		}
-
-		if ( $this->containsFunctionCalls( $normalizedQuery ) ) {
-			return false;
-		}
-
-		return true;
+		return !$this->containsWriteOperations( $normalizedQuery );
 	}
 
 	/**
@@ -32,10 +25,13 @@ class CypherQueryFilter {
 	 */
 	private function normalizeQuery( string $query ): string {
 		// Remove inline comments
-		$query = preg_replace( '/\/\/.*$/m', '', $query );
+		$query = preg_replace( '/\/\/.*$/m', '', $query ) ?? $query;
 
 		// Remove multi-line comments
-		$query = preg_replace( '/\/\*.*?\*\//s', '', $query );
+		$query = preg_replace( '/\/\*.*?\*\//s', '', $query ) ?? $query;
+
+		// Normalize unicode escape sequences that could be used for obfuscation
+		$query = preg_replace( '/\\\\u[0-9A-Fa-f]{4}/', ' ', $query ) ?? $query;
 
 		// Convert to uppercase for easier keyword matching
 		return strtoupper( $query );
@@ -57,28 +53,6 @@ class CypherQueryFilter {
 			}
 		}
 		return false;
-	}
-
-	/**
-	 * Check if the query contains any function calls
-	 *
-	 * @param string $query The normalized query to check
-	 * @return bool True if function calls are found, false otherwise
-	 */
-	private function containsFunctionCalls( string $query ): bool {
-		// Remove string literals to avoid false positives
-		$queryWithoutStrings = preg_replace( '/([\'"])((?:\\\\\1|.)*?)\1/', '', $query );
-
-		// List of common Cypher keywords that might be followed by parentheses but are not functions
-		$nonFunctionKeywords = [
-			'MATCH', 'WHERE', 'RETURN', 'WITH', 'UNWIND', 'CASE', 'WHEN', 'THEN', 'ELSE',
-			'AND', 'OR', 'XOR', 'NOT'
-		];
-
-		// Pattern to match function calls, excluding the common Cypher keywords
-		$pattern = '/\b(?!(' . implode( '|', $nonFunctionKeywords ) . ')\b)[A-Z][A-Z0-9_]*\s*\(/';
-
-		return preg_match( $pattern, $queryWithoutStrings ) === 1;
 	}
 
 }
