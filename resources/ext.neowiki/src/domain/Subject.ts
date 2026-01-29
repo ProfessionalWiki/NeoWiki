@@ -1,8 +1,8 @@
+import { SubjectId } from '@/domain/SubjectId';
+import { StatementList } from '@/domain/StatementList';
 import type { SubjectLookup } from '@/domain/SubjectLookup';
 import type { SchemaName } from '@/domain/Schema';
 import type { SubjectMap } from '@/domain/SubjectMap';
-import type { SubjectId } from '@/domain/SubjectId';
-import type { StatementList } from '@/domain/StatementList';
 import type { PropertyName } from '@/domain/PropertyName';
 import type { Value } from '@/domain/Value';
 
@@ -14,6 +14,17 @@ export class Subject {
 		private readonly schemaName: SchemaName,
 		private readonly statements: StatementList,
 	) {
+	}
+
+	public static createNew( label: string, schemaName: SchemaName ): Subject {
+		// TODO: The dummy ID is a temporary workaround.
+		// Should we make ID optional in Subject or create a separate NewSubject DTO?
+		return new Subject(
+			new SubjectId( 's11111111111111' ),
+			label,
+			schemaName,
+			new StatementList( [] ),
+		);
 	}
 
 	public getId(): SubjectId {

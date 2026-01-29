@@ -1,6 +1,7 @@
 <template>
 	<div class="ext-neowiki-subject-creator-container">
 		<CdxButton
+			class="ext-neowiki-subject-creator-trigger"
 			@click="open = true"
 		>
 			{{ $i18n( 'neowiki-subject-creator-button-label' ).text() }}
@@ -12,63 +13,55 @@
 			:use-close-button="true"
 			@default="open = false"
 		>
-			<p>
-				{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
-			</p>
-
-			<CdxToggleButtonGroup
-				v-model="selectedValue"
-				class="ext-neowiki-subject-creator-dialog-schema-options"
-				:buttons="buttons"
-			/>
-
-			<div v-if="selectedValue === 'existing'">
-				TODO:Existing schema UI
-			</div>
-
-			<div v-if="selectedValue === 'new'">
-				TODO: New schema UI
-			</div>
+			<SubjectCreator @create="onSubjectCreated" />
 		</CdxDialog>
+
+		<SubjectEditorDialog
+			v-if="createdSubject"
+			v-model:open="isSubjectEditorOpen"
+			:subject="createdSubject"
+			:on-save="handleCreateSubject"
+			:on-save-schema="handleSaveSchema"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { CdxButton, CdxDialog, CdxToggleButtonGroup } from '@wikimedia/codex';
-import { cdxIconSearch, cdxIconAdd } from '@wikimedia/codex-icons';
-import type { ButtonGroupItem } from '@wikimedia/codex';
+import { ref, shallowRef } from 'vue';
+import { CdxButton, CdxDialog } from '@wikimedia/codex';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { Subject } from '@/domain/Subject.ts';
+import { Schema } from '@/domain/Schema.ts';
+import SubjectCreator from '@/components/SubjectCreator/SubjectCreator.vue';
+import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 
 const open = ref( false );
-const selectedValue = ref( 'existing' );
+const isSubjectEditorOpen = ref( false );
+const createdSubject = shallowRef<Subject | null>( null );
 
-const buttons = [
-	{
-		value: 'existing',
-		label: mw.msg( 'neowiki-subject-creator-existing-schema' ),
-		icon: cdxIconSearch
-	},
-	{
-		value: 'new',
-		label: mw.msg( 'neowiki-subject-creator-new-schema' ),
-		icon: cdxIconAdd
-	}
-] as ButtonGroupItem[];
+const subjectStore = useSubjectStore();
+const schemaStore = useSchemaStore();
+
+function onSubjectCreated( subject: Subject ): void {
+	createdSubject.value = subject;
+	isSubjectEditorOpen.value = true;
+	open.value = false;
+}
+
+async function handleCreateSubject( subject: Subject, _summary: string ): Promise<void> {
+	await subjectStore.createMainSubject(
+		mw.config.get( 'wgArticleId' ),
+		subject.getLabel(),
+		subject.getSchemaName(),
+		subject.getStatements()
+	);
+	// Reload to show the new subject
+	window.location.reload();
+}
+
+async function handleSaveSchema( schema: Schema, comment?: string ): Promise<void> {
+	await schemaStore.saveSchema( schema, comment );
+}
 
 </script>
-
-<style lang="less">
-@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
-
-.ext-neowiki-subject-creator-dialog {
-	&-schema-options.cdx-toggle-button-group {
-		width: inherit;
-		display: flex;
-		flex-wrap: wrap;
-
-		.cdx-toggle-button {
-			flex-grow: 1;
-		}
-	}
-}
-</style>

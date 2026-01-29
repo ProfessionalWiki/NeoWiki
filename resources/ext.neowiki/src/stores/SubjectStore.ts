@@ -7,6 +7,8 @@ import { StatementList } from '@/domain/StatementList.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 
+import { useSchemaStore } from '@/stores/SchemaStore';
+
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
 		subjects: new Map<string, Subject>(),
@@ -43,6 +45,13 @@ export const useSubjectStore = defineStore( 'subject', {
 		async deleteSubject( subjectId: SubjectId ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSubjectRepository().deleteSubject( subjectId );
 			this.subjects.delete( subjectId.text );
+		},
+		async initNewSubject( schemaName: string ): Promise<Subject> {
+			await useSchemaStore().getOrFetchSchema( schemaName );
+
+			const pageTitle = mw.config.get( 'wgTitle' ) || 'New Subject';
+
+			return Subject.createNew( pageTitle, schemaName );
 		},
 		async createMainSubject( pageId: number, label: string, schemaName: SchemaName, statements: StatementList ): Promise<SubjectId> {
 			const subjectId = await NeoWikiExtension.getInstance().getSubjectRepository().createMainSubject(
