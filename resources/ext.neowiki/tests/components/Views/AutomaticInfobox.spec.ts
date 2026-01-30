@@ -1,4 +1,4 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
 import { Subject } from '@/domain/Subject.ts';
@@ -28,6 +28,13 @@ const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 describe( 'AutomaticInfobox', () => {
 	beforeEach( () => {
 		setupMwMock( { functions: [ 'message' ] } );
+		// Mock mw.util.getUrl
+		( global as any ).mw = {
+			...( global as any ).mw,
+			util: {
+				getUrl: vi.fn( ( title: string ) => `/wiki/${ title }` ),
+			},
+		};
 	} );
 
 	let pinia: ReturnType<typeof createPinia>;
@@ -156,5 +163,72 @@ describe( 'AutomaticInfobox', () => {
 		await editButton.trigger( 'click' );
 
 		expect( dialog.props( 'open' ) ).toBe( true );
+	} );
+
+	it( 'renders schema name as a clickable link when user has edit permissions', async () => {
+		const schemaAuthorizer = {
+			canEditSchema: vi.fn().mockResolvedValue( true ),
+		};
+
+		const wrapper = mount( AutomaticInfobox, {
+			props: {
+				subjectId: mockSubject.getId(),
+				canEditSubject: false,
+			},
+			global: {
+				mocks: {
+					$i18n,
+				},
+				plugins: [ pinia ],
+				provide: {
+					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
+					[ Service.SchemaAuthorizer ]: schemaAuthorizer,
+					[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
+				},
+			},
+		} );
+
+		// Wait for the async permission check to complete
+		await flushPromises();
+
+		const schemaLinks = wrapper.findAll( '.ext-neowiki-auto-infobox__schema a' );
+		expect( schemaLinks.length ).toBeGreaterThan( 0 );
+		const schemaLink = schemaLinks[ 0 ];
+		expect( schemaLink.text() ).toBe( 'TestSchema' );
+		expect( schemaLink.attributes( 'href' ) ).toBe( '#' );
+	} );
+
+	it( 'renders schema name as a link to Schema page when user lacks edit permissions', async () => {
+		const schemaAuthorizer = {
+			canEditSchema: vi.fn().mockResolvedValue( false ),
+		};
+
+		const wrapper = mount( AutomaticInfobox, {
+			props: {
+				subjectId: mockSubject.getId(),
+				canEditSubject: false,
+			},
+			global: {
+				mocks: {
+					$i18n,
+				},
+				plugins: [ pinia ],
+				provide: {
+					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
+					[ Service.SchemaAuthorizer ]: schemaAuthorizer,
+					[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
+				},
+			},
+		} );
+
+		// Wait for the async permission check to complete
+		await flushPromises();
+
+		const schemaLinks = wrapper.findAll( '.ext-neowiki-auto-infobox__schema a' );
+		expect( schemaLinks.length ).toBeGreaterThan( 0 );
+		const schemaLink = schemaLinks[ 0 ];
+		expect( schemaLink.text() ).toBe( 'TestSchema' );
+		// The href should be a link to the Schema: page
+		expect( schemaLink.attributes( 'href' ) ).toContain( 'Schema:TestSchema' );
 	} );
 } );
