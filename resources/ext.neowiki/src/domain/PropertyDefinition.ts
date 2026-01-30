@@ -2,9 +2,32 @@ import { Neo } from '@/Neo';
 import { PropertyTypeRegistry } from '@/domain/PropertyType';
 import { Value } from '@/domain/Value';
 import { ValueDeserializer } from '@/persistence/ValueDeserializer';
-import { PropertyName } from '@/domain/PropertyName';
 
-export { PropertyName };
+export class PropertyName {
+
+	private readonly name: string;
+
+	/**
+	 * @param name - The name of the property.
+	 * @param placeholder - Whether the name is a placeholder, used when creating a new property.
+	 */
+	public constructor( name: string, placeholder: boolean = false ) {
+		this.name = name.trim();
+
+		if ( !PropertyName.isValid( name ) && !placeholder ) {
+			throw new Error( 'Invalid PropertyName' );
+		}
+	}
+
+	public toString(): string {
+		return this.name;
+	}
+
+	public static isValid( name: string ): boolean {
+		return name.trim() !== '';
+	}
+
+}
 
 export interface PropertyDefinition {
 

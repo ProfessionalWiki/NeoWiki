@@ -1,5 +1,5 @@
 import { ValueDeserializer } from '@/persistence/ValueDeserializer';
-import { PropertyName } from '@/domain/PropertyName';
+import { PropertyName } from '@/domain/PropertyDefinition';
 import { Statement } from '@/domain/Statement';
 
 interface StatementJson {

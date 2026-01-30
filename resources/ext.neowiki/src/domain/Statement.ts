@@ -1,4 +1,4 @@
-import { PropertyName } from '@/domain/PropertyName';
+import { PropertyName } from '@/domain/PropertyDefinition';
 import { Value } from '@/domain/Value';
 
 export class Statement {

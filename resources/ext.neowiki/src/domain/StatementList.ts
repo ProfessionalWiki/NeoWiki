@@ -2,7 +2,7 @@ import type { SubjectLookup } from '@/domain/SubjectLookup';
 import { SubjectMap } from '@/domain/SubjectMap';
 import { SubjectId } from '@/domain/SubjectId';
 import { Statement } from '@/domain/Statement';
-import { PropertyName } from '@/domain/PropertyName';
+import { PropertyName } from '@/domain/PropertyDefinition';
 import { RelationValue, type Value, valueToJson } from '@/domain/Value';
 import type { Subject } from '@/domain/Subject';
 
