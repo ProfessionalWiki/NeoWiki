@@ -26,3 +26,4 @@
 * Is [one Schema per Subject](adr/008_One_Schema_per_Subject.md) viable?
   (likely, but let's verify)
 * Do we need to have an API that provides Schemas in JSON Schema format? (50% likely, can be deferred, easy to implement)
+* ID-generation for bulk import: do we need an API for (bulk) ID gen? (local impact, easy to implement)
