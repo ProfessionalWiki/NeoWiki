@@ -32,3 +32,4 @@ import-demo-data:
 update:
 	${dockerCompose} pull
 	${dockerCompose} up -d
+	${dockerCompose} exec -T mediawiki php maintenance/run.php update --quick
