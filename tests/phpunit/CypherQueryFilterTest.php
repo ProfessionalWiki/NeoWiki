@@ -65,12 +65,26 @@ class CypherQueryFilterTest extends TestCase {
 			[ 'CALL' ],
 			[ 'LOAD' ],
 			[ 'FOREACH' ],
+			[ 'GRANT' ],
+			[ 'DENY' ],
+			[ 'REVOKE' ],
+			[ 'SHOW' ],
 		];
 	}
 
 	public function testAllowsWriteKeywordInString(): void {
 		$query = "MATCH (n) WHERE n.action = 'CREATE' RETURN n";
 		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow write keyword in a string' );
+	}
+
+	public function testAllowsAdminKeywordInString(): void {
+		$query = "MATCH (n) WHERE n.action = 'GRANT' RETURN n";
+		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow admin keyword in a string' );
+	}
+
+	public function testAllowsShowKeywordInString(): void {
+		$query = "MATCH (n) WHERE n.type = 'SHOW' RETURN n";
+		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow SHOW keyword in a string' );
 	}
 
 	public function testAllowsPartialKeywordMatch(): void {
@@ -331,6 +345,43 @@ class CypherQueryFilterTest extends TestCase {
 		yield 'FOREACH with CREATE' => [
 			"FOREACH (name IN ['Alice', 'Bob'] | CREATE (:Person {name: name}))",
 			'Should reject FOREACH with CREATE'
+		];
+
+		// Admin keywords
+		yield 'GRANT role' => [
+			"GRANT ROLE admin TO user1",
+			'Should reject GRANT operation'
+		];
+
+		yield 'DENY read' => [
+			"DENY READ {prop} ON GRAPH * TO role1",
+			'Should reject DENY operation'
+		];
+
+		yield 'REVOKE role' => [
+			"REVOKE ROLE admin FROM user1",
+			'Should reject REVOKE operation'
+		];
+
+		yield 'Lowercase grant' => [
+			"grant role admin to user1",
+			'Should reject lowercase grant'
+		];
+
+		// SHOW keywords (information disclosure)
+		yield 'SHOW DATABASES' => [
+			"SHOW DATABASES",
+			'Should reject SHOW DATABASES'
+		];
+
+		yield 'SHOW USERS' => [
+			"SHOW USERS",
+			'Should reject SHOW USERS'
+		];
+
+		yield 'Lowercase show' => [
+			"show databases",
+			'Should reject lowercase show'
 		];
 
 		// Comment-based attempts (should still be caught after comment removal)
