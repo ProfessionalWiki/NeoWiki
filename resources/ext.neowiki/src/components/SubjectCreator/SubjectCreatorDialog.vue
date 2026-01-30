@@ -13,7 +13,7 @@
 			:use-close-button="true"
 			@default="open = false"
 		>
-			<SubjectCreator @create="onSubjectCreated" />
+			<SubjectCreator @draft="onSubjectCreated" />
 		</CdxDialog>
 
 		<SubjectEditorDialog

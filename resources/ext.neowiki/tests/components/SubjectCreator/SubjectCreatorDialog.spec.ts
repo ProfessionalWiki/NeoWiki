@@ -13,7 +13,7 @@ import { Subject } from '@/domain/Subject.ts';
 
 const SubjectCreatorStub = {
 	template: '<div></div>',
-	emits: [ 'create' ],
+	emits: [ 'draft' ],
 };
 
 const SubjectEditorDialogStub = {
@@ -75,7 +75,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 	const createSubject = async ( wrapper: VueWrapper, subject = newSubject() ): Promise<Subject> => {
 		await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
-		await wrapper.findComponent( SubjectCreator ).vm.$emit( 'create', subject );
+		await wrapper.findComponent( SubjectCreator ).vm.$emit( 'draft', subject );
 		return subject as Subject;
 	};
 

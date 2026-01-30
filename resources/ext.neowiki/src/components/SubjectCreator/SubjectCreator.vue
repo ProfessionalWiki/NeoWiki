@@ -35,7 +35,7 @@ import { Subject } from '@/domain/Subject.ts';
 import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
 
 const emit = defineEmits<{
-	'create': [ subject: Subject ];
+	'draft': [ subject: Subject ];
 }>();
 
 const selectedValue = ref( 'existing' );
@@ -81,7 +81,7 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 
 	try {
 		const subject = Subject.createNew( subjectLabel, schemaName );
-		emit( 'create', subject );
+		emit( 'draft', subject );
 	} catch ( error ) {
 		console.error( 'Error preparing subject:', error );
 		mw.notify( 'Error preparing subject: ' + String( error ), { type: 'error' } );
