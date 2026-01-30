@@ -25,13 +25,25 @@ export function createTestWrapper<TComponent extends DefineComponent<any, any, a
 
 export interface MwMockOptions {
 	messages?: Record<string, string | ( ( ...params: string[] ) => string )>;
-	functions?: ( 'message' | 'msg' | 'notify' )[];
+	config?: Record<string, any>;
+	functions?: (
+		'config' | 'message' | 'msg' | 'notify'
+	)[];
 }
 
 export function setupMwMock(
 	options: MwMockOptions = {},
 ): void {
-	const { messages: customMessages = {}, functions = [ 'message', 'msg', 'notify' ] } = options;
+	const {
+		messages: customMessages = {},
+		config: customConfig = {},
+		functions = [
+			'config',
+			'message',
+			'msg',
+			'notify',
+		],
+	} = options;
 
 	const mwMock: any = {};
 
@@ -47,6 +59,9 @@ export function setupMwMock(
 	};
 
 	const implementations: Record<string, any> = {
+		config: () => ( {
+			get: vi.fn( ( key: string ) => customConfig[ key ] ),
+		} ),
 		message: () => vi.fn( ( key: string, ...params: string[] ) => ( {
 			text: () => resolveMessage( key, params ),
 			parse: () => resolveMessage( key, params ),

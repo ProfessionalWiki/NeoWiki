@@ -67,6 +67,7 @@
 	"neowiki-subject-creator-schema-title": "Have an existing schema?",
 	"neowiki-subject-creator-existing-schema": "Use existing",
 	"neowiki-subject-creator-new-schema": "Create new",
+	"neowiki-subject-creator-schema-search-placeholder": "Search for a schema",
 
 	"neowiki-cypher-raw-error-empty-query": "Empty Cypher query provided",
 	"neowiki-cypher-raw-error-write-query": "Write queries are not allowed",
