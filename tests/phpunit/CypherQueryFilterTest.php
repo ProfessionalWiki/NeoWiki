@@ -368,6 +368,16 @@ class CypherQueryFilterTest extends TestCase {
 			'Should reject lowercase grant'
 		];
 
+		yield 'Lowercase deny' => [
+			"deny read {prop} on graph * to role1",
+			'Should reject lowercase deny'
+		];
+
+		yield 'Lowercase revoke' => [
+			"revoke role admin from user1",
+			'Should reject lowercase revoke'
+		];
+
 		yield 'Mixed case GrAnT' => [
 			"GrAnT ROLE admin TO user1",
 			'Should reject mixed case grant'
