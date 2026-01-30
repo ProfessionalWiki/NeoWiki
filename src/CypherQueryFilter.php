@@ -8,7 +8,9 @@ class CypherQueryFilter {
 
 	private const array WRITE_KEYWORDS = [
 		'CREATE', 'SET', 'DELETE', 'REMOVE', 'MERGE', 'DROP',
-		'CALL', 'LOAD', 'FOREACH'
+		'CALL', 'LOAD', 'FOREACH',
+		'GRANT', 'DENY', 'REVOKE',
+		'SHOW',
 	];
 
 	public function isReadQuery( string $query ): bool {
