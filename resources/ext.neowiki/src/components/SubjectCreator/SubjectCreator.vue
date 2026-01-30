@@ -31,7 +31,6 @@ import { ref, watch, nextTick, onMounted } from 'vue';
 import { CdxToggleButtonGroup } from '@wikimedia/codex';
 import { cdxIconSearch, cdxIconAdd } from '@wikimedia/codex-icons';
 import type { ButtonGroupItem } from '@wikimedia/codex';
-import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Subject } from '@/domain/Subject.ts';
 import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
 
@@ -39,7 +38,6 @@ const emit = defineEmits<{
 	'create': [ subject: Subject ];
 }>();
 
-const subjectStore = useSubjectStore();
 const selectedValue = ref( 'existing' );
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const schemaLookupRef = ref<any | null>( null );
@@ -75,8 +73,14 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 		return;
 	}
 
+	const subjectLabel = mw.config.get( 'wgTitle' );
+	if ( typeof subjectLabel !== 'string' ) {
+		mw.notify( 'Error preparing subject: No subject label found', { type: 'error' } );
+		return;
+	}
+
 	try {
-		const subject = await subjectStore.initNewSubject( schemaName );
+		const subject = Subject.createNew( subjectLabel, schemaName );
 		emit( 'create', subject );
 	} catch ( error ) {
 		console.error( 'Error preparing subject:', error );
