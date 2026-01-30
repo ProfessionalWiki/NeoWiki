@@ -18,6 +18,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import { CdxButton } from '@wikimedia/codex';
 import { setupMwMock } from '../../VueTestHelpers.ts';
 
@@ -27,7 +28,7 @@ const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 
 describe( 'AutomaticInfobox', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'message' ] } );
+		setupMwMock( { functions: [ 'message', 'msg' ] } );
 		// Mock mw.util.getUrl
 		( global as any ).mw = {
 			...( global as any ).mw,
@@ -196,12 +197,54 @@ describe( 'AutomaticInfobox', () => {
 		const schemaLink = schemaLinks[ 0 ];
 		expect( schemaLink.text() ).toBe( 'TestSchema' );
 		expect( schemaLink.attributes( 'href' ) ).toBe( '#' );
+		expect( schemaLink.attributes( 'role' ) ).toBe( 'button' );
+	} );
+
+	it( 'opens the SchemaEditorDialog when schema link is clicked', async () => {
+		const schemaAuthorizer = {
+			canEditSchema: vi.fn().mockResolvedValue( true ),
+		};
+
+		const wrapper = mount( AutomaticInfobox, {
+			props: {
+				subjectId: mockSubject.getId(),
+				canEditSubject: false,
+			},
+			global: {
+				mocks: {
+					$i18n,
+				},
+				plugins: [ pinia ],
+				provide: {
+					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
+					[ Service.SchemaAuthorizer ]: schemaAuthorizer,
+					[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
+				},
+				stubs: {
+					teleport: true,
+				},
+			},
+		} );
+
+		// Wait for the async permission check to complete
+		await flushPromises();
+
+		const schemaLink = wrapper.find( '.ext-neowiki-auto-infobox__schema a' );
+		await schemaLink.trigger( 'click' );
+
+		// SchemaEditorDialog should be rendered and open
+		const schemaDialog = wrapper.findComponent( SchemaEditorDialog );
+		expect( schemaDialog.exists() ).toBe( true );
+		expect( schemaDialog.props( 'open' ) ).toBe( true );
 	} );
 
 	it( 'renders schema name as a link to Schema page when user lacks edit permissions', async () => {
 		const schemaAuthorizer = {
 			canEditSchema: vi.fn().mockResolvedValue( false ),
 		};
+
+		// Ensure subject is in the store
+		subjectStore.setSubject( mockSubject );
 
 		const wrapper = mount( AutomaticInfobox, {
 			props: {

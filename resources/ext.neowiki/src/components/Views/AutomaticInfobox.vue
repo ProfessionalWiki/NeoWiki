@@ -16,6 +16,7 @@
 				>
 					<a
 						v-if="canEditSchema"
+						role="button"
 						href="#"
 						@click.prevent="isSchemaEditorOpen = true"
 					>
@@ -45,7 +46,7 @@
 				:on-save-schema="handleSaveSchema"
 			/>
 			<SchemaEditorDialog
-				v-if="schema"
+				v-if="schema && canEditSchema"
 				v-model:open="isSchemaEditorOpen"
 				:initial-schema="schema as Schema"
 				:on-save="handleSaveSchema"
@@ -134,6 +135,10 @@ onMounted( async () => {
 
 async function loadSchemaPermissions(): Promise<void> {
 	try {
+		if ( !schema.value ) {
+			canEditSchema.value = false;
+			return;
+		}
 		canEditSchema.value = await NeoWikiServices.getSchemaAuthorizer().canEditSchema( schema.value.getName() );
 	} catch ( error ) {
 		console.error( 'Failed to check schema permissions:', error );
@@ -141,7 +146,12 @@ async function loadSchemaPermissions(): Promise<void> {
 	}
 }
 
-const schemaUrl = computed( () => mw.util.getUrl( `Schema:${ schema.value?.getName() }` ) );
+const schemaUrl = computed( () => {
+	if ( !schema.value ) {
+		return '';
+	}
+	return mw.util.getUrl( `Schema:${ schema.value.getName() }` );
+} );
 </script>
 
 <style lang="less">
