@@ -368,6 +368,16 @@ class CypherQueryFilterTest extends TestCase {
 			'Should reject lowercase grant'
 		];
 
+		yield 'Mixed case DeNy' => [
+			"DeNy READ {prop} ON GRAPH * TO role1",
+			'Should reject mixed case deny'
+		];
+
+		yield 'Mixed case ReVoKe' => [
+			"ReVoKe ROLE admin FROM user1",
+			'Should reject mixed case revoke'
+		];
+
 		// SHOW keywords (information disclosure)
 		yield 'SHOW DATABASES' => [
 			"SHOW DATABASES",
@@ -382,6 +392,11 @@ class CypherQueryFilterTest extends TestCase {
 		yield 'Lowercase show' => [
 			"show databases",
 			'Should reject lowercase show'
+		];
+
+		yield 'Mixed case ShOw' => [
+			"ShOw DATABASES",
+			'Should reject mixed case show'
 		];
 
 		// Comment-based attempts (should still be caught after comment removal)
