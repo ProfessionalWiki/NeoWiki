@@ -36,8 +36,6 @@ const handleSave = async ( summary: string ): Promise<void> => {
 
 	try {
 		await schemaStore.saveSchema( schema, editSummary );
-		// TODO: i18n
-		mw.notify( `Updated ${ schemaName } schema`, { type: 'success' } );
 		window.location.href = mw.util.getUrl( `Schema:${ schemaName }` );
 	} catch ( error ) {
 		mw.notify(
