@@ -17,7 +17,7 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
-use ProfessionalWiki\NeoWiki\CypherQueryFilter;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\KeywordCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -131,7 +131,7 @@ class NeoWikiHooks {
 			static function ( Parser $parser, string $cypherQuery ): string {
 				$parserFunction = new CypherRawParserFunction(
 					NeoWikiExtension::getInstance()->getQueryStore(),
-					new CypherQueryFilter()
+					new KeywordCypherQueryValidator()
 				);
 				return $parserFunction->handle( $parser, $cypherQuery );
 			}

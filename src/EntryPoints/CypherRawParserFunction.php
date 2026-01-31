@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use Exception;
 use MediaWiki\Parser\Parser;
-use ProfessionalWiki\NeoWiki\CypherQueryFilter;
+use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Persistence\QueryEngine;
 use RuntimeException;
 
@@ -14,7 +14,7 @@ class CypherRawParserFunction {
 
 	public function __construct(
 		private readonly QueryEngine $queryEngine,
-		private readonly CypherQueryFilter $queryFilter
+		private readonly CypherQueryValidator $queryFilter
 	) {
 	}
 
@@ -25,7 +25,7 @@ class CypherRawParserFunction {
 			return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-empty-query' )->text() );
 		}
 
-		if ( !$this->queryFilter->isReadQuery( $cypherQuery ) ) {
+		if ( !$this->queryFilter->queryIsAllowed( $cypherQuery ) ) {
 			return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-write-query' )->text() );
 		}
 
