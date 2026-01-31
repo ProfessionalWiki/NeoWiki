@@ -13,7 +13,7 @@
 ### Medium Priority
 
 * Are we sure we should switch to "[Global Properties](GlobalProperties.md)", replacing the current
-  "[Local Properties](../adr/006_Schemas.md)" approach? (90% likely)
+  "[Local Properties](../adr/006_Schemas.md)" approach?
 * [Validation](Validation.md): do we need to add backend validation?
   (80% likely, but can be deferred)
 * Verify the current data model (Property-graph-like Subjects and multi-Subject support) is workable for provenance.
