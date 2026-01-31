@@ -2,6 +2,9 @@
 
 Try NeoWiki locally or deploy it to a server.
 
+NeoWiki is in the experimental proof of concept phase. It is not production ready, public interfaces will change,
+big structural changes will happen, and key functionality is still missing.
+
 ## Prerequisites
 
 - Docker and Docker Compose
