@@ -29,9 +29,13 @@ describe( 'TextAttributesEditor', () => {
 		} );
 	}
 
-	function getLengthFieldProps( wrapper: VueWrapper ): FieldProps {
+	function getMinLengthFieldProps( wrapper: VueWrapper ): FieldProps {
 		const fields = wrapper.findAllComponents( CdxField );
-		// Length constraint is the last CdxField (after toggle switches)
+		return fields[ fields.length - 2 ].props() as FieldProps;
+	}
+
+	function getMaxLengthFieldProps( wrapper: VueWrapper ): FieldProps {
+		const fields = wrapper.findAllComponents( CdxField );
 		return fields[ fields.length - 1 ].props() as FieldProps;
 	}
 
@@ -61,7 +65,8 @@ describe( 'TextAttributesEditor', () => {
 		it( 'shows no error when both fields are empty', () => {
 			const wrapper = newWrapper();
 
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'default' );
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'default' );
+			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'default' );
 		} );
 
 		it( 'shows no error for valid positive integers', async () => {
@@ -69,65 +74,65 @@ describe( 'TextAttributesEditor', () => {
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
 			await inputs[ 0 ].vm.$emit( 'update:model-value', '5' );
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'default' );
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'default' );
 
 			await inputs[ 1 ].vm.$emit( 'update:model-value', '100' );
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'default' );
+			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'default' );
 		} );
 
-		it( 'shows error and does not emit for zero', async () => {
+		it( 'shows error on min field for zero', async () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
 			await inputs[ 0 ].vm.$emit( 'update:model-value', '0' );
 
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( getLengthFieldProps( wrapper ).messages ).toEqual( {
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( getMinLengthFieldProps( wrapper ).messages ).toEqual( {
 				error: 'Must be a whole number of at least 1.',
 			} );
 			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 
-		it( 'shows error and does not emit for negative numbers', async () => {
+		it( 'shows error on min field for negative numbers', async () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
 			await inputs[ 0 ].vm.$emit( 'update:model-value', '-5' );
 
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( getLengthFieldProps( wrapper ).messages ).toEqual( {
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( getMinLengthFieldProps( wrapper ).messages ).toEqual( {
 				error: 'Must be a whole number of at least 1.',
 			} );
 			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 
-		it( 'shows error and does not emit for decimal numbers', async () => {
+		it( 'shows error on max field for decimal numbers', async () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
 			await inputs[ 1 ].vm.$emit( 'update:model-value', '5.5' );
 
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( getLengthFieldProps( wrapper ).messages ).toEqual( {
+			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( getMaxLengthFieldProps( wrapper ).messages ).toEqual( {
 				error: 'Must be a whole number of at least 1.',
 			} );
 			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 
-		it( 'shows error and does not emit for non-numeric input', async () => {
+		it( 'shows error on min field for non-numeric input', async () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
 			await inputs[ 0 ].vm.$emit( 'update:model-value', 'abc' );
 
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( getLengthFieldProps( wrapper ).messages ).toEqual( {
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( getMinLengthFieldProps( wrapper ).messages ).toEqual( {
 				error: 'Must be a whole number of at least 1.',
 			} );
 			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 
-		it( 'shows error when min exceeds max', async () => {
+		it( 'shows error on min field when min exceeds max', async () => {
 			const wrapper = newWrapper( {
 				property: newTextProperty( { maxLength: 10 } ),
 			} );
@@ -135,14 +140,14 @@ describe( 'TextAttributesEditor', () => {
 
 			await inputs[ 0 ].vm.$emit( 'update:model-value', '20' );
 
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( getLengthFieldProps( wrapper ).messages ).toEqual( {
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( getMinLengthFieldProps( wrapper ).messages ).toEqual( {
 				error: 'Minimum cannot exceed maximum.',
 			} );
 			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 
-		it( 'shows error when max is less than min', async () => {
+		it( 'shows error on max field when max is less than min', async () => {
 			const wrapper = newWrapper( {
 				property: newTextProperty( { minLength: 20 } ),
 			} );
@@ -150,8 +155,8 @@ describe( 'TextAttributesEditor', () => {
 
 			await inputs[ 1 ].vm.$emit( 'update:model-value', '10' );
 
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( getLengthFieldProps( wrapper ).messages ).toEqual( {
+			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( getMaxLengthFieldProps( wrapper ).messages ).toEqual( {
 				error: 'Minimum cannot exceed maximum.',
 			} );
 			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
@@ -165,7 +170,7 @@ describe( 'TextAttributesEditor', () => {
 
 			await inputs[ 0 ].vm.$emit( 'update:model-value', '10' );
 
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'default' );
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'default' );
 			expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 		} );
 
@@ -174,10 +179,24 @@ describe( 'TextAttributesEditor', () => {
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
 			await inputs[ 0 ].vm.$emit( 'update:model-value', '-5' );
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
 
 			await inputs[ 0 ].vm.$emit( 'update:model-value', '5' );
-			expect( getLengthFieldProps( wrapper ).status ).toBe( 'default' );
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'default' );
+		} );
+
+		it( 'clears cross-field error on other field when valid value resolves conflict', async () => {
+			const wrapper = newWrapper( {
+				property: newTextProperty( { maxLength: 10 } ),
+			} );
+			const inputs = wrapper.findAllComponents( CdxTextInput );
+
+			await inputs[ 0 ].vm.$emit( 'update:model-value', '20' );
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
+
+			await inputs[ 0 ].vm.$emit( 'update:model-value', '5' );
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'default' );
+			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'default' );
 		} );
 	} );
 
