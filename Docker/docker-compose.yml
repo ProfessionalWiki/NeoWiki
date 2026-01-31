@@ -2,6 +2,8 @@ services:
   mediawiki:
     image: ghcr.io/professionalwiki/neowiki:latest
     restart: unless-stopped
+    ports:
+      - "${MW_SERVER_PORT:-8484}:80"
     volumes:
       - mediawiki-images-data:/var/www/html/w/images
       # Uncomment to use custom LocalSettings.
@@ -58,6 +60,8 @@ services:
   caddy:
     image: caddy:2.10-alpine
     restart: unless-stopped
+    profiles:
+      - server
     ports:
       - "80:80"
       - "443:443"
