@@ -1,43 +1,50 @@
-# NeoWiki Docker Deployment
+# NeoWiki Docker
 
-Deploy NeoWiki on a VPS with automatic HTTPS via Caddy.
+Try NeoWiki locally or deploy it to a server.
 
 ## Prerequisites
 
-- Docker and Docker Compose installed on your VPS
-- A domain name pointing to your VPS
-- Ports 80 and 443 open
+- Docker and Docker Compose
 
-## Setup
+## Local setup
 
-1. Copy this directory to your VPS
-
-2. Edit `.env` and change all values marked with `# Change for production`:
-   - `MW_SERVER` - your wiki's URL (e.g., `https://wiki.example.com`)
-   - `MARIADB_ROOT_PASSWORD` - database root password
-   - `MARIADB_PASSWORD` - database user password
-   - `MW_ADMIN_PASSWORD` - MediaWiki admin password
-   - `NEO4J_PASSWORD` - Neo4j password
-   - `NEO4J_PASSWORD_READ` - Neo4j read-only user password
-
-3. Start the containers:
+1. Start the containers:
    ```bash
    docker compose up -d
    ```
 
-4. Wait for containers to be healthy, then initialize the database:
+2. Wait for all containers to be healthy:
+   ```bash
+   docker compose ps
+   ```
+
+3. Initialize the database and Neo4j:
    ```bash
    make install-db
    make load-neo4j-users
    ```
 
-5. Optionally load NeoWiki demo data:
+4. Load demo data:
    ```bash
    make import-demo-data
    ```
 
-6. Access your wiki at your configured `MW_SERVER` URL
+5. Open http://localhost:8484
 
-## Extra
+To log in, use username `AdminName` and the password from `.env` (`AdminPassword` by default).
 
-Server hardening is not covered here.
+## Server deployment
+
+To deploy on a server with automatic HTTPS via Caddy:
+
+1. Edit `.env` and change all values marked with `# Change for production`, including
+   `MW_SERVER` (e.g., `https://wiki.example.com`)
+
+2. Start all services including Caddy:
+   ```bash
+   docker compose --profile production up -d
+   ```
+
+3. Follow steps 2-4 from the local setup above
+
+4. Access your wiki at your configured `MW_SERVER` URL
