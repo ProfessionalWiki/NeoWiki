@@ -68,6 +68,11 @@
 	"neowiki-subject-creator-existing-schema": "Use existing",
 	"neowiki-subject-creator-new-schema": "Create new",
 	"neowiki-subject-creator-schema-search-placeholder": "Search for a schema",
+	"neowiki-subject-creator-label-field": "Subject label",
+	"neowiki-subject-creator-label-placeholder": "Enter a label for the subject",
+	"neowiki-subject-creator-save": "Create subject",
+	"neowiki-subject-creator-success": "Subject created successfully",
+	"neowiki-subject-creator-error": "Failed to create subject",
 
 	"neowiki-cypher-raw-error-empty-query": "Empty Cypher query provided",
 	"neowiki-cypher-raw-error-write-query": "Write queries are not allowed",

@@ -16,17 +16,6 @@ export class Subject {
 	) {
 	}
 
-	public static createNew( label: string, schemaName: SchemaName ): Subject {
-		// TODO: The dummy ID is a temporary workaround.
-		// Should we make ID optional in Subject or create a separate NewSubject DTO?
-		return new Subject(
-			new SubjectId( 's11111111111111' ),
-			label,
-			schemaName,
-			new StatementList( [] ),
-		);
-	}
-
 	public getId(): SubjectId {
 		return this.id;
 	}

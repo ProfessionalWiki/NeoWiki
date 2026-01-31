@@ -248,7 +248,12 @@
 				"neowiki-subject-creator-schema-title",
 				"neowiki-subject-creator-existing-schema",
 				"neowiki-subject-creator-new-schema",
-				"neowiki-subject-creator-schema-search-placeholder"
+				"neowiki-subject-creator-schema-search-placeholder",
+				"neowiki-subject-creator-label-field",
+				"neowiki-subject-creator-label-placeholder",
+				"neowiki-subject-creator-save",
+				"neowiki-subject-creator-success",
+				"neowiki-subject-creator-error"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
