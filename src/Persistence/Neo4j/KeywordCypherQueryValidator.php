@@ -2,9 +2,11 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki;
+namespace ProfessionalWiki\NeoWiki\Persistence\Neo4j;
 
-class CypherQueryFilter {
+use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
+
+class KeywordCypherQueryValidator implements CypherQueryValidator {
 
 	private const array WRITE_KEYWORDS = [
 		'CREATE', 'SET', 'DELETE', 'REMOVE', 'MERGE', 'DROP',
@@ -13,8 +15,8 @@ class CypherQueryFilter {
 		'SHOW',
 	];
 
-	public function isReadQuery( string $query ): bool {
-		$normalizedQuery = $this->normalizeQuery( $query );
+	public function queryIsAllowed( string $cypher ): bool {
+		$normalizedQuery = $this->normalizeQuery( $cypher );
 
 		return !$this->containsWriteOperations( $normalizedQuery );
 	}

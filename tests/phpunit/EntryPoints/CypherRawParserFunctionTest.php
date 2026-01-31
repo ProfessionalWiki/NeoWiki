@@ -9,7 +9,7 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherMap;
 use MediaWiki\Parser\Parser;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\CypherQueryFilter;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\KeywordCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\EntryPoints\CypherRawParserFunction;
 use ProfessionalWiki\NeoWiki\Persistence\QueryEngine;
 
@@ -55,7 +55,7 @@ class CypherRawParserFunctionTest extends TestCase {
 	public function testEmptyQueryReturnsError(): void {
 		$parserFunction = new CypherRawParserFunction(
 			$this->createDummyQueryEngine(),
-			new CypherQueryFilter()
+			new KeywordCypherQueryValidator()
 		);
 
 		$result = $parserFunction->handle( $this->createMockParser(), '' );
@@ -66,7 +66,7 @@ class CypherRawParserFunctionTest extends TestCase {
 	public function testWriteQueryIsRejected(): void {
 		$parserFunction = new CypherRawParserFunction(
 			$this->createDummyQueryEngine(),
-			new CypherQueryFilter()
+			new KeywordCypherQueryValidator()
 		);
 
 		$result = $parserFunction->handle( $this->createMockParser(), "CREATE (n:Person {name: 'Alice'})" );
@@ -82,7 +82,7 @@ class CypherRawParserFunctionTest extends TestCase {
 
 		$parserFunction = new CypherRawParserFunction(
 			$this->createQueryEngineWithData( $testData ),
-			new CypherQueryFilter()
+			new KeywordCypherQueryValidator()
 		);
 
 		$result = $parserFunction->handle( $this->createMockParser(), 'MATCH (n:Person) RETURN n' );
@@ -95,7 +95,7 @@ class CypherRawParserFunctionTest extends TestCase {
 	public function testQueryExecutionExceptionReturnsError(): void {
 		$parserFunction = new CypherRawParserFunction(
 			$this->createQueryEngineWithException( new Exception( 'Connection failed' ) ),
-			new CypherQueryFilter()
+			new KeywordCypherQueryValidator()
 		);
 
 		$result = $parserFunction->handle( $this->createMockParser(), 'MATCH (n) RETURN n' );
@@ -106,7 +106,7 @@ class CypherRawParserFunctionTest extends TestCase {
 	public function testTrimWhitespaceFromQuery(): void {
 		$parserFunction = new CypherRawParserFunction(
 			$this->createQueryEngineWithData( [] ),
-			new CypherQueryFilter()
+			new KeywordCypherQueryValidator()
 		);
 
 		$result = $parserFunction->handle( $this->createMockParser(), '  MATCH (n) RETURN n  ' );
@@ -121,7 +121,7 @@ class CypherRawParserFunctionTest extends TestCase {
 
 		$parserFunction = new CypherRawParserFunction(
 			$this->createQueryEngineWithData( $testData ),
-			new CypherQueryFilter()
+			new KeywordCypherQueryValidator()
 		);
 
 		$result = $parserFunction->handle( $this->createMockParser(), 'MATCH (n) RETURN n' );

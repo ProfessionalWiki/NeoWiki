@@ -2,48 +2,48 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests;
+namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\CypherQueryFilter;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\KeywordCypherQueryValidator;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\CypherQueryFilter
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\KeywordCypherQueryValidator
  */
-class CypherQueryFilterTest extends TestCase {
+class KeywordCypherQueryValidatorTest extends TestCase {
 
-	private function isReadQuery( string $query ): bool {
-		return ( new CypherQueryFilter() )->isReadQuery( $query );
+	private function queryIsAllowed( string $query ): bool {
+		return ( new KeywordCypherQueryValidator() )->queryIsAllowed( $query );
 	}
 
 	public function testRejectsSimpleWriteOperation(): void {
 		$query = "CREATE (n:Person {name: 'Alice'})";
-		$this->assertFalse( $this->isReadQuery( $query ), 'Filter should reject a simple CREATE operation' );
+		$this->assertFalse( $this->queryIsAllowed( $query ), 'Filter should reject a simple CREATE operation' );
 	}
 
 	public function testRejectsComplexWriteOperation(): void {
 		$query = "MATCH (n:Person) WHERE n.name = 'Alice' SET n.age = 30";
-		$this->assertFalse( $this->isReadQuery( $query ), 'Filter should reject a complex write operation' );
+		$this->assertFalse( $this->queryIsAllowed( $query ), 'Filter should reject a complex write operation' );
 	}
 
 	public function testAllowsSimpleFunctionCall(): void {
 		$query = "RETURN toUpper('hello')";
-		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow read-only function calls' );
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow read-only function calls' );
 	}
 
 	public function testAllowsNestedFunctionCall(): void {
 		$query = "RETURN size(split(toString(42), ''))";
-		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow nested function calls' );
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow nested function calls' );
 	}
 
 	public function testAllowsValidReadQuery(): void {
 		$query = "MATCH (n:Person) WHERE n.name = 'Alice' RETURN n";
-		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow a valid read query' );
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow a valid read query' );
 	}
 
 	public function testAllowsParenthesesInStrings(): void {
 		$query = "MATCH (n:Person) WHERE n.name = '(Alice)' RETURN n";
-		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow parentheses in strings' );
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow parentheses in strings' );
 	}
 
 	/**
@@ -51,7 +51,7 @@ class CypherQueryFilterTest extends TestCase {
 	 */
 	public function testRejectsVariousWriteOperations( string $keyword ): void {
 		$query = "$keyword (n:Label)";
-		$this->assertFalse( $this->isReadQuery( $query ), "Filter should reject '$keyword' operation" );
+		$this->assertFalse( $this->queryIsAllowed( $query ), "Filter should reject '$keyword' operation" );
 	}
 
 	public static function writeOperationProvider(): array {
@@ -74,23 +74,23 @@ class CypherQueryFilterTest extends TestCase {
 
 	public function testAllowsWriteKeywordInString(): void {
 		$query = "MATCH (n) WHERE n.action = 'CREATE' RETURN n";
-		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow write keyword in a string' );
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow write keyword in a string' );
 	}
 
 	public function testAllowsAdminKeywordInString(): void {
 		$query = "MATCH (n) WHERE n.action = 'GRANT' RETURN n";
-		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow admin keyword in a string' );
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow admin keyword in a string' );
 	}
 
 	public function testAllowsShowKeywordInString(): void {
 		$query = "MATCH (n) WHERE n.type = 'SHOW' RETURN n";
-		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should allow SHOW keyword in a string' );
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow SHOW keyword in a string' );
 	}
 
 	public function testAllowsPartialKeywordMatch(): void {
 		$query = "MATCH (n) WHERE n.name CONTAINS 'create' RETURN n";
 		$this->assertTrue(
-			$this->isReadQuery( $query ),
+			$this->queryIsAllowed( $query ),
 			'Filter should allow partial matches of write operation keywords'
 		);
 	}
@@ -98,7 +98,7 @@ class CypherQueryFilterTest extends TestCase {
 	public function testAllowsFunctionCallWithEmptyParentheses(): void {
 		$query = 'RETURN rand()';
 		$this->assertTrue(
-			$this->isReadQuery( $query ),
+			$this->queryIsAllowed( $query ),
 			'Filter should allow read-only function calls'
 		);
 	}
@@ -106,7 +106,7 @@ class CypherQueryFilterTest extends TestCase {
 	public function testAllowsNonFunctionParentheses(): void {
 		$query = "MATCH (n:Person) WHERE n.age > 30 AND (n.name = 'Alice' OR n.name = 'Bob') RETURN n";
 		$this->assertTrue(
-			$this->isReadQuery( $query ),
+			$this->queryIsAllowed( $query ),
 			'Filter should allow non-function parentheses in queries'
 		);
 	}
@@ -114,7 +114,7 @@ class CypherQueryFilterTest extends TestCase {
 	public function testHandlesComplexNestedStructures(): void {
 		$query = "MATCH (n:Person) WHERE n.age > 30 AND (n.name = 'Alice' OR n.name = 'Bob') AND NOT (n.city = 'New York' AND n.job = 'Teacher') RETURN n";
 		$this->assertTrue(
-			$this->isReadQuery( $query ),
+			$this->queryIsAllowed( $query ),
 			'Filter should handle complex nested structures without false positives'
 		);
 	}
@@ -123,13 +123,13 @@ class CypherQueryFilterTest extends TestCase {
 		$query = "MATCH (n:Person) // This is an inline comment\n" .
 			"WHERE n.age > 30 /* This is a\n" .
 			'multi-line comment */ RETURN n';
-		$this->assertTrue( $this->isReadQuery( $query ), 'Filter should handle comments correctly' );
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should handle comments correctly' );
 	}
 
 	public function testAllowsFunctionInWhereClause(): void {
 		$query = "MATCH (n:Person) WHERE toUpper(n.name) = 'ALICE' RETURN n";
 		$this->assertTrue(
-			$this->isReadQuery( $query ),
+			$this->queryIsAllowed( $query ),
 			'Filter should allow read-only function calls in WHERE clause'
 		);
 	}
@@ -138,7 +138,7 @@ class CypherQueryFilterTest extends TestCase {
 	 * @dataProvider writeQueryProvider
 	 */
 	public function testRejectsWriteQueries( string $query, string $description ): void {
-		$this->assertFalse( $this->isReadQuery( $query ), $description );
+		$this->assertFalse( $this->queryIsAllowed( $query ), $description );
 	}
 
 	public static function writeQueryProvider(): iterable {
