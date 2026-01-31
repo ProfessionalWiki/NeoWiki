@@ -42,7 +42,7 @@ To deploy on a server with automatic HTTPS via Caddy:
 
 2. Start all services including Caddy:
    ```bash
-   docker compose --profile production up -d
+   docker compose --profile server up -d
    ```
 
 3. Follow steps 2-4 from the local setup above

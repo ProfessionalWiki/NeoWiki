@@ -61,7 +61,7 @@ services:
     image: caddy:2.10-alpine
     restart: unless-stopped
     profiles:
-      - production
+      - server
     ports:
       - "80:80"
       - "443:443"
