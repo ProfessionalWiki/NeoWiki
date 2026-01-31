@@ -190,6 +190,8 @@ if ( getenv( 'MW_PASSWORD_SENDER' ) !== false ) {
 
 wfLoadExtension( 'NeoWiki' );
 
+$wgNeoWikiEnableDevelopmentUI = true;
+
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://' . getenv( 'NEO4J_USERNAME' ) . ':' . getenv( 'NEO4J_PASSWORD' ) . '@neo:7687';
 $wgNeoWikiNeo4jInternalReadUrl = 'bolt://' . getenv( 'NEO4J_USERNAME_READ' ) . ':' . getenv( 'NEO4J_PASSWORD_READ' ) . '@neo:7687';
 $wgNeoWikiNeo4jExternalReadUrl = getenv( 'NEO4J_URL_EXTERNAL' );
