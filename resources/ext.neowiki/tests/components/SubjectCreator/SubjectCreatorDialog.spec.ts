@@ -6,7 +6,7 @@ import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.
 import { createPinia, setActivePinia } from 'pinia';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { CdxDialog } from '@wikimedia/codex';
 import { newSchema, newSubject } from '@/TestHelpers.ts';
 import { Subject } from '@/domain/Subject.ts';
@@ -44,7 +44,7 @@ describe( 'SubjectCreatorDialog', () => {
 					teleport: true,
 				},
 				mocks: {
-					$i18n: ( key: string ) => ( { text: () => key } ),
+					$i18n: createI18nMock(),
 				},
 			},
 		} )

@@ -4,10 +4,9 @@ import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { CdxLookup } from '@wikimedia/codex';
+import { createI18nMock } from '../../VueTestHelpers.ts';
 
-const $i18n = vi.fn().mockImplementation( ( key ) => ( {
-	text: () => key,
-} ) );
+const $i18n = createI18nMock();
 
 describe( 'SchemaLookup', () => {
 	let pinia: ReturnType<typeof createPinia>;
