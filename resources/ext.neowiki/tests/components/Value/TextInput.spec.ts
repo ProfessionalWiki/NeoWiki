@@ -146,6 +146,25 @@ describe( 'TextInput', () => {
 		} );
 	} );
 
+	describe( 'Description rendering', () => {
+		it( 'renders description when property has one', () => {
+			const wrapper = newWrapper( {
+				property: newTextProperty( { description: 'Enter the full name' } ),
+			} );
+
+			expect( wrapper.text() ).toContain( 'Enter the full name' );
+		} );
+
+		it( 'does not render description slot when property has no description', () => {
+			const wrapper = newWrapper( {
+				property: newTextProperty( { description: '' } ),
+			} );
+
+			const field = wrapper.findComponent( CdxField );
+			expect( field.text() ).not.toContain( 'Enter the full name' );
+		} );
+	} );
+
 	describe( 'Event Handling', () => {
 		it( 'calls onInput from composable when CdxTextInput emits update:model-value (single)', async () => {
 			const wrapper = newWrapper( {

@@ -7,6 +7,9 @@
 		<template #label>
 			{{ props.label }}
 		</template>
+		<template v-if="props.property.description" #description>
+			{{ props.property.description }}
+		</template>
 		<NeoMultiTextInput
 			:model-value="displayValues"
 			:label="props.label"

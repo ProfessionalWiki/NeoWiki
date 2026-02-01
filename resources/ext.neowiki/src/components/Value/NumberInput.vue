@@ -7,6 +7,9 @@
 		<template #label>
 			{{ label }}
 		</template>
+		<template v-if="props.property.description" #description>
+			{{ props.property.description }}
+		</template>
 		<CdxTextInput
 			:model-value="internalInputValue"
 			:start-icon="startIcon"
