@@ -1,4 +1,4 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
 import { Subject } from '@/domain/Subject.ts';
@@ -18,6 +18,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import { CdxButton } from '@wikimedia/codex';
 import { setupMwMock } from '../../VueTestHelpers.ts';
 
@@ -27,7 +28,10 @@ const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 
 describe( 'AutomaticInfobox', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'message' ] } );
+		setupMwMock( { functions: [ 'message', 'msg' ] } );
+		( globalThis as any ).mw.util = {
+			getUrl: vi.fn( ( title: string ) => `/wiki/${ title }` ),
+		};
 	} );
 
 	let pinia: ReturnType<typeof createPinia>;
@@ -61,7 +65,7 @@ describe( 'AutomaticInfobox', () => {
 		] ),
 	);
 
-	const mountComponent = ( subject: Subject, canEditSubject: boolean ): VueWrapper => mount( AutomaticInfobox, {
+	const mountComponent = ( subject: Subject, canEditSubject: boolean, canEditSchema = false ): VueWrapper => mount( AutomaticInfobox, {
 		props: {
 			subjectId: subject.getId(),
 			canEditSubject: canEditSubject,
@@ -73,8 +77,13 @@ describe( 'AutomaticInfobox', () => {
 			plugins: [ pinia ],
 			provide: {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
-				[ Service.SchemaAuthorizer ]: NeoWikiExtension.getInstance().newSchemaAuthorizer(),
+				[ Service.SchemaAuthorizer ]: {
+					canEditSchema: vi.fn().mockResolvedValue( canEditSchema ),
+				},
 				[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
+			},
+			stubs: {
+				teleport: true,
 			},
 		},
 	} );
@@ -156,5 +165,35 @@ describe( 'AutomaticInfobox', () => {
 		await editButton.trigger( 'click' );
 
 		expect( dialog.props( 'open' ) ).toBe( true );
+	} );
+
+	it( 'renders schema name as a link to the Schema page when user lacks edit permissions', async () => {
+		const wrapper = mountComponent( mockSubject, false );
+		await flushPromises();
+
+		const schemaLink = wrapper.find( '.ext-neowiki-auto-infobox__schema a' );
+		expect( schemaLink.text() ).toBe( 'TestSchema' );
+		expect( schemaLink.attributes( 'href' ) ).toBe( '/wiki/Schema:TestSchema' );
+	} );
+
+	it( 'renders schema name as a clickable button when user has edit permissions', async () => {
+		const wrapper = mountComponent( mockSubject, false, true );
+		await flushPromises();
+
+		const schemaLink = wrapper.find( '.ext-neowiki-auto-infobox__schema a' );
+		expect( schemaLink.text() ).toBe( 'TestSchema' );
+		expect( schemaLink.attributes( 'href' ) ).toBe( '#' );
+	} );
+
+	it( 'opens SchemaEditorDialog when schema name is clicked', async () => {
+		const wrapper = mountComponent( mockSubject, false, true );
+		await flushPromises();
+
+		const schemaLink = wrapper.find( '.ext-neowiki-auto-infobox__schema a' );
+		await schemaLink.trigger( 'click' );
+
+		const schemaDialog = wrapper.findComponent( SchemaEditorDialog );
+		expect( schemaDialog.exists() ).toBe( true );
+		expect( schemaDialog.props( 'open' ) ).toBe( true );
 	} );
 } );
