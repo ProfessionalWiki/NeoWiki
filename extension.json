@@ -248,7 +248,14 @@
 				"neowiki-subject-creator-schema-title",
 				"neowiki-subject-creator-existing-schema",
 				"neowiki-subject-creator-new-schema",
-				"neowiki-subject-creator-schema-search-placeholder"
+				"neowiki-subject-creator-schema-search-placeholder",
+				"neowiki-schema-display-property-name",
+				"neowiki-schema-display-property-type",
+				"neowiki-schema-display-property-required",
+				"neowiki-schema-display-property-description",
+				"neowiki-schema-display-no-properties",
+				"neowiki-schema-display-required-yes",
+				"neowiki-schema-display-required-no"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
