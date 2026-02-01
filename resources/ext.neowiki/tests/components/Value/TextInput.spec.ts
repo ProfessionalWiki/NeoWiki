@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import TextInput from '@/components/Value/TextInput.vue';
 import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
-import { CdxField, CdxTextInput, ValidationMessages } from '@wikimedia/codex';
+import { CdxField, CdxIcon, CdxTextInput, ValidationMessages } from '@wikimedia/codex';
 import { Icon } from '@wikimedia/codex-icons';
 import { newStringValue } from '@/domain/Value';
 import { TextProperty, newTextProperty, TextType } from '@/domain/propertyTypes/Text';
@@ -147,21 +147,20 @@ describe( 'TextInput', () => {
 	} );
 
 	describe( 'Description rendering', () => {
-		it( 'renders description when property has one', () => {
+		it( 'renders info icon when property has a description', () => {
 			const wrapper = newWrapper( {
 				property: newTextProperty( { description: 'Enter the full name' } ),
 			} );
 
-			expect( wrapper.text() ).toContain( 'Enter the full name' );
+			expect( wrapper.findComponent( CdxIcon ).exists() ).toBe( true );
 		} );
 
-		it( 'does not render description slot when property has no description', () => {
+		it( 'does not render info icon when property has no description', () => {
 			const wrapper = newWrapper( {
 				property: newTextProperty( { description: '' } ),
 			} );
 
-			const field = wrapper.findComponent( CdxField );
-			expect( field.text() ).not.toContain( 'Enter the full name' );
+			expect( wrapper.findComponent( CdxIcon ).exists() ).toBe( false );
 		} );
 	} );
 

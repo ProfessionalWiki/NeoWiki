@@ -6,9 +6,13 @@
 	>
 		<template #label>
 			{{ props.label }}
-		</template>
-		<template v-if="props.property.description" #description>
-			{{ props.property.description }}
+			<CdxIcon
+				v-if="props.property.description"
+				v-tooltip="props.property.description"
+				:icon="cdxIconInfoFilled"
+				class="ext-neowiki-value-input__description-icon"
+				size="small"
+			/>
 		</template>
 		<NeoMultiTextInput
 			:model-value="displayValues"
@@ -22,7 +26,8 @@
 
 <script setup lang="ts">
 import { ref, watch, defineExpose, computed } from 'vue';
-import { CdxField, ValidationMessages } from '@wikimedia/codex';
+import { CdxField, CdxIcon, ValidationMessages } from '@wikimedia/codex';
+import { cdxIconInfoFilled } from '@wikimedia/codex-icons';
 import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
 import { ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
