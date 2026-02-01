@@ -14,17 +14,7 @@
 					role="heading"
 					aria-level="3"
 				>
-					<a
-						v-if="canEditSchema"
-						href="#"
-						@click.prevent="isSchemaEditorOpen = true"
-					>
-						{{ schema?.getName() }}
-					</a>
-					<a
-						v-else
-						:href="schemaUrl"
-					>
+					<a :href="schemaUrl">
 						{{ schema?.getName() }}
 					</a>
 				</div>
@@ -43,12 +33,6 @@
 				:subject="subject as Subject"
 				:on-save="handleSaveSubject"
 				:on-save-schema="handleSaveSchema"
-			/>
-			<SchemaEditorDialog
-				v-if="schema && canEditSchema"
-				v-model:open="isSchemaEditorOpen"
-				:initial-schema="schema as Schema"
-				:on-save="handleSaveSchema"
 			/>
 		</div>
 		<div class="ext-neowiki-auto-infobox__content">
@@ -74,14 +58,13 @@
 </template>
 
 <script setup lang="ts">
-import { Component, computed, onMounted, ref } from 'vue';
+import { Component, computed, ref } from 'vue';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
-import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
@@ -102,8 +85,6 @@ const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
 
 const isEditorOpen = ref( false );
-const isSchemaEditorOpen = ref( false );
-const canEditSchema = ref( false );
 
 const subject = computed( () => subjectStore.getSubject( props.subjectId ) as Subject ); // TODO: handle not found
 const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) ); // TODO: handle not found
@@ -133,20 +114,6 @@ const propertiesToDisplay = computed( function(): Record<string, PropertyDefinit
 		.asRecord();
 } );
 
-onMounted( async () => {
-	if ( schema.value ) {
-		await loadSchemaPermissions();
-	}
-} );
-
-async function loadSchemaPermissions(): Promise<void> {
-	try {
-		canEditSchema.value = await NeoWikiServices.getSchemaAuthorizer().canEditSchema( schema.value.getName() );
-	} catch ( error ) {
-		console.error( 'Failed to check schema permissions:', error );
-		canEditSchema.value = false;
-	}
-}
 </script>
 
 <style lang="less">
