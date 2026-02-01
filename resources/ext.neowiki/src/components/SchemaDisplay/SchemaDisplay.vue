@@ -16,6 +16,7 @@
 					<th>{{ $i18n( 'neowiki-schema-display-property-name' ).text() }}</th>
 					<th>{{ $i18n( 'neowiki-schema-display-property-type' ).text() }}</th>
 					<th>{{ $i18n( 'neowiki-schema-display-property-required' ).text() }}</th>
+					<th>{{ $i18n( 'neowiki-schema-display-property-default' ).text() }}</th>
 					<th>{{ $i18n( 'neowiki-schema-display-property-description' ).text() }}</th>
 				</tr>
 			</thead>
@@ -39,6 +40,14 @@
 							$i18n( 'neowiki-schema-display-required-yes' ).text() :
 							$i18n( 'neowiki-schema-display-required-no' ).text()
 						}}
+					</td>
+					<td>
+						<component
+							:is="componentRegistry.getValueDisplayComponent( property.type )"
+							v-if="property.default !== undefined"
+							:value="property.default"
+							:property="property"
+						/>
 					</td>
 					<td>{{ property.description }}</td>
 				</tr>

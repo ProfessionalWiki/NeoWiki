@@ -253,6 +253,7 @@
 				"neowiki-schema-display-property-type",
 				"neowiki-schema-display-property-required",
 				"neowiki-schema-display-property-description",
+				"neowiki-schema-display-property-default",
 				"neowiki-schema-display-no-properties",
 				"neowiki-schema-display-required-yes",
 				"neowiki-schema-display-required-no"

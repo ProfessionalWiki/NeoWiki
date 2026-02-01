@@ -89,16 +89,44 @@ describe( 'SchemaDisplay', () => {
 		expect( rows[ 0 ].findAll( 'td' )[ 0 ].text() ).toBe( 'name' );
 		expect( rows[ 0 ].findAll( 'td' )[ 1 ].text() ).toContain( 'neowiki-property-type-text' );
 		expect( rows[ 0 ].findAll( 'td' )[ 2 ].text() ).toBe( 'neowiki-schema-display-required-yes' );
-		expect( rows[ 0 ].findAll( 'td' )[ 3 ].text() ).toBe( 'Full name' );
+		expect( rows[ 0 ].findAll( 'td' )[ 4 ].text() ).toBe( 'Full name' );
 
 		expect( rows[ 1 ].findAll( 'td' )[ 0 ].text() ).toBe( 'age' );
 		expect( rows[ 1 ].findAll( 'td' )[ 1 ].text() ).toContain( 'neowiki-property-type-number' );
 		expect( rows[ 1 ].findAll( 'td' )[ 2 ].text() ).toBe( 'neowiki-schema-display-required-no' );
-		expect( rows[ 1 ].findAll( 'td' )[ 3 ].text() ).toBe( 'Age in years' );
+		expect( rows[ 1 ].findAll( 'td' )[ 4 ].text() ).toBe( 'Age in years' );
 
 		expect( rows[ 2 ].findAll( 'td' )[ 0 ].text() ).toBe( 'website' );
 		expect( rows[ 2 ].findAll( 'td' )[ 1 ].text() ).toContain( 'neowiki-property-type-url' );
 		expect( rows[ 2 ].findAll( 'td' )[ 2 ].text() ).toBe( 'neowiki-schema-display-required-no' );
+		expect( rows[ 2 ].findAll( 'td' )[ 4 ].text() ).toBe( '' );
+	} );
+
+	it( 'renders default values for properties that have them', () => {
+		const schema = new Schema(
+			'Person',
+			'',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'greeting', {
+					type: TextType.typeName,
+					default: [ 'Hello' ],
+				} ),
+				createPropertyDefinitionFromJson( 'age', {
+					type: NumberType.typeName,
+					default: 25,
+				} ),
+				createPropertyDefinitionFromJson( 'website', {
+					type: UrlType.typeName,
+				} ),
+			] ),
+		);
+
+		const wrapper = mountComponent( schema );
+
+		const rows = wrapper.findAll( '.ext-neowiki-schema-display__table tbody tr' );
+
+		expect( rows[ 0 ].findAll( 'td' )[ 3 ].text() ).toBe( 'Hello' );
+		expect( rows[ 1 ].findAll( 'td' )[ 3 ].text() ).toBe( '25' );
 		expect( rows[ 2 ].findAll( 'td' )[ 3 ].text() ).toBe( '' );
 	} );
 
