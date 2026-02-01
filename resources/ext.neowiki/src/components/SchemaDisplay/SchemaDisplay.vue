@@ -13,10 +13,18 @@
 		>
 			<thead>
 				<tr>
-					<th>{{ $i18n( 'neowiki-schema-display-property-name' ).text() }}</th>
-					<th>{{ $i18n( 'neowiki-schema-display-property-type' ).text() }}</th>
-					<th>{{ $i18n( 'neowiki-schema-display-property-required' ).text() }}</th>
-					<th>{{ $i18n( 'neowiki-schema-display-property-default' ).text() }}</th>
+					<th class="ext-neowiki-schema-display__compact">
+						{{ $i18n( 'neowiki-schema-display-property-name' ).text() }}
+					</th>
+					<th class="ext-neowiki-schema-display__compact">
+						{{ $i18n( 'neowiki-schema-display-property-type' ).text() }}
+					</th>
+					<th class="ext-neowiki-schema-display__compact">
+						{{ $i18n( 'neowiki-schema-display-property-required' ).text() }}
+					</th>
+					<th class="ext-neowiki-schema-display__initial-value">
+						{{ $i18n( 'neowiki-schema-display-property-default' ).text() }}
+					</th>
 					<th>{{ $i18n( 'neowiki-schema-display-property-description' ).text() }}</th>
 				</tr>
 			</thead>
@@ -25,8 +33,10 @@
 					v-for="property in properties"
 					:key="property.name.toString()"
 				>
-					<td>{{ property.name.toString() }}</td>
-					<td>
+					<td class="ext-neowiki-schema-display__compact">
+						{{ property.name.toString() }}
+					</td>
+					<td class="ext-neowiki-schema-display__compact">
 						<span class="ext-neowiki-schema-display__type-cell">
 							<CdxIcon
 								:icon="getIcon( property.type )"
@@ -35,13 +45,13 @@
 							{{ getTypeLabel( property.type ) }}
 						</span>
 					</td>
-					<td>
+					<td class="ext-neowiki-schema-display__compact">
 						{{ property.required ?
 							$i18n( 'neowiki-schema-display-required-yes' ).text() :
 							$i18n( 'neowiki-schema-display-required-no' ).text()
 						}}
 					</td>
-					<td>
+					<td class="ext-neowiki-schema-display__initial-value">
 						<component
 							:is="componentRegistry.getValueDisplayComponent( property.type )"
 							v-if="property.default !== undefined"
@@ -95,7 +105,7 @@ function getTypeLabel( propertyType: string ): string {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-schema-display {
-	max-width: 48rem;
+	max-width: 64rem;
 
 	&__description {
 		color: @color-subtle;
@@ -126,6 +136,15 @@ function getTypeLabel( propertyType: string ): string {
 		tr:last-child td {
 			border-bottom: none;
 		}
+	}
+
+	&__compact {
+		width: 1%;
+		white-space: nowrap;
+	}
+
+	&__initial-value {
+		width: 14rem;
 	}
 
 	&__type-cell {
