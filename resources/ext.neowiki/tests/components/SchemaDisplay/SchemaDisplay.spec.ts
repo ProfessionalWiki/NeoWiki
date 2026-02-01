@@ -58,7 +58,7 @@ describe( 'SchemaDisplay', () => {
 		expect( wrapper.find( '.ext-neowiki-schema-display__description' ).exists() ).toBe( false );
 	} );
 
-	it( 'renders property rows with correct name, type label, required status, and description', () => {
+	it( 'renders property rows with correct property name, type label, required status, and description', () => {
 		const schema = new Schema(
 			'Person',
 			'',

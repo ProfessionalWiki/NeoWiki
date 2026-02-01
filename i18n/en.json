@@ -69,7 +69,7 @@
 	"neowiki-subject-creator-new-schema": "Create new",
 	"neowiki-subject-creator-schema-search-placeholder": "Search for a schema",
 
-	"neowiki-schema-display-property-name": "Name",
+	"neowiki-schema-display-property-name": "Property",
 	"neowiki-schema-display-property-type": "Type",
 	"neowiki-schema-display-property-required": "Required",
 	"neowiki-schema-display-property-description": "Description",
