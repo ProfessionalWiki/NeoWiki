@@ -31,7 +31,7 @@
 						class="ext-neowiki-schema-editor__property-list__menu-item__delete"
 						weight="quiet"
 						action="destructive"
-						@click="onDeleteProperty( menuItem.value )"
+						@click.stop="onDeleteProperty( menuItem.value )"
 					>
 						<CdxIcon :icon="cdxIconTrash" />
 					</CdxButton>
