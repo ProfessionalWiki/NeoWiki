@@ -16,6 +16,7 @@ import { RestSchemaRepository } from '@/persistence/RestSchemaRepository.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
 import { CsrfSendingHttpClient } from '@/infrastructure/HttpClient/CsrfSendingHttpClient.ts';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
+import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
 import { RightsBasedSchemaAuthorizer } from '@/persistence/RightsBasedSchemaAuthorizer.ts';
 import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
 import { SubjectRepository } from '@/domain/SubjectRepository.ts';
@@ -105,6 +106,7 @@ export class NeoWikiExtension {
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
 			new SchemaSerializer(),
+			new SchemaDeserializer(),
 			new MediaWikiPageSaver( this.getMediaWiki() ),
 		);
 	}

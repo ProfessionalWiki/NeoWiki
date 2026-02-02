@@ -1,24 +1,9 @@
 import { Schema, type SchemaName } from '@/domain/Schema';
-import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition';
-import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { SchemaRepository } from '@/application/SchemaRepository';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
+import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
 import { PageSaver } from '@/persistence/PageSaver.ts';
-
-export function schemaFromJson( schemaName: SchemaName, schema: Record<string, any> ): Schema {
-	return new Schema(
-		schemaName,
-		schema.description,
-		propertyDefinitionsFromJson( schema.propertyDefinitions ),
-	);
-}
-
-export function propertyDefinitionsFromJson( definitions: Record<string, any> ): PropertyDefinitionList {
-	return new PropertyDefinitionList(
-		Object.keys( definitions ).map( ( key ) => createPropertyDefinitionFromJson( key, definitions[ key ] ) ),
-	);
-}
 
 export class RestSchemaRepository implements SchemaRepository {
 
@@ -26,6 +11,7 @@ export class RestSchemaRepository implements SchemaRepository {
 		private readonly mediaWikiRestApiUrl: string,
 		private readonly httpClient: HttpClient,
 		private readonly serializer: SchemaSerializer,
+		private readonly deserializer: SchemaDeserializer,
 		private readonly pageSaver: PageSaver,
 	) {
 	}
@@ -46,7 +32,7 @@ export class RestSchemaRepository implements SchemaRepository {
 			throw new Error( 'Schema propertyDefinitions is undefined' );
 		}
 
-		return schemaFromJson( schemaName, schema );
+		return this.deserializer.deserialize( schemaName, schema );
 	}
 
 	public async getSchemaNames( search = '' ): Promise<string[]> {
