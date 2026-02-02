@@ -50,7 +50,7 @@
 			v-model="localProperty.default"
 			class="property-definition-editor__default"
 			:label="$i18n( 'neowiki-property-editor-initial-value' ).text()"
-			:property="localProperty"
+			:property="{ ...localProperty, description: '' }"
 		/>
 	</div>
 </template>

@@ -19,6 +19,9 @@ export function createTestWrapper<TComponent extends DefineComponent<any, any, a
 			props: props,
 			global: {
 				provide: NeoWikiTestServices.getServices(),
+				directives: {
+					tooltip: {},
+				},
 				mocks: {
 					$i18n: createI18nMock(),
 				},

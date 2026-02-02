@@ -7,6 +7,13 @@
 	>
 		<template #label>
 			{{ props.label }}
+			<CdxIcon
+				v-if="props.property.description"
+				v-tooltip="props.property.description"
+				:icon="cdxIconInfo"
+				class="ext-neowiki-value-input__description-icon"
+				size="small"
+			/>
 		</template>
 		<NeoMultiTextInput
 			v-if="props.property.multiple"
@@ -26,7 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import { CdxField, CdxTextInput } from '@wikimedia/codex';
+import { CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
+import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { toRef } from 'vue';
 import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
 import { TextProperty, TextType } from '@/domain/propertyTypes/Text.ts';

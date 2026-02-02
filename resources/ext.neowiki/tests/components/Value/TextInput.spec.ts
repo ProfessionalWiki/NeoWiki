@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import TextInput from '@/components/Value/TextInput.vue';
 import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
-import { CdxField, CdxTextInput, ValidationMessages } from '@wikimedia/codex';
+import { CdxField, CdxIcon, CdxTextInput, ValidationMessages } from '@wikimedia/codex';
 import { Icon } from '@wikimedia/codex-icons';
 import { newStringValue } from '@/domain/Value';
 import { TextProperty, newTextProperty, TextType } from '@/domain/propertyTypes/Text';
@@ -143,6 +143,24 @@ describe( 'TextInput', () => {
 
 			expect( field.props( 'status' ) ).toBe( 'default' );
 			expect( field.props( 'messages' ) ).toEqual( mockFieldMessages.value );
+		} );
+	} );
+
+	describe( 'Description rendering', () => {
+		it( 'renders info icon when property has a description', () => {
+			const wrapper = newWrapper( {
+				property: newTextProperty( { description: 'Enter the full name' } ),
+			} );
+
+			expect( wrapper.findComponent( CdxIcon ).exists() ).toBe( true );
+		} );
+
+		it( 'does not render info icon when property has no description', () => {
+			const wrapper = newWrapper( {
+				property: newTextProperty( { description: '' } ),
+			} );
+
+			expect( wrapper.findComponent( CdxIcon ).exists() ).toBe( false );
 		} );
 	} );
 

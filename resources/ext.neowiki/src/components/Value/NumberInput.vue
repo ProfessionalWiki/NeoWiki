@@ -6,6 +6,13 @@
 	>
 		<template #label>
 			{{ label }}
+			<CdxIcon
+				v-if="props.property.description"
+				v-tooltip="props.property.description"
+				:icon="cdxIconInfo"
+				class="ext-neowiki-value-input__description-icon"
+				size="small"
+			/>
 		</template>
 		<CdxTextInput
 			:model-value="internalInputValue"
@@ -22,7 +29,8 @@ import type { Value } from '@/domain/Value';
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { CdxField, CdxTextInput } from '@wikimedia/codex';
+import { CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
+import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newNumberValue, NumberValue, ValueType } from '@/domain/Value';
 import { NumberType, NumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
