@@ -6,7 +6,7 @@ import EditSummary from '@/components/common/EditSummary.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { newSchema } from '@/TestHelpers.ts';
 import { CdxDialog } from '@wikimedia/codex';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
@@ -87,7 +87,7 @@ describe( 'SubjectCreatorDialog', () => {
 					[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
 				},
 				mocks: {
-					$i18n: ( key: string ) => ( { text: () => key } ),
+					$i18n: createI18nMock(),
 				},
 			},
 		} )

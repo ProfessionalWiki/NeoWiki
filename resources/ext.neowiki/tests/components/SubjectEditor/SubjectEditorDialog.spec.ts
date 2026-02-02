@@ -11,11 +11,9 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
-import { setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
-const $i18n = vi.fn().mockImplementation( ( key ) => ( {
-	text: () => key,
-} ) );
+const $i18n = createI18nMock();
 
 describe( 'SubjectEditorDialog', () => {
 	beforeEach( () => {

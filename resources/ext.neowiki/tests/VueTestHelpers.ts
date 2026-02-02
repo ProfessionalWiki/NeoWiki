@@ -3,6 +3,12 @@ import { Component, DefineComponent } from 'vue';
 import { vi } from 'vitest';
 import { NeoWikiTestServices } from './NeoWikiTestServices.ts';
 
+export function createI18nMock(): ReturnType<typeof vi.fn> {
+	return vi.fn().mockImplementation( ( key ) => ( {
+		text: () => key,
+	} ) );
+}
+
 export function createTestWrapper<TComponent extends DefineComponent<any, any, any>>(
 	component: Component,
 	props: InstanceType<TComponent>['$props'],
@@ -14,9 +20,7 @@ export function createTestWrapper<TComponent extends DefineComponent<any, any, a
 			global: {
 				provide: NeoWikiTestServices.getServices(),
 				mocks: {
-					$i18n: vi.fn().mockImplementation( ( key ) => ( {
-						text: () => key,
-					} ) ),
+					$i18n: createI18nMock(),
 				},
 			},
 		},

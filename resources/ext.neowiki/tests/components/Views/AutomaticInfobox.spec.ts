@@ -1,5 +1,5 @@
 import { mount, VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -19,11 +19,9 @@ import { Service } from '@/NeoWikiServices.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { CdxButton } from '@wikimedia/codex';
-import { setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
-const $i18n = vi.fn().mockImplementation( ( key ) => ( {
-	text: () => key,
-} ) );
+const $i18n = createI18nMock();
 
 describe( 'AutomaticInfobox', () => {
 	beforeEach( () => {
