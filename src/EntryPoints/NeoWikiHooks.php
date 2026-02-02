@@ -119,7 +119,7 @@ class NeoWikiHooks {
 				'div',
 				[
 					'id' => 'ext-neowiki-view-schema',
-					'data-schema-name' => $out->getTitle()->getText(),
+					'data-mw-schema-name' => $out->getTitle()->getText(),
 				]
 			)
 		);

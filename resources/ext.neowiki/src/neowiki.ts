@@ -31,7 +31,7 @@ async function initializeSchemaEditor(): Promise<void> {
 			EditSchemaPage,
 			{
 				initialSchema: await NeoWikiExtension.getInstance().getSchemaRepository().getSchema(
-					editSchema.getAttribute( 'data-schema-name' ) as SchemaName,
+					editSchema.getAttribute( 'data-mw-schema-name' ) as SchemaName,
 				),
 			},
 		);
@@ -46,7 +46,7 @@ async function initializeSchemaView(): Promise<void> {
 
 	if ( viewSchema !== null ) {
 		const schema = await NeoWikiExtension.getInstance().getSchemaRepository().getSchema(
-			viewSchema.getAttribute( 'data-schema-name' ) as SchemaName,
+			viewSchema.getAttribute( 'data-mw-schema-name' ) as SchemaName,
 		);
 
 		const app = createMwApp( SchemaDisplay, { schema } );
