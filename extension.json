@@ -225,10 +225,8 @@
 				"neowiki-property-editor-maximum",
 				"neowiki-property-editor-precision",
 				"neowiki-property-editor-precision-non-negative",
-				"neowiki-property-editor-length-constraint",
-				"neowiki-property-editor-length-between",
-				"neowiki-property-editor-length-and",
-				"neowiki-property-editor-length-characters",
+				"neowiki-property-editor-min-length",
+				"neowiki-property-editor-max-length",
 				"neowiki-property-editor-length-whole-number",
 				"neowiki-property-editor-length-min-exceeds-max",
 				"neowiki-property-editor-multiple",
@@ -257,6 +255,11 @@
 				"neowiki-schema-display-no-properties",
 				"neowiki-schema-display-required-yes",
 				"neowiki-schema-display-required-no"
+				"neowiki-subject-creator-label-field",
+				"neowiki-subject-creator-label-placeholder",
+				"neowiki-subject-creator-save",
+				"neowiki-subject-creator-success",
+				"neowiki-subject-creator-error"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

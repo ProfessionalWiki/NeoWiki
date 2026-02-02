@@ -28,6 +28,9 @@ const $i18n = vi.fn().mockImplementation( ( key ) => ( {
 describe( 'AutomaticInfobox', () => {
 	beforeEach( () => {
 		setupMwMock( { functions: [ 'message' ] } );
+		( globalThis as any ).mw.util = {
+			getUrl: vi.fn( ( title: string ) => `/wiki/${ title }` ),
+		};
 	} );
 
 	let pinia: ReturnType<typeof createPinia>;
@@ -156,5 +159,13 @@ describe( 'AutomaticInfobox', () => {
 		await editButton.trigger( 'click' );
 
 		expect( dialog.props( 'open' ) ).toBe( true );
+	} );
+
+	it( 'renders schema name as a link to the Schema page', () => {
+		const wrapper = mountComponent( mockSubject, false );
+
+		const schemaLink = wrapper.find( '.ext-neowiki-auto-infobox__schema a' );
+		expect( schemaLink.text() ).toBe( 'TestSchema' );
+		expect( schemaLink.attributes( 'href' ) ).toBe( '/wiki/Schema:TestSchema' );
 	} );
 } );
