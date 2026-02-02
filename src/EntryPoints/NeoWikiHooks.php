@@ -232,19 +232,6 @@ class NeoWikiHooks {
 		}
 	}
 
-	public static function onSkinTemplateNavigationUniversal( SkinTemplate $skinTemplate, array &$links ): void {
-		if ( !self::isSchemaPage( $skinTemplate->getOutput() ) || !self::userCanEditCurrentPage( $skinTemplate ) ) {
-			return;
-		}
-
-		// TODO: Rearrange link order.
-		$links['views']['edit-schema'] = [
-			'class' => ( $skinTemplate->getRequest()->getVal( 'action' ) == 'edit-schema' ) ? 'selected' : '',
-			'href' => $skinTemplate->getTitle()->getLocalUrl( 'action=edit-schema' ),
-			'text' => $skinTemplate->msg( 'neowiki-edit-with-form' )->text(),
-		];
-	}
-
 	private static function isSchemaPage( OutputPage $out ): bool {
 		return $out->getTitle()->getNamespace() === NeoWikiExtension::NS_SCHEMA;
 	}

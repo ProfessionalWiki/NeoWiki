@@ -50,9 +50,7 @@
 
 		"SpecialPage_initList": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSpecialPageInitList",
 
-		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn",
-
-		"SkinTemplateNavigation::Universal": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSkinTemplateNavigationUniversal"
+		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn"
 	},
 
 	"Actions": {
@@ -178,7 +176,9 @@
 				"CdxToggleSwitch",
 				"CdxMenu",
 				"CdxToggleButtonGroup",
-				"CdxLookup"
+				"CdxLookup",	
+				"CdxTable",
+				"CdxInfoChip"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",
@@ -259,7 +259,8 @@
 				"neowiki-subject-creator-label-placeholder",
 				"neowiki-subject-creator-save",
 				"neowiki-subject-creator-success",
-				"neowiki-subject-creator-error"
+				"neowiki-subject-creator-error",
+				"neowiki-edit-schema"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

@@ -1,75 +1,46 @@
 <template>
 	<div class="ext-neowiki-schema-display">
-		<p
-			v-if="schema.getDescription()"
-			class="ext-neowiki-schema-display__description"
+		<CdxTable
+			:columns="hasProperties ? columns : []"
+			:data="properties"
+			:caption="schema.getName()"
+			:use-row-headers="true"
+			:hide-caption="true"
 		>
-			{{ schema.getDescription() }}
-		</p>
+			<template #header>
+				<SchemaDisplayHeader :schema="schema" />
+			</template>
 
-		<table
-			v-if="hasProperties"
-			class="ext-neowiki-schema-display__table"
-		>
-			<thead>
-				<tr>
-					<th class="ext-neowiki-schema-display__compact">
-						{{ $i18n( 'neowiki-schema-display-property-name' ).text() }}
-					</th>
-					<th class="ext-neowiki-schema-display__compact">
-						{{ $i18n( 'neowiki-schema-display-property-type' ).text() }}
-					</th>
-					<th class="ext-neowiki-schema-display__compact">
-						{{ $i18n( 'neowiki-schema-display-property-required' ).text() }}
-					</th>
-					<th class="ext-neowiki-schema-display__initial-value">
-						{{ $i18n( 'neowiki-schema-display-property-default' ).text() }}
-					</th>
-					<th>{{ $i18n( 'neowiki-schema-display-property-description' ).text() }}</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr
-					v-for="property in properties"
-					:key="property.name.toString()"
-				>
-					<td class="ext-neowiki-schema-display__compact">
-						{{ property.name.toString() }}
-					</td>
-					<td class="ext-neowiki-schema-display__compact">
-						<span class="ext-neowiki-schema-display__type-cell">
-							<CdxIcon
-								:icon="getIcon( property.type )"
-								size="small"
-							/>
-							{{ getTypeLabel( property.type ) }}
-						</span>
-					</td>
-					<td class="ext-neowiki-schema-display__compact">
-						{{ property.required ?
-							$i18n( 'neowiki-schema-display-required-yes' ).text() :
-							$i18n( 'neowiki-schema-display-required-no' ).text()
-						}}
-					</td>
-					<td class="ext-neowiki-schema-display__initial-value">
-						<component
-							:is="componentRegistry.getValueDisplayComponent( property.type )"
-							v-if="property.default !== undefined"
-							:value="property.default"
-							:property="property"
-						/>
-					</td>
-					<td>{{ property.description }}</td>
-				</tr>
-			</tbody>
-		</table>
+			<template #item-name="{ item }">
+				{{ item.toString() }}
+			</template>
 
-		<p
-			v-else
-			class="ext-neowiki-schema-display__empty"
-		>
-			{{ $i18n( 'neowiki-schema-display-no-properties' ).text() }}
-		</p>
+			<template #item-type="{ item }">
+				<CdxInfoChip :icon="getIcon( item )">
+					{{ getTypeLabel( item ) }}
+				</CdxInfoChip>
+			</template>
+
+			<template #item-required="{ item }">
+				{{ item ?
+					$i18n( 'neowiki-schema-display-required-yes' ).text() :
+					$i18n( 'neowiki-schema-display-required-no' ).text()
+				}}
+			</template>
+
+			<template #item-default="{ item, row }">
+				<component
+					:is="componentRegistry.getValueDisplayComponent( row.type )"
+					v-if="item !== undefined"
+					:value="item"
+					:property="row"
+				/>
+			</template>
+
+			<template #empty-state>
+				{{ $i18n( 'neowiki-schema-display-no-properties' ).text() }}
+			</template>
+		</CdxTable>
 	</div>
 </template>
 
@@ -77,8 +48,10 @@
 import { computed } from 'vue';
 import { Schema } from '@/domain/Schema.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { CdxIcon } from '@wikimedia/codex';
+import { CdxTable, CdxInfoChip } from '@wikimedia/codex';
+import type { TableColumn } from '@wikimedia/codex';
 import type { Icon } from '@wikimedia/codex-icons';
+import SchemaDisplayHeader from './SchemaDisplayHeader.vue';
 
 const props = defineProps( {
 	schema: {
@@ -91,6 +64,29 @@ const componentRegistry = NeoWikiServices.getComponentRegistry();
 
 const properties = computed( () => [ ...props.schema.getPropertyDefinitions() ] );
 const hasProperties = computed( () => properties.value.length > 0 );
+
+const columns = computed<TableColumn[]>( () => [
+	{
+		id: 'name',
+		label: mw.msg( 'neowiki-schema-display-property-name' )
+	},
+	{
+		id: 'type',
+		label: mw.msg( 'neowiki-schema-display-property-type' )
+	},
+	{
+		id: 'required',
+		label: mw.msg( 'neowiki-schema-display-property-required' )
+	},
+	{
+		id: 'default',
+		label: mw.msg( 'neowiki-schema-display-property-default' )
+	},
+	{
+		id: 'description',
+		label: mw.msg( 'neowiki-schema-display-property-description' )
+	}
+] );
 
 function getIcon( propertyType: string ): Icon {
 	return componentRegistry.getIcon( propertyType );
@@ -107,54 +103,13 @@ function getTypeLabel( propertyType: string ): string {
 .ext-neowiki-schema-display {
 	max-width: 64rem;
 
-	&__description {
-		color: @color-subtle;
-		margin-bottom: @spacing-100;
+	// Required to align our custom header to the inline-start of the table header
+	.cdx-table__header__caption {
+		display: none;
 	}
 
-	&__table {
-		width: 100%;
-		border-collapse: separate;
-		border-spacing: 0;
-		border: @border-base;
-		border-radius: @border-radius-base;
-		line-height: @line-height-small;
-
-		th,
-		td {
-			padding: @spacing-50 @spacing-75;
-			text-align: left;
-			border-bottom: @border-subtle;
-		}
-
-		th {
-			font-weight: @font-weight-bold;
-			color: @color-emphasized;
-			background-color: @background-color-interactive-subtle;
-		}
-
-		tr:last-child td {
-			border-bottom: none;
-		}
-	}
-
-	&__compact {
-		width: 1%;
-		white-space: nowrap;
-	}
-
-	&__initial-value {
-		width: 14rem;
-	}
-
-	&__type-cell {
-		display: inline-flex;
-		align-items: center;
-		gap: @spacing-25;
-	}
-
-	&__empty {
-		color: @color-subtle;
+	.cdx-table__header__content {
+		flex-grow: 1;
 	}
 }
 </style>
