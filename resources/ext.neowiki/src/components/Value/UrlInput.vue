@@ -10,7 +10,7 @@
 			<CdxIcon
 				v-if="props.property.description"
 				v-tooltip="props.property.description"
-				:icon="cdxIconInfoFilled"
+				:icon="cdxIconInfo"
 				class="ext-neowiki-value-input__description-icon"
 				size="small"
 			/>
@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
-import { cdxIconInfoFilled } from '@wikimedia/codex-icons';
+import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { toRef } from 'vue';
 import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
 import { UrlProperty, UrlType } from '@/domain/propertyTypes/Url.ts';
