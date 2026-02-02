@@ -1,4 +1,4 @@
-import { RestSchemaRepository } from '@/persistence/RestSchemaRepository';
+import { RestSchemaRepository, schemaFromJson, propertyDefinitionsFromJson } from '@/persistence/RestSchemaRepository';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { PropertyName } from '@/domain/PropertyDefinition';
@@ -6,6 +6,7 @@ import { Schema } from '@/domain/Schema';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
 import { TextType } from '@/domain/propertyTypes/Text';
+import { NumberType } from '@/domain/propertyTypes/Number';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { FailingPageSaver, PageSaver, SucceedingPageSaver } from '@/persistence/PageSaver.ts';
 
@@ -148,6 +149,88 @@ describe( 'RestSchemaRepository', () => {
 				expect.anything(),
 			);
 		} );
+	} );
+
+} );
+
+describe( 'schemaFromJson', () => {
+
+	it( 'deserializes a schema with property definitions', () => {
+		const schema = schemaFromJson( 'Employee', {
+			description: 'An employee',
+			propertyDefinitions: {
+				Name: { type: TextType.typeName, required: true },
+				Age: { type: NumberType.typeName, required: false },
+			},
+		} );
+
+		expect( schema.getName() ).toEqual( 'Employee' );
+		expect( schema.getDescription() ).toEqual( 'An employee' );
+		expect( schema.getPropertyDefinitions().asRecord() ).toEqual( {
+			Name: {
+				name: new PropertyName( 'Name' ),
+				type: TextType.typeName,
+				description: '',
+				required: true,
+				multiple: false,
+				uniqueItems: true,
+			},
+			Age: {
+				name: new PropertyName( 'Age' ),
+				type: NumberType.typeName,
+				description: '',
+				required: false,
+				minimum: undefined,
+				maximum: undefined,
+			},
+		} );
+	} );
+
+	it( 'deserializes a schema with no property definitions', () => {
+		const schema = schemaFromJson( 'Empty', {
+			description: 'Empty schema',
+			propertyDefinitions: {},
+		} );
+
+		expect( schema.getName() ).toEqual( 'Empty' );
+		expect( schema.getDescription() ).toEqual( 'Empty schema' );
+		expect( schema.getPropertyDefinitions().asRecord() ).toEqual( {} );
+	} );
+
+} );
+
+describe( 'propertyDefinitionsFromJson', () => {
+
+	it( 'deserializes multiple property definitions', () => {
+		const definitions = propertyDefinitionsFromJson( {
+			Website: { type: TextType.typeName, required: false },
+			Count: { type: NumberType.typeName, required: true },
+		} );
+
+		expect( definitions.asRecord() ).toEqual( {
+			Website: {
+				name: new PropertyName( 'Website' ),
+				type: TextType.typeName,
+				description: '',
+				required: false,
+				multiple: false,
+				uniqueItems: true,
+			},
+			Count: {
+				name: new PropertyName( 'Count' ),
+				type: NumberType.typeName,
+				description: '',
+				required: true,
+				minimum: undefined,
+				maximum: undefined,
+			},
+		} );
+	} );
+
+	it( 'returns empty list for empty input', () => {
+		const definitions = propertyDefinitionsFromJson( {} );
+
+		expect( definitions.asRecord() ).toEqual( {} );
 	} );
 
 } );
