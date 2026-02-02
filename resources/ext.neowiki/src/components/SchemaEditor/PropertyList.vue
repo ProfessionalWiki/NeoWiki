@@ -7,14 +7,44 @@
 			:menu-items="menuItems"
 			:footer="menuFooter"
 			@update:selected="onMenuSelect"
-		/>
+		>
+			<template #default="{ menuItem }">
+				<span class="ext-neowiki-schema-editor__property-list__menu-item__content cdx-menu-item__content">
+					<CdxIcon
+						v-if="menuItem.icon"
+						class="cdx-menu-item__icon"
+						:icon="menuItem.icon"
+					/>
+					<span class="cdx-menu-item__text">
+						<span class="cdx-menu-item__text__label">
+							{{ menuItem.label }}
+						</span>
+						<span
+							v-if="menuItem.description"
+							class="cdx-menu-item__text__description"
+						>
+							{{ menuItem.description }}
+						</span>
+					</span>
+					<CdxButton
+						v-if="menuItem.value !== 'new-property'"
+						class="ext-neowiki-schema-editor__property-list__menu-item__delete"
+						weight="quiet"
+						action="destructive"
+						@click="onDeleteProperty( menuItem.value )"
+					>
+						<CdxIcon :icon="cdxIconTrash" />
+					</CdxButton>
+				</span>
+			</template>
+		</CdxMenu>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { CdxMenu, MenuItemData } from '@wikimedia/codex';
-import { cdxIconAdd } from '@wikimedia/codex-icons';
+import { CdxMenu, MenuItemData, CdxButton, CdxIcon } from '@wikimedia/codex';
+import { cdxIconAdd, cdxIconTrash } from '@wikimedia/codex-icons';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -27,6 +57,7 @@ const props = defineProps<{
 const emit = defineEmits<{
 	propertySelected: [ name: PropertyName ];
 	propertyCreated: [ property: PropertyDefinition ];
+	propertyDeleted: [ name: PropertyName ];
 }>();
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();
@@ -56,6 +87,10 @@ const menuFooter: MenuItemData = {
 function getMenuDescription( property: PropertyDefinition ): string {
 	const typeLabel = mw.msg( componentRegistry.getLabel( property.type ) );
 	return property.required ? typeLabel : `${ typeLabel }・${ mw.msg( 'neowiki-schema-editor-optional' ) }`;
+}
+
+function onDeleteProperty( propertyName: string ): void {
+	emit( 'propertyDeleted', new PropertyName( propertyName ) );
 }
 
 function onMenuSelect( payload: string ): void {
@@ -152,6 +187,38 @@ function generateUniquePropertyName(): PropertyName {
 				min-height: @min-size-icon-medium;
 				width: @size-icon-medium;
 				height: @size-icon-medium;
+			}
+		}
+
+		.cdx-menu-item:hover,
+		.cdx-menu-item--selected,
+		.cdx-menu-item:focus-within {
+			.ext-neowiki-schema-editor__property-list__menu-item__delete {
+				opacity: 1;
+			}
+		}
+	}
+
+	&__menu-item {
+		&__content {
+			// Needed the specificity to override the Codex style.
+			&.cdx-menu-item__content.cdx-menu-item__content {
+				gap: @spacing-50;
+				align-items: center;
+			}
+
+			.cdx-menu-item__text {
+				flex-grow: 1;
+			}
+		}
+
+		&__delete {
+			opacity: 0;
+
+			.cdx-menu-item:hover &,
+			.cdx-menu-item--selected &,
+			.cdx-menu-item:focus-within & {
+				opacity: 1;
 			}
 		}
 	}

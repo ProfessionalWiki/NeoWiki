@@ -61,4 +61,61 @@ describe( 'SchemaEditor', () => {
 		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( undefined );
 		expect( wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).exists() ).toBe( false );
 	} );
+
+	it( 'removes property when propertyDeleted event is emitted', async () => {
+		const schema = new Schema(
+			'TestSchema',
+			'Description',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
+			] ),
+		);
+
+		const wrapper = createWrapper( schema );
+		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
+
+		await propertyList.vm.$emit( 'propertyDeleted', schema.getPropertyDefinition( 'firstProp' ).name );
+
+		const updatedSchema = ( wrapper.vm as any ).getSchema();
+		expect( updatedSchema.getPropertyDefinitions().has( schema.getPropertyDefinition( 'firstProp' ).name ) ).toBe( false );
+		expect( updatedSchema.getPropertyDefinitions().has( schema.getPropertyDefinition( 'secondProp' ).name ) ).toBe( true );
+	} );
+
+	it( 'updates selection when selected property is deleted', async () => {
+		const schema = new Schema(
+			'TestSchema',
+			'Description',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
+			] ),
+		);
+
+		const wrapper = createWrapper( schema );
+		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
+
+		await propertyList.vm.$emit( 'propertyDeleted', schema.getPropertyDefinition( 'firstProp' ).name );
+
+		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'secondProp' );
+	} );
+
+	it( 'maintains selection when non-selected property is deleted', async () => {
+		const schema = new Schema(
+			'TestSchema',
+			'Description',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
+			] ),
+		);
+
+		const wrapper = createWrapper( schema );
+		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
+
+		await propertyList.vm.$emit( 'propertySelected', schema.getPropertyDefinition( 'secondProp' ).name );
+		await propertyList.vm.$emit( 'propertyDeleted', schema.getPropertyDefinition( 'firstProp' ).name );
+
+		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'secondProp' );
+	} );
 } );

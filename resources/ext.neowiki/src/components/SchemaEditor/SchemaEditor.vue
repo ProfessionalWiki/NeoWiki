@@ -9,6 +9,7 @@
 			:selected-property-name="selectedPropertyName"
 			@property-selected="onPropertySelected"
 			@property-created="onPropertyCreated"
+			@property-deleted="onPropertyDeleted"
 		/>
 		<PropertyDefinitionEditor
 			v-if="selectedProperty !== undefined"
@@ -67,6 +68,17 @@ function onPropertySelected( name: PropertyName ): void {
 
 function onPropertyCreated( newProperty: PropertyDefinition ): void {
 	currentSchema.value = currentSchema.value.withAddedPropertyDefinition( newProperty );
+}
+
+function onPropertyDeleted( name: PropertyName ): void {
+	currentSchema.value = currentSchema.value.withRemovedPropertyDefinition( name );
+
+	if ( selectedPropertyName.value === name.toString() ) {
+		const properties = [ ...currentSchema.value.getPropertyDefinitions() ];
+		selectedPropertyName.value = properties.length > 0 ?
+			properties[ 0 ].name.toString() :
+			undefined;
+	}
 }
 
 function onPropertyUpdated( updatedProperty: PropertyDefinition ): void {
