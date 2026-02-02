@@ -35,6 +35,8 @@ class NeoWikiHooks {
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
 		if ( self::isContentPage( $out ) ) {
 			self::handleContentPage( $out );
+		} elseif ( self::isSchemaPage( $out ) && $out->isArticle() ) {
+			self::handleSchemaPage( $out );
 		}
 	}
 
@@ -105,6 +107,21 @@ class NeoWikiHooks {
 				'class' => 'ext-neowiki-view',
 				'data-subject-id' => $subject->getId()->text,
 			]
+		);
+	}
+
+	private static function handleSchemaPage( OutputPage $out ): void {
+		$out->addModules( 'ext.neowiki' );
+		$out->addModuleStyles( 'ext.neowiki.styles' );
+
+		$out->addHTML(
+			Html::element(
+				'div',
+				[
+					'id' => 'ext-neowiki-view-schema',
+					'data-mw-schema-name' => $out->getTitle()->getText(),
+				]
+			)
 		);
 	}
 
