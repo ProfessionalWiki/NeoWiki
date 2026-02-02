@@ -79,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, onMounted } from 'vue';
+import { ref, nextTick, computed, watch } from 'vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
@@ -92,8 +92,8 @@ import { Schema } from '@/domain/Schema.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
-import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 
 type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
 
@@ -115,23 +115,14 @@ interface SubjectEditorInstance {
 const isSchemaEditorOpen = ref( false );
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
 const loadedSchema = ref<Schema | null>( null );
-const canEditSchema = ref( false );
+const { canEditSchema, checkPermission } = useSchemaPermissions();
 
-onMounted( async () => {
-	if ( props.subject ) {
-		await loadSchemaPermissions();
+watch( () => props.subject, async ( newSubject ) => {
+	if ( newSubject ) {
+		await checkPermission( newSubject.getSchemaName() );
 		await loadSchema();
 	}
-} );
-
-async function loadSchemaPermissions(): Promise<void> {
-	try {
-		canEditSchema.value = await NeoWikiServices.getSchemaAuthorizer().canEditSchema( props.subject.getSchemaName() );
-	} catch ( error ) {
-		console.error( 'Failed to check schema permissions:', error );
-		canEditSchema.value = false;
-	}
-}
+}, { immediate: true } );
 
 async function loadSchema(): Promise<void> {
 	try {

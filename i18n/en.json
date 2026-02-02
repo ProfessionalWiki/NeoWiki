@@ -47,8 +47,8 @@
 	"neowiki-field-invalid-url": "Please enter a valid URL.",
 
 	"neowiki-property-editor-description": "Description",
+	"neowiki-edit-schema": "Edit schema",
 	"neowiki-editing-schema": "Editing $1 schema",
-	"neowiki-edit-with-form": "Edit with form",
 	"neowiki-save-schema": "Save schema",
 
 	"neowiki-edit-summary-label": "Edit summary",

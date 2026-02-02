@@ -1,19 +1,19 @@
 import { mount, VueWrapper } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import SchemaDisplay from '@/components/SchemaDisplay/SchemaDisplay.vue';
+import SchemaDisplayHeader from '@/components/SchemaDisplay/SchemaDisplayHeader.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { NumberType } from '@/domain/propertyTypes/Number.ts';
-import { UrlType } from '@/domain/propertyTypes/Url.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
-import { setupMwMock } from '../../VueTestHelpers.ts';
-
-const $i18n = vi.fn().mockImplementation( ( key ) => ( {
-	text: () => key,
-} ) );
+import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
+import { CdxTable } from '@wikimedia/codex';
+import type { TableColumn } from '@wikimedia/codex';
+import type { PropertyDefinition } from '@/domain/PropertyDefinition';
+import { newSchema } from '@/TestHelpers.ts';
 
 function mountComponent( schema: Schema ): VueWrapper {
 	setupMwMock( { functions: [ 'msg' ] } );
@@ -21,125 +21,79 @@ function mountComponent( schema: Schema ): VueWrapper {
 	return mount( SchemaDisplay, {
 		props: { schema },
 		global: {
-			mocks: { $i18n },
+			mocks: { $i18n: createI18nMock() },
 			provide: {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
+			},
+			stubs: {
+				CdxTable: {
+					template: '<div><slot name="header"></slot><slot></slot></div>',
+					props: [ 'columns', 'data' ],
+				},
+				CdxIcon: true,
+				CdxButton: true,
+				CdxInfoChip: true,
+				SchemaDisplayHeader: true,
 			},
 		},
 	} );
 }
 
 describe( 'SchemaDisplay', () => {
-	it( 'renders schema description', () => {
-		const schema = new Schema(
-			'Person',
-			'A schema for people',
-			new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'name', { type: TextType.typeName } ),
-			] ),
-		);
+	it( 'renders the header component with correct schema', () => {
+		const schema = newSchema( {
+			title: 'Test schema',
+		} );
 
 		const wrapper = mountComponent( schema );
+		const header = wrapper.findComponent( SchemaDisplayHeader );
 
-		expect( wrapper.find( '.ext-neowiki-schema-display__description' ).text() ).toBe( 'A schema for people' );
+		expect( header.exists() ).toBe( true );
+		expect( header.props( 'schema' ) ).toStrictEqual( schema );
 	} );
 
-	it( 'hides description when schema has no description', () => {
-		const schema = new Schema(
-			'Person',
-			'',
-			new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'name', { type: TextType.typeName } ),
-			] ),
-		);
-
-		const wrapper = mountComponent( schema );
-
-		expect( wrapper.find( '.ext-neowiki-schema-display__description' ).exists() ).toBe( false );
-	} );
-
-	it( 'renders property rows with correct property name, type label, required status, and description', () => {
-		const schema = new Schema(
-			'Person',
-			'',
-			new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'name', {
+	it( 'passes correct columns and data to CdxTable when properties exist', () => {
+		const schema = newSchema( {
+			title: 'Test schema',
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Test property 1', {
 					type: TextType.typeName,
 					required: true,
-					description: 'Full name',
+					description: 'Description for test property 1',
 				} ),
-				createPropertyDefinitionFromJson( 'age', {
+				createPropertyDefinitionFromJson( 'Test property 2', {
 					type: NumberType.typeName,
 					required: false,
-					description: 'Age in years',
-				} ),
-				createPropertyDefinitionFromJson( 'website', {
-					type: UrlType.typeName,
-					required: false,
-					description: '',
+					description: 'Description for test property 2',
 				} ),
 			] ),
-		);
+		} );
 
 		const wrapper = mountComponent( schema );
+		const table = wrapper.findComponent( CdxTable );
 
-		const rows = wrapper.findAll( '.ext-neowiki-schema-display__table tbody tr' );
-		expect( rows ).toHaveLength( 3 );
+		const data = table.props( 'data' ) as PropertyDefinition[];
+		expect( data ).toHaveLength( 2 );
+		expect( data[ 0 ].name.toString() ).toBe( 'Test property 1' );
+		expect( data[ 0 ].type ).toBe( TextType.typeName );
+		expect( data[ 1 ].name.toString() ).toBe( 'Test property 2' );
+		expect( data[ 1 ].type ).toBe( NumberType.typeName );
 
-		expect( rows[ 0 ].findAll( 'td' )[ 0 ].text() ).toBe( 'name' );
-		expect( rows[ 0 ].findAll( 'td' )[ 1 ].text() ).toContain( 'neowiki-property-type-text' );
-		expect( rows[ 0 ].findAll( 'td' )[ 2 ].text() ).toBe( 'neowiki-schema-display-required-yes' );
-		expect( rows[ 0 ].findAll( 'td' )[ 4 ].text() ).toBe( 'Full name' );
-
-		expect( rows[ 1 ].findAll( 'td' )[ 0 ].text() ).toBe( 'age' );
-		expect( rows[ 1 ].findAll( 'td' )[ 1 ].text() ).toContain( 'neowiki-property-type-number' );
-		expect( rows[ 1 ].findAll( 'td' )[ 2 ].text() ).toBe( 'neowiki-schema-display-required-no' );
-		expect( rows[ 1 ].findAll( 'td' )[ 4 ].text() ).toBe( 'Age in years' );
-
-		expect( rows[ 2 ].findAll( 'td' )[ 0 ].text() ).toBe( 'website' );
-		expect( rows[ 2 ].findAll( 'td' )[ 1 ].text() ).toContain( 'neowiki-property-type-url' );
-		expect( rows[ 2 ].findAll( 'td' )[ 2 ].text() ).toBe( 'neowiki-schema-display-required-no' );
-		expect( rows[ 2 ].findAll( 'td' )[ 4 ].text() ).toBe( '' );
+		const columns = table.props( 'columns' ) as TableColumn[];
+		expect( columns ).toHaveLength( 5 );
+		expect( columns.map( ( c ) => c.id ) ).toEqual( [ 'name', 'type', 'required', 'default', 'description' ] );
 	} );
 
-	it( 'renders default values for properties that have them', () => {
-		const schema = new Schema(
-			'Person',
-			'',
-			new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'greeting', {
-					type: TextType.typeName,
-					default: [ 'Hello' ],
-				} ),
-				createPropertyDefinitionFromJson( 'age', {
-					type: NumberType.typeName,
-					default: 25,
-				} ),
-				createPropertyDefinitionFromJson( 'website', {
-					type: UrlType.typeName,
-				} ),
-			] ),
-		);
+	it( 'passes empty columns to CdxTable when no properties exist', () => {
+		const schema = newSchema( {
+			title: 'Empty schema',
+			description: '',
+		} );
 
 		const wrapper = mountComponent( schema );
+		const table = wrapper.findComponent( CdxTable );
 
-		const rows = wrapper.findAll( '.ext-neowiki-schema-display__table tbody tr' );
-
-		expect( rows[ 0 ].findAll( 'td' )[ 3 ].text() ).toBe( 'Hello' );
-		expect( rows[ 1 ].findAll( 'td' )[ 3 ].text() ).toBe( '25' );
-		expect( rows[ 2 ].findAll( 'td' )[ 3 ].text() ).toBe( '' );
-	} );
-
-	it( 'shows empty message when schema has no properties', () => {
-		const schema = new Schema(
-			'Empty',
-			'',
-			new PropertyDefinitionList( [] ),
-		);
-
-		const wrapper = mountComponent( schema );
-
-		expect( wrapper.find( '.ext-neowiki-schema-display__table' ).exists() ).toBe( false );
-		expect( wrapper.find( '.ext-neowiki-schema-display__empty' ).text() ).toBe( 'neowiki-schema-display-no-properties' );
+		expect( table.props( 'data' ) ).toHaveLength( 0 );
+		expect( table.props( 'columns' ) ).toHaveLength( 0 );
 	} );
 } );
