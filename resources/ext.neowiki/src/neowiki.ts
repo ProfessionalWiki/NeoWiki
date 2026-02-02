@@ -7,7 +7,7 @@ import EditSchemaPage from '@/components/SchemaEditor/EditSchemaPage.vue';
 import SchemaDisplay from '@/components/SchemaDisplay/SchemaDisplay.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
-import { schemaFromJson } from '@/persistence/RestSchemaRepository.ts';
+import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
 
 async function initializeNeoWikiApp(): Promise<void> {
 	const neowikiApp = document.querySelector( '#mw-content-text > #ext-neowiki-app' );
@@ -63,7 +63,7 @@ async function initializeSchemaView(): Promise<void> {
 			throw new Error( 'Schema propertyDefinitions is undefined' );
 		}
 
-		const schema = schemaFromJson( schemaName, schemaJson );
+		const schema = new SchemaDeserializer().deserialize( schemaName, schemaJson );
 
 		const app = createMwApp( SchemaDisplay, { schema } );
 		app.use( createPinia() );
