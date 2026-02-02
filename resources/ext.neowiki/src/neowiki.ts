@@ -46,11 +46,12 @@ async function initializeSchemaView(): Promise<void> {
 	const viewSchema = document.querySelector( '#ext-neowiki-view-schema' );
 
 	if ( viewSchema !== null ) {
+		const ext = NeoWikiExtension.getInstance();
 		const revisionId = mw.config.get( 'wgRevisionId' );
 		const schemaName = mw.config.get( 'wgTitle' ) as SchemaName;
 
-		const restApiUrl = mw.util.wikiScript( 'rest' );
-		const response = await fetch( `${ restApiUrl }/v1/revision/${ revisionId }` );
+		const restApiUrl = ext.getMediaWiki().util.wikiScript( 'rest' );
+		const response = await ext.newHttpClient().get( `${ restApiUrl }/v1/revision/${ revisionId }` );
 
 		if ( !response.ok ) {
 			throw new Error( 'Error fetching schema revision' );

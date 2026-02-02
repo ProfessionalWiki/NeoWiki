@@ -111,7 +111,7 @@ export class NeoWikiExtension {
 		);
 	}
 
-	private newHttpClient(): HttpClient {
+	public newHttpClient(): HttpClient {
 		return new CsrfSendingHttpClient(
 			new ProductionHttpClient(),
 		);
