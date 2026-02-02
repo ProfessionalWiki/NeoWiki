@@ -26,33 +26,36 @@
 			</CdxToggleSwitch>
 		</CdxField>
 
-		<CdxField
-			:status="lengthError === null ? 'default' : 'error'"
-			:messages="lengthError === null ? {} : { error: lengthError }"
-		>
-			<template #label>
-				{{ $i18n( 'neowiki-property-editor-length-constraint' ).text() }}
-			</template>
-			<div class="text-attributes__length-constraint">
-				<span>{{ $i18n( 'neowiki-property-editor-length-between' ).text() }}</span>
+		<div class="text-attributes__length-constraint">
+			<CdxField
+				:status="minLengthError === null ? 'default' : 'error'"
+				:messages="minLengthError === null ? {} : { error: minLengthError }"
+			>
+				<template #label>
+					{{ $i18n( 'neowiki-property-editor-min-length' ).text() }}
+				</template>
 				<CdxTextInput
 					:model-value="minLengthInput"
 					input-type="number"
 					min="1"
-					class="text-attributes__length-input"
 					@update:model-value="updateMinLength"
 				/>
-				<span>{{ $i18n( 'neowiki-property-editor-length-and' ).text() }}</span>
+			</CdxField>
+			<CdxField
+				:status="maxLengthError === null ? 'default' : 'error'"
+				:messages="maxLengthError === null ? {} : { error: maxLengthError }"
+			>
+				<template #label>
+					{{ $i18n( 'neowiki-property-editor-max-length' ).text() }}
+				</template>
 				<CdxTextInput
 					:model-value="maxLengthInput"
 					input-type="number"
 					min="1"
-					class="text-attributes__length-input"
 					@update:model-value="updateMaxLength"
 				/>
-				<span>{{ $i18n( 'neowiki-property-editor-length-characters' ).text() }}</span>
-			</div>
-		</CdxField>
+			</CdxField>
+		</div>
 	</div>
 </template>
 
@@ -67,7 +70,8 @@ const emit = defineEmits<AttributesEditorEmits<TextProperty>>();
 
 const minLengthInput = ref( props.property.minLength?.toString() ?? '' );
 const maxLengthInput = ref( props.property.maxLength?.toString() ?? '' );
-const lengthError = ref<string | null>( null );
+const minLengthError = ref<string | null>( null );
+const maxLengthError = ref<string | null>( null );
 
 watch( () => props.property.minLength, ( newVal ) => {
 	minLengthInput.value = newVal?.toString() ?? '';
@@ -85,48 +89,55 @@ const isPositiveInteger = ( value: string ): boolean => {
 	return Number.isInteger( num ) && num >= 1;
 };
 
-const validateLength = ( minValue: string, maxValue: string ): string | null => {
-	if ( minValue !== '' && !isPositiveInteger( minValue ) ) {
+const validateValue = ( value: string ): string | null => {
+	if ( value !== '' && !isPositiveInteger( value ) ) {
 		return mw.message( 'neowiki-property-editor-length-whole-number' ).text();
 	}
+	return null;
+};
 
-	if ( maxValue !== '' && !isPositiveInteger( maxValue ) ) {
-		return mw.message( 'neowiki-property-editor-length-whole-number' ).text();
-	}
-
+const minExceedsMax = ( minValue: string, maxValue: string ): boolean => {
 	const min = minValue === '' ? undefined : Number( minValue );
 	const max = maxValue === '' ? undefined : Number( maxValue );
-	if ( min !== undefined && max !== undefined && min > max ) {
-		return mw.message( 'neowiki-property-editor-length-min-exceeds-max' ).text();
-	}
-
-	return null;
+	return min !== undefined && max !== undefined && min > max;
 };
 
 const updateMinLength = ( value: string ): void => {
 	minLengthInput.value = value;
-	const error = validateLength( value, maxLengthInput.value );
 
-	if ( error === null ) {
-		lengthError.value = null;
-		emit( 'update:property', { minLength: value === '' ? undefined : Number( value ) } );
+	const formatError = validateValue( value );
+	if ( formatError !== null ) {
+		minLengthError.value = formatError;
 		return;
 	}
 
-	lengthError.value = error;
+	if ( minExceedsMax( value, maxLengthInput.value ) ) {
+		minLengthError.value = mw.message( 'neowiki-property-editor-length-min-exceeds-max' ).text();
+		return;
+	}
+
+	minLengthError.value = null;
+	maxLengthError.value = null;
+	emit( 'update:property', { minLength: value === '' ? undefined : Number( value ) } );
 };
 
 const updateMaxLength = ( value: string ): void => {
 	maxLengthInput.value = value;
-	const error = validateLength( minLengthInput.value, value );
 
-	if ( error === null ) {
-		lengthError.value = null;
-		emit( 'update:property', { maxLength: value === '' ? undefined : Number( value ) } );
+	const formatError = validateValue( value );
+	if ( formatError !== null ) {
+		maxLengthError.value = formatError;
 		return;
 	}
 
-	lengthError.value = error;
+	if ( minExceedsMax( minLengthInput.value, value ) ) {
+		maxLengthError.value = mw.message( 'neowiki-property-editor-length-min-exceeds-max' ).text();
+		return;
+	}
+
+	maxLengthError.value = null;
+	minLengthError.value = null;
+	emit( 'update:property', { maxLength: value === '' ? undefined : Number( value ) } );
 };
 
 const updateMultiple = ( value: boolean ): void => {
@@ -140,14 +151,13 @@ const updateUniqueItems = ( value: boolean ): void => {
 
 <style lang="less">
 .text-attributes__length-constraint {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-}
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0 16px;
+	align-items: start;
 
-.text-attributes__length-input.cdx-text-input {
-	min-width: unset;
-	width: 7em;
+	.cdx-field {
+		margin-top: 0;
+	}
 }
 </style>

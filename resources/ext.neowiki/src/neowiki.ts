@@ -4,6 +4,7 @@ import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { CdxTooltip } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import EditSchemaPage from '@/components/SchemaEditor/EditSchemaPage.vue';
+import SchemaDisplay from '@/components/SchemaDisplay/SchemaDisplay.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
 
@@ -30,7 +31,7 @@ async function initializeSchemaEditor(): Promise<void> {
 			EditSchemaPage,
 			{
 				initialSchema: await NeoWikiExtension.getInstance().getSchemaRepository().getSchema(
-					editSchema.getAttribute( 'data-schema-name' ) as SchemaName,
+					editSchema.getAttribute( 'data-mw-schema-name' ) as SchemaName,
 				),
 			},
 		);
@@ -40,5 +41,21 @@ async function initializeSchemaEditor(): Promise<void> {
 	}
 }
 
+async function initializeSchemaView(): Promise<void> {
+	const viewSchema = document.querySelector( '#ext-neowiki-view-schema' );
+
+	if ( viewSchema !== null ) {
+		const schema = await NeoWikiExtension.getInstance().getSchemaRepository().getSchema(
+			viewSchema.getAttribute( 'data-mw-schema-name' ) as SchemaName,
+		);
+
+		const app = createMwApp( SchemaDisplay, { schema } );
+		app.use( createPinia() );
+		NeoWikiServices.registerServices( app );
+		app.mount( viewSchema );
+	}
+}
+
 initializeNeoWikiApp();
 initializeSchemaEditor();
+initializeSchemaView();

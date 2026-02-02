@@ -17,7 +17,7 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
-use ProfessionalWiki\NeoWiki\CypherQueryFilter;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\KeywordCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -35,6 +35,8 @@ class NeoWikiHooks {
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
 		if ( self::isContentPage( $out ) ) {
 			self::handleContentPage( $out );
+		} elseif ( self::isSchemaPage( $out ) && $out->isArticle() ) {
+			self::handleSchemaPage( $out );
 		}
 	}
 
@@ -108,6 +110,21 @@ class NeoWikiHooks {
 		);
 	}
 
+	private static function handleSchemaPage( OutputPage $out ): void {
+		$out->addModules( 'ext.neowiki' );
+		$out->addModuleStyles( 'ext.neowiki.styles' );
+
+		$out->addHTML(
+			Html::element(
+				'div',
+				[
+					'id' => 'ext-neowiki-view-schema',
+					'data-mw-schema-name' => $out->getTitle()->getText(),
+				]
+			)
+		);
+	}
+
 	public static function onMediaWikiServices( MediaWikiServices $services ): void {
 		$services->addServiceManipulator(
 			'SlotRoleRegistry',
@@ -131,7 +148,7 @@ class NeoWikiHooks {
 			static function ( Parser $parser, string $cypherQuery ): string {
 				$parserFunction = new CypherRawParserFunction(
 					NeoWikiExtension::getInstance()->getQueryStore(),
-					new CypherQueryFilter()
+					new KeywordCypherQueryValidator()
 				);
 				return $parserFunction->handle( $parser, $cypherQuery );
 			}

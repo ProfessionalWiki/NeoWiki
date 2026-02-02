@@ -14,7 +14,9 @@
 					role="heading"
 					aria-level="3"
 				>
-					{{ schema?.getName() }}
+					<a :href="schemaUrl">
+						{{ schema?.getName() }}
+					</a>
 				</div>
 			</div>
 			<CdxButton
@@ -99,11 +101,19 @@ function getComponent( propertyType: string ): Component {
 	return NeoWikiServices.getComponentRegistry().getValueDisplayComponent( propertyType );
 }
 
+const schemaUrl = computed( () => {
+	if ( !schema.value ) {
+		return '';
+	}
+	return mw.util.getUrl( `Schema:${ schema.value.getName() }` );
+} );
+
 const propertiesToDisplay = computed( function(): Record<string, PropertyDefinition> {
 	return schema.value.getPropertyDefinitions()
 		.withNames( subject.value.getNamesOfNonEmptyProperties() )
 		.asRecord();
 } );
+
 </script>
 
 <style lang="less">
