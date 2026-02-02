@@ -7,6 +7,7 @@ import EditSchemaPage from '@/components/SchemaEditor/EditSchemaPage.vue';
 import SchemaDisplay from '@/components/SchemaDisplay/SchemaDisplay.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
+import { schemaFromJson } from '@/persistence/RestSchemaRepository.ts';
 
 async function initializeNeoWikiApp(): Promise<void> {
 	const neowikiApp = document.querySelector( '#mw-content-text > #ext-neowiki-app' );
@@ -45,9 +46,24 @@ async function initializeSchemaView(): Promise<void> {
 	const viewSchema = document.querySelector( '#ext-neowiki-view-schema' );
 
 	if ( viewSchema !== null ) {
-		const schema = await NeoWikiExtension.getInstance().getSchemaRepository().getSchema(
-			viewSchema.getAttribute( 'data-mw-schema-name' ) as SchemaName,
-		);
+		const revisionId = mw.config.get( 'wgRevisionId' );
+		const schemaName = mw.config.get( 'wgTitle' ) as SchemaName;
+
+		const restApiUrl = mw.util.wikiScript( 'rest' );
+		const response = await fetch( `${ restApiUrl }/v1/revision/${ revisionId }` );
+
+		if ( !response.ok ) {
+			throw new Error( 'Error fetching schema revision' );
+		}
+
+		const data = await response.json();
+		const schemaJson = JSON.parse( data.source );
+
+		if ( schemaJson.propertyDefinitions === undefined ) {
+			throw new Error( 'Schema propertyDefinitions is undefined' );
+		}
+
+		const schema = schemaFromJson( schemaName, schemaJson );
 
 		const app = createMwApp( SchemaDisplay, { schema } );
 		app.use( createPinia() );

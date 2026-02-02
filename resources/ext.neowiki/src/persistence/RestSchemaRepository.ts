@@ -6,6 +6,20 @@ import type { SchemaRepository } from '@/application/SchemaRepository';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 import { PageSaver } from '@/persistence/PageSaver.ts';
 
+export function schemaFromJson( schemaName: SchemaName, schema: Record<string, any> ): Schema {
+	return new Schema(
+		schemaName,
+		schema.description,
+		propertyDefinitionsFromJson( schema.propertyDefinitions ),
+	);
+}
+
+export function propertyDefinitionsFromJson( definitions: Record<string, any> ): PropertyDefinitionList {
+	return new PropertyDefinitionList(
+		Object.keys( definitions ).map( ( key ) => createPropertyDefinitionFromJson( key, definitions[ key ] ) ),
+	);
+}
+
 export class RestSchemaRepository implements SchemaRepository {
 
 	public constructor(
@@ -32,21 +46,7 @@ export class RestSchemaRepository implements SchemaRepository {
 			throw new Error( 'Schema propertyDefinitions is undefined' );
 		}
 
-		return this.schemaFromJson( schemaName, schema );
-	}
-
-	private schemaFromJson( schemaName: SchemaName, schema: Record<string, any> ): Schema {
-		return new Schema(
-			schemaName,
-			schema.description,
-			this.propertyDefinitionsFromJson( schema.propertyDefinitions ),
-		);
-	}
-
-	private propertyDefinitionsFromJson( definitions: Record<string, any> ): PropertyDefinitionList {
-		return new PropertyDefinitionList(
-			Object.keys( definitions ).map( ( key ) => createPropertyDefinitionFromJson( key, definitions[ key ] ) ),
-		);
+		return schemaFromJson( schemaName, schema );
 	}
 
 	public async getSchemaNames( search = '' ): Promise<string[]> {
