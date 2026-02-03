@@ -13,29 +13,31 @@
 			:use-close-button="true"
 			@default="open = false"
 		>
-			<p>
-				{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
-			</p>
+			<template v-if="!selectedSchemaName">
+				<p>
+					{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
+				</p>
 
-			<CdxToggleButtonGroup
-				v-model="selectedSchemaOption"
-				class="ext-neowiki-subject-creator-schema-options"
-				:buttons="toggleButtons"
-			/>
-
-			<div
-				v-if="selectedSchemaOption === 'existing'"
-				class="ext-neowiki-subject-creator-existing"
-			>
-				<SchemaLookup
-					ref="schemaLookupRef"
-					@select="onSchemaSelected"
+				<CdxToggleButtonGroup
+					v-model="selectedSchemaOption"
+					class="ext-neowiki-subject-creator-schema-options"
+					:buttons="toggleButtons"
 				/>
-			</div>
 
-			<div v-if="selectedSchemaOption === 'new'">
-				TODO: New schema UI
-			</div>
+				<div
+					v-if="selectedSchemaOption === 'existing'"
+					class="ext-neowiki-subject-creator-existing"
+				>
+					<SchemaLookup
+						ref="schemaLookupRef"
+						@select="onSchemaSelected"
+					/>
+				</div>
+
+				<div v-if="selectedSchemaOption === 'new'">
+					TODO: New schema UI
+				</div>
+			</template>
 
 			<template v-if="selectedSchemaName">
 				<CdxField class="ext-neowiki-subject-creator-label-field">

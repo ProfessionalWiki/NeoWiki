@@ -129,6 +129,19 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
 	} );
 
+	it( 'hides schema selector after schema selection', async () => {
+		const wrapper = mountComponent();
+
+		expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
+		expect( wrapper.find( 'cdx-toggle-button-group-stub' ).exists() ).toBe( true );
+
+		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await flushPromises();
+
+		expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( false );
+		expect( wrapper.find( 'cdx-toggle-button-group-stub' ).exists() ).toBe( false );
+	} );
+
 	it( 'does not show label input or SubjectEditor before schema selection', () => {
 		const wrapper = mountComponent();
 
