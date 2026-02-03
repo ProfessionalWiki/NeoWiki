@@ -1,0 +1,23 @@
+{
+	"mainSubject": "sEpfwJLnw6zMVhC",
+	"subjects": {
+		"sEpfwJLnw6zMVhC": {
+			"label": "Madrid",
+			"schema": "City",
+			"statements": {
+				"Country": {
+					"type": "text",
+					"value": [ "Spain" ]
+				},
+				"Population": {
+					"type": "number",
+					"value": 3332035
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.madrid.es" ]
+				}
+			}
+		}
+	}
+}

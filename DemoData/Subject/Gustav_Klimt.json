@@ -1,0 +1,35 @@
+{
+	"mainSubject": "sEpfwJLo5VchgS9",
+	"subjects": {
+		"sEpfwJLo5VchgS9": {
+			"label": "Gustav Klimt",
+			"schema": "Artist",
+			"statements": {
+				"Born": {
+					"type": "number",
+					"value": 1862
+				},
+				"Died": {
+					"type": "number",
+					"value": 1918
+				},
+				"Nationality": {
+					"type": "text",
+					"value": [ "Austrian" ]
+				},
+				"Movement": {
+					"type": "text",
+					"value": [ "Symbolism", "Art Nouveau", "Vienna Secession" ]
+				},
+				"Wikipedia": {
+					"type": "url",
+					"value": [ "https://en.wikipedia.org/wiki/Gustav_Klimt" ]
+				},
+				"Active period": {
+					"type": "text",
+					"value": [ "1880–1918" ]
+				}
+			}
+		}
+	}
+}

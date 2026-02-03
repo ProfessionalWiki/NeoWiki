@@ -1,0 +1,45 @@
+{
+	"mainSubject": "sEpfwJLoB8WxiXG",
+	"subjects": {
+		"sEpfwJLoB8WxiXG": {
+			"label": "The Art of Painting",
+			"schema": "Artwork",
+			"statements": {
+				"Year": {
+					"type": "number",
+					"value": 1666
+				},
+				"Medium": {
+					"type": "text",
+					"value": [ "Oil on canvas" ]
+				},
+				"Creator": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoScyfU3j",
+							"target": "sEpfwJLo3dEPj2Z"
+						}
+					]
+				},
+				"Located at": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoTZQ5HBf",
+							"target": "sEpfwJLnyuR5E4i"
+						}
+					]
+				},
+				"Image": {
+					"type": "url",
+					"value": [ "https://upload.wikimedia.org/wikipedia/commons/4/4a/Johannes_Vermeer_-_The_Art_of_Painting_-_Google_Art_Project.jpg" ]
+				},
+				"Estimated value": {
+					"type": "number",
+					"value": 200
+				}
+			}
+		}
+	}
+}

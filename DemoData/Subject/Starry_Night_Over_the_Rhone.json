@@ -1,0 +1,45 @@
+{
+	"mainSubject": "sEpfwJLo7NSDS5F",
+	"subjects": {
+		"sEpfwJLo7NSDS5F": {
+			"label": "Starry Night Over the Rhône",
+			"schema": "Artwork",
+			"statements": {
+				"Year": {
+					"type": "number",
+					"value": 1888
+				},
+				"Medium": {
+					"type": "text",
+					"value": [ "Oil on canvas" ]
+				},
+				"Creator": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoJv75wqU",
+							"target": "sEpfwJLo2hCAw9G"
+						}
+					]
+				},
+				"Located at": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoKte65Di",
+							"target": "sEpfwJLnx3Kze3t"
+						}
+					]
+				},
+				"Image": {
+					"type": "url",
+					"value": [ "https://upload.wikimedia.org/wikipedia/commons/9/94/Starry_Night_Over_the_Rhone.jpg" ]
+				},
+				"Estimated value": {
+					"type": "number",
+					"value": 100
+				}
+			}
+		}
+	}
+}

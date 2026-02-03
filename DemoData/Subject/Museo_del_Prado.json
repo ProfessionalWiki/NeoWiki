@@ -1,0 +1,50 @@
+{
+	"mainSubject": "sEpfwJLnzqsDMs5",
+	"subjects": {
+		"sEpfwJLnzqsDMs5": {
+			"label": "Museo del Prado",
+			"schema": "Museum",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Spain's main national art museum, featuring one of the finest collections of European art from the 12th to early 20th century" ]
+				},
+				"Founded": {
+					"type": "number",
+					"value": 1819
+				},
+				"City": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoG5ZtGDZ",
+							"target": "sEpfwJLnw6zMVhC"
+						}
+					]
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.museodelprado.es" ]
+				},
+				"Specialization": {
+					"type": "text",
+					"value": [ "Spanish Art", "Italian Renaissance", "Flemish Painting" ]
+				},
+				"Annual visitors": {
+					"type": "number",
+					"value": 3200000
+				},
+				"Admission fee": {
+					"type": "number",
+					"value": 15
+				},
+				"Links": {
+					"type": "url",
+					"value": [
+						"https://www.instagram.com/museoprado"
+					]
+				}
+			}
+		}
+	}
+}

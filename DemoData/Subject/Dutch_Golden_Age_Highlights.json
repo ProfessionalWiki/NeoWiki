@@ -1,0 +1,49 @@
+{
+	"mainSubject": "sEpfwJLoD1XRhhP",
+	"subjects": {
+		"sEpfwJLoD1XRhhP": {
+			"label": "Dutch Golden Age Highlights",
+			"schema": "Exhibition",
+			"statements": {
+				"Start year": {
+					"type": "number",
+					"value": 2023
+				},
+				"End year": {
+					"type": "number",
+					"value": 2024
+				},
+				"Venue": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoXU13f3X",
+							"target": "sEpfwJLnxyQy6vR"
+						}
+					]
+				},
+				"Featured artists": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoYRSxeGY",
+							"target": "sEpfwJLo3dEPj2Z"
+						}
+					]
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.rijksmuseum.nl/en/whats-on/exhibitions" ]
+				},
+				"Theme": {
+					"type": "text",
+					"value": [ "Masterworks from the Dutch Republic's golden century of art and trade" ]
+				},
+				"Visitor count": {
+					"type": "number",
+					"value": 380000
+				}
+			}
+		}
+	}
+}

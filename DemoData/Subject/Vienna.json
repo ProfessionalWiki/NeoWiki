@@ -1,0 +1,23 @@
+{
+	"mainSubject": "sEpfwJLnv9T9nKk",
+	"subjects": {
+		"sEpfwJLnv9T9nKk": {
+			"label": "Vienna",
+			"schema": "City",
+			"statements": {
+				"Country": {
+					"type": "text",
+					"value": [ "Austria" ]
+				},
+				"Population": {
+					"type": "number",
+					"value": 1982097
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.wien.gv.at" ]
+				}
+			}
+		}
+	}
+}

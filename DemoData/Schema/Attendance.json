@@ -1,0 +1,17 @@
+{
+	"description": "Annual attendance record for a museum, used as child subjects on museum pages.",
+	"propertyDefinitions": {
+		"Year": {
+			"type": "number",
+			"required": true
+		},
+		"Visitors": {
+			"type": "number",
+			"minimum": 0,
+			"precision": 0
+		},
+		"Source": {
+			"type": "url"
+		}
+	}
+}

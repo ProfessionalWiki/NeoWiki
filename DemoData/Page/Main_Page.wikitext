@@ -27,7 +27,7 @@ Terminology is explained in [https://github.com/ProfessionalWiki/NeoWiki/blob/ma
 
 * Edit a Subject: [[Professional Wiki]] (login required)
 * Edit a Schema: either via a Subject using it, i.e. [[Professional Wiki]], or directly on the Schema page, i.e. [[Schema:Company]]
-* Create a Subject: TODO
+* Create a Subject: Create a new page with any content and click "Create subject". That button is there just for the PoC.
 
 '''As a developer:'''
 
@@ -35,7 +35,23 @@ Terminology is explained in [https://github.com/ProfessionalWiki/NeoWiki/blob/ma
 * Query the graph database: [[Cypher|Cypher raw example]]
 * [[#REST_API_endpoints|Explore the REST API]]
 
-== Demo pages ==
+== European Museums ==
+
+A dataset of European museums, artists, and artworks showcasing cross-schema relations and rich property types.
+
+'''Museums:''' [[Musee dOrsay|Musée d'Orsay]], [[Rijksmuseum]], [[Kunsthistorisches Museum]], [[Museo del Prado]]
+
+'''Artists:''' [[Claude Monet]], [[Vincent van Gogh]], [[Johannes Vermeer]], [[Diego Velazquez|Diego Velázquez]], [[Gustav Klimt]]
+
+'''Artworks:''' [[Water Lilies]], [[Starry Night Over the Rhone|Starry Night Over the Rhône]], [[The Milkmaid]], [[Las Meninas]], [[The Kiss]], [[The Art of Painting]]
+
+'''Exhibitions:''' [[Impressionist Masters]], [[Dutch Golden Age Highlights]]
+
+'''Cities:''' [[Paris]], [[Amsterdam]], [[Vienna]], [[Madrid]]
+
+'''Overview:''' [[Museum Collection]]
+
+== Other Demo Pages ==
 
 * Simple page with automatic infobox and edit form: [[NeoWiki]], [[ProWiki]]
 * Subject with relations: [[Professional Wiki]]
@@ -50,10 +66,14 @@ compensation in EUR with a value between 0 and 1000000.
 * [[Schema:Company]]
 * [[Schema:Product]]
 * [[Schema:Employee]]
-* [[Schema:Everything]]
+* [[Schema:Museum]]
+* [[Schema:Artist]]
+* [[Schema:Artwork]]
+* [[Schema:Exhibition]]
+* [[Schema:Attendance]]
 * [{{fullurl:Special:AllPages|from=&to=&namespace=7474}} View all schemas]
 
-== REST API endpoints ==
+== REST API Endpoints ==
 
 We will have OpenAPI docs later. For now, you can find a complete and up-to-date list by looking at the
 [https://github.com/ProfessionalWiki/NeoWiki/blob/master/extension.json MediaWiki API route definitions].
@@ -61,12 +81,12 @@ Search for "RestRoutes".
 
 Example URL: https://neowiki.dev/w/rest.php/neowiki/v0/subject/s1demo4sssssss1
 
-=== Read endpoints ===
+=== Read Endpoints ===
 
 * <code>GET /neowiki/v0/subject/{subjectId}</code> Gets the JSON definition of a subject
 * <code>GET /neowiki/v0/schema/{schemaName}</code> Gets the JSON definition of a schema
 
-=== Write endpoints ===
+=== Write Endpoints ===
 
 These require a CSRF token, first obtained via <code>api.php?action=query&format=json&meta=tokens&type=csrf</code>
 

@@ -1,0 +1,35 @@
+{
+	"description": "A temporary or permanent exhibition hosted at a museum, showcasing works by one or more artists around a theme.",
+	"propertyDefinitions": {
+		"Start year": {
+			"type": "number",
+			"required": true
+		},
+		"End year": {
+			"type": "number"
+		},
+		"Venue": {
+			"type": "relation",
+			"relation": "Hosted at",
+			"targetSchema": "Museum",
+			"required": true
+		},
+		"Featured artists": {
+			"type": "relation",
+			"relation": "Features",
+			"targetSchema": "Artist",
+			"multiple": true
+		},
+		"Website": {
+			"type": "url"
+		},
+		"Theme": {
+			"type": "text"
+		},
+		"Visitor count": {
+			"type": "number",
+			"minimum": 0,
+			"precision": 0
+		}
+	}
+}

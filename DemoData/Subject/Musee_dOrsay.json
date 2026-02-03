@@ -1,0 +1,105 @@
+{
+	"mainSubject": "sEpfwJLnx3Kze3t",
+	"subjects": {
+		"sEpfwJLnx3Kze3t": {
+			"label": "Musée d'Orsay",
+			"schema": "Museum",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "French national museum housing the world's largest collection of Impressionist and Post-Impressionist masterpieces" ]
+				},
+				"Founded": {
+					"type": "number",
+					"value": 1986
+				},
+				"City": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoDErEFnn",
+							"target": "sEpfwJLntf7EQg6"
+						}
+					]
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.musee-orsay.fr" ]
+				},
+				"Specialization": {
+					"type": "text",
+					"value": [ "Impressionism", "Post-Impressionism", "Art Nouveau" ]
+				},
+				"Annual visitors": {
+					"type": "number",
+					"value": 3270000
+				},
+				"Admission fee": {
+					"type": "number",
+					"value": 16
+				},
+				"Links": {
+					"type": "url",
+					"value": [
+						"https://www.instagram.com/museeorsay",
+						"https://twitter.com/MuseeOrsay"
+					]
+				}
+			}
+		},
+		"sEpfwLY8VcdQZJL": {
+			"label": "2019",
+			"schema": "Attendance",
+			"statements": {
+				"Year": {
+					"type": "number",
+					"value": 2019
+				},
+				"Visitors": {
+					"type": "number",
+					"value": 3651616
+				},
+				"Source": {
+					"type": "url",
+					"value": [ "https://www.musee-orsay.fr/en/articles/key-figures" ]
+				}
+			}
+		},
+		"sEpfwLY8WnceT2y": {
+			"label": "2022",
+			"schema": "Attendance",
+			"statements": {
+				"Year": {
+					"type": "number",
+					"value": 2022
+				},
+				"Visitors": {
+					"type": "number",
+					"value": 3270000
+				},
+				"Source": {
+					"type": "url",
+					"value": [ "https://www.musee-orsay.fr/en/articles/key-figures" ]
+				}
+			}
+		},
+		"sEpfwLY8XjJ8gE1": {
+			"label": "2023",
+			"schema": "Attendance",
+			"statements": {
+				"Year": {
+					"type": "number",
+					"value": 2023
+				},
+				"Visitors": {
+					"type": "number",
+					"value": 3960000
+				},
+				"Source": {
+					"type": "url",
+					"value": [ "https://www.musee-orsay.fr/en/articles/key-figures" ]
+				}
+			}
+		}
+	}
+}

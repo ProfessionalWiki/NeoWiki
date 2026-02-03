@@ -1,0 +1,45 @@
+{
+	"mainSubject": "sEpfwJLoABDZ18D",
+	"subjects": {
+		"sEpfwJLoABDZ18D": {
+			"label": "The Kiss",
+			"schema": "Artwork",
+			"statements": {
+				"Year": {
+					"type": "number",
+					"value": 1908
+				},
+				"Medium": {
+					"type": "text",
+					"value": [ "Oil on canvas with gold leaf" ]
+				},
+				"Creator": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoQh2vtqV",
+							"target": "sEpfwJLo5VchgS9"
+						}
+					]
+				},
+				"Located at": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoReZ4kwu",
+							"target": "sEpfwJLnyuR5E4i"
+						}
+					]
+				},
+				"Image": {
+					"type": "url",
+					"value": [ "https://upload.wikimedia.org/wikipedia/commons/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg" ]
+				},
+				"Estimated value": {
+					"type": "number",
+					"value": 240
+				}
+			}
+		}
+	}
+}

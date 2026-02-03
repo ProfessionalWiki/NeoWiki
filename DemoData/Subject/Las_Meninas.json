@@ -1,0 +1,45 @@
+{
+	"mainSubject": "sEpfwJLo9FKBGqn",
+	"subjects": {
+		"sEpfwJLo9FKBGqn": {
+			"label": "Las Meninas",
+			"schema": "Artwork",
+			"statements": {
+				"Year": {
+					"type": "number",
+					"value": 1656
+				},
+				"Medium": {
+					"type": "text",
+					"value": [ "Oil on canvas" ]
+				},
+				"Creator": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoNnEbFfz",
+							"target": "sEpfwJLo4ZAfkFw"
+						}
+					]
+				},
+				"Located at": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoPk5pFTM",
+							"target": "sEpfwJLnzqsDMs5"
+						}
+					]
+				},
+				"Image": {
+					"type": "url",
+					"value": [ "https://upload.wikimedia.org/wikipedia/commons/3/31/Las_Meninas%2C_by_Diego_Vel%C3%A1zquez%2C_from_Prado_in_Google_Earth.jpg" ]
+				},
+				"Estimated value": {
+					"type": "number",
+					"value": 300
+				}
+			}
+		}
+	}
+}

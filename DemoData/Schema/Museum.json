@@ -1,0 +1,42 @@
+{
+	"description": "A museum or gallery that houses and displays collections of art, artifacts, or other objects of cultural, historical, or scientific significance.",
+	"propertyDefinitions": {
+		"Description": {
+			"type": "text"
+		},
+		"Founded": {
+			"type": "number"
+		},
+		"City": {
+			"type": "relation",
+			"relation": "Located in",
+			"targetSchema": "City"
+		},
+		"Website": {
+			"type": "url",
+			"required": true
+		},
+		"Specialization": {
+			"type": "text",
+			"multiple": true,
+			"uniqueItems": true
+		},
+		"Annual visitors": {
+			"type": "number",
+			"minimum": 0,
+			"precision": 0
+		},
+		"Admission fee": {
+			"type": "number",
+			"minimum": 0,
+			"maximum": 200,
+			"precision": 2,
+			"default": 0
+		},
+		"Links": {
+			"type": "url",
+			"multiple": true,
+			"description": "Social media and review sites"
+		}
+	}
+}

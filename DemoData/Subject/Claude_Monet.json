@@ -1,0 +1,35 @@
+{
+	"mainSubject": "sEpfwJLo1kFh84j",
+	"subjects": {
+		"sEpfwJLo1kFh84j": {
+			"label": "Claude Monet",
+			"schema": "Artist",
+			"statements": {
+				"Born": {
+					"type": "number",
+					"value": 1840
+				},
+				"Died": {
+					"type": "number",
+					"value": 1926
+				},
+				"Nationality": {
+					"type": "text",
+					"value": [ "French" ]
+				},
+				"Movement": {
+					"type": "text",
+					"value": [ "Impressionism" ]
+				},
+				"Wikipedia": {
+					"type": "url",
+					"value": [ "https://en.wikipedia.org/wiki/Claude_Monet" ]
+				},
+				"Active period": {
+					"type": "text",
+					"value": [ "1858–1926" ]
+				}
+			}
+		}
+	}
+}

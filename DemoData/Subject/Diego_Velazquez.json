@@ -1,0 +1,35 @@
+{
+	"mainSubject": "sEpfwJLo4ZAfkFw",
+	"subjects": {
+		"sEpfwJLo4ZAfkFw": {
+			"label": "Diego Velázquez",
+			"schema": "Artist",
+			"statements": {
+				"Born": {
+					"type": "number",
+					"value": 1599
+				},
+				"Died": {
+					"type": "number",
+					"value": 1660
+				},
+				"Nationality": {
+					"type": "text",
+					"value": [ "Spanish" ]
+				},
+				"Movement": {
+					"type": "text",
+					"value": [ "Baroque" ]
+				},
+				"Wikipedia": {
+					"type": "url",
+					"value": [ "https://en.wikipedia.org/wiki/Diego_Vel%C3%A1zquez" ]
+				},
+				"Active period": {
+					"type": "text",
+					"value": [ "1617–1660" ]
+				}
+			}
+		}
+	}
+}
