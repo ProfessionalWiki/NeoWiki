@@ -37,6 +37,7 @@
 
 	"neowiki-infobox-type": "Type",
 	"neowiki-infobox-edit-link": "Edit",
+	"neowiki-field-required": "Please provide a value.",
 	"neowiki-field-unique": "All values must be unique.",
 	"neowiki-field-min-length": "Minimum length is $1 characters.",
 	"neowiki-field-max-length": "Maximum length is $1 characters.",

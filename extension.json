@@ -209,6 +209,7 @@
 				"neowiki-property-type-relation",
 				"neowiki-infobox-type",
 				"neowiki-infobox-edit-link",
+				"neowiki-field-required",
 				"neowiki-field-unique",
 				"neowiki-field-min-length",
 				"neowiki-field-max-length",
