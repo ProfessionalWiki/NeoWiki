@@ -1,0 +1,27 @@
+{
+	"description": "A person who creates works of art such as paintings, sculptures, or other visual media.",
+	"propertyDefinitions": {
+		"Born": {
+			"type": "number",
+			"required": true
+		},
+		"Died": {
+			"type": "number"
+		},
+		"Nationality": {
+			"type": "text",
+			"required": true
+		},
+		"Movement": {
+			"type": "text",
+			"multiple": true
+		},
+		"Wikipedia": {
+			"type": "url"
+		},
+		"Active period": {
+			"type": "text",
+			"description": "Period when the artist was professionally active"
+		}
+	}
+}

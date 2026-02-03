@@ -1,0 +1,23 @@
+{
+	"mainSubject": "sEpfwJLntf7EQg6",
+	"subjects": {
+		"sEpfwJLntf7EQg6": {
+			"label": "Paris",
+			"schema": "City",
+			"statements": {
+				"Country": {
+					"type": "text",
+					"value": [ "France" ]
+				},
+				"Population": {
+					"type": "number",
+					"value": 2102650
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.paris.fr" ]
+				}
+			}
+		}
+	}
+}

@@ -1,7 +1,15 @@
 {
 	"propertyDefinitions": {
 		"Country": {
-			"type": "text"
+			"type": "text",
+			"required": true
+		},
+		"Population": {
+			"type": "number",
+			"minimum": 0
+		},
+		"Website": {
+			"type": "url"
 		}
 	}
 }

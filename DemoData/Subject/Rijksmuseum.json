@@ -1,0 +1,51 @@
+{
+	"mainSubject": "sEpfwJLnxyQy6vR",
+	"subjects": {
+		"sEpfwJLnxyQy6vR": {
+			"label": "Rijksmuseum",
+			"schema": "Museum",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Dutch national museum dedicated to arts and history, home to masterpieces of the Dutch Golden Age" ]
+				},
+				"Founded": {
+					"type": "number",
+					"value": 1800
+				},
+				"City": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoEB5UuQS",
+							"target": "sEpfwJLnuwcxvuJ"
+						}
+					]
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.rijksmuseum.nl" ]
+				},
+				"Specialization": {
+					"type": "text",
+					"value": [ "Dutch Golden Age", "Dutch History", "Asian Art" ]
+				},
+				"Annual visitors": {
+					"type": "number",
+					"value": 2700000
+				},
+				"Admission fee": {
+					"type": "number",
+					"value": 22.50
+				},
+				"Links": {
+					"type": "url",
+					"value": [
+						"https://www.instagram.com/rijksmuseum",
+						"https://twitter.com/rijksmuseum"
+					]
+				}
+			}
+		}
+	}
+}

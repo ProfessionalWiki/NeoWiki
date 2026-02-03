@@ -1,0 +1,45 @@
+{
+	"mainSubject": "sEpfwJLo8KqKsUP",
+	"subjects": {
+		"sEpfwJLo8KqKsUP": {
+			"label": "The Milkmaid",
+			"schema": "Artwork",
+			"statements": {
+				"Year": {
+					"type": "number",
+					"value": 1658
+				},
+				"Medium": {
+					"type": "text",
+					"value": [ "Oil on canvas" ]
+				},
+				"Creator": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoLsv7dAs",
+							"target": "sEpfwJLo3dEPj2Z"
+						}
+					]
+				},
+				"Located at": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoMpL8EVs",
+							"target": "sEpfwJLnxyQy6vR"
+						}
+					]
+				},
+				"Image": {
+					"type": "url",
+					"value": [ "https://upload.wikimedia.org/wikipedia/commons/2/20/Johannes_Vermeer_-_Het_melkmeisje_-_Google_Art_Project.jpg" ]
+				},
+				"Estimated value": {
+					"type": "number",
+					"value": 150
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,49 @@
+{
+	"mainSubject": "sEpfwJLoC5fMpx9",
+	"subjects": {
+		"sEpfwJLoC5fMpx9": {
+			"label": "Impressionist Masters",
+			"schema": "Exhibition",
+			"statements": {
+				"Start year": {
+					"type": "number",
+					"value": 2024
+				},
+				"End year": {
+					"type": "number",
+					"value": 2025
+				},
+				"Venue": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoUY71QX2",
+							"target": "sEpfwJLnx3Kze3t"
+						}
+					]
+				},
+				"Featured artists": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoVW2qior",
+							"target": "sEpfwJLo1kFh84j"
+						},
+						{
+							"id": "rEpfwJLoWXLVHQK",
+							"target": "sEpfwJLo2hCAw9G"
+						}
+					]
+				},
+				"Theme": {
+					"type": "text",
+					"value": [ "The evolution of light and color in French Impressionism" ]
+				},
+				"Visitor count": {
+					"type": "number",
+					"value": 450000
+				}
+			}
+		}
+	}
+}

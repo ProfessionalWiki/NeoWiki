@@ -1,0 +1,35 @@
+{
+	"mainSubject": "sEpfwJLo2hCAw9G",
+	"subjects": {
+		"sEpfwJLo2hCAw9G": {
+			"label": "Vincent van Gogh",
+			"schema": "Artist",
+			"statements": {
+				"Born": {
+					"type": "number",
+					"value": 1853
+				},
+				"Died": {
+					"type": "number",
+					"value": 1890
+				},
+				"Nationality": {
+					"type": "text",
+					"value": [ "Dutch" ]
+				},
+				"Movement": {
+					"type": "text",
+					"value": [ "Post-Impressionism", "Neo-Impressionism" ]
+				},
+				"Wikipedia": {
+					"type": "url",
+					"value": [ "https://en.wikipedia.org/wiki/Vincent_van_Gogh" ]
+				},
+				"Active period": {
+					"type": "text",
+					"value": [ "1881–1890" ]
+				}
+			}
+		}
+	}
+}

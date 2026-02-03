@@ -1,0 +1,45 @@
+{
+	"mainSubject": "sEpfwJLo6Si6kJo",
+	"subjects": {
+		"sEpfwJLo6Si6kJo": {
+			"label": "Water Lilies",
+			"schema": "Artwork",
+			"statements": {
+				"Year": {
+					"type": "number",
+					"value": 1906
+				},
+				"Medium": {
+					"type": "text",
+					"value": [ "Oil on canvas" ]
+				},
+				"Creator": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoH2dWKCs",
+							"target": "sEpfwJLo1kFh84j"
+						}
+					]
+				},
+				"Located at": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoHyZeBJC",
+							"target": "sEpfwJLnx3Kze3t"
+						}
+					]
+				},
+				"Image": {
+					"type": "url",
+					"value": [ "https://upload.wikimedia.org/wikipedia/commons/a/aa/Claude_Monet_-_Water_Lilies_-_1906%2C_Ryerson.jpg" ]
+				},
+				"Estimated value": {
+					"type": "number",
+					"value": 80
+				}
+			}
+		}
+	}
+}

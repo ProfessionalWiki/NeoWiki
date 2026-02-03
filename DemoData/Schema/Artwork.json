@@ -1,0 +1,38 @@
+{
+	"description": "A work of art such as a painting, sculpture, or other creative piece held in a museum collection.",
+	"propertyDefinitions": {
+		"Year": {
+			"type": "number",
+			"required": true,
+			"description": "Year the artwork was created or completed"
+		},
+		"Medium": {
+			"type": "text",
+			"required": true
+		},
+		"Condition": {
+			"type": "text",
+			"default": "Good"
+		},
+		"Creator": {
+			"type": "relation",
+			"relation": "Created by",
+			"targetSchema": "Artist",
+			"required": true
+		},
+		"Located at": {
+			"type": "relation",
+			"relation": "Held at",
+			"targetSchema": "Museum"
+		},
+		"Image": {
+			"type": "url"
+		},
+		"Estimated value": {
+			"type": "number",
+			"minimum": 0,
+			"precision": 2,
+			"description": "Estimated value in millions EUR"
+		}
+	}
+}

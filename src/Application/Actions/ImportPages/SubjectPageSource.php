@@ -47,7 +47,7 @@ class SubjectPageSource {
 
 	private function getWikitext( string $pageName ): string {
 		$wikitextFilePath = $this->directoryPath . '/' . $pageName . '.wikitext';
-		return is_file( $wikitextFilePath ) ? $this->fileFetcher->fetchFile( $wikitextFilePath ) : '{{#infobox:}}';
+		return is_file( $wikitextFilePath ) ? $this->fileFetcher->fetchFile( $wikitextFilePath ) : '';
 	}
 
 }

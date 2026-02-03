@@ -1,0 +1,35 @@
+{
+	"mainSubject": "sEpfwJLo3dEPj2Z",
+	"subjects": {
+		"sEpfwJLo3dEPj2Z": {
+			"label": "Johannes Vermeer",
+			"schema": "Artist",
+			"statements": {
+				"Born": {
+					"type": "number",
+					"value": 1632
+				},
+				"Died": {
+					"type": "number",
+					"value": 1675
+				},
+				"Nationality": {
+					"type": "text",
+					"value": [ "Dutch" ]
+				},
+				"Movement": {
+					"type": "text",
+					"value": [ "Dutch Golden Age", "Baroque" ]
+				},
+				"Wikipedia": {
+					"type": "url",
+					"value": [ "https://en.wikipedia.org/wiki/Johannes_Vermeer" ]
+				},
+				"Active period": {
+					"type": "text",
+					"value": [ "1653–1675" ]
+				}
+			}
+		}
+	}
+}

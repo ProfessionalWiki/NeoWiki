@@ -1,0 +1,44 @@
+{
+	"mainSubject": "sEpfwJLnyuR5E4i",
+	"subjects": {
+		"sEpfwJLnyuR5E4i": {
+			"label": "Kunsthistorisches Museum",
+			"schema": "Museum",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Austrian art museum housing the extensive collections of the Habsburg monarchy" ]
+				},
+				"Founded": {
+					"type": "number",
+					"value": 1891
+				},
+				"City": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rEpfwJLoF7AQMbe",
+							"target": "sEpfwJLnv9T9nKk"
+						}
+					]
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.khm.at" ]
+				},
+				"Specialization": {
+					"type": "text",
+					"value": [ "Old Masters", "Egyptian Antiquities", "Habsburg Collections" ]
+				},
+				"Annual visitors": {
+					"type": "number",
+					"value": 1800000
+				},
+				"Admission fee": {
+					"type": "number",
+					"value": 21
+				}
+			}
+		}
+	}
+}

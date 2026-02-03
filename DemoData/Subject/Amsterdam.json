@@ -1,0 +1,23 @@
+{
+	"mainSubject": "sEpfwJLnuwcxvuJ",
+	"subjects": {
+		"sEpfwJLnuwcxvuJ": {
+			"label": "Amsterdam",
+			"schema": "City",
+			"statements": {
+				"Country": {
+					"type": "text",
+					"value": [ "Netherlands" ]
+				},
+				"Population": {
+					"type": "number",
+					"value": 921402
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.amsterdam.nl" ]
+				}
+			}
+		}
+	}
+}
