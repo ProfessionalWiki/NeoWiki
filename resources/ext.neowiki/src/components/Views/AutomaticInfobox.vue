@@ -188,6 +188,7 @@ const propertiesToDisplay = computed( function(): Record<string, PropertyDefinit
 	}
 }
 
+// TODO: This is a temporary fix until we implement Views.
 @media ( min-width: @min-width-breakpoint-tablet ) {
 	.ext-neowiki-view ~ h2,
 	.ext-neowiki-view ~ h3,
