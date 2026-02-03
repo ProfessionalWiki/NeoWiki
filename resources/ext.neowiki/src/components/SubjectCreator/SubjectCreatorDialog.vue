@@ -9,11 +9,12 @@
 		<CdxDialog
 			v-model:open="open"
 			class="ext-neowiki-subject-creator-dialog"
+			:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' }"
 			:title="$i18n( 'neowiki-subject-creator-title' ).text()"
 			:use-close-button="true"
 			@default="open = false"
 		>
-			<template v-if="!selectedSchemaName">
+			<template v-if="currentStep === 'schema'">
 				<p>
 					{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
 				</p>
@@ -34,12 +35,40 @@
 					/>
 				</div>
 
-				<div v-if="selectedSchemaOption === 'new'">
-					TODO: New schema UI
+				<div
+					v-if="selectedSchemaOption === 'new'"
+					class="ext-neowiki-subject-creator-new"
+				>
+					<CdxField class="ext-neowiki-subject-creator-schema-name-field">
+						<CdxTextInput
+							v-model="newSchemaName"
+							:placeholder="$i18n( 'neowiki-subject-creator-schema-name-placeholder' ).text()"
+							:status="schemaNameStatus"
+						/>
+						<template #label>
+							{{ $i18n( 'neowiki-subject-creator-schema-name-field' ).text() }}
+						</template>
+						<template
+							v-if="schemaNameError"
+							#messages
+						>
+							<CdxMessage
+								type="error"
+								:inline="true"
+							>
+								{{ schemaNameError }}
+							</CdxMessage>
+						</template>
+					</CdxField>
+
+					<SchemaEditor
+						ref="schemaEditorRef"
+						:initial-schema="blankSchema"
+					/>
 				</div>
 			</template>
 
-			<template v-if="selectedSchemaName">
+			<template v-if="currentStep === 'subject'">
 				<CdxField class="ext-neowiki-subject-creator-label-field">
 					<CdxTextInput
 						v-model="subjectLabel"
@@ -59,7 +88,17 @@
 			</template>
 
 			<template
-				v-if="selectedSchemaName"
+				v-if="selectedSchemaOption === 'new' && currentStep === 'schema'"
+				#footer
+			>
+				<EditSummary
+					help-text=""
+					:save-button-label="$i18n( 'neowiki-subject-creator-create-schema' ).text()"
+					@save="handleCreateSchema"
+				/>
+			</template>
+			<template
+				v-else-if="currentStep === 'subject'"
 				#footer
 			>
 				<EditSummary
@@ -74,26 +113,36 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
-import { CdxButton, CdxDialog, CdxField, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
+import { CdxButton, CdxDialog, CdxField, CdxMessage, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
 import { cdxIconSearch, cdxIconAdd } from '@wikimedia/codex-icons';
-import type { ButtonGroupItem } from '@wikimedia/codex';
+import type { ButtonGroupItem, ValidationStatusType } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import type { Schema } from '@/domain/Schema.ts';
+import { Schema } from '@/domain/Schema.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
+import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
+import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
 
+type Step = 'schema' | 'subject';
+
 const open = ref( false );
+const currentStep = ref<Step>( 'schema' );
 const selectedSchemaOption = ref( 'existing' );
 const selectedSchemaName = ref<string | null>( null );
 const loadedSchema = ref<Schema | null>( null );
 const subjectLabel = ref( '' );
+const newSchemaName = ref( '' );
+const schemaNameError = ref( '' );
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const schemaLookupRef = ref<any | null>( null );
+const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
+
+const blankSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
@@ -103,6 +152,10 @@ interface SubjectEditorInstance {
 }
 
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
+
+const schemaNameStatus = computed( (): ValidationStatusType =>
+	schemaNameError.value ? 'error' : 'default'
+);
 
 const toggleButtons = [
 	{
@@ -121,7 +174,10 @@ onMounted( () => {
 	focusSchemaLookup( selectedSchemaOption.value );
 } );
 
-watch( selectedSchemaOption, focusSchemaLookup );
+watch( selectedSchemaOption, ( newValue: string ) => {
+	schemaNameError.value = '';
+	focusSchemaLookup( newValue );
+} );
 
 async function focusSchemaLookup( newValue: string ): Promise<void> {
 	await nextTick();
@@ -140,9 +196,51 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 
 	try {
 		loadedSchema.value = await schemaStore.getOrFetchSchema( schemaName );
+		currentStep.value = 'subject';
 	} catch ( error ) {
 		console.error( 'Failed to load schema:', error );
 		loadedSchema.value = null;
+	}
+}
+
+async function handleCreateSchema( summary: string ): Promise<void> {
+	const name = newSchemaName.value.trim();
+
+	if ( !name ) {
+		schemaNameError.value = mw.msg( 'neowiki-subject-creator-schema-name-required' );
+		return;
+	}
+
+	try {
+		await schemaStore.getOrFetchSchema( name );
+		schemaNameError.value = mw.msg( 'neowiki-subject-creator-schema-name-taken' );
+		return;
+	} catch {
+		// Schema not found -- name is available
+	}
+
+	const propertyDefinitions = schemaEditorRef.value ?
+		schemaEditorRef.value.getSchema().getPropertyDefinitions() :
+		new PropertyDefinitionList( [] );
+
+	const schema = new Schema( name, '', propertyDefinitions );
+
+	try {
+		await schemaStore.saveSchema( schema, summary || undefined );
+		mw.notify( mw.msg( 'neowiki-subject-creator-schema-created' ), { type: 'success' } );
+
+		selectedSchemaName.value = name;
+		loadedSchema.value = schema;
+		subjectLabel.value = String( mw.config.get( 'wgTitle' ) ?? '' );
+		currentStep.value = 'subject';
+	} catch ( error ) {
+		mw.notify(
+			error instanceof Error ? error.message : String( error ),
+			{
+				title: mw.msg( 'neowiki-subject-creator-error' ),
+				type: 'error'
+			}
+		);
 	}
 }
 
@@ -181,6 +279,9 @@ function resetForm(): void {
 	loadedSchema.value = null;
 	subjectLabel.value = '';
 	selectedSchemaOption.value = 'existing';
+	currentStep.value = 'schema';
+	newSchemaName.value = '';
+	schemaNameError.value = '';
 }
 
 const handleSave = async ( _summary: string ): Promise<void> => {
@@ -225,6 +326,10 @@ const handleSave = async ( _summary: string ): Promise<void> => {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-creator {
+	&-dialog--wide.cdx-dialog {
+		max-width: @size-5600;
+	}
+
 	&-schema-options.cdx-toggle-button-group {
 		width: inherit;
 		display: flex;
@@ -237,6 +342,14 @@ const handleSave = async ( _summary: string ): Promise<void> => {
 
 	&-existing {
 		margin-top: @spacing-100;
+	}
+
+	&-new {
+		margin-top: @spacing-100;
+	}
+
+	&-schema-name-field {
+		margin-bottom: @spacing-100;
 	}
 
 	&-label-field {
