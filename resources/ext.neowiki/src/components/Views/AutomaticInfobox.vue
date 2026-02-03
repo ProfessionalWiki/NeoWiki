@@ -187,4 +187,16 @@ const propertiesToDisplay = computed( function(): Record<string, PropertyDefinit
 		word-break: break-word;
 	}
 }
+
+// TODO: This is a temporary fix until we implement Views.
+@media ( min-width: @min-width-breakpoint-tablet ) {
+	.ext-neowiki-view ~ h2,
+	.ext-neowiki-view ~ h3,
+	.ext-neowiki-view ~ h4,
+	.ext-neowiki-view ~ h5,
+	.ext-neowiki-view ~ h6,
+	.ext-neowiki-view ~ .mw-heading {
+		clear: both;
+	}
+}
 </style>
