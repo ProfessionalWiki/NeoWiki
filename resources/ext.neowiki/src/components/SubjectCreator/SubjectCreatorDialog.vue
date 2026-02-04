@@ -212,6 +212,7 @@ async function handleCreateSchema( summary: string ): Promise<void> {
 		schemaNameError.value = mw.msg( 'neowiki-subject-creator-schema-name-taken' );
 		return;
 	} catch {
+		// TODO: Distinguish between schema not existing, and other errors during retrieval.
 		// Schema not found -- name is available
 	}
 
