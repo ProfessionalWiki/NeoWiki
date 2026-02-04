@@ -10,9 +10,6 @@ import { NumberType } from '@/domain/propertyTypes/Number.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
-import { CdxTable } from '@wikimedia/codex';
-import type { TableColumn } from '@wikimedia/codex';
-import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { newSchema } from '@/TestHelpers.ts';
 
 function mountComponent( schema: Schema ): VueWrapper {
@@ -26,13 +23,8 @@ function mountComponent( schema: Schema ): VueWrapper {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
 			},
 			stubs: {
-				CdxTable: {
-					template: '<div><slot name="header"></slot><slot></slot></div>',
-					props: [ 'columns', 'data' ],
-				},
 				CdxIcon: true,
-				CdxButton: true,
-				CdxInfoChip: true,
+				CdxInfoChip: { template: '<span><slot /></span>', props: [ 'icon' ] },
 				SchemaDisplayHeader: true,
 			},
 		},
@@ -40,60 +32,59 @@ function mountComponent( schema: Schema ): VueWrapper {
 }
 
 describe( 'SchemaDisplay', () => {
-	it( 'renders the header component with correct schema', () => {
-		const schema = newSchema( {
-			title: 'Test schema',
-		} );
+	it( 'passes schema to header component', () => {
+		const schema = newSchema( { title: 'Test schema' } );
 
 		const wrapper = mountComponent( schema );
-		const header = wrapper.findComponent( SchemaDisplayHeader );
 
-		expect( header.exists() ).toBe( true );
-		expect( header.props( 'schema' ) ).toStrictEqual( schema );
+		expect( wrapper.findComponent( SchemaDisplayHeader ).props( 'schema' ) ).toStrictEqual( schema );
 	} );
 
-	it( 'passes correct columns and data to CdxTable when properties exist', () => {
+	it( 'renders property names, types, and required status', () => {
 		const schema = newSchema( {
-			title: 'Test schema',
 			properties: new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'Test property 1', {
+				createPropertyDefinitionFromJson( 'Website', {
 					type: TextType.typeName,
 					required: true,
-					description: 'Description for test property 1',
 				} ),
-				createPropertyDefinitionFromJson( 'Test property 2', {
+				createPropertyDefinitionFromJson( 'Age', {
 					type: NumberType.typeName,
 					required: false,
-					description: 'Description for test property 2',
 				} ),
 			] ),
 		} );
 
 		const wrapper = mountComponent( schema );
-		const table = wrapper.findComponent( CdxTable );
+		const rows = wrapper.findAll( 'tbody tr' );
 
-		const data = table.props( 'data' ) as PropertyDefinition[];
-		expect( data ).toHaveLength( 2 );
-		expect( data[ 0 ].name.toString() ).toBe( 'Test property 1' );
-		expect( data[ 0 ].type ).toBe( TextType.typeName );
-		expect( data[ 1 ].name.toString() ).toBe( 'Test property 2' );
-		expect( data[ 1 ].type ).toBe( NumberType.typeName );
-
-		const columns = table.props( 'columns' ) as TableColumn[];
-		expect( columns ).toHaveLength( 5 );
-		expect( columns.map( ( c ) => c.id ) ).toEqual( [ 'name', 'type', 'required', 'default', 'description' ] );
+		expect( rows ).toHaveLength( 2 );
+		expect( rows[ 0 ].text() ).toContain( 'Website' );
+		expect( rows[ 0 ].text() ).toContain( 'neowiki-property-type-text' );
+		expect( rows[ 0 ].text() ).toContain( 'neowiki-schema-display-required-yes' );
+		expect( rows[ 1 ].text() ).toContain( 'Age' );
+		expect( rows[ 1 ].text() ).toContain( 'neowiki-property-type-number' );
+		expect( rows[ 1 ].text() ).toContain( 'neowiki-schema-display-required-no' );
 	} );
 
-	it( 'passes empty columns to CdxTable when no properties exist', () => {
+	it( 'renders default values for properties that have them', () => {
 		const schema = newSchema( {
-			title: 'Empty schema',
-			description: '',
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'greeting', {
+					type: TextType.typeName,
+					default: [ 'Hello' ],
+				} ),
+			] ),
 		} );
 
 		const wrapper = mountComponent( schema );
-		const table = wrapper.findComponent( CdxTable );
 
-		expect( table.props( 'data' ) ).toHaveLength( 0 );
-		expect( table.props( 'columns' ) ).toHaveLength( 0 );
+		expect( wrapper.find( 'tbody tr' ).text() ).toContain( 'Hello' );
+	} );
+
+	it( 'shows empty message when schema has no properties', () => {
+		const wrapper = mountComponent( newSchema( { properties: new PropertyDefinitionList( [] ) } ) );
+
+		expect( wrapper.text() ).toContain( 'neowiki-schema-display-no-properties' );
+		expect( wrapper.find( '.cdx-table__table__empty-state' ).exists() ).toBe( true );
 	} );
 } );

@@ -1,5 +1,5 @@
 import { mount, VueWrapper } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import SchemaDisplayHeader from '@/components/SchemaDisplay/SchemaDisplayHeader.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
@@ -16,8 +16,12 @@ vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	} ),
 } ) );
 
+let mockGetUrl: ReturnType<typeof vi.fn>;
+
 function mountComponent( schema: Schema ): VueWrapper {
 	setupMwMock( { functions: [ 'msg' ] } );
+	mockGetUrl = vi.fn( ( title: string ) => `/wiki/${ title }` );
+	( globalThis as any ).mw.util = { getUrl: mockGetUrl };
 
 	return mount( SchemaDisplayHeader, {
 		props: { schema },
@@ -25,61 +29,59 @@ function mountComponent( schema: Schema ): VueWrapper {
 			mocks: { $i18n: createI18nMock() },
 			stubs: {
 				CdxIcon: true,
-				CdxButton: true,
 			},
 		},
 	} );
 }
 
 describe( 'SchemaDisplayHeader', () => {
-	it( 'renders schema name and description', () => {
-		const schema = newSchema( {
-			title: 'Test schema',
-			description: 'Description for test schema',
-		} );
-
-		const wrapper = mountComponent( schema );
-
-		expect( wrapper.find( '.ext-neowiki-schema-display-header__title' ).text() ).toBe( 'Test schema' );
-		expect( wrapper.find( '.ext-neowiki-schema-display-header__description' ).text() ).toBe( 'Description for test schema' );
+	beforeEach( () => {
+		canEditSchemaRef.value = false;
+		checkPermissionMock.mockClear();
 	} );
 
-	it( 'renders schema name only when no description provided', () => {
-		const schema = newSchema( {
+	it( 'renders schema name and description', () => {
+		const wrapper = mountComponent( newSchema( {
 			title: 'Test schema',
-			description: '',
-		} );
-
-		const wrapper = mountComponent( schema );
+			description: 'A schema for people',
+		} ) );
 
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__title' ).text() ).toBe( 'Test schema' );
+		expect( wrapper.find( '.ext-neowiki-schema-display-header__description' ).text() ).toBe( 'A schema for people' );
+	} );
+
+	it( 'hides description when schema has none', () => {
+		const wrapper = mountComponent( newSchema( { description: '' } ) );
+
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__description' ).exists() ).toBe( false );
 	} );
 
 	it( 'checks permissions on mount', () => {
-		const schema = newSchema( { title: 'Test Schema' } );
-		checkPermissionMock.mockClear();
-
-		mountComponent( schema );
+		mountComponent( newSchema( { title: 'Test Schema' } ) );
 
 		expect( checkPermissionMock ).toHaveBeenCalledWith( 'Test Schema' );
 	} );
 
-	it( 'shows edit button when user has permission', async () => {
-		const schema = newSchema( { title: 'Test Schema' } );
+	it( 'shows edit button when user has permission', () => {
 		canEditSchemaRef.value = true;
 
-		const wrapper = mountComponent( schema );
+		const wrapper = mountComponent( newSchema() );
 
-		expect( wrapper.findComponent( { name: 'CdxButton', props: { 'aria-label': 'neowiki-edit-schema' } } ).exists() ).toBeTruthy();
+		expect( wrapper.find( '.ext-neowiki-schema-display-header__actions button' ).exists() ).toBe( true );
 	} );
 
-	it( 'hides edit button when user lacks permission', async () => {
-		const schema = newSchema( { title: 'Test Schema' } );
-		canEditSchemaRef.value = false;
+	it( 'hides edit button when user lacks permission', () => {
+		const wrapper = mountComponent( newSchema() );
 
-		const wrapper = mountComponent( schema );
+		expect( wrapper.find( '.ext-neowiki-schema-display-header__actions button' ).exists() ).toBe( false );
+	} );
 
-		expect( wrapper.findComponent( { name: 'CdxButton', props: { 'aria-label': 'neowiki-edit-schema' } } ).exists() ).toBe( false );
+	it( 'navigates to schema editor on edit button click', async () => {
+		canEditSchemaRef.value = true;
+		const wrapper = mountComponent( newSchema( { title: 'Company' } ) );
+
+		await wrapper.find( '.ext-neowiki-schema-display-header__actions button' ).trigger( 'click' );
+
+		expect( mockGetUrl ).toHaveBeenCalledWith( 'Schema:Company', { action: 'edit-schema' } );
 	} );
 } );
