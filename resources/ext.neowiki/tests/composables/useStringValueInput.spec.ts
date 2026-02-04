@@ -255,6 +255,41 @@ describe( 'useStringValueInput', () => {
 	} );
 
 	describe( 'Validation (doValidateInputs and its effects)', () => {
+		it( 'preserves display values when input fails validation', () => {
+			const validationError = { error: 'Invalid URL' };
+			mockedValidateValue.mockReturnValue( validationError );
+			const testProperty = createMockPropertyDefinition( { multiple: false } );
+			const { onInput, displayValues, getCurrentValue, fieldMessages } = createComposable( {
+				property: testProperty,
+			} );
+
+			onInput( 'h' );
+
+			expect( displayValues.value ).toEqual( [ 'h' ] );
+			expect( getCurrentValue() ).toBeUndefined();
+			expect( fieldMessages.value ).toEqual( validationError );
+			expect( mockEmit ).not.toHaveBeenCalled();
+		} );
+
+		it( 'preserves display values when replacing valid input with invalid input', () => {
+			mockedValidateValue.mockReturnValue( {} );
+			const testProperty = createMockPropertyDefinition( { multiple: false } );
+			const { onInput, displayValues, getCurrentValue, fieldMessages } = createComposable( {
+				modelValue: newStringValue( 'https://example.com' ),
+				property: testProperty,
+			} );
+
+			const validationError = { error: 'Invalid URL' };
+			mockedValidateValue.mockReturnValue( validationError );
+
+			onInput( 'h' );
+
+			expect( displayValues.value ).toEqual( [ 'h' ] );
+			expect( getCurrentValue() ).toBeUndefined();
+			expect( fieldMessages.value ).toEqual( validationError );
+			expect( mockEmit ).toHaveBeenCalledWith( 'update:modelValue', undefined );
+		} );
+
 		it( 'populates inputMessages and fieldMessages with errors from validateValue', () => {
 			const validationError = { error: 'Invalid from validateValue' };
 			mockedValidateValue.mockReturnValue( validationError );

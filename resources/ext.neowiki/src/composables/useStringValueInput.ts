@@ -24,6 +24,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 	propertyType: PropertyType,
 ): UseStringValueInputReturn {
 	const internalValue: Ref<StringValue | undefined> = ref( undefined );
+	const userInputValues: Ref<string[] | null> = ref( null );
 	const fieldMessages: Ref<ValidationMessages> = ref( {} );
 	const inputMessages: Ref<ValidationMessages[]> = ref( [] );
 
@@ -46,9 +47,12 @@ export function useStringValueInput<P extends MultiStringProperty>(
 
 	initializeInternalValue( modelValue.value );
 
-	const displayValues: ComputedRef<string[]> = computed<string[]>( () =>
-		internalValue.value ? internalValue.value.strings : [],
-	);
+	const displayValues: ComputedRef<string[]> = computed<string[]>( () => {
+		if ( userInputValues.value !== null ) {
+			return userInputValues.value;
+		}
+		return internalValue.value ? internalValue.value.strings : [];
+	} );
 
 	function doValidateInputs( valuesToValidate: string[] ): { errors: ValidationMessages[]; validStrings: string[] } {
 		const perInputErrors: ValidationMessages[] = Array( valuesToValidate.length ).fill( {} );
@@ -88,6 +92,8 @@ export function useStringValueInput<P extends MultiStringProperty>(
 
 	function onInput( newValue: string | string[] ): void {
 		const currentInputValues = typeof newValue === 'string' ? [ newValue ] : newValue;
+		userInputValues.value = currentInputValues;
+
 		const { errors, validStrings } = doValidateInputs( currentInputValues );
 
 		updateValidationMessages( errors );
@@ -114,7 +120,13 @@ export function useStringValueInput<P extends MultiStringProperty>(
 	}
 
 	watch( modelValue, ( newModelValue ) => {
+		const previousInternalValue = internalValue.value;
 		initializeInternalValue( newModelValue );
+
+		if ( JSON.stringify( previousInternalValue ) !== JSON.stringify( internalValue.value ) ) {
+			userInputValues.value = null;
+		}
+
 		updateValidationMessages( doValidateInputs( displayValues.value ).errors );
 	}, { immediate: true } );
 
