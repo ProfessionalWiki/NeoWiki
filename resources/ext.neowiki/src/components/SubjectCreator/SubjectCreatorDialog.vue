@@ -14,7 +14,7 @@
 			:use-close-button="true"
 			@default="open = false"
 		>
-			<template v-if="currentStep === 'schema'">
+			<template v-if="!selectedSchemaName">
 				<p>
 					{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
 				</p>
@@ -68,7 +68,7 @@
 				</div>
 			</template>
 
-			<template v-if="currentStep === 'subject'">
+			<template v-if="selectedSchemaName">
 				<CdxField class="ext-neowiki-subject-creator-label-field">
 					<CdxTextInput
 						v-model="subjectLabel"
@@ -88,7 +88,7 @@
 			</template>
 
 			<template
-				v-if="selectedSchemaOption === 'new' && currentStep === 'schema'"
+				v-if="selectedSchemaOption === 'new' && !selectedSchemaName"
 				#footer
 			>
 				<EditSummary
@@ -98,7 +98,7 @@
 				/>
 			</template>
 			<template
-				v-else-if="currentStep === 'subject'"
+				v-else-if="selectedSchemaName"
 				#footer
 			>
 				<EditSummary
@@ -128,10 +128,7 @@ import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor
 import EditSummary from '@/components/common/EditSummary.vue';
 import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
 
-type Step = 'schema' | 'subject';
-
 const open = ref( false );
-const currentStep = ref<Step>( 'schema' );
 const selectedSchemaOption = ref( 'existing' );
 const selectedSchemaName = ref<string | null>( null );
 const loadedSchema = ref<Schema | null>( null );
@@ -196,7 +193,6 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 
 	try {
 		loadedSchema.value = await schemaStore.getOrFetchSchema( schemaName );
-		currentStep.value = 'subject';
 	} catch ( error ) {
 		console.error( 'Failed to load schema:', error );
 		loadedSchema.value = null;
@@ -232,7 +228,6 @@ async function handleCreateSchema( summary: string ): Promise<void> {
 		selectedSchemaName.value = name;
 		loadedSchema.value = schema;
 		subjectLabel.value = String( mw.config.get( 'wgTitle' ) ?? '' );
-		currentStep.value = 'subject';
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),
@@ -279,7 +274,6 @@ function resetForm(): void {
 	loadedSchema.value = null;
 	subjectLabel.value = '';
 	selectedSchemaOption.value = 'existing';
-	currentStep.value = 'schema';
 	newSchemaName.value = '';
 	schemaNameError.value = '';
 }
