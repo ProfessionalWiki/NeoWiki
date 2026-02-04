@@ -9,7 +9,7 @@
 		<CdxDialog
 			v-model:open="open"
 			class="ext-neowiki-subject-creator-dialog"
-			:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' }"
+			:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' && !selectedSchemaName }"
 			:title="$i18n( 'neowiki-subject-creator-title' ).text()"
 			:use-close-button="true"
 			@default="open = false"
