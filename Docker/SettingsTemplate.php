@@ -206,3 +206,6 @@ $wgCrossSiteAJAXdomains = [
 $wgEmailConfirmToEdit = false;
 
 $wgGroupPermissions['*']['edit'] = false;
+
+$wgUseRCPatrol = false;
+$wgUseNPPatrol = false;
