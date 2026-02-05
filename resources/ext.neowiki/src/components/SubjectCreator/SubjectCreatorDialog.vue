@@ -166,7 +166,6 @@ const toggleButtons = [
 
 onMounted( async () => {
 	await checkCreatePermission();
-	focusInitialInput( selectedSchemaOption.value );
 } );
 
 watch( selectedSchemaOption, ( newValue: string ) => {
@@ -264,8 +263,11 @@ const schemaStatements = computed( (): StatementList | null => {
 	return new StatementList( statements );
 } );
 
-watch( open, ( isOpen ) => {
-	if ( !isOpen ) {
+watch( open, async ( isOpen ) => {
+	if ( isOpen ) {
+		await nextTick();
+		focusInitialInput( selectedSchemaOption.value );
+	} else {
 		resetForm();
 	}
 } );
