@@ -20,6 +20,7 @@
 				</p>
 
 				<CdxToggleButtonGroup
+					v-if="canCreateSchemas"
 					v-model="selectedSchemaOption"
 					class="ext-neowiki-subject-creator-schema-options"
 					:buttons="toggleButtons"
@@ -120,6 +121,7 @@ import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
+import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 
 const open = ref( false );
 const selectedSchemaOption = ref( 'existing' );
@@ -137,6 +139,7 @@ const newSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
+const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
 
 interface SubjectEditorInstance {
 	getSubjectData: () => StatementList;
@@ -161,7 +164,8 @@ const toggleButtons = [
 	}
 ] as ButtonGroupItem[];
 
-onMounted( () => {
+onMounted( async () => {
+	await checkCreatePermission();
 	focusInitialInput( selectedSchemaOption.value );
 } );
 
@@ -322,6 +326,7 @@ const handleSave = async ( _summary: string ): Promise<void> => {
 	}
 
 	&-schema-options.cdx-toggle-button-group {
+		margin-bottom: @spacing-150;
 		width: inherit;
 		display: flex;
 		flex-wrap: wrap;
@@ -329,14 +334,6 @@ const handleSave = async ( _summary: string ): Promise<void> => {
 		.cdx-toggle-button {
 			flex-grow: 1;
 		}
-	}
-
-	&-existing {
-		margin-top: @spacing-100;
-	}
-
-	&-new {
-		margin-top: @spacing-100;
 	}
 
 	&-schema-name-field {

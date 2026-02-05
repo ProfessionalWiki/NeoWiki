@@ -1,5 +1,6 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ref } from 'vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
@@ -20,10 +21,14 @@ import { newStringValue } from '@/domain/Value.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 
+import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
+
 const PAGE_ID = 123;
 const PAGE_TITLE = 'Test Page';
 const SCHEMA_NAME = 'TestSchema';
 const NEW_SCHEMA_NAME = 'NewSchema';
+
+vi.mock( '@/composables/useSchemaPermissions.ts' );
 
 const SchemaLookupStub = {
 	template: '<div class="schema-lookup-stub"></div>',
@@ -76,6 +81,7 @@ describe( 'SubjectCreatorDialog', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let subjectStore: ReturnType<typeof useSubjectStore>;
 	let schemaStore: ReturnType<typeof useSchemaStore>;
+	const canCreateSchemas = ref( true );
 
 	const mountComponent = (
 		stubs: Record<string, any> = {},
@@ -139,6 +145,12 @@ describe( 'SubjectCreatorDialog', () => {
 		schemaStore = useSchemaStore();
 		schemaStore.getOrFetchSchema = vi.fn().mockResolvedValue( newSchema( { title: SCHEMA_NAME } ) );
 		schemaStore.saveSchema = vi.fn().mockResolvedValue( undefined );
+
+		canCreateSchemas.value = true;
+		( useSchemaPermissions as any ).mockReturnValue( {
+			canCreateSchemas,
+			checkCreatePermission: vi.fn(),
+		} );
 	} );
 
 	it( 'opens dialog when button is clicked', async () => {
@@ -169,6 +181,16 @@ describe( 'SubjectCreatorDialog', () => {
 
 		expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( false );
 		expect( wrapper.find( '.cdx-toggle-button-group-stub' ).exists() ).toBe( false );
+	} );
+
+	it( 'hides schema creation option when user lacks permission', async () => {
+		canCreateSchemas.value = false;
+		const wrapper = mountComponent();
+
+		await flushPromises();
+
+		expect( wrapper.find( '.cdx-toggle-button-group-stub' ).exists() ).toBe( false );
+		expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
 	} );
 
 	it( 'does not show label input or SubjectEditor before schema selection', () => {

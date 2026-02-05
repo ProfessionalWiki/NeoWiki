@@ -15,13 +15,13 @@ import { Service } from '@/NeoWikiServices.ts';
 import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
-const checkPermissionMock = vi.fn();
+const checkEditPermissionMock = vi.fn();
 const canEditSchemaRef = ref( false );
 
 vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	useSchemaPermissions: () => ( {
 		canEditSchema: canEditSchemaRef,
-		checkPermission: checkPermissionMock,
+		checkEditPermission: checkEditPermissionMock,
 	} ),
 } ) );
 
@@ -50,7 +50,7 @@ describe( 'SchemaDisplay', () => {
 	beforeEach( () => {
 		setActivePinia( createPinia() );
 		canEditSchemaRef.value = false;
-		checkPermissionMock.mockClear();
+		checkEditPermissionMock.mockClear();
 	} );
 
 	it( 'passes schema and canEditSchema to header component', () => {
