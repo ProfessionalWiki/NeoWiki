@@ -12,8 +12,6 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookupResult;
 
 class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 
-	private const LIMIT = 10;
-
 	public function __construct(
 		private readonly ClientInterface $client
 	) {
@@ -22,25 +20,32 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 	/**
 	 * @return SubjectLabelLookupResult[]
 	 */
-	public function getSubjectLabelsMatching( string $search ): array {
+	public function getSubjectLabelsMatching( string $search, int $limit, array $schemaNames = [] ): array {
 		if ( trim( $search ) === '' ) {
 			return [];
 		}
 
 		return $this->client->readTransaction(
-			function ( TransactionInterface $transaction ) use ( $search ): array {
+			function ( TransactionInterface $transaction ) use ( $search, $limit, $schemaNames ): array {
+				$schemaFilter = '';
+				if ( $schemaNames !== [] ) {
+					$schemaFilter = 'AND any(label IN labels(n) WHERE label IN $schemaNames)';
+				}
+
 				/**
 				 * @var SummarizedResult $result
 				 */
 				$result = $transaction->run(
-					'MATCH (n:Subject)
-					 WHERE toLower(n.name) STARTS WITH toLower($search)
+					"MATCH (n:Subject)
+					 WHERE toLower(n.name) STARTS WITH toLower(\$search)
+					 $schemaFilter
 					 RETURN n.id AS id, n.name AS name
 					 ORDER BY n.name
-					 LIMIT $limit',
+					 LIMIT \$limit",
 					[
 						'search' => $search,
-						'limit' => self::LIMIT
+						'limit' => (int)$limit,
+						'schemaNames' => $schemaNames
 					]
 				);
 
