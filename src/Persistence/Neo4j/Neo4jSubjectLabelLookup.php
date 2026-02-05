@@ -36,6 +36,7 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 					'MATCH (n:Subject)
 					 WHERE toLower(n.name) STARTS WITH toLower($search)
 					 RETURN n.id AS id, n.name AS name
+					 ORDER BY n.name
 					 LIMIT $limit',
 					[
 						'search' => $search,
