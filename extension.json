@@ -218,6 +218,7 @@
 				"neowiki-property-editor-type",
 				"neowiki-property-editor-initial-value",
 				"neowiki-property-editor-required",
+				"neowiki-property-editor-range",
 				"neowiki-property-editor-minimum",
 				"neowiki-property-editor-maximum",
 				"neowiki-property-editor-precision",

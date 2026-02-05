@@ -22,6 +22,7 @@
 	"neowiki-property-editor-initial-value": "Initial value",
 	"neowiki-property-editor-required": "Require a value",
 
+	"neowiki-property-editor-range": "Range",
 	"neowiki-property-editor-minimum": "Minimum",
 	"neowiki-property-editor-maximum": "Maximum",
 	"neowiki-property-editor-precision": "Precision",

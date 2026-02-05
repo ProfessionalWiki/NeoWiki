@@ -1,27 +1,38 @@
 <template>
 	<!-- cdx-field class is used for spacing -->
 	<div class="number-attributes cdx-field">
-		<CdxField>
+		<NeoNestedField :optional="true">
 			<template #label>
-				{{ $i18n( 'neowiki-property-editor-minimum' ).text() }}
+				{{ $i18n( 'neowiki-property-editor-range' ).text() }}
 			</template>
-			<CdxTextInput
-				:model-value="property.minimum?.toString()"
-				input-type="number"
-				@update:model-value="updateMinimum"
-			/>
-		</CdxField>
-		<CdxField>
-			<template #label>
-				{{ $i18n( 'neowiki-property-editor-maximum' ).text() }}
-			</template>
-			<CdxTextInput
-				:model-value="property.maximum?.toString()"
-				input-type="number"
-				@update:model-value="updateMaximum"
-			/>
-		</CdxField>
+
+			<CdxField>
+				<template #label>
+					{{ $i18n( 'neowiki-property-editor-minimum' ).text() }}
+				</template>
+
+				<CdxTextInput
+					:model-value="property.minimum?.toString()"
+					input-type="number"
+					@update:model-value="updateMinimum"
+				/>
+			</CdxField>
+
+			<CdxField>
+				<template #label>
+					{{ $i18n( 'neowiki-property-editor-maximum' ).text() }}
+				</template>
+
+				<CdxTextInput
+					:model-value="property.maximum?.toString()"
+					input-type="number"
+					@update:model-value="updateMaximum"
+				/>
+			</CdxField>
+		</NeoNestedField>
+
 		<CdxField
+			class="number-attributes__precision"
 			:status="precisionError === null ? 'default' : 'error'"
 			:messages="precisionError === null ? {} : { error: precisionError }"
 		>
@@ -43,6 +54,7 @@ import { ref } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { NumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
+import NeoNestedField from '@/components/common/NeoNestedField.vue';
 
 defineProps<AttributesEditorProps<NumberProperty>>();
 const emit = defineEmits<AttributesEditorEmits<NumberProperty>>();
