@@ -13,7 +13,7 @@
 		</div>
 		<div class="ext-neowiki-schema-display-header__actions">
 			<CdxButton
-				v-if="canEditSchema"
+				v-if="canEdit"
 				weight="quiet"
 				:aria-label="$i18n( 'neowiki-edit-schema' ).text()"
 				@click="emit( 'edit' )"
@@ -25,15 +25,17 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue';
 import { Schema } from '@/domain/Schema.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';
-import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 
-const props = defineProps( {
+defineProps( {
 	schema: {
 		type: Schema,
+		required: true
+	},
+	canEdit: {
+		type: Boolean,
 		required: true
 	}
 } );
@@ -41,12 +43,6 @@ const props = defineProps( {
 const emit = defineEmits<{
 	edit: [];
 }>();
-
-const { canEditSchema, checkPermission } = useSchemaPermissions();
-
-watch( () => props.schema, ( newSchema ) => {
-	checkPermission( newSchema.getName() );
-}, { immediate: true } );
 </script>
 
 <style lang="less">
