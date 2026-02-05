@@ -31,14 +31,14 @@ export class UrlType extends BasePropertyType<UrlProperty, StringValue> {
 		const errors: ValueValidationError[] = [];
 		value = value === undefined ? newStringValue() : value;
 
-		if ( property.required && value.strings.length === 0 ) {
+		if ( property.required && value.parts.length === 0 ) {
 			errors.push( { code: 'required' } );
 			return errors;
 		}
 
 		// TODO: check property.multiple
 
-		for ( const part of value.strings ) {
+		for ( const part of value.parts ) {
 			const url = part.trim();
 
 			if ( url !== '' && !isValidUrl( url ) ) {
@@ -46,7 +46,7 @@ export class UrlType extends BasePropertyType<UrlProperty, StringValue> {
 			}
 		}
 
-		if ( property.uniqueItems && new Set( value.strings ).size !== value.strings.length ) {
+		if ( property.uniqueItems && new Set( value.parts ).size !== value.parts.length ) {
 			errors.push( { code: 'unique' } ); // TODO: add source
 		}
 
