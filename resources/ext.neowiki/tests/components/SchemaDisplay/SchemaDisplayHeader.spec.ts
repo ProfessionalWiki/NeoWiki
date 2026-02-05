@@ -1,30 +1,15 @@
 import { mount, VueWrapper } from '@vue/test-utils';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import SchemaDisplayHeader from '@/components/SchemaDisplay/SchemaDisplayHeader.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
 import { newSchema } from '@/TestHelpers.ts';
-import { ref } from 'vue';
 
-const checkPermissionMock = vi.fn();
-const canEditSchemaRef = ref( false );
-
-vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
-	useSchemaPermissions: () => ( {
-		canEditSchema: canEditSchemaRef,
-		checkPermission: checkPermissionMock,
-	} ),
-} ) );
-
-let mockGetUrl: ReturnType<typeof vi.fn>;
-
-function mountComponent( schema: Schema ): VueWrapper {
+function mountComponent( schema: Schema, canEdit: boolean = false ): VueWrapper {
 	setupMwMock( { functions: [ 'msg' ] } );
-	mockGetUrl = vi.fn( ( title: string ) => `/wiki/${ title }` );
-	( globalThis as any ).mw.util = { getUrl: mockGetUrl };
 
 	return mount( SchemaDisplayHeader, {
-		props: { schema },
+		props: { schema, canEdit },
 		global: {
 			mocks: { $i18n: createI18nMock() },
 			stubs: {
@@ -35,11 +20,6 @@ function mountComponent( schema: Schema ): VueWrapper {
 }
 
 describe( 'SchemaDisplayHeader', () => {
-	beforeEach( () => {
-		canEditSchemaRef.value = false;
-		checkPermissionMock.mockClear();
-	} );
-
 	it( 'renders schema name and description', () => {
 		const wrapper = mountComponent( newSchema( {
 			title: 'Test schema',
@@ -56,29 +36,20 @@ describe( 'SchemaDisplayHeader', () => {
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__description' ).exists() ).toBe( false );
 	} );
 
-	it( 'checks permissions on mount', () => {
-		mountComponent( newSchema( { title: 'Test Schema' } ) );
-
-		expect( checkPermissionMock ).toHaveBeenCalledWith( 'Test Schema' );
-	} );
-
-	it( 'shows edit button when user has permission', () => {
-		canEditSchemaRef.value = true;
-
-		const wrapper = mountComponent( newSchema() );
+	it( 'shows edit button when canEdit is true', () => {
+		const wrapper = mountComponent( newSchema(), true );
 
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__actions button' ).exists() ).toBe( true );
 	} );
 
-	it( 'hides edit button when user lacks permission', () => {
-		const wrapper = mountComponent( newSchema() );
+	it( 'hides edit button when canEdit is false', () => {
+		const wrapper = mountComponent( newSchema(), false );
 
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__actions button' ).exists() ).toBe( false );
 	} );
 
 	it( 'emits edit event on edit button click', async () => {
-		canEditSchemaRef.value = true;
-		const wrapper = mountComponent( newSchema( { title: 'Company' } ) );
+		const wrapper = mountComponent( newSchema( { title: 'Company' } ), true );
 
 		await wrapper.find( '.ext-neowiki-schema-display-header__actions button' ).trigger( 'click' );
 
