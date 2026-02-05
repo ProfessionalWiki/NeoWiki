@@ -54,7 +54,11 @@ ts-ci:
 	$(MAKE) ts-test && $(MAKE) ts-build && $(MAKE) ts-lint
 
 ts-test:
+ifdef filter
+	docker run --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:24 npm run test -- $(filter)
+else
 	docker run --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:24 npm run test
+endif
 
 ts-test-watch:
 	docker run --rm -v "$(CURDIR)":/home/node/app:z $(EXEC_USER) -w /home/node/app/resources/ext.neowiki docker.io/library/node:24 npm run test:watch
