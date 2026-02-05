@@ -5,11 +5,11 @@ import { Schema } from '@/domain/Schema.ts';
 import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
-function mountComponent( schema: Schema, canEdit: boolean = false ): VueWrapper {
+function mountComponent( schema: Schema, canEditSchema: boolean = false ): VueWrapper {
 	setupMwMock( { functions: [ 'msg' ] } );
 
 	return mount( SchemaDisplayHeader, {
-		props: { schema, canEdit },
+		props: { schema, canEditSchema },
 		global: {
 			mocks: { $i18n: createI18nMock() },
 			stubs: {
@@ -36,13 +36,13 @@ describe( 'SchemaDisplayHeader', () => {
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__description' ).exists() ).toBe( false );
 	} );
 
-	it( 'shows edit button when canEdit is true', () => {
+	it( 'shows edit button when canEditSchema is true', () => {
 		const wrapper = mountComponent( newSchema(), true );
 
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__actions button' ).exists() ).toBe( true );
 	} );
 
-	it( 'hides edit button when canEdit is false', () => {
+	it( 'hides edit button when canEditSchema is false', () => {
 		const wrapper = mountComponent( newSchema(), false );
 
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__actions button' ).exists() ).toBe( false );

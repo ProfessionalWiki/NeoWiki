@@ -53,14 +53,14 @@ describe( 'SchemaDisplay', () => {
 		checkPermissionMock.mockClear();
 	} );
 
-	it( 'passes schema and canEdit to header component', () => {
+	it( 'passes schema and canEditSchema to header component', () => {
 		const schema = newSchema( { title: 'Test schema' } );
 
 		const wrapper = mountComponent( schema );
 		const header = wrapper.findComponent( SchemaDisplayHeader );
 
 		expect( header.props( 'schema' ) ).toStrictEqual( schema );
-		expect( header.props( 'canEdit' ) ).toBe( false );
+		expect( header.props( 'canEditSchema' ) ).toBe( false );
 	} );
 
 	it( 'renders property names, types, and required status', () => {
