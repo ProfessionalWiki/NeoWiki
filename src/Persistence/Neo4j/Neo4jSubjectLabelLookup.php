@@ -8,7 +8,7 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
-use ProfessionalWiki\NeoWiki\Application\SubjectSearchResult;
+use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookupResult;
 
 class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 
@@ -20,7 +20,7 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 	}
 
 	/**
-	 * @return SubjectSearchResult[]
+	 * @return SubjectLabelLookupResult[]
 	 */
 	public function getSubjectLabelsMatching( string $search ): array {
 		if ( trim( $search ) === '' ) {
@@ -46,7 +46,7 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 
 				$subjects = [];
 				foreach ( $result as $row ) {
-					$subjects[] = new SubjectSearchResult(
+					$subjects[] = new SubjectLabelLookupResult(
 						id: $row->get( 'id' ),
 						label: $row->get( 'name' )
 					);

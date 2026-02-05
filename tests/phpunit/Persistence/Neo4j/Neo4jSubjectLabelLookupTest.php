@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 
 use Laudis\Neo4j\Contracts\ClientInterface;
-use ProfessionalWiki\NeoWiki\Application\SubjectSearchResult;
+use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookupResult;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -44,11 +44,11 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertCount( 2, $results );
 		$this->assertContainsEquals(
-			new SubjectSearchResult( self::SUBJECT_ID_1, 'Apple Pie' ),
+			new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie' ),
 			$results
 		);
 		$this->assertContainsEquals(
-			new SubjectSearchResult( self::SUBJECT_ID_2, 'Apple Crumble' ),
+			new SubjectLabelLookupResult( self::SUBJECT_ID_2, 'Apple Crumble' ),
 			$results
 		);
 	}
