@@ -34,14 +34,14 @@ export class TextType extends BasePropertyType<TextProperty, StringValue> {
 		const errors: ValueValidationError[] = [];
 		value = value === undefined ? newStringValue() : value;
 
-		if ( property.required && value.strings.length === 0 ) {
+		if ( property.required && value.parts.length === 0 ) {
 			errors.push( { code: 'required' } );
 			return errors;
 		}
 
 		// TODO: check property.multiple
 
-		for ( const part of value.strings ) {
+		for ( const part of value.parts ) {
 			if ( property.minLength !== undefined && part.trim().length < property.minLength ) {
 				errors.push( {
 					code: 'min-length',
@@ -59,7 +59,7 @@ export class TextType extends BasePropertyType<TextProperty, StringValue> {
 			}
 		}
 
-		if ( property.uniqueItems && new Set( value.strings ).size !== value.strings.length ) {
+		if ( property.uniqueItems && new Set( value.parts ).size !== value.parts.length ) {
 			errors.push( { code: 'unique' } ); // TODO: add source
 		}
 

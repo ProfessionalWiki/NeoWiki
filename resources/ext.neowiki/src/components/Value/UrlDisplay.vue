@@ -20,6 +20,6 @@ const urls = computed( () => {
 	if ( props.value.type !== ValueType.String ) {
 		return '';
 	}
-	return props.value.strings.filter( ( url ) => url.trim() !== '' );
+	return props.value.parts.filter( ( url ) => url.trim() !== '' );
 } );
 </script>

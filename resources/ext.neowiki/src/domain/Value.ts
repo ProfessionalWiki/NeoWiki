@@ -15,7 +15,7 @@ export interface BaseValueRepresentation {
 
 export interface StringValue extends BaseValueRepresentation {
 	readonly type: ValueType.String;
-	readonly strings: string[]; // TODO: rename to parts
+	readonly parts: string[];
 }
 
 export interface NumberValue extends BaseValueRepresentation {
@@ -55,11 +55,11 @@ export class Relation {
 export type Value = StringValue | NumberValue | BooleanValue | RelationValue;
 
 export function newStringValue( ...parts: string[] | [ string[] ] ): StringValue {
-	const strings = Array.isArray( parts[ 0 ] ) ? parts[ 0 ] : parts as string[];
+	const resolved = Array.isArray( parts[ 0 ] ) ? parts[ 0 ] : parts as string[];
 
 	return {
 		type: ValueType.String,
-		strings: strings
+		parts: resolved
 			.map( ( part ) => part.trim() )
 			.filter( ( part ) => part !== '' ),
 	} as StringValue;
@@ -89,7 +89,7 @@ export function newRelation( id: string | undefined, target: SubjectId | string 
 export function valueToJson( value: Value ): unknown {
 	switch ( value.type ) {
 		case ValueType.String:
-			return ( value as StringValue ).strings;
+			return ( value as StringValue ).parts;
 		case ValueType.Number:
 			return ( value as NumberValue ).number;
 		case ValueType.Boolean:

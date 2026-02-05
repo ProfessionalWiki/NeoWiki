@@ -35,7 +35,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 	function initializeInternalValue( value: Value | undefined ): void {
 		if ( value && value.type === ValueType.String ) {
 			const stringVal = value as StringValue;
-			if ( stringVal.strings.length > 0 && stringVal.strings.some( ( s ) => s !== '' ) ) {
+			if ( stringVal.parts.length > 0 && stringVal.parts.some( ( s ) => s !== '' ) ) {
 				internalValue.value = stringVal;
 			} else {
 				internalValue.value = undefined;
@@ -51,7 +51,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		if ( userInputValues.value !== null ) {
 			return userInputValues.value;
 		}
-		return internalValue.value ? internalValue.value.strings : [];
+		return internalValue.value ? internalValue.value.parts : [];
 	} );
 
 	function doValidateInputs( valuesToValidate: string[] ): { errors: ValidationMessages[]; validStrings: string[] } {
@@ -102,7 +102,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 
 		if ( validStrings.length > 0 ) {
 			const tempValue = newStringValue( ...validStrings );
-			if ( tempValue.strings.length > 0 && tempValue.strings.some( ( s ) => s !== '' ) ) {
+			if ( tempValue.parts.length > 0 && tempValue.parts.some( ( s ) => s !== '' ) ) {
 				newStringValueInstance = tempValue;
 			} else {
 				newStringValueInstance = undefined;
