@@ -25,6 +25,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\QueryStore;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
@@ -37,6 +38,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\PatchSubjectApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectActionAuthorizer;
@@ -51,6 +53,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentReposit
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdaterFactory;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
@@ -296,6 +299,12 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function getSubjectLabelLookup(): SubjectLabelLookup {
+		return new Neo4jSubjectLabelLookup(
+			client: $this->getReadOnlyNeo4jClient()
+		);
+	}
+
 	public function getDbConnection(): IDatabase {
 		$db = MediaWikiServices::getInstance()
 			->getDBLoadBalancerFactory()
@@ -357,6 +366,10 @@ class NeoWikiExtension {
 
 	public static function newGetSchemaNamesApi(): GetSchemaNamesApi {
 		return new GetSchemaNamesApi();
+	}
+
+	public static function newGetSubjectLabelsApi(): GetSubjectLabelsApi {
+		return new GetSubjectLabelsApi();
 	}
 
 	private static function getCsrfValidator(): CsrfValidator {

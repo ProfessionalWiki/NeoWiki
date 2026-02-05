@@ -1,0 +1,14 @@
+<?php
+
+declare( strict_types = 1 );
+
+namespace ProfessionalWiki\NeoWiki\Application;
+
+interface SubjectLabelLookup {
+
+	/**
+	 * @return SubjectSearchResult[]
+	 */
+	public function getSubjectLabelsMatching( string $search ): array;
+
+}
