@@ -77,14 +77,14 @@ const props = defineProps( {
 } );
 
 const schemaStore = useSchemaStore();
-const { canEditSchema, checkPermission } = useSchemaPermissions();
+const { canEditSchema, checkEditPermission } = useSchemaPermissions();
 
 const isEditorOpen = shallowRef( false );
 const currentSchema = shallowRef<Schema>( props.schema );
 
 watch( () => props.schema, ( newSchema ) => {
 	currentSchema.value = newSchema;
-	checkPermission( newSchema.getName() );
+	checkEditPermission( newSchema.getName() );
 }, { immediate: true } );
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();

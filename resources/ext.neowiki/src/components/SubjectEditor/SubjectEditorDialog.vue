@@ -115,11 +115,11 @@ interface SubjectEditorInstance {
 const isSchemaEditorOpen = ref( false );
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
 const loadedSchema = ref<Schema | null>( null );
-const { canEditSchema, checkPermission } = useSchemaPermissions();
+const { canEditSchema, checkEditPermission } = useSchemaPermissions();
 
 watch( () => props.subject, async ( newSubject ) => {
 	if ( newSubject ) {
-		await checkPermission( newSubject.getSchemaName() );
+		await checkEditPermission( newSubject.getSchemaName() );
 		await loadSchema();
 	}
 }, { immediate: true } );
