@@ -257,6 +257,12 @@
 				"neowiki-subject-creator-save",
 				"neowiki-subject-creator-success",
 				"neowiki-subject-creator-error",
+				"neowiki-subject-creator-schema-name-field",
+				"neowiki-subject-creator-schema-name-placeholder",
+				"neowiki-subject-creator-create-schema",
+				"neowiki-subject-creator-schema-created",
+				"neowiki-subject-creator-schema-name-required",
+				"neowiki-subject-creator-schema-name-taken",
 				"neowiki-edit-schema"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",

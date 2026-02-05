@@ -17,10 +17,13 @@ import { Statement } from '@/domain/Statement.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { newStringValue } from '@/domain/Value.ts';
+import { Schema } from '@/domain/Schema.ts';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 
 const PAGE_ID = 123;
 const PAGE_TITLE = 'Test Page';
 const SCHEMA_NAME = 'TestSchema';
+const NEW_SCHEMA_NAME = 'NewSchema';
 
 const SchemaLookupStub = {
 	template: '<div class="schema-lookup-stub"></div>',
@@ -41,6 +44,15 @@ const SubjectEditorStub = {
 	},
 };
 
+const SchemaEditorStub = {
+	template: '<div class="schema-editor-stub"></div>',
+	props: [ 'initialSchema' ],
+	setup() {
+		const getSchema = (): Schema => new Schema( '', '', new PropertyDefinitionList( [] ) );
+		return { getSchema };
+	},
+};
+
 const EditSummaryStub = {
 	template: '<div class="edit-summary-stub"><button class="save-button" @click="$emit( \'save\', \'\' )">Save</button></div>',
 	props: [ 'helpText', 'saveButtonLabel' ],
@@ -51,6 +63,13 @@ const CdxDialogStub = {
 	template: '<div class="cdx-dialog-stub"><slot /><slot name="footer" /></div>',
 	props: [ 'open', 'title', 'useCloseButton' ],
 	emits: [ 'update:open', 'default' ],
+};
+
+const CdxToggleButtonGroupStub = {
+	name: 'CdxToggleButtonGroup',
+	template: '<div class="cdx-toggle-button-group-stub"></div>',
+	props: [ 'modelValue', 'buttons' ],
+	emits: [ 'update:modelValue' ],
 };
 
 describe( 'SubjectCreatorDialog', () => {
@@ -67,17 +86,20 @@ describe( 'SubjectCreatorDialog', () => {
 				stubs: {
 					SchemaLookup: SchemaLookupStub,
 					SubjectEditor: SubjectEditorStub,
+					SchemaEditor: SchemaEditorStub,
 					EditSummary: EditSummaryStub,
 					CdxButton: true,
 					CdxDialog: CdxDialogStub,
-					CdxToggleButtonGroup: true,
+					CdxToggleButtonGroup: CdxToggleButtonGroupStub,
+					CdxMessage: true,
 					CdxField: {
-						template: '<div class="cdx-field-stub"><slot /><slot name="label" /></div>',
+						template: '<div class="cdx-field-stub"><slot /><slot name="label" /><slot name="messages" /></div>',
 					},
 					CdxTextInput: {
 						template: '<input class="cdx-text-input-stub" :value="modelValue" @input="$emit( \'update:modelValue\', $event.target.value )" />',
-						props: [ 'modelValue', 'placeholder' ],
+						props: [ 'modelValue', 'placeholder', 'status' ],
 						emits: [ 'update:modelValue' ],
+						methods: { focus: vi.fn() },
 					},
 					teleport: true,
 					...stubs,
@@ -92,6 +114,12 @@ describe( 'SubjectCreatorDialog', () => {
 			},
 		} )
 	);
+
+	async function switchToNewSchema( wrapper: VueWrapper ): Promise<void> {
+		wrapper.findComponent( { name: 'CdxToggleButtonGroup' } )
+			.vm.$emit( 'update:modelValue', 'new' );
+		await flushPromises();
+	}
 
 	beforeEach( () => {
 		setupMwMock( {
@@ -110,6 +138,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		schemaStore = useSchemaStore();
 		schemaStore.getOrFetchSchema = vi.fn().mockResolvedValue( newSchema( { title: SCHEMA_NAME } ) );
+		schemaStore.saveSchema = vi.fn().mockResolvedValue( undefined );
 	} );
 
 	it( 'opens dialog when button is clicked', async () => {
@@ -133,19 +162,18 @@ describe( 'SubjectCreatorDialog', () => {
 		const wrapper = mountComponent();
 
 		expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
-		expect( wrapper.find( 'cdx-toggle-button-group-stub' ).exists() ).toBe( true );
+		expect( wrapper.find( '.cdx-toggle-button-group-stub' ).exists() ).toBe( true );
 
 		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( false );
-		expect( wrapper.find( 'cdx-toggle-button-group-stub' ).exists() ).toBe( false );
+		expect( wrapper.find( '.cdx-toggle-button-group-stub' ).exists() ).toBe( false );
 	} );
 
 	it( 'does not show label input or SubjectEditor before schema selection', () => {
 		const wrapper = mountComponent();
 
-		expect( wrapper.find( '.cdx-text-input-stub' ).exists() ).toBe( false );
 		expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( false );
 		expect( wrapper.find( '.edit-summary-stub' ).exists() ).toBe( false );
 	} );
@@ -246,5 +274,191 @@ describe( 'SubjectCreatorDialog', () => {
 			expect.any( String ),
 			expect.objectContaining( { type: 'error' } ),
 		);
+	} );
+
+	describe( 'Create new schema flow', () => {
+		it( 'shows schema name input and SchemaEditor when "Create new" is selected', async () => {
+			const wrapper = mountComponent();
+
+			await switchToNewSchema( wrapper );
+
+			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( true );
+			expect( wrapper.findAll( '.cdx-text-input-stub' ).length ).toBe( 1 );
+			expect( wrapper.find( '.edit-summary-stub' ).exists() ).toBe( true );
+		} );
+
+		it( 'does not show SchemaLookup when "Create new" is selected', async () => {
+			const wrapper = mountComponent();
+
+			await switchToNewSchema( wrapper );
+
+			expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( false );
+		} );
+
+		it( 'shows error when schema name is empty on create', async () => {
+			const wrapper = mountComponent();
+
+			await switchToNewSchema( wrapper );
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
+		} );
+
+		it( 'shows error when schema name already exists', async () => {
+			const wrapper = mountComponent();
+
+			await switchToNewSchema( wrapper );
+
+			const nameInput = wrapper.find( '.cdx-text-input-stub' );
+			await nameInput.setValue( SCHEMA_NAME );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
+			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( true );
+		} );
+
+		it( 'hides schema selector after creating a new schema', async () => {
+			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
+			const wrapper = mountComponent();
+
+			await switchToNewSchema( wrapper );
+
+			expect( wrapper.find( '.cdx-toggle-button-group-stub' ).exists() ).toBe( true );
+			expect( wrapper.find( '.cdx-text-input-stub' ).exists() ).toBe( true );
+			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( true );
+
+			const nameInput = wrapper.find( '.cdx-text-input-stub' );
+			await nameInput.setValue( NEW_SCHEMA_NAME );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( wrapper.find( '.cdx-toggle-button-group-stub' ).exists() ).toBe( false );
+			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( false );
+		} );
+
+		it( 'saves schema and transitions to subject step on success', async () => {
+			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
+			const wrapper = mountComponent();
+
+			await switchToNewSchema( wrapper );
+
+			const nameInput = wrapper.find( '.cdx-text-input-stub' );
+			await nameInput.setValue( NEW_SCHEMA_NAME );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', 'Created schema' );
+			await flushPromises();
+
+			expect( schemaStore.saveSchema ).toHaveBeenCalledWith(
+				expect.any( Schema ),
+				'Created schema',
+			);
+
+			const savedSchema = ( schemaStore.saveSchema as ReturnType<typeof vi.fn> ).mock.calls[ 0 ][ 0 ] as Schema;
+			expect( savedSchema.getName() ).toBe( NEW_SCHEMA_NAME );
+
+			expect( mw.notify ).toHaveBeenCalledWith(
+				expect.any( String ),
+				expect.objectContaining( { type: 'success' } ),
+			);
+
+			expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( true );
+			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( false );
+		} );
+
+		it( 'defaults label to page title after schema creation', async () => {
+			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
+			const wrapper = mountComponent();
+
+			await switchToNewSchema( wrapper );
+
+			const nameInput = wrapper.find( '.cdx-text-input-stub' );
+			await nameInput.setValue( NEW_SCHEMA_NAME );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			const labelInput = wrapper.find( '.cdx-text-input-stub' );
+			expect( ( labelInput.element as HTMLInputElement ).value ).toBe( PAGE_TITLE );
+		} );
+
+		it( 'stays on schema step when save fails', async () => {
+			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
+			schemaStore.saveSchema = vi.fn().mockRejectedValue( new Error( 'Save failed' ) );
+			const wrapper = mountComponent();
+
+			await switchToNewSchema( wrapper );
+
+			const nameInput = wrapper.find( '.cdx-text-input-stub' );
+			await nameInput.setValue( NEW_SCHEMA_NAME );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( mw.notify ).toHaveBeenCalledWith(
+				'Save failed',
+				expect.objectContaining( { type: 'error' } ),
+			);
+
+			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( true );
+			expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( false );
+		} );
+
+		it( 'creates subject after schema creation', async () => {
+			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
+			const wrapper = mountComponent();
+
+			await switchToNewSchema( wrapper );
+
+			const nameInput = wrapper.find( '.cdx-text-input-stub' );
+			await nameInput.setValue( NEW_SCHEMA_NAME );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', 'Created subject' );
+			await flushPromises();
+
+			expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
+				PAGE_ID,
+				PAGE_TITLE,
+				NEW_SCHEMA_NAME,
+				expect.any( StatementList ),
+			);
+		} );
+
+		it( 'resets to schema step when dialog closes', async () => {
+			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
+			const wrapper = mountComponent();
+
+			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			await switchToNewSchema( wrapper );
+
+			const nameInput = wrapper.find( '.cdx-text-input-stub' );
+			await nameInput.setValue( NEW_SCHEMA_NAME );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+			await flushPromises();
+
+			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			await flushPromises();
+
+			expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
+			expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( false );
+		} );
 	} );
 } );

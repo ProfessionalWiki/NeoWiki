@@ -72,6 +72,12 @@
 	"neowiki-subject-creator-save": "Create subject",
 	"neowiki-subject-creator-success": "Subject created successfully",
 	"neowiki-subject-creator-error": "Failed to create subject",
+	"neowiki-subject-creator-schema-name-field": "Schema name",
+	"neowiki-subject-creator-schema-name-placeholder": "Enter a name for the schema",
+	"neowiki-subject-creator-create-schema": "Create schema",
+	"neowiki-subject-creator-schema-created": "Schema created successfully",
+	"neowiki-subject-creator-schema-name-required": "Please enter a schema name.",
+	"neowiki-subject-creator-schema-name-taken": "A schema with this name already exists.",
 
 	"neowiki-schema-display-property-name": "Property",
 	"neowiki-schema-display-property-type": "Type",
