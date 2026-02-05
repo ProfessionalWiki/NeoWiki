@@ -1,7 +1,10 @@
 import { mount, VueWrapper } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
+import { ref } from 'vue';
 import SchemaDisplay from '@/components/SchemaDisplay/SchemaDisplay.vue';
 import SchemaDisplayHeader from '@/components/SchemaDisplay/SchemaDisplayHeader.vue';
+import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition.ts';
@@ -12,12 +15,23 @@ import { Service } from '@/NeoWikiServices.ts';
 import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
-function mountComponent( schema: Schema ): VueWrapper {
+const checkPermissionMock = vi.fn();
+const canEditSchemaRef = ref( false );
+
+vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
+	useSchemaPermissions: () => ( {
+		canEditSchema: canEditSchemaRef,
+		checkPermission: checkPermissionMock,
+	} ),
+} ) );
+
+function mountComponent( schema: Schema, pinia = createPinia() ): VueWrapper {
 	setupMwMock( { functions: [ 'msg' ] } );
 
 	return mount( SchemaDisplay, {
 		props: { schema },
 		global: {
+			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
 			provide: {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
@@ -26,18 +40,27 @@ function mountComponent( schema: Schema ): VueWrapper {
 				CdxIcon: true,
 				CdxInfoChip: { template: '<span><slot /></span>', props: [ 'icon' ] },
 				SchemaDisplayHeader: true,
+				SchemaEditorDialog: true,
 			},
 		},
 	} );
 }
 
 describe( 'SchemaDisplay', () => {
-	it( 'passes schema to header component', () => {
+	beforeEach( () => {
+		setActivePinia( createPinia() );
+		canEditSchemaRef.value = false;
+		checkPermissionMock.mockClear();
+	} );
+
+	it( 'passes schema and canEdit to header component', () => {
 		const schema = newSchema( { title: 'Test schema' } );
 
 		const wrapper = mountComponent( schema );
+		const header = wrapper.findComponent( SchemaDisplayHeader );
 
-		expect( wrapper.findComponent( SchemaDisplayHeader ).props( 'schema' ) ).toStrictEqual( schema );
+		expect( header.props( 'schema' ) ).toStrictEqual( schema );
+		expect( header.props( 'canEdit' ) ).toBe( false );
 	} );
 
 	it( 'renders property names, types, and required status', () => {
@@ -86,5 +109,32 @@ describe( 'SchemaDisplay', () => {
 
 		expect( wrapper.text() ).toContain( 'neowiki-schema-display-no-properties' );
 		expect( wrapper.find( '.cdx-table__table__empty-state' ).exists() ).toBe( true );
+	} );
+
+	it( 'renders SchemaEditorDialog when user has edit permission', () => {
+		canEditSchemaRef.value = true;
+
+		const wrapper = mountComponent( newSchema() );
+
+		expect( wrapper.findComponent( SchemaEditorDialog ).exists() ).toBe( true );
+	} );
+
+	it( 'does not render SchemaEditorDialog when user lacks permission', () => {
+		canEditSchemaRef.value = false;
+
+		const wrapper = mountComponent( newSchema() );
+
+		expect( wrapper.findComponent( SchemaEditorDialog ).exists() ).toBe( false );
+	} );
+
+	it( 'opens dialog when header emits edit event', async () => {
+		canEditSchemaRef.value = true;
+
+		const wrapper = mountComponent( newSchema() );
+		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( false );
+
+		await wrapper.findComponent( SchemaDisplayHeader ).vm.$emit( 'edit' );
+
+		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( true );
 	} );
 } );
