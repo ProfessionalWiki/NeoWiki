@@ -264,7 +264,13 @@
 				"neowiki-subject-creator-schema-created",
 				"neowiki-subject-creator-schema-name-required",
 				"neowiki-subject-creator-schema-name-taken",
-				"neowiki-edit-schema"
+				"neowiki-edit-schema",
+				"neowiki-schema-editor-summary-default",
+				"neowiki-schema-editor-success",
+				"neowiki-schema-editor-error",
+				"neowiki-subject-editor-summary-default",
+				"neowiki-subject-editor-success",
+				"neowiki-subject-editor-error"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

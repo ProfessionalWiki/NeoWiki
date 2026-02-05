@@ -61,20 +61,18 @@ const handleSave = async ( summary: string ): Promise<void> => {
 
 	const schema = schemaEditor.value.getSchema();
 	const schemaName = schema.getName();
-	const editSummary = summary || 'Update schema via NeoWiki UI'; // TODO: i18n
+	const editSummary = summary || mw.msg( 'neowiki-schema-editor-summary-default' );
 
 	try {
 		await props.onSave( schema, editSummary );
-		// TODO: i18n
-		mw.notify( `Updated ${ schemaName } schema`, { type: 'success' } );
+		mw.notify( mw.msg( 'neowiki-schema-editor-success', schemaName ), { type: 'success' } );
 		emit( 'saved', schema );
 		open.value = false;
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),
 			{
-				// TODO: i18n
-				title: `Failed to update ${ schemaName } schema.`,
+				title: mw.msg( 'neowiki-schema-editor-error', schemaName ),
 				type: 'error'
 			}
 		);
