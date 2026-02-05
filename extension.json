@@ -53,10 +53,6 @@
 		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn"
 	},
 
-	"Actions": {
-		"edit-schema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\EditSchemaAction"
-	},
-
 	"ContentHandlers": {
 		"NeoWikiSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SubjectContentHandler",
 		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SchemaContentHandler"

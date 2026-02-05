@@ -26,7 +26,6 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaErrorFormatter;
 use Skin;
-use SkinTemplate;
 use Status;
 use WikiPage;
 
@@ -234,14 +233,6 @@ class NeoWikiHooks {
 
 	private static function isSchemaPage( OutputPage $out ): bool {
 		return $out->getTitle()->getNamespace() === NeoWikiExtension::NS_SCHEMA;
-	}
-
-	private static function userCanEditCurrentPage( SkinTemplate $skinTemplate ): bool {
-		return MediaWikiServices::getInstance()->getPermissionManager()->userCan(
-			'edit',
-			$skinTemplate->getUser(),
-			$skinTemplate->getTitle()
-		);
 	}
 
 }
