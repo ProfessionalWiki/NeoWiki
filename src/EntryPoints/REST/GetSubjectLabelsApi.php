@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Rest\StringStream;
-use ProfessionalWiki\NeoWiki\Application\SubjectSearchResult;
+use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookupResult;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -15,7 +15,7 @@ class GetSubjectLabelsApi extends SimpleHandler {
 
 	public function run( string $search ): Response {
 		$subjects = array_map(
-			function ( SubjectSearchResult $result ): array {
+			function ( SubjectLabelLookupResult $result ): array {
 				return [
 					'id' => $result->id,
 					'label' => $result->label,

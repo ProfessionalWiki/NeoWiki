@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application;
 interface SubjectLabelLookup {
 
 	/**
-	 * @return SubjectSearchResult[]
+	 * @return SubjectLabelLookupResult[]
 	 */
 	public function getSubjectLabelsMatching( string $search ): array;
 
