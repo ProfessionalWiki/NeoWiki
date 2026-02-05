@@ -1,6 +1,6 @@
 import { VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { CdxField, CdxTextInput, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
+import { CdxTextInput, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
@@ -42,8 +42,8 @@ describe( 'NumberAttributesEditor', () => {
 	} );
 
 	function getPrecisionFieldProps( wrapper: VueWrapper ): FieldProps {
-		const fields = wrapper.findAllComponents( CdxField );
-		return fields[ 2 ].props() as FieldProps;
+		const field = wrapper.findComponent( '.number-attributes__precision' ) as VueWrapper;
+		return field.props() as FieldProps;
 	}
 
 	it( 'shows error and does not emit when precision is negative', async () => {

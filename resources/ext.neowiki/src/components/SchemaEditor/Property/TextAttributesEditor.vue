@@ -26,46 +26,43 @@
 			</CdxToggleSwitch>
 		</CdxField>
 
-		<CdxField
-			class="ext-neowiki-nested-field"
-			:is-fieldset="true"
-			:optional="true"
-		>
+		<NeoNestedField :optional="true">
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-character-length' ).text() }}
 			</template>
 
-			<div class="ext-neowiki-nested-field__inputs">
-				<CdxField
-					:status="minLengthError === null ? 'default' : 'error'"
-					:messages="minLengthError === null ? {} : { error: minLengthError }"
-				>
-					<template #label>
-						{{ $i18n( 'neowiki-property-editor-minimum' ).text() }}
-					</template>
-					<CdxTextInput
-						:model-value="minLengthInput"
-						input-type="number"
-						min="1"
-						@update:model-value="updateMinLength"
-					/>
-				</CdxField>
-				<CdxField
-					:status="maxLengthError === null ? 'default' : 'error'"
-					:messages="maxLengthError === null ? {} : { error: maxLengthError }"
-				>
-					<template #label>
-						{{ $i18n( 'neowiki-property-editor-maximum' ).text() }}
-					</template>
-					<CdxTextInput
-						:model-value="maxLengthInput"
-						input-type="number"
-						min="1"
-						@update:model-value="updateMaxLength"
-					/>
-				</CdxField>
-			</div>
-		</CdxField>
+			<CdxField
+				:status="minLengthError === null ? 'default' : 'error'"
+				:messages="minLengthError === null ? {} : { error: minLengthError }"
+			>
+				<template #label>
+					{{ $i18n( 'neowiki-property-editor-minimum' ).text() }}
+				</template>
+
+				<CdxTextInput
+					:model-value="minLengthInput"
+					input-type="number"
+					min="1"
+					@update:model-value="updateMinLength"
+				/>
+			</CdxField>
+
+			<CdxField
+				:status="maxLengthError === null ? 'default' : 'error'"
+				:messages="maxLengthError === null ? {} : { error: maxLengthError }"
+			>
+				<template #label>
+					{{ $i18n( 'neowiki-property-editor-maximum' ).text() }}
+				</template>
+
+				<CdxTextInput
+					:model-value="maxLengthInput"
+					input-type="number"
+					min="1"
+					@update:model-value="updateMaxLength"
+				/>
+			</CdxField>
+		</NeoNestedField>
 	</div>
 </template>
 
@@ -74,6 +71,7 @@ import { ref, watch } from 'vue';
 import { TextProperty } from '@/domain/propertyTypes/Text.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { CdxToggleSwitch, CdxField, CdxTextInput } from '@wikimedia/codex';
+import NeoNestedField from '@/components/common/NeoNestedField.vue';
 
 const props = defineProps<AttributesEditorProps<TextProperty>>();
 const emit = defineEmits<AttributesEditorEmits<TextProperty>>();
@@ -158,24 +156,3 @@ const updateUniqueItems = ( value: boolean ): void => {
 	emit( 'update:property', { uniqueItems: value } );
 };
 </script>
-
-<style lang="less">
-@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
-
-.ext-neowiki-nested-field {
-	&__inputs {
-		display: flex;
-		flex-direction: column;
-		gap: @spacing-50;
-
-		@media screen and ( min-width: @min-width-breakpoint-desktop ) {
-			flex-direction: row;
-		}
-
-		// Disable margin-top on all nested fields.
-		.cdx-field {
-			margin-top: 0;
-		}
-	}
-}
-</style>
