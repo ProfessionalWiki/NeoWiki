@@ -235,6 +235,7 @@
 				"neowiki-subject-editor-title",
 				"neowiki-subject-editor-save",
 				"neowiki-schema-editor-new-property",
+				"neowiki-schema-editor-delete-property",
 				"neowiki-schema-editor-optional",
 				"neowiki-editing-schema",
 				"neowiki-schema-label",

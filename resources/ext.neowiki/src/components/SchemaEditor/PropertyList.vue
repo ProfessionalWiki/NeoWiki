@@ -29,6 +29,7 @@
 					<CdxButton
 						v-if="menuItem.value !== 'new-property'"
 						class="ext-neowiki-schema-editor__property-list__menu-item__delete"
+						:aria-label="$i18n( 'neowiki-schema-editor-delete-property' ).text()"
 						weight="quiet"
 						action="destructive"
 						@click.stop="onDeleteProperty( menuItem.value )"
