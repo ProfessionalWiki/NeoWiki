@@ -9,6 +9,6 @@ interface SubjectLabelLookup {
 	/**
 	 * @return SubjectLabelLookupResult[]
 	 */
-	public function getSubjectLabelsMatching( string $search ): array;
+	public function getSubjectLabelsMatching( string $search, int $limit, array $schemaNames = [] ): array;
 
 }

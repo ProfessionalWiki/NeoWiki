@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 
 use Laudis\Neo4j\Contracts\ClientInterface;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookupResult;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -31,7 +32,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testReturnsEmptyArrayOnEmptyGraph(): void {
-		$this->assertSame( [], $this->newLookup()->getSubjectLabelsMatching( 'foo' ) );
+		$this->assertSame( [], $this->getSubjectLabelsMatching( 'foo' ) );
 	}
 
 	public function testFindsSubjectsMatchingPrefix(): void {
@@ -40,7 +41,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 			TestSubject::build( id: self::SUBJECT_ID_2, label: new SubjectLabel( 'Apple Crumble' ) ),
 		) );
 
-		$results = $this->newLookup()->getSubjectLabelsMatching( 'Apple' );
+		$results = $this->getSubjectLabelsMatching( 'Apple' );
 
 		$this->assertCount( 2, $results );
 		$this->assertContainsEquals(
@@ -61,7 +62,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 			)
 		) );
 
-		$this->assertSame( [], $this->newLookup()->getSubjectLabelsMatching( 'Apple' ) );
+		$this->assertSame( [], $this->getSubjectLabelsMatching( 'Apple' ) );
 	}
 
 	public function testCaseInsensitiveSearch(): void {
@@ -72,9 +73,35 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 			)
 		) );
 
-		$results = $this->newLookup()->getSubjectLabelsMatching( 'apple' );
+		$results = $this->getSubjectLabelsMatching( 'apple' );
 		$this->assertCount( 1, $results );
 		$this->assertEquals( 'Apple', $results[0]->label );
+	}
+
+	public function testLimitIsRespected(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: 'sTestSLL1111113', label: new SubjectLabel( 'Apple 1' ) ),
+			TestSubject::build( id: 'sTestSLL1111114', label: new SubjectLabel( 'Apple 2' ) ),
+			TestSubject::build( id: 'sTestSLL1111115', label: new SubjectLabel( 'Apple 3' ) ),
+		) );
+
+		$results = $this->getSubjectLabelsMatching( 'Apple', 2 );
+
+		$this->assertCount( 2, $results );
+	}
+
+	public function testFiltersBySchema(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: 'sTestSLL1111116', label: new SubjectLabel( 'Apple Pie' ), schemaId: new SchemaName( 'Recipe' ) ),
+			TestSubject::build( id: 'sTestSLL1111117', label: new SubjectLabel( 'Apple Tree' ), schemaId: new SchemaName( 'Plant' ) ),
+			TestSubject::build( id: 'sTestSLL1111118', label: new SubjectLabel( 'Apple Inc.' ), schemaId: new SchemaName( 'Company' ) ),
+		) );
+
+		$results = $this->getSubjectLabelsMatching( 'Apple', 10, [ 'Recipe', 'Company' ] );
+
+		$this->assertCount( 2, $results );
+		$this->assertContainsEquals( new SubjectLabelLookupResult( 'sTestSLL1111116', 'Apple Pie' ), $results );
+		$this->assertContainsEquals( new SubjectLabelLookupResult( 'sTestSLL1111118', 'Apple Inc.' ), $results );
 	}
 
 	private function saveSubjects( SubjectMap $subjects ): void {
@@ -88,9 +115,16 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 	private function newQueryStore(): Neo4jQueryStore {
 		return NeoWikiExtension::getInstance()->newNeo4jQueryStore(
 			new InMemorySchemaLookup(
-				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
+				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
+				TestSchema::build( name: 'Recipe' ),
+				TestSchema::build( name: 'Plant' ),
+				TestSchema::build( name: 'Company' ),
 			)
 		);
+	}
+
+	private function getSubjectLabelsMatching( string $search, int $limit = 10, array $schemas = [] ): array {
+		return $this->newLookup()->getSubjectLabelsMatching( $search, $limit, $schemas );
 	}
 
 	private function newLookup( ClientInterface $client = null ): Neo4jSubjectLabelLookup {
