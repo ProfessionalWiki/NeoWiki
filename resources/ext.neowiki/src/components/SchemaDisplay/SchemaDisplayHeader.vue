@@ -13,7 +13,7 @@
 		</div>
 		<div class="ext-neowiki-schema-display-header__actions">
 			<CdxButton
-				v-if="canEdit"
+				v-if="canEditSchema"
 				weight="quiet"
 				:aria-label="$i18n( 'neowiki-edit-schema' ).text()"
 				@click="emit( 'edit' )"
@@ -34,7 +34,7 @@ defineProps( {
 		type: Schema,
 		required: true
 	},
-	canEdit: {
+	canEditSchema: {
 		type: Boolean,
 		required: true
 	}

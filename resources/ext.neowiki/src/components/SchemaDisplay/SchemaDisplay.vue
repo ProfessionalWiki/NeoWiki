@@ -10,7 +10,7 @@
 			<template #header>
 				<SchemaDisplayHeader
 					:schema="currentSchema"
-					:can-edit="canEditSchema"
+					:can-edit-schema="canEditSchema"
 					@edit="isEditorOpen = true"
 				/>
 			</template>
