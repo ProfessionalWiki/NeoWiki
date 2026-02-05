@@ -39,25 +39,17 @@
 					v-if="selectedSchemaOption === 'new'"
 					class="ext-neowiki-subject-creator-new"
 				>
-					<CdxField class="ext-neowiki-subject-creator-schema-name-field">
+					<CdxField
+						class="ext-neowiki-subject-creator-schema-name-field"
+						:status="schemaNameStatus"
+						:messages="schemaNameError ? { error: schemaNameError } : {}"
+					>
 						<CdxTextInput
 							v-model="newSchemaName"
 							:placeholder="$i18n( 'neowiki-subject-creator-schema-name-placeholder' ).text()"
-							:status="schemaNameStatus"
 						/>
 						<template #label>
 							{{ $i18n( 'neowiki-subject-creator-schema-name-field' ).text() }}
-						</template>
-						<template
-							v-if="schemaNameError"
-							#messages
-						>
-							<CdxMessage
-								type="error"
-								:inline="true"
-							>
-								{{ schemaNameError }}
-							</CdxMessage>
 						</template>
 					</CdxField>
 
@@ -113,7 +105,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
-import { CdxButton, CdxDialog, CdxField, CdxMessage, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
+import { CdxButton, CdxDialog, CdxField, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
 import { cdxIconSearch, cdxIconAdd } from '@wikimedia/codex-icons';
 import type { ButtonGroupItem, ValidationStatusType } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
