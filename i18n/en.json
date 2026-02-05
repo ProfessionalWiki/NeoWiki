@@ -91,5 +91,13 @@
 	"neowiki-cypher-raw-error-empty-query": "Empty Cypher query provided",
 	"neowiki-cypher-raw-error-write-query": "Write queries are not allowed",
 	"neowiki-cypher-raw-error-query-failed": "Query execution failed: $1",
-	"neowiki-cypher-raw-error-json-encode": "Failed to encode query result as JSON"
+	"neowiki-cypher-raw-error-json-encode": "Failed to encode query result as JSON",
+
+	"neowiki-schema-editor-summary-default": "Update schema via NeoWiki UI",
+	"neowiki-schema-editor-success": "Updated $1 schema",
+	"neowiki-schema-editor-error": "Failed to update $1 schema.",
+
+	"neowiki-subject-editor-summary-default": "Update subject via NeoWiki UI",
+	"neowiki-subject-editor-success": "Updated $1",
+	"neowiki-subject-editor-error": "Failed to update $1."
 }

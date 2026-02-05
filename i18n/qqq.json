@@ -19,5 +19,13 @@
 	"neowiki-subject-creator-create-schema": "Label for the button that creates a new schema in the subject creator dialog.",
 	"neowiki-subject-creator-schema-created": "Success notification shown after creating a schema.",
 	"neowiki-subject-creator-schema-name-required": "Error shown when the schema name field is empty.",
-	"neowiki-subject-creator-schema-name-taken": "Error shown when a schema with the entered name already exists."
+	"neowiki-subject-creator-schema-name-taken": "Error shown when a schema with the entered name already exists.",
+
+	"neowiki-schema-editor-summary-default": "Default edit summary used when updating a schema via the UI.",
+	"neowiki-schema-editor-success": "Success notification shown after updating a schema. $1 is the schema name.",
+	"neowiki-schema-editor-error": "Error notification title shown when updating a schema fails. $1 is the schema name.",
+
+	"neowiki-subject-editor-summary-default": "Default edit summary used when updating a subject via the UI.",
+	"neowiki-subject-editor-success": "Success notification shown after updating a subject. $1 is the subject label.",
+	"neowiki-subject-editor-error": "Error notification title shown when updating a subject fails. $1 is the subject label."
 }

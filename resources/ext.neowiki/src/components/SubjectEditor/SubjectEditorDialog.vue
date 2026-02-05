@@ -188,19 +188,17 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	console.log( 'statementsToSave', statementsToSave );
 	const updatedSubject = props.subject.withStatements( new StatementList( statementsToSave ) );
 	const subjectName = updatedSubject.getLabel();
-	const editSummary = summary || 'Update subject via NeoWiki UI'; // TODO: i18n
+	const editSummary = summary || mw.msg( 'neowiki-subject-editor-summary-default' );
 
 	try {
 		await props.onSave( updatedSubject, editSummary );
-		// TODO: i18n
-		mw.notify( `Updated ${ subjectName }`, { type: 'success' } );
+		mw.notify( mw.msg( 'neowiki-subject-editor-success', subjectName ), { type: 'success' } );
 		emit( 'update:open', false );
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),
 			{
-				// TODO: i18n
-				title: `Failed to update ${ subjectName }.`,
+				title: mw.msg( 'neowiki-subject-editor-error', subjectName ),
 				type: 'error'
 			}
 		);
