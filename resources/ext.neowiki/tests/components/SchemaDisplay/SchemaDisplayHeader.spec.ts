@@ -76,12 +76,12 @@ describe( 'SchemaDisplayHeader', () => {
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__actions button' ).exists() ).toBe( false );
 	} );
 
-	it( 'navigates to schema editor on edit button click', async () => {
+	it( 'emits edit event on edit button click', async () => {
 		canEditSchemaRef.value = true;
 		const wrapper = mountComponent( newSchema( { title: 'Company' } ) );
 
 		await wrapper.find( '.ext-neowiki-schema-display-header__actions button' ).trigger( 'click' );
 
-		expect( mockGetUrl ).toHaveBeenCalledWith( 'Schema:Company', { action: 'edit-schema' } );
+		expect( wrapper.emitted( 'edit' ) ).toHaveLength( 1 );
 	} );
 } );

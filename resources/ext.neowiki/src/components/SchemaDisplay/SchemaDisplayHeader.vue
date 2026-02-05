@@ -16,7 +16,7 @@
 				v-if="canEditSchema"
 				weight="quiet"
 				:aria-label="$i18n( 'neowiki-edit-schema' ).text()"
-				@click="onEditButtonClick( schema.getName() )"
+				@click="emit( 'edit' )"
 			>
 				<CdxIcon :icon="cdxIconEdit" />
 			</CdxButton>
@@ -38,15 +38,15 @@ const props = defineProps( {
 	}
 } );
 
+const emit = defineEmits<{
+	edit: [];
+}>();
+
 const { canEditSchema, checkPermission } = useSchemaPermissions();
 
 watch( () => props.schema, ( newSchema ) => {
 	checkPermission( newSchema.getName() );
 }, { immediate: true } );
-
-function onEditButtonClick( schemaName: string ): void {
-	window.location.href = mw.util.getUrl( `Schema:${ schemaName }`, { action: 'edit-schema' } );
-}
 </script>
 
 <style lang="less">

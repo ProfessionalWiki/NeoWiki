@@ -3,12 +3,15 @@
 		<CdxTable
 			:columns="hasProperties ? columns : []"
 			:data="properties"
-			:caption="schema.getName()"
+			:caption="currentSchema.getName()"
 			:use-row-headers="true"
 			:hide-caption="true"
 		>
 			<template #header>
-				<SchemaDisplayHeader :schema="schema" />
+				<SchemaDisplayHeader
+					:schema="currentSchema"
+					@edit="isEditorOpen = true"
+				/>
 			</template>
 
 			<template #item-name="{ item }">
@@ -41,17 +44,29 @@
 				{{ $i18n( 'neowiki-schema-display-no-properties' ).text() }}
 			</template>
 		</CdxTable>
+
+		<SchemaEditorDialog
+			v-if="canEditSchema"
+			:open="isEditorOpen"
+			:initial-schema="currentSchema"
+			:on-save="handleSaveSchema"
+			@saved="onSchemaSaved"
+			@update:open="isEditorOpen = $event"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, shallowRef, watch } from 'vue';
 import { Schema } from '@/domain/Schema.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { CdxTable, CdxInfoChip } from '@wikimedia/codex';
 import type { TableColumn } from '@wikimedia/codex';
 import type { Icon } from '@wikimedia/codex-icons';
 import SchemaDisplayHeader from './SchemaDisplayHeader.vue';
+import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 
 const props = defineProps( {
 	schema: {
@@ -60,9 +75,20 @@ const props = defineProps( {
 	}
 } );
 
+const schemaStore = useSchemaStore();
+const { canEditSchema, checkPermission } = useSchemaPermissions();
+
+const isEditorOpen = shallowRef( false );
+const currentSchema = shallowRef<Schema>( props.schema );
+
+watch( () => props.schema, ( newSchema ) => {
+	currentSchema.value = newSchema;
+	checkPermission( newSchema.getName() );
+}, { immediate: true } );
+
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
-const properties = computed( () => [ ...props.schema.getPropertyDefinitions() ] );
+const properties = computed( () => [ ...currentSchema.value.getPropertyDefinitions() ] );
 const hasProperties = computed( () => properties.value.length > 0 );
 
 const columns = computed<TableColumn[]>( () => [
@@ -95,6 +121,14 @@ function getIcon( propertyType: string ): Icon {
 function getTypeLabel( propertyType: string ): string {
 	return mw.msg( componentRegistry.getLabel( propertyType ) );
 }
+
+const handleSaveSchema = async ( updatedSchema: Schema, comment: string ): Promise<void> => {
+	await schemaStore.saveSchema( updatedSchema, comment );
+};
+
+const onSchemaSaved = ( schema: Schema ): void => {
+	currentSchema.value = schema;
+};
 </script>
 
 <style lang="less">
