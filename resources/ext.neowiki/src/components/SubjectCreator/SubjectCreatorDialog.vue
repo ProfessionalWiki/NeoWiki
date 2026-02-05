@@ -56,7 +56,7 @@
 
 					<SchemaEditor
 						ref="schemaEditorRef"
-						:initial-schema="blankSchema"
+						:initial-schema="newSchema"
 					/>
 				</div>
 			</template>
@@ -133,7 +133,7 @@ const schemaLookupRef = ref<any | null>( null );
 const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
 const schemaNameInputRef = ref<InstanceType<typeof CdxTextInput> | null>( null );
 
-const blankSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
+const newSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
