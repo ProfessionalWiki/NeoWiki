@@ -58,6 +58,7 @@
 	"neowiki-subject-editor-save": "Save changes",
 
 	"neowiki-schema-editor-new-property": "Add new property",
+	"neowiki-schema-editor-delete-property": "Delete property",
 	"neowiki-schema-editor-optional": "Optional",
 
 	"neowiki-subject-creator-title": "Creating subject",
