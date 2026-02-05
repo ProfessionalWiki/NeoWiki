@@ -45,6 +45,7 @@
 						:messages="schemaNameError ? { error: schemaNameError } : {}"
 					>
 						<CdxTextInput
+							ref="schemaNameInputRef"
 							v-model="newSchemaName"
 							:placeholder="$i18n( 'neowiki-subject-creator-schema-name-placeholder' ).text()"
 						/>
@@ -130,6 +131,7 @@ const schemaNameError = ref( '' );
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const schemaLookupRef = ref<any | null>( null );
 const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
+const schemaNameInputRef = ref<InstanceType<typeof CdxTextInput> | null>( null );
 
 const blankSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
 
@@ -160,18 +162,20 @@ const toggleButtons = [
 ] as ButtonGroupItem[];
 
 onMounted( () => {
-	focusSchemaLookup( selectedSchemaOption.value );
+	focusInitialInput( selectedSchemaOption.value );
 } );
 
 watch( selectedSchemaOption, ( newValue: string ) => {
 	schemaNameError.value = '';
-	focusSchemaLookup( newValue );
+	focusInitialInput( newValue );
 } );
 
-async function focusSchemaLookup( newValue: string ): Promise<void> {
+async function focusInitialInput( schemaOption: string ): Promise<void> {
 	await nextTick();
-	if ( newValue === 'existing' && schemaLookupRef.value ) {
+	if ( schemaOption === 'existing' && schemaLookupRef.value ) {
 		schemaLookupRef.value.focus();
+	} else if ( schemaOption === 'new' && schemaNameInputRef.value ) {
+		schemaNameInputRef.value.focus();
 	}
 }
 

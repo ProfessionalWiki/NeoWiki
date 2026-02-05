@@ -99,6 +99,7 @@ describe( 'SubjectCreatorDialog', () => {
 						template: '<input class="cdx-text-input-stub" :value="modelValue" @input="$emit( \'update:modelValue\', $event.target.value )" />',
 						props: [ 'modelValue', 'placeholder', 'status' ],
 						emits: [ 'update:modelValue' ],
+						methods: { focus: vi.fn() },
 					},
 					teleport: true,
 					...stubs,
