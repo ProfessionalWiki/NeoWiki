@@ -118,4 +118,74 @@ describe( 'SchemaEditor', () => {
 
 		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'secondProp' );
 	} );
+
+	it( 'emits change when a property is created', async () => {
+		const schema = new Schema(
+			'TestSchema',
+			'Description',
+			new PropertyDefinitionList( [] ),
+		);
+
+		const wrapper = createWrapper( schema );
+		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
+
+		const newProperty = createPropertyDefinitionFromJson( 'newProp', { type: TextType.typeName } );
+		await propertyList.vm.$emit( 'propertyCreated', newProperty );
+
+		expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'emits change when a property is deleted', async () => {
+		const schema = new Schema(
+			'TestSchema',
+			'Description',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
+			] ),
+		);
+
+		const wrapper = createWrapper( schema );
+		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
+
+		await propertyList.vm.$emit( 'propertyDeleted', schema.getPropertyDefinition( 'firstProp' ).name );
+
+		expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'emits change when a property definition is updated', async () => {
+		const schema = new Schema(
+			'TestSchema',
+			'Description',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+			] ),
+		);
+
+		const wrapper = createWrapper( schema );
+		const editor = wrapper.findComponent( { name: 'PropertyDefinitionEditor' } );
+
+		const updatedProperty = createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName, description: 'Updated' } );
+		await editor.vm.$emit( 'update:propertyDefinition', updatedProperty );
+
+		expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'does not emit change when a property is selected', async () => {
+		const schema = new Schema(
+			'TestSchema',
+			'Description',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
+			] ),
+		);
+
+		const wrapper = createWrapper( schema );
+		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
+
+		await propertyList.vm.$emit( 'propertySelected', schema.getPropertyDefinition( 'secondProp' ).name );
+
+		expect( wrapper.emitted( 'change' ) ).toBeUndefined();
+	} );
 } );

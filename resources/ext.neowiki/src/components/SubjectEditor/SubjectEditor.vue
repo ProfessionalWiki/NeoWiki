@@ -10,6 +10,7 @@
 				:label="statement.propertyName.toString()"
 				:model-value="statement.value"
 				:property="props.schemaProperties.get( statement.propertyName )"
+				@update:model-value="emit( 'change' )"
 			/>
 		</CdxField>
 	</div>
@@ -26,6 +27,10 @@ import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 const props = defineProps<{
 	schemaStatements: StatementList;
 	schemaProperties: PropertyDefinitionList;
+}>();
+
+const emit = defineEmits<{
+	change: [];
 }>();
 
 onBeforeUpdate( () => {

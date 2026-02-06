@@ -10,6 +10,7 @@
 			ref="schemaEditor"
 			:initial-schema="initialSchema"
 			@overflow="onOverflow"
+			@change="markChanged"
 		/>
 
 		<template #footer>
@@ -27,7 +28,8 @@ import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/Sch
 import EditSummary from '@/components/common/EditSummary.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 
 export type SchemaSaveHandler = ( schema: Schema, comment: string ) => Promise<void>;
 
@@ -49,6 +51,13 @@ const open = computed( {
 
 const schemaEditor = ref<SchemaEditorExposes | null>( null );
 const hasOverflow = ref( false );
+const { hasChanged, markChanged, resetChanged } = useChangeDetection();
+
+watch( () => props.open, ( isOpen ) => {
+	if ( isOpen ) {
+		resetChanged();
+	}
+} );
 
 function onOverflow( overflow: boolean ): void {
 	hasOverflow.value = overflow;
@@ -78,6 +87,8 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		);
 	}
 };
+
+defineExpose( { hasChanged } );
 </script>
 
 <style lang="less">
