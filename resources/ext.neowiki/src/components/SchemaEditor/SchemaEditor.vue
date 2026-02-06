@@ -36,6 +36,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	overflow: [ hasOverflow: boolean ];
+	change: [];
 }>();
 
 const currentSchema = ref<Schema>( props.initialSchema );
@@ -68,6 +69,7 @@ function onPropertySelected( name: PropertyName ): void {
 
 function onPropertyCreated( newProperty: PropertyDefinition ): void {
 	currentSchema.value = currentSchema.value.withAddedPropertyDefinition( newProperty );
+	emit( 'change' );
 }
 
 function onPropertyDeleted( name: PropertyName ): void {
@@ -79,12 +81,15 @@ function onPropertyDeleted( name: PropertyName ): void {
 			properties[ 0 ].name.toString() :
 			undefined;
 	}
+
+	emit( 'change' );
 }
 
 function onPropertyUpdated( updatedProperty: PropertyDefinition ): void {
 	currentSchema.value = buildUpdatedSchema( updatedProperty );
 
 	selectedPropertyName.value = updatedProperty.name.toString();
+	emit( 'change' );
 }
 
 function propertyExists( name: string | undefined ): boolean {
