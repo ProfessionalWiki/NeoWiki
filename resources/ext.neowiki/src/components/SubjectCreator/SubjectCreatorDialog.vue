@@ -90,6 +90,7 @@
 					<CdxTextInput
 						v-model="subjectLabel"
 						:placeholder="$i18n( 'neowiki-subject-creator-label-placeholder' ).text()"
+						@input="markChanged"
 					/>
 					<template #label>
 						{{ $i18n( 'neowiki-subject-creator-label-field' ).text() }}
@@ -101,6 +102,7 @@
 					ref="subjectEditorRef"
 					:schema-statements="schemaStatements"
 					:schema-properties="schemaProperties"
+					@change="markChanged"
 				/>
 			</template>
 
@@ -145,6 +147,7 @@ import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor
 import EditSummary from '@/components/common/EditSummary.vue';
 import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
+import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 
 const open = ref( false );
 const selectedSchemaOption = ref( 'existing' );
@@ -163,6 +166,7 @@ const newSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
 const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
+const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
 interface SubjectEditorInstance {
 	getSubjectData: () => StatementList;
@@ -314,6 +318,7 @@ function resetForm(): void {
 	selectedSchemaOption.value = 'existing';
 	newSchemaName.value = '';
 	schemaNameError.value = '';
+	resetChanged();
 }
 
 const handleSave = async ( _summary: string ): Promise<void> => {
@@ -352,6 +357,8 @@ const handleSave = async ( _summary: string ): Promise<void> => {
 		);
 	}
 };
+
+defineExpose( { hasChanged } );
 </script>
 
 <style lang="less">
