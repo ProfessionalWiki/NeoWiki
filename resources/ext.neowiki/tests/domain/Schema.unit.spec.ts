@@ -43,6 +43,21 @@ describe( 'Schema', () => {
 
 	} );
 
+	describe( 'withDescription', () => {
+
+		it( 'returns a new Schema with the updated description', () => {
+			const originalSchema = newSchema();
+
+			const updatedSchema = originalSchema.withDescription( 'Updated description' );
+
+			expect( updatedSchema.getDescription() ).toBe( 'Updated description' );
+			expect( updatedSchema.getName() ).toBe( originalSchema.getName() );
+			expect( updatedSchema.getPropertyDefinitions() ).toEqual( originalSchema.getPropertyDefinitions() );
+			expect( updatedSchema ).not.toBe( originalSchema );
+		} );
+
+	} );
+
 	describe( 'withAddedPropertyDefinition', () => {
 
 		it( 'adds a Property Definition when Schema has no properties', () => {
