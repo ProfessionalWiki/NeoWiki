@@ -41,6 +41,7 @@ const SchemaLookupStub = {
 const SubjectEditorStub = {
 	template: '<div class="subject-editor-stub"></div>',
 	props: [ 'schemaStatements', 'schemaProperties' ],
+	emits: [ 'change' ],
 	setup() {
 		const getSubjectData = (): StatementList => new StatementList( [
 			new Statement( new PropertyName( 'Color' ), TextType.typeName, newStringValue( 'Red' ) ),

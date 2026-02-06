@@ -11,9 +11,20 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
 const $i18n = createI18nMock();
+
+const SubjectEditorStub = {
+	template: '<div class="subject-editor-stub"></div>',
+	props: [ 'schemaStatements', 'schemaProperties' ],
+	emits: [ 'change' ],
+	setup() {
+		const getSubjectData = (): StatementList => new StatementList( [] );
+		return { getSubjectData };
+	},
+};
 
 describe( 'SubjectEditorDialog', () => {
 	beforeEach( () => {
@@ -37,7 +48,7 @@ describe( 'SubjectEditorDialog', () => {
 		new StatementList( [] ),
 	);
 
-	const mountComponent = ( canEditSchema: boolean ): VueWrapper => {
+	const mountComponent = ( canEditSchema: boolean, stubs: Record<string, any> = {} ): VueWrapper => {
 		schemaAuthorizer = {
 			canEditSchema: vi.fn().mockResolvedValue( canEditSchema ),
 		};
@@ -61,6 +72,7 @@ describe( 'SubjectEditorDialog', () => {
 				},
 				stubs: {
 					teleport: true,
+					...stubs,
 				},
 			},
 		} );
@@ -105,5 +117,36 @@ describe( 'SubjectEditorDialog', () => {
 		const schemaEditorDialog = wrapper.findComponent( SchemaEditorDialog );
 		expect( schemaEditorDialog.exists() ).toBe( true );
 		expect( schemaEditorDialog.props( 'open' ) ).toBe( true );
+	} );
+
+	it( 'has hasChanged false initially', async () => {
+		const wrapper = mountComponent( true, { SubjectEditor: SubjectEditorStub } );
+		await flushPromises();
+
+		expect( ( wrapper.vm as any ).hasChanged ).toBe( false );
+	} );
+
+	it( 'has hasChanged true after SubjectEditor emits change', async () => {
+		const wrapper = mountComponent( true, { SubjectEditor: SubjectEditorStub } );
+		await flushPromises();
+
+		const subjectEditor = wrapper.findComponent( SubjectEditor );
+		await subjectEditor.vm.$emit( 'change' );
+
+		expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
+	} );
+
+	it( 'resets hasChanged when dialog reopens', async () => {
+		const wrapper = mountComponent( true, { SubjectEditor: SubjectEditorStub } );
+		await flushPromises();
+
+		const subjectEditor = wrapper.findComponent( SubjectEditor );
+		await subjectEditor.vm.$emit( 'change' );
+		expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
+
+		await wrapper.setProps( { open: false } );
+		await wrapper.setProps( { open: true } );
+
+		expect( ( wrapper.vm as any ).hasChanged ).toBe( false );
 	} );
 } );

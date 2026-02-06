@@ -52,6 +52,7 @@
 				ref="subjectEditorRef"
 				:schema-statements="schemaStatements"
 				:schema-properties="schemaProperties"
+				@change="markChanged"
 			/>
 			<div v-else>
 				Loading schema... <!-- Or some other loading indicator -->
@@ -94,6 +95,7 @@ import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
+import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 
 type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
 
@@ -116,6 +118,13 @@ const isSchemaEditorOpen = ref( false );
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
 const loadedSchema = ref<Schema | null>( null );
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
+const { hasChanged, markChanged, resetChanged } = useChangeDetection();
+
+watch( () => props.open, ( isOpen ) => {
+	if ( isOpen ) {
+		resetChanged();
+	}
+} );
 
 watch( () => props.subject, async ( newSubject ) => {
 	if ( newSubject ) {
@@ -208,6 +217,8 @@ const handleSave = async ( summary: string ): Promise<void> => {
 const onSchemaSaved = ( schema: Schema ): void => {
 	loadedSchema.value = schema;
 };
+
+defineExpose( { hasChanged } );
 
 </script>
 
