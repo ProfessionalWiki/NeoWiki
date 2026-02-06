@@ -32,6 +32,7 @@ import { Neo } from '@/Neo.ts';
 import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListNumbered } from '@wikimedia/codex-icons';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
+import UrlAttributesEditor from '@/components/SchemaEditor/Property/UrlAttributesEditor.vue';
 import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader.ts';
@@ -60,7 +61,7 @@ export class NeoWikiExtension {
 		registry.registerType( UrlType.typeName, {
 			valueDisplayComponent: UrlDisplay,
 			valueEditor: UrlInput,
-			attributesEditor: TextAttributesEditor, // TODO
+			attributesEditor: UrlAttributesEditor,
 			label: 'neowiki-property-type-url',
 			icon: cdxIconLink,
 		} );
