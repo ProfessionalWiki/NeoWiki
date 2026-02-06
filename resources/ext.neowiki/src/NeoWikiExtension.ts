@@ -32,6 +32,7 @@ import { Neo } from '@/Neo.ts';
 import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListNumbered } from '@wikimedia/codex-icons';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
+import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader.ts';
@@ -76,7 +77,7 @@ export class NeoWikiExtension {
 		registry.registerType( RelationType.typeName, {
 			valueDisplayComponent: RelationDisplay,
 			valueEditor: RelationInput,
-			attributesEditor: TextAttributesEditor, // TODO
+			attributesEditor: RelationAttributesEditor,
 			label: 'neowiki-property-type-relation',
 			icon: cdxIconArticles,
 		} );
