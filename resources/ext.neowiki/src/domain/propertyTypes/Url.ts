@@ -1,7 +1,6 @@
 import { MultiStringProperty, PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
 import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
-import DOMPurify from 'dompurify';
 
 export interface UrlProperty extends MultiStringProperty {
 
@@ -73,9 +72,9 @@ export class UrlFormatter {
 			const url = new URL( urlString );
 			const sanitizedUrl = url.href;
 			const displayedUrl = this.urlStringToDisplayValue( urlString );
-			return `<a href="${ sanitizedUrl }">${ displayedUrl }</a>`; // TODO: add CSS classes?
+			return `<a href="${ sanitizedUrl }">${ escapeHtml( displayedUrl ) }</a>`; // TODO: add CSS classes?
 		} catch ( _ ) {
-			return DOMPurify.sanitize( urlString ); // TODO: add styling and CSS classes?
+			return escapeHtml( urlString ); // TODO: add styling and CSS classes?
 		}
 	}
 
@@ -85,9 +84,18 @@ export class UrlFormatter {
 			const pathName = url.pathname === '/' ? '' : url.pathname;
 			return url.hostname + pathName + url.search + url.hash;
 		} catch ( _ ) {
-			return DOMPurify.sanitize( urlString );
+			return urlString;
 		}
 	}
+}
+
+function escapeHtml( text: string ): string {
+	return text
+		.replace( /&/g, '&amp;' )
+		.replace( /</g, '&lt;' )
+		.replace( />/g, '&gt;' )
+		.replace( /"/g, '&quot;' )
+		.replace( /'/g, '&#039;' );
 }
 
 export function isValidUrl( url: string ): boolean {

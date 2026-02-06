@@ -50,10 +50,10 @@ describe( 'UrlFormatter', () => {
 			).toBe( '<a href="https://pro.wiki/pricing%20%3Cscript%3Ealert(%22xss%22);%3C/script%3E">pro.wiki/pricing%20%3Cscript%3Ealert(%22xss%22);%3C/script%3E</a>' ); // TODO: verify this is safe
 		} );
 
-		it( 'sanitizes HTML inputs', () => {
+		it( 'escapes HTML inputs', () => {
 			expect(
 				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'evil <strong>bold</strong>' ),
-			).toBe( 'evil <strong>bold</strong>' ); // FIXME: this is NOT what we want. EVERYTHING should be escaped, and nothing should be omitted.
+			).toBe( 'evil &lt;strong&gt;bold&lt;/strong&gt;' );
 		} );
 
 		it( 'returns invalid URLs as they are', () => {
@@ -76,6 +76,12 @@ describe( 'UrlFormatter', () => {
 			expect(
 				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://professional.wiki/en/mediawiki-development#anchor' ),
 			).toBe( '<a href="https://professional.wiki/en/mediawiki-development#anchor">professional.wiki/en/mediawiki-development#anchor</a>' );
+		} );
+
+		it( 'escapes ampersands in displayed URL', () => {
+			expect(
+				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://example.com/?a=1&b=2' ),
+			).toBe( '<a href="https://example.com/?a=1&b=2">example.com?a=1&amp;b=2</a>' );
 		} );
 
 	} );
