@@ -15,6 +15,8 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Session\CsrfTokenSet;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
+use ProfessionalWiki\NeoWiki\Application\CompositeCypherQueryValidator;
+use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
@@ -50,6 +52,8 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDes
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\ExplainCypherQueryValidator;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\KeywordCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdaterFactory;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
@@ -157,6 +161,13 @@ class NeoWikiExtension {
 		}
 
 		return $this->readOnlyNeo4jClient;
+	}
+
+	public function getCypherQueryValidator(): CypherQueryValidator {
+		return new CompositeCypherQueryValidator( [
+			new KeywordCypherQueryValidator(),
+			new ExplainCypherQueryValidator( $this->getReadOnlyNeo4jClient() ),
+		] );
 	}
 
 	public function getWriteQueryEngine(): WriteQueryEngine {
