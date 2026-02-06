@@ -5,6 +5,8 @@ import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
+import { CdxTextArea } from '@wikimedia/codex';
+import { createI18nMock } from '../../VueTestHelpers.ts';
 
 function createWrapper( schema: Schema ): VueWrapper {
 	return mount( SchemaEditor, {
@@ -12,6 +14,9 @@ function createWrapper( schema: Schema ): VueWrapper {
 			initialSchema: schema,
 		},
 		global: {
+			mocks: {
+				$i18n: createI18nMock(),
+			},
 			stubs: {
 				PropertyList: true,
 				PropertyDefinitionEditor: true,
@@ -117,5 +122,45 @@ describe( 'SchemaEditor', () => {
 		await propertyList.vm.$emit( 'propertyDeleted', schema.getPropertyDefinition( 'firstProp' ).name );
 
 		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'secondProp' );
+	} );
+
+	it( 'loads existing description into textarea', () => {
+		const schema = new Schema(
+			'TestSchema',
+			'My schema description',
+			new PropertyDefinitionList( [] ),
+		);
+
+		const wrapper = createWrapper( schema );
+
+		expect( wrapper.findComponent( CdxTextArea ).props( 'modelValue' ) ).toBe( 'My schema description' );
+	} );
+
+	it( 'renders empty textarea for empty description', () => {
+		const schema = new Schema(
+			'TestSchema',
+			'',
+			new PropertyDefinitionList( [] ),
+		);
+
+		const wrapper = createWrapper( schema );
+
+		expect( wrapper.findComponent( CdxTextArea ).props( 'modelValue' ) ).toBe( '' );
+	} );
+
+	it( 'updates schema description when textarea changes', async () => {
+		const schema = new Schema(
+			'TestSchema',
+			'Original description',
+			new PropertyDefinitionList( [] ),
+		);
+
+		const wrapper = createWrapper( schema );
+
+		await wrapper.findComponent( CdxTextArea ).vm.$emit( 'update:modelValue', 'Updated description' );
+
+		const updatedSchema = ( wrapper.vm as any ).getSchema();
+		expect( updatedSchema.getDescription() ).toBe( 'Updated description' );
+		expect( updatedSchema.getName() ).toBe( 'TestSchema' );
 	} );
 } );

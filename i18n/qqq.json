@@ -24,6 +24,7 @@
 	"neowiki-schema-editor-summary-default": "Default edit summary used when updating a schema via the UI.",
 	"neowiki-schema-editor-success": "Success notification shown after updating a schema. $1 is the schema name.",
 	"neowiki-schema-editor-error": "Error notification title shown when updating a schema fails. $1 is the schema name.",
+	"neowiki-schema-editor-description": "Label for the description field in the schema editor.",
 
 	"neowiki-subject-editor-summary-default": "Default edit summary used when updating a subject via the UI.",
 	"neowiki-subject-editor-success": "Success notification shown after updating a subject. $1 is the subject label.",

@@ -38,7 +38,8 @@ async function onLookupInput( value: string ): Promise<void> {
 		const schemaNames = await schemaStore.searchAndFetchMissingSchemas( value );
 		menuItems.value = schemaNames.map( ( name ) => ( {
 			label: name,
-			value: name
+			value: name,
+			description: schemaStore.getSchema( name ).getDescription() || undefined
 		} ) );
 	} catch ( error ) {
 		console.error( 'Error searching schemas:', error );

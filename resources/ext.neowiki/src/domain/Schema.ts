@@ -35,6 +35,10 @@ export class Schema {
 		return new Schema( name, this.description, this.properties );
 	}
 
+	public withDescription( description: string ): Schema {
+		return new Schema( this.name, description, this.properties );
+	}
+
 	public withAddedPropertyDefinition( property: PropertyDefinition ): Schema {
 		return new Schema(
 			this.name,
