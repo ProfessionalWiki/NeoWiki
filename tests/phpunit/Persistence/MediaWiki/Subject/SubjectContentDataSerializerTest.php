@@ -173,7 +173,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 			mainSubject: TestSubject::build(
 				id: 'sTestSCDST11112',
 				label: new SubjectLabel( 'Test subject 112' ),
-				schemaId: new SchemaName( 'Employee' ),
+				schemaName: new SchemaName( 'Employee' ),
 				statements: new StatementList( [
 					new Statement(
 						property: new PropertyName( 'founded' ),

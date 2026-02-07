@@ -9,7 +9,7 @@ readonly class GetSubjectResponseItem {
 	public function __construct(
 		public string $id,
 		public string $label,
-		public string $schemaId,
+		public string $schemaName,
 		/**
 		 * @var array<string, mixed>
 		 */

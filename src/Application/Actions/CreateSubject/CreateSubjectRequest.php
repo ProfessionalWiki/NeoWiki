@@ -12,7 +12,7 @@ readonly class CreateSubjectRequest {
 
 		public string $label,
 
-		public string $schemaId,
+		public string $schemaName,
 
 		/**
 		 * @var array<string, mixed[]>

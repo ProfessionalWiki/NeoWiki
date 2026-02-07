@@ -50,7 +50,7 @@ JSON
 			mainSubject: TestSubject::build(
 				id: 'sTestGSA1111114',
 				label: new SubjectLabel( 'Test subject sTestGSA1111114' ),
-				schemaId: new SchemaName( 'GetSubjectApiTestSchema' )
+				schemaName: new SchemaName( 'GetSubjectApiTestSchema' )
 			)
 		);
 
@@ -106,7 +106,7 @@ JSON,
 			'GetSubjectApiTest0000',
 			mainSubject: TestSubject::build(
 				id: 'sTestGSA1111111',
-				schemaId: new SchemaName( 'GetSubjectApiTestSchema' ),
+				schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
 				statements: new StatementList( [
 					TestStatement::buildRelation(
 						'MyRelation',
@@ -120,7 +120,7 @@ JSON,
 			childSubjects: new SubjectMap(
 				TestSubject::build(
 					id: 'sTestGSA1111112',
-					schemaId: new SchemaName( 'GetSubjectApiTestSchema' ),
+					schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
 				)
 			)
 		)->getPage()->getId();
@@ -129,7 +129,7 @@ JSON,
 			'GetSubjectApiTest0002',
 			mainSubject: TestSubject::build(
 				id: 'sTestGSA1111113',
-				schemaId: new SchemaName( 'GetSubjectApiTestSchema' ),
+				schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
 				statements: new StatementList( [
 					TestStatement::buildRelation(
 						'MyRelation',
