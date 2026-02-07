@@ -41,6 +41,10 @@ const viewsData = ref<ViewData[]>( [] );
 const shouldShowSubjectCreator = ref( props.showSubjectCreator );
 const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
 
+function isLatestRevision(): boolean {
+	return mw.config.get( 'wgRevisionId' ) === mw.config.get( 'wgCurRevisionId' );
+}
+
 onMounted( async (): Promise<void> => {
 	const localViewsData = await getViewsData( document.querySelectorAll( '.ext-neowiki-view' ) );
 
@@ -75,7 +79,7 @@ async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
 			id: subjectId.text,
 			element: element,
 			subjectId: subjectId,
-			canEditSubject: await subjectAuthorizer.canEditSubject( subjectId )
+			canEditSubject: isLatestRevision() && await subjectAuthorizer.canEditSubject( subjectId )
 		};
 	} catch ( error ) {
 		console.error( error );
