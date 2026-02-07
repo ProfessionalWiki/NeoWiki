@@ -41,7 +41,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\PatchSubjectApi;
-use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
@@ -216,7 +216,7 @@ class NeoWikiExtension {
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
 			guidGenerator: $this->getIdGenerator(),
-			subjectActionAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
 			statementListPatcher: $this->getStatementListPatcher()
 		);
 	}
@@ -256,12 +256,12 @@ class NeoWikiExtension {
 	public function newDeleteSubjectAction( Authority $authority ): DeleteSubjectAction {
 		return new DeleteSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
-			subjectActionAuthorizer: $this->newSubjectAuthorizer( $authority )
+			subjectAuthorizer: $this->newSubjectAuthorizer( $authority )
 		);
 	}
 
 	public function newSubjectAuthorizer( Authority $authority ): SubjectAuthorizer {
-		return new AuthorityBasedSubjectActionAuthorizer(
+		return new AuthorityBasedSubjectAuthorizer(
 			authority: $authority
 		);
 	}
@@ -329,7 +329,7 @@ class NeoWikiExtension {
 	public function newPatchSubjectAction( Authority $authority ): PatchSubjectAction {
 		return new PatchSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
-			subjectActionAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
 			patcher: $this->getStatementListPatcher()
 		);
 	}
