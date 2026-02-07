@@ -21,13 +21,13 @@ class Subject {
 	}
 
 	public static function createNew(
-		IdGenerator $guidGenerator,
+		IdGenerator $idGenerator,
 		SubjectLabel $label,
 		SchemaName $schemaId,
 		?StatementList $statements = null,
 	): self {
 		return new self(
-			id: SubjectId::createNew( $guidGenerator ),
+			id: SubjectId::createNew( $idGenerator ),
 			label: $label,
 			schemaId: $schemaId,
 			statements: $statements ?? new StatementList( [] ),

@@ -215,7 +215,7 @@ class NeoWikiExtension {
 		return new CreateSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			guidGenerator: $this->getIdGenerator(),
+			idGenerator: $this->getIdGenerator(),
 			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
 			statementListPatcher: $this->getStatementListPatcher()
 		);
