@@ -138,7 +138,7 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaNamesApi"
 		},
 		{
-			"path": "/neowiki/v0/subject-labels/{search}",
+			"path": "/neowiki/v0/subject-labels",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectLabelsApi"
 		}
