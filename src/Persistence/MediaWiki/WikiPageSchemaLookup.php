@@ -21,15 +21,15 @@ class WikiPageSchemaLookup implements SchemaLookup {
 	) {
 	}
 
-	public function getSchema( SchemaName $schemaId ): ?Schema {
-		$content = $this->getContent( $schemaId );
+	public function getSchema( SchemaName $schemaName ): ?Schema {
+		$content = $this->getContent( $schemaName );
 
 		if ( $content === null ) {
 			return null;
 		}
 
 		try {
-			return $this->schemaDeserializer->deserialize( $schemaId, $content->getText() );
+			return $this->schemaDeserializer->deserialize( $schemaName, $content->getText() );
 		}
 		catch ( InvalidArgumentException ) {
 			return null;

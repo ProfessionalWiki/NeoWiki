@@ -27,7 +27,7 @@ class SchemaPersistenceDeserializer {
 	/**
 	 * @throws InvalidArgumentException
 	 */
-	public function deserialize( SchemaName $schemaId, string $json ): Schema {
+	public function deserialize( SchemaName $schemaName, string $json ): Schema {
 		$json = json_decode( $json, true );
 
 		if ( !is_array( $json ) ) {
@@ -35,7 +35,7 @@ class SchemaPersistenceDeserializer {
 		}
 
 		return new Schema(
-			name: $schemaId,
+			name: $schemaName,
 			description: $json['description'] ?? '',
 			properties: $this->propertiesFromJson( $json ),
 		);

@@ -34,7 +34,7 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 					pageId: $pageId,
 					isMainSubject: $this->isMainSubject,
 					label: $request['label'],
-					schemaId: $request['schema'],
+					schemaName: $request['schema'],
 					statements: $request['statements'],
 				)
 			);

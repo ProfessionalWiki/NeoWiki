@@ -39,7 +39,7 @@ class GetSubjectQueryTest extends TestCase {
 				TestSubject::build(
 					id: 's11111111111129',
 					label: new SubjectLabel( 'expected label' ),
-					schemaId: new SchemaName( 'GetSubjectQueryTestSchema' ),
+					schemaName: new SchemaName( 'GetSubjectQueryTestSchema' ),
 					statements: new StatementList( [
 						TestStatement::build( 'expected property 1', 'expected value 1' ),
 						TestStatement::build( 'expected property 2', value: new NumberValue( 2 ), propertyType: 'number' ),
@@ -71,7 +71,7 @@ class GetSubjectQueryTest extends TestCase {
 					's11111111111129' => new GetSubjectResponseItem(
 						id: 's11111111111129',
 						label: 'expected label',
-						schemaId: 'GetSubjectQueryTestSchema',
+						schemaName: 'GetSubjectQueryTestSchema',
 						statements: [
 							'expected property 1' => [
 								'type' => 'text',
@@ -165,12 +165,12 @@ class GetSubjectQueryTest extends TestCase {
 
 	public function testIncludeReferencedSubjects(): void {
 		$spyPresenter = $this->getSpyPresenter();
-		$schemaId = new SchemaName( 'GetSubjectQueryTest' );
+		$schemaName = new SchemaName( 'GetSubjectQueryTest' );
 
 		$subject = TestSubject::build(
 			id: 's11111111111132',
 			label: new SubjectLabel( 'requested subject' ),
-			schemaId: $schemaId,
+			schemaName: $schemaName,
 			statements: new StatementList( [
 				TestStatement::build(
 					'FriendOf',

@@ -16,7 +16,7 @@ describe( 'Subject', () => {
 	it( 'should be constructable via newSubject', () => {
 		const subject = newSubject( {
 			label: 'I am a tomato',
-			schemaId: 'Tomato',
+			schemaName: 'Tomato',
 		} );
 
 		expect( subject.getId().text ).toBe( DEFAULT_SUBJECT_ID );

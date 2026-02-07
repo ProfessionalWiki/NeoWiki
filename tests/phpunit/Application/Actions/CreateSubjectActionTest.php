@@ -65,7 +65,7 @@ class CreateSubjectActionTest extends TestCase {
 				pageId: 1,
 				isMainSubject: true,
 				label: 'Some Label',
-				schemaId: 'some-schema-id',
+				schemaName: 'some-schema-id',
 				statements: []
 			)
 		);
@@ -88,7 +88,7 @@ class CreateSubjectActionTest extends TestCase {
 				pageId: 1,
 				isMainSubject: true,
 				label: 'Existing Label',
-				schemaId: 'existing-schema-id',
+				schemaName: 'existing-schema-id',
 				statements: []
 			)
 		);
@@ -110,7 +110,7 @@ class CreateSubjectActionTest extends TestCase {
 				pageId: 1,
 				isMainSubject: true,
 				label: 'Some Label',
-				schemaId: 'some-schema-id',
+				schemaName: 'some-schema-id',
 				statements: []
 			)
 		);
@@ -122,7 +122,7 @@ class CreateSubjectActionTest extends TestCase {
 				pageId: 145345,
 				isMainSubject: true,
 				label: 'Some Label',
-				schemaId: '00000000-8888-0000-0000-000000000022',
+				schemaName: '00000000-8888-0000-0000-000000000022',
 				statements: [
 					'Has product' => [
 						'propertyType' => 'relation',

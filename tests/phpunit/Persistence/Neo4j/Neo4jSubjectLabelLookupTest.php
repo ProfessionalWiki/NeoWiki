@@ -92,9 +92,9 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 
 	public function testFiltersBySchema(): void {
 		$this->saveSubjects( new SubjectMap(
-			TestSubject::build( id: 'sTestSLL1111116', label: new SubjectLabel( 'Apple Pie' ), schemaId: new SchemaName( 'Recipe' ) ),
-			TestSubject::build( id: 'sTestSLL1111117', label: new SubjectLabel( 'Apple Tree' ), schemaId: new SchemaName( 'Plant' ) ),
-			TestSubject::build( id: 'sTestSLL1111118', label: new SubjectLabel( 'Apple Inc.' ), schemaId: new SchemaName( 'Company' ) ),
+			TestSubject::build( id: 'sTestSLL1111116', label: new SubjectLabel( 'Apple Pie' ), schemaName: new SchemaName( 'Recipe' ) ),
+			TestSubject::build( id: 'sTestSLL1111117', label: new SubjectLabel( 'Apple Tree' ), schemaName: new SchemaName( 'Plant' ) ),
+			TestSubject::build( id: 'sTestSLL1111118', label: new SubjectLabel( 'Apple Inc.' ), schemaName: new SchemaName( 'Company' ) ),
 		) );
 
 		$results = $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, 'Recipe' );
@@ -105,7 +105,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 
 	public function testDoesNotReturnSubjectsFromOtherSchemas(): void {
 		$this->saveSubjects( new SubjectMap(
-			TestSubject::build( id: 'sTestSLL1111119', label: new SubjectLabel( 'Apple Tree' ), schemaId: new SchemaName( 'Plant' ) ),
+			TestSubject::build( id: 'sTestSLL1111119', label: new SubjectLabel( 'Apple Tree' ), schemaName: new SchemaName( 'Plant' ) ),
 		) );
 
 		$this->assertSame( [], $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, 'Recipe' ) );

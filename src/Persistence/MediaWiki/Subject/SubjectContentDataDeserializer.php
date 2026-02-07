@@ -57,7 +57,7 @@ class SubjectContentDataDeserializer {
 		return new Subject(
 			id: new SubjectId( $id ),
 			label: new SubjectLabel( $jsonArray['label'] ),
-			schemaId: new SchemaName( $jsonArray['schema'] ),
+			schemaName: new SchemaName( $jsonArray['schema'] ),
 			statements: $this->buildStatementList( $jsonArray ),
 		);
 	}

@@ -56,7 +56,7 @@ readonly class CreateSubjectAction {
 		return Subject::createNew(
 			guidGenerator: $this->guidGenerator,
 			label: new SubjectLabel( $request->label ),
-			schemaId: new SchemaName( $request->schemaId ),
+			schemaName: new SchemaName( $request->schemaName ),
 			statements: $this->statementListPatcher->buildStatementList(
 				statements: new StatementList(),
 				patch: $request->statements

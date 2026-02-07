@@ -7,12 +7,12 @@ import { SubjectWithContext } from '@/domain/SubjectWithContext';
 
 export const DEFAULT_SUBJECT_ID = 's11111111111111';
 export const DEFAULT_TEST_SUBJECT_LABEL = 'Test subject';
-export const DEFAULT_TEST_SCHEMA_ID = 'TestSchema';
+export const DEFAULT_TEST_SCHEMA_NAME = 'TestSchema';
 
 interface NewTestSubjectOptions {
 	id?: string|SubjectId;
 	label?: string;
-	schemaId?: string;
+	schemaName?: string;
 	statements?: StatementList;
 	pageIdentifiers?: PageIdentifiers;
 }
@@ -20,14 +20,14 @@ interface NewTestSubjectOptions {
 export function newSubject( {
 	id = DEFAULT_SUBJECT_ID,
 	label = DEFAULT_TEST_SUBJECT_LABEL,
-	schemaId = DEFAULT_TEST_SCHEMA_ID,
+	schemaName = DEFAULT_TEST_SCHEMA_NAME,
 	statements = new StatementList( [] ),
 	pageIdentifiers = new PageIdentifiers( 0, 'TestSubjectPage' ),
 }: NewTestSubjectOptions = {} ): SubjectWithContext {
 	return new SubjectWithContext(
 		id instanceof SubjectId ? id : new SubjectId( id ),
 		label,
-		schemaId,
+		schemaName,
 		statements,
 		pageIdentifiers,
 	);

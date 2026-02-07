@@ -30,7 +30,7 @@ class SubjectContentDataSerializer {
 		foreach ( $subjectMap->asArray() as $subject ) {
 			$serializedSubjects[$subject->id->text] = [
 				'label' => $subject->label->text,
-				'schema' => $subject->getSchemaId()->getText(),
+				'schema' => $subject->getSchemaName()->getText(),
 				'statements' => $this->serializeStatementList( $subject->getStatements() ),
 			];
 		}

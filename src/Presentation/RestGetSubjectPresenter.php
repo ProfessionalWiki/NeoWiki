@@ -33,7 +33,7 @@ class RestGetSubjectPresenter implements GetSubjectPresenter {
 			$map[$subject->id] = [
 				'id' => $subject->id,
 				'label' => $subject->label,
-				'schema' => $subject->schemaId,
+				'schema' => $subject->schemaName,
 			];
 
 			if ( $subject->pageId !== null ) {

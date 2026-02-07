@@ -9,6 +9,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 
 interface SchemaLookup {
 
-	public function getSchema( SchemaName $schemaId ): ?Schema;
+	public function getSchema( SchemaName $schemaName ): ?Schema;
 
 }

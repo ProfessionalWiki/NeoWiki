@@ -256,10 +256,10 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			mainSubject: TestSubject::build( id: self::GUID_1, schemaId: new SchemaName( self::SCHEMA_ID_A ) ),
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: self::GUID_2, schemaId: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
-				TestSubject::build( id: self::GUID_3, schemaId: new SchemaName( self::SCHEMA_ID_Z ) ),
+				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
+				TestSubject::build( id: self::GUID_3, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
 			)
 		) );
 
@@ -350,20 +350,20 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			mainSubject: TestSubject::build( id: self::GUID_1, schemaId: new SchemaName( self::SCHEMA_ID_A ) ),
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: self::GUID_2, schemaId: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
-				TestSubject::build( id: self::GUID_3, schemaId: new SchemaName( self::SCHEMA_ID_Z ) ),
+				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
+				TestSubject::build( id: self::GUID_3, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
 			)
 		) );
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			mainSubject: TestSubject::build( id: self::GUID_1, schemaId: new SchemaName( self::SCHEMA_ID_A ) ),
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
 			childSubjects: new SubjectMap(
-				TestSubject::build( id: self::GUID_2, schemaId: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
-				TestSubject::build( id: self::GUID_3, schemaId: new SchemaName( self::SCHEMA_ID_Z ) ),
-				TestSubject::build( id: self::GUID_4, schemaId: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
+				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
+				TestSubject::build( id: self::GUID_3, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
+				TestSubject::build( id: self::GUID_4, schemaName: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
 			)
 		) );
 

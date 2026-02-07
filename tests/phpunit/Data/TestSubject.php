@@ -20,13 +20,13 @@ class TestSubject {
 	public static function build(
 		string|SubjectId $id = self::ZERO_GUID,
 		SubjectLabel|string $label = 'Test subject',
-		?SchemaName $schemaId = null,
+		?SchemaName $schemaName = null,
 		?StatementList $statements = null,
 	): Subject {
 		return new Subject(
 			id: $id instanceof SubjectId ? $id : new SubjectId( $id ),
 			label: $label instanceof SubjectLabel ? $label : new SubjectLabel( $label ),
-			schemaId: $schemaId ?? new SchemaName( self::DEFAULT_SCHEMA_ID ),
+			schemaName: $schemaName ?? new SchemaName( self::DEFAULT_SCHEMA_ID ),
 			statements: $statements ?? new StatementList( [] ),
 		);
 	}

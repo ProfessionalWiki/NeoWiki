@@ -19,8 +19,8 @@ class InMemorySchemaLookup implements SchemaLookup {
 		array_walk( $schemas, $this->updateSchema( ... ) );
 	}
 
-	public function getSchema( SchemaName $schemaId ): ?Schema {
-		return $this->schemas[$schemaId->getText()] ?? null;
+	public function getSchema( SchemaName $schemaName ): ?Schema {
+		return $this->schemas[$schemaName->getText()] ?? null;
 	}
 
 	public function updateSchema( Schema $schema ): void {

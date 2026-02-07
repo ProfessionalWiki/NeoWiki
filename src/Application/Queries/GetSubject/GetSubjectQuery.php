@@ -59,7 +59,7 @@ readonly class GetSubjectQuery {
 		return new GetSubjectResponseItem(
 			id: $subject->id->text,
 			label: $subject->label->text,
-			schemaId: $subject->getSchemaId()->getText(),
+			schemaName: $subject->getSchemaName()->getText(),
 			statements: $this->arrayifyStatements( $subject->getStatements() ),
 			pageId: $pageIdentifiers?->getId()->id,
 			pageTitle: $pageIdentifiers?->getTitle(),
