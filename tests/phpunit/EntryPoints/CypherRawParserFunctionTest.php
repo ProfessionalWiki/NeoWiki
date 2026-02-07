@@ -9,9 +9,11 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherMap;
 use MediaWiki\Parser\Parser;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\KeywordCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\EntryPoints\CypherRawParserFunction;
 use ProfessionalWiki\NeoWiki\Persistence\QueryEngine;
+use RuntimeException;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\CypherRawParserFunction
@@ -112,6 +114,23 @@ class CypherRawParserFunctionTest extends TestCase {
 		$result = $parserFunction->handle( $this->createMockParser(), '  MATCH (n) RETURN n  ' );
 
 		$this->assertStringContainsString( '<pre><code class="json">', $result );
+	}
+
+	public function testValidatorExceptionReturnsError(): void {
+		$throwingValidator = new class implements CypherQueryValidator {
+			public function queryIsAllowed( string $cypher ): bool {
+				throw new RuntimeException( 'Neo4j connection refused' );
+			}
+		};
+
+		$parserFunction = new CypherRawParserFunction(
+			$this->createDummyQueryEngine(),
+			$throwingValidator
+		);
+
+		$result = $parserFunction->handle( $this->createMockParser(), 'MATCH (n) RETURN n' );
+
+		$this->assertStringContainsString( 'error', $result );
 	}
 
 	public function testOutputIsHTMLEscaped(): void {
