@@ -43,7 +43,7 @@ export class StoreStateLoader {
 			}
 
 			// TODO: we can just call await schemaStore.getOrFetchSchema().
-			// Shall we remvoe the getOrFetch methods from the Stores?
+			// Shall we remove the getOrFetch methods from the Stores?
 			// If we keep them, we can just as well use them here.
 			// Argument for removal: keep the Stores simple.
 		}

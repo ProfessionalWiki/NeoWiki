@@ -1,6 +1,6 @@
 # Graph Model
 
-NeoWiki stores a query-optimized projection of its data in a Neo4j graph database ([ADR 3](adr/003_Neo4j.md)).
+NeoWiki stores a query-optimized projection of its data in a Neo4j graph database ([ADR 3](adr/003_Neo4j_as_Graph_Database.md)).
 The source of truth for all data remains in MediaWiki revision slots ([ADR 4](adr/004_Use_Dedicated_Slot.md));
 the graph is a secondary store that enables efficient querying and relationship traversal.
 
@@ -93,7 +93,7 @@ Two uniqueness constraints are created on initialization:
 
 ## Related Documentation
 
-- [ADR 3: Neo4j as Graph Database](adr/003_Neo4j.md)
+- [ADR 3: Neo4j as Graph Database](adr/003_Neo4j_as_Graph_Database.md)
 - [ADR 4: Use Dedicated Slot](adr/004_Use_Dedicated_Slot.md) — primary storage in MediaWiki revision slots
 - [ADR 13: Restrict Neo4j Access](adr/013_Restrict_Neo4j_Access.md) — backend-only access to Neo4j
 - [SubjectFormat.md](SubjectFormat.md) — JSON format for Subject data in revision slots

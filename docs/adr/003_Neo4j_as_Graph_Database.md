@@ -31,6 +31,6 @@ Consider neo4j as part of NeoWiki's public API. This means consumers can directl
 * We do not need to develop and maintain our own persistence solution.
 * We can use existing tools and libraries to work with Neo4j.
 * Users will be able to use Cypher queries.
-* Various parts of the software will bind to Cyprher and Neo4j. Additional implementation and
+* Various parts of the software will bind to Cypher and Neo4j. Additional implementation and
   abstractions will need to be created to support other graph databases.
 * Potential out-of-the-box visualization options that can be integrated into NeoWiki.

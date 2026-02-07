@@ -111,7 +111,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 			newStringValueInstance = undefined;
 		}
 
-		// TODO: Maybe we should have an unified way to handle deep comparison of values
+		// TODO: Maybe we should have a unified way to handle deep comparison of values
 		// https://github.com/ProfessionalWiki/NeoWiki/pull/382#discussion_r2075610162
 		if ( JSON.stringify( internalValue.value ) !== JSON.stringify( newStringValueInstance ) ) {
 			internalValue.value = newStringValueInstance;

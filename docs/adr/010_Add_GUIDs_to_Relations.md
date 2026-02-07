@@ -8,8 +8,8 @@ Status: Accepted, ID format superseded by [ADR 014](014_Improved_ID_Format.md)
 
 In our domain model, relations do not currently have an ID.
 
-In early versions of the NeoWiki prototype had relation IDs to identify them for updates in Neo4j. However, we removed
-them because we figured we could just use the relations target subject ID and the relation type to identify a relation.
+Early versions of the NeoWiki prototype had relation IDs to identify them for updates in Neo4j. However, we removed
+them because we figured we could just use the relation's target subject ID and the relation type to identify a relation.
 This turns out to be insufficient for our use cases.
 
 We need to be able to have multiple relations of the same type to a single target subject. Example:
