@@ -15,7 +15,7 @@ class Subject {
 	public function __construct(
 		public readonly SubjectId $id,
 		public SubjectLabel $label,
-		private readonly SchemaName $schemaId,
+		private readonly SchemaName $schemaName,
 		private StatementList $statements,
 	) {
 	}
@@ -23,22 +23,22 @@ class Subject {
 	public static function createNew(
 		IdGenerator $guidGenerator,
 		SubjectLabel $label,
-		SchemaName $schemaId,
+		SchemaName $schemaName,
 		?StatementList $statements = null,
 	): self {
 		return new self(
 			id: SubjectId::createNew( $guidGenerator ),
 			label: $label,
-			schemaId: $schemaId,
+			schemaName: $schemaName,
 			statements: $statements ?? new StatementList( [] ),
 		);
 	}
 
-	public static function newSubject( SubjectId $id, SubjectLabel $label, SchemaName $schemaId ): self {
+	public static function newSubject( SubjectId $id, SubjectLabel $label, SchemaName $schemaName ): self {
 		return new self(
 			id: $id,
 			label: $label,
-			schemaId: $schemaId,
+			schemaName: $schemaName,
 			statements: new StatementList( [] ),
 		);
 	}
@@ -55,8 +55,8 @@ class Subject {
 		return $this->label;
 	}
 
-	public function getSchemaId(): SchemaName {
-		return $this->schemaId;
+	public function getSchemaName(): SchemaName {
+		return $this->schemaName;
 	}
 
 	public function getStatements(): StatementList {

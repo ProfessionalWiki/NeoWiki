@@ -17,7 +17,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class GetSchemaApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
-	private SchemaName $schemaId;
+	private SchemaName $schemaName;
 	private const SCHEMA_ID = 'TestSchema';
 
 	public function setUp(): void {

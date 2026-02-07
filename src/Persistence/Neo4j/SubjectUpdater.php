@@ -30,10 +30,10 @@ class SubjectUpdater {
 
 	public function updateSubject( Subject $subject, bool $isMainSubject ): void {
 		// TODO: we should make sure this schema retrieval is cached
-		$schema = $this->schemaRepository->getSchema( $subject->getSchemaId() );
+		$schema = $this->schemaRepository->getSchema( $subject->getSchemaName() );
 
 		if ( $schema === null ) {
-			$this->logger->warning( 'Schema not found: ' . $subject->getSchemaId()->getText() );
+			$this->logger->warning( 'Schema not found: ' . $subject->getSchemaName()->getText() );
 			return;
 		}
 
@@ -98,7 +98,7 @@ class SubjectUpdater {
 
 	private function updateNodeLabels( Subject $subject ): void {
 		$oldLabels = $this->getNodeLabels( $subject->id );
-		$newLabels = [ 'Subject', $subject->getSchemaId()->getText() ];
+		$newLabels = [ 'Subject', $subject->getSchemaName()->getText() ];
 
 		$labelsToRemove = array_diff( $oldLabels, $newLabels );
 
