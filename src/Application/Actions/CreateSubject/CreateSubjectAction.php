@@ -21,14 +21,14 @@ readonly class CreateSubjectAction {
 		private CreateSubjectPresenter $presenter,
 		private SubjectRepository $subjectRepository,
 		private IdGenerator $guidGenerator,
-		private SubjectAuthorizer $subjectActionAuthorizer,
+		private SubjectAuthorizer $subjectAuthorizer,
 		private StatementListPatcher $statementListPatcher,
 	) {
 	}
 
 	public function createSubject( CreateSubjectRequest $request ): void {
-		if ( ( $request->isMainSubject && !$this->subjectActionAuthorizer->canCreateMainSubject(
-				) ) || !$this->subjectActionAuthorizer->canCreateChildSubject() ) {
+		if ( ( $request->isMainSubject && !$this->subjectAuthorizer->canCreateMainSubject(
+				) ) || !$this->subjectAuthorizer->canCreateChildSubject() ) {
 			throw new \RuntimeException( 'You do not have the necessary permissions to create this subject' );
 		}
 
