@@ -271,7 +271,8 @@
 				"neowiki-schema-editor-error",
 				"neowiki-subject-editor-summary-default",
 				"neowiki-subject-editor-success",
-				"neowiki-subject-editor-error"
+				"neowiki-subject-editor-error",
+				"neowiki-subject-lookup-placeholder"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
