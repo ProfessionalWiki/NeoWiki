@@ -30,7 +30,6 @@
 		"@wikimedia/codex-icons": "1.14.0",
 		"@wmde/eslint-config-wikimedia-typescript": "^0.2.14",
 		"axios": "^1.7.7",
-		"dompurify": "^3.1.6",
 		"eslint": "^8.57.0",
 		"eslint-config-wikimedia": "^0.32.3",
 		"eslint-plugin-n": "^17.10.2",

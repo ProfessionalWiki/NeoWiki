@@ -1,7 +1,6 @@
 import { MultiStringProperty, PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
 import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
-import DOMPurify from 'dompurify';
 
 export interface UrlProperty extends MultiStringProperty {
 
@@ -55,6 +54,12 @@ export class UrlType extends BasePropertyType<UrlProperty, StringValue> {
 
 }
 
+const ALLOWED_PROTOCOLS: readonly string[] = [ 'http:', 'https:' ];
+
+function hasAllowedProtocol( url: URL ): boolean {
+	return ALLOWED_PROTOCOLS.includes( url.protocol );
+}
+
 export class UrlFormatter {
 
 	public constructor(
@@ -71,11 +76,16 @@ export class UrlFormatter {
 	public formatUrlAsHtml( urlString: string ): string {
 		try {
 			const url = new URL( urlString );
-			const sanitizedUrl = url.href;
-			const displayedUrl = this.urlStringToDisplayValue( urlString );
+
+			if ( !hasAllowedProtocol( url ) ) {
+				return escapeHtml( urlString );
+			}
+
+			const sanitizedUrl = escapeHtml( url.href );
+			const displayedUrl = escapeHtml( this.urlStringToDisplayValue( urlString ) );
 			return `<a href="${ sanitizedUrl }">${ displayedUrl }</a>`; // TODO: add CSS classes?
 		} catch ( _ ) {
-			return DOMPurify.sanitize( urlString ); // TODO: add styling and CSS classes?
+			return escapeHtml( urlString ); // TODO: add styling and CSS classes?
 		}
 	}
 
@@ -85,14 +95,28 @@ export class UrlFormatter {
 			const pathName = url.pathname === '/' ? '' : url.pathname;
 			return url.hostname + pathName + url.search + url.hash;
 		} catch ( _ ) {
-			return DOMPurify.sanitize( urlString );
+			return urlString;
 		}
 	}
 }
 
-export function isValidUrl( url: string ): boolean {
+function escapeHtml( text: string ): string {
+	return text
+		.replace( /&/g, '&amp;' )
+		.replace( /</g, '&lt;' )
+		.replace( />/g, '&gt;' )
+		.replace( /"/g, '&quot;' )
+		.replace( /'/g, '&#039;' );
+}
+
+export function isValidUrl( urlString: string ): boolean {
+	const protocolMatch = urlString.match( /^([a-z][a-z\d+.-]*):\/\//i );
+	if ( protocolMatch && !ALLOWED_PROTOCOLS.includes( protocolMatch[ 1 ].toLowerCase() + ':' ) ) {
+		return false;
+	}
+
 	const pattern = new RegExp(
-		'^(https?://)?' +
+		'^([a-z][a-z\\d+.-]*://)?' +
 		'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' +
 		'((\\d{1,3}\\.){3}\\d{1,3})|' +
 		'(localhost))' +
@@ -103,7 +127,7 @@ export function isValidUrl( url: string ): boolean {
 		'i',
 	);
 
-	return pattern.test( url );
+	return pattern.test( urlString );
 }
 
 type UrlPropertyAttributes = Omit<Partial<UrlProperty>, 'name'> & {
