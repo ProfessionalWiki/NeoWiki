@@ -43,7 +43,7 @@ need to be kept in sync. (Aside: we could have the validation just in PHP and ha
 API endpoint, but this comes with usability downsides we wish to avoid.)
 
 If there are substantial users of the REST APIs that do not use our TypeScript library,
-then we may need to add backend validation. This seems plausable for ECHOLOT, both in the form
+then we may need to add backend validation. This seems plausible for ECHOLOT, both in the form
 of external applications (for instance, for import) and for the end users of the software.
 
 ## Scenarios to Consider
@@ -94,7 +94,7 @@ Pros:
 * API users can potentially validate Subjects without editing via a new dedicated endpoint
 
 Cons:
-* Need to figure out those TDB details
+* Need to figure out those TBD details
 * Cost of implementation and cost of carry
     * Validation system in PHP
     * Strict-mode or similar for Subject writing APIs with validation status responses

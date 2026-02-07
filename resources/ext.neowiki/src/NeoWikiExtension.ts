@@ -72,7 +72,7 @@ export class NeoWikiExtension {
 			valueEditor: NumberInput,
 			attributesEditor: NumberAttributesEditor,
 			label: 'neowiki-property-type-number',
-			icon: cdxIconListNumbered, // TOOD: Add a custom icon
+			icon: cdxIconListNumbered, // TODO: Add a custom icon
 		} );
 
 		registry.registerType( RelationType.typeName, {

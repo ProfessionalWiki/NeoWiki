@@ -31,9 +31,9 @@ We do not provide backwards compatibility with or migration for the old format s
 ### Staying UUID Version 7
 
 * Least work (no change needed)
-* IDs are harder to copy to due to the hyphens
+* IDs are harder to copy due to the hyphens
 * More storage is used due to unnecessary ID length
-* IDs might offend some peoples' sense of aesthetics
+* IDs might offend some people's sense of aesthetics
 
 ### Using Standard Nanoid
 
