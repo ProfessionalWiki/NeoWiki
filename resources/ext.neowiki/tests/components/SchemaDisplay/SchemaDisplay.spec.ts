@@ -1,4 +1,4 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { ref } from 'vue';
@@ -136,5 +136,20 @@ describe( 'SchemaDisplay', () => {
 		await wrapper.findComponent( SchemaDisplayHeader ).vm.$emit( 'edit' );
 
 		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( true );
+	} );
+
+	it( 'blurs active element when dialog closes', async () => {
+		canEditSchemaRef.value = true;
+
+		const wrapper = mountComponent( newSchema() );
+		await wrapper.findComponent( SchemaDisplayHeader ).vm.$emit( 'edit' );
+
+		const blurSpy = vi.fn();
+		vi.spyOn( document, 'activeElement', 'get' ).mockReturnValue( { blur: blurSpy } as unknown as Element );
+
+		await wrapper.findComponent( SchemaEditorDialog ).vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		expect( blurSpy ).toHaveBeenCalled();
 	} );
 } );
