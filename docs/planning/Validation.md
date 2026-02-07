@@ -4,7 +4,7 @@ Written 2026-01-15
 
 ## Current Status and Context
 
-In [ADR 12: Backend Validation](adr/012_Backend_Validation.md) we decided to validate in the frontend only.
+In [ADR 12: Backend Validation](../adr/012_Backend_Validation.md) we decided to validate in the frontend only.
 With ECHOLOT, the scope of the project changed, and we have to revisit this decision.
 
 All changes to Subjects and Schemas go through the REST API. This includes changes made
@@ -25,7 +25,7 @@ the TypeScript library provides a UI component to display Subjects and Schemas.
 
 Clients not using the TypeScript library can still access the Schemas via the REST API.
 The Schemas are returned as JSON in a format optimized for our UIs and validation logic.
-We decided against using JSON Schema for Schemas internally in [ADR 9: Move Away from JSON Schema](adr/009_Move_Away_from_JSON_Schema.md)
+We decided against using JSON Schema for Schemas internally in [ADR 9: Move Away from JSON Schema](../adr/009_Move_Away_from_JSON_Schema.md)
 because this creates friction and complexity, while we can still easily create a JSON Schema
 from the internal representation for consumers that wish for such an API.
 
