@@ -101,5 +101,8 @@
 
 	"neowiki-subject-editor-summary-default": "Update subject via NeoWiki UI",
 	"neowiki-subject-editor-success": "Updated $1",
-	"neowiki-subject-editor-error": "Failed to update $1."
+	"neowiki-subject-editor-error": "Failed to update $1.",
+
+	"neowiki-subject-lookup-placeholder": "Search for a subject",
+	"neowiki-subject-lookup-no-results": "No subjects found"
 }
