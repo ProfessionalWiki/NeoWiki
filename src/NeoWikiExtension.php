@@ -51,7 +51,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdaterFactory;
@@ -250,7 +250,7 @@ class NeoWikiExtension {
 	}
 
 	private function getPageIdentifiersLookup(): PageIdentifiersLookup {
-		return new Neo4JPageIdentifiersLookup( $this->getReadOnlyNeo4jClient() );
+		return new Neo4jPageIdentifiersLookup( $this->getReadOnlyNeo4jClient() );
 	}
 
 	public function newDeleteSubjectAction( Authority $authority ): DeleteSubjectAction {
