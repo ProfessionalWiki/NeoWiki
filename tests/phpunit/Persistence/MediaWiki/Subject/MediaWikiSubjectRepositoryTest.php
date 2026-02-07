@@ -16,7 +16,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository
- * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jPageIdentifiersLookup
  * @group Database
  */
 class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
