@@ -97,11 +97,18 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 			TestSubject::build( id: 'sTestSLL1111118', label: new SubjectLabel( 'Apple Inc.' ), schemaId: new SchemaName( 'Company' ) ),
 		) );
 
-		$results = $this->getSubjectLabelsMatching( 'Apple', 10, [ 'Recipe', 'Company' ] );
+		$results = $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, 'Recipe' );
 
-		$this->assertCount( 2, $results );
+		$this->assertCount( 1, $results );
 		$this->assertContainsEquals( new SubjectLabelLookupResult( 'sTestSLL1111116', 'Apple Pie' ), $results );
-		$this->assertContainsEquals( new SubjectLabelLookupResult( 'sTestSLL1111118', 'Apple Inc.' ), $results );
+	}
+
+	public function testDoesNotReturnSubjectsFromOtherSchemas(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: 'sTestSLL1111119', label: new SubjectLabel( 'Apple Tree' ), schemaId: new SchemaName( 'Plant' ) ),
+		) );
+
+		$this->assertSame( [], $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, 'Recipe' ) );
 	}
 
 	private function saveSubjects( SubjectMap $subjects ): void {
@@ -123,8 +130,8 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function getSubjectLabelsMatching( string $search, int $limit = 10, array $schemas = [] ): array {
-		return $this->newLookup()->getSubjectLabelsMatching( $search, $limit, $schemas );
+	private function getSubjectLabelsMatching( string $search, int $limit = 10 ): array {
+		return $this->newLookup()->getSubjectLabelsMatching( $search, $limit, TestSubject::DEFAULT_SCHEMA_ID );
 	}
 
 	private function newLookup( ClientInterface $client = null ): Neo4jSubjectLabelLookup {

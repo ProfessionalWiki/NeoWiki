@@ -13,7 +13,7 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class GetSubjectLabelsApi extends SimpleHandler {
 
-	public function run( string $search ): Response {
+	public function run(): Response {
 		$params = $this->getValidatedParams();
 
 		$subjects = array_map(
@@ -24,9 +24,9 @@ class GetSubjectLabelsApi extends SimpleHandler {
 				];
 			},
 			NeoWikiExtension::getInstance()->getSubjectLabelLookup()->getSubjectLabelsMatching(
-				$search,
+				$params['search'],
 				$params['limit'],
-				$params['schemas'],
+				$params['schema'],
 			)
 		);
 
@@ -40,22 +40,21 @@ class GetSubjectLabelsApi extends SimpleHandler {
 	public function getParamSettings(): array {
 		return [
 			'search' => [
-				self::PARAM_SOURCE => 'path',
+				self::PARAM_SOURCE => 'query',
 				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => false
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_DEFAULT => '',
+			],
+			'schema' => [
+				self::PARAM_SOURCE => 'query',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => true,
 			],
 			'limit' => [
 				self::PARAM_SOURCE => 'query',
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_DEFAULT => 10,
-			],
-			'schemas' => [
-				self::PARAM_SOURCE => 'query',
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_ISMULTI => true,
-				ParamValidator::PARAM_REQUIRED => false,
-				ParamValidator::PARAM_DEFAULT => [],
 			],
 		];
 	}

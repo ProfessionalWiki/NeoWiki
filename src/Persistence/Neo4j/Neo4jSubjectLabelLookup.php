@@ -20,32 +20,27 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 	/**
 	 * @return SubjectLabelLookupResult[]
 	 */
-	public function getSubjectLabelsMatching( string $search, int $limit, array $schemaNames = [] ): array {
+	public function getSubjectLabelsMatching( string $search, int $limit, string $schemaName ): array {
 		if ( trim( $search ) === '' ) {
 			return [];
 		}
 
 		return $this->client->readTransaction(
-			function ( TransactionInterface $transaction ) use ( $search, $limit, $schemaNames ): array {
-				$schemaFilter = '';
-				if ( $schemaNames !== [] ) {
-					$schemaFilter = 'AND any(label IN labels(n) WHERE label IN $schemaNames)';
-				}
-
+			function ( TransactionInterface $transaction ) use ( $search, $limit, $schemaName ): array {
 				/**
 				 * @var SummarizedResult $result
 				 */
 				$result = $transaction->run(
 					"MATCH (n:Subject)
 					 WHERE toLower(n.name) STARTS WITH toLower(\$search)
-					 $schemaFilter
+					 AND \$schemaName IN labels(n)
 					 RETURN n.id AS id, n.name AS name
 					 ORDER BY n.name
 					 LIMIT \$limit",
 					[
 						'search' => $search,
 						'limit' => (int)$limit,
-						'schemaNames' => $schemaNames
+						'schemaName' => $schemaName
 					]
 				);
 
