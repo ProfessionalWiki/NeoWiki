@@ -16,6 +16,6 @@ const values = computed( () => {
 	if ( props.value.type !== ValueType.String ) {
 		return [ '' ];
 	}
-	return props.value.parts.filter( ( url ) => url.trim() !== '' );
+	return props.value.parts.filter( ( part ) => part.trim() !== '' );
 } );
 </script>

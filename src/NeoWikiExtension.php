@@ -27,6 +27,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\QueryStore;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
@@ -39,9 +40,10 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\PatchSubjectApi;
-use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectActionAuthorizer;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
@@ -55,6 +57,7 @@ use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\ExplainCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\KeywordCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdaterFactory;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
@@ -223,8 +226,8 @@ class NeoWikiExtension {
 		return new CreateSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			guidGenerator: $this->getIdGenerator(),
-			subjectActionAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			idGenerator: $this->getIdGenerator(),
+			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
 			statementListPatcher: $this->getStatementListPatcher()
 		);
 	}
@@ -258,18 +261,18 @@ class NeoWikiExtension {
 	}
 
 	private function getPageIdentifiersLookup(): PageIdentifiersLookup {
-		return new Neo4JPageIdentifiersLookup( $this->getReadOnlyNeo4jClient() );
+		return new Neo4jPageIdentifiersLookup( $this->getReadOnlyNeo4jClient() );
 	}
 
 	public function newDeleteSubjectAction( Authority $authority ): DeleteSubjectAction {
 		return new DeleteSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
-			subjectActionAuthorizer: $this->newSubjectAuthorizer( $authority )
+			subjectAuthorizer: $this->newSubjectAuthorizer( $authority )
 		);
 	}
 
 	public function newSubjectAuthorizer( Authority $authority ): SubjectAuthorizer {
-		return new AuthorityBasedSubjectActionAuthorizer(
+		return new AuthorityBasedSubjectAuthorizer(
 			authority: $authority
 		);
 	}
@@ -307,6 +310,12 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function getSubjectLabelLookup(): SubjectLabelLookup {
+		return new Neo4jSubjectLabelLookup(
+			client: $this->getReadOnlyNeo4jClient()
+		);
+	}
+
 	public function getDbConnection(): IDatabase {
 		$db = MediaWikiServices::getInstance()
 			->getDBLoadBalancerFactory()
@@ -331,7 +340,7 @@ class NeoWikiExtension {
 	public function newPatchSubjectAction( Authority $authority ): PatchSubjectAction {
 		return new PatchSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
-			subjectActionAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
 			patcher: $this->getStatementListPatcher()
 		);
 	}
@@ -368,6 +377,10 @@ class NeoWikiExtension {
 
 	public static function newGetSchemaNamesApi(): GetSchemaNamesApi {
 		return new GetSchemaNamesApi();
+	}
+
+	public static function newGetSubjectLabelsApi(): GetSubjectLabelsApi {
+		return new GetSubjectLabelsApi();
 	}
 
 	private static function getCsrfValidator(): CsrfValidator {

@@ -23,7 +23,7 @@ Including:
 ## Consequences
 
 * We can simplify our code dealing with schemas, especially code related to handling of multiple values.
-* We can no longer use standard JSON-schema-bases validators to validate Subjects. Then again, we anticipated those
+* We can no longer use standard JSON-schema-based validators to validate Subjects. Then again, we anticipated those
   would not have sufficed anyway.
 * We no longer expose schemas in a standard format. If such a requirement arises we can still implement it via a
   web API that converts our custom schema format to JSON schema.

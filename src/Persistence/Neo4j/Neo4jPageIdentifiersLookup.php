@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-class Neo4JPageIdentifiersLookup implements PageIdentifiersLookup {
+class Neo4jPageIdentifiersLookup implements PageIdentifiersLookup {
 
 	public function __construct(
 		private ClientInterface $client,

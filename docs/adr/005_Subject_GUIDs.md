@@ -10,7 +10,7 @@ We need unique identifiers for Subjects.
 
 Semantic MediaWiki uses page titles. This is not viable since we support multiple Subjects per page.
 
-Wikibase use incrementing numeric IDs. It generates those by storing the current highest ID in
+Wikibase uses incrementing numeric IDs. It generates those by storing the current highest ID in
 database table and doing a query to generate a new ID. This means IDs can only be generated with
 access to the database, and that conflicts occur when transferring data between wikis.
 

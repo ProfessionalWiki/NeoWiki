@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
@@ -19,9 +19,9 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4JPageIdentifiersLookup
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jPageIdentifiersLookup
  */
-class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
+class Neo4jPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 
 	private const string GUID_1 = 'sTestNPL1111111';
 	private const string GUID_2 = 'sTestNPL1111112';
@@ -38,8 +38,8 @@ class Neo4JPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $this->newLookup()->getPageIdOfSubject( new SubjectId( self::GUID_404 ) ) );
 	}
 
-	private function newLookup( ClientInterface $client = null ): Neo4JPageIdentifiersLookup {
-		return new Neo4JPageIdentifiersLookup(
+	private function newLookup( ClientInterface $client = null ): Neo4jPageIdentifiersLookup {
+		return new Neo4jPageIdentifiersLookup(
 			client: $client ?? $this->getClient()
 		);
 	}

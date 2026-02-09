@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
-use Ramsey\Uuid\Uuid;
 
 readonly class RelationId {
 

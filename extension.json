@@ -136,6 +136,11 @@
 			"path": "/neowiki/v0/schema-names/{search}",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaNamesApi"
+		},
+		{
+			"path": "/neowiki/v0/subject-labels",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectLabelsApi"
 		}
 	],
 
@@ -237,6 +242,7 @@
 				"neowiki-schema-editor-new-property",
 				"neowiki-schema-editor-delete-property",
 				"neowiki-schema-editor-optional",
+				"neowiki-schema-editor-description",
 				"neowiki-editing-schema",
 				"neowiki-schema-label",
 				"neowiki-subject-creator-title",

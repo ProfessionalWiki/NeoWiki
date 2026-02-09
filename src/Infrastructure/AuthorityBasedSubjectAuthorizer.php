@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Infrastructure;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 
-class AuthorityBasedSubjectActionAuthorizer implements SubjectAuthorizer {
+class AuthorityBasedSubjectAuthorizer implements SubjectAuthorizer {
 
 	public function __construct(
 		private Authority $authority
