@@ -25,23 +25,8 @@ import { ref, watch } from 'vue';
 import { CdxLookup } from '@wikimedia/codex';
 import type { MenuItemData, ValidationStatusType } from '@wikimedia/codex';
 import type { Icon } from '@wikimedia/codex-icons';
-
-interface StubSubject {
-	id: string;
-	label: string;
-	schema: string;
-}
-
-const STUB_SUBJECTS: StubSubject[] = [
-	{ id: 's1demo1aaaaaaa1', label: 'ACME Inc.', schema: 'Company' },
-	{ id: 's1demo5sssssss1', label: 'Professional Wiki GmbH', schema: 'Company' },
-	{ id: 's1demo1aaaaaaa2', label: 'Foo', schema: 'Product' },
-	{ id: 's1demo1aaaaaaa3', label: 'Bar', schema: 'Product' },
-	{ id: 's1demo1aaaaaaa4', label: 'Baz', schema: 'Product' },
-	{ id: 's1demo4sssssss1', label: 'NeoWiki', schema: 'Product' },
-	{ id: 's1demo6sssssss1', label: 'ProWiki', schema: 'Product' },
-	{ id: 's1demo2sssssss1', label: 'Berlin', schema: 'City' }
-];
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { SubjectId } from '@/domain/SubjectId.ts';
 
 interface SubjectLookupProps {
 	selected: string | null;
@@ -62,37 +47,46 @@ const props = withDefaults(
 
 const emit = defineEmits<{
 	'update:selected': [ value: string | null ];
-	'update:inputText': [ value: string ];
 	'blur': [];
 }>();
 
-function resolveLabel( id: string | null ): string {
+const subjectStore = useSubjectStore();
+
+async function resolveLabel( id: string | null ): Promise<string> {
 	if ( !id ) {
 		return '';
 	}
-	const stub = STUB_SUBJECTS.find( ( s ) => s.id === id );
-	return stub ? stub.label : id;
+
+	try {
+		const subject = await subjectStore.getOrFetchSubject( new SubjectId( id ) );
+		return subject?.getLabel() ?? id;
+	} catch {
+		return id;
+	}
 }
 
 const selectedSubject = ref<string | null>( props.selected );
-const inputText = ref<string | number>( resolveLabel( props.selected ) );
+const inputText = ref<string | number>( '' );
 const menuItems = ref<MenuItemData[]>( [] );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 const searchActive = ref( false );
+let requestSequence = 0;
 
-watch( () => props.selected, ( newSelected ) => {
+resolveLabel( props.selected ).then( ( label ) => {
+	inputText.value = label;
+} );
+
+watch( () => props.selected, async ( newSelected ) => {
 	selectedSubject.value = newSelected;
 
 	if ( newSelected !== null || !searchActive.value ) {
-		inputText.value = resolveLabel( newSelected );
+		inputText.value = await resolveLabel( newSelected );
 	}
 
 	searchActive.value = false;
 } );
 
-function onLookupInput( value: string ): void {
-	emit( 'update:inputText', value );
-
+async function onLookupInput( value: string ): Promise<void> {
 	if ( !value ) {
 		menuItems.value = [];
 		searchActive.value = false;
@@ -100,17 +94,26 @@ function onLookupInput( value: string ): void {
 	}
 
 	searchActive.value = true;
+	const currentSequence = ++requestSequence;
 
-	const query = value.toLowerCase();
-	menuItems.value = STUB_SUBJECTS
-		.filter( ( subject ) =>
-			subject.schema === props.targetSchema &&
-			subject.label.toLowerCase().includes( query )
-		)
-		.map( ( subject ) => ( {
-			label: subject.label,
-			value: subject.id
+	try {
+		const results = await subjectStore.getSubjectLabels( value, props.targetSchema );
+
+		if ( currentSequence !== requestSequence ) {
+			return;
+		}
+
+		menuItems.value = results.map( ( result ) => ( {
+			label: result.label,
+			value: result.id
 		} ) );
+	} catch {
+		if ( currentSequence !== requestSequence ) {
+			return;
+		}
+
+		menuItems.value = [];
+	}
 }
 
 function onSubjectSelected( subjectId: string | null ): void {

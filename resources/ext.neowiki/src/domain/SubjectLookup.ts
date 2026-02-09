@@ -1,9 +1,16 @@
 import type { Subject } from '@/domain/Subject';
 import type { SubjectId } from '@/domain/SubjectId';
 
+export interface SubjectLabelResult {
+	id: string;
+	label: string;
+}
+
 export interface SubjectLookup {
 
 	getSubject( id: SubjectId ): Promise<Subject>;
+
+	getSubjectLabels( search: string, schema: string ): Promise<SubjectLabelResult[]>;
 
 }
 
@@ -22,6 +29,10 @@ export class InMemorySubjectLookup implements SubjectLookup {
 			throw new Error( `Subject with id ${ id.text } not found` );
 		}
 		return this.subjects.get( id.text ) as Subject;
+	}
+
+	public async getSubjectLabels( _search: string, _schema: string ): Promise<SubjectLabelResult[]> {
+		return [];
 	}
 
 	public clearSubjects(): void {

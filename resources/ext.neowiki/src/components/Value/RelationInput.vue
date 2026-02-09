@@ -1,8 +1,8 @@
 <template>
 	<CdxField
 		:is-fieldset="true"
-		:messages="fieldMessages"
-		:status="fieldMessages.error && !props.property.multiple ? 'error' : 'default'"
+		:messages="displayedFieldMessages"
+		:status="fieldStatus"
 		:optional="props.property.required === false"
 	>
 		<template #label>
@@ -40,7 +40,9 @@
 			:selected="selectedId"
 			:target-schema="props.property.targetSchema"
 			:start-icon="startIcon"
+			:status="fieldStatus"
 			@update:selected="onSingleSelectionChanged"
+			@blur="onSingleBlur"
 		/>
 	</CdxField>
 </template>
@@ -71,6 +73,24 @@ const emit = defineEmits<ValueInputEmits>();
 const internalValue = ref<RelationValue | undefined>( undefined );
 const fieldMessages = ref<ValidationMessages>( {} );
 const inputMessages = ref<ValidationMessages[]>( [] );
+const touched = ref( false );
+
+const displayedFieldMessages = computed( (): ValidationMessages => {
+	if ( props.property.multiple || touched.value ) {
+		return fieldMessages.value;
+	}
+	return {};
+} );
+
+const fieldStatus = computed( (): 'error' | 'default' => {
+	if ( props.property.multiple ) {
+		return 'default';
+	}
+	if ( touched.value && fieldMessages.value.error ) {
+		return 'error';
+	}
+	return 'default';
+} );
 
 const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( RelationType.typeName );
 
@@ -132,6 +152,10 @@ function onSingleSelectionChanged( id: string | null ): void {
 
 	validateAndUpdateMessages();
 	emit( 'update:modelValue', newRelationValue );
+}
+
+function onSingleBlur(): void {
+	touched.value = true;
 }
 
 function onSelectionsChanged( ids: ( string | null )[] ): void {

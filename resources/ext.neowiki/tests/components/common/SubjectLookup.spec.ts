@@ -1,34 +1,65 @@
-import { mount, VueWrapper } from '@vue/test-utils';
-import { nextTick } from 'vue';
-import { describe, expect, it, vi } from 'vitest';
+import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SubjectLookup from '@/components/common/SubjectLookup.vue';
+import { createPinia, setActivePinia } from 'pinia';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { CdxLookup } from '@wikimedia/codex';
 import { createI18nMock } from '../../VueTestHelpers.ts';
+import { Subject } from '@/domain/Subject.ts';
+import { SubjectId } from '@/domain/SubjectId.ts';
+import { StatementList } from '@/domain/StatementList.ts';
 
 const $i18n = createI18nMock();
 
-function createWrapper( props: Partial<InstanceType<typeof SubjectLookup>['$props']> = {} ): VueWrapper {
-	return mount( SubjectLookup, {
-		props: {
-			selected: null,
-			targetSchema: 'Product',
-			...props,
-		},
-		global: {
-			mocks: { $i18n },
-			stubs: { CdxLookup: true },
-		},
-	} );
-}
-
 describe( 'SubjectLookup', () => {
+	let pinia: ReturnType<typeof createPinia>;
+	let subjectStore: any;
 
-	it( 'filters stub subjects by targetSchema when input changes', async () => {
+	function createWrapper( props: Partial<InstanceType<typeof SubjectLookup>['$props']> = {} ): VueWrapper {
+		return mount( SubjectLookup, {
+			props: {
+				selected: null,
+				targetSchema: 'Product',
+				...props,
+			},
+			global: {
+				mocks: { $i18n },
+				plugins: [ pinia ],
+				stubs: { CdxLookup: true },
+			},
+		} );
+	}
+
+	beforeEach( () => {
+		pinia = createPinia();
+		setActivePinia( pinia );
+
+		subjectStore = useSubjectStore();
+		subjectStore.getSubjectLabels = vi.fn().mockResolvedValue( [] );
+		subjectStore.getOrFetchSubject = vi.fn().mockRejectedValue( new Error( 'not found' ) );
+	} );
+
+	it( 'calls getSubjectLabels with input and targetSchema', async () => {
+		const wrapper = createWrapper( { targetSchema: 'Company' } );
+		const lookup = wrapper.findComponent( CdxLookup );
+
+		lookup.vm.$emit( 'input', 'acme' );
+		await flushPromises();
+
+		expect( subjectStore.getSubjectLabels ).toHaveBeenCalledWith( 'acme', 'Company' );
+	} );
+
+	it( 'populates menu items from search results', async () => {
+		subjectStore.getSubjectLabels.mockResolvedValue( [
+			{ id: 's1demo1aaaaaaa1', label: 'ACME Inc.' },
+			{ id: 's1demo5sssssss1', label: 'Professional Wiki GmbH' },
+		] );
+
 		const wrapper = createWrapper( { targetSchema: 'Company' } );
 		const lookup = wrapper.findComponent( CdxLookup );
 
 		lookup.vm.$emit( 'input', 'a' );
-		await nextTick();
+		await flushPromises();
 
 		expect( lookup.props( 'menuItems' ) ).toEqual( [
 			{ label: 'ACME Inc.', value: 's1demo1aaaaaaa1' },
@@ -36,28 +67,44 @@ describe( 'SubjectLookup', () => {
 		] );
 	} );
 
-	it( 'filters by search query case-insensitively', async () => {
-		const wrapper = createWrapper( { targetSchema: 'Product' } );
-		const lookup = wrapper.findComponent( CdxLookup );
-
-		lookup.vm.$emit( 'input', 'neo' );
-		await nextTick();
-
-		expect( lookup.props( 'menuItems' ) ).toEqual( [
-			{ label: 'NeoWiki', value: 's1demo4sssssss1' },
-		] );
-	} );
-
 	it( 'clears menu items when input is empty', async () => {
-		const wrapper = createWrapper( { targetSchema: 'Product' } );
+		subjectStore.getSubjectLabels.mockResolvedValue( [
+			{ id: 's1demo1aaaaaaa2', label: 'Foo' },
+		] );
+
+		const wrapper = createWrapper();
 		const lookup = wrapper.findComponent( CdxLookup );
 
 		lookup.vm.$emit( 'input', 'Foo' );
-		await nextTick();
+		await flushPromises();
 		expect( lookup.props( 'menuItems' ) ).toHaveLength( 1 );
 
 		lookup.vm.$emit( 'input', '' );
-		await nextTick();
+		await flushPromises();
+		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
+	} );
+
+	it( 'shows empty results when API returns no matches', async () => {
+		subjectStore.getSubjectLabels.mockResolvedValue( [] );
+
+		const wrapper = createWrapper();
+		const lookup = wrapper.findComponent( CdxLookup );
+
+		lookup.vm.$emit( 'input', 'zzzzz' );
+		await flushPromises();
+
+		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
+	} );
+
+	it( 'shows empty results when API call fails', async () => {
+		subjectStore.getSubjectLabels.mockRejectedValue( new Error( 'Network error' ) );
+
+		const wrapper = createWrapper();
+		const lookup = wrapper.findComponent( CdxLookup );
+
+		lookup.vm.$emit( 'input', 'test' );
+		await flushPromises();
+
 		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
 	} );
 
@@ -79,18 +126,61 @@ describe( 'SubjectLookup', () => {
 		expect( wrapper.emitted( 'blur' ) ).toHaveLength( 1 );
 	} );
 
-	it( 'displays label for a pre-selected subject', () => {
-		const wrapper = createWrapper( { selected: 's1demo1aaaaaaa1' } );
-		const lookup = wrapper.findComponent( CdxLookup );
+	it( 'displays label for a pre-selected subject', async () => {
+		const subject = new Subject(
+			new SubjectId( 's1demo1aaaaaaa1' ),
+			'ACME Inc.',
+			'Company',
+			new StatementList( [] ),
+		);
+		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue( subject );
 
+		const wrapper = createWrapper( { selected: 's1demo1aaaaaaa1' } );
+		await flushPromises();
+
+		const lookup = wrapper.findComponent( CdxLookup );
 		expect( lookup.props( 'inputValue' ) ).toBe( 'ACME Inc.' );
 	} );
 
-	it( 'falls back to raw SubjectId when selected subject is not in stub data', () => {
+	it( 'falls back to raw SubjectId when subject lookup fails', async () => {
+		subjectStore.getOrFetchSubject = vi.fn().mockRejectedValue( new Error( 'not found' ) );
+
 		const wrapper = createWrapper( { selected: 'sABCDEFGHJKLMNP' } );
+		await flushPromises();
+
+		const lookup = wrapper.findComponent( CdxLookup );
+		expect( lookup.props( 'inputValue' ) ).toBe( 'sABCDEFGHJKLMNP' );
+	} );
+
+	it( 'discards stale search results when a newer request completes first', async () => {
+		let resolveFirst: ( value: { id: string; label: string }[] ) => void;
+		const firstCallPromise = new Promise<{ id: string; label: string }[]>( ( resolve ) => {
+			resolveFirst = resolve;
+		} );
+
+		subjectStore.getSubjectLabels = vi.fn()
+			.mockReturnValueOnce( firstCallPromise )
+			.mockResolvedValueOnce( [
+				{ id: 's1demo5sssssss1', label: 'Second Result' },
+			] );
+
+		const wrapper = createWrapper( { targetSchema: 'Company' } );
 		const lookup = wrapper.findComponent( CdxLookup );
 
-		expect( lookup.props( 'inputValue' ) ).toBe( 'sABCDEFGHJKLMNP' );
+		lookup.vm.$emit( 'input', 'first' );
+		lookup.vm.$emit( 'input', 'second' );
+		await flushPromises();
+
+		expect( lookup.props( 'menuItems' ) ).toEqual( [
+			{ label: 'Second Result', value: 's1demo5sssssss1' },
+		] );
+
+		resolveFirst!( [ { id: 's1demo1aaaaaaa1', label: 'Stale Result' } ] );
+		await flushPromises();
+
+		expect( lookup.props( 'menuItems' ) ).toEqual( [
+			{ label: 'Second Result', value: 's1demo5sssssss1' },
+		] );
 	} );
 
 	it( 'exposes focus method', () => {
@@ -105,6 +195,7 @@ describe( 'SubjectLookup', () => {
 			},
 			global: {
 				mocks: { $i18n },
+				plugins: [ pinia ],
 				stubs: { CdxLookup: CdxLookupStub },
 			},
 		} );
@@ -115,64 +206,6 @@ describe( 'SubjectLookup', () => {
 		( wrapper.vm as any ).focus();
 
 		expect( focusSpy ).toHaveBeenCalled();
-	} );
-
-	it( 'returns no results when targetSchema does not match any stub subjects', async () => {
-		const wrapper = createWrapper( { targetSchema: 'NonExistent' } );
-		const lookup = wrapper.findComponent( CdxLookup );
-
-		lookup.vm.$emit( 'input', 'ACME' );
-		await nextTick();
-
-		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
-	} );
-
-	it( 'returns no results when query does not match any stub subjects', async () => {
-		const wrapper = createWrapper();
-		const lookup = wrapper.findComponent( CdxLookup );
-
-		lookup.vm.$emit( 'input', 'zzzzz' );
-		await nextTick();
-
-		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
-	} );
-
-	it( 'emits update:inputText when user types', async () => {
-		const wrapper = createWrapper();
-		const lookup = wrapper.findComponent( CdxLookup );
-
-		lookup.vm.$emit( 'input', 'zzzzz' );
-		await nextTick();
-
-		expect( wrapper.emitted( 'update:inputText' ) ).toEqual( [ [ 'zzzzz' ] ] );
-	} );
-
-	it( 'emits update:inputText with empty string when input is cleared', async () => {
-		const wrapper = createWrapper();
-		const lookup = wrapper.findComponent( CdxLookup );
-
-		lookup.vm.$emit( 'input', 'foo' );
-		await nextTick();
-
-		lookup.vm.$emit( 'input', '' );
-		await nextTick();
-
-		expect( wrapper.emitted( 'update:inputText' ) ).toEqual( [ [ 'foo' ], [ '' ] ] );
-	} );
-
-	it( 'resets search state when a subject is selected', async () => {
-		const wrapper = createWrapper( { targetSchema: 'Product' } );
-		const lookup = wrapper.findComponent( CdxLookup );
-
-		lookup.vm.$emit( 'input', 'Foo' );
-		await nextTick();
-		expect( lookup.props( 'menuItems' ) ).toHaveLength( 1 );
-
-		lookup.vm.$emit( 'update:selected', 's1demo1aaaaaaa2' );
-		lookup.vm.$emit( 'input', '' );
-		await nextTick();
-
-		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
 	} );
 
 } );

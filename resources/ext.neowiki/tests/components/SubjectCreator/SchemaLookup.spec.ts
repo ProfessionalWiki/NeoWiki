@@ -80,6 +80,38 @@ describe( 'SchemaLookup', () => {
 		] );
 	} );
 
+	it( 'discards stale search results when a newer request completes first', async () => {
+		let resolveFirst: ( value: string[] ) => void;
+		const firstCallPromise = new Promise<string[]>( ( resolve ) => {
+			resolveFirst = resolve;
+		} );
+
+		schemaStore.searchAndFetchMissingSchemas = vi.fn()
+			.mockReturnValueOnce( firstCallPromise )
+			.mockResolvedValueOnce( [ 'SecondSchema' ] );
+
+		schemaStore.schemas.set( 'FirstSchema', new Schema( 'FirstSchema', 'Stale', new PropertyDefinitionList( [] ) ) );
+		schemaStore.schemas.set( 'SecondSchema', new Schema( 'SecondSchema', 'Fresh', new PropertyDefinitionList( [] ) ) );
+
+		const wrapper = mountComponent();
+		const lookup = wrapper.findComponent( CdxLookup );
+
+		lookup.vm.$emit( 'input', 'first' );
+		lookup.vm.$emit( 'input', 'second' );
+		await flushPromises();
+
+		expect( lookup.props( 'menuItems' ) ).toEqual( [
+			{ label: 'SecondSchema', value: 'SecondSchema', description: 'Fresh' },
+		] );
+
+		resolveFirst!( [ 'FirstSchema' ] );
+		await flushPromises();
+
+		expect( lookup.props( 'menuItems' ) ).toEqual( [
+			{ label: 'SecondSchema', value: 'SecondSchema', description: 'Fresh' },
+		] );
+	} );
+
 	it( 'exposes focus method', () => {
 		const CdxLookupStub = {
 			template: '<div><input /></div>',
