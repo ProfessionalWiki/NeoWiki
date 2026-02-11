@@ -14,6 +14,8 @@
 	"neowiki-cypher-raw-error-write-query": "Error message shown when a write query is rejected by the cypher_raw parser function.",
 	"neowiki-cypher-raw-error-query-failed": "Error message shown when Cypher query execution fails. $1 is the exception message.",
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
+	"neowiki-subject-creator-save-with-schema": "Label for the save button in the subject creator dialog after a schema is selected. $1 is the schema name.",
+	"neowiki-subject-creator-creating-schema": "Subtitle shown in the subject creator dialog header when the user is creating a new schema.",
 	"neowiki-subject-creator-schema-name-field": "Label for the schema name input field in the subject creator dialog.",
 	"neowiki-subject-creator-schema-name-placeholder": "Placeholder text for the schema name input field.",
 	"neowiki-subject-creator-create-schema": "Label for the button that creates a new schema in the subject creator dialog.",

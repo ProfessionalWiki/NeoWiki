@@ -73,6 +73,8 @@
 	"neowiki-subject-creator-label-field": "Subject label",
 	"neowiki-subject-creator-label-placeholder": "Enter a label for the subject",
 	"neowiki-subject-creator-save": "Create subject",
+	"neowiki-subject-creator-save-with-schema": "Create $1",
+	"neowiki-subject-creator-creating-schema": "Creating schema",
 	"neowiki-subject-creator-success": "Subject created successfully",
 	"neowiki-subject-creator-error": "Failed to create subject",
 	"neowiki-subject-creator-schema-name-field": "Schema name",
