@@ -10,6 +10,7 @@
 				</template>
 				<CdxTextArea
 					:model-value="currentSchema.getDescription()"
+					:placeholder="$i18n( 'neowiki-schema-editor-description-placeholder' ).text()"
 					@update:model-value="onDescriptionChanged"
 				/>
 			</CdxField>
