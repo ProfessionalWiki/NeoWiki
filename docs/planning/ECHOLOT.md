@@ -1,5 +1,7 @@
 # ECHOLOT
 
+If you are not familiar with the NeoWiki terminology yet, see [the glossary](../Glossary.md).
+
 ## Open Questions
 
 ### High Priority
