@@ -345,5 +345,15 @@ const handleSave = async ( _summary: string ): Promise<void> => {
 	&-label-field {
 		margin-top: @spacing-100;
 	}
+
+	&-new {
+		.ext-neowiki-schema-editor {
+			margin-inline: -@spacing-100;
+
+			@media ( min-width: @min-width-breakpoint-desktop ) {
+				margin-inline: -@spacing-150;
+			}
+		}
+	}
 }
 </style>
