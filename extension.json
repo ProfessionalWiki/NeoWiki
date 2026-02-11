@@ -270,6 +270,8 @@
 				"neowiki-subject-creator-schema-created",
 				"neowiki-subject-creator-schema-name-required",
 				"neowiki-subject-creator-schema-name-taken",
+				"neowiki-subject-creator-save-with-schema",
+				"neowiki-subject-creator-creating-schema",
 				"neowiki-edit-schema",
 				"neowiki-schema-editor-summary-default",
 				"neowiki-schema-editor-success",
