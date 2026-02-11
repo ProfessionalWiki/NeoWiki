@@ -134,11 +134,6 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaApi"
 		},
 		{
-			"path": "/neowiki/v0/schema-names",
-			"method": [ "GET" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaNamesApi"
-		},
-		{
 			"path": "/neowiki/v0/schema-names/{search}",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaNamesApi"
@@ -147,6 +142,11 @@
 			"path": "/neowiki/v0/subject-labels",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectLabelsApi"
+		},
+		{
+			"path": "/neowiki/v0/schemas",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaSummariesApi"
 		}
 	],
 

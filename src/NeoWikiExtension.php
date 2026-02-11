@@ -38,6 +38,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\PatchSubjectApi;
@@ -366,6 +367,10 @@ class NeoWikiExtension {
 
 	public static function newGetSchemaNamesApi(): GetSchemaNamesApi {
 		return new GetSchemaNamesApi();
+	}
+
+	public static function newGetSchemaSummariesApi(): GetSchemaSummariesApi {
+		return new GetSchemaSummariesApi();
 	}
 
 	public static function newGetSubjectLabelsApi(): GetSubjectLabelsApi {

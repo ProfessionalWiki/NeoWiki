@@ -36,11 +36,9 @@ export class RestSchemaRepository implements SchemaRepository {
 	}
 
 	public async getSchemaNames( search = '' ): Promise<string[]> {
-		const url = search ?
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/schema-names/${ search }` :
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/schema-names`;
-
-		const response = await this.httpClient.get( url );
+		const response = await this.httpClient.get(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/schema-names/${ search }`,
+		);
 
 		if ( !response.ok ) {
 			throw new Error( 'Error fetching schemas' );
