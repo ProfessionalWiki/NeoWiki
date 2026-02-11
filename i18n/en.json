@@ -10,6 +10,9 @@
 	"neowiki-name": "NeoWiki",
 	"neowiki-description": "TODO",
 
+	"specialpages-group-neowiki": "NeoWiki",
+	"neowiki-special-schemas": "Schemas",
+
 	"neowiki-property-type-text": "Text",
 	"neowiki-property-type-url": "URL",
 	"neowiki-property-type-number": "Number",
@@ -104,5 +107,10 @@
 
 	"neowiki-subject-editor-summary-default": "Update subject via NeoWiki UI",
 	"neowiki-subject-editor-success": "Updated $1",
-	"neowiki-subject-editor-error": "Failed to update $1."
+	"neowiki-subject-editor-error": "Failed to update $1.",
+
+	"neowiki-schemas-column-name": "Name",
+	"neowiki-schemas-column-description": "Description",
+	"neowiki-schemas-column-properties": "Properties",
+	"neowiki-schemas-empty": "No schemas have been created yet."
 }
