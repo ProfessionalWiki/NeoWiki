@@ -85,7 +85,8 @@
 	},
 
 	"SpecialPages": {
-		"NeoJson": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson"
+		"NeoJson": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson",
+		"Schemas": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSchemas"
 	},
 
 	"config": {
@@ -131,6 +132,11 @@
 			"path": "/neowiki/v0/schema/{schemaName}",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaApi"
+		},
+		{
+			"path": "/neowiki/v0/schema-names",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaNamesApi"
 		},
 		{
 			"path": "/neowiki/v0/schema-names/{search}",
@@ -204,6 +210,7 @@
 			],
 			"messages": [
 				"neowiki-name",
+				"neowiki-special-schemas",
 				"neowiki-property-type-text",
 				"neowiki-property-type-url",
 				"neowiki-property-type-number",
@@ -276,7 +283,11 @@
 				"neowiki-schema-editor-error",
 				"neowiki-subject-editor-summary-default",
 				"neowiki-subject-editor-success",
-				"neowiki-subject-editor-error"
+				"neowiki-subject-editor-error",
+				"neowiki-schemas-column-name",
+				"neowiki-schemas-column-description",
+				"neowiki-schemas-column-properties",
+				"neowiki-schemas-empty"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

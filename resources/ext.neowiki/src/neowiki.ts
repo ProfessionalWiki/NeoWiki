@@ -4,6 +4,7 @@ import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { CdxTooltip } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SchemaDisplay from '@/components/SchemaDisplay/SchemaDisplay.vue';
+import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
@@ -54,5 +55,17 @@ async function initializeSchemaView(): Promise<void> {
 	}
 }
 
+function initializeSchemasPage(): void {
+	const schemasPage = document.getElementById( 'ext-neowiki-schemas' );
+
+	if ( schemasPage !== null ) {
+		const app = createMwApp( SchemasPage );
+		app.use( createPinia() );
+		NeoWikiServices.registerServices( app );
+		app.mount( schemasPage );
+	}
+}
+
 initializeNeoWikiApp();
 initializeSchemaView();
+initializeSchemasPage();
