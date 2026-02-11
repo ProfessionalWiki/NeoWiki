@@ -22,9 +22,7 @@
 import { ref, onMounted } from 'vue';
 import { CdxTable } from '@wikimedia/codex';
 import type { TableColumn } from '@wikimedia/codex';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
-
-const schemaStore = useSchemaStore();
+import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
 const loading = ref( true );
 
@@ -55,17 +53,30 @@ function schemaUrl( name: string ): string {
 	return mw.util.getUrl( `Schema:${ name }` );
 }
 
-onMounted( async () => {
-	const schemaNames = await schemaStore.searchAndFetchMissingSchemas( '' );
+interface SchemaSummary {
+	name: string;
+	description: string;
+	propertyCount: number;
+}
 
-	rows.value = schemaNames.map( ( name ) => {
-		const schema = schemaStore.getSchema( name );
-		return {
-			name: schema.getName(),
-			description: schema.getDescription(),
-			properties: [ ...schema.getPropertyDefinitions() ].length
-		};
-	} );
+onMounted( async () => {
+	const restApiUrl = NeoWikiExtension.getInstance().getMediaWiki().util.wikiScript( 'rest' );
+	const httpClient = NeoWikiExtension.getInstance().newHttpClient();
+
+	const response = await httpClient.get( `${ restApiUrl }/neowiki/v0/schemas` );
+
+	if ( !response.ok ) {
+		loading.value = false;
+		return;
+	}
+
+	const summaries: SchemaSummary[] = await response.json();
+
+	rows.value = summaries.map( ( summary ) => ( {
+		name: summary.name,
+		description: summary.description,
+		properties: summary.propertyCount
+	} ) );
 
 	loading.value = false;
 } );
