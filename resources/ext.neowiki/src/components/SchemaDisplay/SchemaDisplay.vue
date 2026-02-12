@@ -52,13 +52,13 @@
 			:initial-schema="currentSchema"
 			:on-save="handleSaveSchema"
 			@saved="onSchemaSaved"
-			@update:open="isEditorOpen = $event"
+			@update:open="onEditorOpenChange"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, watch } from 'vue';
+import { computed, nextTick, shallowRef, watch } from 'vue';
 import { Schema } from '@/domain/Schema.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { CdxTable, CdxInfoChip } from '@wikimedia/codex';
@@ -125,6 +125,16 @@ function getTypeLabel( propertyType: string ): string {
 
 const handleSaveSchema = async ( updatedSchema: Schema, comment: string ): Promise<void> => {
 	await schemaStore.saveSchema( updatedSchema, comment );
+};
+
+const onEditorOpenChange = ( value: boolean ): void => {
+	isEditorOpen.value = value;
+
+	if ( !value ) {
+		nextTick( () => {
+			( document.activeElement as HTMLElement )?.blur?.();
+		} );
+	}
 };
 
 const onSchemaSaved = ( schema: Schema ): void => {
