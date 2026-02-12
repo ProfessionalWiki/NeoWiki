@@ -55,7 +55,7 @@ import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
 import SubjectLookup from '@/components/common/SubjectLookup.vue';
 import { ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
-import { Value, ValueType, RelationValue, newRelation } from '@/domain/Value';
+import { Value, ValueType, RelationValue, newRelation, relationValuesHaveSameTargets } from '@/domain/Value';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = withDefaults(
@@ -146,7 +146,7 @@ function onSingleSelectionChanged( id: string | null ): void {
 		newRelationValue = undefined;
 	}
 
-	if ( JSON.stringify( internalValue.value ) !== JSON.stringify( newRelationValue ) ) {
+	if ( !relationValuesHaveSameTargets( internalValue.value, newRelationValue ) ) {
 		internalValue.value = newRelationValue;
 	}
 
@@ -169,7 +169,7 @@ function onSelectionsChanged( ids: ( string | null )[] ): void {
 		newRelationValue = undefined;
 	}
 
-	if ( JSON.stringify( internalValue.value ) !== JSON.stringify( newRelationValue ) ) {
+	if ( !relationValuesHaveSameTargets( internalValue.value, newRelationValue ) ) {
 		internalValue.value = newRelationValue;
 	}
 
