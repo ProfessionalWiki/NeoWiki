@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Rest\StringStream;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
@@ -26,11 +27,7 @@ class GetSchemaSummariesApi extends SimpleHandler {
 				continue;
 			}
 
-			$summaries[] = [
-				'name' => $schema->getName()->getText(),
-				'description' => $schema->getDescription(),
-				'propertyCount' => count( $schema->getAllProperties()->asMap() ),
-			];
+			$summaries[] = $this->schemaToSummary( $schema );
 		}
 
 		$response = $this->getResponseFactory()->create();
@@ -38,6 +35,17 @@ class GetSchemaSummariesApi extends SimpleHandler {
 		$response->setHeader( 'Content-Type', 'application/json' );
 
 		return $response;
+	}
+
+	/**
+	 * @return array{name: string, description: string, propertyCount: int}
+	 */
+	private function schemaToSummary( Schema $schema ): array {
+		return [
+			'name' => $schema->getName()->getText(),
+			'description' => $schema->getDescription(),
+			'propertyCount' => count( $schema->getAllProperties()->asMap() ),
+		];
 	}
 
 }
