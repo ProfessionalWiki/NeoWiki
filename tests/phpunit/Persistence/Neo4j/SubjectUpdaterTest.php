@@ -14,7 +14,10 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jValueBuilderRegistry;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdater;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
@@ -51,12 +54,12 @@ class SubjectUpdaterTest extends TestCase {
 		);
 	}
 
-	private function newSubjectUpdater( Neo4jValueBuilderRegistry $valueBuilderRegistry = null ): SubjectUpdater {
+	private function newSubjectUpdater( PropertyTypeLookup $propertyTypeLookup = null ): SubjectUpdater {
 		return new SubjectUpdater(
 			$this->transaction,
 			$this->pageId,
 			$this->schemaLookup,
-			$valueBuilderRegistry ?? Neo4jValueBuilderRegistry::withCoreBuilders(),
+			$propertyTypeLookup ?? NeoWikiExtension::getInstance()->getPropertyTypeLookup(),
 			$this->logger
 		);
 	}
@@ -83,8 +86,8 @@ class SubjectUpdaterTest extends TestCase {
 	}
 
 	public function testSkipsStatementsWithUnknownPropertyType(): void {
-		$registry = new Neo4jValueBuilderRegistry();
-		$registry->registerBuilder( 'text', static fn( $value ) => $value->toScalars() );
+		$registry = new PropertyTypeRegistry();
+		$registry->registerType( new TextType() );
 
 		$statements = new StatementList( [
 			TestStatement::build( property: 'P1', value: new StringValue( 'foo' ), propertyType: 'text' ),
@@ -102,7 +105,8 @@ class SubjectUpdaterTest extends TestCase {
 	}
 
 	public function testSkipsStatementsWithRelationType(): void {
-		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+		$registry = new PropertyTypeRegistry();
+		$registry->registerType( new TextType() );
 
 		$statements = new StatementList( [
 			TestStatement::build( property: 'P1', value: new StringValue( 'foo' ), propertyType: 'text' ),

@@ -25,14 +25,13 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
-use ProfessionalWiki\NeoWiki\Persistence\CompositeGraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Persistence\QueryStore;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\WriteQueryEngine;
+use ProfessionalWiki\NeoWiki\Persistence\WriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -60,7 +59,6 @@ use ProfessionalWiki\NeoWiki\Persistence\Neo4j\ExplainCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\KeywordCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jSubjectLabelLookup;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdaterFactory;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
@@ -77,8 +75,7 @@ class NeoWikiExtension {
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private SubjectRepository $subjectRepository;
-	private CompositeGraphDatabasePlugin $graphDatabasePlugin;
-	private ?Neo4jQueryStore $neo4jQueryStore = null;
+	private Neo4jQueryStore $queryStore;
 	private ClientInterface $neo4jClient;
 	private ClientInterface $readOnlyNeo4jClient;
 
@@ -120,7 +117,7 @@ class NeoWikiExtension {
 
 	public function getStoreContentUC(): OnRevisionCreatedHandler {
 		return new OnRevisionCreatedHandler(
-			$this->getGraphDatabasePlugin(),
+			$this->getQueryStore(),
 			new PagePropertiesBuilder(
 				revisionStore: MediaWikiServices::getInstance()->getRevisionStore(),
 				contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory()
@@ -128,22 +125,12 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function getGraphDatabasePlugin(): GraphDatabasePlugin {
-		if ( !isset( $this->graphDatabasePlugin ) ) {
-			$this->graphDatabasePlugin = new CompositeGraphDatabasePlugin(
-				$this->getNeo4jPlugin()
-			);
+	public function getQueryStore(): QueryStore {
+		if ( !isset( $this->queryStore ) ) {
+			$this->queryStore = $this->newNeo4jQueryStore( $this->getSchemaLookup() );
 		}
 
-		return $this->graphDatabasePlugin;
-	}
-
-	public function getNeo4jPlugin(): Neo4jQueryStore {
-		if ( $this->neo4jQueryStore === null ) {
-			$this->neo4jQueryStore = $this->newNeo4jQueryStore( $this->getSchemaLookup() );
-		}
-
-		return $this->neo4jQueryStore;
+		return $this->queryStore;
 	}
 
 	public function newNeo4jQueryStore( SchemaLookup $schemaLookup ): Neo4jQueryStore {
@@ -152,7 +139,7 @@ class NeoWikiExtension {
 			readOnlyClient: $this->getReadOnlyNeo4jClient(),
 			subjectUpdaterFactory: new SubjectUpdaterFactory(
 				schemaLookup: $schemaLookup, // Note: this is a hack, we should have a proper test environment
-				valueBuilderRegistry: Neo4jValueBuilderRegistry::withCoreBuilders(),
+				propertyTypeLookup: $this->getPropertyTypeLookup(),
 				logger: LoggerFactory::getInstance( 'NeoWiki' )
 			),
 		);
@@ -188,7 +175,8 @@ class NeoWikiExtension {
 	}
 
 	public function getWriteQueryEngine(): WriteQueryEngine {
-		return $this->getNeo4jPlugin();
+		$this->getQueryStore();
+		return $this->queryStore;
 	}
 
 	public function isDevelopmentUIEnabled(): bool {
