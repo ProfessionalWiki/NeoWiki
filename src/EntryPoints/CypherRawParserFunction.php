@@ -25,11 +25,11 @@ class CypherRawParserFunction {
 			return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-empty-query' )->text() );
 		}
 
-		if ( !$this->queryFilter->queryIsAllowed( $cypherQuery ) ) {
-			return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-write-query' )->text() );
-		}
-
 		try {
+			if ( !$this->queryFilter->queryIsAllowed( $cypherQuery ) ) {
+				return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-write-query' )->text() );
+			}
+
 			$result = $this->queryEngine->runReadQuery( $cypherQuery );
 			$jsonOutput = json_encode( $result->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 
