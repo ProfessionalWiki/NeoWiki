@@ -27,6 +27,7 @@ import type { MenuItemData, ValidationStatusType } from '@wikimedia/codex';
 import type { Icon } from '@wikimedia/codex-icons';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 interface SubjectLookupProps {
 	selected: string | null;
@@ -51,6 +52,7 @@ const emit = defineEmits<{
 }>();
 
 const subjectStore = useSubjectStore();
+const subjectLabelSearch = NeoWikiServices.getSubjectLabelSearch();
 
 async function resolveLabel( id: string | null ): Promise<string> {
 	if ( !id ) {
@@ -97,7 +99,7 @@ async function onLookupInput( value: string ): Promise<void> {
 	const currentSequence = ++requestSequence;
 
 	try {
-		const results = await subjectStore.getSubjectLabels( value, props.targetSchema );
+		const results = await subjectLabelSearch.searchSubjectLabels( value, props.targetSchema );
 
 		if ( currentSequence !== requestSequence ) {
 			return;
