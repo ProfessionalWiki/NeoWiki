@@ -1,6 +1,6 @@
 # NeoWiki
 
-AI-ready knowledge management system that combines collaborative editing and knowledge graph.
+[NeoWiki](https://professional.wiki/en/neowiki) is a collaborative knowledge management system on top of MediaWiki and graph databases.
 
 ## Technical Documentation
 
