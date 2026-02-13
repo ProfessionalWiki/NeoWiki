@@ -6,6 +6,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
+import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 
 export enum Service { // TODO: make private
 	ComponentRegistry = 'ComponentRegistry',
@@ -13,7 +14,8 @@ export enum Service { // TODO: make private
 	SubjectAuthorizer = 'SubjectAuthorizer',
 	SubjectValidator = 'SubjectValidator',
 	PropertyTypeRegistry = 'PropertyTypeRegistry',
-	SchemaRepository = 'SchemaRepository'
+	SchemaRepository = 'SchemaRepository',
+	SubjectLabelSearch = 'SubjectLabelSearch'
 }
 
 export class NeoWikiServices {
@@ -34,6 +36,7 @@ export class NeoWikiServices {
 			[ Service.SubjectValidator ]: neoWiki.newSubjectValidator(),
 			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry(),
 			[ Service.SchemaRepository ]: neoWiki.getSchemaRepository(),
+			[ Service.SubjectLabelSearch ]: neoWiki.getSubjectLabelSearch(),
 		};
 	}
 
@@ -59,6 +62,10 @@ export class NeoWikiServices {
 
 	public static getSchemaRepository(): SchemaRepository {
 		return inject( Service.SchemaRepository ) as SchemaRepository;
+	}
+
+	public static getSubjectLabelSearch(): SubjectLabelSearch {
+		return inject( Service.SubjectLabelSearch ) as SubjectLabelSearch;
 	}
 
 }
