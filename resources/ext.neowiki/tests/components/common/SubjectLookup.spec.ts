@@ -9,6 +9,8 @@ import { createI18nMock } from '../../VueTestHelpers.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { StatementList } from '@/domain/StatementList.ts';
+import { Service } from '@/NeoWikiServices.ts';
+import type { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 
 const $i18n = createI18nMock();
 
@@ -29,6 +31,7 @@ const CdxLookupWithVModel = defineComponent( {
 describe( 'SubjectLookup', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let subjectStore: any;
+	let mockSubjectLabelSearch: SubjectLabelSearch;
 
 	function createWrapper( props: Partial<InstanceType<typeof SubjectLookup>['$props']> = {} ): VueWrapper {
 		return mount( SubjectLookup, {
@@ -40,6 +43,9 @@ describe( 'SubjectLookup', () => {
 			global: {
 				mocks: { $i18n },
 				plugins: [ pinia ],
+				provide: {
+					[ Service.SubjectLabelSearch ]: mockSubjectLabelSearch,
+				},
 				stubs: { CdxLookup: true },
 			},
 		} );
@@ -65,22 +71,25 @@ describe( 'SubjectLookup', () => {
 		setActivePinia( pinia );
 
 		subjectStore = useSubjectStore();
-		subjectStore.getSubjectLabels = vi.fn().mockResolvedValue( [] );
 		subjectStore.getOrFetchSubject = vi.fn().mockRejectedValue( new Error( 'not found' ) );
+
+		mockSubjectLabelSearch = {
+			searchSubjectLabels: vi.fn().mockResolvedValue( [] ),
+		};
 	} );
 
-	it( 'calls getSubjectLabels with input and targetSchema', async () => {
+	it( 'calls searchSubjectLabels with input and targetSchema', async () => {
 		const wrapper = createWrapper( { targetSchema: 'Company' } );
 		const lookup = wrapper.findComponent( CdxLookup );
 
 		lookup.vm.$emit( 'input', 'acme' );
 		await flushPromises();
 
-		expect( subjectStore.getSubjectLabels ).toHaveBeenCalledWith( 'acme', 'Company' );
+		expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledWith( 'acme', 'Company' );
 	} );
 
 	it( 'populates menu items from search results', async () => {
-		subjectStore.getSubjectLabels.mockResolvedValue( [
+		( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockResolvedValue( [
 			{ id: 's1demo1aaaaaaa1', label: 'ACME Inc.' },
 			{ id: 's1demo5sssssss1', label: 'Professional Wiki GmbH' },
 		] );
@@ -98,7 +107,7 @@ describe( 'SubjectLookup', () => {
 	} );
 
 	it( 'clears menu items when input is empty', async () => {
-		subjectStore.getSubjectLabels.mockResolvedValue( [
+		( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockResolvedValue( [
 			{ id: 's1demo1aaaaaaa2', label: 'Foo' },
 		] );
 
@@ -115,8 +124,6 @@ describe( 'SubjectLookup', () => {
 	} );
 
 	it( 'shows empty results when API returns no matches', async () => {
-		subjectStore.getSubjectLabels.mockResolvedValue( [] );
-
 		const wrapper = createWrapper();
 		const lookup = wrapper.findComponent( CdxLookup );
 
@@ -127,7 +134,7 @@ describe( 'SubjectLookup', () => {
 	} );
 
 	it( 'shows empty results when API call fails', async () => {
-		subjectStore.getSubjectLabels.mockRejectedValue( new Error( 'Network error' ) );
+		( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockRejectedValue( new Error( 'Network error' ) );
 
 		const wrapper = createWrapper();
 		const lookup = wrapper.findComponent( CdxLookup );
@@ -188,7 +195,7 @@ describe( 'SubjectLookup', () => {
 			resolveFirst = resolve;
 		} );
 
-		subjectStore.getSubjectLabels = vi.fn()
+		( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> )
 			.mockReturnValueOnce( firstCallPromise )
 			.mockResolvedValueOnce( [
 				{ id: 's1demo5sssssss1', label: 'Second Result' },
@@ -324,6 +331,9 @@ describe( 'SubjectLookup', () => {
 			global: {
 				mocks: { $i18n },
 				plugins: [ pinia ],
+				provide: {
+					[ Service.SubjectLabelSearch ]: mockSubjectLabelSearch,
+				},
 				stubs: { CdxLookup: CdxLookupStub },
 			},
 		} );

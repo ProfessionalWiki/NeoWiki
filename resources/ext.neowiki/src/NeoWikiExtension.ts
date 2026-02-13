@@ -21,6 +21,8 @@ import { RightsBasedSchemaAuthorizer } from '@/persistence/RightsBasedSchemaAuth
 import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
 import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
+import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
+import { RestSubjectLabelSearch } from '@/persistence/RestSubjectLabelSearch.ts';
 import TextInput from '@/components/Value/TextInput.vue';
 import UrlInput from '@/components/Value/UrlInput.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
@@ -122,6 +124,13 @@ export class NeoWikiExtension {
 	public newSchemaAuthorizer(): SchemaAuthorizer {
 		return new RightsBasedSchemaAuthorizer(
 			this.getUserObjectBasedRightsFetcher(),
+		);
+	}
+
+	public getSubjectLabelSearch(): SubjectLabelSearch {
+		return new RestSubjectLabelSearch(
+			this.getMediaWiki().util.wikiScript( 'rest' ),
+			this.newHttpClient(),
 		);
 	}
 
