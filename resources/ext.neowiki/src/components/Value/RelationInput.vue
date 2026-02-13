@@ -19,7 +19,6 @@
 			v-if="props.property.multiple"
 			:model-value="selectedIds"
 			:label="props.label"
-			:messages="inputMessages"
 			@update:model-value="onSelectionsChanged"
 		>
 			<template #input="{ value, onUpdate, onBlur, onFocus, status, ariaLabel }">
@@ -72,7 +71,6 @@ const emit = defineEmits<ValueInputEmits>();
 
 const internalValue = ref<RelationValue | undefined>( undefined );
 const fieldMessages = ref<ValidationMessages>( {} );
-const inputMessages = ref<ValidationMessages[]>( [] );
 const touched = ref( false );
 
 const displayedFieldMessages = computed( (): ValidationMessages => {
