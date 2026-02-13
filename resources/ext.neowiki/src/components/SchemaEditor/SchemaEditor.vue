@@ -4,12 +4,15 @@
 		:class="{ 'ext-neowiki-schema-editor--has-selected-property': selectedProperty !== undefined }"
 	>
 		<div class="ext-neowiki-schema-editor__description">
-			<CdxField>
+			<CdxField
+				:optional="true"
+			>
 				<template #label>
 					{{ $i18n( 'neowiki-schema-editor-description' ).text() }}
 				</template>
 				<CdxTextArea
 					:model-value="currentSchema.getDescription()"
+					:placeholder="$i18n( 'neowiki-schema-editor-description-placeholder' ).text()"
 					@update:model-value="onDescriptionChanged"
 				/>
 			</CdxField>

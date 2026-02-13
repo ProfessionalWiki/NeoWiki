@@ -4,7 +4,7 @@
 	"version": "0.0.0-alpha",
 
 	"author": [
-		"[https://Professional.Wiki/ Professional.Wiki]",
+		"[https://Professional.Wiki/ Professional Wiki]",
 		"[https://www.EntropyWins.wtf/mediawiki Jeroen De Dauw]"
 	],
 
@@ -85,7 +85,8 @@
 	},
 
 	"SpecialPages": {
-		"NeoJson": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson"
+		"NeoJson": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson",
+		"Schemas": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSchemas"
 	},
 
 	"config": {
@@ -141,6 +142,11 @@
 			"path": "/neowiki/v0/subject-labels",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectLabelsApi"
+		},
+		{
+			"path": "/neowiki/v0/schemas",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaSummariesApi"
 		}
 	],
 
@@ -204,6 +210,7 @@
 			],
 			"messages": [
 				"neowiki-name",
+				"neowiki-special-schemas",
 				"neowiki-property-type-text",
 				"neowiki-property-type-url",
 				"neowiki-property-type-number",
@@ -243,6 +250,7 @@
 				"neowiki-schema-editor-delete-property",
 				"neowiki-schema-editor-optional",
 				"neowiki-schema-editor-description",
+				"neowiki-schema-editor-description-placeholder",
 				"neowiki-editing-schema",
 				"neowiki-schema-label",
 				"neowiki-subject-creator-title",
@@ -270,6 +278,8 @@
 				"neowiki-subject-creator-schema-created",
 				"neowiki-subject-creator-schema-name-required",
 				"neowiki-subject-creator-schema-name-taken",
+				"neowiki-subject-creator-save-with-schema",
+				"neowiki-subject-creator-creating-schema",
 				"neowiki-edit-schema",
 				"neowiki-schema-editor-summary-default",
 				"neowiki-schema-editor-success",
@@ -278,7 +288,11 @@
 				"neowiki-subject-editor-success",
 				"neowiki-subject-editor-error",
 				"neowiki-subject-lookup-placeholder",
-				"neowiki-subject-lookup-no-results"
+				"neowiki-subject-lookup-no-results",
+				"neowiki-schemas-column-name",
+				"neowiki-schemas-column-description",
+				"neowiki-schemas-column-properties",
+				"neowiki-schemas-empty"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

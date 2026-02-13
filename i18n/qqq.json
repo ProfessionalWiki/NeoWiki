@@ -9,11 +9,15 @@
 	},
 	"neowiki-name": "{{Name}}",
 	"neowiki-description": "{{Desc|name=NeoWiki|url=https://github.com/ProfessionalWiki/NeoWiki}}",
+	"specialpages-group-neowiki": "Group heading for NeoWiki special pages on [[Special:SpecialPages]].",
+	"neowiki-special-schemas": "Title and description of the [[Special:Schemas]] page.",
 	"neowiki-schema-label": "Label used to identify the schema. $1 is the schema name or link.",
 	"neowiki-cypher-raw-error-empty-query": "Error message shown when the cypher_raw parser function is called with an empty query.",
 	"neowiki-cypher-raw-error-write-query": "Error message shown when a write query is rejected by the cypher_raw parser function.",
 	"neowiki-cypher-raw-error-query-failed": "Error message shown when Cypher query execution fails. $1 is the exception message.",
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
+	"neowiki-subject-creator-save-with-schema": "Label for the save button in the subject creator dialog after a schema is selected. $1 is the schema name.",
+	"neowiki-subject-creator-creating-schema": "Subtitle shown in the subject creator dialog header when the user is creating a new schema.",
 	"neowiki-subject-creator-schema-name-field": "Label for the schema name input field in the subject creator dialog.",
 	"neowiki-subject-creator-schema-name-placeholder": "Placeholder text for the schema name input field.",
 	"neowiki-subject-creator-create-schema": "Label for the button that creates a new schema in the subject creator dialog.",
@@ -27,10 +31,16 @@
 	"neowiki-schema-editor-new-property": "Label for the button that adds a new property definition in the schema editor. Translations can only exceed the English length a little bit.",
 	"neowiki-schema-editor-delete-property": "Aria label for the button that deletes a property definition in the schema editor.",
 	"neowiki-schema-editor-description": "Label for the description field in the schema editor.",
+	"neowiki-schema-editor-description-placeholder": "Placeholder text for the description field in the schema editor.",
 
 	"neowiki-subject-editor-summary-default": "Default edit summary used when updating a subject via the UI.",
 	"neowiki-subject-editor-success": "Success notification shown after updating a subject. $1 is the subject label.",
 	"neowiki-subject-editor-error": "Error notification title shown when updating a subject fails. $1 is the subject label.",
 	"neowiki-subject-lookup-placeholder": "Placeholder text shown in the subject search input field.",
-	"neowiki-subject-lookup-no-results": "Message shown in the subject lookup dropdown when no subjects match the search query."
+	"neowiki-subject-lookup-no-results": "Message shown in the subject lookup dropdown when no subjects match the search query.",
+
+	"neowiki-schemas-column-name": "Column header for schema name in the schemas list table on [[Special:Schemas]].",
+	"neowiki-schemas-column-description": "Column header for schema description in the schemas list table on [[Special:Schemas]].",
+	"neowiki-schemas-column-properties": "Column header for the number of property definitions in the schemas list table on [[Special:Schemas]].",
+	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]]."
 }

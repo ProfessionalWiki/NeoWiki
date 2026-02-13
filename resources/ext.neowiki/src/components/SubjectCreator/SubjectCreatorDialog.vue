@@ -11,9 +11,32 @@
 			class="ext-neowiki-subject-creator-dialog"
 			:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' && !selectedSchemaName }"
 			:title="$i18n( 'neowiki-subject-creator-title' ).text()"
-			:use-close-button="true"
 			@default="open = false"
 		>
+			<template #header>
+				<div class="cdx-dialog__header__title-group">
+					<h2 class="cdx-dialog__header__title">
+						{{ $i18n( 'neowiki-subject-creator-title' ).text() }}
+					</h2>
+
+					<p
+						v-if="headerSubtitle"
+						class="cdx-dialog__header__subtitle"
+					>
+						{{ headerSubtitle }}
+					</p>
+				</div>
+
+				<CdxButton
+					class="cdx-dialog__header__close-button"
+					weight="quiet"
+					type="button"
+					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
+					@click="open = false"
+				>
+					<CdxIcon :icon="cdxIconClose" />
+				</CdxButton>
+			</template>
 			<template v-if="!selectedSchemaName">
 				<p>
 					{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
@@ -97,7 +120,7 @@
 			>
 				<EditSummary
 					help-text=""
-					:save-button-label="$i18n( 'neowiki-subject-creator-save' ).text()"
+					:save-button-label="$i18n( 'neowiki-subject-creator-save-with-schema', selectedSchemaName ).text()"
 					@save="handleSave"
 				/>
 			</template>
@@ -107,8 +130,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
-import { CdxButton, CdxDialog, CdxField, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
-import { cdxIconSearch, cdxIconAdd } from '@wikimedia/codex-icons';
+import { CdxButton, CdxDialog, CdxField, CdxIcon, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
+import { cdxIconAdd, cdxIconClose, cdxIconSearch } from '@wikimedia/codex-icons';
 import type { ButtonGroupItem, ValidationStatusType } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -146,6 +169,18 @@ interface SubjectEditorInstance {
 }
 
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
+
+const headerSubtitle = computed( (): string | null => {
+	if ( selectedSchemaOption.value === 'new' && !selectedSchemaName.value ) {
+		return mw.msg( 'neowiki-subject-creator-creating-schema' );
+	}
+
+	if ( selectedSchemaName.value ) {
+		return mw.msg( 'neowiki-schema-label', selectedSchemaName.value );
+	}
+
+	return null;
+} );
 
 const schemaNameStatus = computed( (): ValidationStatusType =>
 	schemaNameError.value ? 'error' : 'default'
@@ -323,6 +358,17 @@ const handleSave = async ( _summary: string ): Promise<void> => {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-creator {
+	&-dialog.cdx-dialog {
+		/* Replicate the Codex default dialog header styles */
+		.cdx-dialog__header {
+			display: flex;
+			align-items: baseline;
+			justify-content: flex-end;
+			box-sizing: @box-sizing-base;
+			width: @size-full;
+		}
+	}
+
 	&-dialog--wide.cdx-dialog {
 		max-width: @size-5600;
 	}
@@ -344,6 +390,16 @@ const handleSave = async ( _summary: string ): Promise<void> => {
 
 	&-label-field {
 		margin-top: @spacing-100;
+	}
+
+	&-new {
+		.ext-neowiki-schema-editor {
+			margin-inline: -@spacing-100;
+
+			@media ( min-width: @min-width-breakpoint-desktop ) {
+				margin-inline: -@spacing-150;
+			}
+		}
 	}
 }
 </style>
