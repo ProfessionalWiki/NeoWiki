@@ -7,22 +7,29 @@
 			:menu-items="menuItems"
 			:start-icon="props.startIcon"
 			:placeholder="$i18n( 'neowiki-subject-lookup-placeholder' ).text()"
-			:status="props.status"
+			:status="effectiveStatus"
 			:aria-label="props.ariaLabel"
 			@input="onLookupInput"
 			@update:selected="onSubjectSelected"
-			@blur="emit( 'blur' )"
+			@blur="onBlur"
 		>
 			<template v-if="searchActive" #no-results>
 				{{ $i18n( 'neowiki-subject-lookup-no-results' ).text() }}
 			</template>
 		</CdxLookup>
+		<CdxMessage
+			v-if="hasUnmatchedText"
+			type="error"
+			inline
+		>
+			{{ $i18n( 'neowiki-subject-lookup-no-match' ).text() }}
+		</CdxMessage>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { CdxLookup } from '@wikimedia/codex';
+import { ref, computed, watch } from 'vue';
+import { CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData, ValidationStatusType } from '@wikimedia/codex';
 import type { Icon } from '@wikimedia/codex-icons';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -47,7 +54,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
 	'update:selected': [ value: string | null ];
-	'blur': [];
+	'blur': [ hasUnmatchedText: boolean ];
 }>();
 
 const subjectStore = useSubjectStore();
@@ -70,7 +77,12 @@ const inputText = ref<string | number>( '' );
 const menuItems = ref<MenuItemData[]>( [] );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 const searchActive = ref( false );
+const hasUnmatchedText = ref( false );
 let requestSequence = 0;
+
+const effectiveStatus = computed( (): ValidationStatusType | 'default' =>
+	hasUnmatchedText.value ? 'error' : props.status
+);
 
 resolveLabel( props.selected ).then( ( label ) => {
 	inputText.value = label;
@@ -78,6 +90,7 @@ resolveLabel( props.selected ).then( ( label ) => {
 
 watch( () => props.selected, async ( newSelected ) => {
 	selectedSubject.value = newSelected;
+	hasUnmatchedText.value = false;
 
 	if ( newSelected !== null || !searchActive.value ) {
 		inputText.value = await resolveLabel( newSelected );
@@ -87,6 +100,8 @@ watch( () => props.selected, async ( newSelected ) => {
 } );
 
 async function onLookupInput( value: string ): Promise<void> {
+	hasUnmatchedText.value = false;
+
 	if ( !value ) {
 		menuItems.value = [];
 		searchActive.value = false;
@@ -119,8 +134,16 @@ async function onLookupInput( value: string ): Promise<void> {
 function onSubjectSelected( subjectId: string | null ): void {
 	if ( subjectId !== null ) {
 		searchActive.value = false;
+		hasUnmatchedText.value = false;
+		emit( 'update:selected', subjectId );
+	} else if ( !inputText.value ) {
+		emit( 'update:selected', null );
 	}
-	emit( 'update:selected', subjectId );
+}
+
+function onBlur(): void {
+	hasUnmatchedText.value = !!inputText.value && selectedSubject.value === null;
+	emit( 'blur', hasUnmatchedText.value );
 }
 
 function focus(): void {

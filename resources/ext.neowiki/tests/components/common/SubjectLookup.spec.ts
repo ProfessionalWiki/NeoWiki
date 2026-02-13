@@ -1,15 +1,30 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
+import { defineComponent } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SubjectLookup from '@/components/common/SubjectLookup.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { CdxLookup } from '@wikimedia/codex';
+import { CdxLookup, CdxMessage } from '@wikimedia/codex';
 import { createI18nMock } from '../../VueTestHelpers.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 
 const $i18n = createI18nMock();
+
+const CdxLookupWithVModel = defineComponent( {
+	template: '<div />',
+	props: {
+		selected: { type: String, default: null },
+		inputValue: { type: [ String, Number ], default: '' },
+		menuItems: { type: Array, default: () => [] },
+		startIcon: { type: [ String, Object ], default: undefined },
+		placeholder: { type: String, default: '' },
+		status: { type: String, default: 'default' },
+		ariaLabel: { type: String, default: undefined },
+	},
+	emits: [ 'update:selected', 'update:input-value', 'input', 'blur' ],
+} );
 
 describe( 'SubjectLookup', () => {
 	let pinia: ReturnType<typeof createPinia>;
@@ -26,6 +41,21 @@ describe( 'SubjectLookup', () => {
 				mocks: { $i18n },
 				plugins: [ pinia ],
 				stubs: { CdxLookup: true },
+			},
+		} );
+	}
+
+	function createWrapperWithVModel( props: Partial<InstanceType<typeof SubjectLookup>['$props']> = {} ): VueWrapper {
+		return mount( SubjectLookup, {
+			props: {
+				selected: null,
+				targetSchema: 'Product',
+				...props,
+			},
+			global: {
+				mocks: { $i18n },
+				plugins: [ pinia ],
+				stubs: { CdxLookup: CdxLookupWithVModel },
 			},
 		} );
 	}
@@ -117,13 +147,13 @@ describe( 'SubjectLookup', () => {
 		expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ 's1demo1aaaaaaa2' ] ] );
 	} );
 
-	it( 'emits blur when CdxLookup blurs', () => {
+	it( 'emits blur with false when CdxLookup blurs with no text', () => {
 		const wrapper = createWrapper();
 		const lookup = wrapper.findComponent( CdxLookup );
 
 		lookup.vm.$emit( 'blur' );
 
-		expect( wrapper.emitted( 'blur' ) ).toHaveLength( 1 );
+		expect( wrapper.emitted( 'blur' ) ).toEqual( [ [ false ] ] );
 	} );
 
 	it( 'displays label for a pre-selected subject', async () => {
@@ -181,6 +211,104 @@ describe( 'SubjectLookup', () => {
 		expect( lookup.props( 'menuItems' ) ).toEqual( [
 			{ label: 'Second Result', value: 's1demo5sssssss1' },
 		] );
+	} );
+
+	it( 'does not propagate null selection to parent when input has text', async () => {
+		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue(
+			new Subject( new SubjectId( 's1demo1aaaaaaa1' ), 'ACME Inc.', 'Company', new StatementList( [] ) ),
+		);
+
+		const wrapper = createWrapperWithVModel( { selected: 's1demo1aaaaaaa1' } );
+		await flushPromises();
+
+		const lookup = wrapper.findComponent( CdxLookupWithVModel );
+		lookup.vm.$emit( 'update:input-value', 'ACME In' );
+		lookup.vm.$emit( 'input', 'ACME In' );
+		lookup.vm.$emit( 'update:selected', null );
+		await flushPromises();
+
+		expect( wrapper.emitted( 'update:selected' ) ).toBeUndefined();
+	} );
+
+	it( 'shows error message on blur with text but no selection', async () => {
+		const wrapper = createWrapperWithVModel();
+		await flushPromises();
+		const lookup = wrapper.findComponent( CdxLookupWithVModel );
+
+		lookup.vm.$emit( 'update:input-value', 'some text' );
+		lookup.vm.$emit( 'input', 'some text' );
+		await flushPromises();
+
+		lookup.vm.$emit( 'blur' );
+		await wrapper.vm.$nextTick();
+
+		expect( wrapper.findComponent( CdxMessage ).exists() ).toBe( true );
+	} );
+
+	it( 'emits blur with true when text is present but no selection', async () => {
+		const wrapper = createWrapperWithVModel();
+		await flushPromises();
+		const lookup = wrapper.findComponent( CdxLookupWithVModel );
+
+		lookup.vm.$emit( 'update:input-value', 'unmatched' );
+		lookup.vm.$emit( 'input', 'unmatched' );
+		await flushPromises();
+
+		lookup.vm.$emit( 'blur' );
+
+		expect( wrapper.emitted( 'blur' ) ).toEqual( [ [ true ] ] );
+	} );
+
+	it( 'clears error when subject is selected', async () => {
+		const wrapper = createWrapperWithVModel();
+		await flushPromises();
+		const lookup = wrapper.findComponent( CdxLookupWithVModel );
+
+		lookup.vm.$emit( 'update:input-value', 'some text' );
+		lookup.vm.$emit( 'input', 'some text' );
+		await flushPromises();
+		lookup.vm.$emit( 'blur' );
+		await wrapper.vm.$nextTick();
+
+		expect( wrapper.findComponent( CdxMessage ).exists() ).toBe( true );
+
+		lookup.vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
+		await wrapper.vm.$nextTick();
+
+		expect( wrapper.findComponent( CdxMessage ).exists() ).toBe( false );
+	} );
+
+	it( 'clears error when user types again', async () => {
+		const wrapper = createWrapperWithVModel();
+		await flushPromises();
+		const lookup = wrapper.findComponent( CdxLookupWithVModel );
+
+		lookup.vm.$emit( 'update:input-value', 'some text' );
+		lookup.vm.$emit( 'input', 'some text' );
+		await flushPromises();
+		lookup.vm.$emit( 'blur' );
+		await wrapper.vm.$nextTick();
+
+		expect( wrapper.findComponent( CdxMessage ).exists() ).toBe( true );
+
+		lookup.vm.$emit( 'input', 'new text' );
+		await wrapper.vm.$nextTick();
+
+		expect( wrapper.findComponent( CdxMessage ).exists() ).toBe( false );
+	} );
+
+	it( 'sets status to error when there is unmatched text', async () => {
+		const wrapper = createWrapperWithVModel();
+		await flushPromises();
+		const lookup = wrapper.findComponent( CdxLookupWithVModel );
+
+		lookup.vm.$emit( 'update:input-value', 'some text' );
+		lookup.vm.$emit( 'input', 'some text' );
+		await flushPromises();
+		lookup.vm.$emit( 'blur' );
+		await wrapper.vm.$nextTick();
+
+		expect( lookup.props( 'status' ) ).toBe( 'error' );
 	} );
 
 	it( 'exposes focus method', () => {
