@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\PropertyType\Types;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 
@@ -23,6 +24,10 @@ class TextType implements PropertyType {
 
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): TextProperty {
 		return TextProperty::fromPartialJson( $core, $property );
+	}
+
+	public function buildNeo4jValue( NeoValue $value ): mixed {
+		return $value->toScalars();
 	}
 
 }

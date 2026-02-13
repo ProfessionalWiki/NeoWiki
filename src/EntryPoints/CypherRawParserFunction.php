@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 use Exception;
 use MediaWiki\Parser\Parser;
 use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\QueryEngine;
+use ProfessionalWiki\NeoWiki\Persistence\QueryEngine;
 use RuntimeException;
 
 class CypherRawParserFunction {

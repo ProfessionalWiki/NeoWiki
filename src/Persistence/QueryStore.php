@@ -7,7 +7,10 @@ namespace ProfessionalWiki\NeoWiki\Persistence;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 
-interface GraphDatabasePlugin {
+/**
+ * "Secondary" or "read/query" persistence
+ */
+interface QueryStore {
 
 	public function savePage( Page $page ): void;
 
