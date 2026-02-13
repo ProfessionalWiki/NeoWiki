@@ -27,6 +27,7 @@ const schemaStore = useSchemaStore();
 const selectedSchema = ref<string | null>( null );
 const menuItems = ref<MenuItemData[]>( [] );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
+let requestSequence = 0;
 
 async function onLookupInput( value: string ): Promise<void> {
 	if ( !value ) {
@@ -34,14 +35,25 @@ async function onLookupInput( value: string ): Promise<void> {
 		return;
 	}
 
+	const currentSequence = ++requestSequence;
+
 	try {
 		const schemaNames = await schemaStore.searchAndFetchMissingSchemas( value );
+
+		if ( currentSequence !== requestSequence ) {
+			return;
+		}
+
 		menuItems.value = schemaNames.map( ( name ) => ( {
 			label: name,
 			value: name,
 			description: schemaStore.getSchema( name ).getDescription() || undefined
 		} ) );
 	} catch ( error ) {
+		if ( currentSequence !== requestSequence ) {
+			return;
+		}
+
 		console.error( 'Error searching schemas:', error );
 		menuItems.value = [];
 	}

@@ -4,6 +4,7 @@ import {
 	newNumberValue,
 	newRelation,
 	newStringValue,
+	relationValuesHaveSameTargets,
 	RelationValue,
 	type Value,
 	valueToJson,
@@ -97,6 +98,58 @@ describe( 'newStringValue', () => {
 	it( 'trims strings', () => {
 		expect( newStringValue( '   preceding', 'tailing ', ' both    ', ' keeps middle spaces ' ) )
 			.toEqual( newStringValue( 'preceding', 'tailing', 'both', 'keeps middle spaces' ) );
+	} );
+
+} );
+
+describe( 'relationValuesHaveSameTargets', () => {
+
+	it( 'returns true when both are undefined', () => {
+		expect( relationValuesHaveSameTargets( undefined, undefined ) ).toBe( true );
+	} );
+
+	it( 'returns false when only one is undefined', () => {
+		const value = new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] );
+
+		expect( relationValuesHaveSameTargets( value, undefined ) ).toBe( false );
+		expect( relationValuesHaveSameTargets( undefined, value ) ).toBe( false );
+	} );
+
+	it( 'returns true when both have the same targets', () => {
+		const a = new RelationValue( [ newRelation( 'id-a', 's11111111111111' ) ] );
+		const b = new RelationValue( [ newRelation( 'id-b', 's11111111111111' ) ] );
+
+		expect( relationValuesHaveSameTargets( a, b ) ).toBe( true );
+	} );
+
+	it( 'returns false when targets differ', () => {
+		const a = new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] );
+		const b = new RelationValue( [ newRelation( undefined, 's22222222222222' ) ] );
+
+		expect( relationValuesHaveSameTargets( a, b ) ).toBe( false );
+	} );
+
+	it( 'returns false when lengths differ', () => {
+		const a = new RelationValue( [
+			newRelation( undefined, 's11111111111111' ),
+			newRelation( undefined, 's22222222222222' ),
+		] );
+		const b = new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] );
+
+		expect( relationValuesHaveSameTargets( a, b ) ).toBe( false );
+	} );
+
+	it( 'compares targets regardless of relation IDs', () => {
+		const a = new RelationValue( [
+			newRelation( 'first-id', 's11111111111111' ),
+			newRelation( 'second-id', 's22222222222222' ),
+		] );
+		const b = new RelationValue( [
+			newRelation( 'different-id', 's11111111111111' ),
+			newRelation( 'another-id', 's22222222222222' ),
+		] );
+
+		expect( relationValuesHaveSameTargets( a, b ) ).toBe( true );
 	} );
 
 } );

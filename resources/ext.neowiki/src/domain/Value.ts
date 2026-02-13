@@ -86,6 +86,27 @@ export function newRelation( id: string | undefined, target: SubjectId | string 
 	);
 }
 
+export function relationValuesHaveSameTargets(
+	a: RelationValue | undefined,
+	b: RelationValue | undefined,
+): boolean {
+	if ( !a && !b ) {
+		return true;
+	}
+	if ( !a || !b ) {
+		return false;
+	}
+
+	const aTargets = a.targetIds;
+	const bTargets = b.targetIds;
+
+	if ( aTargets.length !== bTargets.length ) {
+		return false;
+	}
+
+	return aTargets.every( ( target, i ) => target.text === bTargets[ i ].text );
+}
+
 export function valueToJson( value: Value ): unknown {
 	switch ( value.type ) {
 		case ValueType.String:

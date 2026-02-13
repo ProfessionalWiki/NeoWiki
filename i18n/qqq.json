@@ -36,6 +36,8 @@
 	"neowiki-subject-editor-summary-default": "Default edit summary used when updating a subject via the UI.",
 	"neowiki-subject-editor-success": "Success notification shown after updating a subject. $1 is the subject label.",
 	"neowiki-subject-editor-error": "Error notification title shown when updating a subject fails. $1 is the subject label.",
+	"neowiki-subject-lookup-placeholder": "Placeholder text shown in the subject search input field.",
+	"neowiki-subject-lookup-no-results": "Message shown in the subject lookup dropdown when no subjects match the search query.",
 
 	"neowiki-schemas-column-name": "Column header for schema name in the schemas list table on [[Special:Schemas]].",
 	"neowiki-schemas-column-description": "Column header for schema description in the schemas list table on [[Special:Schemas]].",

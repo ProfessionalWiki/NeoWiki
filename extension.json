@@ -287,6 +287,8 @@
 				"neowiki-subject-editor-summary-default",
 				"neowiki-subject-editor-success",
 				"neowiki-subject-editor-error",
+				"neowiki-subject-lookup-placeholder",
+				"neowiki-subject-lookup-no-results",
 				"neowiki-schemas-column-name",
 				"neowiki-schemas-column-description",
 				"neowiki-schemas-column-properties",

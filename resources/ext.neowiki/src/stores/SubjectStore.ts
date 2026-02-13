@@ -6,6 +6,7 @@ import { SchemaName } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import type { SubjectLabelResult } from '@/domain/SubjectLookup.ts';
 
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
@@ -35,6 +36,9 @@ export const useSubjectStore = defineStore( 'subject', {
 				await this.fetchSubject( id );
 			}
 			return this.getSubject( id );
+		},
+		async getSubjectLabels( search: string, schema: string ): Promise<SubjectLabelResult[]> {
+			return NeoWikiExtension.getInstance().getSubjectRepository().getSubjectLabels( search, schema );
 		},
 		async updateSubject( subject: Subject, comment?: string ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject( subject.getId(), subject.getLabel(), subject.getStatements(), comment );

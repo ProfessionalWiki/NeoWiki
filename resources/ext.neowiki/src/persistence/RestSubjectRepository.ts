@@ -5,6 +5,7 @@ import { StatementList, statementsToJson } from '@/domain/StatementList';
 import { type SchemaName } from '@/domain/Schema';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { Subject } from '@/domain/Subject';
+import type { SubjectLabelResult } from '@/domain/SubjectLookup';
 
 export type SubjectJson = {
 	id: string;
@@ -44,6 +45,19 @@ export class RestSubjectRepository implements SubjectRepository {
 		const subjectData = data.subjects[ data.requestedId ];
 
 		return this.subjectDeserializer.deserialize( subjectData );
+	}
+
+	public async getSubjectLabels( search: string, schema: string ): Promise<SubjectLabelResult[]> {
+		const params = new URLSearchParams( { search, schema } );
+		const response = await this.httpClient.get(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject-labels?${ params.toString() }`,
+		);
+
+		if ( !response.ok ) {
+			throw new Error( 'Error searching subject labels' );
+		}
+
+		return await response.json();
 	}
 
 	public async createMainSubject(

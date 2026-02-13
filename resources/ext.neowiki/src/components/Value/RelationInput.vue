@@ -1,7 +1,8 @@
 <template>
 	<CdxField
 		:is-fieldset="true"
-		:messages="fieldMessages"
+		:messages="displayedFieldMessages"
+		:status="fieldStatus"
 		:optional="props.property.required === false"
 	>
 		<template #label>
@@ -14,24 +15,47 @@
 				size="small"
 			/>
 		</template>
-		<NeoMultiTextInput
-			:model-value="displayValues"
+		<NeoMultiLookupInput
+			v-if="props.property.multiple"
+			:model-value="selectedIds"
 			:label="props.label"
 			:messages="inputMessages"
+			@update:model-value="onSelectionsChanged"
+		>
+			<template #input="{ value, onUpdate, onBlur, onFocus, status, ariaLabel }">
+				<SubjectLookup
+					:selected="value"
+					:target-schema="props.property.targetSchema"
+					:start-icon="startIcon"
+					:status="status"
+					:aria-label="ariaLabel"
+					@update:selected="onUpdate"
+					@blur="onBlur"
+					@focusin="onFocus"
+				/>
+			</template>
+		</NeoMultiLookupInput>
+		<SubjectLookup
+			v-else
+			:selected="selectedId"
+			:target-schema="props.property.targetSchema"
 			:start-icon="startIcon"
-			@update:model-value="onInput"
+			:status="fieldStatus"
+			@update:selected="onSingleSelectionChanged"
+			@blur="onSingleBlur"
 		/>
 	</CdxField>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, defineExpose, computed } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { CdxField, CdxIcon, ValidationMessages } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
-import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
+import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
+import SubjectLookup from '@/components/common/SubjectLookup.vue';
 import { ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
-import { Value, ValueType, RelationValue, Relation, newRelation } from '@/domain/Value';
+import { Value, ValueType, RelationValue, newRelation, relationValuesHaveSameTargets } from '@/domain/Value';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = withDefaults(
@@ -49,15 +73,32 @@ const emit = defineEmits<ValueInputEmits>();
 const internalValue = ref<RelationValue | undefined>( undefined );
 const fieldMessages = ref<ValidationMessages>( {} );
 const inputMessages = ref<ValidationMessages[]>( [] );
+const touched = ref( false );
+
+const displayedFieldMessages = computed( (): ValidationMessages => {
+	if ( props.property.multiple || touched.value ) {
+		return fieldMessages.value;
+	}
+	return {};
+} );
+
+const fieldStatus = computed( (): 'error' | 'default' => {
+	if ( props.property.multiple ) {
+		return 'default';
+	}
+	if ( touched.value && fieldMessages.value.error ) {
+		return 'error';
+	}
+	return 'default';
+} );
+
+const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( RelationType.typeName );
 
 function initializeInternalValue( value: Value | undefined ): void {
 	if ( value && value.type === ValueType.Relation ) {
 		const relValue = value as RelationValue;
 		internalValue.value = relValue.relations.length > 0 ? relValue : undefined;
 	} else {
-		if ( value !== undefined ) {
-			// console.error( 'RelationInput received non-Relation value:', value );
-		}
 		internalValue.value = undefined;
 	}
 }
@@ -66,107 +107,82 @@ initializeInternalValue( props.modelValue );
 
 watch( () => props.modelValue, ( newValue ) => {
 	initializeInternalValue( newValue );
-	// Use validate after model updates
-	const { errors, overallErrorMessage } = validate( displayValues.value );
-	inputMessages.value = errors;
-	fieldMessages.value = overallErrorMessage ? { error: overallErrorMessage } : {};
+	validateAndUpdateMessages();
 } );
 
-// Computed property to feed NeoMultiTextInput
-const displayValues = computed( (): string[] => {
+const selectedId = computed( (): string | null => {
+	if ( !internalValue.value || internalValue.value.relations.length === 0 ) {
+		return null;
+	}
+	return internalValue.value.relations[ 0 ].target.text;
+} );
+
+const selectedIds = computed( (): ( string | null )[] => {
 	if ( !internalValue.value ) {
 		return [];
 	}
 	return internalValue.value.relations.map( ( r ) => r.target.text );
 } );
 
-// Get the RelationType instance from the registry
-const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( RelationType.typeName );
+function validateAndUpdateMessages(): void {
+	const errors = propertyType.validate( internalValue.value, props.property );
 
-function validate( targetStrings: string[] ): {
-	errors: ValidationMessages[];
-	validRelations: Relation[];
-	overallErrorMessage: string | null;
-} {
-	const perInputErrors: ValidationMessages[] = Array( targetStrings.length ).fill( {} );
-	const validRelations: Relation[] = [];
-
-	targetStrings.forEach( ( target, index ) => {
-		if ( target.trim() === '' ) {
-			return;
-		}
-
-		let relation: Relation | null = null;
-		try {
-			relation = newRelation( undefined, target );
-		} catch ( error: unknown ) {
-			const message = ( error as Error ).message || mw.message( 'neowiki-error-relation-creation' ).text();
-			perInputErrors[ index ] = { error: message };
-		}
-
-		if ( relation ) {
-			validRelations.push( relation );
-		}
-	} );
-
-	// Perform ONE final validation on the *complete* set of potentially valid relations
-	const finalDomainErrors = propertyType.validate(
-		validRelations.length > 0 ? new RelationValue( validRelations ) : undefined,
-		props.property
-	);
-
-	// Determine overall error message if the final validation fails
 	let overallErrorMessage: string | null = null;
-	const firstDomainError = finalDomainErrors[ 0 ];
-	if ( firstDomainError ) {
+	const firstError = errors[ 0 ];
+	if ( firstError ) {
 		overallErrorMessage = mw.message(
-			`neowiki-field-${ firstDomainError.code }`, ...( firstDomainError.args ?? [] )
+			`neowiki-field-${ firstError.code }`, ...( firstError.args ?? [] )
 		).text();
 	}
 
-	return {
-		errors: perInputErrors,
-		validRelations: validRelations,
-		overallErrorMessage: overallErrorMessage
-	};
+	fieldMessages.value = overallErrorMessage ? { error: overallErrorMessage } : {};
 }
 
-function onInput( newTargetStrings: string[] ): void {
-	const { errors, validRelations, overallErrorMessage } = validate( newTargetStrings );
-
-	inputMessages.value = errors;
-	fieldMessages.value = overallErrorMessage ? { error: overallErrorMessage } : {};
-
+function onSingleSelectionChanged( id: string | null ): void {
 	let newRelationValue: RelationValue | undefined;
-	if ( validRelations.length > 0 ) {
-		newRelationValue = new RelationValue( validRelations );
+	if ( id !== null ) {
+		newRelationValue = new RelationValue( [ newRelation( undefined, id ) ] );
 	} else {
 		newRelationValue = undefined;
 	}
 
-	// Update internal state WITHOUT triggering the props.modelValue watcher again
-	// This assumes initializeInternalValue correctly handles undefined/'empty' RelationValues
-	if ( JSON.stringify( internalValue.value ) !== JSON.stringify( newRelationValue ) ) {
+	if ( !relationValuesHaveSameTargets( internalValue.value, newRelationValue ) ) {
 		internalValue.value = newRelationValue;
 	}
 
+	validateAndUpdateMessages();
+	emit( 'update:modelValue', newRelationValue );
+}
+
+function onSingleBlur(): void {
+	touched.value = true;
+}
+
+function onSelectionsChanged( ids: ( string | null )[] ): void {
+	const nonNullIds = ids.filter( ( id ): id is string => id !== null );
+
+	let newRelationValue: RelationValue | undefined;
+	if ( nonNullIds.length > 0 ) {
+		const relations = nonNullIds.map( ( id ) => newRelation( undefined, id ) );
+		newRelationValue = new RelationValue( relations );
+	} else {
+		newRelationValue = undefined;
+	}
+
+	if ( !relationValuesHaveSameTargets( internalValue.value, newRelationValue ) ) {
+		internalValue.value = newRelationValue;
+	}
+
+	validateAndUpdateMessages();
 	emit( 'update:modelValue', newRelationValue );
 }
 
 watch( () => props.property, () => {
-	// Re-validate using the current display values when property changes
-	const { errors, overallErrorMessage } = validate( displayValues.value );
-	inputMessages.value = errors;
-	fieldMessages.value = overallErrorMessage ? { error: overallErrorMessage } : {};
+	validateAndUpdateMessages();
 }, { deep: true } );
 
-// Initial validation based on the starting modelValue
-// Use validate for initial validation
-const initialValidationResult = validate( displayValues.value );
-inputMessages.value = initialValidationResult.errors;
-fieldMessages.value = initialValidationResult.overallErrorMessage ?
-	{ error: initialValidationResult.overallErrorMessage } :
-	{};
+// Initial validation
+validateAndUpdateMessages();
 
 defineExpose<ValueInputExposes>( {
 	getCurrentValue: function(): Value | undefined {
