@@ -132,7 +132,7 @@ describe( 'RelationInput', () => {
 				property: newRelationProperty( { required: true } ),
 			} );
 
-			wrapper.findComponent( SubjectLookup ).vm.$emit( 'blur' );
+			wrapper.findComponent( SubjectLookup ).vm.$emit( 'blur', false );
 			await wrapper.vm.$nextTick();
 
 			const field = wrapper.findComponent( CdxField );
@@ -148,10 +148,23 @@ describe( 'RelationInput', () => {
 
 			expect( lookup.props( 'status' ) ).toBe( 'default' );
 
-			lookup.vm.$emit( 'blur' );
+			lookup.vm.$emit( 'blur', false );
 			await wrapper.vm.$nextTick();
 
 			expect( lookup.props( 'status' ) ).toBe( 'error' );
+		} );
+
+		it( 'suppresses required error when SubjectLookup reports unmatched text', async () => {
+			const wrapper = newWrapper( {
+				property: newRelationProperty( { required: true } ),
+			} );
+
+			wrapper.findComponent( SubjectLookup ).vm.$emit( 'blur', true );
+			await wrapper.vm.$nextTick();
+
+			const field = wrapper.findComponent( CdxField );
+			expect( field.props( 'messages' ) ).toEqual( {} );
+			expect( field.props( 'status' ) ).toBe( 'default' );
 		} );
 	} );
 

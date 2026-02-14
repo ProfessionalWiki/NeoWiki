@@ -72,8 +72,12 @@ const emit = defineEmits<ValueInputEmits>();
 const internalValue = ref<RelationValue | undefined>( undefined );
 const fieldMessages = ref<ValidationMessages>( {} );
 const touched = ref( false );
+const singleHasUnmatchedText = ref( false );
 
 const displayedFieldMessages = computed( (): ValidationMessages => {
+	if ( singleHasUnmatchedText.value ) {
+		return {};
+	}
 	if ( props.property.multiple || touched.value ) {
 		return fieldMessages.value;
 	}
@@ -81,7 +85,7 @@ const displayedFieldMessages = computed( (): ValidationMessages => {
 } );
 
 const fieldStatus = computed( (): 'error' | 'default' => {
-	if ( props.property.multiple ) {
+	if ( props.property.multiple || singleHasUnmatchedText.value ) {
 		return 'default';
 	}
 	if ( touched.value && fieldMessages.value.error ) {
@@ -152,8 +156,9 @@ function onSingleSelectionChanged( id: string | null ): void {
 	emit( 'update:modelValue', newRelationValue );
 }
 
-function onSingleBlur(): void {
+function onSingleBlur( hasUnmatchedText: boolean ): void {
 	touched.value = true;
+	singleHasUnmatchedText.value = hasUnmatchedText;
 }
 
 function onSelectionsChanged( ids: ( string | null )[] ): void {
