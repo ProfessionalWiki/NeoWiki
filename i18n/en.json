@@ -115,5 +115,10 @@
 	"neowiki-schemas-column-name": "Name",
 	"neowiki-schemas-column-description": "Description",
 	"neowiki-schemas-column-properties": "Properties",
-	"neowiki-schemas-empty": "No schemas have been created yet."
+	"neowiki-schemas-empty": "No schemas have been created yet.",
+
+	"neowiki-close-confirmation-title": "You have unsaved changes",
+	"neowiki-close-confirmation-message": "Are you sure you want to discard your unsaved changes?",
+	"neowiki-close-confirmation-discard": "Discard",
+	"neowiki-close-confirmation-keep-editing": "Keep editing"
 }
