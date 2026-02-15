@@ -8,14 +8,12 @@ use DateTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
-use ProfessionalWiki\NeoWiki\Persistence\QueryEngine;
-use ProfessionalWiki\NeoWiki\Persistence\QueryStore;
-use ProfessionalWiki\NeoWiki\Persistence\WriteQueryEngine;
+use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-readonly class Neo4jQueryStore implements QueryStore, QueryEngine, WriteQueryEngine {
+readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, WriteQueryEngine {
 
 	public function __construct(
 		private ClientInterface $client,

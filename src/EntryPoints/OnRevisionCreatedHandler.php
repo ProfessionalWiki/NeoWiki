@@ -8,7 +8,7 @@ use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
-use ProfessionalWiki\NeoWiki\Persistence\QueryStore;
+use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -19,7 +19,7 @@ use WikiPage;
 class OnRevisionCreatedHandler {
 
 	public function __construct(
-		private readonly QueryStore $queryStore,
+		private readonly GraphDatabasePlugin $graphDatabasePlugin,
 		private readonly PagePropertiesBuilder $pagePropertiesBuilder,
 	) {
 	}
@@ -41,7 +41,7 @@ class OnRevisionCreatedHandler {
 
 		$contentData = $neoContent->getPageSubjects();
 
-		$this->queryStore->savePage(
+		$this->graphDatabasePlugin->savePage(
 			new Page(
 				id: new PageId( $revisionRecord->getPageId() ),
 				properties: $this->pagePropertiesBuilder->getPagePropertiesFor( $revisionRecord, $user ),
@@ -71,7 +71,7 @@ class OnRevisionCreatedHandler {
 	}
 
 	public function onPageDelete( int $pageId ): void {
-		$this->queryStore->deletePage( new PageId( $pageId ) );
+		$this->graphDatabasePlugin->deletePage( new PageId( $pageId ) );
 	}
 
 	public function onPageUndelete( RevisionRecord $restoredRevision ): void {

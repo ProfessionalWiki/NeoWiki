@@ -7,14 +7,13 @@ namespace ProfessionalWiki\NeoWiki\Persistence\Neo4j;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use Psr\Log\LoggerInterface;
 
 class SubjectUpdaterFactory {
 
 	public function __construct(
 		private readonly SchemaLookup $schemaLookup,
-		private readonly PropertyTypeLookup $propertyTypeLookup,
+		private readonly Neo4jValueBuilderRegistry $valueBuilderRegistry,
 		private readonly LoggerInterface $logger
 	) {
 	}
@@ -24,7 +23,7 @@ class SubjectUpdaterFactory {
 			$transaction,
 			$pageId,
 			$this->schemaLookup,
-			$this->propertyTypeLookup,
+			$this->valueBuilderRegistry,
 			$this->logger
 		);
 	}
