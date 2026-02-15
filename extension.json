@@ -293,7 +293,11 @@
 				"neowiki-schemas-column-name",
 				"neowiki-schemas-column-description",
 				"neowiki-schemas-column-properties",
-				"neowiki-schemas-empty"
+				"neowiki-schemas-empty",
+				"neowiki-close-confirmation-title",
+				"neowiki-close-confirmation-message",
+				"neowiki-close-confirmation-discard",
+				"neowiki-close-confirmation-keep-editing"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

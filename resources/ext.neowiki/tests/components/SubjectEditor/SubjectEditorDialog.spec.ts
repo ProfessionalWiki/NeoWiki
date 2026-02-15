@@ -12,6 +12,8 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
+import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
+import { CdxDialog } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
 const $i18n = createI18nMock();
@@ -24,6 +26,12 @@ const SubjectEditorStub = {
 		const getSubjectData = (): StatementList => new StatementList( [] );
 		return { getSubjectData };
 	},
+};
+
+const CloseConfirmationDialogStub = {
+	template: '<div class="close-confirmation-stub"></div>',
+	props: [ 'open' ],
+	emits: [ 'discard', 'keep-editing' ],
 };
 
 describe( 'SubjectEditorDialog', () => {
@@ -148,5 +156,62 @@ describe( 'SubjectEditorDialog', () => {
 		await wrapper.setProps( { open: true } );
 
 		expect( ( wrapper.vm as any ).hasChanged ).toBe( false );
+	} );
+
+	const confirmationTestStubs = {
+		SubjectEditor: SubjectEditorStub,
+		SchemaEditorDialog: true,
+		CloseConfirmationDialog: CloseConfirmationDialogStub,
+	};
+
+	it( 'shows confirmation dialog when closing with unsaved changes', async () => {
+		const wrapper = mountComponent( true, confirmationTestStubs );
+		await flushPromises();
+
+		await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+		expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
+	} );
+
+	it( 'closes without confirmation when there are no unsaved changes', async () => {
+		const wrapper = mountComponent( true, confirmationTestStubs );
+		await flushPromises();
+
+		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
+	} );
+
+	it( 'closes dialog when discard is clicked in confirmation', async () => {
+		const wrapper = mountComponent( true, confirmationTestStubs );
+		await flushPromises();
+
+		await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		wrapper.findComponent( CloseConfirmationDialog ).vm.$emit( 'discard' );
+		await flushPromises();
+
+		expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
+	} );
+
+	it( 'keeps dialog open when keep-editing is clicked in confirmation', async () => {
+		const wrapper = mountComponent( true, confirmationTestStubs );
+		await flushPromises();
+
+		await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		wrapper.findComponent( CloseConfirmationDialog ).vm.$emit( 'keep-editing' );
+		await flushPromises();
+
+		expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+		expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
 	} );
 } );

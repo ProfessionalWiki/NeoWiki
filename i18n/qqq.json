@@ -43,5 +43,10 @@
 	"neowiki-schemas-column-name": "Column header for schema name in the schemas list table on [[Special:Schemas]].",
 	"neowiki-schemas-column-description": "Column header for schema description in the schemas list table on [[Special:Schemas]].",
 	"neowiki-schemas-column-properties": "Column header for the number of property definitions in the schemas list table on [[Special:Schemas]].",
-	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]]."
+	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]].",
+
+	"neowiki-close-confirmation-title": "Title of the confirmation dialog shown when closing a dialog with unsaved changes.",
+	"neowiki-close-confirmation-message": "Message in the confirmation dialog asking the user to confirm discarding unsaved changes.",
+	"neowiki-close-confirmation-discard": "Label for the destructive button that discards unsaved changes and closes the dialog.",
+	"neowiki-close-confirmation-keep-editing": "Label for the button that dismisses the confirmation and returns to editing."
 }

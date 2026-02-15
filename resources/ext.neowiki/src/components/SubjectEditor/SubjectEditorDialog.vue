@@ -4,7 +4,7 @@
 			:open="open"
 			class="ext-neowiki-subject-editor-dialog"
 			:title="$i18n( 'neowiki-subject-editor-title', props.subject.getLabel() ).text()"
-			@update:open="emit( 'update:open', $event )"
+			@update:open="onDialogUpdateOpen"
 		>
 			<template #header>
 				<div class="cdx-dialog__header__title-group">
@@ -41,7 +41,7 @@
 					weight="quiet"
 					type="button"
 					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-					@click="emit( 'update:open', false )"
+					@click="requestClose"
 				>
 					<CdxIcon :icon="cdxIconClose" />
 				</CdxButton>
@@ -76,6 +76,12 @@
 			@saved="onSchemaSaved"
 			@update:open="isSchemaEditorOpen = $event"
 		/>
+
+		<CloseConfirmationDialog
+			:open="confirmationOpen"
+			@discard="confirmClose"
+			@keep-editing="cancelClose"
+		/>
 	</div>
 </template>
 
@@ -94,8 +100,10 @@ import { Statement } from '@/domain/Statement.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
+import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 
 type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
 
@@ -119,6 +127,18 @@ const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
 const loadedSchema = ref<Schema | null>( null );
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
+
+function close(): void {
+	emit( 'update:open', false );
+}
+
+const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( hasChanged, close );
+
+function onDialogUpdateOpen( value: boolean ): void {
+	if ( !value ) {
+		requestClose();
+	}
+}
 
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
@@ -202,7 +222,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	try {
 		await props.onSave( updatedSubject, editSummary );
 		mw.notify( mw.msg( 'neowiki-subject-editor-success', subjectName ), { type: 'success' } );
-		emit( 'update:open', false );
+		close();
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),

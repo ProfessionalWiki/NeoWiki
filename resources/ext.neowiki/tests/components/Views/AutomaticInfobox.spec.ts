@@ -25,7 +25,7 @@ const $i18n = createI18nMock();
 
 describe( 'AutomaticInfobox', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'message' ] } );
+		setupMwMock( { functions: [ 'message', 'msg' ] } );
 		( globalThis as any ).mw.util = {
 			getUrl: vi.fn( ( title: string ) => `/wiki/${ title }` ),
 		};
