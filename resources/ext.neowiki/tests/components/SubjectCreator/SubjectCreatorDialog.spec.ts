@@ -10,6 +10,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { newSchema } from '@/TestHelpers.ts';
 import { CdxDialog } from '@wikimedia/codex';
+import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -71,6 +72,12 @@ const CdxDialogStub = {
 	emits: [ 'update:open', 'default' ],
 };
 
+const CloseConfirmationDialogStub = {
+	template: '<div class="close-confirmation-stub"></div>',
+	props: [ 'open' ],
+	emits: [ 'discard', 'keep-editing' ],
+};
+
 const CdxToggleButtonGroupStub = {
 	name: 'CdxToggleButtonGroup',
 	template: '<div class="cdx-toggle-button-group-stub"></div>',
@@ -95,6 +102,7 @@ describe( 'SubjectCreatorDialog', () => {
 					SubjectEditor: SubjectEditorStub,
 					SchemaEditor: SchemaEditorStub,
 					EditSummary: EditSummaryStub,
+					CloseConfirmationDialog: CloseConfirmationDialogStub,
 					CdxButton: true,
 					CdxDialog: CdxDialogStub,
 					CdxToggleButtonGroup: CdxToggleButtonGroupStub,
@@ -477,11 +485,93 @@ describe( 'SubjectCreatorDialog', () => {
 			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
 			await flushPromises();
 
+			wrapper.findComponent( CloseConfirmationDialog ).vm.$emit( 'discard' );
+			await flushPromises();
+
 			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
 			await flushPromises();
 
 			expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
 			expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( false );
+		} );
+	} );
+
+	describe( 'Close confirmation', () => {
+		it( 'shows confirmation when closing with unsaved changes', async () => {
+			const wrapper = mountComponent();
+
+			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+
+			const labelInput = wrapper.find( '.cdx-text-input-stub' );
+			await labelInput.setValue( 'Something' );
+			await labelInput.trigger( 'input' );
+			await flushPromises();
+
+			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+			await flushPromises();
+
+			const dialog = wrapper.findComponent( CdxDialog );
+			expect( dialog.props( 'open' ) ).toBe( true );
+			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
+		} );
+
+		it( 'closes without confirmation when there are no unsaved changes', async () => {
+			const wrapper = mountComponent();
+
+			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+
+			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+			await flushPromises();
+
+			const dialog = wrapper.findComponent( CdxDialog );
+			expect( dialog.props( 'open' ) ).toBe( false );
+		} );
+
+		it( 'closes dialog when discard is clicked in confirmation', async () => {
+			const wrapper = mountComponent();
+
+			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+
+			const labelInput = wrapper.find( '.cdx-text-input-stub' );
+			await labelInput.setValue( 'Something' );
+			await labelInput.trigger( 'input' );
+			await flushPromises();
+
+			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+			await flushPromises();
+
+			wrapper.findComponent( CloseConfirmationDialog ).vm.$emit( 'discard' );
+			await flushPromises();
+
+			const dialog = wrapper.findComponent( CdxDialog );
+			expect( dialog.props( 'open' ) ).toBe( false );
+		} );
+
+		it( 'keeps dialog open when keep-editing is clicked in confirmation', async () => {
+			const wrapper = mountComponent();
+
+			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+
+			const labelInput = wrapper.find( '.cdx-text-input-stub' );
+			await labelInput.setValue( 'Something' );
+			await labelInput.trigger( 'input' );
+			await flushPromises();
+
+			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+			await flushPromises();
+
+			wrapper.findComponent( CloseConfirmationDialog ).vm.$emit( 'keep-editing' );
+			await flushPromises();
+
+			const dialog = wrapper.findComponent( CdxDialog );
+			expect( dialog.props( 'open' ) ).toBe( true );
+			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
 		} );
 	} );
 } );

@@ -1,35 +1,46 @@
 <template>
-	<CdxDialog
-		v-model:open="open"
-		:use-close-button="true"
-		class="ext-neowiki-schema-editor-dialog"
-		:class="{ 'cdx-dialog--dividers': hasOverflow }"
-		:title="$i18n( 'neowiki-editing-schema', props.initialSchema.getName() ).text()"
-	>
-		<SchemaEditor
-			ref="schemaEditor"
-			:initial-schema="initialSchema"
-			@overflow="onOverflow"
-			@change="markChanged"
-		/>
-
-		<template #footer>
-			<EditSummary
-				:help-text="$i18n( 'neowiki-edit-summary-help-text-schema' ).text()"
-				:save-button-label="$i18n( 'neowiki-save-schema' ).text()"
-				@save="handleSave"
+	<div>
+		<CdxDialog
+			:open="props.open"
+			:use-close-button="true"
+			class="ext-neowiki-schema-editor-dialog"
+			:class="{ 'cdx-dialog--dividers': hasOverflow }"
+			:title="$i18n( 'neowiki-editing-schema', props.initialSchema.getName() ).text()"
+			@update:open="onDialogUpdateOpen"
+		>
+			<SchemaEditor
+				ref="schemaEditor"
+				:initial-schema="initialSchema"
+				@overflow="onOverflow"
+				@change="markChanged"
 			/>
-		</template>
-	</CdxDialog>
+
+			<template #footer>
+				<EditSummary
+					:help-text="$i18n( 'neowiki-edit-summary-help-text-schema' ).text()"
+					:save-button-label="$i18n( 'neowiki-save-schema' ).text()"
+					@save="handleSave"
+				/>
+			</template>
+		</CdxDialog>
+
+		<CloseConfirmationDialog
+			:open="confirmationOpen"
+			@discard="confirmClose"
+			@keep-editing="cancelClose"
+		/>
+	</div>
 </template>
 
 <script setup lang="ts">
 import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
+import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
-import { ref, computed, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
+import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 
 export type SchemaSaveHandler = ( schema: Schema, comment: string ) => Promise<void>;
 
@@ -44,14 +55,21 @@ const emit = defineEmits<{
 	'saved': [ schema: Schema ];
 }>();
 
-const open = computed( {
-	get: () => props.open,
-	set: ( value: boolean ) => emit( 'update:open', value )
-} );
-
 const schemaEditor = ref<SchemaEditorExposes | null>( null );
 const hasOverflow = ref( false );
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
+
+function close(): void {
+	emit( 'update:open', false );
+}
+
+const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( hasChanged, close );
+
+function onDialogUpdateOpen( value: boolean ): void {
+	if ( !value ) {
+		requestClose();
+	}
+}
 
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
@@ -76,7 +94,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		await props.onSave( schema, editSummary );
 		mw.notify( mw.msg( 'neowiki-schema-editor-success', schemaName ), { type: 'success' } );
 		emit( 'saved', schema );
-		open.value = false;
+		close();
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),

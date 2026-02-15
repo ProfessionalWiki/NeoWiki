@@ -7,11 +7,11 @@
 			{{ $i18n( 'neowiki-subject-creator-button-label' ).text() }}
 		</CdxButton>
 		<CdxDialog
-			v-model:open="open"
+			:open="open"
 			class="ext-neowiki-subject-creator-dialog"
 			:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' && !selectedSchemaName }"
 			:title="$i18n( 'neowiki-subject-creator-title' ).text()"
-			@default="open = false"
+			@update:open="onDialogUpdateOpen"
 		>
 			<template #header>
 				<div class="cdx-dialog__header__title-group">
@@ -32,7 +32,7 @@
 					weight="quiet"
 					type="button"
 					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-					@click="open = false"
+					@click="requestClose"
 				>
 					<CdxIcon :icon="cdxIconClose" />
 				</CdxButton>
@@ -72,6 +72,7 @@
 							ref="schemaNameInputRef"
 							v-model="newSchemaName"
 							:placeholder="$i18n( 'neowiki-subject-creator-schema-name-placeholder' ).text()"
+							@input="markChanged"
 						/>
 						<template #label>
 							{{ $i18n( 'neowiki-subject-creator-schema-name-field' ).text() }}
@@ -81,6 +82,7 @@
 					<SchemaEditor
 						ref="schemaEditorRef"
 						:initial-schema="newSchema"
+						@change="markChanged"
 					/>
 				</div>
 			</template>
@@ -127,6 +129,12 @@
 				/>
 			</template>
 		</CdxDialog>
+
+		<CloseConfirmationDialog
+			:open="confirmationOpen"
+			@discard="confirmClose"
+			@keep-editing="cancelClose"
+		/>
 	</div>
 </template>
 
@@ -146,8 +154,10 @@ import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
+import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
+import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 
 const open = ref( false );
 const selectedSchemaOption = ref( 'existing' );
@@ -167,6 +177,18 @@ const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
 const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
+
+function close(): void {
+	open.value = false;
+}
+
+const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( hasChanged, close );
+
+function onDialogUpdateOpen( value: boolean ): void {
+	if ( !value ) {
+		requestClose();
+	}
+}
 
 interface SubjectEditorInstance {
 	getSubjectData: () => StatementList;
@@ -346,7 +368,7 @@ const handleSave = async ( _summary: string ): Promise<void> => {
 			new StatementList( statementsToSave )
 		);
 		mw.notify( mw.msg( 'neowiki-subject-creator-success' ), { type: 'success' } );
-		open.value = false;
+		close();
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),
