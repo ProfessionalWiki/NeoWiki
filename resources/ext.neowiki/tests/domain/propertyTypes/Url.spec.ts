@@ -1,5 +1,5 @@
 import { test, expect, describe, it } from 'vitest';
-import { newUrlProperty, UrlType, isValidUrl, UrlFormatter } from '@/domain/propertyTypes/Url';
+import { newUrlProperty, UrlType, isValidUrl, UrlFormatter, formatUrlForDisplay } from '@/domain/propertyTypes/Url';
 import { newStringValue } from '@/domain/Value';
 import { PropertyName } from '@/domain/PropertyDefinition';
 
@@ -28,6 +28,90 @@ test.each( [
 	expect( isValid ).toBe( expected );
 } );
 
+describe( 'formatUrlForDisplay', () => {
+
+	it( 'strips https protocol', () => {
+		expect( formatUrlForDisplay( 'https://pro.wiki/pricing' ) ).toBe( 'pro.wiki/pricing' );
+	} );
+
+	it( 'strips http protocol', () => {
+		expect( formatUrlForDisplay( 'http://pro.wiki/pricing' ) ).toBe( 'pro.wiki/pricing' );
+	} );
+
+	it( 'does not add trailing slash for root URL', () => {
+		expect( formatUrlForDisplay( 'https://pro.wiki' ) ).toBe( 'pro.wiki' );
+	} );
+
+	it( 'preserves query and hash for short URLs', () => {
+		expect( formatUrlForDisplay( 'https://example.com/path?q=1#top' ) ).toBe( 'example.com/path?q=1#top' );
+	} );
+
+	it( 'returns non-URL strings as-is', () => {
+		expect( formatUrlForDisplay( 'not a url' ) ).toBe( 'not a url' );
+	} );
+
+	it( 'does not truncate short URLs', () => {
+		expect( formatUrlForDisplay( 'https://pro.wiki/short' ) ).toBe( 'pro.wiki/short' );
+	} );
+
+	it( 'does not truncate at exactly the limit', () => {
+		const url = 'https://example.com/exactly';
+		const stripped = 'example.com/exactly';
+		expect( formatUrlForDisplay( url, stripped.length ) ).toBe( stripped );
+	} );
+
+	it( 'drops query string when URL is too long', () => {
+		expect( formatUrlForDisplay(
+			'https://example.com/page?session=abc123&tracking=xyz789&ref=campaign',
+			20,
+		) ).toBe( 'example.com/page' );
+	} );
+
+	it( 'drops fragment when URL is too long', () => {
+		expect( formatUrlForDisplay(
+			'https://example.com/page#very-long-section-name-here',
+			20,
+		) ).toBe( 'example.com/page' );
+	} );
+
+	it( 'collapses middle path segments for multi-segment URLs', () => {
+		expect( formatUrlForDisplay(
+			'https://www.mediawiki.org/wiki/Extension:NeoWiki/Documentation/Getting_Started',
+		) ).toBe( 'www.mediawiki.org/wiki/\u2026/Getting_Started' );
+	} );
+
+	it( 'keeps maximum front segments that fit', () => {
+		expect( formatUrlForDisplay(
+			'https://example.com/alpha/bravo/charlie/delta/echo/foxtrot/target',
+		) ).toBe( 'example.com/alpha/bravo/charlie/delta/\u2026/target' );
+	} );
+
+	it( 'falls back to character truncation for single long path segment', () => {
+		const result = formatUrlForDisplay( 'https://example.com/a-very-long-single-path-segment-name-here', 30 );
+
+		expect( result.length ).toBe( 30 );
+		expect( result ).toContain( '\u2026' );
+		expect( result ).toContain( 'example.com/' );
+	} );
+
+	it( 'falls back to character truncation when segment collapse does not fit', () => {
+		const result = formatUrlForDisplay(
+			'https://very-long-domain-name.example.com/path/to/very-long-last-segment-name',
+		);
+
+		expect( result.length ).toBe( 50 );
+		expect( result ).toContain( '\u2026' );
+	} );
+
+	it( 'respects custom maxLength', () => {
+		const result = formatUrlForDisplay( 'https://example.com/a-very-long-path-that-exceeds', 30 );
+
+		expect( result.length ).toBe( 30 );
+		expect( result ).toContain( '\u2026' );
+	} );
+
+} );
+
 describe( 'UrlFormatter', () => {
 
 	describe( 'formatUrlAsHtml', () => {
@@ -45,9 +129,12 @@ describe( 'UrlFormatter', () => {
 		} );
 
 		it( 'sanitizes evil URLs', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://pro.wiki/pricing <script>alert("xss");</script>' ),
-			).toBe( '<a href="https://pro.wiki/pricing%20%3Cscript%3Ealert(%22xss%22);%3C/script%3E">pro.wiki/pricing%20%3Cscript%3Ealert(%22xss%22);%3C/script%3E</a>' ); // TODO: verify this is safe
+			const result = ( new UrlFormatter( newUrlProperty() ) )
+				.formatUrlAsHtml( 'https://pro.wiki/pricing <script>alert("xss");</script>' );
+
+			expect( result ).toContain( 'href="https://pro.wiki/pricing%20%3Cscript%3Ealert(%22xss%22);%3C/script%3E"' );
+			expect( result ).not.toContain( '<script>' );
+			expect( result ).toContain( '\u2026' );
 		} );
 
 		it( 'escapes HTML inputs', () => {

@@ -115,7 +115,7 @@ describe( 'AutomaticInfobox', () => {
 		expect( statementElements[ 2 ].find( '.ext-neowiki-auto-infobox__property' ).text() ).toBe( 'website' );
 		const linkElement = statementElements[ 2 ].find( '.ext-neowiki-auto-infobox__value a' );
 		expect( linkElement.attributes( 'href' ) ).toBe( 'https://example.com' );
-		expect( linkElement.text() ).toBe( 'https://example.com' );
+		expect( linkElement.text() ).toBe( 'example.com' );
 	} );
 
 	it( 'renders without statements when subject has no statements', () => {
