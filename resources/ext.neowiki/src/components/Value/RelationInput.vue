@@ -141,6 +141,8 @@ function validateAndUpdateMessages(): void {
 }
 
 function onSingleSelectionChanged( id: string | null ): void {
+	singleHasUnmatchedText.value = false;
+
 	let newRelationValue: RelationValue | undefined;
 	if ( id !== null ) {
 		newRelationValue = new RelationValue( [ newRelation( undefined, id ) ] );
