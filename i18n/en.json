@@ -118,8 +118,8 @@
 	"neowiki-schemas-column-properties": "Properties",
 	"neowiki-schemas-empty": "No schemas have been created yet.",
 
-	"neowiki-close-confirmation-title": "You have unsaved changes",
-	"neowiki-close-confirmation-message": "Are you sure you want to discard your unsaved changes?",
+	"neowiki-close-confirmation-title": "Discard unsaved changes?",
+	"neowiki-close-confirmation-message": "Your changes have not been saved and will be lost.",
 	"neowiki-close-confirmation-discard": "Discard",
 	"neowiki-close-confirmation-keep-editing": "Keep editing"
 }
