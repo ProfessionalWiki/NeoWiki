@@ -69,6 +69,11 @@ export function formatUrlForDisplay( urlString: string, maxLength: number = 50 )
 function stripProtocol( urlString: string ): string {
 	try {
 		const url = new URL( urlString );
+
+		if ( !ALLOWED_PROTOCOLS.includes( url.protocol ) ) {
+			return urlString;
+		}
+
 		const pathName = url.pathname === '/' ? '' : url.pathname;
 		return url.hostname + pathName + url.search + url.hash;
 	} catch ( _ ) {

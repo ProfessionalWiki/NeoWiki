@@ -38,6 +38,10 @@ describe( 'formatUrlForDisplay', () => {
 		expect( formatUrlForDisplay( 'http://pro.wiki/pricing' ) ).toBe( 'pro.wiki/pricing' );
 	} );
 
+	it( 'does not strip non-http protocols', () => {
+		expect( formatUrlForDisplay( 'ftp://files.example.com/data' ) ).toBe( 'ftp://files.example.com/data' );
+	} );
+
 	it( 'does not add trailing slash for root URL', () => {
 		expect( formatUrlForDisplay( 'https://pro.wiki' ) ).toBe( 'pro.wiki' );
 	} );
