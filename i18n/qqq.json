@@ -40,6 +40,17 @@
 	"neowiki-subject-lookup-no-results": "Message shown in the subject lookup dropdown when no subjects match the search query.",
 	"neowiki-subject-lookup-no-match": "Error message shown in the subject lookup when the user types text but does not select a subject from the dropdown results.",
 
+	"neowiki-schema-creator-title": "Title of the dialog for creating a new schema.",
+	"neowiki-schema-creator-button": "Label for the button that opens the schema creation dialog on [[Special:Schemas]].",
+	"neowiki-schema-creator-name-field": "Label for the schema name input field in the schema creation dialog.",
+	"neowiki-schema-creator-name-placeholder": "Placeholder text for the schema name input field in the schema creation dialog.",
+	"neowiki-schema-creator-name-required": "Error shown when the schema name field is empty in the schema creation dialog.",
+	"neowiki-schema-creator-name-taken": "Error shown when a schema with the entered name already exists in the schema creation dialog.",
+	"neowiki-schema-creator-save": "Label for the save button in the schema creation dialog.",
+	"neowiki-schema-creator-success": "Success notification shown after creating a schema. $1 is the schema name.",
+	"neowiki-schema-creator-error": "Error notification title shown when creating a schema fails. $1 is the schema name.",
+	"neowiki-schema-creator-summary-default": "Default edit summary used when creating a schema via the UI.",
+
 	"neowiki-schemas-column-name": "Column header for schema name in the schemas list table on [[Special:Schemas]].",
 	"neowiki-schemas-column-description": "Column header for schema description in the schemas list table on [[Special:Schemas]].",
 	"neowiki-schemas-column-properties": "Column header for the number of property definitions in the schemas list table on [[Special:Schemas]].",

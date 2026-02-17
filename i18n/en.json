@@ -113,6 +113,17 @@
 	"neowiki-subject-lookup-no-results": "No subjects found",
 	"neowiki-subject-lookup-no-match": "Please select a subject from the list.",
 
+	"neowiki-schema-creator-title": "Create schema",
+	"neowiki-schema-creator-button": "Create",
+	"neowiki-schema-creator-name-field": "Schema name",
+	"neowiki-schema-creator-name-placeholder": "Enter a name for the schema",
+	"neowiki-schema-creator-name-required": "Please enter a schema name.",
+	"neowiki-schema-creator-name-taken": "A schema with this name already exists.",
+	"neowiki-schema-creator-save": "Create schema",
+	"neowiki-schema-creator-success": "Created $1 schema",
+	"neowiki-schema-creator-error": "Failed to create $1 schema.",
+	"neowiki-schema-creator-summary-default": "Create schema via NeoWiki UI",
+
 	"neowiki-schemas-column-name": "Name",
 	"neowiki-schemas-column-description": "Description",
 	"neowiki-schemas-column-properties": "Properties",
