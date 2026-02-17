@@ -19,23 +19,23 @@ describe( 'CloseConfirmationDialog', () => {
 		} );
 	}
 
-	it( 'emits discard when discard button is clicked', async () => {
+	it( 'emits discard on primary action', () => {
 		const wrapper = mountComponent();
 
-		await wrapper.find( '.cdx-button--action-destructive' ).trigger( 'click' );
+		wrapper.findComponent( CdxDialog ).vm.$emit( 'primary' );
 
 		expect( wrapper.emitted( 'discard' ) ).toHaveLength( 1 );
 	} );
 
-	it( 'emits keep-editing when keep-editing button is clicked', async () => {
+	it( 'emits keep-editing on default action', () => {
 		const wrapper = mountComponent();
 
-		await wrapper.find( '.cdx-button--action-default' ).trigger( 'click' );
+		wrapper.findComponent( CdxDialog ).vm.$emit( 'default' );
 
 		expect( wrapper.emitted( 'keep-editing' ) ).toHaveLength( 1 );
 	} );
 
-	it( 'emits keep-editing on backdrop/escape dismiss', async () => {
+	it( 'emits keep-editing on backdrop/escape dismiss', () => {
 		const wrapper = mountComponent();
 
 		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
