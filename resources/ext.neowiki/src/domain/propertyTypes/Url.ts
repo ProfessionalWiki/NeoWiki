@@ -76,7 +76,7 @@ function stripProtocol( urlString: string ): string {
 
 		const pathName = url.pathname === '/' ? '' : url.pathname;
 		return url.hostname + pathName + url.search + url.hash;
-	} catch ( _ ) {
+	} catch {
 		return urlString;
 	}
 }
