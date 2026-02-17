@@ -1,5 +1,5 @@
 import { test, expect, describe, it } from 'vitest';
-import { newUrlProperty, UrlType, isValidUrl, UrlFormatter, formatUrlForDisplay } from '@/domain/propertyTypes/Url';
+import { newUrlProperty, UrlType, isValidUrl, formatUrlForDisplay } from '@/domain/propertyTypes/Url';
 import { newStringValue } from '@/domain/Value';
 import { PropertyName } from '@/domain/PropertyDefinition';
 
@@ -108,113 +108,6 @@ describe( 'formatUrlForDisplay', () => {
 
 		expect( result.length ).toBe( 30 );
 		expect( result ).toContain( '\u2026' );
-	} );
-
-} );
-
-describe( 'UrlFormatter', () => {
-
-	describe( 'formatUrlAsHtml', () => {
-
-		it( 'returns empty as-is', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( '' ),
-			).toBe( '' );
-		} );
-
-		it( 'formats valid URLs', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://pro.wiki/pricing' ),
-			).toBe( '<a href="https://pro.wiki/pricing">pro.wiki/pricing</a>' );
-		} );
-
-		it( 'sanitizes evil URLs', () => {
-			const result = ( new UrlFormatter( newUrlProperty() ) )
-				.formatUrlAsHtml( 'https://pro.wiki/pricing <script>alert("xss");</script>' );
-
-			expect( result ).toContain( 'href="https://pro.wiki/pricing%20%3Cscript%3Ealert(%22xss%22);%3C/script%3E"' );
-			expect( result ).not.toContain( '<script>' );
-			expect( result ).toContain( '\u2026' );
-		} );
-
-		it( 'escapes HTML inputs', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'evil <strong>bold</strong>' ),
-			).toBe( 'evil &lt;strong&gt;bold&lt;/strong&gt;' );
-		} );
-
-		it( 'returns invalid URLs as they are', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( '~[,,_,,]:3' ),
-			).toBe( '~[,,_,,]:3' );
-		} );
-
-		it( 'does not add tailing slashes in the text', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://pro.wiki' ),
-			).toBe( '<a href="https://pro.wiki/">pro.wiki</a>' ); // Tailing slash only added in the link
-
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://pro.wiki/pricing' ),
-			).toBe( '<a href="https://pro.wiki/pricing">pro.wiki/pricing</a>' );
-		} );
-
-		it( 'returns link with HTTPS stripped from the text', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://professional.wiki/en/mediawiki-development#anchor' ),
-			).toBe( '<a href="https://professional.wiki/en/mediawiki-development#anchor">professional.wiki/en/mediawiki-development#anchor</a>' );
-		} );
-
-		it( 'escapes ampersands in displayed URL', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://example.com/?a=1&b=2' ),
-			).toBe( '<a href="https://example.com/?a=1&amp;b=2">example.com?a=1&amp;b=2</a>' );
-		} );
-
-		it( 'escapes javascript: URLs instead of linking them', () => {
-			// eslint-disable-next-line no-script-url
-			const jsUrl = 'javascript:alert(1)';
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( jsUrl ),
-			).toBe( jsUrl );
-		} );
-
-		it( 'escapes data: URLs instead of linking them', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'data:text/html,<script>alert(1)</script>' ),
-			).toBe( 'data:text/html,&lt;script&gt;alert(1)&lt;/script&gt;' );
-		} );
-
-	} );
-
-	describe( 'formatUrlArrayAsHtml', () => {
-
-		it( 'formats multiple URLs', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlArrayAsHtml( [
-					'https://pro.wiki/blog',
-					'https://pro.wiki/pricing',
-				] ),
-			).toBe( '<a href="https://pro.wiki/blog">pro.wiki/blog</a>, <a href="https://pro.wiki/pricing">pro.wiki/pricing</a>' );
-		} );
-
-		it( 'returns empty string for empty array', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlArrayAsHtml( [] ),
-			).toBe( '' );
-		} );
-
-		it( 'omits empty values', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlArrayAsHtml( [
-					'https://pro.wiki/blog',
-					'',
-					' ',
-					'https://pro.wiki/pricing',
-				] ),
-			).toBe( '<a href="https://pro.wiki/blog">pro.wiki/blog</a>, <a href="https://pro.wiki/pricing">pro.wiki/pricing</a>' );
-		} );
-
 	} );
 
 } );

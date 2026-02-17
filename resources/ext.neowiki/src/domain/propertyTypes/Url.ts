@@ -56,10 +56,6 @@ export class UrlType extends BasePropertyType<UrlProperty, StringValue> {
 
 const ALLOWED_PROTOCOLS: readonly string[] = [ 'http:', 'https:' ];
 
-function hasAllowedProtocol( url: URL ): boolean {
-	return ALLOWED_PROTOCOLS.includes( url.protocol );
-}
-
 export function formatUrlForDisplay( urlString: string, maxLength: number = 50 ): string {
 	const stripped = stripProtocol( urlString );
 
@@ -152,45 +148,6 @@ function truncateMiddle( text: string, maxLength: number ): string {
 	const backLength = maxLength - 1 - frontLength;
 
 	return text.slice( 0, frontLength ) + '\u2026' + text.slice( -backLength );
-}
-
-export class UrlFormatter {
-
-	public constructor(
-		private readonly property: UrlProperty,
-	) {
-	}
-
-	public formatUrlArrayAsHtml( urls: string[] ): string {
-		return urls.map( this.formatUrlAsHtml.bind( this ) )
-			.filter( ( v: string ) => v.trim() !== '' )
-			.join( ', ' );
-	}
-
-	public formatUrlAsHtml( urlString: string ): string {
-		try {
-			const url = new URL( urlString );
-
-			if ( !hasAllowedProtocol( url ) ) {
-				return escapeHtml( urlString );
-			}
-
-			const sanitizedUrl = escapeHtml( url.href );
-			const displayedUrl = escapeHtml( formatUrlForDisplay( urlString ) );
-			return `<a href="${ sanitizedUrl }">${ displayedUrl }</a>`;
-		} catch ( _ ) {
-			return escapeHtml( urlString );
-		}
-	}
-}
-
-function escapeHtml( text: string ): string {
-	return text
-		.replace( /&/g, '&amp;' )
-		.replace( /</g, '&lt;' )
-		.replace( />/g, '&gt;' )
-		.replace( /"/g, '&quot;' )
-		.replace( /'/g, '&#039;' );
 }
 
 export function isValidUrl( urlString: string ): boolean {
