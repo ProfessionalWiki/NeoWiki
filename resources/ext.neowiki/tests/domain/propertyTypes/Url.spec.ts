@@ -1,5 +1,5 @@
 import { test, expect, describe, it } from 'vitest';
-import { newUrlProperty, UrlType, isValidUrl, UrlFormatter } from '@/domain/propertyTypes/Url';
+import { newUrlProperty, UrlType, isValidUrl, formatUrlForDisplay } from '@/domain/propertyTypes/Url';
 import { newStringValue } from '@/domain/Value';
 import { PropertyName } from '@/domain/PropertyDefinition';
 
@@ -28,106 +28,90 @@ test.each( [
 	expect( isValid ).toBe( expected );
 } );
 
-describe( 'UrlFormatter', () => {
+describe( 'formatUrlForDisplay', () => {
 
-	describe( 'formatUrlAsHtml', () => {
-
-		it( 'returns empty as-is', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( '' ),
-			).toBe( '' );
-		} );
-
-		it( 'formats valid URLs', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://pro.wiki/pricing' ),
-			).toBe( '<a href="https://pro.wiki/pricing">pro.wiki/pricing</a>' );
-		} );
-
-		it( 'sanitizes evil URLs', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://pro.wiki/pricing <script>alert("xss");</script>' ),
-			).toBe( '<a href="https://pro.wiki/pricing%20%3Cscript%3Ealert(%22xss%22);%3C/script%3E">pro.wiki/pricing%20%3Cscript%3Ealert(%22xss%22);%3C/script%3E</a>' ); // TODO: verify this is safe
-		} );
-
-		it( 'escapes HTML inputs', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'evil <strong>bold</strong>' ),
-			).toBe( 'evil &lt;strong&gt;bold&lt;/strong&gt;' );
-		} );
-
-		it( 'returns invalid URLs as they are', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( '~[,,_,,]:3' ),
-			).toBe( '~[,,_,,]:3' );
-		} );
-
-		it( 'does not add tailing slashes in the text', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://pro.wiki' ),
-			).toBe( '<a href="https://pro.wiki/">pro.wiki</a>' ); // Tailing slash only added in the link
-
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://pro.wiki/pricing' ),
-			).toBe( '<a href="https://pro.wiki/pricing">pro.wiki/pricing</a>' );
-		} );
-
-		it( 'returns link with HTTPS stripped from the text', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://professional.wiki/en/mediawiki-development#anchor' ),
-			).toBe( '<a href="https://professional.wiki/en/mediawiki-development#anchor">professional.wiki/en/mediawiki-development#anchor</a>' );
-		} );
-
-		it( 'escapes ampersands in displayed URL', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'https://example.com/?a=1&b=2' ),
-			).toBe( '<a href="https://example.com/?a=1&amp;b=2">example.com?a=1&amp;b=2</a>' );
-		} );
-
-		it( 'escapes javascript: URLs instead of linking them', () => {
-			// eslint-disable-next-line no-script-url
-			const jsUrl = 'javascript:alert(1)';
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( jsUrl ),
-			).toBe( jsUrl );
-		} );
-
-		it( 'escapes data: URLs instead of linking them', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlAsHtml( 'data:text/html,<script>alert(1)</script>' ),
-			).toBe( 'data:text/html,&lt;script&gt;alert(1)&lt;/script&gt;' );
-		} );
-
+	it( 'strips https protocol', () => {
+		expect( formatUrlForDisplay( 'https://pro.wiki/pricing' ) ).toBe( 'pro.wiki/pricing' );
 	} );
 
-	describe( 'formatUrlArrayAsHtml', () => {
+	it( 'strips http protocol', () => {
+		expect( formatUrlForDisplay( 'http://pro.wiki/pricing' ) ).toBe( 'pro.wiki/pricing' );
+	} );
 
-		it( 'formats multiple URLs', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlArrayAsHtml( [
-					'https://pro.wiki/blog',
-					'https://pro.wiki/pricing',
-				] ),
-			).toBe( '<a href="https://pro.wiki/blog">pro.wiki/blog</a>, <a href="https://pro.wiki/pricing">pro.wiki/pricing</a>' );
-		} );
+	it( 'does not strip non-http protocols', () => {
+		expect( formatUrlForDisplay( 'ftp://files.example.com/data' ) ).toBe( 'ftp://files.example.com/data' );
+	} );
 
-		it( 'returns empty string for empty array', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlArrayAsHtml( [] ),
-			).toBe( '' );
-		} );
+	it( 'does not add trailing slash for root URL', () => {
+		expect( formatUrlForDisplay( 'https://pro.wiki' ) ).toBe( 'pro.wiki' );
+	} );
 
-		it( 'omits empty values', () => {
-			expect(
-				( new UrlFormatter( newUrlProperty() ) ).formatUrlArrayAsHtml( [
-					'https://pro.wiki/blog',
-					'',
-					' ',
-					'https://pro.wiki/pricing',
-				] ),
-			).toBe( '<a href="https://pro.wiki/blog">pro.wiki/blog</a>, <a href="https://pro.wiki/pricing">pro.wiki/pricing</a>' );
-		} );
+	it( 'preserves query and hash for short URLs', () => {
+		expect( formatUrlForDisplay( 'https://example.com/path?q=1#top' ) ).toBe( 'example.com/path?q=1#top' );
+	} );
 
+	it( 'returns non-URL strings as-is', () => {
+		expect( formatUrlForDisplay( 'not a url' ) ).toBe( 'not a url' );
+	} );
+
+	it( 'does not truncate short URLs', () => {
+		expect( formatUrlForDisplay( 'https://pro.wiki/short' ) ).toBe( 'pro.wiki/short' );
+	} );
+
+	it( 'does not truncate at exactly the limit', () => {
+		const url = 'https://example.com/exactly';
+		const stripped = 'example.com/exactly';
+		expect( formatUrlForDisplay( url, stripped.length ) ).toBe( stripped );
+	} );
+
+	it( 'drops query string when URL is too long', () => {
+		expect( formatUrlForDisplay(
+			'https://example.com/page?session=abc123&tracking=xyz789&ref=campaign',
+			20,
+		) ).toBe( 'example.com/page' );
+	} );
+
+	it( 'drops fragment when URL is too long', () => {
+		expect( formatUrlForDisplay(
+			'https://example.com/page#very-long-section-name-here',
+			20,
+		) ).toBe( 'example.com/page' );
+	} );
+
+	it( 'collapses middle path segments for multi-segment URLs', () => {
+		expect( formatUrlForDisplay(
+			'https://www.mediawiki.org/wiki/Extension:NeoWiki/Documentation/Getting_Started',
+		) ).toBe( 'www.mediawiki.org/wiki/\u2026/Getting_Started' );
+	} );
+
+	it( 'keeps maximum front segments that fit', () => {
+		expect( formatUrlForDisplay(
+			'https://example.com/alpha/bravo/charlie/delta/echo/foxtrot/target',
+		) ).toBe( 'example.com/alpha/bravo/charlie/delta/\u2026/target' );
+	} );
+
+	it( 'falls back to character truncation for single long path segment', () => {
+		const result = formatUrlForDisplay( 'https://example.com/a-very-long-single-path-segment-name-here', 30 );
+
+		expect( result.length ).toBe( 30 );
+		expect( result ).toContain( '\u2026' );
+		expect( result ).toContain( 'example.com/' );
+	} );
+
+	it( 'falls back to character truncation when segment collapse does not fit', () => {
+		const result = formatUrlForDisplay(
+			'https://very-long-domain-name.example.com/path/to/very-long-last-segment-name',
+		);
+
+		expect( result.length ).toBe( 50 );
+		expect( result ).toContain( '\u2026' );
+	} );
+
+	it( 'respects custom maxLength', () => {
+		const result = formatUrlForDisplay( 'https://example.com/a-very-long-path-that-exceeds', 30 );
+
+		expect( result.length ).toBe( 30 );
+		expect( result ).toContain( '\u2026' );
 	} );
 
 } );

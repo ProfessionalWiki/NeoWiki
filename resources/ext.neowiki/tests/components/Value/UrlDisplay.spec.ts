@@ -18,12 +18,19 @@ function createWrapperWithValue( value: Value ): ReturnType<typeof mount> {
 }
 
 describe( 'UrlDisplay', () => {
-	it( 'renders a single URL correctly', () => {
+	it( 'strips protocol and shows domain in display text', () => {
 		const wrapper = createWrapper( 'https://example.com' );
 
 		const link = wrapper.find( 'a' );
 		expect( link.attributes( 'href' ) ).toBe( 'https://example.com' );
-		expect( link.text() ).toBe( 'https://example.com' );
+		expect( link.text() ).toBe( 'example.com' );
+	} );
+
+	it( 'shows full URL on hover via title attribute', () => {
+		const wrapper = createWrapper( 'https://example.com/page' );
+
+		const link = wrapper.find( 'a' );
+		expect( link.attributes( 'title' ) ).toBe( 'https://example.com/page' );
 	} );
 
 	it( 'renders multiple URLs correctly', () => {
@@ -32,9 +39,9 @@ describe( 'UrlDisplay', () => {
 		const links = wrapper.findAll( 'a' );
 		expect( links ).toHaveLength( 2 );
 		expect( links[ 0 ].attributes( 'href' ) ).toBe( 'https://foo.com/example' );
-		expect( links[ 0 ].text() ).toBe( 'https://foo.com/example' );
+		expect( links[ 0 ].text() ).toBe( 'foo.com/example' );
 		expect( links[ 1 ].attributes( 'href' ) ).toBe( 'https://bar.com/example' );
-		expect( links[ 1 ].text() ).toBe( 'https://bar.com/example' );
+		expect( links[ 1 ].text() ).toBe( 'bar.com/example' );
 	} );
 
 	it( 'renders nothing when a single empty URL is present', () => {
