@@ -71,7 +71,7 @@ compensation in EUR with a value between 0 and 1000000.
 * [[Schema:Artwork]]
 * [[Schema:Exhibition]]
 * [[Schema:Attendance]]
-* [{{fullurl:Special:AllPages|from=&to=&namespace=7474}} View all schemas]
+* [[Special:Schemas|View all schemas]]
 
 == REST API Endpoints ==
 
