@@ -63,6 +63,7 @@
 				<EditSummary
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-subject-editor-save' ).text()"
+					:save-disabled="!hasChanged"
 					@save="handleSave"
 				/>
 			</template>

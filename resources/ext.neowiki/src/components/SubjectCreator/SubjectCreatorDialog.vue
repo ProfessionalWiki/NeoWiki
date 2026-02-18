@@ -115,6 +115,7 @@
 				<EditSummary
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-subject-creator-create-schema' ).text()"
+					:save-disabled="!hasChanged"
 					@save="handleCreateSchema"
 				/>
 			</template>
@@ -125,6 +126,7 @@
 				<EditSummary
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-subject-creator-save-with-schema', selectedSchemaName ).text()"
+					:save-disabled="!hasChanged"
 					@save="handleSave"
 				/>
 			</template>
@@ -250,6 +252,7 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 
 	selectedSchemaName.value = schemaName;
 	subjectLabel.value = String( mw.config.get( 'wgTitle' ) ?? '' );
+	markChanged();
 
 	try {
 		loadedSchema.value = await schemaStore.getOrFetchSchema( schemaName );
