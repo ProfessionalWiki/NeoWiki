@@ -34,7 +34,7 @@ export interface MwMockOptions {
 	messages?: Record<string, string | ( ( ...params: string[] ) => string )>;
 	config?: Record<string, any>;
 	functions?: (
-		'config' | 'message' | 'msg' | 'notify'
+		'config' | 'message' | 'msg' | 'notify' | 'util'
 	)[];
 }
 
@@ -75,6 +75,10 @@ export function setupMwMock(
 		} ) ),
 		msg: () => vi.fn( ( key: string, ...params: string[] ) => resolveMessage( key, params ) ),
 		notify: () => vi.fn(),
+		util: () => ( {
+			wikiScript: vi.fn( () => '/rest.php' ),
+			getUrl: vi.fn( ( title: string ) => `/wiki/${ title }` ),
+		} ),
 	};
 
 	functions.forEach( ( funcName ) => {
