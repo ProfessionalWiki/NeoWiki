@@ -9,6 +9,8 @@ import { CdxButton } from '@wikimedia/codex';
 const canCreateSchemasRef = ref( false );
 const checkCreatePermissionMock = vi.fn();
 
+let schemasResponse: unknown[] = [];
+
 vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	useSchemaPermissions: () => ( {
 		canCreateSchemas: canCreateSchemasRef,
@@ -25,7 +27,7 @@ vi.mock( '@/NeoWikiExtension.ts', () => ( {
 			newHttpClient: () => ( {
 				get: vi.fn().mockResolvedValue( {
 					ok: true,
-					json: () => Promise.resolve( [] ),
+					json: () => Promise.resolve( schemasResponse ),
 				} ),
 			} ),
 		} ),
@@ -43,8 +45,9 @@ function findCreateButton( wrapper: VueWrapper ): VueWrapper | undefined {
 		.find( ( btn ) => btn.text().includes( 'neowiki-schema-creator-button' ) );
 }
 
-function mountComponent(): VueWrapper {
-	setupMwMock( { functions: [ 'msg' ] } );
+function mountComponent( summaries: unknown[] = [] ): VueWrapper {
+	schemasResponse = summaries;
+	setupMwMock( { functions: [ 'msg', 'util' ] } );
 
 	return mount( SchemasPage, {
 		global: {
@@ -61,6 +64,7 @@ describe( 'SchemasPage', () => {
 	beforeEach( () => {
 		canCreateSchemasRef.value = false;
 		checkCreatePermissionMock.mockClear();
+		schemasResponse = [];
 	} );
 
 	it( 'shows create button when user has create permission', async () => {
@@ -97,5 +101,27 @@ describe( 'SchemasPage', () => {
 		await flushPromises();
 
 		expect( wrapper.findComponent( SchemaCreatorDialog ).exists() ).toBe( false );
+	} );
+
+	it( 'shows empty value indicator for schemas without a description', async () => {
+		const wrapper = mountComponent( [
+			{ name: 'Person', description: '', propertyCount: 3 },
+		] );
+		await flushPromises();
+
+		const emptyValue = wrapper.find( '.ext-neowiki-schemas-page__empty-value' );
+
+		expect( emptyValue.exists() ).toBe( true );
+		expect( emptyValue.text() ).toBe( '-' );
+	} );
+
+	it( 'does not show empty value indicator when description is present', async () => {
+		const wrapper = mountComponent( [
+			{ name: 'Person', description: 'A human being', propertyCount: 3 },
+		] );
+		await flushPromises();
+
+		expect( wrapper.find( '.ext-neowiki-schemas-page__empty-value' ).exists() ).toBe( false );
+		expect( wrapper.text() ).toContain( 'A human being' );
 	} );
 } );
