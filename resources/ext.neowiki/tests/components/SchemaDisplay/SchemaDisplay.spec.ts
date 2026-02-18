@@ -104,6 +104,39 @@ describe( 'SchemaDisplay', () => {
 		expect( wrapper.find( 'tbody tr' ).text() ).toContain( 'Hello' );
 	} );
 
+	it( 'shows empty value indicators for missing default and description', () => {
+		const schema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Website', {
+					type: TextType.typeName,
+				} ),
+			] ),
+		} );
+
+		const wrapper = mountComponent( schema );
+		const emptyValues = wrapper.findAll( '.ext-neowiki-schema-display__empty-value' );
+
+		expect( emptyValues ).toHaveLength( 2 );
+		expect( emptyValues[ 0 ].text() ).toBe( '-' );
+	} );
+
+	it( 'does not show empty value indicator when description is present', () => {
+		const schema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Website', {
+					type: TextType.typeName,
+					description: 'The main website URL',
+					default: [ 'https://example.com' ],
+				} ),
+			] ),
+		} );
+
+		const wrapper = mountComponent( schema );
+
+		expect( wrapper.find( '.ext-neowiki-schema-display__empty-value' ).exists() ).toBe( false );
+		expect( wrapper.text() ).toContain( 'The main website URL' );
+	} );
+
 	it( 'shows empty message when schema has no properties', () => {
 		const wrapper = mountComponent( newSchema( { properties: new PropertyDefinitionList( [] ) } ) );
 

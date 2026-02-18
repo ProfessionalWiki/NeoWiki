@@ -39,6 +39,20 @@
 					:value="item"
 					:property="row"
 				/>
+				<span
+					v-else
+					class="ext-neowiki-schema-display__empty-value"
+				>-</span>
+			</template>
+
+			<template #item-description="{ item }">
+				<span
+					v-if="!item"
+					class="ext-neowiki-schema-display__empty-value"
+				>-</span>
+				<template v-else>
+					{{ item }}
+				</template>
 			</template>
 
 			<template #empty-state>
@@ -145,6 +159,11 @@ const onSchemaSaved = ( schema: Schema ): void => {
 
 	.cdx-table__header__content {
 		flex-grow: 1;
+	}
+
+	&__empty-value {
+		color: @color-subtle;
+		user-select: none;
 	}
 }
 </style>

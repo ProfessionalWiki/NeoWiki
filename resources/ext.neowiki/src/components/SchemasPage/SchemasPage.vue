@@ -20,6 +20,16 @@
 				<a :href="schemaUrl( item )">{{ item }}</a>
 			</template>
 
+			<template #item-description="{ item }">
+				<span
+					v-if="!item"
+					class="ext-neowiki-schemas-page__empty-value"
+				>-</span>
+				<template v-else>
+					{{ item }}
+				</template>
+			</template>
+
 			<template #empty-state>
 				{{ $i18n( 'neowiki-schemas-empty' ).text() }}
 			</template>
@@ -112,7 +122,14 @@ onMounted( async () => {
 </script>
 
 <style lang="less">
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
 .ext-neowiki-schemas-page {
 	max-width: 64rem;
+
+	&__empty-value {
+		color: @color-subtle;
+		user-select: none;
+	}
 }
 </style>
