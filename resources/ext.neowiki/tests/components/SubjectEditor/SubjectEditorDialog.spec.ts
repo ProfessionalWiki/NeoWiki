@@ -12,6 +12,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
+import EditSummary from '@/components/common/EditSummary.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -26,6 +27,12 @@ const SubjectEditorStub = {
 		const getSubjectData = (): StatementList => new StatementList( [] );
 		return { getSubjectData };
 	},
+};
+
+const EditSummaryStub = {
+	template: '<div class="edit-summary-stub"></div>',
+	props: [ 'helpText', 'saveButtonLabel', 'saveDisabled' ],
+	emits: [ 'save' ],
 };
 
 const CloseConfirmationDialogStub = {
@@ -125,6 +132,43 @@ describe( 'SubjectEditorDialog', () => {
 		const schemaEditorDialog = wrapper.findComponent( SchemaEditorDialog );
 		expect( schemaEditorDialog.exists() ).toBe( true );
 		expect( schemaEditorDialog.props( 'open' ) ).toBe( true );
+	} );
+
+	const saveButtonTestStubs = {
+		SubjectEditor: SubjectEditorStub,
+		SchemaEditorDialog: true,
+		EditSummary: EditSummaryStub,
+	};
+
+	describe( 'Save button', () => {
+		it( 'disables save when there are no changes', async () => {
+			const wrapper = mountComponent( true, saveButtonTestStubs );
+			await flushPromises();
+
+			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( true );
+		} );
+
+		it( 'enables save after a change is made', async () => {
+			const wrapper = mountComponent( true, saveButtonTestStubs );
+			await flushPromises();
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+
+			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'disables save again when dialog reopens', async () => {
+			const wrapper = mountComponent( true, saveButtonTestStubs );
+			await flushPromises();
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( false );
+
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+
+			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( true );
+		} );
 	} );
 
 	it( 'has hasChanged false initially', async () => {

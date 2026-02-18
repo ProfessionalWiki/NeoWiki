@@ -37,6 +37,7 @@
 			<CdxButton
 				action="progressive"
 				weight="primary"
+				:disabled="props.saveDisabled"
 				@click="onSaveClick"
 			>
 				<CdxIcon :icon="cdxIconCheck" />
@@ -54,6 +55,7 @@ import { cdxIconCheck } from '@wikimedia/codex-icons';
 const props = defineProps<{
 	helpText: string;
 	saveButtonLabel: string;
+	saveDisabled: boolean;
 }>();
 
 const editSummary = ref( '' );

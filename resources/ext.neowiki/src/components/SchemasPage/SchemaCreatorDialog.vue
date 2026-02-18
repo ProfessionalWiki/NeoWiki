@@ -35,6 +35,7 @@
 				<EditSummary
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-schema-creator-save' ).text()"
+					:save-disabled="!hasChanged"
 					@save="handleSave"
 				/>
 			</template>

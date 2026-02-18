@@ -2,6 +2,7 @@ import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
+import EditSummary from '@/components/common/EditSummary.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
@@ -20,6 +21,12 @@ const SchemaEditorStub = {
 	},
 };
 
+const EditSummaryStub = {
+	template: '<div class="edit-summary-stub"></div>',
+	props: [ 'helpText', 'saveButtonLabel', 'saveDisabled' ],
+	emits: [ 'save' ],
+};
+
 const CloseConfirmationDialogStub = {
 	template: '<div class="close-confirmation-stub"></div>',
 	props: [ 'open' ],
@@ -35,7 +42,7 @@ describe( 'SchemaEditorDialog', () => {
 
 	const stubs = {
 		SchemaEditor: SchemaEditorStub,
-		EditSummary: true,
+		EditSummary: EditSummaryStub,
 		CloseConfirmationDialog: CloseConfirmationDialogStub,
 	};
 
@@ -52,6 +59,37 @@ describe( 'SchemaEditorDialog', () => {
 			},
 		} );
 	}
+
+	describe( 'Save button', () => {
+		it( 'disables save when there are no changes', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( true );
+		} );
+
+		it( 'enables save after a change is made', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			await wrapper.findComponent( SchemaEditor ).vm.$emit( 'change' );
+
+			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'disables save again when dialog reopens', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			await wrapper.findComponent( SchemaEditor ).vm.$emit( 'change' );
+			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( false );
+
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+
+			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( true );
+		} );
+	} );
 
 	describe( 'Close confirmation', () => {
 		it( 'shows confirmation dialog when closing with unsaved changes', async () => {

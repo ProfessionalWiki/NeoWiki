@@ -27,7 +27,7 @@ const SchemaEditorStub = {
 
 const EditSummaryStub = {
 	template: '<div class="edit-summary-stub"><button class="save-button" @click="$emit( \'save\', \'\' )">Save</button></div>',
-	props: [ 'helpText', 'saveButtonLabel' ],
+	props: [ 'helpText', 'saveButtonLabel', 'saveDisabled' ],
 	emits: [ 'save' ],
 };
 
