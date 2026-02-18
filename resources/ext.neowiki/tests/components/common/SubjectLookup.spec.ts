@@ -318,6 +318,29 @@ describe( 'SubjectLookup', () => {
 		expect( lookup.props( 'status' ) ).toBe( 'error' );
 	} );
 
+	it( 'does not show error when input is cleared and blurred', async () => {
+		const wrapper = createWrapperWithVModel();
+		await flushPromises();
+		const lookup = wrapper.findComponent( CdxLookupWithVModel );
+
+		lookup.vm.$emit( 'update:input-value', 'some text' );
+		lookup.vm.$emit( 'input', 'some text' );
+		await flushPromises();
+		lookup.vm.$emit( 'blur' );
+		await wrapper.vm.$nextTick();
+
+		expect( wrapper.findComponent( CdxMessage ).exists() ).toBe( true );
+
+		lookup.vm.$emit( 'update:input-value', '' );
+		lookup.vm.$emit( 'input', '' );
+		await flushPromises();
+		lookup.vm.$emit( 'blur' );
+		await wrapper.vm.$nextTick();
+
+		expect( wrapper.findComponent( CdxMessage ).exists() ).toBe( false );
+		expect( lookup.props( 'status' ) ).toBe( 'default' );
+	} );
+
 	it( 'exposes focus method', () => {
 		const CdxLookupStub = {
 			template: '<div><input /></div>',
