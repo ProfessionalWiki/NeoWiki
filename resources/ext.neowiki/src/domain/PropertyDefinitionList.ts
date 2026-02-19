@@ -55,6 +55,14 @@ export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 		return this.filter( ( property ): boolean => !stringNames.includes( property.name.toString() ) );
 	}
 
+	public reordered( names: PropertyName[] ): PropertyDefinitionList {
+		return new PropertyDefinitionList(
+			names
+				.map( ( name ): PropertyDefinition | undefined => this.properties[ name.toString() ] )
+				.filter( ( property ): property is PropertyDefinition => property !== undefined ),
+		);
+	}
+
 	private filter( callback: ( property: PropertyDefinition ) => boolean ): PropertyDefinitionList {
 		return new PropertyDefinitionList(
 			Object.values( this.properties ).filter( callback ),

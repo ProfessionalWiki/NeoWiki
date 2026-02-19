@@ -24,6 +24,7 @@
 			@property-selected="onPropertySelected"
 			@property-created="onPropertyCreated"
 			@property-deleted="onPropertyDeleted"
+			@property-reordered="onPropertyReordered"
 		/>
 		<PropertyDefinitionEditor
 			v-if="selectedProperty !== undefined"
@@ -105,6 +106,11 @@ function onPropertyDeleted( name: PropertyName ): void {
 	emit( 'change' );
 }
 
+function onPropertyReordered( names: PropertyName[] ): void {
+	currentSchema.value = currentSchema.value.withReorderedPropertyDefinitions( names );
+	emit( 'change' );
+}
+
 function onPropertyUpdated( updatedProperty: PropertyDefinition ): void {
 	currentSchema.value = buildUpdatedSchema( updatedProperty );
 
@@ -170,7 +176,6 @@ defineExpose( {
 			}
 		}
 
-		&__property-list,
 		&__property-editor {
 			padding: @spacing-100;
 
@@ -179,15 +184,16 @@ defineExpose( {
 			}
 		}
 
-		&__property-list__menu {
-			width: auto;
-
+		&__property-list {
 			@media ( min-width: @min-width-breakpoint-desktop ) {
-				margin: (-@spacing-50) (-@spacing-75);
+				padding-block: ( @spacing-150 - @spacing-50 );
+				padding-inline: ( @spacing-150 - @spacing-75 ) 0;
 
-				.cdx-menu-item {
-					border-top-right-radius: 0;
-					border-bottom-right-radius: 0;
+				.ext-neowiki-property-list {
+					.ext-neowiki-property-list__item {
+						border-top-right-radius: 0;
+						border-bottom-right-radius: 0;
+					}
 				}
 			}
 		}
@@ -207,20 +213,19 @@ defineExpose( {
 				&__property-list {
 					overflow-x: auto;
 					padding: 0;
+					display: flex;
 				}
 
-				&__property-list__menu {
-					.cdx-menu__listbox {
-						display: flex;
-						white-space: nowrap;
-					}
+				&__property-list .ext-neowiki-property-list {
+					display: flex;
+					white-space: nowrap;
 
-					&.cdx-menu--has-footer .cdx-menu-item:last-of-type:not( :first-of-type ) {
-						margin-top: 0;
-					}
-
-					.cdx-menu-item {
+					.ext-neowiki-property-list__item {
 						border-radius: 0;
+					}
+
+					.ext-neowiki-property-list__add-item {
+						margin-block-start: 0;
 					}
 				}
 
@@ -243,10 +248,6 @@ defineExpose( {
 				&__property-list,
 				&__property-editor {
 					overflow-y: auto;
-				}
-
-				&__property-list__menu {
-					margin-inline-end: -@spacing-150;
 				}
 
 				&__property-editor {
