@@ -47,6 +47,14 @@ export class Schema {
 		);
 	}
 
+	public withReorderedPropertyDefinitions( names: PropertyName[] ): Schema {
+		return new Schema(
+			this.name,
+			this.description,
+			this.properties.reordered( names ),
+		);
+	}
+
 	public withRemovedPropertyDefinition( propertyName: PropertyName ): Schema {
 		return new Schema(
 			this.name,

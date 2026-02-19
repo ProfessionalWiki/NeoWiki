@@ -1,54 +1,75 @@
 <template>
 	<div class="ext-neowiki-schema-editor__property-list">
-		<CdxMenu
-			v-model:selected="selectedValue"
-			:expanded="true"
-			class="ext-neowiki-schema-editor__property-list__menu"
-			:menu-items="menuItems"
-			:footer="menuFooter"
-			@update:selected="onMenuSelect"
+		<ul
+			ref="listRef"
+			role="listbox"
+			class="ext-neowiki-property-list"
+			@keydown="onKeydown"
 		>
-			<template #default="{ menuItem }">
-				<span class="ext-neowiki-schema-editor__property-list__menu-item__content cdx-menu-item__content">
-					<CdxIcon
-						v-if="menuItem.icon"
-						class="cdx-menu-item__icon"
-						:icon="menuItem.icon"
-					/>
-					<span class="cdx-menu-item__text">
-						<span class="cdx-menu-item__text__label">
-							{{ menuItem.label }}
-						</span>
-						<span
-							v-if="menuItem.description"
-							class="cdx-menu-item__text__description"
-						>
-							{{ menuItem.description }}
-						</span>
+			<li
+				v-for="property in propertyArray"
+				:key="property.name.toString()"
+				role="option"
+				class="ext-neowiki-property-list__item"
+				:class="{ 'ext-neowiki-property-list__item--selected': property.name.toString() === selectedValue }"
+				:aria-selected="property.name.toString() === selectedValue"
+				:tabindex="property.name.toString() === selectedValue ? 0 : -1"
+				@click="onItemClick( property.name.toString() )"
+			>
+				<CdxIcon
+					v-if="getPropertyIcon( property )"
+					class="ext-neowiki-property-list__item__icon"
+					:icon="getPropertyIcon( property )!"
+				/>
+				<span class="ext-neowiki-property-list__item__text">
+					<span class="ext-neowiki-property-list__item__text__label">
+						{{ property.name.toString() }}
 					</span>
-					<CdxButton
-						v-if="menuItem.value !== 'new-property'"
-						class="ext-neowiki-schema-editor__property-list__menu-item__delete"
-						:aria-label="$i18n( 'neowiki-schema-editor-delete-property' ).text()"
-						weight="quiet"
-						action="destructive"
-						@click.stop="onDeleteProperty( menuItem.value )"
+					<span
+						v-if="getPropertyDescription( property )"
+						class="ext-neowiki-property-list__item__text__description"
 					>
-						<CdxIcon :icon="cdxIconTrash" />
-					</CdxButton>
+						{{ getPropertyDescription( property ) }}
+					</span>
 				</span>
-			</template>
-		</CdxMenu>
+				<CdxButton
+					class="ext-neowiki-property-list__item__delete"
+					:aria-label="$i18n( 'neowiki-schema-editor-delete-property' ).text()"
+					weight="quiet"
+					action="destructive"
+					@click.stop="onDeleteProperty( property.name.toString() )"
+				>
+					<CdxIcon :icon="cdxIconTrash" />
+				</CdxButton>
+			</li>
+		</ul>
+		<button
+			class="ext-neowiki-property-list__add-item"
+			type="button"
+			@click="addNewProperty"
+		>
+			<CdxIcon
+				class="ext-neowiki-property-list__item__icon"
+				:icon="cdxIconAdd"
+			/>
+			<span class="ext-neowiki-property-list__item__text">
+				<span class="ext-neowiki-property-list__item__text__label">
+					{{ $i18n( 'neowiki-schema-editor-new-property' ).text() }}
+				</span>
+			</span>
+		</button>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { CdxMenu, MenuItemData, CdxButton, CdxIcon } from '@wikimedia/codex';
+import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconTrash } from '@wikimedia/codex-icons';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { useSortable } from '@/composables/useSortable.ts';
+import type { Icon } from '@wikimedia/codex-icons';
 
 const props = defineProps<{
 	properties: PropertyDefinitionList;
@@ -59,12 +80,13 @@ const emit = defineEmits<{
 	propertySelected: [ name: PropertyName ];
 	propertyCreated: [ property: PropertyDefinition ];
 	propertyDeleted: [ name: PropertyName ];
+	propertyReordered: [ names: PropertyName[] ];
 }>();
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
-// CdxMenu doesn't support passing a PropertyName as a value, so we use a string instead.
 const selectedValue = ref( props.selectedPropertyName ?? '' );
+const listRef = ref<HTMLElement | null>( null );
 
 watch( () => props.selectedPropertyName, ( newProperty ) => {
 	if ( newProperty !== undefined ) {
@@ -72,34 +94,24 @@ watch( () => props.selectedPropertyName, ( newProperty ) => {
 	}
 } );
 
-const menuItems = computed( (): MenuItemData[] => [ ...props.properties ].map( ( property: PropertyDefinition ): MenuItemData => ( {
-	label: property.name.toString(),
-	value: property.name.toString(),
-	description: getMenuDescription( property ),
-	icon: componentRegistry.getIcon( property.type )
-} ) ) );
+const propertyArray = computed( (): PropertyDefinition[] => [ ...props.properties ] );
 
-const menuFooter: MenuItemData = {
-	label: mw.msg( 'neowiki-schema-editor-new-property' ),
-	value: 'new-property',
-	icon: cdxIconAdd
-};
+function getPropertyIcon( property: PropertyDefinition ): Icon | undefined {
+	return componentRegistry.getIcon( property.type );
+}
 
-function getMenuDescription( property: PropertyDefinition ): string {
+function getPropertyDescription( property: PropertyDefinition ): string {
 	const typeLabel = mw.msg( componentRegistry.getLabel( property.type ) );
 	return property.required ? typeLabel : `${ typeLabel }・${ mw.msg( 'neowiki-schema-editor-optional' ) }`;
 }
 
-function onDeleteProperty( propertyName: string ): void {
-	emit( 'propertyDeleted', new PropertyName( propertyName ) );
+function onItemClick( propertyName: string ): void {
+	selectedValue.value = propertyName;
+	emit( 'propertySelected', new PropertyName( propertyName ) );
 }
 
-function onMenuSelect( payload: string ): void {
-	if ( payload === menuFooter.value ) {
-		addNewProperty();
-	} else {
-		emit( 'propertySelected', new PropertyName( payload ) );
-	}
+function onDeleteProperty( propertyName: string ): void {
+	emit( 'propertyDeleted', new PropertyName( propertyName ) );
 }
 
 function addNewProperty(): void {
@@ -131,50 +143,102 @@ function generateUniquePropertyName(): PropertyName {
 
 	return new PropertyName( name );
 }
+
+function getSelectedIndex(): number {
+	return propertyArray.value.findIndex( ( p ) => p.name.toString() === selectedValue.value );
+}
+
+function focusItem( index: number ): void {
+	const items = listRef.value?.querySelectorAll<HTMLElement>( '[role="option"]' );
+	items?.[ index ]?.focus();
+}
+
+function selectAndFocus( index: number ): void {
+	const property = propertyArray.value[ index ];
+	if ( property ) {
+		onItemClick( property.name.toString() );
+		focusItem( index );
+	}
+}
+
+function moveProperty( fromIndex: number, toIndex: number ): void {
+	const names = propertyArray.value.map( ( p ) => p.name );
+	const [ moved ] = names.splice( fromIndex, 1 );
+	names.splice( toIndex, 0, moved );
+	emit( 'propertyReordered', names );
+}
+
+function onKeydown( event: KeyboardEvent ): void {
+	const currentIndex = getSelectedIndex();
+	if ( currentIndex === -1 ) {
+		return;
+	}
+
+	const lastIndex = propertyArray.value.length - 1;
+
+	if ( event.key === 'ArrowDown' ) {
+		event.preventDefault();
+		if ( event.altKey && currentIndex < lastIndex ) {
+			moveProperty( currentIndex, currentIndex + 1 );
+			selectAndFocus( currentIndex + 1 );
+		} else if ( !event.altKey && currentIndex < lastIndex ) {
+			selectAndFocus( currentIndex + 1 );
+		}
+	} else if ( event.key === 'ArrowUp' ) {
+		event.preventDefault();
+		if ( event.altKey && currentIndex > 0 ) {
+			moveProperty( currentIndex, currentIndex - 1 );
+			selectAndFocus( currentIndex - 1 );
+		} else if ( !event.altKey && currentIndex > 0 ) {
+			selectAndFocus( currentIndex - 1 );
+		}
+	}
+}
+
+useSortable( listRef, {
+	onReorder( oldIndex: number, newIndex: number ): void {
+		moveProperty( oldIndex, newIndex );
+	}
+} );
 </script>
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-.ext-neowiki-schema-editor__property-list {
-	&__menu {
-		&.cdx-menu {
-			position: relative;
-			border: 0;
-			box-shadow: none;
+.ext-neowiki-property-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
 
-			// HACK: The menu footer is sticky on the initial state for unknown reasons.
-			// It behaves correctly after a new property is created, so we use this
-			// workaround to make it behave as expected.
-			&--has-footer {
-				.cdx-menu-item:last-of-type {
-					position: relative;
+	&__item {
+		display: flex;
+		align-items: center;
+		gap: @spacing-50;
+		padding: @spacing-50 @spacing-75;
+		border-radius: @border-radius-base;
+		cursor: grab;
+		user-select: none;
 
-					&:not( :first-of-type ) {
-						border-top: 0;
-						margin-top: @spacing-100;
-					}
-				}
-
-				.cdx-menu__listbox {
-					margin-bottom: 0 !important;
-				}
-			}
-
-			.cdx-menu-item {
-				border-radius: @border-radius-base;
-			}
+		&:hover {
+			background-color: @background-color-interactive-subtle;
 		}
 
-		.cdx-menu-item__icon.cdx-icon {
+		&--selected {
+			background-color: @background-color-progressive-subtle;
+		}
+
+		&--ghost {
+			opacity: 0.5;
+			background-color: @background-color-interactive-subtle;
+		}
+
+		&__icon.cdx-icon {
 			background-position: @background-position-base;
 			background-repeat: no-repeat;
 			background-size: @background-size-search-figure;
 			background-color: @background-color-interactive-subtle;
-			// Thumbnail should never shrink when it's in a flex layout with other elements.
 			flex-shrink: 0;
 			box-sizing: @box-sizing-base;
-			// Values of thumbnail as declared within the MenuItem component, f.e. in TypeaheadSearch.
 			min-width: @min-size-search-figure;
 			min-height: @min-size-search-figure;
 			width: @size-search-figure;
@@ -191,36 +255,56 @@ function generateUniquePropertyName(): PropertyName {
 			}
 		}
 
-		.cdx-menu-item:hover,
-		.cdx-menu-item--selected,
-		.cdx-menu-item:focus-within {
-			.ext-neowiki-schema-editor__property-list__menu-item__delete {
-				opacity: 1;
-			}
-		}
-	}
+		&__text {
+			flex-grow: 1;
+			min-width: 0;
 
-	&__menu-item {
-		&__content {
-			// Needed the specificity to override the Codex style.
-			&.cdx-menu-item__content.cdx-menu-item__content {
-				gap: @spacing-50;
-				align-items: center;
+			&__label {
+				display: block;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
 			}
 
-			.cdx-menu-item__text {
-				flex-grow: 1;
+			&__description {
+				display: block;
+				font-size: @font-size-small;
+				color: @color-subtle;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
 			}
 		}
 
 		&__delete {
 			opacity: 0;
+			flex-shrink: 0;
 
-			.cdx-menu-item:hover &,
-			.cdx-menu-item--selected &,
-			.cdx-menu-item:focus-within & {
+			.ext-neowiki-property-list__item:hover &,
+			.ext-neowiki-property-list__item--selected &,
+			.ext-neowiki-property-list__item:focus-within & {
 				opacity: 1;
 			}
+		}
+	}
+
+	&__add-item {
+		display: flex;
+		align-items: center;
+		gap: @spacing-50;
+		padding: @spacing-50 @spacing-75;
+		border: 0;
+		border-radius: @border-radius-base;
+		background: none;
+		width: 100%;
+		cursor: pointer;
+		font: inherit;
+		color: inherit;
+		text-align: start;
+		margin-block-start: @spacing-100;
+
+		&:hover {
+			background-color: @background-color-interactive-subtle;
 		}
 	}
 }

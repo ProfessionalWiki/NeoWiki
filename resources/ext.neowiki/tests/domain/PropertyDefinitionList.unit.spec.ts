@@ -109,6 +109,54 @@ describe( 'PropertyDefinitionList', () => {
 
 	} );
 
+	describe( 'reordered', () => {
+
+		const collection = new PropertyDefinitionList( [ property1, property2, property3 ] );
+
+		it( 'reorders properties to the specified order', () => {
+			const reordered = collection.reordered( [
+				new PropertyName( 'test3' ),
+				new PropertyName( 'test1' ),
+				new PropertyName( 'test2' ),
+			] );
+
+			expect( Object.keys( reordered.asRecord() ) ).toEqual( [ 'test3', 'test1', 'test2' ] );
+		} );
+
+		it( 'preserves property data after reordering', () => {
+			const reordered = collection.reordered( [
+				new PropertyName( 'test2' ),
+				new PropertyName( 'test1' ),
+				new PropertyName( 'test3' ),
+			] );
+
+			expect( reordered.get( new PropertyName( 'test1' ) ) ).toEqual( property1 );
+			expect( reordered.get( new PropertyName( 'test2' ) ) ).toEqual( property2 );
+			expect( reordered.get( new PropertyName( 'test3' ) ) ).toEqual( property3 );
+		} );
+
+		it( 'identity reorder returns equivalent list', () => {
+			const reordered = collection.reordered( [
+				new PropertyName( 'test1' ),
+				new PropertyName( 'test2' ),
+				new PropertyName( 'test3' ),
+			] );
+
+			expect( reordered ).toEqual( collection );
+		} );
+
+		it( 'ignores unknown property names', () => {
+			const reordered = collection.reordered( [
+				new PropertyName( 'test2' ),
+				new PropertyName( 'test99' ),
+				new PropertyName( 'test1' ),
+			] );
+
+			expect( Object.keys( reordered.asRecord() ) ).toEqual( [ 'test2', 'test1' ] );
+		} );
+
+	} );
+
 	describe( 'withPropertyDefinition', () => {
 
 		it( 'replaces existing property definition', () => {

@@ -3,7 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
-import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition.ts';
+import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { CdxTextArea } from '@wikimedia/codex';
 import { createI18nMock } from '../../VueTestHelpers.ts';
@@ -226,6 +226,52 @@ describe( 'SchemaEditor', () => {
 		const wrapper = createWrapper( schema );
 
 		await wrapper.findComponent( CdxTextArea ).vm.$emit( 'update:modelValue', 'Updated' );
+
+		expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'reorders properties when propertyReordered event is emitted', async () => {
+		const schema = new Schema(
+			'TestSchema',
+			'Description',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'thirdProp', { type: TextType.typeName } ),
+			] ),
+		);
+
+		const wrapper = createWrapper( schema );
+		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
+
+		await propertyList.vm.$emit( 'propertyReordered', [
+			new PropertyName( 'thirdProp' ),
+			new PropertyName( 'firstProp' ),
+			new PropertyName( 'secondProp' ),
+		] );
+
+		const updatedSchema = ( wrapper.vm as any ).getSchema();
+		const propertyNames = Object.keys( updatedSchema.getPropertyDefinitions().asRecord() );
+		expect( propertyNames ).toEqual( [ 'thirdProp', 'firstProp', 'secondProp' ] );
+	} );
+
+	it( 'emits change when properties are reordered', async () => {
+		const schema = new Schema(
+			'TestSchema',
+			'Description',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
+			] ),
+		);
+
+		const wrapper = createWrapper( schema );
+		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
+
+		await propertyList.vm.$emit( 'propertyReordered', [
+			new PropertyName( 'secondProp' ),
+			new PropertyName( 'firstProp' ),
+		] );
 
 		expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
 	} );
