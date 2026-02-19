@@ -9,7 +9,7 @@ import { CdxButton } from '@wikimedia/codex';
 const canCreateSchemasRef = ref( false );
 const checkCreatePermissionMock = vi.fn();
 
-let schemasResponse: unknown[] = [];
+let schemasResponse: { schemas: unknown[]; totalRows: number } = { schemas: [], totalRows: 0 };
 
 vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	useSchemaPermissions: () => ( {
@@ -46,7 +46,10 @@ function findCreateButton( wrapper: VueWrapper ): VueWrapper | undefined {
 }
 
 function mountComponent( summaries: unknown[] = [] ): VueWrapper {
-	schemasResponse = summaries;
+	schemasResponse = {
+		schemas: summaries,
+		totalRows: summaries.length,
+	};
 	setupMwMock( { functions: [ 'msg', 'util' ] } );
 
 	return mount( SchemasPage, {
@@ -64,7 +67,7 @@ describe( 'SchemasPage', () => {
 	beforeEach( () => {
 		canCreateSchemasRef.value = false;
 		checkCreatePermissionMock.mockClear();
-		schemasResponse = [];
+		schemasResponse = { schemas: [], totalRows: 0 };
 	} );
 
 	it( 'shows create button when user has create permission', async () => {

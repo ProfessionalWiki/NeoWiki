@@ -10,17 +10,20 @@ use MediaWiki\Rest\StringStream;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
 class GetSchemaSummariesApi extends SimpleHandler {
 
 	public function run(): Response {
+		$params = $this->getValidatedParams();
 		$extension = NeoWikiExtension::getInstance();
 		$schemaNameLookup = $extension->getSchemaNameLookup();
 		$schemaLookup = $extension->getSchemaLookup();
 
 		$summaries = [];
 
-		foreach ( $schemaNameLookup->getSchemaNamesMatching( '' ) as $title ) {
+		foreach ( $schemaNameLookup->getSchemaNamesMatching( '', $params['limit'], $params['offset'] ) as $title ) {
 			$schema = $schemaLookup->getSchema( new SchemaName( $title->getText() ) );
 
 			if ( $schema === null ) {
@@ -30,11 +33,36 @@ class GetSchemaSummariesApi extends SimpleHandler {
 			$summaries[] = $this->schemaToSummary( $schema );
 		}
 
+		$result = [
+			'schemas' => $summaries,
+			'totalRows' => $schemaNameLookup->getSchemaCount(),
+		];
+
 		$response = $this->getResponseFactory()->create();
-		$response->setBody( new StringStream( json_encode( $summaries ) ) );
+		$response->setBody( new StringStream( json_encode( $result ) ) );
 		$response->setHeader( 'Content-Type', 'application/json' );
 
 		return $response;
+	}
+
+	public function getParamSettings(): array {
+		return [
+			'limit' => [
+				self::PARAM_SOURCE => 'query',
+				ParamValidator::PARAM_TYPE => 'integer',
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_DEFAULT => 10,
+				IntegerDef::PARAM_MIN => 1,
+				IntegerDef::PARAM_MAX => 50,
+			],
+			'offset' => [
+				self::PARAM_SOURCE => 'query',
+				ParamValidator::PARAM_TYPE => 'integer',
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_DEFAULT => 0,
+				IntegerDef::PARAM_MIN => 0,
+			],
+		];
 	}
 
 	/**
