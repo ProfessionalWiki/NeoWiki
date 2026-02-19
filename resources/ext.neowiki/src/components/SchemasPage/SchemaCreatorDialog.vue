@@ -77,11 +77,15 @@ const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
 const emptySchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
 
+const DEBOUNCE_DELAY = 300;
+
 const schemaName = ref( '' );
 const nameError = ref( '' );
 const nameStatus = ref<ValidationStatusType>( 'default' );
 const hasOverflow = ref( false );
 const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let requestSequence = 0;
 
 function close(): void {
 	emit( 'update:open', false );
@@ -103,10 +107,47 @@ function onNameInput(): void {
 	nameError.value = '';
 	nameStatus.value = 'default';
 	markChanged();
+	clearDebounceTimer();
+	requestSequence++;
+
+	const name = schemaName.value.trim();
+
+	if ( !name ) {
+		nameError.value = mw.msg( 'neowiki-schema-creator-name-required' );
+		nameStatus.value = 'error';
+		return;
+	}
+
+	const expectedSequence = requestSequence;
+	debounceTimer = setTimeout( () => checkDuplicateName( name, expectedSequence ), DEBOUNCE_DELAY );
+}
+
+async function checkDuplicateName( name: string, expectedSequence: number ): Promise<void> {
+	try {
+		await schemaStore.getOrFetchSchema( name );
+
+		if ( expectedSequence !== requestSequence ) {
+			return;
+		}
+
+		nameError.value = mw.msg( 'neowiki-schema-creator-name-taken' );
+		nameStatus.value = 'error';
+	} catch {
+		// Schema not found — name is available
+	}
+}
+
+function clearDebounceTimer(): void {
+	if ( debounceTimer !== null ) {
+		clearTimeout( debounceTimer );
+		debounceTimer = null;
+	}
 }
 
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
+		clearDebounceTimer();
+		requestSequence++;
 		resetChanged();
 		schemaName.value = '';
 		nameError.value = '';
@@ -115,6 +156,9 @@ watch( () => props.open, ( isOpen ) => {
 } );
 
 async function handleSave( summary: string ): Promise<void> {
+	clearDebounceTimer();
+	requestSequence++;
+
 	const name = schemaName.value.trim();
 
 	if ( !name ) {
