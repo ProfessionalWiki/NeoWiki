@@ -14,8 +14,6 @@ use Wikimedia\Rdbms\IResultWrapper;
 
 class DatabaseSchemaNameLookup implements SchemaNameLookup {
 
-	private const LIMIT = 10;
-
 	public function __construct(
 		private readonly IDatabase $db,
 		private readonly SearchEngine $searchEngine
@@ -25,17 +23,29 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	/**
 	 * @return TitleValue[]
 	 */
-	public function getSchemaNamesMatching( string $search ): array {
+	public function getSchemaNamesMatching( string $search, int $limit = 10, int $offset = 0 ): array {
 		if ( trim( $search ) === '' ) {
-			return $this->getFirstSchemaNames();
+			return $this->getFirstSchemaNames( $limit, $offset );
 		}
 
-		return $this->searchSuggestionsToTitleArray( $this->getSearchSuggestions( $search ) );
+		return $this->searchSuggestionsToTitleArray( $this->getSearchSuggestions( $search, $limit, $offset ) );
 	}
 
-	private function getSearchSuggestions( string $search ): SearchSuggestionSet {
+	public function getSchemaCount(): int {
+		/** @var string $count */
+		$count = $this->db->selectField(
+			'page',
+			'COUNT(*)',
+			[ 'page_namespace' => NeoWikiExtension::NS_SCHEMA ],
+			__METHOD__
+		);
+
+		return (int)$count;
+	}
+
+	private function getSearchSuggestions( string $search, int $limit, int $offset ): SearchSuggestionSet {
 		$this->searchEngine->setNamespaces( [ NeoWikiExtension::NS_SCHEMA ] );
-		$this->searchEngine->setLimitOffset( self::LIMIT );
+		$this->searchEngine->setLimitOffset( $limit, $offset );
 
 		return $this->searchEngine->completionSearch( $search );
 	}
@@ -58,7 +68,7 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	/**
 	 * @return TitleValue[]
 	 */
-	private function getFirstSchemaNames(): array {
+	private function getFirstSchemaNames( int $limit, int $offset ): array {
 		$res = $this->db->select(
 			'page',
 			[ 'page_title' ],
@@ -66,7 +76,8 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 			__METHOD__,
 			[
 				'ORDER BY' => 'page_id ASC',
-				'LIMIT' => self::LIMIT
+				'LIMIT' => $limit,
+				'OFFSET' => $offset,
 			]
 		);
 

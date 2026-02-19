@@ -69,4 +69,37 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testLimitRestrictsResults(): void {
+		$this->assertEquals(
+			[
+				new TitleValue( NeoWikiExtension::NS_SCHEMA, 'SchemaNameLookupTest1' ),
+				new TitleValue( NeoWikiExtension::NS_SCHEMA, 'SchemaNameLookupTest21' ),
+			],
+			$this->getLookup()->getSchemaNamesMatching( '', 2 )
+		);
+	}
+
+	public function testOffsetSkipsResults(): void {
+		$this->assertEquals(
+			[
+				new TitleValue( NeoWikiExtension::NS_SCHEMA, 'SchemaNameLookupTest22' ),
+				new TitleValue( NeoWikiExtension::NS_SCHEMA, 'SchemaNameLookupTest3' ),
+			],
+			$this->getLookup()->getSchemaNamesMatching( '', 10, 2 )
+		);
+	}
+
+	public function testLimitAndOffsetCombined(): void {
+		$this->assertEquals(
+			[
+				new TitleValue( NeoWikiExtension::NS_SCHEMA, 'SchemaNameLookupTest21' ),
+			],
+			$this->getLookup()->getSchemaNamesMatching( '', 1, 1 )
+		);
+	}
+
+	public function testGetSchemaCount(): void {
+		$this->assertSame( 4, $this->getLookup()->getSchemaCount() );
+	}
+
 }

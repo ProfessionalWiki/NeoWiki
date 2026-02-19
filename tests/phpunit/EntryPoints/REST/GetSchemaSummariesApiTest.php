@@ -16,14 +16,18 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class GetSchemaSummariesApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
-	public function testReturnsEmptyArrayWhenNoSchemas(): void {
+	public function testReturnsEmptyResultWhenNoSchemas(): void {
 		$response = $this->executeHandler(
 			new GetSchemaSummariesApi(),
 			new RequestData( [ 'method' => 'GET' ] )
 		);
 
 		$this->assertSame( 200, $response->getStatusCode() );
-		$this->assertJsonStringEqualsJsonString( '[]', $response->getBody()->getContents() );
+
+		$data = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( [], $data['schemas'] );
+		$this->assertSame( 0, $data['totalRows'] );
 	}
 
 	public function testReturnsSchemaSummaries(): void {
@@ -57,13 +61,13 @@ JSON
 
 		$this->assertSame( 200, $response->getStatusCode() );
 
-		/** @var array<int, array{name: string, description: string, propertyCount: int}> $data */
 		$data = json_decode( $response->getBody()->getContents(), true );
 
-		$this->assertCount( 2, $data );
+		$this->assertSame( 2, $data['totalRows'] );
+		$this->assertCount( 2, $data['schemas'] );
 
 		$byName = [];
-		foreach ( $data as $summary ) {
+		foreach ( $data['schemas'] as $summary ) {
 			$byName[$summary['name']] = $summary;
 		}
 
@@ -72,6 +76,46 @@ JSON
 
 		$this->assertSame( 'A person', $byName['Person']['description'] );
 		$this->assertSame( 1, $byName['Person']['propertyCount'] );
+	}
+
+	public function testPaginationLimitsResults(): void {
+		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
+		$this->createSchema( 'Beta', '{"title":"Beta","description":"Second","propertyDefinitions":{}}' );
+		$this->createSchema( 'Gamma', '{"title":"Gamma","description":"Third","propertyDefinitions":{}}' );
+
+		$response = $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'limit' => '2', 'offset' => '0' ],
+			] )
+		);
+
+		$data = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertCount( 2, $data['schemas'] );
+		$this->assertSame( 3, $data['totalRows'] );
+	}
+
+	public function testPaginationOffset(): void {
+		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
+		$this->createSchema( 'Beta', '{"title":"Beta","description":"Second","propertyDefinitions":{}}' );
+		$this->createSchema( 'Gamma', '{"title":"Gamma","description":"Third","propertyDefinitions":{}}' );
+
+		$response = $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'limit' => '2', 'offset' => '1' ],
+			] )
+		);
+
+		$data = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertCount( 2, $data['schemas'] );
+		$this->assertSame( 'Beta', $data['schemas'][0]['name'] );
+		$this->assertSame( 'Gamma', $data['schemas'][1]['name'] );
+		$this->assertSame( 3, $data['totalRows'] );
 	}
 
 }

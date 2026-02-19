@@ -5,6 +5,12 @@
 			:data="rows"
 			:caption="$i18n( 'neowiki-special-schemas' ).text()"
 			:pending="loading"
+			:paginate="true"
+			:server-pagination="true"
+			:total-rows="totalRows"
+			:pagination-size-default="paginationSizeOptions[ 0 ].value"
+			:pagination-size-options="paginationSizeOptions"
+			@load-more="onLoadMore"
 		>
 			<template #header>
 				<CdxButton
@@ -39,7 +45,7 @@
 			v-if="canCreateSchemas"
 			:open="isCreatorOpen"
 			@update:open="isCreatorOpen = $event"
-			@created="fetchSchemas"
+			@created="fetchSchemas( 0, pageSize )"
 		/>
 	</div>
 </template>
@@ -53,8 +59,17 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import SchemaCreatorDialog from './SchemaCreatorDialog.vue';
 
+// TablePaginationSizeOption is not exported from Codex
+const paginationSizeOptions: { value: number }[] = [
+	{ value: 10 },
+	{ value: 20 },
+	{ value: 50 }
+];
+
 const loading = ref( true );
 const isCreatorOpen = ref( false );
+const totalRows = ref( 0 );
+const pageSize = ref( paginationSizeOptions[ 0 ].value );
 
 const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
 
@@ -91,33 +106,41 @@ interface SchemaSummary {
 	propertyCount: number;
 }
 
-async function fetchSchemas(): Promise<void> {
+async function fetchSchemas( offset: number, limit: number ): Promise<void> {
 	loading.value = true;
+	pageSize.value = limit;
 
 	const restApiUrl = NeoWikiExtension.getInstance().getMediaWiki().util.wikiScript( 'rest' );
 	const httpClient = NeoWikiExtension.getInstance().newHttpClient();
 
-	const response = await httpClient.get( `${ restApiUrl }/neowiki/v0/schemas` );
+	const response = await httpClient.get(
+		`${ restApiUrl }/neowiki/v0/schemas?limit=${ limit }&offset=${ offset }`
+	);
 
 	if ( !response.ok ) {
 		loading.value = false;
 		return;
 	}
 
-	const summaries: SchemaSummary[] = await response.json();
+	const result: { schemas: SchemaSummary[]; totalRows: number } = await response.json();
 
-	rows.value = summaries.map( ( summary ) => ( {
+	rows.value = result.schemas.map( ( summary ) => ( {
 		name: summary.name,
 		description: summary.description,
 		properties: summary.propertyCount
 	} ) );
 
+	totalRows.value = result.totalRows;
 	loading.value = false;
+}
+
+function onLoadMore( offset: number, limit: number ): void {
+	fetchSchemas( offset, limit );
 }
 
 onMounted( async () => {
 	await checkCreatePermission();
-	await fetchSchemas();
+	await fetchSchemas( 0, paginationSizeOptions[ 0 ].value );
 } );
 </script>
 
