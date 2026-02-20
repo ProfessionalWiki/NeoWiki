@@ -63,25 +63,8 @@
 					v-if="selectedSchemaOption === 'new'"
 					class="ext-neowiki-subject-creator-new"
 				>
-					<CdxField
-						class="ext-neowiki-subject-creator-schema-name-field"
-						:status="schemaNameStatus"
-						:messages="schemaNameError ? { error: schemaNameError } : {}"
-					>
-						<CdxTextInput
-							ref="schemaNameInputRef"
-							v-model="newSchemaName"
-							:placeholder="$i18n( 'neowiki-subject-creator-schema-name-placeholder' ).text()"
-							@input="markChanged"
-						/>
-						<template #label>
-							{{ $i18n( 'neowiki-subject-creator-schema-name-field' ).text() }}
-						</template>
-					</CdxField>
-
-					<SchemaEditor
-						ref="schemaEditorRef"
-						:initial-schema="newSchema"
+					<SchemaCreator
+						ref="schemaCreatorRef"
 						@change="markChanged"
 					/>
 				</div>
@@ -144,7 +127,7 @@
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { CdxButton, CdxDialog, CdxField, CdxIcon, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconClose, cdxIconSearch } from '@wikimedia/codex-icons';
-import type { ButtonGroupItem, ValidationStatusType } from '@wikimedia/codex';
+import type { ButtonGroupItem } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
@@ -152,8 +135,8 @@ import { Statement } from '@/domain/Statement.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
-import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
-import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
+import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
+import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCreator.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
@@ -166,14 +149,9 @@ const selectedSchemaOption = ref( 'existing' );
 const selectedSchemaName = ref<string | null>( null );
 const loadedSchema = ref<Schema | null>( null );
 const subjectLabel = ref( '' );
-const newSchemaName = ref( '' );
-const schemaNameError = ref( '' );
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const schemaLookupRef = ref<any | null>( null );
-const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
-const schemaNameInputRef = ref<InstanceType<typeof CdxTextInput> | null>( null );
-
-const newSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
+const schemaCreatorRef = ref<SchemaCreatorExposes | null>( null );
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
@@ -210,10 +188,6 @@ const headerSubtitle = computed( (): string | null => {
 	return null;
 } );
 
-const schemaNameStatus = computed( (): ValidationStatusType =>
-	schemaNameError.value ? 'error' : 'default'
-);
-
 const toggleButtons = [
 	{
 		value: 'existing',
@@ -232,7 +206,6 @@ onMounted( async () => {
 } );
 
 watch( selectedSchemaOption, ( newValue: string ) => {
-	schemaNameError.value = '';
 	focusInitialInput( newValue );
 } );
 
@@ -240,8 +213,8 @@ async function focusInitialInput( schemaOption: string ): Promise<void> {
 	await nextTick();
 	if ( schemaOption === 'existing' && schemaLookupRef.value ) {
 		schemaLookupRef.value.focus();
-	} else if ( schemaOption === 'new' && schemaNameInputRef.value ) {
-		schemaNameInputRef.value.focus();
+	} else if ( schemaOption === 'new' && schemaCreatorRef.value ) {
+		schemaCreatorRef.value.focus();
 	}
 }
 
@@ -263,33 +236,27 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 }
 
 async function handleCreateSchema( summary: string ): Promise<void> {
-	const name = newSchemaName.value.trim();
-
-	if ( !name ) {
-		schemaNameError.value = mw.msg( 'neowiki-subject-creator-schema-name-required' );
+	if ( !schemaCreatorRef.value ) {
 		return;
 	}
 
-	try {
-		await schemaStore.getOrFetchSchema( name );
-		schemaNameError.value = mw.msg( 'neowiki-subject-creator-schema-name-taken' );
+	const valid = await schemaCreatorRef.value.validate();
+
+	if ( !valid ) {
 		return;
-	} catch {
-		// TODO: Distinguish between schema not existing, and other errors during retrieval.
-		// Schema not found -- name is available
 	}
 
-	const propertyDefinitions = schemaEditorRef.value ?
-		schemaEditorRef.value.getSchema().getPropertyDefinitions() :
-		new PropertyDefinitionList( [] );
+	const schema = schemaCreatorRef.value.getSchema();
 
-	const schema = new Schema( name, '', propertyDefinitions );
+	if ( !schema ) {
+		return;
+	}
 
 	try {
 		await schemaStore.saveSchema( schema, summary || undefined );
 		mw.notify( mw.msg( 'neowiki-subject-creator-schema-created' ), { type: 'success' } );
 
-		selectedSchemaName.value = name;
+		selectedSchemaName.value = schema.getName();
 		loadedSchema.value = schema;
 		subjectLabel.value = String( mw.config.get( 'wgTitle' ) ?? '' );
 	} catch ( error ) {
@@ -341,8 +308,7 @@ function resetForm(): void {
 	loadedSchema.value = null;
 	subjectLabel.value = '';
 	selectedSchemaOption.value = 'existing';
-	newSchemaName.value = '';
-	schemaNameError.value = '';
+	schemaCreatorRef.value?.reset();
 	resetChanged();
 }
 
@@ -416,16 +382,12 @@ defineExpose( { hasChanged } );
 		}
 	}
 
-	&-schema-name-field {
-		margin-bottom: @spacing-100;
-	}
-
 	&-label-field {
 		margin-top: @spacing-100;
 	}
 
 	&-new {
-		.ext-neowiki-schema-editor {
+		.ext-neowiki-schema-creator {
 			margin-inline: -@spacing-100;
 
 			@media ( min-width: @min-width-breakpoint-desktop ) {

@@ -8,25 +8,8 @@
 			:title="$i18n( 'neowiki-schema-creator-title' ).text()"
 			@update:open="onDialogUpdateOpen"
 		>
-			<div class="ext-neowiki-schema-creator-dialog__name-section">
-				<CdxField
-					:status="nameStatus"
-					:messages="nameError ? { error: nameError } : {}"
-				>
-					<CdxTextInput
-						v-model="schemaName"
-						:placeholder="$i18n( 'neowiki-schema-creator-name-placeholder' ).text()"
-						@input="onNameInput"
-					/>
-					<template #label>
-						{{ $i18n( 'neowiki-schema-creator-name-field' ).text() }}
-					</template>
-				</CdxField>
-			</div>
-
-			<SchemaEditor
-				ref="schemaEditorRef"
-				:initial-schema="emptySchema"
+			<SchemaCreator
+				ref="schemaCreatorRef"
 				@overflow="onOverflow"
 				@change="markChanged"
 			/>
@@ -51,14 +34,12 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { CdxDialog, CdxField, CdxTextInput } from '@wikimedia/codex';
-import type { ValidationStatusType } from '@wikimedia/codex';
-import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
-import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
+import { CdxDialog } from '@wikimedia/codex';
+import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
+import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCreator.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { Schema } from '@/domain/Schema.ts';
-import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
@@ -75,17 +56,8 @@ const emit = defineEmits<{
 const schemaStore = useSchemaStore();
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
-const emptySchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
-
-const DEBOUNCE_DELAY = 300;
-
-const schemaName = ref( '' );
-const nameError = ref( '' );
-const nameStatus = ref<ValidationStatusType>( 'default' );
 const hasOverflow = ref( false );
-const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-let requestSequence = 0;
+const schemaCreatorRef = ref<SchemaCreatorExposes | null>( null );
 
 function close(): void {
 	emit( 'update:open', false );
@@ -103,100 +75,42 @@ function onOverflow( overflow: boolean ): void {
 	hasOverflow.value = overflow;
 }
 
-function onNameInput(): void {
-	nameError.value = '';
-	nameStatus.value = 'default';
-	markChanged();
-	clearDebounceTimer();
-	requestSequence++;
-
-	const name = schemaName.value.trim();
-
-	if ( !name ) {
-		nameError.value = mw.msg( 'neowiki-schema-creator-name-required' );
-		nameStatus.value = 'error';
-		return;
-	}
-
-	const expectedSequence = requestSequence;
-	debounceTimer = setTimeout( () => checkDuplicateName( name, expectedSequence ), DEBOUNCE_DELAY );
-}
-
-async function checkDuplicateName( name: string, expectedSequence: number ): Promise<void> {
-	try {
-		await schemaStore.getOrFetchSchema( name );
-
-		if ( expectedSequence !== requestSequence ) {
-			return;
-		}
-
-		nameError.value = mw.msg( 'neowiki-schema-creator-name-taken' );
-		nameStatus.value = 'error';
-	} catch {
-		// Schema not found — name is available
-	}
-}
-
-function clearDebounceTimer(): void {
-	if ( debounceTimer !== null ) {
-		clearTimeout( debounceTimer );
-		debounceTimer = null;
-	}
-}
-
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
-		clearDebounceTimer();
-		requestSequence++;
 		resetChanged();
-		schemaName.value = '';
-		nameError.value = '';
-		nameStatus.value = 'default';
+		schemaCreatorRef.value?.reset();
 	}
 } );
 
 async function handleSave( summary: string ): Promise<void> {
-	clearDebounceTimer();
-	requestSequence++;
-
-	const name = schemaName.value.trim();
-
-	if ( !name ) {
-		nameError.value = mw.msg( 'neowiki-schema-creator-name-required' );
-		nameStatus.value = 'error';
+	if ( !schemaCreatorRef.value ) {
 		return;
 	}
 
-	try {
-		await schemaStore.getOrFetchSchema( name );
-		nameError.value = mw.msg( 'neowiki-schema-creator-name-taken' );
-		nameStatus.value = 'error';
+	const valid = await schemaCreatorRef.value.validate();
+
+	if ( !valid ) {
 		return;
-	} catch {
-		// Schema not found — name is available
 	}
 
-	const propertyDefinitions = schemaEditorRef.value ?
-		schemaEditorRef.value.getSchema().getPropertyDefinitions() :
-		new PropertyDefinitionList( [] );
+	const schema = schemaCreatorRef.value.getSchema();
 
-	const description = schemaEditorRef.value ?
-		schemaEditorRef.value.getSchema().getDescription() :
-		'';
+	if ( !schema ) {
+		return;
+	}
 
-	const schema = new Schema( name, description, propertyDefinitions );
 	const editSummary = summary || mw.msg( 'neowiki-schema-creator-summary-default' );
 
 	try {
 		await schemaStore.saveSchema( schema, editSummary );
-		mw.notify( mw.msg( 'neowiki-schema-creator-success', name ), { type: 'success' } );
+		mw.notify( mw.msg( 'neowiki-schema-creator-success', schema.getName() ), { type: 'success' } );
 		emit( 'created', schema );
 		close();
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),
 			{
-				title: mw.msg( 'neowiki-schema-creator-error', name ),
+				title: mw.msg( 'neowiki-schema-creator-error', schema.getName() ),
 				type: 'error'
 			}
 		);
@@ -215,15 +129,6 @@ async function handleSave( summary: string ): Promise<void> {
 			padding: 0;
 			display: grid;
 			overflow: hidden;
-		}
-	}
-
-	&__name-section {
-		padding: @spacing-100;
-		border-block-end: @border-subtle;
-
-		@media ( min-width: @min-width-breakpoint-desktop ) {
-			padding: @spacing-150;
 		}
 	}
 }

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
+import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -51,12 +52,27 @@ const SubjectEditorStub = {
 	},
 };
 
-const SchemaEditorStub = {
-	template: '<div class="schema-editor-stub"></div>',
-	props: [ 'initialSchema' ],
+const SchemaCreatorStub = {
+	template: '<div class="schema-creator-stub"></div>',
+	emits: [ 'change', 'overflow' ],
 	setup() {
-		const getSchema = (): Schema => new Schema( '', '', new PropertyDefinitionList( [] ) );
-		return { getSchema };
+		let valid = true;
+		const schema = new Schema( NEW_SCHEMA_NAME, 'A description', new PropertyDefinitionList( [] ) );
+
+		const validate = vi.fn( async (): Promise<boolean> => valid );
+		const getSchema = vi.fn( (): Schema | null => schema );
+		const reset = vi.fn();
+		const focus = vi.fn();
+
+		return {
+			validate,
+			getSchema,
+			reset,
+			focus,
+			setStubValid( v: boolean ) {
+				valid = v;
+			},
+		};
 	},
 };
 
@@ -100,7 +116,7 @@ describe( 'SubjectCreatorDialog', () => {
 				stubs: {
 					SchemaLookup: SchemaLookupStub,
 					SubjectEditor: SubjectEditorStub,
-					SchemaEditor: SchemaEditorStub,
+					SchemaCreator: SchemaCreatorStub,
 					EditSummary: EditSummaryStub,
 					CloseConfirmationDialog: CloseConfirmationDialogStub,
 					CdxButton: true,
@@ -308,13 +324,12 @@ describe( 'SubjectCreatorDialog', () => {
 	} );
 
 	describe( 'Create new schema flow', () => {
-		it( 'shows schema name input and SchemaEditor when "Create new" is selected', async () => {
+		it( 'shows SchemaCreator when "Create new" is selected', async () => {
 			const wrapper = mountComponent();
 
 			await switchToNewSchema( wrapper );
 
-			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( true );
-			expect( wrapper.findAll( '.cdx-text-input-stub' ).length ).toBe( 1 );
+			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( true );
 			expect( wrapper.find( '.edit-summary-stub' ).exists() ).toBe( true );
 		} );
 
@@ -326,63 +341,47 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( false );
 		} );
 
-		it( 'shows error when schema name is empty on create', async () => {
+		it( 'focuses SchemaCreator when "Create new" is selected', async () => {
 			const wrapper = mountComponent();
 
 			await switchToNewSchema( wrapper );
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
-			await flushPromises();
-
-			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
+			const creatorVm = wrapper.findComponent( SchemaCreator ).vm as any;
+			expect( creatorVm.focus ).toHaveBeenCalled();
 		} );
 
-		it( 'shows error when schema name already exists', async () => {
+		it( 'does not save schema when validation fails', async () => {
 			const wrapper = mountComponent();
 
 			await switchToNewSchema( wrapper );
 
-			const nameInput = wrapper.find( '.cdx-text-input-stub' );
-			await nameInput.setValue( SCHEMA_NAME );
-			await flushPromises();
+			( wrapper.findComponent( SchemaCreator ).vm as any ).setStubValid( false );
 
 			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
-			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( true );
 		} );
 
 		it( 'hides schema selector after creating a new schema', async () => {
-			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
 			const wrapper = mountComponent();
 
 			await switchToNewSchema( wrapper );
 
 			expect( wrapper.find( '.cdx-toggle-button-group-stub' ).exists() ).toBe( true );
-			expect( wrapper.find( '.cdx-text-input-stub' ).exists() ).toBe( true );
-			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( true );
-
-			const nameInput = wrapper.find( '.cdx-text-input-stub' );
-			await nameInput.setValue( NEW_SCHEMA_NAME );
-			await flushPromises();
+			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( true );
 
 			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			expect( wrapper.find( '.cdx-toggle-button-group-stub' ).exists() ).toBe( false );
-			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( false );
+			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( false );
 		} );
 
 		it( 'saves schema and transitions to subject step on success', async () => {
-			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
 			const wrapper = mountComponent();
 
 			await switchToNewSchema( wrapper );
-
-			const nameInput = wrapper.find( '.cdx-text-input-stub' );
-			await nameInput.setValue( NEW_SCHEMA_NAME );
-			await flushPromises();
 
 			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', 'Created schema' );
 			await flushPromises();
@@ -401,18 +400,13 @@ describe( 'SubjectCreatorDialog', () => {
 			);
 
 			expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( true );
-			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( false );
+			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( false );
 		} );
 
 		it( 'defaults label to page title after schema creation', async () => {
-			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
 			const wrapper = mountComponent();
 
 			await switchToNewSchema( wrapper );
-
-			const nameInput = wrapper.find( '.cdx-text-input-stub' );
-			await nameInput.setValue( NEW_SCHEMA_NAME );
-			await flushPromises();
 
 			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
 			await flushPromises();
@@ -422,15 +416,10 @@ describe( 'SubjectCreatorDialog', () => {
 		} );
 
 		it( 'stays on schema step when save fails', async () => {
-			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
 			schemaStore.saveSchema = vi.fn().mockRejectedValue( new Error( 'Save failed' ) );
 			const wrapper = mountComponent();
 
 			await switchToNewSchema( wrapper );
-
-			const nameInput = wrapper.find( '.cdx-text-input-stub' );
-			await nameInput.setValue( NEW_SCHEMA_NAME );
-			await flushPromises();
 
 			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
 			await flushPromises();
@@ -440,19 +429,14 @@ describe( 'SubjectCreatorDialog', () => {
 				expect.objectContaining( { type: 'error' } ),
 			);
 
-			expect( wrapper.find( '.schema-editor-stub' ).exists() ).toBe( true );
+			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( true );
 			expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( false );
 		} );
 
 		it( 'creates subject after schema creation', async () => {
-			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
 			const wrapper = mountComponent();
 
 			await switchToNewSchema( wrapper );
-
-			const nameInput = wrapper.find( '.cdx-text-input-stub' );
-			await nameInput.setValue( NEW_SCHEMA_NAME );
-			await flushPromises();
 
 			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
 			await flushPromises();
@@ -469,15 +453,10 @@ describe( 'SubjectCreatorDialog', () => {
 		} );
 
 		it( 'resets to schema step when dialog closes', async () => {
-			schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
 			const wrapper = mountComponent();
 
 			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
 			await switchToNewSchema( wrapper );
-
-			const nameInput = wrapper.find( '.cdx-text-input-stub' );
-			await nameInput.setValue( NEW_SCHEMA_NAME );
-			await flushPromises();
 
 			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
 			await flushPromises();
