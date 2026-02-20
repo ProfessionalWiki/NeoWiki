@@ -32,15 +32,23 @@
 						{{ getPropertyDescription( property ) }}
 					</span>
 				</span>
-				<CdxButton
-					class="ext-neowiki-property-list__item__delete"
-					:aria-label="$i18n( 'neowiki-schema-editor-delete-property' ).text()"
-					weight="quiet"
-					action="destructive"
-					@click.stop="onDeleteProperty( property.name.toString() )"
-				>
-					<CdxIcon :icon="cdxIconTrash" />
-				</CdxButton>
+				<span class="ext-neowiki-property-list__item__actions">
+					<CdxButton
+						class="ext-neowiki-property-list__item__actions__delete"
+						:aria-label="$i18n( 'neowiki-schema-editor-delete-property' ).text()"
+						weight="quiet"
+						action="destructive"
+						@click.stop="onDeleteProperty( property.name.toString() )"
+					>
+						<CdxIcon :icon="cdxIconTrash" />
+					</CdxButton>
+					<span class="ext-neowiki-property-list__item__actions__drag-handle">
+						<CdxIcon
+							:icon="cdxIconDraggable"
+							:aria-hidden="true"
+						/>
+					</span>
+				</span>
 			</li>
 		</ul>
 		<button
@@ -64,7 +72,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconDraggable, cdxIconTrash } from '@wikimedia/codex-icons';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -218,6 +226,8 @@ useSortable( listRef, {
 		border-radius: @border-radius-base;
 		cursor: grab;
 		user-select: none;
+		position: relative;
+		overflow: hidden;
 
 		&:hover {
 			background-color: @background-color-interactive-subtle;
@@ -276,14 +286,47 @@ useSortable( listRef, {
 			}
 		}
 
-		&__delete {
+		&__actions {
+			position: absolute;
+			inset-inline-end: 0;
+			top: 0;
+			bottom: 0;
+			display: flex;
+			align-items: center;
+			gap: @spacing-25;
+			padding-inline: @spacing-100 @spacing-50;
+			background: linear-gradient( to right, transparent, @background-color-base 40% );
 			opacity: 0;
-			flex-shrink: 0;
+			transform: translateX( @spacing-75 );
+			transition: opacity @transition-duration-medium @transition-timing-function-system, transform @transition-duration-medium @transition-timing-function-system;
 
 			.ext-neowiki-property-list__item:hover &,
 			.ext-neowiki-property-list__item--selected &,
 			.ext-neowiki-property-list__item:focus-within & {
 				opacity: 1;
+				transform: translateX( 0 );
+			}
+
+			.ext-neowiki-property-list__item:hover & {
+				background: linear-gradient( to right, transparent, @background-color-interactive-subtle 40% );
+			}
+
+			.ext-neowiki-property-list__item--selected & {
+				background: linear-gradient( to right, transparent, @background-color-progressive-subtle 40% );
+			}
+
+			&__drag-handle {
+				min-width: @min-size-interactive-pointer;
+				min-height: @min-size-interactive-pointer;
+				padding-inline: @spacing-30; /* Replicate CdxButton padding */
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				box-sizing: border-box;
+
+				.cdx-icon {
+					color: @color-placeholder;
+				}
 			}
 		}
 	}

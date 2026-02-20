@@ -93,7 +93,7 @@ describe( 'PropertyList', () => {
 
 	it( 'emits propertyDeleted when delete button is clicked', async () => {
 		const wrapper = createWrapper( properties, 'Alpha' );
-		const deleteButtons = wrapper.findAll( '.ext-neowiki-property-list__item__delete' );
+		const deleteButtons = wrapper.findAll( '.ext-neowiki-property-list__item__actions__delete' );
 
 		await deleteButtons[ 1 ].trigger( 'click' );
 
@@ -104,7 +104,7 @@ describe( 'PropertyList', () => {
 
 	it( 'does not emit propertySelected when delete button is clicked', async () => {
 		const wrapper = createWrapper( properties, 'Alpha' );
-		const deleteButtons = wrapper.findAll( '.ext-neowiki-property-list__item__delete' );
+		const deleteButtons = wrapper.findAll( '.ext-neowiki-property-list__item__actions__delete' );
 
 		await deleteButtons[ 1 ].trigger( 'click' );
 
