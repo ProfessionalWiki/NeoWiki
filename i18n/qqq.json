@@ -18,12 +18,8 @@
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
 	"neowiki-subject-creator-save-with-schema": "Label for the save button in the subject creator dialog after a schema is selected. $1 is the schema name.",
 	"neowiki-subject-creator-creating-schema": "Subtitle shown in the subject creator dialog header when the user is creating a new schema.",
-	"neowiki-subject-creator-schema-name-field": "Label for the schema name input field in the subject creator dialog.",
-	"neowiki-subject-creator-schema-name-placeholder": "Placeholder text for the schema name input field.",
 	"neowiki-subject-creator-create-schema": "Label for the button that creates a new schema in the subject creator dialog.",
 	"neowiki-subject-creator-schema-created": "Success notification shown after creating a schema.",
-	"neowiki-subject-creator-schema-name-required": "Error shown when the schema name field is empty.",
-	"neowiki-subject-creator-schema-name-taken": "Error shown when a schema with the entered name already exists.",
 
 	"neowiki-schema-editor-summary-default": "Default edit summary used when updating a schema via the UI.",
 	"neowiki-schema-editor-success": "Success notification shown after updating a schema. $1 is the schema name.",
