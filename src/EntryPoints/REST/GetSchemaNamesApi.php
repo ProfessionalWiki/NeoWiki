@@ -18,7 +18,7 @@ class GetSchemaNamesApi extends SimpleHandler {
 			function ( TitleValue $title ): string {
 				return $title->getText();
 			},
-			NeoWikiExtension::getInstance()->getSchemaNameLookup()->getSchemaNamesMatching( $search )
+			NeoWikiExtension::getInstance()->getSchemaNameLookup()->getSchemaNamesMatching( $search, 10 )
 		);
 
 		$response = $this->getResponseFactory()->create();
