@@ -36,7 +36,7 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 				new TitleValue( NeoWikiExtension::NS_SCHEMA, 'SchemaNameLookupTest22' ),
 				new TitleValue( NeoWikiExtension::NS_SCHEMA, 'SchemaNameLookupTest3' ),
 			],
-			$this->getLookup()->getSchemaNamesMatching( $emptySearch )
+			$this->getLookup()->getSchemaNamesMatching( $emptySearch, 10 )
 		);
 	}
 
@@ -58,14 +58,14 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 				new TitleValue( NeoWikiExtension::NS_SCHEMA, 'SchemaNameLookupTest21' ),
 				new TitleValue( NeoWikiExtension::NS_SCHEMA, 'SchemaNameLookupTest22' ),
 			],
-			$this->getLookup()->getSchemaNamesMatching( 'SchemaNameLookupTest2' )
+			$this->getLookup()->getSchemaNamesMatching( 'SchemaNameLookupTest2', 10 )
 		);
 	}
 
 	public function testReturnsEmptyArrayIfNothingMatchesTheSearch(): void {
 		$this->assertSame(
 			[],
-			$this->getLookup()->getSchemaNamesMatching( 'SchemaNameLookupTest4' )
+			$this->getLookup()->getSchemaNamesMatching( 'SchemaNameLookupTest4', 10 )
 		);
 	}
 

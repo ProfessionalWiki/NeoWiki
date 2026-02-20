@@ -23,7 +23,7 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	/**
 	 * @return TitleValue[]
 	 */
-	public function getSchemaNamesMatching( string $search, int $limit = 10, int $offset = 0 ): array {
+	public function getSchemaNamesMatching( string $search, int $limit, int $offset = 0 ): array {
 		if ( trim( $search ) === '' ) {
 			return $this->getFirstSchemaNames( $limit, $offset );
 		}
