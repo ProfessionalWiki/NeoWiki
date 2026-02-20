@@ -203,7 +203,8 @@
 						"cdxIconArticles",
 						"cdxIconListNumbered",
 						"cdxIconClose",
-						"cdxIconSearch"
+						"cdxIconSearch",
+						"cdxIconDraggable"
 					]
 				}
 			],
