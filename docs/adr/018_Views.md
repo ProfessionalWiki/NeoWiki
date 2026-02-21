@@ -26,6 +26,11 @@ We introduce a View concept.
 A View references a Schema and allows customized display of Subjects that use that Schema. Schemas do not reference
 their Views — the link is one-directional from View to Schema.
 
+### Identification and Storage
+
+Views are identified by their name (following the same pattern as Schemas per [ADR 17](017_Names_As_Identifiers.md)).
+View names are immutable. Views are stored as pages in a View namespace.
+
 ### View Types
 
 Views have a View Type like "infobox", "factbox", or "table". View Types are registered via a plugin system —
@@ -107,3 +112,6 @@ when a referenced View no longer exists. Usage sites (parser functions, Page Sch
 * **Flat `attributes` in Property Definitions with plugin-only split**: The constraint/display distinction would
   exist only in Property Type plugin metadata, not in the data. Rejected because making the split visible in the
   Schema format is clearer for users and developers.
+* **Generated IDs for Views**: Views would get opaque IDs (like Subjects) for stable references. Rejected because
+  Views are referenced in wikitext, Page Schemas, and conversation where readability matters. Immutable names
+  provide the same reference stability with better ergonomics.
