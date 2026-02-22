@@ -62,6 +62,11 @@ export class PropertyDefinitionDeserializer {
 
 	public propertyDefinitionFromJson( name: string | PropertyName, json: any ): PropertyDefinition {
 		const propertyType = this.registry.getType( json.type );
+		const typeSpecific = {
+			...json,
+			...json.constraints,
+			...json.displayAttributes,
+		};
 		return propertyType.createPropertyDefinitionFromJson(
 			{
 				name: typeof name === 'string' ? new PropertyName( name ) : name,
@@ -70,7 +75,7 @@ export class PropertyDefinitionDeserializer {
 				required: json.required ?? false,
 				default: json.default ? this.valueDeserializer.deserialize( json.default, json.type ) : undefined,
 			} as PropertyDefinition,
-			json,
+			typeSpecific,
 		);
 	}
 

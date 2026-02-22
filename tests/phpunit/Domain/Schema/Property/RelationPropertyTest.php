@@ -49,7 +49,10 @@ class RelationPropertyTest extends PropertyTestCase {
 	"default": null,
 	"relation": "type",
 	"targetSchema": "schema",
-	"multiple": false
+	"constraints": {
+		"multiple": false
+	},
+	"displayAttributes": {}
 }
 JSON,
 			$this->deserializeAndReserialize(
@@ -74,7 +77,10 @@ JSON
 	"default": null,
 	"relation": "type",
 	"targetSchema": "schema",
-	"multiple": true
+	"constraints": {
+		"multiple": true
+	},
+	"displayAttributes": {}
 }
 JSON
 		);
@@ -90,7 +96,10 @@ JSON
 	"default": null,
 	"relation": "type",
 	"targetSchema": "schema",
-	"multiple": false
+	"constraints": {
+		"multiple": false
+	},
+	"displayAttributes": {}
 }
 JSON
 		);

@@ -37,8 +37,10 @@ it( 'creates a property definition with defaults specified', () => {
 it( 'creates a string property definition', () => {
 	const json = {
 		type: 'text',
-		multiple: true,
-		uniqueItems: false,
+		constraints: {
+			multiple: true,
+			uniqueItems: false,
+		},
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as TextProperty;
@@ -66,9 +68,13 @@ it( 'creates a number property definition with defaults', () => {
 it( 'creates a number property definition with all fields', () => {
 	const json = {
 		type: 'number',
-		minimum: 42,
-		maximum: 1337,
-		precision: 2,
+		constraints: {
+			minimum: 42,
+			maximum: 1337,
+		},
+		displayAttributes: {
+			precision: 2,
+		},
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as NumberProperty;
@@ -101,8 +107,10 @@ it( 'creates a relation property definition with all fields', () => {
 		type: 'relation',
 		relation: 'Employer',
 		targetSchema: 'Company',
-		multiple: true,
-		uniqueItems: false,
+		constraints: {
+			multiple: true,
+			uniqueItems: false,
+		},
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as RelationProperty;

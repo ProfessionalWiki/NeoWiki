@@ -20,8 +20,11 @@ class TextPropertyTest extends PropertyTestCase {
 	"description": "",
 	"required": false,
 	"default": null,
-	"multiple": false,
-	"uniqueItems": false
+	"constraints": {
+		"multiple": false,
+		"uniqueItems": false
+	},
+	"displayAttributes": {}
 }
 JSON,
 			$this->deserializeAndReserialize(
@@ -42,8 +45,11 @@ JSON
 	"description": "foo",
 	"required": true,
 	"default": 42,
-	"multiple": true,
-	"uniqueItems": true
+	"constraints": {
+		"multiple": true,
+		"uniqueItems": true
+	},
+	"displayAttributes": {}
 }
 JSON
 		);
@@ -57,8 +63,11 @@ JSON
 	"description": "",
 	"required": false,
 	"default": null,
-	"multiple": false,
-	"uniqueItems": false
+	"constraints": {
+		"multiple": false,
+		"uniqueItems": false
+	},
+	"displayAttributes": {}
 }
 JSON
 		);
@@ -70,7 +79,9 @@ JSON
 			<<<JSON
 {
 	"type": "text",
-	"multiple": 42
+	"constraints": {
+		"multiple": 42
+	}
 }
 JSON
 		);
@@ -82,7 +93,9 @@ JSON
 			<<<JSON
 {
 	"type": "text",
-	"uniqueItems": "maybe"
+	"constraints": {
+		"uniqueItems": "maybe"
+	}
 }
 JSON
 		);

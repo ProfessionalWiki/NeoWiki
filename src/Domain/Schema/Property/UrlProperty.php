@@ -38,11 +38,15 @@ class UrlProperty extends PropertyDefinition {
 		);
 	}
 
-	public function nonCoreToJson(): array {
+	protected function constraintsToJson(): array {
 		return [
 			'multiple' => $this->allowsMultipleValues(),
 			'uniqueItems' => $this->enforcesUniqueValues(),
 		];
+	}
+
+	protected function displayAttributesToJson(): array {
+		return [];
 	}
 
 }

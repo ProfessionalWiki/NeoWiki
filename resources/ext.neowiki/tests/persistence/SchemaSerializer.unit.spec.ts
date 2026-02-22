@@ -76,23 +76,33 @@ describe( 'SchemaSerializer', () => {
 						type: 'text',
 						description: 'Text property',
 						required: true,
-						multiple: true,
-						uniqueItems: false,
+						constraints: {
+							multiple: true,
+							uniqueItems: false,
+						},
+						displayAttributes: {},
 					},
 					urlProperty: {
 						type: 'url',
 						description: 'URL property',
 						required: false,
-						multiple: false,
-						uniqueItems: true,
+						constraints: {
+							multiple: false,
+							uniqueItems: true,
+						},
+						displayAttributes: {},
 					},
 					numberProperty: {
 						type: 'number',
 						description: 'Number property',
 						required: true,
-						precision: 2,
-						minimum: 0,
-						maximum: 100,
+						constraints: {
+							minimum: 0,
+							maximum: 100,
+						},
+						displayAttributes: {
+							precision: 2,
+						},
 					},
 					relationProperty: {
 						type: 'relation',
@@ -100,7 +110,10 @@ describe( 'SchemaSerializer', () => {
 						required: false,
 						relation: 'TestRelation',
 						targetSchema: 'TestTargetSchema',
-						multiple: true,
+						constraints: {
+							multiple: true,
+						},
+						displayAttributes: {},
 					},
 				},
 			} );

@@ -60,10 +60,13 @@ JSON
                 "description": "This is a test schema",
                 "required": false,
                 "default": null,
-                "multiple": false,
                 "type": "relation",
                 "relation": "MyRelation",
-                "targetSchema": "TestSchema"
+                "targetSchema": "TestSchema",
+                "constraints": {
+                    "multiple": false
+                },
+                "displayAttributes": {}
             }
         }
     }

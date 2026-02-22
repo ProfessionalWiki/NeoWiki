@@ -37,18 +37,21 @@ abstract class PropertyDefinition {
 	}
 
 	public function toJson(): array {
-		return array_merge(
-			[
-				'type' => $this->getPropertyType(),
-				'description' => $this->getDescription(),
-				'required' => $this->isRequired(),
-				'default' => $this->getDefault(),
-			],
-			$this->nonCoreToJson()
-		);
+		$displayAttributes = $this->displayAttributesToJson();
+
+		return [
+			'type' => $this->getPropertyType(),
+			'description' => $this->getDescription(),
+			'required' => $this->isRequired(),
+			'default' => $this->getDefault(),
+			'constraints' => $this->constraintsToJson(),
+			'displayAttributes' => $displayAttributes === [] ? (object)[] : $displayAttributes,
+		];
 	}
 
-	abstract protected function nonCoreToJson(): array;
+	abstract protected function constraintsToJson(): array;
+
+	abstract protected function displayAttributesToJson(): array;
 
 	/**
 	 * @throws InvalidArgumentException
@@ -66,8 +69,12 @@ abstract class PropertyDefinition {
 			default: $json['default'] ?? null
 		);
 
+		$constraints = $json['constraints'] ?? [];
+		$displayAttributes = $json['displayAttributes'] ?? [];
+		$typeSpecific = array_merge( $json, $constraints, $displayAttributes );
+
 		try {
-			return $propertyType->buildPropertyDefinitionFromJson( $propertyCore, $json );
+			return $propertyType->buildPropertyDefinitionFromJson( $propertyCore, $typeSpecific );
 		} catch ( \Throwable $e ) {
 			throw new InvalidArgumentException( 'Invalid property definition: ' . json_encode( $json ), 0, $e );
 		}

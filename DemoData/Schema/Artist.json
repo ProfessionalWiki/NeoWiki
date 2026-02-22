@@ -14,7 +14,9 @@
 		},
 		"Movement": {
 			"type": "text",
-			"multiple": true
+			"constraints": {
+				"multiple": true
+			}
 		},
 		"Wikipedia": {
 			"type": "url"

@@ -47,12 +47,24 @@ class RelationProperty extends PropertyDefinition {
 		);
 	}
 
-	public function nonCoreToJson(): array {
+	public function toJson(): array {
+		return array_merge(
+			parent::toJson(),
+			[
+				'relation' => $this->relationType->getText(),
+				'targetSchema' => $this->targetSchema->getText(),
+			]
+		);
+	}
+
+	protected function constraintsToJson(): array {
 		return [
-			'relation' => $this->relationType->getText(),
-			'targetSchema' => $this->targetSchema->getText(),
 			'multiple' => $this->multiple,
 		];
+	}
+
+	protected function displayAttributesToJson(): array {
+		return [];
 	}
 
 }

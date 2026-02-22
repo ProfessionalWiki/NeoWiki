@@ -30,8 +30,12 @@
 		},
 		"Estimated value": {
 			"type": "number",
-			"minimum": 0,
-			"precision": 2,
+			"constraints": {
+				"minimum": 0
+			},
+			"displayAttributes": {
+				"precision": 2
+			},
 			"description": "Estimated value in millions EUR"
 		}
 	}

@@ -70,8 +70,11 @@ class GetSchemaQueryTest extends TestCase {
             "description": "A string property",
             "required": false,
             "default": null,
-            "multiple": false,
-            "uniqueItems": false
+            "constraints": {
+                "multiple": false,
+                "uniqueItems": false
+            },
+            "displayAttributes": {}
         }
     }
 }

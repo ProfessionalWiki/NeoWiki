@@ -9,21 +9,27 @@
 		},
 		"EmploymentFte": {
 			"type": "number",
-			"minimum": 0,
-			"maximum": 100,
+			"constraints": {
+				"minimum": 0,
+				"maximum": 100
+			},
 			"default": 100
 		},
 		"Skills": {
 			"type": "text",
-			"multiple": true,
-			"uniqueItems": true,
+			"constraints": {
+				"multiple": true,
+				"uniqueItems": true
+			},
 			"description": "A list of the person's skills"
 		},
 		"Employer": {
 			"type": "relation",
 			"relation": "Employer",
 			"targetSchema": "Company",
-			"multiple": false
+			"constraints": {
+				"multiple": false
+			}
 		}
 	}
 }

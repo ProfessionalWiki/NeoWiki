@@ -39,11 +39,11 @@
 						"required": {
 							"type": "boolean"
 						},
-						"multiple": {
-							"type": "boolean"
+						"constraints": {
+							"type": "object"
 						},
-						"uniqueItems": {
-							"type": "boolean"
+						"displayAttributes": {
+							"type": "object"
 						}
 					},
 					"oneOf": [

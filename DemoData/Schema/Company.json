@@ -5,7 +5,9 @@
 		},
 		"Websites": {
 			"type": "url",
-			"multiple": true
+			"constraints": {
+				"multiple": true
+			}
 		},
 		"Main product": {
 			"type": "relation",
@@ -16,7 +18,9 @@
 			"type": "relation",
 			"relation": "Has product",
 			"targetSchema": "Product",
-			"multiple": true
+			"constraints": {
+				"multiple": true
+			}
 		},
 		"World domination progress": {
 			"type": "number",

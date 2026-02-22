@@ -5,7 +5,9 @@
 		},
 		"Part of": {
 			"type": "text",
-			"multiple": true
+			"constraints": {
+				"multiple": true
+			}
 		}
 	}
 }

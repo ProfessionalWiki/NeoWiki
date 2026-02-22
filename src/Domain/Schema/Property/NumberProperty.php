@@ -57,11 +57,16 @@ class NumberProperty extends PropertyDefinition {
 		);
 	}
 
-	public function nonCoreToJson(): array {
+	protected function constraintsToJson(): array {
 		return [
-			'precision' => $this->getPrecision(),
 			'minimum' => $this->getMinimum(),
 			'maximum' => $this->getMaximum(),
+		];
+	}
+
+	protected function displayAttributesToJson(): array {
+		return [
+			'precision' => $this->getPrecision(),
 		];
 	}
 

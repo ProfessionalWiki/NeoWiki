@@ -18,24 +18,36 @@
 		},
 		"Specialization": {
 			"type": "text",
-			"multiple": true,
-			"uniqueItems": true
+			"constraints": {
+				"multiple": true,
+				"uniqueItems": true
+			}
 		},
 		"Annual visitors": {
 			"type": "number",
-			"minimum": 0,
-			"precision": 0
+			"constraints": {
+				"minimum": 0
+			},
+			"displayAttributes": {
+				"precision": 0
+			}
 		},
 		"Admission fee": {
 			"type": "number",
-			"minimum": 0,
-			"maximum": 200,
-			"precision": 2,
+			"constraints": {
+				"minimum": 0,
+				"maximum": 200
+			},
+			"displayAttributes": {
+				"precision": 2
+			},
 			"default": 0
 		},
 		"Links": {
 			"type": "url",
-			"multiple": true,
+			"constraints": {
+				"multiple": true
+			},
 			"description": "Social media and review sites"
 		}
 	}

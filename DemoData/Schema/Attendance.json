@@ -7,8 +7,12 @@
 		},
 		"Visitors": {
 			"type": "number",
-			"minimum": 0,
-			"precision": 0
+			"constraints": {
+				"minimum": 0
+			},
+			"displayAttributes": {
+				"precision": 0
+			}
 		},
 		"Source": {
 			"type": "url"

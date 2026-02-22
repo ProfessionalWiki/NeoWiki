@@ -10,12 +10,16 @@
 		},
 		"string/text (many)": {
 			"type": "text",
-			"multiple": true
+			"constraints": {
+				"multiple": true
+			}
 		},
 		"string/text (duplicates)": {
 			"type": "text",
-			"multiple": true,
-			"uniqueItems": false
+			"constraints": {
+				"multiple": true,
+				"uniqueItems": false
+			}
 		},
 		"string/text (default)": {
 			"type": "text",
@@ -26,19 +30,25 @@
 		},
 		"string/url (many)": {
 			"type": "url",
-			"multiple": true
+			"constraints": {
+				"multiple": true
+			}
 		},
 		"number/number": {
 			"type": "number"
 		},
 		"number/number (w precision)": {
 			"type": "number",
-			"precision": 2
+			"displayAttributes": {
+				"precision": 2
+			}
 		},
 		"number/number (w bounds)": {
 			"type": "number",
-			"minimum": 42,
-			"maximum": 100
+			"constraints": {
+				"minimum": 42,
+				"maximum": 100
+			}
 		},
 		"relation/relation": {
 			"type": "relation",
@@ -49,7 +59,9 @@
 			"type": "relation",
 			"relation": "Has product",
 			"targetSchema": "Product",
-			"multiple": true
+			"constraints": {
+				"multiple": true
+			}
 		}
 	}
 }

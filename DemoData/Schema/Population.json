@@ -12,7 +12,9 @@
 		},
 		"References": {
 			"type": "url",
-			"multiple": true
+			"constraints": {
+				"multiple": true
+			}
 		}
 	}
 }

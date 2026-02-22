@@ -18,7 +18,9 @@
 			"type": "relation",
 			"relation": "Features",
 			"targetSchema": "Artist",
-			"multiple": true
+			"constraints": {
+				"multiple": true
+			}
 		},
 		"Website": {
 			"type": "url"
@@ -28,8 +30,12 @@
 		},
 		"Visitor count": {
 			"type": "number",
-			"minimum": 0,
-			"precision": 0
+			"constraints": {
+				"minimum": 0
+			},
+			"displayAttributes": {
+				"precision": 0
+			}
 		}
 	}
 }

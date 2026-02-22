@@ -20,9 +20,13 @@ class NumberPropertyTest extends PropertyTestCase {
 	"description": "",
 	"required": false,
 	"default": null,
-	"precision": null,
-	"minimum": null,
-	"maximum": null
+	"constraints": {
+		"minimum": null,
+		"maximum": null
+	},
+	"displayAttributes": {
+		"precision": null
+	}
 }
 JSON,
 			$this->deserializeAndReserialize(
@@ -43,9 +47,13 @@ JSON
 	"description": "foo",
 	"required": true,
 	"default": 42,
-	"precision": 2,
-	"minimum": 0,
-	"maximum": 100
+	"constraints": {
+		"minimum": 0,
+		"maximum": 100
+	},
+	"displayAttributes": {
+		"precision": 2
+	}
 }
 JSON
 		);
@@ -59,9 +67,13 @@ JSON
 	"description": "",
 	"required": false,
 	"default": null,
-	"precision": null,
-	"minimum": null,
-	"maximum": null
+	"constraints": {
+		"minimum": null,
+		"maximum": null
+	},
+	"displayAttributes": {
+		"precision": null
+	}
 }
 JSON
 		);
@@ -73,7 +85,9 @@ JSON
 			<<<JSON
 {
 	"type": "number",
-	"precision": "yes"
+	"displayAttributes": {
+		"precision": "yes"
+	}
 }
 JSON
 		);
@@ -85,7 +99,9 @@ JSON
 			<<<JSON
 {
 	"type": "number",
-	"maximum": "yes"
+	"constraints": {
+		"maximum": "yes"
+	}
 }
 JSON
 		);
@@ -97,7 +113,9 @@ JSON
 			<<<JSON
 {
 	"type": "number",
-	"minimum": "yes"
+	"constraints": {
+		"minimum": "yes"
+	}
 }
 JSON
 		);
