@@ -1,6 +1,6 @@
 # Views
 
-Date: 2025-05-09
+Date: 2026-02-21
 
 Status: Draft
 
@@ -23,18 +23,95 @@ like Revenue, Net income, Total assets, etc.
 
 We introduce a View concept.
 
-A View is linked to a Schema, and allows customized display of Subjects that use that Schema.
+A View references a Schema and allows customized display of Subjects that use that Schema. Schemas do not reference
+their Views — the link is one-directional from View to Schema.
 
-Views have a View Type like "infobox", "factbox", or "table". The View Type affects what View Attributes can be set.
+### Identification and Storage
 
-Things that would be implemented as View Attributes:
-* Which Statements to show (specified via Property names)
-* Ordering of Statements (specified via Property names)
-* Statement-level display information like precision and color. This depends on the Property Type of the Statement.
-* View Type specific display information like the border color of an Infobox
+Views are identified by their name (following the same pattern as Schemas per [ADR 17](017_Names_As_Identifiers.md)).
+View names are immutable. Views are stored as pages in a View namespace.
+
+### View Types
+
+Views have a View Type like "infobox", "factbox", or "table". View Types are registered via a plugin system —
+extensions can define new View Types. Each View Type plugin defines:
+* What `settings` it supports (e.g., `borderColor` for infobox)
+* What `displayAttributes` it supports per Display Rule (may depend on the Property Type)
+* How to render a Subject given a View configuration
+* Editing UI for its type-specific options
+
+### Display Rules
+
+A View contains an ordered list of Display Rules. Each Display Rule references a property by name and optionally
+overrides display attributes for that property. This serves as an allowlist — unlisted properties are hidden. If
+the list is empty or absent, all properties are shown in Schema-defined order.
+
+Display attribute overrides (e.g., precision, color) override the defaults from the Property Definition in the
+Schema. A Display Rule only needs to specify overrides — unspecified display attributes are inherited from the
+Property Definition.
+
+### Constraints and Display Attributes in Property Definitions
+
+Property Definition Attributes are split into two explicit groups:
+* **`constraints`** — validation and data rules (e.g., `minimum: 42`). Not overridable in Views.
+* **`displayAttributes`** — presentation configuration (e.g., `precision: 2`). Overridable in Views via Display Rules.
+
+The Property Type plugin defines which attributes belong to which group. Using `displayAttributes` in both Property
+Definitions and View Display Rules makes the connection explicit: the View overrides the same values that the Property
+Definition defines as defaults.
+
+### Settings
+
+View-level configuration specific to the View Type (e.g., `borderColor` for infobox) is stored in `settings`.
+This is distinct from `displayAttributes`, which are per-property overrides.
+
+### No Default View Entity
+
+There is no stored "Default View" on a Schema. When a Subject is displayed without a specified View, the fallback
+is to show all Statements in Schema-defined order (the current AutomaticInfobox behavior). This fallback also applies
+when a referenced View no longer exists. Usage sites (parser functions, Page Schemas, etc.) specify which View to use.
+
+### Example
+
+```json
+{
+  "schema": "Company",
+  "type": "infobox",
+  "description": "Key financial data",
+  "displayRules": [
+    { "property": "Revenue", "displayAttributes": { "precision": 0 } },
+    { "property": "Net Income" },
+    { "property": "Total Assets" }
+  ],
+  "settings": {
+    "borderColor": "#336699"
+  }
+}
+```
 
 ## Consequences
 
-
+* View Types must be registered via the plugin system. Infobox is the first built-in type.
+* Property Definition Attributes must be split into `constraints` and `displayAttributes`. The Property Type plugin
+  defines which attributes belong to which group.
+* The AutomaticInfobox becomes the fallback rendering for Subjects without a specified View.
 
 ## Alternatives Considered
+
+* **Blocklist instead of allowlist**: A View would list properties to hide, showing everything else. Rejected because
+  the allowlist gives explicit control over both selection and ordering, and avoids Statements appearing unexpectedly
+  when a Schema is modified.
+* **Default View as a stored entity**: Each Schema would have a Default View, either auto-created or explicitly set.
+  Rejected because the fallback behavior (show all Statements in Schema order) is sufficient and avoids coupling
+  Schemas to Views.
+* **Schema references its Views**: The Schema would store references to its Views. Rejected to keep Schemas simple
+  and decoupled from the display layer.
+* **`statements` or `properties` as the Display Rules key**: `statements` was rejected because the entries don't
+  contain Statements — they configure how Statements are displayed. `properties` was rejected because "add a property
+  to the View" is ambiguous (could mean adding a Display Rule, a Property Definition, or a Statement value).
+* **Flat `attributes` in Property Definitions with plugin-only split**: The constraint/display distinction would
+  exist only in Property Type plugin metadata, not in the data. Rejected because making the split visible in the
+  Schema format is clearer for users and developers.
+* **Generated IDs for Views**: Views would get opaque IDs (like Subjects) for stable references. Rejected because
+  Views are referenced in wikitext, Page Schemas, and conversation where readability matters. Immutable names
+  provide the same reference stability with better ergonomics.

@@ -61,32 +61,47 @@ Schemas have a name, description, and a list of Property Definitions
 
 ### Property Definition
 
-They always have a Property Name and a Property Type. Depending on the Type, they might have additional information, such as constraints or display info. These Type-specific things are Property Attributes. Property Types are registered via a plugin system and can be defined by extensions.
+They always have a Property Name and a Property Type. Depending on the Type, they might have additional information.
+Property Types are registered via a plugin system and can be defined by extensions.
 
-- A **name**. Example: "Website".
-- A **type**. Example: "url". (formerly “format”)
+- A **name**. Example: “Website”.
+- A **type**. Example: “url”. (formerly “format”)
 - Boolean **required**
 - Optional **description** string
 - Optional **default**, which is a Value
-- **Attributes**
-  - Possibly: additional constraints. Example: `"minimum": 42`
-  - Possibly: additional display information. Example: `"color": "blue"`
+- **Constraints**: validation and data rules specific to the Property Type. Example: `”minimum”: 42`. Not overridable
+  in Views.
+- **Display Attributes**: presentation configuration specific to the Property Type. Example: `”precision”: 2`,
+  `”color”: “blue”`. These serve as defaults that can be overridden per-View via Display Rules.
 
 
 
 ## View
 
-A View ([ADR 18](adr/018_Views.md)) is linked to a Schema, and allows customized display of Subjects that use that Schema.
+A View ([ADR 18](adr/018_Views.md)) references a Schema and allows customized display of Subjects that use that
+Schema. The link is one-directional: Views reference Schemas, Schemas do not reference their Views.
 
-Example: A company Schema has many properties. You want to display only some of them in your “Finances” page section. Thus, you create a finances View for that company Schema that hides all properties except for Revenue, Profit, and Assets.
+Example: A company Schema has many properties. You want to display only some of them in your “Finances” page section.
+You create a finances View for that company Schema that shows only Revenue, Profit, and Assets.
 
-Views have a View Type, such as "infobox", "factbox", or "table". The View Type affects what View Attributes can be set.
+Views have:
 
-View Attributes:
+- A **Schema** reference
+- A **View Type**, such as “infobox”, “factbox”, or “table”. View Types are registered via a plugin system.
+- **Display Rules**: an ordered list that specifies which properties to show and how (see below)
+- **Settings**: View-level configuration specific to the View Type (e.g., `borderColor` for infobox)
+- Optional **description**
 
-- Which Statements to show (specified via Property names)
-- Ordering of Statements (specified via Property names)
-- Statement-level display information like precision and color. This depends on the Property Type of the Statement.
-- Display information specific to the View Type, like the border color of an Infobox
+When a Subject is displayed without a specified View, all properties are shown in Schema-defined order (fallback
+behavior). There is no stored “Default View” entity.
 
-**Not to be confused with** the yet to be clearly named concept of “display container” such as infobox or table.  To make things extra confusing, Notion uses the term View for “display container”:
+### Display Rule
+
+A Display Rule is an entry in a View's ordered allowlist. Each Display Rule references a property by name and
+optionally overrides Display Attributes for that property. Unlisted properties are hidden.
+
+Display Rules have:
+
+- A **property** reference (the property name from the Schema's Property Definitions)
+- Optional **Display Attributes** overrides (e.g., `precision`, `color`). These override the defaults from the
+  Property Definition. Unspecified Display Attributes are inherited from the Property Definition.
