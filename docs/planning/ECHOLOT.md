@@ -24,6 +24,7 @@ If you are not familiar with the NeoWiki terminology yet, see [the glossary](../
   PersonName fields and create or update both the Person Subject and linked PersonName Subject.
 * Is our [Graph Model](../GraphModel.md) OK? In particular, is it OK to have non-Subject data in there, like the connected
   MediaWiki pages? (80% likely, briefly covered in Vienna: can filter out these values when querying)
+* How important is multilinguality for ECHOLOT? Do we need to provide anything beyond our current data model to support that?
 
 ### Low Priority
 
