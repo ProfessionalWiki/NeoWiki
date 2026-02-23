@@ -16,8 +16,7 @@ interface PropertyType {
 	public function getValueType(): ValueType;
 
 	/**
-	 * @return string[] Names of attributes that are display attributes (overridable in Views).
-	 *                  All other non-core attributes are constraints.
+	 * @return string[] Names of Attributes that are Display Attributes (overridable in Views).
 	 */
 	public function getDisplayAttributeNames(): array;
 
