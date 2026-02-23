@@ -16,6 +16,8 @@ export abstract class BasePropertyType<P extends PropertyDefinition, V extends V
 		return ( this.constructor as typeof BasePropertyType ).valueType;
 	}
 
+	public abstract getDisplayAttributeNames(): string[];
+
 	public abstract createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): P;
 
 	public abstract getExampleValue( property: P ): V;

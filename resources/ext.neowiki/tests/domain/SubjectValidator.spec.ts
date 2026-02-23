@@ -26,6 +26,10 @@ describe( 'SubjectValidator', () => {
 			super();
 		}
 
+		public getDisplayAttributeNames(): string[] {
+			return [];
+		}
+
 		public createPropertyDefinitionFromJson(): PropertyDefinition {
 			throw new Error( 'Not implemented' );
 		}

@@ -14,6 +14,11 @@ describe( 'TextType', () => {
 		} );
 
 	} );
+
+	it( 'has no display attributes', () => {
+		expect( type.getDisplayAttributeNames() ).toEqual( [] );
+	} );
+
 } );
 
 describe( 'newTextProperty', () => {

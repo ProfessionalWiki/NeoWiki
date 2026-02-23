@@ -21,6 +21,10 @@ class TextType implements PropertyType {
 		return ValueType::String;
 	}
 
+	public function getDisplayAttributeNames(): array {
+		return [];
+	}
+
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): TextProperty {
 		return TextProperty::fromPartialJson( $core, $property );
 	}

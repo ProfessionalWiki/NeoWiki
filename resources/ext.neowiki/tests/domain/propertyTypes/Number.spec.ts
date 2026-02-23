@@ -3,6 +3,14 @@ import { newNumberProperty, NumberType } from '@/domain/propertyTypes/Number';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newNumberValue } from '@/domain/Value';
 
+describe( 'NumberType', () => {
+
+	it( 'returns precision as display attribute', () => {
+		expect( new NumberType().getDisplayAttributeNames() ).toEqual( [ 'precision' ] );
+	} );
+
+} );
+
 describe( 'newNumberProperty', () => {
 	it( 'creates property with default values when no options provided', () => {
 		const property = newNumberProperty();

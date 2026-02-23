@@ -14,6 +14,10 @@ export class UrlType extends BasePropertyType<UrlProperty, StringValue> {
 
 	public static readonly typeName = 'url';
 
+	public getDisplayAttributeNames(): string[] {
+		return [];
+	}
+
 	public getExampleValue(): StringValue {
 		return newStringValue( 'https://example.com' );
 	}

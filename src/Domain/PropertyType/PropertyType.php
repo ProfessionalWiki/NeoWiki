@@ -16,6 +16,12 @@ interface PropertyType {
 	public function getValueType(): ValueType;
 
 	/**
+	 * @return string[] Names of attributes that are display attributes (overridable in Views).
+	 *                  All other non-core attributes are constraints.
+	 */
+	public function getDisplayAttributeNames(): array;
+
+	/**
 	 * @throws InvalidArgumentException
 	 */
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): PropertyDefinition;

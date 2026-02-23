@@ -21,6 +21,10 @@ class RelationType implements PropertyType {
 		return ValueType::Relation;
 	}
 
+	public function getDisplayAttributeNames(): array {
+		return [];
+	}
+
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): RelationProperty {
 		return RelationProperty::fromPartialJson( $core, $property );
 	}

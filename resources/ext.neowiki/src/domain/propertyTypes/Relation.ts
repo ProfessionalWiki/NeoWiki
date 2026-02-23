@@ -18,6 +18,10 @@ export class RelationType extends BasePropertyType<RelationProperty, RelationVal
 
 	public static readonly typeName = 'relation';
 
+	public getDisplayAttributeNames(): string[] {
+		return [];
+	}
+
 	public getExampleValue( property: RelationProperty ): RelationValue {
 		const relations = [ newRelation( undefined, 's11111111111111' ) ];
 		if ( property !== undefined && property.multiple ) {

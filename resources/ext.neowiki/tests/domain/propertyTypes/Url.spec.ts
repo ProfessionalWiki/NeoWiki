@@ -3,6 +3,14 @@ import { newUrlProperty, UrlType, isValidUrl, formatUrlForDisplay } from '@/doma
 import { newStringValue } from '@/domain/Value';
 import { PropertyName } from '@/domain/PropertyDefinition';
 
+describe( 'UrlType', () => {
+
+	it( 'has no display attributes', () => {
+		expect( new UrlType().getDisplayAttributeNames() ).toEqual( [] );
+	} );
+
+} );
+
 test.each( [
 	[ '', false ],
 	[ 'https://example.com?query=value', true ],

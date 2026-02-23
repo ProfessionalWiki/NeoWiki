@@ -21,6 +21,10 @@ class UrlType implements PropertyType {
 		return ValueType::String;
 	}
 
+	public function getDisplayAttributeNames(): array {
+		return [];
+	}
+
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): UrlProperty {
 		return UrlProperty::fromPartialJson( $core, $property );
 	}

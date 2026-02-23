@@ -17,6 +17,10 @@ export class NumberType extends BasePropertyType<NumberProperty, NumberValue> {
 
 	public static readonly typeName = 'number';
 
+	public getDisplayAttributeNames(): string[] {
+		return [ 'precision' ];
+	}
+
 	public getExampleValue(): NumberValue {
 		return newNumberValue( 42 );
 	}

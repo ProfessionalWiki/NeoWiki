@@ -21,6 +21,10 @@ class NumberType implements PropertyType {
 		return ValueType::Number;
 	}
 
+	public function getDisplayAttributeNames(): array {
+		return [ 'precision' ];
+	}
+
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): NumberProperty {
 		return NumberProperty::fromPartialJson( $core, $property );
 	}

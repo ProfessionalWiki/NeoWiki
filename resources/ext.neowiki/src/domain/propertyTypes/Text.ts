@@ -16,6 +16,10 @@ export class TextType extends BasePropertyType<TextProperty, StringValue> {
 
 	public static readonly typeName = 'text';
 
+	public getDisplayAttributeNames(): string[] {
+		return [];
+	}
+
 	public getExampleValue(): StringValue {
 		return newStringValue( 'Some Text' );
 	}

@@ -3,6 +3,14 @@ import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relati
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newRelation, RelationValue } from '@/domain/Value';
 
+describe( 'RelationType', () => {
+
+	it( 'has no display attributes', () => {
+		expect( new RelationType().getDisplayAttributeNames() ).toEqual( [] );
+	} );
+
+} );
+
 describe( 'newRelationProperty', () => {
 	it( 'creates property with default values when no attributes provided', () => {
 		const property = newRelationProperty();
