@@ -43,8 +43,11 @@ extensions can define new View Types. Each View Type plugin defines:
 ### Display Rules
 
 A View contains an ordered list of Display Rules. Each Display Rule references a property by name and optionally
-overrides display attributes for that property. This serves as an allowlist — unlisted properties are hidden. If
-the list is empty or absent, all properties are shown in Schema-defined order.
+overrides display attributes for that property. This serves as an allowlist — unlisted properties are hidden.
+
+When a View has no Display Rules (empty or absent list), all properties are shown in Schema-defined order. Note that
+adding the first Display Rule switches from "show all" to "show only listed" — there is no way to show all properties
+while overriding display attributes for some of them via Display Rules.
 
 Display attribute overrides (e.g., precision, color) override the defaults from the Property Definition in the
 Schema. A Display Rule only needs to specify overrides — unspecified display attributes are inherited from the
@@ -57,7 +60,7 @@ Property Definition Attributes are split into two explicit groups:
 * **`displayAttributes`** — presentation configuration (e.g., `precision: 2`). Overridable in Views via Display Rules.
 
 The Property Type plugin defines which attributes belong to which group. Using `displayAttributes` in both Property
-Definitions and View Display Rules make the connection explicit: the View overrides the same values that the Property
+Definitions and View Display Rules makes the connection explicit: the View overrides the same values that the Property
 Definition defines as defaults.
 
 ### Settings
