@@ -1,12 +1,12 @@
 # Views
 
-Date: 2026-02-21
+Date: 2026-02-23
 
-Status: Draft
+Status: Accepted
 
 ## Context
 
-We will need a way to let users customize how Subjects are displayed.
+We will need a way for users to customize how Subjects are displayed.
 
 Examples of things users might wish to change:
 * The precision of a number
@@ -16,7 +16,7 @@ Examples of things users might wish to change:
 
 It should be possible for users to have multiple displays of a Subject shown on one page, and it should be possible
 for those displays to be different. For instance, on a page about a company, there might be an infobox at the top of
-the page with key data, while in the financial section there is an infobox with detailed information via Properties
+the page with key data, while in the financial section, there is an infobox with detailed information via Properties
 like Revenue, Net income, Total assets, etc.
 
 ## Decision
@@ -33,10 +33,10 @@ View names are immutable. Views are stored as pages in a View namespace.
 
 ### View Types
 
-Views have a View Type like "infobox", "factbox", or "table". View Types are registered via a plugin system —
+Views have a View Type like "infobox", "factbox", or "table". View Types are registered via a plugin system, so
 extensions can define new View Types. Each View Type plugin defines:
+
 * What `settings` it supports (e.g., `borderColor` for infobox)
-* What `displayAttributes` it supports per Display Rule (may depend on the Property Type)
 * How to render a Subject given a View configuration
 * Editing UI for its type-specific options
 
@@ -57,7 +57,7 @@ Property Definition Attributes are split into two explicit groups:
 * **`displayAttributes`** — presentation configuration (e.g., `precision: 2`). Overridable in Views via Display Rules.
 
 The Property Type plugin defines which attributes belong to which group. Using `displayAttributes` in both Property
-Definitions and View Display Rules makes the connection explicit: the View overrides the same values that the Property
+Definitions and View Display Rules make the connection explicit: the View overrides the same values that the Property
 Definition defines as defaults.
 
 ### Settings
