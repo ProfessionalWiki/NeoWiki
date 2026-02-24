@@ -20,6 +20,7 @@
 	"neowiki-subject-creator-creating-schema": "Subtitle shown in the subject creator dialog header when the user is creating a new schema.",
 	"neowiki-subject-creator-create-schema": "Label for the button that creates a new schema in the subject creator dialog.",
 	"neowiki-subject-creator-schema-created": "Success notification shown after creating a schema.",
+	"neowiki-subject-creator-back": "Aria label for the back button in the subject creator dialog, used to return to schema selection.",
 
 	"neowiki-schema-editor-summary-default": "Default edit summary used when updating a schema via the UI.",
 	"neowiki-schema-editor-success": "Success notification shown after updating a schema. $1 is the schema name.",

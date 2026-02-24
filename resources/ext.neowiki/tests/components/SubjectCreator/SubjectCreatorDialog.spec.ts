@@ -83,7 +83,7 @@ const EditSummaryStub = {
 };
 
 const CdxDialogStub = {
-	template: '<div class="cdx-dialog-stub"><slot /><slot name="footer" /></div>',
+	template: '<div class="cdx-dialog-stub"><slot name="header" /><slot /><slot name="footer" /></div>',
 	props: [ 'open', 'title', 'useCloseButton' ],
 	emits: [ 'update:open', 'default' ],
 };
@@ -472,6 +472,78 @@ describe( 'SubjectCreatorDialog', () => {
 
 			expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
 			expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( false );
+		} );
+	} );
+
+	describe( 'Back button', () => {
+		it( 'does not show back button on schema selection step', () => {
+			const wrapper = mountComponent();
+
+			expect( wrapper.find( '.ext-neowiki-subject-creator-back-button' ).exists() ).toBe( false );
+		} );
+
+		it( 'shows back button after selecting a schema', async () => {
+			const wrapper = mountComponent();
+
+			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+
+			expect( wrapper.find( '.ext-neowiki-subject-creator-back-button' ).exists() ).toBe( true );
+		} );
+
+		it( 'returns to schema selection when back button is clicked', async () => {
+			const wrapper = mountComponent();
+
+			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+
+			expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( true );
+
+			await wrapper.find( '.ext-neowiki-subject-creator-back-button' ).trigger( 'click' );
+			await flushPromises();
+
+			expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
+			expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( false );
+			expect( wrapper.find( '.ext-neowiki-subject-creator-back-button' ).exists() ).toBe( false );
+		} );
+
+		it( 'shows back button after creating a new schema', async () => {
+			const wrapper = mountComponent();
+
+			await switchToNewSchema( wrapper );
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( wrapper.find( '.ext-neowiki-subject-creator-back-button' ).exists() ).toBe( true );
+		} );
+
+		it( 'returns to schema selection after creating a schema and clicking back', async () => {
+			const wrapper = mountComponent();
+
+			await switchToNewSchema( wrapper );
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			await wrapper.find( '.ext-neowiki-subject-creator-back-button' ).trigger( 'click' );
+			await flushPromises();
+
+			expect( wrapper.find( '.cdx-toggle-button-group-stub' ).exists() ).toBe( true );
+			expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( false );
+		} );
+
+		it( 'preserves schema option when going back from existing schema', async () => {
+			const wrapper = mountComponent();
+
+			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+
+			await wrapper.find( '.ext-neowiki-subject-creator-back-button' ).trigger( 'click' );
+			await flushPromises();
+
+			expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
+			expect( wrapper.find( '.cdx-toggle-button-group-stub' ).exists() ).toBe( true );
 		} );
 	} );
 

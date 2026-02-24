@@ -82,6 +82,7 @@
 	"neowiki-subject-creator-error": "Failed to create subject",
 	"neowiki-subject-creator-create-schema": "Create schema",
 	"neowiki-subject-creator-schema-created": "Schema created successfully",
+	"neowiki-subject-creator-back": "Back",
 
 	"neowiki-schema-display-property-name": "Property",
 	"neowiki-schema-display-property-type": "Type",

@@ -14,28 +14,41 @@
 			@update:open="onDialogUpdateOpen"
 		>
 			<template #header>
-				<div class="cdx-dialog__header__title-group">
-					<h2 class="cdx-dialog__header__title">
-						{{ $i18n( 'neowiki-subject-creator-title' ).text() }}
-					</h2>
-
-					<p
-						v-if="headerSubtitle"
-						class="cdx-dialog__header__subtitle"
+				<div class="ext-neowiki-subject-creator-dialog__header">
+					<CdxButton
+						v-if="selectedSchemaName"
+						class="ext-neowiki-subject-creator-back-button"
+						weight="quiet"
+						type="button"
+						:aria-label="$i18n( 'neowiki-subject-creator-back' ).text()"
+						@click="goBack"
 					>
-						{{ headerSubtitle }}
-					</p>
-				</div>
+						<CdxIcon :icon="cdxIconArrowPrevious" />
+					</CdxButton>
 
-				<CdxButton
-					class="cdx-dialog__header__close-button"
-					weight="quiet"
-					type="button"
-					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-					@click="requestClose"
-				>
-					<CdxIcon :icon="cdxIconClose" />
-				</CdxButton>
+					<div class="ext-neowiki-subject-creator-dialog__header__title-group">
+						<h2 class="cdx-dialog__header__title">
+							{{ $i18n( 'neowiki-subject-creator-title' ).text() }}
+						</h2>
+
+						<p
+							v-if="headerSubtitle"
+							class="cdx-dialog__header__subtitle"
+						>
+							{{ headerSubtitle }}
+						</p>
+					</div>
+
+					<CdxButton
+						class="cdx-dialog__header__close-button"
+						weight="quiet"
+						type="button"
+						:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
+						@click="requestClose"
+					>
+						<CdxIcon :icon="cdxIconClose" />
+					</CdxButton>
+				</div>
 			</template>
 			<template v-if="!selectedSchemaName">
 				<p>
@@ -126,7 +139,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { CdxButton, CdxDialog, CdxField, CdxIcon, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconClose, cdxIconSearch } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconArrowPrevious, cdxIconClose, cdxIconSearch } from '@wikimedia/codex-icons';
 import type { ButtonGroupItem } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -312,6 +325,13 @@ function resetForm(): void {
 	resetChanged();
 }
 
+function goBack(): void {
+	selectedSchemaName.value = null;
+	loadedSchema.value = null;
+	subjectLabel.value = '';
+	resetChanged();
+}
+
 const handleSave = async ( _summary: string ): Promise<void> => {
 	await nextTick();
 
@@ -356,15 +376,35 @@ defineExpose( { hasChanged } );
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-creator {
-	&-dialog.cdx-dialog {
-		/* Replicate the Codex default dialog header styles */
-		.cdx-dialog__header {
-			display: flex;
-			align-items: baseline;
-			justify-content: flex-end;
-			box-sizing: @box-sizing-base;
-			width: @size-full;
+	&-dialog {
+		.cdx-dialog {
+			/* Replicate the Codex default dialog header styles */
+			.cdx-dialog__header {
+				display: flex;
+				align-items: baseline;
+				justify-content: flex-end;
+				box-sizing: @box-sizing-base;
+				width: @size-full;
+			}
 		}
+
+		&__header {
+			display: flex;
+			align-items: center;
+			width: @size-full;
+			column-gap: @spacing-75;
+
+			&__title-group {
+				display: flex;
+				flex-grow: 1;
+				flex-direction: column;
+			}
+		}
+	}
+
+	&-back-button.cdx-button {
+		margin-left: -@spacing-50;
+		flex-shrink: 0;
 	}
 
 	&-dialog--wide.cdx-dialog {
