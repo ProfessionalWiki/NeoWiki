@@ -139,7 +139,17 @@ export class NeoWikiExtension {
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
 			this.getSubjectDeserializer(),
+			this.getRevisionId(),
 		);
+	}
+
+	private getRevisionId(): number | undefined {
+		const current = mw.config.get( 'wgRevisionId' );
+		const latest = mw.config.get( 'wgCurRevisionId' );
+		if ( current !== latest ) {
+			return current;
+		}
+		return undefined;
 	}
 
 	public getSubjectDeserializer(): SubjectDeserializer {
