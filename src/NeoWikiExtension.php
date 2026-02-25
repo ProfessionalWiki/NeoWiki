@@ -68,6 +68,7 @@ use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\FactBox;
 use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
+use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use Wikimedia\Rdbms\IDatabase;
 
@@ -219,11 +220,18 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newViewHtmlBuilder(): ViewHtmlBuilder {
+		return new ViewHtmlBuilder(
+			subjectContentRepository: $this->newSubjectContentRepository()
+		);
+	}
+
 	public function newSubjectContentRepository(): SubjectContentRepository {
 		return new SubjectContentRepository(
 			wikiPageFactory: MediaWikiServices::getInstance()->getWikiPageFactory(),
 			authority: RequestContext::getMain()->getUser(),
 			pageContentSaver: $this->getPageContentSaver(),
+			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
 		);
 	}
 

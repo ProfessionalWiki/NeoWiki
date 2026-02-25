@@ -9,6 +9,7 @@ use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionAccessException;
+use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -22,6 +23,7 @@ class SubjectContentRepository {
 		private readonly WikiPageFactory $wikiPageFactory,
 		private readonly Authority $authority,
 		private readonly PageContentSaver $pageContentSaver,
+		private readonly RevisionLookup $revisionLookup,
 	) {
 	}
 
@@ -31,6 +33,16 @@ class SubjectContentRepository {
 
 	public function getSubjectContentByPageTitle( PageIdentity $pageIdentity ): ?SubjectContent {
 		return $this->getSubjectContentFromWikiPage( $this->wikiPageFactory->newFromTitle( $pageIdentity ) );
+	}
+
+	public function getSubjectContentByRevisionId( int $revisionId ): ?SubjectContent {
+		$revision = $this->revisionLookup->getRevisionById( $revisionId );
+
+		if ( $revision === null ) {
+			return null;
+		}
+
+		return $this->getSubjectContentFromRevision( $revision );
 	}
 
 	private function getSubjectContentFromWikiPage( ?WikiPage $wikiPage ): ?SubjectContent {
@@ -44,6 +56,10 @@ class SubjectContentRepository {
 			return null;
 		}
 
+		return $this->getSubjectContentFromRevision( $revision );
+	}
+
+	private function getSubjectContentFromRevision( RevisionRecord $revision ): ?SubjectContent {
 		try {
 			$slot = $revision->getSlot(
 				MediaWikiSubjectRepository::SLOT_NAME,

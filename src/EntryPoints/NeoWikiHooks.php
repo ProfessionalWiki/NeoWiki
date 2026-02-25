@@ -51,7 +51,13 @@ class NeoWikiHooks {
 		$out->addModuleStyles( 'ext.neowiki.styles' );
 		$out->addHtml( self::getNeoWikiAppHtml( $out ) );
 
-		self::injectMainSubject( $out );
+		$revisionId = self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
+		$builder = NeoWikiExtension::getInstance()->newViewHtmlBuilder();
+
+		$html = $out->getHTML();
+		$out->clearHTML();
+		$out->addHTML( $builder->mainSubjectHtml( $out->getTitle(), $revisionId ) );
+		$out->addHTML( $html );
 	}
 
 	private static function getNeoWikiAppHtml( OutputPage $out ): string {
@@ -69,42 +75,11 @@ class NeoWikiHooks {
 	private static function shouldShowSubjectCreator( OutputPage $out ): bool {
 		return NeoWikiExtension::getInstance()->newSubjectAuthorizer( $out->getAuthority() )->canCreateMainSubject()
 			&& self::pageIsLatestRevision( $out )
-			&& !self::pageHasSubjects( $out->getTitle() );
+			&& !NeoWikiExtension::getInstance()->newViewHtmlBuilder()->pageHasSubjects( $out->getTitle() );
 	}
 
 	private static function pageIsLatestRevision( OutputPage $out ): bool {
 		return $out->getRevisionId() === $out->getTitle()->getLatestRevID();
-	}
-
-	private static function pageHasSubjects( Title $title ): bool {
-		return NeoWikiExtension::getInstance()->newSubjectContentRepository()
-			->getSubjectContentByPageTitle( $title )
-			?->hasSubjects() === true;
-	}
-
-	private static function injectMainSubject( OutputPage $out ): void {
-		$html = $out->getHTML();
-		$out->clearHTML();
-		$out->addHTML( self::getMainSubjectHtml( $out ) );
-		$out->addHTML( $html );
-	}
-
-	private static function getMainSubjectHtml( OutputPage $out ): string {
-		$subject = NeoWikiExtension::getInstance()->newSubjectContentRepository()
-			->getSubjectContentByPageTitle( $out->getTitle() )
-			?->getPageSubjects()->getMainSubject();
-
-		if ( $subject === null ) {
-			return '';
-		}
-
-		return Html::element(
-			'div',
-			[
-				'class' => 'ext-neowiki-view',
-				'data-mw-neowiki-subject-id' => $subject->getId()->text,
-			]
-		);
 	}
 
 	private static function handleSchemaPage( OutputPage $out ): void {
