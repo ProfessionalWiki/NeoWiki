@@ -23,13 +23,18 @@ export class RestSubjectRepository implements SubjectRepository {
 		private readonly mediaWikiRestApiUrl: string,
 		private readonly httpClient: HttpClient,
 		private readonly subjectDeserializer: SubjectDeserializer,
+		private readonly revisionId?: number,
 	) {
 	}
 
 	public async getSubject( id: SubjectId ): Promise<Subject> {
-		const response = await this.httpClient.get(
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`,
-		);
+		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`;
+
+		if ( this.revisionId !== undefined ) {
+			url += `&revisionId=${ this.revisionId }`;
+		}
+
+		const response = await this.httpClient.get( url );
 
 		if ( !response.ok ) {
 			throw new Error( 'Error fetching subject' );
