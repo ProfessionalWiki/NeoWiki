@@ -12,6 +12,7 @@ use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\Response;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Session\CsrfTokenSet;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
@@ -51,6 +52,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
@@ -346,6 +348,19 @@ class NeoWikiExtension {
 		return new GetSubjectQuery(
 			presenter: $presenter,
 			subjectLookup: $this->getSubjectRepository(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+		);
+	}
+
+	public function newGetSubjectQueryForRevision( RestGetSubjectPresenter $presenter, RevisionRecord $revision ): GetSubjectQuery {
+		return new GetSubjectQuery(
+			presenter: $presenter,
+			subjectLookup: new PointInTimeSubjectLookup(
+				revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
+				pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+				connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
+				primaryRevision: $revision,
+			),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 		);
 	}

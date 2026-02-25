@@ -101,6 +101,50 @@ JSON,
 		$this->assertSame( 200, $response->getStatusCode() );
 	}
 
+	public function testReturnsSubjectDataFromSpecificRevision(): void {
+		$originalSubject = TestSubject::build(
+			id: 'sTestGSA1111116',
+			label: new SubjectLabel( 'original label' ),
+			schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
+		);
+
+		$revision = $this->createPageWithSubjects( 'GetSubjectApiTestRevision', mainSubject: $originalSubject );
+
+		$updatedSubject = TestSubject::build(
+			id: 'sTestGSA1111116',
+			label: new SubjectLabel( 'updated label' ),
+			schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
+		);
+		$this->createPageWithSubjects( 'GetSubjectApiTestRevision', mainSubject: $updatedSubject );
+
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => 'sTestGSA1111116' ],
+				'queryParams' => [ 'revisionId' => (string)$revision->getId() ],
+			] )
+		);
+
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( 'original label', $body['subjects']['sTestGSA1111116']['label'] );
+	}
+
+	public function testReturns404ForNonExistentRevision(): void {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => 'sTestGSA1111116' ],
+				'queryParams' => [ 'revisionId' => '999999999' ],
+			] )
+		);
+
+		$this->assertSame( 404, $response->getStatusCode() );
+	}
+
 	public function testFullExpansion(): void {
 		$firstPageId = $this->createPageWithSubjects(
 			'GetSubjectApiTest0000',
