@@ -8,7 +8,7 @@ use RuntimeException;
 use SearchEngine;
 use SearchSuggestion;
 use SearchSuggestionSet;
-use TitleValue;
+use MediaWiki\Title\TitleValue;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IResultWrapper;
 

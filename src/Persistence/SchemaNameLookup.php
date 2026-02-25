@@ -2,7 +2,7 @@
 
 namespace ProfessionalWiki\NeoWiki\Persistence;
 
-use TitleValue;
+use MediaWiki\Title\TitleValue;
 
 interface SchemaNameLookup {
 

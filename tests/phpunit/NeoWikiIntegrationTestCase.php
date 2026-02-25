@@ -4,9 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
-use CommentStoreComment;
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\TextContent;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -39,10 +41,10 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		?Subject $mainSubject = null,
 		SubjectMap $childSubjects = new SubjectMap()
 	): ?RevisionRecord {
-		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( \Title::newFromText( $pageName ) );
+		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
 		$updater = $wikiPage->newPageUpdater( $this->getTestSysop()->getUser() );
 
-		$updater->setContent( 'main', new \TextContent( '' ) );
+		$updater->setContent( 'main', new TextContent( '' ) );
 
 		$updater->setContent(
 			MediaWikiSubjectRepository::SLOT_NAME,
@@ -54,7 +56,7 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 
 	protected function createSchema( string $name, string $json = null ): ?RevisionRecord {
 		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
-			\Title::newFromText( $name, NeoWikiExtension::NS_SCHEMA )
+			Title::newFromText( $name, NeoWikiExtension::NS_SCHEMA )
 		);
 
 		$updater = $wikiPage->newPageUpdater( $this->getTestSysop()->getUser() );

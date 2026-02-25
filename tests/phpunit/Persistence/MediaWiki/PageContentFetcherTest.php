@@ -4,15 +4,15 @@ declare( strict_types=1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
-use Content;
-use MalformedTitleException;
+use MediaWiki\Content\Content;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Title\MalformedTitleException;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleParser;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
-use Title;
-use TitleParser;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher

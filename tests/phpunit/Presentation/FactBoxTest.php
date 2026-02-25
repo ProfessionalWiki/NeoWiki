@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace Presentation;
 
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -22,7 +23,7 @@ class FactBoxTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertStringContainsString(
 			'This page defines 1 NeoWiki subjects',
-			NeoWikiExtension::getInstance()->getFactBox()->htmlFor( \Title::newFromText( 'FactBoxSmokeTest' ) )
+			NeoWikiExtension::getInstance()->getFactBox()->htmlFor( Title::newFromText( 'FactBoxSmokeTest' ) )
 		);
 	}
 

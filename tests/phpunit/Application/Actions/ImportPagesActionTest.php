@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageData;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
-use WikitextContent;
+use MediaWiki\Content\WikitextContent;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPagesAction

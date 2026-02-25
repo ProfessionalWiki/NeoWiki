@@ -15,8 +15,8 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
-use Title;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi

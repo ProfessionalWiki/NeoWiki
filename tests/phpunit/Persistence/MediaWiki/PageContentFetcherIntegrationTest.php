@@ -4,11 +4,11 @@ declare( strict_types=1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
-use CommentStoreComment;
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\WikitextContent;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
-use Title;
-use WikitextContent;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher

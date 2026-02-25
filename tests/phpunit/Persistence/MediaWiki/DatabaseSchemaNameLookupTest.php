@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
-use TitleValue;
+use MediaWiki\Title\TitleValue;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup

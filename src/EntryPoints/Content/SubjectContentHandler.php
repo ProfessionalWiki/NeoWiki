@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
 use MediaWiki\Content\Content;
 use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
-use ParserOutput;
+use MediaWiki\Parser\ParserOutput;
 
 class SubjectContentHandler extends JsonContentHandler {
 

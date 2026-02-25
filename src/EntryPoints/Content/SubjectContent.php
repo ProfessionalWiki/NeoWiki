@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
 
-use FormatJson;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\Content\JsonContent;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;

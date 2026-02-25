@@ -8,7 +8,7 @@ use MediaWiki\Content\Content;
 use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Title\Title;
-use ParserOutput;
+use MediaWiki\Parser\ParserOutput;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class SchemaContentHandler extends JsonContentHandler {

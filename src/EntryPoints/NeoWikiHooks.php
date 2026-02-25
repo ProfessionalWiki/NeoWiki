@@ -25,7 +25,6 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaErrorFormatter;
 use Skin;
-use Status;
 use WikiPage;
 
 class NeoWikiHooks {
@@ -202,7 +201,7 @@ class NeoWikiHooks {
 		try {
 			new SchemaName( $editPage->getTitle()->getText() );
 		} catch ( InvalidArgumentException $exception ) {
-			$error = \Html::errorBox(
+			$error = Html::errorBox(
 				$exception->getMessage()
 			);
 		}
@@ -211,7 +210,7 @@ class NeoWikiHooks {
 
 		if ( !$contentValidator->validate( $text ) ) {
 			$errors = $contentValidator->getErrors();
-			$error = \Html::errorBox(
+			$error = Html::errorBox(
 				wfMessage( 'neowiki-schema-invalid', count( $errors ) )->escaped() .
 				JsonSchemaErrorFormatter::format( $errors )
 			);

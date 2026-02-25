@@ -4,10 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Presentation;
 
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
-use SpecialPage;
-use Title;
 
 class FactBox {
 

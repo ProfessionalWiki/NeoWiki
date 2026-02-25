@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Presentation;
 
-use Html;
+use MediaWiki\Html\Html;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use Twig\Environment;

@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 
 use MediaWiki\Message\Message;
-use SpecialPage;
+use MediaWiki\SpecialPage\SpecialPage;
 
 class SpecialSchemas extends SpecialPage {
 
