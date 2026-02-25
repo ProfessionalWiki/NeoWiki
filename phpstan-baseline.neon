@@ -131,6 +131,11 @@ parameters:
 			path: src/Persistence/MediaWiki/Subject/MediaWikiSubjectRepository.php
 
 		-
+			message: "#^Parameter \\#2 \\$op of method Wikimedia\\\\Rdbms\\\\IReadableDatabase\\:\\:expr\\(\\) expects '\\!\\='\\|'\\='\\|'\\\\\\\\x3C'\\|'\\\\\\\\x3C\\='\\|'\\\\\\\\x3E'\\|'\\\\\\\\x3E\\='\\|'LIKE'\\|'NOT LIKE', '\\<\\=' given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/Subject/PointInTimeSubjectLookup.php
+
+		-
 			message: "#^Parameter \\#1 \\$boolean of class ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Value\\\\BooleanValue constructor expects bool, mixed given\\.$#"
 			count: 1
 			path: src/Persistence/MediaWiki/Subject/StatementDeserializer.php
