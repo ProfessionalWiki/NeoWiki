@@ -69,12 +69,12 @@ async function getViewsData( elements: NodeListOf<HTMLElement> ): Promise<ViewDa
 }
 
 async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
-	if ( !element.dataset.subjectId ) {
+	if ( !element.dataset.mwNeowikiSubjectId ) {
 		return null;
 	}
 
 	try {
-		const subjectId = new SubjectId( element.dataset.subjectId );
+		const subjectId = new SubjectId( element.dataset.mwNeowikiSubjectId );
 		return {
 			id: subjectId.text,
 			element: element,

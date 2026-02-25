@@ -2,13 +2,13 @@ This page shows infoboxes with data from various museum and artwork pages, demon
 
 == Museums ==
 
-<div class="ext-neowiki-view" data-subject-id="sEpfwJLnx3Kze3t"></div>
-<div class="ext-neowiki-view" data-subject-id="sEpfwJLnxyQy6vR"></div>
-<div class="ext-neowiki-view" data-subject-id="sEpfwJLnyuR5E4i"></div>
-<div class="ext-neowiki-view" data-subject-id="sEpfwJLnzqsDMs5"></div>
+<div class="ext-neowiki-view" data-mw-neowiki-subject-id="sEpfwJLnx3Kze3t"></div>
+<div class="ext-neowiki-view" data-mw-neowiki-subject-id="sEpfwJLnxyQy6vR"></div>
+<div class="ext-neowiki-view" data-mw-neowiki-subject-id="sEpfwJLnyuR5E4i"></div>
+<div class="ext-neowiki-view" data-mw-neowiki-subject-id="sEpfwJLnzqsDMs5"></div>
 
 == Selected Artworks ==
 
-<div class="ext-neowiki-view" data-subject-id="sEpfwJLo6Si6kJo"></div>
-<div class="ext-neowiki-view" data-subject-id="sEpfwJLo8KqKsUP"></div>
-<div class="ext-neowiki-view" data-subject-id="sEpfwJLoABDZ18D"></div>
+<div class="ext-neowiki-view" data-mw-neowiki-subject-id="sEpfwJLo6Si6kJo"></div>
+<div class="ext-neowiki-view" data-mw-neowiki-subject-id="sEpfwJLo8KqKsUP"></div>
+<div class="ext-neowiki-view" data-mw-neowiki-subject-id="sEpfwJLoABDZ18D"></div>
