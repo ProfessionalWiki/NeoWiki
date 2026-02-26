@@ -206,7 +206,11 @@ DROP SILENT GRAPH <neo-page:42>
 - **Ontology mapping layer.** The [Global Properties](GlobalProperties.md) document concluded that ontology
   alignment (e.g., "Person.Name maps to `foaf:name`") should happen via a separate mapping layer, not by changing
   the data model. That layer is a separate design effort. The RDF mapping described here emits NeoWiki-native
-  predicates; the ontology mapping layer would emit additional triples using standard vocabulary terms.
+  predicates; the ontology mapping layer would emit additional triples using standard vocabulary terms. Note that
+  this layer might need to be quite expressive: CIDOC-CRM alignment isn't just predicate renaming — it requires
+  generating intermediate nodes that don't exist in NeoWiki's data. For example, a simple NeoWiki "Creator" relation
+  from an Object to a Person would need to expand to `E22_Human-Made_Object → P108i_was_produced_by →
+  E12_Production → P14_carried_out_by → E39_Actor` in CIDOC-CRM, creating the Production event node in RDF.
 - **Schema definitions as RDF.** Schemas could be expressed as RDFS/OWL classes with property constraints (similar
   to SHACL shapes). This is potentially valuable for validation and documentation, but is a separate concern.
 - **RDF import.** This document covers the outbound direction (NeoWiki data to RDF). Importing RDF data into
@@ -235,8 +239,11 @@ equivalence that NeoWiki does not enforce. The scoped approach is faithful to th
 there conventions we should follow? Should we plan the data model with future RDF-star migration in mind?
 
 **Q4: CIDOC-CRM alignment.** CIDOC-CRM is the dominant ontology in cultural heritage. It uses an event-centric
-model (relationships mediated through events) which is quite different from NeoWiki's entity-property model. Does
-this affect the base RDF mapping, or is it purely an ontology mapping layer concern?
+model (relationships mediated through events) which is quite different from NeoWiki's entity-property model. For
+example, a simple "Creator" relation in NeoWiki would correspond to the CIDOC-CRM path
+`E22_Human-Made_Object → P108i_was_produced_by → E12_Production → P14_carried_out_by → E39_Actor`, where the
+Production event is an intermediate entity that doesn't exist in NeoWiki's data. Does this affect the base RDF
+mapping, or is it purely an ontology mapping layer concern?
 
 **Q5: Named graph conventions.** Per-page named graphs are proposed for operational reasons (efficient sync). Are
 there CH/LOD conventions for named graph usage (e.g., per-source, per-dataset) that we should align with? Does
