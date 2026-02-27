@@ -68,8 +68,6 @@ use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\FactBox;
 use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
-use ProfessionalWiki\NeoWiki\Presentation\TwigEnvironmentFactory;
-use ProfessionalWiki\NeoWiki\Presentation\TwigTemplateRenderer;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use Wikimedia\Rdbms\IDatabase;
 
@@ -217,15 +215,7 @@ class NeoWikiExtension {
 
 	public function getFactBox(): FactBox {
 		return new FactBox(
-			templateRenderer: $this->newTwigTemplateRenderer(),
 			subjectContentRepository: $this->newSubjectContentRepository()
-		);
-	}
-
-	private function newTwigTemplateRenderer(): TwigTemplateRenderer {
-		return new TwigTemplateRenderer(
-			TwigEnvironmentFactory::create( __DIR__ . '/../templates' ),
-			LoggerFactory::getInstance( 'NeoWiki' )
 		);
 	}
 

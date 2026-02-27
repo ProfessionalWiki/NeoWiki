@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Presentation;
 
+use MediaWiki\Html\Html;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -12,7 +13,6 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentReposit
 class FactBox {
 
 	public function __construct(
-		private readonly TwigTemplateRenderer $templateRenderer,
 		private readonly SubjectContentRepository $subjectContentRepository
 	) {
 	}
@@ -20,12 +20,13 @@ class FactBox {
 	public function htmlFor( Title $title ): string {
 		$subjects = $this->subjectContentRepository->getSubjectContentByPageTitle( $title )?->getPageSubjects()->getAllSubjects() ?? new SubjectMap();
 
-		return $this->templateRenderer->viewModelToString(
-			'FactBox.html.twig',
-			[
-				'subjectCount' => $subjects->count(),
-				'neoJsonUrl' => SpecialPage::getTitleFor( 'NeoJson', $title->getFullText() )->getFullURL(),
-			]
+		$url = SpecialPage::getTitleFor( 'NeoJson', $title->getFullText() )->getFullURL();
+
+		return Html::noticeBox(
+			'This page defines ' . $subjects->count() . ' NeoWiki subjects.'
+			. Html::element( 'br' )
+			. Html::element( 'a', [ 'href' => $url ], 'View or edit JSON' ),
+			''
 		);
 	}
 
