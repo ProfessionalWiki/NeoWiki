@@ -25,9 +25,6 @@ $wgDevelopmentWarnings = true;
 
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:password@localhost:7689';
 $wgNeoWikiNeo4jInternalReadUrl = 'bolt://mediawiki_read:mediawiki_read@localhost:7689';
-$wgNeoWikiNeo4jExternalReadUrl = 'bolt://localhost:7687';
-$wgNeoWikiNeo4jExternalReadUserName = 'mediawiki_read';
-$wgNeoWikiNeo4jExternalReadPassword = 'mediawiki_read';
 EOT
 
 cat <<EOT >> LocalSettings.php
