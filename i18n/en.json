@@ -76,11 +76,11 @@
 	"neowiki-subject-creator-label-field": "Subject label",
 	"neowiki-subject-creator-label-placeholder": "Enter a label for the subject",
 	"neowiki-subject-creator-save": "Create subject",
-	"neowiki-subject-creator-save-with-schema": "Create $1",
 	"neowiki-subject-creator-creating-schema": "Creating schema",
 	"neowiki-subject-creator-success": "Subject created successfully",
 	"neowiki-subject-creator-error": "Failed to create subject",
 	"neowiki-subject-creator-create-schema": "Create schema",
+	"neowiki-subject-creator-continue": "Continue",
 	"neowiki-subject-creator-schema-created": "Schema created successfully",
 	"neowiki-subject-creator-back": "Back",
 
@@ -129,5 +129,11 @@
 	"neowiki-close-confirmation-title": "Discard unsaved changes?",
 	"neowiki-close-confirmation-message": "Your changes have not been saved and will be lost.",
 	"neowiki-close-confirmation-discard": "Discard",
-	"neowiki-close-confirmation-keep-editing": "Keep editing"
+	"neowiki-close-confirmation-keep-editing": "Keep editing",
+
+	"neowiki-schema-abandonment-title": "Discard unsaved changes?",
+	"neowiki-schema-abandonment-message": "Your new schema and subject have not been saved and will be lost.",
+	"neowiki-schema-abandonment-abandon": "Discard all",
+	"neowiki-schema-abandonment-keep-editing": "Keep editing",
+	"neowiki-schema-abandonment-save-schema": "Save schema only"
 }

@@ -16,9 +16,9 @@
 	"neowiki-cypher-raw-error-write-query": "Error message shown when a write query is rejected by the cypher_raw parser function.",
 	"neowiki-cypher-raw-error-query-failed": "Error message shown when Cypher query execution fails. $1 is the exception message.",
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
-	"neowiki-subject-creator-save-with-schema": "Label for the save button in the subject creator dialog after a schema is selected. $1 is the schema name.",
 	"neowiki-subject-creator-creating-schema": "Subtitle shown in the subject creator dialog header when the user is creating a new schema.",
 	"neowiki-subject-creator-create-schema": "Label for the button that creates a new schema in the subject creator dialog.",
+	"neowiki-subject-creator-continue": "Label for the button that continues from schema creation to subject editing in the subject creator dialog.",
 	"neowiki-subject-creator-schema-created": "Success notification shown after creating a schema.",
 	"neowiki-subject-creator-back": "Aria label for the back button in the subject creator dialog, used to return to schema selection.",
 
@@ -56,5 +56,11 @@
 	"neowiki-close-confirmation-title": "Title of the confirmation dialog shown when closing a dialog with unsaved changes.",
 	"neowiki-close-confirmation-message": "Message in the confirmation dialog asking the user to confirm discarding unsaved changes.",
 	"neowiki-close-confirmation-discard": "Label for the destructive button that discards unsaved changes and closes the dialog.",
-	"neowiki-close-confirmation-keep-editing": "Label for the button that dismisses the confirmation and returns to editing."
+	"neowiki-close-confirmation-keep-editing": "Label for the button that dismisses the confirmation and returns to editing.",
+
+	"neowiki-schema-abandonment-title": "Title of the confirmation dialog shown when closing the subject creator with an unsaved draft schema.",
+	"neowiki-schema-abandonment-message": "Message explaining that both the new schema and subject will be lost.",
+	"neowiki-schema-abandonment-abandon": "Label for the destructive button that discards both the schema and subject.",
+	"neowiki-schema-abandonment-keep-editing": "Label for the button that returns to editing the subject.",
+	"neowiki-schema-abandonment-save-schema": "Label for the quiet button that saves only the schema and discards the subject."
 }

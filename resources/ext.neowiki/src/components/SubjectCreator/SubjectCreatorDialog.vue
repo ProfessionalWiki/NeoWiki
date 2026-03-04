@@ -78,6 +78,7 @@
 				>
 					<SchemaCreator
 						ref="schemaCreatorRef"
+						:initial-schema="draftSchema ?? undefined"
 						@change="markChanged"
 					/>
 				</div>
@@ -108,12 +109,17 @@
 				v-if="selectedSchemaOption === 'new' && !selectedSchemaName"
 				#footer
 			>
-				<EditSummary
-					help-text=""
-					:save-button-label="$i18n( 'neowiki-subject-creator-create-schema' ).text()"
-					:save-disabled="!hasChanged"
-					@save="handleCreateSchema"
-				/>
+				<div class="ext-neowiki-subject-creator-continue">
+					<CdxButton
+						action="progressive"
+						weight="primary"
+						:disabled="!hasChanged"
+						@click="handleCreateSchema"
+					>
+						{{ $i18n( 'neowiki-subject-creator-continue' ).text() }}
+						<CdxIcon :icon="cdxIconArrowNext" />
+					</CdxButton>
+				</div>
 			</template>
 			<template
 				v-else-if="selectedSchemaName"
@@ -121,7 +127,7 @@
 			>
 				<EditSummary
 					help-text=""
-					:save-button-label="$i18n( 'neowiki-subject-creator-save-with-schema', selectedSchemaName ).text()"
+					:save-button-label="$i18n( 'neowiki-subject-creator-save' ).text()"
 					:save-disabled="!hasChanged"
 					@save="handleSave"
 				/>
@@ -133,13 +139,20 @@
 			@discard="confirmClose"
 			@keep-editing="cancelClose"
 		/>
+
+		<SchemaAbandonmentDialog
+			:open="schemaAbandonmentOpen"
+			@abandon="abandonAll"
+			@save-schema="saveSchemaAndClose"
+			@keep-editing="cancelSchemaAbandonment"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import { ref, shallowRef, computed, watch, nextTick, onMounted } from 'vue';
 import { CdxButton, CdxDialog, CdxField, CdxIcon, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconArrowPrevious, cdxIconClose, cdxIconSearch } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconArrowNext, cdxIconArrowPrevious, cdxIconClose, cdxIconSearch } from '@wikimedia/codex-icons';
 import type { ButtonGroupItem } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -153,6 +166,7 @@ import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCrea
 import EditSummary from '@/components/common/EditSummary.vue';
 import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
+import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonmentDialog.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
@@ -166,6 +180,8 @@ const subjectLabel = ref( '' );
 const schemaLookupRef = ref<any | null>( null );
 const schemaCreatorRef = ref<SchemaCreatorExposes | null>( null );
 
+const draftSchema = shallowRef<Schema | null>( null );
+
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
 const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
@@ -175,7 +191,37 @@ function close(): void {
 	open.value = false;
 }
 
-const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( hasChanged, close );
+const hasDraftSchema = computed( () => draftSchema.value !== null );
+
+const {
+	confirmationOpen,
+	alternateConfirmationOpen: schemaAbandonmentOpen,
+	requestClose,
+	confirmClose,
+	cancelClose,
+	confirmAlternateClose: abandonAll,
+	cancelAlternateClose: cancelSchemaAbandonment
+} = useCloseConfirmation( hasChanged, close, hasDraftSchema );
+
+async function saveSchemaAndClose(): Promise<void> {
+	if ( draftSchema.value ) {
+		try {
+			await schemaStore.saveSchema( draftSchema.value );
+			mw.notify( mw.msg( 'neowiki-subject-creator-schema-created' ), { type: 'success' } );
+		} catch ( error ) {
+			mw.notify(
+				error instanceof Error ? error.message : String( error ),
+				{
+					title: mw.msg( 'neowiki-subject-creator-error' ),
+					type: 'error'
+				}
+			);
+			cancelSchemaAbandonment();
+			return;
+		}
+	}
+	abandonAll();
+}
 
 function onDialogUpdateOpen( value: boolean ): void {
 	if ( !value ) {
@@ -248,7 +294,7 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 	}
 }
 
-async function handleCreateSchema( summary: string ): Promise<void> {
+async function handleCreateSchema(): Promise<void> {
 	if ( !schemaCreatorRef.value ) {
 		return;
 	}
@@ -265,22 +311,11 @@ async function handleCreateSchema( summary: string ): Promise<void> {
 		return;
 	}
 
-	try {
-		await schemaStore.saveSchema( schema, summary || undefined );
-		mw.notify( mw.msg( 'neowiki-subject-creator-schema-created' ), { type: 'success' } );
-
-		selectedSchemaName.value = schema.getName();
-		loadedSchema.value = schema;
-		subjectLabel.value = String( mw.config.get( 'wgTitle' ) ?? '' );
-	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{
-				title: mw.msg( 'neowiki-subject-creator-error' ),
-				type: 'error'
-			}
-		);
-	}
+	draftSchema.value = schema;
+	selectedSchemaName.value = schema.getName();
+	loadedSchema.value = schema;
+	subjectLabel.value = String( mw.config.get( 'wgTitle' ) ?? '' );
+	markChanged();
 }
 
 const schemaProperties = computed( (): PropertyDefinitionList =>
@@ -319,6 +354,7 @@ watch( open, async ( isOpen ) => {
 function resetForm(): void {
 	selectedSchemaName.value = null;
 	loadedSchema.value = null;
+	draftSchema.value = null;
 	subjectLabel.value = '';
 	selectedSchemaOption.value = 'existing';
 	schemaCreatorRef.value?.reset();
@@ -329,10 +365,15 @@ function goBack(): void {
 	selectedSchemaName.value = null;
 	loadedSchema.value = null;
 	subjectLabel.value = '';
-	resetChanged();
+
+	if ( draftSchema.value ) {
+		selectedSchemaOption.value = 'new';
+	} else {
+		resetChanged();
+	}
 }
 
-const handleSave = async ( _summary: string ): Promise<void> => {
+const handleSave = async ( summary: string ): Promise<void> => {
 	await nextTick();
 
 	const label = subjectLabel.value.trim();
@@ -346,10 +387,15 @@ const handleSave = async ( _summary: string ): Promise<void> => {
 		return;
 	}
 
-	const updatedStatements = subjectEditorRef.value.getSubjectData();
-	const statementsToSave = [ ...updatedStatements ].filter( ( statement ) => statement.hasValue() );
-
 	try {
+		if ( draftSchema.value ) {
+			await schemaStore.saveSchema( draftSchema.value, summary || undefined );
+			draftSchema.value = null;
+		}
+
+		const updatedStatements = subjectEditorRef.value.getSubjectData();
+		const statementsToSave = [ ...updatedStatements ].filter( ( statement ) => statement.hasValue() );
+
 		await subjectStore.createMainSubject(
 			mw.config.get( 'wgArticleId' ),
 			label,
@@ -424,6 +470,15 @@ defineExpose( { hasChanged } );
 
 	&-label-field {
 		margin-top: @spacing-100;
+	}
+
+	&-continue {
+		display: flex;
+
+		.cdx-button {
+			flex-grow: 1;
+			max-width: none;
+		}
 	}
 
 	&-new {

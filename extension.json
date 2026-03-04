@@ -195,6 +195,7 @@
 						"cdxIconAdd",
 						"cdxIconTrash",
 						"cdxIconArrowPrevious",
+						"cdxIconArrowNext",
 						"cdxIconInfo",
 						"cdxIconEdit",
 						"cdxIconLink",
@@ -273,8 +274,8 @@
 				"neowiki-subject-creator-success",
 				"neowiki-subject-creator-error",
 				"neowiki-subject-creator-create-schema",
+				"neowiki-subject-creator-continue",
 				"neowiki-subject-creator-schema-created",
-				"neowiki-subject-creator-save-with-schema",
 				"neowiki-subject-creator-creating-schema",
 				"neowiki-subject-creator-back",
 				"neowiki-edit-schema",
@@ -304,7 +305,12 @@
 				"neowiki-close-confirmation-title",
 				"neowiki-close-confirmation-message",
 				"neowiki-close-confirmation-discard",
-				"neowiki-close-confirmation-keep-editing"
+				"neowiki-close-confirmation-keep-editing",
+				"neowiki-schema-abandonment-title",
+				"neowiki-schema-abandonment-message",
+				"neowiki-schema-abandonment-abandon",
+				"neowiki-schema-abandonment-keep-editing",
+				"neowiki-schema-abandonment-save-schema"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

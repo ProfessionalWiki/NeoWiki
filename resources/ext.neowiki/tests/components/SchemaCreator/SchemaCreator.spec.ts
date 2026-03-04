@@ -15,6 +15,7 @@ const NEW_SCHEMA_NAME = 'Company';
 const DEBOUNCE_DELAY = 300;
 
 const SchemaEditorStub = {
+	name: 'SchemaEditor',
 	template: '<div class="schema-editor-stub"></div>',
 	props: [ 'initialSchema' ],
 	emits: [ 'change', 'overflow' ],
@@ -28,9 +29,10 @@ describe( 'SchemaCreator', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore: ReturnType<typeof useSchemaStore>;
 
-	function mountComponent( { attachTo }: { attachTo?: Element } = {} ): VueWrapper {
+	function mountComponent( { attachTo, initialSchema }: { attachTo?: Element; initialSchema?: Schema } = {} ): VueWrapper {
 		return mount( SchemaCreator, {
 			attachTo,
+			props: initialSchema ? { initialSchema } : {},
 			global: {
 				plugins: [ pinia ],
 				stubs: {
@@ -292,5 +294,44 @@ describe( 'SchemaCreator', () => {
 		await nameInput.setValue( 'A' );
 
 		expect( wrapper.emitted( 'change' ) ).toBeTruthy();
+	} );
+
+	describe( 'initialSchema prop', () => {
+		it( 'pre-populates name from initialSchema', () => {
+			const wrapper = mountComponent( {
+				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ) ),
+			} );
+
+			const nameInput = wrapper.find( '.cdx-text-input-stub' );
+			expect( ( nameInput.element as HTMLInputElement ).value ).toBe( 'PreFilledName' );
+		} );
+
+		it( 'passes initialSchema to SchemaEditor', () => {
+			const wrapper = mountComponent( {
+				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ) ),
+			} );
+
+			const schemaEditor = wrapper.findComponent( { name: 'SchemaEditor' } );
+			expect( schemaEditor.props( 'initialSchema' ).getName() ).toBe( 'PreFilledName' );
+		} );
+
+		it( 'uses empty schema when no initialSchema provided', () => {
+			const wrapper = mountComponent();
+
+			const schemaEditor = wrapper.findComponent( { name: 'SchemaEditor' } );
+			expect( schemaEditor.props( 'initialSchema' ).getName() ).toBe( '' );
+		} );
+
+		it( 'reset clears to empty state even with initialSchema', async () => {
+			const wrapper = mountComponent( {
+				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ) ),
+			} );
+
+			( wrapper.vm as any ).reset();
+			await flushPromises();
+
+			const nameInput = wrapper.find( '.cdx-text-input-stub' );
+			expect( ( nameInput.element as HTMLInputElement ).value ).toBe( '' );
+		} );
 	} );
 } );

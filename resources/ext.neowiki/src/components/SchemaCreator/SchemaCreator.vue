@@ -19,7 +19,7 @@
 
 		<SchemaEditor
 			ref="schemaEditorRef"
-			:initial-schema="emptySchema"
+			:initial-schema="baseSchema"
 			@overflow="onOverflow"
 			@change="onChange"
 		/>
@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import type { ValidationStatusType } from '@wikimedia/codex';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
@@ -35,6 +35,12 @@ import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+
+const props = withDefaults( defineProps<{
+	initialSchema?: Schema;
+}>(), {
+	initialSchema: undefined
+} );
 
 const emit = defineEmits<{
 	overflow: [ hasOverflow: boolean ];
@@ -45,9 +51,11 @@ const schemaStore = useSchemaStore();
 
 const DEBOUNCE_DELAY = 300;
 
-const emptySchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
+const baseSchema = computed( () =>
+	props.initialSchema ?? new Schema( '', '', new PropertyDefinitionList( [] ) )
+);
 
-const schemaName = ref( '' );
+const schemaName = ref( props.initialSchema?.getName() ?? '' );
 const nameError = ref( '' );
 const nameStatus = ref<ValidationStatusType>( 'default' );
 const nameInputRef = ref<InstanceType<typeof CdxTextInput> | null>( null );
