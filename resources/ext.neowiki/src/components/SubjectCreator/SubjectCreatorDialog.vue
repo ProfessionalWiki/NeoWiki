@@ -170,6 +170,7 @@ import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonme
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
+import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 
 const open = ref( false );
 const selectedSchemaOption = ref( 'existing' );
@@ -402,8 +403,8 @@ const handleSave = async ( summary: string ): Promise<void> => {
 			selectedSchemaName.value,
 			new StatementList( statementsToSave )
 		);
-		mw.notify( mw.msg( 'neowiki-subject-creator-success' ), { type: 'success' } );
-		close();
+		setPendingNotification( 'neowiki-subject-creator-success' );
+		window.location.reload();
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),

@@ -168,9 +168,14 @@ describe( 'SubjectCreatorDialog', () => {
 		await flushPromises();
 	}
 
+	let reloadMock: ReturnType<typeof vi.fn>;
+
 	beforeEach( () => {
+		reloadMock = vi.fn();
+		vi.stubGlobal( 'location', { ...window.location, reload: reloadMock } );
+
 		setupMwMock( {
-			functions: [ 'msg', 'notify', 'config' ],
+			functions: [ 'msg', 'notify', 'config', 'storage' ],
 			config: {
 				wgArticleId: PAGE_ID,
 				wgTitle: PAGE_TITLE,
@@ -279,7 +284,7 @@ describe( 'SubjectCreatorDialog', () => {
 		);
 	} );
 
-	it( 'shows success notification and closes dialog after save', async () => {
+	it( 'reloads page after successful save', async () => {
 		const wrapper = mountComponent();
 
 		await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
@@ -289,13 +294,8 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
 		await flushPromises();
 
-		expect( mw.notify ).toHaveBeenCalledWith(
-			expect.any( String ),
-			expect.objectContaining( { type: 'success' } ),
-		);
-
-		const dialog = wrapper.findComponent( CdxDialog );
-		expect( dialog.props( 'open' ) ).toBe( false );
+		expect( mw.storage.session.set ).toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
+		expect( reloadMock ).toHaveBeenCalled();
 	} );
 
 	it( 'shows error notification on save failure and keeps dialog open', async () => {

@@ -8,11 +8,14 @@ import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
+import { showPendingNotification } from '@/presentation/PendingNotification.ts';
 
 async function initializeNeoWikiApp(): Promise<void> {
 	const neowikiApp = document.querySelector( '#mw-content-text > #ext-neowiki-app' );
 
 	if ( neowikiApp !== null ) {
+		showPendingNotification( 'neowiki-subject-creator-success' );
+
 		const showSubjectCreator = ( neowikiApp as HTMLElement ).dataset.mwNeowikiCreateSubject === 'true';
 
 		const app = createMwApp( NeoWikiApp, {
