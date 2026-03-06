@@ -154,7 +154,7 @@ describe( 'UrlInput', () => {
 			const wrapper = newWrapper( {
 				property: newUrlProperty( { multiple: false } ),
 			} );
-			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:model-value', 'https://new.single.url' );
+			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', 'https://new.single.url' );
 
 			expect( mockOnInput ).toHaveBeenCalledWith( 'https://new.single.url' );
 		} );
@@ -163,7 +163,7 @@ describe( 'UrlInput', () => {
 			const wrapper = newWrapper( {
 				property: newUrlProperty( { multiple: true } ),
 			} );
-			await wrapper.findComponent( NeoMultiTextInput ).vm.$emit( 'update:model-value', [ 'https://new1.url', 'https://new2.url' ] );
+			await wrapper.findComponent( NeoMultiTextInput ).vm.$emit( 'update:modelValue', [ 'https://new1.url', 'https://new2.url' ] );
 
 			expect( mockOnInput ).toHaveBeenCalledWith( [ 'https://new1.url', 'https://new2.url' ] );
 		} );

@@ -169,7 +169,7 @@ describe( 'TextInput', () => {
 			const wrapper = newWrapper( {
 				property: newTextProperty( { multiple: false } ),
 			} );
-			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:model-value', 'new single text' );
+			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', 'new single text' );
 
 			expect( mockOnInput ).toHaveBeenCalledWith( 'new single text' );
 		} );
@@ -178,7 +178,7 @@ describe( 'TextInput', () => {
 			const wrapper = newWrapper( {
 				property: newTextProperty( { multiple: true } ),
 			} );
-			await wrapper.findComponent( NeoMultiTextInput ).vm.$emit( 'update:model-value', [ 'new text 1', 'new text 2' ] );
+			await wrapper.findComponent( NeoMultiTextInput ).vm.$emit( 'update:modelValue', [ 'new text 1', 'new text 2' ] );
 
 			expect( mockOnInput ).toHaveBeenCalledWith( [ 'new text 1', 'new text 2' ] );
 		} );

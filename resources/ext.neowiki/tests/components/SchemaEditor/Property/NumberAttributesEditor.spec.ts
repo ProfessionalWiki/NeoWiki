@@ -50,7 +50,7 @@ describe( 'NumberAttributesEditor', () => {
 		const wrapper = newWrapper();
 		const inputs = wrapper.findAllComponents( CdxTextInput );
 
-		await inputs[ 2 ].vm.$emit( 'update:model-value', '-5' );
+		await inputs[ 2 ].vm.$emit( 'update:modelValue', '-5' );
 
 		const fieldProps = getPrecisionFieldProps( wrapper );
 		expect( fieldProps.status ).toBe( 'error' );
@@ -62,10 +62,10 @@ describe( 'NumberAttributesEditor', () => {
 		const wrapper = newWrapper();
 		const inputs = wrapper.findAllComponents( CdxTextInput );
 
-		await inputs[ 2 ].vm.$emit( 'update:model-value', '0' );
+		await inputs[ 2 ].vm.$emit( 'update:modelValue', '0' );
 		expect( getPrecisionFieldProps( wrapper ).status ).toBe( 'default' );
 
-		await inputs[ 2 ].vm.$emit( 'update:model-value', '5' );
+		await inputs[ 2 ].vm.$emit( 'update:modelValue', '5' );
 		expect( getPrecisionFieldProps( wrapper ).status ).toBe( 'default' );
 	} );
 
@@ -73,7 +73,7 @@ describe( 'NumberAttributesEditor', () => {
 		const wrapper = newWrapper();
 
 		const inputs = wrapper.findAllComponents( CdxTextInput );
-		await inputs[ 0 ].vm.$emit( 'update:model-value', '10' );
+		await inputs[ 0 ].vm.$emit( 'update:modelValue', '10' );
 
 		expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 		expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minimum: 10 } ] );
@@ -83,7 +83,7 @@ describe( 'NumberAttributesEditor', () => {
 		const wrapper = newWrapper();
 
 		const inputs = wrapper.findAllComponents( CdxTextInput );
-		await inputs[ 1 ].vm.$emit( 'update:model-value', '50' );
+		await inputs[ 1 ].vm.$emit( 'update:modelValue', '50' );
 
 		expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 		expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { maximum: 50 } ] );
@@ -93,7 +93,7 @@ describe( 'NumberAttributesEditor', () => {
 		const wrapper = newWrapper();
 
 		const inputs = wrapper.findAllComponents( CdxTextInput );
-		await inputs[ 2 ].vm.$emit( 'update:model-value', '3' );
+		await inputs[ 2 ].vm.$emit( 'update:modelValue', '3' );
 
 		expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 		expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { precision: 3 } ] );
@@ -105,7 +105,7 @@ describe( 'NumberAttributesEditor', () => {
 		} );
 
 		const inputs = wrapper.findAllComponents( CdxTextInput );
-		await inputs[ 0 ].vm.$emit( 'update:model-value', '' );
+		await inputs[ 0 ].vm.$emit( 'update:modelValue', '' );
 
 		expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 		expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minimum: undefined } ] );

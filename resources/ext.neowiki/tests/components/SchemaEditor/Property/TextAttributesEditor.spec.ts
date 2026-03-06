@@ -73,10 +73,10 @@ describe( 'TextAttributesEditor', () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', '5' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', '5' );
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'default' );
 
-			await inputs[ 1 ].vm.$emit( 'update:model-value', '100' );
+			await inputs[ 1 ].vm.$emit( 'update:modelValue', '100' );
 			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'default' );
 		} );
 
@@ -84,7 +84,7 @@ describe( 'TextAttributesEditor', () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', '0' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', '0' );
 
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
 			expect( getMinLengthFieldProps( wrapper ).messages ).toEqual( {
@@ -97,7 +97,7 @@ describe( 'TextAttributesEditor', () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', '-5' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', '-5' );
 
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
 			expect( getMinLengthFieldProps( wrapper ).messages ).toEqual( {
@@ -110,7 +110,7 @@ describe( 'TextAttributesEditor', () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 1 ].vm.$emit( 'update:model-value', '5.5' );
+			await inputs[ 1 ].vm.$emit( 'update:modelValue', '5.5' );
 
 			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'error' );
 			expect( getMaxLengthFieldProps( wrapper ).messages ).toEqual( {
@@ -123,7 +123,7 @@ describe( 'TextAttributesEditor', () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', 'abc' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', 'abc' );
 
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
 			expect( getMinLengthFieldProps( wrapper ).messages ).toEqual( {
@@ -138,7 +138,7 @@ describe( 'TextAttributesEditor', () => {
 			} );
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', '20' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', '20' );
 
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
 			expect( getMinLengthFieldProps( wrapper ).messages ).toEqual( {
@@ -153,7 +153,7 @@ describe( 'TextAttributesEditor', () => {
 			} );
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 1 ].vm.$emit( 'update:model-value', '10' );
+			await inputs[ 1 ].vm.$emit( 'update:modelValue', '10' );
 
 			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'error' );
 			expect( getMaxLengthFieldProps( wrapper ).messages ).toEqual( {
@@ -168,7 +168,7 @@ describe( 'TextAttributesEditor', () => {
 			} );
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', '10' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', '10' );
 
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'default' );
 			expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
@@ -178,10 +178,10 @@ describe( 'TextAttributesEditor', () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', '-5' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', '-5' );
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', '5' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', '5' );
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'default' );
 		} );
 
@@ -191,10 +191,10 @@ describe( 'TextAttributesEditor', () => {
 			} );
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', '20' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', '20' );
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', '5' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', '5' );
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'default' );
 			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'default' );
 		} );
@@ -205,7 +205,7 @@ describe( 'TextAttributesEditor', () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', '10' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', '10' );
 
 			expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minLength: 10 } ] );
@@ -215,7 +215,7 @@ describe( 'TextAttributesEditor', () => {
 			const wrapper = newWrapper();
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 1 ].vm.$emit( 'update:model-value', '50' );
+			await inputs[ 1 ].vm.$emit( 'update:modelValue', '50' );
 
 			expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { maxLength: 50 } ] );
@@ -227,7 +227,7 @@ describe( 'TextAttributesEditor', () => {
 			} );
 			const inputs = wrapper.findAllComponents( CdxTextInput );
 
-			await inputs[ 0 ].vm.$emit( 'update:model-value', '' );
+			await inputs[ 0 ].vm.$emit( 'update:modelValue', '' );
 
 			expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minLength: undefined } ] );
