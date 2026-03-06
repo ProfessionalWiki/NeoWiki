@@ -72,6 +72,9 @@ describe( 'AutomaticInfobox', () => {
 				$i18n,
 			},
 			plugins: [ pinia ],
+			directives: {
+				tooltip: {},
+			},
 			provide: {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
 				[ Service.SchemaAuthorizer ]: NeoWikiExtension.getInstance().newSchemaAuthorizer(),
