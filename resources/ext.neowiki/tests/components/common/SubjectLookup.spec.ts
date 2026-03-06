@@ -61,6 +61,9 @@ describe( 'SubjectLookup', () => {
 			global: {
 				mocks: { $i18n },
 				plugins: [ pinia ],
+				provide: {
+					[ Service.SubjectLabelSearch ]: mockSubjectLabelSearch,
+				},
 				stubs: { CdxLookup: CdxLookupWithVModel },
 			},
 		} );
