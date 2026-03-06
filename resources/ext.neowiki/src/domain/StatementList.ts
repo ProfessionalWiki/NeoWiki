@@ -32,19 +32,8 @@ export class StatementList implements Iterable<Statement> {
 		return name.toString() in this.statements;
 	}
 
-	public [ Symbol.iterator ](): Iterator<Statement> {
-		const statements = Object.values( this.statements );
-		let index = 0;
-
-		return {
-			next: (): IteratorResult<Statement> => {
-				if ( index < statements.length ) {
-					return { value: statements[ index++ ], done: false };
-				} else {
-					return { value: undefined, done: true };
-				}
-			},
-		};
+	public [ Symbol.iterator ](): IterableIterator<Statement> {
+		return Object.values( this.statements )[ Symbol.iterator ]();
 	}
 
 	public getPropertyNames(): PropertyName[] {

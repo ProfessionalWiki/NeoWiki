@@ -30,19 +30,8 @@ export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 		return this.properties;
 	}
 
-	public [ Symbol.iterator ](): Iterator<PropertyDefinition> {
-		const properties = Object.values( this.properties );
-		let index = 0;
-
-		return {
-			next: (): IteratorResult<PropertyDefinition> => {
-				if ( index < properties.length ) {
-					return { value: properties[ index++ ], done: false };
-				} else {
-					return { value: undefined, done: true };
-				}
-			},
-		};
+	public [ Symbol.iterator ](): IterableIterator<PropertyDefinition> {
+		return Object.values( this.properties )[ Symbol.iterator ]();
 	}
 
 	public withNames( names: PropertyName[] ): PropertyDefinitionList {
