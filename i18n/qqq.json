@@ -62,5 +62,7 @@
 	"neowiki-schema-abandonment-message": "Message explaining that both the new schema and subject will be lost.",
 	"neowiki-schema-abandonment-abandon": "Label for the destructive button that discards both the schema and subject.",
 	"neowiki-schema-abandonment-keep-editing": "Label for the button that returns to editing the subject.",
-	"neowiki-schema-abandonment-save-schema": "Label for the quiet button that saves only the schema and discards the subject."
+	"neowiki-schema-abandonment-save-schema": "Label for the quiet button that saves only the schema and discards the subject.",
+
+	"neowiki-view-invalid": "Error message shown when saving an invalid View. Parameters:\n* $1 - number of validation errors"
 }

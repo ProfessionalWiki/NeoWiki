@@ -30,6 +30,7 @@ use ProfessionalWiki\NeoWiki\Persistence\CompositeGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
+use ProfessionalWiki\NeoWiki\Application\ViewLookup;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
@@ -56,7 +57,9 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLoo
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\ViewPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageViewLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\ExplainCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\KeywordCypherQueryValidator;
@@ -75,6 +78,7 @@ use Wikimedia\Rdbms\IDatabase;
 class NeoWikiExtension {
 
 	public const int NS_SCHEMA = 7474;
+	public const int NS_VIEW = 7476;
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private SubjectRepository $subjectRepository;
@@ -314,6 +318,18 @@ class NeoWikiExtension {
 		return new SchemaPersistenceDeserializer(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
 		);
+	}
+
+	public function getViewLookup(): ViewLookup {
+		return new WikiPageViewLookup(
+			pageContentFetcher: $this->getPageContentFetcher(),
+			authority: $this->getRequestAuthority(),
+			viewDeserializer: $this->getViewPersistenceDeserializer()
+		);
+	}
+
+	private function getViewPersistenceDeserializer(): ViewPersistenceDeserializer {
+		return new ViewPersistenceDeserializer();
 	}
 
 	public function getSchemaNameLookup(): SchemaNameLookup {

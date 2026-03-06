@@ -55,7 +55,8 @@
 
 	"ContentHandlers": {
 		"NeoWikiSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SubjectContentHandler",
-		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SchemaContentHandler"
+		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SchemaContentHandler",
+		"NeoWikiView": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\ViewContentHandler"
 	},
 
 	"namespaces": [
@@ -68,19 +69,42 @@
 			"content": false,
 			"movable": false,
 			"protection": "neowiki-schema-edit"
+		},
+		{
+			"id": 7475,
+			"constant": "NS_NEOWIKI_SCHEMA_TALK",
+			"name": "Schema_talk"
+		},
+		{
+			"id": 7476,
+			"constant": "NS_NEOWIKI_VIEW",
+			"name": "View",
+			"defaultcontentmodel": "NeoWikiView",
+			"subpages": false,
+			"content": false,
+			"movable": false,
+			"protection": "neowiki-view-edit"
+		},
+		{
+			"id": 7477,
+			"constant": "NS_NEOWIKI_VIEW_TALK",
+			"name": "View_talk"
 		}
 	],
 
 	"AvailableRights": [
-		"neowiki-schema-edit"
+		"neowiki-schema-edit",
+		"neowiki-view-edit"
 	],
 
 	"GroupPermissions": {
 		"sysop": {
-			"neowiki-schema-edit": true
+			"neowiki-schema-edit": true,
+			"neowiki-view-edit": true
 		},
 		"interface-admin": {
-			"neowiki-schema-edit": true
+			"neowiki-schema-edit": true,
+			"neowiki-view-edit": true
 		}
 	},
 
