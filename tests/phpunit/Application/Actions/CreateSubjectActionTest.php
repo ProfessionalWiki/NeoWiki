@@ -116,6 +116,39 @@ class CreateSubjectActionTest extends TestCase {
 		);
 	}
 
+	public function testCommentIsPassedToRepository(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: 'some-schema-id',
+				statements: [],
+				comment: 'My custom comment'
+			)
+		);
+
+		$this->assertSame( 'My custom comment', $this->subjectRepository->comments[1] );
+	}
+
+	public function testNullCommentIsPassedToRepositoryByDefault(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: 'some-schema-id',
+				statements: []
+			)
+		);
+
+		$this->assertNull( $this->subjectRepository->comments[1] );
+	}
+
 	public function testNewRelationGetsGuidAssigned(): void {
 		$this->newCreateSubjectAction()->createSubject(
 			new CreateSubjectRequest(

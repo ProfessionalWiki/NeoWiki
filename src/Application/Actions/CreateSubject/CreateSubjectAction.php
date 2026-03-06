@@ -48,7 +48,7 @@ readonly class CreateSubjectAction {
 			return;
 		}
 
-		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ) );
+		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ), $request->comment );
 		$this->presenter->presentCreated( $subject->id->text );
 	}
 

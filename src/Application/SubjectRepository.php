@@ -31,6 +31,6 @@ interface SubjectRepository extends SubjectLookup {
 	/**
 	 * TODO: document exceptions
 	 */
-	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId ): void;
+	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): void;
 
 }

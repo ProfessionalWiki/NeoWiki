@@ -48,8 +48,9 @@ class InMemorySubjectRepository implements SubjectRepository {
 		return PageSubjects::newEmpty();
 	}
 
-	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId ): void {
+	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): void {
 		$this->subjectsByPage[$pageId->id] = $pageSubjects;
+		$this->comments[$pageId->id] = $comment;
 
 		foreach ( $pageSubjects->getAllSubjects()->asArray() as $subject ) {
 			$this->subjects[$subject->getId()->text] = $subject;

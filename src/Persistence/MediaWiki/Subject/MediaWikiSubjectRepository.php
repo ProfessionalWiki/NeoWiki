@@ -129,11 +129,11 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		return $this->getContentByPageId( $pageId )?->getPageSubjects() ?? PageSubjects::newEmpty();
 	}
 
-	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId ): void {
+	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): void {
 		$content = $this->getContentByPageId( $pageId ) ?? SubjectContent::newEmpty();
 
 		$content->setPageSubjects( $pageSubjects );
 
-		$this->saveContent( $content, $pageId );
+		$this->saveContent( $content, $pageId, $comment );
 	}
 }

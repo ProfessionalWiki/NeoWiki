@@ -56,11 +56,13 @@ export class RestSubjectRepository implements SubjectRepository {
 		label: string,
 		schemaName: SchemaName,
 		statements: StatementList,
+		comment?: string,
 	): Promise<SubjectId> {
 		const payload = {
 			label: label,
 			schema: schemaName,
 			statements: statementsToJson( statements ),
+			comment,
 		};
 
 		const response = await this.httpClient.post(

@@ -10,7 +10,8 @@ export interface SubjectRepository extends SubjectLookup {
 		pageId: number,
 		label: string,
 		schemaName: SchemaName,
-		statements: StatementList
+		statements: StatementList,
+		comment?: string
 	): Promise<SubjectId>;
 
 	createChildSubject(
@@ -29,7 +30,7 @@ export interface SubjectRepository extends SubjectLookup {
 
 export class StubSubjectRepository extends InMemorySubjectLookup implements SubjectRepository {
 
-	public createMainSubject( _pageId: number, _label: string, _schemaName: string, _statements: StatementList ): Promise<SubjectId> {
+	public createMainSubject( _pageId: number, _label: string, _schemaName: string, _statements: StatementList, _comment?: string ): Promise<SubjectId> {
 		return Promise.resolve( new SubjectId( 's11111111111111' ) );
 	}
 

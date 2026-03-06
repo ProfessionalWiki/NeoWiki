@@ -36,6 +36,7 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 					label: $request['label'],
 					schemaName: $request['schema'],
 					statements: $request['statements'],
+					comment: $request['comment'] ?? null,
 				)
 			);
 

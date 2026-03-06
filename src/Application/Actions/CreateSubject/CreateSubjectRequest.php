@@ -18,6 +18,8 @@ readonly class CreateSubjectRequest {
 		 * @var array<string, mixed[]>
 		 */
 		public array $statements,
+
+		public ?string $comment = null,
 	) {
 	}
 

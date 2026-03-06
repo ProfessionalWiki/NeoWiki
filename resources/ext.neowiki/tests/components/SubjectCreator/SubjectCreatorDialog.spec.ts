@@ -281,6 +281,25 @@ describe( 'SubjectCreatorDialog', () => {
 			PAGE_TITLE,
 			SCHEMA_NAME,
 			expect.any( StatementList ),
+			'test summary',
+		);
+	} );
+
+	it( 'does not pass summary when it is empty', async () => {
+		const wrapper = mountComponent();
+
+		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await flushPromises();
+
+		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+		await flushPromises();
+
+		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
+			PAGE_ID,
+			PAGE_TITLE,
+			SCHEMA_NAME,
+			expect.any( StatementList ),
+			undefined,
 		);
 	} );
 
@@ -437,6 +456,7 @@ describe( 'SubjectCreatorDialog', () => {
 				PAGE_TITLE,
 				NEW_SCHEMA_NAME,
 				expect.any( StatementList ),
+				'Created subject',
 			);
 		} );
 

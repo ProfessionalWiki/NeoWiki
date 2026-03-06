@@ -401,7 +401,8 @@ const handleSave = async ( summary: string ): Promise<void> => {
 			mw.config.get( 'wgArticleId' ),
 			label,
 			selectedSchemaName.value,
-			new StatementList( statementsToSave )
+			new StatementList( statementsToSave ),
+			summary || undefined
 		);
 		setPendingNotification( 'neowiki-subject-creator-success' );
 		window.location.reload();
