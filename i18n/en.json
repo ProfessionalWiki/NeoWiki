@@ -135,5 +135,7 @@
 	"neowiki-schema-abandonment-message": "Your new schema and subject have not been saved and will be lost.",
 	"neowiki-schema-abandonment-abandon": "Discard all",
 	"neowiki-schema-abandonment-keep-editing": "Keep editing",
-	"neowiki-schema-abandonment-save-schema": "Save schema only"
+	"neowiki-schema-abandonment-save-schema": "Save schema only",
+
+	"neowiki-view-invalid": "View content is invalid ({{PLURAL:$1|$1 error|$1 errors}}):"
 }
