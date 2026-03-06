@@ -93,6 +93,7 @@ function dropQueryAndFragment( url: string ): string {
 	if ( questionMark !== -1 ) {
 		end = Math.min( end, questionMark );
 	}
+	// eslint-disable-next-line security/detect-possible-timing-attacks
 	if ( hash !== -1 ) {
 		end = Math.min( end, hash );
 	}
