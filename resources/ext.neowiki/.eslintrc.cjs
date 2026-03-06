@@ -70,6 +70,7 @@ module.exports = {
 		'@typescript-eslint/no-empty-object-type': 'off',
 		'no-shadow': 'off',
 		'jsdoc/require-param': 'off',
+		'jsdoc/require-param-type': 'off',
 		'jsdoc/require-returns': 'off',
 		'no-new': 'off',
 		'implicit-arrow-linebreak': 'off',
