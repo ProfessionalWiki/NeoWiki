@@ -7,6 +7,7 @@ import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
+import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
 
 export enum Service { // TODO: make private
 	ComponentRegistry = 'ComponentRegistry',
@@ -15,7 +16,8 @@ export enum Service { // TODO: make private
 	SubjectValidator = 'SubjectValidator',
 	PropertyTypeRegistry = 'PropertyTypeRegistry',
 	SchemaRepository = 'SchemaRepository',
-	SubjectLabelSearch = 'SubjectLabelSearch'
+	SubjectLabelSearch = 'SubjectLabelSearch',
+	ViewTypeRegistry = 'ViewTypeRegistry'
 }
 
 export class NeoWikiServices {
@@ -37,6 +39,7 @@ export class NeoWikiServices {
 			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry(),
 			[ Service.SchemaRepository ]: neoWiki.getSchemaRepository(),
 			[ Service.SubjectLabelSearch ]: neoWiki.getSubjectLabelSearch(),
+			[ Service.ViewTypeRegistry ]: neoWiki.getViewTypeRegistry(),
 		};
 	}
 
@@ -66,6 +69,10 @@ export class NeoWikiServices {
 
 	public static getSubjectLabelSearch(): SubjectLabelSearch {
 		return inject( Service.SubjectLabelSearch ) as SubjectLabelSearch;
+	}
+
+	public static getViewTypeRegistry(): ViewTypeRegistry {
+		return inject( Service.ViewTypeRegistry ) as ViewTypeRegistry;
 	}
 
 }

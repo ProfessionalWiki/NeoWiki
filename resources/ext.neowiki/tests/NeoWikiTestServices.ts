@@ -16,6 +16,7 @@ export class NeoWikiTestServices extends NeoWikiServices {
 			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry(),
 			[ Service.SchemaRepository ]: new InMemorySchemaRepository( [] ),
 			[ Service.SubjectLabelSearch ]: { searchSubjectLabels: () => Promise.resolve( [] ) } as SubjectLabelSearch,
+			[ Service.ViewTypeRegistry ]: neoWiki.getViewTypeRegistry(),
 		};
 	}
 

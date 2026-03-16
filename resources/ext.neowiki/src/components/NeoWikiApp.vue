@@ -5,8 +5,8 @@
 		:key="`view-${view.id}`"
 		:to="view.element"
 	>
-		<!-- TODO: Implement other views -->
-		<AutomaticInfobox
+		<component
+			:is="resolveViewComponent( view.viewType )"
 			:subject-id="view.subjectId"
 			:can-edit-subject="view.canEditSubject"
 		/>
@@ -18,6 +18,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Component } from 'vue';
 import { onMounted, ref } from 'vue';
 import { SubjectId } from '@/domain/SubjectId';
 import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
@@ -30,6 +31,7 @@ interface ViewData {
 	element: HTMLElement;
 	subjectId: SubjectId;
 	canEditSubject: boolean;
+	viewType?: string;
 }
 
 const props = defineProps<{
@@ -40,6 +42,14 @@ const viewsData = ref<ViewData[]>( [] );
 
 const shouldShowSubjectCreator = ref( props.showSubjectCreator );
 const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
+const viewTypeRegistry = NeoWikiServices.getViewTypeRegistry();
+
+function resolveViewComponent( viewType?: string ): Component {
+	if ( viewType !== undefined && viewTypeRegistry.hasType( viewType ) ) {
+		return viewTypeRegistry.getComponent( viewType );
+	}
+	return AutomaticInfobox;
+}
 
 function isLatestRevision(): boolean {
 	return mw.config.get( 'wgRevisionId' ) === mw.config.get( 'wgCurRevisionId' );
@@ -79,7 +89,8 @@ async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
 			id: subjectId.text,
 			element: element,
 			subjectId: subjectId,
-			canEditSubject: isLatestRevision() && await subjectAuthorizer.canEditSubject( subjectId )
+			canEditSubject: isLatestRevision() && await subjectAuthorizer.canEditSubject( subjectId ),
+			viewType: element.dataset.mwNeowikiViewType
 		};
 	} catch ( error ) {
 		console.error( error );
