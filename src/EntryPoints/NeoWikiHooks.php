@@ -169,6 +169,8 @@ class NeoWikiHooks {
 	}
 
 	public static function onEditFilter( EditPage $editPage, ?string $text, ?string $section, string &$error ): void {
+		$text = $text ?? '';
+
 		if ( $editPage->getTitle()->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
 			self::validateSchemaEdit( $editPage, $text, $section, $error );
 		}
@@ -178,7 +180,7 @@ class NeoWikiHooks {
 		}
 	}
 
-	private static function validateSchemaEdit( EditPage $editPage, ?string $text, ?string $section, string &$error ): void {
+	private static function validateSchemaEdit( EditPage $editPage, string $text, ?string $section, string &$error ): void {
 		try {
 			new SchemaName( $editPage->getTitle()->getText() );
 		} catch ( InvalidArgumentException $exception ) {
@@ -198,7 +200,7 @@ class NeoWikiHooks {
 		}
 	}
 
-	private static function validateViewEdit( EditPage $editPage, ?string $text, string &$error ): void {
+	private static function validateViewEdit( EditPage $editPage, string $text, string &$error ): void {
 		try {
 			new ViewName( $editPage->getTitle()->getText() );
 		} catch ( InvalidArgumentException $exception ) {
