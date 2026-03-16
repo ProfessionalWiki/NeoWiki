@@ -39,14 +39,14 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 			[
 				[
 					'name' => 'Page id',
-					'type' => 'UNIQUENESS',
+					'type' => 'NODE_PROPERTY_UNIQUENESS',
 					'entityType' => 'NODE',
 					'labelsOrTypes' => [ 'Page' ],
 					'properties' => [ 'id' ],
 				],
 				[
 					'name' => 'Subject id',
-					'type' => 'UNIQUENESS',
+					'type' => 'NODE_PROPERTY_UNIQUENESS',
 					'entityType' => 'NODE',
 					'labelsOrTypes' => [ 'Subject' ],
 					'properties' => [ 'id' ],
