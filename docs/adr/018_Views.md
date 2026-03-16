@@ -53,15 +53,14 @@ Display attribute overrides (e.g., precision, color) override the defaults from 
 Schema. A Display Rule only needs to specify overrides — unspecified display attributes are inherited from the
 Property Definition.
 
-### Constraints and Display Attributes in Property Definitions
+### Display Attributes in Property Definitions
 
-Property Definition Attributes are split into two explicit groups:
-* **`constraints`** — validation and data rules (e.g., `minimum: 42`). Not overridable in Views.
-* **`displayAttributes`** — presentation configuration (e.g., `precision: 2`). Overridable in Views via Display Rules.
+Property Type plugins declare which of their attributes are **Display Attributes**: presentation configuration
+(e.g., `precision: 2`) that can be overridden per-View via Display Rules. All other attributes (e.g., validation
+rules like `minimum: 42`) are not overridable in Views.
 
-The Property Type plugin defines which attributes belong to which group. Using `displayAttributes` in both Property
-Definitions and View Display Rules makes the connection explicit: the View overrides the same values that the Property
-Definition defines as defaults.
+The Schema JSON format stores all attributes flat. The display/non-display distinction is determined by the Property
+Type plugin, not by the data format.
 
 ### Settings
 
@@ -95,8 +94,7 @@ when a referenced View no longer exists. Usage sites (parser functions, Page Sch
 ## Consequences
 
 * View Types must be registered via the plugin system. Infobox is the first built-in type.
-* Property Definition Attributes must be split into `constraints` and `displayAttributes`. The Property Type plugin
-  defines which attributes belong to which group.
+* Property Type plugins must declare which of their attributes are Display Attributes.
 * The AutomaticInfobox becomes the fallback rendering for Subjects without a specified View.
 
 ## Alternatives Considered
@@ -112,9 +110,9 @@ when a referenced View no longer exists. Usage sites (parser functions, Page Sch
 * **`statements` or `properties` as the Display Rules key**: `statements` was rejected because the entries don't
   contain Statements — they configure how Statements are displayed. `properties` was rejected because "add a property
   to the View" is ambiguous (could mean adding a Display Rule, a Property Definition, or a Statement value).
-* **Flat `attributes` in Property Definitions with plugin-only split**: The constraint/display distinction would
-  exist only in Property Type plugin metadata, not in the data. Rejected because making the split visible in the
-  Schema format is clearer for users and developers.
+* **Explicit `constraints` and `displayAttributes` keys in Schema JSON** ([PR #628](https://github.com/ProfessionalWiki/NeoWiki/pull/628)):
+  The split would be visible in the stored data format rather than determined by the plugin. Rejected because it adds
+  schema migration complexity and duplicates information already defined by the Property Type plugin.
 * **Generated IDs for Views**: Views would get opaque IDs (like Subjects) for stable references. Rejected because
   Views are referenced in wikitext, Page Schemas, and conversation where readability matters. Immutable names
   provide the same reference stability with better ergonomics.
