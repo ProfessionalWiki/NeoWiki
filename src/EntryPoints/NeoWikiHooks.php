@@ -127,6 +127,16 @@ class NeoWikiHooks {
 				return $parserFunction->handle( $parser, $cypherQuery );
 			}
 		);
+
+		$parser->setFunctionHook(
+			'view',
+			static function ( Parser $parser, string ...$args ): string|array {
+				$parserFunction = new ViewParserFunction(
+					NeoWikiExtension::getInstance()->newSubjectContentRepository()
+				);
+				return $parserFunction->handle( $parser, $args[0] ?? '', $args[1] ?? '' );
+			}
+		);
 	}
 
 	/**

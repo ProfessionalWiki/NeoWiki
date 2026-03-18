@@ -24,10 +24,20 @@ class ViewHtmlBuilder {
 			return '';
 		}
 
-		return Html::element( 'div', [
+		return self::viewPlaceholderHtml( $subject->getId()->text );
+	}
+
+	public static function viewPlaceholderHtml( string $subjectId, ?string $viewName = null ): string {
+		$attributes = [
 			'class' => 'ext-neowiki-view',
-			'data-mw-neowiki-subject-id' => $subject->getId()->text,
-		] );
+			'data-mw-neowiki-subject-id' => $subjectId,
+		];
+
+		if ( $viewName !== null ) {
+			$attributes['data-mw-neowiki-view-name'] = $viewName;
+		}
+
+		return Html::element( 'div', $attributes );
 	}
 
 	public function pageHasSubjects( Title $title ): bool {

@@ -4,4 +4,5 @@ $magicWords = [];
 
 $magicWords['en'] = [
 	'cypher_raw' => [ 0, 'cypher_raw' ],
+	'view' => [ 0, 'view' ],
 ];
