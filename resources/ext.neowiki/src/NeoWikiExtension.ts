@@ -10,7 +10,7 @@ import NumberDisplay from '@/components/Value/NumberDisplay.vue';
 import { RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry.ts';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
-import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
+import Infobox from '@/components/Views/Infobox.vue';
 import RelationDisplay from '@/components/Value/RelationDisplay.vue';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
@@ -92,7 +92,7 @@ export class NeoWikiExtension {
 
 	public getViewTypeRegistry(): ViewTypeRegistry {
 		const registry = new ViewTypeRegistry();
-		registry.registerType( 'infobox', AutomaticInfobox );
+		registry.registerType( 'infobox', Infobox );
 		return registry;
 	}
 

@@ -21,7 +21,7 @@
 import type { Component } from 'vue';
 import { onMounted, ref } from 'vue';
 import { SubjectId } from '@/domain/SubjectId';
-import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
+import Infobox from '@/components/Views/Infobox.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
@@ -48,7 +48,7 @@ function resolveViewComponent( viewType?: string ): Component {
 	if ( viewType !== undefined && viewTypeRegistry.hasType( viewType ) ) {
 		return viewTypeRegistry.getComponent( viewType );
 	}
-	return AutomaticInfobox;
+	return Infobox;
 }
 
 function isLatestRevision(): boolean {

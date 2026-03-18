@@ -1,16 +1,17 @@
+<!-- eslint-disable vue/multi-word-component-names -->
 <template>
-	<div v-if="subject !== null" class="ext-neowiki-auto-infobox">
-		<div class="ext-neowiki-auto-infobox__header">
-			<div class="ext-neowiki-auto-infobox__header__text">
+	<div v-if="subject !== null" class="ext-neowiki-infobox">
+		<div class="ext-neowiki-infobox__header">
+			<div class="ext-neowiki-infobox__header__text">
 				<div
-					class="ext-neowiki-auto-infobox__title"
+					class="ext-neowiki-infobox__title"
 					role="heading"
 					aria-level="2"
 				>
 					{{ subject.getLabel() }}
 				</div>
 				<div
-					class="ext-neowiki-auto-infobox__schema"
+					class="ext-neowiki-infobox__schema"
 					role="heading"
 					aria-level="3"
 				>
@@ -35,19 +36,19 @@
 				:on-save-schema="handleSaveSchema"
 			/>
 		</div>
-		<div class="ext-neowiki-auto-infobox__content">
+		<div class="ext-neowiki-infobox__content">
 			<div
 				v-for="( propertyDefinition, propertyName ) in propertiesToDisplay"
 				:key="propertyName"
-				class="ext-neowiki-auto-infobox__item"
+				class="ext-neowiki-infobox__item"
 			>
-				<div class="ext-neowiki-auto-infobox__property">
+				<div class="ext-neowiki-infobox__property">
 					{{ propertyName }}
 				</div>
-				<div class="ext-neowiki-auto-infobox__value">
+				<div class="ext-neowiki-infobox__value">
 					<component
 						:is="getComponent( propertyDefinition.type )"
-						:key="`${propertyDefinition.name}${subject?.getStatementValue( propertyDefinition.name )}-ext-neowiki-auto-infobox`"
+						:key="`${propertyDefinition.name}${subject?.getStatementValue( propertyDefinition.name )}-ext-neowiki-infobox`"
 						:value="subject?.getStatementValue( propertyDefinition.name )"
 						:property="propertyDefinition"
 					/>
@@ -119,7 +120,7 @@ const propertiesToDisplay = computed( function(): Record<string, PropertyDefinit
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-.ext-neowiki-auto-infobox {
+.ext-neowiki-infobox {
 	margin-inline: auto;
 	margin-bottom: @spacing-100;
 	max-width: 20rem;

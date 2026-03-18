@@ -1,6 +1,6 @@
 import { mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AutomaticInfobox from '@/components/Views/AutomaticInfobox.vue';
+import Infobox from '@/components/Views/Infobox.vue';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { StatementList } from '@/domain/StatementList.ts';
@@ -23,7 +23,7 @@ import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
 const $i18n = createI18nMock();
 
-describe( 'AutomaticInfobox', () => {
+describe( 'Infobox', () => {
 	beforeEach( () => {
 		setupMwMock( { functions: [ 'message', 'msg' ] } );
 		( globalThis as any ).mw.util = {
@@ -62,7 +62,7 @@ describe( 'AutomaticInfobox', () => {
 		] ),
 	);
 
-	const mountComponent = ( subject: Subject, canEditSubject: boolean ): VueWrapper => mount( AutomaticInfobox, {
+	const mountComponent = ( subject: Subject, canEditSubject: boolean ): VueWrapper => mount( Infobox, {
 		props: {
 			subjectId: subject.getId(),
 			canEditSubject: canEditSubject,
@@ -97,26 +97,26 @@ describe( 'AutomaticInfobox', () => {
 	it( 'renders the title correctly', () => {
 		const wrapper = mountComponent( mockSubject, false );
 
-		expect( wrapper.find( '.ext-neowiki-auto-infobox__title' ).text() ).toBe( 'Test Subject' );
+		expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'Test Subject' );
 	} );
 
 	it( 'renders statements correctly', () => {
 		const wrapper = mountComponent( mockSubject, false );
 
-		const schema = wrapper.find( '.ext-neowiki-auto-infobox__schema' );
+		const schema = wrapper.find( '.ext-neowiki-infobox__schema' );
 		expect( schema.text() ).toBe( 'TestSchema' );
 
-		const statementElements = wrapper.findAll( '.ext-neowiki-auto-infobox__item' );
+		const statementElements = wrapper.findAll( '.ext-neowiki-infobox__item' );
 		expect( statementElements ).toHaveLength( 3 ); // 3 properties + schema
 
-		expect( statementElements[ 0 ].find( '.ext-neowiki-auto-infobox__property' ).text() ).toBe( 'name' );
-		expect( statementElements[ 0 ].find( '.ext-neowiki-auto-infobox__value' ).text() ).toBe( 'John Doe, Jane Doe' );
+		expect( statementElements[ 0 ].find( '.ext-neowiki-infobox__property' ).text() ).toBe( 'name' );
+		expect( statementElements[ 0 ].find( '.ext-neowiki-infobox__value' ).text() ).toBe( 'John Doe, Jane Doe' );
 
-		expect( statementElements[ 1 ].find( '.ext-neowiki-auto-infobox__property' ).text() ).toBe( 'age' );
-		expect( statementElements[ 1 ].find( '.ext-neowiki-auto-infobox__value' ).text() ).toBe( '30' );
+		expect( statementElements[ 1 ].find( '.ext-neowiki-infobox__property' ).text() ).toBe( 'age' );
+		expect( statementElements[ 1 ].find( '.ext-neowiki-infobox__value' ).text() ).toBe( '30' );
 
-		expect( statementElements[ 2 ].find( '.ext-neowiki-auto-infobox__property' ).text() ).toBe( 'website' );
-		const linkElement = statementElements[ 2 ].find( '.ext-neowiki-auto-infobox__value a' );
+		expect( statementElements[ 2 ].find( '.ext-neowiki-infobox__property' ).text() ).toBe( 'website' );
+		const linkElement = statementElements[ 2 ].find( '.ext-neowiki-infobox__value a' );
 		expect( linkElement.attributes( 'href' ) ).toBe( 'https://example.com' );
 		expect( linkElement.text() ).toBe( 'example.com' );
 	} );
@@ -133,7 +133,7 @@ describe( 'AutomaticInfobox', () => {
 
 		const wrapper = mountComponent( emptySubject, false );
 
-		const statementElements = wrapper.findAll( '.ext-neowiki-auto-infobox__item' );
+		const statementElements = wrapper.findAll( '.ext-neowiki-infobox__item' );
 		expect( statementElements ).toHaveLength( 0 );
 	} );
 
@@ -165,7 +165,7 @@ describe( 'AutomaticInfobox', () => {
 	it( 'renders schema name as a link to the Schema page', () => {
 		const wrapper = mountComponent( mockSubject, false );
 
-		const schemaLink = wrapper.find( '.ext-neowiki-auto-infobox__schema a' );
+		const schemaLink = wrapper.find( '.ext-neowiki-infobox__schema a' );
 		expect( schemaLink.text() ).toBe( 'TestSchema' );
 		expect( schemaLink.attributes( 'href' ) ).toBe( '/wiki/Schema:TestSchema' );
 	} );
