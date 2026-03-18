@@ -191,6 +191,7 @@ export class NeoWikiExtension {
 		return new StoreStateLoader(
 			this.getSubjectRepository(),
 			this.getSchemaRepository(),
+			this.getViewLookup(),
 		);
 	}
 

@@ -14,7 +14,9 @@ export function resolveDisplayProperties(
 	subject: Subject,
 	view?: View,
 ): ResolvedProperty[] {
-	const displayRules = view?.getDisplayRules() ?? [];
+	const displayRules = view !== undefined && view.getSchema() === subject.getSchemaName() ?
+		view.getDisplayRules() :
+		[];
 
 	if ( displayRules.length === 0 ) {
 		return resolveAllNonEmptyProperties( schema, subject );
@@ -26,7 +28,13 @@ export function resolveDisplayProperties(
 function resolveAllNonEmptyProperties( schema: Schema, subject: Subject ): ResolvedProperty[] {
 	const result: ResolvedProperty[] = [];
 
+	const nonEmptyNames = new Set( subject.getNamesOfNonEmptyProperties().map( ( n ) => n.toString() ) );
+
 	for ( const propertyDefinition of schema.getPropertyDefinitions() ) {
+		if ( !nonEmptyNames.has( propertyDefinition.name.toString() ) ) {
+			continue;
+		}
+
 		const value = subject.getStatementValue( propertyDefinition.name );
 		if ( value !== undefined ) {
 			result.push( { propertyDefinition, value } );
@@ -46,6 +54,10 @@ function resolveByDisplayRules(
 	for ( const rule of displayRules ) {
 		const propertyDefinition = getPropertyDefinition( schema, rule.property );
 		if ( propertyDefinition === undefined ) {
+			continue;
+		}
+
+		if ( !subject.getStatements().has( rule.property ) ) {
 			continue;
 		}
 

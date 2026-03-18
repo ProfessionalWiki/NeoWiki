@@ -139,6 +139,51 @@ describe( 'resolveDisplayProperties', () => {
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name' ] );
 	} );
 
+	it( 'falls back to all properties when view schema does not match subject schema', () => {
+		const schema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				newTextProperty( { name: 'Name' } ),
+				newNumberProperty( { name: 'Age' } ),
+			] ),
+		} );
+		const subject = newSubject( {
+			schemaName: 'DifferentSchema',
+			statements: new StatementList( [
+				new Statement( new PropertyName( 'Name' ), 'text', newStringValue( 'Alice' ) ),
+				new Statement( new PropertyName( 'Age' ), 'number', newNumberValue( 30 ) ),
+			] ),
+		} );
+		const view = newView( [
+			{ property: 'Name' },
+		] );
+
+		const result = resolveDisplayProperties( schema, subject, view );
+
+		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name', 'Age' ] );
+	} );
+
+	it( 'skips display rules for properties the subject has no statement for', () => {
+		const schema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				newTextProperty( { name: 'Name' } ),
+				newNumberProperty( { name: 'Age' } ),
+			] ),
+		} );
+		const subject = newSubject( {
+			statements: new StatementList( [
+				new Statement( new PropertyName( 'Name' ), 'text', newStringValue( 'Alice' ) ),
+			] ),
+		} );
+		const view = newView( [
+			{ property: 'Name' },
+			{ property: 'Age' },
+		] );
+
+		const result = resolveDisplayProperties( schema, subject, view );
+
+		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name' ] );
+	} );
+
 	it( 'skips properties with no value on the subject', () => {
 		const schema = newSchema( {
 			properties: new PropertyDefinitionList( [

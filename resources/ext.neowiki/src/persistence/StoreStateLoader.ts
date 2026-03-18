@@ -1,7 +1,9 @@
 import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
+import type { ViewLookup } from '@/application/ViewLookup.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { useViewStore } from '@/stores/ViewStore.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 
 /**
@@ -14,6 +16,7 @@ export class StoreStateLoader {
 	public constructor(
 		private readonly subjectRepo: SubjectRepository,
 		private readonly schemaRepo: SchemaRepository,
+		private readonly viewLookup: ViewLookup,
 	) {
 	}
 
@@ -22,6 +25,21 @@ export class StoreStateLoader {
 			Array.from( subjectIds ).map(
 				( subjectId ) => this.loadForSubject( new SubjectId( subjectId ) ),
 			),
+		);
+	}
+
+	public async loadViews( viewNames: Set<string> ): Promise<void> {
+		const viewStore = useViewStore();
+
+		await Promise.all(
+			Array.from( viewNames ).map( async ( viewName ) => {
+				try {
+					const view = await this.viewLookup.getView( viewName );
+					viewStore.setView( viewName, view );
+				} catch {
+					// View not found or fetch failed — fallback to no-View behavior
+				}
+			} ),
 		);
 	}
 

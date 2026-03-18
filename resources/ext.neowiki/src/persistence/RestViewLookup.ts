@@ -1,4 +1,5 @@
-import { View, type ViewName } from '@/domain/View';
+import { View, type ViewName, type DisplayRule } from '@/domain/View';
+import { PropertyName } from '@/domain/PropertyDefinition';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { ViewLookup } from '@/application/ViewLookup';
 
@@ -30,9 +31,16 @@ export class RestViewLookup implements ViewLookup {
 			data.view.schema,
 			data.view.type,
 			data.view.description ?? '',
-			data.view.displayRules ?? [],
+			this.deserializeDisplayRules( data.view.displayRules ?? [] ),
 			data.view.settings ?? {},
 		);
+	}
+
+	private deserializeDisplayRules( rules: any[] ): DisplayRule[] {
+		return rules.map( ( rule: any ) => ( {
+			property: new PropertyName( rule.property ),
+			displayAttributes: rule.displayAttributes,
+		} ) );
 	}
 
 }

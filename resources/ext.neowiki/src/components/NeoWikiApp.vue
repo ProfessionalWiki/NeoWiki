@@ -6,9 +6,10 @@
 		:to="view.element"
 	>
 		<component
-			:is="resolveViewComponent( view.viewType )"
+			:is="resolveViewComponent( view )"
 			:subject-id="view.subjectId"
 			:can-edit-subject="view.canEditSubject"
+			:view-name="view.viewName"
 		/>
 	</teleport>
 
@@ -25,6 +26,7 @@ import Infobox from '@/components/Views/Infobox.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
+import { useViewStore } from '@/stores/ViewStore.ts';
 
 interface ViewData {
 	id: string;
@@ -32,6 +34,7 @@ interface ViewData {
 	subjectId: SubjectId;
 	canEditSubject: boolean;
 	viewType?: string;
+	viewName?: string;
 }
 
 const props = defineProps<{
@@ -44,10 +47,19 @@ const shouldShowSubjectCreator = ref( props.showSubjectCreator );
 const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
 const viewTypeRegistry = NeoWikiServices.getViewTypeRegistry();
 
-function resolveViewComponent( viewType?: string ): Component {
-	if ( viewType !== undefined && viewTypeRegistry.hasType( viewType ) ) {
-		return viewTypeRegistry.getComponent( viewType );
+function resolveViewComponent( viewData: ViewData ): Component {
+	if ( viewData.viewName ) {
+		const viewStore = useViewStore();
+		const view = viewStore.getView( viewData.viewName );
+		if ( view && viewTypeRegistry.hasType( view.getType() ) ) {
+			return viewTypeRegistry.getComponent( view.getType() );
+		}
 	}
+
+	if ( viewData.viewType !== undefined && viewTypeRegistry.hasType( viewData.viewType ) ) {
+		return viewTypeRegistry.getComponent( viewData.viewType );
+	}
+
 	return Infobox;
 }
 
@@ -57,10 +69,16 @@ function isLatestRevision(): boolean {
 
 onMounted( async (): Promise<void> => {
 	const localViewsData = await getViewsData( document.querySelectorAll( '.ext-neowiki-view' ) );
+	const storeStateLoader = NeoWikiExtension.getInstance().getStoreStateLoader();
 
-	await NeoWikiExtension.getInstance().getStoreStateLoader().loadSubjectsAndSchemas(
-		new Set( localViewsData.map( ( viewData ) => viewData.subjectId.text ) )
-	);
+	await Promise.all( [
+		storeStateLoader.loadSubjectsAndSchemas(
+			new Set( localViewsData.map( ( viewData ) => viewData.subjectId.text ) )
+		),
+		storeStateLoader.loadViews(
+			new Set( localViewsData.map( ( v ) => v.viewName ).filter( ( n ): n is string => n !== undefined ) )
+		)
+	] );
 
 	viewsData.value = localViewsData;
 } );
@@ -90,7 +108,8 @@ async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
 			element: element,
 			subjectId: subjectId,
 			canEditSubject: isLatestRevision() && await subjectAuthorizer.canEditSubject( subjectId ),
-			viewType: element.dataset.mwNeowikiViewType
+			viewType: element.dataset.mwNeowikiViewType,
+			viewName: element.dataset.mwNeowikiViewName
 		};
 	} catch ( error ) {
 		console.error( error );
