@@ -23,6 +23,8 @@ use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetView\GetViewPresenter;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetView\GetViewQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
@@ -42,6 +44,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetViewApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
@@ -73,6 +76,7 @@ use ProfessionalWiki\NeoWiki\Presentation\FactBox;
 use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
+use ProfessionalWiki\NeoWiki\Presentation\ViewPresentationSerializer;
 use Wikimedia\Rdbms\IDatabase;
 
 class NeoWikiExtension {
@@ -302,6 +306,14 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newGetViewQuery( GetViewPresenter $presenter ): GetViewQuery {
+		return new GetViewQuery(
+			presenter: $presenter,
+			viewLookup: $this->getViewLookup(),
+			serializer: new ViewPresentationSerializer(),
+		);
+	}
+
 	public function getSchemaLookup(): SchemaLookup {
 		return new WikiPageSchemaLookup(
 			pageContentFetcher: $this->getPageContentFetcher(),
@@ -415,6 +427,10 @@ class NeoWikiExtension {
 
 	public static function newGetSchemaApi(): GetSchemaApi {
 		return new GetSchemaApi();
+	}
+
+	public static function newGetViewApi(): GetViewApi {
+		return new GetViewApi();
 	}
 
 	public static function newGetSchemaNamesApi(): GetSchemaNamesApi {

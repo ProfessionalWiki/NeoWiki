@@ -158,6 +158,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaApi"
 		},
 		{
+			"path": "/neowiki/v0/view/{viewName}",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetViewApi"
+		},
+		{
 			"path": "/neowiki/v0/schema-names/{search}",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaNamesApi"
