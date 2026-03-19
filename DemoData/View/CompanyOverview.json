@@ -1,0 +1,9 @@
+{
+	"schema": "Company",
+	"type": "infobox",
+	"description": "Shows only founding year and world domination progress",
+	"displayRules": [
+		{ "property": "World domination progress" },
+		{ "property": "Founded at" }
+	]
+}

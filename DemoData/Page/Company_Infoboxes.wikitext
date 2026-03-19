@@ -1,11 +1,15 @@
-{{#view: s1demo1aaaaaaa1}}
-{{#view: s1demo5sssssss1}}
-
 This page shows infoboxes with data from the [[Professional Wiki]] and [[ACME Inc]] pages.
 
-This is achieved with the following wikitext:
+== Default Infobox ==
 
-<pre>
+Shows all properties in schema-defined order:
+
 {{#view: s1demo1aaaaaaa1}}
 {{#view: s1demo5sssssss1}}
-</pre>
+
+== With a View ==
+
+The same subjects rendered through the [[View:CompanyOverview]] View, which only shows "World domination progress" and "Founded at":
+
+{{#view: s1demo1aaaaaaa1 | CompanyOverview}}
+{{#view: s1demo5sssssss1 | CompanyOverview}}
