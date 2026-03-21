@@ -63,7 +63,7 @@ import { Component, computed, ref } from 'vue';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { useViewStore } from '@/stores/ViewStore.ts';
+import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -81,7 +81,7 @@ const props = defineProps( {
 		type: Boolean,
 		required: true
 	},
-	viewName: {
+	layoutName: {
 		type: String,
 		default: undefined
 	}
@@ -89,7 +89,7 @@ const props = defineProps( {
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
-const viewStore = useViewStore();
+const layoutStore = useLayoutStore();
 
 const isEditorOpen = ref( false );
 
@@ -115,18 +115,18 @@ const schemaUrl = computed( () => {
 	return mw.util.getUrl( `Schema:${ schema.value.getName() }` );
 } );
 
-const view = computed( () => {
-	if ( !props.viewName ) {
+const layout = computed( () => {
+	if ( !props.layoutName ) {
 		return undefined;
 	}
-	return viewStore.getView( props.viewName );
+	return layoutStore.getLayout( props.layoutName );
 } );
 
 const resolvedProperties = computed( (): ResolvedProperty[] => {
 	if ( !schema.value || !subject.value ) {
 		return [];
 	}
-	return resolveDisplayProperties( schema.value, subject.value, view.value );
+	return resolveDisplayProperties( schema.value, subject.value, layout.value );
 } );
 
 </script>

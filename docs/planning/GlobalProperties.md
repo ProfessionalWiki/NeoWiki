@@ -33,7 +33,7 @@ every Schema that uses them.
 **Thin abstraction.** Currently a [Property Definition](../Glossary.md#property-definition) carries its type,
 constraints (like `minimum`/`maximum`), `required`, `default`, `multiple`, and display hints (like `precision`).
 Whether a property is required, what its default is, and what constraints apply are per-Schema decisions. Display
-settings are per-[View](../adr/018_Views.md). Once you move all of that out, a global property is just a name
+settings are per-[Layout](../adr/018_Views.md). Once you move all of that out, a global property is just a name
 and a type. It is unclear if that justifies the architectural complexity.
 
 **Schema creation UX suffers.** Instead of defining properties inline while creating a Schema, users must
@@ -51,10 +51,10 @@ local properties with extra indirection.
 **Needs additional storage and UI.** Global Property Definitions require their own namespace or registry,
 a creation/editing UI, and search/browse functionality — all separate from the Schema UI.
 
-**Interaction with Views is unclear.** Display attributes like `precision` are currently Property Definition
-Attributes but are also listed as View Attributes in [ADR 18](../adr/018_Views.md). With global properties,
-this overlap becomes a design problem: a property has no display defaults outside of a View context unless we
-add yet another layer (e.g., display defaults on the Schema's property reference that Views can override).
+**Interaction with Layouts is unclear.** Display attributes like `precision` are currently Property Definition
+Attributes but are also listed as Layout Attributes in [ADR 18](../adr/018_Views.md). With global properties,
+this overlap becomes a design problem: a property has no display defaults outside of a Layout context unless we
+add yet another layer (e.g., display defaults on the Schema's property reference that Layouts can override).
 
 **Opportunity cost of implementation.** Time we spent on changing from local to global properties could be spent
 on something else with higher expected value.

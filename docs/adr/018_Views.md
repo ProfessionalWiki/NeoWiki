@@ -1,8 +1,8 @@
-# Views
+# Views and Layouts
 
 Date: 2026-02-23
 
-Status: Accepted
+Status: Accepted (terminology updated 2026-03)
 
 ## Context
 
@@ -21,31 +21,38 @@ like Revenue, Net income, Total assets, etc.
 
 ## Decision
 
-We introduce a View concept.
+We distinguish between two concepts:
 
-A View references a Schema and allows customized display of Subjects that use that Schema. Schemas do not reference
-their Views — the link is one-directional from View to Schema.
+* A **View** is an on-page rendering of a Subject. Views are placed on wiki pages via the `{{#view}}` parser function
+  or automatically for a page's Main Subject.
+* A **Layout** is a stored configuration that defines how to render Subjects of a certain Schema. Layouts are
+  referenced by name from Views.
 
-### Identification and Storage
+### Layouts
 
-Views are identified by their name (following the same pattern as Schemas per [ADR 17](017_Names_As_Identifiers.md)).
-View names are immutable. Views are stored as pages in a View namespace.
+A Layout references a Schema and allows customized display of Subjects that use that Schema. Schemas do not reference
+their Layouts — the link is one-directional from Layout to Schema.
 
-### View Types
+#### Identification and Storage
 
-Views have a View Type like "infobox", "factbox", or "table". View Types are registered via a plugin system, so
+Layouts are identified by their name (following the same pattern as Schemas per
+[ADR 17](017_Names_As_Identifiers.md)). Layout names are immutable. Layouts are stored as pages in a Layout namespace.
+
+#### View Types
+
+Layouts have a View Type like "infobox", "factbox", or "table". View Types are registered via a plugin system, so
 extensions can define new View Types. Each View Type plugin defines:
 
 * What `settings` it supports (e.g., `borderColor` for infobox)
-* How to render a Subject given a View configuration
+* How to render a Subject given a Layout configuration
 * Editing UI for its type-specific options
 
-### Display Rules
+#### Display Rules
 
-A View contains an ordered list of Display Rules. Each Display Rule references a property by name and optionally
+A Layout contains an ordered list of Display Rules. Each Display Rule references a property by name and optionally
 overrides display attributes for that property. This serves as an allowlist — unlisted properties are hidden.
 
-When a View has no Display Rules (empty or absent list), all properties are shown in Schema-defined order. Note that
+When a Layout has no Display Rules (empty or absent list), all properties are shown in Schema-defined order. Note that
 adding the first Display Rule switches from "show all" to "show only listed" — there is no way to show all properties
 while overriding display attributes for some of them via Display Rules.
 
@@ -53,28 +60,29 @@ Display attribute overrides (e.g., precision, color) override the defaults from 
 Schema. A Display Rule only needs to specify overrides — unspecified display attributes are inherited from the
 Property Definition.
 
-### Constraints and Display Attributes in Property Definitions
+#### Constraints and Display Attributes in Property Definitions
 
 Property Definition Attributes are split into two explicit groups:
-* **`constraints`** — validation and data rules (e.g., `minimum: 42`). Not overridable in Views.
-* **`displayAttributes`** — presentation configuration (e.g., `precision: 2`). Overridable in Views via Display Rules.
+* **`constraints`** — validation and data rules (e.g., `minimum: 42`). Not overridable in Layouts.
+* **`displayAttributes`** — presentation configuration (e.g., `precision: 2`). Overridable in Layouts via Display
+  Rules.
 
 The Property Type plugin defines which attributes belong to which group. Using `displayAttributes` in both Property
-Definitions and View Display Rules makes the connection explicit: the View overrides the same values that the Property
-Definition defines as defaults.
+Definitions and Layout Display Rules makes the connection explicit: the Layout overrides the same values that the
+Property Definition defines as defaults.
 
-### Settings
+#### Settings
 
-View-level configuration specific to the View Type (e.g., `borderColor` for infobox) is stored in `settings`.
+Layout-level configuration specific to the View Type (e.g., `borderColor` for infobox) is stored in `settings`.
 This is distinct from `displayAttributes`, which are per-property overrides.
 
-### No Default View Entity
+#### No Default Layout Entity
 
-There is no stored "Default View" on a Schema. When a Subject is displayed without a specified View, the fallback
-is to show all Statements in Schema-defined order (the current AutomaticInfobox behavior). This fallback also applies
-when a referenced View no longer exists. Usage sites (parser functions, Page Schemas, etc.) specify which View to use.
+There is no stored "Default Layout" on a Schema. When a Subject is displayed without a specified Layout, the fallback
+is to show all Statements in Schema-defined order (the default infobox behavior). This fallback also applies when a
+referenced Layout no longer exists. Usage sites (parser functions, Page Schemas, etc.) specify which Layout to use.
 
-### Example
+#### Example
 
 ```json
 {
@@ -92,29 +100,48 @@ when a referenced View no longer exists. Usage sites (parser functions, Page Sch
 }
 ```
 
+### Views
+
+A View is what users see on a page — a rendered Subject. The `{{#view}}` parser function places a View:
+
+* `{{#view: SubjectId}}` — renders a Subject with the default infobox (no Layout)
+* `{{#view: SubjectId | LayoutName}}` — renders using the specified Layout's Display Rules
+
+Views are not stored entities. They exist as HTML placeholders that the frontend hydrates with Vue components.
+
+### Terminology rationale
+
+"View" is used for the on-page rendering because it's what users naturally say ("I added two views to this page").
+"Layout" is used for the stored configuration because it describes what the entity does — it lays out which properties
+to show, in what order, with what settings — and it avoids overloading "View" for both the thing you see and the thing
+you configure.
+
 ## Consequences
 
 * View Types must be registered via the plugin system. Infobox is the first built-in type.
 * Property Definition Attributes must be split into `constraints` and `displayAttributes`. The Property Type plugin
   defines which attributes belong to which group.
-* The AutomaticInfobox becomes the fallback rendering for Subjects without a specified View.
+* The default infobox becomes the fallback rendering for Subjects without a specified Layout.
 
 ## Alternatives Considered
 
-* **Blocklist instead of allowlist**: A View would list properties to hide, showing everything else. Rejected because
+* **Blocklist instead of allowlist**: A Layout would list properties to hide, showing everything else. Rejected because
   the allowlist gives explicit control over both selection and ordering, and avoids Statements appearing unexpectedly
   when a Schema is modified.
-* **Default View as a stored entity**: Each Schema would have a Default View, either auto-created or explicitly set.
-  Rejected because the fallback behavior (show all Statements in Schema order) is sufficient and avoids coupling
-  Schemas to Views.
-* **Schema references its Views**: The Schema would store references to its Views. Rejected to keep Schemas simple
+* **Default Layout as a stored entity**: Each Schema would have a Default Layout, either auto-created or explicitly
+  set. Rejected because the fallback behavior (show all Statements in Schema order) is sufficient and avoids coupling
+  Schemas to Layouts.
+* **Schema references its Layouts**: The Schema would store references to its Layouts. Rejected to keep Schemas simple
   and decoupled from the display layer.
 * **`statements` or `properties` as the Display Rules key**: `statements` was rejected because the entries don't
   contain Statements — they configure how Statements are displayed. `properties` was rejected because "add a property
-  to the View" is ambiguous (could mean adding a Display Rule, a Property Definition, or a Statement value).
+  to the Layout" is ambiguous (could mean adding a Display Rule, a Property Definition, or a Statement value).
 * **Flat `attributes` in Property Definitions with plugin-only split**: The constraint/display distinction would
   exist only in Property Type plugin metadata, not in the data. Rejected because making the split visible in the
   Schema format is clearer for users and developers.
-* **Generated IDs for Views**: Views would get opaque IDs (like Subjects) for stable references. Rejected because
-  Views are referenced in wikitext, Page Schemas, and conversation where readability matters. Immutable names
+* **Generated IDs for Layouts**: Layouts would get opaque IDs (like Subjects) for stable references. Rejected because
+  Layouts are referenced in wikitext, Page Schemas, and conversation where readability matters. Immutable names
   provide the same reference stability with better ergonomics.
+* **"View" for both concepts**: The stored entity was originally called "View", same as the on-page rendering. Rejected
+  because `{{#view}}` works without a stored entity (it's just "render this Subject"), making the overloaded
+  terminology confusing. "Layout" for the stored entity avoids this ambiguity.

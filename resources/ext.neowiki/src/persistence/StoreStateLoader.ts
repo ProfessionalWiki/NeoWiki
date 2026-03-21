@@ -1,9 +1,9 @@
 import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
-import type { ViewLookup } from '@/application/ViewLookup.ts';
+import type { LayoutLookup } from '@/application/LayoutLookup.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { useViewStore } from '@/stores/ViewStore.ts';
+import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 
 /**
@@ -16,7 +16,7 @@ export class StoreStateLoader {
 	public constructor(
 		private readonly subjectRepo: SubjectRepository,
 		private readonly schemaRepo: SchemaRepository,
-		private readonly viewLookup: ViewLookup,
+		private readonly layoutLookup: LayoutLookup,
 	) {
 	}
 
@@ -28,16 +28,16 @@ export class StoreStateLoader {
 		);
 	}
 
-	public async loadViews( viewNames: Set<string> ): Promise<void> {
-		const viewStore = useViewStore();
+	public async loadLayouts( layoutNames: Set<string> ): Promise<void> {
+		const layoutStore = useLayoutStore();
 
 		await Promise.all(
-			Array.from( viewNames ).map( async ( viewName ) => {
+			Array.from( layoutNames ).map( async ( layoutName ) => {
 				try {
-					const view = await this.viewLookup.getView( viewName );
-					viewStore.setView( viewName, view );
+					const layout = await this.layoutLookup.getLayout( layoutName );
+					layoutStore.setLayout( layoutName, layout );
 				} catch {
-					// View not found or fetch failed — fallback to no-View behavior
+					// Layout not found or fetch failed — fallback to no-Layout behavior
 				}
 			} ),
 		);

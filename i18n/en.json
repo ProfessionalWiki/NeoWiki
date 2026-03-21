@@ -137,5 +137,5 @@
 	"neowiki-schema-abandonment-keep-editing": "Keep editing",
 	"neowiki-schema-abandonment-save-schema": "Save schema only",
 
-	"neowiki-view-invalid": "View content is invalid ({{PLURAL:$1|$1 error|$1 errors}}):"
+	"neowiki-layout-invalid": "Layout content is invalid ({{PLURAL:$1|$1 error|$1 errors}}):"
 }

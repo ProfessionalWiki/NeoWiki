@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\PageContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
-use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ViewContentSource;
+use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\LayoutContentSource;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use User;
@@ -63,8 +63,8 @@ class ImportDemoData extends Maintenance {
 				],
 				new SimpleFileFetcher()
 			),
-			viewContentSource: new ViewContentSource(
-				NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/View',
+			viewContentSource: new LayoutContentSource(
+				NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Layout',
 				new SimpleFileFetcher()
 			)
 		);

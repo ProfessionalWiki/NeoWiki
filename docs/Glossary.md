@@ -27,7 +27,7 @@ Corresponds to one row in an infobox.
 Statements have
 
 - A `propertyName`. Refers to the Property Definition with the same name.
-- A `propertyType`. This is the type of the referenced property at the time the Statement was last changed. This is called “the writer’s schema”. (”Property Type” was formerly “Value Format”)
+- A `propertyType`. This is the type of the referenced property at the time the Statement was last changed. This is called "the writer's schema". ("Property Type" was formerly "Value Format")
 - A `value` of type Value
 
 Example: Property Name "age" with Value `42` and Property Type `number`.
@@ -64,40 +64,57 @@ Schemas have a name, description, and a list of Property Definitions
 They always have a Property Name and a Property Type. Depending on the Type, they might have additional information.
 Property Types are registered via a plugin system and can be defined by extensions.
 
-- A **name**. Example: “Website”.
-- A **type**. Example: “url”. (formerly “format”)
+- A **name**. Example: "Website".
+- A **type**. Example: "url". (formerly "format")
 - Boolean **required**
 - Optional **description** string
 - Optional **default**, which is a Value
-- **Constraints**: validation and data rules specific to the Property Type. Example: `”minimum”: 42`. Not overridable
-  in Views.
-- **Display Attributes**: presentation configuration specific to the Property Type. Example: `”precision”: 2`,
-  `”color”: “blue”`. These serve as defaults that can be overridden per-View via Display Rules.
+- **Constraints**: validation and data rules specific to the Property Type. Example: `"minimum": 42`. Not overridable
+  in Layouts.
+- **Display Attributes**: presentation configuration specific to the Property Type. Example: `"precision": 2`,
+  `"color": "blue"`. These serve as defaults that can be overridden per-Layout via Display Rules.
 
 
 
 ## View
 
-A View ([ADR 18](adr/018_Views.md)) references a Schema and allows customized display of Subjects that use that
-Schema. The link is one-directional: Views reference Schemas, Schemas do not reference their Views.
+A View is an on-page rendering of a Subject. Views are placed on wiki pages via the `{{#view}}` parser function or
+automatically for a page's Main Subject. Each View renders a Subject using a **View Type** (e.g., infobox, card,
+table).
 
-Example: A company Schema has many properties. You want to display only some of them in your “Finances” page section.
-You create a finances View for that company Schema that shows only Revenue, Profit, and Assets.
+A View can optionally reference a Layout to customize which properties are shown and how. Without a Layout, all
+properties are shown in Schema-defined order.
 
-Views have:
+### View Type
+
+The visual format used to render a View. Examples: "infobox", "card", "table". View Types are registered via a plugin
+system, so extensions can define new View Types. Each View Type plugin defines how to render a Subject given a
+configuration.
+
+
+
+## Layout
+
+A Layout ([ADR 18](adr/018_Views.md)) references a Schema and allows customized display of Subjects that use that
+Schema. The link is one-directional: Layouts reference Schemas, Schemas do not reference their Layouts.
+
+Example: A company Schema has many properties. You want to display only some of them in your "Finances" page section.
+You create a finances Layout for that company Schema that shows only Revenue, Profit, and Assets.
+
+Layouts have:
 
 - A **Schema** reference
-- A **View Type**, such as “infobox”, “factbox”, or “table”. View Types are registered via a plugin system.
+- A **View Type**, such as "infobox", "factbox", or "table"
 - **Display Rules**: an ordered list that specifies which properties to show and how (see below)
-- **Settings**: View-level configuration specific to the View Type (e.g., `borderColor` for infobox)
+- **Settings**: Layout-level configuration specific to the View Type (e.g., `borderColor` for infobox)
 - Optional **description**
 
-When a Subject is displayed without a specified View, all properties are shown in Schema-defined order (fallback
-behavior). There is no stored “Default View” entity.
+When a Subject is displayed without a specified Layout, all properties are shown in Schema-defined order (fallback
+behavior). There is no stored "Default Layout" entity.
 
 ### Display Rule
 
-A Display Rule is an entry in a View's ordered allowlist. Each Display Rule references a property by name and
+A Display Rule is an entry in a Layout's ordered allowlist. Each Display Rule references a property by name and
 optionally overrides Display Attributes for that property. Unlisted properties are hidden.
 
 Display Rules have:

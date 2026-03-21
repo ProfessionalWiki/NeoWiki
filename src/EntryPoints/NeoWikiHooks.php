@@ -18,14 +18,14 @@ use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\View\ViewName;
+use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\ViewContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\ViewContentValidator;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutContentValidator;
 use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaErrorFormatter;
 use Skin;
 use WikiPage;
@@ -154,7 +154,7 @@ class NeoWikiHooks {
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
-		if ( in_array( $model, [ SubjectContent::CONTENT_MODEL_ID, SchemaContent::CONTENT_MODEL_ID, ViewContent::CONTENT_MODEL_ID ] ) ) {
+		if ( in_array( $model, [ SubjectContent::CONTENT_MODEL_ID, SchemaContent::CONTENT_MODEL_ID, LayoutContent::CONTENT_MODEL_ID ] ) ) {
 			$lang = 'json';
 		}
 	}
@@ -183,8 +183,8 @@ class NeoWikiHooks {
 			self::validateSchemaEdit( $editPage, $text, $section, $error );
 		}
 
-		if ( $editPage->getTitle()->getNamespace() === NeoWikiExtension::NS_VIEW ) {
-			self::validateViewEdit( $editPage, $text, $error );
+		if ( $editPage->getTitle()->getNamespace() === NeoWikiExtension::NS_LAYOUT ) {
+			self::validateLayoutEdit( $editPage, $text, $error );
 		}
 	}
 
@@ -208,21 +208,21 @@ class NeoWikiHooks {
 		}
 	}
 
-	private static function validateViewEdit( EditPage $editPage, ?string $text, string &$error ): void {
+	private static function validateLayoutEdit( EditPage $editPage, ?string $text, string &$error ): void {
 		try {
-			new ViewName( $editPage->getTitle()->getText() );
+			new LayoutName( $editPage->getTitle()->getText() );
 		} catch ( InvalidArgumentException $exception ) {
 			$error = Html::errorBox(
 				$exception->getMessage()
 			);
 		}
 
-		$contentValidator = ViewContentValidator::newInstance();
+		$contentValidator = LayoutContentValidator::newInstance();
 
 		if ( !$contentValidator->validate( $text ) ) {
 			$errors = $contentValidator->getErrors();
 			$error = Html::errorBox(
-				wfMessage( 'neowiki-view-invalid', count( $errors ) )->escaped() .
+				wfMessage( 'neowiki-layout-invalid', count( $errors ) )->escaped() .
 				JsonSchemaErrorFormatter::format( $errors )
 			);
 		}
@@ -239,8 +239,8 @@ class NeoWikiHooks {
 			$ok = $modelId === SchemaContent::CONTENT_MODEL_ID;
 		}
 
-		if ( $title->getNamespace() === NeoWikiExtension::NS_VIEW ) {
-			$ok = $modelId === ViewContent::CONTENT_MODEL_ID;
+		if ( $title->getNamespace() === NeoWikiExtension::NS_LAYOUT ) {
+			$ok = $modelId === LayoutContent::CONTENT_MODEL_ID;
 		}
 	}
 

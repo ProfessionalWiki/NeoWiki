@@ -27,14 +27,14 @@ class ViewHtmlBuilder {
 		return self::viewPlaceholderHtml( $subject->getId()->text );
 	}
 
-	public static function viewPlaceholderHtml( string $subjectId, ?string $viewName = null ): string {
+	public static function viewPlaceholderHtml( string $subjectId, ?string $layoutName = null ): string {
 		$attributes = [
 			'class' => 'ext-neowiki-view',
 			'data-mw-neowiki-subject-id' => $subjectId,
 		];
 
-		if ( $viewName !== null ) {
-			$attributes['data-mw-neowiki-view-name'] = $viewName;
+		if ( $layoutName !== null ) {
+			$attributes['data-mw-neowiki-layout-name'] = $layoutName;
 		}
 
 		return Html::element( 'div', $attributes );

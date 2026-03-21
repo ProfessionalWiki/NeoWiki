@@ -8,11 +8,11 @@ import { PropertyName } from '@/domain/PropertyDefinition';
 import { newNumberProperty, type NumberProperty } from '@/domain/propertyTypes/Number';
 import { newTextProperty } from '@/domain/propertyTypes/Text';
 import { newNumberValue, newStringValue } from '@/domain/Value';
-import { View } from '@/domain/View';
+import { Layout } from '@/domain/Layout';
 
-function newView( displayRules: { property: string; displayAttributes?: Record<string, unknown> }[] ): View {
-	return new View(
-		'TestView',
+function newLayout( displayRules: { property: string; displayAttributes?: Record<string, unknown> }[] ): Layout {
+	return new Layout(
+		'TestLayout',
 		'TestSchema',
 		'infobox',
 		'',
@@ -65,12 +65,12 @@ describe( 'resolveDisplayProperties', () => {
 				new Statement( new PropertyName( 'City' ), 'text', newStringValue( 'Berlin' ) ),
 			] ),
 		} );
-		const view = newView( [
+		const layout = newLayout( [
 			{ property: 'City' },
 			{ property: 'Name' },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, view );
+		const result = resolveDisplayProperties( schema, subject, layout );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'City', 'Name' ] );
 		expect( result[ 0 ].value ).toEqual( newStringValue( 'Berlin' ) );
@@ -88,11 +88,11 @@ describe( 'resolveDisplayProperties', () => {
 				new Statement( new PropertyName( 'Revenue' ), 'number', newNumberValue( 1234567 ) ),
 			] ),
 		} );
-		const view = newView( [
+		const layout = newLayout( [
 			{ property: 'Revenue', displayAttributes: { precision: 0 } },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, view );
+		const result = resolveDisplayProperties( schema, subject, layout );
 
 		expect( result ).toHaveLength( 1 );
 		expect( ( result[ 0 ].propertyDefinition as NumberProperty ).precision ).toBe( 0 );
@@ -111,9 +111,9 @@ describe( 'resolveDisplayProperties', () => {
 				new Statement( new PropertyName( 'Age' ), 'number', newNumberValue( 30 ) ),
 			] ),
 		} );
-		const view = newView( [] );
+		const layout = newLayout( [] );
 
-		const result = resolveDisplayProperties( schema, subject, view );
+		const result = resolveDisplayProperties( schema, subject, layout );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name', 'Age' ] );
 	} );
@@ -129,12 +129,12 @@ describe( 'resolveDisplayProperties', () => {
 				new Statement( new PropertyName( 'Name' ), 'text', newStringValue( 'Alice' ) ),
 			] ),
 		} );
-		const view = newView( [
+		const layout = newLayout( [
 			{ property: 'Name' },
 			{ property: 'NonExistentProperty' },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, view );
+		const result = resolveDisplayProperties( schema, subject, layout );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name' ] );
 	} );
@@ -153,11 +153,11 @@ describe( 'resolveDisplayProperties', () => {
 				new Statement( new PropertyName( 'Age' ), 'number', newNumberValue( 30 ) ),
 			] ),
 		} );
-		const view = newView( [
+		const layout = newLayout( [
 			{ property: 'Name' },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, view );
+		const result = resolveDisplayProperties( schema, subject, layout );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name', 'Age' ] );
 	} );
@@ -174,12 +174,12 @@ describe( 'resolveDisplayProperties', () => {
 				new Statement( new PropertyName( 'Name' ), 'text', newStringValue( 'Alice' ) ),
 			] ),
 		} );
-		const view = newView( [
+		const layout = newLayout( [
 			{ property: 'Name' },
 			{ property: 'Age' },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, view );
+		const result = resolveDisplayProperties( schema, subject, layout );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name' ] );
 	} );
@@ -199,13 +199,13 @@ describe( 'resolveDisplayProperties', () => {
 				new Statement( new PropertyName( 'City' ), 'text', newStringValue( 'Berlin' ) ),
 			] ),
 		} );
-		const view = newView( [
+		const layout = newLayout( [
 			{ property: 'Name' },
 			{ property: 'Age' },
 			{ property: 'City' },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, view );
+		const result = resolveDisplayProperties( schema, subject, layout );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name', 'City' ] );
 	} );

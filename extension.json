@@ -56,7 +56,7 @@
 	"ContentHandlers": {
 		"NeoWikiSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SubjectContentHandler",
 		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SchemaContentHandler",
-		"NeoWikiView": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\ViewContentHandler"
+		"NeoWikiLayout": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\LayoutContentHandler"
 	},
 
 	"namespaces": [
@@ -77,34 +77,34 @@
 		},
 		{
 			"id": 7476,
-			"constant": "NS_NEOWIKI_VIEW",
-			"name": "View",
-			"defaultcontentmodel": "NeoWikiView",
+			"constant": "NS_NEOWIKI_LAYOUT",
+			"name": "Layout",
+			"defaultcontentmodel": "NeoWikiLayout",
 			"subpages": false,
 			"content": false,
 			"movable": false,
-			"protection": "neowiki-view-edit"
+			"protection": "neowiki-layout-edit"
 		},
 		{
 			"id": 7477,
-			"constant": "NS_NEOWIKI_VIEW_TALK",
-			"name": "View_talk"
+			"constant": "NS_NEOWIKI_LAYOUT_TALK",
+			"name": "Layout_talk"
 		}
 	],
 
 	"AvailableRights": [
 		"neowiki-schema-edit",
-		"neowiki-view-edit"
+		"neowiki-layout-edit"
 	],
 
 	"GroupPermissions": {
 		"sysop": {
 			"neowiki-schema-edit": true,
-			"neowiki-view-edit": true
+			"neowiki-layout-edit": true
 		},
 		"interface-admin": {
 			"neowiki-schema-edit": true,
-			"neowiki-view-edit": true
+			"neowiki-layout-edit": true
 		}
 	},
 
@@ -158,9 +158,9 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaApi"
 		},
 		{
-			"path": "/neowiki/v0/view/{viewName}",
+			"path": "/neowiki/v0/layout/{layoutName}",
 			"method": [ "GET" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetViewApi"
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetLayoutApi"
 		},
 		{
 			"path": "/neowiki/v0/schema-names/{search}",

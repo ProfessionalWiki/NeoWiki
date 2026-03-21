@@ -1,7 +1,7 @@
 import type { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
 import type { Schema } from '@/domain/Schema';
 import type { Subject } from '@/domain/Subject';
-import type { View } from '@/domain/View';
+import type { Layout } from '@/domain/Layout';
 import type { Value } from '@/domain/Value';
 
 export interface ResolvedProperty {
@@ -12,10 +12,10 @@ export interface ResolvedProperty {
 export function resolveDisplayProperties(
 	schema: Schema,
 	subject: Subject,
-	view?: View,
+	layout?: Layout,
 ): ResolvedProperty[] {
-	const displayRules = view !== undefined && view.getSchema() === subject.getSchemaName() ?
-		view.getDisplayRules() :
+	const displayRules = layout !== undefined && layout.getSchema() === subject.getSchemaName() ?
+		layout.getDisplayRules() :
 		[];
 
 	if ( displayRules.length === 0 ) {
@@ -47,7 +47,7 @@ function resolveAllNonEmptyProperties( schema: Schema, subject: Subject ): Resol
 function resolveByDisplayRules(
 	schema: Schema,
 	subject: Subject,
-	displayRules: ReturnType<View['getDisplayRules']>,
+	displayRules: ReturnType<Layout['getDisplayRules']>,
 ): ResolvedProperty[] {
 	const result: ResolvedProperty[] = [];
 

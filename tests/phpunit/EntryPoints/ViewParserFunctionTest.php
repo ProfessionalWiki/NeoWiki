@@ -64,7 +64,7 @@ class ViewParserFunctionTest extends TestCase {
 		return $repo;
 	}
 
-	public function testEmitsPlaceholderWithExplicitSubjectIdAndViewName(): void {
+	public function testEmitsPlaceholderWithExplicitSubjectIdAndLayoutName(): void {
 		$parserFunction = new ViewParserFunction(
 			$this->createRepositoryWithMainSubjectId( 's11111111111111' )
 		);
@@ -77,10 +77,10 @@ class ViewParserFunctionTest extends TestCase {
 
 		$html = $result[0];
 		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s22222222222222"', $html );
-		$this->assertStringContainsString( 'data-mw-neowiki-view-name="Finances"', $html );
+		$this->assertStringContainsString( 'data-mw-neowiki-layout-name="Finances"', $html );
 	}
 
-	public function testEmitsPlaceholderWithExplicitSubjectIdAndNoViewName(): void {
+	public function testEmitsPlaceholderWithExplicitSubjectIdAndNoLayoutName(): void {
 		$parserFunction = new ViewParserFunction(
 			$this->createRepositoryWithMainSubjectId( 's11111111111111' )
 		);
@@ -89,7 +89,7 @@ class ViewParserFunctionTest extends TestCase {
 
 		$html = $result[0];
 		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s22222222222222"', $html );
-		$this->assertStringNotContainsString( 'data-mw-neowiki-view-name', $html );
+		$this->assertStringNotContainsString( 'data-mw-neowiki-layout-name', $html );
 	}
 
 	public function testFallsBackToMainSubjectWhenSubjectIdIsEmpty(): void {
@@ -101,7 +101,7 @@ class ViewParserFunctionTest extends TestCase {
 
 		$html = $result[0];
 		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s11111111111111"', $html );
-		$this->assertStringContainsString( 'data-mw-neowiki-view-name="Finances"', $html );
+		$this->assertStringContainsString( 'data-mw-neowiki-layout-name="Finances"', $html );
 	}
 
 	public function testReturnsEmptyStringWhenNoSubjectAvailable(): void {

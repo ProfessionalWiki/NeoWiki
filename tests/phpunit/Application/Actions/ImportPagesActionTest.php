@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\PageContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageData;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
-use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ViewContentSource;
+use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\LayoutContentSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use MediaWiki\Content\WikitextContent;
 
@@ -26,7 +26,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 	private SubjectPageSource $subjectPageSource;
 	private PageContentSource $pageContentSource;
 	private PageContentSource $moduleContentSource;
-	private ViewContentSource $viewContentSource;
+	private LayoutContentSource $layoutContentSource;
 	private ImportPagesAction $importPagesAction;
 
 	protected function setUp(): void {
@@ -35,7 +35,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 		$this->subjectPageSource = $this->createMock( SubjectPageSource::class );
 		$this->pageContentSource = $this->createMock( PageContentSource::class );
 		$this->moduleContentSource = $this->createMock( PageContentSource::class );
-		$this->viewContentSource = $this->createMock( ViewContentSource::class );
+		$this->layoutContentSource = $this->createMock( LayoutContentSource::class );
 
 		$this->importPagesAction = new ImportPagesAction(
 			$this->presenter,
@@ -47,7 +47,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 			$this->subjectPageSource,
 			$this->pageContentSource,
 			$this->moduleContentSource,
-			$this->viewContentSource,
+			$this->layoutContentSource,
 		);
 	}
 

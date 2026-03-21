@@ -9,7 +9,7 @@
 			:is="resolveViewComponent( view )"
 			:subject-id="view.subjectId"
 			:can-edit-subject="view.canEditSubject"
-			:view-name="view.viewName"
+			:layout-name="view.layoutName"
 		/>
 	</teleport>
 
@@ -26,7 +26,7 @@ import Infobox from '@/components/Views/Infobox.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
-import { useViewStore } from '@/stores/ViewStore.ts';
+import { useLayoutStore } from '@/stores/LayoutStore.ts';
 
 interface ViewData {
 	id: string;
@@ -34,7 +34,7 @@ interface ViewData {
 	subjectId: SubjectId;
 	canEditSubject: boolean;
 	viewType?: string;
-	viewName?: string;
+	layoutName?: string;
 }
 
 const props = defineProps<{
@@ -48,11 +48,11 @@ const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
 const viewTypeRegistry = NeoWikiServices.getViewTypeRegistry();
 
 function resolveViewComponent( viewData: ViewData ): Component {
-	if ( viewData.viewName ) {
-		const viewStore = useViewStore();
-		const view = viewStore.getView( viewData.viewName );
-		if ( view && viewTypeRegistry.hasType( view.getType() ) ) {
-			return viewTypeRegistry.getComponent( view.getType() );
+	if ( viewData.layoutName ) {
+		const layoutStore = useLayoutStore();
+		const layout = layoutStore.getLayout( viewData.layoutName );
+		if ( layout && viewTypeRegistry.hasType( layout.getType() ) ) {
+			return viewTypeRegistry.getComponent( layout.getType() );
 		}
 	}
 
@@ -75,8 +75,8 @@ onMounted( async (): Promise<void> => {
 		storeStateLoader.loadSubjectsAndSchemas(
 			new Set( localViewsData.map( ( viewData ) => viewData.subjectId.text ) )
 		),
-		storeStateLoader.loadViews(
-			new Set( localViewsData.map( ( v ) => v.viewName ).filter( ( n ): n is string => n !== undefined ) )
+		storeStateLoader.loadLayouts(
+			new Set( localViewsData.map( ( v ) => v.layoutName ).filter( ( n ): n is string => n !== undefined ) )
 		)
 	] );
 
@@ -109,7 +109,7 @@ async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
 			subjectId: subjectId,
 			canEditSubject: isLatestRevision() && await subjectAuthorizer.canEditSubject( subjectId ),
 			viewType: element.dataset.mwNeowikiViewType,
-			viewName: element.dataset.mwNeowikiViewName
+			layoutName: element.dataset.mwNeowikiLayoutName
 		};
 	} catch ( error ) {
 		console.error( error );

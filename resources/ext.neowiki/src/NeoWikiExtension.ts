@@ -16,8 +16,8 @@ import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
 import { RestSchemaRepository } from '@/persistence/RestSchemaRepository.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
-import { ViewLookup } from '@/application/ViewLookup.ts';
-import { RestViewLookup } from '@/persistence/RestViewLookup.ts';
+import { LayoutLookup } from '@/application/LayoutLookup.ts';
+import { RestLayoutLookup } from '@/persistence/RestLayoutLookup.ts';
 import { CsrfSendingHttpClient } from '@/infrastructure/HttpClient/CsrfSendingHttpClient.ts';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
@@ -125,8 +125,8 @@ export class NeoWikiExtension {
 		);
 	}
 
-	public getViewLookup(): ViewLookup {
-		return new RestViewLookup(
+	public getLayoutLookup(): LayoutLookup {
+		return new RestLayoutLookup(
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
 		);
@@ -191,7 +191,7 @@ export class NeoWikiExtension {
 		return new StoreStateLoader(
 			this.getSubjectRepository(),
 			this.getSchemaRepository(),
-			this.getViewLookup(),
+			this.getLayoutLookup(),
 		);
 	}
 

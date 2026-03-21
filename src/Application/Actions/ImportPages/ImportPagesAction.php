@@ -23,7 +23,7 @@ class ImportPagesAction {
 		private readonly SubjectPageSource $subjectPageSource,
 		private readonly PageContentSource $pageContentSource,
 		private readonly PageContentSource $moduleContentSource,
-		private readonly ViewContentSource $viewContentSource,
+		private readonly LayoutContentSource $layoutContentSource,
 	) {
 	}
 
@@ -37,11 +37,11 @@ class ImportPagesAction {
 			);
 		}
 
-		foreach ( $this->viewContentSource->getViews() as $viewName => $viewContent ) {
+		foreach ( $this->layoutContentSource->getLayouts() as $layoutName => $layoutContent ) {
 			$this->createPage(
-				"View:$viewName",
+				"View:$layoutName",
 				[
-					'main' => $viewContent,
+					'main' => $layoutContent,
 				]
 			);
 		}
