@@ -63,7 +63,7 @@ class ImportDemoData extends Maintenance {
 				],
 				new SimpleFileFetcher()
 			),
-			viewContentSource: new LayoutContentSource(
+			layoutContentSource: new LayoutContentSource(
 				NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Layout',
 				new SimpleFileFetcher()
 			)
