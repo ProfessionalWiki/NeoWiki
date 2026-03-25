@@ -39,7 +39,7 @@ class ImportPagesAction {
 
 		foreach ( $this->layoutContentSource->getLayouts() as $layoutName => $layoutContent ) {
 			$this->createPage(
-				"View:$layoutName",
+				"Layout:$layoutName",
 				[
 					'main' => $layoutContent,
 				]
