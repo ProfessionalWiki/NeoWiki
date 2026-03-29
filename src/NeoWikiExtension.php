@@ -28,7 +28,7 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
-use ProfessionalWiki\NeoWiki\Domain\Page\CorePagePropertyProvider;
+use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Persistence\CompositeGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
