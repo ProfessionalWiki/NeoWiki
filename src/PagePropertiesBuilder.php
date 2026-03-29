@@ -39,7 +39,7 @@ readonly class PagePropertiesBuilder {
 	private function buildContext( RevisionRecord $revision, ?UserIdentity $user ): PagePropertyProviderContext {
 		return new PagePropertyProviderContext(
 			pageId: new PageId( $revision->getPageId() ),
-			title: $revision->getPageAsLinkTarget()->getText(),
+			pageTitle: $revision->getPageAsLinkTarget()->getText(),
 			creationTime: $this->getCreationTime( $revision ),
 			modificationTime: $this->getModificationTime( $revision ),
 			categories: $this->getCategories( $revision ),
