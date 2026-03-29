@@ -28,6 +28,8 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
+use ProfessionalWiki\NeoWiki\Domain\Page\CorePagePropertyProvider;
+use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Persistence\CompositeGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
@@ -40,6 +42,7 @@ use ProfessionalWiki\NeoWiki\Persistence\Neo4j\WriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
+use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
@@ -85,6 +88,9 @@ class NeoWikiExtension {
 	public const int NS_LAYOUT = 7476;
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
+	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
+	private Neo4jValueBuilderRegistry $valueBuilderRegistry;
+	private bool $extensionsRegistered = false;
 	private SubjectRepository $subjectRepository;
 	private CompositeGraphDatabasePlugin $graphDatabasePlugin;
 	private ?Neo4jQueryStore $neo4jQueryStore = null;
@@ -112,11 +118,38 @@ class NeoWikiExtension {
 			$this->propertyTypeRegistry = PropertyTypeRegistry::withCoreTypes();
 		}
 
+		$this->ensureExtensionsRegistered();
+
 		return $this->propertyTypeRegistry;
 	}
 
 	public function getPropertyTypeLookup(): PropertyTypeLookup {
 		return $this->getPropertyTypeRegistry();
+	}
+
+	public function getValueBuilderRegistry(): Neo4jValueBuilderRegistry {
+		if ( !isset( $this->valueBuilderRegistry ) ) {
+			$this->valueBuilderRegistry = Neo4jValueBuilderRegistry::withCoreBuilders();
+		}
+
+		return $this->valueBuilderRegistry;
+	}
+
+	private function ensureExtensionsRegistered(): void {
+		if ( $this->extensionsRegistered ) {
+			return;
+		}
+
+		$this->extensionsRegistered = true;
+
+		MediaWikiServices::getInstance()->getHookContainer()->run(
+			'NeoWikiRegistration',
+			[ new NeoWikiRegistrar(
+				$this->getPropertyTypeRegistry(),
+				$this->getValueBuilderRegistry(),
+				$this->getPagePropertyProviderRegistry(),
+			) ]
+		);
 	}
 
 	public function getPropertyTypeToValueType(): PropertyTypeToValueType {
@@ -127,12 +160,24 @@ class NeoWikiExtension {
 		return new SubjectContentDataDeserializer( new StatementDeserializer( $this->getPropertyTypeToValueType() ) );
 	}
 
+	public function getPagePropertyProviderRegistry(): PagePropertyProviderRegistry {
+		if ( !isset( $this->pagePropertyProviderRegistry ) ) {
+			$this->pagePropertyProviderRegistry = new PagePropertyProviderRegistry();
+			$this->pagePropertyProviderRegistry->addProvider( new CorePagePropertyProvider() );
+		}
+
+		$this->ensureExtensionsRegistered();
+
+		return $this->pagePropertyProviderRegistry;
+	}
+
 	public function getStoreContentUC(): OnRevisionCreatedHandler {
 		return new OnRevisionCreatedHandler(
 			$this->getGraphDatabasePlugin(),
 			new PagePropertiesBuilder(
 				revisionStore: MediaWikiServices::getInstance()->getRevisionStore(),
-				contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory()
+				contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory(),
+				providerRegistry: $this->getPagePropertyProviderRegistry(),
 			)
 		);
 	}
@@ -161,7 +206,7 @@ class NeoWikiExtension {
 			readOnlyClient: $this->getReadOnlyNeo4jClient(),
 			subjectUpdaterFactory: new SubjectUpdaterFactory(
 				schemaLookup: $schemaLookup, // Note: this is a hack, we should have a proper test environment
-				valueBuilderRegistry: Neo4jValueBuilderRegistry::withCoreBuilders(),
+				valueBuilderRegistry: $this->getValueBuilderRegistry(),
 				logger: LoggerFactory::getInstance( 'NeoWiki' )
 			),
 		);

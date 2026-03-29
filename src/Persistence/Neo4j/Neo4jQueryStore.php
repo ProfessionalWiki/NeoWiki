@@ -8,6 +8,7 @@ use DateTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
+use Laudis\Neo4j\Types\CypherMap;
 use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -24,16 +25,22 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 
 	public function savePage( Page $page ): void {
 		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $page ): void {
+			$properties = $page->getProperties()->asArray();
+
+			/** @var string $creationTime */
+			$creationTime = $properties['creationTime'] ?? '';
+			/** @var string $modificationTime */
+			$modificationTime = $properties['modificationTime'] ?? '';
+			unset( $properties['creationTime'], $properties['modificationTime'] );
+
 			$transaction->run(
 				'
 				// Create or update the page
 				MERGE (page:Page {id: $pageId})
+				SET page += $properties
 				SET page.id = $pageId,
-					page.name = $pageTitle,
 					page.creationTime = datetime($creationTime),
-					page.lastUpdated = datetime($modificationTime),
-					page.lastEditor = $lastEditor,
-					page.categories = $categories
+					page.lastUpdated = datetime($modificationTime)
 
 				// Delete subjects that are no longer present on the page
 				WITH page
@@ -49,11 +56,9 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 				[
 					'pageId' => $page->getId()->id,
 					'subjectIds' => $page->getSubjects()->getAllSubjects()->getIdsAsTextArray(),
-					'pageTitle' => $page->getProperties()->title,
-					'creationTime' => self::mediaWikiTimestampToNeo4jFormat( $page->getProperties()->creationTime ),
-					'modificationTime' => self::mediaWikiTimestampToNeo4jFormat( $page->getProperties()->modificationTime ),
-					'categories' => $page->getProperties()->categories, // TODO: turn into relations
-					'lastEditor' => $page->getProperties()->lastEditor, // TODO: turn into relation?
+					'creationTime' => self::mediaWikiTimestampToNeo4jFormat( $creationTime ),
+					'modificationTime' => self::mediaWikiTimestampToNeo4jFormat( $modificationTime ),
+					'properties' => new CypherMap( $properties ),
 				]
 			);
 

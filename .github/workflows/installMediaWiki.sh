@@ -29,6 +29,7 @@ EOT
 
 cat <<EOT >> LocalSettings.php
 wfLoadExtension( "$EXTENSION_NAME" );
+wfLoadExtension( "RedHerb", "\$IP/extensions/$EXTENSION_NAME/tests/RedHerb/extension.json" );
 EOT
 
 cat <<EOT >> composer.local.json

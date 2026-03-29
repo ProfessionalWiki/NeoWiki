@@ -10,23 +10,40 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\User\UserIdentity;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
+use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderContext;
+use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 
 readonly class PagePropertiesBuilder {
 
 	public function __construct(
 		private RevisionStore $revisionStore,
 		private IContentHandlerFactory $contentHandlerFactory,
+		private PagePropertyProviderRegistry $providerRegistry,
 	) {
 	}
 
 	public function getPagePropertiesFor( RevisionRecord $revision, ?UserIdentity $user ): PageProperties {
-		return new PageProperties(
+		$context = $this->buildContext( $revision, $user );
+
+		$properties = [];
+
+		foreach ( $this->providerRegistry->getProviders() as $provider ) {
+			$properties = array_merge( $properties, $provider->getProperties( $context ) );
+		}
+
+		return new PageProperties( $properties );
+	}
+
+	private function buildContext( RevisionRecord $revision, ?UserIdentity $user ): PagePropertyProviderContext {
+		return new PagePropertyProviderContext(
+			pageId: new PageId( $revision->getPageId() ),
 			title: $revision->getPageAsLinkTarget()->getText(),
 			creationTime: $this->getCreationTime( $revision ),
 			modificationTime: $this->getModificationTime( $revision ),
 			categories: $this->getCategories( $revision ),
-			lastEditor: $user?->getName() ?? ''
+			lastEditor: $user?->getName() ?? '',
 		);
 	}
 

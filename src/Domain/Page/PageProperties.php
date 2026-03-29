@@ -4,20 +4,25 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Page;
 
-class PageProperties {
+readonly class PageProperties {
 
 	/**
-	 * @param string $creationTime In the standard MediaWiki format, ie 20230726163439
-	 * @param string $modificationTime In the standard MediaWiki format, ie 20230726163439
-	 * @param string[] $categories
+	 * @param array<string, mixed> $properties
 	 */
 	public function __construct(
-		public readonly string $title,
-		public readonly string $creationTime,
-		public readonly string $modificationTime,
-		public array $categories,
-		public readonly string $lastEditor
+		private array $properties = [],
 	) {
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function asArray(): array {
+		return $this->properties;
+	}
+
+	public function get( string $key ): mixed {
+		return $this->properties[$key] ?? null;
 	}
 
 }

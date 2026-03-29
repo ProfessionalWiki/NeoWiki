@@ -1,0 +1,29 @@
+{
+	"name": "RedHerb",
+
+	"version": "0.0.1",
+
+	"author": [
+		"[https://Professional.Wiki/ Professional Wiki]"
+	],
+
+	"license-name": "GPL-2.0-or-later",
+
+	"description": "Test extension for validating NeoWiki extension points",
+
+	"requires": {
+		"extensions": {
+			"NeoWiki": "*"
+		}
+	},
+
+	"AutoloadNamespaces": {
+		"ProfessionalWiki\\RedHerb\\": "src/"
+	},
+
+	"Hooks": {
+		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration"
+	},
+
+	"manifest_version": 2
+}

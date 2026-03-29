@@ -2,6 +2,7 @@
 	<testsuites>
 		<testsuite name="NeoWiki">
 			<directory>tests/</directory>
+			<exclude>tests/RedHerb</exclude>
 		</testsuite>
 	</testsuites>
 	<php>

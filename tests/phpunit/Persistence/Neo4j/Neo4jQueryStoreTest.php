@@ -345,6 +345,46 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( $expectedSubjects, $result );
 	}
 
+	public function testSavesPageExtraProperties(): void {
+		$store = $this->newQueryStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build(
+				title: 'TestPage',
+				extraProperties: [
+					'customFlag' => true,
+					'customScore' => 99,
+					'customLabel' => 'hello',
+				]
+			)
+		) );
+
+		$result = $store->runReadQuery( 'MATCH (page:Page {id: 42}) RETURN properties(page) as page' );
+
+		$page = $result->first()->toRecursiveArray()['page'];
+
+		$this->assertTrue( $page['customFlag'] );
+		$this->assertSame( 99, $page['customScore'] );
+		$this->assertSame( 'hello', $page['customLabel'] );
+	}
+
+	public function testSavesPageWithEmptyExtraProperties(): void {
+		$store = $this->newQueryStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( title: 'TestPage' )
+		) );
+
+		$result = $store->runReadQuery( 'MATCH (page:Page {id: 42}) RETURN properties(page) as page' );
+
+		$page = $result->first()->toRecursiveArray()['page'];
+
+		$this->assertSame( 42, $page['id'] );
+		$this->assertSame( 'TestPage', $page['name'] );
+	}
+
 	public function testSavesPageSubjectsWithSubjectLabelAfterUpdatingPage(): void {
 		$store = $this->newQueryStore();
 
