@@ -9,10 +9,10 @@ namespace ProfessionalWiki\NeoWiki\Domain\Page;
  * type handling (e.g., Neo4j datetime, point, duration).
  *
  * Plain scalars can be used directly in PagePropertyProvider return arrays.
- * Use a PageTypedValue implementation when the value needs to be stored
+ * Use a PageValue implementation when the value needs to be stored
  * using a backend's native type system.
  */
-interface PageTypedValue {
+interface PageValue {
 
 	public function getType(): PageValueType;
 

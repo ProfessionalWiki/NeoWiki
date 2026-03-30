@@ -9,7 +9,7 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherMap;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageTypedValue;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageValue;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageValueType;
 use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
@@ -71,7 +71,7 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 	}
 
 	/**
-	 * Extracts PageTypedValue instances from the property map and converts them
+	 * Extracts PageValue instances from the property map and converts them
 	 * to Cypher SET clauses with parameterized values.
 	 *
 	 * @param array<string, mixed> $properties
@@ -83,7 +83,7 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 		$params = [];
 
 		foreach ( $properties as $key => $value ) {
-			if ( !( $value instanceof PageTypedValue ) ) {
+			if ( !( $value instanceof PageValue ) ) {
 				continue;
 			}
 

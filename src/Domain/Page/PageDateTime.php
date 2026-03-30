@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Page;
 
-readonly class PageDateTime implements PageTypedValue {
+readonly class PageDateTime implements PageValue {
 
 	/**
 	 * @param string $timestamp In the standard MediaWiki format, ie 20230726163439
