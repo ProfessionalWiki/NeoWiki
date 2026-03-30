@@ -8,6 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jValueBuilderRegistry;
 
 readonly class NeoWikiRegistrar {
@@ -24,7 +25,7 @@ readonly class NeoWikiRegistrar {
 	}
 
 	/**
-	 * @param callable $builder
+	 * @param callable(NeoValue): mixed $builder
 	 */
 	public function addNeo4jValueBuilder( string $propertyTypeName, callable $builder ): void {
 		$this->valueBuilderRegistry->registerBuilder( $propertyTypeName, $builder );
