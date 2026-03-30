@@ -6,10 +6,3 @@ Shows all properties in schema-defined order:
 
 {{#view: s1demo1aaaaaaa1}}
 {{#view: s1demo5sssssss1}}
-
-== With a Layout ==
-
-The same subjects rendered through the [[Layout:CompanyOverview]] Layout, which only shows "World domination progress" and "Founded at":
-
-{{#view: s1demo1aaaaaaa1 | CompanyOverview}}
-{{#view: s1demo5sssssss1 | CompanyOverview}}
