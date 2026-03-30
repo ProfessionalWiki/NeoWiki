@@ -6,7 +6,9 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\Neo4j;
 
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherMap;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageDateTime;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
@@ -367,6 +369,28 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertTrue( $page['customFlag'] );
 		$this->assertSame( 99, $page['customScore'] );
 		$this->assertSame( 'hello', $page['customLabel'] );
+	}
+
+	public function testSavesExtensionProvidedDateTimeAsNeo4jDatetime(): void {
+		$store = $this->newQueryStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: new PageProperties( [
+				'name' => 'TestPage',
+				'creationTime' => new PageDateTime( '20230726163439' ),
+				'modificationTime' => new PageDateTime( '20230726163439' ),
+				'approvalTime' => new PageDateTime( '20240101120000' ),
+			] )
+		) );
+
+		$result = $store->runReadQuery(
+			'MATCH (page:Page {id: 42}) RETURN page.approvalTime AS approval, page.approvalTime = datetime("2024-01-01T12:00:00") AS isDatetime'
+		);
+
+		$row = $result->first()->toRecursiveArray();
+
+		$this->assertTrue( $row['isDatetime'], 'Extension-provided PageDateTime should be stored as a Neo4j datetime' );
 	}
 
 	public function testSavesPageWithEmptyExtraProperties(): void {

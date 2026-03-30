@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
+use ProfessionalWiki\NeoWiki\Domain\Page\PageDateTime;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 
 class TestPageProperties {
@@ -22,8 +23,8 @@ class TestPageProperties {
 		return new PageProperties( array_merge(
 			[
 				'name' => $title,
-				'creationTime' => $creationTime,
-				'modificationTime' => $modificationTime,
+				'creationTime' => new PageDateTime( $creationTime ),
+				'modificationTime' => new PageDateTime( $modificationTime ),
 				'categories' => $categories,
 				'lastEditor' => $lastEditor,
 			],

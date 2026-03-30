@@ -9,6 +9,7 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherMap;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageDateTime;
 use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -27,20 +28,30 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $page ): void {
 			$properties = $page->getProperties()->asArray();
 
-			/** @var string $creationTime */
-			$creationTime = $properties['creationTime'] ?? '';
-			/** @var string $modificationTime */
-			$modificationTime = $properties['modificationTime'] ?? '';
-			unset( $properties['creationTime'], $properties['modificationTime'] );
+			$datetimeSetClauses = '';
+			$datetimeParams = [];
 
-			$transaction->run(
-				'
+			foreach ( $properties as $key => $value ) {
+				if ( $value instanceof PageDateTime ) {
+					$datetimeSetClauses .= "\n\t\t\t\t\tpage.$key = datetime(\$dt_$key),";
+					$datetimeParams["dt_$key"] = self::mediaWikiTimestampToNeo4jFormat( $value->timestamp );
+					unset( $properties[$key] );
+				}
+			}
+
+			$datetimeSetClauses = rtrim( $datetimeSetClauses, ',' );
+
+			$cypher = '
 				// Create or update the page
 				MERGE (page:Page {id: $pageId})
 				SET page += $properties
-				SET page.id = $pageId,
-					page.creationTime = datetime($creationTime),
-					page.lastUpdated = datetime($modificationTime)
+				SET page.id = $pageId';
+
+			if ( $datetimeSetClauses !== '' ) {
+				$cypher .= ',' . $datetimeSetClauses;
+			}
+
+			$cypher .= '
 
 				// Delete subjects that are no longer present on the page
 				WITH page
@@ -52,14 +63,18 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 				WITH page
 				MATCH (page)-[r:HasSubject]->()
 				DELETE r
-				',
-				[
-					'pageId' => $page->getId()->id,
-					'subjectIds' => $page->getSubjects()->getAllSubjects()->getIdsAsTextArray(),
-					'creationTime' => self::mediaWikiTimestampToNeo4jFormat( $creationTime ),
-					'modificationTime' => self::mediaWikiTimestampToNeo4jFormat( $modificationTime ),
-					'properties' => new CypherMap( $properties ),
-				]
+				';
+
+			$transaction->run(
+				$cypher,
+				array_merge(
+					[
+						'pageId' => $page->getId()->id,
+						'subjectIds' => $page->getSubjects()->getAllSubjects()->getIdsAsTextArray(),
+						'properties' => new CypherMap( $properties ),
+					],
+					$datetimeParams,
+				)
 			);
 
 			$this->updateSubjects( $transaction, $page );
