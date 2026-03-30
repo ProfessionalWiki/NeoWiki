@@ -24,7 +24,7 @@ class TestPageProperties {
 			[
 				'name' => $title,
 				'creationTime' => new PageDateTime( $creationTime ),
-				'modificationTime' => new PageDateTime( $modificationTime ),
+				'lastUpdated' => new PageDateTime( $modificationTime ),
 				'categories' => $categories,
 				'lastEditor' => $lastEditor,
 			],

@@ -14,7 +14,7 @@ class CorePagePropertyProvider implements PagePropertyProvider {
 		return [
 			'name' => $context->pageTitle,
 			'creationTime' => new PageDateTime( $context->creationTime ),
-			'modificationTime' => new PageDateTime( $context->modificationTime ),
+			'lastUpdated' => new PageDateTime( $context->modificationTime ),
 			'categories' => $context->categories,
 			'lastEditor' => $context->lastEditor,
 		];
