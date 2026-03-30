@@ -17,6 +17,7 @@
 	"neowiki-property-type-url": "URL",
 	"neowiki-property-type-number": "Number",
 	"neowiki-property-type-relation": "Relation",
+	"neowiki-property-type-datetime": "Date & Time",
 
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 

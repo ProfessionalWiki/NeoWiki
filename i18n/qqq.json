@@ -64,5 +64,7 @@
 	"neowiki-schema-abandonment-keep-editing": "Label for the button that returns to editing the subject.",
 	"neowiki-schema-abandonment-save-schema": "Label for the quiet button that saves only the schema and discards the subject.",
 
+	"neowiki-property-type-datetime": "Label for the date and time property type in the schema editor",
+
 	"neowiki-layout-invalid": "Error message shown when saving an invalid Layout. Parameters:\n* $1 - number of validation errors"
 }
