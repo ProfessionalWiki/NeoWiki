@@ -9,7 +9,7 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherMap;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageDateTime;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageTypedValue;
 use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -27,19 +27,7 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 	public function savePage( Page $page ): void {
 		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $page ): void {
 			$properties = $page->getProperties()->asArray();
-
-			$datetimeSetClauses = '';
-			$datetimeParams = [];
-
-			foreach ( $properties as $key => $value ) {
-				if ( $value instanceof PageDateTime ) {
-					$datetimeSetClauses .= "\n\t\t\t\t\tpage.$key = datetime(\$dt_$key),";
-					$datetimeParams["dt_$key"] = self::mediaWikiTimestampToNeo4jFormat( $value->timestamp );
-					unset( $properties[$key] );
-				}
-			}
-
-			$datetimeSetClauses = rtrim( $datetimeSetClauses, ',' );
+			[ $typedSetClauses, $typedParams, $properties ] = $this->extractTypedValues( $properties );
 
 			$cypher = '
 				// Create or update the page
@@ -47,8 +35,8 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 				SET page += $properties
 				SET page.id = $pageId';
 
-			if ( $datetimeSetClauses !== '' ) {
-				$cypher .= ',' . $datetimeSetClauses;
+			if ( $typedSetClauses !== '' ) {
+				$cypher .= ',' . $typedSetClauses;
 			}
 
 			$cypher .= '
@@ -73,12 +61,50 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 						'subjectIds' => $page->getSubjects()->getAllSubjects()->getIdsAsTextArray(),
 						'properties' => new CypherMap( $properties ),
 					],
-					$datetimeParams,
+					$typedParams,
 				)
 			);
 
 			$this->updateSubjects( $transaction, $page );
 		} );
+	}
+
+	/**
+	 * Extracts PageTypedValue instances from the property map and converts them
+	 * to Cypher SET clauses with parameterized values.
+	 *
+	 * @param array<string, mixed> $properties
+	 * @return array{ string, array<string, mixed>, array<string, mixed> }
+	 *         [ setClauses, params, remainingProperties ]
+	 */
+	private function extractTypedValues( array $properties ): array {
+		$setClauses = '';
+		$params = [];
+
+		foreach ( $properties as $key => $value ) {
+			if ( !( $value instanceof PageTypedValue ) ) {
+				continue;
+			}
+
+			$paramName = "typed_$key";
+
+			$setClauses .= match ( $value->getType() ) {
+				'datetime' => "\n\t\t\t\t\tpage.$key = datetime(\$$paramName),",
+				default => throw new \InvalidArgumentException( "Unsupported PageTypedValue type: {$value->getType()}" ),
+			};
+
+			/** @var string|int|float $rawValue */
+			$rawValue = $value->getValue();
+
+			$params[$paramName] = match ( $value->getType() ) {
+				'datetime' => self::mediaWikiTimestampToNeo4jFormat( (string)$rawValue ),
+				default => $rawValue,
+			};
+
+			unset( $properties[$key] );
+		}
+
+		return [ rtrim( $setClauses, ',' ), $params, $properties ];
 	}
 
 	public static function mediaWikiTimestampToNeo4jFormat( string $timestamp ): string {

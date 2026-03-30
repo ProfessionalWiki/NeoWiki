@@ -4,12 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Page;
 
-/**
- * Marker type for datetime values in page properties.
- * Graph database backends recognize this type and store it
- * using their native datetime representation.
- */
-readonly class PageDateTime {
+readonly class PageDateTime implements PageTypedValue {
 
 	/**
 	 * @param string $timestamp In the standard MediaWiki format, ie 20230726163439
@@ -17,6 +12,14 @@ readonly class PageDateTime {
 	public function __construct(
 		public string $timestamp,
 	) {
+	}
+
+	public function getType(): string {
+		return 'datetime';
+	}
+
+	public function getValue(): string {
+		return $this->timestamp;
 	}
 
 }
