@@ -100,4 +100,24 @@ describe( 'FrontendRegistrar', () => {
 			.toThrow( 'already registered' );
 	} );
 
+	it( 'registered type is usable via PropertyTypeRegistry for validation', () => {
+		const typeRegistry = new PropertyTypeRegistry();
+		const componentRegistry = new TypeSpecificComponentRegistry();
+		const registrar = new FrontendRegistrar( typeRegistry, componentRegistry );
+
+		registrar.registerType( newTestRegistration( {
+			typeName: 'dateTime',
+			validate: ( value ) => {
+				if ( value === undefined ) {
+					return [ { code: 'required' } ];
+				}
+				return [];
+			},
+		} ) );
+
+		const type = typeRegistry.getType( 'dateTime' );
+		expect( type.validate( undefined, {} as PropertyDefinition ) ).toEqual( [ { code: 'required' } ] );
+		expect( type.validate( newStringValue( 'test' ), {} as PropertyDefinition ) ).toEqual( [] );
+	} );
+
 } );
