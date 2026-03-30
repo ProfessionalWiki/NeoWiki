@@ -42,20 +42,21 @@ export class DateTimeType extends BasePropertyType<DateTimeProperty, StringValue
 
 		if ( value !== undefined && value.parts.length > 0 ) {
 			const dateString = value.parts[ 0 ];
+			const timestamp = Date.parse( dateString );
 
-			if ( isNaN( Date.parse( dateString ) ) ) {
+			if ( isNaN( timestamp ) ) {
 				errors.push( { code: 'invalid-datetime' } );
 				return errors;
 			}
 
-			if ( property.minimum !== undefined && dateString < property.minimum ) {
+			if ( property.minimum !== undefined && timestamp < Date.parse( property.minimum ) ) {
 				errors.push( {
 					code: 'min-value',
 					args: [ property.minimum ],
 				} );
 			}
 
-			if ( property.maximum !== undefined && dateString > property.maximum ) {
+			if ( property.maximum !== undefined && timestamp > Date.parse( property.maximum ) ) {
 				errors.push( {
 					code: 'max-value',
 					args: [ property.maximum ],

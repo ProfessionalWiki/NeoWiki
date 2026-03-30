@@ -27,6 +27,6 @@ const formattedValue = computed( (): string => {
 		return dateString;
 	}
 
-	return date.toLocaleString();
+	return date.toLocaleString( undefined, { timeZone: 'UTC' } );
 } );
 </script>
