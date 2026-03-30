@@ -14,6 +14,7 @@
 				size="small"
 			/>
 		</template>
+		<!-- eslint-disable-next-line vue/html-self-closing -->
 		<input
 			type="datetime-local"
 			class="cdx-text-input__input"
@@ -21,7 +22,7 @@
 			:min="toLocalInputValue( props.property.minimum )"
 			:max="toLocalInputValue( props.property.maximum )"
 			@input="onInput"
-		/>
+		>
 	</CdxField>
 </template>
 
@@ -42,8 +43,8 @@ const props = withDefaults(
 	defineProps<ValueInputProps<DateTimeProperty>>(),
 	{
 		modelValue: undefined,
-		label: '',
-	},
+		label: ''
+	}
 );
 
 const emit = defineEmits<ValueInputEmits>();
@@ -106,7 +107,7 @@ defineExpose<ValueInputExposes>( {
 	getCurrentValue: function(): Value | undefined {
 		const isoValue = fromLocalInputValue( internalInputValue.value );
 		return isoValue ? newStringValue( isoValue ) : undefined;
-	},
+	}
 } );
 
 validate( props.modelValue && props.modelValue.type === ValueType.String ? props.modelValue as StringValue : undefined );
