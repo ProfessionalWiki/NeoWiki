@@ -3,6 +3,7 @@ import { NumberType } from '@/domain/propertyTypes/Number';
 import { SelectType } from '@/domain/propertyTypes/Select';
 import { RelationType } from '@/domain/propertyTypes/Relation';
 import { UrlType } from '@/domain/propertyTypes/Url';
+import { DateTimeType } from '@/domain/propertyTypes/DateTime';
 import { PropertyTypeRegistry } from '@/domain/PropertyType';
 import { PropertyDefinitionDeserializer } from '@/domain/PropertyDefinition';
 import { ValueDeserializer } from '@/persistence/ValueDeserializer';
@@ -26,6 +27,7 @@ export class Neo {
 		registry.registerType( new SelectType() );
 		registry.registerType( new RelationType() );
 		registry.registerType( new UrlType() );
+		registry.registerType( new DateTimeType() );
 
 		return registry;
 	}
