@@ -1,29 +1,56 @@
 {
 	"name": "RedHerb",
-
 	"version": "0.0.1",
-
 	"author": [
 		"[https://Professional.Wiki/ Professional Wiki]"
 	],
-
 	"license-name": "GPL-2.0-or-later",
-
 	"description": "Test extension for validating NeoWiki extension points",
-
 	"requires": {
 		"extensions": {
 			"NeoWiki": "*"
 		}
 	},
-
 	"AutoloadNamespaces": {
 		"ProfessionalWiki\\RedHerb\\": "src/"
 	},
-
 	"Hooks": {
 		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration"
 	},
-
+	"ResourceModules": {
+		"ext.redherb": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"packageFiles": [
+				"resources/init.js",
+				"resources/DateTimeDisplay.vue",
+				"resources/DateTimeInput.vue",
+				"resources/DateTimeAttributesEditor.vue",
+				{
+					"name": "resources/icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconClock"
+					]
+				}
+			],
+			"codexComponents": [
+				"CdxField"
+			],
+			"dependencies": [
+				"ext.neowiki",
+				"vue"
+			],
+			"messages": [
+				"neowiki-property-type-datetime",
+				"neowiki-property-editor-range",
+				"neowiki-property-editor-minimum",
+				"neowiki-property-editor-maximum",
+				"neowiki-field-invalid-datetime",
+				"neowiki-field-min-value",
+				"neowiki-field-max-value",
+				"neowiki-field-required"
+			]
+		}
+	},
 	"manifest_version": 2
 }

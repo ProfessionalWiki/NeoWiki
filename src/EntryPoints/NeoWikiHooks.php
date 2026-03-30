@@ -50,8 +50,7 @@ class NeoWikiHooks {
 			$out->addHTML( NeoWikiExtension::getInstance()->getFactBox()->htmlFor( $out->getTitle() ) );
 		}
 
-		$out->addModules( 'ext.neowiki' );
-		$out->addModuleStyles( 'ext.neowiki.styles' );
+		self::addNeoWikiModules( $out );
 		$out->addHtml( self::getNeoWikiAppHtml( $out ) );
 
 		$revisionId = self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
@@ -85,9 +84,17 @@ class NeoWikiHooks {
 		return $out->getRevisionId() === $out->getTitle()->getLatestRevID();
 	}
 
-	private static function handleSchemaPage( OutputPage $out ): void {
+	private static function addNeoWikiModules( OutputPage $out ): void {
 		$out->addModules( 'ext.neowiki' );
 		$out->addModuleStyles( 'ext.neowiki.styles' );
+
+		foreach ( NeoWikiExtension::getInstance()->getFrontendModules() as $module ) {
+			$out->addModules( $module );
+		}
+	}
+
+	private static function handleSchemaPage( OutputPage $out ): void {
+		self::addNeoWikiModules( $out );
 
 		$out->addHTML(
 			Html::element(

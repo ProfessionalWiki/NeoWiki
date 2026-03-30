@@ -14,6 +14,7 @@ class RedHerbHooks {
 		$registrar->addPropertyType( new DateTimeType() );
 		$registrar->addNeo4jValueBuilder( DateTimeType::NAME, static fn( $value ) => $value->toScalars() );
 		$registrar->addPagePropertyProvider( new StaticPagePropertyProvider() );
+		$registrar->addFrontendModule( 'ext.redherb' );
 	}
 
 }

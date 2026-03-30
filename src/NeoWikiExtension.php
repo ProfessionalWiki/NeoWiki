@@ -91,6 +91,8 @@ class NeoWikiExtension {
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
 	private Neo4jValueBuilderRegistry $valueBuilderRegistry;
 	private bool $extensionsRegistered = false;
+	/** @var string[] */
+	private array $frontendModules = [];
 	private SubjectRepository $subjectRepository;
 	private CompositeGraphDatabasePlugin $graphDatabasePlugin;
 	private ?Neo4jQueryStore $neo4jQueryStore = null;
@@ -111,6 +113,16 @@ class NeoWikiExtension {
 	private function __construct(
 		public readonly NeoWikiConfig $config
 	) {
+	}
+
+	public function addFrontendModule( string $moduleName ): void {
+		$this->frontendModules[] = $moduleName;
+	}
+
+	/** @return string[] */
+	public function getFrontendModules(): array {
+		$this->ensureExtensionsRegistered();
+		return $this->frontendModules;
 	}
 
 	public function getPropertyTypeRegistry(): PropertyTypeRegistry {
