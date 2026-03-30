@@ -14,7 +14,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Page;
  */
 interface PageTypedValue {
 
-	public function getType(): string;
+	public function getType(): PageValueType;
 
 	public function getValue(): mixed;
 

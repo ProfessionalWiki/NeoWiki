@@ -14,8 +14,8 @@ readonly class PageDateTime implements PageTypedValue {
 	) {
 	}
 
-	public function getType(): string {
-		return 'datetime';
+	public function getType(): PageValueType {
+		return PageValueType::Datetime;
 	}
 
 	public function getValue(): string {

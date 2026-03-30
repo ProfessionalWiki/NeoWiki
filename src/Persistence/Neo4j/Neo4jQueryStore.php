@@ -10,6 +10,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherMap;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageTypedValue;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageValueType;
 use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -89,16 +90,14 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 			$paramName = "typed_$key";
 
 			$setClauses .= match ( $value->getType() ) {
-				'datetime' => "\n\t\t\t\t\tpage.$key = datetime(\$$paramName),",
-				default => throw new \InvalidArgumentException( "Unsupported PageTypedValue type: {$value->getType()}" ),
+				PageValueType::Datetime => "\n\t\t\t\t\tpage.$key = datetime(\$$paramName),",
 			};
 
-			/** @var string|int|float $rawValue */
+			/** @var string $rawValue */
 			$rawValue = $value->getValue();
 
 			$params[$paramName] = match ( $value->getType() ) {
-				'datetime' => self::mediaWikiTimestampToNeo4jFormat( (string)$rawValue ),
-				default => $rawValue,
+				PageValueType::Datetime => self::mediaWikiTimestampToNeo4jFormat( $rawValue ),
 			};
 
 			unset( $properties[$key] );
