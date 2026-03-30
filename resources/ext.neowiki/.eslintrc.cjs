@@ -108,7 +108,8 @@ module.exports = {
 				'src/domain/PropertyDefinition.ts',
 				'src/domain/StatementList.ts',
 				'src/domain/Value.ts',
-				'src/domain/PropertyType.ts'
+				'src/domain/PropertyType.ts',
+				'src/domain/PropertyTypeAdapter.ts'
 			],
 			rules: {
 				'@typescript-eslint/no-explicit-any': 'off'
