@@ -8,13 +8,10 @@ import UrlDisplay from '@/components/Value/UrlDisplay.vue';
 import { NumberType } from '@/domain/propertyTypes/Number.ts';
 import NumberDisplay from '@/components/Value/NumberDisplay.vue';
 import { RelationType } from '@/domain/propertyTypes/Relation.ts';
-import { DateTimeType } from '@/domain/propertyTypes/DateTime.ts';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry.ts';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
 import Infobox from '@/components/Views/Infobox.vue';
 import RelationDisplay from '@/components/Value/RelationDisplay.vue';
-import DateTimeDisplay from '@/components/Value/DateTimeDisplay.vue';
-import DateTimeInput from '@/components/Value/DateTimeInput.vue';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
 import { RestSchemaRepository } from '@/persistence/RestSchemaRepository.ts';
@@ -38,15 +35,15 @@ import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import { Neo } from '@/Neo.ts';
 // import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
-import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListNumbered, cdxIconClock } from '@wikimedia/codex-icons';
+import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListNumbered } from '@wikimedia/codex-icons';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import UrlAttributesEditor from '@/components/SchemaEditor/Property/UrlAttributesEditor.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
-import DateTimeAttributesEditor from '@/components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
 import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader.ts';
+import { FrontendRegistrar } from '@/FrontendRegistrar.ts';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -58,50 +55,55 @@ export class NeoWikiExtension {
 
 	private rightsFetcher: RightsFetcher|undefined;
 
+	// Cached so the neowiki.registration hook can populate it by reference.
+	private typeSpecificComponentRegistry: TypeSpecificComponentRegistry | undefined;
+
 	public getTypeSpecificComponentRegistry(): TypeSpecificComponentRegistry {
-		const registry = new TypeSpecificComponentRegistry();
+		if ( this.typeSpecificComponentRegistry === undefined ) {
+			this.typeSpecificComponentRegistry = new TypeSpecificComponentRegistry();
 
-		registry.registerType( TextType.typeName, {
-			valueDisplayComponent: TextDisplay,
-			valueEditor: TextInput,
-			attributesEditor: TextAttributesEditor,
-			label: 'neowiki-property-type-text',
-			icon: cdxIconSearchCaseSensitive,
-		} );
+			this.typeSpecificComponentRegistry.registerType( TextType.typeName, {
+				valueDisplayComponent: TextDisplay,
+				valueEditor: TextInput,
+				attributesEditor: TextAttributesEditor,
+				label: 'neowiki-property-type-text',
+				icon: cdxIconSearchCaseSensitive,
+			} );
 
-		registry.registerType( UrlType.typeName, {
-			valueDisplayComponent: UrlDisplay,
-			valueEditor: UrlInput,
-			attributesEditor: UrlAttributesEditor,
-			label: 'neowiki-property-type-url',
-			icon: cdxIconLink,
-		} );
+			this.typeSpecificComponentRegistry.registerType( UrlType.typeName, {
+				valueDisplayComponent: UrlDisplay,
+				valueEditor: UrlInput,
+				attributesEditor: UrlAttributesEditor,
+				label: 'neowiki-property-type-url',
+				icon: cdxIconLink,
+			} );
 
-		registry.registerType( NumberType.typeName, {
-			valueDisplayComponent: NumberDisplay,
-			valueEditor: NumberInput,
-			attributesEditor: NumberAttributesEditor,
-			label: 'neowiki-property-type-number',
-			icon: cdxIconListNumbered, // TODO: Add a custom icon
-		} );
+			this.typeSpecificComponentRegistry.registerType( NumberType.typeName, {
+				valueDisplayComponent: NumberDisplay,
+				valueEditor: NumberInput,
+				attributesEditor: NumberAttributesEditor,
+				label: 'neowiki-property-type-number',
+				icon: cdxIconListNumbered, // TODO: Add a custom icon
+			} );
 
-		registry.registerType( RelationType.typeName, {
-			valueDisplayComponent: RelationDisplay,
-			valueEditor: RelationInput,
-			attributesEditor: RelationAttributesEditor,
-			label: 'neowiki-property-type-relation',
-			icon: cdxIconArticles,
-		} );
+			this.typeSpecificComponentRegistry.registerType( RelationType.typeName, {
+				valueDisplayComponent: RelationDisplay,
+				valueEditor: RelationInput,
+				attributesEditor: RelationAttributesEditor,
+				label: 'neowiki-property-type-relation',
+				icon: cdxIconArticles,
+			} );
+		}
 
-		registry.registerType( DateTimeType.typeName, {
-			valueDisplayComponent: DateTimeDisplay,
-			valueEditor: DateTimeInput,
-			attributesEditor: DateTimeAttributesEditor,
-			label: 'neowiki-property-type-datetime',
-			icon: cdxIconClock,
-		} );
+		return this.typeSpecificComponentRegistry;
+	}
 
-		return registry;
+	public fireRegistrationHook(): void {
+		const registrar = new FrontendRegistrar(
+			this.getPropertyTypeRegistry(),
+			this.getTypeSpecificComponentRegistry(),
+		);
+		mw.hook( 'neowiki.registration' ).fire( registrar );
 	}
 
 	public getViewTypeRegistry(): ViewTypeRegistry {

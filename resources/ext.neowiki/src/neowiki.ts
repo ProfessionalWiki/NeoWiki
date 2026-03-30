@@ -69,6 +69,7 @@ function initializeSchemasPage(): void {
 	}
 }
 
+NeoWikiExtension.getInstance().fireRegistrationHook();
 initializeNeoWikiApp();
 initializeSchemaView();
 initializeSchemasPage();

@@ -2,7 +2,6 @@ import { TextType } from '@/domain/propertyTypes/Text';
 import { NumberType } from '@/domain/propertyTypes/Number';
 import { RelationType } from '@/domain/propertyTypes/Relation';
 import { UrlType } from '@/domain/propertyTypes/Url';
-import { DateTimeType } from '@/domain/propertyTypes/DateTime';
 import { PropertyTypeRegistry } from '@/domain/PropertyType';
 import { PropertyDefinitionDeserializer } from '@/domain/PropertyDefinition';
 import { ValueDeserializer } from '@/persistence/ValueDeserializer';
@@ -13,21 +12,25 @@ export class Neo {
 
 	private static instance: Neo;
 
+	// Cached so the neowiki.registration hook can populate it by reference.
+	private propertyTypeRegistry: PropertyTypeRegistry | undefined;
+
 	public static getInstance(): Neo {
 		Neo.instance ??= new Neo();
 		return Neo.instance;
 	}
 
 	public getPropertyTypeRegistry(): PropertyTypeRegistry {
-		const registry = new PropertyTypeRegistry();
+		if ( this.propertyTypeRegistry === undefined ) {
+			this.propertyTypeRegistry = new PropertyTypeRegistry();
 
-		registry.registerType( new TextType() );
-		registry.registerType( new NumberType() );
-		registry.registerType( new RelationType() );
-		registry.registerType( new UrlType() );
-		registry.registerType( new DateTimeType() );
+			this.propertyTypeRegistry.registerType( new TextType() );
+			this.propertyTypeRegistry.registerType( new NumberType() );
+			this.propertyTypeRegistry.registerType( new RelationType() );
+			this.propertyTypeRegistry.registerType( new UrlType() );
+		}
 
-		return registry;
+		return this.propertyTypeRegistry;
 	}
 
 	public getPropertyDefinitionDeserializer(): PropertyDefinitionDeserializer {
