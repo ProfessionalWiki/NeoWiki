@@ -41,4 +41,16 @@ class NeoWikiRegistrationHookTest extends MediaWikiIntegrationTestCase {
 		$this->assertTrue( $registry->hasBuilder( 'color' ) );
 	}
 
+	public function testRedHerbRegistersDateTimePropertyType(): void {
+		$registry = NeoWikiExtension::getInstance()->getPropertyTypeRegistry();
+
+		$this->assertNotNull( $registry->getType( 'dateTime' ) );
+	}
+
+	public function testRedHerbRegistersDateTimeNeo4jValueBuilder(): void {
+		$registry = NeoWikiExtension::getInstance()->getValueBuilderRegistry();
+
+		$this->assertTrue( $registry->hasBuilder( 'dateTime' ) );
+	}
+
 }
