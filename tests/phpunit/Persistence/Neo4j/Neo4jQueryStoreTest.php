@@ -347,6 +347,68 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( $expectedSubjects, $result );
 	}
 
+	public function testSavesCreationTimeAsNeo4jDatetime(): void {
+		$store = $this->newQueryStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( creationTime: '20230726163439' )
+		) );
+
+		$result = $store->runReadQuery(
+			'MATCH (page:Page {id: 42}) RETURN page.creationTime = datetime("2023-07-26T16:34:39") AS isDatetime'
+		);
+
+		$this->assertTrue(
+			$result->first()->toRecursiveArray()['isDatetime'],
+			'creationTime should be stored as a Neo4j datetime'
+		);
+	}
+
+	public function testSavesLastUpdatedAsNeo4jDatetime(): void {
+		$store = $this->newQueryStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( modificationTime: '20240315100000' )
+		) );
+
+		$result = $store->runReadQuery(
+			'MATCH (page:Page {id: 42}) RETURN page.lastUpdated = datetime("2024-03-15T10:00:00") AS isDatetime'
+		);
+
+		$this->assertTrue(
+			$result->first()->toRecursiveArray()['isDatetime'],
+			'lastUpdated should be stored as a Neo4j datetime'
+		);
+	}
+
+	public function testSavesLastEditor(): void {
+		$store = $this->newQueryStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( lastEditor: 'JohnDoe' )
+		) );
+
+		$result = $store->runReadQuery( 'MATCH (page:Page {id: 42}) RETURN page.lastEditor AS lastEditor' );
+
+		$this->assertSame( 'JohnDoe', $result->first()->toRecursiveArray()['lastEditor'] );
+	}
+
+	public function testSavesCategories(): void {
+		$store = $this->newQueryStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( categories: [ 'CatA', 'CatB' ] )
+		) );
+
+		$result = $store->runReadQuery( 'MATCH (page:Page {id: 42}) RETURN page.categories AS categories' );
+
+		$this->assertSame( [ 'CatA', 'CatB' ], $result->first()->toRecursiveArray()['categories'] );
+	}
+
 	public function testSavesPageExtraProperties(): void {
 		$store = $this->newQueryStore();
 
