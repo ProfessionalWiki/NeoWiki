@@ -10,12 +10,13 @@
 					{{ $i18n( 'neowiki-property-editor-minimum' ).text() }}
 				</template>
 
+				<!-- eslint-disable-next-line vue/html-self-closing -->
 				<input
 					type="datetime-local"
 					class="cdx-text-input__input"
 					:value="toLocalInputValue( property.minimum )"
 					@input="updateMinimum"
-				/>
+				>
 			</CdxField>
 
 			<CdxField>
@@ -23,12 +24,13 @@
 					{{ $i18n( 'neowiki-property-editor-maximum' ).text() }}
 				</template>
 
+				<!-- eslint-disable-next-line vue/html-self-closing -->
 				<input
 					type="datetime-local"
 					class="cdx-text-input__input"
 					:value="toLocalInputValue( property.maximum )"
 					@input="updateMaximum"
-				/>
+				>
 			</CdxField>
 		</NeoNestedField>
 	</div>
