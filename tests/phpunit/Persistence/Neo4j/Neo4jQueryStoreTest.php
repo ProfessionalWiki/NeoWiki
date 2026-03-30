@@ -447,12 +447,13 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 		) );
 
 		$result = $store->runReadQuery(
-			'MATCH (page:Page {id: 42}) RETURN page.approvalTime AS approval, page.approvalTime = datetime("2024-01-01T12:00:00") AS isDatetime'
+			'MATCH (page:Page {id: 42}) RETURN page.approvalTime = datetime("2024-01-01T12:00:00") AS isDatetime'
 		);
 
-		$row = $result->first()->toRecursiveArray();
-
-		$this->assertTrue( $row['isDatetime'], 'Extension-provided PageDateTime should be stored as a Neo4j datetime' );
+		$this->assertTrue(
+			$result->first()->toRecursiveArray()['isDatetime'],
+			'Extension-provided PageDateTime should be stored as a Neo4j datetime'
+		);
 	}
 
 	public function testSavesPageWithEmptyExtraProperties(): void {
