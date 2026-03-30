@@ -43,9 +43,9 @@ describe( 'FrontendRegistrar', () => {
 		const componentRegistry = new TypeSpecificComponentRegistry();
 		const registrar = new FrontendRegistrar( typeRegistry, componentRegistry );
 
-		const display = defineComponent( { name: 'Display' } );
-		const input = defineComponent( { name: 'Input' } );
-		const editor = defineComponent( { name: 'Editor' } );
+		const display = defineComponent( {} );
+		const input = defineComponent( {} );
+		const editor = defineComponent( {} );
 
 		registrar.registerType( newTestRegistration( {
 			typeName: 'custom',
