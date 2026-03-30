@@ -261,6 +261,7 @@
 				"neowiki-property-type-number",
 				"neowiki-property-type-relation",
 				"neowiki-property-type-select",
+				"neowiki-property-type-datetime",
 				"neowiki-infobox-type",
 				"neowiki-infobox-edit-link",
 				"neowiki-field-required",
