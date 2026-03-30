@@ -122,3 +122,17 @@ Display Rules have:
 - A **property** reference (the property name from the Schema's Property Definitions)
 - Optional **Display Attributes** overrides (e.g., `precision`, `color`). These override the defaults from the
   Property Definition. Unspecified Display Attributes are inherited from the Property Definition.
+
+
+
+## Page Property
+
+A key-value pair stored on the Page node in the graph database. Page Properties are metadata about the wiki page
+itself, as opposed to Subject Statements which are structured data about the entities described on the page.
+
+Built-in Page Properties include `name`, `creationTime`, `lastUpdated`, `categories`, and `lastEditor`. Extensions can
+contribute additional Page Properties via the Page Property Provider plugin system (see `PagePropertyProvider`
+interface).
+
+Page Properties are queryable via Cypher (e.g., `MATCH (page:Page) WHERE page.lastUpdated > datetime("2024-01-01")`)
+and are available on every Page node that has NeoWiki content.
