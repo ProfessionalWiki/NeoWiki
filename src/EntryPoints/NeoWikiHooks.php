@@ -22,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
@@ -244,6 +245,14 @@ class NeoWikiHooks {
 		if ( $title->getNamespace() === NeoWikiExtension::NS_LAYOUT ) {
 			$ok = $modelId === LayoutContent::CONTENT_MODEL_ID;
 		}
+	}
+
+	public static function onScribuntoExternalLibraries( string $engine, array &$extraLibraries ): bool {
+		if ( $engine === 'lua' ) {
+			$extraLibraries['mw.neowiki'] = ScribuntoLuaLibrary::class;
+		}
+
+		return true;
 	}
 
 	private static function isSchemaPage( OutputPage $out ): bool {
