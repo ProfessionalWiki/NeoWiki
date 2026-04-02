@@ -56,9 +56,13 @@ const emit = defineEmits<{
 }>();
 
 const currentSchema = ref<Schema>( props.initialSchema );
+const selectedPropertyName = ref<string | undefined>();
 
-const firstProperty = [ ...props.initialSchema.getPropertyDefinitions() ][ 0 ];
-const selectedPropertyName = ref<string | undefined>( firstProperty?.name.toString() );
+watch( () => props.initialSchema, ( schema ) => {
+	currentSchema.value = schema;
+	const firstProperty = [ ...schema.getPropertyDefinitions() ][ 0 ];
+	selectedPropertyName.value = firstProperty?.name.toString();
+}, { immediate: true } );
 
 const propertyList = ref<ComponentPublicInstance | null>( null );
 const propertyDefinitionEditor = ref<ComponentPublicInstance | null>( null );

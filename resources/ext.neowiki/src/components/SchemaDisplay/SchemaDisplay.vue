@@ -11,7 +11,7 @@
 				<SchemaDisplayHeader
 					:schema="currentSchema"
 					:can-edit-schema="canEditSchema"
-					@edit="isEditorOpen = true"
+					@edit="openEditor"
 				/>
 			</template>
 
@@ -135,6 +135,19 @@ function getIcon( propertyType: string ): Icon {
 
 function getTypeLabel( propertyType: string ): string {
 	return mw.msg( componentRegistry.getLabel( propertyType ) );
+}
+
+async function openEditor(): Promise<void> {
+	try {
+		await schemaStore.fetchSchema( currentSchema.value.getName() );
+		currentSchema.value = schemaStore.getSchema( currentSchema.value.getName() );
+		isEditorOpen.value = true;
+	} catch ( error ) {
+		mw.notify(
+			error instanceof Error ? error.message : String( error ),
+			{ type: 'error' }
+		);
+	}
 }
 
 const handleSaveSchema = async ( updatedSchema: Schema, comment: string ): Promise<void> => {

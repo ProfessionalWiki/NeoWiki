@@ -276,6 +276,35 @@ describe( 'SchemaEditor', () => {
 		expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
 	} );
 
+	it( 'reinitializes state when initialSchema prop changes', async () => {
+		const schema = new Schema(
+			'TestSchema',
+			'Original',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+			] ),
+		);
+
+		const wrapper = createWrapper( schema );
+
+		expect( wrapper.findComponent( CdxTextArea ).props( 'modelValue' ) ).toBe( 'Original' );
+		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'firstProp' );
+
+		const newSchema = new Schema(
+			'UpdatedSchema',
+			'Updated description',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'alphaProperty', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'betaProperty', { type: TextType.typeName } ),
+			] ),
+		);
+
+		await wrapper.setProps( { initialSchema: newSchema } );
+
+		expect( wrapper.findComponent( CdxTextArea ).props( 'modelValue' ) ).toBe( 'Updated description' );
+		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'alphaProperty' );
+	} );
+
 	it( 'does not emit change when a property is selected', async () => {
 		const schema = new Schema(
 			'TestSchema',

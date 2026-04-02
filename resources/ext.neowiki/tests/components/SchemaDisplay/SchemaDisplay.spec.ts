@@ -1,4 +1,4 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { ref } from 'vue';
@@ -14,6 +14,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
 import { newSchema } from '@/TestHelpers.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 const checkEditPermissionMock = vi.fn();
 const canEditSchemaRef = ref( false );
@@ -160,14 +161,25 @@ describe( 'SchemaDisplay', () => {
 		expect( wrapper.findComponent( SchemaEditorDialog ).exists() ).toBe( false );
 	} );
 
-	it( 'opens dialog when header emits edit event', async () => {
+	it( 'fetches latest schema and opens dialog when header emits edit event', async () => {
 		canEditSchemaRef.value = true;
+		setupMwMock( { functions: [ 'msg', 'notify' ] } );
 
-		const wrapper = mountComponent( newSchema() );
+		const schema = newSchema();
+		const pinia = createPinia();
+		setActivePinia( pinia );
+
+		const store = useSchemaStore();
+		store.fetchSchema = vi.fn().mockResolvedValue( undefined );
+		store.setSchema( schema.getName(), schema );
+
+		const wrapper = mountComponent( schema, pinia );
 		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( false );
 
 		await wrapper.findComponent( SchemaDisplayHeader ).vm.$emit( 'edit' );
+		await flushPromises();
 
+		expect( store.fetchSchema ).toHaveBeenCalledWith( schema.getName() );
 		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( true );
 	} );
 } );
