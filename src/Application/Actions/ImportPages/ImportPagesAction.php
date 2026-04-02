@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ImportPages;
 
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\Content;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Content\WikitextContent;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -67,7 +68,7 @@ class ImportPagesAction {
 
 		foreach ( $this->moduleContentSource->getPageContentStrings() as $moduleName => $moduleContent ) {
 			$this->createPage(
-				"Module:$moduleName",
+				"Module:" . explode( '.', $moduleName )[0],
 				[
 					'main' => $this->fileNameAndSourceToContent( $moduleName, $moduleContent ),
 				]
@@ -80,6 +81,10 @@ class ImportPagesAction {
 	private function fileNameAndSourceToContent( string $fileName, string $sourceText ): Content {
 		if ( str_ends_with( $fileName, '.wikitext' ) ) {
 			return new WikitextContent( $sourceText );
+		}
+
+		if ( str_ends_with( $fileName, '.lua' ) ) {
+			return new TextContent( $sourceText, 'Scribunto' );
 		}
 
 		throw new RuntimeException( "Could not import file '$fileName'" );

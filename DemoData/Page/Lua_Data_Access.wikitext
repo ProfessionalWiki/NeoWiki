@@ -1,0 +1,56 @@
+This page demonstrates the <code>mw.neowiki</code> Lua API for accessing NeoWiki structured data from templates and modules.
+
+The examples use [[Module:NeoWikiDemo]], a demo module included with NeoWiki.
+
+== Reading Property Values ==
+
+<code>mw.neowiki.getValue()</code> reads a single property from a Subject. It returns scalars for single values and tables for multi-valued properties.
+
+{| class="wikitable"
+! Property !! Result
+|-
+| Founded at || {{#invoke:NeoWikiDemo|value|Founded at|page=ACME Inc}}
+|-
+| Websites || {{#invoke:NeoWikiDemo|value|Websites|page=ACME Inc}}
+|-
+| Products (relations) || {{#invoke:NeoWikiDemo|value|Products|page=ACME Inc}}
+|}
+
+== Full Subject Data ==
+
+<code>mw.neowiki.getMainSubject()</code> returns all data for a Subject as a Lua table, enabling templates to render complete data views.
+
+=== Professional Wiki ===
+
+{{#invoke:NeoWikiDemo|subject|Professional Wiki}}
+
+=== ACME Inc ===
+
+{{#invoke:NeoWikiDemo|subject|ACME Inc}}
+
+== Child Subjects ==
+
+<code>mw.neowiki.getChildSubjects()</code> returns all non-main Subjects on a page.
+
+Child subjects on [[ACME Inc]]: {{#invoke:NeoWikiDemo|children|ACME Inc}}
+
+== Module Source ==
+
+The demo module uses three <code>mw.neowiki</code> functions:
+
+<syntaxhighlight lang="lua">
+local nw = require( 'mw.neowiki' )
+
+-- Read a single value
+nw.getValue( 'Founded at' )             --> 2005
+nw.getValue( 'Products' )               --> { 'Foo', 'Bar', 'Baz' }
+
+-- Get full subject data
+local s = nw.getMainSubject( 'ACME Inc' )
+s.id, s.label, s.schema, s.statements
+
+-- Get child subjects
+local children = nw.getChildSubjects( 'ACME Inc' )
+</syntaxhighlight>
+
+See [[Module:NeoWikiDemo]] for the full source.

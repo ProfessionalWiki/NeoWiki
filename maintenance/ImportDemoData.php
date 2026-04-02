@@ -59,7 +59,7 @@ class ImportDemoData extends Maintenance {
 			),
 			moduleContentSource: new PageContentSource(
 				[
-					// NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Module'
+					NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Module',
 				],
 				new SimpleFileFetcher()
 			),
