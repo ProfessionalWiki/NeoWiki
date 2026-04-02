@@ -137,6 +137,17 @@ class NeoWikiHooks {
 				return $parserFunction->handle( $parser, $args[0] ?? '', $args[1] ?? '' );
 			}
 		);
+
+		$parser->setFunctionHook(
+			'neowiki_value',
+			static function ( Parser $parser, string ...$args ): string {
+				$parserFunction = new NeoWikiValueParserFunction(
+					NeoWikiExtension::getInstance()->newSubjectContentRepository(),
+					NeoWikiExtension::getInstance()->getSubjectRepository()
+				);
+				return $parserFunction->handle( $parser, ...$args );
+			}
+		);
 	}
 
 	/**
