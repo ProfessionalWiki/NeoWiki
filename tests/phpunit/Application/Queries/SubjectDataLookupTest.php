@@ -34,6 +34,7 @@ class SubjectDataLookupTest extends TestCase {
 
 	private const string SUBJECT_ID = 's1test5aaaaaaaa';
 	private const string TARGET_SUBJECT_ID = 's1test5bbbbbbbb';
+	private const string CHILD_SUBJECT_ID = 's1test5cccccccc';
 
 	private function createTitle(): Title {
 		return $this->createStub( Title::class );
@@ -51,6 +52,16 @@ class SubjectDataLookupTest extends TestCase {
 	private function createRepositoryWithMainSubject( Subject $subject ): SubjectContentRepository {
 		$pageSubjects = new PageSubjects( $subject, new SubjectMap() );
 
+		$subjectContent = $this->createStub( SubjectContent::class );
+		$subjectContent->method( 'getPageSubjects' )->willReturn( $pageSubjects );
+
+		$repo = $this->createStub( SubjectContentRepository::class );
+		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( $subjectContent );
+
+		return $repo;
+	}
+
+	private function createRepositoryWithPageSubjects( PageSubjects $pageSubjects ): SubjectContentRepository {
 		$subjectContent = $this->createStub( SubjectContent::class );
 		$subjectContent->method( 'getPageSubjects' )->willReturn( $pageSubjects );
 
@@ -360,6 +371,202 @@ class SubjectDataLookupTest extends TestCase {
 		);
 
 		$this->assertSame( [ 'Berlin' ], $lookup->getValue( $this->createTitle(), '  City  ' ) );
+	}
+
+	public function testGetMainSubjectReturnsSubjectTable(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) ),
+			new Statement( new PropertyName( 'Population' ), 'number', new NumberValue( 3645000 ) ),
+		);
+
+		$lookup = new SubjectDataLookup(
+			$this->createRepositoryWithMainSubject( $subject ),
+			$this->createDummySubjectLookup()
+		);
+
+		$result = $lookup->getMainSubjectData( $this->createTitle() );
+
+		$this->assertSame( self::SUBJECT_ID, $result[0]['id'] );
+		$this->assertSame( 'Test Subject', $result[0]['label'] );
+		$this->assertSame( 'TestSchema', $result[0]['schema'] );
+		$this->assertSame( 'text', $result[0]['statements']['City']['type'] );
+		$this->assertSame( [ 1 => 'Berlin' ], $result[0]['statements']['City']['values'] );
+		$this->assertSame( 'number', $result[0]['statements']['Population']['type'] );
+		$this->assertSame( [ 1 => 3645000 ], $result[0]['statements']['Population']['values'] );
+	}
+
+	public function testGetMainSubjectReturnsNullWhenNoSubject(): void {
+		$lookup = new SubjectDataLookup(
+			$this->createEmptyRepository(),
+			$this->createDummySubjectLookup()
+		);
+
+		$this->assertSame( [ null ], $lookup->getMainSubjectData( $this->createTitle() ) );
+	}
+
+	public function testGetMainSubjectReturnsNullWhenPageHasNoMainSubject(): void {
+		$pageSubjects = new PageSubjects( null, new SubjectMap() );
+
+		$lookup = new SubjectDataLookup(
+			$this->createRepositoryWithPageSubjects( $pageSubjects ),
+			$this->createDummySubjectLookup()
+		);
+
+		$this->assertSame( [ null ], $lookup->getMainSubjectData( $this->createTitle() ) );
+	}
+
+	public function testGetSubjectReturnsSubjectTable(): void {
+		$subject = new Subject(
+			id: new SubjectId( self::TARGET_SUBJECT_ID ),
+			label: new SubjectLabel( 'ACME Corp' ),
+			schemaName: new SchemaName( 'Company' ),
+			statements: new StatementList( [
+				new Statement( new PropertyName( 'Founded' ), 'number', new NumberValue( 1985 ) ),
+			] ),
+		);
+
+		$lookup = new SubjectDataLookup(
+			$this->createEmptyRepository(),
+			$this->createSubjectLookupReturning( $subject )
+		);
+
+		$result = $lookup->getSubjectData( self::TARGET_SUBJECT_ID );
+
+		$this->assertSame( self::TARGET_SUBJECT_ID, $result[0]['id'] );
+		$this->assertSame( 'ACME Corp', $result[0]['label'] );
+		$this->assertSame( 'Company', $result[0]['schema'] );
+		$this->assertSame( [ 1 => 1985 ], $result[0]['statements']['Founded']['values'] );
+	}
+
+	public function testGetSubjectReturnsNullForInvalidId(): void {
+		$lookup = new SubjectDataLookup(
+			$this->createEmptyRepository(),
+			$this->createDummySubjectLookup()
+		);
+
+		$this->assertSame( [ null ], $lookup->getSubjectData( 'invalid' ) );
+	}
+
+	public function testGetSubjectReturnsNullForUnknownId(): void {
+		$lookup = new SubjectDataLookup(
+			$this->createEmptyRepository(),
+			$this->createDummySubjectLookup()
+		);
+
+		$this->assertSame( [ null ], $lookup->getSubjectData( self::TARGET_SUBJECT_ID ) );
+	}
+
+	public function testGetSubjectIncludesRelationDetails(): void {
+		$targetSubject = new Subject(
+			id: new SubjectId( self::TARGET_SUBJECT_ID ),
+			label: new SubjectLabel( 'Jane Doe' ),
+			schemaName: new SchemaName( 'Person' ),
+			statements: new StatementList(),
+		);
+
+		$subject = new Subject(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'ACME Corp' ),
+			schemaName: new SchemaName( 'Company' ),
+			statements: new StatementList( [
+				new Statement(
+					new PropertyName( 'CEO' ),
+					'relation',
+					new RelationValue(
+						new Relation(
+							id: new RelationId( 'r1test5cccccccc' ),
+							targetId: new SubjectId( self::TARGET_SUBJECT_ID ),
+							properties: new RelationProperties( [] ),
+						)
+					)
+				),
+			] ),
+		);
+
+		$lookup = new SubjectDataLookup(
+			$this->createEmptyRepository(),
+			$this->createSubjectLookupReturning( $subject, $targetSubject )
+		);
+
+		$result = $lookup->getSubjectData( self::SUBJECT_ID );
+
+		$this->assertSame( 'relation', $result[0]['statements']['CEO']['type'] );
+		$this->assertSame( 'r1test5cccccccc', $result[0]['statements']['CEO']['values'][1]['id'] );
+		$this->assertSame( self::TARGET_SUBJECT_ID, $result[0]['statements']['CEO']['values'][1]['target'] );
+		$this->assertSame( 'Jane Doe', $result[0]['statements']['CEO']['values'][1]['label'] );
+	}
+
+	public function testGetChildSubjectsReturnsArrayOfSubjectTables(): void {
+		$mainSubject = $this->createSubject();
+
+		$child1 = new Subject(
+			id: new SubjectId( self::TARGET_SUBJECT_ID ),
+			label: new SubjectLabel( 'Child One' ),
+			schemaName: new SchemaName( 'ChildSchema' ),
+			statements: new StatementList(),
+		);
+		$child2 = new Subject(
+			id: new SubjectId( self::CHILD_SUBJECT_ID ),
+			label: new SubjectLabel( 'Child Two' ),
+			schemaName: new SchemaName( 'ChildSchema' ),
+			statements: new StatementList(),
+		);
+
+		$pageSubjects = new PageSubjects(
+			$mainSubject,
+			new SubjectMap( $child1, $child2 )
+		);
+
+		$lookup = new SubjectDataLookup(
+			$this->createRepositoryWithPageSubjects( $pageSubjects ),
+			$this->createDummySubjectLookup()
+		);
+
+		$result = $lookup->getChildSubjectsData( $this->createTitle() );
+
+		$this->assertCount( 2, $result[0] );
+		$this->assertSame( self::TARGET_SUBJECT_ID, $result[0][1]['id'] );
+		$this->assertSame( 'Child One', $result[0][1]['label'] );
+		$this->assertSame( self::CHILD_SUBJECT_ID, $result[0][2]['id'] );
+		$this->assertSame( 'Child Two', $result[0][2]['label'] );
+	}
+
+	public function testGetChildSubjectsReturnsEmptyArrayWhenNoChildren(): void {
+		$mainSubject = $this->createSubject();
+
+		$pageSubjects = new PageSubjects( $mainSubject, new SubjectMap() );
+
+		$lookup = new SubjectDataLookup(
+			$this->createRepositoryWithPageSubjects( $pageSubjects ),
+			$this->createDummySubjectLookup()
+		);
+
+		$this->assertSame( [ [] ], $lookup->getChildSubjectsData( $this->createTitle() ) );
+	}
+
+	public function testGetChildSubjectsReturnsEmptyArrayWhenNoContent(): void {
+		$lookup = new SubjectDataLookup(
+			$this->createEmptyRepository(),
+			$this->createDummySubjectLookup()
+		);
+
+		$this->assertSame( [ [] ], $lookup->getChildSubjectsData( $this->createTitle() ) );
+	}
+
+	public function testGetMainSubjectIncludesBooleanStatementValues(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( true ) ),
+		);
+
+		$lookup = new SubjectDataLookup(
+			$this->createRepositoryWithMainSubject( $subject ),
+			$this->createDummySubjectLookup()
+		);
+
+		$result = $lookup->getMainSubjectData( $this->createTitle() );
+
+		$this->assertSame( 'boolean', $result[0]['statements']['Active']['type'] );
+		$this->assertSame( [ 1 => true ], $result[0]['statements']['Active']['values'] );
 	}
 
 }

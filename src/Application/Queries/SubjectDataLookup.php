@@ -168,4 +168,182 @@ class SubjectDataLookup {
 		return $relation->targetId->text;
 	}
 
+	/**
+	 * @return array{0: ?array<string, mixed>}
+	 */
+	public function getMainSubjectData( Title $currentTitle, ?string $pageName = null ): array {
+		$title = $this->resolveTitle( $currentTitle, $pageName );
+
+		if ( $title === null ) {
+			return [ null ];
+		}
+
+		$pageSubjects = $this->getPageSubjectsByTitle( $title );
+
+		if ( $pageSubjects === null ) {
+			return [ null ];
+		}
+
+		$subject = $pageSubjects->getMainSubject();
+
+		if ( $subject === null ) {
+			return [ null ];
+		}
+
+		return [ $this->subjectToTable( $subject ) ];
+	}
+
+	/**
+	 * @return array{0: ?array<string, mixed>}
+	 */
+	public function getSubjectData( string $subjectId ): array {
+		$subject = $this->resolveSubjectById( $subjectId );
+
+		if ( $subject === null ) {
+			return [ null ];
+		}
+
+		return [ $this->subjectToTable( $subject ) ];
+	}
+
+	/**
+	 * @return array{0: array<int, array<string, mixed>>}
+	 */
+	public function getChildSubjectsData( Title $currentTitle, ?string $pageName = null ): array {
+		$title = $this->resolveTitle( $currentTitle, $pageName );
+
+		if ( $title === null ) {
+			return [ [] ];
+		}
+
+		$pageSubjects = $this->getPageSubjectsByTitle( $title );
+
+		if ( $pageSubjects === null ) {
+			return [ [] ];
+		}
+
+		$children = $pageSubjects->getChildSubjects()->asArray();
+
+		if ( $children === [] ) {
+			return [ [] ];
+		}
+
+		$result = [];
+		$index = 1;
+		foreach ( $children as $child ) {
+			$result[$index++] = $this->subjectToTable( $child );
+		}
+
+		return [ $result ];
+	}
+
+	private function resolveTitle( Title $currentTitle, ?string $pageName ): ?Title {
+		if ( $pageName !== null && $pageName !== '' ) {
+			return Title::newFromText( $pageName );
+		}
+
+		return $currentTitle;
+	}
+
+	private function getPageSubjectsByTitle( Title $title ): ?PageSubjects {
+		return $this->subjectContentRepository
+			->getSubjectContentByPageTitle( $title )
+			?->getPageSubjects();
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function subjectToTable( Subject $subject ): array {
+		return [
+			'id' => $subject->getId()->text,
+			'label' => $subject->getLabel()->text,
+			'schema' => $subject->getSchemaName()->getText(),
+			'statements' => $this->statementsToTable( $subject ),
+		];
+	}
+
+	/**
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function statementsToTable( Subject $subject ): array {
+		$result = [];
+
+		foreach ( $subject->getStatements()->asArray() as $propertyName => $statement ) {
+			$result[$propertyName] = $this->statementToTable( $statement );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function statementToTable( Statement $statement ): array {
+		return [
+			'type' => $statement->getPropertyType(),
+			'values' => $this->statementValuesToLuaArray( $statement ),
+		];
+	}
+
+	/**
+	 * @return array<int, mixed>
+	 */
+	private function statementValuesToLuaArray( Statement $statement ): array {
+		$value = $statement->getValue();
+
+		if ( $value->isEmpty() ) {
+			return [];
+		}
+
+		if ( $value instanceof StringValue ) {
+			return $this->toLuaIndexed( $value->strings );
+		}
+
+		if ( $value instanceof NumberValue ) {
+			return [ 1 => $value->number ];
+		}
+
+		if ( $value instanceof BooleanValue ) {
+			return [ 1 => $value->boolean ];
+		}
+
+		if ( $value instanceof RelationValue ) {
+			return $this->relationsToLuaArray( $value );
+		}
+
+		return [];
+	}
+
+	/**
+	 * @param array<int, mixed> $values
+	 * @return array<int, mixed>
+	 */
+	private function toLuaIndexed( array $values ): array {
+		return array_combine(
+			range( 1, count( $values ) ),
+			array_values( $values )
+		);
+	}
+
+	/**
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function relationsToLuaArray( RelationValue $value ): array {
+		$result = [];
+		$index = 1;
+
+		foreach ( $value->relations as $relation ) {
+			$label = $this->resolveRelationLabel( $relation );
+
+			$result[$index++] = [
+				'id' => $relation->id->asString(),
+				'target' => $relation->targetId->text,
+				'label' => $label,
+			];
+		}
+
+		return $result;
+	}
+
 }

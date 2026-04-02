@@ -16,4 +16,16 @@ function neowiki.getValue( propertyName, options )
 	return php.getValue( propertyName, options )
 end
 
+function neowiki.getMainSubject( pageName )
+	return php.getMainSubject( pageName )
+end
+
+function neowiki.getSubject( subjectId )
+	return php.getSubject( subjectId )
+end
+
+function neowiki.getChildSubjects( pageName )
+	return php.getChildSubjects( pageName )
+end
+
 return neowiki

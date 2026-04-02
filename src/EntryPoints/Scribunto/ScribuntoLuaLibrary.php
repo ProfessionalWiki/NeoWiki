@@ -22,6 +22,9 @@ class ScribuntoLuaLibrary extends LibraryBase {
 	public function register(): array {
 		$lib = [
 			'getValue' => [ $this, 'getValue' ],
+			'getMainSubject' => [ $this, 'getMainSubject' ],
+			'getSubject' => [ $this, 'getSubject' ],
+			'getChildSubjects' => [ $this, 'getChildSubjects' ],
 		];
 
 		return $this->getEngine()->registerInterface(
@@ -37,6 +40,33 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		}
 
 		return $this->getSubjectDataLookup()->getValue( $this->getTitle(), $propertyName, $options );
+	}
+
+	public function getMainSubject( ?string $pageName = null ): array {
+		$this->checkTypeOptional( 'mw.neowiki.getMainSubject', 1, $pageName, 'string', null );
+
+		if ( $pageName !== null ) {
+			$this->incrementExpensiveFunctionCount();
+		}
+
+		return $this->getSubjectDataLookup()->getMainSubjectData( $this->getTitle(), $pageName );
+	}
+
+	public function getSubject( ?string $subjectId = null ): array {
+		$this->checkType( 'mw.neowiki.getSubject', 1, $subjectId, 'string' );
+		$this->incrementExpensiveFunctionCount();
+
+		return $this->getSubjectDataLookup()->getSubjectData( $subjectId );
+	}
+
+	public function getChildSubjects( ?string $pageName = null ): array {
+		$this->checkTypeOptional( 'mw.neowiki.getChildSubjects', 1, $pageName, 'string', null );
+
+		if ( $pageName !== null ) {
+			$this->incrementExpensiveFunctionCount();
+		}
+
+		return $this->getSubjectDataLookup()->getChildSubjectsData( $this->getTitle(), $pageName );
 	}
 
 }
