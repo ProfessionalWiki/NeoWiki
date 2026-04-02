@@ -319,6 +319,83 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		$this->assertSame( '', $pf->handle( $this->createMockParser(), 'City', 'subject=invalid' ) );
 	}
 
+	public function testPageParam(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Hamburg' ) )
+		);
+
+		$repo = $this->createStub( SubjectContentRepository::class );
+		$repo->method( 'getSubjectContentByPageTitle' )->willReturnCallback(
+			function ( $title ) use ( $subject ) {
+				if ( $title->getText() === 'Other Page' ) {
+					$pageSubjects = new PageSubjects( $subject, new SubjectMap() );
+					$subjectContent = $this->createStub( SubjectContent::class );
+					$subjectContent->method( 'getPageSubjects' )->willReturn( $pageSubjects );
+					return $subjectContent;
+				}
+				return null;
+			}
+		);
+
+		$pf = new NeoWikiValueParserFunction( $repo, $this->createDummySubjectLookup() );
+
+		$this->assertSame( 'Hamburg', $pf->handle( $this->createMockParser(), 'City', 'page=Other Page' ) );
+	}
+
+	public function testReturnsCorrectPropertyFromMultipleStatements(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) ),
+			new Statement( new PropertyName( 'Country' ), 'text', new StringValue( 'Germany' ) ),
+			new Statement( new PropertyName( 'Population' ), 'number', new NumberValue( 3_700_000 ) ),
+		);
+
+		$pf = new NeoWikiValueParserFunction(
+			$this->createRepositoryWithSubject( $subject ),
+			$this->createDummySubjectLookup()
+		);
+
+		$this->assertSame( 'Germany', $pf->handle( $this->createMockParser(), 'Country' ) );
+	}
+
+	public function testRelationLabelFallsBackToIdWhenLookupThrows(): void {
+		$lookup = $this->createStub( SubjectLookup::class );
+		$lookup->method( 'getSubject' )->willThrowException( new \RuntimeException( 'Neo4j down' ) );
+
+		$subject = $this->createSubject(
+			new Statement(
+				new PropertyName( 'Owner' ),
+				'relation',
+				new RelationValue(
+					new Relation(
+						id: new RelationId( 'r1test5cccccccc' ),
+						targetId: new SubjectId( self::TARGET_SUBJECT_ID ),
+						properties: new RelationProperties( [] ),
+					)
+				)
+			)
+		);
+
+		$pf = new NeoWikiValueParserFunction(
+			$this->createRepositoryWithSubject( $subject ),
+			$lookup
+		);
+
+		$this->assertSame( self::TARGET_SUBJECT_ID, $pf->handle( $this->createMockParser(), 'Owner' ) );
+	}
+
+	public function testReturnsEmptyStringForEmptyRelationValue(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'Members' ), 'relation', new RelationValue() )
+		);
+
+		$pf = new NeoWikiValueParserFunction(
+			$this->createRepositoryWithSubject( $subject ),
+			$this->createDummySubjectLookup()
+		);
+
+		$this->assertSame( '', $pf->handle( $this->createMockParser(), 'Members' ) );
+	}
+
 	public function testMultipleRelationLabels(): void {
 		$target1 = new Subject(
 			id: new SubjectId( 's1test5bbbbbbbb' ),
