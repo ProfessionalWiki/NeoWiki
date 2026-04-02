@@ -126,6 +126,14 @@
 	"neowiki-schemas-column-properties": "Properties",
 	"neowiki-schemas-empty": "No schemas have been created yet.",
 
+	"neowiki-schema-delete": "Delete schema",
+	"neowiki-schema-delete-confirm-title": "Delete schema?",
+	"neowiki-schema-delete-confirm-message": "The schema $1 will be permanently deleted.",
+	"neowiki-schema-delete-confirm-delete": "Delete",
+	"neowiki-schema-delete-summary-default": "Delete schema via NeoWiki UI",
+	"neowiki-schema-delete-success": "Deleted $1 schema",
+	"neowiki-schema-delete-error": "Failed to delete $1 schema.",
+
 	"neowiki-close-confirmation-title": "Discard unsaved changes?",
 	"neowiki-close-confirmation-message": "Your changes have not been saved and will be lost.",
 	"neowiki-close-confirmation-discard": "Discard",

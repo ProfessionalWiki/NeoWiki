@@ -53,6 +53,14 @@
 	"neowiki-schemas-column-properties": "Column header for the number of property definitions in the schemas list table on [[Special:Schemas]].",
 	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]].",
 
+	"neowiki-schema-delete": "Aria label for the delete button on a Schema row in the schemas list.",
+	"neowiki-schema-delete-confirm-title": "Title of the confirmation dialog shown when deleting a schema.",
+	"neowiki-schema-delete-confirm-message": "Message in the delete confirmation dialog. $1 is the schema name.",
+	"neowiki-schema-delete-confirm-delete": "Label for the delete button in the schema deletion dialog.",
+	"neowiki-schema-delete-summary-default": "Default deletion reason used when deleting a schema via the UI.",
+	"neowiki-schema-delete-success": "Success notification shown after deleting a schema. $1 is the schema name.",
+	"neowiki-schema-delete-error": "Error notification title shown when deleting a schema fails. $1 is the schema name.",
+
 	"neowiki-close-confirmation-title": "Title of the confirmation dialog shown when closing a dialog with unsaved changes.",
 	"neowiki-close-confirmation-message": "Message in the confirmation dialog asking the user to confirm discarding unsaved changes.",
 	"neowiki-close-confirmation-discard": "Label for the destructive button that discards unsaved changes and closes the dialog.",

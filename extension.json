@@ -339,7 +339,14 @@
 				"neowiki-schema-abandonment-message",
 				"neowiki-schema-abandonment-abandon",
 				"neowiki-schema-abandonment-keep-editing",
-				"neowiki-schema-abandonment-save-schema"
+				"neowiki-schema-abandonment-save-schema",
+				"neowiki-schema-delete",
+				"neowiki-schema-delete-confirm-title",
+				"neowiki-schema-delete-confirm-message",
+				"neowiki-schema-delete-confirm-delete",
+				"neowiki-schema-delete-summary-default",
+				"neowiki-schema-delete-success",
+				"neowiki-schema-delete-error"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
