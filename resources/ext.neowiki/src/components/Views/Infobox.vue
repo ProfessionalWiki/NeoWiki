@@ -24,7 +24,7 @@
 				v-if="canEditSubject"
 				weight="quiet"
 				:aria-label="$i18n( 'neowiki-infobox-edit-link' ).text()"
-				@click="isEditorOpen = true"
+				@click="openEditor"
 			>
 				<CdxIcon :icon="cdxIconEdit" />
 			</CdxButton>
@@ -95,6 +95,18 @@ const isEditorOpen = ref( false );
 
 const subject = computed( () => subjectStore.getSubject( props.subjectId ) as Subject ); // TODO: handle not found
 const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) ); // TODO: handle not found
+
+async function openEditor(): Promise<void> {
+	try {
+		await subjectStore.fetchSubject( props.subjectId );
+		isEditorOpen.value = true;
+	} catch ( error ) {
+		mw.notify(
+			error instanceof Error ? error.message : String( error ),
+			{ type: 'error' }
+		);
+	}
+}
 
 const handleSaveSubject = async ( updatedSubject: Subject, comment: string ): Promise<void> => {
 	await subjectStore.updateSubject( updatedSubject, comment );

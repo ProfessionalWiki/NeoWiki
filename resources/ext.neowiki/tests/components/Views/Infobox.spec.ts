@@ -1,4 +1,4 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Infobox from '@/components/Views/Infobox.vue';
 import { Subject } from '@/domain/Subject.ts';
@@ -150,7 +150,9 @@ describe( 'Infobox', () => {
 		expect( editButton.exists() ).toBe( true );
 	} );
 
-	it( 'opens the SubjectEditorDialog when edit button is clicked', async () => {
+	it( 'fetches latest subject and opens dialog when edit button is clicked', async () => {
+		subjectStore.fetchSubject = vi.fn().mockResolvedValue( undefined );
+
 		const wrapper = mountComponent( mockSubject, true );
 
 		const dialog = wrapper.findComponent( SubjectEditorDialog );
@@ -158,7 +160,9 @@ describe( 'Infobox', () => {
 
 		const editButton = wrapper.findComponent( { name: 'CdxButton', props: { 'aria-label': 'neowiki-infobox-edit-link' } } );
 		await editButton.trigger( 'click' );
+		await flushPromises();
 
+		expect( subjectStore.fetchSubject ).toHaveBeenCalledWith( mockSubject.getId() );
 		expect( dialog.props( 'open' ) ).toBe( true );
 	} );
 
