@@ -21,7 +21,7 @@ $wgShowExceptionDetails = true;
 $wgShowDBErrorBacktrace = true;
 $wgDevelopmentWarnings = true;
 
-// wfLoadExtension( "Scribunto" );
+wfLoadExtension( "Scribunto" );
 
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:password@localhost:7689';
 $wgNeoWikiNeo4jInternalReadUrl = 'bolt://mediawiki_read:mediawiki_read@localhost:7689';
@@ -44,5 +44,5 @@ cat <<EOT >> composer.local.json
 }
 EOT
 
-#cd extensions
-#git clone -b $MW_BRANCH https://gerrit.wikimedia.org/r/p/mediawiki/extensions/Scribunto.git --depth 1
+cd extensions
+git clone -b $MW_BRANCH https://gerrit.wikimedia.org/r/p/mediawiki/extensions/Scribunto.git --depth 1
