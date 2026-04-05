@@ -16,6 +16,10 @@ function neowiki.getValue( propertyName, options )
 	return php.getValue( propertyName, options )
 end
 
+function neowiki.getAll( propertyName, options )
+	return php.getAll( propertyName, options )
+end
+
 function neowiki.getMainSubject( pageName )
 	return php.getMainSubject( pageName )
 end

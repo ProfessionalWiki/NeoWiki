@@ -5,23 +5,32 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints\Scribunto;
 
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
-use ProfessionalWiki\NeoWiki\Application\Queries\SubjectDataLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class ScribuntoLuaLibrary extends LibraryBase {
 
-	private function getSubjectDataLookup(): SubjectDataLookup {
-		$extension = NeoWikiExtension::getInstance();
+	private ?SubjectDataLookup $subjectDataLookup = null;
 
-		return new SubjectDataLookup(
-			$extension->newSubjectContentRepository(),
-			$extension->getSubjectRepository(),
-		);
+	private function getSubjectDataLookup(): SubjectDataLookup {
+		if ( $this->subjectDataLookup === null ) {
+			$extension = NeoWikiExtension::getInstance();
+
+			$this->subjectDataLookup = new SubjectDataLookup(
+				new SubjectResolver(
+					$extension->newSubjectContentRepository(),
+					$extension->getSubjectRepository(),
+				),
+			);
+		}
+
+		return $this->subjectDataLookup;
 	}
 
 	public function register(): array {
 		$lib = [
 			'getValue' => [ $this, 'getValue' ],
+			'getAll' => [ $this, 'getAll' ],
 			'getMainSubject' => [ $this, 'getMainSubject' ],
 			'getSubject' => [ $this, 'getSubject' ],
 			'getChildSubjects' => [ $this, 'getChildSubjects' ],
@@ -40,6 +49,16 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		}
 
 		return $this->getSubjectDataLookup()->getValue( $this->getTitle(), $propertyName, $options );
+	}
+
+	public function getAll( ?string $propertyName = null, ?array $options = null ): array {
+		$this->checkType( 'mw.neowiki.getAll', 1, $propertyName, 'string' );
+
+		if ( $options !== null && ( isset( $options['page'] ) || isset( $options['subject'] ) ) ) {
+			$this->incrementExpensiveFunctionCount();
+		}
+
+		return $this->getSubjectDataLookup()->getAll( $this->getTitle(), $propertyName, $options );
 	}
 
 	public function getMainSubject( ?string $pageName = null ): array {

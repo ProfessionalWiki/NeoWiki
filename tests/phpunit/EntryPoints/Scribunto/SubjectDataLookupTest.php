@@ -2,12 +2,12 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Application\Queries;
+namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Scribunto;
 
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Application\Queries\SubjectDataLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
@@ -25,10 +25,11 @@ use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Application\Queries\SubjectDataLookup
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup
  */
 class SubjectDataLookupTest extends TestCase {
 
@@ -49,7 +50,7 @@ class SubjectDataLookupTest extends TestCase {
 		);
 	}
 
-	private function createRepositoryWithMainSubject( Subject $subject ): SubjectContentRepository {
+	private function createResolverWithMainSubject( Subject $subject, ?SubjectLookup $subjectLookup = null ): SubjectResolver {
 		$pageSubjects = new PageSubjects( $subject, new SubjectMap() );
 
 		$subjectContent = $this->createStub( SubjectContent::class );
@@ -58,28 +59,24 @@ class SubjectDataLookupTest extends TestCase {
 		$repo = $this->createStub( SubjectContentRepository::class );
 		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( $subjectContent );
 
-		return $repo;
+		return new SubjectResolver( $repo, $subjectLookup ?? $this->createStub( SubjectLookup::class ) );
 	}
 
-	private function createRepositoryWithPageSubjects( PageSubjects $pageSubjects ): SubjectContentRepository {
+	private function createResolverWithPageSubjects( PageSubjects $pageSubjects, ?SubjectLookup $subjectLookup = null ): SubjectResolver {
 		$subjectContent = $this->createStub( SubjectContent::class );
 		$subjectContent->method( 'getPageSubjects' )->willReturn( $pageSubjects );
 
 		$repo = $this->createStub( SubjectContentRepository::class );
 		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( $subjectContent );
 
-		return $repo;
+		return new SubjectResolver( $repo, $subjectLookup ?? $this->createStub( SubjectLookup::class ) );
 	}
 
-	private function createEmptyRepository(): SubjectContentRepository {
+	private function createEmptyResolver( ?SubjectLookup $subjectLookup = null ): SubjectResolver {
 		$repo = $this->createStub( SubjectContentRepository::class );
 		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( null );
 
-		return $repo;
-	}
-
-	private function createDummySubjectLookup(): SubjectLookup {
-		return $this->createStub( SubjectLookup::class );
+		return new SubjectResolver( $repo, $subjectLookup ?? $this->createStub( SubjectLookup::class ) );
 	}
 
 	private function createSubjectLookupReturning( Subject ...$subjects ): SubjectLookup {
@@ -99,33 +96,26 @@ class SubjectDataLookupTest extends TestCase {
 		return $lookup;
 	}
 
-	public function testGetValueReturnsStringValue(): void {
+	// === getValue tests ===
+
+	public function testGetValueReturnsStringScalar(): void {
 		$subject = $this->createSubject(
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ 'Berlin' ], $lookup->getValue( $this->createTitle(), 'City' ) );
 	}
 
-	public function testGetValueReturnsMultiValueStringAsArray(): void {
+	public function testGetValueReturnsFirstStringForMultiValue(): void {
 		$subject = $this->createSubject(
 			new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'alpha', 'beta', 'gamma' ) )
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
 
-		$this->assertSame(
-			[ [ 1 => 'alpha', 2 => 'beta', 3 => 'gamma' ] ],
-			$lookup->getValue( $this->createTitle(), 'Tags' )
-		);
+		$this->assertSame( [ 'alpha' ], $lookup->getValue( $this->createTitle(), 'Tags' ) );
 	}
 
 	public function testGetValueReturnsNumber(): void {
@@ -133,10 +123,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 42 ) )
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ 42 ], $lookup->getValue( $this->createTitle(), 'Age' ) );
 	}
@@ -146,10 +133,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Price' ), 'number', new NumberValue( 19.99 ) )
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ 19.99 ], $lookup->getValue( $this->createTitle(), 'Price' ) );
 	}
@@ -159,10 +143,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( true ) )
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ true ], $lookup->getValue( $this->createTitle(), 'Active' ) );
 	}
@@ -172,10 +153,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( false ) )
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ false ], $lookup->getValue( $this->createTitle(), 'Active' ) );
 	}
@@ -202,14 +180,48 @@ class SubjectDataLookupTest extends TestCase {
 			)
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createSubjectLookupReturning( $targetSubject )
-		);
+		$subjectLookup = $this->createSubjectLookupReturning( $targetSubject );
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject, $subjectLookup ) );
 
 		$this->assertSame(
 			[ 'Sarah Naumann' ],
 			$lookup->getValue( $this->createTitle(), 'Process owner' )
+		);
+	}
+
+	public function testGetValueReturnsFirstRelationLabelForMultiRelation(): void {
+		$target1 = new Subject(
+			id: new SubjectId( 's1test5bbbbbbbb' ),
+			label: new SubjectLabel( 'Alice' ),
+			schemaName: new SchemaName( 'Person' ),
+			statements: new StatementList(),
+		);
+
+		$subject = $this->createSubject(
+			new Statement(
+				new PropertyName( 'Members' ),
+				'relation',
+				new RelationValue(
+					new Relation(
+						id: new RelationId( 'r1test5dddddddd' ),
+						targetId: new SubjectId( 's1test5bbbbbbbb' ),
+						properties: new RelationProperties( [] ),
+					),
+					new Relation(
+						id: new RelationId( 'r1test5eeeeeeee' ),
+						targetId: new SubjectId( 's1test5cccccccc' ),
+						properties: new RelationProperties( [] ),
+					),
+				)
+			)
+		);
+
+		$subjectLookup = $this->createSubjectLookupReturning( $target1 );
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject, $subjectLookup ) );
+
+		$this->assertSame(
+			[ 'Alice' ],
+			$lookup->getValue( $this->createTitle(), 'Members' )
 		);
 	}
 
@@ -228,10 +240,7 @@ class SubjectDataLookupTest extends TestCase {
 			)
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
 
 		$this->assertSame(
 			[ self::TARGET_SUBJECT_ID ],
@@ -239,7 +248,122 @@ class SubjectDataLookupTest extends TestCase {
 		);
 	}
 
-	public function testGetValueReturnsMultipleRelationLabels(): void {
+	public function testGetValueReturnsNullForMissingProperty(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
+		);
+
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+
+		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), 'Nonexistent' ) );
+	}
+
+	public function testGetValueReturnsNullWhenNoSubjectOnPage(): void {
+		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
+
+		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), 'City' ) );
+	}
+
+	public function testGetValueReturnsNullForEmptyPropertyName(): void {
+		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
+
+		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), '' ) );
+	}
+
+	public function testGetValueReturnsNullForEmptyStringValue(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'City' ), 'text', new StringValue() )
+		);
+
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+
+		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), 'City' ) );
+	}
+
+	public function testGetValueWithSubjectOption(): void {
+		$targetSubject = new Subject(
+			id: new SubjectId( self::TARGET_SUBJECT_ID ),
+			label: new SubjectLabel( 'Other Subject' ),
+			schemaName: new SchemaName( 'TestSchema' ),
+			statements: new StatementList( [
+				new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Munich' ) ),
+			] ),
+		);
+
+		$subjectLookup = $this->createSubjectLookupReturning( $targetSubject );
+		$lookup = new SubjectDataLookup( $this->createEmptyResolver( $subjectLookup ) );
+
+		$this->assertSame(
+			[ 'Munich' ],
+			$lookup->getValue( $this->createTitle(), 'City', [ 'subject' => self::TARGET_SUBJECT_ID ] )
+		);
+	}
+
+	public function testGetValueWithInvalidSubjectOptionReturnsNull(): void {
+		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
+
+		$this->assertSame(
+			[ null ],
+			$lookup->getValue( $this->createTitle(), 'City', [ 'subject' => 'invalid' ] )
+		);
+	}
+
+	public function testGetValueTrimsPropertyName(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
+		);
+
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+
+		$this->assertSame( [ 'Berlin' ], $lookup->getValue( $this->createTitle(), '  City  ' ) );
+	}
+
+	// === getAll tests ===
+
+	public function testGetAllReturnsSingleStringAsTable(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
+		);
+
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+
+		$this->assertSame( [ [ 1 => 'Berlin' ] ], $lookup->getAll( $this->createTitle(), 'City' ) );
+	}
+
+	public function testGetAllReturnsMultiStringAsTable(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'alpha', 'beta', 'gamma' ) )
+		);
+
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+
+		$this->assertSame(
+			[ [ 1 => 'alpha', 2 => 'beta', 3 => 'gamma' ] ],
+			$lookup->getAll( $this->createTitle(), 'Tags' )
+		);
+	}
+
+	public function testGetAllReturnsNumberAsTable(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 42 ) )
+		);
+
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+
+		$this->assertSame( [ [ 1 => 42 ] ], $lookup->getAll( $this->createTitle(), 'Age' ) );
+	}
+
+	public function testGetAllReturnsBooleanAsTable(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( true ) )
+		);
+
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+
+		$this->assertSame( [ [ 1 => true ] ], $lookup->getAll( $this->createTitle(), 'Active' ) );
+	}
+
+	public function testGetAllReturnsRelationLabelsAsTable(): void {
 		$target1 = new Subject(
 			id: new SubjectId( 's1test5bbbbbbbb' ),
 			label: new SubjectLabel( 'Alice' ),
@@ -272,106 +396,36 @@ class SubjectDataLookupTest extends TestCase {
 			)
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createSubjectLookupReturning( $target1, $target2 )
-		);
+		$subjectLookup = $this->createSubjectLookupReturning( $target1, $target2 );
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject, $subjectLookup ) );
 
 		$this->assertSame(
 			[ [ 1 => 'Alice', 2 => 'Bob' ] ],
-			$lookup->getValue( $this->createTitle(), 'Members' )
+			$lookup->getAll( $this->createTitle(), 'Members' )
 		);
 	}
 
-	public function testGetValueReturnsNullForMissingProperty(): void {
+	public function testGetAllReturnsNullForMissingProperty(): void {
 		$subject = $this->createSubject(
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
 
-		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), 'Nonexistent' ) );
+		$this->assertSame( [ null ], $lookup->getAll( $this->createTitle(), 'Nonexistent' ) );
 	}
 
-	public function testGetValueReturnsNullWhenNoSubjectOnPage(): void {
-		$lookup = new SubjectDataLookup(
-			$this->createEmptyRepository(),
-			$this->createDummySubjectLookup()
-		);
-
-		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), 'City' ) );
-	}
-
-	public function testGetValueReturnsNullForEmptyPropertyName(): void {
-		$lookup = new SubjectDataLookup(
-			$this->createEmptyRepository(),
-			$this->createDummySubjectLookup()
-		);
-
-		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), '' ) );
-	}
-
-	public function testGetValueReturnsNullForEmptyStringValue(): void {
+	public function testGetAllReturnsNullForEmptyValue(): void {
 		$subject = $this->createSubject(
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue() )
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
 
-		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), 'City' ) );
+		$this->assertSame( [ null ], $lookup->getAll( $this->createTitle(), 'City' ) );
 	}
 
-	public function testGetValueWithSubjectOption(): void {
-		$targetSubject = new Subject(
-			id: new SubjectId( self::TARGET_SUBJECT_ID ),
-			label: new SubjectLabel( 'Other Subject' ),
-			schemaName: new SchemaName( 'TestSchema' ),
-			statements: new StatementList( [
-				new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Munich' ) ),
-			] ),
-		);
-
-		$lookup = new SubjectDataLookup(
-			$this->createEmptyRepository(),
-			$this->createSubjectLookupReturning( $targetSubject )
-		);
-
-		$this->assertSame(
-			[ 'Munich' ],
-			$lookup->getValue( $this->createTitle(), 'City', [ 'subject' => self::TARGET_SUBJECT_ID ] )
-		);
-	}
-
-	public function testGetValueWithInvalidSubjectOptionReturnsNull(): void {
-		$lookup = new SubjectDataLookup(
-			$this->createEmptyRepository(),
-			$this->createDummySubjectLookup()
-		);
-
-		$this->assertSame(
-			[ null ],
-			$lookup->getValue( $this->createTitle(), 'City', [ 'subject' => 'invalid' ] )
-		);
-	}
-
-	public function testGetValueTrimsPropertyName(): void {
-		$subject = $this->createSubject(
-			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
-		);
-
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
-
-		$this->assertSame( [ 'Berlin' ], $lookup->getValue( $this->createTitle(), '  City  ' ) );
-	}
+	// === getMainSubjectData tests ===
 
 	public function testGetMainSubjectReturnsSubjectTable(): void {
 		$subject = $this->createSubject(
@@ -379,10 +433,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Population' ), 'number', new NumberValue( 3645000 ) ),
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
 
 		$result = $lookup->getMainSubjectData( $this->createTitle() );
 
@@ -396,10 +447,7 @@ class SubjectDataLookupTest extends TestCase {
 	}
 
 	public function testGetMainSubjectReturnsNullWhenNoSubject(): void {
-		$lookup = new SubjectDataLookup(
-			$this->createEmptyRepository(),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
 
 		$this->assertSame( [ null ], $lookup->getMainSubjectData( $this->createTitle() ) );
 	}
@@ -407,13 +455,12 @@ class SubjectDataLookupTest extends TestCase {
 	public function testGetMainSubjectReturnsNullWhenPageHasNoMainSubject(): void {
 		$pageSubjects = new PageSubjects( null, new SubjectMap() );
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithPageSubjects( $pageSubjects ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithPageSubjects( $pageSubjects ) );
 
 		$this->assertSame( [ null ], $lookup->getMainSubjectData( $this->createTitle() ) );
 	}
+
+	// === getSubjectData tests ===
 
 	public function testGetSubjectReturnsSubjectTable(): void {
 		$subject = new Subject(
@@ -425,10 +472,8 @@ class SubjectDataLookupTest extends TestCase {
 			] ),
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createEmptyRepository(),
-			$this->createSubjectLookupReturning( $subject )
-		);
+		$subjectLookup = $this->createSubjectLookupReturning( $subject );
+		$lookup = new SubjectDataLookup( $this->createEmptyResolver( $subjectLookup ) );
 
 		$result = $lookup->getSubjectData( self::TARGET_SUBJECT_ID );
 
@@ -439,19 +484,13 @@ class SubjectDataLookupTest extends TestCase {
 	}
 
 	public function testGetSubjectReturnsNullForInvalidId(): void {
-		$lookup = new SubjectDataLookup(
-			$this->createEmptyRepository(),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
 
 		$this->assertSame( [ null ], $lookup->getSubjectData( 'invalid' ) );
 	}
 
 	public function testGetSubjectReturnsNullForUnknownId(): void {
-		$lookup = new SubjectDataLookup(
-			$this->createEmptyRepository(),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
 
 		$this->assertSame( [ null ], $lookup->getSubjectData( self::TARGET_SUBJECT_ID ) );
 	}
@@ -483,10 +522,8 @@ class SubjectDataLookupTest extends TestCase {
 			] ),
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createEmptyRepository(),
-			$this->createSubjectLookupReturning( $subject, $targetSubject )
-		);
+		$subjectLookup = $this->createSubjectLookupReturning( $subject, $targetSubject );
+		$lookup = new SubjectDataLookup( $this->createEmptyResolver( $subjectLookup ) );
 
 		$result = $lookup->getSubjectData( self::SUBJECT_ID );
 
@@ -495,6 +532,8 @@ class SubjectDataLookupTest extends TestCase {
 		$this->assertSame( self::TARGET_SUBJECT_ID, $result[0]['statements']['CEO']['values'][1]['target'] );
 		$this->assertSame( 'Jane Doe', $result[0]['statements']['CEO']['values'][1]['label'] );
 	}
+
+	// === getChildSubjectsData tests ===
 
 	public function testGetChildSubjectsReturnsArrayOfSubjectTables(): void {
 		$mainSubject = $this->createSubject();
@@ -517,10 +556,7 @@ class SubjectDataLookupTest extends TestCase {
 			new SubjectMap( $child1, $child2 )
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithPageSubjects( $pageSubjects ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithPageSubjects( $pageSubjects ) );
 
 		$result = $lookup->getChildSubjectsData( $this->createTitle() );
 
@@ -536,19 +572,13 @@ class SubjectDataLookupTest extends TestCase {
 
 		$pageSubjects = new PageSubjects( $mainSubject, new SubjectMap() );
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithPageSubjects( $pageSubjects ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithPageSubjects( $pageSubjects ) );
 
 		$this->assertSame( [ [] ], $lookup->getChildSubjectsData( $this->createTitle() ) );
 	}
 
 	public function testGetChildSubjectsReturnsEmptyArrayWhenNoContent(): void {
-		$lookup = new SubjectDataLookup(
-			$this->createEmptyRepository(),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
 
 		$this->assertSame( [ [] ], $lookup->getChildSubjectsData( $this->createTitle() ) );
 	}
@@ -558,10 +588,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( true ) ),
 		);
 
-		$lookup = new SubjectDataLookup(
-			$this->createRepositoryWithMainSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
 
 		$result = $lookup->getMainSubjectData( $this->createTitle() );
 

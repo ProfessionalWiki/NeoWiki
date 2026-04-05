@@ -12,15 +12,31 @@ function p.value( frame )
 
 	local v = nw.getValue( property, options )
 
-	if type( v ) == 'table' then
-		local parts = {}
-		for _, item in ipairs( v ) do
-			parts[#parts + 1] = tostring( item )
-		end
-		return table.concat( parts, ', ' )
+	return tostring( v or '' )
+end
+
+function p.values( frame )
+	local property = frame.args[1]
+	local page = frame.args['page']
+	local separator = frame.args['separator'] or ', '
+
+	local options = nil
+	if page then
+		options = { page = page }
 	end
 
-	return tostring( v or '' )
+	local all = nw.getAll( property, options )
+
+	if not all then
+		return ''
+	end
+
+	local parts = {}
+	for _, item in ipairs( all ) do
+		parts[#parts + 1] = tostring( item )
+	end
+
+	return table.concat( parts, separator )
 end
 
 function p.subject( frame )

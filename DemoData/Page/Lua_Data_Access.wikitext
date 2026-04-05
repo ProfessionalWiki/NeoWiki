@@ -4,16 +4,16 @@ The examples use [[Module:NeoWikiDemo]], a demo module included with NeoWiki.
 
 == Reading Property Values ==
 
-<code>mw.neowiki.getValue()</code> reads a single property from a Subject. It returns scalars for single values and tables for multi-valued properties.
+<code>mw.neowiki.getValue()</code> returns a single scalar value. <code>mw.neowiki.getAll()</code> returns all values as a table.
 
 {| class="wikitable"
-! Property !! Result
+! Property !! getValue !! getAll
 |-
-| Founded at || {{#invoke:NeoWikiDemo|value|Founded at|page=ACME Inc}}
+| Founded at || {{#invoke:NeoWikiDemo|value|Founded at|page=ACME Inc}} || {{#invoke:NeoWikiDemo|values|Founded at|page=ACME Inc}}
 |-
-| Websites || {{#invoke:NeoWikiDemo|value|Websites|page=ACME Inc}}
+| Websites || {{#invoke:NeoWikiDemo|value|Websites|page=ACME Inc}} || {{#invoke:NeoWikiDemo|values|Websites|page=ACME Inc}}
 |-
-| Products (relations) || {{#invoke:NeoWikiDemo|value|Products|page=ACME Inc}}
+| Products (relations) || {{#invoke:NeoWikiDemo|value|Products|page=ACME Inc}} || {{#invoke:NeoWikiDemo|values|Products|page=ACME Inc}}
 |}
 
 == Full Subject Data ==
@@ -36,14 +36,17 @@ Child subjects on [[ACME Inc]]: {{#invoke:NeoWikiDemo|children|ACME Inc}}
 
 == Module Source ==
 
-The demo module uses three <code>mw.neowiki</code> functions:
+The demo module uses these <code>mw.neowiki</code> functions:
 
 <syntaxhighlight lang="lua">
 local nw = require( 'mw.neowiki' )
 
--- Read a single value
+-- Read a single value (always returns a scalar or nil)
 nw.getValue( 'Founded at' )             --> 2005
-nw.getValue( 'Products' )               --> { 'Foo', 'Bar', 'Baz' }
+nw.getValue( 'Products' )               --> "Foo" (first value only)
+
+-- Read all values (always returns a 1-indexed table or nil)
+nw.getAll( 'Products' )                 --> { "Foo", "Bar", "Baz" }
 
 -- Get full subject data
 local s = nw.getMainSubject( 'ACME Inc' )

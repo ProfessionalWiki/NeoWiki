@@ -59,7 +59,7 @@ class ImportPagesAction {
 
 		foreach ( $this->pageContentSource->getPageContentStrings() as $fileName => $sourceText ) {
 			$this->createPage(
-				explode( '.', $fileName )[0],
+				self::stripFileExtension( $fileName ),
 				[
 					'main' => $this->fileNameAndSourceToContent( $fileName, $sourceText ),
 				]
@@ -68,7 +68,7 @@ class ImportPagesAction {
 
 		foreach ( $this->moduleContentSource->getPageContentStrings() as $moduleName => $moduleContent ) {
 			$this->createPage(
-				"Module:" . explode( '.', $moduleName )[0],
+				'Module:' . self::stripFileExtension( $moduleName ),
 				[
 					'main' => $this->fileNameAndSourceToContent( $moduleName, $moduleContent ),
 				]
@@ -76,6 +76,10 @@ class ImportPagesAction {
 		}
 
 		$this->presenter->presentDone();
+	}
+
+	private static function stripFileExtension( string $fileName ): string {
+		return preg_replace( '/\.(wikitext|lua)$/', '', $fileName ) ?? $fileName;
 	}
 
 	private function fileNameAndSourceToContent( string $fileName, string $sourceText ): Content {

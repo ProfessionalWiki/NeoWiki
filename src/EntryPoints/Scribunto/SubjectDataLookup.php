@@ -2,107 +2,98 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Application\Queries;
+namespace ProfessionalWiki\NeoWiki\EntryPoints\Scribunto;
 
 use MediaWiki\Title\Title;
-use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
 
 class SubjectDataLookup {
 
 	public function __construct(
-		private readonly SubjectContentRepository $subjectContentRepository,
-		private readonly SubjectLookup $subjectLookup,
+		private readonly SubjectResolver $subjectResolver,
 	) {
 	}
 
 	/**
+	 * Returns a single scalar value for the property (first value for multi-valued).
+	 * Relations resolve to the target subject's label.
+	 *
 	 * @return mixed[] Single-element array for Lua: [value] or [null]
 	 */
 	public function getValue( Title $currentTitle, string $propertyName, ?array $options = null ): array {
-		$propertyName = trim( $propertyName );
-
-		if ( $propertyName === '' ) {
-			return [ null ];
-		}
-
-		$subject = $this->resolveSubjectFromOptions( $currentTitle, $options );
-
-		if ( $subject === null ) {
-			return [ null ];
-		}
-
-		$statement = $subject->getStatements()->getStatement( new PropertyName( $propertyName ) );
+		$statement = $this->resolveStatement( $currentTitle, $propertyName, $options );
 
 		if ( $statement === null ) {
 			return [ null ];
 		}
 
-		return [ $this->convertValueForLua( $statement->getValue() ) ];
+		return [ $this->convertToScalar( $statement->getValue() ) ];
+	}
+
+	/**
+	 * Returns all values for the property as a 1-indexed Lua table.
+	 * Relations resolve to the target subject's label.
+	 *
+	 * @return mixed[] Single-element array for Lua: [table] or [null]
+	 */
+	public function getAll( Title $currentTitle, string $propertyName, ?array $options = null ): array {
+		$statement = $this->resolveStatement( $currentTitle, $propertyName, $options );
+
+		if ( $statement === null ) {
+			return [ null ];
+		}
+
+		return [ $this->convertToLuaTable( $statement->getValue() ) ];
+	}
+
+	private function resolveStatement( Title $currentTitle, string $propertyName, ?array $options ): ?Statement {
+		$propertyName = trim( $propertyName );
+
+		if ( $propertyName === '' ) {
+			return null;
+		}
+
+		$subject = $this->resolveSubjectFromOptions( $currentTitle, $options );
+
+		if ( $subject === null ) {
+			return null;
+		}
+
+		return $subject->getStatements()->getStatement( new PropertyName( $propertyName ) );
 	}
 
 	private function resolveSubjectFromOptions( Title $currentTitle, ?array $options ): ?Subject {
 		if ( $options !== null && isset( $options['subject'] ) ) {
-			return $this->resolveSubjectById( (string)$options['subject'] );
+			return $this->subjectResolver->resolveById( (string)$options['subject'] );
 		}
 
 		if ( $options !== null && isset( $options['page'] ) ) {
-			return $this->resolveMainSubjectByPageName( (string)$options['page'] );
+			return $this->subjectResolver->resolveMainByPageName( (string)$options['page'] );
 		}
 
-		return $this->resolveMainSubjectByTitle( $currentTitle );
-	}
-
-	private function resolveSubjectById( string $subjectIdText ): ?Subject {
-		if ( !SubjectId::isValid( $subjectIdText ) ) {
-			return null;
-		}
-
-		try {
-			return $this->subjectLookup->getSubject( new SubjectId( $subjectIdText ) );
-		} catch ( \Exception ) {
-			return null;
-		}
-	}
-
-	private function resolveMainSubjectByPageName( string $pageName ): ?Subject {
-		$title = Title::newFromText( $pageName );
-
-		if ( $title === null ) {
-			return null;
-		}
-
-		return $this->resolveMainSubjectByTitle( $title );
-	}
-
-	private function resolveMainSubjectByTitle( Title $title ): ?Subject {
-		return $this->subjectContentRepository
-			->getSubjectContentByPageTitle( $title )
-			?->getPageSubjects()
-			->getMainSubject();
+		return $this->subjectResolver->resolveMainByTitle( $currentTitle );
 	}
 
 	/**
-	 * @return mixed Scalar, 1-indexed array, or null
+	 * Returns the first/only value as a scalar. Null for empty values.
 	 */
-	private function convertValueForLua( NeoValue $value ): mixed {
+	private function convertToScalar( NeoValue $value ): mixed {
 		if ( $value->isEmpty() ) {
 			return null;
 		}
 
 		if ( $value instanceof StringValue ) {
-			return $this->convertStringForLua( $value->strings );
+			return $value->strings[0];
 		}
 
 		if ( $value instanceof NumberValue ) {
@@ -114,58 +105,39 @@ class SubjectDataLookup {
 		}
 
 		if ( $value instanceof RelationValue ) {
-			return $this->convertRelationsForLua( $value );
+			return $this->subjectResolver->resolveRelationLabel( $value->relations[0] );
 		}
 
 		return null;
 	}
 
 	/**
-	 * @param string[] $strings
-	 * @return string|array<int, string>
+	 * Returns all values as a 1-indexed Lua table. Null for empty values.
+	 *
+	 * @return array<int, mixed>|null
 	 */
-	private function convertStringForLua( array $strings ): string|array {
-		if ( count( $strings ) === 1 ) {
-			return $strings[0];
+	private function convertToLuaTable( NeoValue $value ): ?array {
+		if ( $value->isEmpty() ) {
+			return null;
 		}
 
-		return array_combine(
-			range( 1, count( $strings ) ),
-			array_values( $strings )
-		);
-	}
-
-	/**
-	 * @return string|array<int, string>
-	 */
-	private function convertRelationsForLua( RelationValue $value ): string|array {
-		$labels = array_map(
-			fn( Relation $relation ) => $this->resolveRelationLabel( $relation ),
-			$value->relations
-		);
-
-		if ( count( $labels ) === 1 ) {
-			return $labels[0];
+		if ( $value instanceof StringValue ) {
+			return $this->toLuaIndexed( $value->strings );
 		}
 
-		return array_combine(
-			range( 1, count( $labels ) ),
-			array_values( $labels )
-		);
-	}
-
-	private function resolveRelationLabel( Relation $relation ): string {
-		try {
-			$subject = $this->subjectLookup->getSubject( $relation->targetId );
-
-			if ( $subject !== null ) {
-				return $subject->getLabel()->text;
-			}
-		} catch ( \Exception ) {
-			// Fall through to ID
+		if ( $value instanceof NumberValue ) {
+			return [ 1 => $value->number ];
 		}
 
-		return $relation->targetId->text;
+		if ( $value instanceof BooleanValue ) {
+			return [ 1 => $value->boolean ];
+		}
+
+		if ( $value instanceof RelationValue ) {
+			return $this->relationLabelsToLuaTable( $value );
+		}
+
+		return null;
 	}
 
 	/**
@@ -178,7 +150,7 @@ class SubjectDataLookup {
 			return [ null ];
 		}
 
-		$pageSubjects = $this->getPageSubjectsByTitle( $title );
+		$pageSubjects = $this->subjectResolver->getPageSubjectsByTitle( $title );
 
 		if ( $pageSubjects === null ) {
 			return [ null ];
@@ -197,7 +169,7 @@ class SubjectDataLookup {
 	 * @return array{0: ?array<string, mixed>}
 	 */
 	public function getSubjectData( string $subjectId ): array {
-		$subject = $this->resolveSubjectById( $subjectId );
+		$subject = $this->subjectResolver->resolveById( $subjectId );
 
 		if ( $subject === null ) {
 			return [ null ];
@@ -216,7 +188,7 @@ class SubjectDataLookup {
 			return [ [] ];
 		}
 
-		$pageSubjects = $this->getPageSubjectsByTitle( $title );
+		$pageSubjects = $this->subjectResolver->getPageSubjectsByTitle( $title );
 
 		if ( $pageSubjects === null ) {
 			return [ [] ];
@@ -243,12 +215,6 @@ class SubjectDataLookup {
 		}
 
 		return $currentTitle;
-	}
-
-	private function getPageSubjectsByTitle( Title $title ): ?PageSubjects {
-		return $this->subjectContentRepository
-			->getSubjectContentByPageTitle( $title )
-			?->getPageSubjects();
 	}
 
 	/**
@@ -327,6 +293,18 @@ class SubjectDataLookup {
 	}
 
 	/**
+	 * @return array<int, string>
+	 */
+	private function relationLabelsToLuaTable( RelationValue $value ): array {
+		$labels = array_map(
+			fn( Relation $relation ) => $this->subjectResolver->resolveRelationLabel( $relation ),
+			$value->relations
+		);
+
+		return $this->toLuaIndexed( $labels );
+	}
+
+	/**
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function relationsToLuaArray( RelationValue $value ): array {
@@ -334,7 +312,7 @@ class SubjectDataLookup {
 		$index = 1;
 
 		foreach ( $value->relations as $relation ) {
-			$label = $this->resolveRelationLabel( $relation );
+			$label = $this->subjectResolver->resolveRelationLabel( $relation );
 
 			$result[$index++] = [
 				'id' => $relation->id->asString(),
