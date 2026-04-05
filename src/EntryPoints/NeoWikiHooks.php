@@ -22,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
+use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
@@ -141,9 +142,12 @@ class NeoWikiHooks {
 		$parser->setFunctionHook(
 			'neowiki_value',
 			static function ( Parser $parser, string ...$args ): string {
+				$extension = NeoWikiExtension::getInstance();
 				$parserFunction = new NeoWikiValueParserFunction(
-					NeoWikiExtension::getInstance()->newSubjectContentRepository(),
-					NeoWikiExtension::getInstance()->getSubjectRepository()
+					new SubjectResolver(
+						$extension->newSubjectContentRepository(),
+						$extension->getSubjectRepository()
+					)
 				);
 				return $parserFunction->handle( $parser, ...$args );
 			}

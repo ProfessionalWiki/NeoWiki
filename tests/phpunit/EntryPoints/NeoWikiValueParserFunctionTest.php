@@ -8,6 +8,7 @@ use MediaWiki\Parser\Parser;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
@@ -54,7 +55,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		);
 	}
 
-	private function createRepositoryWithSubject( Subject $subject ): SubjectContentRepository {
+	private function createResolverWithSubject( Subject $subject, ?SubjectLookup $subjectLookup = null ): SubjectResolver {
 		$pageSubjects = new PageSubjects( $subject, new SubjectMap() );
 
 		$subjectContent = $this->createStub( SubjectContent::class );
@@ -63,18 +64,14 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		$repo = $this->createStub( SubjectContentRepository::class );
 		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( $subjectContent );
 
-		return $repo;
+		return new SubjectResolver( $repo, $subjectLookup ?? $this->createStub( SubjectLookup::class ) );
 	}
 
-	private function createEmptyRepository(): SubjectContentRepository {
+	private function createEmptyResolver( ?SubjectLookup $subjectLookup = null ): SubjectResolver {
 		$repo = $this->createStub( SubjectContentRepository::class );
 		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( null );
 
-		return $repo;
-	}
-
-	private function createDummySubjectLookup(): SubjectLookup {
-		return $this->createStub( SubjectLookup::class );
+		return new SubjectResolver( $repo, $subjectLookup ?? $this->createStub( SubjectLookup::class ) );
 	}
 
 	private function createSubjectLookupReturning( Subject $subject ): SubjectLookup {
@@ -89,10 +86,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( 'Berlin', $pf->handle( $this->createMockParser(), 'City' ) );
 	}
@@ -102,10 +96,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'alpha', 'beta', 'gamma' ) )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( 'alpha, beta, gamma', $pf->handle( $this->createMockParser(), 'Tags' ) );
 	}
@@ -115,10 +106,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'alpha', 'beta' ) )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( 'alpha;beta', $pf->handle( $this->createMockParser(), 'Tags', 'separator=;' ) );
 	}
@@ -128,10 +116,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 42 ) )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( '42', $pf->handle( $this->createMockParser(), 'Age' ) );
 	}
@@ -141,10 +126,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Price' ), 'number', new NumberValue( 19.99 ) )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( '19.99', $pf->handle( $this->createMockParser(), 'Price' ) );
 	}
@@ -154,10 +136,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( true ) )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( 'true', $pf->handle( $this->createMockParser(), 'Active' ) );
 	}
@@ -167,10 +146,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( false ) )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( 'false', $pf->handle( $this->createMockParser(), 'Active' ) );
 	}
@@ -197,10 +173,8 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			)
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createSubjectLookupReturning( $targetSubject )
-		);
+		$subjectLookup = $this->createSubjectLookupReturning( $targetSubject );
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject, $subjectLookup ) );
 
 		$this->assertSame( 'Sarah Naumann', $pf->handle( $this->createMockParser(), 'Process owner' ) );
 	}
@@ -220,10 +194,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			)
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( self::TARGET_SUBJECT_ID, $pf->handle( $this->createMockParser(), 'Process owner' ) );
 	}
@@ -233,19 +204,13 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( '', $pf->handle( $this->createMockParser(), 'Nonexistent' ) );
 	}
 
 	public function testReturnsEmptyStringWhenNoSubjectOnPage(): void {
-		$pf = new NeoWikiValueParserFunction(
-			$this->createEmptyRepository(),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createEmptyResolver() );
 
 		$this->assertSame( '', $pf->handle( $this->createMockParser(), 'City' ) );
 	}
@@ -255,10 +220,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( '', $pf->handle( $this->createMockParser(), '' ) );
 	}
@@ -268,10 +230,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue() )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( '', $pf->handle( $this->createMockParser(), 'City' ) );
 	}
@@ -281,10 +240,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( 'Berlin', $pf->handle( $this->createMockParser(), '  City  ' ) );
 	}
@@ -299,10 +255,8 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			] ),
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createEmptyRepository(),
-			$this->createSubjectLookupReturning( $targetSubject )
-		);
+		$subjectLookup = $this->createSubjectLookupReturning( $targetSubject );
+		$pf = new NeoWikiValueParserFunction( $this->createEmptyResolver( $subjectLookup ) );
 
 		$this->assertSame(
 			'Munich',
@@ -311,10 +265,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 	}
 
 	public function testInvalidSubjectIdReturnsEmptyString(): void {
-		$pf = new NeoWikiValueParserFunction(
-			$this->createEmptyRepository(),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createEmptyResolver() );
 
 		$this->assertSame( '', $pf->handle( $this->createMockParser(), 'City', 'subject=invalid' ) );
 	}
@@ -337,7 +288,8 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			}
 		);
 
-		$pf = new NeoWikiValueParserFunction( $repo, $this->createDummySubjectLookup() );
+		$resolver = new SubjectResolver( $repo, $this->createStub( SubjectLookup::class ) );
+		$pf = new NeoWikiValueParserFunction( $resolver );
 
 		$this->assertSame( 'Hamburg', $pf->handle( $this->createMockParser(), 'City', 'page=Other Page' ) );
 	}
@@ -349,10 +301,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Population' ), 'number', new NumberValue( 3_700_000 ) ),
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( 'Germany', $pf->handle( $this->createMockParser(), 'Country' ) );
 	}
@@ -375,10 +324,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			)
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$lookup
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject, $lookup ) );
 
 		$this->assertSame( self::TARGET_SUBJECT_ID, $pf->handle( $this->createMockParser(), 'Owner' ) );
 	}
@@ -388,10 +334,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Members' ), 'relation', new RelationValue() )
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$this->createDummySubjectLookup()
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject ) );
 
 		$this->assertSame( '', $pf->handle( $this->createMockParser(), 'Members' ) );
 	}
@@ -437,10 +380,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			)
 		);
 
-		$pf = new NeoWikiValueParserFunction(
-			$this->createRepositoryWithSubject( $subject ),
-			$lookup
-		);
+		$pf = new NeoWikiValueParserFunction( $this->createResolverWithSubject( $subject, $lookup ) );
 
 		$this->assertSame( 'Alice, Bob', $pf->handle( $this->createMockParser(), 'Members' ) );
 	}
