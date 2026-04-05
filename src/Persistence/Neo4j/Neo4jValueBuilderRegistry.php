@@ -40,6 +40,7 @@ class Neo4jValueBuilderRegistry {
 		$registry->registerBuilder( 'text', $toScalars );
 		$registry->registerBuilder( 'url', $toScalars );
 		$registry->registerBuilder( 'number', $toScalars );
+		$registry->registerBuilder( 'select', $toScalars );
 
 		return $registry;
 	}

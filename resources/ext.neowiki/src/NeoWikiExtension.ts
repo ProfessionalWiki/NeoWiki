@@ -7,6 +7,8 @@ import { UrlType } from '@/domain/propertyTypes/Url.ts';
 import UrlDisplay from '@/components/Value/UrlDisplay.vue';
 import { NumberType } from '@/domain/propertyTypes/Number.ts';
 import NumberDisplay from '@/components/Value/NumberDisplay.vue';
+import { SelectType } from '@/domain/propertyTypes/Select.ts';
+import SelectDisplay from '@/components/Value/SelectDisplay.vue';
 import { RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry.ts';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
@@ -30,14 +32,16 @@ import { RestSubjectLabelSearch } from '@/persistence/RestSubjectLabelSearch.ts'
 import TextInput from '@/components/Value/TextInput.vue';
 import UrlInput from '@/components/Value/UrlInput.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
+import SelectInput from '@/components/Value/SelectInput.vue';
 import RelationInput from '@/components/Value/RelationInput.vue';
 import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import { Neo } from '@/Neo.ts';
 // import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
-import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListNumbered } from '@wikimedia/codex-icons';
+import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconListNumbered } from '@wikimedia/codex-icons';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
+import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import UrlAttributesEditor from '@/components/SchemaEditor/Property/UrlAttributesEditor.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import { SubjectValidator } from '@/domain/SubjectValidator.ts';
@@ -79,6 +83,14 @@ export class NeoWikiExtension {
 			attributesEditor: NumberAttributesEditor,
 			label: 'neowiki-property-type-number',
 			icon: cdxIconListNumbered, // TODO: Add a custom icon
+		} );
+
+		registry.registerType( SelectType.typeName, {
+			valueDisplayComponent: SelectDisplay,
+			valueEditor: SelectInput,
+			attributesEditor: SelectAttributesEditor,
+			label: 'neowiki-property-type-select',
+			icon: cdxIconListBullet,
 		} );
 
 		registry.registerType( RelationType.typeName, {

@@ -16,6 +16,10 @@
 						"https://wikibase.consulting"
 					]
 				},
+				"Status": {
+					"type": "select",
+					"value": ["Active"]
+				},
 				"Products": {
 					"type": "relation",
 					"value": [

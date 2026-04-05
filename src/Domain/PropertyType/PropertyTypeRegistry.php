@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\PropertyType;
 use OutOfBoundsException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\UrlType;
 
@@ -22,6 +23,7 @@ class PropertyTypeRegistry implements PropertyTypeLookup {
 		$registry->registerType( new TextType() );
 		$registry->registerType( new UrlType() );
 		$registry->registerType( new NumberType() );
+		$registry->registerType( new SelectType() );
 		$registry->registerType( new RelationType() );
 		return $registry;
 	}

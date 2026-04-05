@@ -33,6 +33,7 @@
 								"currency",
 								"progress",
 								"checkbox",
+								"select",
 								"relation"
 							]
 						},
@@ -128,6 +129,19 @@
 							"properties": {
 								"type": {
 									"const": "checkbox"
+								}
+							}
+						},
+						{
+							"properties": {
+								"type": {
+									"const": "select"
+								},
+								"options": {
+									"type": "array",
+									"items": {
+										"type": "string"
+									}
 								}
 							}
 						},

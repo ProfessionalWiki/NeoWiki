@@ -18,6 +18,11 @@
 			"targetSchema": "Product",
 			"multiple": true
 		},
+		"Status": {
+			"type": "select",
+			"options": ["Active", "Inactive", "Acquired", "Dissolved"],
+			"required": true
+		},
 		"World domination progress": {
 			"type": "number",
 			"default": 0

@@ -15,6 +15,10 @@
 						"https://acme.example"
 					]
 				},
+				"Status": {
+					"type": "select",
+					"value": ["Active"]
+				},
 				"World domination progress": {
 					"type": "number",
 					"value": 42

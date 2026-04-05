@@ -64,5 +64,12 @@
 	"neowiki-schema-abandonment-keep-editing": "Label for the button that returns to editing the subject.",
 	"neowiki-schema-abandonment-save-schema": "Label for the quiet button that saves only the schema and discards the subject.",
 
-	"neowiki-layout-invalid": "Error message shown when saving an invalid Layout. Parameters:\n* $1 - number of validation errors"
+	"neowiki-layout-invalid": "Error message shown when saving an invalid Layout. Parameters:\n* $1 - number of validation errors",
+
+	"neowiki-property-type-select": "Label for the select/dropdown property type shown in the property type selector.",
+	"neowiki-property-editor-options": "Label for the options field in the select property type editor, where schema creators define the allowed values.",
+	"neowiki-property-editor-options-unique": "Error shown in the schema editor when duplicate option values are entered for a select property.",
+	"neowiki-field-invalid-option": "Validation error shown when a selected value is not in the allowed options list. $1 is the invalid value.",
+	"neowiki-field-single-value-only": "Validation error shown when multiple values are selected for a single-select property.",
+	"neowiki-select-placeholder": "Placeholder text shown in the select dropdown before any option is chosen."
 }

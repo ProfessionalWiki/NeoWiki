@@ -40,6 +40,20 @@
 			"minimum": 42,
 			"maximum": 100
 		},
+		"select/select": {
+			"type": "select",
+			"options": ["Draft", "Review", "Approved", "Archived"]
+		},
+		"select/select (required)": {
+			"type": "select",
+			"options": ["Low", "Medium", "High", "Critical"],
+			"required": true
+		},
+		"select/select (many)": {
+			"type": "select",
+			"options": ["Red", "Green", "Blue", "Yellow"],
+			"multiple": true
+		},
 		"relation/relation": {
 			"type": "relation",
 			"relation": "Has product",

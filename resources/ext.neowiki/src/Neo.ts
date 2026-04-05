@@ -1,5 +1,6 @@
 import { TextType } from '@/domain/propertyTypes/Text';
 import { NumberType } from '@/domain/propertyTypes/Number';
+import { SelectType } from '@/domain/propertyTypes/Select';
 import { RelationType } from '@/domain/propertyTypes/Relation';
 import { UrlType } from '@/domain/propertyTypes/Url';
 import { PropertyTypeRegistry } from '@/domain/PropertyType';
@@ -22,6 +23,7 @@ export class Neo {
 
 		registry.registerType( new TextType() );
 		registry.registerType( new NumberType() );
+		registry.registerType( new SelectType() );
 		registry.registerType( new RelationType() );
 		registry.registerType( new UrlType() );
 

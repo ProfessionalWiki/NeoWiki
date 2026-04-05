@@ -112,6 +112,34 @@ Example with constraints:
 }
 ```
 
+### Select (`select`)
+
+A fixed set of allowed options that users pick from. Stored as string values.
+
+```json
+{
+  "type": "select",
+  "options": ["Draft", "Review", "Approved"]
+}
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `options` | string[] | `[]` | The allowed values to choose from |
+| `multiple` | boolean | `false` | Allow selecting multiple options |
+
+Example with multi-select:
+
+```json
+{
+  "type": "select",
+  "options": ["Red", "Green", "Blue", "Yellow"],
+  "multiple": true,
+  "required": true,
+  "description": "Color tags"
+}
+```
+
 ### Relation (`relation`)
 
 References to other Subjects.
@@ -207,6 +235,11 @@ A "Company" schema with various property types:
       "relation": "Has product",
       "targetSchema": "Product",
       "multiple": true
+    },
+    "Status": {
+      "type": "select",
+      "options": ["Active", "Inactive", "Acquired", "Dissolved"],
+      "required": true
     },
     "World domination progress": {
       "type": "number",

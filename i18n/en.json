@@ -17,6 +17,7 @@
 	"neowiki-property-type-url": "URL",
 	"neowiki-property-type-number": "Number",
 	"neowiki-property-type-relation": "Relation",
+	"neowiki-property-type-select": "Select",
 
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 
@@ -35,6 +36,8 @@
 	"neowiki-property-editor-length-min-exceeds-max": "Minimum cannot exceed maximum.",
 	"neowiki-property-editor-multiple": "Allow multiple values",
 	"neowiki-property-editor-unique-items": "Values must be unique",
+	"neowiki-property-editor-options": "Options",
+	"neowiki-property-editor-options-unique": "Each option must be unique.",
 
 	"neowiki-schema-label": "Schema: $1",
 
@@ -48,6 +51,9 @@
 	"neowiki-field-min-value": "Minimum value is $1.",
 	"neowiki-field-max-value": "Maximum value is $1.",
 	"neowiki-field-invalid-url": "Please enter a valid URL.",
+	"neowiki-field-invalid-option": "\"$1\" is not a valid option.",
+	"neowiki-field-single-value-only": "Only one value can be selected.",
+	"neowiki-select-placeholder": "Select an option",
 
 	"neowiki-property-editor-description": "Description",
 	"neowiki-edit-schema": "Edit schema",
