@@ -61,6 +61,7 @@ A dataset of European museums, artists, and artworks showcasing cross-schema rel
 * Wikibase Statement emulation: [[Berlin]]
 * Displaying data from other pages: [[Company Infoboxes]]
 * [[Reactive UI example]]
+* Lua/Scribunto data access: [[Lua Data Access]]
 
 '''Schemas''' allow you to define the structure of your data. For instance, you can define that a Employee has a
 compensation in EUR with a value between 0 and 1000000.
