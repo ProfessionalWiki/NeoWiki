@@ -54,6 +54,7 @@
 	"neowiki-field-invalid-option": "\"$1\" is not a valid option.",
 	"neowiki-field-single-value-only": "Only one value can be selected.",
 	"neowiki-select-placeholder": "Select an option",
+	"neowiki-select-no-results": "No matching options.",
 
 	"neowiki-property-editor-description": "Description",
 	"neowiki-edit-schema": "Edit schema",

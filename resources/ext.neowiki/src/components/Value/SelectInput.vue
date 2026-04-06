@@ -14,25 +14,23 @@
 				size="small"
 			/>
 		</template>
-		<CdxChipInput
+		<CdxMultiselectLookup
 			v-if="props.property.multiple"
-			:input-chips="selectedChips"
-			:separate-input="true"
-			@update:input-chips="onChipsUpdate"
+			v-model:input-chips="chips"
+			v-model:selected="selection"
+			v-model:input-value="inputValue"
+			:menu-items="menuItems"
+			:placeholder="selectPlaceholder"
+			@input="onInput"
 		>
-			<template #default>
-				<CdxSelect
-					selected=""
-					:menu-items="availableMenuItems"
-					:default-label="selectPlaceholder"
-					@update:selected="onMultiOptionSelected"
-				/>
+			<template #no-results>
+				{{ $i18n( 'neowiki-select-no-results' ).text() }}
 			</template>
-		</CdxChipInput>
+		</CdxMultiselectLookup>
 		<CdxSelect
 			v-else
 			:selected="singleSelectedValue"
-			:menu-items="menuItems"
+			:menu-items="singleMenuItems"
 			:default-label="selectPlaceholder"
 			@update:selected="onSingleSelect"
 		/>
@@ -44,8 +42,8 @@ import type { Value } from '@/domain/Value';
 </script>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import { CdxChipInput, CdxField, CdxIcon, CdxSelect } from '@wikimedia/codex';
+import { ref, watch, computed, nextTick } from 'vue';
+import { CdxField, CdxIcon, CdxMultiselectLookup, CdxSelect } from '@wikimedia/codex';
 import type { ChipInputItem, MenuItemData } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, ValueType } from '@/domain/Value';
@@ -69,61 +67,43 @@ const selectPlaceholder = computed( () =>
 	mw.message( 'neowiki-select-placeholder' ).text()
 );
 
-const menuItems = computed( (): MenuItemData[] =>
+const singleMenuItems = computed( (): MenuItemData[] =>
 	props.property.options.map( ( option ) => ( {
 		value: option,
 		label: option
 	} ) )
 );
 
-const availableMenuItems = computed( (): MenuItemData[] => {
-	const selected = selectedParts.value;
-	return props.property.options
-		.filter( ( option ) => !selected.includes( option ) )
-		.map( ( option ) => ( {
-			value: option,
-			label: option
-		} ) );
-} );
-
-const selectedParts = ref<string[]>( [] );
-
-const initializeFromValue = ( value: Value | undefined ): void => {
+function partsFromValue( value: Value | undefined ): string[] {
 	if ( value && value.type === ValueType.String ) {
-		selectedParts.value = ( value as StringValue ).parts.filter( ( p ) => p.trim() !== '' );
-	} else {
-		selectedParts.value = [];
+		return ( value as StringValue ).parts.filter( ( p ) => p.trim() !== '' );
 	}
-};
+	return [];
+}
 
-initializeFromValue( props.modelValue );
+const initialParts = partsFromValue( props.modelValue );
+const selection = ref<string[]>( [ ...initialParts ] );
+const chips = ref<ChipInputItem[]>( initialParts.map( ( part ) => ( { value: part } ) ) );
+const inputValue = ref<string | number>( '' );
+const menuItems = ref<MenuItemData[]>( [] );
 
 const singleSelectedValue = computed( () =>
-	selectedParts.value.length > 0 ? selectedParts.value[ 0 ] : ''
+	selection.value.length > 0 ? selection.value[ 0 ] : ''
 );
-
-const selectedChips = computed( (): ChipInputItem[] =>
-	selectedParts.value.map( ( part ) => ( { value: part } ) )
-);
-
-watch( () => props.modelValue, ( newValue ) => {
-	initializeFromValue( newValue );
-	validate();
-} );
 
 const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( SelectType.typeName );
 
-function emitValue(): void {
-	const value = selectedParts.value.length > 0 ?
-		newStringValue( selectedParts.value ) :
-		undefined;
-	emit( 'update:modelValue', value );
-	validate();
+function getFilteredOptions(): MenuItemData[] {
+	const query = String( inputValue.value ).toLowerCase();
+	return props.property.options
+		.filter( ( option ) => !selection.value.includes( option ) )
+		.filter( ( option ) => query === '' || option.toLowerCase().includes( query ) )
+		.map( ( option ) => ( { value: option, label: option } ) );
 }
 
 function validate(): void {
-	const value = selectedParts.value.length > 0 ?
-		newStringValue( selectedParts.value ) :
+	const value = selection.value.length > 0 ?
+		newStringValue( selection.value ) :
 		undefined;
 	const errors = propertyType.validate( value, props.property );
 	validationError.value = errors.length === 0 ? null :
@@ -131,21 +111,49 @@ function validate(): void {
 }
 
 function onSingleSelect( selected: string ): void {
-	selectedParts.value = selected ? [ selected ] : [];
-	emitValue();
+	selection.value = selected ? [ selected ] : [];
+	emit( 'update:modelValue', selection.value.length > 0 ?
+		newStringValue( selection.value ) : undefined );
+	validate();
 }
 
-function onMultiOptionSelected( selected: string ): void {
-	if ( selected && !selectedParts.value.includes( selected ) ) {
-		selectedParts.value = [ ...selectedParts.value, selected ];
-		emitValue();
+function onInput(): void {
+	menuItems.value = getFilteredOptions();
+}
+
+// The chips array is the authoritative source for multi-select state.
+// v-model:input-chips handles both additions (from menu selection) and removals (from chip X).
+// v-model:selected is kept in sync by the component internally.
+// We only need to watch chips to emit changes to the parent.
+let emitPending = false;
+
+watch( chips, () => {
+	if ( emitPending ) {
+		return;
 	}
-}
+	emitPending = true;
+	nextTick( () => {
+		emitPending = false;
+		const parts = chips.value.map( ( chip ) => String( chip.value ) );
+		if ( JSON.stringify( parts ) !== JSON.stringify( selection.value ) ) {
+			selection.value = parts;
+		}
+		inputValue.value = '';
+		menuItems.value = [];
+		emit( 'update:modelValue', parts.length > 0 ? newStringValue( parts ) : undefined );
+		validate();
+	} );
+}, { deep: true } );
 
-function onChipsUpdate( chips: ChipInputItem[] ): void {
-	selectedParts.value = chips.map( ( chip ) => String( chip.value ) );
-	emitValue();
-}
+// External modelValue change
+watch( () => props.modelValue, ( newValue ) => {
+	const newParts = partsFromValue( newValue );
+	if ( JSON.stringify( newParts ) !== JSON.stringify( selection.value ) ) {
+		selection.value = [ ...newParts ];
+		chips.value = newParts.map( ( part ) => ( { value: part } ) );
+		validate();
+	}
+} );
 
 watch( () => props.property, () => {
 	validate();
@@ -155,8 +163,8 @@ validate();
 
 defineExpose<ValueInputExposes>( {
 	getCurrentValue(): Value | undefined {
-		return selectedParts.value.length > 0 ?
-			newStringValue( selectedParts.value ) :
+		return selection.value.length > 0 ?
+			newStringValue( selection.value ) :
 			undefined;
 	}
 } );
