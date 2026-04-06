@@ -38,7 +38,7 @@ import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import { Neo } from '@/Neo.ts';
 // import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
-import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconListNumbered } from '@wikimedia/codex-icons';
+import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics } from '@wikimedia/codex-icons';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
@@ -82,7 +82,7 @@ export class NeoWikiExtension {
 			valueEditor: NumberInput,
 			attributesEditor: NumberAttributesEditor,
 			label: 'neowiki-property-type-number',
-			icon: cdxIconListNumbered, // TODO: Add a custom icon
+			icon: cdxIconMathematics,
 		} );
 
 		registry.registerType( SelectType.typeName, {

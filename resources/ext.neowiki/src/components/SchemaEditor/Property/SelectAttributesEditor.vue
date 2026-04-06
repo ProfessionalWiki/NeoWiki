@@ -1,6 +1,17 @@
 <template>
 	<!-- cdx-field class is used for spacing -->
 	<div class="select-attributes cdx-field">
+		<CdxField :hide-label="true">
+			<CdxToggleSwitch
+				:model-value="property.multiple"
+				:align-switch="true"
+				:label="$i18n( 'neowiki-property-editor-multiple' ).text()"
+				@update:model-value="updateMultiple"
+			>
+				{{ $i18n( 'neowiki-property-editor-multiple' ).text() }}
+			</CdxToggleSwitch>
+		</CdxField>
+
 		<CdxField>
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-options' ).text() }}
@@ -16,17 +27,6 @@
 			>
 				{{ optionsError }}
 			</template>
-		</CdxField>
-
-		<CdxField :hide-label="true">
-			<CdxToggleSwitch
-				:model-value="property.multiple"
-				:align-switch="true"
-				:label="$i18n( 'neowiki-property-editor-multiple' ).text()"
-				@update:model-value="updateMultiple"
-			>
-				{{ $i18n( 'neowiki-property-editor-multiple' ).text() }}
-			</CdxToggleSwitch>
 		</CdxField>
 	</div>
 </template>
