@@ -110,3 +110,13 @@ async function handleSave( summary: string ): Promise<void> {
 	}
 }
 </script>
+
+<style lang="less">
+.ext-neowiki-layout-creator-dialog {
+	&.cdx-dialog {
+		.cdx-dialog__body {
+			padding: 0;
+		}
+	}
+}
+</style>

@@ -110,6 +110,10 @@ defineExpose( { hasChanged } );
 .ext-neowiki-layout-editor-dialog {
 	&.cdx-dialog {
 		max-width: @size-5600;
+
+		.cdx-dialog__body {
+			padding: 0;
+		}
 	}
 }
 </style>
