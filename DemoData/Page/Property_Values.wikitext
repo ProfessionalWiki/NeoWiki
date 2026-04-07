@@ -1,0 +1,41 @@
+This page demonstrates the <code>neowiki_value</code> parser function for reading individual property values from Subjects.
+
+== Reading from the Current Page's Subject ==
+
+When used on a page with a Subject, <code>neowiki_value</code> reads from that page's main Subject by default.
+Visit [[ACME Inc]] to see these values in the infobox.
+
+{| class="wikitable"
+! Property !! Syntax !! Result
+|-
+| Founded at || <code><nowiki>{{#neowiki_value: Founded at | page=ACME Inc}}</nowiki></code> || {{#neowiki_value: Founded at | page=ACME Inc}}
+|-
+| Websites || <code><nowiki>{{#neowiki_value: Websites | page=ACME Inc}}</nowiki></code> || {{#neowiki_value: Websites | page=ACME Inc}}
+|-
+| Products || <code><nowiki>{{#neowiki_value: Products | page=ACME Inc}}</nowiki></code> || {{#neowiki_value: Products | page=ACME Inc}}
+|-
+| World domination progress || <code><nowiki>{{#neowiki_value: World domination progress | page=ACME Inc}}</nowiki></code> || {{#neowiki_value: World domination progress | page=ACME Inc}}%
+|-
+| Missing property || <code><nowiki>{{#neowiki_value: Nonexistent | page=ACME Inc}}</nowiki></code> || (empty) {{#neowiki_value: Nonexistent | page=ACME Inc}}
+|}
+
+== Custom Separator ==
+
+Multi-valued properties use <code>, </code> as separator by default. Use <code>separator=</code> to change it:
+
+* Default: {{#neowiki_value: Products | page=ACME Inc}}
+* Semicolons: {{#neowiki_value: Products | page=ACME Inc | separator=;}}
+* Pipe: {{#neowiki_value: Products | page=ACME Inc | separator={{!}}}}
+
+== Cross-Page Lookups ==
+
+Read values from any page using the <code>page=</code> parameter:
+
+* Professional Wiki was founded at: {{#neowiki_value: Founded at | page=Professional Wiki}}
+* ACME Inc was founded at: {{#neowiki_value: Founded at | page=ACME Inc}}
+
+== Inline Usage ==
+
+The parser function can be used inline in running text:
+
+{{#neowiki_value: Products | page=Professional Wiki}} are products of Professional Wiki, which was founded in {{#neowiki_value: Founded at | page=Professional Wiki}}.
