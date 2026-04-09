@@ -1,4 +1,4 @@
-This page demonstrates the <code>neowiki_value</code> parser function for reading individual property values from Subjects.
+This page demonstrates the <code>neowiki_value</code> parser function for reading values from Subjects.
 
 == Reading from the Current Page's Subject ==
 

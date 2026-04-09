@@ -35,6 +35,8 @@ Terminology is explained in [https://github.com/ProfessionalWiki/NeoWiki/blob/ma
 
 * View Subject JSON: [[Special:NeoJson/ACME_Inc]] (developer UI, normal users will not see JSON. [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/SubjectFormat.md View docs])
 * Query the graph database: [[Cypher|Cypher raw example]]
+* Read values in wikitext: [[Value parser function]]
+* Read values in Lua: [[Lua Data Access]]
 * [[#REST_API_endpoints|Explore the REST API]]
 
 == European Museums ==
@@ -53,7 +55,7 @@ A dataset of European museums, artists, and artworks showcasing cross-schema rel
 
 '''Overview:''' [[Museum Collection]]
 
-== Other Demo Pages ==
+== Demo Pages ==
 
 * Simple page with automatic infobox and edit form: [[NeoWiki]], [[ProWiki]]
 * Subject with relations: [[Professional Wiki]]
@@ -61,20 +63,20 @@ A dataset of European museums, artists, and artworks showcasing cross-schema rel
 * Wikibase Statement emulation: [[Berlin]]
 * Displaying data from other pages: [[Company Infoboxes]]
 * [[Reactive UI example]]
-* Lua/Scribunto data access: [[Lua Data Access]]
 
-'''Schemas''' allow you to define the structure of your data. For instance, you can define that a Employee has a
-compensation in EUR with a value between 0 and 1000000.
+== Schemas and Layouts ==
 
-* [[Schema:Company]]
-* [[Schema:Product]]
-* [[Schema:Employee]]
-* [[Schema:Museum]]
-* [[Schema:Artist]]
-* [[Schema:Artwork]]
-* [[Schema:Exhibition]]
-* [[Schema:Attendance]]
+'''Schemas''' define the structure of your data. For instance, you can define that an Employee has a compensation
+in EUR with a value between 0 and 1000000.
+
+* [[Schema:Company]], [[Schema:Product]], [[Schema:Employee]]
+* [[Schema:Museum]], [[Schema:Artist]], [[Schema:Artwork]], [[Schema:Exhibition]], [[Schema:Attendance]]
 * [[Special:Schemas|View all schemas]]
+
+'''Layouts''' customize how Subjects are displayed by selecting which properties to show and in what order.
+
+* [[Layout:CompanyOverview]]
+* [[Special:Layouts|View all layouts]]
 
 == REST API Endpoints ==
 
