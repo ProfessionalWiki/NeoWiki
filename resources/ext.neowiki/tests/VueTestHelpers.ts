@@ -1,7 +1,13 @@
 import { mount, VueWrapper } from '@vue/test-utils';
 import { Component, DefineComponent } from 'vue';
 import { vi } from 'vitest';
+import { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { NeoWikiTestServices } from './NeoWikiTestServices.ts';
+
+export interface FieldProps {
+	status: ValidationStatusType;
+	messages: ValidationMessages;
+}
 
 export function createI18nMock(): ReturnType<typeof vi.fn> {
 	return vi.fn().mockImplementation( ( key ) => ( {

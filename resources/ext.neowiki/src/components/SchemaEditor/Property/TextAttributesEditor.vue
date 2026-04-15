@@ -71,6 +71,7 @@ import { ref, watch } from 'vue';
 import { TextProperty } from '@/domain/propertyTypes/Text.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { CdxToggleSwitch, CdxField, CdxTextInput } from '@wikimedia/codex';
+import { minExceedsMax } from '@/components/SchemaEditor/Property/minExceedsMax.ts';
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
 
 const props = defineProps<AttributesEditorProps<TextProperty>>();
@@ -102,12 +103,6 @@ const validateValue = ( value: string ): string | null => {
 		return mw.message( 'neowiki-property-editor-length-whole-number' ).text();
 	}
 	return null;
-};
-
-const minExceedsMax = ( minValue: string, maxValue: string ): boolean => {
-	const min = minValue === '' ? undefined : Number( minValue );
-	const max = maxValue === '' ? undefined : Number( maxValue );
-	return min !== undefined && max !== undefined && min > max;
 };
 
 const updateMinLength = ( value: string ): void => {

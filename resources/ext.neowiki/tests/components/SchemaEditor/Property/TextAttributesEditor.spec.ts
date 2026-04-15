@@ -1,15 +1,10 @@
 import { VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { CdxField, CdxTextInput, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
+import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import { newTextProperty, TextProperty } from '@/domain/propertyTypes/Text';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, setupMwMock } from '../../../VueTestHelpers.ts';
-
-interface FieldProps {
-	status: ValidationStatusType;
-	messages: ValidationMessages;
-}
+import { createTestWrapper, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
 
 describe( 'TextAttributesEditor', () => {
 	beforeEach( () => {
