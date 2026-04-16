@@ -173,6 +173,7 @@ wfLoadExtension( 'VisualEditor' );
 wfLoadExtension( 'CodeEditor' );
 wfLoadExtension( 'SyntaxHighlight_GeSHi' );
 wfLoadExtension( 'Scribunto' );
+wfLoadExtension( 'ParserFunctions' );
 
 $wgSMTP = [];
 if ( getenv( 'MW_SMTP_HOST' ) !== false ) {
