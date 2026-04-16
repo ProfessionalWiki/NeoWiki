@@ -22,8 +22,8 @@ value. Use [`nw.getAll()`](#nwgetallpropertyname-options) when you need every va
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `propertyName` | string | Required. The name of the property. |
-| `options` | table | Optional. `{ page = '...' }` or `{ subject = '...' }`. |
+| `propertyName` | string | Required. The name of the property. Trimmed; whitespace-only returns `nil`. Passing a non-string raises a Lua error (standard Scribunto type check). |
+| `options` | table | Optional. `{ page = '...' }` or `{ subject = '...' }`. If both are passed, `subject` takes precedence and `page` is silently ignored. |
 
 #### Returns
 
@@ -57,7 +57,8 @@ nw.getValue('City', { subject = 's1abc5def6ghi78' })   --> "Berlin"
 ### `nw.getAll(propertyName, options)`
 
 Returns every value for a property as a 1-indexed Lua table. Use this when a property is
-multi-valued and you need all values.
+multi-valued and you need all values. Even single-valued properties are wrapped in a 1-element
+table.
 
 Same parameters and resolution rules as [`nw.getValue()`](#nwgetvaluepropertyname-options).
 
@@ -121,9 +122,9 @@ Returns the full data of any Subject by its ID, regardless of which page it live
 #### Returns
 
 A Subject table (see [Subject table format](#subject-table-format)) or `nil` if the ID is invalid
-or no Subject exists with that ID.
+or no Subject exists with that ID. Invalid IDs return `nil` rather than raising an error.
 
-#### Example
+#### Examples
 
 ```lua
 local subject = nw.getSubject('s1abc5def6ghi78')
@@ -140,9 +141,10 @@ Returns every Child Subject on a page as a 1-indexed Lua table.
 #### Returns
 
 A 1-indexed Lua table of Subject tables (see [Subject table format](#subject-table-format)).
-Returns an empty table `{}` if the page does not exist or has no Child Subjects.
+Returns an empty table `{}` (not `nil`) if the page does not exist or has no Child Subjects —
+this is the only function in the API that returns an empty table instead of `nil` for "no data".
 
-#### Example
+#### Examples
 
 ```lua
 local children = nw.getChildSubjects()
@@ -163,11 +165,12 @@ structure:
     label = 'ACME Inc.',
     schema = 'Company',
     statements = {
-        ['Founded at']  = { type = 'number',  values = { [1] = 2005 } },
-        ['Status']      = { type = 'select',  values = { [1] = 'Active' } },
-        ['Websites']    = { type = 'url',     values = { [1] = 'https://acme.com', [2] = 'https://acme.org' } },
-        ['Active']      = { type = 'boolean', values = { [1] = true } },
-        ['Products']    = {
+        ['Headquarters'] = { type = 'text',     values = { [1] = 'Berlin' } },
+        ['Founded at']   = { type = 'number',   values = { [1] = 2005 } },
+        ['Status']       = { type = 'select',   values = { [1] = 'Active' } },
+        ['Websites']     = { type = 'url',      values = { [1] = 'https://acme.com', [2] = 'https://acme.org' } },
+        ['Active']       = { type = 'boolean',  values = { [1] = true } },
+        ['Products']     = {
             type = 'relation',
             values = {
                 [1] = { id = 'r1...', target = 's1...', label = 'Foo' },
@@ -186,6 +189,9 @@ Notes:
   ([writer's schema](adr/011_Include_Writers_Schema.md)).
 - For relation values, `label` falls back to the target Subject ID if the label cannot be looked
   up (e.g. broken reference).
+- Per-relation `properties` (qualifiers) are not currently exposed via Lua. Each relation entry
+  contains only `id`, `target`, and `label`. Use the REST API if you need to read relation
+  properties.
 
 ## Performance notes
 
