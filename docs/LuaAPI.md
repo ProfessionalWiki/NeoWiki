@@ -1,9 +1,17 @@
 # Lua API
 
 NeoWiki provides a Scribunto library at `mw.neowiki` for accessing structured data from Lua
-modules. This is the programmatic complement to the [parser functions](ParserFunctions.md) — use
-parser functions for simple inline values, use Lua for templates that need to render multiple
-properties, iterate over collections, or build custom output.
+modules. Use Lua when you need to render multiple properties, iterate over collections, or build
+custom output. For simple inline values, the [parser functions](ParserFunctions.md) are usually
+enough.
+
+| If you want to... | Use |
+|-------------------|-----|
+| Read one value from a property | [`nw.getValue`](#nwgetvaluepropertyname-options) |
+| Read every value from a multi-valued property | [`nw.getAll`](#nwgetallpropertyname-options) |
+| Get a page's Main Subject (label, schema, all properties) | [`nw.getMainSubject`](#nwgetmainsubjectpagename) |
+| Get a Subject by its ID, regardless of which page it's on | [`nw.getSubject`](#nwgetsubjectsubjectid) |
+| List all Child Subjects on a page | [`nw.getChildSubjects`](#nwgetchildsubjectspagename) |
 
 For definitions of terms like Subject, Schema, and Statement, see the [Glossary](Glossary.md).
 
@@ -22,8 +30,8 @@ value. Use [`nw.getAll()`](#nwgetallpropertyname-options) when you need every va
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `propertyName` | string | Required. The name of the property. Trimmed; whitespace-only returns `nil`. Passing a non-string raises a Lua error (standard Scribunto type check). |
-| `options` | table | Optional. `{ page = '...' }` or `{ subject = '...' }`. If both are passed, `subject` takes precedence and `page` is silently ignored. |
+| `propertyName` | string | Required. The name of the property. |
+| `options` | table | Optional. `{ page = '...' }` or `{ subject = '...' }`. If both are passed, `subject` takes precedence. |
 
 #### Returns
 
@@ -36,13 +44,8 @@ The first value of the property, type-converted for Lua:
 | `boolean` | boolean |
 | `relation` | string (target Subject's label, falls back to target ID if lookup fails) |
 
-Returns `nil` when:
-
-- The property name is empty
-- The Subject does not exist (page has no Main Subject, page does not exist, Subject ID invalid
-  or not found)
-- The Subject has no statement for the property
-- The value is empty
+Returns `nil` when the Subject does not exist, has no value for the property, or the value is
+empty.
 
 #### Examples
 
@@ -117,12 +120,12 @@ Returns the full data of any Subject by its ID, regardless of which page it live
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `subjectId` | string | Required. A Subject ID (15 chars, starts with `s`). |
+| `subjectId` | string | Required. A Subject ID. |
 
 #### Returns
 
-A Subject table (see [Subject table format](#subject-table-format)) or `nil` if the ID is invalid
-or no Subject exists with that ID. Invalid IDs return `nil` rather than raising an error.
+A Subject table (see [Subject table format](#subject-table-format)) or `nil` if no Subject exists
+with that ID (or the ID is malformed).
 
 #### Examples
 
@@ -141,8 +144,8 @@ Returns every Child Subject on a page as a 1-indexed Lua table.
 #### Returns
 
 A 1-indexed Lua table of Subject tables (see [Subject table format](#subject-table-format)).
-Returns an empty table `{}` (not `nil`) if the page does not exist or has no Child Subjects —
-this is the only function in the API that returns an empty table instead of `nil` for "no data".
+Returns an empty table `{}` (not `nil`) if the page has no Child Subjects, so it's safe to
+iterate the result directly with `ipairs`.
 
 #### Examples
 
@@ -183,26 +186,19 @@ structure:
 
 Notes:
 
-- `statements` is keyed by property name (a regular Lua associative table, **not** 1-indexed).
-- `values` within each statement is a 1-indexed Lua table.
-- `type` is the property type at the time the Statement was last written
-  ([writer's schema](adr/011_Include_Writers_Schema.md)).
-- For relation values, `label` falls back to the target Subject ID if the label cannot be looked
-  up (e.g. broken reference).
-- Per-relation `properties` (qualifiers) are not currently exposed via Lua. Each relation entry
-  contains only `id`, `target`, and `label`. Use the REST API if you need to read relation
-  properties.
+- `statements` is keyed by property name. `values` within each statement is 1-indexed.
+- `type` is the property type at the time the Subject was last edited. If the Schema has changed
+  since (e.g. a property was changed from `text` to `select`), older Subjects keep their original
+  type until they are re-saved.
+- A relation's `label` falls back to the target Subject ID if the label cannot be looked up
+  (e.g. a broken reference).
+- Per-relation `properties` (qualifiers) are not currently exposed via Lua. Use the REST API if
+  you need them.
 
-## Performance notes
+## Performance
 
-The following calls are marked as expensive (count against the parser's expensive function limit):
-
-- `getValue` and `getAll` when called with `page=` or `subject=` options
-- `getMainSubject(pageName)` when `pageName` is non-nil
-- `getSubject(subjectId)` (always)
-- `getChildSubjects(pageName)` when `pageName` is non-nil
-
-Calls that read from the current page are not expensive.
+Calls that look up another page or a specific Subject ID count as expensive parser functions
+(against the page's expensive function limit). Calls that read from the current page do not.
 
 ## Planned additions
 
