@@ -82,12 +82,90 @@ describe( 'validate', () => {
 		] );
 	} );
 
+	it( 'returns invalid-datetime error for year-only string', () => {
+		const property = newDateTimeProperty();
+
+		expect( dateTimeType.validate( newStringValue( '2025' ), property ) ).toEqual( [
+			{ code: 'invalid-datetime' },
+		] );
+	} );
+
+	it( 'returns invalid-datetime error for year-month string', () => {
+		const property = newDateTimeProperty();
+
+		expect( dateTimeType.validate( newStringValue( '2025-06' ), property ) ).toEqual( [
+			{ code: 'invalid-datetime' },
+		] );
+	} );
+
+	it( 'returns invalid-datetime error for date-only string', () => {
+		const property = newDateTimeProperty();
+
+		expect( dateTimeType.validate( newStringValue( '2025-06-15' ), property ) ).toEqual( [
+			{ code: 'invalid-datetime' },
+		] );
+	} );
+
+	it( 'returns invalid-datetime error for overflowing calendar date', () => {
+		const property = newDateTimeProperty();
+
+		expect( dateTimeType.validate( newStringValue( '2025-02-30T00:00:00Z' ), property ) ).toEqual( [
+			{ code: 'invalid-datetime' },
+		] );
+	} );
+
+	it( 'returns invalid-datetime error when timezone offset is missing', () => {
+		const property = newDateTimeProperty();
+
+		expect( dateTimeType.validate( newStringValue( '2025-06-15T12:00:00' ), property ) ).toEqual( [
+			{ code: 'invalid-datetime' },
+		] );
+	} );
+
+	it( 'accepts explicit positive timezone offset', () => {
+		const property = newDateTimeProperty();
+
+		expect( dateTimeType.validate( newStringValue( '2025-06-15T12:00:00+02:00' ), property ) ).toEqual( [] );
+	} );
+
+	it( 'accepts explicit negative timezone offset', () => {
+		const property = newDateTimeProperty();
+
+		expect( dateTimeType.validate( newStringValue( '2025-06-15T12:00:00-05:00' ), property ) ).toEqual( [] );
+	} );
+
+	it( 'accepts fractional seconds with Z offset', () => {
+		const property = newDateTimeProperty();
+
+		expect( dateTimeType.validate( newStringValue( '2025-06-15T12:00:00.123Z' ), property ) ).toEqual( [] );
+	} );
+
+	it( 'accepts nanosecond-precision fractional seconds (9 digits)', () => {
+		const property = newDateTimeProperty();
+
+		expect( dateTimeType.validate( newStringValue( '2025-06-15T12:00:00.123456789Z' ), property ) ).toEqual( [] );
+	} );
+
 	it( 'returns min-value error when before minimum', () => {
 		const property = newDateTimeProperty( { minimum: '2025-01-01T00:00:00Z' } );
 
 		expect( dateTimeType.validate( newStringValue( '2024-12-31T23:59:59Z' ), property ) ).toEqual( [
 			{ code: 'min-value', args: [ '2025-01-01T00:00:00Z' ] },
 		] );
+	} );
+
+	it( 'returns min-value error when one millisecond before minimum', () => {
+		const property = newDateTimeProperty( { minimum: '2025-01-01T00:00:00.000Z' } );
+
+		expect( dateTimeType.validate( newStringValue( '2024-12-31T23:59:59.999Z' ), property ) ).toEqual( [
+			{ code: 'min-value', args: [ '2025-01-01T00:00:00.000Z' ] },
+		] );
+	} );
+
+	it( 'returns no errors one millisecond after minimum', () => {
+		const property = newDateTimeProperty( { minimum: '2025-01-01T00:00:00.000Z' } );
+
+		expect( dateTimeType.validate( newStringValue( '2025-01-01T00:00:00.001Z' ), property ) ).toEqual( [] );
 	} );
 
 	it( 'returns max-value error when after maximum', () => {
@@ -98,11 +176,45 @@ describe( 'validate', () => {
 		] );
 	} );
 
-	it( 'returns no errors for datetime equal to bounds', () => {
+	it( 'returns max-value error when one millisecond after maximum', () => {
+		const property = newDateTimeProperty( { maximum: '2025-12-31T23:59:59.999Z' } );
+
+		expect( dateTimeType.validate( newStringValue( '2026-01-01T00:00:00.000Z' ), property ) ).toEqual( [
+			{ code: 'max-value', args: [ '2025-12-31T23:59:59.999Z' ] },
+		] );
+	} );
+
+	it( 'returns no errors one millisecond before maximum', () => {
+		const property = newDateTimeProperty( { maximum: '2025-12-31T23:59:59.999Z' } );
+
+		expect( dateTimeType.validate( newStringValue( '2025-12-31T23:59:59.998Z' ), property ) ).toEqual( [] );
+	} );
+
+	it( 'returns no errors for datetime equal to bounds (inclusive min and max)', () => {
 		const property = newDateTimeProperty( {
 			minimum: '2025-06-15T12:00:00Z',
 			maximum: '2025-06-15T12:00:00Z',
 		} );
+
+		expect( dateTimeType.validate( newStringValue( '2025-06-15T12:00:00Z' ), property ) ).toEqual( [] );
+	} );
+
+	it( 'returns no errors when value is empty because newStringValue strips empty parts', () => {
+		const property = newDateTimeProperty( { required: false } );
+		const emptyValue = newStringValue( '' );
+
+		expect( emptyValue.parts ).toEqual( [] );
+		expect( dateTimeType.validate( emptyValue, property ) ).toEqual( [] );
+	} );
+
+	it( 'silently ignores a malformed minimum rather than rejecting the value', () => {
+		const property = newDateTimeProperty( { minimum: 'garbage' } );
+
+		expect( dateTimeType.validate( newStringValue( '2025-06-15T12:00:00Z' ), property ) ).toEqual( [] );
+	} );
+
+	it( 'silently ignores a malformed maximum rather than rejecting the value', () => {
+		const property = newDateTimeProperty( { maximum: 'garbage' } );
 
 		expect( dateTimeType.validate( newStringValue( '2025-06-15T12:00:00Z' ), property ) ).toEqual( [] );
 	} );

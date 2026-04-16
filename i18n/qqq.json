@@ -146,7 +146,7 @@
 	"neowiki-field-single-value-only": "Validation error shown when multiple values are selected for a single-select property.",
 	"neowiki-select-placeholder": "Placeholder text shown in the select dropdown before any option is chosen.",
 	"neowiki-select-no-results": "Message shown in the multi-select dropdown when the typed text does not match any available option.",
-	"neowiki-field-invalid-datetime": "Validation error shown when the entered date and time value cannot be parsed.",
+	"neowiki-field-invalid-datetime": "Validation error shown when the entered date and time value cannot be parsed. DateTime values must be strict ISO 8601 / xsd:dateTime strings with an explicit timezone offset or 'Z' (for example, '2025-06-15T12:00:00Z' or '2025-06-15T12:00:00+02:00'). Partial values such as year-only or date-only are rejected, and min/max bounds are inclusive.",
 	"neowiki-property-type-datetime": "Label for the date and time property type in the schema editor",
 	"neowiki-select-unknown-option": "Placeholder shown in a select-property display when a stored option ID cannot be resolved to a label (e.g. the option was removed from the Schema)."
 }
