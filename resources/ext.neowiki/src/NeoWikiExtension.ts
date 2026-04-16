@@ -45,7 +45,7 @@ import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import { Neo } from '@/Neo.ts';
 // import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
-import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconListNumbered, cdxIconClock } from '@wikimedia/codex-icons';
+import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconClock } from '@wikimedia/codex-icons';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
