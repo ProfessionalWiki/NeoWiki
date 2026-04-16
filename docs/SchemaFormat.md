@@ -178,7 +178,7 @@ The following types are defined in the JSON schema but not yet implemented:
 - `phoneNumber` - Phone numbers
 - `date` - Date values
 - `time` - Time values
-- `dateTime` - Combined date and time
+- `datetime` - Combined date and time
 - `duration` - Time durations
 - `currency` - Monetary values
 - `progress` - Progress indicators

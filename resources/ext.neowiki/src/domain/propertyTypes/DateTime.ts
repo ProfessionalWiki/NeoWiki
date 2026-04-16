@@ -14,7 +14,7 @@ export class DateTimeType extends BasePropertyType<DateTimeProperty, StringValue
 
 	public static readonly valueType = ValueType.String;
 
-	public static readonly typeName = 'dateTime';
+	public static readonly typeName = 'datetime';
 
 	public getDisplayAttributeNames(): string[] {
 		return [];

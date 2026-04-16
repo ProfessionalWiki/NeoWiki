@@ -4,77 +4,101 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\RedHerb;
 
-use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property\PropertyTestCase;
 use ProfessionalWiki\RedHerb\DateTimeProperty;
 use ProfessionalWiki\RedHerb\DateTimeType;
+use TypeError;
 
 /**
  * @covers \ProfessionalWiki\RedHerb\DateTimeProperty
+ * @covers \ProfessionalWiki\RedHerb\DateTimeType
  */
-class DateTimePropertyTest extends TestCase {
+class DateTimePropertyTest extends PropertyTestCase {
 
-	public function testPropertyTypeIsDateTime(): void {
-		$property = $this->buildProperty();
+	protected function fromJson( string $json ): PropertyDefinition {
+		$registry = PropertyTypeRegistry::withCoreTypes();
+		$registry->registerType( new DateTimeType() );
 
-		$this->assertSame( 'dateTime', $property->getPropertyType() );
-	}
-
-	public function testMinimumAndMaximumAreNullByDefault(): void {
-		$property = $this->buildProperty();
-
-		$this->assertNull( $property->getMinimum() );
-		$this->assertFalse( $property->hasMinimum() );
-		$this->assertNull( $property->getMaximum() );
-		$this->assertFalse( $property->hasMaximum() );
-	}
-
-	public function testMinimumAndMaximumFromJson(): void {
-		$property = DateTimeProperty::fromPartialJson(
-			new PropertyCore( description: '', required: false, default: null ),
-			[ 'minimum' => '2020-01-01T00:00:00Z', 'maximum' => '2030-12-31T23:59:59Z' ]
+		return PropertyDefinition::fromJson(
+			json_decode( $json, true ),
+			$registry
 		);
-
-		$this->assertSame( '2020-01-01T00:00:00Z', $property->getMinimum() );
-		$this->assertTrue( $property->hasMinimum() );
-		$this->assertSame( '2030-12-31T23:59:59Z', $property->getMaximum() );
-		$this->assertTrue( $property->hasMaximum() );
 	}
 
-	public function testSerializationRoundTrip(): void {
-		$property = DateTimeProperty::fromPartialJson(
-			new PropertyCore( description: 'A date', required: true, default: '2025-06-15T12:00:00Z' ),
-			[ 'minimum' => '2020-01-01T00:00:00Z', 'maximum' => '2030-12-31T23:59:59Z' ]
+	public function testMinimalSerialization(): void {
+		$this->assertJsonStringEqualsJsonString(
+			<<<JSON
+{
+	"type": "datetime",
+	"description": "",
+	"required": false,
+	"default": null,
+	"minimum": null,
+	"maximum": null
+}
+JSON,
+			$this->deserializeAndReserialize(
+				<<<JSON
+{
+	"type": "datetime"
+}
+JSON
+			)
 		);
-
-		$json = $property->toJson();
-
-		$this->assertSame( 'dateTime', $json['type'] );
-		$this->assertSame( 'A date', $json['description'] );
-		$this->assertTrue( $json['required'] );
-		$this->assertSame( '2025-06-15T12:00:00Z', $json['default'] );
-		$this->assertSame( '2020-01-01T00:00:00Z', $json['minimum'] );
-		$this->assertSame( '2030-12-31T23:59:59Z', $json['maximum'] );
 	}
 
-	public function testBuildPropertyDefinitionFromJsonViaType(): void {
-		$type = new DateTimeType();
-		$core = new PropertyCore( description: '', required: false, default: null );
-
-		$property = $type->buildPropertyDefinitionFromJson( $core, [
-			'minimum' => '2020-01-01T00:00:00Z',
-		] );
-
-		$this->assertInstanceOf( DateTimeProperty::class, $property );
-		$this->assertSame( '2020-01-01T00:00:00Z', $property->getMinimum() );
-		$this->assertNull( $property->getMaximum() );
+	public function testFullSerializationWithChangedValuesIsStable(): void {
+		$this->assertSerializationDoesNotChange(
+			<<<JSON
+{
+	"type": "datetime",
+	"description": "A date",
+	"required": true,
+	"default": "2025-06-15T12:00:00Z",
+	"minimum": "2020-01-01T00:00:00Z",
+	"maximum": "2030-12-31T23:59:59Z"
+}
+JSON
+		);
 	}
 
-	private function buildProperty(): DateTimeProperty {
-		return new DateTimeProperty(
+	public function testFullSerializationWithDefaultValuesIsStable(): void {
+		$this->assertSerializationDoesNotChange(
+			<<<JSON
+{
+	"type": "datetime",
+	"description": "",
+	"required": false,
+	"default": null,
+	"minimum": null,
+	"maximum": null
+}
+JSON
+		);
+	}
+
+	public function testExceptionOnInvalidMinimum(): void {
+		$this->expectException( TypeError::class );
+
+		new DateTimeProperty(
+			core: new PropertyCore( description: '', required: false, default: null ),
+			// @phpstan-ignore-next-line
+			minimum: 42,
+			maximum: null,
+		);
+	}
+
+	public function testExceptionOnInvalidMaximum(): void {
+		$this->expectException( TypeError::class );
+
+		new DateTimeProperty(
 			core: new PropertyCore( description: '', required: false, default: null ),
 			minimum: null,
-			maximum: null,
+			// @phpstan-ignore-next-line
+			maximum: true,
 		);
 	}
 

@@ -42,7 +42,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 const props = withDefaults(
 	defineProps<ValueInputProps<DateTimeProperty>>(),
 	{
-		modelValue: undefined,
+		modelValue: () => newStringValue( '' ),
 		label: ''
 	}
 );

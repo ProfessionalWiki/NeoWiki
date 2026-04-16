@@ -27,7 +27,7 @@
 								"phoneNumber",
 								"date",
 								"time",
-								"dateTime",
+								"datetime",
 								"duration",
 								"number",
 								"currency",
@@ -93,7 +93,7 @@
 						{
 							"properties": {
 								"type": {
-									"const": "dateTime"
+									"const": "datetime"
 								}
 							}
 						},

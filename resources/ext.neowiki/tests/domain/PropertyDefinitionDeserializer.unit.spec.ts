@@ -4,6 +4,7 @@ import { newStringValue } from '@/domain/Value';
 import { TextProperty, TextType } from '@/domain/propertyTypes/Text';
 import { NumberProperty, NumberType } from '@/domain/propertyTypes/Number';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
+import { DateTimeProperty, DateTimeType } from '@/domain/propertyTypes/DateTime';
 import { Neo } from '@/Neo';
 
 const serializer = new PropertyDefinitionDeserializer( Neo.getInstance().getPropertyTypeRegistry(), Neo.getInstance().getValueDeserializer() );
@@ -108,6 +109,34 @@ it( 'creates a relation property definition with all fields', () => {
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as RelationProperty;
 
 	expect( property.multiple ).toBe( true );
+} );
+
+it( 'creates a datetime property definition with defaults', () => {
+	const json = {
+		type: 'datetime',
+	};
+
+	const property = serializer.propertyDefinitionFromJson( 'test', json ) as DateTimeProperty;
+
+	expect( property.type ).toBe( DateTimeType.typeName );
+
+	expect( property.minimum ).toBe( undefined );
+	expect( property.maximum ).toBe( undefined );
+} );
+
+it( 'creates a datetime property definition with all fields', () => {
+	const json = {
+		type: 'datetime',
+		minimum: '2020-01-01T00:00:00Z',
+		maximum: '2030-12-31T23:59:59Z',
+	};
+
+	const property = serializer.propertyDefinitionFromJson( 'test', json ) as DateTimeProperty;
+
+	expect( property.type ).toBe( DateTimeType.typeName );
+
+	expect( property.minimum ).toBe( '2020-01-01T00:00:00Z' );
+	expect( property.maximum ).toBe( '2030-12-31T23:59:59Z' );
 } );
 
 it( 'throws an error for an unsupported type', () => {

@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
 class DateTimeType implements PropertyType {
 
-	public const NAME = 'dateTime';
+	public const NAME = 'datetime';
 
 	public function getTypeName(): string {
 		return self::NAME;
