@@ -53,6 +53,7 @@
 	"neowiki-field-min-value": "Minimum value is $1.",
 	"neowiki-field-max-value": "Maximum value is $1.",
 	"neowiki-field-invalid-url": "Please enter a valid URL.",
+	"neowiki-field-invalid-datetime": "Please enter a valid date and time.",
 	"neowiki-field-invalid-option": "\"$1\" is not a valid option.",
 	"neowiki-field-single-value-only": "Only one value can be selected.",
 	"neowiki-select-placeholder": "Select an option",

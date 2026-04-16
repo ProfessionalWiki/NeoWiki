@@ -138,5 +138,6 @@
 	"neowiki-field-single-value-only": "Validation error shown when multiple values are selected for a single-select property.",
 	"neowiki-select-placeholder": "Placeholder text shown in the select dropdown before any option is chosen.",
 	"neowiki-select-no-results": "Message shown in the multi-select dropdown when the typed text does not match any available option.",
+	"neowiki-field-invalid-datetime": "Validation error shown when the entered date and time value cannot be parsed.",
 	"neowiki-property-type-datetime": "Label for the date and time property type in the schema editor"
 }

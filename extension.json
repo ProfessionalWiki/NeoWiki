@@ -272,6 +272,7 @@
 				"neowiki-field-min-value",
 				"neowiki-field-max-value",
 				"neowiki-field-invalid-url",
+				"neowiki-field-invalid-datetime",
 				"neowiki-field-invalid-option",
 				"neowiki-field-single-value-only",
 				"neowiki-select-placeholder",
