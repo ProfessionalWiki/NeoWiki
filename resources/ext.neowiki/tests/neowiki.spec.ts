@@ -20,9 +20,10 @@ describe( 'registerSubjectCreatorClickHandler', () => {
 		button.setAttribute( 'data-mw-neowiki-action', 'open-subject-creator' );
 		document.body.appendChild( button );
 
-		button.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		const notPrevented = button.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
 
 		expect( store.subjectCreatorOpen ).toBe( true );
+		expect( notPrevented ).toBe( false );
 	} );
 
 	it( 'opens the subject creator when a descendant inside a matching element is clicked', () => {
@@ -37,9 +38,10 @@ describe( 'registerSubjectCreatorClickHandler', () => {
 		link.appendChild( span );
 		document.body.appendChild( link );
 
-		span.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		const notPrevented = span.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
 
 		expect( store.subjectCreatorOpen ).toBe( true );
+		expect( notPrevented ).toBe( false );
 	} );
 
 	it( 'does nothing when an unrelated element is clicked', () => {
@@ -51,8 +53,9 @@ describe( 'registerSubjectCreatorClickHandler', () => {
 		const unrelated = document.createElement( 'div' );
 		document.body.appendChild( unrelated );
 
-		unrelated.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		const notPrevented = unrelated.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
 
 		expect( store.subjectCreatorOpen ).toBe( false );
+		expect( notPrevented ).toBe( true );
 	} );
 } );
