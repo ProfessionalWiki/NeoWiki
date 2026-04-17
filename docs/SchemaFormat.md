@@ -263,7 +263,12 @@ A "Company" schema with various property types:
     },
     "Status": {
       "type": "select",
-      "options": ["Active", "Inactive", "Acquired", "Dissolved"],
+      "options": [
+        { "id": "opt_active",    "label": "Active" },
+        { "id": "opt_inactive",  "label": "Inactive" },
+        { "id": "opt_acquired",  "label": "Acquired" },
+        { "id": "opt_dissolved", "label": "Dissolved" }
+      ],
       "required": true
     },
     "World domination progress": {
