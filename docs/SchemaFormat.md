@@ -114,26 +114,51 @@ Example with constraints:
 
 ### Select (`select`)
 
-A fixed set of allowed options that users pick from. Stored as string values.
+A fixed set of allowed options that users pick from. Each option has a stable ID;
+stored statement values reference the ID, so renaming an option's label does not break
+existing data.
 
 ```json
 {
   "type": "select",
-  "options": ["Draft", "Review", "Approved"]
+  "options": [
+    { "id": "opt_draft",    "label": "Draft" },
+    { "id": "opt_review",   "label": "Review" },
+    { "id": "opt_approved", "label": "Approved" }
+  ]
 }
 ```
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `options` | string[] | `[]` | The allowed values to choose from |
-| `multiple` | boolean | `false` | Allow selecting multiple options |
+| `options` | `SelectOption[]` | `[]` | The allowed values to choose from. |
+| `multiple` | boolean | `false` | Allow selecting multiple options. |
+
+Each `SelectOption`:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Yes | Stable identifier. Unique within the property. Statements store this. |
+| `label` | string | Yes | Human-readable display text. Unique (case-insensitive, trimmed) within the property. |
+
+Stored statement values for a select property are option IDs (not labels). Display and
+API reads resolve IDs to labels via the current Schema.
+
+On write (create/patch statement), the API accepts either an option `id` or a `label`
+(case-insensitive, whitespace-trimmed). A `{ "id": ..., "label": ... }` object is also
+accepted when consistent; mismatched `id`/`label` is rejected.
 
 Example with multi-select:
 
 ```json
 {
   "type": "select",
-  "options": ["Red", "Green", "Blue", "Yellow"],
+  "options": [
+    { "id": "opt_red",    "label": "Red" },
+    { "id": "opt_green",  "label": "Green" },
+    { "id": "opt_blue",   "label": "Blue" },
+    { "id": "opt_yellow", "label": "Yellow" }
+  ],
   "multiple": true,
   "required": true,
   "description": "Color tags"
