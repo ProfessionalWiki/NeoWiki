@@ -33,7 +33,7 @@ JSON
 		);
 	}
 
-	public function testFullSerializationWithChangedValuesIsStable(): void {
+	public function testFullSerializationIsStable(): void {
 		$this->assertSerializationDoesNotChange(
 			<<<JSON
 {
@@ -41,38 +41,24 @@ JSON
 	"description": "Document status",
 	"required": true,
 	"default": null,
-	"options": ["Draft", "Review", "Approved"],
+	"options": [
+		{ "id": "opt1", "label": "Draft" },
+		{ "id": "opt2", "label": "Review" },
+		{ "id": "opt3", "label": "Approved" }
+	],
 	"multiple": false
 }
 JSON
 		);
 	}
 
-	public function testFullSerializationWithDefaultValuesIsStable(): void {
-		$this->assertSerializationDoesNotChange(
+	public function testExceptionOnLegacyStringOption(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->fromJson(
 			<<<JSON
 {
 	"type": "select",
-	"description": "",
-	"required": false,
-	"default": null,
-	"options": [],
-	"multiple": false
-}
-JSON
-		);
-	}
-
-	public function testMultiSelectSerialization(): void {
-		$this->assertSerializationDoesNotChange(
-			<<<JSON
-{
-	"type": "select",
-	"description": "Tags",
-	"required": false,
-	"default": null,
-	"options": ["Important", "Urgent", "Low priority"],
-	"multiple": true
+	"options": ["Draft", "Review"]
 }
 JSON
 		);
@@ -90,13 +76,46 @@ JSON
 		);
 	}
 
-	public function testExceptionOnNonStringOption(): void {
+	public function testExceptionOnDuplicateOptionId(): void {
 		$this->expectException( InvalidArgumentException::class );
 		$this->fromJson(
 			<<<JSON
 {
 	"type": "select",
-	"options": ["valid", 42]
+	"options": [
+		{ "id": "dup", "label": "A" },
+		{ "id": "dup", "label": "B" }
+	]
+}
+JSON
+		);
+	}
+
+	public function testExceptionOnDuplicateLabelCaseInsensitive(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->fromJson(
+			<<<JSON
+{
+	"type": "select",
+	"options": [
+		{ "id": "a", "label": "Draft" },
+		{ "id": "b", "label": "draft" }
+	]
+}
+JSON
+		);
+	}
+
+	public function testExceptionOnDuplicateLabelWhitespace(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->fromJson(
+			<<<JSON
+{
+	"type": "select",
+	"options": [
+		{ "id": "a", "label": "Draft" },
+		{ "id": "b", "label": "  Draft  " }
+	]
 }
 JSON
 		);
@@ -119,12 +138,17 @@ JSON
 			<<<JSON
 {
 	"type": "select",
-	"options": ["Zebra", "Apple", "Mango"]
+	"options": [
+		{ "id": "z", "label": "Zebra" },
+		{ "id": "a", "label": "Apple" },
+		{ "id": "m", "label": "Mango" }
+	]
 }
 JSON
 		);
 
-		$this->assertSame( [ 'Zebra', 'Apple', 'Mango' ], $property->toJson()['options'] );
+		$ids = array_map( fn( $o ) => $o->getId(), $property->getOptions() );
+		$this->assertSame( [ 'z', 'a', 'm' ], $ids );
 	}
 
 }

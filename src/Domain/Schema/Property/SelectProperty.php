@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
 class SelectProperty extends PropertyDefinition {
 
 	/**
-	 * @param string[] $options
+	 * @param SelectOption[] $options
 	 */
 	public function __construct(
 		PropertyCore $core,
@@ -20,6 +20,8 @@ class SelectProperty extends PropertyDefinition {
 		private readonly bool $multiple,
 	) {
 		parent::__construct( $core );
+		$this->assertUniqueIds( $options );
+		$this->assertUniqueLabels( $options );
 	}
 
 	public function getPropertyType(): string {
@@ -27,7 +29,7 @@ class SelectProperty extends PropertyDefinition {
 	}
 
 	/**
-	 * @return string[]
+	 * @return SelectOption[]
 	 */
 	public function getOptions(): array {
 		return $this->options;
@@ -38,30 +40,51 @@ class SelectProperty extends PropertyDefinition {
 	}
 
 	public static function fromPartialJson( PropertyCore $core, array $property ): self {
-		$options = $property['options'] ?? [];
+		$rawOptions = $property['options'] ?? [];
 
-		if ( !is_array( $options ) ) {
+		if ( !is_array( $rawOptions ) ) {
 			throw new InvalidArgumentException( 'Select options must be an array' );
 		}
 
-		foreach ( $options as $option ) {
-			if ( !is_string( $option ) ) {
-				throw new InvalidArgumentException( 'Each select option must be a string' );
-			}
-		}
+		$options = array_map(
+			fn( mixed $raw ): SelectOption => SelectOption::fromJson( $raw ),
+			array_values( $rawOptions )
+		);
 
 		return new self(
 			core: $core,
-			options: array_values( $options ),
+			options: $options,
 			multiple: $property['multiple'] ?? false,
 		);
 	}
 
 	protected function nonCoreToJson(): array {
 		return [
-			'options' => $this->getOptions(),
+			'options' => array_map( fn( SelectOption $o ): array => $o->toJson(), $this->options ),
 			'multiple' => $this->allowsMultipleValues(),
 		];
+	}
+
+	/**
+	 * @param SelectOption[] $options
+	 */
+	private function assertUniqueIds( array $options ): void {
+		$ids = array_map( fn( SelectOption $o ): string => $o->getId(), $options );
+
+		if ( count( $ids ) !== count( array_unique( $ids ) ) ) {
+			throw new InvalidArgumentException( 'Select option ids must be unique' );
+		}
+	}
+
+	/**
+	 * @param SelectOption[] $options
+	 */
+	private function assertUniqueLabels( array $options ): void {
+		$labels = array_map( fn( SelectOption $o ): string => $o->normalizedLabel(), $options );
+
+		if ( count( $labels ) !== count( array_unique( $labels ) ) ) {
+			throw new InvalidArgumentException( 'Select option labels must be unique' );
+		}
 	}
 
 }
