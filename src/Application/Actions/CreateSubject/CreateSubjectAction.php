@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -23,6 +25,8 @@ readonly class CreateSubjectAction {
 		private IdGenerator $idGenerator,
 		private SubjectAuthorizer $subjectAuthorizer,
 		private StatementListPatcher $statementListPatcher,
+		private SchemaLookup $schemaLookup,
+		private SelectPatchResolver $selectPatchResolver,
 	) {
 	}
 
@@ -53,15 +57,32 @@ readonly class CreateSubjectAction {
 	}
 
 	private function buildSubject( CreateSubjectRequest $request ): Subject {
+		$schemaName = new SchemaName( $request->schemaName );
+
 		return Subject::createNew(
 			idGenerator: $this->idGenerator,
 			label: new SubjectLabel( $request->label ),
-			schemaName: new SchemaName( $request->schemaName ),
+			schemaName: $schemaName,
 			statements: $this->statementListPatcher->buildStatementList(
 				statements: new StatementList(),
-				patch: $request->statements
+				patch: $this->resolvePatch( $schemaName, $request->statements )
 			)
 		);
+	}
+
+	/**
+	 * @param array<string, mixed> $patch
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function resolvePatch( SchemaName $schemaName, array $patch ): array {
+		$schema = $this->schemaLookup->getSchema( $schemaName );
+
+		if ( $schema === null ) {
+			return $patch;
+		}
+
+		return $this->selectPatchResolver->resolve( $schema, $patch );
 	}
 
 }

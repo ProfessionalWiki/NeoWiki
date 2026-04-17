@@ -4,8 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject;
 
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -16,7 +19,9 @@ readonly class PatchSubjectAction {
 	public function __construct(
 		private SubjectRepository $subjectRepository,
 		private SubjectAuthorizer $subjectAuthorizer,
-		private StatementListPatcher $patcher
+		private StatementListPatcher $patcher,
+		private SchemaLookup $schemaLookup,
+		private SelectPatchResolver $selectPatchResolver,
 	) {
 	}
 
@@ -43,9 +48,24 @@ readonly class PatchSubjectAction {
 			$subject->setLabel( new SubjectLabel( $label ) );
 		}
 
-		$subject->patchStatements( $this->patcher, $patch );
+		$subject->patchStatements( $this->patcher, $this->resolvePatch( $subject, $patch ) );
 
 		$this->subjectRepository->updateSubject( $subject, $comment );
+	}
+
+	/**
+	 * @param array<string, mixed> $patch
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function resolvePatch( Subject $subject, array $patch ): array {
+		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+
+		if ( $schema === null ) {
+			return $patch;
+		}
+
+		return $this->selectPatchResolver->resolve( $schema, $patch );
 	}
 
 }
