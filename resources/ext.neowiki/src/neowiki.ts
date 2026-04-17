@@ -1,5 +1,6 @@
 import { createMwApp } from 'vue';
 import { createPinia } from 'pinia';
+import type { Pinia } from 'pinia';
 import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { CdxTooltip } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -13,6 +14,24 @@ import type { LayoutName } from '@/domain/Layout.ts';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
 import { LayoutDeserializer } from '@/persistence/LayoutDeserializer.ts';
 import { showPendingNotification } from '@/presentation/PendingNotification.ts';
+import { useSubjectStore } from '@/stores/SubjectStore';
+
+const SUBJECT_CREATOR_TRIGGER_SELECTOR = '[data-mw-neowiki-action="open-subject-creator"]';
+
+export function registerSubjectCreatorClickHandler( pinia: Pinia ): void {
+	document.addEventListener( 'click', ( event ) => {
+		const target = event.target;
+		if ( !( target instanceof Element ) ) {
+			return;
+		}
+		const trigger = target.closest( SUBJECT_CREATOR_TRIGGER_SELECTOR );
+		if ( trigger === null ) {
+			return;
+		}
+		event.preventDefault();
+		useSubjectStore( pinia ).openSubjectCreator();
+	} );
+}
 
 async function initializeNeoWikiApp(): Promise<void> {
 	const neowikiApp = document.querySelector( '#mw-content-text > #ext-neowiki-app' );
@@ -25,9 +44,11 @@ async function initializeNeoWikiApp(): Promise<void> {
 		const app = createMwApp( NeoWikiApp, {
 			showSubjectCreator,
 		} ).directive( 'tooltip', CdxTooltip );
-		app.use( createPinia() );
+		const pinia = createPinia();
+		app.use( pinia );
 		NeoWikiServices.registerServices( app );
 		app.mount( neowikiApp );
+		registerSubjectCreatorClickHandler( pinia );
 	}
 }
 
@@ -111,8 +132,13 @@ function initializeLayoutsPage(): void {
 	}
 }
 
-initializeNeoWikiApp();
-initializeSchemaView();
-initializeLayoutView();
-initializeSchemasPage();
-initializeLayoutsPage();
+const isTestEnvironment = typeof window !== 'undefined' &&
+	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
+
+if ( !isTestEnvironment ) {
+	initializeNeoWikiApp();
+	initializeSchemaView();
+	initializeLayoutView();
+	initializeSchemasPage();
+	initializeLayoutsPage();
+}
