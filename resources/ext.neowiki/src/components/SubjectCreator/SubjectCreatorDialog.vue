@@ -1,5 +1,5 @@
+<!-- eslint-disable vue/no-multiple-template-root -->
 <template>
-	<!-- eslint-disable vue/no-multiple-template-root -->
 	<CdxDialog
 		:open="subjectStore.subjectCreatorOpen"
 		class="ext-neowiki-subject-creator-dialog"

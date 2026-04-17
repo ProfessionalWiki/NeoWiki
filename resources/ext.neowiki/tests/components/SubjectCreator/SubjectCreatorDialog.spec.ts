@@ -204,9 +204,9 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( false );
 	} );
 
-	it( 'renders the dialog open when the store flag is true', async () => {
-		subjectStore.openSubjectCreator();
+	it( 'renders the dialog open when the store flag is set to true', async () => {
 		const wrapper = mountComponent();
+		subjectStore.openSubjectCreator();
 		await flushPromises();
 		expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( true );
 	} );
@@ -543,7 +543,6 @@ describe( 'SubjectCreatorDialog', () => {
 			await flushPromises();
 
 			subjectStore.openSubjectCreator();
-			await flushPromises();
 			await flushPromises();
 
 			expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
