@@ -199,15 +199,27 @@ describe( 'SubjectCreatorDialog', () => {
 		} );
 	} );
 
-	it( 'opens dialog when button is clicked', async () => {
+	it( 'renders the dialog closed by default', () => {
 		const wrapper = mountComponent();
-		const button = wrapper.find( '.ext-neowiki-subject-creator-trigger' );
-		expect( button.exists() ).toBe( true );
+		expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( false );
+	} );
 
-		await button.trigger( 'click' );
+	it( 'renders the dialog open when the store flag is true', async () => {
+		subjectStore.openSubjectCreator();
+		const wrapper = mountComponent();
+		await flushPromises();
+		expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( true );
+	} );
 
-		const dialog = wrapper.findComponent( CdxDialog );
-		expect( dialog.props( 'open' ) ).toBe( true );
+	it( 'clears the store flag when the dialog is closed without changes', async () => {
+		subjectStore.openSubjectCreator();
+		const wrapper = mountComponent();
+		await flushPromises();
+
+		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		expect( subjectStore.subjectCreatorOpen ).toBe( false );
 	} );
 
 	it( 'shows schema search in the existing-schema block', () => {
@@ -306,7 +318,8 @@ describe( 'SubjectCreatorDialog', () => {
 	it( 'reloads page after successful save', async () => {
 		const wrapper = mountComponent();
 
-		await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+		subjectStore.openSubjectCreator();
+		await flushPromises();
 		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
@@ -322,7 +335,8 @@ describe( 'SubjectCreatorDialog', () => {
 
 		const wrapper = mountComponent();
 
-		await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+		subjectStore.openSubjectCreator();
+		await flushPromises();
 		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
@@ -494,7 +508,8 @@ describe( 'SubjectCreatorDialog', () => {
 			schemaStore.saveSchema = vi.fn().mockRejectedValue( new Error( 'Schema save failed' ) );
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await switchToNewSchema( wrapper );
 
 			await clickContinue( wrapper );
@@ -515,7 +530,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'resets to schema step when dialog closes', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await switchToNewSchema( wrapper );
 
 			await clickContinue( wrapper );
@@ -526,7 +542,8 @@ describe( 'SubjectCreatorDialog', () => {
 			wrapper.findComponent( SchemaAbandonmentDialog ).vm.$emit( 'abandon' );
 			await flushPromises();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await flushPromises();
 
 			expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
@@ -623,7 +640,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'shows confirmation when closing with unsaved changes', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
@@ -643,7 +661,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'closes without confirmation when there are no unsaved changes', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 
 			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
 			await flushPromises();
@@ -655,7 +674,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'closes dialog when discard is clicked in confirmation', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
@@ -677,7 +697,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'keeps dialog open when keep-editing is clicked in confirmation', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
@@ -702,7 +723,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'shows three-option dialog when closing with draft schema on subject step', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await switchToNewSchema( wrapper );
 
 			await clickContinue( wrapper );
@@ -717,7 +739,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'closes without saving on abandon', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await switchToNewSchema( wrapper );
 
 			await clickContinue( wrapper );
@@ -735,7 +758,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'saves schema and closes on save-schema', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await switchToNewSchema( wrapper );
 
 			await clickContinue( wrapper );
@@ -755,7 +779,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'keeps dialog open on keep-editing', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await switchToNewSchema( wrapper );
 
 			await clickContinue( wrapper );
@@ -773,7 +798,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'uses standard close confirmation when closing with existing schema', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
@@ -791,7 +817,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'uses standard close confirmation on schema editor step without draft', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await switchToNewSchema( wrapper );
 
 			wrapper.findComponent( SchemaCreator ).vm.$emit( 'change' );
@@ -806,7 +833,8 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'shows three-option dialog on schema editor step when draft exists', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await switchToNewSchema( wrapper );
 
 			await clickContinue( wrapper );
@@ -825,7 +853,8 @@ describe( 'SubjectCreatorDialog', () => {
 			schemaStore.saveSchema = vi.fn().mockRejectedValue( new Error( 'Save failed' ) );
 			const wrapper = mountComponent();
 
-			await wrapper.find( '.ext-neowiki-subject-creator-trigger' ).trigger( 'click' );
+			subjectStore.openSubjectCreator();
+			await flushPromises();
 			await switchToNewSchema( wrapper );
 
 			await clickContinue( wrapper );

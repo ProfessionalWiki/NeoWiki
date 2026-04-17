@@ -1,152 +1,145 @@
 <template>
-	<div class="ext-neowiki-subject-creator-container">
-		<CdxButton
-			class="ext-neowiki-subject-creator-trigger"
-			@click="open = true"
-		>
-			{{ $i18n( 'neowiki-page-tools-create-subject' ).text() }}
-		</CdxButton>
-		<CdxDialog
-			:open="open"
-			class="ext-neowiki-subject-creator-dialog"
-			:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' && !selectedSchemaName }"
-			:title="$i18n( 'neowiki-subject-creator-title' ).text()"
-			@update:open="onDialogUpdateOpen"
-		>
-			<template #header>
-				<div class="ext-neowiki-subject-creator-dialog__header">
-					<CdxButton
-						v-if="selectedSchemaName"
-						class="ext-neowiki-subject-creator-back-button"
-						weight="quiet"
-						type="button"
-						:aria-label="$i18n( 'neowiki-subject-creator-back' ).text()"
-						@click="goBack"
+	<!-- eslint-disable vue/no-multiple-template-root -->
+	<CdxDialog
+		:open="subjectStore.subjectCreatorOpen"
+		class="ext-neowiki-subject-creator-dialog"
+		:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' && !selectedSchemaName }"
+		:title="$i18n( 'neowiki-subject-creator-title' ).text()"
+		@update:open="onDialogUpdateOpen"
+	>
+		<template #header>
+			<div class="ext-neowiki-subject-creator-dialog__header">
+				<CdxButton
+					v-if="selectedSchemaName"
+					class="ext-neowiki-subject-creator-back-button"
+					weight="quiet"
+					type="button"
+					:aria-label="$i18n( 'neowiki-subject-creator-back' ).text()"
+					@click="goBack"
+				>
+					<CdxIcon :icon="cdxIconArrowPrevious" />
+				</CdxButton>
+
+				<div class="ext-neowiki-subject-creator-dialog__header__title-group">
+					<h2 class="cdx-dialog__header__title">
+						{{ $i18n( 'neowiki-subject-creator-title' ).text() }}
+					</h2>
+
+					<p
+						v-if="headerSubtitle"
+						class="cdx-dialog__header__subtitle"
 					>
-						<CdxIcon :icon="cdxIconArrowPrevious" />
-					</CdxButton>
-
-					<div class="ext-neowiki-subject-creator-dialog__header__title-group">
-						<h2 class="cdx-dialog__header__title">
-							{{ $i18n( 'neowiki-subject-creator-title' ).text() }}
-						</h2>
-
-						<p
-							v-if="headerSubtitle"
-							class="cdx-dialog__header__subtitle"
-						>
-							{{ headerSubtitle }}
-						</p>
-					</div>
-
-					<CdxButton
-						class="cdx-dialog__header__close-button"
-						weight="quiet"
-						type="button"
-						:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-						@click="requestClose"
-					>
-						<CdxIcon :icon="cdxIconClose" />
-					</CdxButton>
+						{{ headerSubtitle }}
+					</p>
 				</div>
-			</template>
-			<template v-if="!selectedSchemaName">
-				<p>
-					{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
-				</p>
 
-				<CdxToggleButtonGroup
-					v-if="canCreateSchemas"
-					v-model="selectedSchemaOption"
-					class="ext-neowiki-subject-creator-schema-options"
-					:buttons="toggleButtons"
+				<CdxButton
+					class="cdx-dialog__header__close-button"
+					weight="quiet"
+					type="button"
+					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
+					@click="requestClose"
+				>
+					<CdxIcon :icon="cdxIconClose" />
+				</CdxButton>
+			</div>
+		</template>
+		<template v-if="!selectedSchemaName">
+			<p>
+				{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
+			</p>
+
+			<CdxToggleButtonGroup
+				v-if="canCreateSchemas"
+				v-model="selectedSchemaOption"
+				class="ext-neowiki-subject-creator-schema-options"
+				:buttons="toggleButtons"
+			/>
+
+			<div
+				v-if="selectedSchemaOption === 'existing'"
+				class="ext-neowiki-subject-creator-existing"
+			>
+				<SchemaLookup
+					ref="schemaLookupRef"
+					@select="onSchemaSelected"
 				/>
+			</div>
 
-				<div
-					v-if="selectedSchemaOption === 'existing'"
-					class="ext-neowiki-subject-creator-existing"
-				>
-					<SchemaLookup
-						ref="schemaLookupRef"
-						@select="onSchemaSelected"
-					/>
-				</div>
-
-				<div
-					v-if="selectedSchemaOption === 'new'"
-					class="ext-neowiki-subject-creator-new"
-				>
-					<SchemaCreator
-						ref="schemaCreatorRef"
-						:initial-schema="draftSchema ?? undefined"
-						@change="markChanged"
-					/>
-				</div>
-			</template>
-
-			<template v-if="selectedSchemaName">
-				<CdxField class="ext-neowiki-subject-creator-label-field">
-					<CdxTextInput
-						v-model="subjectLabel"
-						:placeholder="$i18n( 'neowiki-subject-creator-label-placeholder' ).text()"
-						@input="markChanged"
-					/>
-					<template #label>
-						{{ $i18n( 'neowiki-subject-creator-label-field' ).text() }}
-					</template>
-				</CdxField>
-
-				<SubjectEditor
-					v-if="schemaStatements"
-					ref="subjectEditorRef"
-					:schema-statements="schemaStatements"
-					:schema-properties="schemaProperties"
+			<div
+				v-if="selectedSchemaOption === 'new'"
+				class="ext-neowiki-subject-creator-new"
+			>
+				<SchemaCreator
+					ref="schemaCreatorRef"
+					:initial-schema="draftSchema ?? undefined"
 					@change="markChanged"
 				/>
-			</template>
+			</div>
+		</template>
 
-			<template
-				v-if="selectedSchemaOption === 'new' && !selectedSchemaName"
-				#footer
-			>
-				<div class="ext-neowiki-subject-creator-continue">
-					<CdxButton
-						action="progressive"
-						weight="primary"
-						:disabled="!hasChanged"
-						@click="handleCreateSchema"
-					>
-						{{ $i18n( 'neowiki-subject-creator-continue' ).text() }}
-						<CdxIcon :icon="cdxIconArrowNext" />
-					</CdxButton>
-				</div>
-			</template>
-			<template
-				v-else-if="selectedSchemaName"
-				#footer
-			>
-				<EditSummary
-					help-text=""
-					:save-button-label="$i18n( 'neowiki-subject-creator-save' ).text()"
-					:save-disabled="!hasChanged"
-					@save="handleSave"
+		<template v-if="selectedSchemaName">
+			<CdxField class="ext-neowiki-subject-creator-label-field">
+				<CdxTextInput
+					v-model="subjectLabel"
+					:placeholder="$i18n( 'neowiki-subject-creator-label-placeholder' ).text()"
+					@input="markChanged"
 				/>
-			</template>
-		</CdxDialog>
+				<template #label>
+					{{ $i18n( 'neowiki-subject-creator-label-field' ).text() }}
+				</template>
+			</CdxField>
 
-		<CloseConfirmationDialog
-			:open="confirmationOpen"
-			@discard="confirmClose"
-			@keep-editing="cancelClose"
-		/>
+			<SubjectEditor
+				v-if="schemaStatements"
+				ref="subjectEditorRef"
+				:schema-statements="schemaStatements"
+				:schema-properties="schemaProperties"
+				@change="markChanged"
+			/>
+		</template>
 
-		<SchemaAbandonmentDialog
-			:open="schemaAbandonmentOpen"
-			@abandon="abandonAll"
-			@save-schema="saveSchemaAndClose"
-			@keep-editing="cancelSchemaAbandonment"
-		/>
-	</div>
+		<template
+			v-if="selectedSchemaOption === 'new' && !selectedSchemaName"
+			#footer
+		>
+			<div class="ext-neowiki-subject-creator-continue">
+				<CdxButton
+					action="progressive"
+					weight="primary"
+					:disabled="!hasChanged"
+					@click="handleCreateSchema"
+				>
+					{{ $i18n( 'neowiki-subject-creator-continue' ).text() }}
+					<CdxIcon :icon="cdxIconArrowNext" />
+				</CdxButton>
+			</div>
+		</template>
+		<template
+			v-else-if="selectedSchemaName"
+			#footer
+		>
+			<EditSummary
+				help-text=""
+				:save-button-label="$i18n( 'neowiki-subject-creator-save' ).text()"
+				:save-disabled="!hasChanged"
+				@save="handleSave"
+			/>
+		</template>
+	</CdxDialog>
+
+	<CloseConfirmationDialog
+		:open="confirmationOpen"
+		@discard="confirmClose"
+		@keep-editing="cancelClose"
+	/>
+
+	<SchemaAbandonmentDialog
+		:open="schemaAbandonmentOpen"
+		@abandon="abandonAll"
+		@save-schema="saveSchemaAndClose"
+		@keep-editing="cancelSchemaAbandonment"
+	/>
 </template>
 
 <script setup lang="ts">
@@ -172,7 +165,6 @@ import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 
-const open = ref( false );
 const selectedSchemaOption = ref( 'existing' );
 const selectedSchemaName = ref<string | null>( null );
 const loadedSchema = ref<Schema | null>( null );
@@ -189,7 +181,7 @@ const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
 function close(): void {
-	open.value = false;
+	subjectStore.closeSubjectCreator();
 }
 
 const hasDraftSchema = computed( () => draftSchema.value !== null );
@@ -343,7 +335,7 @@ const schemaStatements = computed( (): StatementList | null => {
 	return new StatementList( statements );
 } );
 
-watch( open, async ( isOpen ) => {
+watch( () => subjectStore.subjectCreatorOpen, async ( isOpen ) => {
 	if ( isOpen ) {
 		await nextTick();
 		focusInitialInput( selectedSchemaOption.value );
