@@ -58,6 +58,7 @@
 	"neowiki-field-single-value-only": "Only one value can be selected.",
 	"neowiki-select-placeholder": "Select an option",
 	"neowiki-select-no-results": "No matching options.",
+	"neowiki-select-unknown-option": "(unknown option)",
 
 	"neowiki-property-editor-description": "Description",
 	"neowiki-edit-schema": "Edit schema",

@@ -278,6 +278,7 @@
 				"neowiki-field-single-value-only",
 				"neowiki-select-placeholder",
 				"neowiki-select-no-results",
+				"neowiki-select-unknown-option",
 				"neowiki-property-editor-description",
 				"neowiki-property-editor-name",
 				"neowiki-property-editor-type",
