@@ -112,34 +112,17 @@ local function renderRowsAsTable( rows )
 end
 
 function p.query( frame )
-	local cypher = frame.args[1] or frame.args.query
-	if not cypher or cypher == '' then
-		return 'No query provided'
-	end
-
-	local ok, result = pcall( nw.query, cypher )
-	if not ok then
-		return 'Query failed: ' .. tostring( result )
-	end
-
-	return renderRowsAsTable( result )
+	return renderRowsAsTable( nw.query( frame.args[1] ) )
 end
 
 function p.productsFoundedSince( frame )
 	local year = tonumber( frame.args[1] ) or 2000
 
-	local ok, result = pcall(
-		nw.query,
+	return renderRowsAsTable( nw.query(
 		'MATCH (n:Product) WHERE n.`Available since` >= $year ' ..
 			'RETURN n.name AS name, n.`Available since` AS year ORDER BY year',
 		{ year = year }
-	)
-
-	if not ok then
-		return 'Query failed: ' .. tostring( result )
-	end
-
-	return renderRowsAsTable( result )
+	) )
 end
 
 return p
