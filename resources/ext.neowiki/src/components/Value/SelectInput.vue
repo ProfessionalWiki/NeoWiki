@@ -47,7 +47,7 @@ import { CdxField, CdxIcon, CdxMultiselectLookup, CdxSelect } from '@wikimedia/c
 import type { ChipInputItem, MenuItemData } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, ValueType } from '@/domain/Value';
-import { SelectProperty, SelectType } from '@/domain/propertyTypes/Select.ts';
+import { resolveSelectLabel, SelectProperty, SelectType } from '@/domain/propertyTypes/Select.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
@@ -81,9 +81,17 @@ function partsFromValue( value: Value | undefined ): string[] {
 	return [];
 }
 
+function chipFromId( id: string ): ChipInputItem {
+	const label = resolveSelectLabel( props.property, id );
+	return {
+		value: id,
+		label: label ?? mw.message( 'neowiki-select-unknown-option' ).text()
+	};
+}
+
 const initialParts = partsFromValue( props.modelValue );
 const selection = ref<string[]>( [ ...initialParts ] );
-const chips = ref<ChipInputItem[]>( initialParts.map( ( part ) => ( { value: part } ) ) );
+const chips = ref<ChipInputItem[]>( initialParts.map( chipFromId ) );
 const inputValue = ref<string | number>( '' );
 const menuItems = ref<MenuItemData[]>( [] );
 
@@ -150,7 +158,7 @@ watch( () => props.modelValue, ( newValue ) => {
 	const newParts = partsFromValue( newValue );
 	if ( JSON.stringify( newParts ) !== JSON.stringify( selection.value ) ) {
 		selection.value = [ ...newParts ];
-		chips.value = newParts.map( ( part ) => ( { value: part } ) );
+		chips.value = newParts.map( chipFromId );
 		validate();
 	}
 } );
