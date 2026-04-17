@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newSelectProperty, SelectType } from '@/domain/propertyTypes/Select';
+import { newSelectProperty, resolveSelectLabel, SelectType } from '@/domain/propertyTypes/Select';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue } from '@/domain/Value';
 
@@ -56,7 +56,11 @@ describe( 'newSelectProperty', () => {
 			name: 'Status',
 			description: 'Document status',
 			required: true,
-			options: [ 'Draft', 'Review', 'Approved' ],
+			options: [
+				{ id: 'opt1', label: 'Draft' },
+				{ id: 'opt2', label: 'Review' },
+				{ id: 'opt3', label: 'Approved' },
+			],
 			multiple: true,
 		} );
 
@@ -64,7 +68,11 @@ describe( 'newSelectProperty', () => {
 		expect( property.type ).toBe( SelectType.typeName );
 		expect( property.description ).toBe( 'Document status' );
 		expect( property.required ).toBe( true );
-		expect( property.options ).toEqual( [ 'Draft', 'Review', 'Approved' ] );
+		expect( property.options ).toEqual( [
+			{ id: 'opt1', label: 'Draft' },
+			{ id: 'opt2', label: 'Review' },
+			{ id: 'opt3', label: 'Approved' },
+		] );
 		expect( property.multiple ).toBe( true );
 	} );
 } );
@@ -74,7 +82,11 @@ describe( 'validate', () => {
 
 	it( 'returns no errors for empty value when optional', () => {
 		const property = newSelectProperty( {
-			options: [ 'A', 'B', 'C' ],
+			options: [
+				{ id: 'a', label: 'A' },
+				{ id: 'b', label: 'B' },
+				{ id: 'c', label: 'C' },
+			],
 		} );
 
 		const errors = selectType.validate( newStringValue(), property );
@@ -85,7 +97,9 @@ describe( 'validate', () => {
 	it( 'returns required error for required empty value', () => {
 		const property = newSelectProperty( {
 			required: true,
-			options: [ 'A', 'B', 'C' ],
+			options: [
+				{ id: 'a', label: 'A' },
+			],
 		} );
 
 		const errors = selectType.validate( newStringValue(), property );
@@ -96,7 +110,9 @@ describe( 'validate', () => {
 	it( 'returns required error for required undefined value', () => {
 		const property = newSelectProperty( {
 			required: true,
-			options: [ 'A', 'B', 'C' ],
+			options: [
+				{ id: 'a', label: 'A' },
+			],
 		} );
 
 		const errors = selectType.validate( undefined, property );
@@ -104,63 +120,97 @@ describe( 'validate', () => {
 		expect( errors ).toEqual( [ { code: 'required' } ] );
 	} );
 
-	it( 'returns no errors for valid option', () => {
+	it( 'accepts a known option ID as valid', () => {
 		const property = newSelectProperty( {
-			options: [ 'Draft', 'Review', 'Approved' ],
+			options: [
+				{ id: 'opt1', label: 'Draft' },
+				{ id: 'opt2', label: 'Review' },
+			],
 		} );
 
-		const errors = selectType.validate( newStringValue( 'Review' ), property );
-
-		expect( errors ).toEqual( [] );
+		expect( selectType.validate( newStringValue( 'opt2' ), property ) ).toEqual( [] );
 	} );
 
-	it( 'returns invalid-option error for value not in options', () => {
+	it( 'rejects an option label as invalid since values are matched by ID', () => {
 		const property = newSelectProperty( {
-			options: [ 'Draft', 'Review', 'Approved' ],
+			options: [
+				{ id: 'opt1', label: 'Draft' },
+				{ id: 'opt2', label: 'Review' },
+			],
 		} );
 
-		const errors = selectType.validate( newStringValue( 'Rejected' ), property );
-
-		expect( errors ).toEqual( [ {
-			code: 'invalid-option',
-			args: [ 'Rejected' ],
-			source: 'Rejected',
-		} ] );
+		expect( selectType.validate( newStringValue( 'Draft' ), property ) ).toEqual( [
+			{ code: 'invalid-option', args: [ 'Draft' ], source: 'Draft' },
+		] );
 	} );
 
 	it( 'returns single-value-only error when multiple values given for single select', () => {
 		const property = newSelectProperty( {
-			options: [ 'A', 'B', 'C' ],
+			options: [
+				{ id: 'a', label: 'A' },
+				{ id: 'b', label: 'B' },
+			],
 			multiple: false,
 		} );
 
-		const errors = selectType.validate( newStringValue( [ 'A', 'B' ] ), property );
+		const errors = selectType.validate( newStringValue( [ 'a', 'b' ] ), property );
 
 		expect( errors ).toEqual( [ { code: 'single-value-only' } ] );
 	} );
 
 	it( 'returns no errors for multiple values when multiple is true', () => {
 		const property = newSelectProperty( {
-			options: [ 'A', 'B', 'C' ],
+			options: [
+				{ id: 'a', label: 'A' },
+				{ id: 'b', label: 'B' },
+				{ id: 'c', label: 'C' },
+			],
 			multiple: true,
 		} );
 
-		const errors = selectType.validate( newStringValue( [ 'A', 'C' ] ), property );
+		const errors = selectType.validate( newStringValue( [ 'a', 'c' ] ), property );
 
 		expect( errors ).toEqual( [] );
 	} );
 
 	it( 'returns invalid-option errors for each invalid value in multi-select', () => {
 		const property = newSelectProperty( {
-			options: [ 'A', 'B', 'C' ],
+			options: [
+				{ id: 'a', label: 'A' },
+				{ id: 'b', label: 'B' },
+				{ id: 'c', label: 'C' },
+			],
 			multiple: true,
 		} );
 
-		const errors = selectType.validate( newStringValue( [ 'A', 'X', 'B', 'Y' ] ), property );
+		const errors = selectType.validate( newStringValue( [ 'a', 'X', 'b', 'Y' ] ), property );
 
 		expect( errors ).toEqual( [
 			{ code: 'invalid-option', args: [ 'X' ], source: 'X' },
 			{ code: 'invalid-option', args: [ 'Y' ], source: 'Y' },
 		] );
+	} );
+} );
+
+describe( 'resolveSelectLabel', () => {
+	it( 'returns the label for a known id', () => {
+		const property = newSelectProperty( {
+			options: [
+				{ id: 'opt1', label: 'Draft' },
+				{ id: 'opt2', label: 'Review' },
+			],
+		} );
+
+		expect( resolveSelectLabel( property, 'opt2' ) ).toBe( 'Review' );
+	} );
+
+	it( 'returns undefined for an unknown id', () => {
+		const property = newSelectProperty( {
+			options: [
+				{ id: 'opt1', label: 'Draft' },
+			],
+		} );
+
+		expect( resolveSelectLabel( property, 'unknown' ) ).toBeUndefined();
 	} );
 } );

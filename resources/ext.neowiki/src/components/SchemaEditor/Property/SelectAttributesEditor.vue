@@ -35,7 +35,7 @@
 import { computed, ref } from 'vue';
 import { CdxChipInput, CdxField, CdxToggleSwitch } from '@wikimedia/codex';
 import type { ChipInputItem } from '@wikimedia/codex';
-import { SelectProperty } from '@/domain/propertyTypes/Select.ts';
+import { SelectOption, SelectProperty } from '@/domain/propertyTypes/Select.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 
 const props = defineProps<AttributesEditorProps<SelectProperty>>();
@@ -44,12 +44,12 @@ const emit = defineEmits<AttributesEditorEmits<SelectProperty>>();
 const optionsError = ref<string | null>( null );
 
 const optionChips = computed( (): ChipInputItem[] =>
-	props.property.options.map( ( option ) => ( { value: option } ) )
+	props.property.options.map( ( option ) => ( { value: option.label } ) )
 );
 
 const updateOptions = ( chips: ChipInputItem[] ): void => {
-	const newOptions = chips.map( ( chip ) => String( chip.value ) );
-	const hasDuplicates = new Set( newOptions ).size !== newOptions.length;
+	const newLabels = chips.map( ( chip ) => String( chip.value ) );
+	const hasDuplicates = new Set( newLabels ).size !== newLabels.length;
 
 	if ( hasDuplicates ) {
 		optionsError.value = mw.message( 'neowiki-property-editor-options-unique' ).text();
@@ -57,6 +57,7 @@ const updateOptions = ( chips: ChipInputItem[] ): void => {
 	}
 
 	optionsError.value = null;
+	const newOptions: SelectOption[] = newLabels.map( ( label ) => ( { id: label, label } ) );
 	emit( 'update:property', { options: newOptions } );
 };
 

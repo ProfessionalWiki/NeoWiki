@@ -3,11 +3,22 @@ import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
 import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
 
+export interface SelectOption {
+
+	readonly id: string;
+	readonly label: string;
+
+}
+
 export interface SelectProperty extends PropertyDefinition {
 
-	readonly options: string[];
+	readonly options: SelectOption[];
 	readonly multiple: boolean;
 
+}
+
+export function resolveSelectLabel( property: SelectProperty, id: string ): string | undefined {
+	return property.options.find( ( option ) => option.id === id )?.label;
 }
 
 export class SelectType extends BasePropertyType<SelectProperty, StringValue> {
@@ -21,13 +32,13 @@ export class SelectType extends BasePropertyType<SelectProperty, StringValue> {
 	}
 
 	public getExampleValue( property: SelectProperty ): StringValue {
-		return newStringValue( property.options[ 0 ] ?? '' );
+		return newStringValue( property.options[ 0 ]?.id ?? '' );
 	}
 
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): SelectProperty {
 		return {
 			...base,
-			options: json.options ?? [],
+			options: ( json.options ?? [] ) as SelectOption[],
 			multiple: json.multiple ?? false,
 		} as SelectProperty;
 	}
@@ -41,8 +52,10 @@ export class SelectType extends BasePropertyType<SelectProperty, StringValue> {
 			return errors;
 		}
 
+		const validIds = new Set( property.options.map( ( option ) => option.id ) );
+
 		for ( const part of value.parts ) {
-			if ( !property.options.includes( part ) ) {
+			if ( !validIds.has( part ) ) {
 				errors.push( {
 					code: 'invalid-option',
 					args: [ part ],
