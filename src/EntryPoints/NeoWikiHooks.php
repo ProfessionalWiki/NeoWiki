@@ -51,10 +51,6 @@ class NeoWikiHooks {
 	}
 
 	private static function handleContentPage( OutputPage $out ): void {
-		if ( NeoWikiExtension::getInstance()->isDevelopmentUIEnabled() ) {
-			$out->addHTML( NeoWikiExtension::getInstance()->getFactBox()->htmlFor( $out->getTitle() ) );
-		}
-
 		$out->addModules( 'ext.neowiki' );
 		$out->addModuleStyles( 'ext.neowiki.styles' );
 		$out->addHtml( self::getNeoWikiAppHtml( $out ) );

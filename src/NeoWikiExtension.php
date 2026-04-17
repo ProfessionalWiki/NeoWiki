@@ -80,7 +80,6 @@ use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
-use ProfessionalWiki\NeoWiki\Presentation\FactBox;
 use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
@@ -270,12 +269,6 @@ class NeoWikiExtension {
 
 	private function getRequestAuthority(): Authority {
 		return RequestContext::getMain()->getAuthority();
-	}
-
-	public function getFactBox(): FactBox {
-		return new FactBox(
-			subjectContentRepository: $this->newSubjectContentRepository()
-		);
 	}
 
 	public function newViewHtmlBuilder(): ViewHtmlBuilder {
