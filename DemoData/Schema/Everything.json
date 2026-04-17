@@ -42,16 +42,31 @@
 		},
 		"select/select": {
 			"type": "select",
-			"options": ["Draft", "Review", "Approved", "Archived"]
+			"options": [
+				{ "id": "o1demo1aaaaaab1", "label": "Draft" },
+				{ "id": "o1demo1aaaaaab2", "label": "Review" },
+				{ "id": "o1demo1aaaaaab3", "label": "Approved" },
+				{ "id": "o1demo1aaaaaab4", "label": "Archived" }
+			]
 		},
 		"select/select (required)": {
 			"type": "select",
-			"options": ["Low", "Medium", "High", "Critical"],
+			"options": [
+				{ "id": "o1demo1aaaaaac1", "label": "Low" },
+				{ "id": "o1demo1aaaaaac2", "label": "Medium" },
+				{ "id": "o1demo1aaaaaac3", "label": "High" },
+				{ "id": "o1demo1aaaaaac4", "label": "Critical" }
+			],
 			"required": true
 		},
 		"select/select (many)": {
 			"type": "select",
-			"options": ["Red", "Green", "Blue", "Yellow"],
+			"options": [
+				{ "id": "o1demo1aaaaaad1", "label": "Red" },
+				{ "id": "o1demo1aaaaaad2", "label": "Green" },
+				{ "id": "o1demo1aaaaaad3", "label": "Blue" },
+				{ "id": "o1demo1aaaaaad4", "label": "Yellow" }
+			],
 			"multiple": true
 		},
 		"relation/relation": {

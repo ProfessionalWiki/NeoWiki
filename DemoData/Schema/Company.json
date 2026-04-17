@@ -20,7 +20,12 @@
 		},
 		"Status": {
 			"type": "select",
-			"options": ["Active", "Inactive", "Acquired", "Dissolved"],
+			"options": [
+				{ "id": "o1demo1aaaaaaa1", "label": "Active" },
+				{ "id": "o1demo1aaaaaaa2", "label": "Inactive" },
+				{ "id": "o1demo1aaaaaaa3", "label": "Acquired" },
+				{ "id": "o1demo1aaaaaaa4", "label": "Dissolved" }
+			],
 			"required": true
 		},
 		"World domination progress": {
