@@ -85,6 +85,28 @@ local function testGetChildSubjectsEmptyForPageWithoutChildren()
 	return #children
 end
 
+-- query tests
+
+local function testQueryRejectsEmptyString()
+	local ok = pcall( function()
+		return nw.query( '' )
+	end )
+	if ok then
+		return 'unexpected success'
+	end
+	return 'error'
+end
+
+local function testQueryRejectsWriteQuery()
+	local ok = pcall( function()
+		return nw.query( 'CREATE (n:Foo) RETURN n' )
+	end )
+	if ok then
+		return 'unexpected success'
+	end
+	return 'error'
+end
+
 local tests = {
 	-- getValue
 	{ name = 'getValue returns string value',
@@ -125,6 +147,12 @@ local tests = {
 	  func = testGetChildSubjectsHasLabels, expect = { 'Child Entry', 'Entry' } },
 	{ name = 'getChildSubjects returns empty for page without children',
 	  func = testGetChildSubjectsEmptyForPageWithoutChildren, expect = { 0 } },
+
+	-- query
+	{ name = 'query rejects empty string',
+	  func = testQueryRejectsEmptyString, expect = { 'error' } },
+	{ name = 'query rejects write query',
+	  func = testQueryRejectsWriteQuery, expect = { 'error' } },
 
 }
 
