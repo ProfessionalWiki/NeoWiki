@@ -22,6 +22,10 @@
 
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 
+	"neowiki-page-tools-create-subject": "Create subject",
+	"neowiki-page-tools-edit-json": "View or edit JSON",
+	"neowiki-page-tools-label": "NeoWiki",
+
 	"neowiki-property-editor-name": "Name",
 	"neowiki-property-editor-type": "Type",
 	"neowiki-property-editor-initial-value": "Initial value",
@@ -79,7 +83,6 @@
 	"neowiki-schema-editor-description-placeholder": "Enter a description for the schema",
 
 	"neowiki-subject-creator-title": "Creating subject",
-	"neowiki-subject-creator-button-label": "Create subject",
 	"neowiki-subject-creator-schema-title": "Have an existing schema?",
 	"neowiki-subject-creator-existing-schema": "Use existing",
 	"neowiki-subject-creator-new-schema": "Create new",

@@ -19,6 +19,11 @@
 
 	"neowiki-lua-query-error-empty-query": "Error raised by the nw.query() Lua function when called with an empty Cypher query.",
 	"neowiki-lua-query-error-write-query": "Error raised by the nw.query() Lua function when the Cypher query contains write or non-read-only operations.",
+
+	"neowiki-page-tools-create-subject": "Label for the sidebar link that opens the 'create subject' dialog on pages that have no NeoWiki subject yet.",
+	"neowiki-page-tools-edit-json": "Label for the sidebar link that navigates to Special:NeoJson for the current page. Only visible when development UIs are enabled.",
+	"neowiki-page-tools-label": "Heading for the NeoWiki section in the MediaWiki sidebar (shown as a group label in legacy skins and inside the Tools dropdown in Vector-22).",
+
 	"neowiki-subject-creator-creating-schema": "Subtitle shown in the subject creator dialog header when the user is creating a new schema.",
 	"neowiki-subject-creator-create-schema": "Label for the button that creates a new schema in the subject creator dialog.",
 	"neowiki-subject-creator-continue": "Label for the button that continues from schema creation to subject editing in the subject creator dialog.",

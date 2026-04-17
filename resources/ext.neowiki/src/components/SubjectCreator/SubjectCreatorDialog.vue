@@ -4,7 +4,7 @@
 			class="ext-neowiki-subject-creator-trigger"
 			@click="open = true"
 		>
-			{{ $i18n( 'neowiki-subject-creator-button-label' ).text() }}
+			{{ $i18n( 'neowiki-page-tools-create-subject' ).text() }}
 		</CdxButton>
 		<CdxDialog
 			:open="open"
