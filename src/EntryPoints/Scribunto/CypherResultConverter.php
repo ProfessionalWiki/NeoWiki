@@ -29,14 +29,14 @@ class CypherResultConverter {
 		}
 
 		if ( $value instanceof CypherMap ) {
-			return $this->convertMap( $value );
+			return $this->convertAssociative( $value );
 		}
 
 		if ( $value instanceof Node ) {
 			return [
 				'id' => $value->getId(),
 				'labels' => $this->convertList( $value->getLabels() ),
-				'properties' => $this->convertMap( $value->getProperties() ),
+				'properties' => $this->convertAssociative( $value->getProperties() ),
 			];
 		}
 
@@ -46,7 +46,7 @@ class CypherResultConverter {
 				'type' => $value->getType(),
 				'startNodeId' => $value->getStartNodeId(),
 				'endNodeId' => $value->getEndNodeId(),
-				'properties' => $this->convertMap( $value->getProperties() ),
+				'properties' => $this->convertAssociative( $value->getProperties() ),
 			];
 		}
 
@@ -54,7 +54,7 @@ class CypherResultConverter {
 			return [
 				'id' => $value->getId(),
 				'type' => $value->getType(),
-				'properties' => $this->convertMap( $value->getProperties() ),
+				'properties' => $this->convertAssociative( $value->getProperties() ),
 			];
 		}
 
@@ -66,7 +66,7 @@ class CypherResultConverter {
 		}
 
 		if ( $value instanceof AbstractCypherObject ) {
-			return $this->convertPlainArray( $value->toArray() );
+			return $this->convertAssociative( $value->toArray() );
 		}
 
 		throw new RuntimeException(
@@ -84,17 +84,9 @@ class CypherResultConverter {
 		return $values;
 	}
 
-	private function convertMap( CypherMap $map ): array {
-		$values = [];
-		foreach ( $map as $key => $value ) {
-			$values[$key] = $this->convert( $value );
-		}
-		return $values;
-	}
-
-	private function convertPlainArray( array $array ): array {
+	private function convertAssociative( iterable $entries ): array {
 		$result = [];
-		foreach ( $array as $key => $value ) {
+		foreach ( $entries as $key => $value ) {
 			$result[$key] = $this->convert( $value );
 		}
 		return $result;

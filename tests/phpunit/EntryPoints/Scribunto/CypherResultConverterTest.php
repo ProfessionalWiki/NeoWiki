@@ -4,12 +4,14 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Scribunto;
 
+use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime as Neo4jDateTime;
 use Laudis\Neo4j\Types\Duration;
+use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
@@ -218,14 +220,49 @@ class CypherResultConverterTest extends TestCase {
 
 	public function testCartesianPointBecomesToArrayShape(): void {
 		$result = new CypherList( [
-			new CypherMap( [ 'p' => new CartesianPoint( 1.0, 2.0, 7203 ) ] ),
+			new CypherMap( [ 'p' => new CartesianPoint( 1.0, 2.0 ) ] ),
 		] );
 
-		$converted = $this->newConverter()->convertRows( $result );
+		$this->assertSame(
+			[ 1 => [ 'p' => [
+				'x' => 1.0,
+				'y' => 2.0,
+				'crs' => 'cartesian',
+				'srid' => 7203,
+			] ] ],
+			$this->newConverter()->convertRows( $result )
+		);
+	}
 
-		$this->assertSame( 7203, $converted[1]['p']['srid'] );
-		$this->assertSame( 1.0, $converted[1]['p']['x'] );
-		$this->assertSame( 2.0, $converted[1]['p']['y'] );
+	public function testCartesian3DPointIncludesZ(): void {
+		$result = new CypherList( [
+			new CypherMap( [ 'p' => new Cartesian3DPoint( 1.0, 2.0, 3.0 ) ] ),
+		] );
+
+		$this->assertSame(
+			[ 1 => [ 'p' => [
+				'x' => 1.0,
+				'y' => 2.0,
+				'crs' => 'cartesian-3d',
+				'srid' => 9157,
+				'z' => 3.0,
+			] ] ],
+			$this->newConverter()->convertRows( $result )
+		);
+	}
+
+	public function testLocalDateTimeBecomesToArrayShape(): void {
+		$result = new CypherList( [
+			new CypherMap( [ 'ldt' => new LocalDateTime( 1700000000, 123456789 ) ] ),
+		] );
+
+		$this->assertSame(
+			[ 1 => [ 'ldt' => [
+				'seconds' => 1700000000,
+				'nanoseconds' => 123456789,
+			] ] ],
+			$this->newConverter()->convertRows( $result )
+		);
 	}
 
 	public function testUnknownObjectTypeThrows(): void {

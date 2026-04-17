@@ -176,8 +176,7 @@ A 1-indexed Lua table of rows. Each row is a string-keyed table where the keys a
 without a `nil` check.
 
 Scalar values come back as strings, numbers, booleans, or `nil`. Nested Cypher lists become
-1-indexed tables; Cypher maps become string-keyed tables. Neo4j-specific types convert as follows
-(matching the JSON shape of `{{#cypher_raw}}`):
+1-indexed tables; Cypher maps become string-keyed tables. Neo4j-specific types convert as follows:
 
 | Cypher type | Lua shape |
 |-------------|-----------|

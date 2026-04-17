@@ -80,16 +80,21 @@ class CypherQueryRunnerTest extends TestCase {
 		);
 	}
 
-	public function testEmptyQueryThrows(): void {
+	public function testEmptyQueryThrowsWithEmptyQueryMessage(): void {
 		$runner = $this->newRunner( $this->stubEngine( $this->emptyResult() ) );
 
 		$this->expectException( RuntimeException::class );
+		$this->expectExceptionMessageMatches( '/empty/i' );
 		$runner->run( '   ', [] );
 	}
 
-	public function testDisallowedQueryThrowsAndSkipsEngine(): void {
-		$engine = $this->stubEngine( $this->emptyResult() );
-		$runner = $this->newRunner(
+	public function testDisallowedQueryThrowsWithReadOnlyMessage(): void {
+		$engine = new class implements QueryEngine {
+			public function runReadQuery( string $cypher, array $parameters = [] ): SummarizedResult {
+				throw new \LogicException( 'engine must not be called for a rejected query' );
+			}
+		};
+		$runner = new CypherQueryRunner(
 			$engine,
 			new class implements CypherQueryValidator {
 
@@ -97,15 +102,13 @@ class CypherQueryRunnerTest extends TestCase {
 					return false;
 				}
 
-			}
+			},
+			new CypherResultConverter()
 		);
 
-		try {
-			$runner->run( 'CREATE (n)', [] );
-			$this->fail( 'Expected RuntimeException' );
-		} catch ( RuntimeException $e ) {
-			$this->assertSame( '', $engine->lastCypher, 'engine must not be called for a rejected query' );
-		}
+		$this->expectException( RuntimeException::class );
+		$this->expectExceptionMessageMatches( '/read-only/i' );
+		$runner->run( 'CREATE (n)', [] );
 	}
 
 	public function testTrimsCypherBeforeValidationAndExecution(): void {
