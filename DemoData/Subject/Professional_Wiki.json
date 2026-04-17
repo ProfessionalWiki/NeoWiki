@@ -18,7 +18,7 @@
 				},
 				"Status": {
 					"type": "select",
-					"value": ["Active"]
+					"value": ["o1demo1aaaaaaa1"]
 				},
 				"Products": {
 					"type": "relation",
