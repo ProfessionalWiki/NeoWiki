@@ -201,10 +201,10 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 		)->isEmpty() === false;
 	}
 
-	public function runReadQuery( string $cypher ): SummarizedResult {
+	public function runReadQuery( string $cypher, array $parameters = [] ): SummarizedResult {
 		return $this->readOnlyClient->readTransaction(
-			function ( TransactionInterface $transaction ) use ( $cypher ): SummarizedResult {
-				return $transaction->run( $cypher );
+			function ( TransactionInterface $transaction ) use ( $cypher, $parameters ): SummarizedResult {
+				return $transaction->run( $cypher, $parameters );
 			}
 		);
 	}

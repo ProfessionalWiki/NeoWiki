@@ -8,6 +8,6 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 
 interface QueryEngine {
 
-	public function runReadQuery( string $cypher ): SummarizedResult;
+	public function runReadQuery( string $cypher, array $parameters = [] ): SummarizedResult;
 
 }
