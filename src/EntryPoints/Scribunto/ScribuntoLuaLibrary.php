@@ -4,13 +4,16 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\Scribunto;
 
+use Exception;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class ScribuntoLuaLibrary extends LibraryBase {
 
 	private ?SubjectDataLookup $subjectDataLookup = null;
+	private ?CypherQueryRunner $cypherQueryRunner = null;
 
 	private function getSubjectDataLookup(): SubjectDataLookup {
 		if ( $this->subjectDataLookup === null ) {
@@ -27,6 +30,20 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		return $this->subjectDataLookup;
 	}
 
+	private function getCypherQueryRunner(): CypherQueryRunner {
+		if ( $this->cypherQueryRunner === null ) {
+			$extension = NeoWikiExtension::getInstance();
+
+			$this->cypherQueryRunner = new CypherQueryRunner(
+				$extension->getNeo4jPlugin(),
+				$extension->getCypherQueryValidator(),
+				new CypherResultConverter(),
+			);
+		}
+
+		return $this->cypherQueryRunner;
+	}
+
 	public function register(): array {
 		$lib = [
 			'getValue' => [ $this, 'getValue' ],
@@ -34,6 +51,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 			'getMainSubject' => [ $this, 'getMainSubject' ],
 			'getSubject' => [ $this, 'getSubject' ],
 			'getChildSubjects' => [ $this, 'getChildSubjects' ],
+			'query' => [ $this, 'query' ],
 		];
 
 		return $this->getEngine()->registerInterface(
@@ -86,6 +104,20 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		}
 
 		return $this->getSubjectDataLookup()->getChildSubjectsData( $this->getTitle(), $pageName );
+	}
+
+	public function query( ?string $cypher = null, ?array $params = null ): array {
+		$this->checkType( 'mw.neowiki.query', 1, $cypher, 'string' );
+		$this->checkTypeOptional( 'mw.neowiki.query', 2, $params, 'table', null );
+		$this->incrementExpensiveFunctionCount();
+
+		try {
+			$rows = $this->getCypherQueryRunner()->run( $cypher, $params ?? [] );
+		} catch ( Exception $e ) {
+			throw new LuaError( $e->getMessage() );
+		}
+
+		return [ $rows ];
 	}
 
 }

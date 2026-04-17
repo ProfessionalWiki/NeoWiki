@@ -32,4 +32,8 @@ function neowiki.getChildSubjects( pageName )
 	return php.getChildSubjects( pageName )
 end
 
+function neowiki.query( cypher, params )
+	return php.query( cypher, params )
+end
+
 return neowiki
