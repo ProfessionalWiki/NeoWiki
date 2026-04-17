@@ -7,18 +7,18 @@ describe( 'SubjectStore — subjectCreatorOpen', () => {
 		setActivePinia( createPinia() );
 	} );
 
-	it( 'defaults subjectCreatorOpen to false', () => {
+	it( 'starts closed by default', () => {
 		const store = useSubjectStore();
 		expect( store.subjectCreatorOpen ).toBe( false );
 	} );
 
-	it( 'openSubjectCreator sets the flag to true', () => {
+	it( 'opens the creator when openSubjectCreator is called', () => {
 		const store = useSubjectStore();
 		store.openSubjectCreator();
 		expect( store.subjectCreatorOpen ).toBe( true );
 	} );
 
-	it( 'closeSubjectCreator sets the flag to false', () => {
+	it( 'closes the creator when closeSubjectCreator is called', () => {
 		const store = useSubjectStore();
 		store.openSubjectCreator();
 		store.closeSubjectCreator();

@@ -23,12 +23,6 @@ export const useSubjectStore = defineStore( 'subject', {
 		},
 	},
 	actions: {
-		openSubjectCreator(): void {
-			this.subjectCreatorOpen = true;
-		},
-		closeSubjectCreator(): void {
-			this.subjectCreatorOpen = false;
-		},
 		setSubject( subject: Subject ): void { // TODO: just take Subject
 			this.subjects.set( subject.getId().text, subject );
 		},
@@ -74,6 +68,13 @@ export const useSubjectStore = defineStore( 'subject', {
 				),
 			);
 			return subjectId;
+		},
+
+		openSubjectCreator(): void {
+			this.subjectCreatorOpen = true;
+		},
+		closeSubjectCreator(): void {
+			this.subjectCreatorOpen = false;
 		},
 	},
 } );
