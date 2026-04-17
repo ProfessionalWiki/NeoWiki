@@ -11,6 +11,7 @@ enough.
 | Read every value from a multi-valued property | [`nw.getAll`](#nwgetallpropertyname-options) |
 | Get a page's Main Subject (label, schema, all properties) | [`nw.getMainSubject`](#nwgetmainsubjectpagename) |
 | Get a Subject by its ID, regardless of which page it's on | [`nw.getSubject`](#nwgetsubjectsubjectid) |
+| Run a read-only Cypher query | [`nw.query`](#nwquerycypher-params) |
 | List all Child Subjects on a page | [`nw.getChildSubjects`](#nwgetchildsubjectspagename) |
 
 For definitions of terms like Subject, Schema, and Statement, see the [Glossary](Glossary.md).
@@ -157,6 +158,71 @@ for _, child in ipairs(children) do
 end
 ```
 
+### `nw.query(cypher, params)`
+
+Runs a read-only Cypher query against the graph database and returns each row as a Lua table. Use
+this when a single property lookup is not enough — for example, to join multiple Subjects, filter
+or sort in the query, or build a custom table.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cypher` | string | Required. A Cypher query. Must be read-only (no `CREATE`, `SET`, `DELETE`, etc.). |
+| `params` | table | Optional. Parameter name → value. Use `$name` in the query to reference them. |
+
+#### Returns
+
+A 1-indexed Lua table of rows. Each row is a string-keyed table where the keys are the Cypher
+`RETURN` aliases. An empty result is returned as `{}`, so it is safe to iterate with `ipairs`
+without a `nil` check.
+
+Scalar values come back as strings, numbers, booleans, or `nil`. Nested Cypher lists become
+1-indexed tables; Cypher maps become string-keyed tables. Neo4j-specific types convert as follows
+(matching the JSON shape of `{{#cypher_raw}}`):
+
+| Cypher type | Lua shape |
+|-------------|-----------|
+| Node | `{ id, labels, properties }` |
+| Relationship | `{ id, type, startNodeId, endNodeId, properties }` |
+| Path | `{ nodes, relationships }` |
+| Temporal types | Structured table; fields vary by type (`days`, `seconds`, `nanoseconds`, `tzOffsetSeconds`, `tzId`) |
+| Duration | `{ months, days, seconds, nanoseconds }` |
+| Point | `{ srid, x, y }` (plus `z` for 3D points) |
+
+#### Errors
+
+Always throws on failure; wrap in `pcall` if you need graceful degradation.
+
+- Empty or whitespace-only `cypher`.
+- Write or non-read-only queries (rejected by the validator).
+- Cypher syntax errors, missing parameters, or database errors (surfaced with the underlying
+  message).
+
+#### Expensive
+
+Every call counts as an expensive parser function. Keep an eye on your page's expensive function
+limit if a template calls `nw.query` in a loop.
+
+#### Examples
+
+```lua
+local rows = nw.query( 'MATCH (s:Subject) RETURN s.name LIMIT 5' )
+
+for _, row in ipairs( rows ) do
+    mw.log( row['s.name'] )
+end
+```
+
+```lua
+-- Parameterised — always prefer this over concatenating values into the query.
+local rows = nw.query(
+    'MATCH (s:Subject {schema: $schema}) WHERE s.`Valid` = $valid RETURN s.name, s.`Expiry date`',
+    { schema = 'ISMS Document', valid = 'Yes' }
+)
+```
+
+Lua numbers are all floats in PHP. If a typed comparison fails, cast in the query — for example
+`WHERE s.year = toInteger($year)`.
+
 ## Subject table format
 
 Subject tables returned by `getMainSubject`, `getSubject`, and `getChildSubjects` have this
@@ -204,8 +270,6 @@ Calls that look up another page or a specific Subject ID count as expensive pars
 
 The following are not yet implemented:
 
-- `nw.query(cypher, params)` — Execute Cypher queries from Lua. Tracked in
-  [#736](https://github.com/ProfessionalWiki/NeoWiki/issues/736).
 - `nw.getSchema(name)` — Schema introspection for generic templates. Tracked in
   [#737](https://github.com/ProfessionalWiki/NeoWiki/issues/737).
 
