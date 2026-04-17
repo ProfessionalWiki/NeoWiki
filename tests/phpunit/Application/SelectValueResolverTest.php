@@ -106,6 +106,16 @@ class SelectValueResolverTest extends TestCase {
 		$this->assertSame( 'opt3', $id );
 	}
 
+	public function testObjectWithOnlyIdDoesNotFallBackToLabelMatch(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Draft' );
+
+		$this->newResolver()->resolve(
+			$this->newProperty(),
+			[ 'id' => 'Draft' ]
+		);
+	}
+
 	public function testAcceptsObjectWithOnlyLabel(): void {
 		$id = $this->newResolver()->resolve(
 			$this->newProperty(),

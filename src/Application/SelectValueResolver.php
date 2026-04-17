@@ -65,7 +65,11 @@ readonly class SelectValueResolver {
 		}
 
 		if ( $id !== null ) {
-			return $this->resolveFromScalar( $property, $id );
+			$matched = $this->findById( $property, $id );
+			if ( $matched === null ) {
+				throw new InvalidArgumentException( "No select option matches id \"$id\"" );
+			}
+			return $matched->getId();
 		}
 
 		/** @var string $label */
