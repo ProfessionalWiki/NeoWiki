@@ -84,4 +84,62 @@ function p.children( frame )
 	return table.concat( parts, ', ' )
 end
 
+local function renderRowsAsTable( rows )
+	if #rows == 0 then
+		return 'No results'
+	end
+
+	local columns = {}
+	for k in pairs( rows[1] ) do
+		columns[#columns + 1] = k
+	end
+	table.sort( columns )
+
+	local out = { '{| class="wikitable"', '! ' .. table.concat( columns, ' !! ' ) }
+
+	for _, row in ipairs( rows ) do
+		local cells = {}
+		for _, col in ipairs( columns ) do
+			local v = row[col]
+			cells[#cells + 1] = v == nil and '' or tostring( v )
+		end
+		out[#out + 1] = '|-'
+		out[#out + 1] = '| ' .. table.concat( cells, ' || ' )
+	end
+
+	out[#out + 1] = '|}'
+	return table.concat( out, '\n' )
+end
+
+function p.query( frame )
+	local cypher = frame.args[1] or frame.args.query
+	if not cypher or cypher == '' then
+		return 'No query provided'
+	end
+
+	local ok, result = pcall( nw.query, cypher )
+	if not ok then
+		return 'Query failed: ' .. tostring( result )
+	end
+
+	return renderRowsAsTable( result )
+end
+
+function p.productsFoundedSince( frame )
+	local year = tonumber( frame.args[1] ) or 2000
+
+	local ok, result = pcall(
+		nw.query,
+		'MATCH (n:Product) WHERE n.`Available since` >= $year ' ..
+			'RETURN n.name AS name, n.`Available since` AS year ORDER BY year',
+		{ year = year }
+	)
+
+	if not ok then
+		return 'Query failed: ' .. tostring( result )
+	end
+
+	return renderRowsAsTable( result )
+end
+
 return p

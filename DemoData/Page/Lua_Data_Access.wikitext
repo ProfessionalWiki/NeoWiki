@@ -34,6 +34,34 @@ The examples use [[Module:NeoWikiDemo]], a demo module included with NeoWiki.
 
 Child subjects on [[ACME Inc]]: {{#invoke:NeoWikiDemo|children|ACME Inc}}
 
+== Running Cypher Queries ==
+
+<code>mw.neowiki.query()</code> runs a read-only Cypher query and returns each row as a Lua table keyed
+by the <code>RETURN</code> aliases. Use it when a single-property lookup is not enough — for example
+to join Subjects, sort results, or list all Subjects of a given type.
+
+=== Listing all Companies ===
+
+<syntaxhighlight lang="cypher">
+MATCH (n:Company) RETURN n.name, n.id
+</syntaxhighlight>
+
+{{#invoke:NeoWikiDemo|query|MATCH (n:Company) RETURN n.name, n.id}}
+
+=== Parameterised query: Products available since a given year ===
+
+Templates should always pass values via the <code>params</code> table instead of concatenating into the query string.
+
+<syntaxhighlight lang="lua">
+nw.query(
+    'MATCH (n:Product) WHERE n.`Available since` >= $year ' ..
+        'RETURN n.name AS name, n.`Available since` AS year ORDER BY year',
+    { year = 2010 }
+)
+</syntaxhighlight>
+
+Products available since 2010: {{#invoke:NeoWikiDemo|productsFoundedSince|2010}}
+
 == Module Source ==
 
 The demo module uses these <code>mw.neowiki</code> functions:
@@ -54,6 +82,12 @@ s.id, s.label, s.schema, s.statements
 
 -- Get child subjects
 local children = nw.getChildSubjects( 'ACME Inc' )
+
+-- Run a read-only Cypher query
+local rows = nw.query(
+    'MATCH (n:Product) WHERE n.`Available since` >= $year RETURN n.name, n.`Available since`',
+    { year = 2010 }
+)
 </syntaxhighlight>
 
 See [[Module:NeoWikiDemo]] for the full source.
