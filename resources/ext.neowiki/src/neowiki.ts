@@ -18,7 +18,7 @@ import { useSubjectStore } from '@/stores/SubjectStore';
 
 const SUBJECT_CREATOR_TRIGGER_SELECTOR = '[data-mw-neowiki-action="open-subject-creator"]';
 
-export function registerSubjectCreatorClickHandler( pinia: Pinia ): void {
+export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: AbortSignal ): void {
 	document.addEventListener( 'click', ( event ) => {
 		const target = event.target;
 		if ( !( target instanceof Element ) ) {
@@ -30,7 +30,7 @@ export function registerSubjectCreatorClickHandler( pinia: Pinia ): void {
 		}
 		event.preventDefault();
 		useSubjectStore( pinia ).openSubjectCreator();
-	} );
+	}, { signal } );
 }
 
 async function initializeNeoWikiApp(): Promise<void> {
