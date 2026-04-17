@@ -22,9 +22,9 @@
 
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 
+	"neowiki-page-tools-label": "NeoWiki",
 	"neowiki-page-tools-create-subject": "Create subject",
 	"neowiki-page-tools-edit-json": "View or edit JSON",
-	"neowiki-page-tools-label": "NeoWiki",
 
 	"neowiki-property-editor-name": "Name",
 	"neowiki-property-editor-type": "Type",
