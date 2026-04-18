@@ -176,7 +176,7 @@ A 1-indexed Lua table of rows. Each row is a string-keyed table where the keys a
 without a `nil` check.
 
 Scalar values come back as strings, numbers, booleans, or `nil`. Nested Cypher lists become
-1-indexed tables; Cypher maps become string-keyed tables. Neo4j-specific types convert as follows:
+1-indexed tables; Cypher maps become string-keyed tables. Graph types convert as follows:
 
 | Cypher type | Lua shape |
 |-------------|-----------|
@@ -192,9 +192,8 @@ supported. Cast to a scalar in the query — e.g. `toString(datetime())` or `poi
 Always throws on failure; wrap in `pcall` if you need graceful degradation.
 
 - Empty or whitespace-only `cypher`.
-- Write or non-read-only queries (rejected by the validator).
-- Cypher syntax errors, missing parameters, or database errors (surfaced with the underlying
-  message).
+- Write or non-read-only queries.
+- Cypher syntax errors, missing parameters, or database errors.
 
 #### Expensive
 
@@ -219,8 +218,7 @@ local rows = nw.query(
 )
 ```
 
-Lua numbers are all floats in PHP. If a typed comparison fails, cast in the query — for example
-`WHERE s.year = toInteger($year)`.
+Integer comparisons need an explicit cast in the query — e.g. `WHERE s.year = toInteger($year)`.
 
 ## Subject table format
 
