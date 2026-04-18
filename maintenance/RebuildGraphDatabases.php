@@ -6,13 +6,10 @@ namespace ProfessionalWiki\NeoWiki\Maintenance;
 
 use Maintenance;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Title\Title;
-use MediaWiki\User\UserIdentity;
-use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
+use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
-use User;
 
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../..';
 
@@ -35,14 +32,15 @@ class RebuildGraphDatabases extends Maintenance {
 
 		$this->outputChanneled( 'Rebuilding graph databases for ' . count( $pageIds ) . ' subject pages...' );
 
-		$handler = NeoWikiExtension::getInstance()->getStoreContentUC();
-		$wikiPageFactory = MediaWikiServices::getInstance()->getWikiPageFactory();
-		$user = $this->getMaintenanceUser();
+		$rebuilder = new SubjectPageRebuilder(
+			NeoWikiExtension::getInstance()->getStoreContentUC(),
+			MediaWikiServices::getInstance()->getWikiPageFactory()
+		);
 
 		$rebuilt = 0;
 
 		foreach ( $pageIds as $pageId ) {
-			if ( $this->rebuildPage( $pageId, $handler, $wikiPageFactory, $user ) ) {
+			if ( $this->rebuildPage( $pageId, $rebuilder ) ) {
 				$rebuilt++;
 			}
 		}
@@ -50,12 +48,7 @@ class RebuildGraphDatabases extends Maintenance {
 		$this->outputChanneled( "Rebuild finished. Rebuilt $rebuilt of " . count( $pageIds ) . ' pages.' );
 	}
 
-	private function rebuildPage(
-		int $pageId,
-		OnRevisionCreatedHandler $handler,
-		WikiPageFactory $wikiPageFactory,
-		UserIdentity $user
-	): bool {
+	private function rebuildPage( int $pageId, SubjectPageRebuilder $rebuilder ): bool {
 		$title = Title::newFromID( $pageId );
 
 		if ( $title === null ) {
@@ -63,14 +56,11 @@ class RebuildGraphDatabases extends Maintenance {
 			return false;
 		}
 
-		$revision = $wikiPageFactory->newFromTitle( $title )->getRevisionRecord();
-
-		if ( $revision === null ) {
+		if ( !$rebuilder->rebuild( $title ) ) {
 			$this->outputChanneled( 'Skipped ' . $title->getPrefixedText() . ': no current revision' );
 			return false;
 		}
 
-		$handler->onRevisionCreated( $revision, $user );
 		$this->outputChanneled( 'Rebuilt ' . $title->getPrefixedText() );
 		return true;
 	}
@@ -92,10 +82,6 @@ class RebuildGraphDatabases extends Maintenance {
 			->fetchFieldValues();
 
 		return array_map( 'intval', $rows );
-	}
-
-	private function getMaintenanceUser(): User {
-		return User::newSystemUser( 'NeoWiki', [ 'steal' => true ] );
 	}
 
 }
