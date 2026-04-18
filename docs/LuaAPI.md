@@ -183,9 +183,9 @@ Scalar values come back as strings, numbers, booleans, or `nil`. Nested Cypher l
 | Node | `{ id, labels, properties }` |
 | Relationship | `{ id, type, startNodeId, endNodeId, properties }` |
 | Path | `{ nodes, relationships }` |
-| Temporal types | Structured table; fields vary by type (`days`, `seconds`, `nanoseconds`, `tzOffsetSeconds`, `tzId`) |
-| Duration | `{ months, days, seconds, nanoseconds }` |
-| Point | `{ srid, x, y }` (plus `z` for 3D points) |
+
+Temporal and spatial values (from Cypher functions like `datetime()` or `point()`) are not
+supported. Cast to a scalar in the query — e.g. `toString(datetime())` or `point.x(p)`.
 
 #### Errors
 

@@ -4,14 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Scribunto;
 
-use Laudis\Neo4j\Types\Cartesian3DPoint;
-use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-use Laudis\Neo4j\Types\Date;
-use Laudis\Neo4j\Types\DateTime as Neo4jDateTime;
-use Laudis\Neo4j\Types\Duration;
-use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
@@ -174,95 +168,6 @@ class CypherResultConverterTest extends TestCase {
 			$converted[1]['p']['nodes']
 		);
 		$this->assertSame( 9, $converted[1]['p']['relationships'][1]['id'] );
-	}
-
-	public function testDateBecomesToArrayShape(): void {
-		$result = new CypherList( [
-			new CypherMap( [ 'd' => new Date( 19500 ) ] ),
-		] );
-
-		$this->assertSame(
-			[ 1 => [ 'd' => [ 'days' => 19500 ] ] ],
-			$this->newConverter()->convertRows( $result )
-		);
-	}
-
-	public function testDateTimeBecomesToArrayShape(): void {
-		$result = new CypherList( [
-			new CypherMap( [ 'dt' => new Neo4jDateTime( 1700000000, 123456789, 3600, false ) ] ),
-		] );
-
-		$this->assertSame(
-			[ 1 => [ 'dt' => [
-				'seconds' => 1700000000,
-				'nanoseconds' => 123456789,
-				'tzOffsetSeconds' => 3600,
-			] ] ],
-			$this->newConverter()->convertRows( $result )
-		);
-	}
-
-	public function testDurationBecomesToArrayShape(): void {
-		$result = new CypherList( [
-			new CypherMap( [ 'dur' => new Duration( 2, 15, 30, 0 ) ] ),
-		] );
-
-		$this->assertSame(
-			[ 1 => [ 'dur' => [
-				'months' => 2,
-				'days' => 15,
-				'seconds' => 30,
-				'nanoseconds' => 0,
-			] ] ],
-			$this->newConverter()->convertRows( $result )
-		);
-	}
-
-	public function testCartesianPointBecomesToArrayShape(): void {
-		$result = new CypherList( [
-			new CypherMap( [ 'p' => new CartesianPoint( 1.0, 2.0 ) ] ),
-		] );
-
-		$this->assertSame(
-			[ 1 => [ 'p' => [
-				'x' => 1.0,
-				'y' => 2.0,
-				'crs' => 'cartesian',
-				'srid' => 7203,
-			] ] ],
-			$this->newConverter()->convertRows( $result )
-		);
-	}
-
-	public function testCartesian3DPointIncludesZ(): void {
-		$result = new CypherList( [
-			new CypherMap( [ 'p' => new Cartesian3DPoint( 1.0, 2.0, 3.0 ) ] ),
-		] );
-
-		$this->assertSame(
-			[ 1 => [ 'p' => [
-				'x' => 1.0,
-				'y' => 2.0,
-				'crs' => 'cartesian-3d',
-				'srid' => 9157,
-				'z' => 3.0,
-			] ] ],
-			$this->newConverter()->convertRows( $result )
-		);
-	}
-
-	public function testLocalDateTimeBecomesToArrayShape(): void {
-		$result = new CypherList( [
-			new CypherMap( [ 'ldt' => new LocalDateTime( 1700000000, 123456789 ) ] ),
-		] );
-
-		$this->assertSame(
-			[ 1 => [ 'ldt' => [
-				'seconds' => 1700000000,
-				'nanoseconds' => 123456789,
-			] ] ],
-			$this->newConverter()->convertRows( $result )
-		);
 	}
 
 	public function testUnknownObjectTypeThrows(): void {
