@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Maintenance;
 use FileFetcher\SimpleFileFetcher;
 use Maintenance;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPagesAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\PageContentSource;
@@ -32,6 +33,7 @@ class ImportDemoData extends Maintenance {
 
 	public function execute(): void {
 		$this->newImportAction()->import();
+		$this->reindexSubjectPages();
 	}
 
 	private function newImportAction(): ImportPagesAction {
@@ -47,10 +49,7 @@ class ImportDemoData extends Maintenance {
 				NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Schema',
 				new SimpleFileFetcher()
 			),
-			subjectPageSource: new SubjectPageSource(
-				NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Subject',
-				new SimpleFileFetcher()
-			),
+			subjectPageSource: $this->newSubjectPageSource(),
 			pageContentSource: new PageContentSource(
 				[
 					NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Page',
@@ -68,6 +67,42 @@ class ImportDemoData extends Maintenance {
 				new SimpleFileFetcher()
 			)
 		);
+	}
+
+	private function newSubjectPageSource(): SubjectPageSource {
+		return new SubjectPageSource(
+			NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Subject',
+			new SimpleFileFetcher()
+		);
+	}
+
+	/**
+	 * Re-fires the revision-created handler for every subject page so that the Neo4j index
+	 * matches the imported state. The standard import path only triggers indexing when a
+	 * new revision is actually created, so re-runs after a Neo4j wipe leave subjects on
+	 * unchanged pages unindexed (and any inbound relations point at unlabeled stub nodes).
+	 */
+	private function reindexSubjectPages(): void {
+		$wikiPageFactory = MediaWikiServices::getInstance()->getWikiPageFactory();
+		$handler = NeoWikiExtension::getInstance()->getStoreContentUC();
+		$user = $this->getUser();
+
+		foreach ( $this->newSubjectPageSource()->getSubjectPages() as $subjectPageData ) {
+			$title = Title::newFromText( $subjectPageData->pageName );
+
+			if ( $title === null ) {
+				continue;
+			}
+
+			$revision = $wikiPageFactory->newFromTitle( $title )->getRevisionRecord();
+
+			if ( $revision === null ) {
+				continue;
+			}
+
+			$handler->onRevisionCreated( $revision, $user );
+			$this->outputChanneled( 'Reindexed ' . $title->getPrefixedText() );
+		}
 	}
 
 	private function getUser(): User {
