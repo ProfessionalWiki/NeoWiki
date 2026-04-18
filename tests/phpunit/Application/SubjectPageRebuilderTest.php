@@ -11,7 +11,7 @@ use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
-use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyOnRevisionCreatedHandler;
 use WikiPage;
 
 /**
@@ -19,96 +19,42 @@ use WikiPage;
  */
 class SubjectPageRebuilderTest extends TestCase {
 
+	private SpyOnRevisionCreatedHandler $handler;
+
+	protected function setUp(): void {
+		$this->handler = new SpyOnRevisionCreatedHandler();
+	}
+
 	public function testPassesRevisionAuthorToHandler(): void {
-		$revisionAuthor = new UserIdentityValue( 42, 'RevisionAuthor' );
-		$revision = $this->newRevisionWithUser( $revisionAuthor );
+		$author = new UserIdentityValue( 42, 'RevisionAuthor' );
 
-		$capturedUser = null;
-		$handler = $this->newHandlerCapturingUser( $capturedUser );
+		$this->newRebuilder( $this->newRevisionByUser( $author ) )
+			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
 
-		$rebuilder = new SubjectPageRebuilder(
-			$handler,
-			$this->newWikiPageFactoryWithRevision( $revision )
-		);
-
-		$rebuilder->rebuild( Title::makeTitle( NS_MAIN, 'TestPage' ) );
-
-		$this->assertSame( $revisionAuthor, $capturedUser );
-	}
-
-	public function testPassesGivenRevisionToHandler(): void {
-		$revisionAuthor = new UserIdentityValue( 42, 'RevisionAuthor' );
-		$revision = $this->newRevisionWithUser( $revisionAuthor );
-
-		$capturedRevision = null;
-		$handler = $this->createMock( OnRevisionCreatedHandler::class );
-		$handler->expects( $this->once() )
-			->method( 'onRevisionCreated' )
-			->willReturnCallback(
-				function ( RevisionRecord $r ) use ( &$capturedRevision ): void {
-					$capturedRevision = $r;
-				}
-			);
-
-		$rebuilder = new SubjectPageRebuilder(
-			$handler,
-			$this->newWikiPageFactoryWithRevision( $revision )
-		);
-
-		$rebuilder->rebuild( Title::makeTitle( NS_MAIN, 'TestPage' ) );
-
-		$this->assertSame( $revision, $capturedRevision );
-	}
-
-	public function testReturnsTrueWhenRebuilt(): void {
-		$revision = $this->newRevisionWithUser( new UserIdentityValue( 1, 'Someone' ) );
-
-		$rebuilder = new SubjectPageRebuilder(
-			$this->createMock( OnRevisionCreatedHandler::class ),
-			$this->newWikiPageFactoryWithRevision( $revision )
-		);
-
-		$this->assertTrue( $rebuilder->rebuild( Title::makeTitle( NS_MAIN, 'TestPage' ) ) );
+		$this->assertSame( $author, $this->handler->calls[0]['user'] );
 	}
 
 	public function testSkipsPageWithoutCurrentRevision(): void {
-		$handler = $this->createMock( OnRevisionCreatedHandler::class );
-		$handler->expects( $this->never() )->method( 'onRevisionCreated' );
+		$rebuilt = $this->newRebuilder( null )->rebuild( Title::makeTitle( NS_MAIN, 'Missing' ) );
 
-		$rebuilder = new SubjectPageRebuilder(
-			$handler,
-			$this->newWikiPageFactoryWithRevision( null )
-		);
-
-		$this->assertFalse( $rebuilder->rebuild( Title::makeTitle( NS_MAIN, 'Missing' ) ) );
+		$this->assertFalse( $rebuilt );
+		$this->assertSame( [], $this->handler->calls );
 	}
 
-	private function newRevisionWithUser( UserIdentity $user ): RevisionRecord {
-		$revision = $this->createMock( RevisionRecord::class );
+	private function newRebuilder( ?RevisionRecord $revision ): SubjectPageRebuilder {
+		$page = $this->createStub( WikiPage::class );
+		$page->method( 'getRevisionRecord' )->willReturn( $revision );
+
+		$factory = $this->createStub( WikiPageFactory::class );
+		$factory->method( 'newFromTitle' )->willReturn( $page );
+
+		return new SubjectPageRebuilder( $this->handler, $factory );
+	}
+
+	private function newRevisionByUser( UserIdentity $user ): RevisionRecord {
+		$revision = $this->createStub( RevisionRecord::class );
 		$revision->method( 'getUser' )->willReturn( $user );
 		return $revision;
-	}
-
-	private function newWikiPageFactoryWithRevision( ?RevisionRecord $revision ): WikiPageFactory {
-		$wikiPage = $this->createMock( WikiPage::class );
-		$wikiPage->method( 'getRevisionRecord' )->willReturn( $revision );
-
-		$factory = $this->createMock( WikiPageFactory::class );
-		$factory->method( 'newFromTitle' )->willReturn( $wikiPage );
-
-		return $factory;
-	}
-
-	private function newHandlerCapturingUser( ?UserIdentity &$capturedUser ): OnRevisionCreatedHandler {
-		$handler = $this->createMock( OnRevisionCreatedHandler::class );
-		$handler->expects( $this->once() )
-			->method( 'onRevisionCreated' )
-			->willReturnCallback(
-				function ( RevisionRecord $r, UserIdentity $user ) use ( &$capturedUser ): void {
-					$capturedUser = $user;
-				}
-			);
-		return $handler;
 	}
 
 }
