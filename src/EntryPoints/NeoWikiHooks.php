@@ -345,8 +345,7 @@ class NeoWikiHooks {
 			return false;
 		}
 
-		$revisionId = $skin->getOutput()->getRevisionId();
-		if ( $revisionId !== null && $revisionId !== $title->getLatestRevID() ) {
+		if ( !self::pageIsLatestRevision( $skin->getOutput() ) ) {
 			return false;
 		}
 

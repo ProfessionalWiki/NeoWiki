@@ -29,7 +29,7 @@ Terminology is explained in [https://github.com/ProfessionalWiki/NeoWiki/blob/ma
 
 * Edit a Subject: [[Professional Wiki]] (login required)
 * Edit a Schema: either via a Subject using it, i.e. [[Professional Wiki]], or directly on the Schema page, i.e. [[Schema:Company]]
-* Create a Subject: Create a new page with any content, then click "Create subject" in the NeoWiki section of the page tools menu.
+* Create a Subject: Create a new page with any content, then click "Create subject" in the NeoWiki section of the sidebar.
 
 '''As a developer:'''
 

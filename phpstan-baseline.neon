@@ -251,26 +251,6 @@ parameters:
 			path: src/Presentation/CsrfValidator.php
 
 		-
-			message: "#^Call to method getFullText\\(\\) on an unknown class Title\\.$#"
-			count: 1
-			path: src/Presentation/FactBox.php
-
-		-
-			message: "#^Call to static method getTitleFor\\(\\) on an unknown class SpecialPage\\.$#"
-			count: 1
-			path: src/Presentation/FactBox.php
-
-		-
-			message: "#^Parameter \\#1 \\$pageIdentity of method ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\Subject\\\\SubjectContentRepository\\:\\:getSubjectContentByPageTitle\\(\\) expects MediaWiki\\\\Page\\\\PageIdentity, Title given\\.$#"
-			count: 1
-			path: src/Presentation/FactBox.php
-
-		-
-			message: "#^Parameter \\$title of method ProfessionalWiki\\\\NeoWiki\\\\Presentation\\\\FactBox\\:\\:htmlFor\\(\\) has invalid type Title\\.$#"
-			count: 1
-			path: src/Presentation/FactBox.php
-
-		-
 			message: "#^Call to static method errorBox\\(\\) on an unknown class Html\\.$#"
 			count: 1
 			path: src/Presentation/TwigTemplateRenderer.php

@@ -14,7 +14,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use Skin;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onSidebarBeforeOutput
  * @group Database
  */
 class NeoWikiHooksSidebarTest extends NeoWikiIntegrationTestCase {
@@ -107,6 +107,16 @@ class NeoWikiHooksSidebarTest extends NeoWikiIntegrationTestCase {
 		$sidebar = $this->runSidebarHook( $title );
 
 		$this->assertArrayNotHasKey( self::SECTION_KEY, $sidebar );
+	}
+
+	public function testSectionHeadingMessageExists(): void {
+		// The sidebar section array key doubles as the i18n message key
+		// MediaWiki uses for the section heading. Guards against accidental
+		// rename of the message without also renaming the array key.
+		$this->assertTrue(
+			wfMessage( self::SECTION_KEY )->exists(),
+			sprintf( 'Message "%s" must exist for the sidebar heading to render.', self::SECTION_KEY )
+		);
 	}
 
 	public function testPreservesLayoutsToolOnLayoutNamespace(): void {
