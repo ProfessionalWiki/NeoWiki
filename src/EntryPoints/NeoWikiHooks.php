@@ -29,6 +29,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutContentValidator;
 use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaErrorFormatter;
+use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 use MediaWiki\SpecialPage\SpecialPage;
 use Skin;
 use WikiPage;
@@ -296,60 +297,24 @@ class NeoWikiHooks {
 			);
 		}
 
-		$neoWikiItems = self::buildNeoWikiSidebarItems( $skin, $title );
-		if ( $neoWikiItems !== [] ) {
-			// The section array key is used by MediaWiki as the message key for
-			// the section heading, so it must match an existing message name.
-			$sidebar['neowiki-page-tools-label'] = $neoWikiItems;
-		}
-	}
-
-	/**
-	 * @return list<array<string, mixed>>
-	 */
-	private static function buildNeoWikiSidebarItems( Skin $skin, Title $title ): array {
-		if ( !MediaWikiServices::getInstance()
-			->getNamespaceInfo()
-			->isContent( $title->getNamespace() ) ) {
-			return [];
-		}
-
-		$items = [];
-
-		if ( self::shouldShowCreateSubjectInSidebar( $skin, $title ) ) {
-			$items[] = [
-				'text' => wfMessage( 'neowiki-page-tools-create-subject' )->text(),
-				'href' => '#',
-				'id' => 't-neowiki-create-subject',
-				'data' => [
-					'mw-neowiki-action' => 'open-subject-creator',
-				],
-			];
-		}
-
-		if ( NeoWikiExtension::getInstance()->isDevelopmentUIEnabled() ) {
-			$items[] = [
-				'text' => wfMessage( 'neowiki-page-tools-edit-json' )->text(),
-				'href' => SpecialPage::getTitleFor( 'NeoJson', $title->getFullText() )->getFullURL(),
-				'id' => 't-neowiki-edit-json',
-			];
-		}
-
-		return $items;
-	}
-
-	private static function shouldShowCreateSubjectInSidebar( Skin $skin, Title $title ): bool {
 		$extension = NeoWikiExtension::getInstance();
 
-		if ( !$extension->newSubjectAuthorizer( $skin->getAuthority() )->canCreateMainSubject() ) {
-			return false;
-		}
+		$pageToolsItems = ( new PageToolsBuilder() )->build(
+			title: $title,
+			isContentNamespace: MediaWikiServices::getInstance()
+				->getNamespaceInfo()
+				->isContent( $title->getNamespace() ),
+			canCreateMainSubject: $extension->newSubjectAuthorizer( $skin->getAuthority() )->canCreateMainSubject(),
+			isLatestRevision: self::pageIsLatestRevision( $skin->getOutput() ),
+			pageHasSubjects: $extension->newViewHtmlBuilder()->pageHasSubjects( $title ),
+			devUiEnabled: $extension->isDevelopmentUIEnabled()
+		);
 
-		if ( !self::pageIsLatestRevision( $skin->getOutput() ) ) {
-			return false;
+		if ( $pageToolsItems !== [] ) {
+			// The section array key is used by MediaWiki as the message key for
+			// the section heading, so it must match an existing message name.
+			$sidebar['neowiki-page-tools-label'] = $pageToolsItems;
 		}
-
-		return !$extension->newViewHtmlBuilder()->pageHasSubjects( $title );
 	}
 
 	private static function handleLayoutPage( OutputPage $out ): void {
