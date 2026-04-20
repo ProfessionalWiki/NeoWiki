@@ -72,6 +72,10 @@ class NeoWikiHooks {
 
 		if ( self::shouldShowSubjectCreator( $out ) ) {
 			$attrs['data-mw-neowiki-create-subject'] = 'true';
+			$attrs['data-mw-neowiki-page-has-main-subject'] =
+				NeoWikiExtension::getInstance()->newViewHtmlBuilder()->pageHasMainSubject( $out->getTitle() )
+					? 'true'
+					: 'false';
 		}
 
 		return Html::element( 'div', $attrs );
@@ -79,8 +83,7 @@ class NeoWikiHooks {
 
 	private static function shouldShowSubjectCreator( OutputPage $out ): bool {
 		return NeoWikiExtension::getInstance()->newSubjectAuthorizer( $out->getAuthority() )->canCreateMainSubject()
-			&& self::pageIsLatestRevision( $out )
-			&& !NeoWikiExtension::getInstance()->newViewHtmlBuilder()->pageHasSubjects( $out->getTitle() );
+			&& self::pageIsLatestRevision( $out );
 	}
 
 	private static function pageIsLatestRevision( OutputPage $out ): bool {
@@ -306,7 +309,6 @@ class NeoWikiHooks {
 				->isContent( $title->getNamespace() ),
 			canCreateMainSubject: $extension->newSubjectAuthorizer( $skin->getAuthority() )->canCreateMainSubject(),
 			isLatestRevision: self::pageIsLatestRevision( $skin->getOutput() ),
-			pageHasSubjects: $extension->newViewHtmlBuilder()->pageHasSubjects( $title ),
 			devUiEnabled: $extension->isDevelopmentUIEnabled()
 		);
 

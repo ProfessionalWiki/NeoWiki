@@ -69,6 +69,26 @@ export const useSubjectStore = defineStore( 'subject', {
 			);
 			return subjectId;
 		},
+		async createChildSubject( pageId: number, label: string, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
+			const subjectId = await NeoWikiExtension.getInstance().getSubjectRepository().createChildSubject(
+				pageId,
+				label,
+				schemaName,
+				statements,
+				comment,
+			);
+
+			this.setSubject(
+				new SubjectWithContext(
+					subjectId,
+					label,
+					schemaName,
+					statements,
+					new PageIdentifiers( pageId, 'page-title' ),
+				),
+			);
+			return subjectId;
+		},
 
 		openSubjectCreator(): void {
 			this.subjectCreatorOpen = true;

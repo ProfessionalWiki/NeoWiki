@@ -40,13 +40,6 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	public function testShowsOnlyEditJsonWhenPageHasSubjects(): void {
-		$this->assertSame(
-			[ $this->editJsonItem() ],
-			$this->build( pageHasSubjects: true )
-		);
-	}
-
 	public function testShowsOnlyEditJsonOnOldRevision(): void {
 		$this->assertSame(
 			[ $this->editJsonItem() ],
@@ -78,7 +71,6 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		bool $isContentNamespace = true,
 		bool $canCreateMainSubject = true,
 		bool $isLatestRevision = true,
-		bool $pageHasSubjects = false,
 		bool $devUiEnabled = true
 	): array {
 		return ( new PageToolsBuilder() )->build(
@@ -86,7 +78,6 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 			isContentNamespace: $isContentNamespace,
 			canCreateMainSubject: $canCreateMainSubject,
 			isLatestRevision: $isLatestRevision,
-			pageHasSubjects: $pageHasSubjects,
 			devUiEnabled: $devUiEnabled
 		);
 	}

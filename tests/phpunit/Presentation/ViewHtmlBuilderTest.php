@@ -111,6 +111,37 @@ class ViewHtmlBuilderTest extends TestCase {
 		$this->assertFalse( $builder->pageHasSubjects( Title::newFromText( 'EmptyContent' ) ) );
 	}
 
+	public function testPageHasMainSubjectReturnsTrueWhenMainSubjectExists(): void {
+		$content = SubjectContent::newFromData(
+			new PageSubjects( TestSubject::build(), new SubjectMap() )
+		);
+
+		$builder = new ViewHtmlBuilder(
+			$this->stubRepository( byTitle: $content )
+		);
+
+		$this->assertTrue( $builder->pageHasMainSubject( Title::newFromText( 'HasMain' ) ) );
+	}
+
+	public function testPageHasMainSubjectReturnsFalseWhenNoContent(): void {
+		$builder = new ViewHtmlBuilder(
+			$this->stubRepository( byTitle: null )
+		);
+
+		$this->assertFalse( $builder->pageHasMainSubject( Title::newFromText( 'NoContent' ) ) );
+	}
+
+	public function testPageHasMainSubjectReturnsFalseWhenOnlyChildrenExist(): void {
+		$child = TestSubject::build( id: 's1zz1111111ccc1' );
+		$content = SubjectContent::newFromData( new PageSubjects( null, new SubjectMap( $child ) ) );
+
+		$builder = new ViewHtmlBuilder(
+			$this->stubRepository( byTitle: $content )
+		);
+
+		$this->assertFalse( $builder->pageHasMainSubject( Title::newFromText( 'OnlyChildren' ) ) );
+	}
+
 	private function stubRepository(
 		?SubjectContent $byTitle = null,
 		?SubjectContent $byRevision = null,

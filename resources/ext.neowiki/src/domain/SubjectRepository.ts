@@ -18,7 +18,8 @@ export interface SubjectRepository extends SubjectLookup {
 		pageId: number,
 		label: string,
 		schemaName: SchemaName,
-		statements: StatementList
+		statements: StatementList,
+		comment?: string
 	): Promise<SubjectId>;
 
 	// TODO: return something to indicate status
@@ -34,7 +35,7 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		return Promise.resolve( new SubjectId( 's11111111111111' ) );
 	}
 
-	public createChildSubject( _pageId: number, _label: string, _schemaName: string, _statements: StatementList ): Promise<SubjectId> {
+	public createChildSubject( _pageId: number, _label: string, _schemaName: string, _statements: StatementList, _comment?: string ): Promise<SubjectId> {
 		return Promise.resolve( new SubjectId( 's11111111111112' ) );
 	}
 

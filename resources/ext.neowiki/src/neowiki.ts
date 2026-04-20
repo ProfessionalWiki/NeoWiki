@@ -40,9 +40,11 @@ async function initializeNeoWikiApp(): Promise<void> {
 		showPendingNotification( 'neowiki-subject-creator-success' );
 
 		const showSubjectCreator = ( neowikiApp as HTMLElement ).dataset.mwNeowikiCreateSubject === 'true';
+		const pageHasMainSubject = ( neowikiApp as HTMLElement ).dataset.mwNeowikiPageHasMainSubject === 'true';
 
 		const app = createMwApp( NeoWikiApp, {
 			showSubjectCreator,
+			pageHasMainSubject,
 		} ).directive( 'tooltip', CdxTooltip );
 		const pinia = createPinia();
 		app.use( pinia );

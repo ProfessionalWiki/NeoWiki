@@ -165,6 +165,10 @@ import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 
+const props = defineProps<{
+	pageHasMainSubject: boolean;
+}>();
+
 const selectedSchemaOption = ref( 'existing' );
 const selectedSchemaName = ref<string | null>( null );
 const loadedSchema = ref<Schema | null>( null );
@@ -389,13 +393,27 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		const updatedStatements = subjectEditorRef.value.getSubjectData();
 		const statementsToSave = [ ...updatedStatements ].filter( ( statement ) => statement.hasValue() );
 
-		await subjectStore.createMainSubject(
-			mw.config.get( 'wgArticleId' ),
-			label,
-			selectedSchemaName.value,
-			new StatementList( statementsToSave ),
-			summary || undefined
-		);
+		const pageId = mw.config.get( 'wgArticleId' );
+		const statementList = new StatementList( statementsToSave );
+		const commentOrUndefined = summary || undefined;
+
+		if ( props.pageHasMainSubject ) {
+			await subjectStore.createChildSubject(
+				pageId,
+				label,
+				selectedSchemaName.value,
+				statementList,
+				commentOrUndefined
+			);
+		} else {
+			await subjectStore.createMainSubject(
+				pageId,
+				label,
+				selectedSchemaName.value,
+				statementList,
+				commentOrUndefined
+			);
+		}
 		setPendingNotification( 'neowiki-subject-creator-success' );
 		window.location.reload();
 	} catch ( error ) {

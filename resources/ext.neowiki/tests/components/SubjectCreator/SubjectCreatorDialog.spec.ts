@@ -119,8 +119,10 @@ describe( 'SubjectCreatorDialog', () => {
 
 	const mountComponent = (
 		stubs: Record<string, any> = {},
+		props: Record<string, any> = {},
 	): VueWrapper => (
 		mount( SubjectCreatorDialog, {
+			props: { pageHasMainSubject: false, ...props },
 			global: {
 				plugins: [ pinia ],
 				stubs: {
@@ -187,6 +189,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		subjectStore = useSubjectStore();
 		subjectStore.createMainSubject = vi.fn().mockResolvedValue( new SubjectId( 's11111111111111' ) );
+		subjectStore.createChildSubject = vi.fn().mockResolvedValue( new SubjectId( 's11111111111112' ) );
 
 		schemaStore = useSchemaStore();
 		schemaStore.getOrFetchSchema = vi.fn().mockResolvedValue( newSchema( { title: SCHEMA_NAME } ) );
@@ -313,6 +316,25 @@ describe( 'SubjectCreatorDialog', () => {
 			expect.any( StatementList ),
 			undefined,
 		);
+	} );
+
+	it( 'calls createChildSubject when the page already has a main subject', async () => {
+		const wrapper = mountComponent( {}, { pageHasMainSubject: true } );
+
+		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await flushPromises();
+
+		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', 'test summary' );
+		await flushPromises();
+
+		expect( subjectStore.createChildSubject ).toHaveBeenCalledWith(
+			PAGE_ID,
+			PAGE_TITLE,
+			SCHEMA_NAME,
+			expect.any( StatementList ),
+			'test summary',
+		);
+		expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
 	} );
 
 	it( 'reloads page after successful save', async () => {

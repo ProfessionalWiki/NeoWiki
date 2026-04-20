@@ -46,6 +46,13 @@ class ViewHtmlBuilder {
 			?->hasSubjects() === true;
 	}
 
+	public function pageHasMainSubject( Title $title ): bool {
+		return $this->subjectContentRepository
+			->getSubjectContentByPageTitle( $title )
+			?->getPageSubjects()
+			->getMainSubject() !== null;
+	}
+
 	private function getSubjectContent( Title $title, ?int $revisionId ): ?SubjectContent {
 		if ( $revisionId === null ) {
 			return $this->subjectContentRepository->getSubjectContentByPageTitle( $title );

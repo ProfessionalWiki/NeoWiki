@@ -17,7 +17,6 @@ class PageToolsBuilder {
 		bool $isContentNamespace,
 		bool $canCreateMainSubject,
 		bool $isLatestRevision,
-		bool $pageHasSubjects,
 		bool $devUiEnabled
 	): array {
 		if ( !$isContentNamespace ) {
@@ -26,7 +25,7 @@ class PageToolsBuilder {
 
 		$items = [];
 
-		if ( $canCreateMainSubject && $isLatestRevision && !$pageHasSubjects ) {
+		if ( $canCreateMainSubject && $isLatestRevision ) {
 			$items[] = [
 				'text' => wfMessage( 'neowiki-page-tools-create-subject' )->text(),
 				'href' => '#',

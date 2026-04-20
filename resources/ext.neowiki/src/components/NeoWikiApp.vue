@@ -14,7 +14,7 @@
 	</teleport>
 
 	<teleport v-if="shouldShowSubjectCreator" to="#mw-content-text">
-		<SubjectCreatorDialog />
+		<SubjectCreatorDialog :page-has-main-subject="pageHasMainSubject" />
 	</teleport>
 </template>
 
@@ -39,11 +39,13 @@ interface ViewData {
 
 const props = defineProps<{
 	showSubjectCreator: boolean;
+	pageHasMainSubject: boolean;
 }>();
 
 const viewsData = ref<ViewData[]>( [] );
 
 const shouldShowSubjectCreator = ref( props.showSubjectCreator );
+const pageHasMainSubject = ref( props.pageHasMainSubject );
 const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
 const viewTypeRegistry = NeoWikiServices.getViewTypeRegistry();
 
