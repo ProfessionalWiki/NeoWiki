@@ -1,9 +1,11 @@
 import { DOMWrapper, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { CdxTextInput } from '@wikimedia/codex';
 import DateTimeAttributesEditor from '@/components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
 import { newDateTimeProperty, DateTimeProperty } from '@/domain/propertyTypes/DateTime';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { createTestWrapper, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
+import { toLocalInputValue } from '@/domain/propertyTypes/dateTimeConversion';
 
 describe( 'DateTimeAttributesEditor', () => {
 	beforeEach( () => {
@@ -34,19 +36,28 @@ describe( 'DateTimeAttributesEditor', () => {
 		return ( wrapper.findComponent( '.datetime-attributes__maximum' ) as VueWrapper ).props() as FieldProps;
 	}
 
+	describe( 'rendering', () => {
+		it( 'renders two CdxTextInput components with datetime-local input-type', () => {
+			const wrapper = newWrapper();
+
+			const textInputs = wrapper.findAllComponents( CdxTextInput );
+			expect( textInputs.length ).toBe( 2 );
+			expect( textInputs[ 0 ].props( 'inputType' ) ).toBe( 'datetime-local' );
+			expect( textInputs[ 1 ].props( 'inputType' ) ).toBe( 'datetime-local' );
+		} );
+	} );
+
 	describe( 'displaying existing values', () => {
-		// FIXME(#728): pins the current Z-stripping behavior; revisit when the timezone story is decided.
-		it( 'strips the Z suffix and seconds from minimum and maximum for the native input', () => {
+		it( 'renders minimum and maximum as host-local wall-clock for the prop ISOs', () => {
+			const minimum = '2020-01-01T00:00:00Z';
+			const maximum = '2030-12-31T23:59:59Z';
 			const wrapper = newWrapper( {
-				property: newDateTimeProperty( {
-					minimum: '2020-01-01T00:00:00Z',
-					maximum: '2030-12-31T23:59:59Z',
-				} ),
+				property: newDateTimeProperty( { minimum, maximum } ),
 			} );
 			const inputs = getInputs( wrapper );
 
-			expect( inputs[ 0 ].element.value ).toBe( '2020-01-01T00:00' );
-			expect( inputs[ 1 ].element.value ).toBe( '2030-12-31T23:59' );
+			expect( inputs[ 0 ].element.value ).toBe( toLocalInputValue( minimum ) );
+			expect( inputs[ 1 ].element.value ).toBe( toLocalInputValue( maximum ) );
 		} );
 
 		it( 'displays empty inputs when minimum and maximum are undefined', () => {
@@ -101,11 +112,13 @@ describe( 'DateTimeAttributesEditor', () => {
 				property: newDateTimeProperty( { maximum: '2020-01-01T00:00:00Z' } ),
 			} );
 			const inputs = getInputs( wrapper );
+			const localMax = inputs[ 1 ].element.value;
+			const expectedIso = new Date( localMax ).toISOString();
 
-			await inputs[ 0 ].setValue( '2020-01-01T00:00' );
+			await inputs[ 0 ].setValue( localMax );
 
 			expect( getMinimumFieldProps( wrapper ).status ).toBe( 'default' );
-			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minimum: '2020-01-01T00:00:00Z' } ] );
+			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minimum: expectedIso } ] );
 		} );
 
 		it( 'clears min error when valid value resolves conflict', async () => {
@@ -137,24 +150,26 @@ describe( 'DateTimeAttributesEditor', () => {
 	} );
 
 	describe( 'emitting updates', () => {
-		// FIXME(#728): pins the TZ-naive Z-suffix emission; revisit with the timezone fix.
-		it( 'emits minimum as an ISO string with Z suffix when the min input changes', async () => {
+		it( 'emits minimum as the UTC ISO representing the typed local instant', async () => {
 			const wrapper = newWrapper();
 			const inputs = getInputs( wrapper );
+			const local = '2020-01-01T00:00';
+			const expectedIso = new Date( local ).toISOString();
 
-			await inputs[ 0 ].setValue( '2020-01-01T00:00' );
+			await inputs[ 0 ].setValue( local );
 
-			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minimum: '2020-01-01T00:00:00Z' } ] );
+			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minimum: expectedIso } ] );
 		} );
 
-		// FIXME(#728): pins the TZ-naive Z-suffix emission; revisit with the timezone fix.
-		it( 'emits maximum as an ISO string with Z suffix when the max input changes', async () => {
+		it( 'emits maximum as the UTC ISO representing the typed local instant', async () => {
 			const wrapper = newWrapper();
 			const inputs = getInputs( wrapper );
+			const local = '2030-12-31T23:59';
+			const expectedIso = new Date( local ).toISOString();
 
-			await inputs[ 1 ].setValue( '2030-12-31T23:59' );
+			await inputs[ 1 ].setValue( local );
 
-			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { maximum: '2030-12-31T23:59:00Z' } ] );
+			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { maximum: expectedIso } ] );
 		} );
 
 		it( 'emits undefined minimum when the min input is cleared', async () => {

@@ -14,13 +14,11 @@
 					{{ $i18n( 'neowiki-property-editor-minimum' ).text() }}
 				</template>
 
-				<!-- eslint-disable-next-line vue/html-self-closing -->
-				<input
-					type="datetime-local"
-					class="cdx-text-input__input"
-					:value="minimumInput"
-					@input="updateMinimum"
-				>
+				<CdxTextInput
+					input-type="datetime-local"
+					:model-value="minimumInput"
+					@update:model-value="updateMinimum"
+				/>
 			</CdxField>
 
 			<CdxField
@@ -32,13 +30,11 @@
 					{{ $i18n( 'neowiki-property-editor-maximum' ).text() }}
 				</template>
 
-				<!-- eslint-disable-next-line vue/html-self-closing -->
-				<input
-					type="datetime-local"
-					class="cdx-text-input__input"
-					:value="maximumInput"
-					@input="updateMaximum"
-				>
+				<CdxTextInput
+					input-type="datetime-local"
+					:model-value="maximumInput"
+					@update:model-value="updateMaximum"
+				/>
 			</CdxField>
 		</NeoNestedField>
 	</div>
@@ -46,8 +42,9 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { CdxField } from '@wikimedia/codex';
+import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { DateTimeProperty } from '@/domain/propertyTypes/DateTime.ts';
+import { fromLocalInputValue, toLocalInputValue } from '@/domain/propertyTypes/dateTimeConversion.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
 
@@ -67,17 +64,6 @@ watch( () => props.property.maximum, ( newVal ) => {
 	maximumInput.value = toLocalInputValue( newVal );
 } );
 
-function toLocalInputValue( isoString: string | undefined ): string {
-	if ( !isoString ) {
-		return '';
-	}
-	return isoString.replace( /Z$/, '' ).slice( 0, 16 );
-}
-
-function fromLocalInputValue( localValue: string ): string | undefined {
-	return localValue ? localValue + ':00Z' : undefined;
-}
-
 function minExceedsMax( min: string, max: string ): boolean {
 	if ( min === '' || max === '' ) {
 		return false;
@@ -87,8 +73,7 @@ function minExceedsMax( min: string, max: string ): boolean {
 	return !Number.isNaN( minTime ) && !Number.isNaN( maxTime ) && minTime > maxTime;
 }
 
-const updateMinimum = ( event: Event ): void => {
-	const value = ( event.target as HTMLInputElement ).value;
+const updateMinimum = ( value: string ): void => {
 	minimumInput.value = value;
 
 	if ( minExceedsMax( value, maximumInput.value ) ) {
@@ -101,8 +86,7 @@ const updateMinimum = ( event: Event ): void => {
 	emit( 'update:property', { minimum: fromLocalInputValue( value ) } );
 };
 
-const updateMaximum = ( event: Event ): void => {
-	const value = ( event.target as HTMLInputElement ).value;
+const updateMaximum = ( value: string ): void => {
 	maximumInput.value = value;
 
 	if ( minExceedsMax( minimumInput.value, value ) ) {
