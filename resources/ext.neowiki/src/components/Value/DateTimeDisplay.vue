@@ -10,10 +10,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { newStringValue, ValueType } from '@/domain/Value.ts';
-import { DateTimeProperty, DateTimeType } from '@/domain/propertyTypes/DateTime.ts';
+import { ValueType } from '@/domain/Value.ts';
+import { DateTimeProperty, parseStrictDateTime } from '@/domain/propertyTypes/DateTime.ts';
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
-import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps<ValueDisplayProps<DateTimeProperty>>();
 
@@ -26,15 +25,7 @@ const rawValue = computed( (): string => {
 
 const parsedIso = computed( (): string | null => {
 	const raw = rawValue.value;
-	if ( raw === '' ) {
-		return null;
-	}
-
-	const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( DateTimeType.typeName );
-	const errors = propertyType.validate( newStringValue( raw ), props.property );
-	const isValidIso = !errors.some( ( e ) => e.code === 'invalid-datetime' );
-
-	return isValidIso ? raw : null;
+	return raw !== '' && parseStrictDateTime( raw ) !== null ? raw : null;
 } );
 
 const formattedValue = computed( (): string => {

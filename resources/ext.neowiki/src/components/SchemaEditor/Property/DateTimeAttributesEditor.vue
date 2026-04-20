@@ -66,8 +66,13 @@ watch( () => props.property.maximum, ( newVal ) => {
 
 // datetime-local wire values are always `YYYY-MM-DDTHH:mm` in a single
 // timezone (host local), so lexicographic ordering matches chronological.
+// The regex guards against malformed values bypassing the ordering check.
+const DATETIME_LOCAL_WIRE_FORMAT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+
 function minExceedsMax( min: string, max: string ): boolean {
-	return min !== '' && max !== '' && min > max;
+	return DATETIME_LOCAL_WIRE_FORMAT.test( min ) &&
+		DATETIME_LOCAL_WIRE_FORMAT.test( max ) &&
+		min > max;
 }
 
 const updateMinimum = ( value: string ): void => {
