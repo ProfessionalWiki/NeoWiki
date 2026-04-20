@@ -1,25 +1,24 @@
-import { mount } from '@vue/test-utils';
+import { VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import DateTimeDisplay from '@/components/Value/DateTimeDisplay.vue';
 import { newNumberValue, newStringValue, Value } from '@/domain/Value';
 import { newDateTimeProperty, DateTimeProperty } from '@/domain/propertyTypes/DateTime';
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
+import { createTestWrapper } from '../../VueTestHelpers.ts';
 
-function createWrapper( props: Partial<ValueDisplayProps<DateTimeProperty>> ): ReturnType<typeof mount> {
+function createWrapper( props: Partial<ValueDisplayProps<DateTimeProperty>> ): VueWrapper {
 	const defaultProps: ValueDisplayProps<DateTimeProperty> = {
 		value: newStringValue( '' ),
 		property: newDateTimeProperty(),
 	};
 
-	return mount( DateTimeDisplay, {
-		props: {
-			...defaultProps,
-			...props,
-		},
+	return createTestWrapper( DateTimeDisplay, {
+		...defaultProps,
+		...props,
 	} );
 }
 
-function createWrapperWithValue( value: Value ): ReturnType<typeof mount> {
+function createWrapperWithValue( value: Value ): VueWrapper {
 	return createWrapper( { value } );
 }
 
@@ -46,9 +45,9 @@ describe( 'DateTimeDisplay', () => {
 			const wrapper = createWrapperWithValue( newStringValue( '2025-06-15T12:00:00Z' ) );
 
 			// With timeZoneName: 'short', toLocaleString appends a TZ abbreviation
-			// (e.g. "GMT", "UTC", "CEST", "PST"). Asserting on a letter-containing
-			// suffix after the formatted time is TZ- and locale-invariant.
-			expect( wrapper.text() ).toMatch( /[A-Za-z]{2,}/ );
+			// (UTC, CEST, PDT, MEZ, ...). These are 3+ consecutive uppercase
+			// letters, which won't match "Jun" (mixed case) or AM/PM (2 letters).
+			expect( wrapper.text() ).toMatch( /[A-Z]{3,}/ );
 		} );
 
 		it( 'preserves an explicit-offset ISO string as the datetime attribute', () => {

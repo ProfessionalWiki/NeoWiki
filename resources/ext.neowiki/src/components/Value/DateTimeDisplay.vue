@@ -13,10 +13,9 @@ import { computed } from 'vue';
 import { newStringValue, ValueType } from '@/domain/Value.ts';
 import { DateTimeProperty, DateTimeType } from '@/domain/propertyTypes/DateTime.ts';
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps<ValueDisplayProps<DateTimeProperty>>();
-
-const dateTimeType = new DateTimeType();
 
 const rawValue = computed( (): string => {
 	if ( props.value.type !== ValueType.String ) {
@@ -31,7 +30,8 @@ const parsedIso = computed( (): string | null => {
 		return null;
 	}
 
-	const errors = dateTimeType.validate( newStringValue( raw ), props.property );
+	const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( DateTimeType.typeName );
+	const errors = propertyType.validate( newStringValue( raw ), props.property );
 	const isValidIso = !errors.some( ( e ) => e.code === 'invalid-datetime' );
 
 	return isValidIso ? raw : null;
@@ -42,6 +42,8 @@ const formattedValue = computed( (): string => {
 	if ( iso === null ) {
 		return '';
 	}
+	// Per-component options rather than dateStyle+timeStyle: ECMA-402 throws
+	// when dateStyle/timeStyle is combined with timeZoneName.
 	return new Date( iso ).toLocaleString( undefined, {
 		year: 'numeric',
 		month: 'short',
