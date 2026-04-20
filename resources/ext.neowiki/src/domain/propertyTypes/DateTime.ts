@@ -29,6 +29,12 @@ export interface DateTimeProperty extends PropertyDefinition {
 // eslint-disable-next-line security/detect-unsafe-regex
 const ISO_DATE_TIME_REGEX = /^(-?\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.\d{1,9})?(?<offset>Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/;
 
+/**
+ * Parses a strict ISO 8601 / xsd:dateTime string with an explicit offset or `Z`.
+ * Returns a millisecond timestamp, or `null` if the value is malformed, missing
+ * an offset, or a calendar overflow (e.g. Feb 30) that `Date` would silently
+ * roll over.
+ */
 export function parseStrictDateTime( value: string ): number | null {
 	const match = ISO_DATE_TIME_REGEX.exec( value );
 	if ( match === null || match.groups === undefined ) {

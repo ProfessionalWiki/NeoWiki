@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newDateTimeProperty, DateTimeType } from '@/domain/propertyTypes/DateTime';
+import { newDateTimeProperty, DateTimeType, parseStrictDateTime } from '@/domain/propertyTypes/DateTime';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue } from '@/domain/Value';
 
@@ -217,6 +217,34 @@ describe( 'validate', () => {
 		const property = newDateTimeProperty( { maximum: 'garbage' } );
 
 		expect( dateTimeType.validate( newStringValue( '2025-06-15T12:00:00Z' ), property ) ).toEqual( [] );
+	} );
+
+} );
+
+describe( 'parseStrictDateTime', () => {
+
+	it( 'returns a millisecond timestamp for a valid ISO with Z offset', () => {
+		const result = parseStrictDateTime( '2025-06-15T12:00:00Z' );
+
+		expect( result ).toBe( Date.parse( '2025-06-15T12:00:00Z' ) );
+	} );
+
+	it( 'returns a millisecond timestamp for a valid ISO with explicit numeric offset', () => {
+		const result = parseStrictDateTime( '2025-06-15T23:30:00+05:00' );
+
+		expect( result ).toBe( Date.parse( '2025-06-15T23:30:00+05:00' ) );
+	} );
+
+	it( 'returns null for a calendar-overflow date that Date silently rolls over', () => {
+		expect( parseStrictDateTime( '2025-02-30T00:00:00Z' ) ).toBeNull();
+	} );
+
+	it( 'returns null for an ISO without an explicit offset or Z', () => {
+		expect( parseStrictDateTime( '2025-06-15T12:00:00' ) ).toBeNull();
+	} );
+
+	it( 'returns null for completely malformed input', () => {
+		expect( parseStrictDateTime( 'not-a-date' ) ).toBeNull();
 	} );
 
 } );
