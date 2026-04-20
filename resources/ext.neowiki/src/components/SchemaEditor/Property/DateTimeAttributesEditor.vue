@@ -64,13 +64,10 @@ watch( () => props.property.maximum, ( newVal ) => {
 	maximumInput.value = toLocalInputValue( newVal );
 } );
 
+// datetime-local wire values are always `YYYY-MM-DDTHH:mm` in a single
+// timezone (host local), so lexicographic ordering matches chronological.
 function minExceedsMax( min: string, max: string ): boolean {
-	if ( min === '' || max === '' ) {
-		return false;
-	}
-	const minTime = Date.parse( min );
-	const maxTime = Date.parse( max );
-	return !Number.isNaN( minTime ) && !Number.isNaN( maxTime ) && minTime > maxTime;
+	return min !== '' && max !== '' && min > max;
 }
 
 const updateMinimum = ( value: string ): void => {

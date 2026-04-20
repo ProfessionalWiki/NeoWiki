@@ -5,7 +5,6 @@ import DateTimeAttributesEditor from '@/components/SchemaEditor/Property/DateTim
 import { newDateTimeProperty, DateTimeProperty } from '@/domain/propertyTypes/DateTime';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { createTestWrapper, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
-import { toLocalInputValue } from '@/domain/propertyTypes/dateTimeConversion';
 
 describe( 'DateTimeAttributesEditor', () => {
 	beforeEach( () => {
@@ -49,15 +48,17 @@ describe( 'DateTimeAttributesEditor', () => {
 
 	describe( 'displaying existing values', () => {
 		it( 'renders minimum and maximum as host-local wall-clock for the prop ISOs', () => {
+			// Use minute-aligned ISOs so the host-local wall-clock (minute precision)
+			// parses back to the exact same instant as the original UTC prop.
 			const minimum = '2020-01-01T00:00:00Z';
-			const maximum = '2030-12-31T23:59:59Z';
+			const maximum = '2030-12-31T23:59:00Z';
 			const wrapper = newWrapper( {
 				property: newDateTimeProperty( { minimum, maximum } ),
 			} );
 			const inputs = getInputs( wrapper );
 
-			expect( inputs[ 0 ].element.value ).toBe( toLocalInputValue( minimum ) );
-			expect( inputs[ 1 ].element.value ).toBe( toLocalInputValue( maximum ) );
+			expect( new Date( inputs[ 0 ].element.value ).getTime() ).toBe( new Date( minimum ).getTime() );
+			expect( new Date( inputs[ 1 ].element.value ).getTime() ).toBe( new Date( maximum ).getTime() );
 		} );
 
 		it( 'displays empty inputs when minimum and maximum are undefined', () => {
@@ -108,17 +109,17 @@ describe( 'DateTimeAttributesEditor', () => {
 		} );
 
 		it( 'allows min equal to max', async () => {
+			const localValue = '2020-01-01T00:00';
+			const maxIso = new Date( localValue ).toISOString();
 			const wrapper = newWrapper( {
-				property: newDateTimeProperty( { maximum: '2020-01-01T00:00:00Z' } ),
+				property: newDateTimeProperty( { maximum: maxIso } ),
 			} );
 			const inputs = getInputs( wrapper );
-			const localMax = inputs[ 1 ].element.value;
-			const expectedIso = new Date( localMax ).toISOString();
 
-			await inputs[ 0 ].setValue( localMax );
+			await inputs[ 0 ].setValue( localValue );
 
 			expect( getMinimumFieldProps( wrapper ).status ).toBe( 'default' );
-			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minimum: expectedIso } ] );
+			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minimum: maxIso } ] );
 		} );
 
 		it( 'clears min error when valid value resolves conflict', async () => {
