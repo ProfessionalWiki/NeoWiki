@@ -14,15 +14,14 @@
 				size="small"
 			/>
 		</template>
-		<!-- eslint-disable-next-line vue/html-self-closing -->
-		<input
-			type="datetime-local"
-			class="cdx-text-input__input"
-			:value="internalInputValue"
+		<CdxTextInput
+			input-type="datetime-local"
+			:start-icon="cdxIconClock"
+			:model-value="internalInputValue"
 			:min="toLocalInputValue( props.property.minimum )"
 			:max="toLocalInputValue( props.property.maximum )"
-			@input="onInput"
-		>
+			@update:model-value="onInput"
+		/>
 	</CdxField>
 </template>
 
@@ -32,10 +31,11 @@ import type { Value } from '@/domain/Value';
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { CdxField, CdxIcon } from '@wikimedia/codex';
-import { cdxIconInfo } from '@wikimedia/codex-icons';
+import { CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
+import { cdxIconInfo, cdxIconClock } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, ValueType } from '@/domain/Value';
 import { DateTimeType, DateTimeProperty } from '@/domain/propertyTypes/DateTime.ts';
+import { fromLocalInputValue, toLocalInputValue } from '@/domain/propertyTypes/dateTimeConversion.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
@@ -51,20 +51,6 @@ const emit = defineEmits<ValueInputEmits>();
 
 const validationError = ref<string | null>( null );
 const internalInputValue = ref<string>( '' );
-
-function toLocalInputValue( isoString: string | undefined ): string {
-	if ( !isoString ) {
-		return '';
-	}
-	return isoString.replace( /Z$/, '' ).slice( 0, 16 );
-}
-
-function fromLocalInputValue( localValue: string ): string {
-	if ( !localValue ) {
-		return '';
-	}
-	return localValue + ':00Z';
-}
 
 const initializeInputValue = ( value: Value | undefined ): void => {
 	if ( value && value.type === ValueType.String ) {
@@ -84,11 +70,10 @@ watch( () => props.modelValue, ( newValue ) => {
 
 const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( DateTimeType.typeName );
 
-function onInput( event: Event ): void {
-	const target = event.target as HTMLInputElement;
-	internalInputValue.value = target.value;
-	const isoValue = fromLocalInputValue( target.value );
-	const value = isoValue ? newStringValue( isoValue ) : undefined;
+function onInput( newValue: string ): void {
+	internalInputValue.value = newValue;
+	const isoValue = fromLocalInputValue( newValue );
+	const value = isoValue !== undefined ? newStringValue( isoValue ) : undefined;
 	emit( 'update:modelValue', value );
 	validate( value );
 }
@@ -106,7 +91,7 @@ watch( () => props.property, () => {
 defineExpose<ValueInputExposes>( {
 	getCurrentValue: function(): Value | undefined {
 		const isoValue = fromLocalInputValue( internalInputValue.value );
-		return isoValue ? newStringValue( isoValue ) : undefined;
+		return isoValue !== undefined ? newStringValue( isoValue ) : undefined;
 	}
 } );
 
