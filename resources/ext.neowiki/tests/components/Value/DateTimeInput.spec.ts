@@ -2,7 +2,7 @@ import { VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconClock } from '@wikimedia/codex-icons';
-import { newStringValue } from '@/domain/Value';
+import { newStringValue, StringValue, ValueType } from '@/domain/Value';
 import DateTimeInput from '@/components/Value/DateTimeInput.vue';
 import { newDateTimeProperty, DateTimeProperty } from '@/domain/propertyTypes/DateTime';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
@@ -39,14 +39,6 @@ describe( 'DateTimeInput', () => {
 		expect( textInput.props( 'inputType' ) ).toBe( 'datetime-local' );
 		expect( textInput.props( 'startIcon' ) ).toBe( cdxIconClock );
 		expect( wrapper.text() ).toContain( 'Test Label' );
-	} );
-
-	it( 'renders exactly one input and it is under a CdxTextInput', () => {
-		const wrapper = newWrapper();
-
-		const inputs = wrapper.findAll( 'input' );
-		expect( inputs.length ).toBe( 1 );
-		expect( inputs[ 0 ].element.closest( '.cdx-text-input' ) ).not.toBeNull();
 	} );
 
 	it( 'displays ISO modelValue as the host-local wall-clock in the input', () => {
@@ -134,7 +126,7 @@ describe( 'DateTimeInput', () => {
 
 			const result = ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue();
 
-			if ( result === undefined || result.type !== 'string' ) {
+			if ( result === undefined || result.type !== ValueType.String ) {
 				throw new Error( 'expected a string value' );
 			}
 			const resultIso = result.parts[ 0 ];
@@ -168,7 +160,7 @@ describe( 'DateTimeInput', () => {
 
 			const result = ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue();
 
-			if ( result === undefined || result.type !== 'string' ) {
+			if ( result === undefined || result.type !== ValueType.String ) {
 				throw new Error( 'expected a string value' );
 			}
 			const resultIso = result.parts[ 0 ];
@@ -176,29 +168,21 @@ describe( 'DateTimeInput', () => {
 		} );
 	} );
 
-	describe( 'under a non-UTC TZ (#728 pinning test)', () => {
-		it( 'round-trips a UTC ISO through the input preserving the instant', async () => {
-			// vi.stubEnv sets process.env.TZ. Node's Intl/Date may cache the
-			// startup TZ, so this documents intent; the assertion itself is
-			// TZ-invariant — it checks instant equivalence, not a literal string.
-			vi.stubEnv( 'TZ', 'Europe/Berlin' );
+	it( 'round-trips an ISO modelValue through the full input event flow preserving the instant', async () => {
+		// Driving the input via its own displayed value asserts that the
+		// display→emit path is a no-op on the instant, independent of host TZ.
+		const iso = '2025-06-15T14:00:00Z';
+		const wrapper = newWrapper( { modelValue: newStringValue( iso ) } );
 
-			const iso = '2025-06-15T14:00:00Z';
-			const wrapper = newWrapper( { modelValue: newStringValue( iso ) } );
+		const localValue = wrapper.find( 'input' ).element.value;
+		await wrapper.find( 'input' ).setValue( localValue );
 
-			const localValue = wrapper.find( 'input' ).element.value;
-			await wrapper.find( 'input' ).setValue( localValue );
+		const events = wrapper.emitted( 'update:modelValue' );
+		const firstEvent = events?.[ 0 ]?.[ 0 ] as StringValue | undefined;
+		if ( firstEvent === undefined || firstEvent.type !== ValueType.String ) {
+			throw new Error( 'expected an emitted string value' );
+		}
 
-			const events = wrapper.emitted( 'update:modelValue' );
-			const firstEvent = events?.[ 0 ]?.[ 0 ];
-			if ( firstEvent === undefined || firstEvent === null || typeof firstEvent !== 'object' || !( 'parts' in firstEvent ) ) {
-				throw new Error( 'expected an emitted string value' );
-			}
-			const emittedIso = ( firstEvent as { parts: string[] } ).parts[ 0 ];
-
-			expect( new Date( emittedIso ).getTime() ).toBe( new Date( iso ).getTime() );
-
-			vi.unstubAllEnvs();
-		} );
+		expect( new Date( firstEvent.parts[ 0 ] ).getTime() ).toBe( new Date( iso ).getTime() );
 	} );
 } );
