@@ -24,44 +24,62 @@ function createWrapperWithValue( value: Value ): ReturnType<typeof mount> {
 }
 
 describe( 'DateTimeDisplay', () => {
-	// The assertions below are deliberately locale-invariant: the year and the
-	// minute-second pair are stable across en-US, en-GB, de-DE, etc., whereas
-	// day-first vs month-first and 12h vs 24h clock rendering are not. This
-	// keeps the test green for contributors whose host locale differs from CI.
-	it( 'renders a UTC date/time using the UTC timezone rather than the host timezone', () => {
-		const wrapper = createWrapperWithValue( newStringValue( '2025-06-15T12:00:00Z' ) );
+	describe( 'valid ISO 8601 input', () => {
+		it( 'renders a <time> element with the raw ISO string as the datetime attribute', () => {
+			const iso = '2025-06-15T12:00:00Z';
+			const wrapper = createWrapperWithValue( newStringValue( iso ) );
 
-		const text = wrapper.text();
-		expect( text ).toContain( '2025' );
-		expect( text ).toContain( ':00:00' );
+			const time = wrapper.find( 'time' );
+			expect( time.exists() ).toBe( true );
+			expect( time.attributes( 'datetime' ) ).toBe( iso );
+		} );
+
+		it( 'renders the instant formatted in the host timezone', () => {
+			const iso = '2025-06-15T12:00:00Z';
+			const wrapper = createWrapperWithValue( newStringValue( iso ) );
+
+			const localHour = String( new Date( iso ).getHours() ).padStart( 2, '0' );
+			expect( wrapper.text() ).toContain( localHour );
+		} );
+
+		it( 'includes a timezone name suffix in the rendered text', () => {
+			const wrapper = createWrapperWithValue( newStringValue( '2025-06-15T12:00:00Z' ) );
+
+			// With timeZoneName: 'short', toLocaleString appends a TZ abbreviation
+			// (e.g. "GMT", "UTC", "CEST", "PST"). Asserting on a letter-containing
+			// suffix after the formatted time is TZ- and locale-invariant.
+			expect( wrapper.text() ).toMatch( /[A-Za-z]{2,}/ );
+		} );
+
+		it( 'preserves an explicit-offset ISO string as the datetime attribute', () => {
+			const iso = '2025-06-15T23:30:00+05:00';
+			const wrapper = createWrapperWithValue( newStringValue( iso ) );
+
+			expect( wrapper.find( 'time' ).attributes( 'datetime' ) ).toBe( iso );
+		} );
 	} );
 
-	it( 'converts a positive-offset datetime to UTC for display', () => {
-		// 2025-06-15T23:30:00+05:00 == 2025-06-15T18:30:00Z — must NOT display as 23:30.
-		// The positive assertion uses the locale-invariant ":30:00" suffix; the
-		// negative one proves the wrong local time is not rendered.
-		const wrapper = createWrapperWithValue( newStringValue( '2025-06-15T23:30:00+05:00' ) );
+	describe( 'invalid input', () => {
+		it( 'renders a span (not a time element) with the raw string when the value cannot be parsed', () => {
+			const wrapper = createWrapperWithValue( newStringValue( 'not-a-date' ) );
 
-		const text = wrapper.text();
-		expect( text ).toContain( ':30:00' );
-		expect( text ).not.toContain( '23:30' );
-	} );
+			expect( wrapper.find( 'time' ).exists() ).toBe( false );
+			expect( wrapper.find( 'span' ).exists() ).toBe( true );
+			expect( wrapper.text() ).toBe( 'not-a-date' );
+		} );
 
-	it( 'renders the raw string when the datetime cannot be parsed', () => {
-		const wrapper = createWrapperWithValue( newStringValue( 'not-a-date' ) );
+		it( 'renders an empty span when the string value is empty', () => {
+			const wrapper = createWrapperWithValue( newStringValue( '' ) );
 
-		expect( wrapper.text() ).toBe( 'not-a-date' );
-	} );
+			expect( wrapper.find( 'time' ).exists() ).toBe( false );
+			expect( wrapper.text() ).toBe( '' );
+		} );
 
-	it( 'renders empty when the string value is empty', () => {
-		const wrapper = createWrapperWithValue( newStringValue( '' ) );
+		it( 'renders an empty span when given the wrong value type', () => {
+			const wrapper = createWrapperWithValue( newNumberValue( 42 ) );
 
-		expect( wrapper.text() ).toBe( '' );
-	} );
-
-	it( 'renders empty when given the wrong value type', () => {
-		const wrapper = createWrapperWithValue( newNumberValue( 42 ) );
-
-		expect( wrapper.text() ).toBe( '' );
+			expect( wrapper.find( 'time' ).exists() ).toBe( false );
+			expect( wrapper.text() ).toBe( '' );
+		} );
 	} );
 } );

@@ -1,32 +1,57 @@
 <template>
-	<div>
+	<time
+		v-if="parsedIso !== null"
+		:datetime="parsedIso"
+	>
 		{{ formattedValue }}
-	</div>
+	</time>
+	<span v-else>{{ fallbackText }}</span>
 </template>
 
 <script setup lang="ts">
-import { ValueType } from '@/domain/Value.ts';
 import { computed } from 'vue';
-import { DateTimeProperty } from '@/domain/propertyTypes/DateTime.ts';
+import { newStringValue, ValueType } from '@/domain/Value.ts';
+import { DateTimeProperty, DateTimeType } from '@/domain/propertyTypes/DateTime.ts';
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
 
 const props = defineProps<ValueDisplayProps<DateTimeProperty>>();
 
-const formattedValue = computed( (): string => {
+const dateTimeType = new DateTimeType();
+
+const rawValue = computed( (): string => {
 	if ( props.value.type !== ValueType.String ) {
 		return '';
 	}
+	return props.value.parts[ 0 ] ?? '';
+} );
 
-	const dateString = props.value.parts[ 0 ];
-	if ( !dateString ) {
+const parsedIso = computed( (): string | null => {
+	const raw = rawValue.value;
+	if ( raw === '' ) {
+		return null;
+	}
+
+	const errors = dateTimeType.validate( newStringValue( raw ), props.property );
+	const isValidIso = !errors.some( ( e ) => e.code === 'invalid-datetime' );
+
+	return isValidIso ? raw : null;
+} );
+
+const formattedValue = computed( (): string => {
+	const iso = parsedIso.value;
+	if ( iso === null ) {
 		return '';
 	}
-
-	const date = new Date( dateString );
-	if ( isNaN( date.getTime() ) ) {
-		return dateString;
-	}
-
-	return date.toLocaleString( undefined, { timeZone: 'UTC' } );
+	return new Date( iso ).toLocaleString( undefined, {
+		year: 'numeric',
+		month: 'short',
+		day: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+		timeZoneName: 'short'
+	} );
 } );
+
+const fallbackText = computed( (): string => ( parsedIso.value === null ? rawValue.value : '' ) );
 </script>
