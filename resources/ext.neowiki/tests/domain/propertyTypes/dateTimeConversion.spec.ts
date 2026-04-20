@@ -45,7 +45,9 @@ describe( 'round-trip preserves the instant', () => {
 		const local = toLocalInputValue( iso );
 		const result = fromLocalInputValue( local );
 
-		expect( result ).toBeDefined();
-		expect( new Date( result! ).getTime() ).toBe( new Date( iso ).getTime() );
+		if ( result === undefined ) {
+			throw new Error( 'round-trip must not produce undefined' );
+		}
+		expect( new Date( result ).getTime() ).toBe( new Date( iso ).getTime() );
 	} );
 } );
