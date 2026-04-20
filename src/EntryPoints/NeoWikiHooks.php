@@ -281,7 +281,7 @@ class NeoWikiHooks {
 	public static function onSidebarBeforeOutput( Skin $skin, array &$sidebar ): void {
 		$title = $skin->getTitle();
 
-		if ( $title === null ) {
+		if ( $title === null || !$title->canExist() ) {
 			return;
 		}
 
