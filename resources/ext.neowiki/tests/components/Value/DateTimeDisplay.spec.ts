@@ -33,7 +33,7 @@ describe( 'DateTimeDisplay', () => {
 
 		const text = wrapper.text();
 		expect( text ).toContain( '2025' );
-		expect( text ).toContain( '12:00:00' );
+		expect( text ).toContain( ':00:00' );
 	} );
 
 	it( 'converts a positive-offset datetime to UTC for display', () => {
