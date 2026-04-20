@@ -33,6 +33,23 @@ export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: Abort
 	}, { signal } );
 }
 
+const PAGE_SUBJECTS_TRIGGER_SELECTOR = '[data-mw-neowiki-action="open-page-subjects"]';
+
+export function registerPageSubjectsClickHandler( pinia: Pinia, signal?: AbortSignal ): void {
+	document.addEventListener( 'click', ( event ) => {
+		const target = event.target;
+		if ( !( target instanceof Element ) ) {
+			return;
+		}
+		const trigger = target.closest( PAGE_SUBJECTS_TRIGGER_SELECTOR );
+		if ( trigger === null ) {
+			return;
+		}
+		event.preventDefault();
+		useSubjectStore( pinia ).openPageSubjects();
+	}, { signal } );
+}
+
 async function initializeNeoWikiApp(): Promise<void> {
 	const neowikiApp = document.querySelector( '#mw-content-text > #ext-neowiki-app' );
 
@@ -51,6 +68,7 @@ async function initializeNeoWikiApp(): Promise<void> {
 		NeoWikiServices.registerServices( app );
 		app.mount( neowikiApp );
 		registerSubjectCreatorClickHandler( pinia );
+		registerPageSubjectsClickHandler( pinia );
 	}
 }
 

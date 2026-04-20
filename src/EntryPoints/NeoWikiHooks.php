@@ -309,6 +309,7 @@ class NeoWikiHooks {
 				->isContent( $title->getNamespace() ),
 			canCreateMainSubject: $extension->newSubjectAuthorizer( $skin->getAuthority() )->canCreateMainSubject(),
 			isLatestRevision: self::pageIsLatestRevision( $skin->getOutput() ),
+			pageHasSubjects: $extension->newViewHtmlBuilder()->pageHasSubjects( $title ),
 			devUiEnabled: $extension->isDevelopmentUIEnabled()
 		);
 

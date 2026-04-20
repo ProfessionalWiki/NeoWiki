@@ -51,6 +51,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutSummariesApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
@@ -504,6 +505,10 @@ class NeoWikiExtension {
 
 	public static function newGetSubjectLabelsApi(): GetSubjectLabelsApi {
 		return new GetSubjectLabelsApi();
+	}
+
+	public static function newGetPageSubjectsApi(): GetPageSubjectsApi {
+		return new GetPageSubjectsApi();
 	}
 
 	private static function getCsrfValidator(): CsrfValidator {

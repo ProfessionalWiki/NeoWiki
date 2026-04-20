@@ -16,6 +16,10 @@
 	<teleport v-if="shouldShowSubjectCreator" to="#mw-content-text">
 		<SubjectCreatorDialog :page-has-main-subject="pageHasMainSubject" />
 	</teleport>
+
+	<teleport to="#mw-content-text">
+		<PageSubjectsDialog />
+	</teleport>
 </template>
 
 <script setup lang="ts">
@@ -24,6 +28,7 @@ import { onMounted, ref } from 'vue';
 import { SubjectId } from '@/domain/SubjectId';
 import Infobox from '@/components/Views/Infobox.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
+import PageSubjectsDialog from '@/components/PageSubjects/PageSubjectsDialog.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';

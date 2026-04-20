@@ -25,3 +25,27 @@ describe( 'SubjectStore — subjectCreatorOpen', () => {
 		expect( store.subjectCreatorOpen ).toBe( false );
 	} );
 } );
+
+describe( 'SubjectStore — pageSubjectsOpen', () => {
+	beforeEach( () => {
+		setActivePinia( createPinia() );
+	} );
+
+	it( 'starts closed by default', () => {
+		const store = useSubjectStore();
+		expect( store.pageSubjectsOpen ).toBe( false );
+	} );
+
+	it( 'opens when openPageSubjects is called', () => {
+		const store = useSubjectStore();
+		store.openPageSubjects();
+		expect( store.pageSubjectsOpen ).toBe( true );
+	} );
+
+	it( 'closes when closePageSubjects is called', () => {
+		const store = useSubjectStore();
+		store.openPageSubjects();
+		store.closePageSubjects();
+		expect( store.pageSubjectsOpen ).toBe( false );
+	} );
+} );

@@ -40,6 +40,27 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
+	public function testShowsCreateSubjectManageSubjectsAndEditJsonWhenPageHasSubjects(): void {
+		$this->assertSame(
+			[
+				$this->createSubjectItem(),
+				$this->manageSubjectsItem(),
+				$this->editJsonItem(),
+			],
+			$this->build( pageHasSubjects: true )
+		);
+	}
+
+	public function testShowsCreateSubjectAndManageSubjectsWhenPageHasSubjectsAndDevUiDisabled(): void {
+		$this->assertSame(
+			[
+				$this->createSubjectItem(),
+				$this->manageSubjectsItem(),
+			],
+			$this->build( pageHasSubjects: true, devUiEnabled: false )
+		);
+	}
+
 	public function testShowsOnlyEditJsonOnOldRevision(): void {
 		$this->assertSame(
 			[ $this->editJsonItem() ],
@@ -71,6 +92,7 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		bool $isContentNamespace = true,
 		bool $canCreateMainSubject = true,
 		bool $isLatestRevision = true,
+		bool $pageHasSubjects = false,
 		bool $devUiEnabled = true
 	): array {
 		return ( new PageToolsBuilder() )->build(
@@ -78,6 +100,7 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 			isContentNamespace: $isContentNamespace,
 			canCreateMainSubject: $canCreateMainSubject,
 			isLatestRevision: $isLatestRevision,
+			pageHasSubjects: $pageHasSubjects,
 			devUiEnabled: $devUiEnabled
 		);
 	}
@@ -104,6 +127,20 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 			'text' => wfMessage( 'neowiki-page-tools-edit-json' )->text(),
 			'href' => SkinComponentUtils::makeSpecialUrlSubpage( 'NeoJson', self::PAGE_NAME ),
 			'id' => 't-neowiki-edit-json',
+		];
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function manageSubjectsItem(): array {
+		return [
+			'text' => wfMessage( 'neowiki-page-tools-manage-subjects' )->text(),
+			'href' => '#',
+			'id' => 't-neowiki-manage-subjects',
+			'data' => [
+				'mw-neowiki-action' => 'open-page-subjects',
+			],
 		];
 	}
 

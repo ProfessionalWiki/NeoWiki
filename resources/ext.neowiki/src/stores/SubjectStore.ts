@@ -10,6 +10,7 @@ export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
 		subjects: new Map<string, Subject>(),
 		subjectCreatorOpen: false,
+		pageSubjectsOpen: false,
 	} ),
 	getters: {
 		getSubject: ( state ) => function ( id: SubjectId ): Subject | undefined {
@@ -95,6 +96,12 @@ export const useSubjectStore = defineStore( 'subject', {
 		},
 		closeSubjectCreator(): void {
 			this.subjectCreatorOpen = false;
+		},
+		openPageSubjects(): void {
+			this.pageSubjectsOpen = true;
+		},
+		closePageSubjects(): void {
+			this.pageSubjectsOpen = false;
 		},
 	},
 } );

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import type { Pinia } from 'pinia';
 import { useSubjectStore } from '@/stores/SubjectStore';
-import { registerSubjectCreatorClickHandler } from '@/neowiki';
+import { registerPageSubjectsClickHandler, registerSubjectCreatorClickHandler } from '@/neowiki';
 
 describe( 'registerSubjectCreatorClickHandler', () => {
 	let pinia: Pinia;
@@ -54,6 +54,59 @@ describe( 'registerSubjectCreatorClickHandler', () => {
 		const notPrevented = unrelated.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
 
 		expect( store.subjectCreatorOpen ).toBe( false );
+		expect( notPrevented ).toBe( true );
+	} );
+} );
+
+describe( 'registerPageSubjectsClickHandler', () => {
+	let pinia: Pinia;
+	let store: ReturnType<typeof useSubjectStore>;
+	let controller: AbortController;
+
+	beforeEach( () => {
+		pinia = createPinia();
+		setActivePinia( pinia );
+		store = useSubjectStore();
+		controller = new AbortController();
+		registerPageSubjectsClickHandler( pinia, controller.signal );
+		document.body.innerHTML = '';
+	} );
+
+	afterEach( () => {
+		controller.abort();
+	} );
+
+	it( 'opens the page-subjects dialog when a matching element is directly clicked', () => {
+		const button = document.createElement( 'button' );
+		button.setAttribute( 'data-mw-neowiki-action', 'open-page-subjects' );
+		document.body.appendChild( button );
+
+		const notPrevented = button.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		expect( store.pageSubjectsOpen ).toBe( true );
+		expect( notPrevented ).toBe( false );
+	} );
+
+	it( 'opens the dialog when a descendant inside a matching element is clicked', () => {
+		const link = document.createElement( 'a' );
+		link.setAttribute( 'data-mw-neowiki-action', 'open-page-subjects' );
+		const span = document.createElement( 'span' );
+		link.appendChild( span );
+		document.body.appendChild( link );
+
+		const notPrevented = span.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		expect( store.pageSubjectsOpen ).toBe( true );
+		expect( notPrevented ).toBe( false );
+	} );
+
+	it( 'does nothing when an unrelated element is clicked', () => {
+		const unrelated = document.createElement( 'div' );
+		document.body.appendChild( unrelated );
+
+		const notPrevented = unrelated.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		expect( store.pageSubjectsOpen ).toBe( false );
 		expect( notPrevented ).toBe( true );
 	} );
 } );

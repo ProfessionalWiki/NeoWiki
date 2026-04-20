@@ -17,6 +17,7 @@ class PageToolsBuilder {
 		bool $isContentNamespace,
 		bool $canCreateMainSubject,
 		bool $isLatestRevision,
+		bool $pageHasSubjects,
 		bool $devUiEnabled
 	): array {
 		if ( !$isContentNamespace ) {
@@ -32,6 +33,17 @@ class PageToolsBuilder {
 				'id' => 't-neowiki-create-subject',
 				'data' => [
 					'mw-neowiki-action' => 'open-subject-creator',
+				],
+			];
+		}
+
+		if ( $pageHasSubjects ) {
+			$items[] = [
+				'text' => wfMessage( 'neowiki-page-tools-manage-subjects' )->text(),
+				'href' => '#',
+				'id' => 't-neowiki-manage-subjects',
+				'data' => [
+					'mw-neowiki-action' => 'open-page-subjects',
 				],
 			];
 		}

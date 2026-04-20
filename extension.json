@@ -186,6 +186,11 @@
 			"path": "/neowiki/v0/schemas",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaSummariesApi"
+		},
+		{
+			"path": "/neowiki/v0/page/{pageId}/subjects",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetPageSubjectsApi"
 		}
 	],
 
@@ -313,6 +318,15 @@
 				"neowiki-page-tools-label",
 				"neowiki-page-tools-create-subject",
 				"neowiki-page-tools-edit-json",
+				"neowiki-page-tools-manage-subjects",
+				"neowiki-page-subjects-dialog-title",
+				"neowiki-page-subjects-column-label",
+				"neowiki-page-subjects-column-id",
+				"neowiki-page-subjects-column-schema",
+				"neowiki-page-subjects-main-badge",
+				"neowiki-page-subjects-main-badge-aria",
+				"neowiki-page-subjects-empty",
+				"neowiki-page-subjects-fetch-error",
 				"neowiki-subject-creator-title",
 				"neowiki-subject-creator-schema-title",
 				"neowiki-subject-creator-existing-schema",
