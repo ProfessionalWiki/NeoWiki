@@ -19,7 +19,14 @@ export class Neo {
 		return Neo.instance;
 	}
 
+	private propertyTypeRegistry: PropertyTypeRegistry | undefined;
+
 	public getPropertyTypeRegistry(): PropertyTypeRegistry {
+		this.propertyTypeRegistry ??= this.newPropertyTypeRegistry();
+		return this.propertyTypeRegistry;
+	}
+
+	private newPropertyTypeRegistry(): PropertyTypeRegistry {
 		const registry = new PropertyTypeRegistry();
 
 		registry.registerType( new TextType() );

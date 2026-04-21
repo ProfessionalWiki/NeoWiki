@@ -66,7 +66,14 @@ export class NeoWikiExtension {
 
 	private rightsFetcher: RightsFetcher|undefined;
 
+	private typeSpecificComponentRegistry: TypeSpecificComponentRegistry | undefined;
+
 	public getTypeSpecificComponentRegistry(): TypeSpecificComponentRegistry {
+		this.typeSpecificComponentRegistry ??= this.newTypeSpecificComponentRegistry();
+		return this.typeSpecificComponentRegistry;
+	}
+
+	private newTypeSpecificComponentRegistry(): TypeSpecificComponentRegistry {
 		const registry = new TypeSpecificComponentRegistry();
 
 		registry.registerType( TextType.typeName, {

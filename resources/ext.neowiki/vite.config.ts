@@ -12,7 +12,7 @@ export default defineConfig( {
 	},
 	build: {
 		lib: {
-			entry: 'src/neowiki.ts',
+			entry: 'src/public-api.ts',
 			name: 'NeoWiki',
 			fileName: () => 'neowiki.js',
 			formats: [ 'cjs' ],
