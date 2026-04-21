@@ -19,12 +19,16 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPres
 use ProfessionalWiki\NeoWiki\Application\CompositeCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutQuery;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsPresenter;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
@@ -48,6 +52,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutSummariesApi;
@@ -56,6 +61,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\PatchSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
@@ -341,6 +347,14 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newSetMainSubjectAction( SetMainSubjectPresenter $presenter, Authority $authority ): SetMainSubjectAction {
+		return new SetMainSubjectAction(
+			presenter: $presenter,
+			subjectRepository: $this->getSubjectRepository(),
+			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+		);
+	}
+
 	public function newSubjectAuthorizer( Authority $authority ): SubjectAuthorizer {
 		return new AuthorityBasedSubjectAuthorizer(
 			authority: $authority
@@ -419,6 +433,13 @@ class NeoWikiExtension {
 		return $db;
 	}
 
+	public function newGetPageSubjectsQuery( GetPageSubjectsPresenter $presenter ): GetPageSubjectsQuery {
+		return new GetPageSubjectsQuery(
+			presenter: $presenter,
+			subjectRepository: $this->getSubjectRepository(),
+		);
+	}
+
 	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
@@ -468,12 +489,20 @@ class NeoWikiExtension {
 		return new GetSubjectApi();
 	}
 
+	public static function newGetPageSubjectsApi(): GetPageSubjectsApi {
+		return new GetPageSubjectsApi();
+	}
+
 	public static function newPatchSubjectApi(): PatchSubjectApi {
 		return new PatchSubjectApi( csrfValidator: self::getCsrfValidator() );
 	}
 
 	public static function newDeleteSubjectApi(): DeleteSubjectApi {
 		return new DeleteSubjectApi( csrfValidator: self::getCsrfValidator() );
+	}
+
+	public static function newSetMainSubjectApi(): SetMainSubjectApi {
+		return new SetMainSubjectApi( csrfValidator: self::getCsrfValidator() );
 	}
 
 	public static function newGetSchemaApi(): GetSchemaApi {

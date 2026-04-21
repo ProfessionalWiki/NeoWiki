@@ -143,6 +143,16 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCreateChildSubjectApi"
 		},
 		{
+			"path": "/neowiki/v0/page/{pageId}/subjects",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetPageSubjectsApi"
+		},
+		{
+			"path": "/neowiki/v0/page/{pageId}/mainSubject",
+			"method": [ "PUT" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newSetMainSubjectApi"
+		},
+		{
 			"path": "/neowiki/v0/subject/{subjectId}",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectApi"
