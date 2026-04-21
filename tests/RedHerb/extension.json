@@ -21,8 +21,58 @@
 		"ProfessionalWiki\\RedHerb\\": "src/"
 	},
 
+	"MessagesDirs": {
+		"RedHerb": [ "i18n" ]
+	},
+
 	"Hooks": {
-		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration"
+		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration",
+		"NeoWikiGetFrontendModules": "RedHerbFrontendHook"
+	},
+
+	"HookHandlers": {
+		"RedHerbFrontendHook": {
+			"class": "ProfessionalWiki\\RedHerb\\RedHerbFrontendHook"
+		}
+	},
+
+	"ResourceModules": {
+		"ext.redherb": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"localBasePath": "resources",
+			"remoteExtPath": "NeoWiki/tests/RedHerb/resources",
+			"dependencies": [
+				"vue",
+				"ext.neowiki"
+			],
+			"codexComponents": [
+				"CdxField",
+				"CdxIcon",
+				"CdxTextInput"
+			],
+			"packageFiles": [
+				"init.js",
+				"DateTimeDisplay.vue",
+				"DateTimeInput.vue",
+				"DateTimeAttributesEditor.vue",
+				"dateTimeConversion.js",
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconClock",
+						"cdxIconInfo"
+					]
+				}
+			],
+			"messages": [
+				"redherb-property-type-datetime",
+				"neowiki-property-editor-range",
+				"neowiki-property-editor-minimum",
+				"neowiki-property-editor-maximum",
+				"neowiki-property-editor-min-exceeds-max"
+			]
+		}
 	},
 
 	"manifest_version": 2
