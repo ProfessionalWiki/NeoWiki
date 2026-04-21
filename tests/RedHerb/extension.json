@@ -21,8 +21,52 @@
 		"ProfessionalWiki\\RedHerb\\": "src/"
 	},
 
+	"MessagesDirs": {
+		"RedHerb": [ "i18n" ]
+	},
+
 	"Hooks": {
-		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration"
+		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration",
+		"NeoWikiGetFrontendModules": "RedHerbFrontendHook"
+	},
+
+	"HookHandlers": {
+		"RedHerbFrontendHook": {
+			"class": "ProfessionalWiki\\RedHerb\\RedHerbFrontendHook"
+		}
+	},
+
+	"ResourceModules": {
+		"ext.redherb": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"localBasePath": "resources",
+			"remoteExtPath": "NeoWiki/tests/RedHerb/resources",
+			"dependencies": [
+				"vue",
+				"ext.neowiki"
+			],
+			"codexComponents": [
+				"CdxField",
+				"CdxIcon"
+			],
+			"packageFiles": [
+				"init.js",
+				"DateTimeDisplay.vue",
+				"DateTimeInput.vue",
+				"DateTimeAttributesEditor.vue",
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconClock",
+						"cdxIconInfo"
+					]
+				}
+			],
+			"messages": [
+				"redherb-property-type-datetime"
+			]
+		}
 	},
 
 	"manifest_version": 2

@@ -17,6 +17,8 @@ use Skin;
 class NeoWikiHooksTest extends MediaWikiIntegrationTestCase {
 
 	public function testAddsCoreModuleWhenNoExtensionsHandleHook(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
 		$out = $this->newSchemaOutputPageMock();
 		$skin = $this->createMock( Skin::class );
 
