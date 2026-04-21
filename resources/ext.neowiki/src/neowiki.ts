@@ -15,6 +15,7 @@ import type { LayoutName } from '@/domain/Layout.ts';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
 import { LayoutDeserializer } from '@/persistence/LayoutDeserializer.ts';
 import { showPendingNotification } from '@/presentation/PendingNotification.ts';
+import { FrontendRegistrar } from '@/presentation/FrontendRegistrar';
 import { useSubjectStore } from '@/stores/SubjectStore';
 
 const SUBJECT_CREATOR_TRIGGER_SELECTOR = '[data-mw-neowiki-action="open-subject-creator"]';
@@ -34,106 +35,141 @@ export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: Abort
 	}, { signal } );
 }
 
-async function initializeNeoWikiApp(): Promise<void> {
-	const neowikiApp = document.querySelector( '#mw-content-text > #ext-neowiki-app' );
+function initializeNeoWikiApp(): void {
+	queueMicrotask( () => {
+		const neowikiApp = document.querySelector( '#mw-content-text > #ext-neowiki-app' );
 
-	if ( neowikiApp !== null ) {
-		showPendingNotification( 'neowiki-subject-creator-success' );
-		showPendingNotification( 'neowiki-managesubjects-delete-success' );
+		if ( neowikiApp !== null ) {
+			showPendingNotification( 'neowiki-subject-creator-success' );
+			showPendingNotification( 'neowiki-managesubjects-delete-success' );
 
-		const showSubjectCreator = ( neowikiApp as HTMLElement ).dataset.mwNeowikiCreateSubject === 'true';
-		const pageHasMainSubject = ( neowikiApp as HTMLElement ).dataset.mwNeowikiPageHasMainSubject === 'true';
+			const showSubjectCreator = ( neowikiApp as HTMLElement ).dataset.mwNeowikiCreateSubject === 'true';
+			const pageHasMainSubject = ( neowikiApp as HTMLElement ).dataset.mwNeowikiPageHasMainSubject === 'true';
 
-		const app = createMwApp( NeoWikiApp, {
-			showSubjectCreator,
-			pageHasMainSubject,
-		} ).directive( 'tooltip', CdxTooltip );
-		const pinia = createPinia();
-		app.use( pinia );
-		NeoWikiServices.registerServices( app );
-		app.mount( neowikiApp );
-		registerSubjectCreatorClickHandler( pinia );
-	}
+			const ext = NeoWikiExtension.getInstance();
+			mw.hook( 'neowiki.registration' ).fire(
+				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
+			);
+
+			const app = createMwApp( NeoWikiApp, {
+				showSubjectCreator,
+				pageHasMainSubject,
+			} ).directive( 'tooltip', CdxTooltip );
+			const pinia = createPinia();
+			app.use( pinia );
+			NeoWikiServices.registerServices( app );
+			app.mount( neowikiApp );
+			registerSubjectCreatorClickHandler( pinia );
+		}
+	} );
 }
 
-async function initializeSchemaView(): Promise<void> {
-	const viewSchema = document.querySelector( '#ext-neowiki-view-schema' );
+function initializeSchemaView(): void {
+	queueMicrotask( async () => {
+		const viewSchema = document.querySelector( '#ext-neowiki-view-schema' );
 
-	if ( viewSchema !== null ) {
-		const ext = NeoWikiExtension.getInstance();
-		const revisionId = mw.config.get( 'wgRevisionId' );
-		const schemaName = mw.config.get( 'wgTitle' ) as SchemaName;
+		if ( viewSchema !== null ) {
+			const ext = NeoWikiExtension.getInstance();
 
-		const restApiUrl = ext.getMediaWiki().util.wikiScript( 'rest' );
-		const response = await ext.newHttpClient().get( `${ restApiUrl }/v1/revision/${ revisionId }` );
+			mw.hook( 'neowiki.registration' ).fire(
+				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
+			);
 
-		if ( !response.ok ) {
-			throw new Error( 'Error fetching schema revision' );
+			const revisionId = mw.config.get( 'wgRevisionId' );
+			const schemaName = mw.config.get( 'wgTitle' ) as SchemaName;
+
+			const restApiUrl = ext.getMediaWiki().util.wikiScript( 'rest' );
+			const response = await ext.newHttpClient().get( `${ restApiUrl }/v1/revision/${ revisionId }` );
+
+			if ( !response.ok ) {
+				throw new Error( 'Error fetching schema revision' );
+			}
+
+			const data = await response.json();
+			const schemaJson = JSON.parse( data.source );
+
+			if ( schemaJson.propertyDefinitions === undefined ) {
+				throw new Error( 'Schema propertyDefinitions is undefined' );
+			}
+
+			const schema = new SchemaDeserializer().deserialize( schemaName, schemaJson );
+
+			const app = createMwApp( SchemaDisplay, { schema } );
+			app.use( createPinia() );
+			NeoWikiServices.registerServices( app );
+			app.mount( viewSchema );
 		}
-
-		const data = await response.json();
-		const schemaJson = JSON.parse( data.source );
-
-		if ( schemaJson.propertyDefinitions === undefined ) {
-			throw new Error( 'Schema propertyDefinitions is undefined' );
-		}
-
-		const schema = new SchemaDeserializer().deserialize( schemaName, schemaJson );
-
-		const app = createMwApp( SchemaDisplay, { schema } );
-		app.use( createPinia() );
-		NeoWikiServices.registerServices( app );
-		app.mount( viewSchema );
-	}
+	} );
 }
 
 function initializeSchemasPage(): void {
-	const schemasPage = document.getElementById( 'ext-neowiki-schemas' );
+	queueMicrotask( () => {
+		const schemasPage = document.getElementById( 'ext-neowiki-schemas' );
 
-	if ( schemasPage !== null ) {
-		const app = createMwApp( SchemasPage );
-		app.use( createPinia() );
-		NeoWikiServices.registerServices( app );
-		app.mount( schemasPage );
-	}
+		if ( schemasPage !== null ) {
+			const ext = NeoWikiExtension.getInstance();
+			mw.hook( 'neowiki.registration' ).fire(
+				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
+			);
+
+			const app = createMwApp( SchemasPage );
+			app.use( createPinia() );
+			NeoWikiServices.registerServices( app );
+			app.mount( schemasPage );
+		}
+	} );
 }
 
-async function initializeLayoutView(): Promise<void> {
-	const viewLayout = document.querySelector( '#ext-neowiki-view-layout' );
+function initializeLayoutView(): void {
+	queueMicrotask( async () => {
+		const viewLayout = document.querySelector( '#ext-neowiki-view-layout' );
 
-	if ( viewLayout !== null ) {
-		const ext = NeoWikiExtension.getInstance();
-		const revisionId = mw.config.get( 'wgRevisionId' );
-		const layoutName = mw.config.get( 'wgTitle' ) as LayoutName;
+		if ( viewLayout !== null ) {
+			const ext = NeoWikiExtension.getInstance();
 
-		const restApiUrl = ext.getMediaWiki().util.wikiScript( 'rest' );
-		const response = await ext.newHttpClient().get( `${ restApiUrl }/v1/revision/${ revisionId }` );
+			mw.hook( 'neowiki.registration' ).fire(
+				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
+			);
 
-		if ( !response.ok ) {
-			throw new Error( 'Error fetching layout revision' );
+			const revisionId = mw.config.get( 'wgRevisionId' );
+			const layoutName = mw.config.get( 'wgTitle' ) as LayoutName;
+
+			const restApiUrl = ext.getMediaWiki().util.wikiScript( 'rest' );
+			const response = await ext.newHttpClient().get( `${ restApiUrl }/v1/revision/${ revisionId }` );
+
+			if ( !response.ok ) {
+				throw new Error( 'Error fetching layout revision' );
+			}
+
+			const data = await response.json();
+			const layoutJson = JSON.parse( data.source );
+
+			const layout = new LayoutDeserializer().deserialize( layoutName, layoutJson );
+
+			const app = createMwApp( LayoutDisplay, { layout } );
+			app.use( createPinia() );
+			NeoWikiServices.registerServices( app );
+			app.mount( viewLayout );
 		}
-
-		const data = await response.json();
-		const layoutJson = JSON.parse( data.source );
-
-		const layout = new LayoutDeserializer().deserialize( layoutName, layoutJson );
-
-		const app = createMwApp( LayoutDisplay, { layout } );
-		app.use( createPinia() );
-		NeoWikiServices.registerServices( app );
-		app.mount( viewLayout );
-	}
+	} );
 }
 
 function initializeLayoutsPage(): void {
-	const layoutsPage = document.getElementById( 'ext-neowiki-layouts' );
+	queueMicrotask( () => {
+		const layoutsPage = document.getElementById( 'ext-neowiki-layouts' );
 
-	if ( layoutsPage !== null ) {
-		const app = createMwApp( LayoutsPage );
-		app.use( createPinia() );
-		NeoWikiServices.registerServices( app );
-		app.mount( layoutsPage );
-	}
+		if ( layoutsPage !== null ) {
+			const ext = NeoWikiExtension.getInstance();
+			mw.hook( 'neowiki.registration' ).fire(
+				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
+			);
+
+			const app = createMwApp( LayoutsPage );
+			app.use( createPinia() );
+			NeoWikiServices.registerServices( app );
+			app.mount( layoutsPage );
+		}
+	} );
 }
 
 function initializeSubjectsManagerPage(): void {

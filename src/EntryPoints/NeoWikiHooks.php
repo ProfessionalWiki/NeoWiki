@@ -40,11 +40,25 @@ class NeoWikiHooks {
 
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
 		if ( self::isContentPage( $out ) ) {
-			self::handleContentPage( $out );
+			self::handleContentPage( $out, $skin );
 		} elseif ( self::isSchemaPage( $out ) && $out->isArticle() ) {
-			self::handleSchemaPage( $out );
+			self::handleSchemaPage( $out, $skin );
 		} elseif ( self::isLayoutPage( $out ) && $out->isArticle() ) {
-			self::handleLayoutPage( $out );
+			self::handleLayoutPage( $out, $skin );
+		}
+	}
+
+	public static function addNeoWikiModules( OutputPage $out, Skin $skin ): void {
+		$out->addModules( 'ext.neowiki' );
+		$out->addModuleStyles( 'ext.neowiki.styles' );
+
+		$modules = [];
+		MediaWikiServices::getInstance()
+			->getHookContainer()
+			->run( 'NeoWikiGetFrontendModules', [ &$modules, $out, $skin ] );
+
+		foreach ( $modules as $module ) {
+			$out->addModules( $module );
 		}
 	}
 
@@ -53,9 +67,8 @@ class NeoWikiHooks {
 			&& MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $out->getTitle()->getNamespace() );
 	}
 
-	private static function handleContentPage( OutputPage $out ): void {
-		$out->addModules( 'ext.neowiki' );
-		$out->addModuleStyles( 'ext.neowiki.styles' );
+	private static function handleContentPage( OutputPage $out, Skin $skin ): void {
+		self::addNeoWikiModules( $out, $skin );
 		$out->addHtml( self::getNeoWikiAppHtml( $out ) );
 
 		$revisionId = self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
@@ -92,9 +105,8 @@ class NeoWikiHooks {
 		return $out->getRevisionId() === $out->getTitle()->getLatestRevID();
 	}
 
-	private static function handleSchemaPage( OutputPage $out ): void {
-		$out->addModules( 'ext.neowiki' );
-		$out->addModuleStyles( 'ext.neowiki.styles' );
+	private static function handleSchemaPage( OutputPage $out, Skin $skin ): void {
+		self::addNeoWikiModules( $out, $skin );
 
 		$out->addHTML(
 			Html::element(
@@ -340,9 +352,8 @@ class NeoWikiHooks {
 		];
 	}
 
-	private static function handleLayoutPage( OutputPage $out ): void {
-		$out->addModules( 'ext.neowiki' );
-		$out->addModuleStyles( 'ext.neowiki.styles' );
+	private static function handleLayoutPage( OutputPage $out, Skin $skin ): void {
+		self::addNeoWikiModules( $out, $skin );
 
 		$out->addHTML(
 			Html::element(

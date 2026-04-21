@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
+use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 
 class SpecialSchemas extends SpecialPage {
 
@@ -19,8 +20,7 @@ class SpecialSchemas extends SpecialPage {
 	public function execute( $subPage ): void {
 		parent::execute( $subPage );
 
-		$this->getOutput()->addModuleStyles( [ 'ext.neowiki.styles' ] );
-		$this->getOutput()->addModules( [ 'ext.neowiki' ] );
+		NeoWikiHooks::addNeoWikiModules( $this->getOutput(), $this->getSkin() );
 		$this->getOutput()->addHTML( '<div id="ext-neowiki-schemas"></div>' );
 	}
 
