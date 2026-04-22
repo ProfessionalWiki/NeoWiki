@@ -200,10 +200,11 @@ export class NeoWikiExtension {
 	private getRevisionId(): number | undefined {
 		const current = mw.config.get( 'wgRevisionId' );
 		const latest = mw.config.get( 'wgCurRevisionId' );
-		if ( current !== latest ) {
-			return current;
+		// wgRevisionId is 0 on action pages and other non-revision contexts; treat as "latest".
+		if ( !current || current === latest ) {
+			return undefined;
 		}
-		return undefined;
+		return current;
 	}
 
 	public getSubjectDeserializer(): SubjectDeserializer {

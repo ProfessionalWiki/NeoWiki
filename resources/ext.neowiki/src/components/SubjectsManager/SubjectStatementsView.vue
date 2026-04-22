@@ -20,12 +20,12 @@
 				</span>
 			</li>
 		</ul>
-		<p
+		<div
 			v-else
 			class="ext-neowiki-subject-statements__empty"
 		>
 			{{ $i18n( 'neowiki-managesubjects-no-statements' ).text() }}
-		</p>
+		</div>
 	</div>
 </template>
 
@@ -81,7 +81,6 @@ const resolvedProperties = computed<ResolvedProperty[]>( () => {
 	&__empty {
 		color: @color-subtle;
 		font-style: italic;
-		margin: 0;
 	}
 }
 </style>
