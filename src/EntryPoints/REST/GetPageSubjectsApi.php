@@ -35,6 +35,7 @@ class GetPageSubjectsApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'MediaWiki page ID.',
 			],
 			'expand' => [
 				self::PARAM_SOURCE => 'query',
@@ -44,6 +45,7 @@ class GetPageSubjectsApi extends SimpleHandler {
 				],
 				ParamValidator::PARAM_ISMULTI => true,
 				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'Embed related data in the response. Accepted values: "schemas", "relations".',
 			],
 		];
 	}

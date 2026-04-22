@@ -54,6 +54,7 @@ class GetLayoutSummariesApi extends SimpleHandler {
 				ParamValidator::PARAM_DEFAULT => 10,
 				IntegerDef::PARAM_MIN => 1,
 				IntegerDef::PARAM_MAX => 50,
+				self::PARAM_DESCRIPTION => 'Maximum number of items to return.',
 			],
 			'offset' => [
 				self::PARAM_SOURCE => 'query',
@@ -61,6 +62,7 @@ class GetLayoutSummariesApi extends SimpleHandler {
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_DEFAULT => 0,
 				IntegerDef::PARAM_MIN => 0,
+				self::PARAM_DESCRIPTION => 'Zero-based index of the first item to return.',
 			],
 		];
 	}

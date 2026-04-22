@@ -61,6 +61,7 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'MediaWiki page ID.',
 			],
 		];
 	}

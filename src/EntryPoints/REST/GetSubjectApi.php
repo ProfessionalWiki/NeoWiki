@@ -61,11 +61,13 @@ class GetSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject. 15 characters, starting with "s".',
 			],
 			'revisionId' => [
 				self::PARAM_SOURCE => 'query',
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'Revision ID to fetch the Subject at. Defaults to the latest revision.',
 			],
 			'expand' => [
 				self::PARAM_SOURCE => 'query',
@@ -75,6 +77,7 @@ class GetSubjectApi extends SimpleHandler {
 				],
 				ParamValidator::PARAM_ISMULTI => true,
 				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'Embed related data in the response. Accepted values: "page", "relations".',
 			],
 		];
 	}

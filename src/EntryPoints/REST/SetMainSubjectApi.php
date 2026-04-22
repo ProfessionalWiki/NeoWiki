@@ -76,6 +76,7 @@ class SetMainSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'MediaWiki page ID.',
 			],
 		];
 	}

@@ -44,17 +44,20 @@ class GetSubjectLabelsApi extends SimpleHandler {
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_DEFAULT => '',
+				self::PARAM_DESCRIPTION => 'Case-insensitive search prefix matched against Subject labels.',
 			],
 			'schema' => [
 				self::PARAM_SOURCE => 'query',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'Schema name to filter results by (e.g. "Person"). Case-sensitive. Only Subjects of this Schema are returned.',
 			],
 			'limit' => [
 				self::PARAM_SOURCE => 'query',
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_DEFAULT => 10,
+				self::PARAM_DESCRIPTION => 'Maximum number of items to return.',
 			],
 		];
 	}

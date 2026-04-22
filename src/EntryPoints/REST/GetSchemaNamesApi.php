@@ -33,7 +33,8 @@ class GetSchemaNamesApi extends SimpleHandler {
 			'search' => [
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true
+				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'Case-insensitive search prefix matched against Schema names.',
 			],
 		];
 	}
