@@ -197,13 +197,21 @@ const loading = ref( true );
 const expandedIds = ref<Set<string>>( new Set() );
 const highlightedId = ref<string | null>( null );
 
-const editingSubject = ref<Subject | null>( null );
+const editingSubjectId = ref<SubjectId | null>( null );
 const editorOpen = ref( false );
 
 const deleteConfirmOpen = ref( false );
 const deletingSubject = ref<Subject | null>( null );
 
-const subjects = computed<Subject[]>( () => subjectStore.pageSubjects?.getSubjects() ?? [] );
+// Read subjects through the reactive store so refreshes (e.g. on openEditor) flow into the list.
+const subjects = computed<Subject[]>( () =>
+	subjectStore.pageSubjects?.getSubjects()
+		.map( ( s ) => subjectStore.getSubject( s.getId() ) ?? s ) ?? []
+);
+
+const editingSubject = computed<Subject | null>( () =>
+	editingSubjectId.value === null ? null : subjectStore.getSubject( editingSubjectId.value ) ?? null
+);
 const hasMainSubject = computed( () => subjectStore.pageSubjects?.getMainSubjectId() !== null && subjectStore.pageSubjects?.getMainSubjectId() !== undefined );
 
 const canCreate = computed( () => canCreateMainSubject.value || canCreateChildSubject.value );
@@ -300,11 +308,12 @@ async function openEditor( subject: Subject ): Promise<void> {
 	try {
 		// Refresh both subject and schema so the editor never opens against stale data
 		// (e.g. after the subject or its schema was edited in another tab).
-		await subjectStore.fetchSubject( subject.getId() );
-		await schemaStore.fetchSchema( subject.getSchemaName() );
+		await Promise.all( [
+			subjectStore.fetchSubject( subject.getId() ),
+			schemaStore.fetchSchema( subject.getSchemaName() )
+		] );
 
-		const fresh = subjectStore.getSubject( subject.getId() );
-		editingSubject.value = fresh ?? subject;
+		editingSubjectId.value = subject.getId();
 		editorOpen.value = true;
 	} catch ( error ) {
 		mw.notify(
