@@ -33,7 +33,7 @@ class GetSchemaNamesApi extends SimpleHandler {
 			'search' => [
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => false
+				ParamValidator::PARAM_REQUIRED => true
 			],
 		];
 	}
