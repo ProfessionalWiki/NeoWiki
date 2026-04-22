@@ -164,6 +164,10 @@ JSON
 		$this->assertArrayHasKey( 'referencedSubjects', $body );
 		$this->assertArrayHasKey( 'sTestGPS1111aa1', $body['referencedSubjects'] );
 		$this->assertSame( 'Target', $body['referencedSubjects']['sTestGPS1111aa1']['label'] );
+		$this->assertSame(
+			'GetPageSubjectsApiTest RelationTarget',
+			$body['referencedSubjects']['sTestGPS1111aa1']['pageTitle']
+		);
 	}
 
 	public function testReturnsChildrenWhenMainSubjectIsAbsent(): void {

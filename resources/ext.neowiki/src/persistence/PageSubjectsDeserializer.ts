@@ -39,11 +39,11 @@ export class PageSubjectsDeserializer {
 		};
 	}
 
-	private deserializeSubjects( map: Record<string, SubjectJson>, pageId: number ): Subject[] {
+	private deserializeSubjects( map: Record<string, SubjectJson>, fallbackPageId: number ): Subject[] {
 		return Object.values( map ).map( ( subjectJson ) => this.subjectDeserializer.deserialize( {
 			...subjectJson,
-			pageId,
-			pageTitle: '',
+			pageId: subjectJson.pageId ?? fallbackPageId,
+			pageTitle: subjectJson.pageTitle ?? '',
 		} ) );
 	}
 

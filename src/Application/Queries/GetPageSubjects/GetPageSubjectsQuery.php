@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects;
 
+use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
@@ -22,6 +23,7 @@ readonly class GetPageSubjectsQuery {
 		private SubjectLookup $subjectLookup,
 		private SchemaLookup $schemaLookup,
 		private SchemaPresentationSerializer $schemaSerializer,
+		private PageIdentifiersLookup $pageIdentifiersLookup,
 	) {
 	}
 
@@ -61,13 +63,15 @@ readonly class GetPageSubjectsQuery {
 	}
 
 	private function buildResponseItem( Subject $subject ): GetSubjectResponseItem {
+		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $subject->id );
+
 		return new GetSubjectResponseItem(
 			id: $subject->id->text,
 			label: $subject->label->text,
 			schemaName: $subject->getSchemaName()->getText(),
 			statements: $this->arrayifyStatements( $subject->getStatements() ),
-			pageId: null,
-			pageTitle: null,
+			pageId: $pageIdentifiers?->getId()->id,
+			pageTitle: $pageIdentifiers?->getTitle(),
 		);
 	}
 

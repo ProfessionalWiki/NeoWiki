@@ -60,7 +60,7 @@ const resolvedProperties = computed<ResolvedProperty[]>( () => {
 		list-style: none;
 		display: grid;
 		grid-template-columns: minmax( 8rem, max-content ) 1fr;
-		gap: @spacing-25 @spacing-100;
+		gap: @spacing-75 @spacing-100;
 		margin: 0;
 		padding: 0;
 	}

@@ -440,6 +440,7 @@ class NeoWikiExtension {
 			subjectLookup: $this->getSubjectRepository(),
 			schemaLookup: $this->getSchemaLookup(),
 			schemaSerializer: $this->getSchemaPresentationSerializer(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 		);
 	}
 

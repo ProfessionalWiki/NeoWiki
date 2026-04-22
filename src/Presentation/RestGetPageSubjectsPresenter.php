@@ -42,12 +42,20 @@ class RestGetPageSubjectsPresenter implements GetPageSubjectsPresenter {
 		$map = [];
 
 		foreach ( $subjects as $subject ) {
-			$map[$subject->id] = [
+			$entry = [
 				'id' => $subject->id,
 				'label' => $subject->label,
 				'schema' => $subject->schemaName,
-				'statements' => $subject->statements,
 			];
+
+			if ( $subject->pageId !== null ) {
+				$entry['pageId'] = $subject->pageId;
+				$entry['pageTitle'] = $subject->pageTitle;
+			}
+
+			$entry['statements'] = $subject->statements;
+
+			$map[$subject->id] = $entry;
 		}
 
 		return $map;
