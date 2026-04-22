@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { newNumberProperty, NumberType } from '@/domain/propertyTypes/Number';
-import { PropertyName } from '@/domain/PropertyDefinition';
+import { newNumberProperty, NumberType, type NumberProperty } from '@/domain/propertyTypes/Number';
+import { PropertyName, type PropertyDefinition } from '@/domain/PropertyDefinition';
 import { newNumberValue } from '@/domain/Value';
 
 describe( 'NumberType', () => {
@@ -150,5 +150,22 @@ describe( 'validate', () => {
 			code: 'max-value',
 			args: [ 100 ],
 		} ] );
+	} );
+
+	it( 'ignores null bounds coming from JSON deserialization', () => {
+		const base: PropertyDefinition = {
+			name: new PropertyName( 'n' ),
+			type: NumberType.typeName,
+			description: '',
+			required: false,
+		};
+		const property = numberType.createPropertyDefinitionFromJson(
+			base,
+			{ type: NumberType.typeName, minimum: null, maximum: null, precision: null },
+		) as NumberProperty;
+
+		const errors = numberType.validate( newNumberValue( 2000 ), property );
+
+		expect( errors ).toEqual( [] );
 	} );
 } );
