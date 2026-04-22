@@ -15,7 +15,7 @@ export const useSubjectStore = defineStore( 'subject', {
 		pageSubjects: null as PageSubjects | null,
 	} ),
 	getters: {
-		getSubject: ( state ) => function ( id: SubjectId ): Subject | undefined {
+		getSubject: ( state ) => function ( id: SubjectId ): Subject {
 			const subject = state.subjects.get( id.text );
 
 			if ( subject === undefined ) {
@@ -33,7 +33,7 @@ export const useSubjectStore = defineStore( 'subject', {
 			const subject = await NeoWikiExtension.getInstance().getSubjectRepository().getSubject( id );
 			this.setSubject( subject );
 		},
-		async getOrFetchSubject( id: SubjectId ): Promise<Subject | undefined> {
+		async getOrFetchSubject( id: SubjectId ): Promise<Subject> {
 			if ( !this.subjects.has( id.text ) ) {
 				await this.fetchSubject( id );
 			}

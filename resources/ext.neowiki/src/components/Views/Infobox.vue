@@ -31,7 +31,7 @@
 			<SubjectEditorDialog
 				v-if="canEditSubject"
 				v-model:open="isEditorOpen"
-				:subject="subject as Subject"
+				:subject="subject"
 				:on-save="handleSaveSubject"
 				:on-save-schema="handleSaveSchema"
 			/>
@@ -93,7 +93,7 @@ const layoutStore = useLayoutStore();
 
 const isEditorOpen = ref( false );
 
-const subject = computed( () => subjectStore.getSubject( props.subjectId ) as Subject ); // TODO: handle not found
+const subject = computed( () => subjectStore.getSubject( props.subjectId ) ); // TODO: handle not found
 const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) ); // TODO: handle not found
 
 async function openEditor(): Promise<void> {

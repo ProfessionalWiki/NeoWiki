@@ -59,10 +59,17 @@
 					class="ext-neowiki-subjects-manager__row-header"
 					@click="toggleExpanded( subject.getId().text )"
 				>
-					<CdxIcon
+					<CdxButton
+						weight="quiet"
 						class="ext-neowiki-subjects-manager__row-chevron"
-						:icon="expandedIds.has( subject.getId().text ) ? cdxIconArrowPrevious : cdxIconArrowNext"
-					/>
+						:aria-expanded="expandedIds.has( subject.getId().text )"
+						:aria-label="expandedIds.has( subject.getId().text ) ?
+							$i18n( 'neowiki-managesubjects-row-collapse' ).text() :
+							$i18n( 'neowiki-managesubjects-row-expand' ).text()"
+						@click.stop="toggleExpanded( subject.getId().text )"
+					>
+						<CdxIcon :icon="expandedIds.has( subject.getId().text ) ? cdxIconArrowPrevious : cdxIconArrowNext" />
+					</CdxButton>
 					<span class="ext-neowiki-subjects-manager__row-title">
 						<span class="ext-neowiki-subjects-manager__row-label">
 							{{ subject.getLabel() }}
@@ -206,11 +213,11 @@ const deletingSubject = ref<Subject | null>( null );
 // Read subjects through the reactive store so refreshes (e.g. on openEditor) flow into the list.
 const subjects = computed<Subject[]>( () =>
 	subjectStore.pageSubjects?.getSubjects()
-		.map( ( s ) => subjectStore.getSubject( s.getId() ) ?? s ) ?? []
+		.map( ( s ) => subjectStore.getSubject( s.getId() ) ) ?? []
 );
 
 const editingSubject = computed<Subject | null>( () =>
-	editingSubjectId.value === null ? null : subjectStore.getSubject( editingSubjectId.value ) ?? null
+	editingSubjectId.value === null ? null : subjectStore.getSubject( editingSubjectId.value )
 );
 const hasMainSubject = computed( () => subjectStore.pageSubjects?.getMainSubjectId() !== null && subjectStore.pageSubjects?.getMainSubjectId() !== undefined );
 
