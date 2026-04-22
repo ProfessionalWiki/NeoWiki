@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -109,7 +110,7 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 		] );
 	}
 
-	private function createPageWithMainAndChild() {
+	private function createPageWithMainAndChild(): RevisionRecord {
 		return $this->createPageWithSubjects(
 			'SetMainSubjectApiTest_Page',
 			mainSubject: TestSubject::build(

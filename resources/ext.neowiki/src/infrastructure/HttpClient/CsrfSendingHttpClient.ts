@@ -35,6 +35,14 @@ export class CsrfSendingHttpClient implements HttpClient {
 		return this.convertResponse( response );
 	}
 
+	public async put( url: string, data?: Record<string, any>, config?: Record<string, any> ): Promise<Response> {
+		const response = await this.httpClient
+			.put( url, data, config )
+			.catch( ( err ) => this.handleError( err ) );
+
+		return this.convertResponse( response );
+	}
+
 	public async delete( url: string, config?: Record<string, any> ): Promise<Response> {
 		const response = await this.httpClient
 			.delete( url, config )

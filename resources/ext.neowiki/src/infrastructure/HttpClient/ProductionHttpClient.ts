@@ -33,6 +33,14 @@ export class ProductionHttpClient implements HttpClient {
 		} );
 	}
 
+	public async put( url: string, data?: Record<string, any>, config?: Record<string, any> ): Promise<Response> {
+		const response = await this.axiosInstance.put( url, data, config );
+		return new Response( JSON.stringify( response.data ), {
+			status: response.status,
+			statusText: response.statusText,
+		} );
+	}
+
 	public async delete( url: string, config?: Record<string, any> ): Promise<Response> {
 		const response = await this.axiosInstance.delete( url, config );
 		return new Response( JSON.stringify( response.data ), {

@@ -8,6 +8,7 @@ import SchemaDisplay from '@/components/SchemaDisplay/SchemaDisplay.vue';
 import LayoutDisplay from '@/components/LayoutDisplay/LayoutDisplay.vue';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import LayoutsPage from '@/components/LayoutsPage/LayoutsPage.vue';
+import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
 import type { LayoutName } from '@/domain/Layout.ts';
@@ -134,6 +135,19 @@ function initializeLayoutsPage(): void {
 	}
 }
 
+function initializeSubjectsManagerPage(): void {
+	const subjectsManager = document.getElementById( 'ext-neowiki-manage-subjects' );
+
+	if ( subjectsManager !== null ) {
+		const app = createMwApp( SubjectsManagerPage ).directive( 'tooltip', CdxTooltip );
+		const pinia = createPinia();
+		app.use( pinia );
+		NeoWikiServices.registerServices( app );
+		app.mount( subjectsManager );
+		registerSubjectCreatorClickHandler( pinia );
+	}
+}
+
 const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
@@ -143,4 +157,5 @@ if ( !isTestEnvironment ) {
 	initializeLayoutView();
 	initializeSchemasPage();
 	initializeLayoutsPage();
+	initializeSubjectsManagerPage();
 }

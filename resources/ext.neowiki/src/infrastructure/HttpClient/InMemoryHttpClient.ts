@@ -37,6 +37,16 @@ export class InMemoryHttpClient implements HttpClient {
 		return response;
 	}
 
+	public async put( url: string, _data?: Record<string, any>, _config?: Record<string, any> ): Promise<Response> {
+		const response = this.responses[ url ];
+
+		if ( !response ) {
+			throw new Error( `No response found for URL: ${ url }` );
+		}
+
+		return response;
+	}
+
 	public async delete( url: string, _config?: Record<string, any> ): Promise<Response> {
 		const response = this.responses[ url ];
 

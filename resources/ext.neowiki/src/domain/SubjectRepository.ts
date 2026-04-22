@@ -3,8 +3,13 @@ import type { SubjectLookup } from '@/domain/SubjectLookup';
 import { InMemorySubjectLookup } from '@/domain/SubjectLookup';
 import type { StatementList } from '@/domain/StatementList';
 import type { SchemaName } from '@/domain/Schema';
+import { PageSubjects } from '@/domain/PageSubjects';
 
 export interface SubjectRepository extends SubjectLookup {
+
+	getPageSubjects( pageId: number ): Promise<PageSubjects>;
+
+	setMainSubject( pageId: number, subjectId: SubjectId | null, comment?: string ): Promise<void>;
 
 	createMainSubject(
 		pageId: number,
@@ -30,6 +35,14 @@ export interface SubjectRepository extends SubjectLookup {
 }
 
 export class StubSubjectRepository extends InMemorySubjectLookup implements SubjectRepository {
+
+	public getPageSubjects( pageId: number ): Promise<PageSubjects> {
+		return Promise.resolve( new PageSubjects( pageId, null, [] ) );
+	}
+
+	public setMainSubject( _pageId: number, _subjectId: SubjectId | null, _comment?: string ): Promise<void> {
+		return Promise.resolve();
+	}
 
 	public createMainSubject( _pageId: number, _label: string, _schemaName: string, _statements: StatementList, _comment?: string ): Promise<SubjectId> {
 		return Promise.resolve( new SubjectId( 's11111111111111' ) );

@@ -19,6 +19,10 @@ export class StubHttpClient implements HttpClient {
 		return this.response;
 	}
 
+	public async put( _url: string, _data?: Record<string, any>, _config?: Record<string, any> ): Promise<Response> {
+		return this.response;
+	}
+
 	public async delete( _url: string, _config?: Record<string, any> ): Promise<Response> {
 		return this.response;
 	}

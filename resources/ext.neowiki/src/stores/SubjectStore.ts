@@ -6,10 +6,12 @@ import { SchemaName } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { PageSubjects } from '@/domain/PageSubjects.ts';
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
 		subjects: new Map<string, Subject>(),
 		subjectCreatorOpen: false,
+		pageSubjects: null as PageSubjects | null,
 	} ),
 	getters: {
 		getSubject: ( state ) => function ( id: SubjectId ): Subject | undefined {
@@ -95,6 +97,20 @@ export const useSubjectStore = defineStore( 'subject', {
 		},
 		closeSubjectCreator(): void {
 			this.subjectCreatorOpen = false;
+		},
+
+		async loadPageSubjects( pageId: number ): Promise<void> {
+			const repository = NeoWikiExtension.getInstance().getSubjectRepository();
+			this.pageSubjects = await repository.getPageSubjects( pageId );
+
+			for ( const subject of this.pageSubjects.getSubjects() ) {
+				this.setSubject( subject );
+			}
+		},
+
+		async setPageMainSubject( pageId: number, subjectId: SubjectId | null, comment?: string ): Promise<void> {
+			await NeoWikiExtension.getInstance().getSubjectRepository().setMainSubject( pageId, subjectId, comment );
+			await this.loadPageSubjects( pageId );
 		},
 	},
 } );
