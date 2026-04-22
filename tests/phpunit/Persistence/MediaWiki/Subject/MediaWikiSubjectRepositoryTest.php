@@ -78,7 +78,8 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		$this->createPages();
 
 		$this->newRepository()->deleteSubject(
-			new SubjectId( 'sTestMSR1111113' )
+			new SubjectId( 'sTestMSR1111113' ),
+			null
 		);
 
 		$this->assertNull(
@@ -92,7 +93,8 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		$this->createPages();
 
 		$this->newRepository()->deleteSubject(
-			new SubjectId( 'sTestMSR1111113' )
+			new SubjectId( 'sTestMSR1111113' ),
+			null
 		);
 
 		$this->assertNull(
