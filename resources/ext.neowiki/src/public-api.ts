@@ -1,14 +1,147 @@
-// Side-effect import: keep the existing bootstrap behaviour (Vue app mount).
-// Rollup preserves this because package.json has no sideEffects field, and
-// neowiki.ts has top-level statements that qualify as side-effects.
+// Broad public-API barrel. Everything the extension exposes to MW-native
+// RL modules via require('ext.neowiki').
+//
+// 0.x / alpha stability contract: anything here can change without notice.
+// Narrow before production (see follow-up issue).
+
+// Side-effect import — bootstrap (mount + hook) must run.
 import './neowiki';
 
-// Runtime exports for MW-native extensions via require('ext.neowiki').
-export { newStringValue, ValueType } from './domain/Value';
-export { NeoWikiServices } from './NeoWikiServices';
-export { default as NeoNestedField } from './components/common/NeoNestedField.vue';
+// Re-exported TS modules.
+export * from './Neo';
+export * from './NeoWikiExtension';
+export * from './NeoWikiServices';
+export * from './TypeSpecificComponentRegistry';
+export * from './ViewTypeRegistry';
+export * from './application/LayoutAuthorizer';
+export * from './application/LayoutLookup';
+export * from './application/LayoutRepository';
+export * from './application/SchemaAuthorizer';
+export * from './application/SchemaLookup';
+export * from './application/SchemaRepository';
+export * from './application/SubjectAuthorizer';
+export * from './assets/CustomIcons';
+export * from './components/SchemaEditor/Property/AttributesEditorContract';
+export * from './components/SchemaEditor/Property/minExceedsMax';
+export * from './components/Value/ValueDisplayContract';
+export * from './components/Value/ValueInputContract';
+export * from './composables/useChangeDetection';
+export * from './composables/useCloseConfirmation';
+export * from './composables/useLayoutPermissions';
+export * from './composables/useOverflowDetection';
+export * from './composables/useSchemaPermissions';
+export * from './composables/useSortable';
+export * from './composables/useStringValueInput';
+export * from './composables/useSubjectPermissions';
+export * from './composables/useValueValidation';
+export * from './domain/Layout';
+export * from './domain/PageIdentifiers';
+export * from './domain/PageSubjects';
+export * from './domain/PropertyDefinition';
+export * from './domain/PropertyDefinitionList';
+export * from './domain/PropertyType';
+export * from './domain/PropertyTypeRegistration';
+export * from './domain/Schema';
+export * from './domain/Statement';
+export * from './domain/StatementList';
+export * from './domain/Subject';
+export * from './domain/SubjectId';
+export * from './domain/SubjectLabelSearch';
+export * from './domain/SubjectLookup';
+export * from './domain/SubjectMap';
+export * from './domain/SubjectRepository';
+export * from './domain/SubjectValidator';
+export * from './domain/SubjectWithContext';
+export * from './domain/Value';
+export * from './domain/propertyTypes/DateTime';
+export * from './domain/propertyTypes/dateTimeConversion';
+export * from './domain/propertyTypes/Number';
+export * from './domain/propertyTypes/Relation';
+export * from './domain/propertyTypes/Select';
+export * from './domain/propertyTypes/Text';
+export * from './domain/propertyTypes/Url';
+export * from './domain/resolveDisplayProperties';
+export * from './infrastructure/HttpClient/CsrfSendingHttpClient';
+export * from './infrastructure/HttpClient/HttpClient';
+export * from './infrastructure/HttpClient/InMemoryHttpClient';
+export * from './infrastructure/HttpClient/ProductionHttpClient';
+export * from './infrastructure/HttpClient/StubHttpClient';
+export * from './persistence/LayoutDeserializer';
+export * from './persistence/LayoutSerializer';
+export * from './persistence/MediaWikiPageSaver';
+export * from './persistence/PageSaver';
+export * from './persistence/PageSubjectsDeserializer';
+export * from './persistence/RestLayoutRepository';
+export * from './persistence/RestSchemaRepository';
+export * from './persistence/RestSubjectLabelSearch';
+export * from './persistence/RestSubjectRepository';
+export * from './persistence/RightsBasedLayoutAuthorizer';
+export * from './persistence/RightsBasedSchemaAuthorizer';
+export * from './persistence/RightsBasedSubjectAuthorizer';
+export * from './persistence/SchemaDeserializer';
+export * from './persistence/SchemaSerializer';
+export * from './persistence/StatementDeserializer';
+export * from './persistence/StoreStateLoader';
+export * from './persistence/SubjectDeserializer';
+export * from './persistence/UserObjectBasedRightsFetcher';
+export * from './persistence/ValueDeserializer';
+export * from './presentation/FrontendRegistrar';
+export * from './presentation/PendingNotification';
+export * from './presentation/PropertyTypeAdapter';
+export * from './stores/LayoutStore';
+export * from './stores/SchemaStore';
+export * from './stores/SubjectStore';
 
-// Type exports for TS-based extensions using tsconfig-paths.
-export type { StringValue, Value } from './domain/Value';
-export type { BasePropertyType, ValueValidationError } from './domain/PropertyType';
-export type { PropertyDefinition } from './domain/PropertyDefinition';
+// Re-exported Vue components.
+export { default as LayoutDisplay } from './components/LayoutDisplay/LayoutDisplay.vue';
+export { default as LayoutDisplayHeader } from './components/LayoutDisplay/LayoutDisplayHeader.vue';
+export { default as DisplayRuleList } from './components/LayoutEditor/DisplayRuleList.vue';
+export { default as LayoutEditor } from './components/LayoutEditor/LayoutEditor.vue';
+export { default as LayoutEditorDialog } from './components/LayoutEditor/LayoutEditorDialog.vue';
+export { default as LayoutCreator } from './components/LayoutsPage/LayoutCreator.vue';
+export { default as LayoutCreatorDialog } from './components/LayoutsPage/LayoutCreatorDialog.vue';
+export { default as LayoutsPage } from './components/LayoutsPage/LayoutsPage.vue';
+export { default as NeoWikiApp } from './components/NeoWikiApp.vue';
+export { default as SchemaCreator } from './components/SchemaCreator/SchemaCreator.vue';
+export { default as SchemaDisplay } from './components/SchemaDisplay/SchemaDisplay.vue';
+export { default as SchemaDisplayHeader } from './components/SchemaDisplay/SchemaDisplayHeader.vue';
+export { default as DateTimeAttributesEditor } from './components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
+export { default as NumberAttributesEditor } from './components/SchemaEditor/Property/NumberAttributesEditor.vue';
+export { default as RelationAttributesEditor } from './components/SchemaEditor/Property/RelationAttributesEditor.vue';
+export { default as SelectAttributesEditor } from './components/SchemaEditor/Property/SelectAttributesEditor.vue';
+export { default as TextAttributesEditor } from './components/SchemaEditor/Property/TextAttributesEditor.vue';
+export { default as UrlAttributesEditor } from './components/SchemaEditor/Property/UrlAttributesEditor.vue';
+export { default as PropertyDefinitionEditor } from './components/SchemaEditor/PropertyDefinitionEditor.vue';
+export { default as PropertyList } from './components/SchemaEditor/PropertyList.vue';
+export { default as SchemaEditor } from './components/SchemaEditor/SchemaEditor.vue';
+export { default as SchemaEditorDialog } from './components/SchemaEditor/SchemaEditorDialog.vue';
+export { default as SchemaCreatorDialog } from './components/SchemasPage/SchemaCreatorDialog.vue';
+export { default as SchemasPage } from './components/SchemasPage/SchemasPage.vue';
+export { default as SchemaAbandonmentDialog } from './components/SubjectCreator/SchemaAbandonmentDialog.vue';
+export { default as SchemaLookup } from './components/SubjectCreator/SchemaLookup.vue';
+export { default as SubjectCreatorDialog } from './components/SubjectCreator/SubjectCreatorDialog.vue';
+export { default as SubjectEditor } from './components/SubjectEditor/SubjectEditor.vue';
+export { default as SubjectEditorDialog } from './components/SubjectEditor/SubjectEditorDialog.vue';
+export { default as SubjectStatementsView } from './components/SubjectsManager/SubjectStatementsView.vue';
+export { default as SubjectsManagerPage } from './components/SubjectsManager/SubjectsManagerPage.vue';
+export { default as DateTimeDisplay } from './components/Value/DateTimeDisplay.vue';
+export { default as DateTimeInput } from './components/Value/DateTimeInput.vue';
+export { default as NumberDisplay } from './components/Value/NumberDisplay.vue';
+export { default as NumberInput } from './components/Value/NumberInput.vue';
+export { default as RelationDisplay } from './components/Value/RelationDisplay.vue';
+export { default as RelationInput } from './components/Value/RelationInput.vue';
+export { default as SelectDisplay } from './components/Value/SelectDisplay.vue';
+export { default as SelectInput } from './components/Value/SelectInput.vue';
+export { default as StatementDisplay } from './components/Value/StatementDisplay.vue';
+export { default as TextDisplay } from './components/Value/TextDisplay.vue';
+export { default as TextInput } from './components/Value/TextInput.vue';
+export { default as UrlDisplay } from './components/Value/UrlDisplay.vue';
+export { default as UrlInput } from './components/Value/UrlInput.vue';
+export { default as Infobox } from './components/Views/Infobox.vue';
+export { default as CloseConfirmationDialog } from './components/common/CloseConfirmationDialog.vue';
+export { default as EditSummary } from './components/common/EditSummary.vue';
+export { default as I18nSlot } from './components/common/I18nSlot.vue';
+export { default as NeoMultiLookupInput } from './components/common/NeoMultiLookupInput.vue';
+export { default as NeoMultiTextInput } from './components/common/NeoMultiTextInput.vue';
+export { default as NeoNestedField } from './components/common/NeoNestedField.vue';
+export { default as SubjectLookup } from './components/common/SubjectLookup.vue';
