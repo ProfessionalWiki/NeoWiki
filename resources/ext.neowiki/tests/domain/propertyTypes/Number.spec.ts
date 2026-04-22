@@ -152,19 +152,31 @@ describe( 'validate', () => {
 		} ] );
 	} );
 
-	it( 'ignores null bounds coming from JSON deserialization', () => {
+	function numberPropertyFromJson( json: Record<string, unknown> ): NumberProperty {
 		const base: PropertyDefinition = {
 			name: new PropertyName( 'n' ),
 			type: NumberType.typeName,
 			description: '',
 			required: false,
 		};
-		const property = numberType.createPropertyDefinitionFromJson(
+		return numberType.createPropertyDefinitionFromJson(
 			base,
-			{ type: NumberType.typeName, minimum: null, maximum: null, precision: null },
+			{ type: NumberType.typeName, ...json },
 		) as NumberProperty;
+	}
+
+	it( 'ignores null maximum coming from JSON deserialization', () => {
+		const property = numberPropertyFromJson( { maximum: null } );
 
 		const errors = numberType.validate( newNumberValue( 2000 ), property );
+
+		expect( errors ).toEqual( [] );
+	} );
+
+	it( 'ignores null minimum coming from JSON deserialization', () => {
+		const property = numberPropertyFromJson( { minimum: null } );
+
+		const errors = numberType.validate( newNumberValue( -2000 ), property );
 
 		expect( errors ).toEqual( [] );
 	} );
