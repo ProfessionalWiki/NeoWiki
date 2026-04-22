@@ -67,7 +67,7 @@ class SetMainSubjectActionTest extends TestCase {
 			new PageSubjects( null, new SubjectMap( TestSubject::build( id: self::CHILD_ID ) ) ),
 			new PageId( self::PAGE_ID )
 		);
-		$repository->comments = [];
+		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
 
 		$presenter = $this->newSpyPresenter();
 
@@ -76,12 +76,12 @@ class SetMainSubjectActionTest extends TestCase {
 		);
 
 		$this->assertTrue( $presenter->noChange );
-		$this->assertSame( [], $repository->comments );
+		$this->assertEquals( $before, $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) ) );
 	}
 
 	public function testPromotingTheCurrentMainIsNoOp(): void {
 		$repository = $this->newRepositoryWithMainAndChild();
-		$repository->comments = [];
+		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
 
 		$presenter = $this->newSpyPresenter();
 
@@ -90,7 +90,7 @@ class SetMainSubjectActionTest extends TestCase {
 		);
 
 		$this->assertTrue( $presenter->noChange );
-		$this->assertSame( [], $repository->comments );
+		$this->assertEquals( $before, $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) ) );
 	}
 
 	public function testPromotingUnknownSubjectIdReportsNotFound(): void {

@@ -51,12 +51,16 @@ class GetPageSubjectsQueryTest extends TestCase {
 				),
 				new SubjectMap(
 					TestSubject::build(
-						id: 's11111111111ca1',
-						label: new SubjectLabel( 'child one' ),
-					),
-					TestSubject::build(
 						id: 's11111111111ca2',
 						label: new SubjectLabel( 'child two' ),
+					),
+					TestSubject::build(
+						id: 's11111111111ca3',
+						label: new SubjectLabel( 'child three' ),
+					),
+					TestSubject::build(
+						id: 's11111111111ca1',
+						label: new SubjectLabel( 'child one' ),
 					),
 				)
 			),
@@ -67,6 +71,10 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$this->newQuery( $presenter, $repository )->execute( 42 );
 
+		$this->assertSame(
+			[ 's11111111111maa', 's11111111111ca2', 's11111111111ca3', 's11111111111ca1' ],
+			array_keys( $presenter->response->subjects )
+		);
 		$this->assertEquals(
 			new GetPageSubjectsResponse(
 				pageId: 42,
@@ -85,17 +93,25 @@ class GetPageSubjectsQueryTest extends TestCase {
 						pageId: null,
 						pageTitle: null,
 					),
-					's11111111111ca1' => new GetSubjectResponseItem(
-						id: 's11111111111ca1',
-						label: 'child one',
+					's11111111111ca2' => new GetSubjectResponseItem(
+						id: 's11111111111ca2',
+						label: 'child two',
 						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
 						pageTitle: null,
 					),
-					's11111111111ca2' => new GetSubjectResponseItem(
-						id: 's11111111111ca2',
-						label: 'child two',
+					's11111111111ca3' => new GetSubjectResponseItem(
+						id: 's11111111111ca3',
+						label: 'child three',
+						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
+						statements: [],
+						pageId: null,
+						pageTitle: null,
+					),
+					's11111111111ca1' => new GetSubjectResponseItem(
+						id: 's11111111111ca1',
+						label: 'child one',
 						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
@@ -199,6 +215,82 @@ class GetPageSubjectsQueryTest extends TestCase {
 		$this->assertNotNull( $presenter->response->referencedSubjects );
 		$this->assertArrayHasKey( 's11111111111tar', $presenter->response->referencedSubjects );
 		$this->assertSame( 'target subject', $presenter->response->referencedSubjects['s11111111111tar']->label );
+	}
+
+	public function testReferencedSubjectsAlreadyOnPageAreNotDuplicated(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build(
+					id: 's11111111111maa',
+					statements: new StatementList( [
+						TestStatement::build(
+							'partner',
+							new RelationValue( TestRelation::build( id: 'r11111111111maa', targetId: 's11111111111ca1' ) ),
+							RelationType::NAME,
+						),
+					] )
+				),
+				new SubjectMap(
+					TestSubject::build( id: 's11111111111ca1', label: new SubjectLabel( 'on-page target' ) ),
+				)
+			),
+			new PageId( 42 )
+		);
+
+		$subjectLookup = new InMemorySubjectLookup(
+			TestSubject::build( id: 's11111111111ca1', label: new SubjectLabel( 'on-page target' ) )
+		);
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery( $presenter, $repository, subjectLookup: $subjectLookup )->execute( 42, includeReferencedSubjects: true );
+
+		$this->assertSame( [], $presenter->response->referencedSubjects );
+	}
+
+	public function testReferencedSubjectIsIncludedOnlyOnceWhenMultipleStatementsReferenceIt(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build(
+					id: 's11111111111maa',
+					statements: new StatementList( [
+						TestStatement::build(
+							'partner',
+							new RelationValue( TestRelation::build( id: 'r11111111111maa', targetId: 's11111111111tar' ) ),
+							RelationType::NAME,
+						),
+					] )
+				),
+				new SubjectMap(
+					TestSubject::build(
+						id: 's11111111111ca1',
+						statements: new StatementList( [
+							TestStatement::build(
+								'sibling',
+								new RelationValue( TestRelation::build( id: 'r11111111111ca1', targetId: 's11111111111tar' ) ),
+								RelationType::NAME,
+							),
+						] )
+					),
+				)
+			),
+			new PageId( 42 )
+		);
+
+		$subjectLookup = new InMemorySubjectLookup(
+			TestSubject::build( id: 's11111111111tar', label: new SubjectLabel( 'shared target' ) )
+		);
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery( $presenter, $repository, subjectLookup: $subjectLookup )->execute( 42, includeReferencedSubjects: true );
+
+		$this->assertSame(
+			[ 's11111111111tar' ],
+			array_keys( $presenter->response->referencedSubjects )
+		);
 	}
 
 	public function testReferencedSubjectsCarryPageIdentifiers(): void {

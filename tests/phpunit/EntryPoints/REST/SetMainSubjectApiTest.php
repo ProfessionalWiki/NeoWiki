@@ -8,10 +8,12 @@ use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWiki\Revision\RevisionRecord;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -46,6 +48,13 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 200, $response->getStatusCode() );
 		$body = json_decode( $response->getBody()->getContents(), true );
 		$this->assertSame( 'changed', $body['status'] );
+
+		$pageSubjects = NeoWikiExtension::getInstance()->getSubjectRepository()
+			->getSubjectsByPageId( new PageId( $pageId ) );
+		$this->assertSame( 'sTestSMS1111ch1', $pageSubjects->getMainSubject()?->id->text );
+		$this->assertTrue( $pageSubjects->getChildSubjects()->hasSubject(
+			TestSubject::build( id: 'sTestSMS1111maa' )->id
+		) );
 	}
 
 	public function testClearsMainWithNullSubjectId(): void {
@@ -59,6 +68,13 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 200, $response->getStatusCode() );
 		$body = json_decode( $response->getBody()->getContents(), true );
 		$this->assertSame( 'changed', $body['status'] );
+
+		$pageSubjects = NeoWikiExtension::getInstance()->getSubjectRepository()
+			->getSubjectsByPageId( new PageId( $pageId ) );
+		$this->assertNull( $pageSubjects->getMainSubject() );
+		$this->assertTrue( $pageSubjects->getChildSubjects()->hasSubject(
+			TestSubject::build( id: 'sTestSMS1111maa' )->id
+		) );
 	}
 
 	public function testReturnsNotFoundForUnknownSubjectId(): void {
