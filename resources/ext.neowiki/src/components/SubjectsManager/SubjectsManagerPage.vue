@@ -297,8 +297,21 @@ async function onMainChanged( newValue: string | null ): Promise<void> {
 }
 
 async function openEditor( subject: Subject ): Promise<void> {
-	editingSubject.value = subject;
-	editorOpen.value = true;
+	try {
+		// Refresh both subject and schema so the editor never opens against stale data
+		// (e.g. after the subject or its schema was edited in another tab).
+		await subjectStore.fetchSubject( subject.getId() );
+		await schemaStore.fetchSchema( subject.getSchemaName() );
+
+		const fresh = subjectStore.getSubject( subject.getId() );
+		editingSubject.value = fresh ?? subject;
+		editorOpen.value = true;
+	} catch ( error ) {
+		mw.notify(
+			error instanceof Error ? error.message : String( error ),
+			{ type: 'error' }
+		);
+	}
 }
 
 async function handleEditSave( updatedSubject: Subject, comment: string ): Promise<void> {
