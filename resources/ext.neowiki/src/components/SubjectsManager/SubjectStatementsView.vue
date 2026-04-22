@@ -1,25 +1,25 @@
 <template>
 	<div class="ext-neowiki-subject-statements">
-		<ul
+		<dl
 			v-if="resolvedProperties.length > 0"
 			class="ext-neowiki-subject-statements__list"
 		>
-			<li
+			<div
 				v-for="resolved in resolvedProperties"
 				:key="resolved.propertyDefinition.name.toString()"
 				class="ext-neowiki-subject-statements__item"
 			>
-				<span class="ext-neowiki-subject-statements__property">
+				<dt class="ext-neowiki-subject-statements__property">
 					{{ resolved.propertyDefinition.name.toString() }}
-				</span>
-				<span class="ext-neowiki-subject-statements__value">
+				</dt>
+				<dd class="ext-neowiki-subject-statements__value">
 					<StatementDisplay
 						:value="resolved.value"
 						:property="resolved.propertyDefinition"
 					/>
-				</span>
-			</li>
-		</ul>
+				</dd>
+			</div>
+		</dl>
 		<div
 			v-else
 			class="ext-neowiki-subject-statements__empty"
@@ -56,31 +56,55 @@ const resolvedProperties = computed<ResolvedProperty[]>( () => {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-statements {
+	line-height: @line-height-small;
+
 	&__list {
-		list-style: none;
-		display: grid;
-		grid-template-columns: minmax( 8rem, max-content ) 1fr;
-		gap: @spacing-75 @spacing-100;
 		margin: 0;
 		padding: 0;
 	}
 
 	&__item {
-		display: contents;
+		display: flex;
+		flex-direction: column;
+		gap: @spacing-25;
+		padding-block: @spacing-75;
+		border-top: @border-subtle;
+	}
+
+	&__item:first-child {
+		border-top: 0;
 	}
 
 	&__property {
 		font-weight: @font-weight-bold;
-		color: @color-subtle;
+		color: @color-emphasized;
 	}
 
 	&__value {
 		margin: 0;
+		overflow-wrap: anywhere;
+		word-break: break-word;
 	}
 
 	&__empty {
 		color: @color-subtle;
 		font-style: italic;
+	}
+
+	@media ( min-width: @min-width-breakpoint-tablet ) {
+		&__item {
+			flex-direction: row;
+			align-items: flex-start;
+			column-gap: @spacing-150;
+		}
+
+		&__property {
+			flex: 0 0 40%;
+		}
+
+		&__value {
+			flex: 0 1 60%;
+		}
 	}
 }
 </style>

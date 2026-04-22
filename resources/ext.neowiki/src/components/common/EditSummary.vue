@@ -35,12 +35,12 @@
 
 		<div class="ext-neowiki-edit-summary__actions">
 			<CdxButton
-				action="progressive"
+				:action="props.saveButtonAction"
 				weight="primary"
 				:disabled="props.saveDisabled"
 				@click="onSaveClick"
 			>
-				<CdxIcon :icon="cdxIconCheck" />
+				<CdxIcon :icon="props.saveButtonIcon" />
 				{{ props.saveButtonLabel }}
 			</CdxButton>
 		</div>
@@ -51,12 +51,21 @@
 import { ref } from 'vue';
 import { CdxButton, CdxField, CdxIcon, CdxTextArea, CdxAccordion } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
+import type { Icon } from '@wikimedia/codex-icons';
 
-const props = defineProps<{
-	helpText: string;
-	saveButtonLabel: string;
-	saveDisabled: boolean;
-}>();
+const props = withDefaults(
+	defineProps<{
+		helpText: string;
+		saveButtonLabel: string;
+		saveDisabled: boolean;
+		saveButtonAction?: 'progressive' | 'destructive';
+		saveButtonIcon?: Icon;
+	}>(),
+	{
+		saveButtonAction: 'progressive',
+		saveButtonIcon: () => cdxIconCheck
+	}
+);
 
 const editSummary = ref( '' );
 const textAreaRef = ref<InstanceType<typeof CdxTextArea> | null>( null );

@@ -266,7 +266,10 @@
 						"cdxIconEyeClosed",
 						"cdxIconClock",
 						"cdxIconCollapse",
-						"cdxIconExpand"
+						"cdxIconExpand",
+						"cdxIconStar",
+						"cdxIconUnStar",
+						"cdxIconEllipsis"
 					]
 				}
 			],
@@ -440,13 +443,16 @@
 				"neowiki-managesubjects-not-applicable",
 				"neowiki-managesubjects-add-button",
 				"neowiki-managesubjects-empty",
-				"neowiki-managesubjects-main-subject-label",
-				"neowiki-managesubjects-main-subject-none",
+				"neowiki-managesubjects-count",
 				"neowiki-managesubjects-main-subject-changed",
 				"neowiki-managesubjects-main-subject-error",
-				"neowiki-managesubjects-main-subject-pill",
+				"neowiki-managesubjects-main-subject-indicator",
+				"neowiki-managesubjects-other-subjects-heading",
 				"neowiki-managesubjects-row-edit",
 				"neowiki-managesubjects-row-delete",
+				"neowiki-managesubjects-row-promote",
+				"neowiki-managesubjects-row-more",
+				"neowiki-managesubjects-statement-count",
 				"neowiki-managesubjects-no-statements",
 				"neowiki-managesubjects-delete-summary-default",
 				"neowiki-managesubjects-delete-confirm-title",
@@ -455,6 +461,7 @@
 				"neowiki-managesubjects-delete-success",
 				"neowiki-managesubjects-delete-error",
 				"neowiki-managesubjects-load-error",
+				"neowiki-managesubjects-id-label",
 				"neowiki-managesubjects-id-copy",
 				"neowiki-managesubjects-id-copied",
 				"neowiki-managesubjects-id-copy-error"
