@@ -100,6 +100,72 @@ JSON
 		);
 	}
 
+	public function testIncludesSchemasAndReferencedSubjectsWhenExpanded(): void {
+		$this->createSchema(
+			'GetPageSubjectsApiTestRelationSchema',
+			<<<JSON
+{
+	"title": "GetPageSubjectsApiTestRelationSchema",
+	"propertyDefinitions": {
+		"partner": {
+			"type": "relation",
+			"relation": "Partner",
+			"targetSchema": "GetPageSubjectsApiTestSchema"
+		}
+	}
+}
+JSON
+		);
+
+		$this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_RelationTarget',
+			mainSubject: TestSubject::build(
+				id: 'sTestGPS1111aa1',
+				label: new SubjectLabel( 'Target' ),
+				schemaName: new SchemaName( 'GetPageSubjectsApiTestSchema' ),
+			),
+		);
+
+		$revision = $this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_WithRelation',
+			mainSubject: TestSubject::build(
+				id: 'sTestGPS1111aa2',
+				label: new SubjectLabel( 'Source' ),
+				schemaName: new SchemaName( 'GetPageSubjectsApiTestRelationSchema' ),
+				statements: new StatementList( [
+					TestStatement::buildRelation( 'partner', [
+						\ProfessionalWiki\NeoWiki\Tests\Data\TestRelation::build(
+							id: 'rTestGPS1111aa2',
+							targetId: 'sTestGPS1111aa1',
+						),
+					] ),
+				] )
+			),
+		);
+
+		$response = $this->executeHandler(
+			new GetPageSubjectsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'pageId' => (string)$revision->getPage()->getId() ],
+				'queryParams' => [ 'expand' => 'schemas|relations' ],
+			] )
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
+
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertArrayHasKey( 'schemas', $body );
+		$this->assertArrayHasKey( 'GetPageSubjectsApiTestRelationSchema', $body['schemas'] );
+		$this->assertArrayHasKey( 'GetPageSubjectsApiTestSchema', $body['schemas'] );
+		$this->assertArrayHasKey( 'partner', $body['schemas']['GetPageSubjectsApiTestRelationSchema']['propertyDefinitions'] );
+
+		$this->assertArrayHasKey( 'referencedSubjects', $body );
+		$this->assertArrayHasKey( 'sTestGPS1111aa1', $body['referencedSubjects'] );
+		$this->assertSame( 'Target', $body['referencedSubjects']['sTestGPS1111aa1']['label'] );
+	}
+
 	public function testReturnsChildrenWhenMainSubjectIsAbsent(): void {
 		$revision = $this->createPageWithSubjects(
 			'GetPageSubjectsApiTest_NoMain',

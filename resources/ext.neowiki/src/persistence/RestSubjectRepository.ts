@@ -1,8 +1,11 @@
 import type { SubjectRepository } from '@/domain/SubjectRepository';
 import { SubjectId } from '@/domain/SubjectId';
 import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
-import { PageSubjectsDeserializer, type PageSubjectsJson } from '@/persistence/PageSubjectsDeserializer';
-import { PageSubjects } from '@/domain/PageSubjects';
+import {
+	PageSubjectsDeserializer,
+	type DeserializedPageSubjects,
+	type PageSubjectsJson,
+} from '@/persistence/PageSubjectsDeserializer';
 import { StatementList, statementsToJson } from '@/domain/StatementList';
 import { type SchemaName } from '@/domain/Schema';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
@@ -29,9 +32,9 @@ export class RestSubjectRepository implements SubjectRepository {
 	) {
 	}
 
-	public async getPageSubjects( pageId: number ): Promise<PageSubjects> {
+	public async getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects> {
 		const response = await this.httpClient.get(
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/page/${ pageId }/subjects`,
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/page/${ pageId }/subjects?expand=schemas%7Crelations`,
 		);
 
 		if ( !response.ok ) {

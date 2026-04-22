@@ -1,19 +1,22 @@
 <template>
 	<div class="ext-neowiki-subject-statements">
 		<ul
-			v-if="hasStatements"
+			v-if="resolvedProperties.length > 0"
 			class="ext-neowiki-subject-statements__list"
 		>
 			<li
-				v-for="statement in statements"
-				:key="statement.propertyName.toString()"
+				v-for="resolved in resolvedProperties"
+				:key="resolved.propertyDefinition.name.toString()"
 				class="ext-neowiki-subject-statements__item"
 			>
 				<span class="ext-neowiki-subject-statements__property">
-					{{ statement.propertyName.toString() }}
+					{{ resolved.propertyDefinition.name.toString() }}
 				</span>
 				<span class="ext-neowiki-subject-statements__value">
-					{{ formatValue( statement ) }}
+					<StatementDisplay
+						:value="resolved.value"
+						:property="resolved.propertyDefinition"
+					/>
 				</span>
 			</li>
 		</ul>
@@ -29,38 +32,24 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Subject } from '@/domain/Subject';
-import { Statement } from '@/domain/Statement';
-import { ValueType, type Value, type RelationValue } from '@/domain/Value';
+import { Schema } from '@/domain/Schema';
+import { useSchemaStore } from '@/stores/SchemaStore';
+import { resolveDisplayProperties, type ResolvedProperty } from '@/domain/resolveDisplayProperties';
+import StatementDisplay from '@/components/Value/StatementDisplay.vue';
 
 const props = defineProps<{
 	subject: Subject;
 }>();
 
-const statements = computed<Statement[]>( () => [ ...props.subject.getStatements() ] );
-const hasStatements = computed( () => statements.value.length > 0 );
+const schemaStore = useSchemaStore();
 
-function formatValue( statement: Statement ): string {
-	const value = statement.value;
-	if ( value === undefined ) {
-		return '';
+const resolvedProperties = computed<ResolvedProperty[]>( () => {
+	const schema = schemaStore.schemas.get( props.subject.getSchemaName() ) as Schema | undefined;
+	if ( schema === undefined ) {
+		return [];
 	}
-	return formatValueByType( value );
-}
-
-function formatValueByType( value: Value ): string {
-	switch ( value.type ) {
-		case ValueType.String:
-			return value.parts.join( ', ' );
-		case ValueType.Number:
-			return String( value.number );
-		case ValueType.Boolean:
-			return value.boolean ? '✓' : '✗';
-		case ValueType.Relation:
-			return ( value as RelationValue ).relations.map( ( r ) => r.target.text ).join( ', ' );
-		default:
-			return '';
-	}
-}
+	return resolveDisplayProperties( schema, props.subject as Subject );
+} );
 </script>
 
 <style lang="less">

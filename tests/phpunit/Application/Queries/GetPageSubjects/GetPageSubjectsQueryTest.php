@@ -9,14 +9,24 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjects
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsResponse;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
+use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 
 /**
@@ -52,7 +62,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$presenter = $this->newSpyPresenter();
 
-		( new GetPageSubjectsQuery( $presenter, $repository ) )->execute( 42 );
+		$this->newQuery( $presenter, $repository )->execute( 42 );
 
 		$this->assertEquals(
 			new GetPageSubjectsResponse(
@@ -97,7 +107,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 	public function testReturnsEmptyResponseForPageWithoutSubjects(): void {
 		$presenter = $this->newSpyPresenter();
 
-		( new GetPageSubjectsQuery( $presenter, new InMemorySubjectRepository() ) )->execute( 99 );
+		$this->newQuery( $presenter, new InMemorySubjectRepository() )->execute( 99 );
 
 		$this->assertEquals(
 			new GetPageSubjectsResponse( pageId: 99, mainSubjectId: null, subjects: [] ),
@@ -119,10 +129,97 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$presenter = $this->newSpyPresenter();
 
-		( new GetPageSubjectsQuery( $presenter, $repository ) )->execute( 7 );
+		$this->newQuery( $presenter, $repository )->execute( 7 );
 
 		$this->assertNull( $presenter->response->mainSubjectId );
 		$this->assertSame( [ 's11111111111oa1' ], array_keys( $presenter->response->subjects ) );
+	}
+
+	public function testIncludesSchemasWhenRequested(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build(
+					id: 's11111111111maa',
+					schemaName: new SchemaName( 'CitySchema' ),
+				),
+				new SubjectMap(
+					TestSubject::build( id: 's11111111111ca1', schemaName: new SchemaName( 'PopulationSchema' ) ),
+					TestSubject::build( id: 's11111111111ca2', schemaName: new SchemaName( 'PopulationSchema' ) ),
+				)
+			),
+			new PageId( 42 )
+		);
+
+		$schemaLookup = new InMemorySchemaLookup(
+			TestSchema::build( name: new SchemaName( 'CitySchema' ) ),
+			TestSchema::build( name: new SchemaName( 'PopulationSchema' ) ),
+		);
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery( $presenter, $repository, schemaLookup: $schemaLookup )->execute( 42, includeSchemas: true );
+
+		$this->assertNotNull( $presenter->response->schemas );
+		$this->assertSame(
+			[ 'CitySchema', 'PopulationSchema' ],
+			array_keys( $presenter->response->schemas )
+		);
+	}
+
+	public function testIncludesReferencedSubjectsForRelationValues(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build(
+					id: 's11111111111maa',
+					statements: new StatementList( [
+						TestStatement::build(
+							'partner',
+							new RelationValue( TestRelation::build( id: 'r11111111111maa', targetId: 's11111111111tar' ) ),
+							RelationType::NAME,
+						),
+					] )
+				),
+				new SubjectMap()
+			),
+			new PageId( 42 )
+		);
+
+		$referenced = TestSubject::build( id: 's11111111111tar', label: new SubjectLabel( 'target subject' ) );
+		$subjectLookup = new InMemorySubjectLookup( $referenced );
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery( $presenter, $repository, subjectLookup: $subjectLookup )->execute( 42, includeReferencedSubjects: true );
+
+		$this->assertNotNull( $presenter->response->referencedSubjects );
+		$this->assertArrayHasKey( 's11111111111tar', $presenter->response->referencedSubjects );
+		$this->assertSame( 'target subject', $presenter->response->referencedSubjects['s11111111111tar']->label );
+	}
+
+	public function testReferencedSubjectsAndSchemasAreNullWhenNotRequested(): void {
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery( $presenter, new InMemorySubjectRepository() )->execute( 42 );
+
+		$this->assertNull( $presenter->response->referencedSubjects );
+		$this->assertNull( $presenter->response->schemas );
+	}
+
+	private function newQuery(
+		object $presenter,
+		InMemorySubjectRepository $repository,
+		?SubjectLookup $subjectLookup = null,
+		?SchemaLookup $schemaLookup = null,
+	): GetPageSubjectsQuery {
+		return new GetPageSubjectsQuery(
+			presenter: $presenter,
+			subjectRepository: $repository,
+			subjectLookup: $subjectLookup ?? new InMemorySubjectLookup(),
+			schemaLookup: $schemaLookup ?? new InMemorySchemaLookup(),
+			schemaSerializer: new SchemaPresentationSerializer(),
+		);
 	}
 
 	private function newSpyPresenter(): object {

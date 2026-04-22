@@ -7,6 +7,7 @@ import { StatementList } from '@/domain/StatementList.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
 		subjects: new Map<string, Subject>(),
@@ -101,10 +102,20 @@ export const useSubjectStore = defineStore( 'subject', {
 
 		async loadPageSubjects( pageId: number ): Promise<void> {
 			const repository = NeoWikiExtension.getInstance().getSubjectRepository();
-			this.pageSubjects = await repository.getPageSubjects( pageId );
+			const result = await repository.getPageSubjects( pageId );
 
-			for ( const subject of this.pageSubjects.getSubjects() ) {
+			this.pageSubjects = result.pageSubjects;
+
+			for ( const subject of result.pageSubjects.getSubjects() ) {
 				this.setSubject( subject );
+			}
+			for ( const subject of result.referencedSubjects ) {
+				this.setSubject( subject );
+			}
+
+			const schemaStore = useSchemaStore();
+			for ( const schema of result.schemas ) {
+				schemaStore.setSchema( schema.getName(), schema );
 			}
 		},
 

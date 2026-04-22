@@ -17,11 +17,21 @@ class RestGetPageSubjectsPresenter implements GetPageSubjectsPresenter {
 	}
 
 	public function presentPageSubjects( GetPageSubjectsResponse $response ): void {
-		$this->apiResponse = [
+		$body = [
 			'pageId' => $response->pageId,
 			'mainSubjectId' => $response->mainSubjectId,
 			'subjects' => $this->buildSubjectsMap( $response->subjects ),
 		];
+
+		if ( $response->referencedSubjects !== null ) {
+			$body['referencedSubjects'] = $this->buildSubjectsMap( $response->referencedSubjects );
+		}
+
+		if ( $response->schemas !== null ) {
+			$body['schemas'] = $this->buildSchemasMap( $response->schemas );
+		}
+
+		$this->apiResponse = $body;
 	}
 
 	/**
@@ -38,6 +48,20 @@ class RestGetPageSubjectsPresenter implements GetPageSubjectsPresenter {
 				'schema' => $subject->schemaName,
 				'statements' => $subject->statements,
 			];
+		}
+
+		return $map;
+	}
+
+	/**
+	 * @param array<string, string> $schemas Schema name → JSON-encoded schema
+	 * @return array<string, mixed> Schema name → decoded schema body
+	 */
+	private function buildSchemasMap( array $schemas ): array {
+		$map = [];
+
+		foreach ( $schemas as $name => $json ) {
+			$map[$name] = json_decode( $json, true );
 		}
 
 		return $map;
