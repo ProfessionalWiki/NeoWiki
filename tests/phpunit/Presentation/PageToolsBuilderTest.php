@@ -65,6 +65,24 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
+	public function testHidesManageSubjectsLinkWhenAlreadyViewingSubjectsAction(): void {
+		$this->assertSame(
+			[ $this->createSubjectItem(), $this->editJsonItem() ],
+			$this->build( currentAction: 'subjects' )
+		);
+	}
+
+	public function testReturnsEmptyListOnSubjectsActionWhenNothingElseQualifies(): void {
+		$this->assertSame(
+			[],
+			$this->build(
+				canCreateMainSubject: false,
+				devUiEnabled: false,
+				currentAction: 'subjects'
+			)
+		);
+	}
+
 	/**
 	 * @return list<array<string, mixed>>
 	 */
@@ -72,14 +90,16 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		bool $isContentNamespace = true,
 		bool $canCreateMainSubject = true,
 		bool $isLatestRevision = true,
-		bool $devUiEnabled = true
+		bool $devUiEnabled = true,
+		string $currentAction = 'view'
 	): array {
 		return ( new PageToolsBuilder() )->build(
 			title: Title::newFromText( self::PAGE_NAME ),
 			isContentNamespace: $isContentNamespace,
 			canCreateMainSubject: $canCreateMainSubject,
 			isLatestRevision: $isLatestRevision,
-			devUiEnabled: $devUiEnabled
+			devUiEnabled: $devUiEnabled,
+			currentAction: $currentAction
 		);
 	}
 

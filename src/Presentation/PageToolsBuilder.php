@@ -18,7 +18,8 @@ class PageToolsBuilder {
 		bool $isContentNamespace,
 		bool $canCreateMainSubject,
 		bool $isLatestRevision,
-		bool $devUiEnabled
+		bool $devUiEnabled,
+		string $currentAction
 	): array {
 		if ( !$isContentNamespace ) {
 			return [];
@@ -37,7 +38,7 @@ class PageToolsBuilder {
 			];
 		}
 
-		if ( $title->canExist() ) {
+		if ( $title->canExist() && $currentAction !== SubjectsAction::ACTION_NAME ) {
 			$items[] = [
 				'text' => wfMessage( 'neowiki-page-tools-manage-subjects' )->text(),
 				'href' => $title->getLocalURL( [ 'action' => SubjectsAction::ACTION_NAME ] ),

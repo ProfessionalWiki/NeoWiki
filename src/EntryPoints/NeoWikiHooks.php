@@ -309,7 +309,10 @@ class NeoWikiHooks {
 				->isContent( $title->getNamespace() ),
 			canCreateMainSubject: $extension->newSubjectAuthorizer( $skin->getAuthority() )->canCreateMainSubject(),
 			isLatestRevision: self::pageIsLatestRevision( $skin->getOutput() ),
-			devUiEnabled: $extension->isDevelopmentUIEnabled()
+			devUiEnabled: $extension->isDevelopmentUIEnabled(),
+			currentAction: MediaWikiServices::getInstance()
+				->getActionFactory()
+				->getActionName( $skin->getContext() )
 		);
 
 		if ( $pageToolsItems !== [] ) {
