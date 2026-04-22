@@ -16,12 +16,12 @@ readonly class DeleteSubjectAction {
 	) {
 	}
 
-	public function deleteSubject( SubjectId $subjectId ): void {
+	public function deleteSubject( SubjectId $subjectId, ?string $comment = null ): void {
 		if ( !$this->subjectAuthorizer->canDeleteSubject() ) {
 			throw new \RuntimeException( 'You do not have the necessary permissions to delete this subject' );
 		}
 
-		$this->subjectRepository->deleteSubject( $subjectId );
+		$this->subjectRepository->deleteSubject( $subjectId, $comment );
 	}
 
 }

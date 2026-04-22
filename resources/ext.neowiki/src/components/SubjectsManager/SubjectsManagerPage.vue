@@ -12,17 +12,21 @@
 			</CdxButton>
 		</div>
 
-		<CdxField class="ext-neowiki-subjects-manager__main-field">
-			<template #label>
+		<div class="ext-neowiki-subjects-manager__main-field">
+			<label
+				for="ext-neowiki-subjects-manager-main-select"
+				class="ext-neowiki-subjects-manager__main-field-label"
+			>
 				{{ $i18n( 'neowiki-managesubjects-main-subject-label' ).text() }}
-			</template>
+			</label>
 			<CdxSelect
+				id="ext-neowiki-subjects-manager-main-select"
 				v-model:selected="selectedMainId"
 				:menu-items="mainOptions"
 				:disabled="loading || !canEdit || subjects.length === 0"
 				@update:selected="onMainChanged"
 			/>
-		</CdxField>
+		</div>
 
 		<p
 			v-if="loading"
@@ -63,6 +67,12 @@
 					<span class="ext-neowiki-subjects-manager__row-label">
 						{{ subject.getLabel() }}
 					</span>
+					<CdxInfoChip
+						v-if="isMain( subject )"
+						class="ext-neowiki-subjects-manager__row-main-badge"
+					>
+						{{ $i18n( 'neowiki-managesubjects-main-subject-pill' ).text() }}
+					</CdxInfoChip>
 					<a
 						class="ext-neowiki-subjects-manager__row-schema"
 						:href="schemaUrl( subject.getSchemaName() )"
@@ -70,12 +80,14 @@
 					>
 						{{ subject.getSchemaName() }}
 					</a>
-					<CdxInfoChip
-						v-if="isMain( subject )"
-						class="ext-neowiki-subjects-manager__row-main-badge"
+					<button
+						type="button"
+						class="ext-neowiki-subjects-manager__row-id"
+						:title="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
+						@click.stop="copySubjectId( subject.getId().text )"
 					>
-						{{ $i18n( 'neowiki-managesubjects-main-badge' ).text() }}
-					</CdxInfoChip>
+						<code>{{ subject.getId().text }}</code>
+					</button>
 					<span class="ext-neowiki-subjects-manager__row-actions">
 						<CdxButton
 							v-if="canEdit"
@@ -144,7 +156,6 @@ import { computed, onMounted, onUnmounted, ref, nextTick } from 'vue';
 import {
 	CdxButton,
 	CdxDialog,
-	CdxField,
 	CdxIcon,
 	CdxInfoChip,
 	CdxSelect
@@ -237,6 +248,18 @@ function onAddClicked(): void {
 	subjectStore.openSubjectCreator();
 }
 
+async function copySubjectId( id: string ): Promise<void> {
+	try {
+		await navigator.clipboard.writeText( id );
+		mw.notify( mw.msg( 'neowiki-managesubjects-id-copied', id ), { type: 'success' } );
+	} catch ( error ) {
+		mw.notify(
+			error instanceof Error ? error.message : String( error ),
+			{ title: mw.msg( 'neowiki-managesubjects-id-copy-error' ), type: 'error' }
+		);
+	}
+}
+
 async function loadSubjects(): Promise<void> {
 	loading.value = true;
 	try {
@@ -291,7 +314,7 @@ function confirmDelete( subject: Subject ): void {
 	deleteConfirmOpen.value = true;
 }
 
-async function executeDelete( _comment: string ): Promise<void> {
+async function executeDelete( comment: string ): Promise<void> {
 	const subject = deletingSubject.value;
 	deleteConfirmOpen.value = false;
 
@@ -300,10 +323,10 @@ async function executeDelete( _comment: string ): Promise<void> {
 	}
 
 	const label = subject.getLabel();
+	const summary = comment || mw.msg( 'neowiki-managesubjects-delete-summary-default' );
 
 	try {
-		// _comment is reserved for future use once the delete API accepts an edit summary.
-		await subjectStore.deleteSubject( subject.getId() );
+		await subjectStore.deleteSubject( subject.getId(), summary );
 		mw.notify( mw.msg( 'neowiki-managesubjects-delete-success', label ), { type: 'success' } );
 		await loadSubjects();
 	} catch ( error ) {
@@ -358,8 +381,16 @@ onUnmounted( () => {
 	}
 
 	&__main-field {
-		max-width: 32rem;
+		display: flex;
+		align-items: center;
+		gap: @spacing-100;
+		max-width: 48rem;
 		margin-bottom: @spacing-150;
+	}
+
+	&__main-field-label {
+		font-weight: @font-weight-bold;
+		flex-shrink: 0;
 	}
 
 	&__loading,
@@ -418,6 +449,30 @@ onUnmounted( () => {
 	&__row-schema {
 		color: @color-subtle;
 		flex-shrink: 0;
+	}
+
+	&__row-id {
+		appearance: none;
+		background: transparent;
+		border: 0;
+		padding: 0;
+		flex-shrink: 0;
+		cursor: pointer;
+		color: @color-subtle;
+		font: inherit;
+
+		code {
+			font-family: monospace;
+			font-size: @font-size-small;
+			padding: @spacing-12 @spacing-25;
+			border-radius: @border-radius-base;
+			background: @background-color-neutral-subtle;
+		}
+
+		&:hover code {
+			background: @background-color-neutral;
+			color: @color-base;
+		}
 	}
 
 	&__row-main-badge {

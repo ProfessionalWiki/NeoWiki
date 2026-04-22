@@ -23,40 +23,41 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	public function testShowsBothItemsWhenEverythingOpenAndDevUiEnabled(): void {
+	public function testShowsAllItemsWhenEverythingOpenAndDevUiEnabled(): void {
 		$this->assertSame(
 			[
 				$this->createSubjectItem(),
+				$this->manageSubjectsItem(),
 				$this->editJsonItem(),
 			],
 			$this->build()
 		);
 	}
 
-	public function testShowsOnlyCreateSubjectWhenDevUiDisabled(): void {
+	public function testShowsCreateAndManageWhenDevUiDisabled(): void {
 		$this->assertSame(
-			[ $this->createSubjectItem() ],
+			[ $this->createSubjectItem(), $this->manageSubjectsItem() ],
 			$this->build( devUiEnabled: false )
 		);
 	}
 
-	public function testShowsOnlyEditJsonOnOldRevision(): void {
+	public function testShowsManageAndEditJsonOnOldRevision(): void {
 		$this->assertSame(
-			[ $this->editJsonItem() ],
+			[ $this->manageSubjectsItem(), $this->editJsonItem() ],
 			$this->build( isLatestRevision: false )
 		);
 	}
 
-	public function testShowsOnlyEditJsonWhenUserCannotCreateSubjects(): void {
+	public function testShowsManageAndEditJsonWhenUserCannotCreateSubjects(): void {
 		$this->assertSame(
-			[ $this->editJsonItem() ],
+			[ $this->manageSubjectsItem(), $this->editJsonItem() ],
 			$this->build( canCreateMainSubject: false )
 		);
 	}
 
-	public function testReturnsNoItemsWhenNothingQualifies(): void {
+	public function testReturnsOnlyManageSubjectsWhenNothingElseQualifies(): void {
 		$this->assertSame(
-			[],
+			[ $this->manageSubjectsItem() ],
 			$this->build(
 				canCreateMainSubject: false,
 				devUiEnabled: false
@@ -93,6 +94,17 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 			'data' => [
 				'mw-neowiki-action' => 'open-subject-creator',
 			],
+		];
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function manageSubjectsItem(): array {
+		return [
+			'text' => wfMessage( 'neowiki-page-tools-manage-subjects' )->text(),
+			'href' => Title::newFromText( self::PAGE_NAME )->getLocalURL( [ 'action' => 'subjects' ] ),
+			'id' => 't-neowiki-manage-subjects',
 		];
 	}
 

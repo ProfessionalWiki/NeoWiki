@@ -19,10 +19,23 @@ class DeleteSubjectActionTest extends TestCase {
 		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
 		$subjectAuthorizer = new SucceedingSubjectAuthorizer();
 
-		$mockSubjectRepository->expects( $this->once() )->method( 'deleteSubject' )->with( new SubjectId( self::SUBJECT_ID ) );
+		$mockSubjectRepository->expects( $this->once() )->method( 'deleteSubject' )->with( new SubjectId( self::SUBJECT_ID ), null );
 
 		$action = new DeleteSubjectAction( $mockSubjectRepository, $subjectAuthorizer );
 		$action->deleteSubject( new SubjectId( self::SUBJECT_ID ) );
+	}
+
+	public function testDeleteSubjectPassesCommentThrough(): void {
+		$mockSubjectRepository = $this->createMock( SubjectRepository::class );
+		$subjectAuthorizer = new SucceedingSubjectAuthorizer();
+
+		$mockSubjectRepository
+			->expects( $this->once() )
+			->method( 'deleteSubject' )
+			->with( new SubjectId( self::SUBJECT_ID ), 'Removed by curator' );
+
+		$action = new DeleteSubjectAction( $mockSubjectRepository, $subjectAuthorizer );
+		$action->deleteSubject( new SubjectId( self::SUBJECT_ID ), 'Removed by curator' );
 	}
 
 	public function testUserIsNotAllowedToDeleteSubject(): void {

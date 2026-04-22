@@ -101,7 +101,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		// TODO: expose failure information
 	}
 
-	public function deleteSubject( SubjectId $id ): void {
+	public function deleteSubject( SubjectId $id, ?string $comment = null ): void {
 		$pageId = $this->getPageIdForSubject( $id );
 
 		if ( $pageId === null ) {
@@ -118,7 +118,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 			$pageSubjects->removeSubject( $id );
 		} );
 
-		$this->saveContent( $content, $pageId );
+		$this->saveContent( $content, $pageId, $comment );
 	}
 
 	public function getMainSubject( PageId $pageId ): ?Subject {

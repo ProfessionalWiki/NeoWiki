@@ -54,7 +54,6 @@
 		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn",
 
 		"SidebarBeforeOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSidebarBeforeOutput",
-		"SkinTemplateNavigation::Universal": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSkinTemplateNavigationUniversal",
 		"ScribuntoExternalLibraries": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onScribuntoExternalLibraries"
 	},
 
@@ -120,7 +119,7 @@
 	},
 
 	"Actions": {
-		"managesubjects": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Actions\\ManageSubjectsAction"
+		"subjects": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Actions\\SubjectsAction"
 	},
 
 	"config": {
@@ -435,7 +434,6 @@
 				"neowiki-layout-delete-summary-default",
 				"neowiki-layout-delete-success",
 				"neowiki-layout-delete-error",
-				"neowiki-managesubjects-tab",
 				"neowiki-managesubjects-title",
 				"neowiki-managesubjects-not-applicable",
 				"neowiki-managesubjects-add-button",
@@ -444,18 +442,22 @@
 				"neowiki-managesubjects-main-subject-none",
 				"neowiki-managesubjects-main-subject-changed",
 				"neowiki-managesubjects-main-subject-error",
-				"neowiki-managesubjects-main-badge",
+				"neowiki-managesubjects-main-subject-pill",
 				"neowiki-managesubjects-row-edit",
 				"neowiki-managesubjects-row-delete",
 				"neowiki-managesubjects-row-expand",
 				"neowiki-managesubjects-row-collapse",
 				"neowiki-managesubjects-no-statements",
+				"neowiki-managesubjects-delete-summary-default",
 				"neowiki-managesubjects-delete-confirm-title",
 				"neowiki-managesubjects-delete-confirm-message",
 				"neowiki-managesubjects-delete-confirm-button",
 				"neowiki-managesubjects-delete-success",
 				"neowiki-managesubjects-delete-error",
-				"neowiki-managesubjects-load-error"
+				"neowiki-managesubjects-load-error",
+				"neowiki-managesubjects-id-copy",
+				"neowiki-managesubjects-id-copied",
+				"neowiki-managesubjects-id-copy-error"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

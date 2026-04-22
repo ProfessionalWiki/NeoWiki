@@ -42,8 +42,8 @@ export const useSubjectStore = defineStore( 'subject', {
 			await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject( subject.getId(), subject.getLabel(), subject.getStatements(), comment );
 			this.setSubject( subject );
 		},
-		async deleteSubject( subjectId: SubjectId ): Promise<void> {
-			await NeoWikiExtension.getInstance().getSubjectRepository().deleteSubject( subjectId );
+		async deleteSubject( subjectId: SubjectId, comment?: string ): Promise<void> {
+			await NeoWikiExtension.getInstance().getSubjectRepository().deleteSubject( subjectId, comment );
 			this.subjects.delete( subjectId.text );
 		},
 		async createMainSubject( pageId: number, label: string, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {

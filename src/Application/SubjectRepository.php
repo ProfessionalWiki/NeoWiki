@@ -21,7 +21,7 @@ interface SubjectRepository extends SubjectLookup {
 	/**
 	 * TODO: document exceptions
 	 */
-	public function deleteSubject( SubjectId $id ): void;
+	public function deleteSubject( SubjectId $id, ?string $comment = null ): void;
 
 	/**
 	 * TODO: document exceptions

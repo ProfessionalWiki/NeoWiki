@@ -150,7 +150,6 @@
 	"neowiki-property-type-datetime": "Label for the date and time property type in the schema editor",
 	"neowiki-select-unknown-option": "Placeholder shown in a select-property display when a stored option ID cannot be resolved to a label (e.g. the option was removed from the Schema).",
 
-	"neowiki-managesubjects-tab": "Label for the page action tab that opens the Subject management view.",
 	"neowiki-managesubjects-title": "Title of the Subject management page. $1 is the prefixed page title (e.g. 'Berlin').",
 	"neowiki-managesubjects-not-applicable": "Error shown when the Subject management page is opened on a page that cannot have Subjects (e.g. a Special page or a non-existent page).",
 	"neowiki-managesubjects-add-button": "Label for the button that opens the Subject creation flow from the Subject management page.",
@@ -159,17 +158,21 @@
 	"neowiki-managesubjects-main-subject-none": "Option in the Main Subject dropdown representing 'no Main Subject'.",
 	"neowiki-managesubjects-main-subject-changed": "Notification confirming the Main Subject was successfully changed.",
 	"neowiki-managesubjects-main-subject-error": "Notification shown when changing the Main Subject failed.",
-	"neowiki-managesubjects-main-badge": "Short badge label shown on the row of the Main Subject in the management list.",
+	"neowiki-managesubjects-main-subject-pill": "Pill label shown right after the Subject label on the row of the Main Subject in the management list.",
 	"neowiki-managesubjects-row-edit": "Aria/button label for editing a Subject from its row.",
 	"neowiki-managesubjects-row-delete": "Aria/button label for deleting a Subject from its row.",
 	"neowiki-managesubjects-row-expand": "Aria label for the chevron that expands a Subject row to show its statement values.",
 	"neowiki-managesubjects-row-collapse": "Aria label for the chevron that collapses an expanded Subject row.",
 	"neowiki-managesubjects-no-statements": "Empty-state shown inside an expanded Subject row when the Subject has no statements.",
+	"neowiki-managesubjects-delete-summary-default": "Default edit summary used when deleting a Subject from the Subject management page.",
 	"neowiki-managesubjects-delete-confirm-title": "Title of the confirmation dialog shown before deleting a Subject.",
 	"neowiki-managesubjects-delete-confirm-message": "Body of the delete confirmation dialog. $1 is the Subject label.",
 	"neowiki-managesubjects-delete-confirm-button": "Label for the destructive confirm-button in the delete dialog.",
 	"neowiki-managesubjects-delete-success": "Notification confirming a Subject was deleted. $1 is the Subject label.",
 	"neowiki-managesubjects-delete-error": "Notification shown when deleting a Subject failed. $1 is the Subject label.",
 	"neowiki-managesubjects-load-error": "Notification shown when loading the Subject list for the page failed.",
-	"action-managesubjects": "Description of the Subject management action used by MediaWiki when generating action descriptions."
+	"neowiki-managesubjects-id-copy": "Tooltip on the subject ID button. $1 is the Subject ID. Click copies the ID to the clipboard.",
+	"neowiki-managesubjects-id-copied": "Notification shown after the subject ID was copied. $1 is the Subject ID.",
+	"neowiki-managesubjects-id-copy-error": "Notification shown when copying the subject ID to the clipboard failed.",
+	"action-subjects": "Description of the Subject management action used by MediaWiki when generating action descriptions."
 }

@@ -6,19 +6,19 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Actions;
 
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\EntryPoints\Actions\ManageSubjectsAction;
+use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Actions\ManageSubjectsAction
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction
  */
-class ManageSubjectsActionTest extends TestCase {
+class SubjectsActionTest extends TestCase {
 
-	public function testActionNameIsManagesubjects(): void {
-		$this->assertSame( 'managesubjects', ManageSubjectsAction::ACTION_NAME );
+	public function testActionNameIsSubjects(): void {
+		$this->assertSame( 'subjects', SubjectsAction::ACTION_NAME );
 	}
 
 	public function testNullTitleIsNotEligible(): void {
-		$this->assertFalse( ManageSubjectsAction::isEligibleTitle( null ) );
+		$this->assertFalse( SubjectsAction::isEligibleTitle( null ) );
 	}
 
 	public function testNonExistentTitleIsNotEligible(): void {
@@ -26,14 +26,14 @@ class ManageSubjectsActionTest extends TestCase {
 		$title->method( 'canExist' )->willReturn( true );
 		$title->method( 'getArticleID' )->willReturn( 0 );
 
-		$this->assertFalse( ManageSubjectsAction::isEligibleTitle( $title ) );
+		$this->assertFalse( SubjectsAction::isEligibleTitle( $title ) );
 	}
 
 	public function testNonContentNamespaceTitleIsNotEligible(): void {
 		// Special: namespace is not a content namespace.
 		$title = Title::newFromText( 'Special:RecentChanges' );
 
-		$this->assertFalse( ManageSubjectsAction::isEligibleTitle( $title ) );
+		$this->assertFalse( SubjectsAction::isEligibleTitle( $title ) );
 	}
 
 }

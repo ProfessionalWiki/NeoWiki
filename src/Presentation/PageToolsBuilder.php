@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Presentation;
 
 use MediaWiki\Skin\SkinComponentUtils;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 
 class PageToolsBuilder {
 
@@ -33,6 +34,14 @@ class PageToolsBuilder {
 				'data' => [
 					'mw-neowiki-action' => 'open-subject-creator',
 				],
+			];
+		}
+
+		if ( $title->canExist() ) {
+			$items[] = [
+				'text' => wfMessage( 'neowiki-page-tools-manage-subjects' )->text(),
+				'href' => $title->getLocalURL( [ 'action' => SubjectsAction::ACTION_NAME ] ),
+				'id' => 't-neowiki-manage-subjects',
 			];
 		}
 

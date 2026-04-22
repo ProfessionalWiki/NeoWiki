@@ -36,8 +36,9 @@ class InMemorySubjectRepository implements SubjectRepository {
 		$this->comments[$subject->id->text] = $comment;
 	}
 
-	public function deleteSubject( SubjectId $id ): void {
+	public function deleteSubject( SubjectId $id, ?string $comment = null ): void {
 		unset( $this->subjects[$id->text] );
+		$this->comments[$id->text] = $comment;
 	}
 
 	public function getSubjectsByPageId( PageId $pageId ): PageSubjects {

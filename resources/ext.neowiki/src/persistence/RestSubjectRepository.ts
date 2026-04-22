@@ -171,13 +171,14 @@ export class RestSubjectRepository implements SubjectRepository {
 		return await response.json();
 	}
 
-	public async deleteSubject( id: SubjectId ): Promise<boolean> {
+	public async deleteSubject( id: SubjectId, comment?: string ): Promise<boolean> {
 		const response = await this.httpClient.delete(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
 			{
 				headers: {
 					'Content-Type': 'application/json',
 				},
+				data: { comment },
 			},
 		);
 

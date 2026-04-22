@@ -25,9 +25,15 @@ class DeleteSubjectApi extends SimpleHandler {
 	public function run( string $subjectId ): Response {
 		$this->csrfValidator->verifyCsrfToken();
 
+		$body = json_decode( $this->getRequest()->getBody()->getContents(), true );
+		$comment = is_array( $body ) && isset( $body['comment'] ) && is_string( $body['comment'] )
+			? $body['comment']
+			: null;
+
 		try {
 			NeoWikiExtension::getInstance()->newDeleteSubjectAction( $this->getAuthority() )->deleteSubject(
-				new SubjectId( $subjectId )
+				new SubjectId( $subjectId ),
+				$comment
 			);
 		} catch ( \RuntimeException $e ) {
 			return $this->getResponseFactory()->createHttpError( 403, [

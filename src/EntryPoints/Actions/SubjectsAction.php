@@ -9,9 +9,9 @@ use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 
-class ManageSubjectsAction extends FormlessAction {
+class SubjectsAction extends FormlessAction {
 
-	public const string ACTION_NAME = 'managesubjects';
+	public const string ACTION_NAME = 'subjects';
 
 	public function getName(): string {
 		return self::ACTION_NAME;
@@ -25,6 +25,14 @@ class ManageSubjectsAction extends FormlessAction {
 		return false;
 	}
 
+	public function getPageTitle(): string {
+		return $this->msg( 'neowiki-managesubjects-title', $this->getTitle()->getPrefixedText() )->text();
+	}
+
+	protected function getDescription(): string {
+		return '';
+	}
+
 	public function onView(): string {
 		$out = $this->getOutput();
 		$title = $out->getTitle();
@@ -34,10 +42,6 @@ class ManageSubjectsAction extends FormlessAction {
 				$this->msg( 'neowiki-managesubjects-not-applicable' )->escaped()
 			);
 		}
-
-		$out->setPageTitleMsg(
-			$this->msg( 'neowiki-managesubjects-title', $title->getPrefixedText() )
-		);
 
 		$out->addModuleStyles( [ 'ext.neowiki.styles' ] );
 		$out->addModules( [ 'ext.neowiki' ] );
