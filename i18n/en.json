@@ -233,8 +233,6 @@
 	"neowiki-managesubjects-main-subject-pill": "Main subject",
 	"neowiki-managesubjects-row-edit": "Edit",
 	"neowiki-managesubjects-row-delete": "Delete",
-	"neowiki-managesubjects-row-expand": "Show details",
-	"neowiki-managesubjects-row-collapse": "Hide details",
 	"neowiki-managesubjects-no-statements": "This subject has no statements.",
 	"neowiki-managesubjects-delete-summary-default": "Delete subject via NeoWiki UI",
 	"neowiki-managesubjects-delete-confirm-title": "Delete subject?",

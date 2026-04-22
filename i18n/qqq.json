@@ -161,8 +161,6 @@
 	"neowiki-managesubjects-main-subject-pill": "Pill label shown right after the Subject label on the row of the Main Subject in the management list.",
 	"neowiki-managesubjects-row-edit": "Aria/button label for editing a Subject from its row.",
 	"neowiki-managesubjects-row-delete": "Aria/button label for deleting a Subject from its row.",
-	"neowiki-managesubjects-row-expand": "Aria label for the chevron that expands a Subject row to show its statement values.",
-	"neowiki-managesubjects-row-collapse": "Aria label for the chevron that collapses an expanded Subject row.",
 	"neowiki-managesubjects-no-statements": "Empty-state shown inside an expanded Subject row when the Subject has no statements.",
 	"neowiki-managesubjects-delete-summary-default": "Default edit summary used when deleting a Subject from the Subject management page.",
 	"neowiki-managesubjects-delete-confirm-title": "Title of the confirmation dialog shown before deleting a Subject.",

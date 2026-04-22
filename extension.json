@@ -264,7 +264,9 @@
 						"cdxIconDraggable",
 						"cdxIconEye",
 						"cdxIconEyeClosed",
-						"cdxIconClock"
+						"cdxIconClock",
+						"cdxIconCollapse",
+						"cdxIconExpand"
 					]
 				}
 			],
@@ -445,8 +447,6 @@
 				"neowiki-managesubjects-main-subject-pill",
 				"neowiki-managesubjects-row-edit",
 				"neowiki-managesubjects-row-delete",
-				"neowiki-managesubjects-row-expand",
-				"neowiki-managesubjects-row-collapse",
 				"neowiki-managesubjects-no-statements",
 				"neowiki-managesubjects-delete-summary-default",
 				"neowiki-managesubjects-delete-confirm-title",

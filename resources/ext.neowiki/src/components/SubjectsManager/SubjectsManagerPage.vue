@@ -55,73 +55,66 @@
 					'ext-neowiki-subjects-manager__row--highlighted': highlightedId === subject.getId().text
 				}"
 			>
-				<div
-					class="ext-neowiki-subjects-manager__row-header"
-					@click="toggleExpanded( subject.getId().text )"
-				>
-					<CdxButton
-						weight="quiet"
-						class="ext-neowiki-subjects-manager__row-chevron"
-						:aria-expanded="expandedIds.has( subject.getId().text )"
-						:aria-label="expandedIds.has( subject.getId().text ) ?
-							$i18n( 'neowiki-managesubjects-row-collapse' ).text() :
-							$i18n( 'neowiki-managesubjects-row-expand' ).text()"
-						@click.stop="toggleExpanded( subject.getId().text )"
+				<details :open="expandedIds.has( subject.getId().text )">
+					<summary
+						class="ext-neowiki-subjects-manager__row-header"
+						@click.prevent="toggleExpanded( subject.getId().text )"
 					>
-						<CdxIcon :icon="expandedIds.has( subject.getId().text ) ? cdxIconArrowPrevious : cdxIconArrowNext" />
-					</CdxButton>
-					<span class="ext-neowiki-subjects-manager__row-title">
-						<span class="ext-neowiki-subjects-manager__row-label">
-							{{ subject.getLabel() }}
+						<CdxIcon
+							class="ext-neowiki-subjects-manager__row-chevron"
+							:icon="expandedIds.has( subject.getId().text ) ? cdxIconCollapse : cdxIconExpand"
+							size="small"
+						/>
+						<span class="ext-neowiki-subjects-manager__row-title">
+							<span class="ext-neowiki-subjects-manager__row-label">
+								{{ subject.getLabel() }}
+							</span>
+							<CdxInfoChip
+								v-if="isMain( subject )"
+								class="ext-neowiki-subjects-manager__row-main-badge"
+							>
+								{{ $i18n( 'neowiki-managesubjects-main-subject-pill' ).text() }}
+							</CdxInfoChip>
 						</span>
-						<CdxInfoChip
-							v-if="isMain( subject )"
-							class="ext-neowiki-subjects-manager__row-main-badge"
+						<a
+							class="ext-neowiki-subjects-manager__row-schema"
+							:href="schemaUrl( subject.getSchemaName() )"
+							@click.stop
 						>
-							{{ $i18n( 'neowiki-managesubjects-main-subject-pill' ).text() }}
-						</CdxInfoChip>
-					</span>
-					<a
-						class="ext-neowiki-subjects-manager__row-schema"
-						:href="schemaUrl( subject.getSchemaName() )"
-						@click.stop
-					>
-						{{ subject.getSchemaName() }}
-					</a>
-					<button
-						type="button"
-						class="ext-neowiki-subjects-manager__row-id"
-						:title="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
-						@click.stop="copySubjectId( subject.getId().text )"
-					>
-						<code>{{ subject.getId().text }}</code>
-					</button>
-					<span class="ext-neowiki-subjects-manager__row-actions">
-						<CdxButton
-							v-if="canEdit"
-							weight="quiet"
-							:aria-label="$i18n( 'neowiki-managesubjects-row-edit' ).text()"
-							@click.stop="openEditor( subject )"
+							{{ subject.getSchemaName() }}
+						</a>
+						<button
+							type="button"
+							class="ext-neowiki-subjects-manager__row-id"
+							:title="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
+							@click.stop="copySubjectId( subject.getId().text )"
 						>
-							<CdxIcon :icon="cdxIconEdit" />
-						</CdxButton>
-						<CdxButton
-							v-if="canDelete"
-							weight="quiet"
-							action="destructive"
-							:aria-label="$i18n( 'neowiki-managesubjects-row-delete' ).text()"
-							@click.stop="confirmDelete( subject )"
-						>
-							<CdxIcon :icon="cdxIconTrash" />
-						</CdxButton>
-					</span>
-				</div>
-				<div
-					v-if="expandedIds.has( subject.getId().text )"
-					class="ext-neowiki-subjects-manager__row-expanded"
-				>
-					<SubjectStatementsView :subject="subject" />
-				</div>
+							<code>{{ subject.getId().text }}</code>
+						</button>
+						<span class="ext-neowiki-subjects-manager__row-actions">
+							<CdxButton
+								v-if="canEdit"
+								weight="quiet"
+								:aria-label="$i18n( 'neowiki-managesubjects-row-edit' ).text()"
+								@click.stop="openEditor( subject )"
+							>
+								<CdxIcon :icon="cdxIconEdit" />
+							</CdxButton>
+							<CdxButton
+								v-if="canDelete"
+								weight="quiet"
+								action="destructive"
+								:aria-label="$i18n( 'neowiki-managesubjects-row-delete' ).text()"
+								@click.stop="confirmDelete( subject )"
+							>
+								<CdxIcon :icon="cdxIconTrash" />
+							</CdxButton>
+						</span>
+					</summary>
+					<div class="ext-neowiki-subjects-manager__row-expanded">
+						<SubjectStatementsView :subject="subject" />
+					</div>
+				</details>
 			</li>
 		</ul>
 
@@ -171,9 +164,9 @@ import {
 import type { MenuItemData } from '@wikimedia/codex';
 import {
 	cdxIconAdd,
-	cdxIconArrowNext,
-	cdxIconArrowPrevious,
+	cdxIconCollapse,
 	cdxIconEdit,
+	cdxIconExpand,
 	cdxIconTrash
 } from '@wikimedia/codex-icons';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -463,6 +456,27 @@ onUnmounted( () => {
 		padding: @spacing-75 @spacing-100;
 		cursor: pointer;
 		user-select: none;
+		list-style: none;
+		transition-property: background-color, color, border-color, box-shadow;
+		transition-duration: @transition-duration-medium;
+		transition-timing-function: @transition-timing-function-system;
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+
+		&:hover {
+			background-color: @background-color-interactive-subtle;
+		}
+
+		&:active {
+			background-color: @background-color-interactive;
+		}
+
+		&:focus-visible {
+			outline: @outline-base--focus;
+			box-shadow: inset 0 0 0 2px @box-shadow-color-progressive--focus;
+		}
 	}
 
 	&__row-chevron {
