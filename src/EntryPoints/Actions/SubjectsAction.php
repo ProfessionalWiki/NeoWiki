@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Actions;
 use FormlessAction;
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
 
 class SubjectsAction extends FormlessAction {
@@ -25,8 +26,8 @@ class SubjectsAction extends FormlessAction {
 		return false;
 	}
 
-	public function getPageTitle(): string {
-		return $this->msg( 'neowiki-managesubjects-title', $this->getTitle()->getPrefixedText() )->text();
+	public function getPageTitle(): Message {
+		return $this->msg( 'neowiki-managesubjects-title', $this->getTitle()->getPrefixedText() );
 	}
 
 	protected function getDescription(): string {

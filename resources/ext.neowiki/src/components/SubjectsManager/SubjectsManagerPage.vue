@@ -1,6 +1,21 @@
 <template>
 	<div class="ext-neowiki-subjects-manager">
-		<div class="ext-neowiki-subjects-manager__header">
+		<div class="ext-neowiki-subjects-manager__controls">
+			<div class="ext-neowiki-subjects-manager__main-field">
+				<label
+					for="ext-neowiki-subjects-manager-main-select"
+					class="ext-neowiki-subjects-manager__main-field-label"
+				>
+					{{ $i18n( 'neowiki-managesubjects-main-subject-label' ).text() }}
+				</label>
+				<CdxSelect
+					id="ext-neowiki-subjects-manager-main-select"
+					v-model:selected="selectedMainId"
+					:menu-items="mainOptions"
+					:disabled="loading || !canEdit || subjects.length === 0"
+					@update:selected="onMainChanged"
+				/>
+			</div>
 			<CdxButton
 				v-if="canCreate"
 				weight="primary"
@@ -10,22 +25,6 @@
 				<CdxIcon :icon="cdxIconAdd" />
 				{{ $i18n( 'neowiki-managesubjects-add-button' ).text() }}
 			</CdxButton>
-		</div>
-
-		<div class="ext-neowiki-subjects-manager__main-field">
-			<label
-				for="ext-neowiki-subjects-manager-main-select"
-				class="ext-neowiki-subjects-manager__main-field-label"
-			>
-				{{ $i18n( 'neowiki-managesubjects-main-subject-label' ).text() }}
-			</label>
-			<CdxSelect
-				id="ext-neowiki-subjects-manager-main-select"
-				v-model:selected="selectedMainId"
-				:menu-items="mainOptions"
-				:disabled="loading || !canEdit || subjects.length === 0"
-				@update:selected="onMainChanged"
-			/>
 		</div>
 
 		<p
@@ -64,15 +63,17 @@
 						class="ext-neowiki-subjects-manager__row-chevron"
 						:icon="expandedIds.has( subject.getId().text ) ? cdxIconArrowPrevious : cdxIconArrowNext"
 					/>
-					<span class="ext-neowiki-subjects-manager__row-label">
-						{{ subject.getLabel() }}
+					<span class="ext-neowiki-subjects-manager__row-title">
+						<span class="ext-neowiki-subjects-manager__row-label">
+							{{ subject.getLabel() }}
+						</span>
+						<CdxInfoChip
+							v-if="isMain( subject )"
+							class="ext-neowiki-subjects-manager__row-main-badge"
+						>
+							{{ $i18n( 'neowiki-managesubjects-main-subject-pill' ).text() }}
+						</CdxInfoChip>
 					</span>
-					<CdxInfoChip
-						v-if="isMain( subject )"
-						class="ext-neowiki-subjects-manager__row-main-badge"
-					>
-						{{ $i18n( 'neowiki-managesubjects-main-subject-pill' ).text() }}
-					</CdxInfoChip>
 					<a
 						class="ext-neowiki-subjects-manager__row-schema"
 						:href="schemaUrl( subject.getSchemaName() )"
@@ -374,18 +375,20 @@ onUnmounted( () => {
 .ext-neowiki-subjects-manager {
 	max-width: 64rem;
 
-	&__header {
+	&__controls {
 		display: flex;
-		justify-content: flex-end;
-		margin-bottom: @spacing-100;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: @spacing-100;
+		margin-bottom: @spacing-150;
 	}
 
 	&__main-field {
 		display: flex;
 		align-items: center;
 		gap: @spacing-100;
+		flex-grow: 1;
 		max-width: 48rem;
-		margin-bottom: @spacing-150;
 	}
 
 	&__main-field-label {
@@ -437,9 +440,16 @@ onUnmounted( () => {
 		color: @color-subtle;
 	}
 
+	&__row-title {
+		display: flex;
+		align-items: center;
+		gap: @spacing-50;
+		flex-grow: 1;
+		min-width: 0;
+	}
+
 	&__row-label {
 		font-weight: @font-weight-bold;
-		flex-grow: 1;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
