@@ -22,7 +22,7 @@ class DeleteSubjectApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 	use MockAuthorityTrait;
 
-	public function testSmoke(): void {
+	public function testDeletesSubjectWithoutBody(): void {
 		$this->createPages();
 
 		$response = $this->executeHandler(
@@ -43,11 +43,16 @@ class DeleteSubjectApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function createValidRequestData(): RequestData {
+		return $this->createRequestData( [] );
+	}
+
+	private function createRequestData( array $body ): RequestData {
 		return new RequestData( [
 			'method' => 'DELETE',
 			'pathParams' => [
 				'subjectId' => 'sTestDSA1111111'
 			],
+			'bodyContents' => json_encode( $body ),
 			'headers' => [
 				'Content-Type' => 'application/json'
 			]
@@ -62,6 +67,17 @@ class DeleteSubjectApiTest extends NeoWikiIntegrationTestCase {
 				label: new SubjectLabel( 'Test subject sTestDSA1111111' ),
 			)
 		);
+	}
+
+	public function testDeleteWithComment(): void {
+		$this->createPages();
+
+		$response = $this->executeHandler(
+			$this->newDeleteSubjectApi(),
+			$this->createRequestData( [ 'comment' => 'Test edit summary' ] )
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
 	}
 
 	public function testPermissionDenied(): void {

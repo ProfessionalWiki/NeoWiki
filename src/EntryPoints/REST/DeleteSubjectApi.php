@@ -25,10 +25,10 @@ class DeleteSubjectApi extends SimpleHandler {
 	public function run( string $subjectId ): Response {
 		$this->csrfValidator->verifyCsrfToken();
 
-		$body = json_decode( $this->getRequest()->getBody()->getContents(), true );
-		$comment = is_array( $body ) && isset( $body['comment'] ) && is_string( $body['comment'] )
-			? $body['comment']
-			: null;
+		// getValidatedBody() returns null when the request has no body.
+		$body = $this->getValidatedBody() ?? [];
+		'@phan-var array $body';
+		$comment = $body['comment'] ?? null;
 
 		try {
 			NeoWikiExtension::getInstance()->newDeleteSubjectAction( $this->getAuthority() )->deleteSubject(
@@ -52,6 +52,17 @@ class DeleteSubjectApi extends SimpleHandler {
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
 				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject. 15 characters, starting with "s".',
+			],
+		];
+	}
+
+	public function getBodyParamSettings(): array {
+		return [
+			'comment' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'Optional edit summary.',
 			],
 		];
 	}
