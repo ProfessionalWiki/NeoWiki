@@ -28,6 +28,11 @@ describe( 'DateTimeInput', () => {
 		} );
 	}
 
+	function findMessageCall( key: string ): unknown[] | undefined {
+		const calls = ( mw.message as ReturnType<typeof vi.fn> ).mock.calls as unknown[][];
+		return calls.find( ( call ) => call[ 0 ] === key );
+	}
+
 	it( 'renders a CdxTextInput with datetime-local input-type and clock start-icon', () => {
 		const wrapper = newWrapper();
 
@@ -86,6 +91,17 @@ describe( 'DateTimeInput', () => {
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-min-value' );
 	} );
 
+	it( 'passes the minimum bound to mw.message as a host-local formatted string, not the raw UTC ISO', async () => {
+		const minimum = '2025-01-01T00:00:00Z';
+		const wrapper = newWrapper( { property: newDateTimeProperty( { minimum } ) } );
+
+		await wrapper.find( 'input' ).setValue( '2024-12-31T23:59' );
+
+		const minCall = findMessageCall( 'neowiki-field-min-value' );
+		expect( minCall?.[ 1 ] ).not.toBe( minimum );
+		expect( minCall?.[ 1 ] ).not.toMatch( /Z$/ );
+	} );
+
 	it( 'shows max-value error when input is after maximum', async () => {
 		const wrapper = newWrapper( {
 			property: newDateTimeProperty( { maximum: '2025-12-31T23:59:59Z' } ),
@@ -95,6 +111,17 @@ describe( 'DateTimeInput', () => {
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-max-value' );
+	} );
+
+	it( 'passes the maximum bound to mw.message as a host-local formatted string, not the raw UTC ISO', async () => {
+		const maximum = '2025-12-31T23:59:59Z';
+		const wrapper = newWrapper( { property: newDateTimeProperty( { maximum } ) } );
+
+		await wrapper.find( 'input' ).setValue( '2026-01-01T00:00' );
+
+		const maxCall = findMessageCall( 'neowiki-field-max-value' );
+		expect( maxCall?.[ 1 ] ).not.toBe( maximum );
+		expect( maxCall?.[ 1 ] ).not.toMatch( /Z$/ );
 	} );
 
 	it( 'emits update:modelValue as a UTC ISO representing the typed local instant', async () => {
