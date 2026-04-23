@@ -195,6 +195,7 @@ if ( getenv( 'MW_PASSWORD_SENDER' ) !== false ) {
 }
 
 wfLoadExtension( 'NeoWiki' );
+wfLoadExtension( 'RedHerb', "$IP/extensions/NeoWiki/tests/RedHerb/extension.json" );
 
 $wgNeoWikiEnableDevelopmentUI = true;
 
