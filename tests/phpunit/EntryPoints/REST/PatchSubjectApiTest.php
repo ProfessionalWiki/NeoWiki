@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
@@ -54,64 +55,63 @@ class PatchSubjectApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function createValidRequestData(): RequestData {
+		return $this->createRequestData( $this->validBody() );
+	}
+
+	private function createRequestData( array $body ): RequestData {
 		return new RequestData( [
 			'method' => 'PATCH',
 			'pathParams' => [
 				'subjectId' => 'sTestSA11111111'
 			],
-			'bodyContents' => <<<JSON
-{
-	"label": "Test subject sTestSA11111111",
-	"statements": {
-		"Founded at": {
-			"propertyType": "number",
-			"value": 2019
-		},
-		"Websites": {
-			"propertyType": "url",
-			"value": [
-				"https://professional.wiki",
-				"https://wikibase.consulting"
-			]
-		},
-		"Products": {
-			"propertyType": "relation",
-			"value": [
-				{
-					"id": "rTestSA11111rr1",
-					"target": "sTestSA11111114"
-				},
-				{
-					"target": "sTestSA11111115"
-				}
-			]
-		},
-		"DoNotWant": null
-	}
-}
-JSON,
+			'bodyContents' => json_encode( $body ),
 			'headers' => [
 				'Content-Type' => 'application/json'
 			]
 		] );
 	}
 
+	private function validBody(): array {
+		return [
+			'label' => 'Test subject sTestSA11111111',
+			'statements' => [
+				'Founded at' => [
+					'propertyType' => 'number',
+					'value' => 2019
+				],
+				'Websites' => [
+					'propertyType' => 'url',
+					'value' => [
+						'https://professional.wiki',
+						'https://wikibase.consulting'
+					]
+				],
+				'Products' => [
+					'propertyType' => 'relation',
+					'value' => [
+						[
+							'id' => 'rTestSA11111rr1',
+							'target' => 'sTestSA11111114'
+						],
+						[
+							'target' => 'sTestSA11111115'
+						]
+					]
+				],
+				'DoNotWant' => null
+			]
+		];
+	}
+
 	public function testPatchSubjectWithComment(): void {
 		$this->createPages();
 
-		$requestData = $this->createValidRequestData();
-		$requestBody = json_decode( $requestData->getBody()->getContents(), true );
-		$requestBody['comment'] = 'My edit summary';
-		$requestData = new RequestData( [
-			'method' => 'PATCH',
-			'pathParams' => $requestData->getPathParams(),
-			'bodyContents' => json_encode( $requestBody ),
-			'headers' => $requestData->getHeaders()
-		] );
+		$body = $this->validBody();
+		$body['comment'] = 'My edit summary';
 
 		$response = $this->executeHandler(
 			$this->newPatchSubjectApi(),
-			$requestData
+			$this->createRequestData( $body )
 		);
 
 		$this->assertSame( 200, $response->getStatusCode() );
@@ -137,25 +137,31 @@ JSON,
 	public function testLabelChange(): void {
 		$this->createPages();
 
-		$requestData = $this->createValidRequestData();
-		$requestBody = json_decode( $requestData->getBody()->getContents(), true );
-		$requestBody['label'] = 'Updated Test Subject sTestSA11111111';
-		$requestData = new RequestData( [
-			'method' => 'PATCH',
-			'pathParams' => $requestData->getPathParams(),
-			'bodyContents' => json_encode( $requestBody ),
-			'headers' => $requestData->getHeaders()
-		] );
+		$body = $this->validBody();
+		$body['label'] = 'Updated Test Subject sTestSA11111111'; // was 'Test subject sTestSA11111111'
 
 		$response = $this->executeHandler(
 			$this->newPatchSubjectApi(),
-			$requestData
+			$this->createRequestData( $body )
 		);
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
 
 		$this->assertSame( 200, $response->getStatusCode() );
 		$this->assertSame( 'Updated Test Subject sTestSA11111111', $responseData['label'] );
+	}
+
+	public function testRejectsBodyMissingStatements(): void {
+		$body = $this->validBody();
+		unset( $body['statements'] );
+
+		$this->expectException( HttpException::class );
+		$this->expectExceptionCode( 400 );
+
+		$this->executeHandler(
+			$this->newPatchSubjectApi(),
+			$this->createRequestData( $body )
+		);
 	}
 
 }
