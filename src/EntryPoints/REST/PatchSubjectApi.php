@@ -10,7 +10,6 @@ use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
-use RuntimeException;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class PatchSubjectApi extends SimpleHandler {
@@ -47,6 +46,17 @@ class PatchSubjectApi extends SimpleHandler {
 		return new Response( json_encode( $body ) );
 	}
 
+	public function getParamSettings(): array {
+		return [
+			'subjectId' => [
+				self::PARAM_SOURCE => 'path',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject. 15 characters, starting with "s".',
+			],
+		];
+	}
+
 	public function getBodyParamSettings(): array {
 		return [
 			'label' => [
@@ -66,17 +76,6 @@ class PatchSubjectApi extends SimpleHandler {
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
 				self::PARAM_DESCRIPTION => 'Optional edit summary.',
-			],
-		];
-	}
-
-	public function getParamSettings(): array {
-		return [
-			'subjectId' => [
-				self::PARAM_SOURCE => 'path',
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject. 15 characters, starting with "s".',
 			],
 		];
 	}

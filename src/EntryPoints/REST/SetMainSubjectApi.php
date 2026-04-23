@@ -85,7 +85,7 @@ class SetMainSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
-				self::PARAM_DESCRIPTION => 'Subject ID to promote to Main Subject, or null to clear the Main Subject.',
+				self::PARAM_DESCRIPTION => 'Subject ID (15 characters, starting with "s") to promote to Main Subject, or null to clear the Main Subject.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',

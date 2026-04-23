@@ -31,7 +31,7 @@ class GetLayoutApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Layout name.',
+				self::PARAM_DESCRIPTION => 'Layout name (e.g. "Person finances"). Case-sensitive.',
 			],
 		];
 	}
