@@ -39,6 +39,7 @@ async function initializeNeoWikiApp(): Promise<void> {
 
 	if ( neowikiApp !== null ) {
 		showPendingNotification( 'neowiki-subject-creator-success' );
+		showPendingNotification( 'neowiki-managesubjects-delete-success' );
 
 		const showSubjectCreator = ( neowikiApp as HTMLElement ).dataset.mwNeowikiCreateSubject === 'true';
 		const pageHasMainSubject = ( neowikiApp as HTMLElement ).dataset.mwNeowikiPageHasMainSubject === 'true';

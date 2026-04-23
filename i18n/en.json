@@ -247,7 +247,7 @@
 	"neowiki-managesubjects-delete-confirm-title": "Delete subject?",
 	"neowiki-managesubjects-delete-confirm-message": "The subject \"$1\" will be permanently deleted.",
 	"neowiki-managesubjects-delete-confirm-button": "Delete",
-	"neowiki-managesubjects-delete-success": "Deleted \"$1\".",
+	"neowiki-managesubjects-delete-success": "Subject deleted.",
 	"neowiki-managesubjects-delete-error": "Couldn't delete \"$1\".",
 	"neowiki-managesubjects-load-error": "Couldn't load subjects.",
 	"neowiki-managesubjects-id-label": "ID:",

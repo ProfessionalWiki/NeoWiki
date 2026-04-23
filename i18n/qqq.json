@@ -175,7 +175,7 @@
 	"neowiki-managesubjects-delete-confirm-title": "Title of the confirmation dialog shown before deleting a Subject.",
 	"neowiki-managesubjects-delete-confirm-message": "Body of the delete confirmation dialog. $1 is the Subject label.",
 	"neowiki-managesubjects-delete-confirm-button": "Label for the destructive confirm-button in the delete dialog.",
-	"neowiki-managesubjects-delete-success": "Notification confirming a Subject was deleted. $1 is the Subject label.",
+	"neowiki-managesubjects-delete-success": "Notification confirming a Subject was deleted. Shown after the Manage Subjects page reloads following the deletion.",
 	"neowiki-managesubjects-delete-error": "Notification shown when deleting a Subject failed. $1 is the Subject label.",
 	"neowiki-managesubjects-load-error": "Notification shown when loading the Subject list for the page failed.",
 	"neowiki-managesubjects-id-label": "Inline label shown before the Subject ID in the footer of an expanded Subject row. Typically short, e.g. \"ID:\".",
