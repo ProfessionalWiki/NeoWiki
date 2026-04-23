@@ -222,6 +222,7 @@
 	"neowiki-layout-delete-success": "Deleted $1 layout",
 	"neowiki-layout-delete-error": "Failed to delete $1 layout.",
 
+	"neowiki-managesubjects-tab": "Subjects",
 	"neowiki-managesubjects-title": "Subjects on $1",
 	"neowiki-managesubjects-not-applicable": "Subject management is not available on this page.",
 	"neowiki-managesubjects-add-button": "Add subject",

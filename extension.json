@@ -54,6 +54,7 @@
 		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn",
 
 		"SidebarBeforeOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSidebarBeforeOutput",
+		"SkinTemplateNavigation::Universal": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSkinTemplateNavigationUniversal",
 		"ScribuntoExternalLibraries": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onScribuntoExternalLibraries"
 	},
 

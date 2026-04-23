@@ -23,6 +23,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
+use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
@@ -32,6 +33,7 @@ use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaErrorFormatter;
 use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 use MediaWiki\SpecialPage\SpecialPage;
 use Skin;
+use SkinTemplate;
 use WikiPage;
 
 class NeoWikiHooks {
@@ -317,6 +319,22 @@ class NeoWikiHooks {
 			// the section heading, so it must match an existing message name.
 			$sidebar['neowiki-page-tools-label'] = $pageToolsItems;
 		}
+	}
+
+	public static function onSkinTemplateNavigationUniversal( SkinTemplate $sktemplate, array &$links ): void {
+		$title = $sktemplate->getTitle();
+
+		if ( !SubjectsAction::isEligibleTitle( $title ) ) {
+			return;
+		}
+
+		$action = $sktemplate->getRequest()->getRawVal( 'action' );
+
+		$links['views']['neowiki-subjects'] = [
+			'class' => $action === SubjectsAction::ACTION_NAME ? 'selected' : false,
+			'text' => $sktemplate->msg( 'neowiki-managesubjects-tab' )->text(),
+			'href' => $title->getLocalURL( [ 'action' => SubjectsAction::ACTION_NAME ] ),
+		];
 	}
 
 	private static function handleLayoutPage( OutputPage $out ): void {
