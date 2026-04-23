@@ -38,7 +38,10 @@ class SetMainSubjectApi extends SimpleHandler {
 		$validatedBody = $this->getValidatedBody() ?? [];
 		'@phan-var array $validatedBody';
 
-		$subjectId = $parsedBody['subjectId'];
+		// For a non-null subjectId the validator guarantees it is a string; for an explicit null
+		// the field is absent from the validated body. Either way, reading through the validated
+		// path keeps every value pulled from the typed side.
+		$subjectId = $validatedBody['subjectId'] ?? null;
 		$comment = $validatedBody['comment'] ?? null;
 
 		$presenter = new RestSetMainSubjectPresenter();

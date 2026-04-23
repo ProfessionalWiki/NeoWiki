@@ -102,15 +102,14 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 	public function testReturnsBadRequestForNonStringSubjectId(): void {
 		// subjectId must be a string or null. Non-string, non-null values (e.g. integer) are rejected
-		// by the framework's body param validator with a 400 before run() is invoked.
-		$pageId = $this->createPageWithMainAndChild()->getPage()->getId();
-
+		// by the framework's body param validator with a 400 before run() is invoked, so no page
+		// setup is needed.
 		$this->expectException( HttpException::class );
 		$this->expectExceptionCode( 400 );
 
 		$this->executeHandler(
 			$this->newApi(),
-			$this->newRequest( $pageId, [ 'subjectId' => 42 ] )
+			$this->newRequest( pageId: 1, body: [ 'subjectId' => 42 ] )
 		);
 	}
 

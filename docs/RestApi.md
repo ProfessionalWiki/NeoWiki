@@ -33,5 +33,10 @@ until the project hits 1.0. Do not treat `/neowiki/v0/*` as stable for third-par
 ## Drift check
 
 A PHPUnit integration test (`tests/phpunit/EntryPoints/REST/ModuleSpecHandlerNeoWikiTest.php`) runs on CI and
-verifies that every route registered in `extension.json` appears in the emitted OpenAPI spec, with its declared
-params and body schemas. If a handler's `getParamSettings()` declaration silently drops a field, the test will fail.
+verifies that every route registered in `extension.json` is emitted into the spec with the expected HTTP methods,
+that every path and query param declared in each handler's `getParamSettings()` is rendered into the operation's
+`parameters`, that every field declared in `getBodyParamSettings()` is rendered into the operation's `requestBody`,
+and that all emitted path and query param entries have a non-empty `description`. This catches breakage where the
+framework stops emitting something we declared (e.g., a route becomes invisible to `ModuleSpecHandler`). It does
+**not** catch intentional removal of a declaration — for that, rely on the per-handler tests that exercise the
+affected behaviour.
