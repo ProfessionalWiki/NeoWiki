@@ -9,7 +9,7 @@
 			</span>
 			<span v-else class="ext-neowiki-subjects-manager__count" />
 			<CdxButton
-				v-if="canCreate"
+				v-if="canCreate && !isCompletelyEmpty"
 				weight="primary"
 				action="progressive"
 				@click="onAddClicked"
@@ -26,12 +26,28 @@
 			…
 		</p>
 
-		<p
-			v-else-if="subjects.length === 0"
-			class="ext-neowiki-subjects-manager__empty"
+		<div
+			v-else-if="isCompletelyEmpty"
+			class="ext-neowiki-subjects-manager__empty-state"
 		>
-			{{ $i18n( 'neowiki-managesubjects-empty' ).text() }}
-		</p>
+			<div class="ext-neowiki-subjects-manager__empty-state-text">
+				<div class="ext-neowiki-subjects-manager__empty-state-title">
+					{{ $i18n( 'neowiki-managesubjects-empty-title' ).text() }}
+				</div>
+				<div class="ext-neowiki-subjects-manager__empty-state-description">
+					{{ $i18n( 'neowiki-managesubjects-empty-description' ).text() }}
+				</div>
+			</div>
+			<CdxButton
+				v-if="canCreate"
+				weight="primary"
+				action="progressive"
+				@click="onAddClicked"
+			>
+				<CdxIcon :icon="cdxIconAdd" />
+				{{ $i18n( 'neowiki-managesubjects-add-button' ).text() }}
+			</CdxButton>
+		</div>
 
 		<template v-else>
 			<details
@@ -40,7 +56,9 @@
 				class="ext-neowiki-subjects-manager__row ext-neowiki-subjects-manager__row--main"
 				:class="{
 					'ext-neowiki-subjects-manager__row--highlighted':
-						highlightedId === mainSubject.getId().text
+						highlightedId === mainSubject.getId().text,
+					'ext-neowiki-subjects-manager__row--focused':
+						focusedId === mainSubject.getId().text
 				}"
 				:open="expandedIds.has( mainSubject.getId().text )"
 			>
@@ -53,10 +71,20 @@
 						:icon="expandedIds.has( mainSubject.getId().text ) ? cdxIconCollapse : cdxIconExpand"
 						size="small"
 					/>
-					<CdxIcon
+					<CdxButton
+						v-if="canEdit"
 						class="ext-neowiki-subjects-manager__row-main-indicator"
-						:icon="cdxIconUnStar"
-						size="small"
+						weight="quiet"
+						:aria-label="$i18n( 'neowiki-managesubjects-row-demote' ).text()"
+						:title="$i18n( 'neowiki-managesubjects-row-demote' ).text()"
+						@click.stop="demoteFromMain"
+					>
+						<CdxIcon :icon="cdxIconPushPin" />
+					</CdxButton>
+					<CdxIcon
+						v-else
+						class="ext-neowiki-subjects-manager__row-main-indicator"
+						:icon="cdxIconPushPin"
 						:icon-label="$i18n( 'neowiki-managesubjects-main-subject-indicator' ).text()"
 					/>
 					<span class="ext-neowiki-subjects-manager__row-title">
@@ -135,15 +163,30 @@
 				</div>
 			</details>
 
-			<h2
-				v-if="otherSubjects.length > 0"
-				class="ext-neowiki-subjects-manager__section-heading"
+			<div
+				v-else
+				class="ext-neowiki-subjects-manager__empty-state"
 			>
+				<div class="ext-neowiki-subjects-manager__empty-state-text">
+					<CdxIcon
+						class="ext-neowiki-subjects-manager__empty-state-icon"
+						:icon="cdxIconPushPin"
+					/>
+					<div class="ext-neowiki-subjects-manager__empty-state-title">
+						{{ $i18n( 'neowiki-managesubjects-no-main-title' ).text() }}
+					</div>
+					<div class="ext-neowiki-subjects-manager__empty-state-description">
+						{{ $i18n( 'neowiki-managesubjects-no-main-description' ).text() }}
+					</div>
+				</div>
+			</div>
+
+			<h2 class="ext-neowiki-subjects-manager__section-heading">
 				{{ $i18n( 'neowiki-managesubjects-other-subjects-heading' ).text() }}
 			</h2>
 
 			<ul
-				v-if="otherSubjects.length > 0"
+				v-if="hasChildSubjects"
 				class="ext-neowiki-subjects-manager__list"
 			>
 				<li
@@ -153,7 +196,9 @@
 					class="ext-neowiki-subjects-manager__row"
 					:class="{
 						'ext-neowiki-subjects-manager__row--highlighted':
-							highlightedId === subject.getId().text
+							highlightedId === subject.getId().text,
+						'ext-neowiki-subjects-manager__row--focused':
+							focusedId === subject.getId().text
 					}"
 				>
 					<details :open="expandedIds.has( subject.getId().text )">
@@ -191,7 +236,7 @@
 									:title="$i18n( 'neowiki-managesubjects-row-promote' ).text()"
 									@click.stop="promoteToMain( subject )"
 								>
-									<CdxIcon :icon="cdxIconStar" />
+									<CdxIcon :icon="cdxIconPushPin" />
 								</CdxButton>
 								<CdxButton
 									v-if="canEdit"
@@ -316,9 +361,8 @@ import {
 	cdxIconEdit,
 	cdxIconEllipsis,
 	cdxIconExpand,
-	cdxIconStar,
-	cdxIconTrash,
-	cdxIconUnStar
+	cdxIconPushPin,
+	cdxIconTrash
 } from '@wikimedia/codex-icons';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -347,6 +391,30 @@ const {
 const loading = ref( true );
 const expandedIds = ref<Set<string>>( new Set() );
 const highlightedId = ref<string | null>( null );
+const focusedId = ref<string | null>( null );
+let focusTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+function focusSubject( id: string ): void {
+	focusedId.value = id;
+	if ( focusTimeoutId !== null ) {
+		clearTimeout( focusTimeoutId );
+	}
+	focusTimeoutId = setTimeout( () => {
+		focusedId.value = null;
+		focusTimeoutId = null;
+	}, 2000 );
+
+	nextTick().then( () => {
+		document.getElementById( `ext-neowiki-subject-row-${ id }` )
+			?.scrollIntoView( { behavior: scrollBehavior(), block: 'nearest' } );
+	} ).catch( ( err ) => {
+		console.error( 'Failed to scroll to subject row:', err );
+	} );
+}
+
+function scrollBehavior(): 'auto' | 'smooth' {
+	return window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches ? 'auto' : 'smooth';
+}
 
 const editingSubjectId = ref<SubjectId | null>( null );
 const editorOpen = ref( false );
@@ -363,7 +431,6 @@ const subjects = computed<Subject[]>( () =>
 const editingSubject = computed<Subject | null>( () =>
 	editingSubjectId.value === null ? null : subjectStore.getSubject( editingSubjectId.value )
 );
-const hasMainSubject = computed( () => subjectStore.pageSubjects?.getMainSubjectId() !== null && subjectStore.pageSubjects?.getMainSubjectId() !== undefined );
 
 const canCreate = computed( () => canCreateMainSubject.value || canCreateChildSubject.value );
 const canEdit = computed( () => canEditSubject.value );
@@ -385,6 +452,10 @@ const otherSubjects = computed<Subject[]>( () => {
 	return subjects.value.filter( ( s ) => s.getId().text !== mainId.text );
 } );
 
+const hasMainSubject = computed( () => mainSubject.value !== null );
+const hasChildSubjects = computed( () => otherSubjects.value.length > 0 );
+const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasChildSubjects.value );
+
 const deletingLabel = computed( () => deletingSubject.value?.getLabel() ?? '' );
 
 function schemaUrl( name: string ): string {
@@ -398,7 +469,7 @@ function statementCount( subject: Subject ): number {
 const promoteMenuItem = computed<MenuButtonItemData>( () => ( {
 	value: 'promote',
 	label: mw.msg( 'neowiki-managesubjects-row-promote' ),
-	icon: cdxIconStar
+	icon: cdxIconPushPin
 } ) );
 
 const editMenuItem = computed<MenuButtonItemData>( () => ( {
@@ -468,10 +539,8 @@ async function copySubjectId( id: string ): Promise<void> {
 		await navigator.clipboard.writeText( id );
 		mw.notify( mw.msg( 'neowiki-managesubjects-id-copied', id ), { type: 'success' } );
 	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{ title: mw.msg( 'neowiki-managesubjects-id-copy-error' ), type: 'error' }
-		);
+		console.error( 'Failed to copy subject ID:', error );
+		mw.notify( mw.msg( 'neowiki-managesubjects-id-copy-error' ), { type: 'error' } );
 	}
 }
 
@@ -480,10 +549,8 @@ async function loadSubjects(): Promise<void> {
 	try {
 		await subjectStore.loadPageSubjects( pageId );
 	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{ title: mw.msg( 'neowiki-managesubjects-load-error' ), type: 'error' }
-		);
+		console.error( 'Failed to load subjects:', error );
+		mw.notify( mw.msg( 'neowiki-managesubjects-load-error' ), { type: 'error' } );
 	} finally {
 		loading.value = false;
 	}
@@ -492,12 +559,25 @@ async function loadSubjects(): Promise<void> {
 async function promoteToMain( subject: Subject ): Promise<void> {
 	try {
 		await subjectStore.setPageMainSubject( pageId, subject.getId() );
-		mw.notify( mw.msg( 'neowiki-managesubjects-main-subject-changed' ), { type: 'success' } );
+		mw.notify( mw.msg( 'neowiki-managesubjects-main-subject-set', subject.getLabel() ), { type: 'success' } );
+		focusSubject( subject.getId().text );
 	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{ title: mw.msg( 'neowiki-managesubjects-main-subject-error' ), type: 'error' }
-		);
+		console.error( 'Failed to set main subject:', error );
+		mw.notify( mw.msg( 'neowiki-managesubjects-main-subject-error' ), { type: 'error' } );
+	}
+}
+
+async function demoteFromMain(): Promise<void> {
+	const demoted = mainSubject.value;
+	try {
+		await subjectStore.setPageMainSubject( pageId, null );
+		mw.notify( mw.msg( 'neowiki-managesubjects-main-subject-cleared' ), { type: 'success' } );
+		if ( demoted !== null ) {
+			focusSubject( demoted.getId().text );
+		}
+	} catch ( error ) {
+		console.error( 'Failed to clear main subject:', error );
+		mw.notify( mw.msg( 'neowiki-managesubjects-main-subject-error' ), { type: 'error' } );
 	}
 }
 
@@ -550,10 +630,8 @@ async function executeDelete( comment: string ): Promise<void> {
 		mw.notify( mw.msg( 'neowiki-managesubjects-delete-success', label ), { type: 'success' } );
 		await loadSubjects();
 	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{ title: mw.msg( 'neowiki-managesubjects-delete-error', label ), type: 'error' }
-		);
+		console.error( 'Failed to delete subject:', error );
+		mw.notify( mw.msg( 'neowiki-managesubjects-delete-error', label ), { type: 'error' } );
 	} finally {
 		deletingSubject.value = null;
 	}
@@ -570,7 +648,7 @@ function applyHash(): void {
 	expandedIds.value = next;
 	nextTick().then( () => {
 		document.getElementById( `ext-neowiki-subject-row-${ id }` )
-			?.scrollIntoView( { behavior: 'smooth', block: 'center' } );
+			?.scrollIntoView( { behavior: scrollBehavior(), block: 'center' } );
 	} ).catch( ( err ) => {
 		console.error( 'Failed to scroll to subject row:', err );
 	} );
@@ -585,11 +663,18 @@ onMounted( async () => {
 
 onUnmounted( () => {
 	window.removeEventListener( 'hashchange', applyHash );
+	if ( focusTimeoutId !== null ) {
+		clearTimeout( focusTimeoutId );
+	}
 } );
 </script>
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+// Fixed row height. Rows are content-sized in practice but we pin a value here so the
+// add-subject placeholder button matches the rows without fragile text-height math.
+@row-height: 70px;
 
 .ext-neowiki-subjects-manager {
 	max-width: 64rem;
@@ -607,10 +692,45 @@ onUnmounted( () => {
 		color: @color-subtle;
 	}
 
-	&__loading,
-	&__empty {
+	&__loading {
 		color: @color-subtle;
 		font-style: italic;
+	}
+
+	&__empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: @spacing-150;
+		padding: @spacing-200;
+		margin-top: @spacing-100;
+		background-color: @background-color-neutral-subtle;
+		border: @border-width-base dashed @border-color-subtle;
+		border-radius: @border-radius-base;
+		text-align: center;
+	}
+
+	&__empty-state-text {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: @spacing-50;
+	}
+
+	&__empty-state-title {
+		font-size: @font-size-large;
+		font-weight: @font-weight-bold;
+	}
+
+	&__empty-state-description {
+		max-width: 36rem;
+		color: @color-subtle;
+	}
+
+	&__empty-state-icon.cdx-icon {
+		width: @size-150;
+		height: @size-150;
+		color: @color-subtle;
 	}
 
 	&__section-heading {
@@ -630,7 +750,14 @@ onUnmounted( () => {
 		border: @border-base;
 		border-radius: @border-radius-base;
 		background: @background-color-base;
-		transition: @transition-property-base @transition-duration-base @transition-timing-function-system;
+		// Baseline zero-color shadow so the focused-state ring can transition in/out smoothly
+		// rather than snap between "none" and a value.
+		box-shadow: @box-shadow-outset-small transparent;
+		transition: @transition-property-base @transition-duration-medium @transition-timing-function-system;
+
+		@media ( prefers-reduced-motion: reduce ) {
+			transition-duration: 0s;
+		}
 		font-size: @font-size-small;
 		line-height: 1.375rem; // Codex 2.0+ line-height-small
 
@@ -641,9 +768,12 @@ onUnmounted( () => {
 			> .ext-neowiki-subjects-manager__row-header {
 				background-color: @background-color-progressive-subtle;
 
-				&:hover,
+				&:hover {
+					background-color: @background-color-interactive-subtle;
+				}
+
 				&:active {
-					background-color: @background-color-progressive-subtle;
+					background-color: @background-color-interactive;
 				}
 
 				.ext-neowiki-subjects-manager__row-label {
@@ -654,6 +784,13 @@ onUnmounted( () => {
 
 		&--highlighted {
 			background: @background-color-progressive-subtle;
+		}
+
+		&--focused {
+			border-color: @border-color-progressive--focus;
+			box-shadow: @box-shadow-outset-small @box-shadow-color-progressive--focus;
+			// Transparent 1px outline for Windows high-contrast mode — Codex focus pattern.
+			outline: @outline-base--focus;
 		}
 	}
 
@@ -666,7 +803,7 @@ onUnmounted( () => {
 		user-select: none;
 		list-style: none;
 		transition-property: background-color, color, border-color, box-shadow;
-		transition-duration: @transition-duration-medium;
+		transition-duration: @transition-duration-base;
 		transition-timing-function: @transition-timing-function-system;
 
 		&::-webkit-details-marker {
@@ -698,6 +835,12 @@ onUnmounted( () => {
 		// Codex sets an explicit `color` on `.cdx-icon`, matching our class's specificity.
 		// Chain the class to win the cascade regardless of Codex/bundle load order.
 		&.cdx-icon {
+			color: @color-progressive;
+		}
+
+		// When the user can edit, the indicator renders as a quiet CdxButton so clicking it
+		// demotes the subject. Paint the nested icon progressive to match the read-only case.
+		&.cdx-button .cdx-icon {
 			color: @color-progressive;
 		}
 	}
@@ -828,6 +971,7 @@ onUnmounted( () => {
 
 	&__add-more.cdx-button {
 		width: @size-full;
+		min-height: @row-height;
 		margin-top: @spacing-75;
 		max-width: none;
 
