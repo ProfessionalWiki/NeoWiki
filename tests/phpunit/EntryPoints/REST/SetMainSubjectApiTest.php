@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
@@ -97,6 +98,20 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	public function testReturnsBadRequestForNonStringSubjectId(): void {
+		// subjectId must be a string or null. Non-string, non-null values (e.g. integer) are rejected
+		// by the framework's body param validator with a 400 before run() is invoked.
+		$pageId = $this->createPageWithMainAndChild()->getPage()->getId();
+
+		$this->expectException( HttpException::class );
+		$this->expectExceptionCode( 400 );
+
+		$this->executeHandler(
+			$this->newApi(),
+			$this->newRequest( $pageId, [ 'subjectId' => 42 ] )
+		);
 	}
 
 	public function testPermissionDenied(): void {

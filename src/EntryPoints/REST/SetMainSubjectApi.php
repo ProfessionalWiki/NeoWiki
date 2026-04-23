@@ -23,25 +23,23 @@ class SetMainSubjectApi extends SimpleHandler {
 	public function run( int $pageId ): Response {
 		$this->csrfValidator->verifyCsrfToken();
 
-		$body = json_decode( $this->getRequest()->getBody()->getContents(), true );
+		// getValidatedBody() collapses an explicit null to "absent" via ??, so we can't use it to
+		// tell "subjectId not sent" apart from "subjectId sent as null". Read the raw parsed body
+		// to detect presence, then read validated values for the typed fields.
+		$parsedBody = $this->getRequest()->getParsedBody() ?? [];
 
-		if ( !is_array( $body ) || !array_key_exists( 'subjectId', $body ) ) {
+		if ( !array_key_exists( 'subjectId', $parsedBody ) ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',
 				'message' => 'Missing required field: subjectId',
 			] );
 		}
 
-		$subjectId = $body['subjectId'];
+		$validatedBody = $this->getValidatedBody() ?? [];
+		'@phan-var array $validatedBody';
 
-		if ( $subjectId !== null && !is_string( $subjectId ) ) {
-			return $this->getResponseFactory()->createHttpError( 400, [
-				'status' => 'error',
-				'message' => 'subjectId must be a string or null',
-			] );
-		}
-
-		$comment = isset( $body['comment'] ) && is_string( $body['comment'] ) ? $body['comment'] : null;
+		$subjectId = $parsedBody['subjectId'];
+		$comment = $validatedBody['comment'] ?? null;
 
 		$presenter = new RestSetMainSubjectPresenter();
 
@@ -77,6 +75,23 @@ class SetMainSubjectApi extends SimpleHandler {
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_REQUIRED => true,
 				self::PARAM_DESCRIPTION => 'MediaWiki page ID.',
+			],
+		];
+	}
+
+	public function getBodyParamSettings(): array {
+		return [
+			'subjectId' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'Subject ID to promote to Main Subject, or null to clear the Main Subject.',
+			],
+			'comment' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'Optional edit summary.',
 			],
 		];
 	}
