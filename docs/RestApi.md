@@ -1,42 +1,53 @@
 # REST API
 
-NeoWiki exposes a REST API under `/neowiki/v0/*`. The API surface is auto-documented as an OpenAPI 3.0 spec
-generated from each handler's declared parameters and request body.
+NeoWiki's REST API lives under `/neowiki/v0/*`. There is no hand-written reference — MediaWiki core's
+`ModuleSpecHandler` emits an OpenAPI 3.0 document from each handler's declared parameters and body schema.
 
 ## Browsing the spec
 
-- **Full per-module spec:** `/rest.php/specs/v0/module/-`
-- **Discovery (list of available modules):** `/rest.php/specs/v0/discovery`
+The spec endpoints are not registered by default. Add this to `LocalSettings.php` to expose them:
 
-On the local dev wiki the full URL is `http://localhost:8484/rest.php/specs/v0/module/-`.
+```php
+$wgRestAPIAdditionalRouteFiles[] = 'includes/Rest/specs.v0.json';
+```
 
-You can paste the JSON emitted by the module endpoint into a Swagger UI or Redoc viewer
-(e.g. [editor.swagger.io](https://editor.swagger.io)) to browse it visually.
+Then:
 
-## Where the spec comes from
+- **Full spec:** `/rest.php/specs/v0/module/-`
+- **Discovery (list of modules):** `/rest.php/specs/v0/discovery`
 
-The spec is not hand-maintained. It is built at request time by MediaWiki core's `ModuleSpecHandler` from two sources:
+On the local dev wiki: `http://localhost:8484/rest.php/specs/v0/module/-`.
 
-- The `RestRoutes` array in `extension.json`, which registers each path and its HTTP method.
-- The `getParamSettings()` and `getBodyParamSettings()` methods on each REST handler class under
-  `src/EntryPoints/REST/`. These declare parameter names, types, required flags, and descriptions.
+Paste the emitted JSON into [editor.swagger.io](https://editor.swagger.io) or a similar viewer for a
+visual browse.
 
-To document a new endpoint, add its route to `extension.json` and make sure the handler declares `PARAM_DESCRIPTION`
-on every parameter in `getParamSettings()` (and on body fields in `getBodyParamSettings()` if the endpoint has a
-body). The emitted spec picks the rest up automatically.
+## How the spec is built
+
+`ModuleSpecHandler` combines two sources at request time:
+
+- `extension.json` — the `RestRoutes` array (paths, HTTP methods).
+- REST handler classes under `src/EntryPoints/REST/` — `getParamSettings()` and `getBodyParamSettings()`
+  (param names, types, required flags, descriptions).
+
+To document a new endpoint, register its route in `extension.json` and set `PARAM_DESCRIPTION` on
+every parameter and body field on the handler. The rest is picked up automatically.
 
 ## Stability
 
-The REST API is pre-1.0. Endpoints, request/response payloads, and the emitted spec itself may change without notice
-until the project hits 1.0. Do not treat `/neowiki/v0/*` as stable for third-party integrations yet.
+Pre-1.0. Endpoints, payloads, and the emitted spec may change without notice until 1.0. Do not treat
+`/neowiki/v0/*` as stable for third-party integrations yet.
 
 ## Drift check
 
-A PHPUnit integration test (`tests/phpunit/EntryPoints/REST/ModuleSpecHandlerNeoWikiTest.php`) runs on CI and
-verifies that every route registered in `extension.json` is emitted into the spec with the expected HTTP methods,
-that every path and query param declared in each handler's `getParamSettings()` is rendered into the operation's
-`parameters`, that every field declared in `getBodyParamSettings()` is rendered into the operation's `requestBody`,
-and that all emitted path and query param entries have a non-empty `description`. This catches breakage where the
-framework stops emitting something we declared (e.g., a route becomes invisible to `ModuleSpecHandler`). It does
-**not** catch intentional removal of a declaration — for that, rely on the per-handler tests that exercise the
-affected behaviour.
+`tests/phpunit/EntryPoints/REST/ModuleSpecHandlerNeoWikiTest` runs on CI and asserts that:
+
+- Every route registered in `extension.json` appears in the emitted spec with the expected methods.
+- Every path or query parameter declared in `getParamSettings()` is rendered into the operation's `parameters`.
+- Every body field declared in `getBodyParamSettings()` is rendered into the operation's `requestBody`.
+- Every path or query parameter in the emitted spec carries a non-empty `description`.
+
+What this catches: the framework silently stops emitting something a handler declared (e.g., a route
+becomes invisible to `ModuleSpecHandler`). What it does not catch: intentional removal of a declaration
+— that is covered by the per-handler tests that exercise the affected behaviour. The test builds the
+spec through the framework directly, so it passes regardless of whether `specs.v0.json` is enabled on
+the wiki.
