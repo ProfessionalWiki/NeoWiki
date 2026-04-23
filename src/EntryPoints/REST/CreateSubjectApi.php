@@ -25,18 +25,18 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 	public function run( int $pageId ): Response {
 		$this->csrfValidator->verifyCsrfToken();
 
-		try {
-			// TODO: format validation
-			$request = json_decode( $this->getRequest()->getBody()->getContents(), true );
+		$body = $this->getValidatedBody();
+		'@phan-var array $body';
 
+		try {
 			NeoWikiExtension::getInstance()->newCreateSubjectAction( $this, $this->getAuthority() )->createSubject(
 				new CreateSubjectRequest(
 					pageId: $pageId,
 					isMainSubject: $this->isMainSubject,
-					label: $request['label'],
-					schemaName: $request['schema'],
-					statements: $request['statements'],
-					comment: $request['comment'] ?? null,
+					label: $body['label'],
+					schemaName: $body['schema'],
+					statements: $body['statements'],
+					comment: $body['comment'] ?? null,
 				)
 			);
 
@@ -62,6 +62,35 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_REQUIRED => true,
 				self::PARAM_DESCRIPTION => 'MediaWiki page ID.',
+			],
+		];
+	}
+
+	public function getBodyParamSettings(): array {
+		return [
+			'label' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'Display label for the Subject.',
+			],
+			'schema' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'Name of the Schema this Subject is an instance of.',
+			],
+			'statements' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'array',
+				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) for the Subject. Nested shape matches the subject JSON format documented in docs/SubjectFormat.md.',
+			],
+			'comment' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'Optional edit summary.',
 			],
 		];
 	}
