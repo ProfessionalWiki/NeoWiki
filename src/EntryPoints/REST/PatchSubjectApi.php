@@ -26,7 +26,6 @@ class PatchSubjectApi extends SimpleHandler {
 		$this->csrfValidator->verifyCsrfToken();
 
 		$body = $this->getValidatedBody();
-		'@phan-var array $body';
 
 		// TODO: replace try-catch with presenter. See CreateSubjectApi for example.
 		try {

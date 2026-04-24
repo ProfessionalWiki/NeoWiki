@@ -36,7 +36,6 @@ class SetMainSubjectApi extends SimpleHandler {
 		}
 
 		$validatedBody = $this->getValidatedBody() ?? [];
-		'@phan-var array $validatedBody';
 
 		// For a non-null subjectId the validator guarantees it is a string; for an explicit null
 		// the field is absent from the validated body. Either way, reading through the validated

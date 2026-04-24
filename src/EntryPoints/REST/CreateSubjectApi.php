@@ -26,7 +26,6 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 		$this->csrfValidator->verifyCsrfToken();
 
 		$body = $this->getValidatedBody();
-		'@phan-var array $body';
 
 		try {
 			NeoWikiExtension::getInstance()->newCreateSubjectAction( $this, $this->getAuthority() )->createSubject(

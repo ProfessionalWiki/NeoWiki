@@ -27,7 +27,6 @@ class DeleteSubjectApi extends SimpleHandler {
 
 		// getValidatedBody() returns null when the request has no body.
 		$body = $this->getValidatedBody() ?? [];
-		'@phan-var array $body';
 		$comment = $body['comment'] ?? null;
 
 		try {
