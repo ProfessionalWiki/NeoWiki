@@ -11,8 +11,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { ValueType } from '@/domain/Value.ts';
-import { DateTimeProperty, parseStrictDateTime } from '@/domain/propertyTypes/DateTime.ts';
-import { formatDateTimeForDisplay } from '@/domain/propertyTypes/dateTimeFormat.ts';
+import { DateTimeProperty, formatDateTimeForDisplay, parseStrictDateTime } from '@/domain/propertyTypes/DateTime.ts';
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
 
 const props = defineProps<ValueDisplayProps<DateTimeProperty>>();

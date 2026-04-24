@@ -34,9 +34,8 @@ import { ref, watch } from 'vue';
 import { CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconInfo, cdxIconClock } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, ValueType } from '@/domain/Value';
-import { DateTimeType, DateTimeProperty } from '@/domain/propertyTypes/DateTime.ts';
+import { DateTimeType, DateTimeProperty, formatDateTimeForDisplay } from '@/domain/propertyTypes/DateTime.ts';
 import { fromLocalInputValue, toLocalInputValue } from '@/domain/propertyTypes/dateTimeConversion.ts';
-import { formatDateTimeForDisplay } from '@/domain/propertyTypes/dateTimeFormat.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
