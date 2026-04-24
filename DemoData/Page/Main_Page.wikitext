@@ -80,11 +80,12 @@ in EUR with a value between 0 and 1000000.
 
 == REST API Endpoints ==
 
-We will have OpenAPI docs later. For now, you can find a complete and up-to-date list by looking at the
-[https://github.com/ProfessionalWiki/NeoWiki/blob/master/extension.json MediaWiki API route definitions].
-Search for "RestRoutes".
+An auto-generated OpenAPI 3.0 spec describes the REST API:
 
-Example URL: https://neowiki.dev/w/rest.php/neowiki/v0/subject/s1demo4sssssss1
+* [{{SERVER}}{{SCRIPTPATH}}/rest.php/specs/v0/module/- NeoWiki OpenAPI spec] — <code>/rest.php/specs/v0/module/-</code>
+* [{{SERVER}}{{SCRIPTPATH}}/rest.php/specs/v0/discovery Module discovery] — <code>/rest.php/specs/v0/discovery</code>
+
+Example endpoint URL: <code>{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/subject/s1demo4sssssss1</code>
 
 === Read Endpoints ===
 
