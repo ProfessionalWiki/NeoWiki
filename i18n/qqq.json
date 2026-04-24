@@ -157,7 +157,7 @@
 	"neowiki-managesubjects-empty-title": "Heading of the large zero-state shown on the Subject management page when the page has neither a Main Subject nor any Child Subjects.",
 	"neowiki-managesubjects-empty-description": "Descriptive subtitle below {{msg-mw|neowiki-managesubjects-empty-title}} explaining what Subjects are and inviting the user to add one.",
 	"neowiki-managesubjects-no-main-title": "Heading of the placeholder shown in the Main Subject slot when the page has Child Subjects but no Main Subject assigned.",
-	"neowiki-managesubjects-no-main-description": "Subtitle under {{msg-mw|neowiki-managesubjects-no-main-title}} explaining how to assign a Main Subject.",
+	"neowiki-managesubjects-no-main-description": "Subtitle under {{msg-mw|neowiki-managesubjects-no-main-title}} explaining how to assign a Main Subject and what the Main Subject represents.",
 	"neowiki-managesubjects-count": "Subtle text on the Subject management toolbar showing the total number of Subjects on the page. $1 is the count.",
 	"neowiki-managesubjects-main-subject-set": "Notification confirming a Subject was promoted to Main Subject. $1 is the Subject label.",
 	"neowiki-managesubjects-main-subject-cleared": "Notification confirming the page no longer has a Main Subject.",
