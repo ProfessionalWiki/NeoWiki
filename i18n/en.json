@@ -229,7 +229,7 @@
 	"neowiki-managesubjects-empty-title": "No subjects yet",
 	"neowiki-managesubjects-empty-description": "A subject describes one thing with structured data.",
 	"neowiki-managesubjects-no-main-title": "No main subject set",
-	"neowiki-managesubjects-no-main-description": "Pin any subject below to make it the main subject, indicating it represents the same topic as this page.",
+	"neowiki-managesubjects-no-main-description": "Pin a subject to make it the main subject — the subject this page is about.",
 	"neowiki-managesubjects-count": "{{PLURAL:$1|$1 subject|$1 subjects}} in total",
 	"neowiki-managesubjects-main-subject-set": "Set \"$1\" as the main subject.",
 	"neowiki-managesubjects-main-subject-cleared": "Main subject cleared.",
