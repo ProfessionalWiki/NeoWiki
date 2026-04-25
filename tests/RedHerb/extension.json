@@ -21,15 +21,26 @@
 		"ProfessionalWiki\\RedHerb\\": "src/"
 	},
 
+	"MessagesDirs": {
+		"RedHerb": [ "i18n" ]
+	},
+
+	"ExtensionMessagesFiles": {
+		"RedHerbAliases": "i18n/_Aliases.php"
+	},
+
 	"Hooks": {
 		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration",
-		"NeoWikiGetFrontendModules": "RedHerbFrontendModulesHook",
+		"NeoWikiGetFrontendModules": [ "RedHerbFrontendModulesHook", "RedHerbFrontendHook" ],
 		"SidebarBeforeOutput": "RedHerbSidebarHook"
 	},
 
 	"HookHandlers": {
 		"RedHerbFrontendModulesHook": {
 			"class": "ProfessionalWiki\\RedHerb\\RedHerbFrontendModulesHook"
+		},
+		"RedHerbFrontendHook": {
+			"class": "ProfessionalWiki\\RedHerb\\RedHerbFrontendHook"
 		},
 		"RedHerbSidebarHook": {
 			"class": "ProfessionalWiki\\RedHerb\\RedHerbSidebarHook"
@@ -40,14 +51,6 @@
 		"RedHerbSubjectFinder": {
 			"class": "ProfessionalWiki\\RedHerb\\Specials\\SpecialRedHerbSubjectFinder"
 		}
-	},
-
-	"MessagesDirs": {
-		"RedHerb": [ "i18n" ]
-	},
-
-	"ExtensionMessagesFiles": {
-		"RedHerbAliases": "i18n/_Aliases.php"
 	},
 
 	"ResourceModules": {
@@ -110,6 +113,49 @@
 				"redherb-edit-main-subject-dialog-cancel",
 				"redherb-edit-main-subject-no-main",
 				"redherb-edit-main-subject-success"
+			]
+		},
+		"ext.redherb": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"localBasePath": "resources",
+			"remoteExtPath": "NeoWiki/tests/RedHerb/resources",
+			"dependencies": [
+				"vue",
+				"ext.neowiki"
+			],
+			"codexComponents": [
+				"CdxButton",
+				"CdxField",
+				"CdxIcon",
+				"CdxTextInput"
+			],
+			"packageFiles": [
+				"init.js",
+				"ColorDisplay.vue",
+				"ColorInput.vue",
+				"ColorAttributesEditor.vue",
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconAdd",
+						"cdxIconClose",
+						"cdxIconDraggable",
+						"cdxIconHighlight",
+						"cdxIconInfo"
+					]
+				}
+			],
+			"messages": [
+				"redherb-property-type-color",
+				"redherb-color-allowed-palette-label",
+				"redherb-color-add-color",
+				"redherb-color-remove-color",
+				"redherb-color-reorder-color",
+				"redherb-color-invalid-fallback",
+				"neowiki-field-invalid-hex",
+				"neowiki-field-not-in-palette",
+				"neowiki-field-required"
 			]
 		}
 	},

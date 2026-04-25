@@ -21,5 +21,13 @@
 	"redherb-edit-main-subject-dialog-save": "Save",
 	"redherb-edit-main-subject-dialog-cancel": "Cancel",
 	"redherb-edit-main-subject-no-main": "This page does not have a main subject.",
-	"redherb-edit-main-subject-success": "Updated main subject."
+	"redherb-edit-main-subject-success": "Updated main subject.",
+	"redherb-property-type-color": "Color",
+	"redherb-color-allowed-palette-label": "Allowed palette",
+	"redherb-color-add-color": "Add color",
+	"redherb-color-remove-color": "Remove color",
+	"redherb-color-reorder-color": "Drag to reorder",
+	"redherb-color-invalid-fallback": "Unrecognised color value: $1",
+	"neowiki-field-invalid-hex": "Please enter a 6-digit hex color like #ff5733.",
+	"neowiki-field-not-in-palette": "This color is not in the allowed palette."
 }
