@@ -21,5 +21,13 @@
 	"redherb-edit-main-subject-dialog-save": "Label of the save button in the RedHerb edit-main-subject dialog.\n{{Identical|Save}}",
 	"redherb-edit-main-subject-dialog-cancel": "Label of the cancel button in the RedHerb edit-main-subject dialog.\n{{Identical|Cancel}}",
 	"redherb-edit-main-subject-no-main": "Warning shown when triggering the RedHerb edit-main-subject action on a page that does not have a main subject.",
-	"redherb-edit-main-subject-success": "Confirmation shown after successfully updating the main Subject via the RedHerb dialog."
+	"redherb-edit-main-subject-success": "Confirmation shown after successfully updating the main Subject via the RedHerb dialog.",
+	"redherb-property-type-color": "Name of the Color property type shown in the property-type picker.",
+	"redherb-color-allowed-palette-label": "Label for the palette editor in the Color property attributes editor.",
+	"redherb-color-add-color": "Button label to add another color to the allowed palette.",
+	"redherb-color-remove-color": "Accessible label for the button that removes a color from the allowed palette.",
+	"redherb-color-reorder-color": "Tooltip on the drag handle next to each palette entry, indicating the entry can be dragged to reorder the palette.",
+	"redherb-color-invalid-fallback": "Fallback text shown when a stored Color value cannot be rendered as a swatch. $1 is the raw, unparseable value.",
+	"neowiki-field-invalid-hex": "Validation error shown when a Color input value is not a valid 6-digit hex code.",
+	"neowiki-field-not-in-palette": "Validation error shown when a Color input value is not one of the property's allowed palette entries."
 }
