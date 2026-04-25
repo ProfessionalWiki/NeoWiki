@@ -21,8 +21,65 @@
 		"ProfessionalWiki\\RedHerb\\": "src/"
 	},
 
+	"MessagesDirs": {
+		"RedHerb": [ "i18n" ]
+	},
+
 	"Hooks": {
-		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration"
+		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration",
+		"NeoWikiGetFrontendModules": "RedHerbFrontendHook"
+	},
+
+	"HookHandlers": {
+		"RedHerbFrontendHook": {
+			"class": "ProfessionalWiki\\RedHerb\\RedHerbFrontendHook"
+		}
+	},
+
+	"ResourceModules": {
+		"ext.redherb": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"localBasePath": "resources",
+			"remoteExtPath": "NeoWiki/tests/RedHerb/resources",
+			"dependencies": [
+				"vue",
+				"ext.neowiki"
+			],
+			"codexComponents": [
+				"CdxButton",
+				"CdxField",
+				"CdxIcon",
+				"CdxTextInput"
+			],
+			"packageFiles": [
+				"init.js",
+				"ColorDisplay.vue",
+				"ColorInput.vue",
+				"ColorAttributesEditor.vue",
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconAdd",
+						"cdxIconClose",
+						"cdxIconDraggable",
+						"cdxIconHighlight",
+						"cdxIconInfo"
+					]
+				}
+			],
+			"messages": [
+				"redherb-property-type-color",
+				"redherb-color-allowed-palette-label",
+				"redherb-color-add-color",
+				"redherb-color-remove-color",
+				"redherb-color-reorder-color",
+				"redherb-color-invalid-fallback",
+				"neowiki-field-invalid-hex",
+				"neowiki-field-not-in-palette",
+				"neowiki-field-required"
+			]
+		}
 	},
 
 	"manifest_version": 2
