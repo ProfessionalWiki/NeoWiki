@@ -55,6 +55,8 @@ import DateTimeAttributesEditor from '@/components/SchemaEditor/Property/DateTim
 import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader.ts';
+import { createPinia } from 'pinia';
+import type { Pinia } from 'pinia';
 
 export class NeoWikiExtension {
 	private static instance: NeoWikiExtension;
@@ -131,6 +133,13 @@ export class NeoWikiExtension {
 		const registry = new ViewTypeRegistry();
 		registry.registerType( 'infobox', Infobox );
 		return registry;
+	}
+
+	private pinia: Pinia | undefined;
+
+	public getPinia(): Pinia {
+		this.pinia ??= createPinia();
+		return this.pinia;
 	}
 
 	public getMediaWiki(): typeof mw {
