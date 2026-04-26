@@ -14,5 +14,12 @@
 	"redherb-create-child-dialog-save": "Label of the save button in the RedHerb create-child-Company dialog.\n{{Identical|Create}}",
 	"redherb-create-child-dialog-cancel": "Label of the cancel button in the RedHerb create-child-Company dialog.\n{{Identical|Cancel}}",
 	"redherb-create-child-not-eligible": "Warning shown when triggering the RedHerb create-child-Company action on a page that does not have a main subject.",
-	"redherb-create-child-success": "Confirmation shown after successfully creating a child Company subject via the RedHerb dialog."
+	"redherb-create-child-success": "Confirmation shown after successfully creating a child Company subject via the RedHerb dialog.",
+	"redherb-sidebar-edit-main-subject": "Text of the sidebar link that opens a dialog for editing the page's main Subject.",
+	"redherb-edit-main-subject-dialog-title": "Title of the RedHerb dialog that edits the page's main Subject.",
+	"redherb-edit-main-subject-dialog-label": "Label of the subject label input in the RedHerb edit-main-subject dialog.\n{{Identical|Label}}",
+	"redherb-edit-main-subject-dialog-save": "Label of the save button in the RedHerb edit-main-subject dialog.\n{{Identical|Save}}",
+	"redherb-edit-main-subject-dialog-cancel": "Label of the cancel button in the RedHerb edit-main-subject dialog.\n{{Identical|Cancel}}",
+	"redherb-edit-main-subject-no-main": "Warning shown when triggering the RedHerb edit-main-subject action on a page that does not have a main subject.",
+	"redherb-edit-main-subject-success": "Confirmation shown after successfully updating the main Subject via the RedHerb dialog."
 }
