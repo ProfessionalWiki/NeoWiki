@@ -12,33 +12,48 @@ use Skin;
 
 /**
  * @covers \ProfessionalWiki\RedHerb\RedHerbSidebarHook
+ * @group Database
  */
 class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 
-	public function testAddsCreateChildAndSubjectFinderLinksWhenNoMainSubject(): void {
+	public function testAddsCreateChildLinkOnAnyExistingPage(): void {
 		$sidebar = [];
 		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( false ) );
 
-		$hook->onSidebarBeforeOutput( $this->newSkin(), $sidebar );
+		$hook->onSidebarBeforeOutput( $this->newSkinForExistingPage(), $sidebar );
 
 		$this->assertCount( 2, $sidebar['redherb-sidebar'] );
-		$this->assertSame( 'redherb-sidebar-create-child-company', $sidebar['redherb-sidebar'][0]['id'] );
-		$this->assertSame( 'ext-redherb-create-child-company-trigger', $sidebar['redherb-sidebar'][0]['class'] );
-		$this->assertSame( '#', $sidebar['redherb-sidebar'][0]['href'] );
-		$this->assertSame( 'redherb-sidebar-subject-finder', $sidebar['redherb-sidebar'][1]['id'] );
-		$this->assertStringContainsString( 'RedHerbSubjectFinder', $sidebar['redherb-sidebar'][1]['href'] );
+		$this->assertSame( 'redherb-sidebar-subject-finder', $sidebar['redherb-sidebar'][0]['id'] );
+		$this->assertSame( 'redherb-sidebar-create-child-company', $sidebar['redherb-sidebar'][1]['id'] );
+		$this->assertSame( 'ext-redherb-create-child-company-trigger', $sidebar['redherb-sidebar'][1]['class'] );
 	}
 
-	public function testAddsEditMainSubjectLinkWhenPageHasMainSubject(): void {
+	public function testAddsEditLinkOnPageWithMainSubject(): void {
 		$sidebar = [];
 		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( true ) );
 
-		$hook->onSidebarBeforeOutput( $this->newSkin(), $sidebar );
+		$hook->onSidebarBeforeOutput( $this->newSkinForExistingPage(), $sidebar );
 
 		$this->assertCount( 3, $sidebar['redherb-sidebar'] );
 		$this->assertSame( 'redherb-sidebar-edit-main-subject', $sidebar['redherb-sidebar'][2]['id'] );
 		$this->assertSame( 'ext-redherb-edit-main-subject-trigger', $sidebar['redherb-sidebar'][2]['class'] );
-		$this->assertSame( '#', $sidebar['redherb-sidebar'][2]['href'] );
+	}
+
+	public function testOnlyAddsSubjectFinderLinkOnNonExistentPages(): void {
+		$sidebar = [];
+		$predicateInvoked = false;
+		$hook = new RedHerbSidebarHook( static function () use ( &$predicateInvoked ): bool {
+			$predicateInvoked = true;
+			return true;
+		} );
+
+		$skin = $this->createStub( Skin::class );
+		$skin->method( 'getTitle' )->willReturn( Title::newFromText( 'NonExistentPage_' . uniqid() ) );
+
+		$hook->onSidebarBeforeOutput( $skin, $sidebar );
+
+		$this->assertFalse( $predicateInvoked );
+		$this->assertCount( 1, $sidebar['redherb-sidebar'] );
 	}
 
 	public function testDoesNotCheckMainSubjectForNonExistingTitles(): void {
@@ -55,7 +70,7 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 		$hook->onSidebarBeforeOutput( $skin, $sidebar );
 
 		$this->assertFalse( $predicateInvoked );
-		$this->assertCount( 2, $sidebar['redherb-sidebar'] );
+		$this->assertCount( 1, $sidebar['redherb-sidebar'] );
 	}
 
 	public function testDoesNotOverwriteExistingSidebarSections(): void {
@@ -76,6 +91,12 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 	private function newSkin(): Skin {
 		$skin = $this->createStub( Skin::class );
 		$skin->method( 'getTitle' )->willReturn( Title::newFromText( 'Test' ) );
+		return $skin;
+	}
+
+	private function newSkinForExistingPage(): Skin {
+		$skin = $this->createStub( Skin::class );
+		$skin->method( 'getTitle' )->willReturn( $this->getExistingTestPage()->getTitle() );
 		return $skin;
 	}
 

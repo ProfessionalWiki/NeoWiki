@@ -114,7 +114,7 @@ module.exports = exports = {
 				.catch( function ( err ) {
 					mw.log.error( err );
 					mw.notify(
-						mw.message( 'redherb-create-child-not-eligible' ).text(),
+						mw.message( 'redherb-create-child-error' ).text(),
 						{ type: 'error' }
 					);
 				} );
