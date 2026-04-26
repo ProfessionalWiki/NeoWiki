@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"redherb-sidebar": "RedHerb",
+	"redherb-sidebar-subject-finder": "Find a subject",
+	"redherb-special-subject-finder": "RedHerb subject finder",
+	"redherb-subject-finder-schema-label": "Schema",
+	"redherb-subject-finder-schema-placeholder": "Enter a schema name",
+	"redherb-subject-finder-pick-subject": "Pick a subject"
+}

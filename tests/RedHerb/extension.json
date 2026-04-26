@@ -22,7 +22,50 @@
 	},
 
 	"Hooks": {
-		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration"
+		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration",
+		"SidebarBeforeOutput": "RedHerbSidebarHook"
+	},
+
+	"HookHandlers": {
+		"RedHerbSidebarHook": {
+			"class": "ProfessionalWiki\\RedHerb\\RedHerbSidebarHook"
+		}
+	},
+
+	"SpecialPages": {
+		"RedHerbSubjectFinder": {
+			"class": "ProfessionalWiki\\RedHerb\\Specials\\SpecialRedHerbSubjectFinder"
+		}
+	},
+
+	"MessagesDirs": {
+		"RedHerb": [ "i18n" ]
+	},
+
+	"ExtensionMessagesFiles": {
+		"RedHerbAliases": "i18n/_Aliases.php"
+	},
+
+	"ResourceModules": {
+		"ext.redherb-sidebar": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"localBasePath": "resources/subjectFinder",
+			"remoteExtPath": "NeoWiki/tests/RedHerb/resources/subjectFinder",
+			"dependencies": [ "vue", "ext.neowiki" ],
+			"codexComponents": [ "CdxField", "CdxTextInput" ],
+			"packageFiles": [
+				"init.js",
+				"SubjectFinderPanel.vue"
+			],
+			"messages": [
+				"redherb-sidebar",
+				"redherb-sidebar-subject-finder",
+				"redherb-special-subject-finder",
+				"redherb-subject-finder-schema-label",
+				"redherb-subject-finder-schema-placeholder",
+				"redherb-subject-finder-pick-subject"
+			]
+		}
 	},
 
 	"manifest_version": 2

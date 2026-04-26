@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"redherb-sidebar": "Heading shown above the RedHerb section in the wiki sidebar.\n{{Identical|RedHerb}}",
+	"redherb-sidebar-subject-finder": "Text of the sidebar link that opens the RedHerb subject finder.",
+	"redherb-special-subject-finder": "Title shown on Special:RedHerbSubjectFinder.",
+	"redherb-subject-finder-schema-label": "Label of the schema name input on Special:RedHerbSubjectFinder.\n{{Identical|Schema}}",
+	"redherb-subject-finder-schema-placeholder": "Placeholder text inside the schema name input on Special:RedHerbSubjectFinder.",
+	"redherb-subject-finder-pick-subject": "Label of the subject lookup on Special:RedHerbSubjectFinder."
+}
