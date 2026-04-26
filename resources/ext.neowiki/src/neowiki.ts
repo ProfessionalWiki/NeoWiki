@@ -1,5 +1,4 @@
 import { createMwApp } from 'vue';
-import { createPinia } from 'pinia';
 import type { Pinia } from 'pinia';
 import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { CdxTooltip } from '@wikimedia/codex';
@@ -55,7 +54,7 @@ function initializeNeoWikiApp(): void {
 				showSubjectCreator,
 				pageHasMainSubject,
 			} ).directive( 'tooltip', CdxTooltip );
-			const pinia = createPinia();
+			const pinia = ext.getPinia();
 			app.use( pinia );
 			NeoWikiServices.registerServices( app );
 			app.mount( neowikiApp );
@@ -95,7 +94,7 @@ function initializeSchemaView(): void {
 			const schema = new SchemaDeserializer().deserialize( schemaName, schemaJson );
 
 			const app = createMwApp( SchemaDisplay, { schema } );
-			app.use( createPinia() );
+			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
 			app.mount( viewSchema );
 		}
@@ -113,7 +112,7 @@ function initializeSchemasPage(): void {
 			);
 
 			const app = createMwApp( SchemasPage );
-			app.use( createPinia() );
+			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
 			app.mount( schemasPage );
 		}
@@ -147,7 +146,7 @@ function initializeLayoutView(): void {
 			const layout = new LayoutDeserializer().deserialize( layoutName, layoutJson );
 
 			const app = createMwApp( LayoutDisplay, { layout } );
-			app.use( createPinia() );
+			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
 			app.mount( viewLayout );
 		}
@@ -165,7 +164,7 @@ function initializeLayoutsPage(): void {
 			);
 
 			const app = createMwApp( LayoutsPage );
-			app.use( createPinia() );
+			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
 			app.mount( layoutsPage );
 		}
@@ -177,7 +176,7 @@ function initializeSubjectsManagerPage(): void {
 
 	if ( subjectsManager !== null ) {
 		const app = createMwApp( SubjectsManagerPage ).directive( 'tooltip', CdxTooltip );
-		const pinia = createPinia();
+		const pinia = NeoWikiExtension.getInstance().getPinia();
 		app.use( pinia );
 		NeoWikiServices.registerServices( app );
 		app.mount( subjectsManager );
