@@ -3,9 +3,16 @@
 		"authors": []
 	},
 	"redherb-sidebar": "Heading shown above the RedHerb section in the wiki sidebar.\n{{Identical|RedHerb}}",
+	"redherb-sidebar-create-child-company": "Text of the sidebar link that opens a dialog for creating a child Subject with the Company schema.",
 	"redherb-sidebar-subject-finder": "Text of the sidebar link that opens the RedHerb subject finder.",
 	"redherb-special-subject-finder": "Title shown on Special:RedHerbSubjectFinder.",
 	"redherb-subject-finder-schema-label": "Label of the schema name input on Special:RedHerbSubjectFinder.\n{{Identical|Schema}}",
 	"redherb-subject-finder-schema-placeholder": "Placeholder text inside the schema name input on Special:RedHerbSubjectFinder.",
-	"redherb-subject-finder-pick-subject": "Label of the subject lookup on Special:RedHerbSubjectFinder."
+	"redherb-subject-finder-pick-subject": "Label of the subject lookup on Special:RedHerbSubjectFinder.",
+	"redherb-create-child-dialog-title": "Title of the RedHerb dialog that creates a child Company subject.",
+	"redherb-create-child-dialog-label": "Label of the subject label input in the RedHerb create-child-Company dialog.\n{{Identical|Label}}",
+	"redherb-create-child-dialog-save": "Label of the save button in the RedHerb create-child-Company dialog.\n{{Identical|Create}}",
+	"redherb-create-child-dialog-cancel": "Label of the cancel button in the RedHerb create-child-Company dialog.\n{{Identical|Cancel}}",
+	"redherb-create-child-not-eligible": "Warning shown when triggering the RedHerb create-child-Company action on a page that does not have a main subject.",
+	"redherb-create-child-success": "Confirmation shown after successfully creating a child Company subject via the RedHerb dialog."
 }

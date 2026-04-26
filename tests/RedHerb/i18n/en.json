@@ -3,9 +3,16 @@
 		"authors": []
 	},
 	"redherb-sidebar": "RedHerb",
+	"redherb-sidebar-create-child-company": "Create child Company",
 	"redherb-sidebar-subject-finder": "Find a subject",
 	"redherb-special-subject-finder": "RedHerb subject finder",
 	"redherb-subject-finder-schema-label": "Schema",
 	"redherb-subject-finder-schema-placeholder": "Enter a schema name",
-	"redherb-subject-finder-pick-subject": "Pick a subject"
+	"redherb-subject-finder-pick-subject": "Pick a subject",
+	"redherb-create-child-dialog-title": "Add Company subject",
+	"redherb-create-child-dialog-label": "Label",
+	"redherb-create-child-dialog-save": "Create",
+	"redherb-create-child-dialog-cancel": "Cancel",
+	"redherb-create-child-not-eligible": "This page does not support adding child subjects yet.",
+	"redherb-create-child-success": "Created child Company subject."
 }

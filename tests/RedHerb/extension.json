@@ -23,10 +23,14 @@
 
 	"Hooks": {
 		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration",
+		"NeoWikiGetFrontendModules": "RedHerbCreateChildModuleHook",
 		"SidebarBeforeOutput": "RedHerbSidebarHook"
 	},
 
 	"HookHandlers": {
+		"RedHerbCreateChildModuleHook": {
+			"class": "ProfessionalWiki\\RedHerb\\RedHerbCreateChildModuleHook"
+		},
 		"RedHerbSidebarHook": {
 			"class": "ProfessionalWiki\\RedHerb\\RedHerbSidebarHook"
 		}
@@ -52,7 +56,7 @@
 			"localBasePath": "resources/subjectFinder",
 			"remoteExtPath": "NeoWiki/tests/RedHerb/resources/subjectFinder",
 			"dependencies": [ "vue", "ext.neowiki" ],
-			"codexComponents": [ "CdxField", "CdxTextInput" ],
+			"codexComponents": [ "CdxField", "CdxTextInput", "CdxTooltip" ],
 			"packageFiles": [
 				"init.js",
 				"SubjectFinderPanel.vue"
@@ -64,6 +68,27 @@
 				"redherb-subject-finder-schema-label",
 				"redherb-subject-finder-schema-placeholder",
 				"redherb-subject-finder-pick-subject"
+			]
+		},
+		"ext.redherb-create-child": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"localBasePath": "resources/createChild",
+			"remoteExtPath": "NeoWiki/tests/RedHerb/resources/createChild",
+			"dependencies": [ "vue", "pinia", "ext.neowiki" ],
+			"codexComponents": [ "CdxButton", "CdxDialog", "CdxField", "CdxTextInput", "CdxTooltip" ],
+			"packageFiles": [
+				"init.js",
+				"store.js",
+				"CreateChildDialog.vue"
+			],
+			"messages": [
+				"redherb-sidebar-create-child-company",
+				"redherb-create-child-dialog-title",
+				"redherb-create-child-dialog-label",
+				"redherb-create-child-dialog-save",
+				"redherb-create-child-dialog-cancel",
+				"redherb-create-child-not-eligible",
+				"redherb-create-child-success"
 			]
 		}
 	},
