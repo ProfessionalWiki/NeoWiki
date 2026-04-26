@@ -23,13 +23,13 @@
 
 	"Hooks": {
 		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration",
-		"NeoWikiGetFrontendModules": "RedHerbCreateChildModuleHook",
+		"NeoWikiGetFrontendModules": "RedHerbFrontendModulesHook",
 		"SidebarBeforeOutput": "RedHerbSidebarHook"
 	},
 
 	"HookHandlers": {
-		"RedHerbCreateChildModuleHook": {
-			"class": "ProfessionalWiki\\RedHerb\\RedHerbCreateChildModuleHook"
+		"RedHerbFrontendModulesHook": {
+			"class": "ProfessionalWiki\\RedHerb\\RedHerbFrontendModulesHook"
 		},
 		"RedHerbSidebarHook": {
 			"class": "ProfessionalWiki\\RedHerb\\RedHerbSidebarHook"
@@ -89,6 +89,27 @@
 				"redherb-create-child-dialog-cancel",
 				"redherb-create-child-not-eligible",
 				"redherb-create-child-success"
+			]
+		},
+		"ext.redherb-edit-main-subject": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"localBasePath": "resources/editMainSubject",
+			"remoteExtPath": "NeoWiki/tests/RedHerb/resources/editMainSubject",
+			"dependencies": [ "vue", "pinia", "ext.neowiki" ],
+			"codexComponents": [ "CdxButton", "CdxDialog", "CdxField", "CdxTextInput", "CdxTooltip" ],
+			"packageFiles": [
+				"init.js",
+				"store.js",
+				"EditMainSubjectDialog.vue"
+			],
+			"messages": [
+				"redherb-sidebar-edit-main-subject",
+				"redherb-edit-main-subject-dialog-title",
+				"redherb-edit-main-subject-dialog-label",
+				"redherb-edit-main-subject-dialog-save",
+				"redherb-edit-main-subject-dialog-cancel",
+				"redherb-edit-main-subject-no-main",
+				"redherb-edit-main-subject-success"
 			]
 		}
 	},
