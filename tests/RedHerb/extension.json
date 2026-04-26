@@ -87,7 +87,7 @@
 				"redherb-create-child-dialog-label",
 				"redherb-create-child-dialog-save",
 				"redherb-create-child-dialog-cancel",
-				"redherb-create-child-not-eligible",
+				"redherb-create-child-error",
 				"redherb-create-child-success"
 			]
 		},

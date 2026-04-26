@@ -22,12 +22,6 @@ class RedHerbSidebarHook implements SidebarBeforeOutputHook {
 	public function onSidebarBeforeOutput( $skin, &$sidebar ): void {
 		$links = [
 			[
-				'id' => 'redherb-sidebar-create-child-company',
-				'text' => wfMessage( 'redherb-sidebar-create-child-company' )->text(),
-				'href' => '#',
-				'class' => 'ext-redherb-create-child-company-trigger',
-			],
-			[
 				'id' => 'redherb-sidebar-subject-finder',
 				'text' => wfMessage( 'redherb-sidebar-subject-finder' )->text(),
 				'href' => Title::makeTitle( NS_SPECIAL, 'RedHerbSubjectFinder' )->getLocalURL(),
@@ -35,13 +29,22 @@ class RedHerbSidebarHook implements SidebarBeforeOutputHook {
 		];
 
 		$title = $skin->getTitle();
-		if ( $title !== null && $title->canExist() && ( $this->pageHasMainSubject )( $title ) ) {
+		if ( $title !== null && $title->exists() ) {
 			$links[] = [
-				'id' => 'redherb-sidebar-edit-main-subject',
-				'text' => wfMessage( 'redherb-sidebar-edit-main-subject' )->text(),
+				'id' => 'redherb-sidebar-create-child-company',
+				'text' => wfMessage( 'redherb-sidebar-create-child-company' )->text(),
 				'href' => '#',
-				'class' => 'ext-redherb-edit-main-subject-trigger',
+				'class' => 'ext-redherb-create-child-company-trigger',
 			];
+
+			if ( ( $this->pageHasMainSubject )( $title ) ) {
+				$links[] = [
+					'id' => 'redherb-sidebar-edit-main-subject',
+					'text' => wfMessage( 'redherb-sidebar-edit-main-subject' )->text(),
+					'href' => '#',
+					'class' => 'ext-redherb-edit-main-subject-trigger',
+				];
+			}
 		}
 
 		$sidebar['redherb-sidebar'] = $links;

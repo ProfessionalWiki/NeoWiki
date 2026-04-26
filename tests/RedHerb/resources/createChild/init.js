@@ -8,7 +8,6 @@
 	var useCreateChildStore = require( './store.js' );
 
 	var TRIGGER_SELECTOR = '.ext-redherb-create-child-company-trigger';
-	var NEOWIKI_APP_ID = 'ext-neowiki-app';
 
 	var mounted = false;
 
@@ -28,26 +27,12 @@
 		mounted = true;
 	}
 
-	function pageHasMainSubject() {
-		var neoWikiApp = document.getElementById( NEOWIKI_APP_ID );
-		return neoWikiApp !== null
-			&& neoWikiApp.dataset.mwNeowikiPageHasMainSubject === 'true';
-	}
-
 	function handleClick( ev ) {
 		var trigger = ev.target.closest( TRIGGER_SELECTOR );
 		if ( trigger === null ) {
 			return;
 		}
 		ev.preventDefault();
-
-		if ( !pageHasMainSubject() ) {
-			mw.notify(
-				mw.message( 'redherb-create-child-not-eligible' ).text(),
-				{ type: 'warn' }
-			);
-			return;
-		}
 
 		var sharedPinia = nw.NeoWikiExtension.getInstance().getPinia();
 		ensureMounted( sharedPinia );
