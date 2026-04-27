@@ -74,11 +74,10 @@
 			"class": "MediaWiki\\ResourceLoader\\CodexModule",
 			"localBasePath": "resources/createChild",
 			"remoteExtPath": "NeoWiki/tests/RedHerb/resources/createChild",
-			"dependencies": [ "vue", "pinia", "ext.neowiki" ],
+			"dependencies": [ "vue", "ext.neowiki" ],
 			"codexComponents": [ "CdxButton", "CdxDialog", "CdxField", "CdxTextInput", "CdxTooltip" ],
 			"packageFiles": [
 				"init.js",
-				"store.js",
 				"CreateChildDialog.vue"
 			],
 			"messages": [
@@ -95,11 +94,10 @@
 			"class": "MediaWiki\\ResourceLoader\\CodexModule",
 			"localBasePath": "resources/editMainSubject",
 			"remoteExtPath": "NeoWiki/tests/RedHerb/resources/editMainSubject",
-			"dependencies": [ "vue", "pinia", "ext.neowiki" ],
+			"dependencies": [ "vue", "ext.neowiki" ],
 			"codexComponents": [ "CdxButton", "CdxDialog", "CdxField", "CdxTextInput", "CdxTooltip" ],
 			"packageFiles": [
 				"init.js",
-				"store.js",
 				"EditMainSubjectDialog.vue"
 			],
 			"messages": [

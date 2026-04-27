@@ -5,14 +5,15 @@
 	var codex = require( './codex.js' );
 	var nw = require( 'ext.neowiki' );
 	var EditMainSubjectDialog = require( './EditMainSubjectDialog.vue' );
-	var useEditMainSubjectStore = require( './store.js' );
 
 	var TRIGGER_SELECTOR = '.ext-redherb-edit-main-subject-trigger';
 	var MAIN_SUBJECT_SELECTOR = '.ext-neowiki-view[data-mw-neowiki-subject-id]';
+	var DIALOG_STATE_KEY = 'redHerbEditMainSubjectState';
 
+	var dialogState = Vue.reactive( { open: false, subjectId: null } );
 	var mounted = false;
 
-	function ensureMounted( sharedPinia ) {
+	function ensureMounted() {
 		if ( mounted ) {
 			return;
 		}
@@ -22,8 +23,9 @@
 
 		var app = Vue.createMwApp( EditMainSubjectDialog )
 			.directive( 'tooltip', codex.CdxTooltip );
-		app.use( sharedPinia );
+		app.use( nw.NeoWikiExtension.getInstance().getPinia() );
 		nw.NeoWikiServices.registerServices( app );
+		app.provide( DIALOG_STATE_KEY, dialogState );
 		app.mount( host );
 		mounted = true;
 	}
@@ -52,9 +54,9 @@
 			return;
 		}
 
-		var sharedPinia = nw.NeoWikiExtension.getInstance().getPinia();
-		ensureMounted( sharedPinia );
-		useEditMainSubjectStore( sharedPinia ).openDialog( subjectId );
+		ensureMounted();
+		dialogState.subjectId = subjectId;
+		dialogState.open = true;
 	}
 
 	queueMicrotask( function () {

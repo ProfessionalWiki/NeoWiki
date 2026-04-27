@@ -1,6 +1,6 @@
 <template>
 	<cdx-dialog
-		:open="store.open"
+		:open="state.open"
 		:title="dialogTitle"
 		:primary-action="primaryAction"
 		:default-action="defaultAction"
@@ -30,7 +30,8 @@
 var vue = require( 'vue' );
 var codex = require( './codex.js' );
 var nw = require( 'ext.neowiki' );
-var useEditMainSubjectStore = require( './store.js' );
+
+var DIALOG_STATE_KEY = 'redHerbEditMainSubjectState';
 
 module.exports = exports = {
 	components: {
@@ -40,7 +41,7 @@ module.exports = exports = {
 		SubjectEditor: nw.SubjectEditor
 	},
 	setup: function () {
-		var store = useEditMainSubjectStore();
+		var state = vue.inject( DIALOG_STATE_KEY );
 		var schemaStore = nw.useSchemaStore();
 		var subjectStore = nw.useSubjectStore();
 
@@ -48,6 +49,17 @@ module.exports = exports = {
 		var editorRef = vue.ref( null );
 		var loadedSubject = vue.shallowRef( null );
 		var loadedSchema = vue.shallowRef( null );
+
+		function reset() {
+			loadedSubject.value = null;
+			loadedSchema.value = null;
+			label.value = '';
+		}
+
+		function close() {
+			state.open = false;
+			state.subjectId = null;
+		}
 
 		function loadSubjectAndSchema( subjectIdText ) {
 			var subjectId = new nw.SubjectId( subjectIdText );
@@ -66,19 +78,17 @@ module.exports = exports = {
 						err instanceof Error ? err.message : String( err ),
 						{ type: 'error' }
 					);
-					store.closeDialog();
+					close();
 				} );
 		}
 
 		vue.watch( function () {
-			return store.subjectId;
+			return state.subjectId;
 		}, function ( newId ) {
 			if ( newId !== null ) {
 				loadSubjectAndSchema( newId );
 			} else {
-				loadedSubject.value = null;
-				loadedSchema.value = null;
-				label.value = '';
+				reset();
 			}
 		} );
 
@@ -106,12 +116,12 @@ module.exports = exports = {
 		} );
 
 		function onClose() {
-			store.closeDialog();
+			close();
 		}
 
 		function onOpenChange( newOpen ) {
 			if ( !newOpen ) {
-				store.closeDialog();
+				close();
 			}
 		}
 
@@ -128,7 +138,7 @@ module.exports = exports = {
 			subjectStore.updateSubject( updatedSubject )
 				.then( function () {
 					mw.notify( mw.message( 'redherb-edit-main-subject-success' ).text() );
-					store.closeDialog();
+					close();
 				} )
 				.catch( function ( err ) {
 					mw.log.error( err );
@@ -140,7 +150,7 @@ module.exports = exports = {
 		}
 
 		return {
-			store: store,
+			state: state,
 			label: label,
 			editorRef: editorRef,
 			schemaStatements: schemaStatements,
