@@ -1,6 +1,6 @@
 <template>
 	<cdx-dialog
-		:open="store.open"
+		:open="open"
 		:title="dialogTitle"
 		:primary-action="primaryAction"
 		:default-action="defaultAction"
@@ -30,9 +30,9 @@
 var vue = require( 'vue' );
 var codex = require( './codex.js' );
 var nw = require( 'ext.neowiki' );
-var useCreateChildStore = require( './store.js' );
 
 var SCHEMA_NAME = 'Company';
+var DIALOG_OPEN_KEY = 'redHerbCreateChildOpen';
 
 module.exports = exports = {
 	components: {
@@ -42,7 +42,7 @@ module.exports = exports = {
 		SubjectEditor: nw.SubjectEditor
 	},
 	setup: function () {
-		var store = useCreateChildStore();
+		var open = vue.inject( DIALOG_OPEN_KEY );
 		var schemaStore = nw.useSchemaStore();
 		var subjectStore = nw.useSubjectStore();
 
@@ -58,9 +58,7 @@ module.exports = exports = {
 			} );
 		}
 
-		vue.watch( function () {
-			return store.open;
-		}, function ( isOpen ) {
+		vue.watch( open, function ( isOpen ) {
 			if ( isOpen && loadedSchema.value === null ) {
 				loadSchema();
 			}
@@ -90,12 +88,12 @@ module.exports = exports = {
 		} );
 
 		function onClose() {
-			store.closeDialog();
+			open.value = false;
 		}
 
 		function onOpenChange( newOpen ) {
 			if ( !newOpen ) {
-				store.closeDialog();
+				open.value = false;
 			}
 		}
 
@@ -109,7 +107,7 @@ module.exports = exports = {
 			subjectStore.createChildSubject( pageId, trimmed, SCHEMA_NAME, statements )
 				.then( function () {
 					mw.notify( mw.message( 'redherb-create-child-success' ).text() );
-					store.closeDialog();
+					open.value = false;
 				} )
 				.catch( function ( err ) {
 					mw.log.error( err );
@@ -121,7 +119,7 @@ module.exports = exports = {
 		}
 
 		return {
-			store: store,
+			open: open,
 			label: label,
 			editorRef: editorRef,
 			schemaStatements: schemaStatements,

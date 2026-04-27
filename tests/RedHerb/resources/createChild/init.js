@@ -5,13 +5,14 @@
 	var codex = require( './codex.js' );
 	var nw = require( 'ext.neowiki' );
 	var CreateChildDialog = require( './CreateChildDialog.vue' );
-	var useCreateChildStore = require( './store.js' );
 
 	var TRIGGER_SELECTOR = '.ext-redherb-create-child-company-trigger';
+	var DIALOG_OPEN_KEY = 'redHerbCreateChildOpen';
 
+	var open = Vue.ref( false );
 	var mounted = false;
 
-	function ensureMounted( sharedPinia ) {
+	function ensureMounted() {
 		if ( mounted ) {
 			return;
 		}
@@ -21,8 +22,9 @@
 
 		var app = Vue.createMwApp( CreateChildDialog )
 			.directive( 'tooltip', codex.CdxTooltip );
-		app.use( sharedPinia );
+		app.use( nw.NeoWikiExtension.getInstance().getPinia() );
 		nw.NeoWikiServices.registerServices( app );
+		app.provide( DIALOG_OPEN_KEY, open );
 		app.mount( host );
 		mounted = true;
 	}
@@ -34,9 +36,8 @@
 		}
 		ev.preventDefault();
 
-		var sharedPinia = nw.NeoWikiExtension.getInstance().getPinia();
-		ensureMounted( sharedPinia );
-		useCreateChildStore( sharedPinia ).openDialog();
+		ensureMounted();
+		open.value = true;
 	}
 
 	queueMicrotask( function () {
