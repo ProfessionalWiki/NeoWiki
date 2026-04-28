@@ -148,8 +148,6 @@ module.exports = exports = {
 </script>
 
 <style lang="less">
-@import 'mediawiki.skin.variables.less';
-
 .ext-redherb-create-child-mount {
 	display: contents;
 }

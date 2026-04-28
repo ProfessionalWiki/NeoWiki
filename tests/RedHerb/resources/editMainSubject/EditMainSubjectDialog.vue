@@ -172,8 +172,6 @@ module.exports = exports = {
 </script>
 
 <style lang="less">
-@import 'mediawiki.skin.variables.less';
-
 .ext-redherb-edit-main-subject-mount {
 	display: contents;
 }
