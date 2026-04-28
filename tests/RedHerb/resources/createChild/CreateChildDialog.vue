@@ -53,8 +53,14 @@ module.exports = exports = {
 		function loadSchema() {
 			schemaStore.getOrFetchSchema( SCHEMA_NAME ).then( function ( schema ) {
 				loadedSchema.value = schema;
-			} ).catch( function () {
+			} ).catch( function ( err ) {
 				loadedSchema.value = null;
+				mw.log.error( err );
+				mw.notify(
+					err instanceof Error ? err.message : String( err ),
+					{ type: 'error' }
+				);
+				open.value = false;
 			} );
 		}
 
