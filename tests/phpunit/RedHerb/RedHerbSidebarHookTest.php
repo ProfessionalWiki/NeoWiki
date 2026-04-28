@@ -5,9 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\RedHerb;
 
 use Closure;
+use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\RedHerb\RedHerbSidebarHook;
+use RawMessage;
 use Skin;
 
 /**
@@ -47,10 +49,10 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 			return true;
 		} );
 
-		$skin = $this->createStub( Skin::class );
-		$skin->method( 'getTitle' )->willReturn( Title::newFromText( 'NonExistentPage_' . uniqid() ) );
-
-		$hook->onSidebarBeforeOutput( $skin, $sidebar );
+		$hook->onSidebarBeforeOutput(
+			$this->newSkinStub( Title::newFromText( 'NonExistentPage_' . uniqid() ) ),
+			$sidebar
+		);
 
 		$this->assertFalse( $predicateInvoked );
 		$this->assertCount( 1, $sidebar['redherb-sidebar'] );
@@ -64,10 +66,10 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 			return true;
 		} );
 
-		$skin = $this->createStub( Skin::class );
-		$skin->method( 'getTitle' )->willReturn( Title::newFromText( 'UserLogin', NS_SPECIAL ) );
-
-		$hook->onSidebarBeforeOutput( $skin, $sidebar );
+		$hook->onSidebarBeforeOutput(
+			$this->newSkinStub( Title::newFromText( 'UserLogin', NS_SPECIAL ) ),
+			$sidebar
+		);
 
 		$this->assertFalse( $predicateInvoked );
 		$this->assertCount( 1, $sidebar['redherb-sidebar'] );
@@ -89,14 +91,19 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 	}
 
 	private function newSkin(): Skin {
-		$skin = $this->createStub( Skin::class );
-		$skin->method( 'getTitle' )->willReturn( Title::newFromText( 'Test' ) );
-		return $skin;
+		return $this->newSkinStub( Title::newFromText( 'Test' ) );
 	}
 
 	private function newSkinForExistingPage(): Skin {
+		return $this->newSkinStub( $this->getExistingTestPage()->getTitle() );
+	}
+
+	private function newSkinStub( Title $title ): Skin {
 		$skin = $this->createStub( Skin::class );
-		$skin->method( 'getTitle' )->willReturn( $this->getExistingTestPage()->getTitle() );
+		$skin->method( 'getTitle' )->willReturn( $title );
+		$skin->method( 'msg' )->willReturnCallback(
+			static fn ( string $key ): Message => new RawMessage( $key )
+		);
 		return $skin;
 	}
 
