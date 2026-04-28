@@ -75,7 +75,7 @@ class NeoWikiHooks {
 		if ( self::shouldShowSubjectCreator( $out ) ) {
 			$attrs['data-mw-neowiki-create-subject'] = 'true';
 			$attrs['data-mw-neowiki-page-has-main-subject'] =
-				NeoWikiExtension::getInstance()->newViewHtmlBuilder()->pageHasMainSubject( $out->getTitle() )
+				NeoWikiExtension::getInstance()->newSubjectContentRepository()->pageHasMainSubject( $out->getTitle() )
 					? 'true'
 					: 'false';
 		}

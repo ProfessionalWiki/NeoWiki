@@ -35,6 +35,16 @@ class SubjectContentRepository {
 		return $this->getSubjectContentFromWikiPage( $this->wikiPageFactory->newFromTitle( $pageIdentity ) );
 	}
 
+	public function pageHasSubjects( PageIdentity $pageIdentity ): bool {
+		return $this->getSubjectContentByPageTitle( $pageIdentity )?->hasSubjects() === true;
+	}
+
+	public function pageHasMainSubject( PageIdentity $pageIdentity ): bool {
+		return $this->getSubjectContentByPageTitle( $pageIdentity )
+			?->getPageSubjects()
+			->getMainSubject() !== null;
+	}
+
 	public function getSubjectContentByRevisionId( int $revisionId ): ?SubjectContent {
 		$revision = $this->revisionLookup->getRevisionById( $revisionId );
 
