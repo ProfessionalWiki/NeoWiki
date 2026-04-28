@@ -23,7 +23,7 @@ class SpecialRedHerbSubjectFinder extends SpecialPage {
 
 		$out = $this->getOutput();
 		NeoWikiHooks::addNeoWikiModules( $out, $this->getSkin() );
-		$out->addModules( 'ext.redherb-sidebar' );
+		$out->addModules( 'ext.redherb-subject-finder' );
 
 		$out->addHTML( Html::element( 'div', [ 'id' => 'ext-redherb-subject-finder' ] ) );
 	}
