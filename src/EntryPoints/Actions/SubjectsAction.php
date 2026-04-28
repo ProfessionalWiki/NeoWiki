@@ -9,6 +9,7 @@ use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 
 class SubjectsAction extends FormlessAction {
 
@@ -44,8 +45,7 @@ class SubjectsAction extends FormlessAction {
 			);
 		}
 
-		$out->addModuleStyles( [ 'ext.neowiki.styles' ] );
-		$out->addModules( [ 'ext.neowiki' ] );
+		NeoWikiHooks::addNeoWikiModules( $out, $this->getSkin() );
 
 		$out->addJsConfigVars( [
 			'wgNeoWikiManageSubjectsPageId' => $title->getArticleID(),
