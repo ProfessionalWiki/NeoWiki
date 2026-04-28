@@ -30,7 +30,7 @@ class SpecialRedHerbSubjectFinderTest extends SpecialPageTestBase {
 		$modules = $page->getOutput()->getModules();
 
 		$this->assertContains( 'ext.neowiki', $modules );
-		$this->assertContains( 'ext.redherb-sidebar', $modules );
+		$this->assertContains( 'ext.redherb-subject-finder', $modules );
 	}
 
 }

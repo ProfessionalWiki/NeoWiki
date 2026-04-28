@@ -51,7 +51,7 @@
 	},
 
 	"ResourceModules": {
-		"ext.redherb-sidebar": {
+		"ext.redherb-subject-finder": {
 			"class": "MediaWiki\\ResourceLoader\\CodexModule",
 			"localBasePath": "resources/subjectFinder",
 			"remoteExtPath": "NeoWiki/tests/RedHerb/resources/subjectFinder",
