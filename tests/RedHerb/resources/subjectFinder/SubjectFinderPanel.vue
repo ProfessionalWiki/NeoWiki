@@ -73,6 +73,13 @@ module.exports = exports = {
 				.loadSubjectsAndSchemas( new Set( [ id ] ) )
 				.then( function () {
 					loadedSubjectId.value = id;
+				} )
+				.catch( function ( err ) {
+					mw.log.error( err );
+					mw.notify(
+						err instanceof Error ? err.message : String( err ),
+						{ type: 'error' }
+					);
 				} );
 		}
 
