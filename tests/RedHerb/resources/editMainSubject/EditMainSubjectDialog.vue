@@ -30,8 +30,7 @@
 var vue = require( 'vue' );
 var codex = require( './codex.js' );
 var nw = require( 'ext.neowiki' );
-
-var DIALOG_STATE_KEY = 'redHerbEditMainSubjectState';
+var DIALOG_STATE_KEY = require( './constants.js' ).DIALOG_STATE_KEY;
 
 module.exports = exports = {
 	components: {

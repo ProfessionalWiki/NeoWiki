@@ -5,10 +5,10 @@
 	var codex = require( './codex.js' );
 	var nw = require( 'ext.neowiki' );
 	var EditMainSubjectDialog = require( './EditMainSubjectDialog.vue' );
+	var DIALOG_STATE_KEY = require( './constants.js' ).DIALOG_STATE_KEY;
 
 	var TRIGGER_SELECTOR = '.ext-redherb-edit-main-subject-trigger';
 	var MAIN_SUBJECT_SELECTOR = '.ext-neowiki-view[data-mw-neowiki-subject-id]';
-	var DIALOG_STATE_KEY = 'redHerbEditMainSubjectState';
 
 	var dialogState = Vue.reactive( { open: false, subjectId: null } );
 	var mounted = false;
