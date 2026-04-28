@@ -15,7 +15,7 @@
 	function validate( value, property ) {
 		var errors = [];
 
-		if ( property.required && value === undefined ) {
+		if ( property.required && ( value === undefined || value.parts.length === 0 ) ) {
 			errors.push( { code: 'required' } );
 			return errors;
 		}
