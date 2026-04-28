@@ -3,14 +3,12 @@
 
 	var nw = require( 'ext.neowiki' );
 	var icons = require( './icons.json' );
+	var HEX_REGEX = require( './hexRegex.js' );
 	var ColorDisplay = require( './ColorDisplay.vue' );
 	var ColorInput = require( './ColorInput.vue' );
 	var ColorAttributesEditor = require( './ColorAttributesEditor.vue' );
 
 	var COLOR_TYPE_NAME = 'color';
-
-	// eslint-disable-next-line security/detect-unsafe-regex -- bounded quantifiers, no backtracking
-	var HEX_REGEX = /^#[0-9a-fA-F]{6}$/;
 
 	function validate( value, property ) {
 		var errors = [];
