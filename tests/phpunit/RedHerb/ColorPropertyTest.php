@@ -104,6 +104,36 @@ class ColorPropertyTest extends TestCase {
 		$this->assertSame( [ '#ABCDEF' ], $property->getAllowedColors() );
 	}
 
+	public function testConstructorAcceptsValidHexDefault(): void {
+		$property = new ColorProperty(
+			core: new PropertyCore( description: '', required: false, default: '#abcdef' ),
+			allowedColors: [],
+		);
+
+		$this->assertSame( '#abcdef', $property->getDefault() );
+	}
+
+	/**
+	 * @dataProvider malformedDefaultProvider
+	 */
+	public function testConstructorRejectsMalformedDefault( mixed $malformed ): void {
+		$this->expectException( \InvalidArgumentException::class );
+
+		new ColorProperty(
+			core: new PropertyCore( description: '', required: false, default: $malformed ),
+			allowedColors: [],
+		);
+	}
+
+	public static function malformedDefaultProvider(): iterable {
+		yield 'missing hash' => [ 'ff0000' ];
+		yield 'too short' => [ '#fff' ];
+		yield 'too long' => [ '#ff00000' ];
+		yield 'invalid char' => [ '#gggggg' ];
+		yield 'empty string' => [ '' ];
+		yield 'not a string' => [ 42 ];
+	}
+
 	private function buildProperty(): ColorProperty {
 		return new ColorProperty(
 			core: new PropertyCore( description: '', required: false, default: null ),
