@@ -23,7 +23,7 @@ class RedHerbSidebarHook implements SidebarBeforeOutputHook {
 		$links = [
 			[
 				'id' => 'redherb-sidebar-subject-finder',
-				'text' => wfMessage( 'redherb-sidebar-subject-finder' )->text(),
+				'text' => $skin->msg( 'redherb-sidebar-subject-finder' )->text(),
 				'href' => Title::makeTitle( NS_SPECIAL, 'RedHerbSubjectFinder' )->getLocalURL(),
 			],
 		];
@@ -32,7 +32,7 @@ class RedHerbSidebarHook implements SidebarBeforeOutputHook {
 		if ( $title !== null && $title->exists() ) {
 			$links[] = [
 				'id' => 'redherb-sidebar-create-child-company',
-				'text' => wfMessage( 'redherb-sidebar-create-child-company' )->text(),
+				'text' => $skin->msg( 'redherb-sidebar-create-child-company' )->text(),
 				'href' => '#',
 				'class' => 'ext-redherb-create-child-company-trigger',
 			];
@@ -40,7 +40,7 @@ class RedHerbSidebarHook implements SidebarBeforeOutputHook {
 			if ( ( $this->pageHasMainSubject )( $title ) ) {
 				$links[] = [
 					'id' => 'redherb-sidebar-edit-main-subject',
-					'text' => wfMessage( 'redherb-sidebar-edit-main-subject' )->text(),
+					'text' => $skin->msg( 'redherb-sidebar-edit-main-subject' )->text(),
 					'href' => '#',
 					'class' => 'ext-redherb-edit-main-subject-trigger',
 				];
