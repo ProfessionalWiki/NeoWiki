@@ -78,7 +78,8 @@
 			"codexComponents": [ "CdxButton", "CdxDialog", "CdxField", "CdxTextInput", "CdxTooltip" ],
 			"packageFiles": [
 				"init.js",
-				"CreateChildDialog.vue"
+				"CreateChildDialog.vue",
+				"constants.js"
 			],
 			"messages": [
 				"redherb-sidebar-create-child-company",
@@ -98,7 +99,8 @@
 			"codexComponents": [ "CdxButton", "CdxDialog", "CdxField", "CdxTextInput", "CdxTooltip" ],
 			"packageFiles": [
 				"init.js",
-				"EditMainSubjectDialog.vue"
+				"EditMainSubjectDialog.vue",
+				"constants.js"
 			],
 			"messages": [
 				"redherb-sidebar-edit-main-subject",

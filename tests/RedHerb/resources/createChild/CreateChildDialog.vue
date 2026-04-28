@@ -30,9 +30,9 @@
 var vue = require( 'vue' );
 var codex = require( './codex.js' );
 var nw = require( 'ext.neowiki' );
+var DIALOG_OPEN_KEY = require( './constants.js' ).DIALOG_OPEN_KEY;
 
 var SCHEMA_NAME = 'Company';
-var DIALOG_OPEN_KEY = 'redHerbCreateChildOpen';
 
 module.exports = exports = {
 	components: {

@@ -5,9 +5,9 @@
 	var codex = require( './codex.js' );
 	var nw = require( 'ext.neowiki' );
 	var CreateChildDialog = require( './CreateChildDialog.vue' );
+	var DIALOG_OPEN_KEY = require( './constants.js' ).DIALOG_OPEN_KEY;
 
 	var TRIGGER_SELECTOR = '.ext-redherb-create-child-company-trigger';
-	var DIALOG_OPEN_KEY = 'redHerbCreateChildOpen';
 
 	var open = Vue.ref( false );
 	var mounted = false;
