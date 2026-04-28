@@ -172,16 +172,24 @@ function initializeLayoutsPage(): void {
 }
 
 function initializeSubjectsManagerPage(): void {
-	const subjectsManager = document.getElementById( 'ext-neowiki-manage-subjects' );
+	queueMicrotask( () => {
+		const subjectsManager = document.getElementById( 'ext-neowiki-manage-subjects' );
 
-	if ( subjectsManager !== null ) {
-		const app = createMwApp( SubjectsManagerPage ).directive( 'tooltip', CdxTooltip );
-		const pinia = NeoWikiExtension.getInstance().getPinia();
-		app.use( pinia );
-		NeoWikiServices.registerServices( app );
-		app.mount( subjectsManager );
-		registerSubjectCreatorClickHandler( pinia );
-	}
+		if ( subjectsManager !== null ) {
+			const ext = NeoWikiExtension.getInstance();
+
+			mw.hook( 'neowiki.registration' ).fire(
+				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
+			);
+
+			const app = createMwApp( SubjectsManagerPage ).directive( 'tooltip', CdxTooltip );
+			const pinia = ext.getPinia();
+			app.use( pinia );
+			NeoWikiServices.registerServices( app );
+			app.mount( subjectsManager );
+			registerSubjectCreatorClickHandler( pinia );
+		}
+	} );
 }
 
 const isTestEnvironment = typeof window !== 'undefined' &&
