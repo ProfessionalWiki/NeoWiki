@@ -70,7 +70,7 @@ var codex = require( './codex.js' );
 var icons = require( './icons.json' );
 var nw = require( 'ext.neowiki' );
 
-var HEX_REGEX = /^#[0-9a-fA-F]{6}$/;
+var HEX_REGEX = require( './hexRegex.js' );
 var nextId = 0;
 
 function wrapEntries( colors ) {

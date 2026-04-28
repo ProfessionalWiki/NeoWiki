@@ -26,7 +26,7 @@ var nw = require( 'ext.neowiki' );
 // constraints like allowedColors: a stored value that was valid when
 // it was saved should keep rendering as a swatch even if the schema's
 // palette has since narrowed.
-var HEX_REGEX = /^#[0-9a-fA-F]{6}$/;
+var HEX_REGEX = require( './hexRegex.js' );
 
 module.exports = exports = {
 	components: {

@@ -53,6 +53,7 @@
 			],
 			"packageFiles": [
 				"init.js",
+				"hexRegex.js",
 				"ColorDisplay.vue",
 				"ColorInput.vue",
 				"ColorAttributesEditor.vue",
