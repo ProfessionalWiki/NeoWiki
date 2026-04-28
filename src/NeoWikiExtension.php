@@ -23,6 +23,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAc
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutPresenter;
@@ -281,6 +282,10 @@ class NeoWikiExtension {
 		return new ViewHtmlBuilder(
 			subjectContentRepository: $this->newSubjectContentRepository()
 		);
+	}
+
+	public function newPageSubjectsLookup(): PageSubjectsLookup {
+		return new PageSubjectsLookup( $this->getSubjectRepository() );
 	}
 
 	public function newSubjectContentRepository(): SubjectContentRepository {

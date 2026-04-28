@@ -41,6 +41,10 @@ class PageSubjects {
 			|| !$this->childSubjects->isEmpty();
 	}
 
+	public function hasMainSubject(): bool {
+		return $this->mainSubject !== null;
+	}
+
 	public function isEmpty(): bool {
 		return $this->mainSubject === null
 			&& $this->childSubjects->isEmpty();

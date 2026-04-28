@@ -17,6 +17,7 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
@@ -75,9 +76,10 @@ class NeoWikiHooks {
 		if ( self::shouldShowSubjectCreator( $out ) ) {
 			$attrs['data-mw-neowiki-create-subject'] = 'true';
 			$attrs['data-mw-neowiki-page-has-main-subject'] =
-				NeoWikiExtension::getInstance()->newViewHtmlBuilder()->pageHasMainSubject( $out->getTitle() )
-					? 'true'
-					: 'false';
+				NeoWikiExtension::getInstance()->newPageSubjectsLookup()
+					->pageHasMainSubject( new PageId( $out->getTitle()->getArticleID() ) )
+						? 'true'
+						: 'false';
 		}
 
 		return Html::element( 'div', $attrs );
