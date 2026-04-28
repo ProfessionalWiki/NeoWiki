@@ -27,6 +27,12 @@ class ColorProperty extends PropertyDefinition {
 			}
 		}
 
+		if ( $core->default !== null && ( !is_string( $core->default ) || preg_match( self::HEX_COLOR_REGEX, $core->default ) !== 1 ) ) {
+			throw new InvalidArgumentException(
+				'ColorProperty default must be a 6-digit hex string prefixed with #'
+			);
+		}
+
 		parent::__construct( $core );
 	}
 
