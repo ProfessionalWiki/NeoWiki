@@ -20,20 +20,24 @@ class ColorProperty extends PropertyDefinition {
 		private readonly array $allowedColors,
 	) {
 		foreach ( $allowedColors as $color ) {
-			if ( !is_string( $color ) || preg_match( self::HEX_COLOR_REGEX, $color ) !== 1 ) {
+			if ( !self::isValidHex( $color ) ) {
 				throw new InvalidArgumentException(
 					'ColorProperty allowedColors must be 6-digit hex strings prefixed with #'
 				);
 			}
 		}
 
-		if ( $core->default !== null && ( !is_string( $core->default ) || preg_match( self::HEX_COLOR_REGEX, $core->default ) !== 1 ) ) {
+		if ( $core->default !== null && !self::isValidHex( $core->default ) ) {
 			throw new InvalidArgumentException(
 				'ColorProperty default must be a 6-digit hex string prefixed with #'
 			);
 		}
 
 		parent::__construct( $core );
+	}
+
+	private static function isValidHex( mixed $value ): bool {
+		return is_string( $value ) && preg_match( self::HEX_COLOR_REGEX, $value ) === 1;
 	}
 
 	public function getPropertyType(): string {
