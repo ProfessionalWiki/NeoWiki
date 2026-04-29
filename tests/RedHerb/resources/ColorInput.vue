@@ -39,7 +39,7 @@ var icons = require( './icons.json' );
 var nw = require( 'ext.neowiki' );
 
 var COLOR_TYPE_NAME = 'color';
-var HEX_PREVIEW_REGEX = require( './hexRegex.js' );
+var HEX_REGEX = require( './hexRegex.js' );
 
 module.exports = exports = {
 	components: {
@@ -65,7 +65,7 @@ module.exports = exports = {
 
 		var previewHex = vue.computed( function () {
 			var raw = stringInput.displayValues.value[ 0 ] || '';
-			return HEX_PREVIEW_REGEX.test( raw ) ? raw : '';
+			return HEX_REGEX.test( raw ) ? raw : '';
 		} );
 
 		ctx.expose( {
