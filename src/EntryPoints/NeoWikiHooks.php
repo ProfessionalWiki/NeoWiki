@@ -49,27 +49,13 @@ class NeoWikiHooks {
 		}
 	}
 
-	public static function addNeoWikiModules( OutputPage $out, Skin $skin ): void {
-		$out->addModules( 'ext.neowiki' );
-		$out->addModuleStyles( 'ext.neowiki.styles' );
-
-		$modules = [];
-		MediaWikiServices::getInstance()
-			->getHookContainer()
-			->run( 'NeoWikiGetFrontendModules', [ &$modules, $out, $skin ] );
-
-		foreach ( $modules as $module ) {
-			$out->addModules( $module );
-		}
-	}
-
 	private static function isContentPage( OutputPage $out ): bool {
 		return $out->isArticle()
 			&& MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $out->getTitle()->getNamespace() );
 	}
 
 	private static function handleContentPage( OutputPage $out, Skin $skin ): void {
-		self::addNeoWikiModules( $out, $skin );
+		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $skin );
 		$out->addHtml( self::getNeoWikiAppHtml( $out ) );
 
 		$revisionId = self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
@@ -108,7 +94,7 @@ class NeoWikiHooks {
 	}
 
 	private static function handleSchemaPage( OutputPage $out, Skin $skin ): void {
-		self::addNeoWikiModules( $out, $skin );
+		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $skin );
 
 		$out->addHTML(
 			Html::element(
@@ -355,7 +341,7 @@ class NeoWikiHooks {
 	}
 
 	private static function handleLayoutPage( OutputPage $out, Skin $skin ): void {
-		self::addNeoWikiModules( $out, $skin );
+		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $skin );
 
 		$out->addHTML(
 			Html::element(

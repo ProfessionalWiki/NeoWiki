@@ -87,6 +87,7 @@ use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\FrontendModuleLoader;
 use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
@@ -286,6 +287,10 @@ class NeoWikiExtension {
 
 	public function newPageSubjectsLookup(): PageSubjectsLookup {
 		return new PageSubjectsLookup( $this->getSubjectRepository() );
+	}
+
+	public function newFrontendModuleLoader(): FrontendModuleLoader {
+		return new FrontendModuleLoader( MediaWikiServices::getInstance()->getHookContainer() );
 	}
 
 	public function newSubjectContentRepository(): SubjectContentRepository {
