@@ -1,6 +1,8 @@
 import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
+import { Statement } from '@/domain/Statement';
+import { StatementList } from '@/domain/StatementList';
 
 export type SchemaName = string;
 
@@ -61,6 +63,20 @@ export class Schema {
 			this.description,
 			this.properties.withoutNames( [ propertyName ] ),
 		);
+	}
+
+	public statementsFrom( existing: StatementList ): StatementList {
+		return new StatementList(
+			[ ...this.properties ].map( ( definition ) =>
+				existing.has( definition.name ) ?
+					existing.get( definition.name ) :
+					new Statement( definition.name, definition.type, undefined ),
+			),
+		);
+	}
+
+	public blankStatements(): StatementList {
+		return this.statementsFrom( new StatementList( [] ) );
 	}
 
 }

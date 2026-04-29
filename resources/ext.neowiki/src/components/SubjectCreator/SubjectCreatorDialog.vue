@@ -91,10 +91,10 @@
 			</CdxField>
 
 			<SubjectEditor
-				v-if="schemaStatements"
+				v-if="statements"
 				ref="subjectEditorRef"
-				:schema-statements="schemaStatements"
-				:schema-properties="schemaProperties"
+				:statements="statements"
+				:schema="loadedSchema as Schema"
 				@change="markChanged"
 			/>
 		</template>
@@ -150,9 +150,7 @@ import type { ButtonGroupItem } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
-import { Statement } from '@/domain/Statement.ts';
 import { StatementList } from '@/domain/StatementList.ts';
-import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCreator.vue';
@@ -315,29 +313,9 @@ async function handleCreateSchema(): Promise<void> {
 	markChanged();
 }
 
-const schemaProperties = computed( (): PropertyDefinitionList =>
-	loadedSchema.value?.getPropertyDefinitions() ?? new PropertyDefinitionList( [] )
+const statements = computed( (): StatementList | null =>
+	loadedSchema.value?.blankStatements() ?? null
 );
-
-const schemaStatements = computed( (): StatementList | null => {
-	if ( !loadedSchema.value ) {
-		return null;
-	}
-
-	const statements: Statement[] = [];
-
-	for ( const propDef of schemaProperties.value ) {
-		statements.push(
-			new Statement(
-				propDef.name,
-				propDef.type,
-				undefined
-			)
-		);
-	}
-
-	return new StatementList( statements );
-} );
 
 watch( () => subjectStore.subjectCreatorOpen, async ( isOpen ) => {
 	if ( isOpen ) {

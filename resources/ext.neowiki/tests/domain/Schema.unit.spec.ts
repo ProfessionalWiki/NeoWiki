@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
-import { newTextProperty } from '@/domain/propertyTypes/Text';
+import { newTextProperty, TextType } from '@/domain/propertyTypes/Text';
 import { newSchema } from '@/TestHelpers';
-import { newNumberProperty } from '@/domain/propertyTypes/Number';
+import { newNumberProperty, NumberType } from '@/domain/propertyTypes/Number';
+import { Statement } from '@/domain/Statement';
+import { StatementList } from '@/domain/StatementList';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import { newStringValue } from '@/domain/Value';
 
 describe( 'Schema', () => {
 
@@ -106,6 +110,120 @@ describe( 'Schema', () => {
 			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
 				[ property2.name.toString() ]: property2,
 			} );
+		} );
+
+	} );
+
+	describe( 'statementsFrom', () => {
+
+		it( 'returns an empty StatementList when the Schema has no Property Definitions', () => {
+			const schema = newSchema();
+
+			const result = schema.statementsFrom( new StatementList( [] ) );
+
+			expect( [ ...result ] ).toEqual( [] );
+		} );
+
+		it( 'creates an empty Statement for each Property Definition when no existing Statements are given', () => {
+			const schema = newSchema( {
+				properties: new PropertyDefinitionList( [
+					newTextProperty( { name: 'foo' } ),
+					newNumberProperty( { name: 'bar' } ),
+				] ),
+			} );
+
+			const result = schema.statementsFrom( new StatementList( [] ) );
+
+			expect( [ ...result ] ).toEqual( [
+				new Statement( new PropertyName( 'foo' ), TextType.typeName, undefined ),
+				new Statement( new PropertyName( 'bar' ), NumberType.typeName, undefined ),
+			] );
+		} );
+
+		it( 'preserves an existing Statement whose Property is in the Schema', () => {
+			const fooStatement = new Statement(
+				new PropertyName( 'foo' ),
+				TextType.typeName,
+				newStringValue( 'hello' ),
+			);
+			const schema = newSchema( {
+				properties: new PropertyDefinitionList( [
+					newTextProperty( { name: 'before' } ),
+					newTextProperty( { name: 'foo' } ),
+					newTextProperty( { name: 'after' } ),
+				] ),
+			} );
+
+			const result = schema.statementsFrom( new StatementList( [ fooStatement ] ) );
+
+			expect( result.get( new PropertyName( 'foo' ) ) ).toBe( fooStatement );
+		} );
+
+		it( 'drops existing Statements whose Property is not in the Schema', () => {
+			const orphan = new Statement(
+				new PropertyName( 'orphan' ),
+				TextType.typeName,
+				newStringValue( 'x' ),
+			);
+			const schema = newSchema( {
+				properties: new PropertyDefinitionList( [ newTextProperty( { name: 'foo' } ) ] ),
+			} );
+
+			const result = schema.statementsFrom( new StatementList( [ orphan ] ) );
+
+			expect( result.has( new PropertyName( 'orphan' ) ) ).toBe( false );
+			expect( result.has( new PropertyName( 'foo' ) ) ).toBe( true );
+		} );
+
+		it( 'orders Statements by Schema order, regardless of input order', () => {
+			const aStatement = new Statement( new PropertyName( 'a' ), TextType.typeName, newStringValue( 'A' ) );
+			const cStatement = new Statement( new PropertyName( 'c' ), TextType.typeName, newStringValue( 'C' ) );
+			const schema = newSchema( {
+				properties: new PropertyDefinitionList( [
+					newTextProperty( { name: 'a' } ),
+					newTextProperty( { name: 'b' } ),
+					newTextProperty( { name: 'c' } ),
+				] ),
+			} );
+
+			const result = schema.statementsFrom( new StatementList( [ cStatement, aStatement ] ) );
+
+			expect( [ ...result ].map( ( s ) => s.propertyName.toString() ) ).toEqual( [ 'a', 'b', 'c' ] );
+		} );
+
+		it( 'preserves the writer\'s Property Type from the existing Statement, not the Schema\'s current type', () => {
+			const existing = new Statement(
+				new PropertyName( 'foo' ),
+				TextType.typeName,
+				newStringValue( 'hello' ),
+			);
+			const schema = newSchema( {
+				properties: new PropertyDefinitionList( [ newNumberProperty( { name: 'foo' } ) ] ),
+			} );
+
+			const result = schema.statementsFrom( new StatementList( [ existing ] ) );
+
+			expect( result.get( new PropertyName( 'foo' ) ).propertyType ).toBe( TextType.typeName );
+		} );
+
+	} );
+
+	describe( 'blankStatements', () => {
+
+		it( 'creates an empty Statement for each Property Definition', () => {
+			const schema = newSchema( {
+				properties: new PropertyDefinitionList( [
+					newTextProperty( { name: 'foo' } ),
+					newNumberProperty( { name: 'bar' } ),
+				] ),
+			} );
+
+			const result = schema.blankStatements();
+
+			expect( [ ...result ] ).toEqual( [
+				new Statement( new PropertyName( 'foo' ), TextType.typeName, undefined ),
+				new Statement( new PropertyName( 'bar' ), NumberType.typeName, undefined ),
+			] );
 		} );
 
 	} );

@@ -16,10 +16,10 @@
 		</cdx-field>
 
 		<subject-editor
-			v-if="schemaStatements && schemaProperties"
+			v-if="statements"
 			ref="editorRef"
-			:schema-statements="schemaStatements"
-			:schema-properties="schemaProperties"
+			:statements="statements"
+			:schema="loadedSchema"
 		></subject-editor>
 	</cdx-dialog>
 </template>
@@ -91,27 +91,11 @@ module.exports = exports = {
 			}
 		} );
 
-		var schemaProperties = vue.computed( function () {
-			return loadedSchema.value === null
-				? null
-				: loadedSchema.value.getPropertyDefinitions();
-		} );
-
-		var schemaStatements = vue.computed( function () {
+		var statements = vue.computed( function () {
 			if ( loadedSchema.value === null || loadedSubject.value === null ) {
 				return null;
 			}
-			var existingStatements = loadedSubject.value.getStatements();
-			var statements = [];
-			var defs = loadedSchema.value.getPropertyDefinitions();
-			for ( var def of defs ) {
-				if ( existingStatements.has( def.name ) ) {
-					statements.push( existingStatements.get( def.name ) );
-				} else {
-					statements.push( new nw.Statement( def.name, def.type, undefined ) );
-				}
-			}
-			return new nw.StatementList( statements );
+			return loadedSchema.value.statementsFrom( loadedSubject.value.getStatements() );
 		} );
 
 		function onClose() {
@@ -152,8 +136,8 @@ module.exports = exports = {
 			state: state,
 			label: label,
 			editorRef: editorRef,
-			schemaStatements: schemaStatements,
-			schemaProperties: schemaProperties,
+			statements: statements,
+			loadedSchema: loadedSchema,
 			onSave: onSave,
 			onClose: onClose,
 			onOpenChange: onOpenChange,
