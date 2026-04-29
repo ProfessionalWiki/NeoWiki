@@ -48,10 +48,10 @@
 			</template>
 
 			<SubjectEditor
-				v-if="schemaStatements"
+				v-if="statements"
 				ref="subjectEditorRef"
-				:schema-statements="schemaStatements"
-				:schema-properties="schemaProperties"
+				:statements="statements"
+				:schema="loadedSchema as Schema"
 				@change="markChanged"
 			/>
 			<div v-else>
@@ -97,8 +97,6 @@ import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
-import { Statement } from '@/domain/Statement.ts';
-import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
@@ -166,43 +164,9 @@ async function loadSchema(): Promise<void> {
 	}
 }
 
-const schemaProperties = computed( (): PropertyDefinitionList =>
-	loadedSchema.value?.getPropertyDefinitions() ?? new PropertyDefinitionList( [] )
+const statements = computed( (): StatementList | null =>
+	loadedSchema.value?.statementsFrom( props.subject.getStatements() ) ?? null
 );
-
-const schemaStatements = computed( (): StatementList | null => {
-	if ( !schemaProperties.value ) {
-		return null;
-	}
-
-	const existingStatements = props.subject.getStatements();
-	const allStatements: Statement[] = [];
-
-	for ( const propDef of schemaProperties.value ) {
-		let existingStatement: Statement | undefined;
-		for ( const stmt of existingStatements ) {
-			if ( stmt.propertyName.toString() === propDef.name.toString() ) {
-				existingStatement = stmt;
-				break;
-			}
-		}
-
-		if ( existingStatement ) {
-			allStatements.push( existingStatement );
-		} else {
-			// Create a new empty statement based on the schema definition
-			allStatements.push(
-				new Statement(
-					propDef.name,
-					propDef.type,
-					undefined
-				)
-			);
-		}
-	}
-
-	return new StatementList( allStatements );
-} );
 
 const handleSave = async ( summary: string ): Promise<void> => {
 	await nextTick();

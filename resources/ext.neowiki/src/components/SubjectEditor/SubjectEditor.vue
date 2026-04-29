@@ -1,7 +1,7 @@
 <template>
 	<div class="ext-neowiki-subject-editor">
 		<CdxField
-			v-for="( statement, index ) in props.schemaStatements"
+			v-for="( statement, index ) in props.statements"
 			:key="statement.propertyName.toString()"
 		>
 			<component
@@ -9,7 +9,7 @@
 				:ref="( el: any ) => { if ( el ) valueEditors[ index ] = el; }"
 				:label="statement.propertyName.toString()"
 				:model-value="statement.value"
-				:property="props.schemaProperties.get( statement.propertyName )"
+				:property="props.schema.getPropertyDefinition( statement.propertyName )"
 				@update:model-value="emit( 'change' )"
 			/>
 		</CdxField>
@@ -23,10 +23,10 @@ import { StatementList } from '@/domain/StatementList.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
-import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { Schema } from '@/domain/Schema.ts';
 const props = defineProps<{
-	schemaStatements: StatementList;
-	schemaProperties: PropertyDefinitionList;
+	statements: StatementList;
+	schema: Schema;
 }>();
 
 const emit = defineEmits<{
@@ -40,7 +40,7 @@ onBeforeUpdate( () => {
 const valueEditors = ref<ValueInputExposes[]>( [] );
 
 const getSubjectData = (): StatementList => {
-	const newStatements = [ ...props.schemaStatements ].map( ( statement, index ) =>
+	const newStatements = [ ...props.statements ].map( ( statement, index ) =>
 		new Statement(
 			statement.propertyName,
 			statement.propertyType,
