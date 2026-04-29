@@ -95,12 +95,6 @@ module.exports = exports = {
 		var entries = vue.ref( wrapEntries( props.property.allowedColors ) );
 		var paletteList = vue.ref( null );
 
-		// Dirty tracking lets us show users that the palette has local edits
-		// that differ from what was loaded. The parent still receives every
-		// change via update:property, but a visible marker reassures the user
-		// their edits were registered before a save/cancel at the dialog level.
-		var changeDetection = nw.useChangeDetection();
-
 		vue.watch(
 			function () { return props.property.allowedColors; },
 			function ( newColors ) {
@@ -108,7 +102,6 @@ module.exports = exports = {
 					return;
 				}
 				entries.value = wrapEntries( newColors );
-				changeDetection.resetChanged();
 			}
 		);
 
@@ -116,7 +109,6 @@ module.exports = exports = {
 			ctx.emit( 'update:property', {
 				allowedColors: colorsOf( entries.value )
 			} );
-			changeDetection.markChanged();
 		}
 
 		function updateEntry( index, nextValue ) {
@@ -147,15 +139,10 @@ module.exports = exports = {
 			}
 		} );
 
-		var paletteLabel = vue.computed( function () {
-			var base = mw.message( 'redherb-color-allowed-palette-label' ).text();
-			return changeDetection.hasChanged.value ? base + ' *' : base;
-		} );
-
 		return {
 			entries: entries,
 			paletteList: paletteList,
-			paletteLabel: paletteLabel,
+			paletteLabel: mw.message( 'redherb-color-allowed-palette-label' ).text(),
 			addLabel: mw.message( 'redherb-color-add-color' ).text(),
 			removeLabel: mw.message( 'redherb-color-remove-color' ).text(),
 			dragTooltip: mw.message( 'redherb-color-reorder-color' ).text(),
