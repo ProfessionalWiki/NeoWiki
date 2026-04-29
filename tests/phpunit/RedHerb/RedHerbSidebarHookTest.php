@@ -5,11 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\RedHerb;
 
 use Closure;
+use MediaWiki\Language\RawMessage;
 use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\RedHerb\RedHerbSidebarHook;
-use RawMessage;
 use Skin;
 
 /**
