@@ -5,6 +5,7 @@ parameters:
 	level: 9
 	paths:
 		- src
+		- tests/RedHerb/src
 	scanDirectories:
 		- ../../includes
 		- ../../tests/phpunit
