@@ -23,9 +23,7 @@ class FrontendModuleLoader {
 		$modules = [];
 		$this->hookContainer->run( 'NeoWikiGetFrontendModules', [ &$modules, $out, $skin ] );
 
-		foreach ( $modules as $module ) {
-			$out->addModules( $module );
-		}
+		$out->addModules( $modules );
 	}
 
 }
