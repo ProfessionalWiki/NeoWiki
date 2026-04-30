@@ -7,6 +7,7 @@ namespace ProfessionalWiki\RedHerb;
 use Closure;
 use MediaWiki\Hook\SidebarBeforeOutputHook;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Skin;
 
@@ -16,7 +17,8 @@ class RedHerbSidebarHook implements SidebarBeforeOutputHook {
 
 	public function __construct( ?Closure $pageHasMainSubject = null ) {
 		$this->pageHasMainSubject = $pageHasMainSubject ?? static fn ( Title $title ): bool =>
-			NeoWikiExtension::getInstance()->newViewHtmlBuilder()->pageHasMainSubject( $title );
+			NeoWikiExtension::getInstance()->newPageSubjectsLookup()
+				->pageHasMainSubject( new PageId( $title->getArticleID() ) );
 	}
 
 	public function onSidebarBeforeOutput( $skin, &$sidebar ): void {
