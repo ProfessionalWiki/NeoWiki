@@ -12,15 +12,7 @@
 			return;
 		}
 
-		var ext = nw.NeoWikiExtension.getInstance();
-		mw.hook( 'neowiki.registration' ).fire(
-			new nw.FrontendRegistrar(
-				ext.getTypeSpecificComponentRegistry(),
-				ext.getPropertyTypeRegistry()
-			)
-		);
-
-		var pinia = ext.getPinia();
+		var pinia = nw.NeoWikiExtension.getInstance().getPinia();
 		var app = Vue.createMwApp( SubjectFinderPanel )
 			.directive( 'tooltip', codex.CdxTooltip );
 		app.use( pinia );

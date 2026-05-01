@@ -34,6 +34,13 @@ export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: Abort
 	}, { signal } );
 }
 
+function fireRegistrationHook(): void {
+	const ext = NeoWikiExtension.getInstance();
+	mw.hook( 'neowiki.registration' ).fire(
+		new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
+	);
+}
+
 function initializeNeoWikiApp(): void {
 	queueMicrotask( () => {
 		const neowikiApp = document.querySelector( '#mw-content-text > #ext-neowiki-app' );
@@ -46,9 +53,6 @@ function initializeNeoWikiApp(): void {
 			const pageHasMainSubject = ( neowikiApp as HTMLElement ).dataset.mwNeowikiPageHasMainSubject === 'true';
 
 			const ext = NeoWikiExtension.getInstance();
-			mw.hook( 'neowiki.registration' ).fire(
-				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
-			);
 
 			const app = createMwApp( NeoWikiApp, {
 				showSubjectCreator,
@@ -69,10 +73,6 @@ function initializeSchemaView(): void {
 
 		if ( viewSchema !== null ) {
 			const ext = NeoWikiExtension.getInstance();
-
-			mw.hook( 'neowiki.registration' ).fire(
-				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
-			);
 
 			const revisionId = mw.config.get( 'wgRevisionId' );
 			const schemaName = mw.config.get( 'wgTitle' ) as SchemaName;
@@ -107,9 +107,6 @@ function initializeSchemasPage(): void {
 
 		if ( schemasPage !== null ) {
 			const ext = NeoWikiExtension.getInstance();
-			mw.hook( 'neowiki.registration' ).fire(
-				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
-			);
 
 			const app = createMwApp( SchemasPage );
 			app.use( ext.getPinia() );
@@ -125,10 +122,6 @@ function initializeLayoutView(): void {
 
 		if ( viewLayout !== null ) {
 			const ext = NeoWikiExtension.getInstance();
-
-			mw.hook( 'neowiki.registration' ).fire(
-				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
-			);
 
 			const revisionId = mw.config.get( 'wgRevisionId' );
 			const layoutName = mw.config.get( 'wgTitle' ) as LayoutName;
@@ -159,9 +152,6 @@ function initializeLayoutsPage(): void {
 
 		if ( layoutsPage !== null ) {
 			const ext = NeoWikiExtension.getInstance();
-			mw.hook( 'neowiki.registration' ).fire(
-				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
-			);
 
 			const app = createMwApp( LayoutsPage );
 			app.use( ext.getPinia() );
@@ -178,10 +168,6 @@ function initializeSubjectsManagerPage(): void {
 		if ( subjectsManager !== null ) {
 			const ext = NeoWikiExtension.getInstance();
 
-			mw.hook( 'neowiki.registration' ).fire(
-				new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
-			);
-
 			const app = createMwApp( SubjectsManagerPage ).directive( 'tooltip', CdxTooltip );
 			const pinia = ext.getPinia();
 			app.use( pinia );
@@ -196,6 +182,7 @@ const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
 if ( !isTestEnvironment ) {
+	fireRegistrationHook();
 	initializeNeoWikiApp();
 	initializeSchemaView();
 	initializeLayoutView();

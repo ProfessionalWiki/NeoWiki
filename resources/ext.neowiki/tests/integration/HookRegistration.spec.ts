@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { markRaw } from 'vue';
 import { FrontendRegistrar } from '@/presentation/FrontendRegistrar';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry';
@@ -77,5 +77,32 @@ describe( 'neowiki.registration hook end-to-end', () => {
 		} );
 
 		expect( typeRegistry.getTypeNames() ).toContain( 'late' );
+	} );
+} );
+
+describe( 'ext.neowiki module load', () => {
+	beforeEach( () => setupMwHook() );
+
+	afterEach( () => {
+		( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode = true;
+	} );
+
+	it( 'fires neowiki.registration with a registrar wired to the live extension registries', async () => {
+		( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode = false;
+
+		vi.resetModules();
+		await import( '@/neowiki' );
+		const { NeoWikiExtension } = await import( '@/NeoWikiExtension' );
+
+		let receivedRegistrar: FrontendRegistrar | null = null;
+		( globalThis as any ).mw.hook( 'neowiki.registration' ).add( ( r: FrontendRegistrar ) => {
+			receivedRegistrar = r;
+		} );
+
+		receivedRegistrar!.registerPropertyType( fakeRegistration( 'boot-fake' ) );
+
+		const ext = NeoWikiExtension.getInstance();
+		expect( ext.getPropertyTypeRegistry().getTypeNames() ).toContain( 'boot-fake' );
+		expect( ext.getTypeSpecificComponentRegistry().getPropertyTypes() ).toContain( 'boot-fake' );
 	} );
 } );
