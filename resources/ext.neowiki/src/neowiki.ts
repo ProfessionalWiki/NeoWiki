@@ -34,7 +34,7 @@ export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: Abort
 	}, { signal } );
 }
 
-function registerExtensions(): void {
+function fireRegistrationHook(): void {
 	const ext = NeoWikiExtension.getInstance();
 	mw.hook( 'neowiki.registration' ).fire(
 		new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
@@ -182,7 +182,7 @@ const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
 if ( !isTestEnvironment ) {
-	registerExtensions();
+	fireRegistrationHook();
 	initializeNeoWikiApp();
 	initializeSchemaView();
 	initializeLayoutView();
