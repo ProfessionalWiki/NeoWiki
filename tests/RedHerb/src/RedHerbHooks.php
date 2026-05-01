@@ -11,8 +11,6 @@ class RedHerbHooks {
 	public static function onNeoWikiRegistration( NeoWikiRegistrar $registrar ): void {
 		$registrar->addPropertyType( new ColorType() );
 		$registrar->addNeo4jValueBuilder( ColorType::NAME, static fn( $value ) => $value->toScalars() );
-		$registrar->addPropertyType( new DateTimeType() );
-		$registrar->addNeo4jValueBuilder( DateTimeType::NAME, static fn( $value ) => $value->toScalars() );
 		$registrar->addPagePropertyProvider( new StaticPagePropertyProvider() );
 	}
 

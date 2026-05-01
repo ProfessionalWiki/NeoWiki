@@ -2,9 +2,10 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\RedHerb;
+namespace ProfessionalWiki\NeoWiki\Domain\PropertyType\Types;
 
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
