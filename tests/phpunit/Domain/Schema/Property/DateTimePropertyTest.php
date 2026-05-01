@@ -2,15 +2,15 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\RedHerb;
+namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
-use ProfessionalWiki\RedHerb\DateTimeProperty;
-use ProfessionalWiki\RedHerb\DateTimeType;
 
 /**
- * @covers \ProfessionalWiki\RedHerb\DateTimeProperty
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty
  */
 class DateTimePropertyTest extends TestCase {
 
