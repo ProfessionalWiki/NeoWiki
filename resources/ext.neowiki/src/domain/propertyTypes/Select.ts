@@ -1,7 +1,8 @@
+import type { Constraint } from '@/domain/Constraint';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
-import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
+import { BasePropertyType } from '@/domain/PropertyType';
 
 export interface SelectOption {
 
@@ -43,32 +44,19 @@ export class SelectType extends BasePropertyType<SelectProperty, StringValue> {
 		} as SelectProperty;
 	}
 
-	public validate( value: StringValue | undefined, property: SelectProperty ): ValueValidationError[] {
-		const errors: ValueValidationError[] = [];
-		value = value === undefined ? newStringValue() : value;
-
-		if ( property.required && value.parts.length === 0 ) {
-			errors.push( { code: 'required' } );
-			return errors;
+	public getConstraints( property: SelectProperty ): Constraint[] {
+		const constraints: Constraint[] = [];
+		if ( property.required ) {
+			constraints.push( { kind: 'required' } );
 		}
-
-		const validIds = new Set( property.options.map( ( option ) => option.id ) );
-
-		for ( const part of value.parts ) {
-			if ( !validIds.has( part ) ) {
-				errors.push( {
-					code: 'invalid-option',
-					args: [ part ],
-					source: part,
-				} );
-			}
+		constraints.push( {
+			kind: 'enum',
+			allowedValues: property.options.map( ( option ) => option.id ),
+		} );
+		if ( !property.multiple ) {
+			constraints.push( { kind: 'cardinality', maxItems: 1 } );
 		}
-
-		if ( !property.multiple && value.parts.length > 1 ) {
-			errors.push( { code: 'single-value-only' } );
-		}
-
-		return errors;
+		return constraints;
 	}
 
 }
