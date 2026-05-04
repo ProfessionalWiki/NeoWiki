@@ -44,6 +44,11 @@ export interface ValueValidationError {
 	 */
 	source?: unknown;
 
+	/**
+	 * Optional severity. Absent means error (default).
+	 */
+	severity?: 'error' | 'warning';
+
 }
 
 export type PropertyType = BasePropertyType<PropertyDefinition, Value>;
