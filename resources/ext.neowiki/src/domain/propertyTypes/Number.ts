@@ -1,3 +1,4 @@
+import type { Constraint } from '@/domain/Constraint';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newNumberValue, type NumberValue, ValueType } from '@/domain/Value';
@@ -34,29 +35,21 @@ export class NumberType extends BasePropertyType<NumberProperty, NumberValue> {
 		} as NumberProperty;
 	}
 
-	public validate( value: NumberValue | undefined, property: NumberProperty ): ValueValidationError[] {
+	public getConstraints( property: NumberProperty ): Constraint[] {
+		return property.required ? [ { kind: 'required' } ] : [];
+	}
+
+	public validateValue( value: NumberValue | undefined, property: NumberProperty ): ValueValidationError[] {
+		if ( value === undefined ) {
+			return [];
+		}
 		const errors: ValueValidationError[] = [];
-
-		if ( property.required && value === undefined ) {
-			errors.push( { code: 'required' } );
-			return errors;
+		if ( property.minimum !== undefined && value.number < property.minimum ) {
+			errors.push( { code: 'min-value', args: [ property.minimum ] } );
 		}
-
-		if ( value !== undefined ) {
-			if ( property.minimum !== undefined && value.number < property.minimum ) {
-				errors.push( {
-					code: 'min-value',
-					args: [ property.minimum ],
-				} );
-			}
-			if ( property.maximum !== undefined && value.number > property.maximum ) {
-				errors.push( {
-					code: 'max-value',
-					args: [ property.maximum ],
-				} );
-			}
+		if ( property.maximum !== undefined && value.number > property.maximum ) {
+			errors.push( { code: 'max-value', args: [ property.maximum ] } );
 		}
-
 		return errors;
 	}
 
