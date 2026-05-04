@@ -2,6 +2,7 @@ import { PropertyDefinition } from '@/domain/PropertyDefinition';
 import type { Value } from '@/domain/Value';
 import { ValueType } from '@/domain/Value';
 import type { Constraint } from '@/domain/Constraint';
+import type { ConstraintAttributeKind } from '@/domain/ConstraintAttributeKind';
 import { interpretConstraints } from '@/domain/ConstraintInterpreter';
 
 export abstract class BasePropertyType<P extends PropertyDefinition, V extends Value> {
@@ -34,6 +35,10 @@ export abstract class BasePropertyType<P extends PropertyDefinition, V extends V
 	public abstract getConstraints( property: P ): Constraint[];
 
 	public validateValue( _value: V | undefined, _property: P ): ValueValidationError[] {
+		return [];
+	}
+
+	public getConstraintAttributes(): ConstraintAttributeKind[] {
 		return [];
 	}
 

@@ -3,6 +3,7 @@ import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
 import { BasePropertyType } from '@/domain/PropertyType';
+import type { ConstraintAttributeKind } from '@/domain/ConstraintAttributeKind';
 
 export interface SelectOption {
 
@@ -57,6 +58,10 @@ export class SelectType extends BasePropertyType<SelectProperty, StringValue> {
 			constraints.push( { kind: 'cardinality', maxItems: 1 } );
 		}
 		return constraints;
+	}
+
+	public getConstraintAttributes(): ConstraintAttributeKind[] {
+		return [ 'multiple-toggle' ];
 	}
 
 }

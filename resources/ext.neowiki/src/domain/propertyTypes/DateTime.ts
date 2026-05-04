@@ -3,6 +3,7 @@ import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
 import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
 import type { Constraint } from '@/domain/Constraint';
+import type { ConstraintAttributeKind } from '@/domain/ConstraintAttributeKind';
 
 export interface DateTimeProperty extends PropertyDefinition {
 
@@ -115,6 +116,10 @@ export class DateTimeType extends BasePropertyType<DateTimeProperty, StringValue
 
 	public getConstraints( property: DateTimeProperty ): Constraint[] {
 		return property.required ? [ { kind: 'required' } ] : [];
+	}
+
+	public getConstraintAttributes(): ConstraintAttributeKind[] {
+		return [ 'datetime-range' ];
 	}
 
 	public validateValue(
