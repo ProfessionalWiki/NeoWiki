@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
 import { PropertyName } from '@/domain/PropertyDefinition';
-import { newRelation, RelationValue } from '@/domain/Value';
+import { newRelation, RelationValue, Relation } from '@/domain/Value';
 
 describe( 'RelationType', () => {
 
@@ -83,4 +83,50 @@ describe( 'newRelationProperty', () => {
 		expect( property.targetSchema ).toBe( 'MyTargetSchema' );
 		expect( property.multiple ).toBe( false );
 	} );
+} );
+
+describe( 'RelationType.validate', () => {
+
+	const type = new RelationType();
+
+	it( 'returns no errors when not required and value is undefined', () => {
+		const property = newRelationProperty();
+		expect( type.validate( undefined, property ) ).toEqual( [] );
+	} );
+
+	it( 'returns required error when required and value is undefined', () => {
+		const property = newRelationProperty( { required: true } );
+		expect( type.validate( undefined, property ) ).toEqual( [ { code: 'required' } ] );
+	} );
+
+	it( 'returns required error when required and value has empty relations', () => {
+		const property = newRelationProperty( { required: true } );
+		expect( type.validate( new RelationValue( [] ), property ) ).toEqual( [ { code: 'required' } ] );
+	} );
+
+	it( 'returns no errors when relations all have valid SubjectIds', () => {
+		const property = newRelationProperty();
+		const value = new RelationValue( [
+			newRelation( undefined, 's11111111111111' ),
+			newRelation( undefined, 's22222222222222' ),
+		] );
+		expect( type.validate( value, property ) ).toEqual( [] );
+	} );
+
+	it( 'returns one invalid-subject-id error per malformed target', () => {
+		const property = newRelationProperty();
+		// Construct Relation directly with mock SubjectId objects to bypass validation
+		// in the SubjectId constructor
+		const invalidSubjectIdMock1 = { text: 'not-a-valid-id' };
+		const invalidSubjectIdMock2 = { text: 'also-bad' };
+		const value = new RelationValue( [
+			new Relation( undefined, invalidSubjectIdMock1 as any ),
+			new Relation( undefined, invalidSubjectIdMock2 as any ),
+		] );
+		expect( type.validate( value, property ) ).toEqual( [
+			{ code: 'invalid-subject-id', args: [ 'not-a-valid-id' ] },
+			{ code: 'invalid-subject-id', args: [ 'also-bad' ] },
+		] );
+	} );
+
 } );
