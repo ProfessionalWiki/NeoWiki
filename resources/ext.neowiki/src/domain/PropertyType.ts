@@ -1,6 +1,8 @@
 import { PropertyDefinition } from '@/domain/PropertyDefinition';
 import type { Value } from '@/domain/Value';
 import { ValueType } from '@/domain/Value';
+import type { Constraint } from '@/domain/Constraint';
+import { interpretConstraints } from '@/domain/ConstraintInterpreter';
 
 export abstract class BasePropertyType<P extends PropertyDefinition, V extends Value> {
 
@@ -22,8 +24,20 @@ export abstract class BasePropertyType<P extends PropertyDefinition, V extends V
 
 	public abstract getExampleValue( property: P ): V;
 
-	// TODO: do we need to allow undefined for value?
-	public abstract validate( value: V | undefined, property: P ): ValueValidationError[];
+	public validate( value: V | undefined, property: P ): ValueValidationError[] {
+		return [
+			...this.validateValue( value, property ),
+			...interpretConstraints( this.getConstraints( property ), value ),
+		];
+	}
+
+	public getConstraints( _property: P ): Constraint[] {
+		return [];
+	}
+
+	public validateValue( _value: V | undefined, _property: P ): ValueValidationError[] {
+		return [];
+	}
 
 }
 
