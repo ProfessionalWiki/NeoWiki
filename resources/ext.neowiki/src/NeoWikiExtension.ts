@@ -46,7 +46,7 @@ import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import { Neo } from '@/Neo.ts';
 // import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
 import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconClock } from '@wikimedia/codex-icons';
-import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
+import ConstraintAttributesEditor from '@/components/SchemaEditor/Property/ConstraintAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import UrlAttributesEditor from '@/components/SchemaEditor/Property/UrlAttributesEditor.vue';
@@ -81,7 +81,7 @@ export class NeoWikiExtension {
 		registry.registerType( TextType.typeName, {
 			valueDisplayComponent: TextDisplay,
 			valueEditor: TextInput,
-			attributesEditor: TextAttributesEditor,
+			attributesEditor: ConstraintAttributesEditor,
 			label: 'neowiki-property-type-text',
 			icon: cdxIconSearchCaseSensitive,
 		} );
