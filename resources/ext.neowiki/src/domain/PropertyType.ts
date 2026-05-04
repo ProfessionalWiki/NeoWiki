@@ -31,9 +31,7 @@ export abstract class BasePropertyType<P extends PropertyDefinition, V extends V
 		];
 	}
 
-	public getConstraints( _property: P ): Constraint[] {
-		return [];
-	}
+	public abstract getConstraints( property: P ): Constraint[];
 
 	public validateValue( _value: V | undefined, _property: P ): ValueValidationError[] {
 		return [];
