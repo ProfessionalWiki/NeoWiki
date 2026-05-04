@@ -50,7 +50,6 @@ import ConstraintAttributesEditor from '@/components/SchemaEditor/Property/Const
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
-import DateTimeAttributesEditor from '@/components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
 import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader.ts';
@@ -120,7 +119,7 @@ export class NeoWikiExtension {
 		registry.registerType( DateTimeType.typeName, {
 			valueDisplayComponent: DateTimeDisplay,
 			valueEditor: DateTimeInput,
-			attributesEditor: DateTimeAttributesEditor,
+			attributesEditor: ConstraintAttributesEditor,
 			label: 'neowiki-property-type-datetime',
 			icon: cdxIconClock,
 		} );
