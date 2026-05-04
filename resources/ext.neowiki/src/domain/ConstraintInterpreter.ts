@@ -1,5 +1,5 @@
 import type { Constraint } from '@/domain/Constraint';
-import { isValueEmpty, type StringValue, type Value, ValueType } from '@/domain/Value';
+import { isValueEmpty, type Value, ValueType } from '@/domain/Value';
 import type { ValueValidationError } from '@/domain/PropertyType';
 
 export function interpretConstraints(
@@ -23,7 +23,7 @@ function evaluate( constraint: Constraint, value: Value | undefined ): ValueVali
 				return [];
 			}
 			const out: ValueValidationError[] = [];
-			for ( const part of ( value as StringValue ).parts ) {
+			for ( const part of value.parts ) {
 				if ( part.trim().length < constraint.value ) {
 					out.push( emit( 'min-length', constraint, { args: [ constraint.value ], source: part } ) );
 				}
@@ -36,7 +36,7 @@ function evaluate( constraint: Constraint, value: Value | undefined ): ValueVali
 				return [];
 			}
 			const out: ValueValidationError[] = [];
-			for ( const part of ( value as StringValue ).parts ) {
+			for ( const part of value.parts ) {
 				if ( part.trim().length > constraint.value ) {
 					out.push( emit( 'max-length', constraint, { args: [ constraint.value ], source: part } ) );
 				}
@@ -48,7 +48,7 @@ function evaluate( constraint: Constraint, value: Value | undefined ): ValueVali
 			if ( value?.type !== ValueType.String ) {
 				return [];
 			}
-			const parts = ( value as StringValue ).parts;
+			const parts = value.parts;
 			return new Set( parts ).size !== parts.length ? [ emit( 'unique', constraint ) ] : [];
 		}
 
@@ -56,7 +56,10 @@ function evaluate( constraint: Constraint, value: Value | undefined ): ValueVali
 			if ( value?.type !== ValueType.String ) {
 				return [];
 			}
-			const parts = ( value as StringValue ).parts;
+			const parts = value.parts;
+			// The 'single-value-only' code assumes maxItems === 1 (the only value used today).
+			// When a maxItems > 1 use case lands, branch the error code (e.g. 'max-items' with
+			// args: [ maxItems ]) and add a matching i18n message.
 			return parts.length > constraint.maxItems ? [ emit( 'single-value-only', constraint ) ] : [];
 		}
 
@@ -66,7 +69,7 @@ function evaluate( constraint: Constraint, value: Value | undefined ): ValueVali
 			}
 			const allowed = new Set( constraint.allowedValues );
 			const out: ValueValidationError[] = [];
-			for ( const part of ( value as StringValue ).parts ) {
+			for ( const part of value.parts ) {
 				if ( !allowed.has( part ) ) {
 					out.push( emit( 'invalid-option', constraint, { args: [ part ], source: part } ) );
 				}
