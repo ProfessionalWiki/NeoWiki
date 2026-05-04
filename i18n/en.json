@@ -50,6 +50,7 @@
 
 	"neowiki-infobox-type": "Type",
 	"neowiki-infobox-edit-link": "Edit",
+	"neowiki-field-label-required": "This subject needs a label.",
 	"neowiki-field-required": "Please provide a value.",
 	"neowiki-field-unique": "All values must be unique.",
 	"neowiki-field-min-length": "Minimum length is $1 characters.",
