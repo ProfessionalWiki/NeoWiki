@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	isValueEmpty,
 	newBooleanValue,
 	newNumberValue,
 	newRelation,
@@ -150,6 +151,46 @@ describe( 'relationValuesHaveSameTargets', () => {
 		] );
 
 		expect( relationValuesHaveSameTargets( a, b ) ).toBe( true );
+	} );
+
+} );
+
+describe( 'isValueEmpty', () => {
+
+	it( 'returns true for undefined', () => {
+		expect( isValueEmpty( undefined ) ).toBe( true );
+	} );
+
+	it( 'returns true for StringValue with no parts', () => {
+		expect( isValueEmpty( newStringValue() ) ).toBe( true );
+	} );
+
+	it( 'returns false for StringValue with one part', () => {
+		expect( isValueEmpty( newStringValue( 'hello' ) ) ).toBe( false );
+	} );
+
+	it( 'returns false for NumberValue with zero', () => {
+		expect( isValueEmpty( newNumberValue( 0 ) ) ).toBe( false );
+	} );
+
+	it( 'returns false for NumberValue with non-zero', () => {
+		expect( isValueEmpty( newNumberValue( 42 ) ) ).toBe( false );
+	} );
+
+	it( 'returns false for BooleanValue (true)', () => {
+		expect( isValueEmpty( newBooleanValue( true ) ) ).toBe( false );
+	} );
+
+	it( 'returns false for BooleanValue (false)', () => {
+		expect( isValueEmpty( newBooleanValue( false ) ) ).toBe( false );
+	} );
+
+	it( 'returns true for RelationValue with no relations', () => {
+		expect( isValueEmpty( new RelationValue( [] ) ) ).toBe( true );
+	} );
+
+	it( 'returns false for RelationValue with one relation', () => {
+		expect( isValueEmpty( new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] ) ) ).toBe( false );
 	} );
 
 } );

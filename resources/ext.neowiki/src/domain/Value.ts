@@ -86,6 +86,20 @@ export function newRelation( id: string | undefined, target: SubjectId | string 
 	);
 }
 
+export function isValueEmpty( value: Value | undefined ): boolean {
+	if ( value === undefined ) return true;
+	switch ( value.type ) {
+		case ValueType.String:
+			return value.parts.length === 0;
+		case ValueType.Number:
+			return false;
+		case ValueType.Boolean:
+			return false;
+		case ValueType.Relation:
+			return value.relations.length === 0;
+	}
+}
+
 export function relationValuesHaveSameTargets(
 	a: RelationValue | undefined,
 	b: RelationValue | undefined,
