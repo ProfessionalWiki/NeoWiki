@@ -1,5 +1,6 @@
 import { BasePropertyType } from '@/domain/PropertyType';
 import type { ValueValidationError } from '@/domain/PropertyType';
+import type { Constraint } from '@/domain/Constraint';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import type { Value, ValueType } from '@/domain/Value';
 import type { PropertyTypeRegistration } from '@/domain/PropertyTypeRegistration';
@@ -38,6 +39,10 @@ export class PropertyTypeAdapter extends BasePropertyType<PropertyDefinition, Va
 
 	public getExampleValue( property: PropertyDefinition ): Value {
 		return this.registration.getExampleValue( property );
+	}
+
+	public getConstraints(): Constraint[] {
+		return [];
 	}
 
 	public validate( value: Value | undefined, property: PropertyDefinition ): ValueValidationError[] {

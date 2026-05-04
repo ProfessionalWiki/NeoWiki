@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { interpretConstraints } from '@/domain/ConstraintInterpreter';
-import { newNumberValue, newRelation, newStringValue, RelationValue } from '@/domain/Value';
+import { newNumberValue, newRelation, newStringValue, RelationValue, ValueType, type StringValue } from '@/domain/Value';
 
 describe( 'interpretConstraints', () => {
 
@@ -52,7 +52,7 @@ describe( 'interpretConstraints', () => {
 		it( 'measures trimmed length', () => {
 			// Note: newStringValue trims at construction; this confirms the interpreter ALSO trims.
 			// Construct a StringValue with an untrimmed part by hand to bypass newStringValue's trim.
-			const value = { type: 'string' as const, parts: [ '  ab  ' ] };
+			const value: StringValue = { type: ValueType.String, parts: [ '  ab  ' ] };
 			expect( interpretConstraints(
 				[ { kind: 'minLength', value: 3 } ],
 				value,
