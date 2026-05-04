@@ -87,7 +87,9 @@ export function newRelation( id: string | undefined, target: SubjectId | string 
 }
 
 export function isValueEmpty( value: Value | undefined ): boolean {
-	if ( value === undefined ) return true;
+	if ( value === undefined ) {
+		return true;
+	}
 	switch ( value.type ) {
 		case ValueType.String:
 			return value.parts.length === 0;

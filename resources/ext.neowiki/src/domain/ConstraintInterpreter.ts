@@ -19,7 +19,9 @@ function evaluate( constraint: Constraint, value: Value | undefined ): ValueVali
 			return isValueEmpty( value ) ? [ emit( 'required', constraint ) ] : [];
 
 		case 'minLength': {
-			if ( value?.type !== ValueType.String ) return [];
+			if ( value?.type !== ValueType.String ) {
+				return [];
+			}
 			const out: ValueValidationError[] = [];
 			for ( const part of ( value as StringValue ).parts ) {
 				if ( part.trim().length < constraint.value ) {
@@ -30,7 +32,9 @@ function evaluate( constraint: Constraint, value: Value | undefined ): ValueVali
 		}
 
 		case 'maxLength': {
-			if ( value?.type !== ValueType.String ) return [];
+			if ( value?.type !== ValueType.String ) {
+				return [];
+			}
 			const out: ValueValidationError[] = [];
 			for ( const part of ( value as StringValue ).parts ) {
 				if ( part.trim().length > constraint.value ) {
@@ -41,19 +45,25 @@ function evaluate( constraint: Constraint, value: Value | undefined ): ValueVali
 		}
 
 		case 'uniqueItems': {
-			if ( value?.type !== ValueType.String ) return [];
+			if ( value?.type !== ValueType.String ) {
+				return [];
+			}
 			const parts = ( value as StringValue ).parts;
 			return new Set( parts ).size !== parts.length ? [ emit( 'unique', constraint ) ] : [];
 		}
 
 		case 'cardinality': {
-			if ( value?.type !== ValueType.String ) return [];
+			if ( value?.type !== ValueType.String ) {
+				return [];
+			}
 			const parts = ( value as StringValue ).parts;
 			return parts.length > constraint.maxItems ? [ emit( 'single-value-only', constraint ) ] : [];
 		}
 
 		case 'enum': {
-			if ( value?.type !== ValueType.String ) return [];
+			if ( value?.type !== ValueType.String ) {
+				return [];
+			}
 			const allowed = new Set( constraint.allowedValues );
 			const out: ValueValidationError[] = [];
 			for ( const part of ( value as StringValue ).parts ) {
