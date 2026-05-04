@@ -3,6 +3,7 @@ import { PropertyName } from '@/domain/PropertyDefinition';
 import { newRelation, RelationValue, ValueType } from '@/domain/Value';
 import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
 import { SubjectId } from '@/domain/SubjectId';
+import type { Constraint } from '@/domain/Constraint';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -41,25 +42,20 @@ export class RelationType extends BasePropertyType<RelationProperty, RelationVal
 		} as RelationProperty;
 	}
 
-	public validate( value: RelationValue | undefined, property: RelationProperty ): ValueValidationError[] {
+	public getConstraints( property: RelationProperty ): Constraint[] {
+		return property.required ? [ { kind: 'required' } ] : [];
+	}
+
+	public validateValue( value: RelationValue | undefined ): ValueValidationError[] {
+		if ( value === undefined || value.relations.length === 0 ) {
+			return [];
+		}
 		const errors: ValueValidationError[] = [];
-		const valueIsEmpty = !value || value.relations.length === 0;
-
-		if ( property.required && valueIsEmpty ) {
-			errors.push( { code: 'required' } );
-			return errors;
-		}
-
-		if ( valueIsEmpty ) {
-			return errors;
-		}
-
 		for ( const relation of value.relations ) {
 			if ( !SubjectId.isValid( relation.target.text ) ) {
 				errors.push( { code: 'invalid-subject-id', args: [ relation.target.text ] } );
 			}
 		}
-
 		return errors;
 	}
 
