@@ -46,12 +46,10 @@ import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import { Neo } from '@/Neo.ts';
 // import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
 import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconClock } from '@wikimedia/codex-icons';
-import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
+import ConstraintAttributesEditor from '@/components/SchemaEditor/Property/ConstraintAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
-import UrlAttributesEditor from '@/components/SchemaEditor/Property/UrlAttributesEditor.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
-import DateTimeAttributesEditor from '@/components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
 import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader.ts';
@@ -81,7 +79,7 @@ export class NeoWikiExtension {
 		registry.registerType( TextType.typeName, {
 			valueDisplayComponent: TextDisplay,
 			valueEditor: TextInput,
-			attributesEditor: TextAttributesEditor,
+			attributesEditor: ConstraintAttributesEditor,
 			label: 'neowiki-property-type-text',
 			icon: cdxIconSearchCaseSensitive,
 		} );
@@ -89,7 +87,7 @@ export class NeoWikiExtension {
 		registry.registerType( UrlType.typeName, {
 			valueDisplayComponent: UrlDisplay,
 			valueEditor: UrlInput,
-			attributesEditor: UrlAttributesEditor,
+			attributesEditor: ConstraintAttributesEditor,
 			label: 'neowiki-property-type-url',
 			icon: cdxIconLink,
 		} );
@@ -121,7 +119,7 @@ export class NeoWikiExtension {
 		registry.registerType( DateTimeType.typeName, {
 			valueDisplayComponent: DateTimeDisplay,
 			valueEditor: DateTimeInput,
-			attributesEditor: DateTimeAttributesEditor,
+			attributesEditor: ConstraintAttributesEditor,
 			label: 'neowiki-property-type-datetime',
 			icon: cdxIconClock,
 		} );

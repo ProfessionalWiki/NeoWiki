@@ -3,6 +3,7 @@ import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
 import { BasePropertyType } from '@/domain/PropertyType';
 import type { Constraint } from '@/domain/Constraint';
+import type { ConstraintAttributeKind } from '@/domain/ConstraintAttributeKind';
 
 export interface TextProperty extends MultiStringProperty {
 
@@ -51,6 +52,10 @@ export class TextType extends BasePropertyType<TextProperty, StringValue> {
 		}
 		// TODO: check property.multiple
 		return constraints;
+	}
+
+	public getConstraintAttributes(): ConstraintAttributeKind[] {
+		return [ 'multiple-toggle', 'unique-items-toggle', 'integer-range' ];
 	}
 
 }

@@ -3,6 +3,7 @@ import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newNumberValue, type NumberValue, ValueType } from '@/domain/Value';
 import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
+import type { ConstraintAttributeKind } from '@/domain/ConstraintAttributeKind';
 
 export interface NumberProperty extends PropertyDefinition {
 
@@ -37,6 +38,10 @@ export class NumberType extends BasePropertyType<NumberProperty, NumberValue> {
 
 	public getConstraints( property: NumberProperty ): Constraint[] {
 		return property.required ? [ { kind: 'required' } ] : [];
+	}
+
+	public getConstraintAttributes(): ConstraintAttributeKind[] {
+		return [ 'numeric-range' ];
 	}
 
 	public validateValue( value: NumberValue | undefined, property: NumberProperty ): ValueValidationError[] {

@@ -1,16 +1,9 @@
 <template>
-	<!-- cdx-field class is used for spacing -->
 	<div class="select-attributes cdx-field">
-		<CdxField :hide-label="true">
-			<CdxToggleSwitch
-				:model-value="property.multiple"
-				:align-switch="true"
-				:label="$i18n( 'neowiki-property-editor-multiple' ).text()"
-				@update:model-value="updateMultiple"
-			>
-				{{ $i18n( 'neowiki-property-editor-multiple' ).text() }}
-			</CdxToggleSwitch>
-		</CdxField>
+		<ConstraintAttributesEditor
+			:property="property"
+			@update:property="onUpdate"
+		/>
 
 		<CdxField>
 			<template #label>
@@ -33,10 +26,11 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { CdxChipInput, CdxField, CdxToggleSwitch } from '@wikimedia/codex';
+import { CdxChipInput, CdxField } from '@wikimedia/codex';
 import type { ChipInputItem } from '@wikimedia/codex';
 import { SelectOption, SelectProperty } from '@/domain/propertyTypes/Select.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
+import ConstraintAttributesEditor from '@/components/SchemaEditor/Property/ConstraintAttributesEditor.vue';
 
 const props = defineProps<AttributesEditorProps<SelectProperty>>();
 const emit = defineEmits<AttributesEditorEmits<SelectProperty>>();
@@ -47,7 +41,7 @@ const optionChips = computed( (): ChipInputItem[] =>
 	props.property.options.map( ( option ) => ( { value: option.label } ) )
 );
 
-const updateOptions = ( chips: ChipInputItem[] ): void => {
+function updateOptions( chips: ChipInputItem[] ): void {
 	const newLabels = chips.map( ( chip ) => String( chip.value ) );
 	const hasDuplicates = new Set( newLabels ).size !== newLabels.length;
 
@@ -59,9 +53,9 @@ const updateOptions = ( chips: ChipInputItem[] ): void => {
 	optionsError.value = null;
 	const newOptions: SelectOption[] = newLabels.map( ( label ) => ( { id: label, label } ) );
 	emit( 'update:property', { options: newOptions } );
-};
+}
 
-const updateMultiple = ( value: boolean ): void => {
-	emit( 'update:property', { multiple: value } );
-};
+function onUpdate( partial: Partial<SelectProperty> ): void {
+	emit( 'update:property', partial );
+}
 </script>

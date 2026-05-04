@@ -2,6 +2,7 @@ import { MultiStringProperty, PropertyDefinition, PropertyName } from '@/domain/
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
 import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
 import type { Constraint } from '@/domain/Constraint';
+import type { ConstraintAttributeKind } from '@/domain/ConstraintAttributeKind';
 
 export interface UrlProperty extends MultiStringProperty {
 
@@ -41,6 +42,10 @@ export class UrlType extends BasePropertyType<UrlProperty, StringValue> {
 			constraints.push( { kind: 'uniqueItems' } );
 		}
 		return constraints;
+	}
+
+	public getConstraintAttributes(): ConstraintAttributeKind[] {
+		return [ 'multiple-toggle', 'unique-items-toggle' ];
 	}
 
 	public validateValue( value: StringValue | undefined ): ValueValidationError[] {
