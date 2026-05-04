@@ -34,6 +34,8 @@ export * from './composables/useSortable';
 export * from './composables/useStringValueInput';
 export * from './composables/useSubjectPermissions';
 export * from './composables/useValueValidation';
+export * from './domain/Constraint';
+export * from './domain/ConstraintInterpreter';
 export * from './domain/Layout';
 export * from './domain/PageIdentifiers';
 export * from './domain/PageSubjects';

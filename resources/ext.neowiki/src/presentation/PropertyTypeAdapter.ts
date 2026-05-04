@@ -41,6 +41,8 @@ export class PropertyTypeAdapter extends BasePropertyType<PropertyDefinition, Va
 		return this.registration.getExampleValue( property );
 	}
 
+	// Unreachable: validate() below is overridden and never delegates to getConstraints.
+	// Required only to satisfy the abstract contract on BasePropertyType.
 	public getConstraints(): Constraint[] {
 		return [];
 	}
