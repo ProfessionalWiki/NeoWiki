@@ -111,7 +111,6 @@ export { default as DateTimeAttributesEditor } from './components/SchemaEditor/P
 export { default as NumberAttributesEditor } from './components/SchemaEditor/Property/NumberAttributesEditor.vue';
 export { default as RelationAttributesEditor } from './components/SchemaEditor/Property/RelationAttributesEditor.vue';
 export { default as SelectAttributesEditor } from './components/SchemaEditor/Property/SelectAttributesEditor.vue';
-export { default as UrlAttributesEditor } from './components/SchemaEditor/Property/UrlAttributesEditor.vue';
 export { default as PropertyDefinitionEditor } from './components/SchemaEditor/PropertyDefinitionEditor.vue';
 export { default as PropertyList } from './components/SchemaEditor/PropertyList.vue';
 export { default as SchemaEditor } from './components/SchemaEditor/SchemaEditor.vue';

@@ -49,7 +49,6 @@ import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBu
 import ConstraintAttributesEditor from '@/components/SchemaEditor/Property/ConstraintAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
-import UrlAttributesEditor from '@/components/SchemaEditor/Property/UrlAttributesEditor.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import DateTimeAttributesEditor from '@/components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
 import { SubjectValidator } from '@/domain/SubjectValidator.ts';
@@ -89,7 +88,7 @@ export class NeoWikiExtension {
 		registry.registerType( UrlType.typeName, {
 			valueDisplayComponent: UrlDisplay,
 			valueEditor: UrlInput,
-			attributesEditor: UrlAttributesEditor,
+			attributesEditor: ConstraintAttributesEditor,
 			label: 'neowiki-property-type-url',
 			icon: cdxIconLink,
 		} );
