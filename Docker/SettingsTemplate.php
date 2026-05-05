@@ -15,9 +15,20 @@ if ( !defined( 'MEDIAWIKI' ) ) {
 	exit;
 }
 
-$wgShowExceptionDetails = false;
-$wgDebugDumpSql = false;
-$wgDebugComments = false;
+$mwMode = getenv( 'MW_MODE' ) ?: 'production';
+$mwIsDev = $mwMode === 'dev';
+
+if ( $mwIsDev ) {
+	error_reporting( -1 );
+	ini_set( 'display_errors', 1 );
+	$wgShowExceptionDetails = true;
+	$wgDebugDumpSql = true;
+	$wgDebugComments = true;
+} else {
+	$wgShowExceptionDetails = false;
+	$wgDebugDumpSql = false;
+	$wgDebugComments = false;
+}
 
 ## Uncomment this to disable output compression
 # $wgDisableOutputCompression = true;
@@ -89,13 +100,19 @@ $wgSharedTables[] = "actor";
 //    'daemonized' => true
 //];
 
-$wgMainCacheType = CACHE_ACCEL;
-$wgMessageCacheType = CACHE_ACCEL;
-
-$wgLanguageConverterCacheType = CACHE_ACCEL;
-$wgSessionCacheType = CACHE_DB;
-$wgParserCacheType = CACHE_ACCEL;
-
+if ( $mwIsDev ) {
+	$wgMainCacheType = CACHE_NONE;
+	$wgMessageCacheType = CACHE_NONE;
+	$wgLanguageConverterCacheType = CACHE_NONE;
+	$wgSessionCacheType = CACHE_DB;
+	$wgParserCacheType = CACHE_NONE;
+} else {
+	$wgMainCacheType = CACHE_ACCEL;
+	$wgMessageCacheType = CACHE_ACCEL;
+	$wgLanguageConverterCacheType = CACHE_ACCEL;
+	$wgSessionCacheType = CACHE_DB;
+	$wgParserCacheType = CACHE_ACCEL;
+}
 $wgRevisionCacheExpiry = 0;
 $wgUseLocalMessageCache = true;
 
@@ -176,18 +193,21 @@ wfLoadExtension( 'Scribunto' );
 wfLoadExtension( 'ParserFunctions' );
 
 $wgSMTP = [];
-if ( getenv( 'MW_SMTP_HOST' ) !== false ) {
-    $wgSMTP = [
-        'host' => getenv( 'MW_SMTP_HOST' ),
-        'IDHost' => getenv( 'MW_SMTP_ID_HOST' ),
-        'port' => (int)getenv( 'MW_SMTP_PORT' ),
-    ];
+if ( $mwIsDev && getenv( 'MW_SMTP_HOST' ) === false ) {
+	// Default to the mailcatcher sidecar in dev mode.
+	$wgSMTP = [ 'host' => 'mailcatcher', 'port' => 1025 ];
+} elseif ( getenv( 'MW_SMTP_HOST' ) !== false ) {
+	$wgSMTP = [
+		'host' => getenv( 'MW_SMTP_HOST' ),
+		'IDHost' => getenv( 'MW_SMTP_ID_HOST' ),
+		'port' => (int)getenv( 'MW_SMTP_PORT' ),
+	];
 
-    if ( getenv( 'MW_SMTP_USER' ) !== false ) {
-        $wgSMTP['auth'] = true;
-        $wgSMTP['username'] = getenv( 'MW_SMTP_USER' );
-        $wgSMTP['password'] = getenv( 'MW_SMTP_PASSWORD' );
-    }
+	if ( getenv( 'MW_SMTP_USER' ) !== false ) {
+		$wgSMTP['auth'] = true;
+		$wgSMTP['username'] = getenv( 'MW_SMTP_USER' );
+		$wgSMTP['password'] = getenv( 'MW_SMTP_PASSWORD' );
+	}
 }
 
 if ( getenv( 'MW_PASSWORD_SENDER' ) !== false ) {
@@ -218,3 +238,10 @@ $wgGroupPermissions['*']['edit'] = false;
 
 $wgUseRCPatrol = false;
 $wgUseNPPatrol = false;
+
+# Per-worktree opt-in overrides (gitignored). Use to load sister extensions for integration
+# work, set custom debug toggles, or override hooks.
+$mwLocal = __DIR__ . '/LocalSettings.local.php';
+if ( file_exists( $mwLocal ) ) {
+	require_once $mwLocal;
+}
