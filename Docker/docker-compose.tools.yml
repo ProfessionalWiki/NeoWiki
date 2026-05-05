@@ -1,0 +1,11 @@
+services:
+  # Opt-in port exposure for graph inspection tools. Activate by including this
+  # overlay alongside the dev overlay, or by running `make dev-tools` from the
+  # extension root.
+  #
+  # Default ports (7474, 7687) are Neo4j conventions. Override via env if you
+  # run multiple worktrees with the tools overlay enabled.
+  neo:
+    ports:
+      - "${NEO_BROWSER_PORT:-7474}:7474"
+      - "${NEO_BOLT_PORT:-7687}:7687"
