@@ -16,7 +16,7 @@ is_port_free() {
     ! (echo > /dev/tcp/127.0.0.1/"$p") 2>/dev/null
 }
 
-write_port() {
+write_mw_port() {
     local p=$1
     if grep -qE '^MW_SERVER_PORT=' "$ENV_FILE"; then
         sed -i.bak -E "s|^MW_SERVER_PORT=.*|MW_SERVER_PORT=$p|" "$ENV_FILE"
@@ -24,7 +24,26 @@ write_port() {
     else
         echo "MW_SERVER_PORT=$p" >> "$ENV_FILE"
     fi
-    echo "Using MW_SERVER_PORT=$p"
+}
+
+# Derive mailcatcher port from MW_SERVER_PORT (1180 maps to 8484, etc.) and
+# write it to the env file. Always called so renaming a worktree's MW port
+# keeps mailcatcher in sync.
+write_mailcatcher_port() {
+    local p=$1
+    local mc=$(( 1180 + p - RANGE_START ))
+    if grep -qE '^MAILCATCHER_PORT=' "$ENV_FILE"; then
+        sed -i.bak -E "s|^MAILCATCHER_PORT=.*|MAILCATCHER_PORT=$mc|" "$ENV_FILE"
+        rm -f "$ENV_FILE.bak"
+    else
+        echo "MAILCATCHER_PORT=$mc" >> "$ENV_FILE"
+    fi
+}
+
+write_port() {
+    write_mw_port "$1"
+    write_mailcatcher_port "$1"
+    echo "Using MW_SERVER_PORT=$1, MAILCATCHER_PORT=$(( 1180 + $1 - RANGE_START ))"
 }
 
 if [ -n "$REQUESTED" ]; then
@@ -35,8 +54,9 @@ fi
 # Read the existing .env value.
 EXISTING="$(grep -E '^MW_SERVER_PORT=' "$ENV_FILE" | head -1 | cut -d= -f2- || true)"
 if [ -n "$EXISTING" ] && [ "$EXISTING" != "$RANGE_START" ] && is_port_free "$EXISTING"; then
-    # Reuse the configured port if it's free.
-    echo "Using existing MW_SERVER_PORT=$EXISTING"
+    # Reuse the configured MW port; ensure mailcatcher port is in sync.
+    write_mailcatcher_port "$EXISTING"
+    echo "Using existing MW_SERVER_PORT=$EXISTING, MAILCATCHER_PORT=$(( 1180 + EXISTING - RANGE_START ))"
     exit 0
 fi
 
