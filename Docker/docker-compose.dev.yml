@@ -10,5 +10,12 @@ services:
       - mediawiki-images-data:/var/www/html/w/images
       # NeoWiki source bind-mount (the worktree).
       - ../:/var/www/html/w/extensions/NeoWiki
-      # Sister extensions overlay (PW internal devs only). Empty default avoids the mount.
-      - ${MW_EXTRA_EXTENSIONS_DIR:-/dev/null}:/var/www/html/w/extensions-extra:ro
+      # Optional read-only overlay of additional MediaWiki extensions for IDE indexing
+      # or integration testing. Set MW_EXTRA_EXTENSIONS_DIR to a host directory of
+      # extensions; when unset, falls back to a tracked empty dir so the mount is
+      # always valid. Files here are not auto-loaded.
+      - ${MW_EXTRA_EXTENSIONS_DIR:-./empty-extensions-extra}:/var/www/html/w/extensions-extra:ro
+      # Per-worktree opt-in override. The Makefile's ensure-port target touches this
+      # file on the host so the bind mount is always valid; SettingsTemplate.php's
+      # require_once is gated on file_exists so an empty file is harmless.
+      - ./LocalSettings.local.php:/var/www/html/w/LocalSettings.local.php

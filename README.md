@@ -63,7 +63,7 @@ Example:
 
 ```php
 <?php
-wfLoadExtension( 'BlueSpiceFoundation' );
+wfLoadExtension( 'SomeExtension' );
 $wgDebugLogGroups['neowiki'] = '/tmp/neowiki-debug.log';
 ```
 

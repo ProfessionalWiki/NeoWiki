@@ -15,12 +15,9 @@ if [ -d "$NW_DIR" ] && [ ! -d "$NW_DIR/vendor" ]; then
     chmod -R ugo+rwX "$NW_DIR/vendor"
 fi
 
-# Apply any local settings overlay if present (gitignored, per-worktree).
-LOCAL_OVERRIDE=/var/www/html/w/LocalSettings.local.php
-if [ ! -f "$LOCAL_OVERRIDE" ]; then
-    # Touch a no-op file so a require_once in LocalSettings.php does not fail.
-    touch "$LOCAL_OVERRIDE"
-    chown www-data:www-data "$LOCAL_OVERRIDE"
-fi
+# LocalSettings.local.php is bind-mounted from the host (see docker-compose.dev.yml
+# and the bootstrap make target, which guarantees the host file exists). The
+# require_once in SettingsTemplate.php is gated on file_exists, so an empty file
+# is harmless.
 
 exec "$@"
