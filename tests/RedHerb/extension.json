@@ -31,16 +31,13 @@
 
 	"Hooks": {
 		"NeoWikiRegistration": "ProfessionalWiki\\RedHerb\\RedHerbHooks::onNeoWikiRegistration",
-		"NeoWikiGetFrontendModules": [ "RedHerbFrontendModulesHook", "RedHerbFrontendHook" ],
+		"NeoWikiGetFrontendModules": "RedHerbFrontendModulesHook",
 		"SidebarBeforeOutput": "RedHerbSidebarHook"
 	},
 
 	"HookHandlers": {
 		"RedHerbFrontendModulesHook": {
 			"class": "ProfessionalWiki\\RedHerb\\RedHerbFrontendModulesHook"
-		},
-		"RedHerbFrontendHook": {
-			"class": "ProfessionalWiki\\RedHerb\\RedHerbFrontendHook"
 		},
 		"RedHerbSidebarHook": {
 			"class": "ProfessionalWiki\\RedHerb\\RedHerbSidebarHook"

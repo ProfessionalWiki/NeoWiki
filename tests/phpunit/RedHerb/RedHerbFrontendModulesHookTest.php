@@ -14,7 +14,7 @@ use Skin;
  */
 class RedHerbFrontendModulesHookTest extends TestCase {
 
-	public function testAddsRedHerbDialogModules(): void {
+	public function testAddsRedHerbModules(): void {
 		$modules = [];
 		$hook = new RedHerbFrontendModulesHook();
 
@@ -25,7 +25,7 @@ class RedHerbFrontendModulesHookTest extends TestCase {
 		);
 
 		$this->assertSame(
-			[ 'ext.redherb-create-child', 'ext.redherb-edit-main-subject' ],
+			[ 'ext.redherb', 'ext.redherb-create-child', 'ext.redherb-edit-main-subject' ],
 			$modules
 		);
 	}
@@ -41,7 +41,7 @@ class RedHerbFrontendModulesHookTest extends TestCase {
 		);
 
 		$this->assertSame(
-			[ 'ext.preexisting', 'ext.redherb-create-child', 'ext.redherb-edit-main-subject' ],
+			[ 'ext.preexisting', 'ext.redherb', 'ext.redherb-create-child', 'ext.redherb-edit-main-subject' ],
 			$modules
 		);
 	}
