@@ -69,6 +69,9 @@ services:
       - test-neo4j-data:/data
     environment:
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=eval
+      # Hardcoded password (intentional): NeoWiki's test suite uses this
+      # fixed credential to connect to the test Neo4j instance. Do not
+      # parameterize without also updating the test configuration.
       - NEO4J_AUTH=neo4j/password
       - NEO4J_server_bolt_listen__address=:7689
       - NEO4J_server_http_listen__address=:7475
@@ -81,7 +84,7 @@ services:
   node:
     image: node:24
     profiles: [dev]
-    restart: unless-stopped
+    restart: on-failure:3
     working_dir: /workspace/resources/ext.neowiki
     volumes:
       - ../:/workspace
