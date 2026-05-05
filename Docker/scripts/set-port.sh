@@ -5,7 +5,7 @@
 set -e
 
 REQUESTED="${1:-}"
-ENV_FILE=".env"
+ENV_FILE="${ENV_FILE:-Docker/.env}"
 LOCK_FILE="/tmp/.neowiki-port-allocation.lock"
 RANGE_START="${PORT_RANGE_START:-8484}"
 RANGE_END="${PORT_RANGE_END:-8499}"
