@@ -24,6 +24,7 @@ PORT_RANGE_END := 8499
 
 DC := docker compose -p $(PROJECT_NAME) --project-directory Docker
 DC_DEV := $(DC) -f Docker/docker-compose.yml -f Docker/docker-compose.dev.yml --profile dev
+DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
 
 IS_PODMAN := $(shell (docker --version 2>/dev/null | grep -qi podman || command -v podman >/dev/null 2>&1) && echo 1 || echo 0)
 ifeq ($(IS_PODMAN),1)
@@ -48,13 +49,26 @@ help:
 
 # ---- Lifecycle (host only) ---------------------------------------------------
 
-.PHONY: up dev stop down logs ps bash
+.PHONY: up dev dev-tools _dev-tools-impl stop down logs ps bash
 
 up: ## Bring up try-it-out stack (no profile, prebuilt image)
 	$(DC) up -d
 
 dev: bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
+
+dev-tools: bootstrap ensure-port ## Like 'dev' but also exposes Neo4j Browser/Bolt to host
+	@$(MAKE) --no-print-directory _dev-tools-impl
+
+_dev-tools-impl:
+	$(DC_TOOLS) up -d --build
+	@$(MAKE) --no-print-directory _wait-mw
+	@$(MAKE) --no-print-directory _first-run-seed
+	@echo ""
+	@echo "Dev wiki ready at:    http://localhost:$$MW_SERVER_PORT"
+	@echo "Neo4j Browser:        http://localhost:$${NEO_BROWSER_PORT:-7474}"
+	@echo "Neo4j Bolt endpoint:  bolt://localhost:$${NEO_BOLT_PORT:-7687}"
+	@echo "Project:              $(PROJECT_NAME)"
 
 # ---- Bootstrap (one-time, idempotent) ----------------------------------------
 

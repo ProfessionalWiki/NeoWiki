@@ -20,13 +20,17 @@ make dev
 
 This builds a dev-mode image, brings up the stack (mediawiki, db, neo, test_neo, node
 watcher, mailcatcher), runs first-time install and seed, and waits until the wiki is
-reachable. It prints the URL when ready.
+reachable. It prints the URL when ready (the default is `http://localhost:8484` but
+the actual port is auto-allocated; see [Reserved ports](Docker/README.md#reserved-host-ports)).
 
-Mailcatcher web UI: `http://localhost:1080` (configurable via `MAILCATCHER_PORT` in
-`Docker/.env`).
+Mailcatcher web UI is at the port `make dev` printed (default `8025`,
+configurable via `MAILCATCHER_PORT` in `Docker/.env`).
 
 The `node` sidecar runs `npm run build:watch`, so TypeScript changes under
 `resources/ext.neowiki/` rebuild automatically.
+
+To also expose Neo4j Browser and the Bolt endpoint to the host (single-worktree use),
+use `make dev-tools` instead. URLs print when the stack comes up.
 
 ### Running tests and tools
 
@@ -46,9 +50,10 @@ For all targets, run `make help`.
 
 Each clone or worktree is a self-contained stack. Run `make dev` from any NeoWiki
 checkout and it will allocate its own port and project namespace, so multiple worktrees
-can run side by side without collision.
+can run side by side without collision. See [Reserved host ports](Docker/README.md#reserved-host-ports)
+for the auto-allocation ranges.
 
-To override the port: `make dev port=8488` or `MW_SERVER_PORT=8488 make dev`.
+To override the MediaWiki port: `make dev port=8488` or `MW_SERVER_PORT=8488 make dev`.
 
 ### Customizing dev config
 
