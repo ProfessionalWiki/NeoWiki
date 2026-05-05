@@ -92,7 +92,7 @@ endif
 _wait-mw:
 	@echo "Waiting for MediaWiki to be reachable on port $$MW_SERVER_PORT..."
 	@for i in $$(seq 1 90); do \
-		if curl -fsSLo /dev/null "http://localhost:$$MW_SERVER_PORT/" 2>/dev/null; then \
+		if curl -sSo /dev/null "http://localhost:$$MW_SERVER_PORT/" 2>/dev/null; then \
 			echo "Reachable."; exit 0; \
 		fi; \
 		sleep 1; \
@@ -175,9 +175,9 @@ cs: phpcs stan ## Run code style checks (phpcs + phpstan)
 phpunit: ## Run PHPUnit (use filter=X for a single test)
 ifeq ($(INSIDE_CONTAINER),1)
 ifdef filter
-	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --filter $(filter)
+	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --filter $(filter) < /dev/null
 else
-	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist
+	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist < /dev/null
 endif
 else
 ifdef filter
@@ -189,42 +189,42 @@ endif
 
 perf: ## Run performance test group
 ifeq ($(INSIDE_CONTAINER),1)
-	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --group Performance
+	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --group Performance < /dev/null
 else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf'
 endif
 
 phpcs:
 ifeq ($(INSIDE_CONTAINER),1)
-	vendor/bin/phpcs -p -s --standard=$$(pwd)/phpcs.xml
+	vendor/bin/phpcs -p -s --standard=$$(pwd)/phpcs.xml < /dev/null
 else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make phpcs'
 endif
 
 stan:
 ifeq ($(INSIDE_CONTAINER),1)
-	vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=2G
+	vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=2G < /dev/null
 else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make stan'
 endif
 
 stan-baseline:
 ifeq ($(INSIDE_CONTAINER),1)
-	vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=2G --generate-baseline
+	vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=2G --generate-baseline < /dev/null
 else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make stan-baseline'
 endif
 
 psalm:
 ifeq ($(INSIDE_CONTAINER),1)
-	vendor/bin/psalm --config=psalm.xml --no-diff
+	vendor/bin/psalm --config=psalm.xml --no-diff < /dev/null
 else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make psalm'
 endif
 
 psalm-baseline:
 ifeq ($(INSIDE_CONTAINER),1)
-	vendor/bin/psalm --config=psalm.xml --set-baseline=psalm-baseline.xml
+	vendor/bin/psalm --config=psalm.xml --set-baseline=psalm-baseline.xml < /dev/null
 else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make psalm-baseline'
 endif
