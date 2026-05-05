@@ -1,0 +1,14 @@
+services:
+  mediawiki:
+    image: !reset null
+    build:
+      context: .
+      target: dev-mw
+    environment:
+      - MW_MODE=dev
+    volumes:
+      - mediawiki-images-data:/var/www/html/w/images
+      # NeoWiki source bind-mount (the worktree).
+      - ../:/var/www/html/w/extensions/NeoWiki
+      # Sister extensions overlay (PW internal devs only). Empty default avoids the mount.
+      - ${MW_EXTRA_EXTENSIONS_DIR:-/dev/null}:/var/www/html/w/extensions-extra:ro
