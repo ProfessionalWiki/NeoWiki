@@ -74,6 +74,8 @@ RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 # Bake MW core in for fast first-boot. NeoWiki source is mounted at runtime.
 COPY --chown=www-data:www-data mediawiki /var/www/html/w
 COPY --chown=www-data:www-data composer.local.json /var/www/html/w/composer.local.json
+# LocalSettings.php is the SettingsTemplate; it switches on MW_MODE at runtime.
+COPY --chown=www-data:www-data SettingsTemplate.php /var/www/html/w/LocalSettings.php
 
 # Install MW core deps. NeoWiki composer install happens at runtime via entrypoint.
 RUN cd w && composer config --global audit.block-insecure false && \

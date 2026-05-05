@@ -92,7 +92,7 @@ endif
 _wait-mw:
 	@echo "Waiting for MediaWiki to be reachable on port $$MW_SERVER_PORT..."
 	@for i in $$(seq 1 90); do \
-		if curl -fsSL "http://localhost:$$MW_SERVER_PORT/index.php/Special:Version" 2>/dev/null | grep -q 'NeoWiki\|Jeroen'; then \
+		if curl -fsSLo /dev/null "http://localhost:$$MW_SERVER_PORT/" 2>/dev/null; then \
 			echo "Reachable."; exit 0; \
 		fi; \
 		sleep 1; \
@@ -110,10 +110,9 @@ _first-run-seed:
 		$(MAKE) --no-print-directory install-db; \
 		$(MAKE) --no-print-directory load-neo4j-users; \
 		$(MAKE) --no-print-directory composer-install; \
-		$(MAKE) --no-print-directory ts-install; \
-		$(MAKE) --no-print-directory ts-build; \
 		$(MAKE) --no-print-directory import-demo-data; \
 	fi
+	@# TS install/build are handled by the node sidecar on startup (npm install && npm run build:watch).
 
 # ---- DB and Neo4j init -------------------------------------------------------
 
