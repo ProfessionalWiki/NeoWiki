@@ -173,7 +173,7 @@ ifeq ($(INSIDE_CONTAINER),1)
 	composer install --optimize-autoloader
 else
 	$(DC_DEV) exec -T -e HOME=/tmp -e COMPOSER_HOME=/tmp/composer $(EXEC_USER) mediawiki \
-		bash -c 'cd extensions/NeoWiki && make composer-install'
+		bash -c 'cd extensions/NeoWiki && make composer-install' < /dev/null
 endif
 
 composer-update: ## Update composer deps for NeoWiki
@@ -181,7 +181,7 @@ ifeq ($(INSIDE_CONTAINER),1)
 	composer update
 else
 	$(DC_DEV) exec -T -e HOME=/tmp -e COMPOSER_HOME=/tmp/composer $(EXEC_USER) mediawiki \
-		bash -c 'cd extensions/NeoWiki && make composer-update'
+		bash -c 'cd extensions/NeoWiki && make composer-update' < /dev/null
 endif
 
 # ---- PHP code quality (dual-mode: works inside or outside container) ---------
