@@ -70,8 +70,14 @@ FROM configured-mw AS dev-mw
 # DEV-ONLY image. Includes editor/debug tooling and exposes exception details.
 # Do NOT push to a public registry or use for any production-facing deployment.
 
-# Use the dev-tuned php.ini (errors visible, no opcache surprises)
+# Use the dev-tuned php.ini (errors visible)
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+
+# fs_overlay/usr/local/etc/php/conf.d/opcache-recommended.ini sets
+# opcache.validate_timestamps=0 (production tuning). Re-enable timestamp
+# validation in dev so PHP edits land on the next request without a restart.
+# The 'zz-' prefix ensures this loads after the production tuning.
+RUN echo 'opcache.validate_timestamps=1' > "$PHP_INI_DIR/conf.d/zz-dev-opcache.ini"
 
 # Bake MW core in for fast first-boot. NeoWiki source is mounted at runtime.
 # Note: `composer install` below runs without extensions/NeoWiki/composer.json
@@ -82,6 +88,8 @@ RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 COPY --chown=www-data:www-data mediawiki /var/www/html/w
 COPY --chown=www-data:www-data composer.local.json /var/www/html/w/composer.local.json
 # LocalSettings.php is the SettingsTemplate; it switches on MW_MODE at runtime.
+# Per-worktree overrides go in LocalSettings.local.php (bind-mounted from the host
+# by docker-compose.dev.yml), which is the file users actually edit.
 COPY --chown=www-data:www-data SettingsTemplate.php /var/www/html/w/LocalSettings.php
 
 RUN cd w && composer config --global audit.block-insecure false && \
