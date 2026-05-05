@@ -1,6 +1,11 @@
 # NeoWiki extension dev environment.
 # Single entry point for both the Docker dev stack and developer tooling.
-# Public contributors and PW devs run targets directly from here. Issue #120.
+# Issue #120.
+
+# Bootstrap a local .env from .env.dist on first run.
+ifeq ($(wildcard Docker/.env),)
+$(shell cp Docker/.env.dist Docker/.env)
+endif
 
 include Docker/.env
 export
@@ -20,7 +25,7 @@ PORT_RANGE_END := 8499
 DC := docker compose -p $(PROJECT_NAME) --project-directory Docker
 DC_DEV := $(DC) -f Docker/docker-compose.yml -f Docker/docker-compose.dev.yml --profile dev
 
-IS_PODMAN := $(shell docker info 2>&1 | grep -qi podman && echo 1 || echo 0)
+IS_PODMAN := $(shell (docker --version 2>/dev/null | grep -qi podman || command -v podman >/dev/null 2>&1) && echo 1 || echo 0)
 ifeq ($(IS_PODMAN),1)
 	EXEC_USER :=
 else
@@ -48,8 +53,24 @@ help:
 up: ## Bring up try-it-out stack (no profile, prebuilt image)
 	$(DC) up -d
 
-dev: ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
+dev: bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
+
+# ---- Bootstrap (one-time, idempotent) ----------------------------------------
+
+# Populates the gitignored prerequisites that the build context needs:
+# Docker/mediawiki/ (a vendored MediaWiki core checkout) and an empty
+# Docker/LocalSettings.local.php for the per-worktree override bind-mount.
+.PHONY: bootstrap
+bootstrap: ## Clone MW core into Docker/mediawiki/ and prep gitignored files (idempotent)
+	@if [ ! -d Docker/mediawiki/.git ]; then \
+		echo "Cloning MediaWiki $${MW_BRANCH:-REL1_43} into Docker/mediawiki/..."; \
+		git clone --depth 1 --recurse-submodules \
+			--branch "$${MW_BRANCH:-REL1_43}" \
+			"$${MW_GIT_URL:-https://github.com/wikimedia/mediawiki}" \
+			Docker/mediawiki; \
+	fi
+	@touch Docker/LocalSettings.local.php
 
 _dev-impl:
 	$(DC_DEV) up -d --build
@@ -181,9 +202,9 @@ else
 endif
 else
 ifdef filter
-	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make phpunit filter=$(filter)'
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make phpunit filter=$(filter)' < /dev/null
 else
-	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make phpunit'
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make phpunit' < /dev/null
 endif
 endif
 
@@ -191,45 +212,58 @@ perf: ## Run performance test group
 ifeq ($(INSIDE_CONTAINER),1)
 	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --group Performance < /dev/null
 else
-	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf'
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf' < /dev/null
 endif
 
 phpcs:
 ifeq ($(INSIDE_CONTAINER),1)
 	vendor/bin/phpcs -p -s --standard=$$(pwd)/phpcs.xml < /dev/null
 else
-	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make phpcs'
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make phpcs' < /dev/null
 endif
 
 stan:
 ifeq ($(INSIDE_CONTAINER),1)
 	vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=2G < /dev/null
 else
-	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make stan'
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make stan' < /dev/null
 endif
 
 stan-baseline:
 ifeq ($(INSIDE_CONTAINER),1)
 	vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=2G --generate-baseline < /dev/null
 else
-	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make stan-baseline'
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make stan-baseline' < /dev/null
 endif
 
 psalm:
 ifeq ($(INSIDE_CONTAINER),1)
 	vendor/bin/psalm --config=psalm.xml --no-diff < /dev/null
 else
-	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make psalm'
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make psalm' < /dev/null
 endif
 
 psalm-baseline:
 ifeq ($(INSIDE_CONTAINER),1)
 	vendor/bin/psalm --config=psalm.xml --set-baseline=psalm-baseline.xml < /dev/null
 else
-	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make psalm-baseline'
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make psalm-baseline' < /dev/null
 endif
 
 # ---- TypeScript (always runs in the node sidecar) ----------------------------
+
+# The node sidecar runs `npm install && npm run build:watch` on startup. Targets
+# that depend on node_modules being populated should depend on _wait-node so the
+# first invocation after `make dev` does not race the sidecar's initial install.
+.PHONY: _wait-node
+_wait-node:
+	@for i in $$(seq 1 60); do \
+		if [ -f resources/ext.neowiki/node_modules/.package-lock.json ]; then \
+			exit 0; \
+		fi; \
+		sleep 1; \
+	done; \
+	echo "Timed out waiting for node_modules; the node sidecar may not have started." >&2; exit 1
 
 .PHONY: ts-install ts-update ts-build ts-build-watch ts-test ts-test-watch ts-coverage ts-lint ts-ci tsci
 
@@ -240,32 +274,32 @@ ts-ci:
 	$(MAKE) --no-print-directory ts-lint
 
 ts-install: ## npm install for NeoWiki frontend
-	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm install'
+	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm install' < /dev/null
 
 ts-update: ## npm update for NeoWiki frontend
-	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm update'
+	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm update' < /dev/null
 
-ts-build: ## Build TS bundle (one-shot; the watcher runs as a sidecar)
-	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run build'
+ts-build: _wait-node ## Build TS bundle (one-shot; the watcher runs as a sidecar)
+	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run build' < /dev/null
 
-ts-build-watch: ## Run the TS build watcher one-shot (the node sidecar already runs this)
-	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run build:watch'
+ts-build-watch: _wait-node ## Run the TS build watcher one-shot (the node sidecar already runs this)
+	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run build:watch' < /dev/null
 
-ts-test: ## Run vitest (use filter=X for a single test)
+ts-test: _wait-node ## Run vitest (use filter=X for a single test)
 ifdef filter
-	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run test -- $(filter)'
+	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run test -- $(filter)' < /dev/null
 else
-	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run test'
+	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run test' < /dev/null
 endif
 
-ts-test-watch: ## Run vitest in watch mode
-	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run test:watch'
+ts-test-watch: _wait-node ## Run vitest in watch mode
+	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run test:watch' < /dev/null
 
-ts-coverage: ## TS test coverage report
-	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run coverage'
+ts-coverage: _wait-node ## TS test coverage report
+	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run coverage' < /dev/null
 
-ts-lint: ## Run TS linter
-	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run lint'
+ts-lint: _wait-node ## Run TS linter
+	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm run lint' < /dev/null
 
 # ---- Maintenance -------------------------------------------------------------
 

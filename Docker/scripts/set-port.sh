@@ -53,7 +53,7 @@ fi
 
 # Read the existing .env value.
 EXISTING="$(grep -E '^MW_SERVER_PORT=' "$ENV_FILE" | head -1 | cut -d= -f2- || true)"
-if [ -n "$EXISTING" ] && [ "$EXISTING" != "$RANGE_START" ] && is_port_free "$EXISTING"; then
+if [ -n "$EXISTING" ] && is_port_free "$EXISTING"; then
     # Reuse the configured MW port; ensure mailcatcher port is in sync.
     write_mailcatcher_port "$EXISTING"
     echo "Using existing MW_SERVER_PORT=$EXISTING, MAILCATCHER_PORT=$(( 1180 + EXISTING - RANGE_START ))"

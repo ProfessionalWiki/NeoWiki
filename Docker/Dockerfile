@@ -67,17 +67,23 @@ COPY SettingsTemplate.php /var/www/html/w/LocalSettings.php
 
 
 FROM configured-mw AS dev-mw
+# DEV-ONLY image. Includes editor/debug tooling and exposes exception details.
+# Do NOT push to a public registry or use for any production-facing deployment.
 
 # Use the dev-tuned php.ini (errors visible, no opcache surprises)
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
 # Bake MW core in for fast first-boot. NeoWiki source is mounted at runtime.
+# Note: `composer install` below runs without extensions/NeoWiki/composer.json
+# present, so composer-merge-plugin cannot merge any NeoWiki-declared root-level
+# deps into the MW root vendor. NeoWiki's own deps install at runtime into
+# extensions/NeoWiki/vendor/ via the entrypoint, which covers the common case.
+# Cross-vendor dependencies declared at the root would need a manual rebuild.
 COPY --chown=www-data:www-data mediawiki /var/www/html/w
 COPY --chown=www-data:www-data composer.local.json /var/www/html/w/composer.local.json
 # LocalSettings.php is the SettingsTemplate; it switches on MW_MODE at runtime.
 COPY --chown=www-data:www-data SettingsTemplate.php /var/www/html/w/LocalSettings.php
 
-# Install MW core deps. NeoWiki composer install happens at runtime via entrypoint.
 RUN cd w && composer config --global audit.block-insecure false && \
 	composer install --no-interaction --optimize-autoloader
 
