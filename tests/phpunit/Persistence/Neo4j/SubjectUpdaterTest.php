@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jTypedValue;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdater;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
@@ -96,6 +97,27 @@ class SubjectUpdaterTest extends TestCase {
 			[
 				'P1' => [ 'foo' ],
 				'P3' => [ 'baz' ],
+			],
+			$this->newSubjectUpdater( $registry )->statementsToNodeProperties( $statements )
+		);
+	}
+
+	public function testReturnsTypedValueForDateTimeStatements(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$statements = new StatementList( [
+			TestStatement::build( property: 'P1', value: new StringValue( 'plain' ), propertyType: 'text' ),
+			TestStatement::build(
+				property: 'P2',
+				value: new StringValue( '2024-01-01T12:00:00Z' ),
+				propertyType: 'dateTime'
+			),
+		] );
+
+		$this->assertEquals(
+			[
+				'P1' => [ 'plain' ],
+				'P2' => new Neo4jTypedValue( 'datetime', [ '2024-01-01T12:00:00Z' ] ),
 			],
 			$this->newSubjectUpdater( $registry )->statementsToNodeProperties( $statements )
 		);
