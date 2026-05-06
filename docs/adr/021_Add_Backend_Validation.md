@@ -22,6 +22,9 @@ We assume we will have these:
 * UIs that support display and editing of "invalid" Subjects. These are Subjects that do not meet all constraints in their linked Schema.
 * Ability to write "invalid" Subjects to the backend. (Needed by the UI, and plausibly by various CH use cases)
 
+For the broader discussion that produced this decision, see the
+[Mattermost thread](https://chat.professional.wiki/pro-wiki/pl/k5koija5npdhijzjedhbxbiutr).
+
 ## Requirement: invalid Subjects support
 
 We have to support invalid Subjects. Even if we were to always reject edits that create invalid data, Schemas can
