@@ -79,12 +79,12 @@ RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 # The 'zz-' prefix ensures this loads after the production tuning.
 RUN echo 'opcache.validate_timestamps=1' > "$PHP_INI_DIR/conf.d/zz-dev-opcache.ini"
 
-# Bake MW core in for fast first-boot. NeoWiki source is mounted at runtime.
-# Note: `composer install` below runs without extensions/NeoWiki/composer.json
-# present, so composer-merge-plugin cannot merge any NeoWiki-declared root-level
-# deps into the MW root vendor. NeoWiki's own deps install at runtime into
-# extensions/NeoWiki/vendor/ via the entrypoint, which covers the common case.
-# Cross-vendor dependencies declared at the root would need a manual rebuild.
+# Bake MW core source in for fast first-boot. NeoWiki source plus MW root's
+# vendor/ and composer.lock are bind-mounted at runtime by docker-compose.dev.yml,
+# so we deliberately do NOT run composer install here — the entrypoint runs it
+# once on first boot against the bind-mounted vendor, with composer-merge-plugin
+# now able to see extensions/NeoWiki/composer.json (which is also bind-mounted).
+# This keeps the host's Docker/mediawiki/vendor/ in sync with what MW is loading.
 COPY --chown=www-data:www-data mediawiki /var/www/html/w
 COPY --chown=www-data:www-data composer.local.json /var/www/html/w/composer.local.json
 # LocalSettings.php is the SettingsTemplate; it switches on MW_MODE at runtime.
@@ -92,8 +92,7 @@ COPY --chown=www-data:www-data composer.local.json /var/www/html/w/composer.loca
 # by docker-compose.dev.yml), which is the file users actually edit.
 COPY --chown=www-data:www-data SettingsTemplate.php /var/www/html/w/LocalSettings.php
 
-RUN cd w && composer config --global audit.block-insecure false && \
-	composer install --no-interaction --optimize-autoloader
+RUN composer config --global audit.block-insecure false
 
 # Tools useful inside the dev container
 RUN apt-get update && apt-get install -y --no-install-recommends \
