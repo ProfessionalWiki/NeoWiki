@@ -20,10 +20,15 @@ fi
 # composer-merge-plugin can only see extensions/NeoWiki/composer.json once the
 # bind mount is up, which is after the build-time composer install in the
 # Dockerfile. Run composer update at MW root once so the lock file regenerates
-# with NeoWiki's merged deps. Marker file makes this idempotent.
+# with NeoWiki's merged deps. The vendor directory is bind-mounted back to
+# the host so the merged state is also visible to IDEs and AI tooling. Marker
+# file makes this idempotent across container restarts.
 if [ -d "$NW_DIR" ] && [ ! -f "$NW_MERGED_MARKER" ]; then
     echo "[dev-entrypoint] merging NeoWiki composer deps into MW root vendor..."
     (cd "$MW_ROOT" && composer update --no-interaction --optimize-autoloader)
+    # vendor/ is bind-mounted back to host. Make it host-deletable.
+    chown -R www-data:www-data "$MW_ROOT/vendor"
+    chmod -R ugo+rwX "$MW_ROOT/vendor"
     touch "$NW_MERGED_MARKER"
 fi
 

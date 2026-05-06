@@ -20,3 +20,11 @@ services:
       # on the host so the bind mount is always valid; SettingsTemplate.php's
       # require_once is gated on file_exists so an empty file is harmless.
       - ./LocalSettings.local.php:/var/www/html/w/LocalSettings.local.php
+      # Bind-mount MW core's vendor directory back to the host so the entrypoint's
+      # composer update (which merges NeoWiki deps via composer-merge-plugin) writes
+      # through. Result: host's Docker/mediawiki/vendor/ ends up with the full
+      # post-merge state, which IDE autocomplete and AI tooling rely on.
+      # composer.lock stays in the image (MW REL1_43 does not track one) — small
+      # inconsistency, but it stops a non-existent file from being bind-mounted as
+      # an empty directory.
+      - ./mediawiki/vendor:/var/www/html/w/vendor
