@@ -26,10 +26,10 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 class SubjectContentDataDeserializerTest extends TestCase {
 
 	public function testNodeExampleSmokeTest(): void {
-		$subjects = $this->newDeserializer()->deserialize( TestData::getFileContents( 'Subject/Professional_Wiki.json' ) );
+		$subjects = $this->newDeserializer()->deserialize( TestData::getFileContents( 'Subject/ACME_Inc.json' ) );
 
 		$this->assertSame(
-			'Professional Wiki GmbH',
+			'ACME Inc',
 			$subjects->getMainSubject()->getLabel()->text
 		);
 	}
