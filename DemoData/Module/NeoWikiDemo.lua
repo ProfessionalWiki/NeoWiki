@@ -84,7 +84,7 @@ function p.children( frame )
 	return table.concat( parts, ', ' )
 end
 
-local function renderRowsAsTable( rows, columns )
+local function renderRowsAsTable( rows, columns, linkColumns )
 	if #rows == 0 then
 		return 'No results'
 	end
@@ -97,13 +97,24 @@ local function renderRowsAsTable( rows, columns )
 		table.sort( columns )
 	end
 
+	local linkSet = {}
+	if linkColumns then
+		for _, col in ipairs( linkColumns ) do
+			linkSet[col] = true
+		end
+	end
+
 	local out = { '{| class="wikitable"', '! ' .. table.concat( columns, ' !! ' ) }
 
 	for _, row in ipairs( rows ) do
 		local cells = {}
 		for _, col in ipairs( columns ) do
 			local v = row[col]
-			cells[#cells + 1] = v == nil and '' or tostring( v )
+			local cell = v == nil and '' or tostring( v )
+			if linkSet[col] and cell ~= '' then
+				cell = '[[' .. cell .. ']]'
+			end
+			cells[#cells + 1] = cell
 		end
 		out[#out + 1] = '|-'
 		out[#out + 1] = '| ' .. table.concat( cells, ' || ' )
@@ -114,7 +125,17 @@ local function renderRowsAsTable( rows, columns )
 end
 
 function p.query( frame )
-	return renderRowsAsTable( nw.query( frame.args[1] ) )
+	local columns = nil
+	if frame.args.columns then
+		columns = mw.text.split( frame.args.columns, ',%s*' )
+	end
+
+	local linkColumns = nil
+	if frame.args.linkColumns then
+		linkColumns = mw.text.split( frame.args.linkColumns, ',%s*' )
+	end
+
+	return renderRowsAsTable( nw.query( frame.args[1] ), columns, linkColumns )
 end
 
 function p.productsFoundedSince( frame )
