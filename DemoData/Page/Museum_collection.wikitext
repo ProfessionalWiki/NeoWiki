@@ -1,6 +1,6 @@
-A demonstration dataset of European museums, artists, artworks, and exhibitions. This hub illustrates how
-NeoWiki connects entities across schemas, similar to the cultural-heritage scenarios ECHOLOT and GLAM partners
-work with. The data is curated for demonstration only and is not authoritative.
+A demo dataset of European museums, artists, artworks, and exhibitions. This hub shows how NeoWiki connects
+entities across schemas, mirroring the cultural-heritage scenarios ECHOLOT and GLAM partners work with. The
+data is curated for demonstration and is not authoritative.
 
 == Featured museums ==
 
@@ -18,4 +18,4 @@ work with. The data is curated for demonstration only and is not authoritative.
 
 * Schemas: [[Schema:Museum]], [[Schema:Artist]], [[Schema:Artwork]], [[Schema:Exhibition]], [[Schema:Attendance]], [[Schema:City]]
 * See the source of one subject: [{{fullurl:Rijksmuseum|action=edit}} Edit Rijksmuseum]
-* The featured museums above are embedded with the <code><nowiki>{{#view}}</nowiki></code> parser function. The tables are produced by Cypher queries via [[Module:NeoWikiDemo]].
+* The featured museums are embedded with the <code><nowiki>{{#view}}</nowiki></code> parser function. The tables come from Cypher queries via [[Module:NeoWikiDemo]].

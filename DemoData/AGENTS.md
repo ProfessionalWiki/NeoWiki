@@ -1,9 +1,8 @@
 # AGENTS.md
 
-Conventions for authoring demo wiki content under `DemoData/`. The contents of this directory are
-imported by `maintenance/ImportDemoData.php` into a running NeoWiki demo wiki, used to showcase
-NeoWiki's capabilities to ECHOLOT/GLAM partners, knowledge managers, MediaWiki ecosystem evaluators,
-and during live demos.
+Conventions for authoring demo wiki content under `DemoData/`. `maintenance/ImportDemoData.php`
+imports this directory into a running NeoWiki demo wiki to showcase NeoWiki to ECHOLOT/GLAM
+partners, knowledge managers, MediaWiki ecosystem evaluators, and live-demo audiences.
 
 ## File layout
 
@@ -15,9 +14,9 @@ and during live demos.
 | `Page/<Name>.wikitext` | Free-form wiki pages (hubs, references) | Main namespace, `<Name>` |
 | `Module/<Name>.lua` | Scribunto modules | `Module:<Name>` |
 
-`ImportDemoData.php` is additive; it creates and updates pages from source files but does NOT delete
-pages whose source files were removed. Use `make reinstall-db && make load-test-data` from the repo
-root for a clean-slate import after renames or deletions.
+`ImportDemoData.php` is additive: it creates and updates pages but does NOT delete pages whose
+source files were removed. Use `make reinstall-db && make load-test-data` from the repo root for
+a clean-slate import after renames or deletions.
 
 ## Filename and ID conventions
 
@@ -25,7 +24,7 @@ root for a clean-slate import after renames or deletions.
   Examples: `Diego_Velázquez.json`, `Musée_d'Orsay.json`, `Starry_Night_Over_the_Rhône.json`.
   Otherwise auto-linked Cypher results and wikilinks dead-end.
 - Underscores in filenames render as spaces in page titles.
-- **Avoid colons in labels.** A colon in a wiki page title is interpreted as a namespace prefix.
+- **Avoid colons in labels.** MediaWiki interprets a colon in a page title as a namespace prefix.
   Rephrase, e.g. "Lessons from MARC to RDF migration" rather than "MARC to RDF: Lessons learned".
 
 Subject, relation, and option IDs:
@@ -35,16 +34,16 @@ Subject, relation, and option IDs:
   `l`, `I`.
 - Existing conventions:
   - Museum corpus uses random base62 (e.g. `sEpfwJLnxyQy6vR`).
-  - Older / structured corpora group by prefix (`s1demo1...` ACME, `s1demo7...` ACME structural,
+  - Older corpora group by prefix (`s1demo1...` ACME, `s1demo7...` ACME structural,
     `s1demo8...` research). Pick a fresh group prefix for new corpora.
-- Uniqueness across the entire dataset is the only hard requirement.
+- The only hard requirement is uniqueness across the dataset.
 
 ## Wikitext gotchas
 
-1. **Leading whitespace = `<pre>` block.** Never start a continuation line with whitespace; MediaWiki
+1. **Leading whitespace = `<pre>` block.** Never start a continuation line with whitespace. MediaWiki
    renders any line starting with a space as preformatted. Keep long bullets on a single source line.
 2. **`[[Page?action=edit|Label]]` does NOT work.** Internal-link syntax does not accept query
-   strings; the question mark becomes part of the page title. Use external-link syntax with `fullurl`:
+   strings, so the question mark becomes part of the page title. Use external-link syntax with `fullurl`:
 
    ```wikitext
    [{{fullurl:{{FULLPAGENAME}}|action=edit}} Edit this page]
@@ -52,17 +51,17 @@ Subject, relation, and option IDs:
    ```
 
 3. **Subject pages auto-render their Main Subject infobox** at the top of the page, emitted by
-   `NeoWikiHooks::handleContentPage` (`BeforePageDisplay`). Don't `{{#view}}` the same subject in the
-   page's wikitext; you get two infoboxes. Use `{{#view}}` only on plain `Page/` hubs (which have no
-   Main Subject) or to embed a different subject.
+   `NeoWikiHooks::handleContentPage` (`BeforePageDisplay`). Don't `{{#view}}` the same subject in
+   the page's wikitext, or you get two infoboxes. Use `{{#view}}` only on plain `Page/` hubs (which
+   have no Main Subject) or to embed a different subject.
 4. **`{{#view:id|LayoutName}}` is positional.** The named form `{{#view:id|layout=LayoutName}}` is
    silently ignored.
 
 ## Cypher gotchas
 
 - **Text properties land in Neo4j as arrays even when declared `"multiple": false`.** Cypher queries
-  on text properties must index: `p.Venue[0] AS Venue`. Otherwise the table cell renders as the
-  literal string `table` (Lua `tostring()` on a list).
+  on text properties must index: `p.Venue[0] AS Venue`. Otherwise the cell renders as the literal
+  string `table` (Lua `tostring()` on a list).
 - Use backticks for property and relation names with spaces:
 
   ```cypher
@@ -71,7 +70,7 @@ Subject, relation, and option IDs:
   ```
 
 - The Neo4j projection can lag after edits. If a query returns 0 rows when you expect data, run
-  `make rebuild-graph-databases` from the repo root and reload.
+  `make rebuild-graph-databases` from the repo root, then reload.
 
 ## Reusable modules
 
@@ -86,21 +85,21 @@ Subject, relation, and option IDs:
 
 Use-case hub pages follow a five-section pattern:
 
-1. **Scenario** — one short paragraph framing who the dataset is for and what story it tells.
-2. **Featured** — `{{#invoke:FeaturedRow|render|<id>|<id>}}` showing 2 representative subjects.
-   **Skip this section on Subject-as-page hubs** (e.g. `ACME_Inc`); the auto-rendered infobox at
+1. **Scenario**. One short paragraph framing who the dataset is for and what story it tells.
+2. **Featured**. `{{#invoke:FeaturedRow|render|<id>|<id>}}` showing 2 representative subjects.
+   **Skip this section on Subject-as-page hubs** (e.g. `ACME_Inc`). The auto-rendered infobox at
    the top already serves as the featured view.
-3. **Question Answered** — a natural-language question heading followed by a Cypher result table.
-4. **Browse** — a curated table of subjects in the dataset.
-5. **How this is built** — links to schemas, layouts, and an "Edit this page" link.
+3. **Question Answered**. A natural-language question heading followed by a Cypher result table.
+4. **Browse**. A curated table of subjects in the dataset.
+5. **How this is built**. Links to schemas, layouts, and an "Edit this page" link.
 
-Cypher tables on hubs should use `linkColumns=` so subject names render as wikilinks.
+Use `linkColumns=` on hub-page Cypher tables so subject names render as wikilinks.
 
 ## Codex CSS
 
 This Docker setup loads only color/border-color Codex tokens at `:root`, **without** the `--cdx-`
-prefix. Font sizes, font weights, line heights, paddings, gaps, and border-radius tokens are NOT
-exposed as CSS variables. Always include a hex fallback.
+prefix. Font sizes, weights, line heights, paddings, gaps, and border-radius tokens are NOT exposed
+as CSS variables. Always include a hex fallback.
 
 | Use | Variable | Light fallback |
 |---|---|---|
@@ -111,22 +110,22 @@ exposed as CSS variables. Always include a hex fallback.
 | Border | `var(--border-color-base, #a2a9b1)` | `#a2a9b1` |
 | Subtle border | `var(--border-color-subtle, #c8ccd1)` | `#c8ccd1` |
 
-For everything else (sizes, spacing, radii, weights), use plain numeric values.
+For sizes, spacing, radii, and weights, use plain numeric values.
 
 ## Subject prose conventions
 
 Prose `.wikitext` files paired with subjects follow Wikipedia conventions:
 
 - **Bold the first mention** of the page's title: `'''Subject Name''' is...`.
-- **Wikilink other demo-wiki subjects** on first mention: `[[Page Name]]` or `[[Page Name|short
+- **Wikilink other demo-wiki subjects** on first mention: `[[Page Name]]`, or `[[Page Name|short
   label]]` if the displayed text differs. Link the first occurrence only.
 - Don't link the page's own title (Wikipedia self-link rule).
-- 1-2 short factual paragraphs; no headings, no markup beyond plain prose.
+- 1-2 short factual paragraphs. No headings, no markup beyond plain prose.
 - Match the existing `Subject/Claude_Monet.wikitext` style.
 
 Reserve prose for subjects visitors are likely to land on (museums, artists, featured publications,
-ACME entities). Reference data like attendance records doesn't need prose; the auto-infobox is the
-content.
+ACME entities). Reference data such as attendance records doesn't need prose; the auto-infobox is
+the content.
 
 ## Verifying changes
 
@@ -143,5 +142,5 @@ make reinstall-db && make load-test-data
 make rebuild-graph-databases
 ```
 
-A successful import ends with `Import finished` and zero `FAILED` lines. The wiki is reachable at
+A successful import ends with `Import finished` and zero `FAILED` lines. The wiki runs at
 `http://localhost:8484/`.

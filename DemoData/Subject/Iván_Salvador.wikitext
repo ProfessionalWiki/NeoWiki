@@ -1,3 +1,3 @@
-'''Iván Salvador''' is an information scientist whose research centres on entity reconciliation across cultural heritage datasets. His work addresses the practical and methodological challenges of linking records about the same person, place, or work across collections that use different identifier systems.
+'''Iván Salvador''' is an information scientist focused on entity reconciliation across cultural heritage datasets. His work addresses the practical and methodological challenges of linking records about the same person, place, or work across collections that use different identifier systems.
 
 He is affiliated with [[CSIC Madrid]] and has published on [[Reconciling Author Identifiers Across Cultural Heritage Datasets|author identifier reconciliation]], [[Cross-Lingual Author Disambiguation at Scale|cross-lingual disambiguation]], and [[Multilingual Named Entity Recognition for Historical Texts|named-entity recognition for historical texts]].

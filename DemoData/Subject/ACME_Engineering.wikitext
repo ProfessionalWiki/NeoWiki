@@ -1,3 +1,3 @@
-'''ACME Engineering''' builds and maintains the company's product portfolio, from the original [[Acme Anvil|Anvil]] through the more recent [[Acme Rocket|Rocket]] and [[Acme TNT|TNT]] lines. With a headcount of 184, it is the largest department at [[ACME Inc|ACME]].
+'''ACME Engineering''' builds and maintains the company's product portfolio, from the original [[Acme Anvil|Anvil]] to the more recent [[Acme Rocket|Rocket]] and [[Acme TNT|TNT]] lines. At 184 people, it is the largest department at [[ACME Inc|ACME]].
 
-The team is based primarily at the [[ACME Amsterdam HQ|Amsterdam headquarters]] and owns end-to-end responsibility for product design, manufacturing, and post-launch support.
+The team is based at the [[ACME Amsterdam HQ|Amsterdam headquarters]] and owns product design, manufacturing, and post-launch support end to end.

@@ -1,3 +1,3 @@
 The Spanish National Research Council, known by its Spanish acronym CSIC, is the largest public research institution in Spain. Founded in 1939 and headquartered in [[Madrid]], it spans the natural sciences, social sciences, and humanities across a network of institutes.
 
-In the demo's research graph, '''CSIC Madrid''' hosts work on entity reconciliation and named-entity recognition, contributed by affiliated authors to projects on cultural heritage linked data.
+In the demo's research graph, '''CSIC Madrid''' hosts work on entity reconciliation and named-entity recognition. Affiliated authors contribute to projects on cultural heritage linked data.

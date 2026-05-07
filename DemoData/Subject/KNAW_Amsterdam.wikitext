@@ -1,3 +1,3 @@
-The Royal Netherlands Academy of Arts and Sciences, known by its Dutch acronym KNAW, was founded in 1808 and is based in [[Amsterdam]]. It hosts a network of humanities and social science research institutes alongside its role as a learned society.
+The Royal Netherlands Academy of Arts and Sciences, known by its Dutch acronym KNAW, was founded in 1808 and is based in [[Amsterdam]]. Alongside its role as a learned society, it hosts a network of humanities and social science research institutes.
 
 In the demo's research graph, '''KNAW Amsterdam''' leads the [[European Literary Bibliography]] project and is the affiliation of authors working on bibliographic linked data and MARC21 to RDF migration.

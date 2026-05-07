@@ -1,3 +1,3 @@
-"'''Multilingual Named Entity Recognition for Historical Texts'''" proposes a training and evaluation methodology for NER models that have to cope with the spelling variation, code-switching, and non-standard orthography typical of pre-modern European sources. The paper benchmarks several transformer-based architectures against a curated set of historical corpora.
+"'''Multilingual Named Entity Recognition for Historical Texts'''" proposes a training and evaluation methodology for NER models that must cope with the spelling variation, code-switching, and non-standard orthography typical of pre-modern European sources. The paper benchmarks several transformer-based architectures against a curated set of historical corpora.
 
-The work underpins the [[Multilingual NER Toolkit]] project, where the methodology is packaged as reusable models and evaluation harnesses for downstream digital humanities use.
+The work underpins the [[Multilingual NER Toolkit]] project, which packages the methodology as reusable models and evaluation harnesses for downstream digital humanities use.

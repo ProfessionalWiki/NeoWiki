@@ -1,3 +1,3 @@
-'''ACME Vienna Office''' is the company's central European sales and support hub, located on the Kärntner Ring in [[Vienna]]'s first district. It opened in 2011 to accompany the launch of the [[Acme Rocket]] product line.
+'''ACME Vienna Office''' is the company's central European sales and support hub, on the Kärntner Ring in [[Vienna]]'s first district. It opened in 2011 alongside the launch of the [[Acme Rocket]] product line.
 
-The office coordinates customer-facing activity across the DACH region and partners closely with the [[ACME Engineering|Engineering team]] in [[Amsterdam]] on field deployments.
+The office coordinates customer-facing activity across the DACH region and works closely with the [[ACME Engineering|Engineering team]] in [[Amsterdam]] on field deployments.

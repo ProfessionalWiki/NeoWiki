@@ -26,7 +26,7 @@ card1_title=Museum collection
 
 == About this wiki ==
 
-NeoWiki is in active development. Public interfaces will change and structural changes will continue. This demo wiki may be reset periodically; edits may not persist.
+NeoWiki is under active development. Public interfaces and structure will continue to change. This demo wiki may be reset periodically, and edits may not persist.
 
 * [https://github.com/ProfessionalWiki/NeoWiki Source on GitHub]
 * [https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs Technical documentation]

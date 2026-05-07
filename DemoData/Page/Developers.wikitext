@@ -1,4 +1,4 @@
-NeoWiki exposes a programmable surface: a graph database, parser functions, a Lua library, special pages, and a REST API. This page demonstrates each, showing the wikitext source above the rendered result.
+NeoWiki exposes a programmable surface: a graph database, parser functions, a Lua library, special pages, and a REST API. This page demonstrates each, showing the wikitext source alongside the rendered result.
 
 == Browse ==
 
@@ -8,7 +8,7 @@ NeoWiki exposes a programmable surface: a graph database, parser functions, a Lu
 
 == Query the graph ==
 
-The <code><nowiki>{{#cypher_raw}}</nowiki></code> parser function runs a Cypher query and returns the raw JSON result.
+The <code><nowiki>{{#cypher_raw}}</nowiki></code> parser function runs a Cypher query and returns the raw JSON.
 
 Source:
 
@@ -42,7 +42,7 @@ Result: {{#neowiki_value:Founded at|page=ACME Inc}}
 
 == Read values in Lua ==
 
-The <code>mw.neowiki</code> Lua library exposes structured data to your own Scribunto modules. The example below reads a single property and runs a Cypher query.
+The <code>mw.neowiki</code> Lua library exposes structured data to your Scribunto modules. The example below reads a single property and runs a Cypher query.
 
 [[Module:LuaExample]]:
 
@@ -90,11 +90,11 @@ For the full library reference, see the [https://github.com/ProfessionalWiki/Neo
 
 == Reactive UI ==
 
-NeoWiki components can be embedded in pages as reactive UIs that update without a page reload. See [[Reactive UI example]].
+NeoWiki components embed in pages as reactive UIs that update without a page reload. See [[Reactive UI example]].
 
 == REST API ==
 
-NeoWiki exposes a REST API for reading and writing structured data. The OpenAPI 3.0 specification is auto-generated:
+NeoWiki exposes a REST API for reading and writing structured data. The OpenAPI 3.0 spec is auto-generated:
 
 * OpenAPI spec: <code>[{{SERVER}}{{SCRIPTPATH}}/rest.php/specs/v0/module/- /rest.php/specs/v0/module/-]</code>
 * Module discovery: <code>[{{SERVER}}{{SCRIPTPATH}}/rest.php/specs/v0/discovery /rest.php/specs/v0/discovery]</code>
@@ -104,4 +104,4 @@ Representative read endpoints:
 * <code>GET /neowiki/v0/subject/{subjectId}</code>
 * <code>GET /neowiki/v0/schema/{schemaName}</code>
 
-For full endpoint documentation, see the OpenAPI spec linked above.
+For full endpoint documentation, see the OpenAPI spec above.
