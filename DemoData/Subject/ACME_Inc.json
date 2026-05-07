@@ -2,7 +2,7 @@
 	"mainSubject": "s1demo1aaaaaaa1",
 	"subjects": {
 		"s1demo1aaaaaaa1": {
-			"label": "ACME Inc.",
+			"label": "ACME Inc",
 			"schema": "Company",
 			"statements": {
 				"Founded at": {
