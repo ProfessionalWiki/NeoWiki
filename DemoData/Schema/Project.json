@@ -1,0 +1,19 @@
+{
+	"description": "A research project that produces publications and other outputs.",
+	"propertyDefinitions": {
+		"Description": {
+			"type": "text"
+		},
+		"Started": {
+			"type": "number",
+			"minimum": 1900,
+			"precision": 0,
+			"description": "Year the project started"
+		},
+		"Lead institution": {
+			"type": "relation",
+			"relation": "Led by",
+			"targetSchema": "Institution"
+		}
+	}
+}

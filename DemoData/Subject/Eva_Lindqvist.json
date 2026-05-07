@@ -1,0 +1,28 @@
+{
+	"mainSubject": "s1demo8aaaaaab1",
+	"subjects": {
+		"s1demo8aaaaaab1": {
+			"label": "Eva Lindqvist",
+			"schema": "Author",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Computational philologist working on multilingual literary corpora." ]
+				},
+				"Affiliation": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaB1",
+							"target": "s1demo8aaaaaai2"
+						}
+					]
+				},
+				"ORCID": {
+					"type": "url",
+					"value": [ "https://orcid.org/0000-0002-1111-2222" ]
+				}
+			}
+		}
+	}
+}

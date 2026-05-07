@@ -1,0 +1,28 @@
+{
+	"mainSubject": "s1demo8aaaaaap2",
+	"subjects": {
+		"s1demo8aaaaaap2": {
+			"label": "Heritage Linked Data",
+			"schema": "Project",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "A research programme connecting European cultural heritage datasets through CIDOC CRM mappings." ]
+				},
+				"Started": {
+					"type": "number",
+					"value": 2019
+				},
+				"Lead institution": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaC2",
+							"target": "s1demo8aaaaaai1"
+						}
+					]
+				}
+			}
+		}
+	}
+}

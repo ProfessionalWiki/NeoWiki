@@ -1,0 +1,28 @@
+{
+	"mainSubject": "s1demo8aaaaaap3",
+	"subjects": {
+		"s1demo8aaaaaap3": {
+			"label": "Multilingual NER Toolkit",
+			"schema": "Project",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Open-source named-entity recognition tooling tuned for historical European languages." ]
+				},
+				"Started": {
+					"type": "number",
+					"value": 2022
+				},
+				"Lead institution": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaC3",
+							"target": "s1demo8aaaaaai3"
+						}
+					]
+				}
+			}
+		}
+	}
+}

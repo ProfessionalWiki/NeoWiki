@@ -1,0 +1,32 @@
+{
+	"mainSubject": "s1demo8aaaaaai2",
+	"subjects": {
+		"s1demo8aaaaaai2": {
+			"label": "KNAW Amsterdam",
+			"schema": "Institution",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Royal Netherlands Academy of Arts and Sciences, hosting humanities and social science research institutes." ]
+				},
+				"City": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaA2",
+							"target": "sEpfwJLnuwcxvuJ"
+						}
+					]
+				},
+				"Founded": {
+					"type": "number",
+					"value": 1808
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.knaw.nl" ]
+				}
+			}
+		}
+	}
+}

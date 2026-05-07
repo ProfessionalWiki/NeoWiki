@@ -1,0 +1,36 @@
+{
+	"mainSubject": "s1demo8aaaaaaP6",
+	"subjects": {
+		"s1demo8aaaaaaP6": {
+			"label": "TEI Encoding Patterns for Multilingual Editions",
+			"schema": "Publication",
+			"statements": {
+				"Title": {
+					"type": "text",
+					"value": [ "TEI Encoding Patterns for Multilingual Editions" ]
+				},
+				"Year": {
+					"type": "number",
+					"value": 2024
+				},
+				"Venue": {
+					"type": "text",
+					"value": [ "Journal of the Text Encoding Initiative" ]
+				},
+				"Authors": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaE3",
+							"target": "s1demo8aaaaaab3"
+						}
+					]
+				},
+				"URL": {
+					"type": "url",
+					"value": [ "https://example.org/publications/tei-multilingual" ]
+				}
+			}
+		}
+	}
+}

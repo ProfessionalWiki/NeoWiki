@@ -1,0 +1,28 @@
+{
+	"mainSubject": "s1demo8aaaaaab3",
+	"subjects": {
+		"s1demo8aaaaaab3": {
+			"label": "Aurélie Cordier",
+			"schema": "Author",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Digital humanities researcher focused on TEI encoding and bibliographic ontologies." ]
+				},
+				"Affiliation": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaB3",
+							"target": "s1demo8aaaaaai3"
+						}
+					]
+				},
+				"ORCID": {
+					"type": "url",
+					"value": [ "https://orcid.org/0000-0003-5555-6666" ]
+				}
+			}
+		}
+	}
+}

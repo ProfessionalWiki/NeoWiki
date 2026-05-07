@@ -1,0 +1,28 @@
+{
+	"mainSubject": "s1demo8aaaaaab5",
+	"subjects": {
+		"s1demo8aaaaaab5": {
+			"label": "Hannah Voss",
+			"schema": "Author",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Knowledge graph researcher with a focus on provenance and FAIR data principles." ]
+				},
+				"Affiliation": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaB5",
+							"target": "s1demo8aaaaaai1"
+						}
+					]
+				},
+				"ORCID": {
+					"type": "url",
+					"value": [ "https://orcid.org/0000-0001-9999-0000" ]
+				}
+			}
+		}
+	}
+}

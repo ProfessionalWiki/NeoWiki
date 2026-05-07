@@ -1,0 +1,49 @@
+{
+	"mainSubject": "s1demo8aaaaaaP9",
+	"subjects": {
+		"s1demo8aaaaaaP9": {
+			"label": "Cross-Lingual Author Disambiguation at Scale",
+			"schema": "Publication",
+			"statements": {
+				"Title": {
+					"type": "text",
+					"value": [ "Cross-Lingual Author Disambiguation at Scale" ]
+				},
+				"Year": {
+					"type": "number",
+					"value": 2023
+				},
+				"Venue": {
+					"type": "text",
+					"value": [ "ECIR Proceedings" ]
+				},
+				"Authors": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaE9",
+							"target": "s1demo8aaaaaab4"
+						},
+						{
+							"id": "r1demo8aaaaaaEA",
+							"target": "s1demo8aaaaaab3"
+						}
+					]
+				},
+				"Project": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaF1",
+							"target": "s1demo8aaaaaap3"
+						}
+					]
+				},
+				"URL": {
+					"type": "url",
+					"value": [ "https://example.org/publications/cross-lingual-disambiguation" ]
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,13 @@
+{
+	"schema": "Publication",
+	"type": "infobox",
+	"description": "Publication overview with title, authors, year, venue, project, and URL",
+	"displayRules": [
+		{ "property": "Title" },
+		{ "property": "Authors" },
+		{ "property": "Year" },
+		{ "property": "Venue" },
+		{ "property": "Project" },
+		{ "property": "URL" }
+	]
+}

@@ -1,0 +1,20 @@
+A fictional research-output catalog used to demonstrate NeoWiki's relations across institutions, authors, projects, and publications. The dataset is invented for the demo and aligns with the kind of structured bibliographic content found in the European Literary Bibliography case study.
+
+== Featured publication ==
+
+{{#view:s1demo8aaaaaaP1|PublicationOverview}}
+
+== Publications per project ==
+
+{{#invoke:NeoWikiDemo|query|MATCH (p:Publication)-[:`Part of project`]->(pr:Project) RETURN pr.name AS Project, count(p) AS Publications ORDER BY Publications DESC|columns=Project, Publications|linkColumns=Project}}
+
+== Browse ==
+
+{{#invoke:NeoWikiDemo|query|MATCH (p:Publication) RETURN p.name AS Title, p.Year AS Year, p.Venue[0] AS Venue ORDER BY Year DESC, Title|columns=Title, Year, Venue|linkColumns=Title}}
+
+== How this is built ==
+
+* Schemas: [[Schema:Publication]], [[Schema:Author]], [[Schema:Institution]], [[Schema:Project]]
+* Layout: [[Layout:PublicationOverview]]
+* See the source of one publication: [{{fullurl:Linked Bibliography Mappings for European Archives|action=edit}} Edit Linked Bibliography Mappings for European Archives]
+* The featured infobox uses <code><nowiki>{{#view}}</nowiki></code>; tables are produced by Cypher queries via [[Module:NeoWikiDemo]].
