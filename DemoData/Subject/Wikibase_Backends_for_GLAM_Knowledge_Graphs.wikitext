@@ -1,0 +1,3 @@
+"'''Wikibase Backends for GLAM Knowledge Graphs'''" assesses Wikibase as a platform for galleries, libraries, archives, and museums building their own knowledge graphs. The paper compares it against general-purpose triple stores on modelling flexibility, editorial workflow, and federation with Wikidata.
+
+The work informs the [[Heritage Linked Data]] programme, where Wikibase is one of the candidate backends for institution-led contributions to the broader linked-data ecosystem.

@@ -1,0 +1,3 @@
+"'''Federated Cypher Queries Across Wiki Instances'''" describes an architecture for running Cypher queries that span multiple wiki-hosted graph stores. The paper details a query-planning layer that decomposes a single user query into per-instance subqueries and merges results without requiring a central index.
+
+The approach is presented as a practical step toward cross-institution knowledge graph use cases, where each contributing wiki retains autonomy over its own data and access controls.

@@ -1,0 +1,3 @@
+"'''Lessons from a Year of MARC to RDF Migration'''" reports on the practical experience of converting a sizeable MARC21 catalogue into RDF over a twelve-month programme. The paper documents the recurring data-quality issues encountered, the trade-offs between faithful preservation and cleanup, and the workflow choices that proved durable.
+
+The findings inform the [[European Literary Bibliography]] project by setting out reusable patterns for migrating legacy bibliographic records into linked open data.

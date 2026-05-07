@@ -1,0 +1,3 @@
+'''Aurélie Cordier''' is a digital humanities researcher whose work focuses on TEI encoding and bibliographic ontologies. She studies how scholarly editing practices can be modelled in shared, machine-readable formats without losing editorial intent.
+
+She is affiliated with [[Sorbonne University]] and has published on [[TEI Encoding Patterns for Multilingual Editions|TEI encoding patterns for multilingual editions]] and on [[Cross-Lingual Author Disambiguation at Scale|cross-lingual author disambiguation]].

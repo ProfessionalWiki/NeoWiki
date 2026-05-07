@@ -1,0 +1,3 @@
+"'''Cross-Lingual Author Disambiguation at Scale'''" presents methods for resolving author identities across bibliographic datasets that span multiple languages and transliteration conventions. The paper combines name normalisation, co-author network signals, and topic-aware embeddings to disambiguate authors at the size of national catalogue exports.
+
+The work feeds into the [[Multilingual NER Toolkit]] project, where the disambiguation pipeline is integrated with upstream entity recognition for historical European texts.

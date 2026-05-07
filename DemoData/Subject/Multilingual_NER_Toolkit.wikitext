@@ -1,0 +1,3 @@
+The '''Multilingual NER Toolkit''' is an open-source named-entity recognition project tuned for historical European languages. Started in 2022, it provides models and tooling that handle the spelling variation, archaic vocabulary, and code-switching common in pre-modern texts.
+
+The project is led by [[Sorbonne University]] and is used as a foundation for downstream work on entity disambiguation and linking across cultural heritage corpora.

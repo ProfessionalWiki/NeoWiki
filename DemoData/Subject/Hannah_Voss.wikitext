@@ -1,0 +1,3 @@
+'''Hannah Voss''' is a knowledge graph researcher whose work concentrates on provenance modelling and FAIR data principles. She examines how the origins, transformations, and authorship of statements in open knowledge graphs can be captured and queried.
+
+She is based at [[OEAW Vienna]] and has contributed to publications on [[A Survey of Provenance Models in Open Knowledge Graphs|provenance models]], [[Federated Cypher Queries Across Wiki Instances|federated Cypher queries]], and [[Wikibase Backends for GLAM Knowledge Graphs|Wikibase backends for GLAM knowledge graphs]].

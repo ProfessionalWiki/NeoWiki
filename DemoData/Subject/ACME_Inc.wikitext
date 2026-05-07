@@ -1,4 +1,4 @@
-A fictional company used to demonstrate NeoWiki's structured-data features for a corporate knowledge base scenario: departments, offices, products, and the relations between them. ACME Inc is the Main Subject of this page; each related entity has its own page, linked through the company's relations shown in the infobox above.
+A fictional company used to demonstrate NeoWiki's structured-data features for a corporate knowledge base scenario: departments, offices, products, and the relations between them. '''ACME Inc''' is the Main Subject of this page; each related entity has its own page, linked through the company's relations shown in the infobox above.
 
 == Which departments are largest by headcount? ==
 

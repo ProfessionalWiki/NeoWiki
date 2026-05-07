@@ -1,0 +1,3 @@
+'''ACME Operations''' runs the company's back-office functions, covering finance, people, IT, and facilities. With a headcount of 47, it is the leanest of [[ACME Inc|ACME]]'s three departments.
+
+The team keeps the day-to-day infrastructure of the company running and coordinates the planning cycles that underpin the broader corporate roadmap.

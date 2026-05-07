@@ -1,0 +1,3 @@
+The Austrian Academy of Sciences, known by its German acronym OEAW, is the largest non-university research institution in Austria. Founded in 1847 and based in [[Vienna]], it covers the humanities and social sciences alongside the natural and technical sciences.
+
+In the demo's research graph, '''OEAW Vienna''' leads the [[Heritage Linked Data]] programme and is the affiliation of authors working on provenance modelling, federated graph queries, and GLAM knowledge graphs.
