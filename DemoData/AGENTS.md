@@ -97,20 +97,24 @@ Use `linkColumns=` on hub-page Cypher tables so subject names render as wikilink
 
 ## Codex CSS
 
-This Docker setup loads only color/border-color Codex tokens at `:root`, **without** the `--cdx-`
-prefix. Font sizes, weights, line heights, paddings, gaps, and border-radius tokens are NOT exposed
-as CSS variables. Always include a hex fallback.
+Always pick design values from [Codex 1.14.0](https://doc.wikimedia.org/codex/v1.14.0/design-tokens/overview.html)
+tokens. Don't invent arbitrary colors, spacings, or sizes. MediaWiki 1.43 ships this version.
 
-| Use | Variable | Light fallback |
-|---|---|---|
-| Surface background | `var(--background-color-base, #fff)` | `#fff` |
-| Subtle / interactive surface | `var(--background-color-interactive-subtle, #eaecf0)` | `#eaecf0` |
-| Primary text | `var(--color-base, #202122)` | `#202122` |
-| Secondary text | `var(--color-subtle, #54595d)` | `#54595d` |
-| Border | `var(--border-color-base, #a2a9b1)` | `#a2a9b1` |
-| Subtle border | `var(--border-color-subtle, #c8ccd1)` | `#c8ccd1` |
+The Vector skin exposes color and border-color tokens as CSS custom properties at `:root`, without
+the `--cdx-` prefix. Spacing, border-radius, font-size, font-weight, and line-height tokens are not
+exposed as variables.
 
-For sizes, spacing, radii, and weights, use plain numeric values.
+For colors and borders, use the CSS variable with a hex fallback so the design degrades gracefully
+where Codex isn't loaded:
+
+```css
+background: var(--background-color-interactive-subtle, #eaecf0);
+border: 1px solid var(--border-color-subtle, #c8ccd1);
+color: var(--color-subtle, #54595d);
+```
+
+For sizes, spacing, radii, and weights, use the Codex token's value as a numeric literal so the
+result still aligns with the design system.
 
 ## Subject prose conventions
 
