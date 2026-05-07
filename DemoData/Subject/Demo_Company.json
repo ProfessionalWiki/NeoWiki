@@ -1,0 +1,29 @@
+{
+	"mainSubject": "s1demo9aaaaaaa1",
+	"subjects": {
+		"s1demo9aaaaaaa1": {
+			"label": "Demo Company",
+			"schema": "Company",
+			"statements": {
+				"Founded at": {
+					"type": "number",
+					"value": 2020
+				},
+				"Websites": {
+					"type": "url",
+					"value": [
+						"https://demo.example"
+					]
+				},
+				"Status": {
+					"type": "select",
+					"value": ["o1demo1aaaaaaa1"]
+				},
+				"World domination progress": {
+					"type": "number",
+					"value": 7
+				}
+			}
+		}
+	}
+}

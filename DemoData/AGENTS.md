@@ -77,7 +77,7 @@ Subject, relation, and option IDs:
 | Module | Purpose | Example invocation |
 |---|---|---|
 | `Module:NeoWikiDemo` | Renders Cypher results as wikitables. `query` accepts `columns=Col1, Col2` for ordering and `linkColumns=Col1` to wrap cells in `[[...]]`. | `{{#invoke:NeoWikiDemo\|query\|MATCH (m:Museum) RETURN m.name AS Museum, m.Founded AS Founded\|columns=Museum, Founded\|linkColumns=Museum}}` |
-| `Module:FeaturedRow` | Renders a row of Subject views in a centered, scrollable container. Optional `layout=` named arg. | `{{#invoke:FeaturedRow\|render\|<id1>\|<id2>}}` |
+| `Module:SubjectRow` | Renders a row of Subject views in a centered, scrollable container. Optional `layout=` named arg. | `{{#invoke:SubjectRow\|render\|<id1>\|<id2>}}` |
 | `Module:Card` | Renders a row of styled cards (used by `Main_Page`). | `{{#invoke:Card\|cards\|card1_title=...\|card1_link=...}}` |
 | `Module:LuaExample` | Educational example for the Developers hub showing direct `mw.neowiki` use. | `{{#invoke:LuaExample\|foundedYear\|Rijksmuseum}}` |
 
@@ -86,7 +86,7 @@ Subject, relation, and option IDs:
 Use-case hub pages follow a five-section pattern:
 
 1. **Scenario**. One short paragraph framing who the dataset is for and what story it tells.
-2. **Featured**. `{{#invoke:FeaturedRow|render|<id>|<id>}}` showing 2 representative subjects.
+2. **Featured**. `{{#invoke:SubjectRow|render|<id>|<id>}}` showing 2 representative subjects.
    **Skip this section on Subject-as-page hubs** (e.g. `ACME_Inc`). The auto-rendered infobox at
    the top already serves as the featured view.
 3. **Question Answered**. A natural-language question heading followed by a Cypher result table.

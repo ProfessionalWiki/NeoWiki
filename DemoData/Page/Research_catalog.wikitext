@@ -2,7 +2,7 @@ A fictional research-output catalog showing NeoWiki's relations across instituti
 
 == Featured publications ==
 
-{{#invoke:FeaturedRow|render|layout=PublicationOverview|s1demo8aaaaaaP1|s1demo8aaaaaaP5}}
+{{#invoke:SubjectRow|render|layout=PublicationOverview|s1demo8aaaaaaP1|s1demo8aaaaaaP5}}
 
 == Publications per project ==
 

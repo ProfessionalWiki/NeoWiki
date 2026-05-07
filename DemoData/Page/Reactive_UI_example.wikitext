@@ -1,15 +1,7 @@
-This page demonstrates NeoWiki's reactive frontend. The same Subject is rendered three times below. Edits made in any view propagate immediately to the others without a page reload.
+This page demonstrates NeoWiki's reactive frontend. The [[Demo Company]] Subject is rendered below in three views: two with the default schema and one with the [[Layout:CompanyOverview|CompanyOverview]] layout. Edits in any view propagate immediately to the others without a page reload.
 
-The featured Subject is [[ACME Inc]].
+Demo Company is a sandbox Subject used only on this page, so editing it won't affect the rest of the demo wiki.
 
-Default view:
+{{#invoke:SubjectRow|render|s1demo9aaaaaaa1|s1demo9aaaaaaa1}}
 
-{{#view:s1demo1aaaaaaa1}}
-
-With the [[Layout:CompanyOverview|CompanyOverview]] layout:
-
-{{#view:s1demo1aaaaaaa1|CompanyOverview}}
-
-Default view again:
-
-{{#view:s1demo1aaaaaaa1}}
+{{#invoke:SubjectRow|render|layout=CompanyOverview|s1demo9aaaaaaa1}}

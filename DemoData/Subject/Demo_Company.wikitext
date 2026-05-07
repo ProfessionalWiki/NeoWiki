@@ -1,0 +1,1 @@
+'''Demo Company''' is a sandbox Subject used by the [[Reactive UI example]] page. It is intentionally isolated from the rest of the demo dataset so edits made to demonstrate reactivity don't leak into the [[ACME Inc]] corporate hub.
