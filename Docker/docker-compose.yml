@@ -22,7 +22,7 @@ services:
       - NEO4J_USERNAME_READ
       - NEO4J_PASSWORD_READ
     healthcheck:
-      test: "curl -fsSL http://localhost:80/index.php/Special:Version | grep 'Jeroen De Dauw'"
+      test: "curl -fs http://localhost:80/wiki/Special:Version | grep -q 'Jeroen De Dauw'"
       interval: 60s
       timeout: 5s
       retries: 1
@@ -87,7 +87,7 @@ services:
     restart: on-failure:3
     working_dir: /workspace/resources/ext.neowiki
     volumes:
-      - ../:/workspace
+      - ../:/workspace:z
     command: sh -c "npm install && npm run build:watch"
     environment:
       - npm_config_cache=/tmp/.npm
