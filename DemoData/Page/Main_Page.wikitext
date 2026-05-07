@@ -1,104 +1,34 @@
-<div style="max-width:1200px; font-size: 1.15rem">
-Welcome to the NeoWiki demo wiki!
-
-NeoWiki turns your wiki into a collaborative graph database by letting you store and query structured information.
-Information is stored in versioned document form inside wiki pages. The latest version is also stored in
-graph databases, via which it can be queried.
-
-NeoWiki is in the experimental proof-of-concept phase. It is not production-ready, public interfaces will change,
-big structural changes will happen, and key functionality is still missing.
-
-This demo exists to gather feedback to inform further development.
-
-You can find [https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs technical documentation] in the
-[https://github.com/ProfessionalWiki/NeoWiki NeoWiki git repository]. You can also
-[https://github.com/ProfessionalWiki/NeoWiki/issues view the issue tracker] or
-[https://professional.wiki/en/contact contact Professional Wiki] (the maintainer of NeoWiki).
+<div style="padding:24px 16px;background:var(--background-color-interactive-subtle, #eaecf0);border:1px solid var(--border-color-subtle, #c8ccd1);border-radius:2px;margin-block:1em">
+<div style="font-size:1.5rem;font-weight:600;line-height:1.25;color:var(--color-base, #202122);max-width:700px">NeoWiki turns wiki pages into queryable structured data</div>
+<div style="color:var(--color-subtle, #54595d);max-width:560px;margin-top:4px">Schemas, infoboxes, relations, and Cypher, native to MediaWiki.</div>
 </div>
 
-== Discover NeoWiki Step by Step ==
+== Explore by use case ==
 
-Terminology is explained in [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/Glossary.md the glossary].
+{{#invoke:Card|cards|
+card1_title=Museum collection
+|card1_description=Connect institutions, artists, artworks, and exhibitions.
+|card1_link=Museum collection
 
-'''As a reader:'''
+|card2_title=ACME Inc
+|card2_description=Document a company's departments, products, and offices.
+|card2_link=ACME Inc
 
-* View a Subject: [[Professional Wiki]]
-* View a Schema: [[Schema:Company]]
+|card3_title=Research catalog
+|card3_description=Track publications, authors, institutions, and projects.
+|card3_link=Research catalog
+}}
 
-'''As an editor:'''
+== For developers ==
 
-* Edit a Subject: [[Professional Wiki]] (login required)
-* Edit a Schema: either via a Subject using it, i.e. [[Professional Wiki]], or directly on the Schema page, i.e. [[Schema:Company]]
-* Create a Subject: Create a new page with any content, then click "Create subject" in the NeoWiki section of the sidebar.
+* [[Developers|Developers hub]]: Cypher, parser functions, Lua, REST API
+* [[Special:Schemas]], [[Special:Layouts]], [[Special:NeoJson|Special:NeoJson/<subject id>]]
 
-'''As a developer:'''
+== About this wiki ==
 
-* View Subject JSON: [[Special:NeoJson/ACME_Inc]] (developer UI, normal users will not see JSON. [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/SubjectFormat.md View docs])
-* Query the graph database: [[Cypher|Cypher raw example]]
-* Read values in wikitext: [[Value parser function]]
-* Read values in Lua: [[Lua Data Access]]
-* [[#REST_API_endpoints|Explore the REST API]]
+NeoWiki is in active development. Public interfaces will change and structural changes will continue. This demo wiki may be reset periodically; edits may not persist.
 
-== European Museums ==
-
-A dataset of European museums, artists, and artworks showcasing cross-schema relations and rich property types.
-
-'''Museums:''' [[Musee dOrsay|Musée d'Orsay]], [[Rijksmuseum]], [[Kunsthistorisches Museum]], [[Museo del Prado]]
-
-'''Artists:''' [[Claude Monet]], [[Vincent van Gogh]], [[Johannes Vermeer]], [[Diego Velazquez|Diego Velázquez]], [[Gustav Klimt]]
-
-'''Artworks:''' [[Water Lilies]], [[Starry Night Over the Rhone|Starry Night Over the Rhône]], [[The Milkmaid]], [[Las Meninas]], [[The Kiss]], [[The Art of Painting]]
-
-'''Exhibitions:''' [[Impressionist Masters]], [[Dutch Golden Age Highlights]]
-
-'''Cities:''' [[Paris]], [[Amsterdam]], [[Vienna]], [[Madrid]]
-
-'''Overview:''' [[Museum Collection]]
-
-== Demo Pages ==
-
-* Simple page with automatic infobox and edit form: [[NeoWiki]], [[ProWiki]]
-* Subject with relations: [[Professional Wiki]]
-* Multiple subjects per page: [[ACME Inc]]
-* Wikibase Statement emulation: [[Berlin]]
-* Displaying data from other pages: [[Company Infoboxes]]
-* [[Reactive UI example]]
-
-== Schemas and Layouts ==
-
-'''Schemas''' define the structure of your data. For instance, you can define that an Employee has a compensation
-in EUR with a value between 0 and 1000000.
-
-* [[Schema:Company]], [[Schema:Product]], [[Schema:Employee]]
-* [[Schema:Museum]], [[Schema:Artist]], [[Schema:Artwork]], [[Schema:Exhibition]], [[Schema:Attendance]]
-* [[Special:Schemas|View all schemas]]
-
-'''Layouts''' customize how Subjects are displayed by selecting which properties to show and in what order.
-
-* [[Layout:CompanyOverview]]
-* [[Special:Layouts|View all layouts]]
-
-== REST API Endpoints ==
-
-An auto-generated OpenAPI 3.0 spec describes the REST API:
-
-* [{{SERVER}}{{SCRIPTPATH}}/rest.php/specs/v0/module/- NeoWiki OpenAPI spec] — <code>/rest.php/specs/v0/module/-</code>
-* [{{SERVER}}{{SCRIPTPATH}}/rest.php/specs/v0/discovery Module discovery] — <code>/rest.php/specs/v0/discovery</code>
-
-Example endpoint URL: <code>{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/subject/s1demo4sssssss1</code>
-
-=== Read Endpoints ===
-
-* <code>GET /neowiki/v0/subject/{subjectId}</code> Gets the JSON definition of a subject
-* <code>GET /neowiki/v0/schema/{schemaName}</code> Gets the JSON definition of a schema
-
-=== Write Endpoints ===
-
-These require a CSRF token, first obtained via <code>api.php?action=query&format=json&meta=tokens&type=csrf</code>
-
-* <code>POST /neowiki/v0/page/{pageId}/mainSubject</code> Creates a new main subject
-* <code>POST /neowiki/v0/page/{pageId}/childSubjects</code> Creates a new child subject
-* <code>PATCH /neowiki/v0/subject/{subjectId}</code> Updates a subject
-* <code>DELETE /neowiki/v0/subject/{subjectId}</code> Deletes a subject
-
-These endpoints are designed for the NeoWiki frontend. They are not a complete general purpose API yet.
+* [https://github.com/ProfessionalWiki/NeoWiki Source on GitHub]
+* [https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs Technical documentation]
+* [https://github.com/ProfessionalWiki/NeoWiki/issues Issue tracker]
+* [https://professional.wiki/en/contact Contact Professional Wiki]
