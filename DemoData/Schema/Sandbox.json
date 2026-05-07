@@ -1,0 +1,30 @@
+{
+	"description": "A sandbox schema used by the Reactive UI example. Subjects of this schema are isolated from the rest of the demo so visitors can edit them freely.",
+	"propertyDefinitions": {
+		"Description": {
+			"type": "text"
+		},
+		"Status": {
+			"type": "select",
+			"options": [
+				{ "id": "o1demo9aaaaaaa1", "label": "Active" },
+				{ "id": "o1demo9aaaaaaa2", "label": "Inactive" },
+				{ "id": "o1demo9aaaaaaa3", "label": "Archived" }
+			]
+		},
+		"Founded": {
+			"type": "number",
+			"minimum": 1000,
+			"precision": 0
+		},
+		"Website": {
+			"type": "url"
+		},
+		"Importance": {
+			"type": "number",
+			"minimum": 0,
+			"maximum": 10,
+			"precision": 0
+		}
+	}
+}

@@ -1,0 +1,31 @@
+{
+	"mainSubject": "s1demo9aaaaaaa1",
+	"subjects": {
+		"s1demo9aaaaaaa1": {
+			"label": "Sandbox Subject",
+			"schema": "Sandbox",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "A sandbox Subject for the Reactive UI example. Edit any field to see every view on the page update in place." ]
+				},
+				"Status": {
+					"type": "select",
+					"value": ["o1demo9aaaaaaa1"]
+				},
+				"Founded": {
+					"type": "number",
+					"value": 2024
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://sandbox.example" ]
+				},
+				"Importance": {
+					"type": "number",
+					"value": 5
+				}
+			}
+		}
+	}
+}

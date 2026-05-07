@@ -1,0 +1,9 @@
+{
+	"schema": "Sandbox",
+	"type": "infobox",
+	"description": "Compact view: status and founding year only",
+	"displayRules": [
+		{ "property": "Status" },
+		{ "property": "Founded" }
+	]
+}

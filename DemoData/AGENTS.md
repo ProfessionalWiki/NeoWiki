@@ -77,7 +77,7 @@ Subject, relation, and option IDs:
 | Module | Purpose | Example invocation |
 |---|---|---|
 | `Module:NeoWikiDemo` | Renders Cypher results as wikitables. `query` accepts `columns=Col1, Col2` for ordering and `linkColumns=Col1` to wrap cells in `[[...]]`. | `{{#invoke:NeoWikiDemo\|query\|MATCH (m:Museum) RETURN m.name AS Museum, m.Founded AS Founded\|columns=Museum, Founded\|linkColumns=Museum}}` |
-| `Module:SubjectRow` | Renders a row of Subject views in a centered, scrollable container. Optional `layout=` named arg. | `{{#invoke:SubjectRow\|render\|<id1>\|<id2>}}` |
+| `Module:SubjectRow` | Renders a row of Subject views in a centered, scrollable container. Optional `layout=` named arg sets a row default. Append `@LayoutName` to a subject ID to override per view. | `{{#invoke:SubjectRow\|render\|<id1>\|<id2>@LayoutName}}` |
 | `Module:Card` | Renders a row of styled cards (used by `Main_Page`). | `{{#invoke:Card\|cards\|card1_title=...\|card1_link=...}}` |
 | `Module:LuaExample` | Educational example for the Developers hub showing direct `mw.neowiki` use. | `{{#invoke:LuaExample\|foundedYear\|Rijksmuseum}}` |
 

@@ -16,14 +16,24 @@ local style = table.concat( {
 	'margin-block:1em',
 }, ';' )
 
+-- Each positional argument is a subject ID, optionally followed by @LayoutName
+-- for a per-view layout override. The named layout= argument is the row's
+-- default layout when no override is present.
 function p.render( frame )
-	local layout = frame.args.layout
+	local rowLayout = frame.args.layout
 	local out = { '<div style="' .. style .. '">' }
 
-	for _, id in ipairs( frame.args ) do
+	for _, arg in ipairs( frame.args ) do
+		local id, viewLayout = arg, rowLayout
+		local at = string.find( arg, '@', 1, true )
+		if at then
+			id = string.sub( arg, 1, at - 1 )
+			viewLayout = string.sub( arg, at + 1 )
+		end
+
 		local view
-		if layout then
-			view = frame:preprocess( '{{#view:' .. id .. '|' .. layout .. '}}' )
+		if viewLayout and viewLayout ~= '' then
+			view = frame:preprocess( '{{#view:' .. id .. '|' .. viewLayout .. '}}' )
 		else
 			view = frame:preprocess( '{{#view:' .. id .. '}}' )
 		end

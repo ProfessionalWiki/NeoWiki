@@ -1,0 +1,1 @@
+'''Sandbox Subject''' is a Subject used by the [[Reactive UI example]] page. It uses the dedicated [[Schema:Sandbox|Sandbox]] schema, so edits made here don't affect any other Subject in the demo wiki.
