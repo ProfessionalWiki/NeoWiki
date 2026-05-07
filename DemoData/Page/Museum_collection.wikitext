@@ -17,5 +17,5 @@ work with. The data is curated for demonstration only and is not authoritative.
 == How this is built ==
 
 * Schemas: [[Schema:Museum]], [[Schema:Artist]], [[Schema:Artwork]], [[Schema:Exhibition]], [[Schema:Attendance]], [[Schema:City]]
-* See the source of one subject: [[Rijksmuseum]] (use "Edit source" in the page tools)
+* See the source of one subject: [{{fullurl:Rijksmuseum|action=edit}} Edit Rijksmuseum]
 * The featured museum above is embedded with the <code><nowiki>{{#view}}</nowiki></code> parser function. The tables are produced by Cypher queries via [[Module:NeoWikiDemo]].

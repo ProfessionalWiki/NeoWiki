@@ -1,0 +1,19 @@
+{
+	"mainSubject": "s1demo7aaaaaaa2",
+	"subjects": {
+		"s1demo7aaaaaaa2": {
+			"label": "ACME Sales",
+			"schema": "Department",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Drives global revenue across the Anvil, Rocket, and TNT product lines, with field teams in Europe and North America." ]
+				},
+				"Headcount": {
+					"type": "number",
+					"value": 96
+				}
+			}
+		}
+	}
+}

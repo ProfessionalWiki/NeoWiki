@@ -1,0 +1,19 @@
+{
+	"mainSubject": "s1demo7aaaaaaa1",
+	"subjects": {
+		"s1demo7aaaaaaa1": {
+			"label": "ACME Engineering",
+			"schema": "Department",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Builds and maintains ACME's product portfolio, from the original Anvil through TNT." ]
+				},
+				"Headcount": {
+					"type": "number",
+					"value": 184
+				}
+			}
+		}
+	}
+}

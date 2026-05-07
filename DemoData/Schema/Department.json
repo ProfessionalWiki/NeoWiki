@@ -1,0 +1,18 @@
+{
+	"description": "An organizational unit within a company.",
+	"propertyDefinitions": {
+		"Description": {
+			"type": "text"
+		},
+		"Headcount": {
+			"type": "number",
+			"minimum": 0,
+			"precision": 0
+		},
+		"Lead": {
+			"type": "relation",
+			"relation": "Led by",
+			"targetSchema": "Employee"
+		}
+	}
+}
