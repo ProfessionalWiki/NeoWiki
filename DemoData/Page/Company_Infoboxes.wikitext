@@ -1,8 +1,0 @@
-This page shows infoboxes with data from the [[Professional Wiki]] and [[ACME Inc]] pages.
-
-== Default Infobox ==
-
-Shows all properties in schema-defined order:
-
-{{#view: s1demo1aaaaaaa1}}
-{{#view: s1demo5sssssss1}}
