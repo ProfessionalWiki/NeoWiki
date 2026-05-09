@@ -1,12 +1,16 @@
-The Main Subject of this page is the Company ACME Inc, shown in the infobox.
+A fictional company that demonstrates NeoWiki's structured-data features in a corporate knowledge-base scenario: departments, offices, products, and the relations between them. '''ACME Inc''' is the Main Subject of this page. Each related entity has its own page, linked through the relations shown in the infobox above.
 
-The page also contains Child Subjects which are Products.
+== Which departments are largest by headcount? ==
 
-TODO: show a table here, for now see the "View or edit JSON" developer link in the NeoWiki section of the sidebar
+{{#invoke:NeoWikiDemo|query|MATCH (d:Department) RETURN d.name AS Department, d.Headcount AS Headcount ORDER BY Headcount DESC|columns=Department, Headcount|linkColumns=Department}}
 
-You can have as many Child Subjects on a page as you want. For instance you could also define Employees.
+== Browse ==
 
-TODO: show a table here, for now see the "View or edit JSON" developer link in the NeoWiki section of the sidebar
+{{#invoke:NeoWikiDemo|query|MATCH (d:Department) RETURN d.name AS Subject, 'Department' AS Type UNION MATCH (o:Office) RETURN o.name AS Subject, 'Office' AS Type UNION MATCH (p:Product) RETURN p.name AS Subject, 'Product' AS Type|columns=Subject, Type|linkColumns=Subject}}
 
-It is up to you to choose if you define products, employees and other business objects on their own pages or if you
-define multiple subjects on a single page.
+== How this is built ==
+
+* Schemas: [[Schema:Company]], [[Schema:Department]], [[Schema:Office]], [[Schema:Product]], [[Schema:Employee]]
+* Layout: [[Layout:CompanyOverview]]
+* See the source of this page: [{{fullurl:{{FULLPAGENAME}}|action=edit}} Edit this page]
+* The infobox renders automatically from the Main Subject. The tables come from Cypher queries via [[Module:NeoWikiDemo]].

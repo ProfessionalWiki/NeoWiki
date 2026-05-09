@@ -18,6 +18,23 @@
 			"targetSchema": "Product",
 			"multiple": true
 		},
+		"Departments": {
+			"type": "relation",
+			"relation": "Has department",
+			"targetSchema": "Department",
+			"multiple": true
+		},
+		"Offices": {
+			"type": "relation",
+			"relation": "Has office",
+			"targetSchema": "Office",
+			"multiple": true
+		},
+		"Headquarters": {
+			"type": "relation",
+			"relation": "Has headquarters",
+			"targetSchema": "Office"
+		},
 		"Status": {
 			"type": "select",
 			"options": [

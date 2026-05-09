@@ -1,0 +1,32 @@
+{
+	"mainSubject": "s1demo8aaaaaai1",
+	"subjects": {
+		"s1demo8aaaaaai1": {
+			"label": "OEAW Vienna",
+			"schema": "Institution",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Austrian Academy of Sciences, the largest non-university research institution in Austria." ]
+				},
+				"City": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaA1",
+							"target": "sEpfwJLnv9T9nKk"
+						}
+					]
+				},
+				"Founded": {
+					"type": "number",
+					"value": 1847
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.oeaw.ac.at" ]
+				}
+			}
+		}
+	}
+}

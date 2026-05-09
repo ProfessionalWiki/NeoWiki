@@ -1,0 +1,21 @@
+{
+	"mainSubject": "s1demo1aaaaaaa3",
+	"subjects": {
+		"s1demo1aaaaaaa3": {
+			"label": "Acme Rocket",
+			"schema": "Product",
+			"statements": {
+				"Available since": {
+					"type": "number",
+					"value": 2010
+				},
+				"Website": {
+					"type": "url",
+					"value": [
+						"https://acme.example/product/rocket"
+					]
+				}
+			}
+		}
+	}
+}

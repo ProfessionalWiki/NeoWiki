@@ -1,0 +1,49 @@
+{
+	"mainSubject": "s1demo8aaaaaaP2",
+	"subjects": {
+		"s1demo8aaaaaaP2": {
+			"label": "Reconciling Author Identifiers Across Cultural Heritage Datasets",
+			"schema": "Publication",
+			"statements": {
+				"Title": {
+					"type": "text",
+					"value": [ "Reconciling Author Identifiers Across Cultural Heritage Datasets" ]
+				},
+				"Year": {
+					"type": "number",
+					"value": 2022
+				},
+				"Venue": {
+					"type": "text",
+					"value": [ "Semantic Web Journal" ]
+				},
+				"Authors": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaD3",
+							"target": "s1demo8aaaaaab4"
+						},
+						{
+							"id": "r1demo8aaaaaaD4",
+							"target": "s1demo8aaaaaab2"
+						}
+					]
+				},
+				"Project": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaD5",
+							"target": "s1demo8aaaaaap2"
+						}
+					]
+				},
+				"URL": {
+					"type": "url",
+					"value": [ "https://example.org/publications/reconciling-author-identifiers" ]
+				}
+			}
+		}
+	}
+}

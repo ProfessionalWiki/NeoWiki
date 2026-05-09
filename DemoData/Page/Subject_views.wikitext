@@ -1,0 +1,7 @@
+A Subject's data can be presented through multiple Layouts, each tailored to a different context. Below, the [[Sandbox Subject]] is rendered in three views: the default schema view, plus the [[Layout:SandboxCompact|SandboxCompact]] and [[Layout:SandboxDetail|SandboxDetail]] layouts.
+
+Edits in any view also propagate to the others without a page reload.
+
+Sandbox Subject uses a dedicated [[Schema:Sandbox|Sandbox]] schema, so editing it here won't affect any other Subject in the demo wiki.
+
+{{#invoke:SubjectRow|render|s1demo9aaaaaaa1|s1demo9aaaaaaa1@SandboxCompact|s1demo9aaaaaaa1@SandboxDetail}}

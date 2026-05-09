@@ -1,0 +1,107 @@
+NeoWiki exposes a programmable surface: a graph database, parser functions, a Lua library, special pages, and a REST API. This page demonstrates each, showing the wikitext source alongside the rendered result.
+
+== Browse ==
+
+* [[Special:Schemas]]: all schemas
+* [[Special:Layouts]]: all layouts
+* [[Special:NeoJson|Special:NeoJson/&lt;subject id&gt;]]: view any subject as JSON
+
+== Query the graph ==
+
+The <code><nowiki>{{#cypher_raw}}</nowiki></code> parser function runs a Cypher query and returns the raw JSON.
+
+Source:
+
+<syntaxhighlight lang="mediawiki">
+{{#cypher_raw:MATCH (m:Museum) RETURN m.name AS name, m.`Annual visitors` AS visitors ORDER BY visitors DESC LIMIT 5}}
+</syntaxhighlight>
+
+Result:
+
+{{#cypher_raw:MATCH (m:Museum) RETURN m.name AS name, m.`Annual visitors` AS visitors ORDER BY visitors DESC LIMIT 5}}
+
+== Read values in wikitext ==
+
+The <code><nowiki>{{#neowiki_value}}</nowiki></code> parser function reads a single property from a subject on a page.
+
+Source:
+
+<syntaxhighlight lang="mediawiki">
+{{#neowiki_value:Annual visitors|page=Rijksmuseum}}
+</syntaxhighlight>
+
+Result: {{#neowiki_value:Annual visitors|page=Rijksmuseum}}
+
+Source:
+
+<syntaxhighlight lang="mediawiki">
+{{#neowiki_value:Founded at|page=ACME Inc}}
+</syntaxhighlight>
+
+Result: {{#neowiki_value:Founded at|page=ACME Inc}}
+
+== Read values in Lua ==
+
+The <code>mw.neowiki</code> Lua library exposes structured data to your Scribunto modules. The example below reads a single property and runs a Cypher query.
+
+[[Module:LuaExample]]:
+
+<syntaxhighlight lang="lua">
+local p = {}
+local nw = require( 'mw.neowiki' )
+
+function p.foundedYear( frame )
+	local year = nw.getValue( 'Founded', { page = frame.args[1] } )
+	return tostring( year or '' )
+end
+
+function p.oldestMuseums( frame )
+	local rows = nw.query(
+		'MATCH (m:Museum) RETURN m.name AS name, m.Founded AS year ORDER BY year LIMIT 3'
+	)
+
+	local list = {}
+	for _, row in ipairs( rows ) do
+		list[#list + 1] = '* ' .. row.name .. ' (' .. row.year .. ')'
+	end
+	return table.concat( list, '\n' )
+end
+
+return p
+</syntaxhighlight>
+
+Invoke it from wikitext:
+
+<syntaxhighlight lang="mediawiki">
+{{#invoke:LuaExample|foundedYear|Rijksmuseum}}
+
+{{#invoke:LuaExample|oldestMuseums}}
+</syntaxhighlight>
+
+Result:
+
+Rijksmuseum was founded in {{#invoke:LuaExample|foundedYear|Rijksmuseum}}.
+
+Oldest museums in this demo:
+
+{{#invoke:LuaExample|oldestMuseums}}
+
+For the full library reference, see the [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/LuaAPI.md Lua API documentation].
+
+== Reactive UI ==
+
+NeoWiki components embed in pages as reactive UIs that update without a page reload. See [[Subject views]] for the same Sandbox subject in three layouts, with edits propagating between them.
+
+== REST API ==
+
+NeoWiki exposes a REST API for reading and writing structured data. The OpenAPI 3.0 spec is auto-generated:
+
+* OpenAPI spec: <code>[{{SERVER}}{{SCRIPTPATH}}/rest.php/specs/v0/module/- /rest.php/specs/v0/module/-]</code>
+* Module discovery: <code>[{{SERVER}}{{SCRIPTPATH}}/rest.php/specs/v0/discovery /rest.php/specs/v0/discovery]</code>
+
+Representative read endpoints:
+
+* <code>GET /neowiki/v0/subject/{subjectId}</code>
+* <code>GET /neowiki/v0/schema/{schemaName}</code>
+
+For full endpoint documentation, see the OpenAPI spec above.

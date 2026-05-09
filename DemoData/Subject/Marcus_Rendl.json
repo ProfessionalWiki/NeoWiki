@@ -1,0 +1,28 @@
+{
+	"mainSubject": "s1demo8aaaaaab2",
+	"subjects": {
+		"s1demo8aaaaaab2": {
+			"label": "Marcus Rendl",
+			"schema": "Author",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Historian specialising in linked open data for cultural heritage collections." ]
+				},
+				"Affiliation": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaB2",
+							"target": "s1demo8aaaaaai1"
+						}
+					]
+				},
+				"ORCID": {
+					"type": "url",
+					"value": [ "https://orcid.org/0000-0001-3333-4444" ]
+				}
+			}
+		}
+	}
+}

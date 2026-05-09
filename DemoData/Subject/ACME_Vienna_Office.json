@@ -1,0 +1,32 @@
+{
+	"mainSubject": "s1demo7aaaaaaa5",
+	"subjects": {
+		"s1demo7aaaaaaa5": {
+			"label": "ACME Vienna Office",
+			"schema": "Office",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Central European sales and support hub. Opened to accompany the Rocket product launch." ]
+				},
+				"City": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo7aaaaaar8",
+							"target": "sEpfwJLnv9T9nKk"
+						}
+					]
+				},
+				"Address": {
+					"type": "text",
+					"value": [ "Kärntner Ring 12, 1010 Vienna" ]
+				},
+				"Opened": {
+					"type": "number",
+					"value": 2011
+				}
+			}
+		}
+	}
+}

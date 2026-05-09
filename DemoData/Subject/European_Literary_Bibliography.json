@@ -1,0 +1,28 @@
+{
+	"mainSubject": "s1demo8aaaaaap1",
+	"subjects": {
+		"s1demo8aaaaaap1": {
+			"label": "European Literary Bibliography",
+			"schema": "Project",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "An effort to harmonise MARC21 bibliographic records across European literary archives into linked open data." ]
+				},
+				"Started": {
+					"type": "number",
+					"value": 2021
+				},
+				"Lead institution": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaC1",
+							"target": "s1demo8aaaaaai2"
+						}
+					]
+				}
+			}
+		}
+	}
+}

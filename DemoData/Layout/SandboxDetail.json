@@ -1,0 +1,10 @@
+{
+	"schema": "Sandbox",
+	"type": "infobox",
+	"description": "Curated detail view: description, founded, and website",
+	"displayRules": [
+		{ "property": "Description" },
+		{ "property": "Founded" },
+		{ "property": "Website" }
+	]
+}

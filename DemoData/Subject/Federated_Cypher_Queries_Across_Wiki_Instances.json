@@ -1,0 +1,40 @@
+{
+	"mainSubject": "s1demo8aaaaaaP8",
+	"subjects": {
+		"s1demo8aaaaaaP8": {
+			"label": "Federated Cypher Queries Across Wiki Instances",
+			"schema": "Publication",
+			"statements": {
+				"Title": {
+					"type": "text",
+					"value": [ "Federated Cypher Queries Across Wiki Instances" ]
+				},
+				"Year": {
+					"type": "number",
+					"value": 2025
+				},
+				"Venue": {
+					"type": "text",
+					"value": [ "Knowledge-Based Systems" ]
+				},
+				"Authors": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaE7",
+							"target": "s1demo8aaaaaab5"
+						},
+						{
+							"id": "r1demo8aaaaaaE8",
+							"target": "s1demo8aaaaaab4"
+						}
+					]
+				},
+				"URL": {
+					"type": "url",
+					"value": [ "https://example.org/publications/federated-cypher" ]
+				}
+			}
+		}
+	}
+}

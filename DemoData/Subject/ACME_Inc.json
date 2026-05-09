@@ -2,7 +2,7 @@
 	"mainSubject": "s1demo1aaaaaaa1",
 	"subjects": {
 		"s1demo1aaaaaaa1": {
-			"label": "ACME Inc.",
+			"label": "ACME Inc",
 			"schema": "Company",
 			"statements": {
 				"Founded at": {
@@ -39,53 +39,44 @@
 							"target": "s1demo1aaaaaaa4"
 						}
 					]
-				}
-			}
-		},
-		"s1demo1aaaaaaa2": {
-			"label": "Foo",
-			"schema": "Product",
-			"statements": {
-				"Available since": {
-					"type": "number",
-					"value": 2006
 				},
-				"Website": {
-					"type": "url",
+				"Departments": {
+					"type": "relation",
 					"value": [
-						"https://acme.example/product/foo"
+						{
+							"id": "r1demo7aaaaaar1",
+							"target": "s1demo7aaaaaaa1"
+						},
+						{
+							"id": "r1demo7aaaaaar2",
+							"target": "s1demo7aaaaaaa2"
+						},
+						{
+							"id": "r1demo7aaaaaar3",
+							"target": "s1demo7aaaaaaa3"
+						}
 					]
-				}
-			}
-		},
-		"s1demo1aaaaaaa3": {
-			"label": "Bar",
-			"schema": "Product",
-			"statements": {
-				"Available since": {
-					"type": "number",
-					"value": 2010
 				},
-				"Website": {
-					"type": "url",
+				"Offices": {
+					"type": "relation",
 					"value": [
-						"https://acme.example/product/bar"
+						{
+							"id": "r1demo7aaaaaar4",
+							"target": "s1demo7aaaaaaa4"
+						},
+						{
+							"id": "r1demo7aaaaaar5",
+							"target": "s1demo7aaaaaaa5"
+						}
 					]
-				}
-			}
-		},
-		"s1demo1aaaaaaa4": {
-			"label": "Baz",
-			"schema": "Product",
-			"statements": {
-				"Available since": {
-					"type": "number",
-					"value": 2015
 				},
-				"Website": {
-					"type": "url",
+				"Headquarters": {
+					"type": "relation",
 					"value": [
-						"https://acme.example/product/baz"
+						{
+							"id": "r1demo7aaaaaar6",
+							"target": "s1demo7aaaaaaa4"
+						}
 					]
 				}
 			}

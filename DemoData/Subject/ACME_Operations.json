@@ -1,0 +1,19 @@
+{
+	"mainSubject": "s1demo7aaaaaaa3",
+	"subjects": {
+		"s1demo7aaaaaaa3": {
+			"label": "ACME Operations",
+			"schema": "Department",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Runs the back-office functions: finance, people, IT, and facilities. Keeps the world-domination roadmap on schedule." ]
+				},
+				"Headcount": {
+					"type": "number",
+					"value": 47
+				}
+			}
+		}
+	}
+}

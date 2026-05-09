@@ -1,0 +1,3 @@
+"'''TEI Encoding Patterns for Multilingual Editions'''" surveys the encoding choices editors make when preparing scholarly editions of texts that exist in multiple languages or translations. The paper distils a small set of TEI patterns that handle parallel passages, code-switching, and translator attribution without sacrificing source readability.
+
+It serves as a practical reference for editorial teams working on cross-linguistic editions in digital humanities projects.

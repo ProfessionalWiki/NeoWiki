@@ -1,0 +1,3 @@
+The '''European Literary Bibliography''' harmonises MARC21 bibliographic records across European literary archives into linked open data. Started in 2021, it builds shared mappings that let records held in different national archives be queried and cross-referenced as a single graph.
+
+The project is led by [[KNAW Amsterdam]] and brings together collaborators working on bibliographic ontologies, multilingual cataloguing, and migration tooling for legacy library formats.

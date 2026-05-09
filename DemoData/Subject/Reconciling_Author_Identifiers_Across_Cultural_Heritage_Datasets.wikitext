@@ -1,0 +1,3 @@
+"'''Reconciling Author Identifiers Across Cultural Heritage Datasets'''" examines the problem of aligning author identifiers across collection systems that use different authority files and identifier schemes. The paper proposes a reconciliation workflow that combines string similarity, biographical metadata, and curator review to balance recall against editorial trust.
+
+The work contributes a concrete reconciliation pattern to the [[Heritage Linked Data]] programme's linked open data integrations.

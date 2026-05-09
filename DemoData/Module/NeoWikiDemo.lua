@@ -84,7 +84,7 @@ function p.children( frame )
 	return table.concat( parts, ', ' )
 end
 
-local function renderRowsAsTable( rows, columns )
+local function renderRowsAsTable( rows, columns, linkColumns )
 	if #rows == 0 then
 		return 'No results'
 	end
@@ -97,13 +97,24 @@ local function renderRowsAsTable( rows, columns )
 		table.sort( columns )
 	end
 
+	local linkSet = {}
+	if linkColumns then
+		for _, col in ipairs( linkColumns ) do
+			linkSet[col] = true
+		end
+	end
+
 	local out = { '{| class="wikitable"', '! ' .. table.concat( columns, ' !! ' ) }
 
 	for _, row in ipairs( rows ) do
 		local cells = {}
 		for _, col in ipairs( columns ) do
 			local v = row[col]
-			cells[#cells + 1] = v == nil and '' or tostring( v )
+			local cell = v == nil and '' or tostring( v )
+			if linkSet[col] and cell ~= '' then
+				cell = '[[' .. cell .. ']]'
+			end
+			cells[#cells + 1] = cell
 		end
 		out[#out + 1] = '|-'
 		out[#out + 1] = '| ' .. table.concat( cells, ' || ' )
@@ -114,7 +125,93 @@ local function renderRowsAsTable( rows, columns )
 end
 
 function p.query( frame )
-	return renderRowsAsTable( nw.query( frame.args[1] ) )
+	local columns = nil
+	if frame.args.columns then
+		columns = mw.text.split( frame.args.columns, ',%s*' )
+	end
+
+	local linkColumns = nil
+	if frame.args.linkColumns then
+		linkColumns = mw.text.split( frame.args.linkColumns, ',%s*' )
+	end
+
+	return renderRowsAsTable( nw.query( frame.args[1] ), columns, linkColumns )
+end
+
+local function statementValue( stmt )
+	if not stmt or not stmt.values or stmt.values[1] == nil then
+		return nil
+	end
+	local v = stmt.values[1]
+	if type( v ) == 'table' then
+		return v.label or v.target
+	end
+	return v
+end
+
+-- Renders a wikitable from the current page's child Subjects.
+-- Args: columns=Col1, Col2 (required, in order)
+--       schema=SchemaName (optional, filters children to one schema)
+--       sortBy=ColName (optional)
+--       sortDir=asc|desc (optional, default desc)
+--       numberColumns=Col1, Col2 (optional, formatted with thousand separators)
+function p.childTable( frame )
+	local columns = mw.text.split( frame.args.columns or '', ',%s*' )
+	local schemaFilter = frame.args.schema
+	local sortBy = frame.args.sortBy
+	local sortDir = frame.args.sortDir or 'desc'
+
+	local numberSet = {}
+	if frame.args.numberColumns then
+		for _, col in ipairs( mw.text.split( frame.args.numberColumns, ',%s*' ) ) do
+			numberSet[col] = true
+		end
+	end
+
+	local children = nw.getChildSubjects()
+	if not children then
+		return ''
+	end
+
+	local lang = mw.getContentLanguage()
+	local rows = {}
+
+	for _, child in ipairs( children ) do
+		if not schemaFilter or child.schema == schemaFilter then
+			local row = {}
+			for _, col in ipairs( columns ) do
+				local v = statementValue( child.statements[col] )
+				if v == nil then
+					row[col] = ''
+				elseif numberSet[col] and tonumber( v ) then
+					row[col] = lang:formatNum( tonumber( v ) )
+				else
+					row[col] = tostring( v )
+				end
+			end
+			-- Stash the raw sort value so number columns sort numerically
+			-- even after thousand-separator formatting has stringified them.
+			if sortBy then
+				row.__sortValue = statementValue( child.statements[sortBy] )
+			end
+			rows[#rows + 1] = row
+		end
+	end
+
+	if sortBy then
+		table.sort( rows, function( a, b )
+			local av, bv = a.__sortValue, b.__sortValue
+			local an, bn = tonumber( av ), tonumber( bv )
+			if an and bn then
+				if sortDir == 'asc' then return an < bn end
+				return an > bn
+			end
+			if sortDir == 'asc' then return tostring( av ) < tostring( bv ) end
+			return tostring( av ) > tostring( bv )
+		end )
+	end
+
+	return renderRowsAsTable( rows, columns, nil )
 end
 
 function p.productsFoundedSince( frame )

@@ -1,0 +1,32 @@
+{
+	"mainSubject": "s1demo7aaaaaaa4",
+	"subjects": {
+		"s1demo7aaaaaaa4": {
+			"label": "ACME Amsterdam HQ",
+			"schema": "Office",
+			"statements": {
+				"Description": {
+					"type": "text",
+					"value": [ "Global headquarters. Houses executive leadership, engineering, and the original Anvil product team." ]
+				},
+				"City": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo7aaaaaar7",
+							"target": "sEpfwJLnuwcxvuJ"
+						}
+					]
+				},
+				"Address": {
+					"type": "text",
+					"value": [ "Herengracht 1, 1015 BB Amsterdam" ]
+				},
+				"Opened": {
+					"type": "number",
+					"value": 2005
+				}
+			}
+		}
+	}
+}

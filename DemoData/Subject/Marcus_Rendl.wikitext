@@ -1,0 +1,3 @@
+'''Marcus Rendl''' is a historian specialising in linked open data for cultural heritage collections. His research examines how RDF-based knowledge graphs can preserve scholarly nuance while making collection data interoperable across institutions.
+
+He is based at [[OEAW Vienna]] and has contributed to publications on [[Wikibase Backends for GLAM Knowledge Graphs|Wikibase backends]] and on [[Reconciling Author Identifiers Across Cultural Heritage Datasets|author identifier reconciliation]] in the [[Heritage Linked Data]] programme.

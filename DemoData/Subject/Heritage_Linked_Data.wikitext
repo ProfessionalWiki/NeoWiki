@@ -1,0 +1,3 @@
+'''Heritage Linked Data''' is a research programme connecting European cultural heritage datasets through CIDOC CRM mappings. Started in 2019, it focuses on practical strategies for aligning heterogeneous collection records around a shared semantic backbone.
+
+Led by [[OEAW Vienna]], the programme produces methodological guidance and technical tooling, including work on provenance modelling, identifier reconciliation, and Wikibase-based knowledge graphs.

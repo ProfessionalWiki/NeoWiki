@@ -1,0 +1,21 @@
+A demo dataset of European museums, artists, artworks, and exhibitions. This hub shows how NeoWiki connects
+entities across schemas, mirroring the cultural-heritage scenarios ECHOLOT and GLAM partners work with. The
+data is curated for demonstration and is not authoritative.
+
+== Featured museums ==
+
+{{#invoke:SubjectRow|render|sEpfwJLnxyQy6vR|sEpfwJLnx3Kze3t}}
+
+== Which museums have the most visitors? ==
+
+{{#invoke:NeoWikiDemo|query|MATCH (m:Museum) RETURN m.name AS Museum, m.`Annual visitors` AS `Annual visitors` ORDER BY `Annual visitors` DESC|columns=Museum, Annual visitors|linkColumns=Museum}}
+
+== Browse ==
+
+{{#invoke:NeoWikiDemo|query|MATCH (m:Museum)-[:`Located in`]->(c:City) RETURN m.name AS Museum, c.name AS City, m.Founded AS Founded, m.`Annual visitors` AS `Annual visitors` ORDER BY Museum|columns=Museum, City, Founded, Annual visitors|linkColumns=Museum, City}}
+
+== How this is built ==
+
+* Schemas: [[Schema:Museum]], [[Schema:Artist]], [[Schema:Artwork]], [[Schema:Exhibition]], [[Schema:Attendance]], [[Schema:City]]
+* See the source of one subject: [{{fullurl:Rijksmuseum|action=edit}} Edit Rijksmuseum]
+* The featured museums are embedded with the <code><nowiki>{{#view}}</nowiki></code> parser function. The tables come from Cypher queries via [[Module:NeoWikiDemo]].

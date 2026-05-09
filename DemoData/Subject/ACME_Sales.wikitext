@@ -1,0 +1,3 @@
+'''ACME Sales''' drives global revenue across the [[Acme Anvil|Anvil]], [[Acme Rocket|Rocket]], and [[Acme TNT|TNT]] product lines, with field teams across Europe and North America. The 96-person department is the company's customer-facing arm.
+
+Day-to-day work is coordinated between the [[ACME Amsterdam HQ|Amsterdam headquarters]] and the [[ACME Vienna Office|Vienna office]], the latter serving as the principal hub for the DACH and central European markets.

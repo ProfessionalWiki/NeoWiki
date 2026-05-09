@@ -1,0 +1,45 @@
+{
+	"mainSubject": "s1demo8aaaaaaP1",
+	"subjects": {
+		"s1demo8aaaaaaP1": {
+			"label": "Linked Bibliography Mappings for European Archives",
+			"schema": "Publication",
+			"statements": {
+				"Title": {
+					"type": "text",
+					"value": [ "Linked Bibliography Mappings for European Archives" ]
+				},
+				"Year": {
+					"type": "number",
+					"value": 2021
+				},
+				"Venue": {
+					"type": "text",
+					"value": [ "Journal of Digital Humanities" ]
+				},
+				"Authors": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaD1",
+							"target": "s1demo8aaaaaab1"
+						}
+					]
+				},
+				"Project": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaD2",
+							"target": "s1demo8aaaaaap1"
+						}
+					]
+				},
+				"URL": {
+					"type": "url",
+					"value": [ "https://example.org/publications/linked-bibliography-mappings" ]
+				}
+			}
+		}
+	}
+}

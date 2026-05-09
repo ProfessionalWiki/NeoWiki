@@ -1,0 +1,3 @@
+"'''A Survey of Provenance Models in Open Knowledge Graphs'''" reviews the main approaches to recording provenance in public knowledge graphs, comparing their expressivity, query support, and real-world adoption. The paper argues that pragmatic, layered models tend to outperform fully expressive frameworks once editorial workflows are considered.
+
+The work informs the [[Heritage Linked Data]] programme by clarifying which provenance patterns are realistic when integrating heterogeneous cultural heritage datasets.

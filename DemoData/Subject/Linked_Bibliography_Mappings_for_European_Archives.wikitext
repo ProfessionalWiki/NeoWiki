@@ -1,0 +1,3 @@
+"'''Linked Bibliography Mappings for European Archives'''" presents a CIDOC CRM mapping framework for archival bibliographic records, drawing on case studies from three European national archives. The paper documents the property-level transformations needed to align MARC21 source data with a CRM-compliant graph projection.
+
+The work informs the [[European Literary Bibliography]] project by providing a reusable mapping methodology for migrating heterogeneous bibliographic descriptions into linked open data.

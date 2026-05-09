@@ -1,0 +1,49 @@
+{
+	"mainSubject": "s1demo8aaaaaaP4",
+	"subjects": {
+		"s1demo8aaaaaaP4": {
+			"label": "Multilingual Named Entity Recognition for Historical Texts",
+			"schema": "Publication",
+			"statements": {
+				"Title": {
+					"type": "text",
+					"value": [ "Multilingual Named Entity Recognition for Historical Texts" ]
+				},
+				"Year": {
+					"type": "number",
+					"value": 2023
+				},
+				"Venue": {
+					"type": "text",
+					"value": [ "ACL Findings" ]
+				},
+				"Authors": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaD8",
+							"target": "s1demo8aaaaaab3"
+						},
+						{
+							"id": "r1demo8aaaaaaD9",
+							"target": "s1demo8aaaaaab1"
+						}
+					]
+				},
+				"Project": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaDA",
+							"target": "s1demo8aaaaaap3"
+						}
+					]
+				},
+				"URL": {
+					"type": "url",
+					"value": [ "https://example.org/publications/multilingual-ner" ]
+				}
+			}
+		}
+	}
+}

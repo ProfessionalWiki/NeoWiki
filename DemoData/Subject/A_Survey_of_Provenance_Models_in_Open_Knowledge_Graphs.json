@@ -1,0 +1,45 @@
+{
+	"mainSubject": "s1demo8aaaaaaP3",
+	"subjects": {
+		"s1demo8aaaaaaP3": {
+			"label": "A Survey of Provenance Models in Open Knowledge Graphs",
+			"schema": "Publication",
+			"statements": {
+				"Title": {
+					"type": "text",
+					"value": [ "A Survey of Provenance Models in Open Knowledge Graphs" ]
+				},
+				"Year": {
+					"type": "number",
+					"value": 2020
+				},
+				"Venue": {
+					"type": "text",
+					"value": [ "ISWC Proceedings" ]
+				},
+				"Authors": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaD6",
+							"target": "s1demo8aaaaaab5"
+						}
+					]
+				},
+				"Project": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "r1demo8aaaaaaD7",
+							"target": "s1demo8aaaaaap2"
+						}
+					]
+				},
+				"URL": {
+					"type": "url",
+					"value": [ "https://example.org/publications/provenance-survey" ]
+				}
+			}
+		}
+	}
+}

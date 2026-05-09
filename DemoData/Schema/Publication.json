@@ -1,0 +1,35 @@
+{
+	"description": "A research output such as a journal article, conference paper, or report.",
+	"propertyDefinitions": {
+		"Title": {
+			"type": "text",
+			"required": true
+		},
+		"Year": {
+			"type": "number",
+			"minimum": 1900,
+			"precision": 0,
+			"required": true,
+			"description": "Year of publication"
+		},
+		"Venue": {
+			"type": "text",
+			"description": "Journal, conference, or publisher"
+		},
+		"Authors": {
+			"type": "relation",
+			"relation": "Authored by",
+			"targetSchema": "Author",
+			"multiple": true,
+			"required": true
+		},
+		"Project": {
+			"type": "relation",
+			"relation": "Part of project",
+			"targetSchema": "Project"
+		},
+		"URL": {
+			"type": "url"
+		}
+	}
+}

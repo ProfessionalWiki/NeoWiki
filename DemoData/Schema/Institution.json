@@ -1,0 +1,21 @@
+{
+	"description": "A research institution such as a university, library, or research centre.",
+	"propertyDefinitions": {
+		"Description": {
+			"type": "text"
+		},
+		"City": {
+			"type": "relation",
+			"relation": "Located in",
+			"targetSchema": "City"
+		},
+		"Founded": {
+			"type": "number",
+			"minimum": 1000,
+			"precision": 0
+		},
+		"Website": {
+			"type": "url"
+		}
+	}
+}

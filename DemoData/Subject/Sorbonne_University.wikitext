@@ -1,0 +1,3 @@
+'''Sorbonne University''' is a public research university in [[Paris]] with strong programmes in the humanities and digital scholarship. It traces its origins to the 13th-century University of Paris and now operates across faculties of arts, sciences, and medicine.
+
+In the demo's research graph, Sorbonne University leads the [[Multilingual NER Toolkit]] project and is the affiliation of authors contributing to TEI encoding and entity disambiguation work.

@@ -1,0 +1,16 @@
+{
+	"description": "A researcher or author of one or more publications.",
+	"propertyDefinitions": {
+		"Description": {
+			"type": "text"
+		},
+		"Affiliation": {
+			"type": "relation",
+			"relation": "Affiliated with",
+			"targetSchema": "Institution"
+		},
+		"ORCID": {
+			"type": "url"
+		}
+	}
+}

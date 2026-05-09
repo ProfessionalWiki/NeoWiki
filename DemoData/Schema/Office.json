@@ -1,0 +1,21 @@
+{
+	"description": "A physical location of a company.",
+	"propertyDefinitions": {
+		"Description": {
+			"type": "text"
+		},
+		"City": {
+			"type": "relation",
+			"relation": "Located in",
+			"targetSchema": "City"
+		},
+		"Address": {
+			"type": "text"
+		},
+		"Opened": {
+			"type": "number",
+			"minimum": 1800,
+			"precision": 0
+		}
+	}
+}

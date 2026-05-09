@@ -1,9 +1,13 @@
 {
 	"schema": "Company",
 	"type": "infobox",
-	"description": "Shows only founding year and world domination progress",
+	"description": "Company overview with founding year, headquarters, departments, offices, status, and websites",
 	"displayRules": [
-		{ "property": "World domination progress" },
-		{ "property": "Founded at" }
+		{ "property": "Founded at" },
+		{ "property": "Headquarters" },
+		{ "property": "Departments" },
+		{ "property": "Offices" },
+		{ "property": "Status" },
+		{ "property": "Websites" }
 	]
 }

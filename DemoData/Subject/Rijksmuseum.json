@@ -46,6 +46,51 @@
 					]
 				}
 			}
+		},
+		"sEpfwJLAtndAaaA": {
+			"label": "Rijksmuseum 2024",
+			"schema": "Attendance",
+			"statements": {
+				"Year": { "type": "number", "value": 2024 },
+				"Visitors": { "type": "number", "value": 2500000 },
+				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2024" ] }
+			}
+		},
+		"sEpfwJLAtndBbbB": {
+			"label": "Rijksmuseum 2023",
+			"schema": "Attendance",
+			"statements": {
+				"Year": { "type": "number", "value": 2023 },
+				"Visitors": { "type": "number", "value": 2700000 },
+				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/rijksmuseum-rounds-off-historic-year" ] }
+			}
+		},
+		"sEpfwJLAtndCccC": {
+			"label": "Rijksmuseum 2022",
+			"schema": "Attendance",
+			"statements": {
+				"Year": { "type": "number", "value": 2022 },
+				"Visitors": { "type": "number", "value": 1760000 },
+				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2022" ] }
+			}
+		},
+		"sEpfwJLAtndDddD": {
+			"label": "Rijksmuseum 2021",
+			"schema": "Attendance",
+			"statements": {
+				"Year": { "type": "number", "value": 2021 },
+				"Visitors": { "type": "number", "value": 625000 },
+				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2021" ] }
+			}
+		},
+		"sEpfwJLAtndEeeE": {
+			"label": "Rijksmuseum 2020",
+			"schema": "Attendance",
+			"statements": {
+				"Year": { "type": "number", "value": 2020 },
+				"Visitors": { "type": "number", "value": 675000 },
+				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2020" ] }
+			}
 		}
 	}
 }
