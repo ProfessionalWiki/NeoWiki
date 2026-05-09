@@ -52,8 +52,8 @@
 			"schema": "Attendance",
 			"statements": {
 				"Year": { "type": "number", "value": 2024 },
-				"Visitors": { "type": "number", "value": 2800000 },
-				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/en/about-us/annual-reports" ] }
+				"Visitors": { "type": "number", "value": 2500000 },
+				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2024" ] }
 			}
 		},
 		"sEpfwJLAtndBbbB": {
@@ -62,7 +62,7 @@
 			"statements": {
 				"Year": { "type": "number", "value": 2023 },
 				"Visitors": { "type": "number", "value": 2700000 },
-				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/en/about-us/annual-reports" ] }
+				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/rijksmuseum-rounds-off-historic-year" ] }
 			}
 		},
 		"sEpfwJLAtndCccC": {
@@ -70,7 +70,8 @@
 			"schema": "Attendance",
 			"statements": {
 				"Year": { "type": "number", "value": 2022 },
-				"Visitors": { "type": "number", "value": 2400000 }
+				"Visitors": { "type": "number", "value": 1760000 },
+				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2022" ] }
 			}
 		},
 		"sEpfwJLAtndDddD": {
@@ -78,7 +79,8 @@
 			"schema": "Attendance",
 			"statements": {
 				"Year": { "type": "number", "value": 2021 },
-				"Visitors": { "type": "number", "value": 1000000 }
+				"Visitors": { "type": "number", "value": 625000 },
+				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2021" ] }
 			}
 		},
 		"sEpfwJLAtndEeeE": {
@@ -86,7 +88,8 @@
 			"schema": "Attendance",
 			"statements": {
 				"Year": { "type": "number", "value": 2020 },
-				"Visitors": { "type": "number", "value": 675000 }
+				"Visitors": { "type": "number", "value": 675000 },
+				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2020" ] }
 			}
 		}
 	}
