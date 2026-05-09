@@ -7,7 +7,7 @@
 			"statements": {
 				"Description": {
 					"type": "text",
-					"value": [ "A sandbox Subject for the Reactive UI example. Edit any field to see every view on the page update in place." ]
+					"value": [ "A sandbox Subject for the Subject views demo. Edit any field to see every view on the page update in place." ]
 				},
 				"Status": {
 					"type": "select",

@@ -1,5 +1,5 @@
 {
-	"description": "A sandbox schema used by the Reactive UI example. Subjects of this schema are isolated from the rest of the demo so visitors can edit them freely.",
+	"description": "A sandbox schema used by the Subject views demo. Subjects of this schema are isolated from the rest of the demo so visitors can edit them freely.",
 	"propertyDefinitions": {
 		"Description": {
 			"type": "text"

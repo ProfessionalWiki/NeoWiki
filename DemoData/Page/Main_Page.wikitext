@@ -21,9 +21,8 @@ card1_title=Museum collection
 
 == See how it works ==
 
-* Edit live: [[Reactive UI example]] — change one view, see the others update without a page reload.
 * [[Special:Schemas]] — every subject in this wiki has a defined shape; this is the list.
-* [[Special:Layouts]] — alternate ways to present the same subject.
+* [[Special:Layouts]] — alternate ways to present the same subject. See [[Subject views]] for one subject in three layouts, with edits propagating live.
 * The '''Data''' tab on any page shows its structured data ([[Rijksmuseum]] is a good example).
 
 == Build on it ==

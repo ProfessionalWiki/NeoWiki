@@ -90,7 +90,7 @@ For the full library reference, see the [https://github.com/ProfessionalWiki/Neo
 
 == Reactive UI ==
 
-NeoWiki components embed in pages as reactive UIs that update without a page reload. See [[Reactive UI example]].
+NeoWiki components embed in pages as reactive UIs that update without a page reload. See [[Subject views]] for the same Sandbox subject in three layouts, with edits propagating between them.
 
 == REST API ==
 

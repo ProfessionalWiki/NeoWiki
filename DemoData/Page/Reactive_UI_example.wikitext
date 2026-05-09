@@ -1,5 +1,0 @@
-This page demonstrates NeoWiki's reactive frontend. The [[Sandbox Subject]] is rendered below in three views: the default schema view alongside the [[Layout:SandboxCompact|SandboxCompact]] and [[Layout:SandboxDetail|SandboxDetail]] layouts. Edits in any view propagate immediately to the others without a page reload.
-
-Sandbox Subject uses a dedicated [[Schema:Sandbox|Sandbox]] schema, so editing it won't affect any other Subject in the demo wiki.
-
-{{#invoke:SubjectRow|render|s1demo9aaaaaaa1|s1demo9aaaaaaa1@SandboxCompact|s1demo9aaaaaaa1@SandboxDetail}}
