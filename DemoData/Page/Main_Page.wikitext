@@ -21,9 +21,9 @@ card1_title=Museum collection
 
 == See how it works ==
 
+* Subjects hold your structured data. A page can have multiple. See the Data tab. Example: [{{fullurl:Rijksmuseum|action=subjects}} Rijksmuseum]
 * [[Special:Schemas]]. Every Subject is shaped by a Schema. View or manage Schemas via this list page.
 * [[Special:Layouts]]. Customize the presentation of Subjects via Layouts. Example usage: [[Subject views]].
-* The '''Data''' tab on any page shows its structured data — try it on [{{fullurl:Rijksmuseum|action=subjects}} Rijksmuseum].
 
 == Build on it ==
 
