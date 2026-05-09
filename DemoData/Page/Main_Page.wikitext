@@ -1,5 +1,5 @@
 <div style="padding:24px 16px;background:var(--background-color-interactive-subtle, #eaecf0);border:1px solid var(--border-color-subtle, #c8ccd1);border-radius:2px;margin-block:1em">
-<div style="font-size:1.5rem;font-weight:600;line-height:1.25;color:var(--color-base, #202122);max-width:700px">NeoWiki turns wiki pages into queryable structured data</div>
+<div style="font-size:1.5rem;font-weight:600;line-height:1.25;color:var(--color-base, #202122);max-width:800px">NeoWiki turns wiki pages into queryable structured data</div>
 <div style="color:var(--color-subtle, #54595d);max-width:560px;margin-top:4px">Schemas, infoboxes, relations, and Cypher, native to MediaWiki.</div>
 </div>
 
@@ -19,16 +19,22 @@ card1_title=Museum collection
 |card3_link=Research catalog
 }}
 
-== For developers ==
+== See how it works ==
 
-* [[Developers|Developers hub]]: Cypher, parser functions, Lua, REST API
-* [[Special:Schemas]], [[Special:Layouts]], [[Special:NeoJson|Special:NeoJson/<subject id>]]
+* Edit live: [[Reactive UI example]] — change one view, see the others update without a page reload.
+* [[Special:Schemas]] — every subject in this wiki has a defined shape; this is the list.
+* [[Special:Layouts]] — alternate ways to present the same subject.
+* The '''Data''' tab on any page shows its structured data ([[Rijksmuseum]] is a good example).
+
+== Build on it ==
+
+* [[Developers|Developers hub]]: Cypher, parser functions, Lua, REST API.
+* [https://github.com/ProfessionalWiki/NeoWiki Source on GitHub]
+* [https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs Technical documentation]
+* [https://github.com/ProfessionalWiki/NeoWiki/issues Issue tracker]
 
 == About this wiki ==
 
 NeoWiki is under active development. Public interfaces and structure will continue to change. This demo wiki may be reset periodically, and edits may not persist.
 
-* [https://github.com/ProfessionalWiki/NeoWiki Source on GitHub]
-* [https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs Technical documentation]
-* [https://github.com/ProfessionalWiki/NeoWiki/issues Issue tracker]
-* [https://professional.wiki/en/contact Contact Professional Wiki]
+* [https://professional.wiki/en/contact Contact Professional Wiki] — the team behind NeoWiki
