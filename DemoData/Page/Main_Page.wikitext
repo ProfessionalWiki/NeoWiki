@@ -21,9 +21,9 @@ card1_title=Museum collection
 
 == See how it works ==
 
-* [[Special:Schemas]] — every subject in this wiki has a defined shape; this is the list.
-* [[Special:Layouts]] — alternate ways to present the same subject. See [[Subject views]] for one subject in three layouts, with edits propagating live.
-* The '''Data''' tab on any page shows its structured data ([[Rijksmuseum]] is a good example).
+* [[Special:Schemas]]. Every Subject is shaped by a Schema. View or manage Schemas via this list page.
+* [[Special:Layouts]]. Customize the presentation of Subjects via Layouts. Example usage: [[Subject views]].
+* The '''Data''' tab on any page shows its structured data — try it on [{{fullurl:Rijksmuseum|action=subjects}} Rijksmuseum].
 
 == Build on it ==
 
@@ -34,6 +34,9 @@ card1_title=Museum collection
 
 == About this wiki ==
 
+'''NeoWiki''' is a MediaWiki extension for queryable structured data. See [https://neowiki.ai neowiki.ai] for downloads, documentation, and updates.
+
 NeoWiki is under active development. Public interfaces and structure will continue to change. This demo wiki may be reset periodically, and edits may not persist.
 
 * [https://professional.wiki/en/contact Contact Professional Wiki] — the team behind NeoWiki
+* Follow NeoWiki: [https://mastodon.social/@NeoWiki Mastodon] · [https://bsky.app/profile/neowiki.bsky.social Bluesky] · [https://x.com/NeoWikiAI X]
