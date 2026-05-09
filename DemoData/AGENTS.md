@@ -76,7 +76,8 @@ Subject, relation, and option IDs:
 
 | Module | Purpose | Example invocation |
 |---|---|---|
-| `Module:NeoWikiDemo` | Renders Cypher results as wikitables. `query` accepts `columns=Col1, Col2` for ordering and `linkColumns=Col1` to wrap cells in `[[...]]`. | `{{#invoke:NeoWikiDemo\|query\|MATCH (m:Museum) RETURN m.name AS Museum, m.Founded AS Founded\|columns=Museum, Founded\|linkColumns=Museum}}` |
+| `Module:NeoWikiDemo` `query` | Renders Cypher results as a wikitable. `columns=Col1, Col2` orders columns; `linkColumns=Col1` wraps cells in `[[...]]`. | `{{#invoke:NeoWikiDemo\|query\|MATCH (m:Museum) RETURN m.name AS Museum, m.Founded AS Founded\|columns=Museum, Founded\|linkColumns=Museum}}` |
+| `Module:NeoWikiDemo` `childTable` | Builds a wikitable from the current page's child Subjects (via `mw.neowiki.getChildSubjects`). Avoids a Cypher query when the data is page-local. Optional `schema=` filter, `sortBy=`/`sortDir=` (default `desc`), `numberColumns=` for thousand-separator formatting. | `{{#invoke:NeoWikiDemo\|childTable\|schema=Attendance\|columns=Year, Visitors\|sortBy=Year\|numberColumns=Visitors}}` |
 | `Module:SubjectRow` | Renders a row of Subject views in a centered, scrollable container. Optional `layout=` named arg sets a row default. Append `@LayoutName` to a subject ID to override per view. | `{{#invoke:SubjectRow\|render\|<id1>\|<id2>@LayoutName}}` |
 | `Module:Card` | Renders a row of styled cards (used by `Main_Page`). | `{{#invoke:Card\|cards\|card1_title=...\|card1_link=...}}` |
 | `Module:LuaExample` | Educational example for the Developers hub showing direct `mw.neowiki` use. | `{{#invoke:LuaExample\|foundedYear\|Rijksmuseum}}` |

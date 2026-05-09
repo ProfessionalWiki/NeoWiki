@@ -6,4 +6,4 @@ The museum holds around one million objects from 1200 to 2000, including masterp
 
 Yearly attendance for the Rijksmuseum, stored as individual [[Schema:Attendance|Attendance]] Subjects on this page.
 
-{{#invoke:SubjectRow|render|sEpfwJLAtndAaaA|sEpfwJLAtndBbbB|sEpfwJLAtndCccC|sEpfwJLAtndDddD|sEpfwJLAtndEeeE}}
+{{#invoke:NeoWikiDemo|childTable|schema=Attendance|columns=Year, Visitors|sortBy=Year|numberColumns=Visitors}}
