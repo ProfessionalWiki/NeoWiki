@@ -26,19 +26,6 @@ class QueryCypherApiTest extends MediaWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
 
-	protected function setUp(): void {
-		parent::setUp();
-		// Override the bot rate-limit entry — [0,0] causes WRStatsError in the test environment.
-		$this->overrideConfigValues( [
-			'RateLimits' => [
-				'neowiki-query' => [
-					'anon' => [ 10, 60 ],
-					'user' => [ 60, 60 ],
-				],
-			],
-		] );
-	}
-
 	public function testReturns200WithEnvelopeOnSuccess(): void {
 		$service = $this->stubServiceReturning( new QueryResult(
 			columns: [ 'name' ],
