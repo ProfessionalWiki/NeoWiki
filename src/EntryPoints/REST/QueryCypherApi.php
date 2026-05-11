@@ -1,0 +1,110 @@
+<?php
+
+declare( strict_types = 1 );
+
+namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
+
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Rest\Response;
+use MediaWiki\Rest\SimpleHandler;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\BackendUnavailableException;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\CypherSyntaxException;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\EmptyQueryException;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\InternalQueryException;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\ParameterMissingException;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryException;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryTimeoutException;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\WriteQueryRejectedException;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryLimits;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryRequest;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryService;
+use Wikimedia\ParamValidator\ParamValidator;
+
+class QueryCypherApi extends SimpleHandler {
+
+	public function __construct(
+		private readonly QueryService $queryService,
+	) {
+	}
+
+	public function run(): Response {
+		$user = RequestContext::getMain()->getUser();
+
+		if ( !$user->isAllowed( 'neowiki-query' ) ) {
+			return $this->errorResponse( 403, 'permissionDenied', 'You do not have permission to run queries.' );
+		}
+
+		if ( $user->pingLimiter( 'neowiki-query' ) ) {
+			return $this->errorResponse( 429, 'rateLimitExceeded', 'Query rate limit exceeded.' );
+		}
+
+		$body = $this->getValidatedBody();
+
+		try {
+			$result = $this->queryService->execute(
+				new QueryRequest(
+					cypher: $body['cypher'],
+					parameters: $body['parameters'] ?? [],
+					limits: QueryLimits::forUser( $user ),
+				)
+			);
+		} catch ( QueryException $e ) {
+			return $this->mapException( $e );
+		}
+
+		return $this->getResponseFactory()->createJson( [
+			'columns' => $result->columns,
+			'rows' => $result->rows,
+			'truncated' => $result->truncated,
+			'resultCount' => $result->resultCount,
+			'durationMs' => $result->durationMs,
+		] );
+	}
+
+	private function mapException( QueryException $e ): Response {
+		[ $status, $type ] = match ( true ) {
+			$e instanceof EmptyQueryException         => [ 400, 'emptyQuery' ],
+			$e instanceof ParameterMissingException   => [ 400, 'parameterMissing' ],
+			$e instanceof CypherSyntaxException       => [ 400, 'cypherSyntaxError' ],
+			$e instanceof WriteQueryRejectedException => [ 422, 'writeQueryRejected' ],
+			$e instanceof QueryTimeoutException       => [ 408, 'queryTimeout' ],
+			$e instanceof BackendUnavailableException => [ 503, 'backendUnavailable' ],
+			$e instanceof InternalQueryException      => [ 500, 'internalError' ],
+			default                                   => [ 500, 'internalError' ],
+		};
+
+		return $this->errorResponse( $status, $type, $e->getMessage() );
+	}
+
+	private function errorResponse( int $status, string $errorType, string $message ): Response {
+		$response = $this->getResponseFactory()->createJson( [
+			'errorType' => $errorType,
+			'message' => $message,
+		] );
+		$response->setStatus( $status );
+		return $response;
+	}
+
+	public function getBodyParamSettings(): array {
+		return [
+			'cypher' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'A read-only Cypher query. Single statement.',
+			],
+			'parameters' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'array',
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_DEFAULT => [],
+				self::PARAM_DESCRIPTION => 'Optional parameter map. Reference parameters in the query as $name.',
+			],
+		];
+	}
+
+	public function needsWriteAccess(): bool {
+		return false;
+	}
+
+}

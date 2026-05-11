@@ -62,6 +62,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\QueryCypherApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
@@ -260,6 +261,12 @@ class NeoWikiExtension {
 			$this->getNeo4jPlugin(),
 			$this->getCypherQueryValidator(),
 			new QueryResultNormalizer(),
+		);
+	}
+
+	public static function newQueryCypherApi(): QueryCypherApi {
+		return new QueryCypherApi(
+			self::getInstance()->newQueryService()
 		);
 	}
 

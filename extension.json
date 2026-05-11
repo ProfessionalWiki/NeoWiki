@@ -220,6 +220,11 @@
 			"path": "/neowiki/v0/schemas",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaSummariesApi"
+		},
+		{
+			"path": "/neowiki/v0/query/cypher",
+			"method": [ "POST" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newQueryCypherApi"
 		}
 	],
 
