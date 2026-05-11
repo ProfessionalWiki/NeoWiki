@@ -41,7 +41,7 @@ class CypherQueryRunnerTest extends TestCase {
 			public function __construct( private readonly SummarizedResult $result ) {
 			}
 
-			public function runReadQuery( string $cypher, array $parameters = [] ): SummarizedResult {
+			public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
 				$this->lastCypher = $cypher;
 				$this->lastParams = $parameters;
 				return $this->result;
@@ -90,7 +90,7 @@ class CypherQueryRunnerTest extends TestCase {
 
 	public function testDisallowedQueryThrowsWithReadOnlyMessage(): void {
 		$engine = new class implements QueryEngine {
-			public function runReadQuery( string $cypher, array $parameters = [] ): SummarizedResult {
+			public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
 				throw new \LogicException( 'engine must not be called for a rejected query' );
 			}
 		};
@@ -131,7 +131,7 @@ class CypherQueryRunnerTest extends TestCase {
 
 	public function testEngineExceptionsPropagate(): void {
 		$engine = new class implements QueryEngine {
-			public function runReadQuery( string $cypher, array $parameters = [] ): SummarizedResult {
+			public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
 				throw new RuntimeException( 'connection refused' );
 			}
 		};

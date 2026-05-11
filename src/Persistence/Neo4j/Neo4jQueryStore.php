@@ -201,11 +201,17 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 		)->isEmpty() === false;
 	}
 
-	public function runReadQuery( string $cypher, array $parameters = [] ): SummarizedResult {
+	public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
+		$transactionConfig = $timeoutSeconds === null
+			? null
+			: \Laudis\Neo4j\Databags\TransactionConfiguration::default()->withTimeout( (float)$timeoutSeconds );
+
 		return $this->readOnlyClient->readTransaction(
 			function ( TransactionInterface $transaction ) use ( $cypher, $parameters ): SummarizedResult {
 				return $transaction->run( $cypher, $parameters );
-			}
+			},
+			null,
+			$transactionConfig
 		);
 	}
 
