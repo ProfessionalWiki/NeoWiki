@@ -25,39 +25,51 @@ use ProfessionalWiki\NeoWiki\Application\Query\Exception\WriteQueryRejectedExcep
 class QueryExceptionTest extends TestCase {
 
 	public function testEmptyQueryExceptionExtendsBase(): void {
-		$exception = new EmptyQueryException( 'msg' );
-		$this->assertInstanceOf( QueryException::class, $exception );
-		$this->assertSame( 'emptyQuery', $exception->errorType() );
+		$this->assertInstanceOf( QueryException::class, new EmptyQueryException() );
+	}
+
+	public function testEmptyQueryExceptionErrorType(): void {
+		$this->assertSame( 'emptyQuery', ( new EmptyQueryException() )->errorType() );
 	}
 
 	public function testWriteQueryRejectedExceptionExtendsBase(): void {
-		$exception = new WriteQueryRejectedException( 'msg' );
-		$this->assertInstanceOf( QueryException::class, $exception );
-		$this->assertSame( 'writeQueryRejected', $exception->errorType() );
+		$this->assertInstanceOf( QueryException::class, new WriteQueryRejectedException() );
+	}
+
+	public function testWriteQueryRejectedExceptionErrorType(): void {
+		$this->assertSame( 'writeQueryRejected', ( new WriteQueryRejectedException() )->errorType() );
 	}
 
 	public function testCypherSyntaxExceptionExtendsBase(): void {
-		$exception = new CypherSyntaxException( 'msg' );
-		$this->assertInstanceOf( QueryException::class, $exception );
-		$this->assertSame( 'cypherSyntaxError', $exception->errorType() );
+		$this->assertInstanceOf( QueryException::class, new CypherSyntaxException() );
+	}
+
+	public function testCypherSyntaxExceptionErrorType(): void {
+		$this->assertSame( 'cypherSyntaxError', ( new CypherSyntaxException() )->errorType() );
 	}
 
 	public function testParameterMissingExceptionExtendsBase(): void {
-		$exception = new ParameterMissingException( 'msg' );
-		$this->assertInstanceOf( QueryException::class, $exception );
-		$this->assertSame( 'parameterMissing', $exception->errorType() );
+		$this->assertInstanceOf( QueryException::class, new ParameterMissingException() );
+	}
+
+	public function testParameterMissingExceptionErrorType(): void {
+		$this->assertSame( 'parameterMissing', ( new ParameterMissingException() )->errorType() );
 	}
 
 	public function testQueryTimeoutExceptionExtendsBase(): void {
-		$exception = new QueryTimeoutException( 'msg' );
-		$this->assertInstanceOf( QueryException::class, $exception );
-		$this->assertSame( 'queryTimeout', $exception->errorType() );
+		$this->assertInstanceOf( QueryException::class, new QueryTimeoutException() );
+	}
+
+	public function testQueryTimeoutExceptionErrorType(): void {
+		$this->assertSame( 'queryTimeout', ( new QueryTimeoutException() )->errorType() );
 	}
 
 	public function testBackendUnavailableExceptionExtendsBase(): void {
-		$exception = new BackendUnavailableException( 'msg' );
-		$this->assertInstanceOf( QueryException::class, $exception );
-		$this->assertSame( 'backendUnavailable', $exception->errorType() );
+		$this->assertInstanceOf( QueryException::class, new BackendUnavailableException() );
+	}
+
+	public function testBackendUnavailableExceptionErrorType(): void {
+		$this->assertSame( 'backendUnavailable', ( new BackendUnavailableException() )->errorType() );
 	}
 
 }
