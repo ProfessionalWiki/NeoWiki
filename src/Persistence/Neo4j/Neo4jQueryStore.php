@@ -8,6 +8,7 @@ use DateTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Types\CypherMap;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageValue;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageValueType;
@@ -204,7 +205,7 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, QueryEngine, Writ
 	public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
 		$transactionConfig = $timeoutSeconds === null
 			? null
-			: \Laudis\Neo4j\Databags\TransactionConfiguration::default()->withTimeout( (float)$timeoutSeconds );
+			: TransactionConfiguration::default()->withTimeout( (float)$timeoutSeconds );
 
 		return $this->readOnlyClient->readTransaction(
 			function ( TransactionInterface $transaction ) use ( $cypher, $parameters ): SummarizedResult {
