@@ -92,11 +92,15 @@ readonly class QueryService {
 	}
 
 	private function translateNeo4jException( Neo4jException $exception ): QueryException {
+		// Prefer the Neo4j-supplied message ("Invalid input ...", "Expected parameter(s) ...")
+		// over Laudis's verbose template ('Neo4j errors detected. First one with code "..." ...').
+		$message = $exception->getNeo4jMessage() ?? $exception->getMessage();
+
 		return match ( $exception->getNeo4jCode() ) {
-			'Neo.ClientError.Transaction.TransactionTimedOut' => new QueryTimeoutException( $exception->getMessage(), 0, $exception ),
-			'Neo.ClientError.Statement.SyntaxError'           => new CypherSyntaxException( $exception->getMessage(), 0, $exception ),
-			'Neo.ClientError.Statement.ParameterMissing'      => new ParameterMissingException( $exception->getMessage(), 0, $exception ),
-			default                                            => new InternalQueryException( $exception->getMessage(), 0, $exception ),
+			'Neo.ClientError.Transaction.TransactionTimedOut' => new QueryTimeoutException( $message, 0, $exception ),
+			'Neo.ClientError.Statement.SyntaxError'           => new CypherSyntaxException( $message, 0, $exception ),
+			'Neo.ClientError.Statement.ParameterMissing'      => new ParameterMissingException( $message, 0, $exception ),
+			default                                            => new InternalQueryException( $message, 0, $exception ),
 		};
 	}
 
