@@ -192,6 +192,19 @@ class QueryServiceTest extends TestCase {
 		$service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
 	}
 
+	public function testValidatorExceptionBecomesBackendUnavailable(): void {
+		$throwingValidator = new class implements CypherQueryValidator {
+			public function queryIsAllowed( string $cypher ): bool {
+				throw new RuntimeException( 'EXPLAIN failed: connection refused' );
+			}
+		};
+		$service = $this->newService( $this->stubEngineWithRows( [] ), validator: $throwingValidator );
+
+		$this->expectException( BackendUnavailableException::class );
+
+		$service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
+	}
+
 	public function testDurationMsIsNonNegativeInteger(): void {
 		$service = $this->newService( $this->stubEngineWithRows( [ [ 'i' => 1 ] ] ) );
 

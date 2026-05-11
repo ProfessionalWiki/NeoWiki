@@ -9,7 +9,6 @@ use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\Application\Query\QueryLimits;
 use ProfessionalWiki\NeoWiki\Application\Query\QueryRequest;
 use ProfessionalWiki\NeoWiki\Application\Query\QueryService;
-use RuntimeException;
 
 class CypherRawParserFunction {
 

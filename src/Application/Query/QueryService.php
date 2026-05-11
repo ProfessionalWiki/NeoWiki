@@ -35,13 +35,13 @@ readonly class QueryService {
 		}
 
 		try {
-			if ( !$this->validator->queryIsAllowed( $cypher ) ) {
-				throw new WriteQueryRejectedException( 'Query is not read-only.' );
-			}
-		} catch ( WriteQueryRejectedException $e ) {
-			throw $e;
+			$allowed = $this->validator->queryIsAllowed( $cypher );
 		} catch ( Throwable $e ) {
 			throw new BackendUnavailableException( $e->getMessage(), 0, $e );
+		}
+
+		if ( !$allowed ) {
+			throw new WriteQueryRejectedException( 'Query is not read-only.' );
 		}
 
 		$startedAt = (int)( microtime( true ) * 1000 );
