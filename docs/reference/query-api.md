@@ -50,8 +50,8 @@ Content-Type: application/json
 {
     "columns": ["name", "year"],
     "rows": [
-        { "name": "Alice Fontaine", "year": 2003 },
-        { "name": "Ben Markov",     "year": 2001 }
+        { "name": "Alice Fontaine", "year": 2001 },
+        { "name": "Ben Markov",     "year": 2003 }
     ],
     "truncated": false,
     "resultCount": 2,
@@ -75,6 +75,7 @@ Scalar Cypher values (strings, integers, floats, booleans, `null`) pass through 
 |---|---|
 | Node | `{ "id": ..., "labels": [...], "properties": {...} }` |
 | Relationship | `{ "id": ..., "type": "...", "startNodeId": ..., "endNodeId": ..., "properties": {...} }` |
+| UnboundRelationship | `{ "id": ..., "type": "...", "properties": {...} }` (no start/end node ids; appears in undirected pattern matches) |
 | Path | `{ "nodes": [...], "relationships": [...] }` |
 
 Temporal and spatial values (e.g. `datetime()`, `point()`) are not supported. Cast to a scalar in the query:
