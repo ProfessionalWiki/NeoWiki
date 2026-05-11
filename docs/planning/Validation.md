@@ -80,6 +80,7 @@ Currently, we assume we will have these:
 Pros:
 * No cost of implementation, we can build other things instead
 * No cost of carry. Simpler system
+* Instant feedback when editing in the frontend
 
 Cons:
 * API users have to validate their data before sending it to the API if they want to ensure correctness
@@ -90,8 +91,12 @@ We implement a backend validation service similar to the existing TypeScript one
 adding a dedicated validation endpoint and adding a strict mode to the subject writing API. Details TBD.
 
 Pros:
+* Constraints defined on a Schema are enforced for everyone, not only for users who edit via the NeoWiki
+  frontend
 * API users can edit Subjects without prior validation without risking creating "invalid" Subjects
 * API users can potentially validate Subjects without editing via a new dedicated endpoint
+* Schemas are increasingly likely to be managed through the API, whether from LLM clients, third-party tools,
+  or import pipelines. Consumers do not need to implement their own validation.
 
 Cons:
 * Need to figure out those TBD details
@@ -100,4 +105,37 @@ Cons:
     * Strict-mode or similar for Subject writing APIs with validation status responses
     * Potentially dedicated REST validation endpoint
 
+**Option 3: Both frontend and backend validation**
 
+The Schema is the **single source of truth** for validation rules. Both the TypeScript library and the PHP
+backend have a generic constraint interpreter that reads the Schema and validates against it. This is the same
+pattern as JSON Schema: one schema, multiple interpreters. The interpreters handle constraint types (required,
+min/max, regex, etc.), not specific business rules. Adding a new constraint type means updating both
+interpreters, but the constraint values themselves are defined once in the Schema.
+
+A shared test suite runs the same inputs and expected outputs against both interpreters to keep them in sync.
+
+New constraint types scale without per-rule maintenance. For example, a user-defined regex check is a
+declarative rule in the Schema (`pattern: "^[A-Z]"`). Both TS and PHP execute it natively. Only the "regex"
+constraint type needs to be added once to each interpreter.
+
+The same declarative constraint metadata could also drive the Schema Editor UI, replacing per-Property-Type
+editor components with a generic renderer.
+
+Pros:
+* Constraints defined on a Schema are enforced for everyone, not only users who edit via the NeoWiki frontend
+* API consumers get validation without implementing their own
+* API users can validate Subjects via a dedicated endpoint without persisting
+* Instant feedback when editing in the frontend
+* Single source of truth and generic interpreters keep the two implementations manageable
+* Scales for new constraint types without growing per-rule maintenance
+
+Cons:
+* More complex to implement than either option alone
+    * Validation system in PHP
+    * Constraint interpreters in both TS and PHP, kept in sync via shared test suite
+    * Strict-mode or similar for Subject writing APIs with validation status responses
+    * Potentially dedicated REST validation endpoint
+
+See also: [Validation Severity](Validation-Severity.md) for a related but separate discussion on
+warning/error severity levels for validation results.
