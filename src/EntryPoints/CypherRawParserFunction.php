@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Parser\Parser;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\Application\Query\QueryLimits;
@@ -23,8 +24,7 @@ class CypherRawParserFunction {
 				new QueryRequest(
 					cypher: $cypherQuery,
 					parameters: [],
-					// TODO(task 7): replace with QueryLimits::forUser() once config + resolver land.
-					limits: new QueryLimits( 30, 5000 ),
+					limits: QueryLimits::forUser( RequestContext::getMain()->getUser() ),
 				)
 			);
 		} catch ( QueryException $e ) {
