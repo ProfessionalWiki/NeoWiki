@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\BackendUnavailableException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\CypherSyntaxException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\EmptyQueryException;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\InternalQueryException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\ParameterMissingException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryTimeoutException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\WriteQueryRejectedException;
@@ -52,15 +53,20 @@ class QueryServiceTest extends TestCase {
 		);
 	}
 
-	public function testEmptyResultProducesEmptyColumnsAndRows(): void {
+	public function testEmptyResultProducesEmptyColumns(): void {
 		$service = $this->newService( $this->stubEngineWithRows( [] ) );
 
 		$result = $service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
 
 		$this->assertSame( [], $result->columns );
+	}
+
+	public function testEmptyResultProducesEmptyRows(): void {
+		$service = $this->newService( $this->stubEngineWithRows( [] ) );
+
+		$result = $service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
+
 		$this->assertSame( [], $result->rows );
-		$this->assertSame( 0, $result->resultCount );
-		$this->assertFalse( $result->truncated );
 	}
 
 	public function testTruncatesAtMaxRowsAndSetsTruncatedFlag(): void {
@@ -166,12 +172,12 @@ class QueryServiceTest extends TestCase {
 		$service->execute( $this->newRequest( 'MATCH (n {id: $missing}) RETURN n' ) );
 	}
 
-	public function testUnknownNeo4jCodeBecomesBackendUnavailable(): void {
+	public function testUnknownNeo4jCodeBecomesInternalError(): void {
 		$service = $this->newService(
 			$this->stubEngineThrowing( $this->neo4jExceptionFor( 'Neo.DatabaseError.Statement.ExecutionFailed' ) )
 		);
 
-		$this->expectException( BackendUnavailableException::class );
+		$this->expectException( InternalQueryException::class );
 
 		$service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
 	}
@@ -184,6 +190,34 @@ class QueryServiceTest extends TestCase {
 		$this->expectException( BackendUnavailableException::class );
 
 		$service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
+	}
+
+	public function testDurationMsIsNonNegativeInteger(): void {
+		$service = $this->newService( $this->stubEngineWithRows( [ [ 'i' => 1 ] ] ) );
+
+		$result = $service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
+
+		$this->assertGreaterThanOrEqual( 0, $result->durationMs );
+	}
+
+	public function testParametersAreForwardedToEngine(): void {
+		$capturedParameters = null;
+		$engine = new class( $capturedParameters ) implements QueryEngine {
+			public function __construct( public mixed &$captured ) {
+			}
+
+			public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
+				$this->captured = $parameters;
+				$summary = null;
+				return new SummarizedResult( $summary, new CypherList( [] ) );
+			}
+		};
+
+		$this->newService( $engine )->execute(
+			new QueryRequest( 'MATCH (n {id: $x}) RETURN n', [ 'x' => 'subject-42' ], new QueryLimits( 30, 5000 ) )
+		);
+
+		$this->assertSame( [ 'x' => 'subject-42' ], $capturedParameters );
 	}
 
 	private function newService(

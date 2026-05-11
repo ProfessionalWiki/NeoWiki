@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\BackendUnavailableException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\CypherSyntaxException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\EmptyQueryException;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\InternalQueryException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\ParameterMissingException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryTimeoutException;
@@ -84,7 +85,7 @@ readonly class QueryService {
 			'Neo.ClientError.Transaction.TransactionTimedOut' => new QueryTimeoutException( $exception->getMessage(), 0, $exception ),
 			'Neo.ClientError.Statement.SyntaxError'           => new CypherSyntaxException( $exception->getMessage(), 0, $exception ),
 			'Neo.ClientError.Statement.ParameterMissing'      => new ParameterMissingException( $exception->getMessage(), 0, $exception ),
-			default                                            => new BackendUnavailableException( $exception->getMessage(), 0, $exception ),
+			default                                            => new InternalQueryException( $exception->getMessage(), 0, $exception ),
 		};
 	}
 

@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\BackendUnavailableException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\CypherSyntaxException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\EmptyQueryException;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\InternalQueryException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\ParameterMissingException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryTimeoutException;
@@ -21,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Application\Query\Exception\WriteQueryRejectedExcep
  * @covers \ProfessionalWiki\NeoWiki\Application\Query\Exception\ParameterMissingException
  * @covers \ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryTimeoutException
  * @covers \ProfessionalWiki\NeoWiki\Application\Query\Exception\BackendUnavailableException
+ * @covers \ProfessionalWiki\NeoWiki\Application\Query\Exception\InternalQueryException
  */
 class QueryExceptionTest extends TestCase {
 
@@ -70,6 +72,14 @@ class QueryExceptionTest extends TestCase {
 
 	public function testBackendUnavailableExceptionErrorType(): void {
 		$this->assertSame( 'backendUnavailable', ( new BackendUnavailableException() )->errorType() );
+	}
+
+	public function testInternalQueryExceptionExtendsBase(): void {
+		$this->assertInstanceOf( QueryException::class, new InternalQueryException() );
+	}
+
+	public function testInternalQueryExceptionErrorType(): void {
+		$this->assertSame( 'internalError', ( new InternalQueryException() )->errorType() );
 	}
 
 }
