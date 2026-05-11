@@ -134,7 +134,7 @@ the content.
 
 ## Verifying changes
 
-From the repo root (`/home/alistair/unix-projects/professionalwiki/NeoWiki-Docker`):
+From the repo root:
 
 ```sh
 # Incremental import (does not delete removed pages).
