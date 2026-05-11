@@ -70,19 +70,19 @@ class QueryCypherApi extends SimpleHandler {
 	}
 
 	private function mapException( QueryException $e ): Response {
-		[ $status, $type ] = match ( true ) {
-			$e instanceof EmptyQueryException         => [ 400, 'emptyQuery' ],
-			$e instanceof ParameterMissingException   => [ 400, 'parameterMissing' ],
-			$e instanceof CypherSyntaxException       => [ 400, 'cypherSyntaxError' ],
-			$e instanceof WriteQueryRejectedException => [ 422, 'writeQueryRejected' ],
-			$e instanceof QueryTimeoutException       => [ 408, 'queryTimeout' ],
-			$e instanceof BackendUnavailableException => [ 503, 'backendUnavailable' ],
-			$e instanceof InternalQueryException      => [ 500, 'internalError' ],
+		$status = match ( true ) {
+			$e instanceof EmptyQueryException         => 400,
+			$e instanceof ParameterMissingException   => 400,
+			$e instanceof CypherSyntaxException       => 400,
+			$e instanceof WriteQueryRejectedException => 422,
+			$e instanceof QueryTimeoutException       => 408,
+			$e instanceof BackendUnavailableException => 503,
+			$e instanceof InternalQueryException      => 500,
 			// Defensive default for any future QueryException subclass added without updating this map.
-			default                                   => [ 500, 'internalError' ],
+			default                                   => 500,
 		};
 
-		return $this->errorResponse( $status, $type, $e->getMessage() );
+		return $this->errorResponse( $status, $e->errorType(), $e->getMessage() );
 	}
 
 	private function errorResponse( int $status, string $errorType, string $message ): Response {
