@@ -120,7 +120,8 @@
 	"RateLimits": {
 		"neowiki-query": {
 			"anon": [ 10, 60 ],
-			"user": [ 60, 60 ]
+			"user": [ 60, 60 ],
+			"bot": [ 1000, 60 ]
 		}
 	},
 

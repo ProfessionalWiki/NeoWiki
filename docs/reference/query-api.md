@@ -224,7 +224,10 @@ Defaults shipped by NeoWiki:
 |---|---|
 | Anonymous | 10 requests / 60 s |
 | Logged-in user | 60 requests / 60 s |
-| Bot / sysop | Unlimited (via core `noratelimit` right) |
+| Bot | 1000 requests / 60 s |
+| Sysop / Bureaucrat | Unlimited (via core `noratelimit` right) |
+
+Other accounts can be exempted from rate limits by granting them the core `noratelimit` right.
 
 Override for your site:
 

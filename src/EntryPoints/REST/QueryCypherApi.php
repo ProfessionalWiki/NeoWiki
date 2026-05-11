@@ -43,11 +43,17 @@ class QueryCypherApi extends SimpleHandler {
 		$body = $this->getValidatedBody();
 
 		try {
+			$limits = QueryLimits::forUser( $user );
+		} catch ( \Throwable $e ) {
+			return $this->errorResponse( 500, 'internalError', $e->getMessage() );
+		}
+
+		try {
 			$result = $this->queryService->execute(
 				new QueryRequest(
 					cypher: $body['cypher'],
 					parameters: $body['parameters'],
-					limits: QueryLimits::forUser( $user ),
+					limits: $limits,
 				)
 			);
 		} catch ( QueryException $e ) {

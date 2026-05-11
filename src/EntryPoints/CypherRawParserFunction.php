@@ -34,7 +34,7 @@ class CypherRawParserFunction {
 		$json = json_encode( $result->rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 
 		if ( $json === false ) {
-			return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-json-encode' )->text() );
+			return $this->formatError( $parser->msg( 'neowiki-cypher-raw-error-json-encode' )->text() );
 		}
 
 		return $this->formatResult( $json );
