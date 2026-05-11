@@ -4,38 +4,39 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\Scribunto;
 
-use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\QueryEngine;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryException;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryLimits;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryRequest;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryService;
 use RuntimeException;
 
 class CypherQueryRunner {
 
 	public function __construct(
-		private readonly QueryEngine $queryEngine,
-		private readonly CypherQueryValidator $validator,
-		private readonly QueryResultNormalizer $converter,
+		private readonly QueryService $queryService,
 	) {
 	}
 
 	public function run( string $cypher, array $params ): array {
-		$cypher = trim( $cypher );
-
-		if ( $cypher === '' ) {
-			throw new RuntimeException(
-				wfMessage( 'neowiki-lua-query-error-empty-query' )->text()
+		try {
+			$result = $this->queryService->execute(
+				new QueryRequest(
+					cypher: $cypher,
+					parameters: $params,
+					// TODO(task 7): replace with QueryLimits::forUser() once config + resolver land.
+					limits: new QueryLimits( 30, 5000 ),
+				)
 			);
+		} catch ( QueryException $e ) {
+			throw new RuntimeException( $e->getMessage(), 0, $e );
 		}
 
-		if ( !$this->validator->queryIsAllowed( $cypher ) ) {
-			throw new RuntimeException(
-				wfMessage( 'neowiki-lua-query-error-write-query' )->text()
-			);
+		// Lua expects 1-indexed tables; QueryResult::$rows is a 0-indexed list.
+		$indexed = [];
+		foreach ( $result->rows as $i => $row ) {
+			$indexed[$i + 1] = $row;
 		}
-
-		return $this->converter->convertRows(
-			$this->queryEngine->runReadQuery( $cypher, $params )
-		);
+		return $indexed;
 	}
 
 }

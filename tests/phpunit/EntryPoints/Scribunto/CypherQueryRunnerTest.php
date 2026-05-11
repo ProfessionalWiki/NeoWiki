@@ -10,6 +10,7 @@ use Laudis\Neo4j\Types\CypherMap;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryService;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\CypherQueryRunner;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\QueryEngine;
 use RuntimeException;
@@ -30,7 +31,14 @@ class CypherQueryRunnerTest extends TestCase {
 			}
 
 		};
-		return new CypherQueryRunner( $engine, $validator, new QueryResultNormalizer() );
+
+		return new CypherQueryRunner(
+			new QueryService(
+				$engine,
+				$validator,
+				new QueryResultNormalizer(),
+			)
+		);
 	}
 
 	private function stubEngine( SummarizedResult $result ): QueryEngine {
@@ -95,15 +103,17 @@ class CypherQueryRunnerTest extends TestCase {
 			}
 		};
 		$runner = new CypherQueryRunner(
-			$engine,
-			new class implements CypherQueryValidator {
+			new QueryService(
+				$engine,
+				new class implements CypherQueryValidator {
 
-				public function queryIsAllowed( string $cypher ): bool {
-					return false;
-				}
+					public function queryIsAllowed( string $cypher ): bool {
+						return false;
+					}
 
-			},
-			new QueryResultNormalizer()
+				},
+				new QueryResultNormalizer(),
+			)
 		);
 
 		$this->expectException( RuntimeException::class );

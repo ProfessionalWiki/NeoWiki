@@ -18,6 +18,8 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectActi
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\CompositeCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryService;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
@@ -251,6 +253,14 @@ class NeoWikiExtension {
 			new KeywordCypherQueryValidator(),
 			new ExplainCypherQueryValidator( $this->getReadOnlyNeo4jClient() ),
 		] );
+	}
+
+	public function newQueryService(): QueryService {
+		return new QueryService(
+			$this->getNeo4jPlugin(),
+			$this->getCypherQueryValidator(),
+			new QueryResultNormalizer(),
+		);
 	}
 
 	public function getWriteQueryEngine(): WriteQueryEngine {
