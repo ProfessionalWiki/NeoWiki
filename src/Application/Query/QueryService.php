@@ -34,8 +34,14 @@ readonly class QueryService {
 			throw new EmptyQueryException( 'Query is empty.' );
 		}
 
-		if ( !$this->validator->queryIsAllowed( $cypher ) ) {
-			throw new WriteQueryRejectedException( 'Query is not read-only.' );
+		try {
+			if ( !$this->validator->queryIsAllowed( $cypher ) ) {
+				throw new WriteQueryRejectedException( 'Query is not read-only.' );
+			}
+		} catch ( WriteQueryRejectedException $e ) {
+			throw $e;
+		} catch ( Throwable $e ) {
+			throw new BackendUnavailableException( $e->getMessage(), 0, $e );
 		}
 
 		$startedAt = (int)( microtime( true ) * 1000 );

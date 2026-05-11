@@ -4,47 +4,45 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
-use Exception;
 use MediaWiki\Parser\Parser;
-use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\QueryEngine;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryException;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryLimits;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryRequest;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryService;
 use RuntimeException;
 
 class CypherRawParserFunction {
 
 	public function __construct(
-		private readonly QueryEngine $queryEngine,
-		private readonly CypherQueryValidator $queryFilter
+		private readonly QueryService $queryService,
 	) {
 	}
 
 	public function handle( Parser $parser, string $cypherQuery ): string {
-		$cypherQuery = trim( $cypherQuery );
-
-		if ( $cypherQuery === '' ) {
-			return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-empty-query' )->text() );
-		}
-
 		try {
-			if ( !$this->queryFilter->queryIsAllowed( $cypherQuery ) ) {
-				return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-write-query' )->text() );
-			}
-
-			$result = $this->queryEngine->runReadQuery( $cypherQuery );
-			$jsonOutput = json_encode( $result->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
-
-			if ( $jsonOutput === false ) {
-				throw new RuntimeException( wfMessage( 'neowiki-cypher-raw-error-json-encode' )->text() );
-			}
-
-			return $this->formatCodeBlock( $jsonOutput );
-		} catch ( Exception $e ) {
-			return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-query-failed', $e->getMessage() )->text() );
+			$result = $this->queryService->execute(
+				new QueryRequest(
+					cypher: $cypherQuery,
+					parameters: [],
+					// TODO(task 7): replace with QueryLimits::forUser() once config + resolver land.
+					limits: new QueryLimits( 30, 5000 ),
+				)
+			);
+		} catch ( QueryException $e ) {
+			return $this->formatError( $e->getMessage() );
 		}
+
+		$json = json_encode( $result->rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
+
+		if ( $json === false ) {
+			return $this->formatError( wfMessage( 'neowiki-cypher-raw-error-json-encode' )->text() );
+		}
+
+		return $this->formatResult( $json );
 	}
 
-	private function formatCodeBlock( string $content ): string {
-		return '<pre><code class="json">' . "\n" . htmlspecialchars( $content ) . "\n" . '</code></pre>';
+	private function formatResult( string $json ): string {
+		return '<div class="mw-neowiki-cypher-result"><pre>' . htmlspecialchars( $json ) . '</pre></div>';
 	}
 
 	private function formatError( string $message ): string {
