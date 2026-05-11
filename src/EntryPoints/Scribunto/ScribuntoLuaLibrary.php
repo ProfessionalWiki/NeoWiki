@@ -8,6 +8,7 @@ use Exception;
 use InvalidArgumentException;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -47,7 +48,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 			$this->cypherQueryRunner = new CypherQueryRunner(
 				$extension->getNeo4jPlugin(),
 				$extension->getCypherQueryValidator(),
-				new CypherResultConverter(),
+				new QueryResultNormalizer(),
 			);
 		}
 

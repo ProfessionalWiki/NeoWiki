@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Scribunto;
+namespace ProfessionalWiki\NeoWiki\Tests\Application\Query;
 
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -11,23 +11,23 @@ use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\CypherResultConverter;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer;
 use RuntimeException;
 use stdClass;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\CypherResultConverter
+ * @covers \ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer
  */
-class CypherResultConverterTest extends TestCase {
+class QueryResultNormalizerTest extends TestCase {
 
-	private function newConverter(): CypherResultConverter {
-		return new CypherResultConverter();
+	private function newNormalizer(): QueryResultNormalizer {
+		return new QueryResultNormalizer();
 	}
 
 	public function testEmptyResultReturnsEmptyArray(): void {
 		$this->assertSame(
 			[],
-			$this->newConverter()->convertRows( new CypherList( [] ) )
+			$this->newNormalizer()->convertRows( new CypherList( [] ) )
 		);
 	}
 
@@ -42,7 +42,7 @@ class CypherResultConverterTest extends TestCase {
 				1 => [ 'name' => 'Ada', 'age' => 36, 'active' => true ],
 				2 => [ 'name' => 'Grace', 'age' => 85, 'active' => false ],
 			],
-			$this->newConverter()->convertRows( $result )
+			$this->newNormalizer()->convertRows( $result )
 		);
 	}
 
@@ -51,7 +51,7 @@ class CypherResultConverterTest extends TestCase {
 
 		$this->assertSame(
 			[ 1 => [ 'name' => null ] ],
-			$this->newConverter()->convertRows( $result )
+			$this->newNormalizer()->convertRows( $result )
 		);
 	}
 
@@ -64,7 +64,7 @@ class CypherResultConverterTest extends TestCase {
 
 		$this->assertSame(
 			[ 1 => [ 'tags' => [ 1 => 'alpha', 2 => 'beta', 3 => 'gamma' ] ] ],
-			$this->newConverter()->convertRows( $result )
+			$this->newNormalizer()->convertRows( $result )
 		);
 	}
 
@@ -77,7 +77,7 @@ class CypherResultConverterTest extends TestCase {
 
 		$this->assertSame(
 			[ 1 => [ 'props' => [ 'city' => 'Berlin', 'founded' => 2019 ] ] ],
-			$this->newConverter()->convertRows( $result )
+			$this->newNormalizer()->convertRows( $result )
 		);
 	}
 
@@ -95,7 +95,7 @@ class CypherResultConverterTest extends TestCase {
 				'labels' => [ 1 => 'Person', 2 => 'Employee' ],
 				'properties' => [ 'name' => 'Ada', 'age' => 36 ],
 			] ] ],
-			$this->newConverter()->convertRows(
+			$this->newNormalizer()->convertRows(
 				new CypherList( [ new CypherMap( [ 'node' => $node ] ) ] )
 			)
 		);
@@ -119,7 +119,7 @@ class CypherResultConverterTest extends TestCase {
 				'endNodeId' => 2,
 				'properties' => [ 'since' => 2020 ],
 			] ] ],
-			$this->newConverter()->convertRows(
+			$this->newNormalizer()->convertRows(
 				new CypherList( [ new CypherMap( [ 'r' => $rel ] ) ] )
 			)
 		);
@@ -139,7 +139,7 @@ class CypherResultConverterTest extends TestCase {
 				'type' => 'TAGGED',
 				'properties' => [ 'weight' => 0.5 ],
 			] ] ],
-			$this->newConverter()->convertRows(
+			$this->newNormalizer()->convertRows(
 				new CypherList( [ new CypherMap( [ 'r' => $rel ] ) ] )
 			)
 		);
@@ -156,7 +156,7 @@ class CypherResultConverterTest extends TestCase {
 			new CypherList( [] ),
 		);
 
-		$converted = $this->newConverter()->convertRows(
+		$converted = $this->newNormalizer()->convertRows(
 			new CypherList( [ new CypherMap( [ 'p' => $path ] ) ] )
 		);
 
@@ -174,7 +174,7 @@ class CypherResultConverterTest extends TestCase {
 		$result = new CypherList( [ new CypherMap( [ 'mystery' => new stdClass() ] ) ] );
 
 		$this->expectException( RuntimeException::class );
-		$this->newConverter()->convertRows( $result );
+		$this->newNormalizer()->convertRows( $result );
 	}
 
 }

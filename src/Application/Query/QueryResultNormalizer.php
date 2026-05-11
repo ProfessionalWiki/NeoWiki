@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\EntryPoints\Scribunto;
+namespace ProfessionalWiki\NeoWiki\Application\Query;
 
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -12,7 +12,7 @@ use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use RuntimeException;
 
-class CypherResultConverter {
+class QueryResultNormalizer {
 
 	public function convertRows( CypherList $rows ): array {
 		return $this->convertList( $rows );
@@ -79,6 +79,9 @@ class CypherResultConverter {
 		return $values;
 	}
 
+	/**
+	 * @param iterable<string|int, mixed> $entries
+	 */
 	private function convertAssociative( iterable $entries ): array {
 		$result = [];
 		foreach ( $entries as $key => $value ) {

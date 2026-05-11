@@ -9,8 +9,8 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\CypherQueryRunner;
-use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\CypherResultConverter;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\QueryEngine;
 use RuntimeException;
 
@@ -30,7 +30,7 @@ class CypherQueryRunnerTest extends TestCase {
 			}
 
 		};
-		return new CypherQueryRunner( $engine, $validator, new CypherResultConverter() );
+		return new CypherQueryRunner( $engine, $validator, new QueryResultNormalizer() );
 	}
 
 	private function stubEngine( SummarizedResult $result ): QueryEngine {
@@ -103,7 +103,7 @@ class CypherQueryRunnerTest extends TestCase {
 				}
 
 			},
-			new CypherResultConverter()
+			new QueryResultNormalizer()
 		);
 
 		$this->expectException( RuntimeException::class );

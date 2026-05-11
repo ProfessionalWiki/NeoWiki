@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints\Scribunto;
 
 use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
+use ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\QueryEngine;
 use RuntimeException;
 
@@ -13,7 +14,7 @@ class CypherQueryRunner {
 	public function __construct(
 		private readonly QueryEngine $queryEngine,
 		private readonly CypherQueryValidator $validator,
-		private readonly CypherResultConverter $converter,
+		private readonly QueryResultNormalizer $converter,
 	) {
 	}
 
