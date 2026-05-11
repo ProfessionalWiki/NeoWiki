@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
-use MediaWiki\Context\RequestContext;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\BackendUnavailableException;
@@ -28,11 +28,13 @@ class QueryCypherApi extends SimpleHandler {
 	}
 
 	public function run(): Response {
-		$user = RequestContext::getMain()->getUser();
+		$authority = $this->getAuthority();
 
-		if ( !$user->isAllowed( 'neowiki-query' ) ) {
+		if ( !$authority->isAllowed( 'neowiki-query' ) ) {
 			return $this->errorResponse( 403, 'permissionDenied', 'You do not have permission to run queries.' );
 		}
+
+		$user = MediaWikiServices::getInstance()->getUserFactory()->newFromAuthority( $authority );
 
 		if ( $user->pingLimiter( 'neowiki-query' ) ) {
 			return $this->errorResponse( 429, 'rateLimitExceeded', 'Query rate limit exceeded.' );
@@ -44,7 +46,7 @@ class QueryCypherApi extends SimpleHandler {
 			$result = $this->queryService->execute(
 				new QueryRequest(
 					cypher: $body['cypher'],
-					parameters: $body['parameters'] ?? [],
+					parameters: $body['parameters'],
 					limits: QueryLimits::forUser( $user ),
 				)
 			);
@@ -70,6 +72,7 @@ class QueryCypherApi extends SimpleHandler {
 			$e instanceof QueryTimeoutException       => [ 408, 'queryTimeout' ],
 			$e instanceof BackendUnavailableException => [ 503, 'backendUnavailable' ],
 			$e instanceof InternalQueryException      => [ 500, 'internalError' ],
+			// Defensive default for any future QueryException subclass added without updating this map.
 			default                                   => [ 500, 'internalError' ],
 		};
 

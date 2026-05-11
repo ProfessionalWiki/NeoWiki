@@ -4,13 +4,16 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\BackendUnavailableException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\CypherSyntaxException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\EmptyQueryException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\InternalQueryException;
+use ProfessionalWiki\NeoWiki\Application\Query\Exception\ParameterMissingException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryTimeoutException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\WriteQueryRejectedException;
 use ProfessionalWiki\NeoWiki\Application\Query\QueryRequest;
@@ -25,6 +28,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\QueryCypherApi;
 class QueryCypherApiTest extends MediaWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
+	use MockAuthorityTrait;
 
 	public function testReturns200WithEnvelopeOnSuccess(): void {
 		$service = $this->stubServiceReturning( new QueryResult(
@@ -90,6 +94,17 @@ class QueryCypherApiTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 'cypherSyntaxError', $body['errorType'] );
 	}
 
+	public function testParameterMissingExceptionMapsTo400ParameterMissing(): void {
+		$response = $this->executeRequest(
+			$this->stubServiceThrowing( new ParameterMissingException( 'missing' ) ),
+			[ 'cypher' => 'MATCH (n {id: $missing}) RETURN n' ]
+		);
+		$body = $this->decodeBody( $response );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertSame( 'parameterMissing', $body['errorType'] );
+	}
+
 	public function testBackendUnavailableExceptionMapsTo503(): void {
 		$response = $this->executeRequest(
 			$this->stubServiceThrowing( new BackendUnavailableException( 'backend' ) ),
@@ -113,11 +128,10 @@ class QueryCypherApiTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testReturns403WhenUserLacksNeowikiQueryRight(): void {
-		$this->setGroupPermissions( '*', 'neowiki-query', false );
-
 		$response = $this->executeRequest(
 			$this->stubServiceReturning( $this->emptyResult() ),
-			[ 'cypher' => 'MATCH (n) RETURN n' ]
+			[ 'cypher' => 'MATCH (n) RETURN n' ],
+			authority: $this->mockAnonAuthorityWithPermissions( [] )
 		);
 		$body = $this->decodeBody( $response );
 
@@ -132,14 +146,19 @@ class QueryCypherApiTest extends MediaWikiIntegrationTestCase {
 		$this->markTestIncomplete( 'Rate-limit gate is tested manually; PingLimiter is not easily triggered in integration tests.' );
 	}
 
-	private function executeRequest( QueryService $service, array $body ): \MediaWiki\Rest\ResponseInterface {
+	private function executeRequest(
+		QueryService $service,
+		array $body,
+		?Authority $authority = null
+	): \MediaWiki\Rest\ResponseInterface {
 		return $this->executeHandler(
 			new QueryCypherApi( $service ),
 			new RequestData( [
 				'method' => 'POST',
 				'bodyContents' => json_encode( $body ),
 				'headers' => [ 'Content-Type' => 'application/json' ],
-			] )
+			] ),
+			authority: $authority
 		);
 	}
 
