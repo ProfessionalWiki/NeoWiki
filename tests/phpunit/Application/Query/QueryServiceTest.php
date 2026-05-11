@@ -205,6 +205,21 @@ class QueryServiceTest extends TestCase {
 		$service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
 	}
 
+	public function testValidatorNeo4jSyntaxErrorBecomesCypherSyntaxException(): void {
+		$throwingValidator = new class implements CypherQueryValidator {
+			public function queryIsAllowed( string $cypher ): bool {
+				throw new Neo4jException( [
+					Neo4jError::fromMessageAndCode( 'Neo.ClientError.Statement.SyntaxError', 'bad syntax' ),
+				] );
+			}
+		};
+		$service = $this->newService( $this->stubEngineWithRows( [] ), validator: $throwingValidator );
+
+		$this->expectException( CypherSyntaxException::class );
+
+		$service->execute( $this->newRequest( 'INVALID' ) );
+	}
+
 	public function testDurationMsIsNonNegativeInteger(): void {
 		$service = $this->newService( $this->stubEngineWithRows( [ [ 'i' => 1 ] ] ) );
 

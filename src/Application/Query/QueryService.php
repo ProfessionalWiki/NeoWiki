@@ -36,6 +36,11 @@ readonly class QueryService {
 
 		try {
 			$allowed = $this->validator->queryIsAllowed( $cypher );
+		} catch ( Neo4jException $e ) {
+			// The EXPLAIN-based validator surfaces real Cypher errors (syntax, parameter, etc.)
+			// the same way the engine does. Translate them so callers see the actual problem,
+			// not a misleading "backend unavailable".
+			throw $this->translateNeo4jException( $e );
 		} catch ( Throwable $e ) {
 			throw new BackendUnavailableException( $e->getMessage(), 0, $e );
 		}
