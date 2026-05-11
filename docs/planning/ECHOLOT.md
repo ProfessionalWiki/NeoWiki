@@ -14,8 +14,6 @@ If you are not familiar with the NeoWiki terminology yet, see [the glossary](../
 
 ### Medium Priority
 
-* [Validation](Validation.md): do we need to add backend validation?
-  (80% likely, but can be deferred)
 * Verify the current data model (Property-graph-like Subjects and multi-Subject support) is workable for provenance.
 * Does the [RDF mapping stwaman proposal](RdfMapping.md) go in the right direction? What needs to be adjusted?
 * Is our [Graph Model](../GraphModel.md) OK? In particular, is it OK to have non-Subject data in there, like the connected

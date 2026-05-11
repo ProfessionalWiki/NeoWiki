@@ -2,7 +2,7 @@
 
 Date: 2024-09-10
 
-Status: Accepted
+Status: Superseded by [ADR 21](021_Add_Backend_Validation.md)
 
 ## Context
 
