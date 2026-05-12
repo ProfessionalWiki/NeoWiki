@@ -75,6 +75,10 @@ class Subject {
 		$this->label = $newLabel;
 	}
 
+	public function setStatements( StatementList $statements ): void {
+		$this->statements = $statements;
+	}
+
 	public function patchStatements( StatementListPatcher $patcher, array $patch ): void {
 		$this->statements = $patcher->buildStatementList(
 			statements: $this->statements,
