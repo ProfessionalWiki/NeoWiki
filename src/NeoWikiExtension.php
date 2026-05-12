@@ -43,7 +43,6 @@ use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
-use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\WriteQueryEngine;
@@ -309,7 +308,7 @@ class NeoWikiExtension {
 			subjectRepository: $this->getSubjectRepository(),
 			idGenerator: $this->getIdGenerator(),
 			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
-			statementListPatcher: $this->getStatementListPatcher(),
+			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 		);
@@ -340,15 +339,11 @@ class NeoWikiExtension {
 		return new ProductionIdGenerator();
 	}
 
-	public function getStatementListPatcher(): StatementListPatcher {
-		return new StatementListPatcher(
+	public function getStatementListBuilder(): StatementListBuilder {
+		return new StatementListBuilder(
 			propertyTypeToValueType: $this->getPropertyTypeToValueType(),
 			idGenerator: $this->getIdGenerator()
 		);
-	}
-
-	public function getStatementListBuilder(): StatementListBuilder {
-		return new StatementListBuilder( $this->getStatementListPatcher() );
 	}
 
 	private function getPageIdentifiersLookup(): PageIdentifiersLookup {

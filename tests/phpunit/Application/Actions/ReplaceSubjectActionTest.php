@@ -9,7 +9,6 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAc
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
-use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -49,12 +48,10 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function newAction( ?SubjectAuthorizer $authorizer = null ): ReplaceSubjectAction {
-		$idGenerator = new StubIdGenerator( '11111111111127' );
-		$patcher = new StatementListPatcher(
+		$builder = new StatementListBuilder(
 			propertyTypeToValueType: new PropertyTypeToValueType( PropertyTypeRegistry::withCoreTypes() ),
-			idGenerator: $idGenerator
+			idGenerator: new StubIdGenerator( '11111111111127' )
 		);
-		$builder = new StatementListBuilder( $patcher );
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->subjectRepository,
 			subjectAuthorizer: $authorizer ?? new SucceedingSubjectAuthorizer(),
