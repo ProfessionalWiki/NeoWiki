@@ -6,9 +6,11 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
+use MediaWiki\Rest\ResponseInterface;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWikiIntegrationTestCase;
+use Throwable;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\BackendUnavailableException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\CypherSyntaxException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\EmptyQueryException;
@@ -150,7 +152,7 @@ class QueryCypherApiTest extends MediaWikiIntegrationTestCase {
 		QueryService $service,
 		array $body,
 		?Authority $authority = null
-	): \MediaWiki\Rest\ResponseInterface {
+	): ResponseInterface {
 		return $this->executeHandler(
 			new QueryCypherApi( $service ),
 			new RequestData( [
@@ -162,7 +164,7 @@ class QueryCypherApiTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	private function decodeBody( \MediaWiki\Rest\ResponseInterface $response ): array {
+	private function decodeBody( ResponseInterface $response ): array {
 		return json_decode( $response->getBody()->getContents(), true );
 	}
 
@@ -178,9 +180,9 @@ class QueryCypherApiTest extends MediaWikiIntegrationTestCase {
 		};
 	}
 
-	private function stubServiceThrowing( \Throwable $exception ): QueryService {
+	private function stubServiceThrowing( Throwable $exception ): QueryService {
 		return new readonly class( $exception ) extends QueryService {
-			public function __construct( private readonly \Throwable $exception ) {
+			public function __construct( private readonly Throwable $exception ) {
 				// Intentionally skip parent constructor — dependencies not needed for stubs.
 			}
 
