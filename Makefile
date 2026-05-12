@@ -111,14 +111,20 @@ bash: ## Shell into the mediawiki container
 
 # ---- Port allocation ---------------------------------------------------------
 
-# Set MW_SERVER_PORT in Docker/.env if not already set.
-# Precedence: port=<flag> > MW_SERVER_PORT env > existing .env > auto-allocate.
+# Allocate host ports into Docker/.env.
+# Precedence: port=<flag> > existing .env value (reused if still free) > range scan.
+# Skipped when our compose stack is already up, so re-running `make dev` does not
+# trigger a port change and force-recreate the running mediawiki container.
 .PHONY: ensure-port
 ensure-port:
 ifdef port
 	@./Docker/scripts/set-port.sh $(port)
 else
-	@./Docker/scripts/set-port.sh "$${MW_SERVER_PORT:-}"
+	@if $(DC_DEV) ps -q mediawiki 2>/dev/null | grep -q .; then \
+		echo "Stack already up; reusing MW_SERVER_PORT=$$MW_SERVER_PORT MAILCATCHER_PORT=$$MAILCATCHER_PORT"; \
+	else \
+		./Docker/scripts/set-port.sh ""; \
+	fi
 endif
 
 # ---- Health gate -------------------------------------------------------------
