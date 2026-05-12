@@ -16,7 +16,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
  * Leaves non-select entries, deletions (null), and properties not found
  * on the Schema untouched.
  */
-readonly class SelectPatchResolver {
+class SelectPatchResolver {
 
 	public function __construct(
 		private SelectValueResolver $valueResolver,

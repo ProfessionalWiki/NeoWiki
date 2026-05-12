@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-readonly class TypedRelation {
+class TypedRelation {
 
 	public function __construct(
 		public RelationId $id,

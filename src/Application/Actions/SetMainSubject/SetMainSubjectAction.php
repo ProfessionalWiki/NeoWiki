@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-readonly class SetMainSubjectAction {
+class SetMainSubjectAction {
 
 	public function __construct(
 		private SetMainSubjectPresenter $presenter,

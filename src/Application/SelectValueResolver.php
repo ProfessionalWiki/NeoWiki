@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
 
-readonly class SelectValueResolver {
+class SelectValueResolver {
 
 	/**
 	 * Resolves a raw input value (id, label, or {id,label} object) to the canonical option ID.

@@ -9,13 +9,13 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Plan;
 use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
 
-readonly class ExplainCypherQueryValidator implements CypherQueryValidator {
+class ExplainCypherQueryValidator implements CypherQueryValidator {
 
 	/**
 	 * Read-only plan operators known to Neo4j 5.x. Any operator not in this list
 	 * causes the query to be classified as non-read-only.
 	 */
-	private const array ALLOWED_OPERATORS = [
+	private const ALLOWED_OPERATORS = [
 		// Result production
 		'ProduceResults',
 		'EmptyResult',

@@ -16,7 +16,7 @@
 		}
 	],
 	"require": {
-		"php": "^8.3",
+		"php": "^8.1",
 		"composer/installers": "^2|^1.0.1",
 		"opis/json-schema": "^2.3.0",
 		"laudis/neo4j-php-client": "^3.1.2",

@@ -8,7 +8,7 @@ use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
 
 class KeywordCypherQueryValidator implements CypherQueryValidator {
 
-	private const array WRITE_KEYWORDS = [
+	private const WRITE_KEYWORDS = [
 		'CREATE', 'SET', 'DELETE', 'REMOVE', 'MERGE', 'DROP',
 		'CALL', 'LOAD', 'FOREACH',
 		'GRANT', 'DENY', 'REVOKE',

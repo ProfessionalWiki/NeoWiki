@@ -27,7 +27,7 @@ use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
  */
 class SubjectUpdaterTest extends TestCase {
 
-	private const string SCHEMA_NAME = 'SubjectUpdaterTestSchema';
+	private const SCHEMA_NAME = 'SubjectUpdaterTestSchema';
 
 	private TransactionInterface $transaction;
 	private InMemorySchemaLookup $schemaLookup;

@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\PropertyType;
 use OutOfBoundsException;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
-readonly class PropertyTypeToValueType {
+class PropertyTypeToValueType {
 
 	public function __construct(
 		private PropertyTypeLookup $registry

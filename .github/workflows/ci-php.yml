@@ -24,7 +24,7 @@ jobs:
       matrix:
         include:
           - mw: 'REL1_43'
-            php: '8.3'
+            php: '8.1'
 
     runs-on: ubuntu-latest
 
@@ -112,7 +112,7 @@ jobs:
         run: php tests/phpunit/phpunit.php -c extensions/NeoWiki/phpunit.xml.dist
 
   phpcs:
-    name: "PHPCS with PHP 8.3"
+    name: "PHPCS with PHP 8.1"
 
     runs-on: ubuntu-latest
 
@@ -120,7 +120,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
+          php-version: 8.1
 
       - name: Checkout NeoExtension
         uses: actions/checkout@v6
@@ -138,7 +138,7 @@ jobs:
       matrix:
         include:
           - mw: 'REL1_43'
-            php: '8.3'
+            php: '8.1'
 
     runs-on: ubuntu-latest
 
@@ -204,7 +204,7 @@ jobs:
 #      matrix:
 #        include:
 #          - mw: 'master'
-#            php: '8.3'
+#            php: '8.1'
 #
 #    runs-on: ubuntu-latest
 #

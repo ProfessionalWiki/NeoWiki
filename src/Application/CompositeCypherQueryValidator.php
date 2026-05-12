@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application;
 
-readonly class CompositeCypherQueryValidator implements CypherQueryValidator {
+class CompositeCypherQueryValidator implements CypherQueryValidator {
 
 	/**
 	 * @param CypherQueryValidator[] $validators

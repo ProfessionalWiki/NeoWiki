@@ -13,7 +13,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class SubjectsAction extends FormlessAction {
 
-	public const string ACTION_NAME = 'subjects';
+	public const ACTION_NAME = 'subjects';
 
 	public function getName(): string {
 		return self::ACTION_NAME;

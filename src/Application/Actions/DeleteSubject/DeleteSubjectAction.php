@@ -8,7 +8,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 
-readonly class DeleteSubjectAction {
+class DeleteSubjectAction {
 
 	public function __construct(
 		private SubjectRepository $subjectRepository,

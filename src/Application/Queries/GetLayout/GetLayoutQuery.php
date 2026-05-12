@@ -8,7 +8,7 @@ use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\Presentation\LayoutPresentationSerializer;
 
-readonly class GetLayoutQuery {
+class GetLayoutQuery {
 
 	public function __construct(
 		private GetLayoutPresenter $presenter,

@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Value;
 
-readonly class NumberValue implements NeoValue {
+class NumberValue implements NeoValue {
 
 	public function __construct(
 		public int|float $number

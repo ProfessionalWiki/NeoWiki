@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject;
 
-readonly class SetMainSubjectRequest {
+class SetMainSubjectRequest {
 
 	public function __construct(
 		public int $pageId,

@@ -33,9 +33,9 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentReposit
  */
 class SubjectDataLookupTest extends TestCase {
 
-	private const string SUBJECT_ID = 's1test5aaaaaaaa';
-	private const string TARGET_SUBJECT_ID = 's1test5bbbbbbbb';
-	private const string CHILD_SUBJECT_ID = 's1test5cccccccc';
+	private const SUBJECT_ID = 's1test5aaaaaaaa';
+	private const TARGET_SUBJECT_ID = 's1test5bbbbbbbb';
+	private const CHILD_SUBJECT_ID = 's1test5cccccccc';
 
 	private function createTitle(): Title {
 		return $this->createStub( Title::class );

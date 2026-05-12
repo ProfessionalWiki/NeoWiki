@@ -10,7 +10,7 @@ use WMDE\Clock\SystemClock;
 
 class ProductionIdGenerator implements IdGenerator {
 
-	private const string BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+	private const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
 	private Randomizer $randomizer;
 	private Clock $clock;

@@ -8,7 +8,7 @@ use MediaWiki\Content\JsonContent;
 
 class LayoutContent extends JsonContent {
 
-	public const string CONTENT_MODEL_ID = 'NeoWikiLayout';
+	public const CONTENT_MODEL_ID = 'NeoWikiLayout';
 
 	public function __construct( string $text, string $modelId = self::CONTENT_MODEL_ID ) {
 		parent::__construct(

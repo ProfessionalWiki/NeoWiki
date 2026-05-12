@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Page;
 
-readonly class PageProperties {
+class PageProperties {
 
 	/**
 	 * @param array<string, mixed> $properties

@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSubject;
 
-readonly class GetSubjectResponseItem {
+class GetSubjectResponseItem {
 
 	public function __construct(
 		public string $id,

@@ -24,8 +24,8 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
  */
 class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 
-	private const string SUBJECT_ID_1 = 'sTestSLL1111111';
-	private const string SUBJECT_ID_2 = 'sTestSLL1111112';
+	private const SUBJECT_ID_1 = 'sTestSLL1111111';
+	private const SUBJECT_ID_2 = 'sTestSLL1111112';
 
 	public function setUp(): void {
 		$this->setUpNeo4j();

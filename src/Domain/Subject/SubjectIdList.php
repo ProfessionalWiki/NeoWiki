@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
-readonly class SubjectIdList {
+class SubjectIdList {
 
 	/**
 	 * @var SubjectId[]

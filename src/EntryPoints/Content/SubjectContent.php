@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSer
 
 class SubjectContent extends JsonContent {
 
-	public const string CONTENT_MODEL_ID = 'NeoWikiSubject';
+	public const CONTENT_MODEL_ID = 'NeoWikiSubject';
 
 	public function __construct( string $text, string $modelId = self::CONTENT_MODEL_ID ) {
 		parent::__construct(

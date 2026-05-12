@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Layout;
 
 use InvalidArgumentException;
 
-readonly class LayoutName {
+class LayoutName {
 
 	public function __construct(
 		private string $text,

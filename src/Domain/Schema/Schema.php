@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 use OutOfBoundsException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 
-readonly class Schema {
+class Schema {
 
 	public function __construct(
 		private SchemaName $name,

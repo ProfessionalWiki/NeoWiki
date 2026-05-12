@@ -22,9 +22,9 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  */
 class SubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 
-	private const string SUBJECT_ID = 'sTestSRU1111111';
-	private const string TARGET_SUBJECT_1 = 'sTestSRU1111112';
-	private const string TARGET_SUBJECT_2 = 'sTestSRU1111113';
+	private const SUBJECT_ID = 'sTestSRU1111111';
+	private const TARGET_SUBJECT_1 = 'sTestSRU1111112';
+	private const TARGET_SUBJECT_2 = 'sTestSRU1111113';
 
 	public function setUp(): void {
 		$this->setUpNeo4j();

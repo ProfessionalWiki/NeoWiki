@@ -15,7 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 
-readonly class StatementList {
+class StatementList {
 
 	/**
 	 * @var array<string, Statement> Key is property name

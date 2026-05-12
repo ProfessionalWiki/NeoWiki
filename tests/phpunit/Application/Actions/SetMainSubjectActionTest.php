@@ -21,10 +21,10 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
  */
 class SetMainSubjectActionTest extends TestCase {
 
-	private const string MAIN_ID = 's11111111111maa';
-	private const string CHILD_ID = 's11111111111caa';
-	private const string OTHER_ID = 's11111111111oaa';
-	private const int PAGE_ID = 42;
+	private const MAIN_ID = 's11111111111maa';
+	private const CHILD_ID = 's11111111111caa';
+	private const OTHER_ID = 's11111111111oaa';
+	private const PAGE_ID = 42;
 
 	public function testPromotesChildToMainAndDemotesPreviousMain(): void {
 		$repository = $this->newRepositoryWithMainAndChild();

@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
-readonly class PropertyCore {
+class PropertyCore {
 
 	/**
 	 * A null default means there is no default.

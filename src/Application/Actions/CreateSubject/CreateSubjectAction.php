@@ -17,7 +17,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use RuntimeException;
 
-readonly class CreateSubjectAction {
+class CreateSubjectAction {
 
 	public function __construct(
 		private CreateSubjectPresenter $presenter,

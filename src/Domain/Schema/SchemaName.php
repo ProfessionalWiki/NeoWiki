@@ -6,9 +6,9 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
 use InvalidArgumentException;
 
-readonly class SchemaName {
+class SchemaName {
 
-	private const array RESERVED_NAMES = [
+	private const RESERVED_NAMES = [
 		'page',
 		'subject'
 	];

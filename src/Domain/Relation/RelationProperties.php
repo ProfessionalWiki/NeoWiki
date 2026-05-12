@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 
 use InvalidArgumentException;
 
-readonly class RelationProperties {
+class RelationProperties {
 
 	public function __construct(
 		/**

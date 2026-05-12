@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 
-readonly class RelationId {
+class RelationId {
 
 	private string $text;
 

@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects;
 
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 
-readonly class GetPageSubjectsResponse {
+class GetPageSubjectsResponse {
 
 	public function __construct(
 		public int $pageId,

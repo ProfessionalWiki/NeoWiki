@@ -18,7 +18,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 
 class MediaWikiSubjectRepository implements SubjectRepository {
 
-	public const string SLOT_NAME = 'neo';
+	public const SLOT_NAME = 'neo';
 
 	public function __construct(
 		private readonly PageIdentifiersLookup $pageIdentifiersLookup,

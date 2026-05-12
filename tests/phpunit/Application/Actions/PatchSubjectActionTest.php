@@ -36,8 +36,8 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
  */
 class PatchSubjectActionTest extends TestCase {
 
-	private const string SUBJECT_ID = 's11111111111127';
-	private const string SCHEMA_NAME = 'TestSchema';
+	private const SUBJECT_ID = 's11111111111127';
+	private const SCHEMA_NAME = 'TestSchema';
 
 	private InMemorySubjectRepository $inMemorySubjectRepository;
 	private IdGenerator $idGenerator;

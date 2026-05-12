@@ -18,7 +18,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
  */
 class DeleteSubjectActionTest extends TestCase {
 
-	private const string SUBJECT_ID = 's11111111111126';
+	private const SUBJECT_ID = 's11111111111126';
 
 	public function testDeleteSubjectRemovesSubjectFromRepository(): void {
 		$repository = $this->newRepositoryWithSubject();

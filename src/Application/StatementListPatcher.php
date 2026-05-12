@@ -20,7 +20,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 
-readonly class StatementListPatcher {
+class StatementListPatcher {
 
 	public function __construct(
 		private PropertyTypeToValueType $propertyTypeToValueType,

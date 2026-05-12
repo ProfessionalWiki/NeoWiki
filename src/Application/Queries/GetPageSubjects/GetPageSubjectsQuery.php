@@ -15,7 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 
-readonly class GetPageSubjectsQuery {
+class GetPageSubjectsQuery {
 
 	public function __construct(
 		private GetPageSubjectsPresenter $presenter,

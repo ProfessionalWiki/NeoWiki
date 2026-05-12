@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki;
 
-readonly class NeoWikiConfig {
+class NeoWikiConfig {
 
 	public function __construct(
 		public bool $enableDevelopmentUIs,

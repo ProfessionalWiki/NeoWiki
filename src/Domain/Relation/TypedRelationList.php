@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Relation;
 
-readonly class TypedRelationList {
+class TypedRelationList {
 
 	public function __construct(
 		/**

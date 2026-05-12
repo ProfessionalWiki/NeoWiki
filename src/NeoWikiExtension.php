@@ -96,8 +96,8 @@ use Wikimedia\Rdbms\IDatabase;
 
 class NeoWikiExtension {
 
-	public const int NS_SCHEMA = 7474;
-	public const int NS_LAYOUT = 7476;
+	public const NS_SCHEMA = 7474;
+	public const NS_LAYOUT = 7476;
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;

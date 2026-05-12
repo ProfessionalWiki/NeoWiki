@@ -23,12 +23,12 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
  */
 class Neo4jPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 
-	private const string GUID_1 = 'sTestNPL1111111';
-	private const string GUID_2 = 'sTestNPL1111112';
-	private const string GUID_3 = 'sTestNPL1111113';
-	private const string GUID_4 = 'sTestNPL1111114';
-	private const string GUID_5 = 'sTestNPL1111115';
-	private const string GUID_404 = 'sTestNPL111nope';
+	private const GUID_1 = 'sTestNPL1111111';
+	private const GUID_2 = 'sTestNPL1111112';
+	private const GUID_3 = 'sTestNPL1111113';
+	private const GUID_4 = 'sTestNPL1111114';
+	private const GUID_5 = 'sTestNPL1111115';
+	private const GUID_404 = 'sTestNPL111nope';
 
 	public function setUp(): void {
 		$this->setUpNeo4j();

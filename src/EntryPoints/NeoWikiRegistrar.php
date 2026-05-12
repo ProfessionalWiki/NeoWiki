@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jValueBuilderRegistry;
 
-readonly class NeoWikiRegistrar {
+class NeoWikiRegistrar {
 
 	public function __construct(
 		private PropertyTypeRegistry $propertyTypeRegistry,

@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Layout;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 
-readonly class Layout {
+class Layout {
 
 	/**
 	 * @param array<string, mixed> $settings

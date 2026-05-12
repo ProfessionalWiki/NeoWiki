@@ -14,8 +14,8 @@ use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 
 class TestSubject {
 
-	public const string ZERO_GUID = 's11111111111111'; // TODO: rename
-	public const string DEFAULT_SCHEMA_ID = 'TestSubjectSchemaId';
+	public const ZERO_GUID = 's11111111111111'; // TODO: rename
+	public const DEFAULT_SCHEMA_ID = 'TestSubjectSchemaId';
 
 	public static function build(
 		string|SubjectId $id = self::ZERO_GUID,

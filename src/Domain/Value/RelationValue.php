@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Value;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 
-readonly class RelationValue implements NeoValue {
+class RelationValue implements NeoValue {
 
 	/**
 	 * @var Relation[]

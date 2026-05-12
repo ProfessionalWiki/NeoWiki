@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Value;
 
-readonly class StringValue implements NeoValue {
+class StringValue implements NeoValue {
 
 	/**
 	 * @var string[]

@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Layout;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 
-readonly class DisplayRule {
+class DisplayRule {
 
 	/**
 	 * @param array<string, mixed> $displayAttributes

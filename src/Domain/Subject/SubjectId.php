@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use Stringable;
 
-readonly class SubjectId implements Stringable {
+class SubjectId implements Stringable {
 
 	public string $text;
 

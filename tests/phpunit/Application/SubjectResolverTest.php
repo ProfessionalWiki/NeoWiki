@@ -26,8 +26,8 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentReposit
  */
 class SubjectResolverTest extends TestCase {
 
-	private const string SUBJECT_ID = 's1test5aaaaaaaa';
-	private const string TARGET_SUBJECT_ID = 's1test5bbbbbbbb';
+	private const SUBJECT_ID = 's1test5aaaaaaaa';
+	private const TARGET_SUBJECT_ID = 's1test5bbbbbbbb';
 
 	private function createSubject( string $id = self::SUBJECT_ID, string $label = 'Test Subject' ): Subject {
 		return new Subject(

@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Page;
 
-readonly class PagePropertyProviderContext {
+class PagePropertyProviderContext {
 
 	/**
 	 * @param string $pageTitle Page title text without namespace prefix, e.g. "My Page" not "Talk:My Page"

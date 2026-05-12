@@ -15,7 +15,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\IncrementalIdGenerator;
  */
 class TestRelation {
 
-	public const string DEFAULT_TARGET_ID = 'srt555555555555';
+	public const DEFAULT_TARGET_ID = 'srt555555555555';
 
 	public static function build(
 		string|RelationId $id = null,

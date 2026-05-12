@@ -9,7 +9,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 class IncrementalIdGenerator implements IdGenerator {
 
 	private int $currentIndex;
-	private const string BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+	private const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
 	public function __construct( int $startingIndex = 0 ) {
 		$this->currentIndex = $startingIndex;

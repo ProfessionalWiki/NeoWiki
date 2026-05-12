@@ -14,7 +14,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use RuntimeException;
 
-readonly class PatchSubjectAction {
+class PatchSubjectAction {
 
 	public function __construct(
 		private SubjectRepository $subjectRepository,

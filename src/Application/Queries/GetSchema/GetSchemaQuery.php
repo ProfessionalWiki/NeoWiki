@@ -8,7 +8,7 @@ use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 
-readonly class GetSchemaQuery {
+class GetSchemaQuery {
 
 	public function __construct(
 		private GetSchemaPresenter $presenter,

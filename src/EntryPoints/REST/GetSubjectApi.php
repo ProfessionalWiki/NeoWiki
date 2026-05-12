@@ -15,8 +15,8 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class GetSubjectApi extends SimpleHandler {
 
-	private const string EXPAND_PAGE = 'page';
-	private const string EXPAND_RELATIONS = 'relations';
+	private const EXPAND_PAGE = 'page';
+	private const EXPAND_RELATIONS = 'relations';
 
 	public function run( string $subjectId ): Response {
 		$presenter = new RestGetSubjectPresenter();

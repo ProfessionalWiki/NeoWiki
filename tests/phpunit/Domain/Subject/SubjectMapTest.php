@@ -15,9 +15,9 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
  */
 class SubjectMapTest extends TestCase {
 
-	private const string GUID_123 = 's1111111111a123';
-	private const string GUID_456 = 's1111111111a456';
-	private const string GUID_789 = 's1111111111a789';
+	private const GUID_123 = 's1111111111a123';
+	private const GUID_456 = 's1111111111a456';
+	private const GUID_789 = 's1111111111a789';
 
 	public function testGetSubject(): void {
 		$subjectId = new SubjectId( self::GUID_123 );

@@ -17,8 +17,8 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
  */
 class PageSubjectsLookupTest extends TestCase {
 
-	private const int PAGE_ID = 42;
-	private const int OTHER_PAGE_ID = 43;
+	private const PAGE_ID = 42;
+	private const OTHER_PAGE_ID = 43;
 
 	public function testPageHasSubjectsIsTrueWhenMainSubjectExists(): void {
 		$lookup = $this->newLookupWithSubjects(

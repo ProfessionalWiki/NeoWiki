@@ -41,8 +41,8 @@ use RuntimeException;
  */
 class CreateSubjectActionTest extends TestCase {
 
-	private const string STUB_ID = 'EVNrDCjgVpv9oC';
-	private const string SELECT_SCHEMA_NAME = 'StatusSchema';
+	private const STUB_ID = 'EVNrDCjgVpv9oC';
+	private const SELECT_SCHEMA_NAME = 'StatusSchema';
 
 	private InMemorySubjectRepository $subjectRepository;
 	private IdGenerator $idGenerator;

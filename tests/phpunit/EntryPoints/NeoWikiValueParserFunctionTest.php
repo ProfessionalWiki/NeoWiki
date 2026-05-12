@@ -34,8 +34,8 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentReposit
  */
 class NeoWikiValueParserFunctionTest extends TestCase {
 
-	private const string SUBJECT_ID = 's1test5aaaaaaaa';
-	private const string TARGET_SUBJECT_ID = 's1test5bbbbbbbb';
+	private const SUBJECT_ID = 's1test5aaaaaaaa';
+	private const TARGET_SUBJECT_ID = 's1test5bbbbbbbb';
 
 	private function createMockParser(): Parser {
 		$title = $this->createStub( Title::class );

@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-readonly class GetSubjectQuery {
+class GetSubjectQuery {
 
 	public function __construct(
 		private GetSubjectPresenter $presenter,

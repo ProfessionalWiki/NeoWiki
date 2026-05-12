@@ -17,7 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 
 class NeoWikiValueParserFunction {
 
-	private const string DEFAULT_SEPARATOR = ', ';
+	private const DEFAULT_SEPARATOR = ', ';
 
 	public function __construct(
 		private readonly SubjectResolver $subjectResolver,
