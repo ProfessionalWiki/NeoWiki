@@ -41,34 +41,69 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'sTestSA11111111', $responseData['subjectId'] );
 	}
 
-	public function testOmittedStatementIsDeleted(): void {
+	public function testOmittedStatementKeyIsDeleted(): void {
 		$this->createPages();
 
-		$bodyWithStatement = $this->validBody();
-		$bodyWithStatement['statements'] = [
-			'Founded at' => [
-				'propertyType' => 'number',
-				'value' => 2019,
-			],
+		$bodyWithTwoStatements = $this->validBody();
+		$bodyWithTwoStatements['statements'] = [
+			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
+			'Website' => [ 'propertyType' => 'url', 'value' => [ 'https://example.com' ] ],
 		];
+		$this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestData( $bodyWithTwoStatements )
+		);
+
+		$bodyOmittingOne = $this->validBody();
+		$bodyOmittingOne['statements'] = [
+			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
+		];
+		$this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestData( $bodyOmittingOne )
+		);
+
+		$subject = $this->getSubjectFromRepository( 'sTestSA11111111' );
+		$this->assertSame( [ 'Founded at' ], array_keys( $subject->getStatements()->asArray() ) );
+	}
+
+	public function testEmptyStatementsMapClearsAll(): void {
+		$this->createPages();
 
 		$this->executeHandler(
 			$this->newReplaceSubjectApi(),
-			$this->createRequestData( $bodyWithStatement )
+			$this->createValidRequestData()
 		);
 
 		$bodyEmpty = $this->validBody();
 		$bodyEmpty['statements'] = [];
-
-		$response = $this->executeHandler(
+		$this->executeHandler(
 			$this->newReplaceSubjectApi(),
 			$this->createRequestData( $bodyEmpty )
 		);
 
-		$this->assertSame( 200, $response->getStatusCode() );
-
 		$subject = $this->getSubjectFromRepository( 'sTestSA11111111' );
 		$this->assertSame( [], $subject->getStatements()->asArray() );
+	}
+
+	public function testNonExistentSubjectReturns404(): void {
+		$body = $this->validBody();
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			new RequestData( [
+				'method' => 'PUT',
+				'pathParams' => [ 'subjectId' => 'sDoesNotExist99' ],
+				'bodyContents' => json_encode( $body ),
+				'headers' => [ 'Content-Type' => 'application/json' ],
+			] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 404, $response->getStatusCode() );
+		$this->assertSame( 'error', $responseData['status'] );
+		$this->assertStringContainsString( 'not found', $responseData['message'] );
 	}
 
 	public function testMissingLabelReturns400(): void {
