@@ -21,7 +21,6 @@ use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
-use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
@@ -63,7 +62,6 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
-use ProfessionalWiki\NeoWiki\EntryPoints\REST\PatchSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
@@ -482,16 +480,6 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newPatchSubjectAction( Authority $authority ): PatchSubjectAction {
-		return new PatchSubjectAction(
-			subjectRepository: $this->getSubjectRepository(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
-			patcher: $this->getStatementListPatcher(),
-			schemaLookup: $this->getSchemaLookup(),
-			selectPatchResolver: $this->getSelectPatchResolver(),
-		);
-	}
-
 	public function newReplaceSubjectAction( Authority $authority ): ReplaceSubjectAction {
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
@@ -522,10 +510,6 @@ class NeoWikiExtension {
 
 	public static function newGetPageSubjectsApi(): GetPageSubjectsApi {
 		return new GetPageSubjectsApi();
-	}
-
-	public static function newPatchSubjectApi(): PatchSubjectApi {
-		return new PatchSubjectApi( csrfValidator: self::getCsrfValidator() );
 	}
 
 	public static function newReplaceSubjectApi(): ReplaceSubjectApi {
