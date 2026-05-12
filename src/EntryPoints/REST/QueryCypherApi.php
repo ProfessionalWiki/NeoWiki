@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Application\Query\Exception\WriteQueryRejectedExcep
 use ProfessionalWiki\NeoWiki\Application\Query\QueryLimits;
 use ProfessionalWiki\NeoWiki\Application\Query\QueryRequest;
 use ProfessionalWiki\NeoWiki\Application\Query\QueryService;
+use Throwable;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class QueryCypherApi extends SimpleHandler {
@@ -44,7 +45,7 @@ class QueryCypherApi extends SimpleHandler {
 
 		try {
 			$limits = QueryLimits::forUser( $user );
-		} catch ( \Throwable $e ) {
+		} catch ( Throwable $e ) {
 			return $this->errorResponse( 500, 'internalError', $e->getMessage() );
 		}
 
