@@ -1,7 +1,7 @@
 # Subject JSON Format
 
 This document describes the JSON format used to store Subject data in MediaWiki revision slots and returned by
-the REST API (GET endpoints). The same format is used for write operations (PUT) with minor differences
+the REST API (GET endpoints). The same format is used for write operations (POST/PUT) with minor differences
 noted below.
 
 For definitions of terms like Subject, Statement, and Value, see the [Glossary](Glossary.md).
