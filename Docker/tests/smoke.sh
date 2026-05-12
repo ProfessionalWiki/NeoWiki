@@ -2,7 +2,8 @@
 
 STATUS=0
 
-. ./.env
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "$SCRIPT_DIR/../.env"
 
 function echoGood {
     echo -e "\e[32mSuccess: $1\e[0m"
