@@ -7,10 +7,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-concurrency:
-  group: build-docker-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
 
   build_and_deploy_mediawiki:
