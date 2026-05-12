@@ -164,8 +164,8 @@
 		},
 		{
 			"path": "/neowiki/v0/subject/{subjectId}",
-			"method": [ "PATCH" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newPatchSubjectApi"
+			"method": [ "PUT" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newReplaceSubjectApi"
 		},
 		{
 			"path": "/neowiki/v0/subject/{subjectId}",
