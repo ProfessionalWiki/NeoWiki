@@ -33,8 +33,8 @@ else
 	EXEC_USER := --user $(shell id -u):$(shell id -g)
 endif
 
-EXEC_MW := $(DC_DEV) exec -T $(EXEC_USER) mediawiki
-EXEC_MW_ROOT := $(DC_DEV) exec -T mediawiki
+EXEC_MW := $(DC) exec -T $(EXEC_USER) mediawiki
+EXEC_MW_ROOT := $(DC) exec -T mediawiki
 EXEC_NODE := $(DC_DEV) exec -T $(EXEC_USER) -e npm_config_cache=/tmp/.npm node
 
 # Detect when this Makefile is invoked from inside the mediawiki container.
@@ -159,6 +159,7 @@ _first-run-seed:
 	else \
 		$(MAKE) --no-print-directory install-db; \
 		$(MAKE) --no-print-directory load-neo4j-users; \
+		$(MAKE) --no-print-directory setup-test-neo; \
 		$(MAKE) --no-print-directory composer-install; \
 		$(MAKE) --no-print-directory import-demo-data; \
 	fi
@@ -166,9 +167,9 @@ _first-run-seed:
 
 # ---- DB and Neo4j init -------------------------------------------------------
 
-.PHONY: install-db load-neo4j-users wait-for-neo4j
+.PHONY: install-db load-neo4j-users wait-for-neo4j setup-test-neo
 
-install-db:
+install-db: ## Install MediaWiki against the running stack
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh db:3306 -t 60'
 	$(EXEC_MW_ROOT) mv LocalSettings.php __LocalSettings.php
 	$(EXEC_MW_ROOT) \
@@ -184,12 +185,15 @@ install-db:
 
 wait-for-neo4j:
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh neo:7687 -t 60'
-	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_neo:7689 -t 60'
 
-load-neo4j-users:
+load-neo4j-users: ## Create the read-only Neo4j user against the running stack
 	$(MAKE) --no-print-directory wait-for-neo4j
-	$(DC_DEV) exec -T neo bash -c \
+	$(DC) exec -T neo bash -c \
 		"echo \"CREATE USER $(NEO4J_USERNAME_READ) SET PASSWORD '$(NEO4J_PASSWORD_READ)' CHANGE NOT REQUIRED; GRANT ROLE reader TO $(NEO4J_USERNAME_READ);\" | cypher-shell -u neo4j -p $(NEO4J_PASSWORD) -a bolt://localhost:7687"
+
+# Dev-only: wait for and seed the test_neo instance. Not called from prod or CI flows.
+setup-test-neo:
+	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_neo:7689 -t 60'
 	$(DC_DEV) exec -T test_neo bash -c \
 		"echo \"CREATE USER mediawiki_read SET PASSWORD 'mediawiki_read' CHANGE NOT REQUIRED; GRANT ROLE reader TO mediawiki_read;\" | cypher-shell -u neo4j -p password -a bolt://localhost:7689"
 
@@ -332,7 +336,7 @@ ts-lint: _wait-node ## Run TS linter
 
 # ---- Maintenance -------------------------------------------------------------
 
-.PHONY: reset import-demo-data rebuild-graph-databases update-dot-php
+.PHONY: reset import-demo-data rebuild-graph-databases update-dot-php update smoke-test
 
 reset: ## Wipe DB + Neo4j volumes and reseed demo data (containers stay)
 	$(DC_DEV) down --volumes
@@ -340,6 +344,7 @@ reset: ## Wipe DB + Neo4j volumes and reseed demo data (containers stay)
 	@$(MAKE) --no-print-directory _wait-mw
 	$(MAKE) --no-print-directory install-db
 	$(MAKE) --no-print-directory load-neo4j-users
+	$(MAKE) --no-print-directory setup-test-neo
 	$(MAKE) --no-print-directory import-demo-data
 
 import-demo-data: ## Import the NeoWiki demo subjects
@@ -350,6 +355,14 @@ rebuild-graph-databases: ## Rebuild Neo4j projection from MariaDB
 
 update-dot-php: ## Run MW maintenance/update.php
 	$(EXEC_MW_ROOT) php maintenance/run.php update --quick
+
+update: ## Pull the latest production image, restart, and run update.php (VPS upgrade flow)
+	$(DC) --profile server pull
+	$(DC) --profile server up -d
+	$(EXEC_MW_ROOT) php maintenance/run.php update --quick
+
+smoke-test: ## Hit the running wiki from outside and verify Main_Page/api.php respond (CI smoke test)
+	cd Docker && bash test.sh
 
 # ---- Production image --------------------------------------------------------
 
