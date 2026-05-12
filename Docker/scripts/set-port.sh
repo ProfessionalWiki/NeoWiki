@@ -39,6 +39,8 @@ get_env_var() {
 
 # Allocate or reuse a port for $key in [$start..$end]. If the existing value
 # in .env is still free on the host, reuse it; otherwise pick the first free.
+# A held value outside [$start..$end] is treated as a deliberate user override
+# and surfaces as an error rather than being silently replaced.
 allocate() {
     local key=$1 start=$2 end=$3
     local existing
@@ -46,6 +48,11 @@ allocate() {
     if [ -n "$existing" ] && is_port_free "$existing"; then
         echo "$existing"
         return 0
+    fi
+    if [ -n "$existing" ] && { [ "$existing" -lt "$start" ] || [ "$existing" -gt "$end" ]; }; then
+        echo "Error: configured $key=$existing is in use and outside the auto-allocation range $start-$end." >&2
+        echo "Edit Docker/.env or stop the conflicting service." >&2
+        return 1
     fi
     for p in $(seq "$start" "$end"); do
         if is_port_free "$p"; then
@@ -64,6 +71,11 @@ exec 200>"$LOCK_FILE"
 flock -x 200
 
 if [ -n "$REQUESTED" ]; then
+    if ! is_port_free "$REQUESTED"; then
+        echo "Error: requested MW_SERVER_PORT=$REQUESTED is already in use." >&2
+        echo "Pick a different port or stop the conflicting service." >&2
+        exit 1
+    fi
     set_env_var MW_SERVER_PORT "$REQUESTED"
     mw_port="$REQUESTED"
 else
