@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
-use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
+use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -26,7 +26,7 @@ readonly class CreateSubjectAction {
 		private SubjectAuthorizer $subjectAuthorizer,
 		private StatementListPatcher $statementListPatcher,
 		private SchemaLookup $schemaLookup,
-		private SelectPatchResolver $selectPatchResolver,
+		private SelectStatementResolver $selectStatementResolver,
 	) {
 	}
 
@@ -82,7 +82,7 @@ readonly class CreateSubjectAction {
 			return $patch;
 		}
 
-		return $this->selectPatchResolver->resolve( $schema, $patch );
+		return $this->selectStatementResolver->resolve( $schema, $patch );
 	}
 
 }

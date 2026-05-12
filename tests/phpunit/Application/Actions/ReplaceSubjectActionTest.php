@@ -6,12 +6,12 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
-use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
+use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
-use ProfessionalWiki\NeoWiki\Application\SubjectEditNotAuthorizedException;
-use ProfessionalWiki\NeoWiki\Application\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
@@ -60,7 +60,7 @@ class ReplaceSubjectActionTest extends TestCase {
 			subjectAuthorizer: $authorizer ?? new SucceedingSubjectAuthorizer(),
 			statementListBuilder: $builder,
 			schemaLookup: $this->schemaLookup,
-			selectPatchResolver: new SelectPatchResolver( new SelectValueResolver() ),
+			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 		);
 	}
 

@@ -39,7 +39,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Persistence\CompositeGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
-use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
+use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
@@ -311,12 +311,12 @@ class NeoWikiExtension {
 			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
 			statementListPatcher: $this->getStatementListPatcher(),
 			schemaLookup: $this->getSchemaLookup(),
-			selectPatchResolver: $this->getSelectPatchResolver(),
+			selectStatementResolver: $this->getSelectStatementResolver(),
 		);
 	}
 
-	public function getSelectPatchResolver(): SelectPatchResolver {
-		return new SelectPatchResolver( new SelectValueResolver() );
+	public function getSelectStatementResolver(): SelectStatementResolver {
+		return new SelectStatementResolver( new SelectValueResolver() );
 	}
 
 	public function getSubjectRepository(): SubjectRepository {
@@ -486,7 +486,7 @@ class NeoWikiExtension {
 			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
-			selectPatchResolver: $this->getSelectPatchResolver(),
+			selectStatementResolver: $this->getSelectStatementResolver(),
 		);
 	}
 

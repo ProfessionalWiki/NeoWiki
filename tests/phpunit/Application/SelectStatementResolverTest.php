@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
+use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
@@ -17,12 +17,12 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Application\SelectPatchResolver
+ * @covers \ProfessionalWiki\NeoWiki\Application\SelectStatementResolver
  */
-class SelectPatchResolverTest extends TestCase {
+class SelectStatementResolverTest extends TestCase {
 
-	private function newResolver(): SelectPatchResolver {
-		return new SelectPatchResolver( new SelectValueResolver() );
+	private function newResolver(): SelectStatementResolver {
+		return new SelectStatementResolver( new SelectValueResolver() );
 	}
 
 	private function newSchemaWithSelect( bool $multiple = false ): Schema {

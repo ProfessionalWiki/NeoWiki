@@ -5,11 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject;
 
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
-use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
+use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
-use ProfessionalWiki\NeoWiki\Application\SubjectEditNotAuthorizedException;
-use ProfessionalWiki\NeoWiki\Application\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -22,7 +22,7 @@ readonly class ReplaceSubjectAction {
 		private SubjectAuthorizer $subjectAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
-		private SelectPatchResolver $selectPatchResolver,
+		private SelectStatementResolver $selectStatementResolver,
 	) {
 	}
 
@@ -60,7 +60,7 @@ readonly class ReplaceSubjectAction {
 			return $statements;
 		}
 
-		return $this->selectPatchResolver->resolve( $schema, $statements );
+		return $this->selectStatementResolver->resolve( $schema, $statements );
 	}
 
 }

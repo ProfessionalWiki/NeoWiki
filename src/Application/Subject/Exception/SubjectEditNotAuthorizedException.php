@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Application;
+namespace ProfessionalWiki\NeoWiki\Application\Subject\Exception;
 
 use RuntimeException;
 
