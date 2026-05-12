@@ -8,11 +8,12 @@ use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectEditNotAuthorizedException;
+use ProfessionalWiki\NeoWiki\Application\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use RuntimeException;
 
 readonly class ReplaceSubjectAction {
 
@@ -30,13 +31,13 @@ readonly class ReplaceSubjectAction {
 	 */
 	public function replace( SubjectId $subjectId, string $label, array $statements, ?string $comment ): void {
 		if ( !$this->subjectAuthorizer->canEditSubject() ) {
-			throw new RuntimeException( 'You do not have the necessary permissions to edit this subject' );
+			throw new SubjectEditNotAuthorizedException();
 		}
 
 		$subject = $this->subjectRepository->getSubject( $subjectId );
 
 		if ( $subject === null ) {
-			throw new RuntimeException( 'Subject not found: ' . $subjectId->text );
+			throw SubjectNotFoundException::forId( $subjectId );
 		}
 
 		$subject->setLabel( new SubjectLabel( $label ) );

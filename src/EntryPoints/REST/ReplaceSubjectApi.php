@@ -8,10 +8,11 @@ use InvalidArgumentException;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
+use ProfessionalWiki\NeoWiki\Application\SubjectEditNotAuthorizedException;
+use ProfessionalWiki\NeoWiki\Application\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
-use RuntimeException;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ReplaceSubjectApi extends SimpleHandler {
@@ -41,9 +42,13 @@ class ReplaceSubjectApi extends SimpleHandler {
 				'status' => 'error',
 				'message' => $e->getMessage(),
 			] );
-		} catch ( RuntimeException $e ) {
-			$status = str_contains( $e->getMessage(), 'not found' ) ? 404 : 403;
-			return $this->getResponseFactory()->createHttpError( $status, [
+		} catch ( SubjectNotFoundException $e ) {
+			return $this->getResponseFactory()->createHttpError( 404, [
+				'status' => 'error',
+				'message' => $e->getMessage(),
+			] );
+		} catch ( SubjectEditNotAuthorizedException $e ) {
+			return $this->getResponseFactory()->createHttpError( 403, [
 				'status' => 'error',
 				'message' => $e->getMessage(),
 			] );

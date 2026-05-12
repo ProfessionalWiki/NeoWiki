@@ -10,6 +10,8 @@ use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
+use ProfessionalWiki\NeoWiki\Application\SubjectEditNotAuthorizedException;
+use ProfessionalWiki\NeoWiki\Application\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
@@ -157,8 +159,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$action = $this->newAction( new FailingSubjectAuthorizer() );
 
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessageMatches( '/permissions/' );
+		$this->expectException( SubjectEditNotAuthorizedException::class );
 
 		$action->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
 	}
@@ -166,7 +167,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	public function testNonExistentSubjectThrows(): void {
 		$action = $this->newAction();
 
-		$this->expectException( \RuntimeException::class );
+		$this->expectException( SubjectNotFoundException::class );
 		$this->expectExceptionMessage( 'Subject not found: ' . self::SUBJECT_ID );
 
 		$action->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
