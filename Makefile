@@ -359,6 +359,8 @@ update-dot-php: ## Run MW maintenance/update.php
 update: ## Pull the latest production image, restart, and run update.php (VPS upgrade flow)
 	$(DC) --profile server pull
 	$(DC) --profile server up -d
+	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh db:3306 -t 60'
+	$(MAKE) --no-print-directory wait-for-neo4j
 	$(EXEC_MW_ROOT) php maintenance/run.php update --quick
 
 smoke-test: ## Hit the running wiki from outside and verify Main_Page/api.php respond (CI smoke test)
