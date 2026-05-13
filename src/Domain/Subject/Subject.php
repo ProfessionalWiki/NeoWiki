@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
-use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -75,11 +74,8 @@ class Subject {
 		$this->label = $newLabel;
 	}
 
-	public function patchStatements( StatementListPatcher $patcher, array $patch ): void {
-		$this->statements = $patcher->buildStatementList(
-			statements: $this->statements,
-			patch: $patch,
-		);
+	public function setStatements( StatementList $statements ): void {
+		$this->statements = $statements;
 	}
 
 }

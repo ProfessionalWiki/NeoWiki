@@ -7,9 +7,9 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
-use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
+use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
-use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
+use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
@@ -64,12 +64,12 @@ class CreateSubjectActionTest extends TestCase {
 			$this->subjectRepository,
 			$this->idGenerator,
 			$this->authorizer,
-			new StatementListPatcher(
+			new StatementListBuilder(
 				new PropertyTypeToValueType( PropertyTypeRegistry::withCoreTypes() ),
 				$this->idGenerator
 			),
 			$this->schemaLookup,
-			new SelectPatchResolver( new SelectValueResolver() ),
+			new SelectStatementResolver( new SelectValueResolver() ),
 		);
 	}
 

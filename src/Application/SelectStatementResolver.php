@@ -10,13 +10,13 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 
 /**
- * Walks a write-path patch array and resolves every select statement value
+ * Walks an incoming statements array and resolves every select statement value
  * (id, label, or {id, label} object) to the canonical live option ID.
  *
- * Leaves non-select entries, deletions (null), and properties not found
+ * Leaves non-select entries, null entries, and properties not found
  * on the Schema untouched.
  */
-readonly class SelectPatchResolver {
+readonly class SelectStatementResolver {
 
 	public function __construct(
 		private SelectValueResolver $valueResolver,
@@ -24,14 +24,14 @@ readonly class SelectPatchResolver {
 	}
 
 	/**
-	 * @param array<string, mixed> $patch
+	 * @param array<string, mixed> $statements
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @throws InvalidArgumentException When a select value cannot be resolved.
 	 */
-	public function resolve( Schema $schema, array $patch ): array {
-		foreach ( $patch as $propertyName => $entry ) {
+	public function resolve( Schema $schema, array $statements ): array {
+		foreach ( $statements as $propertyName => $entry ) {
 			if ( !is_array( $entry ) ) {
 				continue;
 			}
@@ -60,10 +60,10 @@ readonly class SelectPatchResolver {
 				$entry['value']
 			);
 
-			$patch[$propertyName] = $entry;
+			$statements[$propertyName] = $entry;
 		}
 
-		return $patch;
+		return $statements;
 	}
 
 	private function resolveEntryValue( string $propertyName, SelectProperty $property, mixed $value ): mixed {

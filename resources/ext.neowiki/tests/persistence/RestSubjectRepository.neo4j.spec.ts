@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository';
 import { SubjectId } from '@/domain/SubjectId';
 import { PageIdentifiers } from '@/domain/PageIdentifiers';
@@ -190,6 +190,26 @@ describe( 'RestSubjectRepository', () => {
 			);
 
 			expect( response ).toEqual( mockUpdateResponse );
+		} );
+
+		it( 'sends a PUT request', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
+					new Response( JSON.stringify( {} ), { status: 200 } ),
+			} );
+			const putSpy = vi.spyOn( inMemoryHttpClient, 'put' );
+			const patchSpy = vi.spyOn( inMemoryHttpClient, 'patch' );
+
+			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
+
+			await repository.updateSubject(
+				new SubjectId( 's11111111111111' ),
+				'Subject label',
+				new StatementList( [] ),
+			);
+
+			expect( putSpy ).toHaveBeenCalledOnce();
+			expect( patchSpy ).not.toHaveBeenCalled();
 		} );
 
 	} );

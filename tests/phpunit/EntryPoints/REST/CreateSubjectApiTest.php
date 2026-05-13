@@ -134,4 +134,18 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testEmptyLabelReturns400(): void {
+		$this->createSchema( 'Employee' );
+
+		$body = $this->validBody();
+		$body['label'] = '   ';
+
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
 }

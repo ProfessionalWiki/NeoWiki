@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application;
 
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
@@ -17,10 +18,9 @@ use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 
-readonly class StatementListPatcher {
+readonly class StatementListBuilder {
 
 	public function __construct(
 		private PropertyTypeToValueType $propertyTypeToValueType,
@@ -29,40 +29,34 @@ readonly class StatementListPatcher {
 	}
 
 	/**
-	 * The patch maps property name to scalar value representation (or null to delete the statement).
-	 * This follows the JSON Merge Patch specification (RFC 7396).
-	 *
-	 * @param StatementList $statements
-	 * @param array<string, mixed> $patch
+	 * @param array<string, mixed> $statements
 	 */
-	public function buildStatementList( StatementList $statements, array $patch ): StatementList {
-		$newStatements = $statements->asArray();
+	public function build( array $statements ): StatementList {
+		$built = [];
 
-		foreach ( $patch as $propertyName => $requestStatement ) {
-			if ( is_array( $requestStatement ) && isset( $requestStatement['propertyType'] ) ) {
-				/** @var string $propertyType TODO: handle missing propertyType */
-				$propertyType = $requestStatement['propertyType'];
-				$value = $this->deserializeValue( $propertyType, $requestStatement['value'] );
-
-				if ( !$value->isEmpty() ) {
-					$newStatements[$propertyName] = new Statement(
-						property: new PropertyName( $propertyName ),
-						propertyType: $propertyType,
-						value: $value
-					);
-
-					continue;
-				}
+		foreach ( $statements as $propertyName => $entry ) {
+			if ( !is_array( $entry ) || !isset( $entry['propertyType'] ) ) {
+				continue;
 			}
 
-			unset( $newStatements[$propertyName] );
+			$propertyType = $entry['propertyType'];
+			$value = $this->deserializeValue( $propertyType, $entry['value'] );
+
+			if ( $value->isEmpty() ) {
+				continue;
+			}
+
+			$built[$propertyName] = new Statement(
+				property: new PropertyName( $propertyName ),
+				propertyType: $propertyType,
+				value: $value
+			);
 		}
 
-		return new StatementList( $newStatements );
+		return new StatementList( $built );
 	}
 
 	private function deserializeValue( string $propertyType, mixed $value ): NeoValue {
-		// TODO: validate value integrity
 		return match ( $this->propertyTypeToValueType->lookup( $propertyType ) ) {
 			ValueType::String => new StringValue( ...(array)$value ),
 			ValueType::Number => new NumberValue( $value ),
@@ -75,10 +69,10 @@ readonly class StatementListPatcher {
 		$relations = [];
 
 		foreach ( $json as $relation ) {
-			if ( is_array( $relation ) ) { // TODO: complete validation and log warning on failure
+			if ( is_array( $relation ) ) {
 				$relations[] = new Relation(
 					id: $this->buildRelationId( $relation ),
-					targetId: new SubjectId( $relation['target'] ), // TODO: handle exception
+					targetId: new SubjectId( $relation['target'] ),
 					properties: new RelationProperties( $relation['properties'] ?? [] )
 				);
 			}
@@ -89,7 +83,7 @@ readonly class StatementListPatcher {
 
 	private function buildRelationId( array $relation ): RelationId {
 		if ( array_key_exists( 'id', $relation ) ) {
-			return new RelationId( $relation['id'] ); // TODO: handle exception
+			return new RelationId( $relation['id'] );
 		}
 
 		return RelationId::createNew( $this->idGenerator );

@@ -21,7 +21,8 @@ use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
-use ProfessionalWiki\NeoWiki\Application\Actions\PatchSubject\PatchSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
@@ -38,11 +39,10 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Persistence\CompositeGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
-use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
+use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
-use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\WriteQueryEngine;
@@ -61,7 +61,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
-use ProfessionalWiki\NeoWiki\EntryPoints\REST\PatchSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
@@ -308,14 +308,14 @@ class NeoWikiExtension {
 			subjectRepository: $this->getSubjectRepository(),
 			idGenerator: $this->getIdGenerator(),
 			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
-			statementListPatcher: $this->getStatementListPatcher(),
+			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
-			selectPatchResolver: $this->getSelectPatchResolver(),
+			selectStatementResolver: $this->getSelectStatementResolver(),
 		);
 	}
 
-	public function getSelectPatchResolver(): SelectPatchResolver {
-		return new SelectPatchResolver( new SelectValueResolver() );
+	public function getSelectStatementResolver(): SelectStatementResolver {
+		return new SelectStatementResolver( new SelectValueResolver() );
 	}
 
 	public function getSubjectRepository(): SubjectRepository {
@@ -339,8 +339,8 @@ class NeoWikiExtension {
 		return new ProductionIdGenerator();
 	}
 
-	public function getStatementListPatcher(): StatementListPatcher {
-		return new StatementListPatcher(
+	public function getStatementListBuilder(): StatementListBuilder {
+		return new StatementListBuilder(
 			propertyTypeToValueType: $this->getPropertyTypeToValueType(),
 			idGenerator: $this->getIdGenerator()
 		);
@@ -475,13 +475,13 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newPatchSubjectAction( Authority $authority ): PatchSubjectAction {
-		return new PatchSubjectAction(
+	public function newReplaceSubjectAction( Authority $authority ): ReplaceSubjectAction {
+		return new ReplaceSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
 			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
-			patcher: $this->getStatementListPatcher(),
+			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
-			selectPatchResolver: $this->getSelectPatchResolver(),
+			selectStatementResolver: $this->getSelectStatementResolver(),
 		);
 	}
 
@@ -507,8 +507,8 @@ class NeoWikiExtension {
 		return new GetPageSubjectsApi();
 	}
 
-	public static function newPatchSubjectApi(): PatchSubjectApi {
-		return new PatchSubjectApi( csrfValidator: self::getCsrfValidator() );
+	public static function newReplaceSubjectApi(): ReplaceSubjectApi {
+		return new ReplaceSubjectApi( csrfValidator: self::getCsrfValidator() );
 	}
 
 	public static function newDeleteSubjectApi(): DeleteSubjectApi {

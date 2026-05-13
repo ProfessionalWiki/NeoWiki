@@ -4,15 +4,18 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
+use InvalidArgumentException;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\ParamValidator\ParamValidator;
 
-class PatchSubjectApi extends SimpleHandler {
+class ReplaceSubjectApi extends SimpleHandler {
 
 	public function __construct(
 		private readonly CsrfValidator $csrfValidator
@@ -27,22 +30,34 @@ class PatchSubjectApi extends SimpleHandler {
 
 		$body = $this->getValidatedBody();
 
-		// TODO: replace try-catch with presenter. See CreateSubjectApi for example.
 		try {
-			NeoWikiExtension::getInstance()->newPatchSubjectAction( $this->getAuthority() )->patch(
+			NeoWikiExtension::getInstance()->newReplaceSubjectAction( $this->getAuthority() )->replace(
 				new SubjectId( $subjectId ),
-				$body['label'] ?? null,
-				$body['statements'], // TODO: support property removal. https://github.com/ProfessionalWiki/NeoWiki/issues/280
+				$body['label'],
+				$body['statements'],
 				$body['comment'] ?? null
 			);
-		} catch ( \RuntimeException $e ) {
+		} catch ( InvalidArgumentException $e ) {
+			return $this->getResponseFactory()->createHttpError( 400, [
+				'status' => 'error',
+				'message' => $e->getMessage(),
+			] );
+		} catch ( SubjectNotFoundException $e ) {
+			return $this->getResponseFactory()->createHttpError( 404, [
+				'status' => 'error',
+				'message' => $e->getMessage(),
+			] );
+		} catch ( SubjectEditNotAuthorizedException $e ) {
 			return $this->getResponseFactory()->createHttpError( 403, [
 				'status' => 'error',
 				'message' => $e->getMessage(),
 			] );
 		}
 
-		return new Response( json_encode( $body ) );
+		return $this->getResponseFactory()->createJson( [
+			'status' => 'updated',
+			'subjectId' => $subjectId,
+		] );
 	}
 
 	public function getParamSettings(): array {
@@ -61,14 +76,14 @@ class PatchSubjectApi extends SimpleHandler {
 			'label' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => false,
-				self::PARAM_DESCRIPTION => 'New display label. Omit to leave unchanged.',
+				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_DESCRIPTION => 'New display label. Required, must be non-empty.',
 			],
 			'statements' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) to set on the Subject. Nested shape matches the subject JSON format documented in docs/SubjectFormat.md.',
+				self::PARAM_DESCRIPTION => 'Map of property names to Statements. Replaces the Subject\'s statement list entirely; omitted property names are deleted. Pass `{}` to delete all statements. Nested shape matches the subject JSON format documented in docs/SubjectFormat.md.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',

@@ -153,7 +153,7 @@ export class RestSubjectRepository implements SubjectRepository {
 	}
 
 	public async updateSubject( id: SubjectId, label: string, statements: StatementList, comment?: string ): Promise<object> {
-		const response = await this.httpClient.patch(
+		const response = await this.httpClient.put(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
 			{
 				label,

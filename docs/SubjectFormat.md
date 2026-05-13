@@ -1,7 +1,7 @@
 # Subject JSON Format
 
 This document describes the JSON format used to store Subject data in MediaWiki revision slots and returned by
-the REST API (GET endpoints). The same format is used for write operations (POST/PATCH) with minor differences
+the REST API (GET endpoints). The same format is used for write operations (POST/PUT) with minor differences
 noted below.
 
 For definitions of terms like Subject, Statement, and Value, see the [Glossary](Glossary.md).
@@ -193,9 +193,10 @@ Returns the same statement format as storage, with additional fields:
 
 ### Writing Subjects
 
-`PATCH /rest.php/neowiki/v0/subject/{subjectId}`
+`PUT /rest.php/neowiki/v0/subject/{subjectId}`
 
-The request body uses `propertyType` instead of `type` for statements:
+Full replace of the Subject's writable state (label and statements). The request body uses
+`propertyType` instead of `type` for statements:
 
 ```json
 {
@@ -204,13 +205,22 @@ The request body uses `propertyType` instead of `type` for statements:
     "Founded at": {
       "propertyType": "number",
       "value": 2019
-    },
-    "Unwanted Property": null
-  }
+    }
+  },
+  "comment": "Optional edit summary"
 }
 ```
 
-Setting a statement to `null` removes it. Relation IDs can be omitted for new relations.
+| Field | Required | Notes |
+|---|---|---|
+| `label` | Yes | Non-empty after `trim`. |
+| `statements` | Yes | Map of property name to Statement. Property names not in the map are deleted from the Subject. Pass `{}` to clear all statements. |
+| `comment` | No | Optional edit summary. |
+
+The Subject's `id`, `schema`, `pageId`, and `pageTitle` are immutable after creation and are
+not part of the request body. If sent, they are ignored.
+
+Relation IDs can be omitted for new relations (a fresh ID is generated server-side).
 
 ## Complete Example
 

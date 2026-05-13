@@ -144,7 +144,7 @@ Each `SelectOption`:
 Stored statement values for a select property are option IDs (not labels). Display and
 API reads resolve IDs to labels via the current Schema.
 
-On write (create/patch statement), the API accepts either an option `id` or a `label`
+On write (create/replace statement), the API accepts either an option `id` or a `label`
 (case-insensitive, whitespace-trimmed). A `{ "id": ..., "label": ... }` object is also
 accepted when consistent; mismatched `id`/`label` is rejected.
 

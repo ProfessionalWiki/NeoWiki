@@ -5,16 +5,15 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
-use ProfessionalWiki\NeoWiki\Application\SelectPatchResolver;
-use ProfessionalWiki\NeoWiki\Application\StatementListPatcher;
+use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
+use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use RuntimeException;
 
 readonly class CreateSubjectAction {
@@ -24,9 +23,9 @@ readonly class CreateSubjectAction {
 		private SubjectRepository $subjectRepository,
 		private IdGenerator $idGenerator,
 		private SubjectAuthorizer $subjectAuthorizer,
-		private StatementListPatcher $statementListPatcher,
+		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
-		private SelectPatchResolver $selectPatchResolver,
+		private SelectStatementResolver $selectStatementResolver,
 	) {
 	}
 
@@ -63,26 +62,25 @@ readonly class CreateSubjectAction {
 			idGenerator: $this->idGenerator,
 			label: new SubjectLabel( $request->label ),
 			schemaName: $schemaName,
-			statements: $this->statementListPatcher->buildStatementList(
-				statements: new StatementList(),
-				patch: $this->resolvePatch( $schemaName, $request->statements )
+			statements: $this->statementListBuilder->build(
+				$this->resolveSelectValues( $schemaName, $request->statements )
 			)
 		);
 	}
 
 	/**
-	 * @param array<string, mixed> $patch
+	 * @param array<string, mixed> $statements
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function resolvePatch( SchemaName $schemaName, array $patch ): array {
+	private function resolveSelectValues( SchemaName $schemaName, array $statements ): array {
 		$schema = $this->schemaLookup->getSchema( $schemaName );
 
 		if ( $schema === null ) {
-			return $patch;
+			return $statements;
 		}
 
-		return $this->selectPatchResolver->resolve( $schema, $patch );
+		return $this->selectStatementResolver->resolve( $schema, $statements );
 	}
 
 }
