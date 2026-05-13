@@ -367,7 +367,7 @@ update: ## Pull the latest production image, restart, and run update.php (VPS up
 	$(EXEC_MW_ROOT) php maintenance/run.php update --quick
 
 smoke-test: ## Hit the running wiki from outside and verify Main_Page/api.php respond (CI smoke test)
-	cd Docker && bash test.sh
+	bash Docker/tests/smoke.sh
 
 # ---- Production image --------------------------------------------------------
 
