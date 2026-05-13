@@ -49,10 +49,13 @@ help:
 
 # ---- Lifecycle (host only) ---------------------------------------------------
 
-.PHONY: up dev dev-tools _dev-tools-impl stop down logs ps bash
+.PHONY: up server-up dev dev-tools _dev-tools-impl stop down logs ps bash
 
 up: ## Bring up try-it-out stack (no profile, prebuilt image)
 	$(DC) up -d
+
+server-up: ## Bring up production stack including Caddy (HTTPS on 80/443)
+	$(DC) --profile server up -d
 
 dev: bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl

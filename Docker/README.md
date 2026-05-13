@@ -40,10 +40,8 @@ To deploy on a server with automatic HTTPS via Caddy:
 
 2. From the extension root, bring up the stack including Caddy:
    ```bash
-   docker compose --profile server -p neowiki-neowiki --project-directory Docker up -d
+   make server-up
    ```
-   (Or equivalently `cd Docker && docker compose --profile server up -d` if you do
-   not need the make-driven project name.)
 
 3. Run the install/load steps from the try-it-out section above.
 
