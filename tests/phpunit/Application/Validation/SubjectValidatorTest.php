@@ -183,7 +183,7 @@ class SubjectValidatorTest extends TestCase {
 	private function newSubjectWithLabel( string $label, array $statements ): Subject {
 		return new Subject(
 			id: new SubjectId( 's1test5aaaaaaaa' ),
-			label: SubjectLabel::createForValidation( $label ),
+			label: new SubjectLabel( $label ),
 			schemaName: new SchemaName( 'TestSchema' ),
 			statements: new StatementList( $statements ),
 		);
