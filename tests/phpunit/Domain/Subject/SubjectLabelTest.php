@@ -37,4 +37,16 @@ class SubjectLabelTest extends TestCase {
 		$this->assertSame( '  foo  ', $label->text );
 	}
 
+	public function testCreateForValidationAllowsEmpty(): void {
+		$label = SubjectLabel::createForValidation( '' );
+
+		$this->assertSame( '', $label->text );
+	}
+
+	public function testCreateForValidationAllowsWhitespace(): void {
+		$label = SubjectLabel::createForValidation( '   ' );
+
+		$this->assertSame( '   ', $label->text );
+	}
+
 }
