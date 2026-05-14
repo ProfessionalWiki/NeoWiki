@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
 class NumberType implements PropertyType {
@@ -36,7 +37,36 @@ class NumberType implements PropertyType {
 	 * @return Violation[]
 	 */
 	public function validate( NeoValue $value, PropertyDefinition $definition ): array {
-		return [];
+		if ( !$definition instanceof NumberProperty ) {
+			return [];
+		}
+
+		if ( !$value instanceof NumberValue ) {
+			if ( $definition->isRequired() ) {
+				return [ new Violation( propertyName: null, code: 'required' ) ];
+			}
+			return [];
+		}
+
+		$violations = [];
+
+		if ( $definition->hasMinimum() && $value->number < $definition->getMinimum() ) {
+			$violations[] = new Violation(
+				propertyName: null,
+				code: 'min-value',
+				args: [ $definition->getMinimum() ],
+			);
+		}
+
+		if ( $definition->hasMaximum() && $value->number > $definition->getMaximum() ) {
+			$violations[] = new Violation(
+				propertyName: null,
+				code: 'max-value',
+				args: [ $definition->getMaximum() ],
+			);
+		}
+
+		return $violations;
 	}
 
 }
