@@ -47,7 +47,15 @@ class UrlType implements PropertyType {
 			return [];
 		}
 
-		if ( $definition->isRequired() && $value->strings === [] ) {
+		$hasContent = false;
+		foreach ( $value->strings as $part ) {
+			if ( trim( $part ) !== '' ) {
+				$hasContent = true;
+				break;
+			}
+		}
+
+		if ( $definition->isRequired() && !$hasContent ) {
 			return [ new Violation( propertyName: null, code: 'required' ) ];
 		}
 

@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -136,6 +137,27 @@ class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 
 		$subject = $this->getSubjectFromRepository( 'sTestSU11111111' );
 		$this->assertSame( 'Test subject sTestSU11111111', $subject->getLabel()->__toString() );
+	}
+
+	public function testSubjectWithMissingSchemaReturnsSchemaNotFoundViolation(): void {
+		$this->createPageWithSubjects(
+			'ValidateSubjectUpdateApiMissingSchemaTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSU22222222',
+				label: new SubjectLabel( 'Test subject sTestSU22222222' ),
+				schemaName: new SchemaName( 'NonExistentSchemaThatWasNeverCreated' ),
+			)
+		);
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU22222222', $this->validBody() )
+		);
+
+		$body = json_decode( $response->getBody()->getContents(), true );
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertCount( 1, $body['violations'] );
+		$this->assertSame( 'schema-not-found', $body['violations'][0]['code'] );
 	}
 
 	public function testNeedsWriteAccessReturnsFalse(): void {

@@ -51,14 +51,20 @@ class ValidateSubjectUpdateApi extends SimpleHandler {
 
 		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
 
+		// Unlike POST /subject/validate (which 404s when the body's schema name is
+		// unknown), here the Subject already exists but its Schema page has gone
+		// missing — surface this as a violation rather than 404, since the Subject
+		// itself is real and the user can recover by re-creating the Schema page.
 		if ( $schema === null ) {
 			return $this->getResponseFactory()->createJson( [
 				'violations' => [
-					[
-						'propertyName' => null,
-						'code' => 'schema-not-found',
-						'args' => [ $subject->getSchemaName()->getText() ],
-					],
+					self::serializeViolation(
+						new Violation(
+							propertyName: null,
+							code: 'schema-not-found',
+							args: [ $subject->getSchemaName()->getText() ],
+						)
+					),
 				],
 			] );
 		}

@@ -146,6 +146,26 @@ class UrlTypeValidateTest extends TestCase {
 		];
 	}
 
+	public function testRequiredAndSingleEmptyStringPartReturnsRequiredViolation(): void {
+		$violations = $this->type->validate(
+			new StringValue( '' ),
+			$this->newProperty( required: true ),
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'required', $violations[0]->code );
+	}
+
+	public function testRequiredAndWhitespaceOnlyPartReturnsRequiredViolation(): void {
+		$violations = $this->type->validate(
+			new StringValue( '   ' ),
+			$this->newProperty( required: true ),
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'required', $violations[0]->code );
+	}
+
 	public function testEmptyStringPartIsSkippedWithNoViolation(): void {
 		$violations = $this->type->validate(
 			new StringValue( '' ),
