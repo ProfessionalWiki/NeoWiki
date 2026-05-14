@@ -6,6 +6,7 @@ namespace ProfessionalWiki\RedHerb;
 
 use Closure;
 use MediaWiki\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -14,11 +15,21 @@ use Skin;
 class RedHerbSidebarHook implements SidebarBeforeOutputHook {
 
 	private Closure $pageHasMainSubject;
+	private Closure $canEditSubject;
+	private Closure $canCreateChildSubject;
 
-	public function __construct( ?Closure $pageHasMainSubject = null ) {
+	public function __construct(
+		?Closure $pageHasMainSubject = null,
+		?Closure $canEditSubject = null,
+		?Closure $canCreateChildSubject = null
+	) {
 		$this->pageHasMainSubject = $pageHasMainSubject ?? static fn ( Title $title ): bool =>
 			NeoWikiExtension::getInstance()->newPageSubjectsLookup()
 				->pageHasMainSubject( new PageId( $title->getArticleID() ) );
+		$this->canEditSubject = $canEditSubject ?? static fn ( Authority $authority ): bool =>
+			NeoWikiExtension::getInstance()->newSubjectAuthorizer( $authority )->canEditSubject();
+		$this->canCreateChildSubject = $canCreateChildSubject ?? static fn ( Authority $authority ): bool =>
+			NeoWikiExtension::getInstance()->newSubjectAuthorizer( $authority )->canCreateChildSubject();
 	}
 
 	public function onSidebarBeforeOutput( $skin, &$sidebar ): void {
@@ -32,14 +43,21 @@ class RedHerbSidebarHook implements SidebarBeforeOutputHook {
 
 		$title = $skin->getTitle();
 		if ( $title !== null && $title->exists() ) {
-			$links[] = [
-				'id' => 'redherb-sidebar-create-child-company',
-				'text' => $skin->msg( 'redherb-sidebar-create-child-company' )->text(),
-				'href' => '#',
-				'class' => 'ext-redherb-create-child-company-trigger',
-			];
+			$authority = $skin->getAuthority();
 
-			if ( ( $this->pageHasMainSubject )( $title ) ) {
+			if ( ( $this->canCreateChildSubject )( $authority ) ) {
+				$links[] = [
+					'id' => 'redherb-sidebar-create-child-company',
+					'text' => $skin->msg( 'redherb-sidebar-create-child-company' )->text(),
+					'href' => '#',
+					'class' => 'ext-redherb-create-child-company-trigger',
+				];
+			}
+
+			if (
+				( $this->pageHasMainSubject )( $title )
+				&& ( $this->canEditSubject )( $authority )
+			) {
 				$links[] = [
 					'id' => 'redherb-sidebar-edit-main-subject',
 					'text' => $skin->msg( 'redherb-sidebar-edit-main-subject' )->text(),
