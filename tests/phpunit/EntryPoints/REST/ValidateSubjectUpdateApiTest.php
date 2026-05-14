@@ -1,0 +1,192 @@
+<?php
+
+declare( strict_types = 1 );
+
+namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
+
+use MediaWiki\Rest\RequestData;
+use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+
+/**
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi
+ * @group Database
+ */
+class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
+
+	use HandlerTestTrait;
+	use MockAuthorityTrait;
+
+	public function testHappyPathReturns200WithEmptyViolations(): void {
+		$this->createPages();
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $this->validBody() )
+		);
+
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( [], $body['violations'] );
+	}
+
+	public function testEmptyLabelReturnsLabelRequiredViolation(): void {
+		$this->createPages();
+
+		$body = $this->validBody();
+		$body['label'] = '';
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $body )
+		);
+
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertCount( 1, $responseBody['violations'] );
+		$this->assertSame( 'label-required', $responseBody['violations'][0]['code'] );
+		$this->assertNull( $responseBody['violations'][0]['propertyName'] );
+	}
+
+	public function testInvalidConstraintReturnsViolation(): void {
+		$this->createSchema(
+			TestSubject::DEFAULT_SCHEMA_ID,
+			'{"title":"' . TestSubject::DEFAULT_SCHEMA_ID . '","propertyDefinitions":{"Founded at":{"type":"number","constraints":{"minimum":null,"maximum":2000,"precision":null},"displayAttributes":{}}}}'
+		);
+		$this->createPageWithSubjects(
+			'ValidateSubjectUpdateApiConstraintTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSU11111111',
+				label: new SubjectLabel( 'Test subject sTestSU11111111' ),
+			)
+		);
+
+		$body = $this->validBody();
+		$body['statements'] = [
+			'Founded at' => [ 'propertyType' => 'number', 'value' => 2025 ],
+		];
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $body )
+		);
+
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertCount( 1, $responseBody['violations'] );
+		$this->assertSame( 'max-value', $responseBody['violations'][0]['code'] );
+	}
+
+	public function testNonExistentSubjectReturns404(): void {
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sDoesNotExist99', $this->validBody() )
+		);
+
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 404, $response->getStatusCode() );
+		$this->assertSame( 'error', $responseBody['status'] );
+		$this->assertStringContainsString( 'not found', $responseBody['message'] );
+	}
+
+	public function testMalformedSubjectIdReturns400(): void {
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'not-valid', $this->validBody() )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	public function testCommentFieldIsAccepted(): void {
+		$this->createPages();
+
+		$body = $this->validBody();
+		$body['comment'] = 'My validation comment';
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $body )
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
+	}
+
+	public function testNoWriteOccurs(): void {
+		$this->createPages();
+
+		$body = $this->validBody();
+		$body['label'] = 'Changed Label That Should Not Persist';
+
+		$this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $body )
+		);
+
+		$subject = $this->getSubjectFromRepository( 'sTestSU11111111' );
+		$this->assertSame( 'Test subject sTestSU11111111', $subject->getLabel()->__toString() );
+	}
+
+	public function testNeedsWriteAccessReturnsFalse(): void {
+		$this->assertFalse( $this->newValidateSubjectUpdateApi()->needsWriteAccess() );
+	}
+
+	private function createPages(): void {
+		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+		$this->createPageWithSubjects(
+			'ValidateSubjectUpdateApiTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSU11111111',
+				label: new SubjectLabel( 'Test subject sTestSU11111111' ),
+			)
+		);
+	}
+
+	private function newValidateSubjectUpdateApi(): ValidateSubjectUpdateApi {
+		$instance = NeoWikiExtension::getInstance();
+		return new ValidateSubjectUpdateApi(
+			subjectRepository: $instance->getSubjectRepository(),
+			schemaLookup: $instance->getSchemaLookup(),
+			subjectValidator: $instance->getSubjectValidator(),
+			statementListBuilder: $instance->getStatementListBuilder(),
+			selectStatementResolver: $instance->getSelectStatementResolver(),
+		);
+	}
+
+	private function createRequestData( string $subjectId, array $body ): RequestData {
+		return new RequestData( [
+			'method' => 'POST',
+			'pathParams' => [ 'subjectId' => $subjectId ],
+			'bodyContents' => json_encode( $body ),
+			'headers' => [ 'Content-Type' => 'application/json' ],
+		] );
+	}
+
+	private function validBody(): array {
+		return [
+			'label' => 'Test subject sTestSU11111111',
+			'statements' => [],
+		];
+	}
+
+	private function getSubjectFromRepository( string $subjectId ): Subject {
+		$subject = NeoWikiExtension::getInstance()
+			->newSubjectRepository()
+			->getSubject( new SubjectId( $subjectId ) );
+
+		$this->assertNotNull( $subject );
+		return $subject;
+	}
+
+}

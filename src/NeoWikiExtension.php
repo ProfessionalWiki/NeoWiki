@@ -65,6 +65,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
@@ -496,6 +497,17 @@ class NeoWikiExtension {
 	public static function newValidateSubjectApi(): ValidateSubjectApi {
 		$instance = self::getInstance();
 		return new ValidateSubjectApi(
+			schemaLookup: $instance->getSchemaLookup(),
+			subjectValidator: $instance->getSubjectValidator(),
+			statementListBuilder: $instance->getStatementListBuilder(),
+			selectStatementResolver: $instance->getSelectStatementResolver(),
+		);
+	}
+
+	public static function newValidateSubjectUpdateApi(): ValidateSubjectUpdateApi {
+		$instance = self::getInstance();
+		return new ValidateSubjectUpdateApi(
+			subjectRepository: $instance->getSubjectRepository(),
 			schemaLookup: $instance->getSchemaLookup(),
 			subjectValidator: $instance->getSubjectValidator(),
 			statementListBuilder: $instance->getStatementListBuilder(),
