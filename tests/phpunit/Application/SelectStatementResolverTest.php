@@ -136,6 +136,36 @@ class SelectStatementResolverTest extends TestCase {
 		$this->assertSame( $patch, $resolved );
 	}
 
+	public function testResolveOrLeaveResolvesKnownLabelToId(): void {
+		$patch = [
+			'Status' => [ 'propertyType' => 'select', 'value' => [ 'Draft' ] ],
+		];
+
+		$resolved = $this->newResolver()->resolveOrLeave( $this->newSchemaWithSelect(), $patch );
+
+		$this->assertSame( [ 'opt1' ], $resolved['Status']['value'] );
+	}
+
+	public function testResolveOrLeaveLeavesUnknownValueInPlace(): void {
+		$patch = [
+			'Status' => [ 'propertyType' => 'select', 'value' => [ 'bogus-value' ] ],
+		];
+
+		$resolved = $this->newResolver()->resolveOrLeave( $this->newSchemaWithSelect(), $patch );
+
+		$this->assertSame( [ 'bogus-value' ], $resolved['Status']['value'] );
+	}
+
+	public function testResolveOrLeaveDoesNotThrowForUnknownValue(): void {
+		$patch = [
+			'Status' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ],
+		];
+
+		$resolved = $this->newResolver()->resolveOrLeave( $this->newSchemaWithSelect(), $patch );
+
+		$this->assertSame( 'Nonexistent', $resolved['Status']['value'] );
+	}
+
 	public function testThrowsOnUnknownValueForKnownSelectProperty(): void {
 		$patch = [
 			'Status' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ],

@@ -104,8 +104,66 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertFalse( $this->newValidateSubjectApi()->needsWriteAccess() );
 	}
 
+	public function testInvalidSelectValueProducesInvalidOptionViolation(): void {
+		$this->createSchemaWithSelectProperty();
+
+		$body = $this->validBody();
+		$body['statements'] = [
+			'Status' => [ 'propertyType' => 'select', 'value' => [ 'bogus-id' ] ],
+		];
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+		$codes = array_column( $responseBody['violations'], 'code' );
+		$this->assertContains( 'invalid-option', $codes );
+	}
+
+	public function testValidSelectLabelIsResolvedAndValidates(): void {
+		$this->createSchemaWithSelectProperty();
+
+		$body = $this->validBody();
+		$body['statements'] = [
+			'Status' => [ 'propertyType' => 'select', 'value' => [ 'Active' ] ],
+		];
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+		$this->assertSame( [], $responseBody['violations'] );
+	}
+
 	private function createPages(): void {
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+	}
+
+	private function createSchemaWithSelectProperty(): void {
+		$json = json_encode( [
+			'title' => TestSubject::DEFAULT_SCHEMA_ID,
+			'propertyDefinitions' => [
+				'Status' => [
+					'type' => 'select',
+					'description' => '',
+					'required' => false,
+					'default' => null,
+					'options' => [
+						[ 'id' => 'opt1aaaaaaaaaaaa', 'label' => 'Active' ],
+						[ 'id' => 'opt2aaaaaaaaaaaa', 'label' => 'Inactive' ],
+					],
+					'multiple' => false,
+				],
+			],
+		] );
+
+		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID, $json );
 	}
 
 	private function createRequestData( array $body ): RequestData {

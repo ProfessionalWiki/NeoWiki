@@ -95,6 +95,71 @@ readonly class SelectStatementResolver {
 		}
 	}
 
+	/**
+	 * Like resolve() but never throws. When a select value cannot be resolved to an
+	 * option ID (unknown ID and unknown label), the original value is left in place
+	 * so downstream validation can flag it as an invalid-option violation rather
+	 * than aborting the entire request.
+	 *
+	 * @param array<string, mixed> $statements
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function resolveOrLeave( Schema $schema, array $statements ): array {
+		foreach ( $statements as $propertyName => $entry ) {
+			if ( !is_array( $entry ) ) {
+				continue;
+			}
+
+			if ( ( $entry['propertyType'] ?? null ) !== SelectType::NAME ) {
+				continue;
+			}
+
+			if ( !array_key_exists( 'value', $entry ) ) {
+				continue;
+			}
+
+			if ( !$schema->hasProperty( $propertyName ) ) {
+				continue;
+			}
+
+			$property = $schema->getProperty( $propertyName );
+
+			if ( !$property instanceof SelectProperty ) {
+				continue;
+			}
+
+			$entry['value'] = $this->resolveEntryValueOrLeave( $property, $entry['value'] );
+
+			$statements[$propertyName] = $entry;
+		}
+
+		return $statements;
+	}
+
+	private function resolveEntryValueOrLeave( SelectProperty $property, mixed $value ): mixed {
+		if ( $this->isListOfValues( $value ) ) {
+			return array_map(
+				fn( mixed $item ): mixed => $this->resolveSingleOrLeave( $property, $item ),
+				$value
+			);
+		}
+
+		return $this->resolveSingleOrLeave( $property, $value );
+	}
+
+	private function resolveSingleOrLeave( SelectProperty $property, mixed $value ): mixed {
+		if ( !is_string( $value ) && !is_array( $value ) ) {
+			return $value;
+		}
+
+		try {
+			return $this->valueResolver->resolve( $property, $value );
+		} catch ( InvalidArgumentException ) {
+			return $value;
+		}
+	}
+
 	private function isListOfValues( mixed $value ): bool {
 		return is_array( $value ) && array_is_list( $value );
 	}

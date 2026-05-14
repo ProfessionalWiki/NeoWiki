@@ -58,7 +58,7 @@ class ValidateSubjectApi extends SimpleHandler {
 			label: SubjectLabel::createForValidation( $label ),
 			schemaName: $schemaName,
 			statements: $this->statementListBuilder->build(
-				$this->selectStatementResolver->resolve( $schema, $body['statements'] )
+				$this->selectStatementResolver->resolveOrLeave( $schema, $body['statements'] )
 			),
 		);
 
