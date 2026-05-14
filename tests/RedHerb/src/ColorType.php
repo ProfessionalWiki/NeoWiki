@@ -6,6 +6,9 @@ namespace ProfessionalWiki\RedHerb;
 
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
 class ColorType implements PropertyType {
@@ -26,6 +29,13 @@ class ColorType implements PropertyType {
 
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): ColorProperty {
 		return ColorProperty::fromPartialJson( $core, $property );
+	}
+
+	/**
+	 * @return Violation[]
+	 */
+	public function validate( NeoValue $value, PropertyDefinition $definition ): array {
+		return [];
 	}
 
 }

@@ -7,6 +7,9 @@ namespace ProfessionalWiki\NeoWiki\Domain\PropertyType\Types;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
 class DateTimeType implements PropertyType {
@@ -27,6 +30,13 @@ class DateTimeType implements PropertyType {
 
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): DateTimeProperty {
 		return DateTimeProperty::fromPartialJson( $core, $property );
+	}
+
+	/**
+	 * @return Violation[]
+	 */
+	public function validate( NeoValue $value, PropertyDefinition $definition ): array {
+		return [];
 	}
 
 }

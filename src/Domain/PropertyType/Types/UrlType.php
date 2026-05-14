@@ -4,10 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\PropertyType\Types;
 
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UrlProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 
 class UrlType implements PropertyType {
 
@@ -27,6 +30,13 @@ class UrlType implements PropertyType {
 
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): UrlProperty {
 		return UrlProperty::fromPartialJson( $core, $property );
+	}
+
+	/**
+	 * @return Violation[]
+	 */
+	public function validate( NeoValue $value, PropertyDefinition $definition ): array {
+		return [];
 	}
 
 }
