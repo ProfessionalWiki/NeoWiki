@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
 class RelationType implements PropertyType {
@@ -36,6 +37,16 @@ class RelationType implements PropertyType {
 	 * @return Violation[]
 	 */
 	public function validate( NeoValue $value, PropertyDefinition $definition ): array {
+		if ( !$definition instanceof RelationProperty ) {
+			return [];
+		}
+
+		$isEmpty = !( $value instanceof RelationValue ) || $value->isEmpty();
+
+		if ( $definition->isRequired() && $isEmpty ) {
+			return [ new Violation( propertyName: null, code: 'required' ) ];
+		}
+
 		return [];
 	}
 
