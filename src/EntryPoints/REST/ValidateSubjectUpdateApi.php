@@ -70,7 +70,7 @@ class ValidateSubjectUpdateApi extends SimpleHandler {
 		}
 
 		$label = is_string( $body['label'] ) ? $body['label'] : '';
-		$subject->setLabel( SubjectLabel::createForValidation( $label ) );
+		$subject->setLabel( new SubjectLabel( $label ) );
 		$subject->setStatements(
 			$this->statementListBuilder->build(
 				$this->selectStatementResolver->resolveOrLeave( $schema, $body['statements'] )
