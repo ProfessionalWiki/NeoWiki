@@ -31,7 +31,7 @@ use Throwable;
  */
 class QueryServiceTest extends TestCase {
 
-	public function testReturnsRowsAsListWithColumnsFromFirstRow(): void {
+	public function testReturnsRowsAsListWithColumnsFromProtocolKeys(): void {
 		$service = $this->newService(
 			$this->stubEngineWithRows( [
 				[ 'name' => 'Ada', 'year' => 1815 ],
@@ -53,12 +53,14 @@ class QueryServiceTest extends TestCase {
 		);
 	}
 
-	public function testEmptyResultProducesEmptyColumns(): void {
-		$service = $this->newService( $this->stubEngineWithRows( [] ) );
+	public function testColumnsComeFromProtocolKeysEvenWhenResultIsEmpty(): void {
+		$service = $this->newService(
+			$this->stubEngineWithRows( rows: [], keys: [ 'name', 'year' ] )
+		);
 
-		$result = $service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
+		$result = $service->execute( $this->newRequest( 'MATCH (p:Person) WHERE false RETURN p.name AS name, p.born AS year' ) );
 
-		$this->assertSame( [], $result->columns );
+		$this->assertSame( [ 'name', 'year' ], $result->columns );
 	}
 
 	public function testEmptyResultProducesEmptyRows(): void {
@@ -274,10 +276,17 @@ class QueryServiceTest extends TestCase {
 		};
 	}
 
-	private function stubEngineWithRows( array $rows ): QueryEngine {
+	/**
+	 * @param array<int, array<string,mixed>> $rows
+	 * @param list<string> $keys Column names to expose via SummarizedResult::keys(); defaults to the keys of the first row.
+	 */
+	private function stubEngineWithRows( array $rows, array $keys = [] ): QueryEngine {
 		$cypherMaps = array_map( fn( array $row ): CypherMap => new CypherMap( $row ), $rows );
 		$summary = null;
-		$result = new SummarizedResult( $summary, new CypherList( $cypherMaps ) );
+		if ( $keys === [] && $rows !== [] ) {
+			$keys = array_keys( $rows[0] );
+		}
+		$result = new SummarizedResult( $summary, new CypherList( $cypherMaps ), $keys );
 
 		return new class( $result ) implements QueryEngine {
 			public function __construct( private readonly SummarizedResult $result ) {

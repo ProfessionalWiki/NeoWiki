@@ -79,11 +79,10 @@ readonly class QueryService {
 			$rowsList = array_slice( $rowsList, 0, $maxRows );
 		}
 
-		/** @var list<string> $columns */
-		$columns = $rowsList === [] ? [] : array_keys( $rowsList[0] );
-
+		// Columns come from the protocol-level RETURN alias metadata, so they
+		// are present even when the result has zero rows.
 		return new QueryResult(
-			columns: $columns,
+			columns: $rows->keys(),
 			rows: $rowsList,
 			truncated: $truncated,
 			resultCount: count( $rowsList ),
