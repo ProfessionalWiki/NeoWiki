@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Query\Cypher;
 
+use ProfessionalWiki\NeoWiki\Application\Query\QueryLimits;
+
 readonly class QueryRequest {
 
 	/**
