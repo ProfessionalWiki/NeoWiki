@@ -201,6 +201,11 @@
 			"path": "/neowiki/v0/schemas",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaSummariesApi"
+		},
+		{
+			"path": "/neowiki/v0/subject/validate",
+			"method": [ "POST" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newValidateSubjectApi"
 		}
 	],
 

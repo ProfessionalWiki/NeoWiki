@@ -23,6 +23,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAc
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
@@ -63,6 +64,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
@@ -482,6 +484,22 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
+		);
+	}
+
+	public function getSubjectValidator(): SubjectValidator {
+		return new SubjectValidator(
+			propertyTypeLookup: $this->getPropertyTypeLookup(),
+		);
+	}
+
+	public static function newValidateSubjectApi(): ValidateSubjectApi {
+		$instance = self::getInstance();
+		return new ValidateSubjectApi(
+			schemaLookup: $instance->getSchemaLookup(),
+			subjectValidator: $instance->getSubjectValidator(),
+			statementListBuilder: $instance->getStatementListBuilder(),
+			selectStatementResolver: $instance->getSelectStatementResolver(),
 		);
 	}
 
