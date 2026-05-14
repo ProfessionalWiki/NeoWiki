@@ -163,6 +163,36 @@ class DateTimePropertyTest extends TestCase {
 		yield 'empty string' => [ '' ];
 	}
 
+	public function testParseStrictDateTimeReturnsTimestampForZOffset(): void {
+		$result = DateTimeProperty::parseStrictDateTime( '2025-06-15T12:00:00Z' );
+
+		$this->assertNotNull( $result );
+	}
+
+	public function testParseStrictDateTimeReturnsTimestampForExplicitOffset(): void {
+		$result = DateTimeProperty::parseStrictDateTime( '2025-06-15T23:30:00+05:00' );
+
+		$this->assertNotNull( $result );
+	}
+
+	public function testParseStrictDateTimeReturnsNullForCalendarOverflow(): void {
+		$result = DateTimeProperty::parseStrictDateTime( '2025-02-30T00:00:00Z' );
+
+		$this->assertNull( $result );
+	}
+
+	public function testParseStrictDateTimeReturnsNullForMissingOffset(): void {
+		$result = DateTimeProperty::parseStrictDateTime( '2025-06-15T12:00:00' );
+
+		$this->assertNull( $result );
+	}
+
+	public function testParseStrictDateTimeReturnsNullForGarbage(): void {
+		$result = DateTimeProperty::parseStrictDateTime( 'not-a-date' );
+
+		$this->assertNull( $result );
+	}
+
 	private function buildProperty(): DateTimeProperty {
 		return new DateTimeProperty(
 			core: new PropertyCore( description: '', required: false, default: null ),
