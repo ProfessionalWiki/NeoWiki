@@ -15,7 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ValidateSubjectApi extends SimpleHandler {
@@ -65,28 +65,8 @@ class ValidateSubjectApi extends SimpleHandler {
 		$violations = $this->subjectValidator->validate( $subject, $schema );
 
 		return $this->getResponseFactory()->createJson( [
-			'violations' => array_map(
-				static fn( Violation $v ): array => self::serializeViolation( $v ),
-				$violations
-			),
+			'violations' => ViolationSerializer::serializeMany( $violations ),
 		] );
-	}
-
-	/**
-	 * @return array<string, mixed>
-	 */
-	private static function serializeViolation( Violation $violation ): array {
-		$serialized = [
-			'propertyName' => $violation->propertyName?->__toString(),
-			'code' => $violation->code,
-			'args' => $violation->args,
-		];
-
-		if ( $violation->valuePartIndex !== null ) {
-			$serialized['valuePartIndex'] = $violation->valuePartIndex;
-		}
-
-		return $serialized;
 	}
 
 	public function getBodyParamSettings(): array {

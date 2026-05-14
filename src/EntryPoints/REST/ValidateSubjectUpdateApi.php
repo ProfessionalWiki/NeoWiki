@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ValidateSubjectUpdateApi extends SimpleHandler {
@@ -58,7 +59,7 @@ class ValidateSubjectUpdateApi extends SimpleHandler {
 		if ( $schema === null ) {
 			return $this->getResponseFactory()->createJson( [
 				'violations' => [
-					self::serializeViolation(
+					ViolationSerializer::serialize(
 						new Violation(
 							propertyName: null,
 							code: 'schema-not-found',
@@ -80,28 +81,8 @@ class ValidateSubjectUpdateApi extends SimpleHandler {
 		$violations = $this->subjectValidator->validate( $subject, $schema );
 
 		return $this->getResponseFactory()->createJson( [
-			'violations' => array_map(
-				static fn( Violation $v ): array => self::serializeViolation( $v ),
-				$violations
-			),
+			'violations' => ViolationSerializer::serializeMany( $violations ),
 		] );
-	}
-
-	/**
-	 * @return array<string, mixed>
-	 */
-	private static function serializeViolation( Violation $violation ): array {
-		$serialized = [
-			'propertyName' => $violation->propertyName?->__toString(),
-			'code' => $violation->code,
-			'args' => $violation->args,
-		];
-
-		if ( $violation->valuePartIndex !== null ) {
-			$serialized['valuePartIndex'] = $violation->valuePartIndex;
-		}
-
-		return $serialized;
 	}
 
 	public function getParamSettings(): array {
