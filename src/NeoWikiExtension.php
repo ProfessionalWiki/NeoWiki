@@ -18,8 +18,8 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectActi
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\CompositeCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryService;
+use ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryResultNormalizer;
+use ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryService;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
@@ -256,7 +256,7 @@ class NeoWikiExtension {
 		] );
 	}
 
-	public function newQueryService(): QueryService {
+	public function newCypherQueryService(): QueryService {
 		return new QueryService(
 			$this->getNeo4jPlugin(),
 			$this->getCypherQueryValidator(),
@@ -266,7 +266,7 @@ class NeoWikiExtension {
 
 	public static function newQueryCypherApi(): QueryCypherApi {
 		return new QueryCypherApi(
-			self::getInstance()->newQueryService()
+			self::getInstance()->newCypherQueryService()
 		);
 	}
 

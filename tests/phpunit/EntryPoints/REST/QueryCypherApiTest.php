@@ -18,9 +18,9 @@ use ProfessionalWiki\NeoWiki\Application\Query\Exception\InternalQueryException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\ParameterMissingException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryTimeoutException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\WriteQueryRejectedException;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryRequest;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryResult;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryService;
+use ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryRequest;
+use ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryResult;
+use ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryService;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\QueryCypherApi;
 
 /**

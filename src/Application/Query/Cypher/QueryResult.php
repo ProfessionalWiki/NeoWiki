@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Application\Query;
+namespace ProfessionalWiki\NeoWiki\Application\Query\Cypher;
 
 readonly class QueryResult {
 

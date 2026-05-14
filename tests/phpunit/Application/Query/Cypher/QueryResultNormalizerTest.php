@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Application\Query;
+namespace ProfessionalWiki\NeoWiki\Tests\Application\Query\Cypher;
 
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -11,12 +11,12 @@ use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer;
+use ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryResultNormalizer;
 use RuntimeException;
 use stdClass;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer
+ * @covers \ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryResultNormalizer
  */
 class QueryResultNormalizerTest extends TestCase {
 

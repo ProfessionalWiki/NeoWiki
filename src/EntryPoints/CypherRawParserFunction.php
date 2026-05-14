@@ -8,8 +8,8 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\Parser\Parser;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\Application\Query\QueryLimits;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryRequest;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryService;
+use ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryRequest;
+use ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryService;
 
 class CypherRawParserFunction {
 

@@ -43,7 +43,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 	private function getCypherQueryRunner(): CypherQueryRunner {
 		if ( $this->cypherQueryRunner === null ) {
 			$this->cypherQueryRunner = new CypherQueryRunner(
-				NeoWikiExtension::getInstance()->newQueryService()
+				NeoWikiExtension::getInstance()->newCypherQueryService()
 			);
 		}
 

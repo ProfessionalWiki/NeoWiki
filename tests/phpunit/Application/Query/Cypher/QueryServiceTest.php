@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Application\Query;
+namespace ProfessionalWiki\NeoWiki\Tests\Application\Query\Cypher;
 
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\SummarizedResult;
@@ -19,15 +19,15 @@ use ProfessionalWiki\NeoWiki\Application\Query\Exception\ParameterMissingExcepti
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\QueryTimeoutException;
 use ProfessionalWiki\NeoWiki\Application\Query\Exception\WriteQueryRejectedException;
 use ProfessionalWiki\NeoWiki\Application\Query\QueryLimits;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryRequest;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryResultNormalizer;
-use ProfessionalWiki\NeoWiki\Application\Query\QueryService;
+use ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryRequest;
+use ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryResultNormalizer;
+use ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryService;
 use ProfessionalWiki\NeoWiki\Persistence\Neo4j\QueryEngine;
 use RuntimeException;
 use Throwable;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Application\Query\QueryService
+ * @covers \ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryService
  */
 class QueryServiceTest extends TestCase {
 

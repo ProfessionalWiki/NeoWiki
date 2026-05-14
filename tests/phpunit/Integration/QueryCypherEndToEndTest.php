@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\QueryCypherApi
- * @covers \ProfessionalWiki\NeoWiki\Application\Query\QueryService
+ * @covers \ProfessionalWiki\NeoWiki\Application\Query\Cypher\QueryService
  * @group Database
  */
 class QueryCypherEndToEndTest extends NeoWikiIntegrationTestCase {

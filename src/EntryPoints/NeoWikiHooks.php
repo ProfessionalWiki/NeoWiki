@@ -128,7 +128,7 @@ class NeoWikiHooks {
 			'cypher_raw',
 			static function ( Parser $parser, string $cypherQuery ): string {
 				$parserFunction = new CypherRawParserFunction(
-					NeoWikiExtension::getInstance()->newQueryService()
+					NeoWikiExtension::getInstance()->newCypherQueryService()
 				);
 				return $parserFunction->handle( $parser, $cypherQuery );
 			}
