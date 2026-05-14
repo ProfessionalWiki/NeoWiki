@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 
 class SelectType implements PropertyType {
@@ -36,7 +37,39 @@ class SelectType implements PropertyType {
 	 * @return Violation[]
 	 */
 	public function validate( NeoValue $value, PropertyDefinition $definition ): array {
-		return [];
+		if ( !$definition instanceof SelectProperty ) {
+			return [];
+		}
+
+		$parts = $value instanceof StringValue ? $value->strings : [];
+
+		if ( $definition->isRequired() && $parts === [] ) {
+			return [ new Violation( propertyName: null, code: 'required' ) ];
+		}
+
+		$validIds = [];
+		foreach ( $definition->getOptions() as $option ) {
+			$validIds[ $option->getId() ] = true;
+		}
+
+		$violations = [];
+
+		foreach ( $parts as $index => $part ) {
+			if ( !isset( $validIds[ $part ] ) ) {
+				$violations[] = new Violation(
+					propertyName: null,
+					code: 'invalid-option',
+					args: [ $part ],
+					valuePartIndex: $index,
+				);
+			}
+		}
+
+		if ( !$definition->allowsMultipleValues() && count( $parts ) > 1 ) {
+			$violations[] = new Violation( propertyName: null, code: 'single-value-only' );
+		}
+
+		return $violations;
 	}
 
 }
