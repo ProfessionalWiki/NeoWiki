@@ -154,7 +154,7 @@ planned (see [#736](https://github.com/ProfessionalWiki/NeoWiki/issues/736)).
 
 - [Lua API](lua-api.md) — Programmatic access to the same data via `mw.neowiki`
 - [Glossary](../concepts/glossary.md) — Definitions of Subject, Schema, Layout, View, etc.
-- [SchemaFormat.md](schema-format.md) — How Schemas and properties are defined
-- [SubjectFormat.md](subject-format.md) — How Subject data is stored
-- [GraphModel.md](graph-model.md) — Neo4j node and relationship structure (relevant for
+- [Schema Format](schema-format.md) — How Schemas and properties are defined
+- [Subject Format](subject-format.md) — How Subject data is stored
+- [Graph Model](graph-model.md) — Neo4j node and relationship structure (relevant for
   `{{#cypher_raw}}` queries)

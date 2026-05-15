@@ -290,4 +290,4 @@ A "Company" schema with various property types:
 - [ADR 006: Schemas](../adr/006-schemas.md)
 - [ADR 009: Move Away from JSON Schema](../adr/009-move-away-from-json-schema.md)
 - [ADR 017: Names as Identifiers](../adr/017-names-as-identifiers.md)
-- [SubjectFormat.md](subject-format.md) - Format for Subject data that follows schemas
+- [Subject Format](subject-format.md) - Format for Subject data that follows schemas

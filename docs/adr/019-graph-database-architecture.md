@@ -36,7 +36,7 @@ limited to deployment configuration and optional bulk-load optimizations.
 
 ### Each plugin owns its data model mapping
 
-The Neo4j plugin maps NeoWiki data to a property graph (as documented in [GraphModel.md](../reference/graph-model.md)).
+The Neo4j plugin maps NeoWiki data to a property graph (as documented in [Graph Model](../reference/graph-model.md)).
 The SPARQL plugin maps the same data to RDF triples. These mappings are deliberately separate: attempting to
 force one abstraction over both property graphs and RDF would be artificial and constraining. The shared
 contract is at the domain event level, not the graph model level.

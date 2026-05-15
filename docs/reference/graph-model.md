@@ -100,5 +100,5 @@ Two uniqueness constraints are created on initialization:
 - [ADR 3: Neo4j as Graph Database](../adr/003-neo4j-as-graph-database.md)
 - [ADR 4: Use Dedicated Slot](../adr/004-use-dedicated-slot.md) — primary storage in MediaWiki revision slots
 - [ADR 13: Restrict Neo4j Access](../adr/013-restrict-neo4j-access.md) — backend-only access to Neo4j
-- [SubjectFormat.md](subject-format.md) — JSON format for Subject data in revision slots
-- [SchemaFormat.md](schema-format.md) — JSON format for Schema definitions
+- [Subject Format](subject-format.md) — JSON format for Subject data in revision slots
+- [Schema Format](schema-format.md) — JSON format for Schema definitions
