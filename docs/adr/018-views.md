@@ -36,7 +36,7 @@ their Layouts — the link is one-directional from Layout to Schema.
 #### Identification and Storage
 
 Layouts are identified by their name (following the same pattern as Schemas per
-[ADR 17](017_Names_As_Identifiers.md)). Layout names are immutable. Layouts are stored as pages in a Layout namespace.
+[ADR 17](017-names-as-identifiers.md)). Layout names are immutable. Layouts are stored as pages in a Layout namespace.
 
 #### View Types
 

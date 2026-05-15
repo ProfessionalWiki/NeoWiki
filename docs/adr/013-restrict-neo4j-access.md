@@ -2,7 +2,7 @@
 
 Date: 2024-09-16
 
-Status: Accepted. See also [ADR 19](019_Graph_Database_Architecture.md).
+Status: Accepted. See also [ADR 19](019-graph-database-architecture.md).
 
 ## Context
 

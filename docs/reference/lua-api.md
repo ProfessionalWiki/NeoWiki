@@ -1,8 +1,12 @@
+---
+title: Lua API
+order: 2
+---
 # Lua API
 
 NeoWiki provides a Scribunto library at `mw.neowiki` for accessing structured data from Lua
 modules. Use Lua when you need to render multiple properties, iterate over collections, or build
-custom output. For simple inline values, the [parser functions](ParserFunctions.md) are usually
+custom output. For simple inline values, the [parser functions](parser-functions.md) are usually
 enough.
 
 | If you want to... | Use |
@@ -15,7 +19,7 @@ enough.
 | List all Child Subjects on a page | [`nw.getChildSubjects`](#nwgetchildsubjectspagename) |
 | Inspect a Schema | [`nw.getSchema`](#nwgetschemaname) |
 
-For definitions of terms like Subject, Schema, and Statement, see the [Glossary](Glossary.md).
+For definitions of terms like Subject, Schema, and Statement, see the [Glossary](../concepts/glossary.md).
 
 ## Loading the library
 
@@ -349,8 +353,8 @@ Calls that look up another page or a specific Subject ID count as expensive pars
 
 ## Related Documentation
 
-- [Parser Functions](ParserFunctions.md) — Wikitext interface to the same data
-- [Glossary](Glossary.md) — Definitions of Subject, Schema, Statement, etc.
-- [SchemaFormat.md](SchemaFormat.md) — How Schemas and properties are defined
-- [SubjectFormat.md](SubjectFormat.md) — How Subject data is stored
-- [GraphModel.md](GraphModel.md) — Neo4j node and relationship structure
+- [Parser Functions](parser-functions.md) — Wikitext interface to the same data
+- [Glossary](../concepts/glossary.md) — Definitions of Subject, Schema, Statement, etc.
+- [SchemaFormat.md](schema-format.md) — How Schemas and properties are defined
+- [SubjectFormat.md](subject-format.md) — How Subject data is stored
+- [GraphModel.md](graph-model.md) — Neo4j node and relationship structure

@@ -2,11 +2,11 @@
 
 Date: 2026-05-06
 
-Status: Accepted. Supersedes [ADR 12](012_Backend_Validation.md).
+Status: Accepted. Supersedes [ADR 12](012-backend-validation.md).
 
 ## Context
 
-In [ADR 12: Backend Validation](../adr/012_Backend_Validation.md) we decided to validate in the frontend only.
+In [ADR 12: Backend Validation](012-backend-validation.md) we decided to validate in the frontend only.
 The scope of the project changed, both due to ECHOLOT and AI progress, so we have to revisit this decision.
 
 ECHOLOT stakeholders wish to be able to get a list of constraint violations from the API before attempting a save.

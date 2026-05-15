@@ -1,10 +1,14 @@
+---
+title: Graph Model
+order: 6
+---
 # Graph Model
 
-NeoWiki stores a query-optimized projection of its data in a Neo4j graph database ([ADR 3](adr/003_Neo4j_as_Graph_Database.md)).
-The source of truth for all data remains in MediaWiki revision slots ([ADR 4](adr/004_Use_Dedicated_Slot.md));
+NeoWiki stores a query-optimized projection of its data in a Neo4j graph database ([ADR 3](../adr/003-neo4j-as-graph-database.md)).
+The source of truth for all data remains in MediaWiki revision slots ([ADR 4](../adr/004-use-dedicated-slot.md));
 the graph is a secondary store that enables efficient querying and relationship traversal.
 
-For definitions of domain terms like Subject, Statement, and Schema, see the [Glossary](Glossary.md).
+For definitions of domain terms like Subject, Statement, and Schema, see the [Glossary](../concepts/glossary.md).
 
 ## Overview
 
@@ -68,7 +72,7 @@ Connects a Page node to each of its Subject nodes.
 | `isMain` | boolean | `true` for the Main Subject, `false` for Child Subjects |
 
 A page can have at most one Main Subject and any number of Child Subjects
-([ADR 7](adr/007_Multiple_Subjects_Per_Page.md)).
+([ADR 7](../adr/007-multiple-subjects-per-page.md)).
 
 ### Typed Relations
 
@@ -93,8 +97,8 @@ Two uniqueness constraints are created on initialization:
 
 ## Related Documentation
 
-- [ADR 3: Neo4j as Graph Database](adr/003_Neo4j_as_Graph_Database.md)
-- [ADR 4: Use Dedicated Slot](adr/004_Use_Dedicated_Slot.md) — primary storage in MediaWiki revision slots
-- [ADR 13: Restrict Neo4j Access](adr/013_Restrict_Neo4j_Access.md) — backend-only access to Neo4j
-- [SubjectFormat.md](SubjectFormat.md) — JSON format for Subject data in revision slots
-- [SchemaFormat.md](SchemaFormat.md) — JSON format for Schema definitions
+- [ADR 3: Neo4j as Graph Database](../adr/003-neo4j-as-graph-database.md)
+- [ADR 4: Use Dedicated Slot](../adr/004-use-dedicated-slot.md) — primary storage in MediaWiki revision slots
+- [ADR 13: Restrict Neo4j Access](../adr/013-restrict-neo4j-access.md) — backend-only access to Neo4j
+- [SubjectFormat.md](subject-format.md) — JSON format for Subject data in revision slots
+- [SchemaFormat.md](schema-format.md) — JSON format for Schema definitions

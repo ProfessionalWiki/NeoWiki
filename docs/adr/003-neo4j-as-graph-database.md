@@ -2,7 +2,7 @@
 
 Date: March 2023
 
-Status: Accepted. Extended by [ADR 19](019_Graph_Database_Architecture.md).
+Status: Accepted. Extended by [ADR 19](019-graph-database-architecture.md).
 
 ## Context
 

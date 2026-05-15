@@ -2,7 +2,7 @@
 
 Date: 2023-06-17
 
-Status: Accepted, ID format superseded by [ADR 014](014_Improved_ID_Format.md)
+Status: Accepted, ID format superseded by [ADR 014](014-improved-id-format.md)
 
 ## Context
 

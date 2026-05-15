@@ -1,10 +1,14 @@
+---
+title: Subject Format
+order: 5
+---
 # Subject JSON Format
 
 This document describes the JSON format used to store Subject data in MediaWiki revision slots and returned by
 the REST API (GET endpoints). The same format is used for write operations (POST/PUT) with minor differences
 noted below.
 
-For definitions of terms like Subject, Statement, and Value, see the [Glossary](Glossary.md).
+For definitions of terms like Subject, Statement, and Value, see the [Glossary](../concepts/glossary.md).
 
 ## Overview
 
@@ -179,7 +183,7 @@ Relation IDs follow the same format as subject IDs but start with `r`.
 
 Example: `r1demo5rrrrrrr1`
 
-See [ADR 014](adr/014_Improved_ID_Format.md) for details on the ID format.
+See [ADR 014](../adr/014-improved-id-format.md) for details on the ID format.
 
 ## REST API
 
@@ -264,8 +268,8 @@ A page about Berlin with multiple subjects (main subject + child subjects for po
 
 ## Related Documentation
 
-- [ADR 002: Store Data as JSON](adr/002_Store_Data_as_JSON.md)
-- [ADR 004: Use Dedicated Slot](adr/004_Use_Dedicated_Slot.md)
-- [ADR 007: Multiple Subjects Per Page](adr/007_Multiple_Subjects_Per_Page.md)
-- [ADR 011: Include Writer's Schema](adr/011_Include_Writers_Schema.md)
-- [ADR 014: Improved ID Format](adr/014_Improved_ID_Format.md)
+- [ADR 002: Store Data as JSON](../adr/002-store-data-as-json.md)
+- [ADR 004: Use Dedicated Slot](../adr/004-use-dedicated-slot.md)
+- [ADR 007: Multiple Subjects Per Page](../adr/007-multiple-subjects-per-page.md)
+- [ADR 011: Include Writer's Schema](../adr/011-include-writers-schema.md)
+- [ADR 014: Improved ID Format](../adr/014-improved-id-format.md)
