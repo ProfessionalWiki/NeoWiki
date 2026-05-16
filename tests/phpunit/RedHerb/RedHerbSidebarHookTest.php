@@ -9,6 +9,7 @@ use MediaWiki\Language\RawMessage;
 use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\RedHerb\RedHerbSidebarHook;
 use Skin;
 
@@ -20,7 +21,7 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 
 	public function testAddsCreateChildLinkOnAnyExistingPage(): void {
 		$sidebar = [];
-		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( false ) );
+		$hook = $this->newHook( pageHasMainSubject: false );
 
 		$hook->onSidebarBeforeOutput( $this->newSkinForExistingPage(), $sidebar );
 
@@ -32,7 +33,7 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 
 	public function testAddsEditLinkOnPageWithMainSubject(): void {
 		$sidebar = [];
-		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( true ) );
+		$hook = $this->newHook( pageHasMainSubject: true );
 
 		$hook->onSidebarBeforeOutput( $this->newSkinForExistingPage(), $sidebar );
 
@@ -41,13 +42,28 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 'ext-redherb-edit-main-subject-trigger', $sidebar['redherb-sidebar'][2]['class'] );
 	}
 
+	public function testDoesNotAddEditLinkWhenUserCannotEditSubject(): void {
+		$sidebar = [];
+		$hook = $this->newHook( pageHasMainSubject: true, canEditSubject: false );
+
+		$hook->onSidebarBeforeOutput( $this->newSkinForExistingPage(), $sidebar );
+
+		$this->assertSame(
+			[ 'redherb-sidebar-subject-finder', 'redherb-sidebar-create-child-company' ],
+			array_column( $sidebar['redherb-sidebar'], 'id' )
+		);
+	}
+
 	public function testOnlyAddsSubjectFinderLinkOnNonExistentPages(): void {
 		$sidebar = [];
 		$predicateInvoked = false;
-		$hook = new RedHerbSidebarHook( static function () use ( &$predicateInvoked ): bool {
-			$predicateInvoked = true;
-			return true;
-		} );
+		$hook = new RedHerbSidebarHook(
+			static function () use ( &$predicateInvoked ): bool {
+				$predicateInvoked = true;
+				return true;
+			},
+			$this->newSubjectAuthorizerStub()
+		);
 
 		$hook->onSidebarBeforeOutput(
 			$this->newSkinStub( Title::newFromText( 'NonExistentPage_' . uniqid() ) ),
@@ -61,10 +77,13 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 	public function testDoesNotCheckMainSubjectForNonExistingTitles(): void {
 		$sidebar = [];
 		$predicateInvoked = false;
-		$hook = new RedHerbSidebarHook( static function () use ( &$predicateInvoked ): bool {
-			$predicateInvoked = true;
-			return true;
-		} );
+		$hook = new RedHerbSidebarHook(
+			static function () use ( &$predicateInvoked ): bool {
+				$predicateInvoked = true;
+				return true;
+			},
+			$this->newSubjectAuthorizerStub()
+		);
 
 		$hook->onSidebarBeforeOutput(
 			$this->newSkinStub( Title::newFromText( 'UserLogin', NS_SPECIAL ) ),
@@ -77,7 +96,7 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 
 	public function testDoesNotOverwriteExistingSidebarSections(): void {
 		$sidebar = [ 'navigation' => [ [ 'id' => 'preexisting' ] ] ];
-		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( false ) );
+		$hook = $this->newHook( pageHasMainSubject: false );
 
 		$hook->onSidebarBeforeOutput( $this->newSkin(), $sidebar );
 
@@ -86,8 +105,25 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 		$this->assertArrayHasKey( 'redherb-sidebar', $sidebar );
 	}
 
-	private static function pageHasMainSubjectStub( bool $value ): Closure {
-		return static fn ( Title $title ): bool => $value;
+	private function newHook(
+		bool $pageHasMainSubject,
+		bool $canEditSubject = true,
+		bool $canCreateChildSubject = true
+	): RedHerbSidebarHook {
+		return new RedHerbSidebarHook(
+			static fn ( Title $title ): bool => $pageHasMainSubject,
+			$this->newSubjectAuthorizerStub( $canEditSubject, $canCreateChildSubject )
+		);
+	}
+
+	private function newSubjectAuthorizerStub(
+		bool $canEditSubject = true,
+		bool $canCreateChildSubject = true
+	): Closure {
+		$authorizer = $this->createStub( SubjectAuthorizer::class );
+		$authorizer->method( 'canEditSubject' )->willReturn( $canEditSubject );
+		$authorizer->method( 'canCreateChildSubject' )->willReturn( $canCreateChildSubject );
+		return static fn (): SubjectAuthorizer => $authorizer;
 	}
 
 	private function newSkin(): Skin {
