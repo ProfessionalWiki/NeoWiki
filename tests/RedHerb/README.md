@@ -18,9 +18,12 @@ this directory as a working example alongside the index below.
   is what makes `require('ext.neowiki')` available on the frontend.
 - **Register property types and graph data** — the `NeoWikiRegistration` hook delivers a
   `NeoWikiRegistrar`: `addPropertyType()`, `addNeo4jValueBuilder()` (value → Neo4j
-  scalars), and `addPagePropertyProvider()`. See [`src/RedHerbHooks.php`](src/RedHerbHooks.php),
-  [`src/ColorType.php`](src/ColorType.php), [`src/ColorProperty.php`](src/ColorProperty.php),
-  and [`src/StaticPagePropertyProvider.php`](src/StaticPagePropertyProvider.php).
+  scalars), and `addPagePropertyProvider()`. A property type implements the
+  `PropertyType` interface, paired with a class extending `PropertyDefinition`. See
+  [`src/RedHerbHooks.php`](src/RedHerbHooks.php),
+  [`src/ColorType.php`](src/ColorType.php) (`implements PropertyType`),
+  [`src/ColorProperty.php`](src/ColorProperty.php) (`extends PropertyDefinition`), and
+  [`src/StaticPagePropertyProvider.php`](src/StaticPagePropertyProvider.php).
 - **Load frontend modules alongside NeoWiki's UI** — the `NeoWikiGetFrontendModules`
   hook. See [`src/RedHerbFrontendModulesHook.php`](src/RedHerbFrontendModulesHook.php).
 - **Query NeoWiki data and authorization from PHP** — `NeoWikiExtension::getInstance()`
@@ -37,7 +40,8 @@ this directory as a working example alongside the index below.
 
 - **Register a property type frontend** — the `neowiki.registration` JS hook
   (`mw.hook('neowiki.registration')`) delivers a registrar; call
-  `registrar.registerPropertyType(...)`. The display, input, and attributesEditor
+  `registrar.registerPropertyType(...)`. The registration's `typeName` must equal the
+  backend `PropertyType::getTypeName()`. The display, input, and attributesEditor
   components conform to NeoWiki's component prop shapes — see
   [`ValueDisplayContract.ts`](../../resources/ext.neowiki/src/components/Value/ValueDisplayContract.ts),
   [`ValueInputContract.ts`](../../resources/ext.neowiki/src/components/Value/ValueInputContract.ts),
@@ -61,8 +65,9 @@ this directory as a working example alongside the index below.
   resolves as `neowiki-field-<code>` message keys; your extension must define those
   messages (see [`i18n/en.json`](i18n/en.json), e.g. `neowiki-field-invalid-hex`).
 - **Icons** — the property-type registration's `icon` is a Codex `Icon`. RedHerb uses a
-  stock Codex icon declared via `CodexModule::getIcons` in
-  [`extension.json`](extension.json). Custom SVG icons are also supported — pass an SVG
+  stock Codex icon (browse the gallery at
+  <https://doc.wikimedia.org/codex/latest/icons/all-icons.html>) declared via
+  `CodexModule::getIcons` in [`extension.json`](extension.json). Custom SVG icons are also supported — pass an SVG
   string as the `icon`; NeoWiki ships SVG-string constants of this form (see
   [`CustomIcons.ts`](../../resources/ext.neowiki/src/assets/CustomIcons.ts)). RedHerb does
   not yet demonstrate a custom SVG icon, and no built-in NeoWiki type currently uses one.
