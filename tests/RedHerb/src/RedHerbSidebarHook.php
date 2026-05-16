@@ -34,12 +34,14 @@ class RedHerbSidebarHook implements SidebarBeforeOutputHook {
 		if ( $title !== null && $title->exists() ) {
 			$authorizer = NeoWikiExtension::getInstance()->newSubjectAuthorizer( $skin->getAuthority() );
 
-			$links[] = [
-				'id' => 'redherb-sidebar-create-child-company',
-				'text' => $skin->msg( 'redherb-sidebar-create-child-company' )->text(),
-				'href' => '#',
-				'class' => 'ext-redherb-create-child-company-trigger',
-			];
+			if ( $authorizer->canCreateChildSubject() ) {
+				$links[] = [
+					'id' => 'redherb-sidebar-create-child-company',
+					'text' => $skin->msg( 'redherb-sidebar-create-child-company' )->text(),
+					'href' => '#',
+					'class' => 'ext-redherb-create-child-company-trigger',
+				];
+			}
 
 			if ( $authorizer->canEditSubject() && ( $this->pageHasMainSubject )( $title ) ) {
 				$links[] = [
