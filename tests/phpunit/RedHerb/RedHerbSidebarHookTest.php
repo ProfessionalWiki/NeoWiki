@@ -7,6 +7,8 @@ namespace ProfessionalWiki\NeoWiki\Tests\RedHerb;
 use Closure;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Message\Message;
+use MediaWiki\Permissions\Authority;
+use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\RedHerb\RedHerbSidebarHook;
@@ -17,6 +19,8 @@ use Skin;
  * @group Database
  */
 class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
+
+	use MockAuthorityTrait;
 
 	public function testAddsCreateChildLinkOnAnyExistingPage(): void {
 		$sidebar = [];
@@ -30,15 +34,32 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 'ext-redherb-create-child-company-trigger', $sidebar['redherb-sidebar'][1]['class'] );
 	}
 
-	public function testAddsEditLinkOnPageWithMainSubject(): void {
+	public function testAddsEditLinkWhenUserCanEditAndPageHasMainSubject(): void {
 		$sidebar = [];
 		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( true ) );
 
-		$hook->onSidebarBeforeOutput( $this->newSkinForExistingPage(), $sidebar );
+		$hook->onSidebarBeforeOutput(
+			$this->newSkinForExistingPage( $this->mockRegisteredAuthorityWithPermissions( [ 'edit' ] ) ),
+			$sidebar
+		);
 
 		$this->assertCount( 3, $sidebar['redherb-sidebar'] );
 		$this->assertSame( 'redherb-sidebar-edit-main-subject', $sidebar['redherb-sidebar'][2]['id'] );
 		$this->assertSame( 'ext-redherb-edit-main-subject-trigger', $sidebar['redherb-sidebar'][2]['class'] );
+	}
+
+	public function testDoesNotAddEditLinkWhenUserCannotEditSubject(): void {
+		$sidebar = [];
+		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( true ) );
+
+		$hook->onSidebarBeforeOutput(
+			$this->newSkinForExistingPage( $this->mockAnonAuthorityWithPermissions( [] ) ),
+			$sidebar
+		);
+
+		$this->assertCount( 2, $sidebar['redherb-sidebar'] );
+		$this->assertSame( 'redherb-sidebar-subject-finder', $sidebar['redherb-sidebar'][0]['id'] );
+		$this->assertSame( 'redherb-sidebar-create-child-company', $sidebar['redherb-sidebar'][1]['id'] );
 	}
 
 	public function testOnlyAddsSubjectFinderLinkOnNonExistentPages(): void {
@@ -94,13 +115,16 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 		return $this->newSkinStub( Title::newFromText( 'Test' ) );
 	}
 
-	private function newSkinForExistingPage(): Skin {
-		return $this->newSkinStub( $this->getExistingTestPage()->getTitle() );
+	private function newSkinForExistingPage( ?Authority $authority = null ): Skin {
+		return $this->newSkinStub( $this->getExistingTestPage()->getTitle(), $authority );
 	}
 
-	private function newSkinStub( Title $title ): Skin {
+	private function newSkinStub( Title $title, ?Authority $authority = null ): Skin {
 		$skin = $this->createStub( Skin::class );
 		$skin->method( 'getTitle' )->willReturn( $title );
+		$skin->method( 'getAuthority' )->willReturn(
+			$authority ?? $this->mockRegisteredAuthorityWithPermissions( [ 'edit' ] )
+		);
 		$skin->method( 'msg' )->willReturnCallback(
 			static fn ( string $key ): Message => new RawMessage( $key )
 		);
