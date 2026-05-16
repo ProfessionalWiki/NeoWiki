@@ -22,7 +22,7 @@ PORT_RANGE_END := 8499
 
 # ---- Compose invocations -----------------------------------------------------
 
-DC := docker compose -p $(PROJECT_NAME) --project-directory Docker
+DC := docker compose -p $(PROJECT_NAME)
 DC_DEV := $(DC) -f Docker/docker-compose.yml -f Docker/docker-compose.dev.yml --profile dev
 DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
 
