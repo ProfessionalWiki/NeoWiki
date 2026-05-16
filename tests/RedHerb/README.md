@@ -40,8 +40,13 @@ this directory as a working example alongside the index below.
 
 - **Register a property type frontend** — the `neowiki.registration` JS hook
   (`mw.hook('neowiki.registration')`) delivers a registrar; call
-  `registrar.registerPropertyType(...)`. The registration's `typeName` must equal the
-  backend `PropertyType::getTypeName()`. The display, input, and attributesEditor
+  `registrar.registerPropertyType(...)`. This code only runs if your module is loaded
+  alongside NeoWiki's UI (the `NeoWikiGetFrontendModules` hook above). The object you
+  pass matches
+  [`PropertyTypeRegistration.ts`](../../resources/ext.neowiki/src/domain/PropertyTypeRegistration.ts);
+  every field is required, including `attributesEditor` even for a type with no
+  configurable attributes. The registration's `typeName` must equal the backend
+  `PropertyType::getTypeName()`. The display, input, and attributesEditor
   components conform to NeoWiki's component prop shapes — see
   [`ValueDisplayContract.ts`](../../resources/ext.neowiki/src/components/Value/ValueDisplayContract.ts),
   [`ValueInputContract.ts`](../../resources/ext.neowiki/src/components/Value/ValueInputContract.ts),
@@ -50,8 +55,11 @@ this directory as a working example alongside the index below.
   [`resources/ColorDisplay.vue`](resources/ColorDisplay.vue),
   [`resources/ColorInput.vue`](resources/ColorInput.vue),
   [`resources/ColorAttributesEditor.vue`](resources/ColorAttributesEditor.vue).
-- **Use NeoWiki's public JS API** — `require('ext.neowiki')`; the full surface is
-  [`public-api.ts`](../../resources/ext.neowiki/src/public-api.ts).
+- **Use NeoWiki's public JS API** — `require('ext.neowiki')`; exports are listed in
+  [`public-api.ts`](../../resources/ext.neowiki/src/public-api.ts) (a re-export barrel).
+  The value model and factories (`newStringValue`, `newNumberValue`) live in
+  [`domain/Value.ts`](../../resources/ext.neowiki/src/domain/Value.ts); value shape
+  varies by `valueType`.
 - **Mount standalone Vue features wired to NeoWiki services** — obtain NeoWiki's Pinia
   via `NeoWikiExtension.getInstance().getPinia()` and call
   `NeoWikiServices.registerServices(app)`. See [`resources/createChild/`](resources/createChild),
