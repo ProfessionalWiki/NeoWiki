@@ -1,0 +1,19 @@
+name: Deploy docs to website
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'docs/**'
+
+permissions:
+  contents: read
+
+jobs:
+  trigger-website-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Cloudflare Pages build
+        run: curl -fsS -X POST "$DEPLOY_HOOK"
+        env:
+          DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_PAGES_DEPLOY_HOOK }}
