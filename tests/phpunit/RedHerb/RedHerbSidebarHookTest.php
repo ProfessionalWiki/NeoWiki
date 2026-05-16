@@ -4,13 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\RedHerb;
 
-use Closure;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Message\Message;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWiki\Title\Title;
-use MediaWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\RedHerb\RedHerbSidebarHook;
 use Skin;
 
@@ -18,15 +18,29 @@ use Skin;
  * @covers \ProfessionalWiki\RedHerb\RedHerbSidebarHook
  * @group Database
  */
-class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
+class RedHerbSidebarHookTest extends NeoWikiIntegrationTestCase {
 
 	use MockAuthorityTrait;
 
-	public function testAddsCreateChildLinkOnAnyExistingPage(): void {
-		$sidebar = [];
-		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( false ) );
+	private const string PAGE_WITH_MAIN_SUBJECT = 'RedHerbSidebarHookTest_WithSubject';
+	private const string PAGE_WITHOUT_SUBJECTS = 'RedHerbSidebarHookTest_NoSubject';
 
-		$hook->onSidebarBeforeOutput( $this->newSkinForExistingPage(), $sidebar );
+	public function setUp(): void {
+		parent::setUp();
+		$this->setUpNeo4j();
+	}
+
+	public function testAddsCreateChildLinkOnExistingPage(): void {
+		$this->createPageWithSubjects( self::PAGE_WITHOUT_SUBJECTS );
+		$sidebar = [];
+
+		( new RedHerbSidebarHook() )->onSidebarBeforeOutput(
+			$this->newSkinStub(
+				Title::newFromText( self::PAGE_WITHOUT_SUBJECTS ),
+				$this->mockRegisteredAuthorityWithPermissions( [ 'edit' ] )
+			),
+			$sidebar
+		);
 
 		$this->assertCount( 2, $sidebar['redherb-sidebar'] );
 		$this->assertSame( 'redherb-sidebar-subject-finder', $sidebar['redherb-sidebar'][0]['id'] );
@@ -35,11 +49,14 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testAddsEditLinkWhenUserCanEditAndPageHasMainSubject(): void {
+		$this->createPageWithSubjects( self::PAGE_WITH_MAIN_SUBJECT, TestSubject::build() );
 		$sidebar = [];
-		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( true ) );
 
-		$hook->onSidebarBeforeOutput(
-			$this->newSkinForExistingPage( $this->mockRegisteredAuthorityWithPermissions( [ 'edit' ] ) ),
+		( new RedHerbSidebarHook() )->onSidebarBeforeOutput(
+			$this->newSkinStub(
+				Title::newFromText( self::PAGE_WITH_MAIN_SUBJECT ),
+				$this->mockRegisteredAuthorityWithPermissions( [ 'edit' ] )
+			),
 			$sidebar
 		);
 
@@ -49,11 +66,14 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testDoesNotAddEditLinkWhenUserCannotEditSubject(): void {
+		$this->createPageWithSubjects( self::PAGE_WITH_MAIN_SUBJECT, TestSubject::build() );
 		$sidebar = [];
-		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( true ) );
 
-		$hook->onSidebarBeforeOutput(
-			$this->newSkinForExistingPage( $this->mockAnonAuthorityWithPermissions( [] ) ),
+		( new RedHerbSidebarHook() )->onSidebarBeforeOutput(
+			$this->newSkinStub(
+				Title::newFromText( self::PAGE_WITH_MAIN_SUBJECT ),
+				$this->mockAnonAuthorityWithPermissions( [] )
+			),
 			$sidebar
 		);
 
@@ -62,11 +82,14 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testDoesNotAddCreateChildLinkWhenUserCannotCreateChildSubject(): void {
+		$this->createPageWithSubjects( self::PAGE_WITHOUT_SUBJECTS );
 		$sidebar = [];
-		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( false ) );
 
-		$hook->onSidebarBeforeOutput(
-			$this->newSkinForExistingPage( $this->mockAnonAuthorityWithPermissions( [] ) ),
+		( new RedHerbSidebarHook() )->onSidebarBeforeOutput(
+			$this->newSkinStub(
+				Title::newFromText( self::PAGE_WITHOUT_SUBJECTS ),
+				$this->mockAnonAuthorityWithPermissions( [] )
+			),
 			$sidebar
 		);
 
@@ -76,59 +99,39 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 
 	public function testOnlyAddsSubjectFinderLinkOnNonExistentPages(): void {
 		$sidebar = [];
-		$predicateInvoked = false;
-		$hook = new RedHerbSidebarHook( static function () use ( &$predicateInvoked ): bool {
-			$predicateInvoked = true;
-			return true;
-		} );
 
-		$hook->onSidebarBeforeOutput(
+		( new RedHerbSidebarHook() )->onSidebarBeforeOutput(
 			$this->newSkinStub( Title::newFromText( 'NonExistentPage_' . uniqid() ) ),
 			$sidebar
 		);
 
-		$this->assertFalse( $predicateInvoked );
 		$this->assertCount( 1, $sidebar['redherb-sidebar'] );
+		$this->assertSame( 'redherb-sidebar-subject-finder', $sidebar['redherb-sidebar'][0]['id'] );
 	}
 
-	public function testDoesNotCheckMainSubjectForNonExistingTitles(): void {
+	public function testOnlyAddsSubjectFinderLinkOnNonExistingSpecialPages(): void {
 		$sidebar = [];
-		$predicateInvoked = false;
-		$hook = new RedHerbSidebarHook( static function () use ( &$predicateInvoked ): bool {
-			$predicateInvoked = true;
-			return true;
-		} );
 
-		$hook->onSidebarBeforeOutput(
+		( new RedHerbSidebarHook() )->onSidebarBeforeOutput(
 			$this->newSkinStub( Title::newFromText( 'UserLogin', NS_SPECIAL ) ),
 			$sidebar
 		);
 
-		$this->assertFalse( $predicateInvoked );
 		$this->assertCount( 1, $sidebar['redherb-sidebar'] );
+		$this->assertSame( 'redherb-sidebar-subject-finder', $sidebar['redherb-sidebar'][0]['id'] );
 	}
 
 	public function testDoesNotOverwriteExistingSidebarSections(): void {
 		$sidebar = [ 'navigation' => [ [ 'id' => 'preexisting' ] ] ];
-		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( false ) );
 
-		$hook->onSidebarBeforeOutput( $this->newSkin(), $sidebar );
+		( new RedHerbSidebarHook() )->onSidebarBeforeOutput(
+			$this->newSkinStub( Title::newFromText( 'NonExistentPage_' . uniqid() ) ),
+			$sidebar
+		);
 
 		$this->assertArrayHasKey( 'navigation', $sidebar );
 		$this->assertSame( 'preexisting', $sidebar['navigation'][0]['id'] );
 		$this->assertArrayHasKey( 'redherb-sidebar', $sidebar );
-	}
-
-	private static function pageHasMainSubjectStub( bool $value ): Closure {
-		return static fn ( Title $title ): bool => $value;
-	}
-
-	private function newSkin(): Skin {
-		return $this->newSkinStub( Title::newFromText( 'Test' ) );
-	}
-
-	private function newSkinForExistingPage( ?Authority $authority = null ): Skin {
-		return $this->newSkinStub( $this->getExistingTestPage()->getTitle(), $authority );
 	}
 
 	private function newSkinStub( Title $title, ?Authority $authority = null ): Skin {
