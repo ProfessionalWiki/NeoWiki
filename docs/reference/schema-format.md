@@ -1,12 +1,16 @@
+---
+title: Schema Format
+order: 4
+---
 # Schema JSON Format
 
 This document describes the JSON format used to store Schema data on pages in the Schema namespace (7474) and
 returned by the REST API.
 
-For definitions of terms like Schema and Property Definition, see the [Glossary](Glossary.md).
+For definitions of terms like Schema and Property Definition, see the [Glossary](../concepts/glossary.md).
 
 A JSON Schema for validation is available at
-[`src/Persistence/MediaWiki/schemaContentSchema.json`](../src/Persistence/MediaWiki/schemaContentSchema.json).
+[`src/Persistence/MediaWiki/schemaContentSchema.json`](../../src/Persistence/MediaWiki/schemaContentSchema.json).
 
 ## Top-Level Structure
 
@@ -283,7 +287,7 @@ A "Company" schema with various property types:
 
 ## Related Documentation
 
-- [ADR 006: Schemas](adr/006_Schemas.md)
-- [ADR 009: Move Away from JSON Schema](adr/009_Move_Away_from_JSON_Schema.md)
-- [ADR 017: Names as Identifiers](adr/017_Names_as_Identifiers.md)
-- [SubjectFormat.md](SubjectFormat.md) - Format for Subject data that follows schemas
+- [ADR 006: Schemas](../adr/006-schemas.md)
+- [ADR 009: Move Away from JSON Schema](../adr/009-move-away-from-json-schema.md)
+- [ADR 017: Names as Identifiers](../adr/017-names-as-identifiers.md)
+- [Subject Format](subject-format.md) - Format for Subject data that follows schemas

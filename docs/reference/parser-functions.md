@@ -1,3 +1,7 @@
+---
+title: Parser Functions
+order: 1
+---
 # Parser Functions
 
 NeoWiki provides three parser functions for use in wikitext.
@@ -8,14 +12,14 @@ NeoWiki provides three parser functions for use in wikitext.
 | Insert one property's value inline as text | [`{{#neowiki_value}}`](#neowiki_value) |
 | Run a custom Cypher query and see the raw results | [`{{#cypher_raw}}`](#cypher_raw) |
 
-For programmatic access from Lua modules, see the [Lua API](LuaAPI.md).
+For programmatic access from Lua modules, see the [Lua API](lua-api.md).
 
-For definitions of terms like Subject, Schema, and Layout, see the [Glossary](Glossary.md).
+For definitions of terms like Subject, Schema, and Layout, see the [Glossary](../concepts/glossary.md).
 
 ## `{{#view}}`
 
-Renders a Subject as HTML on the page using a [View Type](Glossary.md#view-type) (currently
-`infobox`). Optionally uses a [Layout](Glossary.md#layout) to control which properties are shown
+Renders a Subject as HTML on the page using a [View Type](../concepts/glossary.md#view-type) (currently
+`infobox`). Optionally uses a [Layout](../concepts/glossary.md#layout) to control which properties are shown
 and how.
 
 ### Syntax
@@ -148,9 +152,9 @@ planned (see [#736](https://github.com/ProfessionalWiki/NeoWiki/issues/736)).
 
 ## Related Documentation
 
-- [Lua API](LuaAPI.md) — Programmatic access to the same data via `mw.neowiki`
-- [Glossary](Glossary.md) — Definitions of Subject, Schema, Layout, View, etc.
-- [SchemaFormat.md](SchemaFormat.md) — How Schemas and properties are defined
-- [SubjectFormat.md](SubjectFormat.md) — How Subject data is stored
-- [GraphModel.md](GraphModel.md) — Neo4j node and relationship structure (relevant for
+- [Lua API](lua-api.md) — Programmatic access to the same data via `mw.neowiki`
+- [Glossary](../concepts/glossary.md) — Definitions of Subject, Schema, Layout, View, etc.
+- [Schema Format](schema-format.md) — How Schemas and properties are defined
+- [Subject Format](subject-format.md) — How Subject data is stored
+- [Graph Model](graph-model.md) — Neo4j node and relationship structure (relevant for
   `{{#cypher_raw}}` queries)

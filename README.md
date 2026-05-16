@@ -8,7 +8,7 @@
 
 ## Technical Documentation
 
-See [docs/](./docs/), especially [docs/Glossary.md](./docs/Glossary.md).
+See [docs/](./docs/), especially [docs/concepts/glossary.md](./docs/concepts/glossary.md).
 
 ## Development
 

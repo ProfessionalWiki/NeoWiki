@@ -6,9 +6,9 @@ Status: Draft
 
 ## Context
 
-NeoWiki currently uses Neo4j as its sole graph database ([ADR 3](003_Neo4j_as_Graph_Database.md)). The graph is a
+NeoWiki currently uses Neo4j as its sole graph database ([ADR 3](003-neo4j-as-graph-database.md)). The graph is a
 query-optimized projection of data whose source of truth lives in MediaWiki revision slots
-([ADR 4](004_Use_Dedicated_Slot.md)). This projection is kept in sync via MediaWiki hooks
+([ADR 4](004-use-dedicated-slot.md)). This projection is kept in sync via MediaWiki hooks
 (`RevisionFromEditComplete`, `PageDeleteComplete`, etc.).
 
 We want to support RDF and SPARQL for interoperability, especially with the cultural heritage and Linked Open
@@ -24,7 +24,7 @@ NeoWiki supports multiple graph database backends simultaneously. Each backend i
    projection of the data.
 2. **Executes user queries** in its native query language and returns tabular results.
 3. **Validates user queries** if needed to ensure they are read-only, using backend-appropriate validation
-   (extending [ADR 13](013_Restrict_Neo4j_Access.md)'s approach).
+   (extending [ADR 13](013-restrict-neo4j-access.md)'s approach).
 
 ### SPARQL as the triple store abstraction
 
@@ -36,7 +36,7 @@ limited to deployment configuration and optional bulk-load optimizations.
 
 ### Each plugin owns its data model mapping
 
-The Neo4j plugin maps NeoWiki data to a property graph (as documented in [GraphModel.md](../GraphModel.md)).
+The Neo4j plugin maps NeoWiki data to a property graph (as documented in [Graph Model](../reference/graph-model.md)).
 The SPARQL plugin maps the same data to RDF triples. These mappings are deliberately separate: attempting to
 force one abstraction over both property graphs and RDF would be artificial and constraining. The shared
 contract is at the domain event level, not the graph model level.
@@ -75,7 +75,7 @@ This is not a near-term priority. The goal is to avoid architectural decisions t
   LOD world (public SPARQL endpoints). Whether this is safe depends on the store: QLever supports access tokens
   that restrict writes while allowing public reads; stores without per-request access control (like Oxigraph)
   need proxy-level protection or network isolation. This is a deployment concern, not an architectural one.
-  Unlike Neo4j ([ADR 13](013_Restrict_Neo4j_Access.md)), this direct exposure is feasible and expected for
+  Unlike Neo4j ([ADR 13](013-restrict-neo4j-access.md)), this direct exposure is feasible and expected for
   interoperability use cases.
 
 ## Alternatives Considered

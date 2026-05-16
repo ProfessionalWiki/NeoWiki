@@ -1,3 +1,7 @@
+---
+title: REST API
+order: 3
+---
 # REST API
 
 NeoWiki's REST API lives under `/neowiki/v0/*`. There is no hand-written reference — MediaWiki core's
