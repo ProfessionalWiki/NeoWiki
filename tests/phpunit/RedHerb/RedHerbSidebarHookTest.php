@@ -57,9 +57,21 @@ class RedHerbSidebarHookTest extends MediaWikiIntegrationTestCase {
 			$sidebar
 		);
 
-		$this->assertCount( 2, $sidebar['redherb-sidebar'] );
+		$this->assertCount( 1, $sidebar['redherb-sidebar'] );
 		$this->assertSame( 'redherb-sidebar-subject-finder', $sidebar['redherb-sidebar'][0]['id'] );
-		$this->assertSame( 'redherb-sidebar-create-child-company', $sidebar['redherb-sidebar'][1]['id'] );
+	}
+
+	public function testDoesNotAddCreateChildLinkWhenUserCannotCreateChildSubject(): void {
+		$sidebar = [];
+		$hook = new RedHerbSidebarHook( self::pageHasMainSubjectStub( false ) );
+
+		$hook->onSidebarBeforeOutput(
+			$this->newSkinForExistingPage( $this->mockAnonAuthorityWithPermissions( [] ) ),
+			$sidebar
+		);
+
+		$this->assertCount( 1, $sidebar['redherb-sidebar'] );
+		$this->assertSame( 'redherb-sidebar-subject-finder', $sidebar['redherb-sidebar'][0]['id'] );
 	}
 
 	public function testOnlyAddsSubjectFinderLinkOnNonExistentPages(): void {
