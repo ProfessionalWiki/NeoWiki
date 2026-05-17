@@ -47,15 +47,13 @@ jobs:
         run: rsync -a --exclude='Docker/' ./ Docker/mediawiki/extensions/NeoWiki/
 
       - run: make wiki-production-image
-        working-directory: Docker
 
       - name: Use CI docker-compose
         run: rm docker-compose.yml && mv docker-compose.ci.yml docker-compose.yml
         working-directory: Docker
 
       - name: Start containers
-        run: docker compose up -d
-        working-directory: Docker
+        run: make up
 
       - name: Wait for Neo4j
         uses: iFaxity/wait-on-action@v1.1.0
@@ -65,14 +63,11 @@ jobs:
 
       - name: Install MediaWiki
         run: make install-db
-        working-directory: Docker
 
       - name: Load Neo4j users
         run: make load-neo4j-users
-        working-directory: Docker
 
-      - run: make test
-        working-directory: Docker
+      - run: make smoke-test
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v4
