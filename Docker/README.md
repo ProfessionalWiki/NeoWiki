@@ -38,14 +38,23 @@ To deploy on a server with automatic HTTPS via Caddy:
 1. Copy `Docker/.env.dist` to `Docker/.env` and change all values marked with
    `# Change for production`, including `MW_SERVER` (e.g. `https://wiki.example.com`).
 
-2. Start all services including Caddy:
+2. From the extension root, bring up the stack including Caddy:
    ```bash
-   docker compose --profile server up -d
+   make server-up
    ```
 
 3. Run the install/load steps from the try-it-out section above.
 
 4. Access your wiki at the configured `MW_SERVER` URL.
+
+### Upgrading
+
+```bash
+make update
+```
+
+Pulls the latest production image, restarts the stack (including Caddy), and runs
+`maintenance/update.php`.
 
 ## Reserved host ports
 
