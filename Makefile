@@ -22,8 +22,8 @@ PORT_RANGE_END := 8499
 
 # ---- Compose invocations -----------------------------------------------------
 
-DC := docker compose -p $(PROJECT_NAME)
-DC_DEV := $(DC) -f Docker/docker-compose.yml -f Docker/docker-compose.dev.yml --profile dev
+DC := docker compose -p $(PROJECT_NAME) -f Docker/docker-compose.yml
+DC_DEV := $(DC) -f Docker/docker-compose.dev.yml --profile dev
 DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
 
 IS_PODMAN := $(shell (docker --version 2>/dev/null | grep -qi podman || command -v podman >/dev/null 2>&1) && echo 1 || echo 0)
