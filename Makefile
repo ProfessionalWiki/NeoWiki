@@ -22,8 +22,8 @@ PORT_RANGE_END := 8499
 
 # ---- Compose invocations -----------------------------------------------------
 
-DC := docker compose -p $(PROJECT_NAME)
-DC_DEV := $(DC) -f Docker/docker-compose.yml -f Docker/docker-compose.dev.yml --profile dev
+DC := docker compose -p $(PROJECT_NAME) -f Docker/docker-compose.yml
+DC_DEV := $(DC) -f Docker/docker-compose.dev.yml --profile dev
 DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
 
 IS_PODMAN := $(shell (docker --version 2>/dev/null | grep -qi podman || command -v podman >/dev/null 2>&1) && echo 1 || echo 0)
@@ -33,8 +33,8 @@ else
 	EXEC_USER := --user $(shell id -u):$(shell id -g)
 endif
 
-EXEC_MW := $(DC_DEV) exec -T $(EXEC_USER) mediawiki
-EXEC_MW_ROOT := $(DC_DEV) exec -T mediawiki
+EXEC_MW := $(DC) exec -T $(EXEC_USER) mediawiki
+EXEC_MW_ROOT := $(DC) exec -T mediawiki
 EXEC_NODE := $(DC_DEV) exec -T $(EXEC_USER) -e npm_config_cache=/tmp/.npm node
 
 # Detect when this Makefile is invoked from inside the mediawiki container.
@@ -159,6 +159,7 @@ _first-run-seed:
 	else \
 		$(MAKE) --no-print-directory install-db; \
 		$(MAKE) --no-print-directory load-neo4j-users; \
+		$(MAKE) --no-print-directory setup-test-neo; \
 		$(MAKE) --no-print-directory composer-install; \
 		$(MAKE) --no-print-directory import-demo-data; \
 	fi
@@ -166,7 +167,7 @@ _first-run-seed:
 
 # ---- DB and Neo4j init -------------------------------------------------------
 
-.PHONY: install-db load-neo4j-users wait-for-neo4j
+.PHONY: install-db load-neo4j-users wait-for-neo4j setup-test-neo
 
 install-db:
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh db:3306 -t 60'
@@ -184,12 +185,15 @@ install-db:
 
 wait-for-neo4j:
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh neo:7687 -t 60'
-	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_neo:7689 -t 60'
 
 load-neo4j-users:
 	$(MAKE) --no-print-directory wait-for-neo4j
-	$(DC_DEV) exec -T neo bash -c \
+	$(DC) exec -T neo bash -c \
 		"echo \"CREATE USER $(NEO4J_USERNAME_READ) SET PASSWORD '$(NEO4J_PASSWORD_READ)' CHANGE NOT REQUIRED; GRANT ROLE reader TO $(NEO4J_USERNAME_READ);\" | cypher-shell -u neo4j -p $(NEO4J_PASSWORD) -a bolt://localhost:7687"
+
+# Dev-only: wait for and seed the test_neo instance. Not called from prod or CI flows.
+setup-test-neo:
+	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_neo:7689 -t 60'
 	$(DC_DEV) exec -T test_neo bash -c \
 		"echo \"CREATE USER mediawiki_read SET PASSWORD 'mediawiki_read' CHANGE NOT REQUIRED; GRANT ROLE reader TO mediawiki_read;\" | cypher-shell -u neo4j -p password -a bolt://localhost:7689"
 
@@ -332,7 +336,7 @@ ts-lint: _wait-node ## Run TS linter
 
 # ---- Maintenance -------------------------------------------------------------
 
-.PHONY: reset import-demo-data rebuild-graph-databases update-dot-php
+.PHONY: reset import-demo-data rebuild-graph-databases update-dot-php smoke-test
 
 reset: ## Wipe DB + Neo4j volumes and reseed demo data (containers stay)
 	$(DC_DEV) down --volumes
@@ -340,6 +344,7 @@ reset: ## Wipe DB + Neo4j volumes and reseed demo data (containers stay)
 	@$(MAKE) --no-print-directory _wait-mw
 	$(MAKE) --no-print-directory install-db
 	$(MAKE) --no-print-directory load-neo4j-users
+	$(MAKE) --no-print-directory setup-test-neo
 	$(MAKE) --no-print-directory import-demo-data
 
 import-demo-data: ## Import the NeoWiki demo subjects
@@ -350,6 +355,9 @@ rebuild-graph-databases: ## Rebuild Neo4j projection from MariaDB
 
 update-dot-php: ## Run MW maintenance/update.php
 	$(EXEC_MW_ROOT) php maintenance/run.php update --quick
+
+smoke-test: ## Hit the running wiki from outside and verify it responds (CI smoke test)
+	bash Docker/tests/smoke.sh
 
 # ---- Production image --------------------------------------------------------
 
