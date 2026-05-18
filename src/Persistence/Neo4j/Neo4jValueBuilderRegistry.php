@@ -41,7 +41,10 @@ class Neo4jValueBuilderRegistry {
 		$registry->registerBuilder( 'url', $toScalars );
 		$registry->registerBuilder( 'number', $toScalars );
 		$registry->registerBuilder( 'select', $toScalars );
-		$registry->registerBuilder( 'dateTime', $toScalars );
+		$registry->registerBuilder(
+			'dateTime',
+			static fn( NeoValue $value ): Neo4jTypedValue => new Neo4jTypedValue( 'datetime', $value->toScalars() )
+		);
 
 		return $registry;
 	}
