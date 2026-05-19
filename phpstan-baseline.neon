@@ -183,27 +183,27 @@ parameters:
 		-
 			message: "#^Anonymous function should return Laudis\\\\Neo4j\\\\Databags\\\\SummarizedResult but returns mixed\\.$#"
 			count: 2
-			path: src/Persistence/Neo4j/Neo4jQueryStore.php
+			path: src/GraphDatabasePlugins/Neo4j/Persistence/Neo4jQueryStore.php
 
 		-
 			message: "#^Cannot call method get\\(\\) on mixed\\.$#"
 			count: 1
-			path: src/Persistence/Neo4j/Neo4jQueryStore.php
+			path: src/GraphDatabasePlugins/Neo4j/Persistence/Neo4jQueryStore.php
 
 		-
 			message: "#^Cannot call method isEmpty\\(\\) on mixed\\.$#"
 			count: 1
-			path: src/Persistence/Neo4j/Neo4jQueryStore.php
+			path: src/GraphDatabasePlugins/Neo4j/Persistence/Neo4jQueryStore.php
 
 		-
 			message: "#^Cannot call method get\\(\\) on mixed\\.$#"
 			count: 1
-			path: src/Persistence/Neo4j/SubjectUpdater.php
+			path: src/GraphDatabasePlugins/Neo4j/Persistence/Neo4jSubjectUpdater.php
 
 		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\Neo4j\\\\SubjectUpdater\\:\\:getNodeLabels\\(\\) should return array\\<string\\> but returns array\\<int, mixed\\>\\.$#"
+			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\GraphDatabasePlugins\\\\Neo4j\\\\Persistence\\\\Neo4jSubjectUpdater\\:\\:getNodeLabels\\(\\) should return array\\<string\\> but returns array\\<int, mixed\\>\\.$#"
 			count: 1
-			path: src/Persistence/Neo4j/SubjectUpdater.php
+			path: src/GraphDatabasePlugins/Neo4j/Persistence/Neo4jSubjectUpdater.php
 
 		-
 			message: "#^Cannot access property \\$page_title on array\\|stdClass\\|false\\.$#"
@@ -298,14 +298,14 @@ parameters:
 		-
 			message: "#^Parameter \\#1 \\$string of function strtoupper expects string, string\\|null given\\.$#"
 			count: 1
-			path: src/Persistence/Neo4j/KeywordCypherQueryValidator.php
+			path: src/GraphDatabasePlugins/Neo4j/Application/KeywordCypherQueryValidator.php
 
 		-
 			message: "#^Parameter \\#2 \\$subject of function preg_match expects string, string\\|null given\\.$#"
 			count: 2
-			path: src/Persistence/Neo4j/KeywordCypherQueryValidator.php
+			path: src/GraphDatabasePlugins/Neo4j/Application/KeywordCypherQueryValidator.php
 
 		-
 			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, string\\|null given\\.$#"
 			count: 1
-			path: src/Persistence/Neo4j/KeywordCypherQueryValidator.php
+			path: src/GraphDatabasePlugins/Neo4j/Application/KeywordCypherQueryValidator.php

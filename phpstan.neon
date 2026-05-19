@@ -13,6 +13,7 @@ parameters:
 	excludePaths:
 		analyse:
 			- src/EntryPoints/
+			- src/GraphDatabasePlugins/Neo4j/EntryPoints/
 	reportUnmatchedIgnoredErrors: false
 	ignoreErrors:
 		- '#no value type specified in iterable type array\.$#'
