@@ -98,7 +98,10 @@ const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaNam
 
 async function openEditor(): Promise<void> {
 	try {
-		await subjectStore.fetchSubject( props.subjectId );
+		await Promise.all( [
+			schemaStore.fetchSchema( subject.value.getSchemaName() ),
+			subjectStore.fetchSubject( props.subjectId )
+		] );
 		isEditorOpen.value = true;
 	} catch ( error ) {
 		mw.notify(
