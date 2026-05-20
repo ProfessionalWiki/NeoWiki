@@ -12,6 +12,13 @@ export interface SubjectRepository extends SubjectLookup {
 
 	setMainSubject( pageId: number, subjectId: SubjectId | null, comment?: string ): Promise<void>;
 
+	setSubjectsOrdering(
+		pageId: number,
+		mainSubjectId: SubjectId | null,
+		childSubjectIds: SubjectId[],
+		comment?: string
+	): Promise<void>;
+
 	createMainSubject(
 		pageId: number,
 		label: string,
@@ -46,6 +53,15 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 	}
 
 	public setMainSubject( _pageId: number, _subjectId: SubjectId | null, _comment?: string ): Promise<void> {
+		return Promise.resolve();
+	}
+
+	public setSubjectsOrdering(
+		_pageId: number,
+		_mainSubjectId: SubjectId | null,
+		_childSubjectIds: SubjectId[],
+		_comment?: string,
+	): Promise<void> {
 		return Promise.resolve();
 	}
 

@@ -177,6 +177,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newSetMainSubjectApi"
 		},
 		{
+			"path": "/neowiki/v0/page/{pageId}/subjectsOrdering",
+			"method": [ "PUT" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newSetSubjectsOrderingApi"
+		},
+		{
 			"path": "/neowiki/v0/subject/{subjectId}",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectApi"
@@ -489,6 +494,8 @@
 				"neowiki-managesubjects-count",
 				"neowiki-managesubjects-main-subject-set",
 				"neowiki-managesubjects-main-subject-cleared",
+				"neowiki-managesubjects-reordered",
+				"neowiki-managesubjects-ordering-error",
 				"neowiki-managesubjects-main-subject-error",
 				"neowiki-managesubjects-main-subject-indicator",
 				"neowiki-managesubjects-other-subjects-heading",
@@ -497,6 +504,7 @@
 				"neowiki-managesubjects-row-promote",
 				"neowiki-managesubjects-row-demote",
 				"neowiki-managesubjects-row-more",
+				"neowiki-managesubjects-row-drag-handle",
 				"neowiki-managesubjects-statement-count",
 				"neowiki-managesubjects-no-statements",
 				"neowiki-managesubjects-delete-summary-default",
