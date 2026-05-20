@@ -263,7 +263,7 @@ $wgGroupPermissions['researcher']['neowiki-query'] = true;
 
 ## Deployment notes
 
-NeoWiki enforces a transaction timeout in-process via `QueryLimits::$timeoutSeconds`. This is the primary
+NeoWiki enforces a transaction timeout in-process via `Neo4jQueryLimits::$timeoutSeconds`. This is the primary
 protection against long-running queries. For defense-in-depth, configure Neo4j itself with matching server-side
 limits so that a bug or misconfiguration in the application layer does not leave the database exposed:
 
