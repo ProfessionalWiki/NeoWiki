@@ -33,7 +33,7 @@ function p.render( frame )
 
 		local view
 		if viewLayout and viewLayout ~= '' then
-			view = frame:preprocess( '{{#view:' .. id .. '|' .. viewLayout .. '}}' )
+			view = frame:preprocess( '{{#view:' .. id .. '|layout=' .. viewLayout .. '}}' )
 		else
 			view = frame:preprocess( '{{#view:' .. id .. '}}' )
 		end
