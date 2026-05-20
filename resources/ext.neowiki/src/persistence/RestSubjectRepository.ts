@@ -123,6 +123,31 @@ export class RestSubjectRepository implements SubjectRepository {
 		}
 	}
 
+	public async setSubjectsOrdering(
+		pageId: number,
+		mainSubjectId: SubjectId | null,
+		childSubjectIds: SubjectId[],
+		comment?: string,
+	): Promise<void> {
+		const response = await this.httpClient.put(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/page/${ pageId }/subjectsOrdering`,
+			{
+				mainSubjectId: mainSubjectId === null ? null : mainSubjectId.text,
+				childSubjectIds: childSubjectIds.map( ( id ) => id.text ),
+				comment,
+			},
+			{
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			},
+		);
+
+		if ( !response.ok ) {
+			throw new Error( 'Error setting subjects ordering' );
+		}
+	}
+
 	public async getSubject( id: SubjectId ): Promise<Subject> {
 		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`;
 
