@@ -102,9 +102,11 @@ referenced Layout no longer exists. Usage sites (parser functions, Page Schemas,
 
 A View is what users see on a page — a rendered Subject. The `{{#view}}` parser function places a View:
 
-* `{{#view: SubjectId}}` — renders a Subject with the default infobox (no Layout)
-* `{{#view: SubjectId | layout=LayoutName}}` — renders using the specified Layout's Display Rules
+* `{{#view: }}` — renders the current page's Main Subject with the default infobox (no Layout)
+* `{{#view: SubjectId}}` — renders the specified Subject with the default infobox (no Layout)
 * `{{#view: layout=LayoutName}}` — renders the current page's Main Subject with the specified Layout
+* `{{#view: SubjectId | layout=LayoutName}}` — renders the specified Subject using the Layout's Display Rules
+* `{{#view: subject=SubjectId | layout=LayoutName}}` — same, with the Subject specified as a named argument
 
 Views are not stored entities. They exist as HTML placeholders that the frontend hydrates with Vue components.
 

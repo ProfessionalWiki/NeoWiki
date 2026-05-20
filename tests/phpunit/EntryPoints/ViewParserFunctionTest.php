@@ -210,6 +210,7 @@ class ViewParserFunctionTest extends TestCase {
 
 		$this->assertIsString( $result );
 		$this->assertStringContainsString( 'class="error"', $result );
+		$this->assertStringContainsString( 'neowiki-view-error-extra-positional', $result );
 		$this->assertStringContainsString( 's33333333333333', $result );
 	}
 
@@ -224,6 +225,7 @@ class ViewParserFunctionTest extends TestCase {
 
 		$this->assertIsString( $result );
 		$this->assertStringContainsString( 'class="error"', $result );
+		$this->assertStringContainsString( 'neowiki-view-error-extra-positional', $result );
 		$this->assertStringContainsString( 'Finances', $result );
 	}
 
@@ -238,6 +240,7 @@ class ViewParserFunctionTest extends TestCase {
 
 		$this->assertIsString( $result );
 		$this->assertStringContainsString( 'class="error"', $result );
+		$this->assertStringContainsString( 'neowiki-view-error-conflicting-subject', $result );
 	}
 
 	public function testRendersErrorOnUnknownNamedArg(): void {
@@ -247,7 +250,19 @@ class ViewParserFunctionTest extends TestCase {
 
 		$this->assertIsString( $result );
 		$this->assertStringContainsString( 'class="error"', $result );
+		$this->assertStringContainsString( 'neowiki-view-error-unknown-arg', $result );
 		$this->assertStringContainsString( 'layuot', $result );
+	}
+
+	public function testRendersErrorOnArgWithEmptyName(): void {
+		$parserFunction = $this->newParserFunction( 's11111111111111' );
+
+		$result = $parserFunction->handle( $this->createMockParser(), '=Finances' );
+
+		$this->assertIsString( $result );
+		$this->assertStringContainsString( 'class="error"', $result );
+		$this->assertStringContainsString( 'neowiki-view-error-unknown-arg', $result );
+		$this->assertStringContainsString( '=Finances', $result );
 	}
 
 }

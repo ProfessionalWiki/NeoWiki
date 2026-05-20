@@ -81,7 +81,11 @@ class ViewParserFunction {
 			$key = trim( $key );
 
 			if ( $key !== self::ARG_SUBJECT && $key !== self::ARG_LAYOUT ) {
-				return $this->renderError( $parser, 'neowiki-view-error-unknown-arg', $key );
+				return $this->renderError(
+					$parser,
+					'neowiki-view-error-unknown-arg',
+					$key !== '' ? $key : $arg
+				);
 			}
 
 			$named[$key] = trim( $value );
@@ -101,10 +105,22 @@ class ViewParserFunction {
 			return $this->renderError( $parser, 'neowiki-view-error-conflicting-subject', '' );
 		}
 
-		$subjectId = $positionalSubject !== '' ? $positionalSubject : ( $namedSubject !== '' ? $namedSubject : null );
+		$subjectId = $this->pickSubjectId( $positionalSubject, $namedSubject );
 		$layoutName = ( $named[self::ARG_LAYOUT] ?? '' ) !== '' ? $named[self::ARG_LAYOUT] : null;
 
 		return [ $subjectId, $layoutName ];
+	}
+
+	private function pickSubjectId( string $positional, string $named ): ?string {
+		if ( $positional !== '' ) {
+			return $positional;
+		}
+
+		if ( $named !== '' ) {
+			return $named;
+		}
+
+		return null;
 	}
 
 	private function renderError( Parser $parser, string $messageKey, string $insertion ): string {
