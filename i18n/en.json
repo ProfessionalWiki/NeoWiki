@@ -108,13 +108,7 @@
 	"neowiki-schema-display-required-yes": "Yes",
 	"neowiki-schema-display-required-no": "No",
 
-	"neowiki-cypher-raw-error-empty-query": "Empty Cypher query provided",
-	"neowiki-cypher-raw-error-write-query": "Write queries are not allowed",
-	"neowiki-cypher-raw-error-query-failed": "Query execution failed: $1",
 	"neowiki-cypher-raw-error-json-encode": "Failed to encode query result as JSON",
-
-	"neowiki-lua-query-error-empty-query": "nw.query: the Cypher query must not be empty.",
-	"neowiki-lua-query-error-write-query": "nw.query: only read-only Cypher queries are allowed.",
 
 	"neowiki-schema-editor-summary-default": "Update schema via NeoWiki UI",
 	"neowiki-schema-editor-success": "Updated $1 schema",

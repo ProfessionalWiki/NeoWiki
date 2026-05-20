@@ -12,13 +12,7 @@
 	"specialpages-group-neowiki": "Group heading for NeoWiki special pages on [[Special:SpecialPages]].",
 	"neowiki-special-schemas": "Title and description of the [[Special:Schemas]] page.",
 	"neowiki-schema-label": "Label used to identify the schema. $1 is the schema name or link.",
-	"neowiki-cypher-raw-error-empty-query": "Error message shown when the cypher_raw parser function is called with an empty query.",
-	"neowiki-cypher-raw-error-write-query": "Error message shown when a write query is rejected by the cypher_raw parser function.",
-	"neowiki-cypher-raw-error-query-failed": "Error message shown when Cypher query execution fails. $1 is the exception message.",
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
-
-	"neowiki-lua-query-error-empty-query": "Error raised by the nw.query() Lua function when called with an empty Cypher query.",
-	"neowiki-lua-query-error-write-query": "Error raised by the nw.query() Lua function when the Cypher query contains write or non-read-only operations.",
 
 	"neowiki-page-tools-label": "Heading for the NeoWiki section in the MediaWiki sidebar (shown as a group label in legacy skins and inside the page tools menu in modern Vector).",
 	"neowiki-page-tools-create-subject": "Label for the sidebar link that opens the 'create subject' dialog. The dialog creates a main subject if the page has none, or a child subject otherwise.",

@@ -10,6 +10,7 @@ use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua\CypherQueryRunner;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class ScribuntoLuaLibrary extends LibraryBase {
@@ -42,12 +43,8 @@ class ScribuntoLuaLibrary extends LibraryBase {
 
 	private function getCypherQueryRunner(): CypherQueryRunner {
 		if ( $this->cypherQueryRunner === null ) {
-			$extension = NeoWikiExtension::getInstance();
-
 			$this->cypherQueryRunner = new CypherQueryRunner(
-				$extension->getNeo4jPlugin(),
-				$extension->getCypherQueryValidator(),
-				new CypherResultConverter(),
+				NeoWikiExtension::getInstance()->newCypherQueryService()
 			);
 		}
 

@@ -7,6 +7,12 @@ order: 3
 NeoWiki's REST API lives under `/neowiki/v0/*`. There is no hand-written reference — MediaWiki core's
 `ModuleSpecHandler` emits an OpenAPI 3.0 document from each handler's declared parameters and body schema.
 
+## Query endpoint
+
+For the public Cypher query endpoint (`POST /neowiki/v0/query/cypher`), see the dedicated
+[Query API](query-api.md) documentation, which covers the full request/response contract, discovery
+flow, error types, resource limits, permissions, and deployment notes.
+
 ## Browsing the spec
 
 The spec endpoints are not registered by default. Add this to `LocalSettings.php` to expose them:
