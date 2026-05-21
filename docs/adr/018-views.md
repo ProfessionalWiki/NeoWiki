@@ -104,6 +104,7 @@ A View is what users see on a page — a rendered Subject. The `{{#view}}` parse
 
 * `{{#view: }}` — renders the current page's Main Subject with the default infobox (no Layout)
 * `{{#view: SubjectId}}` — renders the specified Subject with the default infobox (no Layout)
+* `{{#view: subject=SubjectId}}` — same, with the Subject specified as a named argument
 * `{{#view: layout=LayoutName}}` — renders the current page's Main Subject with the specified Layout
 * `{{#view: SubjectId | layout=LayoutName}}` — renders the specified Subject using the Layout's Display Rules
 * `{{#view: subject=SubjectId | layout=LayoutName}}` — same, with the Subject specified as a named argument

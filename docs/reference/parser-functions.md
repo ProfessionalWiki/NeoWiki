@@ -27,6 +27,7 @@ and how.
 ```
 {{#view: }}                                           renders the current page's Main Subject
 {{#view: <subjectId>}}                                renders the specified Subject
+{{#view: subject=<subjectId>}}                        same, with the Subject specified as a named argument
 {{#view: layout=<layoutName>}}                        renders the current page's Main Subject with the named Layout
 {{#view: <subjectId> | layout=<layoutName>}}          renders the specified Subject with the named Layout
 {{#view: subject=<subjectId> | layout=<layoutName>}}  same, with the Subject specified as a named argument

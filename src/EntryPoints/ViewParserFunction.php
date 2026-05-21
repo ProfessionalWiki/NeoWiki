@@ -102,7 +102,7 @@ class ViewParserFunction {
 		$namedSubject = $named[self::ARG_SUBJECT] ?? '';
 
 		if ( $positionalSubject !== '' && $namedSubject !== '' ) {
-			return $this->renderError( $parser, 'neowiki-view-error-conflicting-subject', '' );
+			return $this->renderError( $parser, 'neowiki-view-error-conflicting-subject' );
 		}
 
 		$subjectId = $this->pickSubjectId( $positionalSubject, $namedSubject );
@@ -123,10 +123,12 @@ class ViewParserFunction {
 		return null;
 	}
 
-	private function renderError( Parser $parser, string $messageKey, string $insertion ): string {
-		return '<div class="error">'
-			. $parser->msg( $messageKey, $insertion )->escaped()
-			. '</div>';
+	private function renderError( Parser $parser, string $messageKey, ?string $insertion = null ): string {
+		$message = $insertion === null
+			? $parser->msg( $messageKey )
+			: $parser->msg( $messageKey, $insertion );
+
+		return '<div class="error">' . $message->escaped() . '</div>';
 	}
 
 	private function resolveMainSubjectId( Parser $parser ): ?string {
