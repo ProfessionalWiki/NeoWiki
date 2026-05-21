@@ -110,9 +110,9 @@
 
 	"neowiki-cypher-raw-error-json-encode": "Failed to encode query result as JSON",
 
-	"neowiki-view-error-extra-positional": "Unexpected extra positional argument: <code>$1</code>",
-	"neowiki-view-error-conflicting-subject": "Subject specified both positionally and as <code>subject=</code> named argument.",
-	"neowiki-view-error-unknown-arg": "Unknown argument: <code>$1</code>",
+	"neowiki-view-error-extra-positional": "Unexpected extra positional argument: $1",
+	"neowiki-view-error-conflicting-subject": "Subject specified both positionally and as a named subject argument.",
+	"neowiki-view-error-unknown-arg": "Unknown argument: $1",
 
 	"neowiki-schema-editor-summary-default": "Update schema via NeoWiki UI",
 	"neowiki-schema-editor-success": "Updated $1 schema",
