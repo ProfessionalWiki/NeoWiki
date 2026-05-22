@@ -48,6 +48,7 @@ class Neo4jValueBuilderRegistryTest extends TestCase {
 		$this->assertTrue( $registry->hasBuilder( 'url' ) );
 		$this->assertTrue( $registry->hasBuilder( 'number' ) );
 		$this->assertTrue( $registry->hasBuilder( 'dateTime' ) );
+		$this->assertTrue( $registry->hasBuilder( 'date' ) );
 	}
 
 	public function testHasBuilderReturnsFalseForUnregisteredType(): void {

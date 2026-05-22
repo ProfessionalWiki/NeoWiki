@@ -55,6 +55,8 @@ export * from './domain/SubjectWithContext';
 export * from './domain/Value';
 export * from './domain/propertyTypes/DateTime';
 export * from './domain/propertyTypes/dateTimeConversion';
+export * from './domain/propertyTypes/Date';
+export * from './domain/propertyTypes/dateConversion';
 export * from './domain/propertyTypes/Number';
 export * from './domain/propertyTypes/Relation';
 export * from './domain/propertyTypes/Select';
@@ -106,6 +108,7 @@ export { default as SchemaCreator } from './components/SchemaCreator/SchemaCreat
 export { default as SchemaDisplay } from './components/SchemaDisplay/SchemaDisplay.vue';
 export { default as SchemaDisplayHeader } from './components/SchemaDisplay/SchemaDisplayHeader.vue';
 export { default as DateTimeAttributesEditor } from './components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
+export { default as DateAttributesEditor } from './components/SchemaEditor/Property/DateAttributesEditor.vue';
 export { default as NumberAttributesEditor } from './components/SchemaEditor/Property/NumberAttributesEditor.vue';
 export { default as RelationAttributesEditor } from './components/SchemaEditor/Property/RelationAttributesEditor.vue';
 export { default as SelectAttributesEditor } from './components/SchemaEditor/Property/SelectAttributesEditor.vue';
@@ -126,6 +129,8 @@ export { default as SubjectStatementsView } from './components/SubjectsManager/S
 export { default as SubjectsManagerPage } from './components/SubjectsManager/SubjectsManagerPage.vue';
 export { default as DateTimeDisplay } from './components/Value/DateTimeDisplay.vue';
 export { default as DateTimeInput } from './components/Value/DateTimeInput.vue';
+export { default as DateDisplay } from './components/Value/DateDisplay.vue';
+export { default as DateInput } from './components/Value/DateInput.vue';
 export { default as NumberDisplay } from './components/Value/NumberDisplay.vue';
 export { default as NumberInput } from './components/Value/NumberInput.vue';
 export { default as RelationDisplay } from './components/Value/RelationDisplay.vue';
