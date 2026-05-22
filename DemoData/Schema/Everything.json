@@ -81,6 +81,17 @@
 			],
 			"multiple": true
 		},
+		"boolean/boolean": {
+			"type": "boolean"
+		},
+		"boolean/boolean (default true)": {
+			"type": "boolean",
+			"default": true
+		},
+		"boolean/boolean (default false)": {
+			"type": "boolean",
+			"default": false
+		},
 		"relation/relation": {
 			"type": "relation",
 			"relation": "Has product",

@@ -20,6 +20,9 @@
 	"neowiki-property-type-select": "Select",
 	"neowiki-property-type-datetime": "Date & Time",
 	"neowiki-property-type-date": "Date",
+	"neowiki-property-type-boolean": "Boolean",
+	"neowiki-boolean-true": "Yes",
+	"neowiki-boolean-false": "No",
 
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 

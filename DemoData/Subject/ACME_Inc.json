@@ -23,6 +23,10 @@
 					"type": "number",
 					"value": 42
 				},
+				"Is public": {
+					"type": "boolean",
+					"value": true
+				},
 				"Products": {
 					"type": "relation",
 					"value": [

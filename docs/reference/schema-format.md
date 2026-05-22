@@ -199,6 +199,29 @@ Example:
 }
 ```
 
+### Boolean (`boolean`)
+
+A true/false value, edited via a toggle switch and displayed as "Yes" or "No".
+
+```json
+{
+  "type": "boolean"
+}
+```
+
+This type has no type-specific fields beyond the [common fields](#common-fields).
+The `default` may be `true`, `false`, or `null` (no default).
+
+Example:
+
+```json
+{
+  "type": "boolean",
+  "default": false,
+  "description": "Whether the company is publicly traded"
+}
+```
+
 ## Reserved Property Types
 
 The following types are defined in the JSON schema but not yet implemented:
@@ -211,7 +234,6 @@ The following types are defined in the JSON schema but not yet implemented:
 - `duration` - Time durations
 - `currency` - Monetary values
 - `progress` - Progress indicators
-- `checkbox` - Boolean checkbox
 
 ## REST API
 
