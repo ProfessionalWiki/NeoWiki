@@ -11,12 +11,15 @@ import { SelectType } from '@/domain/propertyTypes/Select.ts';
 import SelectDisplay from '@/components/Value/SelectDisplay.vue';
 import { RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { DateTimeType } from '@/domain/propertyTypes/DateTime.ts';
+import { DateType } from '@/domain/propertyTypes/Date.ts';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry.ts';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
 import Infobox from '@/components/Views/Infobox.vue';
 import RelationDisplay from '@/components/Value/RelationDisplay.vue';
 import DateTimeDisplay from '@/components/Value/DateTimeDisplay.vue';
 import DateTimeInput from '@/components/Value/DateTimeInput.vue';
+import DateDisplay from '@/components/Value/DateDisplay.vue';
+import DateInput from '@/components/Value/DateInput.vue';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
 import { RestSchemaRepository } from '@/persistence/RestSchemaRepository.ts';
@@ -45,13 +48,14 @@ import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import { Neo } from '@/Neo.ts';
 // import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
-import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconClock } from '@wikimedia/codex-icons';
+import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconClock, cdxIconCalendar } from '@wikimedia/codex-icons';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import UrlAttributesEditor from '@/components/SchemaEditor/Property/UrlAttributesEditor.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import DateTimeAttributesEditor from '@/components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
+import DateAttributesEditor from '@/components/SchemaEditor/Property/DateAttributesEditor.vue';
 import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader.ts';
@@ -124,6 +128,14 @@ export class NeoWikiExtension {
 			attributesEditor: DateTimeAttributesEditor,
 			label: 'neowiki-property-type-datetime',
 			icon: cdxIconClock,
+		} );
+
+		registry.registerType( DateType.typeName, {
+			valueDisplayComponent: DateDisplay,
+			valueEditor: DateInput,
+			attributesEditor: DateAttributesEditor,
+			label: 'neowiki-property-type-date',
+			icon: cdxIconCalendar,
 		} );
 
 		return registry;

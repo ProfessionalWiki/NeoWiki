@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\PropertyType;
 
 use OutOfBoundsException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
@@ -27,6 +28,7 @@ class PropertyTypeRegistry implements PropertyTypeLookup {
 		$registry->registerType( new SelectType() );
 		$registry->registerType( new RelationType() );
 		$registry->registerType( new DateTimeType() );
+		$registry->registerType( new DateType() );
 		return $registry;
 	}
 
