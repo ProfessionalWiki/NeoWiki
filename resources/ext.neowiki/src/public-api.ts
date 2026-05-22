@@ -53,6 +53,7 @@ export * from './domain/SubjectRepository';
 export * from './domain/SubjectValidator';
 export * from './domain/SubjectWithContext';
 export * from './domain/Value';
+export * from './domain/propertyTypes/Boolean';
 export * from './domain/propertyTypes/DateTime';
 export * from './domain/propertyTypes/dateTimeConversion';
 export * from './domain/propertyTypes/Date';
