@@ -149,8 +149,16 @@ class ViewParserFunctionTest extends TestCase {
 		$subject = $this->createStub( Subject::class );
 		$subject->method( 'getId' )->willReturn( new SubjectId( $subjectId ) );
 
+		return $this->createRepositoryWithMainSubject( $subject );
+	}
+
+	private function createRepositoryWithNoMainSubject(): SubjectContentRepository {
+		return $this->createRepositoryWithMainSubject( null );
+	}
+
+	private function createRepositoryWithMainSubject( ?Subject $mainSubject ): SubjectContentRepository {
 		$pageSubjects = $this->createStub( PageSubjects::class );
-		$pageSubjects->method( 'getMainSubject' )->willReturn( $subject );
+		$pageSubjects->method( 'getMainSubject' )->willReturn( $mainSubject );
 
 		$subjectContent = $this->createStub( SubjectContent::class );
 		$subjectContent->method( 'getPageSubjects' )->willReturn( $pageSubjects );
@@ -164,19 +172,6 @@ class ViewParserFunctionTest extends TestCase {
 	private function createRepositoryWithNoContent(): SubjectContentRepository {
 		$repo = $this->createStub( SubjectContentRepository::class );
 		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( null );
-
-		return $repo;
-	}
-
-	private function createRepositoryWithNoMainSubject(): SubjectContentRepository {
-		$pageSubjects = $this->createStub( PageSubjects::class );
-		$pageSubjects->method( 'getMainSubject' )->willReturn( null );
-
-		$subjectContent = $this->createStub( SubjectContent::class );
-		$subjectContent->method( 'getPageSubjects' )->willReturn( $pageSubjects );
-
-		$repo = $this->createStub( SubjectContentRepository::class );
-		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( $subjectContent );
 
 		return $repo;
 	}
