@@ -54,8 +54,9 @@ Subject, relation, and option IDs:
    `NeoWikiHooks::handleContentPage` (`BeforePageDisplay`). Don't `{{#view}}` the same subject in
    the page's wikitext, or you get two infoboxes. Use `{{#view}}` only on plain `Page/` hubs (which
    have no Main Subject) or to embed a different subject.
-4. **`{{#view:id|LayoutName}}` is positional.** The named form `{{#view:id|layout=LayoutName}}` is
-   silently ignored.
+4. **`{{#view}}` takes one positional Subject ID plus named args.** Write
+   `{{#view:id|layout=LayoutName}}` or `{{#view:subject=id|layout=LayoutName}}`. The old
+   positional form `{{#view:id|LayoutName}}` is gone and now renders a visible parser error.
 
 ## Cypher gotchas
 

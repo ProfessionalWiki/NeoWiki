@@ -14,6 +14,10 @@
 	"neowiki-schema-label": "Label used to identify the schema. $1 is the schema name or link.",
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
 
+	"neowiki-view-error-extra-positional": "Error shown when {{#view}} is called with more than one positional argument. $1 is the offending extra argument value.",
+	"neowiki-view-error-conflicting-subject": "Error shown when {{#view}} receives a Subject ID as both a positional argument and a named <code>subject=</code> argument.",
+	"neowiki-view-error-unknown-arg": "Error shown when {{#view}} receives an unrecognized named argument. $1 is the offending argument name.",
+
 	"neowiki-page-tools-label": "Heading for the NeoWiki section in the MediaWiki sidebar (shown as a group label in legacy skins and inside the page tools menu in modern Vector).",
 	"neowiki-page-tools-create-subject": "Label for the sidebar link that opens the 'create subject' dialog. The dialog creates a main subject if the page has none, or a child subject otherwise.",
 	"neowiki-page-tools-edit-json": "Label for the sidebar link that navigates to Special:NeoJson for the current page. Only visible when development UIs are enabled.",

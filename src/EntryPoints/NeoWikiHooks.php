@@ -141,7 +141,7 @@ class NeoWikiHooks {
 				$parserFunction = new ViewParserFunction(
 					NeoWikiExtension::getInstance()->newSubjectContentRepository()
 				);
-				return $parserFunction->handle( $parser, $args[0] ?? '', $args[1] ?? '' );
+				return $parserFunction->handle( $parser, ...$args );
 			}
 		);
 

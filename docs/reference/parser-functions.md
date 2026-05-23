@@ -25,18 +25,21 @@ and how.
 ### Syntax
 
 ```
-{{#view: }}                              renders the current page's Main Subject
-{{#view: <subjectId>}}                   renders the specified Subject
-{{#view: <subjectId> | <layoutName>}}    renders the specified Subject with the named Layout
-{{#view:  | <layoutName>}}               renders the current page's Main Subject with the named Layout
+{{#view: }}                                           renders the current page's Main Subject
+{{#view: <subjectId>}}                                renders the specified Subject
+{{#view: subject=<subjectId>}}                        same, with the Subject specified as a named argument
+{{#view: layout=<layoutName>}}                        renders the current page's Main Subject with the named Layout
+{{#view: <subjectId> | layout=<layoutName>}}          renders the specified Subject with the named Layout
+{{#view: subject=<subjectId> | layout=<layoutName>}}  same, with the Subject specified as a named argument
 ```
 
 ### Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `subjectId` (positional) | Subject ID to render. Defaults to the current page's Main Subject. |
-| `layoutName` (positional) | Layout to apply. Without one, all properties are shown in schema order. |
+| `<subjectId>` (positional) | Subject ID to render. Defaults to the current page's Main Subject. |
+| `subject=<subjectId>` | Named alternative to the positional form. Cannot be combined with the positional form. |
+| `layout=<layoutName>` | Layout to apply. Without one, all properties are shown in schema order. |
 
 ### Notes
 
@@ -49,9 +52,13 @@ and how.
 ```
 {{#view: }}
 {{#view: s1abc5def6ghi78}}
-{{#view: s1abc5def6ghi78 | CompanyOverview}}
-{{#view:  | CompanyOverview}}
+{{#view: layout=CompanyOverview}}
+{{#view: s1abc5def6ghi78 | layout=CompanyOverview}}
+{{#view: subject=s1abc5def6ghi78 | layout=CompanyOverview}}
 ```
+
+Unknown named arguments, more than one positional argument, or specifying the
+Subject both positionally and as `subject=` produce a visible parser error.
 
 ## `{{#neowiki_value}}`
 
