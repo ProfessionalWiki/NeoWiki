@@ -20,6 +20,119 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentReposit
  */
 class ViewParserFunctionTest extends TestCase {
 
+	private const string MAIN_SUBJECT_ID = 's11111111111111';
+	private const string EXPLICIT_SUBJECT_ID = 's22222222222222';
+	private const string OTHER_SUBJECT_ID = 's33333333333333';
+
+	public function testEmitsPlaceholderWithExplicitPositionalSubject(): void {
+		$result = $this->callView( self::EXPLICIT_SUBJECT_ID );
+
+		$this->assertRendersSubject( $result, self::EXPLICIT_SUBJECT_ID );
+	}
+
+	public function testEmitsPlaceholderWithLayoutAsNamedArg(): void {
+		$result = $this->callView( 'layout=Finances' );
+
+		$this->assertRendersSubject( $result, self::MAIN_SUBJECT_ID, 'Finances' );
+	}
+
+	public function testEmitsPlaceholderWithSubjectAsNamedArg(): void {
+		$result = $this->callView( 'subject=' . self::EXPLICIT_SUBJECT_ID );
+
+		$this->assertRendersSubject( $result, self::EXPLICIT_SUBJECT_ID );
+	}
+
+	public function testEmitsPlaceholderWithSubjectAndLayoutNamedArgs(): void {
+		$result = $this->callView( 'subject=' . self::EXPLICIT_SUBJECT_ID, 'layout=Finances' );
+
+		$this->assertRendersSubject( $result, self::EXPLICIT_SUBJECT_ID, 'Finances' );
+	}
+
+	public function testEmitsPlaceholderWithMixedPositionalAndNamed(): void {
+		$result = $this->callView( self::EXPLICIT_SUBJECT_ID, 'layout=Finances' );
+
+		$this->assertRendersSubject( $result, self::EXPLICIT_SUBJECT_ID, 'Finances' );
+	}
+
+	public function testEmitsPlaceholderWhenNamedArgComesBeforePositional(): void {
+		$result = $this->callView( 'layout=Finances', self::EXPLICIT_SUBJECT_ID );
+
+		$this->assertRendersSubject( $result, self::EXPLICIT_SUBJECT_ID, 'Finances' );
+	}
+
+	public function testTreatsEmptyNamedSubjectAsFallbackToMainSubject(): void {
+		$result = $this->callView( 'subject=', 'layout=Finances' );
+
+		$this->assertRendersSubject( $result, self::MAIN_SUBJECT_ID, 'Finances' );
+	}
+
+	public function testTreatsEmptyNamedLayoutAsUnset(): void {
+		$result = $this->callView( self::EXPLICIT_SUBJECT_ID, 'layout=' );
+
+		$this->assertRendersSubject( $result, self::EXPLICIT_SUBJECT_ID );
+	}
+
+	public function testFallsBackToMainSubjectWhenNoArgs(): void {
+		$result = $this->callView();
+
+		$this->assertRendersSubject( $result, self::MAIN_SUBJECT_ID );
+	}
+
+	public function testReturnsEmptyStringWhenNoSubjectAvailable(): void {
+		$parserFunction = new ViewParserFunction( $this->createRepositoryWithNoContent() );
+
+		$result = $parserFunction->handle( $this->createMockParser() );
+
+		$this->assertSame( '', $result );
+	}
+
+	public function testReturnsEmptyStringWhenPageHasNoMainSubject(): void {
+		$parserFunction = new ViewParserFunction( $this->createRepositoryWithNoMainSubject() );
+
+		$result = $parserFunction->handle( $this->createMockParser() );
+
+		$this->assertSame( '', $result );
+	}
+
+	public function testRendersErrorOnExtraPositional(): void {
+		$result = $this->callView( self::EXPLICIT_SUBJECT_ID, self::OTHER_SUBJECT_ID );
+
+		$this->assertRendersError( $result, 'neowiki-view-error-extra-positional', self::OTHER_SUBJECT_ID );
+	}
+
+	public function testOldPositionalLayoutFormProducesExtraPositionalError(): void {
+		$result = $this->callView( self::EXPLICIT_SUBJECT_ID, 'Finances' );
+
+		$this->assertRendersError( $result, 'neowiki-view-error-extra-positional', 'Finances' );
+	}
+
+	public function testRendersErrorOnConflictingSubject(): void {
+		$result = $this->callView( self::EXPLICIT_SUBJECT_ID, 'subject=' . self::OTHER_SUBJECT_ID );
+
+		$this->assertRendersError( $result, 'neowiki-view-error-conflicting-subject' );
+	}
+
+	public function testRendersErrorOnUnknownNamedArg(): void {
+		$result = $this->callView( 'layuot=Finances' );
+
+		$this->assertRendersError( $result, 'neowiki-view-error-unknown-arg', 'layuot' );
+	}
+
+	public function testRendersErrorOnArgWithEmptyName(): void {
+		$result = $this->callView( '=Finances' );
+
+		$this->assertRendersError( $result, 'neowiki-view-error-unknown-arg', '=Finances' );
+	}
+
+	private function callView( string ...$args ): string|array {
+		return $this->newParserFunction( self::MAIN_SUBJECT_ID )
+			->handle( $this->createMockParser(), ...$args );
+	}
+
+	private function newParserFunction( string $mainSubjectId ): ViewParserFunction {
+		return new ViewParserFunction( $this->createRepositoryWithMainSubjectId( $mainSubjectId ) );
+	}
+
 	private function createMockParser(): Parser {
 		$title = $this->createStub( Title::class );
 
@@ -68,201 +181,35 @@ class ViewParserFunctionTest extends TestCase {
 		return $repo;
 	}
 
-	private function newParserFunction( string $mainSubjectId ): ViewParserFunction {
-		return new ViewParserFunction( $this->createRepositoryWithMainSubjectId( $mainSubjectId ) );
-	}
-
-	public function testEmitsPlaceholderWithExplicitPositionalSubject(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle( $this->createMockParser(), 's22222222222222' );
-
-		$this->assertIsArray( $result );
+	/**
+	 * @param string|array{0: string, noparse: true, isHTML: true} $result
+	 */
+	private function assertRendersSubject( string|array $result, string $subjectId, ?string $layoutName = null ): void {
+		$this->assertIsArray( $result, 'Expected a placeholder array; got an error string or empty string.' );
 		$this->assertTrue( $result['isHTML'] );
 		$this->assertTrue( $result['noparse'] );
-		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s22222222222222"', $result[0] );
-		$this->assertStringNotContainsString( 'data-mw-neowiki-layout-name', $result[0] );
+
+		$html = $result[0];
+		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="' . $subjectId . '"', $html );
+
+		if ( $layoutName === null ) {
+			$this->assertStringNotContainsString( 'data-mw-neowiki-layout-name', $html );
+		} else {
+			$this->assertStringContainsString( 'data-mw-neowiki-layout-name="' . $layoutName . '"', $html );
+		}
 	}
 
-	public function testEmitsPlaceholderWithLayoutAsNamedArg(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle( $this->createMockParser(), 'layout=Finances' );
-
-		$this->assertIsArray( $result );
-		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s11111111111111"', $result[0] );
-		$this->assertStringContainsString( 'data-mw-neowiki-layout-name="Finances"', $result[0] );
-	}
-
-	public function testEmitsPlaceholderWithSubjectAsNamedArg(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle( $this->createMockParser(), 'subject=s22222222222222' );
-
-		$this->assertIsArray( $result );
-		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s22222222222222"', $result[0] );
-		$this->assertStringNotContainsString( 'data-mw-neowiki-layout-name', $result[0] );
-	}
-
-	public function testEmitsPlaceholderWithSubjectAndLayoutNamedArgs(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle(
-			$this->createMockParser(),
-			'subject=s22222222222222',
-			'layout=Finances'
-		);
-
-		$this->assertIsArray( $result );
-		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s22222222222222"', $result[0] );
-		$this->assertStringContainsString( 'data-mw-neowiki-layout-name="Finances"', $result[0] );
-	}
-
-	public function testEmitsPlaceholderWithMixedPositionalAndNamed(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle(
-			$this->createMockParser(),
-			's22222222222222',
-			'layout=Finances'
-		);
-
-		$this->assertIsArray( $result );
-		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s22222222222222"', $result[0] );
-		$this->assertStringContainsString( 'data-mw-neowiki-layout-name="Finances"', $result[0] );
-	}
-
-	public function testEmitsPlaceholderWhenNamedArgComesBeforePositional(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle(
-			$this->createMockParser(),
-			'layout=Finances',
-			's22222222222222'
-		);
-
-		$this->assertIsArray( $result );
-		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s22222222222222"', $result[0] );
-		$this->assertStringContainsString( 'data-mw-neowiki-layout-name="Finances"', $result[0] );
-	}
-
-	public function testTreatsEmptyNamedSubjectAsFallbackToMainSubject(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle(
-			$this->createMockParser(),
-			'subject=',
-			'layout=Finances'
-		);
-
-		$this->assertIsArray( $result );
-		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s11111111111111"', $result[0] );
-		$this->assertStringContainsString( 'data-mw-neowiki-layout-name="Finances"', $result[0] );
-	}
-
-	public function testTreatsEmptyNamedLayoutAsUnset(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle(
-			$this->createMockParser(),
-			's22222222222222',
-			'layout='
-		);
-
-		$this->assertIsArray( $result );
-		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s22222222222222"', $result[0] );
-		$this->assertStringNotContainsString( 'data-mw-neowiki-layout-name', $result[0] );
-	}
-
-	public function testFallsBackToMainSubjectWhenNoArgs(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle( $this->createMockParser() );
-
-		$this->assertIsArray( $result );
-		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s11111111111111"', $result[0] );
-	}
-
-	public function testReturnsEmptyStringWhenNoSubjectAvailable(): void {
-		$parserFunction = new ViewParserFunction( $this->createRepositoryWithNoContent() );
-
-		$result = $parserFunction->handle( $this->createMockParser() );
-
-		$this->assertSame( '', $result );
-	}
-
-	public function testReturnsEmptyStringWhenPageHasNoMainSubject(): void {
-		$parserFunction = new ViewParserFunction( $this->createRepositoryWithNoMainSubject() );
-
-		$result = $parserFunction->handle( $this->createMockParser() );
-
-		$this->assertSame( '', $result );
-	}
-
-	public function testRendersErrorOnExtraPositional(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle(
-			$this->createMockParser(),
-			's22222222222222',
-			's33333333333333'
-		);
-
-		$this->assertIsString( $result );
+	/**
+	 * @param string|array{0: string, noparse: true, isHTML: true} $result
+	 */
+	private function assertRendersError( string|array $result, string $messageKey, ?string $insertion = null ): void {
+		$this->assertIsString( $result, 'Expected an error HTML string; got a placeholder array.' );
 		$this->assertStringContainsString( 'class="error"', $result );
-		$this->assertStringContainsString( 'neowiki-view-error-extra-positional', $result );
-		$this->assertStringContainsString( 's33333333333333', $result );
-	}
+		$this->assertStringContainsString( $messageKey, $result );
 
-	public function testOldPositionalLayoutFormProducesExtraPositionalError(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle(
-			$this->createMockParser(),
-			's22222222222222',
-			'Finances'
-		);
-
-		$this->assertIsString( $result );
-		$this->assertStringContainsString( 'class="error"', $result );
-		$this->assertStringContainsString( 'neowiki-view-error-extra-positional', $result );
-		$this->assertStringContainsString( 'Finances', $result );
-	}
-
-	public function testRendersErrorOnConflictingSubject(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle(
-			$this->createMockParser(),
-			's22222222222222',
-			'subject=s33333333333333'
-		);
-
-		$this->assertIsString( $result );
-		$this->assertStringContainsString( 'class="error"', $result );
-		$this->assertStringContainsString( 'neowiki-view-error-conflicting-subject', $result );
-	}
-
-	public function testRendersErrorOnUnknownNamedArg(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle( $this->createMockParser(), 'layuot=Finances' );
-
-		$this->assertIsString( $result );
-		$this->assertStringContainsString( 'class="error"', $result );
-		$this->assertStringContainsString( 'neowiki-view-error-unknown-arg', $result );
-		$this->assertStringContainsString( 'layuot', $result );
-	}
-
-	public function testRendersErrorOnArgWithEmptyName(): void {
-		$parserFunction = $this->newParserFunction( 's11111111111111' );
-
-		$result = $parserFunction->handle( $this->createMockParser(), '=Finances' );
-
-		$this->assertIsString( $result );
-		$this->assertStringContainsString( 'class="error"', $result );
-		$this->assertStringContainsString( 'neowiki-view-error-unknown-arg', $result );
-		$this->assertStringContainsString( '=Finances', $result );
+		if ( $insertion !== null ) {
+			$this->assertStringContainsString( $insertion, $result );
+		}
 	}
 
 }
