@@ -108,6 +108,7 @@ export { default as NeoWikiApp } from './components/NeoWikiApp.vue';
 export { default as SchemaCreator } from './components/SchemaCreator/SchemaCreator.vue';
 export { default as SchemaDisplay } from './components/SchemaDisplay/SchemaDisplay.vue';
 export { default as SchemaDisplayHeader } from './components/SchemaDisplay/SchemaDisplayHeader.vue';
+export { default as BooleanAttributesEditor } from './components/SchemaEditor/Property/BooleanAttributesEditor.vue';
 export { default as DateTimeAttributesEditor } from './components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
 export { default as DateAttributesEditor } from './components/SchemaEditor/Property/DateAttributesEditor.vue';
 export { default as NumberAttributesEditor } from './components/SchemaEditor/Property/NumberAttributesEditor.vue';
@@ -128,6 +129,8 @@ export { default as SubjectEditor } from './components/SubjectEditor/SubjectEdit
 export { default as SubjectEditorDialog } from './components/SubjectEditor/SubjectEditorDialog.vue';
 export { default as SubjectStatementsView } from './components/SubjectsManager/SubjectStatementsView.vue';
 export { default as SubjectsManagerPage } from './components/SubjectsManager/SubjectsManagerPage.vue';
+export { default as BooleanDisplay } from './components/Value/BooleanDisplay.vue';
+export { default as BooleanInput } from './components/Value/BooleanInput.vue';
 export { default as DateTimeDisplay } from './components/Value/DateTimeDisplay.vue';
 export { default as DateTimeInput } from './components/Value/DateTimeInput.vue';
 export { default as DateDisplay } from './components/Value/DateDisplay.vue';
