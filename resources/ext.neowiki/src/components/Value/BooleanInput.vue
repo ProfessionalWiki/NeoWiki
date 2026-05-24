@@ -4,10 +4,8 @@
 		:messages="validationError === null ? {} : { error: validationError }"
 		:hide-label="true"
 	>
-		<CdxToggleSwitch
+		<CdxCheckbox
 			:model-value="internalValue"
-			:align-switch="true"
-			:label="props.label"
 			@update:model-value="onInput"
 		>
 			{{ props.label }}
@@ -18,7 +16,7 @@
 				class="ext-neowiki-value-input__description-icon"
 				size="small"
 			/>
-		</CdxToggleSwitch>
+		</CdxCheckbox>
 	</CdxField>
 </template>
 
@@ -28,7 +26,7 @@ import type { Value } from '@/domain/Value';
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { CdxField, CdxIcon, CdxToggleSwitch } from '@wikimedia/codex';
+import { CdxCheckbox, CdxField, CdxIcon } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newBooleanValue, BooleanValue, ValueType } from '@/domain/Value';
 import { BooleanType, BooleanProperty } from '@/domain/propertyTypes/Boolean.ts';
