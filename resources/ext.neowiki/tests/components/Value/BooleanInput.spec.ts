@@ -21,7 +21,7 @@ describe( 'BooleanInput', () => {
 		return createTestWrapper( BooleanInput, {
 			modelValue: undefined,
 			label: 'Test Label',
-			property: newBooleanProperty( {} ),
+			property: newBooleanProperty( { name: 'Is public' } ),
 			...props,
 		} );
 	}
@@ -30,12 +30,27 @@ describe( 'BooleanInput', () => {
 		return ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue();
 	}
 
-	it( 'renders a CdxCheckbox wrapped in a CdxField', () => {
+	it( 'renders a CdxCheckbox wrapped in a CdxField, inline-labelled with the property name', () => {
 		const wrapper = newWrapper();
 
 		expect( wrapper.findComponent( CdxField ).exists() ).toBe( true );
 		expect( wrapper.findComponent( CdxCheckbox ).exists() ).toBe( true );
-		expect( wrapper.text() ).toContain( 'Test Label' );
+		expect( wrapper.findComponent( CdxCheckbox ).text() ).toContain( 'Is public' );
+	} );
+
+	it( 'shows the caller-supplied label as the field heading when it differs from the property name (schema-editor case)', () => {
+		const wrapper = newWrapper( { label: 'Initial value' } );
+
+		expect( wrapper.findComponent( CdxField ).props( 'hideLabel' ) ).toBe( false );
+		expect( wrapper.text() ).toContain( 'Initial value' );
+		expect( wrapper.findComponent( CdxCheckbox ).text() ).toContain( 'Is public' );
+	} );
+
+	it( 'hides the field heading when the caller-supplied label equals the property name (subject-editor case)', () => {
+		const wrapper = newWrapper( { label: 'Is public' } );
+
+		expect( wrapper.findComponent( CdxField ).props( 'hideLabel' ) ).toBe( true );
+		expect( wrapper.findComponent( CdxCheckbox ).text() ).toContain( 'Is public' );
 	} );
 
 	it( 'renders the checkbox unchecked when modelValue is BooleanValue(false)', () => {
