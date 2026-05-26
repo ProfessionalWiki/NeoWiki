@@ -15,6 +15,24 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
  *
  * Leaves non-select entries, null entries, and properties not found
  * on the Schema untouched.
+ *
+ * ## Two methods, two error policies
+ *
+ * - {@see self::resolve()} throws `InvalidArgumentException` on any unresolvable
+ *   select value. Used by the write paths (`CreateSubjectAction`,
+ *   `ReplaceSubjectAction`); the throw becomes an HTTP 400.
+ * - {@see self::resolveOrLeave()} never throws. Unresolvable values are left in
+ *   place so downstream validation can surface them as `invalid-option`
+ *   `Violation`s with proper `valuePartIndex`. Used by the validate-endpoint
+ *   queries (`ValidateSubjectQuery`, `ValidateSubjectUpdateQuery`); the
+ *   non-throwing behavior is what lets the validate endpoints return HTTP 200
+ *   with per-part violations rather than HTTP 500 on bad input.
+ *
+ * The duplication is the foundation-tier cost of running the validator only on
+ * the validate path. Once the enforcement tier runs the validator on write
+ * paths too, the throwing form becomes redundant — the validator's
+ * `invalid-option` check produces the same rejection outcome with a richer
+ * error shape — and the two methods collapse to one.
  */
 readonly class SelectStatementResolver {
 
