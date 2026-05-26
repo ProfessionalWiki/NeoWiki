@@ -313,6 +313,7 @@
 				"neowiki-boolean-false",
 				"neowiki-infobox-type",
 				"neowiki-infobox-edit-link",
+				"neowiki-field-label-required",
 				"neowiki-field-required",
 				"neowiki-field-unique",
 				"neowiki-field-min-length",

@@ -145,6 +145,7 @@
 	"neowiki-select-placeholder": "Placeholder text shown in the select dropdown before any option is chosen.",
 	"neowiki-select-no-results": "Message shown in the multi-select dropdown when the typed text does not match any available option.",
 	"neowiki-field-invalid-datetime": "Validation error shown when the entered date and time value cannot be parsed. DateTime values must be strict ISO 8601 / xsd:dateTime strings with an explicit timezone offset or 'Z' (for example, '2025-06-15T12:00:00Z' or '2025-06-15T12:00:00+02:00'). Partial values such as year-only or date-only are rejected, and min/max bounds are inclusive.",
+	"neowiki-field-label-required": "Error message shown when a Subject is saved or validated with an empty label.",
 	"neowiki-property-type-datetime": "Label for the date and time property type in the schema editor",
 	"neowiki-field-invalid-date": "Validation error shown when the entered date value cannot be parsed. Date values must be strict ISO 8601 calendar dates in YYYY-MM-DD form with no time or timezone component (for example, '2025-06-15'). Values with a time part, partial values such as year-only, and calendar overflows such as '2025-02-30' are rejected, and min/max bounds are inclusive.",
 	"neowiki-property-type-date": "Label for the date (without time) property type in the schema editor",

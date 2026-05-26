@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SubjectValidator } from '@/domain/SubjectValidator';
+import { SubjectValidator, SubjectValidationError } from '@/domain/SubjectValidator';
 import { BasePropertyType, PropertyTypeRegistry, ValueValidationError } from '@/domain/PropertyType';
 import { Subject } from '@/domain/Subject';
 import { Schema } from '@/domain/Schema';
@@ -8,6 +8,7 @@ import { Statement } from '@/domain/Statement';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, Value, ValueType } from '@/domain/Value';
+import { Constraint } from '@/domain/Constraint';
 import { newSubject } from '@/TestHelpers';
 
 describe( 'SubjectValidator', () => {
@@ -36,6 +37,10 @@ describe( 'SubjectValidator', () => {
 
 		public getExampleValue(): Value {
 			throw new Error( 'Not implemented' );
+		}
+
+		public getConstraints(): Constraint[] {
+			return [];
 		}
 
 		public validate(): ValueValidationError[] {
@@ -78,16 +83,16 @@ describe( 'SubjectValidator', () => {
 	}
 
 	describe( 'validate', () => {
-		it( 'returns true when subject has no statements', () => {
+		it( 'returns no errors when subject has no statements', () => {
 			const validator = new SubjectValidator( new PropertyTypeRegistry() );
 
 			const subject = newSubject();
 			const schema = newSchema( [] );
 
-			expect( validator.validate( subject, schema ) ).toBe( true );
+			expect( validator.validate( subject, schema ) ).toEqual( [] );
 		} );
 
-		it( 'returns true when statements are for unknown properties', () => {
+		it( 'returns no errors when statements are for unknown properties', () => {
 			const validator = new SubjectValidator(
 				getFormatRegistryWithMockPropertyType( true ),
 			);
@@ -95,10 +100,10 @@ describe( 'SubjectValidator', () => {
 			const subject = newValidSubjectWithProperty();
 			const schema = newSchema( [] ); // Property not defined in schema
 
-			expect( validator.validate( subject, schema ) ).toBe( true );
+			expect( validator.validate( subject, schema ) ).toEqual( [] );
 		} );
 
-		it( 'returns true when all statements are valid according to their property types', () => {
+		it( 'returns no errors when all statements are valid according to their property types', () => {
 			const validator = new SubjectValidator(
 				getFormatRegistryWithMockPropertyType( true ),
 			);
@@ -106,10 +111,10 @@ describe( 'SubjectValidator', () => {
 			const subject = newValidSubjectWithProperty();
 			const schema = newSchema( [ exampleProperty ] );
 
-			expect( validator.validate( subject, schema ) ).toBe( true );
+			expect( validator.validate( subject, schema ) ).toEqual( [] );
 		} );
 
-		it( 'returns false when a statement is invalid according to its property type', () => {
+		it( 'returns a statement error when a statement is invalid according to its property type', () => {
 			const validator = new SubjectValidator(
 				getFormatRegistryWithMockPropertyType( false ),
 			);
@@ -117,23 +122,30 @@ describe( 'SubjectValidator', () => {
 			const subject = newValidSubjectWithProperty();
 			const schema = newSchema( [ exampleProperty ] );
 
-			expect( validator.validate( subject, schema ) ).toBe( false );
+			expect( validator.validate( subject, schema ) ).toEqual( [
+				{ propertyName: exampleProperty, error: { code: 'mock-error' } },
+			] );
 		} );
 
-		it( 'returns false when subject label is empty', () => {
+		it( 'returns a label-required error when subject label is empty', () => {
 			const validator = new SubjectValidator( new PropertyTypeRegistry() );
 
 			const subject = newSubject( { label: '' } );
 
-			expect( validator.validate( subject, newSchema( [] ) ) ).toBe( false );
+			const expected: SubjectValidationError[] = [
+				{ propertyName: null, error: { code: 'label-required' } },
+			];
+			expect( validator.validate( subject, newSchema( [] ) ) ).toEqual( expected );
 		} );
 
-		it( 'returns false when subject label contains only whitespace', () => {
+		it( 'returns a label-required error when subject label contains only whitespace', () => {
 			const validator = new SubjectValidator( new PropertyTypeRegistry() );
 
 			const subject = newSubject( { label: '   ' } );
 
-			expect( validator.validate( subject, newSchema( [] ) ) ).toBe( false );
+			expect( validator.validate( subject, newSchema( [] ) ) ).toEqual( [
+				{ propertyName: null, error: { code: 'label-required' } },
+			] );
 		} );
 
 	} );

@@ -70,6 +70,12 @@ describe( 'validate', () => {
 		expect( dateTimeType.validate( undefined, property ) ).toEqual( [ { code: 'required' } ] );
 	} );
 
+	it( 'returns required error for required empty StringValue', () => {
+		const property = newDateTimeProperty( { required: true } );
+
+		expect( dateTimeType.validate( newStringValue(), property ) ).toEqual( [ { code: 'required' } ] );
+	} );
+
 	it( 'returns no errors for valid datetime within bounds', () => {
 		const property = newDateTimeProperty( {
 			minimum: '2020-01-01T00:00:00Z',

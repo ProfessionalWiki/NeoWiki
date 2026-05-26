@@ -1,7 +1,13 @@
-import { PropertyType, PropertyTypeRegistry } from '@/domain/PropertyType';
+import { PropertyTypeRegistry } from '@/domain/PropertyType';
+import type { ValueValidationError } from '@/domain/PropertyType';
 import { Subject } from '@/domain/Subject';
 import { Schema } from '@/domain/Schema';
 import { Statement } from '@/domain/Statement';
+
+export interface SubjectValidationError {
+	readonly propertyName: string | null;
+	readonly error: ValueValidationError;
+}
 
 export class SubjectValidator {
 
@@ -9,37 +15,30 @@ export class SubjectValidator {
 		private readonly propertyTypeRegistry: PropertyTypeRegistry,
 	) {}
 
-	public validate( subject: Subject, schema: Schema ): boolean {
+	public validate( subject: Subject, schema: Schema ): SubjectValidationError[] {
+		const errors: SubjectValidationError[] = [];
+
 		if ( subject.getLabel().trim() === '' ) {
-			return false;
+			errors.push( { propertyName: null, error: { code: 'label-required' } } );
 		}
 
 		for ( const statement of subject.getStatements() ) {
-			if ( !this.statementIsValid( statement, schema ) ) {
-				return false;
-			}
+			errors.push( ...this.validateStatement( statement, schema ) );
 		}
 
-		return true;
+		return errors;
 	}
 
-	private statementIsValid( statement: Statement, schema: Schema ): boolean {
-		if ( !schema.getPropertyDefinitions().has( statement.propertyName ) ) {
-			return true; // Statements for unknown properties are considered valid
+	private validateStatement( statement: Statement, schema: Schema ): SubjectValidationError[] {
+		const propertyDef = schema.getPropertyDefinitions().get( statement.propertyName );
+		if ( propertyDef === undefined ) {
+			return [];
 		}
 
-		const errors =
-			this.getPropertyType( statement )
-				.validate(
-					statement.value,
-					schema.getPropertyDefinitions().get( statement.propertyName ),
-				);
+		const propertyType = this.propertyTypeRegistry.getType( statement.propertyType );
+		const valueErrors = propertyType.validate( statement.value, propertyDef );
 
-		return errors.length === 0;
-	}
-
-	private getPropertyType( statement: Statement ): PropertyType {
-		return this.propertyTypeRegistry.getType( statement.propertyType );
+		return valueErrors.map( ( error ) => ( { propertyName: statement.propertyName.toString(), error } ) );
 	}
 
 }
