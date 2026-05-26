@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\PropertyType\Types;
 
+use DateTimeImmutable;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -44,10 +45,9 @@ class DateTimeType implements PropertyType {
 		$rawValue = $this->extractFirstString( $value );
 
 		if ( $rawValue === null ) {
-			if ( $definition->isRequired() ) {
-				return [ new Violation( propertyName: null, code: 'required' ) ];
-			}
-			return [];
+			return $definition->isRequired()
+				? [ new Violation( propertyName: null, code: 'required' ) ]
+				: [];
 		}
 
 		$parsed = DateTimeProperty::parseStrictDateTime( $rawValue );
@@ -56,33 +56,32 @@ class DateTimeType implements PropertyType {
 			return [ new Violation( propertyName: null, code: 'invalid-datetime' ) ];
 		}
 
-		$violations = [];
+		return array_values( array_filter( [
+			$this->checkMinimum( $parsed, $definition->getMinimum() ),
+			$this->checkMaximum( $parsed, $definition->getMaximum() ),
+		] ) );
+	}
 
-		$minimumString = $definition->getMinimum();
-		if ( $minimumString !== null ) {
-			$min = DateTimeProperty::parseStrictDateTime( $minimumString );
-			if ( $min !== null && $parsed < $min ) {
-				$violations[] = new Violation(
-					propertyName: null,
-					code: 'min-value',
-					args: [ $minimumString ],
-				);
-			}
+	private function checkMinimum( DateTimeImmutable $parsed, ?string $minString ): ?Violation {
+		if ( $minString === null ) {
+			return null;
 		}
-
-		$maximumString = $definition->getMaximum();
-		if ( $maximumString !== null ) {
-			$max = DateTimeProperty::parseStrictDateTime( $maximumString );
-			if ( $max !== null && $parsed > $max ) {
-				$violations[] = new Violation(
-					propertyName: null,
-					code: 'max-value',
-					args: [ $maximumString ],
-				);
-			}
+		$min = DateTimeProperty::parseStrictDateTime( $minString );
+		if ( $min === null || $parsed >= $min ) {
+			return null;
 		}
+		return new Violation( propertyName: null, code: 'min-value', args: [ $minString ] );
+	}
 
-		return $violations;
+	private function checkMaximum( DateTimeImmutable $parsed, ?string $maxString ): ?Violation {
+		if ( $maxString === null ) {
+			return null;
+		}
+		$max = DateTimeProperty::parseStrictDateTime( $maxString );
+		if ( $max === null || $parsed <= $max ) {
+			return null;
+		}
+		return new Violation( propertyName: null, code: 'max-value', args: [ $maxString ] );
 	}
 
 	private function extractFirstString( NeoValue $value ): ?string {
