@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Validation;
 
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -44,6 +45,27 @@ readonly class SubjectValidator {
 			foreach ( $propertyType->validate( $statement->getValue(), $definition ) as $rawViolation ) {
 				$violations[] = $rawViolation->withPropertyName( $propertyName );
 			}
+		}
+
+		// Catch required-but-missing: Schema declares the property as required,
+		// but no Statement for it is present on the Subject. This also covers
+		// the "empty Value dropped by StatementListBuilder" case, since dropped
+		// statements look the same as absent statements from the validator's
+		// perspective.
+		foreach ( $schema->getAllProperties()->asMap() as $name => $definition ) {
+			if ( !$definition->isRequired() ) {
+				continue;
+			}
+
+			$propertyName = new PropertyName( $name );
+			if ( $statements->getStatement( $propertyName ) !== null ) {
+				continue;
+			}
+
+			$violations[] = new Violation(
+				propertyName: $propertyName,
+				code: 'required',
+			);
 		}
 
 		return $violations;

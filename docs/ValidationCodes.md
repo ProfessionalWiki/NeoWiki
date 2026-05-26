@@ -36,20 +36,30 @@ Each violation in the response has this shape:
 
 ### `required`
 
-Emitted by every built-in PropertyType plus `ColorType` (RedHerb).
+Emitted by `SubjectValidator` (when a required property has no Statement on the Subject) and
+by every built-in PropertyType plus `ColorType` (RedHerb) (when a Statement is present but its
+Value is content-empty).
 `args`: `[]`.
 `valuePartIndex`: never set.
-`propertyName`: attached by `SubjectValidator`.
+`propertyName`: attached by `SubjectValidator` (either directly when the schema-iteration loop
+emits, or via `withPropertyName()` from the per-type loop).
 
-The Statement's value is missing or empty when the Schema declares the property as `required`.
-"Empty" depends on the PropertyType:
+Fires in two cases for any property declared `required: true`:
 
-- `TextType` — no non-whitespace string in the `StringValue` parts.
-- `UrlType`, `SelectType`, `ColorType` — `StringValue` has zero parts.
-- `NumberType` — the value is not a `NumberValue`.
-- `RelationType` — the value is not a `RelationValue`, or has zero relations.
-- `DateTimeType` — the value is not a `StringValue`, has zero parts, or its first part is
-  empty/whitespace.
+1. **No Statement at all** — the Subject body did not include the property. `SubjectValidator`
+   iterates the Schema's properties after the per-statement loop and emits `required` for any
+   required property without a corresponding Statement. This also covers the case where the
+   client sent the property with an empty Value (e.g. `value: []`), because
+   `StatementListBuilder` drops empty-Value Statements before the validator runs, leaving the
+   schema-iteration loop to surface it.
+2. **Statement present but Value is content-empty** — emitted by the PropertyType validator.
+   What counts as "content-empty" depends on the type:
+   - `TextType` — no non-whitespace string in the `StringValue` parts.
+   - `UrlType`, `SelectType`, `ColorType` — `StringValue` has zero parts after deserialization.
+   - `NumberType` — the value is not a `NumberValue`.
+   - `RelationType` — the value is not a `RelationValue`, or has zero relations.
+   - `DateTimeType` — the value is not a `StringValue`, has zero parts, or its first part is
+     empty/whitespace.
 
 ### `label-required`
 
@@ -148,20 +158,12 @@ Subject itself does exist; the caller can fix this by re-creating or renaming th
 
 ## Known limitations (Foundation round)
 
-The PHP `SubjectValidator` deliberately mirrors the TS `SubjectValidator` algorithm. This carries
-two gaps from the TS implementation:
+The PHP `SubjectValidator` is intentionally more rigorous than the current TS `SubjectValidator`
+on the `required` check — PHP iterates the Schema's properties to catch absent-required cases.
+The TS top-level validator does not yet do this; alignment will happen in the tier-two TS rework
+and is the intended direction (PHP first, TS catches up).
 
-- **Missing-required.** A Schema property with no Statement at all is not flagged with `required`
-  — neither implementation iterates the Schema's property list during validation. A property is
-  only validated if a Statement for it is present on the Subject.
-- **Empty-Statement-required.** A Statement with an empty Value (e.g. `value: []`) is dropped by
-  `StatementListBuilder` before the validator sees it, so it cannot trigger `required` either.
-
-Both gaps are scoped to a future round that upgrades the TS top-level `SubjectValidator` to
-iterate the Schema and produce structured violations. Until then, callers relying on `required`
-should ensure every required property has at least one non-empty Statement before submitting.
-
-Additionally:
+Remaining gaps:
 
 - **TextType min-length / max-length.** TS `TextType` validates min/max-length per part with
   `min-length` / `max-length` codes. PHP's `TextProperty` does not yet expose `minLength` /

@@ -150,6 +150,94 @@ class SubjectValidatorTest extends TestCase {
 		) );
 	}
 
+	public function testMissingRequiredPropertyReturnsRequired(): void {
+		$schema = $this->newSchema( [
+			'Age' => $this->newNumberProperty( required: true ),
+		] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'required', $violations[0]->code );
+		$this->assertEquals( new PropertyName( 'Age' ), $violations[0]->propertyName );
+	}
+
+	public function testOptionalMissingPropertyReturnsNoViolation(): void {
+		$schema = $this->newSchema( [
+			'Age' => $this->newNumberProperty( required: false ),
+		] );
+
+		$this->assertSame( [], $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [] ),
+			$schema,
+		) );
+	}
+
+	public function testRequiredPropertyWithStatementPresentDoesNotEmitFromSchemaIteration(): void {
+		$schema = $this->newSchema( [
+			'Age' => $this->newNumberProperty( required: true ),
+		] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 42 ) ),
+			] ),
+			$schema,
+		);
+
+		// Statement is present and content-valid; required is satisfied.
+		$this->assertSame( [], $violations );
+	}
+
+	public function testMultipleMissingRequiredPropertiesAllSurface(): void {
+		$schema = $this->newSchema( [
+			'A' => $this->newNumberProperty( required: true ),
+			'B' => $this->newNumberProperty( required: false ),
+			'C' => $this->newNumberProperty( required: true ),
+		] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [] ),
+			$schema,
+		);
+
+		$this->assertCount( 2, $violations );
+		$missing = array_map(
+			static fn( $v ) => (string)$v->propertyName,
+			$violations
+		);
+		$this->assertContains( 'A', $missing );
+		$this->assertContains( 'C', $missing );
+		$this->assertNotContains( 'B', $missing );
+	}
+
+	public function testMissingRequiredViolationsAppearAfterStatementViolations(): void {
+		$schema = $this->newSchema( [
+			'Present' => $this->newNumberProperty( maximum: 10 ),
+			'Missing' => $this->newNumberProperty( required: true ),
+		] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				new Statement( new PropertyName( 'Present' ), 'number', new NumberValue( 999 ) ),
+			] ),
+			$schema,
+		);
+
+		$this->assertCount( 2, $violations );
+		$this->assertSame( 'max-value', $violations[0]->code );
+		$this->assertSame( 'required', $violations[1]->code );
+		$this->assertEquals( new PropertyName( 'Missing' ), $violations[1]->propertyName );
+	}
+
 	// --- Helpers ---
 
 	private function newSchema( array $properties ): Schema {
