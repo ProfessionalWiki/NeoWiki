@@ -35,12 +35,25 @@ readonly class SubjectValidator {
 				continue;
 			}
 
+			$definition = $schema->getProperty( $propertyName );
+
+			// Writer's-schema drift (ADR 11 / ADR 12): the Schema property's type
+			// has changed since this Statement was written. Surface as a violation
+			// and skip per-type validation, which would no-op against a wrong-typed
+			// PropertyDefinition anyway.
+			if ( $statement->getPropertyType() !== $definition->getPropertyType() ) {
+				$violations[] = new Violation(
+					propertyName: $propertyName,
+					code: 'type-mismatch',
+					args: [ $statement->getPropertyType(), $definition->getPropertyType() ],
+				);
+				continue;
+			}
+
 			$propertyType = $this->propertyTypeLookup->getType( $statement->getPropertyType() );
 			if ( $propertyType === null ) {
 				continue;
 			}
-
-			$definition = $schema->getProperty( $propertyName );
 
 			foreach ( $propertyType->validate( $statement->getValue(), $definition ) as $rawViolation ) {
 				$violations[] = $rawViolation->withPropertyName( $propertyName );

@@ -138,18 +138,6 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertSame( 'max-value', $violations[1]->code );
 	}
 
-	public function testStatementWithUnknownPropertyTypeIsSkipped(): void {
-		$schema = $this->newSchema( [ 'Foo' => $this->newNumberProperty() ] );
-
-		$this->assertSame( [], $this->validator->validate(
-			new SubjectLabel( 'X' ),
-			new StatementList( [
-				new Statement( new PropertyName( 'Foo' ), 'unknown-type', new NumberValue( 42 ) ),
-			] ),
-			$schema,
-		) );
-	}
-
 	public function testMissingRequiredPropertyReturnsRequired(): void {
 		$schema = $this->newSchema( [
 			'Age' => $this->newNumberProperty( required: true ),
@@ -216,6 +204,86 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertContains( 'A', $missing );
 		$this->assertContains( 'C', $missing );
 		$this->assertNotContains( 'B', $missing );
+	}
+
+	public function testWriterTypeDiffersFromCurrentTypeEmitsTypeMismatch(): void {
+		// Schema currently declares Age as a Number property, but the Statement
+		// was written when Age was something else (here: a text property).
+		$schema = $this->newSchema( [
+			'Age' => $this->newNumberProperty(),
+		] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				new Statement( new PropertyName( 'Age' ), 'text', new NumberValue( 42 ) ),
+			] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'type-mismatch', $violations[0]->code );
+		$this->assertEquals( new PropertyName( 'Age' ), $violations[0]->propertyName );
+		$this->assertSame( [ 'text', 'number' ], $violations[0]->args );
+	}
+
+	public function testTypeMismatchSkipsPerTypeValidation(): void {
+		// If type-mismatch fires, the per-type validator must not also run —
+		// it would either no-op against the wrong-typed PropertyDefinition or
+		// emit a redundant violation.
+		$schema = $this->newSchema( [
+			'Age' => $this->newNumberProperty( maximum: 10 ),
+		] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				new Statement( new PropertyName( 'Age' ), 'text', new NumberValue( 999 ) ),
+			] ),
+			$schema,
+		);
+
+		// Only the type-mismatch fires; no max-value even though 999 > 10.
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'type-mismatch', $violations[0]->code );
+	}
+
+	public function testTypeMismatchOnRequiredPropertySuppressesMissingRequired(): void {
+		// A Statement IS present (just under the wrong type), so the
+		// schema-iteration loop should NOT also emit 'required'.
+		$schema = $this->newSchema( [
+			'Age' => $this->newNumberProperty( required: true ),
+		] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				new Statement( new PropertyName( 'Age' ), 'text', new NumberValue( 42 ) ),
+			] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'type-mismatch', $violations[0]->code );
+	}
+
+	public function testMatchingTypeRunsPerTypeValidation(): void {
+		// Sanity: when writer's type matches current type, per-type validation
+		// runs normally.
+		$schema = $this->newSchema( [
+			'Age' => $this->newNumberProperty( maximum: 10 ),
+		] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 999 ) ),
+			] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'max-value', $violations[0]->code );
 	}
 
 	public function testMissingRequiredViolationsAppearAfterStatementViolations(): void {

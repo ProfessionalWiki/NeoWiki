@@ -68,9 +68,28 @@ Emitted by `SubjectValidator` only.
 `valuePartIndex`: never set.
 `propertyName`: always `null` (Subject-level).
 
-The Subject's label is empty or whitespace-only. Reachable through the validate endpoints
-because they construct the Subject via `SubjectLabel::createForValidation()` which permits empty
-labels; the regular `SubjectLabel::__construct` still rejects empty labels for write paths.
+The Subject's label is empty or whitespace-only.
+
+### `type-mismatch`
+
+Emitted by `SubjectValidator` only.
+`args`: `[writerType, currentType]` — the type recorded on the Statement when it was written
+and the type the Schema currently declares for the property.
+`valuePartIndex`: never set.
+`propertyName`: the affected property.
+
+The Statement's writer's-schema type (the `propertyType` recorded when the Statement was
+written, per ADR 11) no longer matches the Schema's current type for that property. For example,
+a property was originally declared as `url` and a Statement was written carrying a `StringValue`;
+the Schema was later edited to make that property a `number`. The Statement is now invalid under
+the current Schema (ADR 12 names this case explicitly).
+
+`SubjectValidator` skips per-type validation when this fires — the per-type's `instanceof`
+PropertyDefinition guard would no-op against the wrong-typed definition anyway, and the more
+specific `type-mismatch` code is what a consumer needs to react.
+
+If a property is `required` AND its Statement has a type mismatch, only `type-mismatch` fires
+(the Statement is present, just under the wrong type). `required` would be redundant noise.
 
 ### `invalid-url`
 
@@ -159,9 +178,23 @@ Subject itself does exist; the caller can fix this by re-creating or renaming th
 ## Known limitations (Foundation round)
 
 The PHP `SubjectValidator` is intentionally more rigorous than the current TS `SubjectValidator`
-on the `required` check — PHP iterates the Schema's properties to catch absent-required cases.
-The TS top-level validator does not yet do this; alignment will happen in the tier-two TS rework
-and is the intended direction (PHP first, TS catches up).
+on two checks:
+
+- **`required`** — PHP iterates the Schema's properties to catch absent-required cases.
+- **`type-mismatch`** — PHP compares the Statement's writer's-schema type against the Schema's
+  current type and surfaces drift per ADR 11 / ADR 12.
+
+The TS top-level validator does not yet do either; alignment will happen in the tier-two TS
+rework and is the intended direction (PHP first, TS catches up).
+
+### Deliberate behavior, not a gap
+
+- **Out-of-schema Statements are silently skipped.** A Statement whose property is not declared
+  on the current Schema is ignored — no violation. This is schema-drift tolerance: a property
+  may have been removed from the Schema while Subjects still carry old Statements. ADR 8 says
+  one Schema per Subject, not that every Statement on that Subject must reference an extant
+  Property. If surfacing these as violations becomes useful (e.g. for migration UIs), it can be
+  added as a separate code without changing the current behavior.
 
 Remaining gaps:
 
