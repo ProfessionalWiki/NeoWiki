@@ -6,7 +6,8 @@ namespace ProfessionalWiki\NeoWiki\Application\Validation;
 
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 readonly class SubjectValidator {
@@ -19,14 +20,14 @@ readonly class SubjectValidator {
 	/**
 	 * @return Violation[]
 	 */
-	public function validate( Subject $subject, Schema $schema ): array {
+	public function validate( SubjectLabel $label, StatementList $statements, Schema $schema ): array {
 		$violations = [];
 
-		if ( trim( $subject->getLabel()->text ) === '' ) {
+		if ( trim( $label->text ) === '' ) {
 			$violations[] = new Violation( propertyName: null, code: 'label-required' );
 		}
 
-		foreach ( $subject->getStatements()->asArray() as $statement ) {
+		foreach ( $statements->asArray() as $statement ) {
 			$propertyName = $statement->getPropertyName();
 
 			if ( !$schema->hasProperty( $propertyName ) ) {
