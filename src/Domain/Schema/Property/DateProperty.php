@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
+use DateTimeImmutable;
+use Exception;
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -53,6 +55,25 @@ class DateProperty extends PropertyDefinition {
 
 		// Reject calendar overflows that the regex alone cannot detect (e.g. Feb 30).
 		return checkdate( (int)$matches[2], (int)$matches[3], (int)$matches[1] );
+	}
+
+	/**
+	 * Parses a strict ISO 8601 calendar date (`YYYY-MM-DD`). Returns a
+	 * DateTimeImmutable at UTC midnight, or null if the value is malformed,
+	 * carries a time/timezone component, or is a calendar overflow.
+	 *
+	 * Mirrors the TS parseStrictDate helper.
+	 */
+	public static function parseStrictDate( string $value ): ?DateTimeImmutable {
+		if ( !self::isValidIsoDate( $value ) ) {
+			return null;
+		}
+
+		try {
+			return new DateTimeImmutable( $value . 'T00:00:00Z' );
+		} catch ( Exception ) {
+			return null;
+		}
 	}
 
 	public function getPropertyType(): string {

@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use RuntimeException;
 
@@ -30,6 +31,10 @@ readonly class CreateSubjectAction {
 	}
 
 	public function createSubject( CreateSubjectRequest $request ): void {
+		if ( trim( $request->label ) === '' ) {
+			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
+		}
+
 		if ( ( $request->isMainSubject && !$this->subjectAuthorizer->canCreateMainSubject(
 				) ) || !$this->subjectAuthorizer->canCreateChildSubject() ) {
 			throw new \RuntimeException( 'You do not have the necessary permissions to create this subject' );

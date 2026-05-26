@@ -25,6 +25,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAc
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
@@ -34,6 +35,8 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
+use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubject\ValidateSubjectQuery;
+use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubjectUpdate\ValidateSubjectUpdateQuery;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
@@ -66,6 +69,8 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
@@ -499,6 +504,43 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
+		);
+	}
+
+	public function getSubjectValidator(): SubjectValidator {
+		return new SubjectValidator(
+			propertyTypeLookup: $this->getPropertyTypeLookup(),
+		);
+	}
+
+	public function newValidateSubjectQuery(): ValidateSubjectQuery {
+		return new ValidateSubjectQuery(
+			schemaLookup: $this->getSchemaLookup(),
+			subjectValidator: $this->getSubjectValidator(),
+			statementListBuilder: $this->getStatementListBuilder(),
+			selectStatementResolver: $this->getSelectStatementResolver(),
+		);
+	}
+
+	public function newValidateSubjectUpdateQuery(): ValidateSubjectUpdateQuery {
+		return new ValidateSubjectUpdateQuery(
+			subjectRepository: $this->getSubjectRepository(),
+			schemaLookup: $this->getSchemaLookup(),
+			subjectValidator: $this->getSubjectValidator(),
+			statementListBuilder: $this->getStatementListBuilder(),
+			selectStatementResolver: $this->getSelectStatementResolver(),
+		);
+	}
+
+	public static function newValidateSubjectApi(): ValidateSubjectApi {
+		return new ValidateSubjectApi(
+			query: self::getInstance()->newValidateSubjectQuery(),
+		);
+	}
+
+	public static function newValidateSubjectUpdateApi(): ValidateSubjectUpdateApi {
+		return new ValidateSubjectUpdateApi(
+			query: self::getInstance()->newValidateSubjectUpdateQuery(),
 		);
 	}
 

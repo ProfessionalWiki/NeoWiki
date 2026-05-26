@@ -15,6 +15,24 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
  *
  * Leaves non-select entries, null entries, and properties not found
  * on the Schema untouched.
+ *
+ * ## Two methods, two error policies
+ *
+ * - {@see self::resolve()} throws `InvalidArgumentException` on any unresolvable
+ *   select value. Used by the write paths (`CreateSubjectAction`,
+ *   `ReplaceSubjectAction`); the throw becomes an HTTP 400.
+ * - {@see self::resolveOrLeave()} never throws. Unresolvable values are left in
+ *   place so downstream validation can surface them as `invalid-option`
+ *   `Violation`s with proper `valuePartIndex`. Used by the validate-endpoint
+ *   queries (`ValidateSubjectQuery`, `ValidateSubjectUpdateQuery`); the
+ *   non-throwing behavior is what lets the validate endpoints return HTTP 200
+ *   with per-part violations rather than HTTP 500 on bad input.
+ *
+ * The duplication is the foundation-tier cost of running the validator only on
+ * the validate path. Once the enforcement tier runs the validator on write
+ * paths too, the throwing form becomes redundant — the validator's
+ * `invalid-option` check produces the same rejection outcome with a richer
+ * error shape — and the two methods collapse to one.
  */
 readonly class SelectStatementResolver {
 
@@ -92,6 +110,71 @@ readonly class SelectStatementResolver {
 				0,
 				$e
 			);
+		}
+	}
+
+	/**
+	 * Like resolve() but never throws. When a select value cannot be resolved to an
+	 * option ID (unknown ID and unknown label), the original value is left in place
+	 * so downstream validation can flag it as an invalid-option violation rather
+	 * than aborting the entire request.
+	 *
+	 * @param array<string, mixed> $statements
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function resolveOrLeave( Schema $schema, array $statements ): array {
+		foreach ( $statements as $propertyName => $entry ) {
+			if ( !is_array( $entry ) ) {
+				continue;
+			}
+
+			if ( ( $entry['propertyType'] ?? null ) !== SelectType::NAME ) {
+				continue;
+			}
+
+			if ( !array_key_exists( 'value', $entry ) ) {
+				continue;
+			}
+
+			if ( !$schema->hasProperty( $propertyName ) ) {
+				continue;
+			}
+
+			$property = $schema->getProperty( $propertyName );
+
+			if ( !$property instanceof SelectProperty ) {
+				continue;
+			}
+
+			$entry['value'] = $this->resolveEntryValueOrLeave( $property, $entry['value'] );
+
+			$statements[$propertyName] = $entry;
+		}
+
+		return $statements;
+	}
+
+	private function resolveEntryValueOrLeave( SelectProperty $property, mixed $value ): mixed {
+		if ( $this->isListOfValues( $value ) ) {
+			return array_map(
+				fn( mixed $item ): mixed => $this->resolveSingleOrLeave( $property, $item ),
+				$value
+			);
+		}
+
+		return $this->resolveSingleOrLeave( $property, $value );
+	}
+
+	private function resolveSingleOrLeave( SelectProperty $property, mixed $value ): mixed {
+		if ( !is_string( $value ) && !is_array( $value ) ) {
+			return $value;
+		}
+
+		try {
+			return $this->valueResolver->resolve( $property, $value );
+		} catch ( InvalidArgumentException ) {
+			return $value;
 		}
 	}
 

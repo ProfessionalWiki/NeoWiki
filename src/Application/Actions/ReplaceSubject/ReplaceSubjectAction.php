@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
@@ -30,6 +31,10 @@ readonly class ReplaceSubjectAction {
 	 * @param array<string, mixed> $statements
 	 */
 	public function replace( SubjectId $subjectId, string $label, array $statements, ?string $comment ): void {
+		if ( trim( $label ) === '' ) {
+			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
+		}
+
 		if ( !$this->subjectAuthorizer->canEditSubject() ) {
 			throw new SubjectEditNotAuthorizedException();
 		}

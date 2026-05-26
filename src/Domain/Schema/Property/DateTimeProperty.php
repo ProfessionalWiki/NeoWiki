@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
+use DateTimeImmutable;
+use Exception;
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -43,6 +45,25 @@ class DateTimeProperty extends PropertyDefinition {
 			throw new InvalidArgumentException(
 				"DateTimeProperty {$field} must be a strict ISO 8601 datetime with an explicit timezone, got '{$value}'"
 			);
+		}
+	}
+
+	/**
+	 * Parses a strict ISO 8601 / xsd:dateTime string with an explicit timezone offset or `Z`.
+	 * Returns a DateTimeImmutable, or null if the value is malformed (no offset, calendar
+	 * overflow, etc).
+	 *
+	 * Mirrors the TS parseStrictDateTime helper.
+	 */
+	public static function parseStrictDateTime( string $value ): ?DateTimeImmutable {
+		if ( !self::isValidIsoDateTime( $value ) ) {
+			return null;
+		}
+
+		try {
+			return new DateTimeImmutable( $value );
+		} catch ( Exception $e ) {
+			return null;
 		}
 	}
 
