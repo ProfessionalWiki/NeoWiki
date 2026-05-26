@@ -2,15 +2,19 @@
 	<CdxField
 		:status="validationError === null ? 'default' : 'error'"
 		:messages="validationError === null ? {} : { error: validationError }"
-		:hide-label="true"
+		:hide-label="!showFieldHeading"
 	>
-		<CdxToggleSwitch
-			:model-value="internalValue"
-			:align-switch="true"
-			:label="props.label"
-			@update:model-value="onInput"
+		<template
+			v-if="showFieldHeading"
+			#label
 		>
 			{{ props.label }}
+		</template>
+		<CdxCheckbox
+			:model-value="internalValue"
+			@update:model-value="onInput"
+		>
+			{{ props.property.name.toString() }}
 			<CdxIcon
 				v-if="props.property.description"
 				v-tooltip="props.property.description"
@@ -18,7 +22,7 @@
 				class="ext-neowiki-value-input__description-icon"
 				size="small"
 			/>
-		</CdxToggleSwitch>
+		</CdxCheckbox>
 	</CdxField>
 </template>
 
@@ -27,8 +31,8 @@ import type { Value } from '@/domain/Value';
 </script>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { CdxField, CdxIcon, CdxToggleSwitch } from '@wikimedia/codex';
+import { computed, ref, watch } from 'vue';
+import { CdxCheckbox, CdxField, CdxIcon } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newBooleanValue, BooleanValue, ValueType } from '@/domain/Value';
 import { BooleanType, BooleanProperty } from '@/domain/propertyTypes/Boolean.ts';
@@ -46,6 +50,10 @@ const props = withDefaults(
 const emit = defineEmits<ValueInputEmits>();
 
 const validationError = ref<string | null>( null );
+
+// Hide the heading when it would duplicate the inline checkbox label
+// (subject-editor case: the caller passes the property name as the label).
+const showFieldHeading = computed( () => props.label !== props.property.name.toString() );
 
 const toBoolean = ( value: Value | undefined ): boolean =>
 	value !== undefined && value.type === ValueType.Boolean ? ( value as BooleanValue ).boolean : false;

@@ -1,6 +1,6 @@
 import { VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CdxField, CdxToggleSwitch } from '@wikimedia/codex';
+import { CdxCheckbox, CdxField } from '@wikimedia/codex';
 import { newBooleanValue, newStringValue, ValueType } from '@/domain/Value';
 import BooleanInput from '@/components/Value/BooleanInput.vue';
 import { newBooleanProperty, BooleanProperty } from '@/domain/propertyTypes/Boolean';
@@ -21,7 +21,7 @@ describe( 'BooleanInput', () => {
 		return createTestWrapper( BooleanInput, {
 			modelValue: undefined,
 			label: 'Test Label',
-			property: newBooleanProperty( {} ),
+			property: newBooleanProperty( { name: 'Is public' } ),
 			...props,
 		} );
 	}
@@ -30,50 +30,65 @@ describe( 'BooleanInput', () => {
 		return ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue();
 	}
 
-	it( 'renders a CdxToggleSwitch wrapped in a CdxField', () => {
+	it( 'renders a CdxCheckbox wrapped in a CdxField, inline-labelled with the property name', () => {
 		const wrapper = newWrapper();
 
 		expect( wrapper.findComponent( CdxField ).exists() ).toBe( true );
-		expect( wrapper.findComponent( CdxToggleSwitch ).exists() ).toBe( true );
-		expect( wrapper.text() ).toContain( 'Test Label' );
+		expect( wrapper.findComponent( CdxCheckbox ).exists() ).toBe( true );
+		expect( wrapper.findComponent( CdxCheckbox ).text() ).toContain( 'Is public' );
 	} );
 
-	it( 'renders the toggle in the off position when modelValue is BooleanValue(false)', () => {
+	it( 'shows the caller-supplied label as the field heading when it differs from the property name (schema-editor case)', () => {
+		const wrapper = newWrapper( { label: 'Initial value' } );
+
+		expect( wrapper.findComponent( CdxField ).props( 'hideLabel' ) ).toBe( false );
+		expect( wrapper.text() ).toContain( 'Initial value' );
+		expect( wrapper.findComponent( CdxCheckbox ).text() ).toContain( 'Is public' );
+	} );
+
+	it( 'hides the field heading when the caller-supplied label equals the property name (subject-editor case)', () => {
+		const wrapper = newWrapper( { label: 'Is public' } );
+
+		expect( wrapper.findComponent( CdxField ).props( 'hideLabel' ) ).toBe( true );
+		expect( wrapper.findComponent( CdxCheckbox ).text() ).toContain( 'Is public' );
+	} );
+
+	it( 'renders the checkbox unchecked when modelValue is BooleanValue(false)', () => {
 		const wrapper = newWrapper( { modelValue: newBooleanValue( false ) } );
 
-		expect( wrapper.findComponent( CdxToggleSwitch ).props( 'modelValue' ) ).toBe( false );
+		expect( wrapper.findComponent( CdxCheckbox ).props( 'modelValue' ) ).toBe( false );
 	} );
 
-	it( 'renders the toggle in the on position when modelValue is BooleanValue(true)', () => {
+	it( 'renders the checkbox checked when modelValue is BooleanValue(true)', () => {
 		const wrapper = newWrapper( { modelValue: newBooleanValue( true ) } );
 
-		expect( wrapper.findComponent( CdxToggleSwitch ).props( 'modelValue' ) ).toBe( true );
+		expect( wrapper.findComponent( CdxCheckbox ).props( 'modelValue' ) ).toBe( true );
 	} );
 
-	it( 'renders the toggle in the off position when modelValue is undefined', () => {
+	it( 'renders the checkbox unchecked when modelValue is undefined', () => {
 		const wrapper = newWrapper( { modelValue: undefined } );
 
-		expect( wrapper.findComponent( CdxToggleSwitch ).props( 'modelValue' ) ).toBe( false );
+		expect( wrapper.findComponent( CdxCheckbox ).props( 'modelValue' ) ).toBe( false );
 	} );
 
-	it( 'falls back to the off position when modelValue is the wrong value type', () => {
+	it( 'falls back to unchecked when modelValue is the wrong value type', () => {
 		const wrapper = newWrapper( { modelValue: newStringValue( 'not a boolean' ) } );
 
-		expect( wrapper.findComponent( CdxToggleSwitch ).props( 'modelValue' ) ).toBe( false );
+		expect( wrapper.findComponent( CdxCheckbox ).props( 'modelValue' ) ).toBe( false );
 	} );
 
-	it( 'emits BooleanValue(true) when the toggle is switched on', async () => {
+	it( 'emits BooleanValue(true) when the checkbox is checked', async () => {
 		const wrapper = newWrapper();
 
-		await wrapper.findComponent( CdxToggleSwitch ).vm.$emit( 'update:modelValue', true );
+		await wrapper.findComponent( CdxCheckbox ).vm.$emit( 'update:modelValue', true );
 
 		expect( wrapper.emitted( 'update:modelValue' )?.[ 0 ] ).toEqual( [ newBooleanValue( true ) ] );
 	} );
 
-	it( 'emits BooleanValue(false) when the toggle is switched off', async () => {
+	it( 'emits BooleanValue(false) when the checkbox is unchecked', async () => {
 		const wrapper = newWrapper( { modelValue: newBooleanValue( true ) } );
 
-		await wrapper.findComponent( CdxToggleSwitch ).vm.$emit( 'update:modelValue', false );
+		await wrapper.findComponent( CdxCheckbox ).vm.$emit( 'update:modelValue', false );
 
 		expect( wrapper.emitted( 'update:modelValue' )?.[ 0 ] ).toEqual( [ newBooleanValue( false ) ] );
 	} );
@@ -83,7 +98,7 @@ describe( 'BooleanInput', () => {
 
 		await wrapper.setProps( { modelValue: newBooleanValue( true ) } );
 
-		expect( wrapper.findComponent( CdxToggleSwitch ).props( 'modelValue' ) ).toBe( true );
+		expect( wrapper.findComponent( CdxCheckbox ).props( 'modelValue' ) ).toBe( true );
 	} );
 
 	describe( 'getCurrentValue', () => {
@@ -108,10 +123,10 @@ describe( 'BooleanInput', () => {
 			expect( getCurrentValue( wrapper ) ).toEqual( newBooleanValue( false ) );
 		} );
 
-		it( 'returns the toggled value after the user switches the toggle on', async () => {
+		it( 'returns the new value after the user checks the checkbox', async () => {
 			const wrapper = newWrapper( { modelValue: newBooleanValue( false ) } );
 
-			await wrapper.findComponent( CdxToggleSwitch ).vm.$emit( 'update:modelValue', true );
+			await wrapper.findComponent( CdxCheckbox ).vm.$emit( 'update:modelValue', true );
 
 			expect( getCurrentValue( wrapper ) ).toEqual( newBooleanValue( true ) );
 		} );
@@ -120,7 +135,7 @@ describe( 'BooleanInput', () => {
 	it( 'emits a Value of type Boolean (not String or Number)', async () => {
 		const wrapper = newWrapper();
 
-		await wrapper.findComponent( CdxToggleSwitch ).vm.$emit( 'update:modelValue', true );
+		await wrapper.findComponent( CdxCheckbox ).vm.$emit( 'update:modelValue', true );
 
 		const events = wrapper.emitted( 'update:modelValue' );
 		const emitted = events?.[ 0 ]?.[ 0 ] as { type: ValueType } | undefined;
