@@ -184,12 +184,8 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function newValidateSubjectApi(): ValidateSubjectApi {
-		$instance = NeoWikiExtension::getInstance();
 		return new ValidateSubjectApi(
-			schemaLookup: $instance->getSchemaLookup(),
-			subjectValidator: $instance->getSubjectValidator(),
-			statementListBuilder: $instance->getStatementListBuilder(),
-			selectStatementResolver: $instance->getSelectStatementResolver(),
+			query: NeoWikiExtension::getInstance()->newValidateSubjectQuery(),
 		);
 	}
 

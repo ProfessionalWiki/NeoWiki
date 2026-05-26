@@ -7,26 +7,15 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use InvalidArgumentException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
-use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubject\ValidateSubjectQuery;
+use ProfessionalWiki\NeoWiki\Application\Schema\Exception\SchemaNotFoundException;
 use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ValidateSubjectApi extends SimpleHandler {
 
-	private const string PLACEHOLDER_SUBJECT_ID = 's111111111aaaat';
-
 	public function __construct(
-		private readonly SchemaLookup $schemaLookup,
-		private readonly SubjectValidator $subjectValidator,
-		private readonly StatementListBuilder $statementListBuilder,
-		private readonly SelectStatementResolver $selectStatementResolver,
+		private readonly ValidateSubjectQuery $query,
 	) {
 	}
 
@@ -34,35 +23,22 @@ class ValidateSubjectApi extends SimpleHandler {
 		$body = $this->getValidatedBody();
 
 		try {
-			$schemaName = new SchemaName( $body['schema'] );
+			$violations = $this->query->validate(
+				$body['schema'],
+				is_string( $body['label'] ) ? $body['label'] : '',
+				$body['statements'],
+			);
 		} catch ( InvalidArgumentException $e ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',
 				'message' => $e->getMessage(),
 			] );
-		}
-
-		$schema = $this->schemaLookup->getSchema( $schemaName );
-
-		if ( $schema === null ) {
+		} catch ( SchemaNotFoundException $e ) {
 			return $this->getResponseFactory()->createHttpError( 404, [
 				'status' => 'error',
-				'message' => 'Schema not found: ' . $schemaName->getText(),
+				'message' => $e->getMessage(),
 			] );
 		}
-
-		$label = is_string( $body['label'] ) ? $body['label'] : '';
-
-		$subject = new Subject(
-			id: new SubjectId( self::PLACEHOLDER_SUBJECT_ID ),
-			label: new SubjectLabel( $label ),
-			schemaName: $schemaName,
-			statements: $this->statementListBuilder->build(
-				$this->selectStatementResolver->resolveOrLeave( $schema, $body['statements'] )
-			),
-		);
-
-		$violations = $this->subjectValidator->validate( $subject, $schema );
 
 		return $this->getResponseFactory()->createJson( [
 			'violations' => ViolationSerializer::serializeMany( $violations ),

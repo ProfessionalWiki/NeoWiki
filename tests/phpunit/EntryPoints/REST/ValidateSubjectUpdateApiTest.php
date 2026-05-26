@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -167,13 +166,8 @@ class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function newValidateSubjectUpdateApi(): ValidateSubjectUpdateApi {
-		$instance = NeoWikiExtension::getInstance();
 		return new ValidateSubjectUpdateApi(
-			subjectRepository: $instance->getSubjectRepository(),
-			schemaLookup: $instance->getSchemaLookup(),
-			subjectValidator: $instance->getSubjectValidator(),
-			statementListBuilder: $instance->getStatementListBuilder(),
-			selectStatementResolver: $instance->getSelectStatementResolver(),
+			query: NeoWikiExtension::getInstance()->newValidateSubjectUpdateQuery(),
 		);
 	}
 

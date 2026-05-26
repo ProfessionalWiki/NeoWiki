@@ -7,78 +7,38 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use InvalidArgumentException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
-use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubjectUpdate\ValidateSubjectUpdateQuery;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ValidateSubjectUpdateApi extends SimpleHandler {
 
 	public function __construct(
-		private readonly SubjectRepository $subjectRepository,
-		private readonly SchemaLookup $schemaLookup,
-		private readonly SubjectValidator $subjectValidator,
-		private readonly StatementListBuilder $statementListBuilder,
-		private readonly SelectStatementResolver $selectStatementResolver,
+		private readonly ValidateSubjectUpdateQuery $query,
 	) {
 	}
 
 	public function run( string $subjectId ): Response {
+		$body = $this->getValidatedBody();
+
 		try {
-			$id = new SubjectId( $subjectId );
+			$violations = $this->query->validate(
+				$subjectId,
+				is_string( $body['label'] ) ? $body['label'] : '',
+				$body['statements'],
+			);
 		} catch ( InvalidArgumentException $e ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',
 				'message' => $e->getMessage(),
 			] );
-		}
-
-		$subject = $this->subjectRepository->getSubject( $id );
-
-		if ( $subject === null ) {
+		} catch ( SubjectNotFoundException $e ) {
 			return $this->getResponseFactory()->createHttpError( 404, [
 				'status' => 'error',
-				'message' => 'Subject not found: ' . $subjectId,
+				'message' => $e->getMessage(),
 			] );
 		}
-
-		$body = $this->getValidatedBody();
-
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
-
-		// Unlike POST /subject/validate (which 404s when the body's schema name is
-		// unknown), here the Subject already exists but its Schema page has gone
-		// missing — surface this as a violation rather than 404, since the Subject
-		// itself is real and the user can recover by re-creating the Schema page.
-		if ( $schema === null ) {
-			return $this->getResponseFactory()->createJson( [
-				'violations' => [
-					ViolationSerializer::serialize(
-						new Violation(
-							propertyName: null,
-							code: 'schema-not-found',
-							args: [ $subject->getSchemaName()->getText() ],
-						)
-					),
-				],
-			] );
-		}
-
-		$label = is_string( $body['label'] ) ? $body['label'] : '';
-		$subject->setLabel( new SubjectLabel( $label ) );
-		$subject->setStatements(
-			$this->statementListBuilder->build(
-				$this->selectStatementResolver->resolveOrLeave( $schema, $body['statements'] )
-			)
-		);
-
-		$violations = $this->subjectValidator->validate( $subject, $schema );
 
 		return $this->getResponseFactory()->createJson( [
 			'violations' => ViolationSerializer::serializeMany( $violations ),
