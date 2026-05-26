@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -25,9 +26,8 @@ use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction
@@ -55,23 +55,8 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		);
 	}
 
-	private function createRepositoryWithSubject( Subject $subject ): SubjectContentRepository {
-		$pageSubjects = new PageSubjects( $subject, new SubjectMap() );
-
-		$subjectContent = $this->createStub( SubjectContent::class );
-		$subjectContent->method( 'getPageSubjects' )->willReturn( $pageSubjects );
-
-		$repo = $this->createStub( SubjectContentRepository::class );
-		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( $subjectContent );
-
-		return $repo;
-	}
-
-	private function createEmptyRepository(): SubjectContentRepository {
-		$repo = $this->createStub( SubjectContentRepository::class );
-		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( null );
-
-		return $repo;
+	private function repositoryWithSubject( Subject $subject ): InMemorySubjectContentRepository {
+		return new InMemorySubjectContentRepository( new PageSubjects( $subject, new SubjectMap() ) );
 	}
 
 	private function createDummyLookup(): SubjectLookup {
@@ -105,7 +90,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'City' );
 
 		$this->assertNoParseHtml( 'Berlin', $result );
@@ -116,7 +101,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'alpha', 'beta', 'gamma' ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Tags' );
 
 		$this->assertNoParseHtml( 'alpha, beta, gamma', $result );
@@ -127,7 +112,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'alpha', 'beta' ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Tags', 'separator=;' );
 
 		$this->assertNoParseHtml( 'alpha;beta', $result );
@@ -138,7 +123,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'alpha', 'beta' ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Tags', ' separator = ; ' );
 
 		$this->assertNoParseHtml( 'alpha;beta', $result );
@@ -149,7 +134,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'a', 'b', 'c' ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Tags', 'separator=' );
 
 		$this->assertNoParseHtml( 'abc', $result );
@@ -162,7 +147,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 42 ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Age' );
 
 		$this->assertNoParseHtml( '42', $result );
@@ -173,7 +158,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Price' ), 'number', new NumberValue( 19.99 ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Price' );
 
 		$this->assertNoParseHtml( '19.99', $result );
@@ -186,7 +171,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( true ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Active' );
 
 		$this->assertNoParseHtml( 'true', $result );
@@ -197,7 +182,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( false ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Active' );
 
 		$this->assertNoParseHtml( 'false', $result );
@@ -228,7 +213,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		);
 
 		$result = $this->createPF(
-			$this->createRepositoryWithSubject( $subject ),
+			$this->repositoryWithSubject( $subject ),
 			$this->createLookupReturning( $targetSubject )
 		)->handle( $this->createMockParser(), 'Process owner' );
 
@@ -250,7 +235,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			)
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Process owner' );
 
 		$this->assertNoParseHtml( self::TARGET_SUBJECT_ID, $result );
@@ -297,7 +282,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			)
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ), $lookup )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ), $lookup )
 			->handle( $this->createMockParser(), 'Members' );
 
 		$this->assertNoParseHtml( 'Alice, Bob', $result );
@@ -308,7 +293,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Members' ), 'relation', new RelationValue() )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Members' );
 
 		$this->assertSame( '', $result );
@@ -321,14 +306,14 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Nonexistent' );
 
 		$this->assertSame( '', $result );
 	}
 
 	public function testReturnsEmptyStringWhenNoSubjectOnPage(): void {
-		$result = $this->createPF( $this->createEmptyRepository() )
+		$result = $this->createPF( new InMemorySubjectContentRepository() )
 			->handle( $this->createMockParser(), 'City' );
 
 		$this->assertSame( '', $result );
@@ -339,7 +324,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), '' );
 
 		$this->assertSame( '', $result );
@@ -350,7 +335,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser() );
 
 		$this->assertSame( '', $result );
@@ -361,7 +346,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue() )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'City' );
 
 		$this->assertSame( '', $result );
@@ -374,7 +359,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), '  City  ' );
 
 		$this->assertNoParseHtml( 'Berlin', $result );
@@ -391,7 +376,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		);
 
 		$pf = $this->createPF(
-			$this->createEmptyRepository(),
+			new InMemorySubjectContentRepository(),
 			$this->createLookupReturning( $targetSubject )
 		);
 
@@ -401,7 +386,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 	}
 
 	public function testInvalidSubjectIdReturnsEmptyString(): void {
-		$result = $this->createPF( $this->createEmptyRepository() )
+		$result = $this->createPF( new InMemorySubjectContentRepository() )
 			->handle( $this->createMockParser(), 'City', 'subject=invalid' );
 
 		$this->assertSame( '', $result );
@@ -412,18 +397,8 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Hamburg' ) )
 		);
 
-		$repo = $this->createStub( SubjectContentRepository::class );
-		$repo->method( 'getSubjectContentByPageTitle' )->willReturnCallback(
-			function ( $title ) use ( $subject ) {
-				if ( $title->getText() === 'Other Page' ) {
-					$pageSubjects = new PageSubjects( $subject, new SubjectMap() );
-					$subjectContent = $this->createStub( SubjectContent::class );
-					$subjectContent->method( 'getPageSubjects' )->willReturn( $pageSubjects );
-					return $subjectContent;
-				}
-				return null;
-			}
-		);
+		$repo = new InMemorySubjectContentRepository();
+		$repo->setContentForPage( 'Other_Page', new PageSubjects( $subject, new SubjectMap() ) );
 
 		$result = $this->createPF( $repo )
 			->handle( $this->createMockParser(), 'City', 'page=Other Page' );
@@ -446,7 +421,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		);
 
 		$result = $this->createPF(
-			$this->createRepositoryWithSubject( $subjectViaPage ),
+			$this->repositoryWithSubject( $subjectViaPage ),
 			$this->createLookupReturning( $subjectViaId )
 		)->handle(
 			$this->createMockParser(),
@@ -465,7 +440,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Population' ), 'number', new NumberValue( 3_700_000 ) ),
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Country' );
 
 		$this->assertNoParseHtml( 'Germany', $result );
@@ -478,7 +453,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'Name' ), 'text', new StringValue( '<b>bold</b> & "quoted"' ) )
 		);
 
-		$result = $this->createPF( $this->createRepositoryWithSubject( $subject ) )
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
 			->handle( $this->createMockParser(), 'Name' );
 
 		$this->assertIsArray( $result );

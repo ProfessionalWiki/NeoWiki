@@ -11,13 +11,14 @@ use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
+use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use RuntimeException;
 use WikiPage;
 
-class SubjectContentRepository {
+class MediaWikiSubjectContentRepository implements SubjectContentRepository {
 
 	public function __construct(
 		private readonly WikiPageFactory $wikiPageFactory,

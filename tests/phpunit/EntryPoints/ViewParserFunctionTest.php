@@ -9,11 +9,14 @@ use MediaWiki\Parser\Parser;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\ViewParserFunction;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\ViewParserFunction
@@ -79,7 +82,7 @@ class ViewParserFunctionTest extends TestCase {
 	}
 
 	public function testReturnsEmptyStringWhenNoSubjectAvailable(): void {
-		$parserFunction = new ViewParserFunction( $this->createRepositoryWithNoContent() );
+		$parserFunction = new ViewParserFunction( new InMemorySubjectContentRepository() );
 
 		$result = $parserFunction->handle( $this->createMockParser() );
 
@@ -87,7 +90,9 @@ class ViewParserFunctionTest extends TestCase {
 	}
 
 	public function testReturnsEmptyStringWhenPageHasNoMainSubject(): void {
-		$parserFunction = new ViewParserFunction( $this->createRepositoryWithNoMainSubject() );
+		$parserFunction = new ViewParserFunction(
+			new InMemorySubjectContentRepository( new PageSubjects( null, new SubjectMap() ) )
+		);
 
 		$result = $parserFunction->handle( $this->createMockParser() );
 
@@ -125,12 +130,19 @@ class ViewParserFunctionTest extends TestCase {
 	}
 
 	private function callView( string ...$args ): string|array {
-		return $this->newParserFunction( self::MAIN_SUBJECT_ID )
+		return ( new ViewParserFunction( $this->repositoryWithMainSubject() ) )
 			->handle( $this->createMockParser(), ...$args );
 	}
 
-	private function newParserFunction( string $mainSubjectId ): ViewParserFunction {
-		return new ViewParserFunction( $this->createRepositoryWithMainSubjectId( $mainSubjectId ) );
+	private function repositoryWithMainSubject(): InMemorySubjectContentRepository {
+		$mainSubject = new Subject(
+			id: new SubjectId( self::MAIN_SUBJECT_ID ),
+			label: new SubjectLabel( 'Main' ),
+			schemaName: new SchemaName( 'TestSchema' ),
+			statements: new StatementList(),
+		);
+
+		return new InMemorySubjectContentRepository( new PageSubjects( $mainSubject, new SubjectMap() ) );
 	}
 
 	private function createMockParser(): Parser {
@@ -143,37 +155,6 @@ class ViewParserFunctionTest extends TestCase {
 		);
 
 		return $parser;
-	}
-
-	private function createRepositoryWithMainSubjectId( string $subjectId ): SubjectContentRepository {
-		$subject = $this->createStub( Subject::class );
-		$subject->method( 'getId' )->willReturn( new SubjectId( $subjectId ) );
-
-		return $this->createRepositoryWithMainSubject( $subject );
-	}
-
-	private function createRepositoryWithNoMainSubject(): SubjectContentRepository {
-		return $this->createRepositoryWithMainSubject( null );
-	}
-
-	private function createRepositoryWithMainSubject( ?Subject $mainSubject ): SubjectContentRepository {
-		$pageSubjects = $this->createStub( PageSubjects::class );
-		$pageSubjects->method( 'getMainSubject' )->willReturn( $mainSubject );
-
-		$subjectContent = $this->createStub( SubjectContent::class );
-		$subjectContent->method( 'getPageSubjects' )->willReturn( $pageSubjects );
-
-		$repo = $this->createStub( SubjectContentRepository::class );
-		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( $subjectContent );
-
-		return $repo;
-	}
-
-	private function createRepositoryWithNoContent(): SubjectContentRepository {
-		$repo = $this->createStub( SubjectContentRepository::class );
-		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( null );
-
-		return $repo;
 	}
 
 	/**

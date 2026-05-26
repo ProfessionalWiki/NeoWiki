@@ -6,8 +6,8 @@ namespace ProfessionalWiki\NeoWiki\Presentation;
 
 use MediaWiki\Html\Html;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
 
 class ViewHtmlBuilder {
 

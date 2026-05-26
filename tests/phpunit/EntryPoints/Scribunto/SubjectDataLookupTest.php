@@ -24,9 +24,8 @@ use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup
@@ -50,33 +49,19 @@ class SubjectDataLookupTest extends TestCase {
 		);
 	}
 
-	private function createResolverWithMainSubject( Subject $subject, ?SubjectLookup $subjectLookup = null ): SubjectResolver {
-		$pageSubjects = new PageSubjects( $subject, new SubjectMap() );
-
-		$subjectContent = $this->createStub( SubjectContent::class );
-		$subjectContent->method( 'getPageSubjects' )->willReturn( $pageSubjects );
-
-		$repo = $this->createStub( SubjectContentRepository::class );
-		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( $subjectContent );
-
-		return new SubjectResolver( $repo, $subjectLookup ?? $this->createStub( SubjectLookup::class ) );
+	private function resolverWithMainSubject( Subject $subject, ?SubjectLookup $subjectLookup = null ): SubjectResolver {
+		return $this->resolverWithPageSubjects( new PageSubjects( $subject, new SubjectMap() ), $subjectLookup );
 	}
 
-	private function createResolverWithPageSubjects( PageSubjects $pageSubjects, ?SubjectLookup $subjectLookup = null ): SubjectResolver {
-		$subjectContent = $this->createStub( SubjectContent::class );
-		$subjectContent->method( 'getPageSubjects' )->willReturn( $pageSubjects );
-
-		$repo = $this->createStub( SubjectContentRepository::class );
-		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( $subjectContent );
-
-		return new SubjectResolver( $repo, $subjectLookup ?? $this->createStub( SubjectLookup::class ) );
+	private function resolverWithPageSubjects( ?PageSubjects $pageSubjects, ?SubjectLookup $subjectLookup = null ): SubjectResolver {
+		return new SubjectResolver(
+			new InMemorySubjectContentRepository( $pageSubjects ),
+			$subjectLookup ?? $this->createStub( SubjectLookup::class )
+		);
 	}
 
-	private function createEmptyResolver( ?SubjectLookup $subjectLookup = null ): SubjectResolver {
-		$repo = $this->createStub( SubjectContentRepository::class );
-		$repo->method( 'getSubjectContentByPageTitle' )->willReturn( null );
-
-		return new SubjectResolver( $repo, $subjectLookup ?? $this->createStub( SubjectLookup::class ) );
+	private function emptyResolver( ?SubjectLookup $subjectLookup = null ): SubjectResolver {
+		return $this->resolverWithPageSubjects( null, $subjectLookup );
 	}
 
 	private function createSubjectLookupReturning( Subject ...$subjects ): SubjectLookup {
@@ -103,7 +88,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ 'Berlin' ], $lookup->getValue( $this->createTitle(), 'City' ) );
 	}
@@ -113,7 +98,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'alpha', 'beta', 'gamma' ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ 'alpha' ], $lookup->getValue( $this->createTitle(), 'Tags' ) );
 	}
@@ -123,7 +108,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 42 ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ 42 ], $lookup->getValue( $this->createTitle(), 'Age' ) );
 	}
@@ -133,7 +118,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Price' ), 'number', new NumberValue( 19.99 ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ 19.99 ], $lookup->getValue( $this->createTitle(), 'Price' ) );
 	}
@@ -143,7 +128,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( true ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ true ], $lookup->getValue( $this->createTitle(), 'Active' ) );
 	}
@@ -153,7 +138,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( false ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ false ], $lookup->getValue( $this->createTitle(), 'Active' ) );
 	}
@@ -181,7 +166,7 @@ class SubjectDataLookupTest extends TestCase {
 		);
 
 		$subjectLookup = $this->createSubjectLookupReturning( $targetSubject );
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject, $subjectLookup ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject, $subjectLookup ) );
 
 		$this->assertSame(
 			[ 'Sarah Naumann' ],
@@ -217,7 +202,7 @@ class SubjectDataLookupTest extends TestCase {
 		);
 
 		$subjectLookup = $this->createSubjectLookupReturning( $target1 );
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject, $subjectLookup ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject, $subjectLookup ) );
 
 		$this->assertSame(
 			[ 'Alice' ],
@@ -240,7 +225,7 @@ class SubjectDataLookupTest extends TestCase {
 			)
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame(
 			[ self::TARGET_SUBJECT_ID ],
@@ -253,19 +238,19 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), 'Nonexistent' ) );
 	}
 
 	public function testGetValueReturnsNullWhenNoSubjectOnPage(): void {
-		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
+		$lookup = new SubjectDataLookup( $this->emptyResolver() );
 
 		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), 'City' ) );
 	}
 
 	public function testGetValueReturnsNullForEmptyPropertyName(): void {
-		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
+		$lookup = new SubjectDataLookup( $this->emptyResolver() );
 
 		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), '' ) );
 	}
@@ -275,7 +260,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue() )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), 'City' ) );
 	}
@@ -291,7 +276,7 @@ class SubjectDataLookupTest extends TestCase {
 		);
 
 		$subjectLookup = $this->createSubjectLookupReturning( $targetSubject );
-		$lookup = new SubjectDataLookup( $this->createEmptyResolver( $subjectLookup ) );
+		$lookup = new SubjectDataLookup( $this->emptyResolver( $subjectLookup ) );
 
 		$this->assertSame(
 			[ 'Munich' ],
@@ -300,7 +285,7 @@ class SubjectDataLookupTest extends TestCase {
 	}
 
 	public function testGetValueWithInvalidSubjectOptionReturnsNull(): void {
-		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
+		$lookup = new SubjectDataLookup( $this->emptyResolver() );
 
 		$this->assertSame(
 			[ null ],
@@ -313,7 +298,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ 'Berlin' ], $lookup->getValue( $this->createTitle(), '  City  ' ) );
 	}
@@ -325,7 +310,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ [ 1 => 'Berlin' ] ], $lookup->getAll( $this->createTitle(), 'City' ) );
 	}
@@ -335,7 +320,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'alpha', 'beta', 'gamma' ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame(
 			[ [ 1 => 'alpha', 2 => 'beta', 3 => 'gamma' ] ],
@@ -348,7 +333,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 42 ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ [ 1 => 42 ] ], $lookup->getAll( $this->createTitle(), 'Age' ) );
 	}
@@ -358,7 +343,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( true ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ [ 1 => true ] ], $lookup->getAll( $this->createTitle(), 'Active' ) );
 	}
@@ -397,7 +382,7 @@ class SubjectDataLookupTest extends TestCase {
 		);
 
 		$subjectLookup = $this->createSubjectLookupReturning( $target1, $target2 );
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject, $subjectLookup ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject, $subjectLookup ) );
 
 		$this->assertSame(
 			[ [ 1 => 'Alice', 2 => 'Bob' ] ],
@@ -410,7 +395,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ null ], $lookup->getAll( $this->createTitle(), 'Nonexistent' ) );
 	}
@@ -420,7 +405,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue() )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ null ], $lookup->getAll( $this->createTitle(), 'City' ) );
 	}
@@ -433,7 +418,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Population' ), 'number', new NumberValue( 3645000 ) ),
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$result = $lookup->getMainSubjectData( $this->createTitle() );
 
@@ -447,7 +432,7 @@ class SubjectDataLookupTest extends TestCase {
 	}
 
 	public function testGetMainSubjectReturnsNullWhenNoSubject(): void {
-		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
+		$lookup = new SubjectDataLookup( $this->emptyResolver() );
 
 		$this->assertSame( [ null ], $lookup->getMainSubjectData( $this->createTitle() ) );
 	}
@@ -455,7 +440,7 @@ class SubjectDataLookupTest extends TestCase {
 	public function testGetMainSubjectReturnsNullWhenPageHasNoMainSubject(): void {
 		$pageSubjects = new PageSubjects( null, new SubjectMap() );
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithPageSubjects( $pageSubjects ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithPageSubjects( $pageSubjects ) );
 
 		$this->assertSame( [ null ], $lookup->getMainSubjectData( $this->createTitle() ) );
 	}
@@ -473,7 +458,7 @@ class SubjectDataLookupTest extends TestCase {
 		);
 
 		$subjectLookup = $this->createSubjectLookupReturning( $subject );
-		$lookup = new SubjectDataLookup( $this->createEmptyResolver( $subjectLookup ) );
+		$lookup = new SubjectDataLookup( $this->emptyResolver( $subjectLookup ) );
 
 		$result = $lookup->getSubjectData( self::TARGET_SUBJECT_ID );
 
@@ -484,13 +469,13 @@ class SubjectDataLookupTest extends TestCase {
 	}
 
 	public function testGetSubjectReturnsNullForInvalidId(): void {
-		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
+		$lookup = new SubjectDataLookup( $this->emptyResolver() );
 
 		$this->assertSame( [ null ], $lookup->getSubjectData( 'invalid' ) );
 	}
 
 	public function testGetSubjectReturnsNullForUnknownId(): void {
-		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
+		$lookup = new SubjectDataLookup( $this->emptyResolver() );
 
 		$this->assertSame( [ null ], $lookup->getSubjectData( self::TARGET_SUBJECT_ID ) );
 	}
@@ -523,7 +508,7 @@ class SubjectDataLookupTest extends TestCase {
 		);
 
 		$subjectLookup = $this->createSubjectLookupReturning( $subject, $targetSubject );
-		$lookup = new SubjectDataLookup( $this->createEmptyResolver( $subjectLookup ) );
+		$lookup = new SubjectDataLookup( $this->emptyResolver( $subjectLookup ) );
 
 		$result = $lookup->getSubjectData( self::SUBJECT_ID );
 
@@ -556,7 +541,7 @@ class SubjectDataLookupTest extends TestCase {
 			new SubjectMap( $child1, $child2 )
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithPageSubjects( $pageSubjects ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithPageSubjects( $pageSubjects ) );
 
 		$result = $lookup->getChildSubjectsData( $this->createTitle() );
 
@@ -572,13 +557,13 @@ class SubjectDataLookupTest extends TestCase {
 
 		$pageSubjects = new PageSubjects( $mainSubject, new SubjectMap() );
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithPageSubjects( $pageSubjects ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithPageSubjects( $pageSubjects ) );
 
 		$this->assertSame( [ [] ], $lookup->getChildSubjectsData( $this->createTitle() ) );
 	}
 
 	public function testGetChildSubjectsReturnsEmptyArrayWhenNoContent(): void {
-		$lookup = new SubjectDataLookup( $this->createEmptyResolver() );
+		$lookup = new SubjectDataLookup( $this->emptyResolver() );
 
 		$this->assertSame( [ [] ], $lookup->getChildSubjectsData( $this->createTitle() ) );
 	}
@@ -588,7 +573,7 @@ class SubjectDataLookupTest extends TestCase {
 			new Statement( new PropertyName( 'Active' ), 'boolean', new BooleanValue( true ) ),
 		);
 
-		$lookup = new SubjectDataLookup( $this->createResolverWithMainSubject( $subject ) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$result = $lookup->getMainSubjectData( $this->createTitle() );
 
