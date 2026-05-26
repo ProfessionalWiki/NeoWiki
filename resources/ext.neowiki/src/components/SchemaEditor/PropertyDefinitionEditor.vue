@@ -32,12 +32,9 @@
 		</CdxField>
 
 		<CdxField :hide-label="true">
-			<CdxToggleSwitch
-				v-model="localProperty.required"
-				:align-switch="true"
-			>
+			<CdxCheckbox v-model="localProperty.required">
 				{{ $i18n( 'neowiki-property-editor-required' ).text() }}
-			</CdxToggleSwitch>
+			</CdxCheckbox>
 		</CdxField>
 
 		<component
@@ -57,7 +54,7 @@
 
 <script setup lang="ts">
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
-import { CdxField, CdxSelect, CdxTextArea, CdxTextInput, CdxToggleSwitch } from '@wikimedia/codex';
+import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { nextTick, onMounted, ref, watch } from 'vue';
 
