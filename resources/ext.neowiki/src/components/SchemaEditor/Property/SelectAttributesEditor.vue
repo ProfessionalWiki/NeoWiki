@@ -2,14 +2,12 @@
 	<!-- cdx-field class is used for spacing -->
 	<div class="select-attributes cdx-field">
 		<CdxField :hide-label="true">
-			<CdxToggleSwitch
+			<CdxCheckbox
 				:model-value="property.multiple"
-				:align-switch="true"
-				:label="$i18n( 'neowiki-property-editor-multiple' ).text()"
 				@update:model-value="updateMultiple"
 			>
 				{{ $i18n( 'neowiki-property-editor-multiple' ).text() }}
-			</CdxToggleSwitch>
+			</CdxCheckbox>
 		</CdxField>
 
 		<CdxField>
@@ -33,7 +31,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { CdxChipInput, CdxField, CdxToggleSwitch } from '@wikimedia/codex';
+import { CdxCheckbox, CdxChipInput, CdxField } from '@wikimedia/codex';
 import type { ChipInputItem } from '@wikimedia/codex';
 import { SelectOption, SelectProperty } from '@/domain/propertyTypes/Select.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';

@@ -49,10 +49,10 @@ describe( 'TextAttributesEditor', () => {
 			const wrapper = newWrapper( {
 				property: newTextProperty( { multiple: true, uniqueItems: false } ),
 			} );
-			const toggles = wrapper.findAll( 'input[type="checkbox"]' );
+			const checkboxes = wrapper.findAll( 'input[type="checkbox"]' );
 
-			expect( ( toggles[ 0 ].element as HTMLInputElement ).checked ).toBe( true );
-			expect( ( toggles[ 1 ].element as HTMLInputElement ).checked ).toBe( false );
+			expect( ( checkboxes[ 0 ].element as HTMLInputElement ).checked ).toBe( true );
+			expect( ( checkboxes[ 1 ].element as HTMLInputElement ).checked ).toBe( false );
 		} );
 	} );
 
