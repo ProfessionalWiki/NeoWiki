@@ -267,6 +267,29 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertSame( 'type-mismatch', $violations[0]->code );
 	}
 
+	public function testUnregisteredWriterTypeStillEmitsTypeMismatch(): void {
+		// Replaces the pre-refactor testStatementWithUnknownPropertyTypeIsSkipped:
+		// when the writer's type is a string not in the PropertyType registry
+		// AND differs from the schema's current type, type-mismatch still fires
+		// (the comparison is string-vs-string; registry membership is checked
+		// only when the types match, for the per-type validate dispatch).
+		$schema = $this->newSchema( [
+			'Age' => $this->newNumberProperty(),
+		] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				new Statement( new PropertyName( 'Age' ), 'unknown-type', new NumberValue( 42 ) ),
+			] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'type-mismatch', $violations[0]->code );
+		$this->assertSame( [ 'unknown-type', 'number' ], $violations[0]->args );
+	}
+
 	public function testMatchingTypeRunsPerTypeValidation(): void {
 		// Sanity: when writer's type matches current type, per-type validation
 		// runs normally.
