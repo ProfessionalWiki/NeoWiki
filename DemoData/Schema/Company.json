@@ -48,6 +48,9 @@
 		"World domination progress": {
 			"type": "number",
 			"default": 0
+		},
+		"Is public": {
+			"type": "boolean"
 		}
 	}
 }

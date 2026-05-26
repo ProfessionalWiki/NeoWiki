@@ -40,6 +40,18 @@
 			"minimum": 42,
 			"maximum": 100
 		},
+		"date/date": {
+			"type": "date"
+		},
+		"date/date (required)": {
+			"type": "date",
+			"required": true
+		},
+		"date/date (w bounds)": {
+			"type": "date",
+			"minimum": "2020-01-01",
+			"maximum": "2030-12-31"
+		},
 		"select/select": {
 			"type": "select",
 			"options": [
@@ -68,6 +80,17 @@
 				{ "id": "o1demo1aaaaaad4", "label": "Yellow" }
 			],
 			"multiple": true
+		},
+		"boolean/boolean": {
+			"type": "boolean"
+		},
+		"boolean/boolean (default true)": {
+			"type": "boolean",
+			"default": true
+		},
+		"boolean/boolean (default false)": {
+			"type": "boolean",
+			"default": false
 		},
 		"relation/relation": {
 			"type": "relation",

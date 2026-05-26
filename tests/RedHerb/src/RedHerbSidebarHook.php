@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\RedHerb;
 
-use Closure;
 use MediaWiki\Hook\SidebarBeforeOutputHook;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -12,14 +11,6 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Skin;
 
 class RedHerbSidebarHook implements SidebarBeforeOutputHook {
-
-	private Closure $pageHasMainSubject;
-
-	public function __construct( ?Closure $pageHasMainSubject = null ) {
-		$this->pageHasMainSubject = $pageHasMainSubject ?? static fn ( Title $title ): bool =>
-			NeoWikiExtension::getInstance()->newPageSubjectsLookup()
-				->pageHasMainSubject( new PageId( $title->getArticleID() ) );
-	}
 
 	public function onSidebarBeforeOutput( $skin, &$sidebar ): void {
 		$links = [
@@ -32,14 +23,23 @@ class RedHerbSidebarHook implements SidebarBeforeOutputHook {
 
 		$title = $skin->getTitle();
 		if ( $title !== null && $title->exists() ) {
-			$links[] = [
-				'id' => 'redherb-sidebar-create-child-company',
-				'text' => $skin->msg( 'redherb-sidebar-create-child-company' )->text(),
-				'href' => '#',
-				'class' => 'ext-redherb-create-child-company-trigger',
-			];
+			$extension = NeoWikiExtension::getInstance();
+			$authorizer = $extension->newSubjectAuthorizer( $skin->getAuthority() );
 
-			if ( ( $this->pageHasMainSubject )( $title ) ) {
+			if ( $authorizer->canCreateChildSubject() ) {
+				$links[] = [
+					'id' => 'redherb-sidebar-create-child-company',
+					'text' => $skin->msg( 'redherb-sidebar-create-child-company' )->text(),
+					'href' => '#',
+					'class' => 'ext-redherb-create-child-company-trigger',
+				];
+			}
+
+			if (
+				$authorizer->canEditSubject()
+				&& $extension->newPageSubjectsLookup()
+					->pageHasMainSubject( new PageId( $title->getArticleID() ) )
+			) {
 				$links[] = [
 					'id' => 'redherb-sidebar-edit-main-subject',
 					'text' => $skin->msg( 'redherb-sidebar-edit-main-subject' )->text(),

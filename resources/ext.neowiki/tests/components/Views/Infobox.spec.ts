@@ -32,7 +32,7 @@ describe( 'Infobox', () => {
 	} );
 
 	let pinia: ReturnType<typeof createPinia>;
-	let schemaStore;
+	let schemaStore: any;
 	let subjectStore: any;
 
 	const mockSchema = new Schema(
@@ -150,7 +150,8 @@ describe( 'Infobox', () => {
 		expect( editButton.exists() ).toBe( true );
 	} );
 
-	it( 'fetches latest subject and opens dialog when edit button is clicked', async () => {
+	it( 'fetches latest schema and subject before opening dialog when edit button is clicked', async () => {
+		schemaStore.fetchSchema = vi.fn().mockResolvedValue( undefined );
 		subjectStore.fetchSubject = vi.fn().mockResolvedValue( undefined );
 
 		const wrapper = mountComponent( mockSubject, true );
@@ -162,6 +163,7 @@ describe( 'Infobox', () => {
 		await editButton.trigger( 'click' );
 		await flushPromises();
 
+		expect( schemaStore.fetchSchema ).toHaveBeenCalledWith( mockSubject.getSchemaName() );
 		expect( subjectStore.fetchSubject ).toHaveBeenCalledWith( mockSubject.getId() );
 		expect( dialog.props( 'open' ) ).toBe( true );
 	} );

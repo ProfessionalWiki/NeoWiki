@@ -7,7 +7,7 @@ Status: Draft, incorporating feedback from ECHOLOT partners (Bilbao meeting Marc
 ## Purpose
 
 This document proposes how NeoWiki's data model maps to RDF triples for the SPARQL plugin described in
-[ADR 19](../adr/019_Graph_Database_Architecture.md). The mapping determines what RDF a triple store contains
+[ADR 19](../adr/019-graph-database-architecture.md). The mapping determines what RDF a triple store contains
 and therefore what SPARQL queries users can write. It also defines the shape of RDF exports.
 
 This is a strawman proposal. Many decisions here need input from partners with RDF and Linked Open Data expertise,
@@ -18,7 +18,7 @@ collected at the end. Discussion is tracked in [#723](https://github.com/Profess
 
 1. **Simple queries should be simple.** The most common operation — looking up a Subject's properties or finding
    Subjects by property values — should require only basic triple patterns, not navigating reification structures.
-2. **No information loss.** Everything in the [Subject format](../SubjectFormat.md) must be representable in RDF,
+2. **No information loss.** Everything in the [Subject format](../reference/subject-format.md) must be representable in RDF,
    including Relation IDs and Relation properties.
 3. **Standard RDF 1.1.** No dependency on RDF-star/RDF 1.2, which is still a Working Draft and not supported by
    QLever. Can be adopted later as an optimization.

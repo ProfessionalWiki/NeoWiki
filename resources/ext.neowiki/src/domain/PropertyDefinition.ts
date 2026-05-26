@@ -68,7 +68,9 @@ export class PropertyDefinitionDeserializer {
 				type: json.type as string,
 				description: json.description ?? '',
 				required: json.required ?? false,
-				default: json.default ? this.valueDeserializer.deserialize( json.default, json.type ) : undefined,
+				default: json.default !== undefined && json.default !== null ?
+					this.valueDeserializer.deserialize( json.default, json.type ) :
+					undefined,
 			} as PropertyDefinition,
 			json,
 		);

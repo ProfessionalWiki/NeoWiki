@@ -2,28 +2,24 @@
 	<!-- cdx-field class is used for spacing -->
 	<div class="text-attributes cdx-field">
 		<CdxField :hide-label="true">
-			<CdxToggleSwitch
+			<CdxCheckbox
 				:model-value="property.multiple"
-				:align-switch="true"
-				:label="$i18n( 'neowiki-property-editor-multiple' ).text()"
 				@update:model-value="updateMultiple"
 			>
 				{{ $i18n( 'neowiki-property-editor-multiple' ).text() }}
-			</CdxToggleSwitch>
+			</CdxCheckbox>
 		</CdxField>
 
 		<CdxField
 			v-if="property.multiple"
 			:hide-label="true"
 		>
-			<CdxToggleSwitch
+			<CdxCheckbox
 				:model-value="property.uniqueItems"
-				:align-switch="true"
-				:label="$i18n( 'neowiki-property-editor-unique-items' ).text()"
 				@update:model-value="updateUniqueItems"
 			>
 				{{ $i18n( 'neowiki-property-editor-unique-items' ).text() }}
-			</CdxToggleSwitch>
+			</CdxCheckbox>
 		</CdxField>
 
 		<NeoNestedField :optional="true">
@@ -70,7 +66,7 @@
 import { ref, watch } from 'vue';
 import { TextProperty } from '@/domain/propertyTypes/Text.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { CdxToggleSwitch, CdxField, CdxTextInput } from '@wikimedia/codex';
+import { CdxCheckbox, CdxField, CdxTextInput } from '@wikimedia/codex';
 import { minExceedsMax } from '@/components/SchemaEditor/Property/minExceedsMax.ts';
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
 

@@ -4,7 +4,7 @@ Written 2026-01-31 by Jeroen De Dauw with some help from Claude Opus 4.5
 
 ## Context
 
-Currently, Property Definitions are local to their Schema ([ADR 6](../adr/006_Schemas.md)). "Name" in a Person
+Currently, Property Definitions are local to their Schema ([ADR 6](../adr/006-schemas.md)). "Name" in a Person
 Schema and "Name" in a Company Schema are independent definitions that can have different types and constraints.
 
 Both Semantic MediaWiki and Wikibase use global properties: a property is defined once and reused across types.
@@ -20,7 +20,7 @@ the same ontology term (e.g., `foaf:name`) must be mapped separately for every S
 
 **Enforced consistency.** Same-named properties cannot accidentally have different types across Schemas.
 
-**Cross-schema query semantics.** A property name on a Subject node in the [graph](../GraphModel.md) is
+**Cross-schema query semantics.** A property name on a Subject node in the [graph](../reference/graph-model.md) is
 guaranteed to mean the same thing regardless of the Subject's Schema.
 
 **Reduced redundancy.** Properties like "Name" or "Website" are defined once instead of duplicated across
@@ -30,10 +30,10 @@ every Schema that uses them.
 
 ## Cons of Global Properties
 
-**Thin abstraction.** Currently a [Property Definition](../Glossary.md#property-definition) carries its type,
+**Thin abstraction.** Currently a [Property Definition](../concepts/glossary.md#property-definition) carries its type,
 constraints (like `minimum`/`maximum`), `required`, `default`, `multiple`, and display hints (like `precision`).
 Whether a property is required, what its default is, and what constraints apply are per-Schema decisions. Display
-settings are per-[Layout](../adr/018_Views.md). Once you move all of that out, a global property is just a name
+settings are per-[Layout](../adr/018-views.md). Once you move all of that out, a global property is just a name
 and a type. It is unclear if that justifies the architectural complexity.
 
 **Schema creation UX suffers.** Instead of defining properties inline while creating a Schema, users must
@@ -52,7 +52,7 @@ local properties with extra indirection.
 a creation/editing UI, and search/browse functionality — all separate from the Schema UI.
 
 **Interaction with Layouts is unclear.** Display attributes like `precision` are currently Property Definition
-Attributes but are also listed as Layout Attributes in [ADR 18](../adr/018_Views.md). With global properties,
+Attributes but are also listed as Layout Attributes in [ADR 18](../adr/018-views.md). With global properties,
 this overlap becomes a design problem: a property has no display defaults outside of a Layout context unless we
 add yet another layer (e.g., display defaults on the Schema's property reference that Layouts can override).
 

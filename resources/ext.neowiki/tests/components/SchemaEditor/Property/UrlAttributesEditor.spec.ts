@@ -19,30 +19,30 @@ describe( 'UrlAttributesEditor', () => {
 			const wrapper = newWrapper( {
 				property: newUrlProperty( { multiple: true, uniqueItems: false } ),
 			} );
-			const toggles = wrapper.findAll( 'input[type="checkbox"]' );
+			const checkboxes = wrapper.findAll( 'input[type="checkbox"]' );
 
-			expect( ( toggles[ 0 ].element as HTMLInputElement ).checked ).toBe( true );
-			expect( ( toggles[ 1 ].element as HTMLInputElement ).checked ).toBe( false );
+			expect( ( checkboxes[ 0 ].element as HTMLInputElement ).checked ).toBe( true );
+			expect( ( checkboxes[ 1 ].element as HTMLInputElement ).checked ).toBe( false );
 		} );
 	} );
 
 	describe( 'conditional display', () => {
-		it( 'hides uniqueItems toggle when multiple is false', () => {
+		it( 'hides uniqueItems checkbox when multiple is false', () => {
 			const wrapper = newWrapper( {
 				property: newUrlProperty( { multiple: false } ),
 			} );
-			const toggles = wrapper.findAll( 'input[type="checkbox"]' );
+			const checkboxes = wrapper.findAll( 'input[type="checkbox"]' );
 
-			expect( toggles ).toHaveLength( 1 );
+			expect( checkboxes ).toHaveLength( 1 );
 		} );
 
-		it( 'shows uniqueItems toggle when multiple is true', () => {
+		it( 'shows uniqueItems checkbox when multiple is true', () => {
 			const wrapper = newWrapper( {
 				property: newUrlProperty( { multiple: true } ),
 			} );
-			const toggles = wrapper.findAll( 'input[type="checkbox"]' );
+			const checkboxes = wrapper.findAll( 'input[type="checkbox"]' );
 
-			expect( toggles ).toHaveLength( 2 );
+			expect( checkboxes ).toHaveLength( 2 );
 		} );
 	} );
 
@@ -60,9 +60,9 @@ describe( 'UrlAttributesEditor', () => {
 			const wrapper = newWrapper( {
 				property: newUrlProperty( { multiple: true, uniqueItems: true } ),
 			} );
-			const toggles = wrapper.findAll( 'input[type="checkbox"]' );
+			const checkboxes = wrapper.findAll( 'input[type="checkbox"]' );
 
-			await toggles[ 1 ].setValue( false );
+			await checkboxes[ 1 ].setValue( false );
 
 			expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { uniqueItems: false } ] );

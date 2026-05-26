@@ -23,6 +23,7 @@ use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\ParserFunction\CypherRawParserFunction;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
@@ -128,8 +129,7 @@ class NeoWikiHooks {
 			'cypher_raw',
 			static function ( Parser $parser, string $cypherQuery ): string {
 				$parserFunction = new CypherRawParserFunction(
-					NeoWikiExtension::getInstance()->getNeo4jPlugin(),
-					NeoWikiExtension::getInstance()->getCypherQueryValidator()
+					NeoWikiExtension::getInstance()->newCypherQueryService()
 				);
 				return $parserFunction->handle( $parser, $cypherQuery );
 			}
@@ -141,7 +141,7 @@ class NeoWikiHooks {
 				$parserFunction = new ViewParserFunction(
 					NeoWikiExtension::getInstance()->newSubjectContentRepository()
 				);
-				return $parserFunction->handle( $parser, $args[0] ?? '', $args[1] ?? '' );
+				return $parserFunction->handle( $parser, ...$args );
 			}
 		);
 

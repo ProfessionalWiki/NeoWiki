@@ -19,6 +19,10 @@
 	"neowiki-property-type-relation": "Relation",
 	"neowiki-property-type-select": "Select",
 	"neowiki-property-type-datetime": "Date & Time",
+	"neowiki-property-type-date": "Date",
+	"neowiki-property-type-boolean": "Boolean",
+	"neowiki-boolean-true": "Yes",
+	"neowiki-boolean-false": "No",
 
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 
@@ -59,6 +63,7 @@
 	"neowiki-field-max-value": "Maximum value is $1.",
 	"neowiki-field-invalid-url": "Please enter a valid URL.",
 	"neowiki-field-invalid-datetime": "Please enter a valid date and time.",
+	"neowiki-field-invalid-date": "Please enter a valid date.",
 	"neowiki-field-invalid-option": "\"$1\" is not a valid option.",
 	"neowiki-field-single-value-only": "Only one value can be selected.",
 	"neowiki-select-placeholder": "Select an option",
@@ -108,13 +113,11 @@
 	"neowiki-schema-display-required-yes": "Yes",
 	"neowiki-schema-display-required-no": "No",
 
-	"neowiki-cypher-raw-error-empty-query": "Empty Cypher query provided",
-	"neowiki-cypher-raw-error-write-query": "Write queries are not allowed",
-	"neowiki-cypher-raw-error-query-failed": "Query execution failed: $1",
 	"neowiki-cypher-raw-error-json-encode": "Failed to encode query result as JSON",
 
-	"neowiki-lua-query-error-empty-query": "nw.query: the Cypher query must not be empty.",
-	"neowiki-lua-query-error-write-query": "nw.query: only read-only Cypher queries are allowed.",
+	"neowiki-view-error-extra-positional": "Unexpected extra positional argument: $1",
+	"neowiki-view-error-conflicting-subject": "Subject specified both positionally and as a named subject argument.",
+	"neowiki-view-error-unknown-arg": "Unknown argument: $1",
 
 	"neowiki-schema-editor-summary-default": "Update schema via NeoWiki UI",
 	"neowiki-schema-editor-success": "Updated $1 schema",

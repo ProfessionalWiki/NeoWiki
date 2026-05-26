@@ -16,8 +16,10 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Session\CsrfTokenSet;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
-use ProfessionalWiki\NeoWiki\Application\CompositeCypherQueryValidator;
-use ProfessionalWiki\NeoWiki\Application\CypherQueryValidator;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CompositeCypherQueryValidator;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CypherQueryValidator;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
@@ -48,7 +50,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\WriteQueryEngine;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -62,8 +64,9 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
-use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
@@ -81,13 +84,13 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentReposit
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jPageIdentifiersLookup;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\ExplainCypherQueryValidator;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\KeywordCypherQueryValidator;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jQueryStore;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jSubjectLabelLookup;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\Neo4jValueBuilderRegistry;
-use ProfessionalWiki\NeoWiki\Persistence\Neo4j\SubjectUpdaterFactory;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jPageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\ExplainCypherQueryValidator;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\KeywordCypherQueryValidator;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
@@ -221,7 +224,7 @@ class NeoWikiExtension {
 		return new Neo4jQueryStore(
 			client: $this->getNeo4jClient(),
 			readOnlyClient: $this->getReadOnlyNeo4jClient(),
-			subjectUpdaterFactory: new SubjectUpdaterFactory(
+			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
 				schemaLookup: $schemaLookup, // Note: this is a hack, we should have a proper test environment
 				valueBuilderRegistry: $this->getValueBuilderRegistry(),
 				logger: LoggerFactory::getInstance( 'NeoWiki' )
@@ -258,7 +261,21 @@ class NeoWikiExtension {
 		] );
 	}
 
-	public function getWriteQueryEngine(): WriteQueryEngine {
+	public function newCypherQueryService(): Neo4jQueryService {
+		return new Neo4jQueryService(
+			$this->getNeo4jPlugin(),
+			$this->getCypherQueryValidator(),
+			new Neo4jResultNormalizer(),
+		);
+	}
+
+	public static function newCypherQueryApi(): CypherQueryApi {
+		return new CypherQueryApi(
+			self::getInstance()->newCypherQueryService()
+		);
+	}
+
+	public function getWriteQueryEngine(): Neo4jWriteQueryEngine {
 		return $this->getNeo4jPlugin();
 	}
 

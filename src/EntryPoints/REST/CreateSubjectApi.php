@@ -88,7 +88,7 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) for the Subject. Nested shape matches the subject JSON format documented in docs/SubjectFormat.md.',
+				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) for the Subject. Nested shape matches the subject JSON format documented in docs/reference/subject-format.md.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',

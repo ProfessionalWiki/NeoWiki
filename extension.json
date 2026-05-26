@@ -99,10 +99,14 @@
 
 	"AvailableRights": [
 		"neowiki-schema-edit",
-		"neowiki-layout-edit"
+		"neowiki-layout-edit",
+		"neowiki-query"
 	],
 
 	"GroupPermissions": {
+		"*": {
+			"neowiki-query": true
+		},
 		"sysop": {
 			"neowiki-schema-edit": true,
 			"neowiki-layout-edit": true
@@ -110,6 +114,14 @@
 		"interface-admin": {
 			"neowiki-schema-edit": true,
 			"neowiki-layout-edit": true
+		}
+	},
+
+	"RateLimits": {
+		"neowiki-query": {
+			"anon": [ 10, 60 ],
+			"user": [ 60, 60 ],
+			"bot": [ 1000, 60 ]
 		}
 	},
 
@@ -127,6 +139,13 @@
 		"NeoWikiEnableDevelopmentUI": {
 			"description": "Whether development UIs should be enabled",
 			"value": false
+		},
+		"NeoWikiQueryLimits": {
+			"description": "Per-tier per-query resource caps. Keys: 'default' (users without apihighlimits) and 'expensive' (users with apihighlimits). Each value: { timeoutSeconds, maxRows }.",
+			"value": {
+				"default": { "timeoutSeconds": 30, "maxRows": 5000 },
+				"expensive": { "timeoutSeconds": 300, "maxRows": 50000 }
+			}
 		}
 	},
 
@@ -211,6 +230,11 @@
 			"path": "/neowiki/v0/subject/{subjectId}/validate",
 			"method": [ "POST" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newValidateSubjectUpdateApi"
+		},
+		{
+			"path": "/neowiki/v0/query/cypher",
+			"method": [ "POST" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCypherQueryApi"
 		}
 	],
 
@@ -276,6 +300,7 @@
 						"cdxIconEye",
 						"cdxIconEyeClosed",
 						"cdxIconClock",
+						"cdxIconCalendar",
 						"cdxIconCollapse",
 						"cdxIconExpand",
 						"cdxIconPushPin",
@@ -292,6 +317,10 @@
 				"neowiki-property-type-relation",
 				"neowiki-property-type-select",
 				"neowiki-property-type-datetime",
+				"neowiki-property-type-date",
+				"neowiki-property-type-boolean",
+				"neowiki-boolean-true",
+				"neowiki-boolean-false",
 				"neowiki-infobox-type",
 				"neowiki-infobox-edit-link",
 				"neowiki-field-required",
@@ -303,6 +332,7 @@
 				"neowiki-field-max-value",
 				"neowiki-field-invalid-url",
 				"neowiki-field-invalid-datetime",
+				"neowiki-field-invalid-date",
 				"neowiki-field-invalid-option",
 				"neowiki-field-single-value-only",
 				"neowiki-select-placeholder",

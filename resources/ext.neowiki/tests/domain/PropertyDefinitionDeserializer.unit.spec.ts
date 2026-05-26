@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { PropertyDefinitionDeserializer } from '@/domain/PropertyDefinition';
-import { newStringValue } from '@/domain/Value';
+import { newBooleanValue, newNumberValue, newStringValue } from '@/domain/Value';
 import { TextProperty, TextType } from '@/domain/propertyTypes/Text';
 import { NumberProperty, NumberType } from '@/domain/propertyTypes/Number';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
@@ -147,6 +147,54 @@ it( 'creates definitions with explicitly undefined default value', () => {
 		{
 			type: 'text',
 			default: undefined,
+		},
+	);
+
+	expect( property.default ).toBeUndefined();
+} );
+
+it( 'preserves default: false for a boolean property', () => {
+	const property = serializer.propertyDefinitionFromJson(
+		'test',
+		{
+			type: 'boolean',
+			default: false,
+		},
+	);
+
+	expect( property.default ).toEqual( newBooleanValue( false ) );
+} );
+
+it( 'preserves default: true for a boolean property', () => {
+	const property = serializer.propertyDefinitionFromJson(
+		'test',
+		{
+			type: 'boolean',
+			default: true,
+		},
+	);
+
+	expect( property.default ).toEqual( newBooleanValue( true ) );
+} );
+
+it( 'preserves default: 0 for a number property', () => {
+	const property = serializer.propertyDefinitionFromJson(
+		'test',
+		{
+			type: 'number',
+			default: 0,
+		},
+	);
+
+	expect( property.default ).toEqual( newNumberValue( 0 ) );
+} );
+
+it( 'treats default: null as no default', () => {
+	const property = serializer.propertyDefinitionFromJson(
+		'test',
+		{
+			type: 'boolean',
+			default: null,
 		},
 	);
 
