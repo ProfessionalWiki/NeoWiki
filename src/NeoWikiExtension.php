@@ -505,7 +505,13 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
+			subjectValidator: $this->getSubjectValidator(),
+			validationEnforced: $this->isValidationEnforced(),
 		);
+	}
+
+	private function isValidationEnforced(): bool {
+		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiValidationEnforced' ) === true;
 	}
 
 	public function getSubjectValidator(): SubjectValidator {

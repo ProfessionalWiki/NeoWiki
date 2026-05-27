@@ -10,9 +10,11 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\ValidationFailedException;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ReplaceSubjectApi extends SimpleHandler {
@@ -41,6 +43,12 @@ class ReplaceSubjectApi extends SimpleHandler {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',
 				'message' => $e->getMessage(),
+			] );
+		} catch ( ValidationFailedException $e ) {
+			return $this->getResponseFactory()->createHttpError( 422, [
+				'status' => 'error',
+				'message' => $e->getMessage(),
+				'violations' => ViolationSerializer::serializeMany( $e->violations ),
 			] );
 		} catch ( SubjectNotFoundException $e ) {
 			return $this->getResponseFactory()->createHttpError( 404, [
