@@ -17,7 +17,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
-use ProfessionalWiki\NeoWiki\Domain\Validation\ViolationDiff;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use RuntimeException;
 
@@ -63,10 +62,7 @@ readonly class CreateSubjectAction {
 
 		$proposedViolations = $this->validateProposedSubject( $subject );
 
-		if (
-			$this->validationEnforced &&
-			ViolationDiff::newViolations( $proposedViolations, [] ) !== []
-		) {
+		if ( $this->validationEnforced && $proposedViolations !== [] ) {
 			throw new ValidationFailedException( $proposedViolations );
 		}
 

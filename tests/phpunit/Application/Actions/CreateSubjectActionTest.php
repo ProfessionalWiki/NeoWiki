@@ -406,6 +406,11 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	public function testEnforcementOnDoesNotInterceptAlreadyExistsBranch(): void {
+		// Register a schema with a required property that the request omits, so
+		// that if enforcement ran before the already-exists check the action
+		// would throw ValidationFailedException. The test only passes if the
+		// already-exists branch short-circuits first.
+		$this->registerPersonSchemaWithRequiredName();
 		$pageSubjects = $this->createMock( PageSubjects::class );
 		$pageSubjects->method( 'createMainSubject' )->willThrowException(
 			new RuntimeException( 'Subject already exists' )
@@ -417,7 +422,7 @@ class CreateSubjectActionTest extends TestCase {
 				pageId: 1,
 				isMainSubject: true,
 				label: 'Existing Label',
-				schemaName: 'existing-schema-id',
+				schemaName: 'PersonSchema',
 				statements: [],
 			)
 		);
