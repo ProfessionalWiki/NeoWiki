@@ -111,6 +111,7 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 		$this->apiResponse = [
 			'status' => 'created',
 			'subjectId' => $subjectId,
+			'violations' => ViolationSerializer::serializeMany( $violations ),
 		];
 	}
 

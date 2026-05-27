@@ -33,7 +33,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 		$body = $this->getValidatedBody();
 
 		try {
-			NeoWikiExtension::getInstance()->newReplaceSubjectAction( $this->getAuthority() )->replace(
+			$violations = NeoWikiExtension::getInstance()->newReplaceSubjectAction( $this->getAuthority() )->replace(
 				new SubjectId( $subjectId ),
 				$body['label'],
 				$body['statements'],
@@ -65,6 +65,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 		return $this->getResponseFactory()->createJson( [
 			'status' => 'updated',
 			'subjectId' => $subjectId,
+			'violations' => ViolationSerializer::serializeMany( $violations ),
 		] );
 	}
 
