@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -164,6 +165,71 @@ class SubjectMapTest extends TestCase {
 			$subjectMap,
 			new SubjectMap( $subject1 )
 		);
+	}
+
+	public function testWithOrderingReturnsSubjectsInGivenOrder(): void {
+		$subject1 = TestSubject::build( self::GUID_123 );
+		$subject2 = TestSubject::build( self::GUID_456 );
+		$subject3 = TestSubject::build( self::GUID_789 );
+
+		$subjectMap = new SubjectMap( $subject1, $subject2, $subject3 );
+
+		$reordered = $subjectMap->withOrdering( [
+			new SubjectId( self::GUID_789 ),
+			new SubjectId( self::GUID_123 ),
+			new SubjectId( self::GUID_456 ),
+		] );
+
+		$this->assertEquals(
+			[ $subject3, $subject1, $subject2 ],
+			$reordered->asArray()
+		);
+	}
+
+	public function testWithOrderingDoesNotMutate(): void {
+		$subject1 = TestSubject::build( self::GUID_123 );
+		$subject2 = TestSubject::build( self::GUID_456 );
+
+		$subjectMap = new SubjectMap( $subject1, $subject2 );
+		$subjectMap->withOrdering( [
+			new SubjectId( self::GUID_456 ),
+			new SubjectId( self::GUID_123 ),
+		] );
+
+		$this->assertEquals(
+			[ $subject1, $subject2 ],
+			$subjectMap->asArray()
+		);
+	}
+
+	public function testWithOrderingThrowsWhenIdNotPresent(): void {
+		$subjectMap = new SubjectMap( TestSubject::build( self::GUID_123 ) );
+
+		$this->expectException( InvalidArgumentException::class );
+		$subjectMap->withOrdering( [ new SubjectId( self::GUID_456 ) ] );
+	}
+
+	public function testWithOrderingThrowsWhenIdMissingFromOrdering(): void {
+		$subjectMap = new SubjectMap(
+			TestSubject::build( self::GUID_123 ),
+			TestSubject::build( self::GUID_456 ),
+		);
+
+		$this->expectException( InvalidArgumentException::class );
+		$subjectMap->withOrdering( [ new SubjectId( self::GUID_123 ) ] );
+	}
+
+	public function testWithOrderingThrowsOnDuplicateIds(): void {
+		$subjectMap = new SubjectMap(
+			TestSubject::build( self::GUID_123 ),
+			TestSubject::build( self::GUID_456 ),
+		);
+
+		$this->expectException( InvalidArgumentException::class );
+		$subjectMap->withOrdering( [
+			new SubjectId( self::GUID_123 ),
+			new SubjectId( self::GUID_123 ),
+		] );
 	}
 
 }

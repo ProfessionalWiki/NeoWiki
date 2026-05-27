@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Page;
 
+use InvalidArgumentException;
 use OutOfBoundsException;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -99,6 +100,32 @@ class PageSubjects {
 		}
 
 		$this->childSubjects->addOrUpdateSubject( $subject );
+	}
+
+	/**
+	 * Atomically set the main subject and child subject ordering. The set of
+	 * ids in $mainId (if non-null) and $childIds must match exactly the set of
+	 * subject ids currently on this page; no additions or removals are allowed.
+	 *
+	 * @param SubjectId[] $childIds
+	 * @throws InvalidArgumentException on unknown / duplicate / missing ids
+	 */
+	public function setOrdering( ?SubjectId $mainId, array $childIds ): void {
+		$allSubjects = $this->getAllSubjects();
+
+		$newMain = null;
+		if ( $mainId !== null ) {
+			$newMain = $allSubjects->getSubject( $mainId );
+			if ( $newMain === null ) {
+				throw new InvalidArgumentException( 'Unknown main subject id: ' . $mainId->text );
+			}
+		}
+
+		$remaining = $mainId === null ? $allSubjects : $allSubjects->without( $mainId );
+		$newChildren = $remaining->withOrdering( $childIds );
+
+		$this->mainSubject = $newMain;
+		$this->childSubjects = $newChildren;
 	}
 
 }

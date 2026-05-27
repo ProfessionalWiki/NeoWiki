@@ -123,5 +123,15 @@ export const useSubjectStore = defineStore( 'subject', {
 			await NeoWikiExtension.getInstance().getSubjectRepository().setMainSubject( pageId, subjectId, comment );
 			await this.loadPageSubjects( pageId );
 		},
+
+		async setPageSubjectsOrdering(
+			pageId: number,
+			mainSubjectId: SubjectId | null,
+			childSubjectIds: SubjectId[],
+			comment?: string,
+		): Promise<void> {
+			await NeoWikiExtension.getInstance().getSubjectRepository().setSubjectsOrdering( pageId, mainSubjectId, childSubjectIds, comment );
+			await this.loadPageSubjects( pageId );
+		},
 	},
 } );

@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Page;
 
+use InvalidArgumentException;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -103,6 +104,90 @@ class PageSubjectsTest extends TestCase {
 
 		$this->expectException( OutOfBoundsException::class );
 		$data->updateSubject( TestSubject::build( TestSubject::uniqueId() ) );
+	}
+
+	public function testSetOrderingReordersChildSubjects(): void {
+		$main = TestSubject::build( TestSubject::uniqueId() );
+		$first = TestSubject::build( TestSubject::uniqueId() );
+		$second = TestSubject::build( TestSubject::uniqueId() );
+		$third = TestSubject::build( TestSubject::uniqueId() );
+
+		$data = new PageSubjects( $main, new SubjectMap( $first, $second, $third ) );
+
+		$data->setOrdering( $main->id, [ $third->id, $first->id, $second->id ] );
+
+		$this->assertSame( $main, $data->getMainSubject() );
+		$this->assertEquals(
+			new SubjectMap( $third, $first, $second ),
+			$data->getChildSubjects()
+		);
+	}
+
+	public function testSetOrderingPromotesAndSwapsMainIntoDroppedSlot(): void {
+		$oldMain = TestSubject::build( TestSubject::uniqueId() );
+		$first = TestSubject::build( TestSubject::uniqueId() );
+		$second = TestSubject::build( TestSubject::uniqueId() );
+		$third = TestSubject::build( TestSubject::uniqueId() );
+
+		$data = new PageSubjects( $oldMain, new SubjectMap( $first, $second, $third ) );
+
+		// Promote $second; previous main lands in $second's old slot.
+		$data->setOrdering( $second->id, [ $first->id, $oldMain->id, $third->id ] );
+
+		$this->assertSame( $second, $data->getMainSubject() );
+		$this->assertEquals(
+			new SubjectMap( $first, $oldMain, $third ),
+			$data->getChildSubjects()
+		);
+	}
+
+	public function testSetOrderingDemotesMainAtChosenPosition(): void {
+		$oldMain = TestSubject::build( TestSubject::uniqueId() );
+		$first = TestSubject::build( TestSubject::uniqueId() );
+		$second = TestSubject::build( TestSubject::uniqueId() );
+
+		$data = new PageSubjects( $oldMain, new SubjectMap( $first, $second ) );
+
+		$data->setOrdering( null, [ $first->id, $oldMain->id, $second->id ] );
+
+		$this->assertNull( $data->getMainSubject() );
+		$this->assertEquals(
+			new SubjectMap( $first, $oldMain, $second ),
+			$data->getChildSubjects()
+		);
+	}
+
+	public function testSetOrderingThrowsWhenMainIdNotPresent(): void {
+		$data = new PageSubjects(
+			TestSubject::build( TestSubject::uniqueId() ),
+			TestSubject::newMap()
+		);
+
+		$this->expectException( InvalidArgumentException::class );
+		$data->setOrdering( TestSubject::uniqueId(), [] );
+	}
+
+	public function testSetOrderingThrowsWhenChildOrderingMissesAnId(): void {
+		$oldMain = TestSubject::build( TestSubject::uniqueId() );
+		$first = TestSubject::build( TestSubject::uniqueId() );
+		$second = TestSubject::build( TestSubject::uniqueId() );
+
+		$data = new PageSubjects( $oldMain, new SubjectMap( $first, $second ) );
+
+		$this->expectException( InvalidArgumentException::class );
+		// Forgot to include $second.
+		$data->setOrdering( $oldMain->id, [ $first->id ] );
+	}
+
+	public function testSetOrderingThrowsWhenChildOrderingIncludesMain(): void {
+		$oldMain = TestSubject::build( TestSubject::uniqueId() );
+		$first = TestSubject::build( TestSubject::uniqueId() );
+
+		$data = new PageSubjects( $oldMain, new SubjectMap( $first ) );
+
+		$this->expectException( InvalidArgumentException::class );
+		// Same id appearing as main AND in the child ordering is illegal.
+		$data->setOrdering( $oldMain->id, [ $first->id, $oldMain->id ] );
 	}
 
 }
