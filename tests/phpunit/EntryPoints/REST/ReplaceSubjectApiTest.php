@@ -8,6 +8,7 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
@@ -39,6 +40,44 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 200, $response->getStatusCode() );
 		$this->assertSame( 'updated', $responseData['status'] );
 		$this->assertSame( 'sTestSA11111111', $responseData['subjectId'] );
+		$this->assertArrayHasKey( 'violations', $responseData );
+		$this->assertSame( [], $responseData['violations'] );
+	}
+
+	public function testResponseIncludesViolationsWhenRequiredPropertyMissing(): void {
+		$this->createSchema(
+			'ReplaceViolationSchema',
+			'{"title":"ReplaceViolationSchema","propertyDefinitions":{"Status":{"type":"text","required":true}}}'
+		);
+		$this->createPageWithSubjects(
+			'ReplaceSubjectApiViolationTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSA11111122',
+				label: new SubjectLabel( 'Subject with required Status' ),
+				schemaName: new SchemaName( 'ReplaceViolationSchema' ),
+			)
+		);
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			new RequestData( [
+				'method' => 'PUT',
+				'pathParams' => [ 'subjectId' => 'sTestSA11111122' ],
+				'bodyContents' => json_encode( [
+					'label' => 'Still missing Status',
+					'statements' => [],
+				] ),
+				'headers' => [ 'Content-Type' => 'application/json' ],
+			] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( 'updated', $responseData['status'] );
+		$this->assertNotEmpty( $responseData['violations'] );
+		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
+		$this->assertSame( 'Status', $responseData['violations'][0]['propertyName'] );
 	}
 
 	public function testOmittedStatementKeyIsDeleted(): void {
@@ -104,6 +143,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 404, $response->getStatusCode() );
 		$this->assertSame( 'error', $responseData['status'] );
 		$this->assertStringContainsString( 'not found', $responseData['message'] );
+		$this->assertArrayNotHasKey( 'violations', $responseData );
 	}
 
 	public function testMissingLabelReturns400(): void {
