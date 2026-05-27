@@ -168,7 +168,7 @@ export function isValidUrl( urlString: string ): boolean {
 
 	const pattern = new RegExp(
 		'^([a-z][a-z\\d+.-]*://)?' +
-		'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' +
+		'((?:[a-z\\d](?:[a-z\\d-]*[a-z\\d])?\\.)+[a-z]{2,}|' +
 		'((\\d{1,3}\\.){3}\\d{1,3})|' +
 		'(localhost))' +
 		'(\\:\\d+)?' +
