@@ -4,15 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Presentation;
 
-use MediaWiki\Page\PageIdentity;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder
@@ -20,9 +18,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 class ViewHtmlBuilderTest extends TestCase {
 
 	public function testReturnsEmptyStringWhenNoContentExists(): void {
-		$builder = new ViewHtmlBuilder(
-			$this->stubRepository( byTitle: null, byRevision: null )
-		);
+		$builder = new ViewHtmlBuilder( new InMemorySubjectContentRepository() );
 
 		$html = $builder->mainSubjectHtml( Title::newFromText( 'NoContent' ), null );
 
@@ -30,10 +26,8 @@ class ViewHtmlBuilderTest extends TestCase {
 	}
 
 	public function testReturnsEmptyStringWhenContentHasNoMainSubject(): void {
-		$content = SubjectContent::newFromData( PageSubjects::newEmpty() );
-
 		$builder = new ViewHtmlBuilder(
-			$this->stubRepository( byTitle: $content )
+			new InMemorySubjectContentRepository( PageSubjects::newEmpty() )
 		);
 
 		$html = $builder->mainSubjectHtml( Title::newFromText( 'Empty' ), null );
@@ -43,10 +37,9 @@ class ViewHtmlBuilderTest extends TestCase {
 
 	public function testReturnsDivWithSubjectIdAttribute(): void {
 		$subject = TestSubject::build( id: 's1zz1111111azz1' );
-		$content = SubjectContent::newFromData( new PageSubjects( $subject, new SubjectMap() ) );
 
 		$builder = new ViewHtmlBuilder(
-			$this->stubRepository( byTitle: $content )
+			new InMemorySubjectContentRepository( new PageSubjects( $subject, new SubjectMap() ) )
 		);
 
 		$html = $builder->mainSubjectHtml( Title::newFromText( 'HasSubject' ), null );
@@ -57,11 +50,11 @@ class ViewHtmlBuilderTest extends TestCase {
 
 	public function testDoesNotIncludeRevisionIdInHtml(): void {
 		$subject = TestSubject::build( id: 's1zz1111111azz2' );
-		$content = SubjectContent::newFromData( new PageSubjects( $subject, new SubjectMap() ) );
 
-		$builder = new ViewHtmlBuilder(
-			$this->stubRepository( byRevision: $content )
-		);
+		$repo = new InMemorySubjectContentRepository();
+		$repo->setContentForRevision( 42, new PageSubjects( $subject, new SubjectMap() ) );
+
+		$builder = new ViewHtmlBuilder( $repo );
 
 		$html = $builder->mainSubjectHtml( Title::newFromText( 'WithRevision' ), 42 );
 
@@ -70,38 +63,15 @@ class ViewHtmlBuilderTest extends TestCase {
 
 	public function testUsesRevisionIdToLookUpContent(): void {
 		$subject = TestSubject::build( id: 's1zz1111111azz3' );
-		$revisionContent = SubjectContent::newFromData( new PageSubjects( $subject, new SubjectMap() ) );
 
-		$builder = new ViewHtmlBuilder(
-			$this->stubRepository( byTitle: null, byRevision: $revisionContent )
-		);
+		$repo = new InMemorySubjectContentRepository();
+		$repo->setContentForRevision( 42, new PageSubjects( $subject, new SubjectMap() ) );
+
+		$builder = new ViewHtmlBuilder( $repo );
 
 		$html = $builder->mainSubjectHtml( Title::newFromText( 'RevisionLookup' ), 42 );
 
 		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s1zz1111111azz3"', $html );
-	}
-
-	private function stubRepository(
-		?SubjectContent $byTitle = null,
-		?SubjectContent $byRevision = null,
-	): SubjectContentRepository {
-		return new class( $byTitle, $byRevision ) extends SubjectContentRepository {
-
-			public function __construct(
-				private readonly ?SubjectContent $titleContent,
-				private readonly ?SubjectContent $revisionContent,
-			) {
-			}
-
-			public function getSubjectContentByPageTitle( PageIdentity $pageIdentity ): ?SubjectContent {
-				return $this->titleContent;
-			}
-
-			public function getSubjectContentByRevisionId( int $revisionId ): ?SubjectContent {
-				return $this->revisionContent;
-			}
-
-		};
 	}
 
 }
