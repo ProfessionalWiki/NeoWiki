@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPres
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
@@ -99,10 +100,11 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 		];
 	}
 
-	public function presentCreated( string $subjectId ): void {
+	public function presentCreated( string $subjectId, array $violations ): void {
 		$this->apiResponse = [
 			'status' => 'created',
 			'subjectId' => $subjectId,
+			'violations' => ViolationSerializer::serializeMany( $violations ),
 		];
 	}
 

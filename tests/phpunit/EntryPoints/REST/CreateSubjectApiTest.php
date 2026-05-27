@@ -40,6 +40,8 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 201, $response->getStatusCode() );
 		$this->assertSame( 'created', $responseData['status'] );
+		$this->assertArrayHasKey( 'violations', $responseData );
+		$this->assertSame( [], $responseData['violations'] );
 
 		$subject = NeoWikiExtension::getInstance()->newSubjectRepository()->getSubject( new SubjectId( $responseData['subjectId'] ) );
 
@@ -119,6 +121,33 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 403, $response->getStatusCode() );
 		$this->assertSame( 'error', $responseData['status'] );
 		$this->assertSame( 'You do not have the necessary permissions to create this subject', $responseData['message'] );
+		$this->assertArrayNotHasKey( 'violations', $responseData );
+	}
+
+	public function testResponseIncludesViolationsWhenRequiredPropertyMissing(): void {
+		$this->createSchema(
+			'CreateViolationSchema',
+			'{"title":"CreateViolationSchema","propertyDefinitions":{"Status":{"type":"text","required":true}}}'
+		);
+
+		$body = [
+			'label' => 'Subject with missing required',
+			'schema' => 'CreateViolationSchema',
+			'statements' => [],
+		];
+
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( 'created', $responseData['status'] );
+		$this->assertNotEmpty( $responseData['violations'] );
+		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
+		$this->assertSame( 'Status', $responseData['violations'][0]['propertyName'] );
 	}
 
 	public function testRejectsBodyMissingLabel(): void {
