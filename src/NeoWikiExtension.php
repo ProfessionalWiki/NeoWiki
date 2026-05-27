@@ -334,6 +334,7 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
+			subjectValidator: $this->getSubjectValidator(),
 		);
 	}
 
@@ -505,6 +506,7 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
+			subjectValidator: $this->getSubjectValidator(),
 		);
 	}
 

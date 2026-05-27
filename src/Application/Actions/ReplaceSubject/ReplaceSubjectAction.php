@@ -4,17 +4,19 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
-use InvalidArgumentException;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 readonly class ReplaceSubjectAction {
 
@@ -24,13 +26,15 @@ readonly class ReplaceSubjectAction {
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
 		private SelectStatementResolver $selectStatementResolver,
+		private SubjectValidator $subjectValidator,
 	) {
 	}
 
 	/**
 	 * @param array<string, mixed> $statements
+	 * @return Violation[]
 	 */
-	public function replace( SubjectId $subjectId, string $label, array $statements, ?string $comment ): void {
+	public function replace( SubjectId $subjectId, string $label, array $statements, ?string $comment ): array {
 		if ( trim( $label ) === '' ) {
 			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
 		}
@@ -50,7 +54,11 @@ readonly class ReplaceSubjectAction {
 			$this->statementListBuilder->build( $this->resolveStatements( $subject, $statements ) )
 		);
 
+		$violations = $this->validateProposedSubject( $subject );
+
 		$this->subjectRepository->updateSubject( $subject, $comment );
+
+		return $violations;
 	}
 
 	/**
@@ -66,6 +74,21 @@ readonly class ReplaceSubjectAction {
 		}
 
 		return $this->selectStatementResolver->resolve( $schema, $statements );
+	}
+
+	/** @return Violation[] */
+	private function validateProposedSubject( Subject $subject ): array {
+		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+
+		if ( $schema === null ) {
+			return [];
+		}
+
+		return $this->subjectValidator->validate(
+			$subject->getLabel(),
+			$subject->getStatements(),
+			$schema,
+		);
 	}
 
 }

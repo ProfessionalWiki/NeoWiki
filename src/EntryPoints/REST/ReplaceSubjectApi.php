@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundExcept
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ReplaceSubjectApi extends SimpleHandler {
@@ -31,7 +32,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 		$body = $this->getValidatedBody();
 
 		try {
-			NeoWikiExtension::getInstance()->newReplaceSubjectAction( $this->getAuthority() )->replace(
+			$violations = NeoWikiExtension::getInstance()->newReplaceSubjectAction( $this->getAuthority() )->replace(
 				new SubjectId( $subjectId ),
 				$body['label'],
 				$body['statements'],
@@ -57,6 +58,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 		return $this->getResponseFactory()->createJson( [
 			'status' => 'updated',
 			'subjectId' => $subjectId,
+			'violations' => ViolationSerializer::serializeMany( $violations ),
 		] );
 	}
 
