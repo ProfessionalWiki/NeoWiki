@@ -4,12 +4,16 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
+use InvalidArgumentException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\ValidationFailedException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
+use RuntimeException;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
@@ -40,12 +44,18 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 			);
 
 			return $this->buildResponseObject();
-		} catch ( \InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException $e ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',
 				'message' => $e->getMessage(),
 			] );
-		} catch ( \RuntimeException $e ) {
+		} catch ( ValidationFailedException $e ) {
+			return $this->getResponseFactory()->createHttpError( 422, [
+				'status' => 'error',
+				'message' => $e->getMessage(),
+				'violations' => ViolationSerializer::serializeMany( $e->violations ),
+			] );
+		} catch ( RuntimeException $e ) {
 			return $this->getResponseFactory()->createHttpError( 403, [
 				'status' => 'error',
 				'message' => $e->getMessage(),
@@ -99,10 +109,11 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 		];
 	}
 
-	public function presentCreated( string $subjectId ): void {
+	public function presentCreated( string $subjectId, array $violations ): void {
 		$this->apiResponse = [
 			'status' => 'created',
 			'subjectId' => $subjectId,
+			'violations' => ViolationSerializer::serializeMany( $violations ),
 		];
 	}
 

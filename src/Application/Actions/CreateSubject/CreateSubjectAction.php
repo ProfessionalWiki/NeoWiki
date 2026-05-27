@@ -4,16 +4,19 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\ValidationFailedException;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use RuntimeException;
 
@@ -27,6 +30,8 @@ readonly class CreateSubjectAction {
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
 		private SelectStatementResolver $selectStatementResolver,
+		private SubjectValidator $subjectValidator,
+		private bool $validationEnforced,
 	) {
 	}
 
@@ -37,7 +42,7 @@ readonly class CreateSubjectAction {
 
 		if ( ( $request->isMainSubject && !$this->subjectAuthorizer->canCreateMainSubject(
 				) ) || !$this->subjectAuthorizer->canCreateChildSubject() ) {
-			throw new \RuntimeException( 'You do not have the necessary permissions to create this subject' );
+			throw new RuntimeException( 'You do not have the necessary permissions to create this subject' );
 		}
 
 		$subject = $this->buildSubject( $request );
@@ -50,14 +55,19 @@ readonly class CreateSubjectAction {
 			} else {
 				$pageSubjects->createChildSubject( $subject );
 			}
-		}
-		catch ( RuntimeException ) {
+		} catch ( RuntimeException ) {
 			$this->presenter->presentSubjectAlreadyExists();
 			return;
 		}
 
+		$proposedViolations = $this->validateProposedSubject( $subject );
+
+		if ( $this->validationEnforced && $proposedViolations !== [] ) {
+			throw new ValidationFailedException( $proposedViolations );
+		}
+
 		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ), $request->comment );
-		$this->presenter->presentCreated( $subject->id->text );
+		$this->presenter->presentCreated( $subject->id->text, $proposedViolations );
 	}
 
 	private function buildSubject( CreateSubjectRequest $request ): Subject {
@@ -86,6 +96,21 @@ readonly class CreateSubjectAction {
 		}
 
 		return $this->selectStatementResolver->resolve( $schema, $statements );
+	}
+
+	/** @return Violation[] */
+	private function validateProposedSubject( Subject $subject ): array {
+		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+
+		if ( $schema === null ) {
+			return [];
+		}
+
+		return $this->subjectValidator->validate(
+			$subject->getLabel(),
+			$subject->getStatements(),
+			$schema,
+		);
 	}
 
 }

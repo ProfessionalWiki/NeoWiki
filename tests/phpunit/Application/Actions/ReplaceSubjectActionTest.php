@@ -11,6 +11,8 @@ use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\ValidationFailedException;
+use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
@@ -20,9 +22,11 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
@@ -47,9 +51,13 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->schemaLookup = new InMemorySchemaLookup();
 	}
 
-	private function newAction( ?SubjectAuthorizer $authorizer = null ): ReplaceSubjectAction {
+	private function newAction(
+		?SubjectAuthorizer $authorizer = null,
+		bool $validationEnforced = false,
+	): ReplaceSubjectAction {
+		$registry = PropertyTypeRegistry::withCoreTypes();
 		$builder = new StatementListBuilder(
-			propertyTypeToValueType: new PropertyTypeToValueType( PropertyTypeRegistry::withCoreTypes() ),
+			propertyTypeToValueType: new PropertyTypeToValueType( $registry ),
 			idGenerator: new StubIdGenerator( '11111111111127' )
 		);
 		return new ReplaceSubjectAction(
@@ -58,6 +66,8 @@ class ReplaceSubjectActionTest extends TestCase {
 			statementListBuilder: $builder,
 			schemaLookup: $this->schemaLookup,
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
+			subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
+			validationEnforced: $validationEnforced,
 		);
 	}
 
@@ -203,6 +213,123 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 
 		$this->assertSame( [ 'opt_draft' ], $this->getStatusValue( new SubjectId( self::SUBJECT_ID ) )->strings );
+	}
+
+	private function registerSchemaWithRequiredAlphaAndBeta(): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( self::SCHEMA_NAME ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Alpha' => new SelectProperty(
+					core: new PropertyCore( description: '', required: true, default: null ),
+					options: [ new SelectOption( id: 'opt_a', label: 'A' ) ],
+					multiple: false,
+				),
+				'Beta' => new SelectProperty(
+					core: new PropertyCore( description: '', required: true, default: null ),
+					options: [ new SelectOption( id: 'opt_b', label: 'B' ) ],
+					multiple: false,
+				),
+			] )
+		) );
+	}
+
+	public function testEnforcementOffPersistsEditWithNewViolations(): void {
+		$this->registerSchemaWithRequiredAlphaAndBeta();
+		$subject = TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		);
+		$this->subjectRepository->updateSubject( $subject );
+
+		$this->newAction( validationEnforced: false )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'After',
+			[],
+			null
+		);
+
+		$stored = $this->subjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) );
+		$this->assertSame( 'After', $stored->getLabel()->text );
+	}
+
+	public function testEnforcementOnRejectsEditThatIntroducesNewViolation(): void {
+		$this->registerSchemaWithRequiredAlphaAndBeta();
+		$subject = TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+			statements: new StatementList( [
+				TestStatement::build( property: 'Alpha', value: new StringValue( 'opt_a' ), propertyType: 'select' ),
+				TestStatement::build( property: 'Beta', value: new StringValue( 'opt_b' ), propertyType: 'select' ),
+			] ),
+		);
+		$this->subjectRepository->updateSubject( $subject );
+
+		$this->expectException( ValidationFailedException::class );
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'After',
+			[],
+			null
+		);
+	}
+
+	public function testEnforcementOnAllowsEditWithOnlyPreExistingViolations(): void {
+		$this->registerSchemaWithRequiredAlphaAndBeta();
+		$subject = TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Old' ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		);
+		$this->subjectRepository->updateSubject( $subject );
+
+		$violations = $this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'New',
+			[],
+			null
+		);
+
+		$this->assertCount( 2, $violations );
+		$this->assertSame( 'New',
+			$this->subjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) )->getLabel()->text );
+	}
+
+	public function testEnforcementOnAllowsEditThatReducesViolations(): void {
+		$this->registerSchemaWithRequiredAlphaAndBeta();
+		$subject = TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		);
+		$this->subjectRepository->updateSubject( $subject );
+
+		$violations = $this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'After',
+			[ 'Alpha' => [ 'propertyType' => 'select', 'value' => 'opt_a' ] ],
+			null
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'Beta', $violations[0]->propertyName?->text );
+	}
+
+	public function testEnforcementOnDoesNotThrowWhenSchemaIsMissing(): void {
+		$subject = TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( 'NonexistentSchema' ),
+		);
+		$this->subjectRepository->updateSubject( $subject );
+
+		$violations = $this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'After',
+			[],
+			null
+		);
+
+		$this->assertSame( [], $violations );
 	}
 
 }
