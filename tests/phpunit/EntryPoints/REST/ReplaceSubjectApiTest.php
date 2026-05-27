@@ -125,6 +125,48 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $subject->getStatements()->asArray() );
 	}
 
+	public function testResponseIncludesMultipleViolations(): void {
+		$this->createSchema(
+			'ReplaceMultiViolationSchema',
+			'{"title":"ReplaceMultiViolationSchema","propertyDefinitions":{"Alpha":{"type":"text","required":true},"Beta":{"type":"text","required":true}}}'
+		);
+		$this->createPageWithSubjects(
+			'ReplaceSubjectApiMultiViolationTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSA11111133',
+				label: new SubjectLabel( 'Subject with two required properties' ),
+				schemaName: new SchemaName( 'ReplaceMultiViolationSchema' ),
+			)
+		);
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			new RequestData( [
+				'method' => 'PUT',
+				'pathParams' => [ 'subjectId' => 'sTestSA11111133' ],
+				'bodyContents' => json_encode( [
+					'label' => 'Still missing both',
+					'statements' => [],
+				] ),
+				'headers' => [ 'Content-Type' => 'application/json' ],
+			] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertCount( 2, $responseData['violations'] );
+		$propertyNames = array_map(
+			static fn ( array $v ): string => $v['propertyName'],
+			$responseData['violations']
+		);
+		$this->assertSame( [ 'Alpha', 'Beta' ], $propertyNames );
+		foreach ( $responseData['violations'] as $violation ) {
+			$this->assertSame( 'required', $violation['code'] );
+			$this->assertSame( [], $violation['args'] );
+		}
+	}
+
 	public function testNonExistentSubjectReturns404(): void {
 		$body = $this->validBody();
 

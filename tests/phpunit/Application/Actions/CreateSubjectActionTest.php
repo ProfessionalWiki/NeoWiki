@@ -145,6 +145,7 @@ class CreateSubjectActionTest extends TestCase {
 			'presentSubjectAlreadyExists',
 			$this->presenterSpy->result
 		);
+		$this->assertSame( [], $this->presenterSpy->violations );
 	}
 
 	public function testUserIsNotAllowedToCreateSubject(): void {
