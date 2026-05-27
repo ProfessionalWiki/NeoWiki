@@ -148,4 +148,33 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 400, $response->getStatusCode() );
 	}
 
+	public function testEnforcementBlockedReturns422(): void {
+		$this->setMwGlobals( 'wgNeoWikiValidationEnforced', true );
+
+		$this->createSchema(
+			'CreateEnforcementSchema',
+			'{"title":"CreateEnforcementSchema","propertyDefinitions":{"Required":{"type":"text","required":true}}}'
+		);
+
+		$body = [
+			'label' => 'Subject with missing required',
+			'schema' => 'CreateEnforcementSchema',
+			'statements' => [],
+		];
+
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 422, $response->getStatusCode() );
+		$this->assertSame( 'error', $responseData['status'] );
+		$this->assertSame( 'Validation failed', $responseData['message'] );
+		$this->assertNotEmpty( $responseData['violations'] );
+		$this->assertSame( 'Required', $responseData['violations'][0]['propertyName'] );
+		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
+	}
+
 }
