@@ -103,7 +103,10 @@ Temporal and spatial values (e.g. `datetime()`, `point()`) are not supported. Ca
 | `internalError` | 500 | Anything else. |
 
 `errorType` strings are stable across releases. Clients and LLMs should branch on `errorType`, not on `message`
-text — `message` is translated and may change.
+text. The REST `message` is always English and may change between releases; it is intended for logging and
+debugging, not display. User-facing localization applies only to the wikitext surfaces — the `{{#cypher_raw}}`
+parser function and `nw.query()` in Lua — which render translated messages derived from the same `errorType`
+classification.
 
 ## Example walkthrough
 

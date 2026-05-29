@@ -122,6 +122,14 @@
 
 	"neowiki-cypher-raw-error-json-encode": "Failed to encode query result as JSON",
 
+	"neowiki-cypher-error-empty-query": "The Cypher query must not be empty.",
+	"neowiki-cypher-error-write-query": "Only read-only Cypher queries are allowed.",
+	"neowiki-cypher-error-syntax": "The Cypher query has a syntax error: $1",
+	"neowiki-cypher-error-parameter-missing": "The Cypher query is missing a required parameter: $1",
+	"neowiki-cypher-error-timeout": "The Cypher query exceeded the allowed time limit: $1",
+	"neowiki-cypher-error-backend-unavailable": "The graph database is currently unavailable.",
+	"neowiki-cypher-error-internal": "The Cypher query could not be completed: $1",
+
 	"neowiki-view-error-extra-positional": "Unexpected extra positional argument: $1",
 	"neowiki-view-error-conflicting-subject": "Subject specified both positionally and as a named subject argument.",
 	"neowiki-view-error-unknown-arg": "Unknown argument: $1",
