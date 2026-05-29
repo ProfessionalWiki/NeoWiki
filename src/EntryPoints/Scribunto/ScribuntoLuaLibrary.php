@@ -10,6 +10,8 @@ use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\CypherErrorMessage;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua\CypherQueryRunner;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
@@ -121,6 +123,9 @@ class ScribuntoLuaLibrary extends LibraryBase {
 
 		try {
 			$rows = $this->getCypherQueryRunner()->run( $cypher, $params ?? [] );
+		} catch ( QueryException $e ) {
+			$message = CypherErrorMessage::for( $e );
+			throw new LuaError( $this->getParser()->msg( $message->key, ...$message->params )->text() );
 		} catch ( Exception $e ) {
 			throw new LuaError( $e->getMessage() );
 		}

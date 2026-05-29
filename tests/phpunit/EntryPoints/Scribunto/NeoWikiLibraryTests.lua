@@ -88,23 +88,23 @@ end
 -- query tests
 
 local function testQueryRejectsEmptyString()
-	local ok = pcall( function()
+	local ok, err = pcall( function()
 		return nw.query( '' )
 	end )
 	if ok then
 		return 'unexpected success'
 	end
-	return 'error'
+	return type( err ) == 'string' and string.find( err, 'must not be empty', 1, true ) ~= nil
 end
 
 local function testQueryRejectsWriteQuery()
-	local ok = pcall( function()
+	local ok, err = pcall( function()
 		return nw.query( 'CREATE (n:Foo) RETURN n' )
 	end )
 	if ok then
 		return 'unexpected success'
 	end
-	return 'error'
+	return type( err ) == 'string' and string.find( err, 'read-only Cypher queries are allowed', 1, true ) ~= nil
 end
 
 -- getSchema tests
@@ -209,10 +209,10 @@ local tests = {
 	  func = testGetChildSubjectsEmptyForPageWithoutChildren, expect = { 0 } },
 
 	-- query
-	{ name = 'query rejects empty string',
-	  func = testQueryRejectsEmptyString, expect = { 'error' } },
-	{ name = 'query rejects write query',
-	  func = testQueryRejectsWriteQuery, expect = { 'error' } },
+	{ name = 'query rejects empty string with localized message',
+	  func = testQueryRejectsEmptyString, expect = { true } },
+	{ name = 'query rejects write query with localized message',
+	  func = testQueryRejectsWriteQuery, expect = { true } },
 
 	-- getSchema
 	{ name = 'getSchema returns name and property count',
