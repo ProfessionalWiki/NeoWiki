@@ -5,8 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\EntryPoints\ParserFunction;
 
 use Exception;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\SummarizedResult;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherMap;
+use MediaWiki\Message\Message;
 use MediaWiki\Parser\Parser;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CypherQueryValidator;
@@ -22,8 +25,22 @@ use RuntimeException;
  */
 class CypherRawParserFunctionTest extends TestCase {
 
-	private function createMockParser(): Parser {
-		return $this->createMock( Parser::class );
+	/**
+	 * Returns a Parser whose msg() renders any key as "[key]" (params appended as
+	 * "[key|p1|p2]"). This lets a test assert which message key the production code
+	 * selected without a full MediaWiki message-resolution context.
+	 */
+	private function createParser(): Parser {
+		$parser = $this->createMock( Parser::class );
+		$parser->method( 'msg' )->willReturnCallback(
+			function ( string $key, ...$params ): Message {
+				$rendered = $params === [] ? "[$key]" : '[' . $key . '|' . implode( '|', $params ) . ']';
+				$message = $this->createMock( Message::class );
+				$message->method( 'text' )->willReturn( $rendered );
+				return $message;
+			}
+		);
+		return $parser;
 	}
 
 	private function createDummyQueryEngine(): Neo4jQueryEngine {
@@ -71,20 +88,59 @@ class CypherRawParserFunctionTest extends TestCase {
 		);
 	}
 
-	public function testEmptyQueryReturnsError(): void {
+	public function testEmptyQueryShowsLocalizedError(): void {
 		$parserFunction = $this->createParserFunction( $this->createDummyQueryEngine() );
 
-		$result = $parserFunction->handle( $this->createMockParser(), '' );
+		$result = $parserFunction->handle( $this->createParser(), '' );
 
-		$this->assertStringContainsString( 'error', $result );
+		$this->assertStringContainsString( '[neowiki-cypher-error-empty-query]', $result );
 	}
 
-	public function testWriteQueryIsRejected(): void {
+	public function testWriteQueryShowsLocalizedError(): void {
 		$parserFunction = $this->createParserFunction( $this->createDummyQueryEngine() );
 
-		$result = $parserFunction->handle( $this->createMockParser(), "CREATE (n:Person {name: 'Alice'})" );
+		$result = $parserFunction->handle( $this->createParser(), "CREATE (n:Person {name: 'Alice'})" );
 
-		$this->assertStringContainsString( 'error', $result );
+		$this->assertStringContainsString( '[neowiki-cypher-error-write-query]', $result );
+	}
+
+	public function testEngineFailureShowsLocalizedBackendError(): void {
+		$parserFunction = $this->createParserFunction(
+			$this->createQueryEngineWithException( new Exception( 'Connection failed' ) )
+		);
+
+		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n) RETURN n' );
+
+		$this->assertStringContainsString( '[neowiki-cypher-error-backend-unavailable]', $result );
+	}
+
+	public function testSyntaxErrorForwardsNeo4jDetailToLocalizedMessage(): void {
+		$neo4jException = new Neo4jException( [
+			Neo4jError::fromMessageAndCode( 'Neo.ClientError.Statement.SyntaxError', 'Invalid input near RETURN' ),
+		] );
+
+		$parserFunction = $this->createParserFunction(
+			$this->createQueryEngineWithException( $neo4jException )
+		);
+
+		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n) RETURN x' );
+
+		$this->assertStringContainsString( '[neowiki-cypher-error-syntax|', $result );
+		$this->assertStringContainsString( 'Invalid input near RETURN', $result );
+	}
+
+	public function testValidatorFailureShowsLocalizedBackendError(): void {
+		$throwingValidator = new class implements CypherQueryValidator {
+			public function queryIsAllowed( string $cypher ): bool {
+				throw new RuntimeException( 'Neo4j connection refused' );
+			}
+		};
+
+		$parserFunction = $this->createParserFunction( $this->createDummyQueryEngine(), $throwingValidator );
+
+		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n) RETURN n' );
+
+		$this->assertStringContainsString( '[neowiki-cypher-error-backend-unavailable]', $result );
 	}
 
 	public function testValidReadQueryReturnsFormattedResult(): void {
@@ -95,43 +151,19 @@ class CypherRawParserFunctionTest extends TestCase {
 
 		$parserFunction = $this->createParserFunction( $this->createQueryEngineWithData( $testData ) );
 
-		$result = $parserFunction->handle( $this->createMockParser(), 'MATCH (n:Person) RETURN n' );
+		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n:Person) RETURN n' );
 
 		$this->assertStringContainsString( '<div class="mw-neowiki-cypher-result"><pre>', $result );
 		$this->assertStringContainsString( 'Alice', $result );
 		$this->assertStringContainsString( 'Bob', $result );
 	}
 
-	public function testQueryExecutionExceptionReturnsError(): void {
-		$parserFunction = $this->createParserFunction(
-			$this->createQueryEngineWithException( new Exception( 'Connection failed' ) )
-		);
-
-		$result = $parserFunction->handle( $this->createMockParser(), 'MATCH (n) RETURN n' );
-
-		$this->assertStringContainsString( 'error', $result );
-	}
-
 	public function testTrimWhitespaceFromQuery(): void {
 		$parserFunction = $this->createParserFunction( $this->createQueryEngineWithData( [] ) );
 
-		$result = $parserFunction->handle( $this->createMockParser(), '  MATCH (n) RETURN n  ' );
+		$result = $parserFunction->handle( $this->createParser(), '  MATCH (n) RETURN n  ' );
 
 		$this->assertStringContainsString( '<div class="mw-neowiki-cypher-result"><pre>', $result );
-	}
-
-	public function testValidatorExceptionReturnsError(): void {
-		$throwingValidator = new class implements CypherQueryValidator {
-			public function queryIsAllowed( string $cypher ): bool {
-				throw new RuntimeException( 'Neo4j connection refused' );
-			}
-		};
-
-		$parserFunction = $this->createParserFunction( $this->createDummyQueryEngine(), $throwingValidator );
-
-		$result = $parserFunction->handle( $this->createMockParser(), 'MATCH (n) RETURN n' );
-
-		$this->assertStringContainsString( 'error', $result );
 	}
 
 	public function testOutputIsHTMLEscaped(): void {
@@ -141,7 +173,7 @@ class CypherRawParserFunctionTest extends TestCase {
 
 		$parserFunction = $this->createParserFunction( $this->createQueryEngineWithData( $testData ) );
 
-		$result = $parserFunction->handle( $this->createMockParser(), 'MATCH (n) RETURN n' );
+		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n) RETURN n' );
 
 		$this->assertStringNotContainsString( '<script>alert', $result );
 		$this->assertStringContainsString( '&lt;script&gt;', $result );

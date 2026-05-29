@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\Qu
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryRequest;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\CypherErrorMessage;
 
 class CypherRawParserFunction {
 
@@ -28,7 +29,8 @@ class CypherRawParserFunction {
 				)
 			);
 		} catch ( QueryException $e ) {
-			return $this->formatError( $e->getMessage() );
+			$message = CypherErrorMessage::for( $e );
+			return $this->formatError( $parser->msg( $message->key, ...$message->params )->text() );
 		}
 
 		$json = json_encode( $result->rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );

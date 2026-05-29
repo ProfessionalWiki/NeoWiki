@@ -14,6 +14,14 @@
 	"neowiki-schema-label": "Label used to identify the schema. $1 is the schema name or link.",
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
 
+	"neowiki-cypher-error-empty-query": "Error shown on the <code>{{#cypher_raw}}</code> parser function and the <code>nw.query()</code> Lua function when the supplied Cypher query is empty or only whitespace.",
+	"neowiki-cypher-error-write-query": "Error shown on the <code>{{#cypher_raw}}</code> parser function and the <code>nw.query()</code> Lua function when the query contains a write operation. Cypher queries from wikitext are restricted to read-only.",
+	"neowiki-cypher-error-syntax": "Error shown when Neo4j reports a syntax error for a Cypher query run from wikitext. $1 is the verbatim Neo4j-supplied syntax detail and is not translatable.",
+	"neowiki-cypher-error-parameter-missing": "Error shown when a Cypher query run from wikitext references a parameter that was not supplied. $1 is the verbatim Neo4j-supplied detail and is not translatable.",
+	"neowiki-cypher-error-timeout": "Error shown when a Cypher query run from wikitext exceeds the allowed time limit. $1 is the verbatim Neo4j-supplied detail and is not translatable.",
+	"neowiki-cypher-error-backend-unavailable": "Error shown when the graph database backend cannot be reached for a Cypher query run from wikitext. The underlying connection detail is intentionally omitted.",
+	"neowiki-cypher-error-internal": "Generic fallback error shown for a Cypher query run from wikitext that fails for a reason not covered by the more specific cases. $1 is the verbatim underlying detail and is not translatable.",
+
 	"neowiki-view-error-extra-positional": "Error shown when {{#view}} is called with more than one positional argument. $1 is the offending extra argument value.",
 	"neowiki-view-error-conflicting-subject": "Error shown when {{#view}} receives a Subject ID as both a positional argument and a named <code>subject=</code> argument.",
 	"neowiki-view-error-unknown-arg": "Error shown when {{#view}} receives an unrecognized named argument. $1 is the offending argument name.",

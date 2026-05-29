@@ -9,6 +9,9 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CypherQueryValidator;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\BackendUnavailableException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\EmptyQueryException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\WriteQueryRejectedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua\CypherQueryRunner;
@@ -88,15 +91,14 @@ class CypherQueryRunnerTest extends TestCase {
 		);
 	}
 
-	public function testEmptyQueryThrowsWithEmptyQueryMessage(): void {
+	public function testEmptyQueryPropagatesEmptyQueryException(): void {
 		$runner = $this->newRunner( $this->stubEngine( $this->emptyResult() ) );
 
-		$this->expectException( RuntimeException::class );
-		$this->expectExceptionMessageMatches( '/empty/i' );
+		$this->expectException( EmptyQueryException::class );
 		$runner->run( '   ', [] );
 	}
 
-	public function testDisallowedQueryThrowsWithReadOnlyMessage(): void {
+	public function testWriteQueryPropagatesWriteQueryRejectedException(): void {
 		$engine = new class implements Neo4jQueryEngine {
 			public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
 				throw new \LogicException( 'engine must not be called for a rejected query' );
@@ -116,8 +118,7 @@ class CypherQueryRunnerTest extends TestCase {
 			)
 		);
 
-		$this->expectException( RuntimeException::class );
-		$this->expectExceptionMessageMatches( '/read-only/i' );
+		$this->expectException( WriteQueryRejectedException::class );
 		$runner->run( 'CREATE (n)', [] );
 	}
 
@@ -139,7 +140,7 @@ class CypherQueryRunnerTest extends TestCase {
 		$this->assertSame( [ 'x' => 42, 'y' => 'foo' ], $engine->lastParams );
 	}
 
-	public function testEngineExceptionsPropagate(): void {
+	public function testEngineFailurePropagatesAsBackendUnavailableException(): void {
 		$engine = new class implements Neo4jQueryEngine {
 			public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
 				throw new RuntimeException( 'connection refused' );
@@ -147,7 +148,7 @@ class CypherQueryRunnerTest extends TestCase {
 		};
 		$runner = $this->newRunner( $engine );
 
-		$this->expectException( RuntimeException::class );
+		$this->expectException( BackendUnavailableException::class );
 		$this->expectExceptionMessage( 'connection refused' );
 		$runner->run( 'MATCH (n) RETURN n', [] );
 	}
