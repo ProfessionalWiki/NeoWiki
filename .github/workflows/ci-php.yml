@@ -21,12 +21,18 @@ jobs:
   test:
     name: "PHPUnit: MW ${{ matrix.mw }}, PHP ${{ matrix.php }}"
 
+    continue-on-error: ${{ matrix.experimental }}
+
     strategy:
       fail-fast: false
       matrix:
         include:
           - mw: 'REL1_43'
             php: '8.3'
+            experimental: false
+          - mw: 'master'
+            php: '8.5'
+            experimental: true
 
     runs-on: ubuntu-latest
 
