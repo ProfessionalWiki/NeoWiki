@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthori
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
+use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -26,7 +26,7 @@ readonly class ReplaceSubjectAction {
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
 		private SelectStatementResolver $selectStatementResolver,
-		private SubjectValidator $subjectValidator,
+		private ProposedSubjectValidator $proposedSubjectValidator,
 	) {
 	}
 
@@ -54,7 +54,7 @@ readonly class ReplaceSubjectAction {
 			$this->statementListBuilder->build( $this->resolveStatements( $subject, $statements ) )
 		);
 
-		$violations = $this->validateProposedSubject( $subject );
+		$violations = $this->proposedSubjectValidator->validate( $subject );
 
 		$this->subjectRepository->updateSubject( $subject, $comment );
 
@@ -74,21 +74,6 @@ readonly class ReplaceSubjectAction {
 		}
 
 		return $this->selectStatementResolver->resolve( $schema, $statements );
-	}
-
-	/** @return Violation[] */
-	private function validateProposedSubject( Subject $subject ): array {
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
-
-		if ( $schema === null ) {
-			return [];
-		}
-
-		return $this->subjectValidator->validate(
-			$subject->getLabel(),
-			$subject->getStatements(),
-			$schema,
-		);
 	}
 
 }

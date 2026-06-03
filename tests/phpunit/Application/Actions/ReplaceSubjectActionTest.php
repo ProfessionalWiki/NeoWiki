@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
@@ -60,7 +61,10 @@ class ReplaceSubjectActionTest extends TestCase {
 			statementListBuilder: $builder,
 			schemaLookup: $this->schemaLookup,
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
-			subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
+			proposedSubjectValidator: new ProposedSubjectValidator(
+				schemaLookup: $this->schemaLookup,
+				subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
+			),
 		);
 	}
 

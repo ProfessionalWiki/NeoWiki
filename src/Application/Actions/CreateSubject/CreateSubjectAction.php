@@ -10,12 +10,11 @@ use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
+use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use RuntimeException;
 
@@ -29,7 +28,7 @@ readonly class CreateSubjectAction {
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
 		private SelectStatementResolver $selectStatementResolver,
-		private SubjectValidator $subjectValidator,
+		private ProposedSubjectValidator $proposedSubjectValidator,
 	) {
 	}
 
@@ -58,7 +57,7 @@ readonly class CreateSubjectAction {
 			return;
 		}
 
-		$violations = $this->validateProposedSubject( $subject );
+		$violations = $this->proposedSubjectValidator->validate( $subject );
 
 		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ), $request->comment );
 		$this->presenter->presentCreated( $subject->id->text, $violations );
@@ -90,21 +89,6 @@ readonly class CreateSubjectAction {
 		}
 
 		return $this->selectStatementResolver->resolve( $schema, $statements );
-	}
-
-	/** @return Violation[] */
-	private function validateProposedSubject( Subject $subject ): array {
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
-
-		if ( $schema === null ) {
-			return [];
-		}
-
-		return $this->subjectValidator->validate(
-			$subject->getLabel(),
-			$subject->getStatements(),
-			$schema,
-		);
 	}
 
 }
