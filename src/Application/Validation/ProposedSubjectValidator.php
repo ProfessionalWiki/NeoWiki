@@ -15,7 +15,9 @@ use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
  * When the Schema cannot be found, no violations are returned: the Subject is
  * left unvalidated so the write can still proceed and the Subject stays
  * editable (ADR 21). Centralising that decision here keeps the write paths
- * (CreateSubjectAction, ReplaceSubjectAction) from each repeating it.
+ * (CreateSubjectAction, ReplaceSubjectAction) from each repeating it, and
+ * gives the enforcement tier one place to revisit it, e.g. to align with the
+ * dedicated validate endpoints, which report a missing Schema differently.
  */
 readonly class ProposedSubjectValidator {
 
