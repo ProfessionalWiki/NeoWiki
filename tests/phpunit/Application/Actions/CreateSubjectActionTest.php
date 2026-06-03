@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequ
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -72,7 +73,10 @@ class CreateSubjectActionTest extends TestCase {
 			),
 			$this->schemaLookup,
 			new SelectStatementResolver( new SelectValueResolver() ),
-			new SubjectValidator( propertyTypeLookup: $registry ),
+			new ProposedSubjectValidator(
+				schemaLookup: $this->schemaLookup,
+				subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
+			),
 		);
 	}
 
