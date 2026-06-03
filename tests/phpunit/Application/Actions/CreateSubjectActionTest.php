@@ -379,7 +379,7 @@ class CreateSubjectActionTest extends TestCase {
 		$this->assertSame( 'Status', $this->presenterSpy->violations[0]->propertyName?->text );
 	}
 
-	public function testCreateWithMissingSchemaProducesEmptyViolations(): void {
+	public function testCreateWithMissingSchemaSurfacesSchemaNotFoundButStillPersists(): void {
 		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
 
 		$this->newCreateSubjectAction()->createSubject(
@@ -393,7 +393,9 @@ class CreateSubjectActionTest extends TestCase {
 		);
 
 		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
-		$this->assertSame( [], $this->presenterSpy->violations );
+		$this->assertCount( 1, $this->presenterSpy->violations );
+		$this->assertSame( 'schema-not-found', $this->presenterSpy->violations[0]->code );
+		$this->assertSame( [ 'NonexistentSchema' ], $this->presenterSpy->violations[0]->args );
 	}
 
 	public function testCreateWithViolationsStillPersistsTheSubject(): void {

@@ -73,10 +73,15 @@ class ProposedSubjectValidatorTest extends TestCase {
 		$this->assertSame( 'Age', $violations[0]->propertyName?->text );
 	}
 
-	public function testReturnsNoViolationsWhenSchemaNotFound(): void {
+	public function testReturnsSchemaNotFoundViolationWhenSchemaIsMissing(): void {
 		$this->registerSchemaWithAge( required: true );
 
-		$this->assertSame( [], $this->newValidator()->validate( $this->newSubject( 'UnregisteredSchema' ) ) );
+		$violations = $this->newValidator()->validate( $this->newSubject( 'UnregisteredSchema' ) );
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'schema-not-found', $violations[0]->code );
+		$this->assertNull( $violations[0]->propertyName );
+		$this->assertSame( [ 'UnregisteredSchema' ], $violations[0]->args );
 	}
 
 }
