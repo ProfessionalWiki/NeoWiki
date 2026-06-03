@@ -166,14 +166,23 @@ A part does not match the 6-digit hex-color pattern (`/^#[0-9a-fA-F]{6}$/`).
 
 ### `schema-not-found`
 
-Emitted by `ValidateSubjectUpdateApi`.
+Emitted by `ValidateSubjectUpdateApi` and by the Subject write endpoints
+(`POST /subject`, `PUT /subject/{id}`) via `ProposedSubjectValidator`.
 `args`: `[schemaName]`.
 `valuePartIndex`: never set.
 `propertyName`: always `null` (Subject-level).
 
-The existing Subject's Schema cannot be loaded — usually because the Schema page was deleted or
-renamed since the Subject was created. Surfaced as a violation rather than a 404 because the
-Subject itself does exist; the caller can fix this by re-creating or renaming the Schema page.
+The Subject's Schema cannot be loaded — usually because the Schema page was deleted or renamed
+since the Subject was created, or because a Subject is created/imported referencing a Schema that
+does not (yet) exist. On the write endpoints it is non-blocking: the write proceeds and the
+(unvalidatable) Subject stays editable per ADR 21, but the response reports `schema-not-found`
+rather than an empty (and misleading "valid") violation list. The caller can resolve it by
+creating or renaming the Schema page.
+
+Note the create dry-run endpoint (`POST /subject/validate`) instead returns `404`
+(`SchemaNotFoundException`) for a missing Schema, because there it is the addressed resource;
+the update dry-run (`POST /subject/{id}/validate`) and both write endpoints surface the violation.
+Reconciling that asymmetry is left to the enforcement tier (ADR 21).
 
 ## Known limitations (Foundation round)
 

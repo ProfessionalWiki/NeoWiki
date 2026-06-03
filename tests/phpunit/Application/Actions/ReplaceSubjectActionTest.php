@@ -269,7 +269,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->assertSame( 'Status', $violations[0]->propertyName?->text );
 	}
 
-	public function testReplaceWithMissingSchemaReturnsEmptyViolations(): void {
+	public function testReplaceWithMissingSchemaReturnsSchemaNotFound(): void {
 		$subject = TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Orphan' ),
@@ -284,7 +284,9 @@ class ReplaceSubjectActionTest extends TestCase {
 			null
 		);
 
-		$this->assertSame( [], $violations );
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'schema-not-found', $violations[0]->code );
+		$this->assertSame( [ 'NonexistentSchema' ], $violations[0]->args );
 	}
 
 	public function testReplaceWithViolationsStillPersistsTheSubject(): void {

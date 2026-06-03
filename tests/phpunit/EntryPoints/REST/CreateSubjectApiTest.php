@@ -152,6 +152,28 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Status', $responseData['violations'][0]['propertyName'] );
 	}
 
+	public function testResponseIncludesSchemaNotFoundWhenSchemaMissing(): void {
+		$body = [
+			'label' => 'Subject with missing schema',
+			'schema' => 'NeverCreatedSchema',
+			'statements' => [],
+		];
+
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( 'created', $responseData['status'] );
+		$this->assertCount( 1, $responseData['violations'] );
+		$this->assertSame( 'schema-not-found', $responseData['violations'][0]['code'] );
+		$this->assertNull( $responseData['violations'][0]['propertyName'] );
+		$this->assertSame( [ 'NeverCreatedSchema' ], $responseData['violations'][0]['args'] );
+	}
+
 	public function testAlreadyExistingMainSubjectResponseOmitsViolations(): void {
 		$this->createSchema( 'Employee' );
 

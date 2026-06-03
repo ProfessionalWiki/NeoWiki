@@ -8,6 +8,7 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
@@ -165,6 +166,47 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 			$this->assertSame( 'required', $violation['code'] );
 			$this->assertSame( [], $violation['args'] );
 		}
+	}
+
+	public function testResponseIncludesSchemaNotFoundWhenSchemaMissing(): void {
+		// Reproduce the canonical orphan: the Schema existed when the Subject was
+		// created, then its page was deleted, leaving the Subject un-validatable.
+		$this->createSchema( 'OrphanSchema' );
+		$this->createPageWithSubjects(
+			'ReplaceSubjectApiMissingSchemaTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSA11111155',
+				label: new SubjectLabel( 'Orphaned subject' ),
+				schemaName: new SchemaName( 'OrphanSchema' ),
+			)
+		);
+		$this->deletePage(
+			$this->getServiceContainer()->getWikiPageFactory()->newFromTitle(
+				Title::newFromText( 'OrphanSchema', NeoWikiExtension::NS_SCHEMA )
+			)
+		);
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			new RequestData( [
+				'method' => 'PUT',
+				'pathParams' => [ 'subjectId' => 'sTestSA11111155' ],
+				'bodyContents' => json_encode( [
+					'label' => 'Still orphaned',
+					'statements' => [],
+				] ),
+				'headers' => [ 'Content-Type' => 'application/json' ],
+			] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( 'updated', $responseData['status'] );
+		$this->assertCount( 1, $responseData['violations'] );
+		$this->assertSame( 'schema-not-found', $responseData['violations'][0]['code'] );
+		$this->assertNull( $responseData['violations'][0]['propertyName'] );
+		$this->assertSame( [ 'OrphanSchema' ], $responseData['violations'][0]['args'] );
 	}
 
 	public function testNonExistentSubjectReturns404(): void {
