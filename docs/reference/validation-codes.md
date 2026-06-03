@@ -4,15 +4,19 @@ Constraint violations returned by NeoWiki's backend validation API use stable `c
 This document is the authoritative reference, shared between the PHP backend implementation and
 (in a future round) the TS frontend implementation.
 
-The API endpoints are:
+Violations are returned by:
 
-- `POST /neowiki/v0/subject/validate` — validates a proposed create-shape body.
-- `POST /neowiki/v0/subject/{subjectId}/validate` — validates a proposed update-shape body
-  against an existing Subject's Schema.
+- `POST /neowiki/v0/subject/validate` — dry-run validation of a proposed create-shape body.
+- `POST /neowiki/v0/subject/{subjectId}/validate` — dry-run validation of a proposed update-shape
+  body against an existing Subject's Schema.
+- `POST /neowiki/v0/subject` and `PUT /neowiki/v0/subject/{subjectId}` — the write endpoints include
+  the resulting `violations` array in their `201`/`200` success body. Validation does not block the
+  write (see [ADR 21](../adr/021-add-backend-validation.md)).
 
-Both endpoints return `200 OK` with a `{violations: [...]}` body whenever the request is
-well-formed. Violations present in the body do not change the HTTP status. `400` is reserved for
-malformed input; `404` for a missing Schema or Subject.
+The `/validate` endpoints return `200 OK` with a `{violations: [...]}` body whenever the request is
+well-formed; violations in the body do not change the HTTP status. `400` is reserved for malformed
+input, `404` for a missing Subject (update dry-run). A missing Schema is reported differently per
+endpoint — see [`schema-not-found`](#schema-not-found).
 
 Each violation in the response has this shape:
 
