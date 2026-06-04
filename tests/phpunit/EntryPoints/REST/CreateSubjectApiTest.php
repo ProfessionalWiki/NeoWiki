@@ -200,6 +200,7 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
 
+		$this->assertSame( 409, $response->getStatusCode() );
 		$this->assertSame( 'error', $responseData['status'] );
 		$this->assertSame( 'Subject already exists', $responseData['message'] );
 		$this->assertArrayNotHasKey( 'violations', $responseData );
