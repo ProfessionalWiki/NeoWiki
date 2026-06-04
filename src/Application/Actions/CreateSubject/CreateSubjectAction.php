@@ -4,16 +4,17 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use RuntimeException;
 
@@ -27,6 +28,7 @@ readonly class CreateSubjectAction {
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
 		private SelectStatementResolver $selectStatementResolver,
+		private ProposedSubjectValidator $proposedSubjectValidator,
 	) {
 	}
 
@@ -37,7 +39,7 @@ readonly class CreateSubjectAction {
 
 		if ( ( $request->isMainSubject && !$this->subjectAuthorizer->canCreateMainSubject(
 				) ) || !$this->subjectAuthorizer->canCreateChildSubject() ) {
-			throw new \RuntimeException( 'You do not have the necessary permissions to create this subject' );
+			throw new RuntimeException( 'You do not have the necessary permissions to create this subject' );
 		}
 
 		$subject = $this->buildSubject( $request );
@@ -50,14 +52,15 @@ readonly class CreateSubjectAction {
 			} else {
 				$pageSubjects->createChildSubject( $subject );
 			}
-		}
-		catch ( RuntimeException ) {
+		} catch ( RuntimeException ) {
 			$this->presenter->presentSubjectAlreadyExists();
 			return;
 		}
 
+		$violations = $this->proposedSubjectValidator->validate( $subject );
+
 		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ), $request->comment );
-		$this->presenter->presentCreated( $subject->id->text );
+		$this->presenter->presentCreated( $subject->id->text, $violations );
 	}
 
 	private function buildSubject( CreateSubjectRequest $request ): Subject {

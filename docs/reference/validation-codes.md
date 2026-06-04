@@ -4,15 +4,19 @@ Constraint violations returned by NeoWiki's backend validation API use stable `c
 This document is the authoritative reference, shared between the PHP backend implementation and
 (in a future round) the TS frontend implementation.
 
-The API endpoints are:
+Violations are returned by:
 
-- `POST /neowiki/v0/subject/validate` — validates a proposed create-shape body.
-- `POST /neowiki/v0/subject/{subjectId}/validate` — validates a proposed update-shape body
-  against an existing Subject's Schema.
+- `POST /neowiki/v0/subject/validate` — dry-run validation of a proposed create-shape body.
+- `POST /neowiki/v0/subject/{subjectId}/validate` — dry-run validation of a proposed update-shape
+  body against an existing Subject's Schema.
+- `POST /neowiki/v0/subject` and `PUT /neowiki/v0/subject/{subjectId}` — the write endpoints include
+  the resulting `violations` array in their `201`/`200` success body. Validation does not block the
+  write (see [ADR 21](../adr/021-add-backend-validation.md)).
 
-Both endpoints return `200 OK` with a `{violations: [...]}` body whenever the request is
-well-formed. Violations present in the body do not change the HTTP status. `400` is reserved for
-malformed input; `404` for a missing Schema or Subject.
+The `/validate` endpoints return `200 OK` with a `{violations: [...]}` body whenever the request is
+well-formed; violations in the body do not change the HTTP status. `400` is reserved for malformed
+input, `404` for a missing Subject (update dry-run). A missing Schema is reported differently per
+endpoint — see [`schema-not-found`](#schema-not-found).
 
 Each violation in the response has this shape:
 
@@ -166,14 +170,23 @@ A part does not match the 6-digit hex-color pattern (`/^#[0-9a-fA-F]{6}$/`).
 
 ### `schema-not-found`
 
-Emitted by `ValidateSubjectUpdateApi`.
+Emitted by `ValidateSubjectUpdateApi` and by the Subject write endpoints
+(`POST /subject`, `PUT /subject/{id}`) via `ProposedSubjectValidator`.
 `args`: `[schemaName]`.
 `valuePartIndex`: never set.
 `propertyName`: always `null` (Subject-level).
 
-The existing Subject's Schema cannot be loaded — usually because the Schema page was deleted or
-renamed since the Subject was created. Surfaced as a violation rather than a 404 because the
-Subject itself does exist; the caller can fix this by re-creating or renaming the Schema page.
+The Subject's Schema cannot be loaded — usually because the Schema page was deleted or renamed
+since the Subject was created, or because a Subject is created/imported referencing a Schema that
+does not (yet) exist. On the write endpoints it is non-blocking: the write proceeds and the
+(unvalidatable) Subject stays editable per ADR 21, but the response reports `schema-not-found`
+rather than an empty (and misleading "valid") violation list. The caller can resolve it by
+creating or renaming the Schema page.
+
+Note the create dry-run endpoint (`POST /subject/validate`) instead returns `404`
+(`SchemaNotFoundException`) for a missing Schema, because there it is the addressed resource;
+the update dry-run (`POST /subject/{id}/validate`) and both write endpoints surface the violation.
+Reconciling that asymmetry is left to the enforcement tier (ADR 21).
 
 ## Known limitations (Foundation round)
 

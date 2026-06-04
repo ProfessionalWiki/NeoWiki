@@ -25,6 +25,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAc
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
@@ -334,6 +335,7 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
+			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 		);
 	}
 
@@ -505,12 +507,20 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
+			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 		);
 	}
 
 	public function getSubjectValidator(): SubjectValidator {
 		return new SubjectValidator(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
+		);
+	}
+
+	public function getProposedSubjectValidator(): ProposedSubjectValidator {
+		return new ProposedSubjectValidator(
+			schemaLookup: $this->getSchemaLookup(),
+			subjectValidator: $this->getSubjectValidator(),
 		);
 	}
 

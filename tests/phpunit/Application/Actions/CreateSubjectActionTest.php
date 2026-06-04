@@ -10,6 +10,8 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequ
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
+use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
@@ -59,17 +61,22 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	private function newCreateSubjectAction(): CreateSubjectAction {
+		$registry = PropertyTypeRegistry::withCoreTypes();
 		return new CreateSubjectAction(
 			$this->presenterSpy,
 			$this->subjectRepository,
 			$this->idGenerator,
 			$this->authorizer,
 			new StatementListBuilder(
-				new PropertyTypeToValueType( PropertyTypeRegistry::withCoreTypes() ),
+				new PropertyTypeToValueType( $registry ),
 				$this->idGenerator
 			),
 			$this->schemaLookup,
 			new SelectStatementResolver( new SelectValueResolver() ),
+			new ProposedSubjectValidator(
+				schemaLookup: $this->schemaLookup,
+				subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
+			),
 		);
 	}
 
@@ -142,6 +149,7 @@ class CreateSubjectActionTest extends TestCase {
 			'presentSubjectAlreadyExists',
 			$this->presenterSpy->result
 		);
+		$this->assertSame( [], $this->presenterSpy->violations );
 	}
 
 	public function testUserIsNotAllowedToCreateSubject(): void {
@@ -314,6 +322,100 @@ class CreateSubjectActionTest extends TestCase {
 		);
 
 		$this->assertSame( [ 'opt_draft' ], $this->getStatusValueForCreatedSubject()->strings );
+	}
+
+	private function registerSchemaWithRequiredStatus(): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( self::SELECT_SCHEMA_NAME ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Status' => new SelectProperty(
+					core: new PropertyCore( description: '', required: true, default: null ),
+					options: [
+						new SelectOption( id: 'opt_draft', label: 'Draft' ),
+						new SelectOption( id: 'opt_approved', label: 'Approved' ),
+					],
+					multiple: false,
+				),
+			] )
+		) );
+	}
+
+	public function testCreateProducesEmptyViolationsForCleanInput(): void {
+		$this->registerSelectSchema();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: self::SELECT_SCHEMA_NAME,
+				statements: [],
+			)
+		);
+
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
+		$this->assertSame( [], $this->presenterSpy->violations );
+	}
+
+	public function testCreateProducesViolationForRequiredPropertyMissing(): void {
+		$this->registerSchemaWithRequiredStatus();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: self::SELECT_SCHEMA_NAME,
+				statements: [],
+			)
+		);
+
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
+		$this->assertCount( 1, $this->presenterSpy->violations );
+		$this->assertSame( 'required', $this->presenterSpy->violations[0]->code );
+		$this->assertSame( 'Status', $this->presenterSpy->violations[0]->propertyName?->text );
+	}
+
+	public function testCreateWithMissingSchemaSurfacesSchemaNotFoundButStillPersists(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: 'NonexistentSchema',
+				statements: [],
+			)
+		);
+
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
+		$this->assertCount( 1, $this->presenterSpy->violations );
+		$this->assertSame( 'schema-not-found', $this->presenterSpy->violations[0]->code );
+		$this->assertSame( [ 'NonexistentSchema' ], $this->presenterSpy->violations[0]->args );
+	}
+
+	public function testCreateWithViolationsStillPersistsTheSubject(): void {
+		$this->registerSchemaWithRequiredStatus();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: self::SELECT_SCHEMA_NAME,
+				statements: [],
+			)
+		);
+
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
+		$this->assertNotEmpty(
+			$this->subjectRepository->getSubject( new SubjectId( 's' . self::STUB_ID ) )
+		);
 	}
 
 	public function testNewRelationGetsGuidAssigned(): void {

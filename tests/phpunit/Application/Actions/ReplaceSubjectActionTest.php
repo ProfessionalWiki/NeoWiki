@@ -11,6 +11,8 @@ use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
+use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
@@ -48,8 +50,9 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function newAction( ?SubjectAuthorizer $authorizer = null ): ReplaceSubjectAction {
+		$registry = PropertyTypeRegistry::withCoreTypes();
 		$builder = new StatementListBuilder(
-			propertyTypeToValueType: new PropertyTypeToValueType( PropertyTypeRegistry::withCoreTypes() ),
+			propertyTypeToValueType: new PropertyTypeToValueType( $registry ),
 			idGenerator: new StubIdGenerator( '11111111111127' )
 		);
 		return new ReplaceSubjectAction(
@@ -58,6 +61,10 @@ class ReplaceSubjectActionTest extends TestCase {
 			statementListBuilder: $builder,
 			schemaLookup: $this->schemaLookup,
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
+			proposedSubjectValidator: new ProposedSubjectValidator(
+				schemaLookup: $this->schemaLookup,
+				subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
+			),
 		);
 	}
 
@@ -203,6 +210,98 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 
 		$this->assertSame( [ 'opt_draft' ], $this->getStatusValue( new SubjectId( self::SUBJECT_ID ) )->strings );
+	}
+
+	private function registerSchemaWithRequiredStatus(): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( self::SCHEMA_NAME ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Status' => new SelectProperty(
+					core: new PropertyCore( description: '', required: true, default: null ),
+					options: [
+						new SelectOption( id: 'opt_draft', label: 'Draft' ),
+						new SelectOption( id: 'opt_approved', label: 'Approved' ),
+					],
+					multiple: false,
+				),
+			] )
+		) );
+	}
+
+	public function testReplaceReturnsEmptyViolationsForCleanInput(): void {
+		$this->registerSchemaWithSelect();
+		$subject = TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Original Label' ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		);
+		$this->subjectRepository->updateSubject( $subject );
+
+		$violations = $this->newAction()->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'New Label',
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ] ],
+			null
+		);
+
+		$this->assertSame( [], $violations );
+	}
+
+	public function testReplaceReturnsViolationForRequiredPropertyMissing(): void {
+		$this->registerSchemaWithRequiredStatus();
+		$subject = TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Before' ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		);
+		$this->subjectRepository->updateSubject( $subject );
+
+		$violations = $this->newAction()->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'After',
+			[],
+			null
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'required', $violations[0]->code );
+		$this->assertSame( 'Status', $violations[0]->propertyName?->text );
+	}
+
+	public function testReplaceWithMissingSchemaReturnsSchemaNotFound(): void {
+		$subject = TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Orphan' ),
+			schemaName: new SchemaName( 'NonexistentSchema' ),
+		);
+		$this->subjectRepository->updateSubject( $subject );
+
+		$violations = $this->newAction()->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Still Orphan',
+			[],
+			null
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'schema-not-found', $violations[0]->code );
+		$this->assertSame( [ 'NonexistentSchema' ], $violations[0]->args );
+	}
+
+	public function testReplaceWithViolationsStillPersistsTheSubject(): void {
+		$this->registerSchemaWithRequiredStatus();
+		$subject = TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Before' ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		);
+		$this->subjectRepository->updateSubject( $subject );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'After', [], null );
+
+		$stored = $this->subjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) );
+		$this->assertSame( 'After', $stored->getLabel()->text );
 	}
 
 }
