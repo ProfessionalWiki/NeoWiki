@@ -232,7 +232,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		) );
 	}
 
-	public function testReplaceReturnsEmptyViolationsForCleanInput(): void {
+	public function testReplacePresentsEmptyViolationsForCleanInput(): void {
 		$this->registerSchemaWithSelect();
 		$subject = TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
@@ -249,9 +249,10 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 
 		$this->assertSame( [], $this->presenterSpy->violations );
+		$this->assertSame( self::SUBJECT_ID, $this->presenterSpy->subjectId );
 	}
 
-	public function testReplaceReturnsViolationForRequiredPropertyMissing(): void {
+	public function testReplacePresentsViolationForRequiredPropertyMissing(): void {
 		$this->registerSchemaWithRequiredStatus();
 		$subject = TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
@@ -273,7 +274,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->assertSame( 'Status', $violations[0]->propertyName?->text );
 	}
 
-	public function testReplaceWithMissingSchemaReturnsSchemaNotFound(): void {
+	public function testReplaceWithMissingSchemaPresentsSchemaNotFound(): void {
 		$subject = TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Orphan' ),
