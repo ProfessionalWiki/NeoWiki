@@ -47,6 +47,19 @@ To deploy on a server with automatic HTTPS via Caddy:
 
 4. Access your wiki at the configured `MW_SERVER` URL.
 
+## Composer dependency loading
+
+NeoWiki's PHP dependencies must be available through MediaWiki's root Composer
+autoload setup. The bundled Docker images do this by merging
+`extensions/NeoWiki/composer.json` into the MediaWiki root Composer install with
+`composer-merge-plugin`.
+
+Do not load `extensions/NeoWiki/vendor/autoload.php` directly from
+`LocalSettings.php`. Registering the extension's standalone Composer autoloader
+ahead of MediaWiki's autoloader can make shared interfaces resolve to versions
+that are incompatible with MediaWiki core. In particular, MediaWiki 1.43 REST
+classes expect `psr/http-message` 1.x interfaces.
+
 ## Reserved host ports
 
 `make dev` allocates host ports from these ranges. Auto-allocation skips ports that
