@@ -55,4 +55,24 @@ class RestCreateSubjectPresenterTest extends TestCase {
 		);
 	}
 
+	public function testPresentValidationFailedYields422WithErrorBody(): void {
+		$presenter = new RestCreateSubjectPresenter();
+
+		$presenter->presentValidationFailed( [
+			new Violation( propertyName: new PropertyName( 'Required' ), code: 'required' ),
+		] );
+
+		$this->assertSame( 422, $presenter->getStatusCode() );
+		$this->assertSame(
+			[
+				'status' => 'error',
+				'message' => 'Validation failed',
+				'violations' => [
+					[ 'propertyName' => 'Required', 'code' => 'required', 'args' => [] ],
+				],
+			],
+			$presenter->getJsonArray()
+		);
+	}
+
 }

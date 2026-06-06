@@ -13,4 +13,12 @@ interface CreateSubjectPresenter {
 
 	public function presentSubjectAlreadyExists(): void;
 
+	/**
+	 * Called when validation enforcement rejects a Subject the request would
+	 * have created.
+	 *
+	 * @param Violation[] $violations
+	 */
+	public function presentValidationFailed( array $violations ): void;
+
 }
