@@ -16,6 +16,8 @@ use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Domain\Validation\ViolationDiff;
 
 readonly class ReplaceSubjectAction {
 
@@ -27,6 +29,7 @@ readonly class ReplaceSubjectAction {
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private ReplaceSubjectPresenter $presenter,
+		private bool $validationEnforced,
 	) {
 	}
 
@@ -48,16 +51,28 @@ readonly class ReplaceSubjectAction {
 			throw SubjectNotFoundException::forId( $subjectId );
 		}
 
+		$priorViolations = $this->proposedSubjectValidator->validate( $subject );
+
 		$subject->setLabel( new SubjectLabel( $label ) );
 		$subject->setStatements(
 			$this->statementListBuilder->build( $this->resolveStatements( $subject, $statements ) )
 		);
 
-		$violations = $this->proposedSubjectValidator->validate( $subject );
+		$proposedViolations = $this->proposedSubjectValidator->validate( $subject );
+
+		$newBlockingViolations = array_filter(
+			ViolationDiff::newViolations( $proposedViolations, $priorViolations ),
+			static fn ( Violation $v ): bool => $v->isBlocking()
+		);
+
+		if ( $this->validationEnforced && $newBlockingViolations !== [] ) {
+			$this->presenter->presentValidationFailed( $proposedViolations );
+			return;
+		}
 
 		$this->subjectRepository->updateSubject( $subject, $comment );
 
-		$this->presenter->presentUpdated( $subjectId->text, $violations );
+		$this->presenter->presentUpdated( $subjectId->text, $proposedViolations );
 	}
 
 	/**

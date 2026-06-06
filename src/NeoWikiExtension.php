@@ -337,6 +337,7 @@ class NeoWikiExtension {
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
+			validationEnforced: $this->isValidationEnforced(),
 		);
 	}
 
@@ -510,7 +511,18 @@ class NeoWikiExtension {
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 			presenter: $presenter,
+			validationEnforced: $this->isValidationEnforced(),
 		);
+	}
+
+	/**
+	 * Reads the flag fresh from MainConfig rather than from $this->config because the
+	 * NeoWikiExtension singleton (and the NeoWikiConfig it holds) is built once on first
+	 * getInstance() call, so a setMwGlobals('wgNeoWikiValidationEnforced', true) in
+	 * integration tests would not be observable through the baked config.
+	 */
+	private function isValidationEnforced(): bool {
+		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiValidationEnforced' ) === true;
 	}
 
 	public function getSubjectValidator(): SubjectValidator {

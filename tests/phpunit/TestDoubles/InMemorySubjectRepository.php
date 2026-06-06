@@ -27,6 +27,8 @@ class InMemorySubjectRepository implements SubjectRepository {
 	 */
 	public array $comments = [];
 
+	public int $updateSubjectCallCount = 0;
+
 	public function getSubject( SubjectId $subjectId ): ?Subject {
 		return $this->subjects[$subjectId->text] ?? null;
 	}
@@ -34,6 +36,7 @@ class InMemorySubjectRepository implements SubjectRepository {
 	public function updateSubject( Subject $subject, ?string $comment = null ): void {
 		$this->subjects[$subject->id->text] = $subject;
 		$this->comments[$subject->id->text] = $comment;
+		$this->updateSubjectCallCount++;
 	}
 
 	public function deleteSubject( SubjectId $id, ?string $comment ): void {
