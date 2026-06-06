@@ -16,7 +16,6 @@ use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 readonly class ReplaceSubjectAction {
 
@@ -27,14 +26,14 @@ readonly class ReplaceSubjectAction {
 		private SchemaLookup $schemaLookup,
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
+		private ReplaceSubjectPresenter $presenter,
 	) {
 	}
 
 	/**
 	 * @param array<string, mixed> $statements
-	 * @return Violation[]
 	 */
-	public function replace( SubjectId $subjectId, string $label, array $statements, ?string $comment ): array {
+	public function replace( SubjectId $subjectId, string $label, array $statements, ?string $comment ): void {
 		if ( trim( $label ) === '' ) {
 			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
 		}
@@ -58,7 +57,7 @@ readonly class ReplaceSubjectAction {
 
 		$this->subjectRepository->updateSubject( $subject, $comment );
 
-		return $violations;
+		$this->presenter->presentUpdated( $subjectId->text, $violations );
 	}
 
 	/**

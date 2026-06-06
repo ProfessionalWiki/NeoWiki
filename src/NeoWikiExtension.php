@@ -24,6 +24,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectActi
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
@@ -500,7 +501,7 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newReplaceSubjectAction( Authority $authority ): ReplaceSubjectAction {
+	public function newReplaceSubjectAction( ReplaceSubjectPresenter $presenter, Authority $authority ): ReplaceSubjectAction {
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
 			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
@@ -508,6 +509,7 @@ class NeoWikiExtension {
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
+			presenter: $presenter,
 		);
 	}
 

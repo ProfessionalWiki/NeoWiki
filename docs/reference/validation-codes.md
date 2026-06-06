@@ -16,7 +16,8 @@ Violations are returned by:
 The `/validate` endpoints return `200 OK` with a `{violations: [...]}` body whenever the request is
 well-formed; violations in the body do not change the HTTP status. `400` is reserved for malformed
 input, `404` for a missing Subject (update dry-run). A missing Schema is reported differently per
-endpoint — see [`schema-not-found`](#schema-not-found).
+endpoint — see [`schema-not-found`](#schema-not-found). `POST /subject` returns `409` when the page
+already has the requested Subject (the create did not run, so the body carries no `violations`).
 
 Each violation in the response has this shape:
 

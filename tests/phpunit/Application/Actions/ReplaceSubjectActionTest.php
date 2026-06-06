@@ -43,10 +43,12 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	private InMemorySubjectRepository $subjectRepository;
 	private InMemorySchemaLookup $schemaLookup;
+	private ReplaceSubjectPresenterSpy $presenterSpy;
 
 	public function setUp(): void {
 		$this->subjectRepository = new InMemorySubjectRepository();
 		$this->schemaLookup = new InMemorySchemaLookup();
+		$this->presenterSpy = new ReplaceSubjectPresenterSpy();
 	}
 
 	private function newAction( ?SubjectAuthorizer $authorizer = null ): ReplaceSubjectAction {
@@ -65,6 +67,7 @@ class ReplaceSubjectActionTest extends TestCase {
 				schemaLookup: $this->schemaLookup,
 				subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
 			),
+			presenter: $this->presenterSpy,
 		);
 	}
 
@@ -229,7 +232,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		) );
 	}
 
-	public function testReplaceReturnsEmptyViolationsForCleanInput(): void {
+	public function testReplacePresentsEmptyViolationsForCleanInput(): void {
 		$this->registerSchemaWithSelect();
 		$subject = TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
@@ -238,17 +241,18 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 		$this->subjectRepository->updateSubject( $subject );
 
-		$violations = $this->newAction()->replace(
+		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'New Label',
 			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ] ],
 			null
 		);
 
-		$this->assertSame( [], $violations );
+		$this->assertSame( [], $this->presenterSpy->violations );
+		$this->assertSame( self::SUBJECT_ID, $this->presenterSpy->subjectId );
 	}
 
-	public function testReplaceReturnsViolationForRequiredPropertyMissing(): void {
+	public function testReplacePresentsViolationForRequiredPropertyMissing(): void {
 		$this->registerSchemaWithRequiredStatus();
 		$subject = TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
@@ -257,19 +261,20 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 		$this->subjectRepository->updateSubject( $subject );
 
-		$violations = $this->newAction()->replace(
+		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'After',
 			[],
 			null
 		);
 
+		$violations = $this->presenterSpy->violations;
 		$this->assertCount( 1, $violations );
 		$this->assertSame( 'required', $violations[0]->code );
 		$this->assertSame( 'Status', $violations[0]->propertyName?->text );
 	}
 
-	public function testReplaceWithMissingSchemaReturnsSchemaNotFound(): void {
+	public function testReplaceWithMissingSchemaPresentsSchemaNotFound(): void {
 		$subject = TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Orphan' ),
@@ -277,13 +282,14 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 		$this->subjectRepository->updateSubject( $subject );
 
-		$violations = $this->newAction()->replace(
+		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'Still Orphan',
 			[],
 			null
 		);
 
+		$violations = $this->presenterSpy->violations;
 		$this->assertCount( 1, $violations );
 		$this->assertSame( 'schema-not-found', $violations[0]->code );
 		$this->assertSame( [ 'NonexistentSchema' ], $violations[0]->args );

@@ -6,16 +6,13 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
-use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
+use ProfessionalWiki\NeoWiki\Presentation\RestCreateSubjectPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
-class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
-
-	private array $apiResponse = [];
+class CreateSubjectApi extends SimpleHandler {
 
 	public function __construct(
 		private readonly bool $isMainSubject,
@@ -28,8 +25,10 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 
 		$body = $this->getValidatedBody();
 
+		$presenter = new RestCreateSubjectPresenter();
+
 		try {
-			NeoWikiExtension::getInstance()->newCreateSubjectAction( $this, $this->getAuthority() )->createSubject(
+			NeoWikiExtension::getInstance()->newCreateSubjectAction( $presenter, $this->getAuthority() )->createSubject(
 				new CreateSubjectRequest(
 					pageId: $pageId,
 					isMainSubject: $this->isMainSubject,
@@ -39,8 +38,6 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 					comment: $body['comment'] ?? null,
 				)
 			);
-
-			return $this->buildResponseObject();
 		} catch ( \InvalidArgumentException $e ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',
@@ -52,11 +49,9 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 				'message' => $e->getMessage(),
 			] );
 		}
-	}
 
-	private function buildResponseObject(): Response {
-		$response = $this->getResponseFactory()->createJson( $this->apiResponse );
-		$response->setStatus( 201 );
+		$response = $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
+		$response->setStatus( $presenter->getStatusCode() );
 		return $response;
 	}
 
@@ -100,18 +95,4 @@ class CreateSubjectApi extends SimpleHandler implements CreateSubjectPresenter {
 		];
 	}
 
-	public function presentCreated( string $subjectId, array $violations ): void {
-		$this->apiResponse = [
-			'status' => 'created',
-			'subjectId' => $subjectId,
-			'violations' => ViolationSerializer::serializeMany( $violations ),
-		];
-	}
-
-	public function presentSubjectAlreadyExists(): void {
-		$this->apiResponse = [
-			'status' => 'error',
-			'message' => 'Subject already exists',
-		];
-	}
 }
