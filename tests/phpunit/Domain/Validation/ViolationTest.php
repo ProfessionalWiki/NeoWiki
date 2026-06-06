@@ -66,4 +66,18 @@ class ViolationTest extends TestCase {
 		$this->assertSame( 1, $named->valuePartIndex );
 	}
 
+	public function testSchemaNotFoundIsNotBlocking(): void {
+		$violation = new Violation( propertyName: null, code: 'schema-not-found', args: [ 'Person' ] );
+
+		$this->assertFalse( $violation->isBlocking() );
+	}
+
+	public function testOtherCodesAreBlocking(): void {
+		$required = new Violation( propertyName: new PropertyName( 'Status' ), code: 'required' );
+		$invalid = new Violation( propertyName: new PropertyName( 'Website' ), code: 'invalid-url' );
+
+		$this->assertTrue( $required->isBlocking() );
+		$this->assertTrue( $invalid->isBlocking() );
+	}
+
 }

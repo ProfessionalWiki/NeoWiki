@@ -25,4 +25,14 @@ readonly class Violation {
 		);
 	}
 
+	/**
+	 * Whether this Violation should block writes under enforcement.
+	 * schema-not-found is a system condition (the Schema page is missing
+	 * or has been deleted), not a user-correctable constraint, so it does
+	 * not block.
+	 */
+	public function isBlocking(): bool {
+		return $this->code !== 'schema-not-found';
+	}
+
 }
