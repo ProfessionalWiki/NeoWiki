@@ -60,7 +60,7 @@ class CreateSubjectActionTest extends TestCase {
 		$this->schemaLookup = new InMemorySchemaLookup();
 	}
 
-	private function newCreateSubjectAction(): CreateSubjectAction {
+	private function newCreateSubjectAction( bool $validationEnforced = false ): CreateSubjectAction {
 		$registry = PropertyTypeRegistry::withCoreTypes();
 		return new CreateSubjectAction(
 			$this->presenterSpy,
@@ -77,6 +77,7 @@ class CreateSubjectActionTest extends TestCase {
 				schemaLookup: $this->schemaLookup,
 				subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
 			),
+			$validationEnforced,
 		);
 	}
 
@@ -464,6 +465,118 @@ class CreateSubjectActionTest extends TestCase {
 			] ),
 			$newSubject->getStatements()
 		);
+	}
+
+	private function registerPersonSchemaWithRequiredName(): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( 'PersonSchema' ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Name' => new SelectProperty(
+					core: new PropertyCore( description: '', required: true, default: null ),
+					options: [ new SelectOption( id: 'opt_alice', label: 'Alice' ) ],
+					multiple: false,
+				),
+			] )
+		) );
+	}
+
+	public function testEnforcementOffPersistsCreateWithViolations(): void {
+		$this->registerPersonSchemaWithRequiredName();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: false )->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Bob',
+				schemaName: 'PersonSchema',
+				statements: [],
+			)
+		);
+
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+	}
+
+	public function testEnforcementOnRejectsCreateWithViolations(): void {
+		$this->registerPersonSchemaWithRequiredName();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: true )->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Bob',
+				schemaName: 'PersonSchema',
+				statements: [],
+			)
+		);
+
+		$this->assertTrue( $this->presenterSpy->validationFailed );
+		$this->assertSame( '', $this->presenterSpy->result );
+		$this->assertNull( $this->subjectRepository->getSubject( new SubjectId( 's' . self::STUB_ID ) ) );
+	}
+
+	public function testEnforcementOnAllowsCleanCreate(): void {
+		$this->registerPersonSchemaWithRequiredName();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: true )->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Bob',
+				schemaName: 'PersonSchema',
+				statements: [
+					'Name' => [ 'propertyType' => 'select', 'value' => 'opt_alice' ],
+				],
+			)
+		);
+
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+	}
+
+	public function testEnforcementOnAllowsCreateWhenSchemaIsMissing(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: true )->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Subject',
+				schemaName: 'NonexistentSchema',
+				statements: [],
+			)
+		);
+
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertCount( 1, $this->presenterSpy->violations );
+		$this->assertSame( 'schema-not-found', $this->presenterSpy->violations[0]->code );
+	}
+
+	public function testEnforcementOnDoesNotInterceptAlreadyExistsBranch(): void {
+		$this->registerPersonSchemaWithRequiredName();
+		$pageSubjects = $this->createMock( PageSubjects::class );
+		$pageSubjects->method( 'createMainSubject' )->willThrowException(
+			new RuntimeException( 'Subject already exists' )
+		);
+		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: true )->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Existing Label',
+				schemaName: 'PersonSchema',
+				statements: [],
+			)
+		);
+
+		$this->assertSame( 'presentSubjectAlreadyExists', $this->presenterSpy->result );
+		$this->assertFalse( $this->presenterSpy->validationFailed );
 	}
 
 }

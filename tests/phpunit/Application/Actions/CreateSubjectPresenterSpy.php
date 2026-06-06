@@ -14,6 +14,8 @@ class CreateSubjectPresenterSpy implements CreateSubjectPresenter {
 	/** @var Violation[] */
 	public array $violations = [];
 
+	public bool $validationFailed = false;
+
 	public function presentCreated( string $subjectId, array $violations ): void {
 		$this->result = $subjectId;
 		$this->violations = $violations;
@@ -21,6 +23,11 @@ class CreateSubjectPresenterSpy implements CreateSubjectPresenter {
 
 	public function presentSubjectAlreadyExists(): void {
 		$this->result = 'presentSubjectAlreadyExists';
+	}
+
+	public function presentValidationFailed( array $violations ): void {
+		$this->validationFailed = true;
+		$this->violations = $violations;
 	}
 
 }

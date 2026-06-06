@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use RuntimeException;
 
@@ -29,6 +30,7 @@ readonly class CreateSubjectAction {
 		private SchemaLookup $schemaLookup,
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
+		private bool $validationEnforced,
 	) {
 	}
 
@@ -59,8 +61,24 @@ readonly class CreateSubjectAction {
 
 		$violations = $this->proposedSubjectValidator->validate( $subject );
 
+		if ( $this->validationEnforced && $this->blockingViolations( $violations ) !== [] ) {
+			$this->presenter->presentValidationFailed( $violations );
+			return;
+		}
+
 		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ), $request->comment );
 		$this->presenter->presentCreated( $subject->id->text, $violations );
+	}
+
+	/**
+	 * @param Violation[] $violations
+	 * @return Violation[]
+	 */
+	private function blockingViolations( array $violations ): array {
+		return array_values( array_filter(
+			$violations,
+			static fn ( Violation $v ): bool => $v->isBlocking()
+		) );
 	}
 
 	private function buildSubject( CreateSubjectRequest $request ): Subject {
