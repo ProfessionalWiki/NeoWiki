@@ -14,8 +14,15 @@ class ReplaceSubjectPresenterSpy implements ReplaceSubjectPresenter {
 	/** @var Violation[] */
 	public array $violations = [];
 
+	public bool $validationFailed = false;
+
 	public function presentUpdated( string $subjectId, array $violations ): void {
 		$this->subjectId = $subjectId;
+		$this->violations = $violations;
+	}
+
+	public function presentValidationFailed( array $violations ): void {
+		$this->validationFailed = true;
 		$this->violations = $violations;
 	}
 

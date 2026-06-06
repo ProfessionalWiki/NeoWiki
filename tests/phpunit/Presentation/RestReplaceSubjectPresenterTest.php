@@ -45,4 +45,24 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 		$this->assertSame( [], $presenter->getJsonArray()['violations'] );
 	}
 
+	public function testPresentValidationFailedYields422WithErrorBody(): void {
+		$presenter = new RestReplaceSubjectPresenter();
+
+		$presenter->presentValidationFailed( [
+			new Violation( propertyName: new PropertyName( 'Status' ), code: 'required' ),
+		] );
+
+		$this->assertSame( 422, $presenter->getStatusCode() );
+		$this->assertSame(
+			[
+				'status' => 'error',
+				'message' => 'Validation failed',
+				'violations' => [
+					[ 'propertyName' => 'Status', 'code' => 'required', 'args' => [] ],
+				],
+			],
+			$presenter->getJsonArray()
+		);
+	}
+
 }

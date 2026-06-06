@@ -32,4 +32,16 @@ class RestReplaceSubjectPresenter implements ReplaceSubjectPresenter {
 		$this->statusCode = 200;
 	}
 
+	/**
+	 * @param Violation[] $violations
+	 */
+	public function presentValidationFailed( array $violations ): void {
+		$this->apiResponse = [
+			'status' => 'error',
+			'message' => 'Validation failed',
+			'violations' => ViolationSerializer::serializeMany( $violations ),
+		];
+		$this->statusCode = 422;
+	}
+
 }

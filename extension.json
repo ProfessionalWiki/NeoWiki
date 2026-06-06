@@ -140,6 +140,10 @@
 			"description": "Whether development UIs should be enabled",
 			"value": false
 		},
+		"NeoWikiValidationEnforced": {
+			"description": "Whether write endpoints reject edits that introduce new constraint violations. When false, violations are surfaced in responses but writes always persist.",
+			"value": false
+		},
 		"NeoWikiQueryLimits": {
 			"description": "Per-tier per-query resource caps. Keys: 'default' (users without apihighlimits) and 'expensive' (users with apihighlimits). Each value: { timeoutSeconds, maxRows }.",
 			"value": {

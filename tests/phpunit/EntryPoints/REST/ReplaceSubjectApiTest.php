@@ -10,9 +10,11 @@ use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -297,6 +299,48 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame( 200, $response->getStatusCode() );
+	}
+
+	public function testEnforcementBlockedReturns422(): void {
+		$this->setMwGlobals( 'wgNeoWikiValidationEnforced', true );
+
+		$this->createSchema(
+			'EnforcementSchema',
+			'{"title":"EnforcementSchema","propertyDefinitions":{"Required":{"type":"text","required":true}}}'
+		);
+		$this->createPageWithSubjects(
+			'ReplaceSubjectApiEnforcementTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSA11111144',
+				label: new SubjectLabel( 'Was clean' ),
+				schemaName: new SchemaName( 'EnforcementSchema' ),
+				statements: new StatementList( [
+					TestStatement::build( property: 'Required', value: 'present' ),
+				] )
+			)
+		);
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			new RequestData( [
+				'method' => 'PUT',
+				'pathParams' => [ 'subjectId' => 'sTestSA11111144' ],
+				'bodyContents' => json_encode( [
+					'label' => 'After',
+					'statements' => [],
+				] ),
+				'headers' => [ 'Content-Type' => 'application/json' ],
+			] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 422, $response->getStatusCode() );
+		$this->assertSame( 'error', $responseData['status'] );
+		$this->assertSame( 'Validation failed', $responseData['message'] );
+		$this->assertNotEmpty( $responseData['violations'] );
+		$this->assertSame( 'Required', $responseData['violations'][0]['propertyName'] );
+		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
 	}
 
 	private function createPages(): void {

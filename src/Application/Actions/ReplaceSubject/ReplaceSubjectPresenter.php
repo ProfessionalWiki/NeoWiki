@@ -13,4 +13,12 @@ interface ReplaceSubjectPresenter {
 	 */
 	public function presentUpdated( string $subjectId, array $violations ): void;
 
+	/**
+	 * Called when validation enforcement rejects an edit that would introduce
+	 * new constraint violations relative to the Subject's prior state.
+	 *
+	 * @param Violation[] $violations
+	 */
+	public function presentValidationFailed( array $violations ): void;
+
 }
