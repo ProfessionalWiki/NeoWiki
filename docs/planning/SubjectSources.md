@@ -1,181 +1,223 @@
 # Subject Sources
 
-Status: Exploration (pre-ADR). Written 2026-06-06 by Jeroen De Dauw and Claude Opus 4.8,
-based on approx 4h of investigation and iteration.
+Status: Exploration (pre-ADR). Started 2026-06-06 by Jeroen De Dauw and Claude Opus 4.8, expanded over subsequent
+sessions of investigation and iteration.
 
-This is a WIP exploration doc, intended for team and stakeholder feedback.
+A WIP exploration doc for team and stakeholder feedback, and a context seed for future work. If the direction is
+confirmed it should graduate to an ADR.
 
-## High-level summary
+## Summary
 
-A cluster of new use cases (document-control/approval metadata, Confluence-style free-form tables, cross-wiki
-authority data, user-computed and external values) all hit the same two walls in today's model: data that isn't a
-local, editable, versioned Subject cannot be **displayed** through our Views, and cannot be **stored/queried**
-without bolting it onto the Neo4j page node as untyped properties.
+NeoWiki today assumes every Subject is local, editable, and versioned — stored in a MediaWiki revision slot and
+projected into Neo4j. Several needed capabilities do not fit that assumption: page and approval metadata, free-form
+tables, cross-wiki metadata in a wiki farm, references to other systems, and user-computed values.
 
-Proposed direction: generalise **where Subjects (and
-their Schemas) come from**. A Subject is produced by a **Source**. The local revision-slot store is just the default
-Source. Other Sources (built-in page metadata, external/approval providers, remote NeoWiki/Wikibase, organic
-wikitext) produce Subjects with **reduced capabilities** — most importantly, not always writeable or versioned.
+Proposed direction: **a Subject (and the Schema it uses) is produced by a pluggable Source.** The local revision slot
+is the default Source. Other Sources produce Subjects with reduced capabilities — notably not always writeable or
+versioned. The UI continues to treat everything as Subjects and only learns to respect per-Source capability flags;
+sourced data is surfaced *as Subjects*, so it flows through the existing View, query, and editing surfaces.
 
-The UI keeps its Subject assumption everywhere (Views, editors). It only learns to respect per-Subject and
-per-Schema capability flags.
+## Requirements / use cases
 
-## Background: the use cases
+Primary drivers (committed work):
 
-1. **External-owned state (BlueSpice document control).** Approval state, last reviewer, etc. are owned by another
-   extension (content-stabilisation/approvals). They must be queryable/sortable for dashboards and ideally viewable
-   in a page header, must update **without creating a page revision**, and must survive a graph rebuild.
-2. **Free-form tables (Confluence migration).** Migrators want an inline key/value table that becomes queryable
-   metadata — Confluence's Page Properties / Page Properties Report macros.
-3. **Authority control / federation (ECHOLOT).** A shared instance of clean authority records that per-case-study
-   instances reference rather than duplicate; more broadly, distributed instances and bi-directional flow.
-4. **User-computed and external values.** Values computed in wikitext/Lua, or pulled via ExternalData / Wikibase /
-   SMW, surfaced as structured data — the popular SMW + ExternalData pattern.
-5. **System page metadata.** `name`, `creationTime`, `lastEditor`, `categories` already exist on the page node but
-   cannot be shown via Views.
+1. **Wiki-farm metadata.** A farm of separate wikis needs unified metadata: each page's metadata and approval state
+   queryable, sortable, and filterable **across all wikis** (e.g. "all pages approved before date X, farm-wide"), plus
+   cross-wiki references in query results. This is the main reason a graph database was chosen, and the primary
+   near-term driver. Cross-wiki queryability implies the metadata must be **materialised in the (shared) graph**, not
+   only synthesised on read.
+2. **External-owned state (document control).** Approval state, last reviewer, etc. are owned by another extension.
+   They must be queryable for dashboards, viewable alongside Subject data, updatable **without creating a page
+   revision**, and survive a graph rebuild.
+3. **System page metadata.** `name`, `creationTime`, `lastEditor`, `categories` already exist on the page node; they
+   need to be viewable through Views.
+4. **Free-form tables (Confluence migration).** An inline key/value table that becomes queryable metadata.
 
-## Core idea: Subjects and Schemas come from Sources
+Secondary / future (designed-for, not all committed):
 
-A **Source** produces Subjects and resolves the Schemas those Subjects use. Schema *lookup* therefore becomes
-Source-aware: a schema may be a local Schema-namespace page, a code-defined built-in, or remotely owned.
+5. **Federation / authority control.** A shared authority instance other instances reference; more generally a
+   federation of interoperable instances with eventual two-way (write-back) flow.
+6. **User-computed / external values.** Values computed in wikitext/Lua or pulled via ExternalData / Wikibase / SMW,
+   surfaced as structured data.
+7. **RDF identity.** Stable per-source IRIs for export, plus coarse origin provenance. (Rich chain-of-production
+   provenance and rights are a separate model, out of scope here.)
 
-Each Source (and the Subjects/Schemas it yields) declares four **independent** capabilities:
+Orthogonal but interacting (tracked elsewhere):
 
-| Capability | Meaning | Local slot | Engineered adapter | Organic wikitext | Built-in page metadata |
+8. **Subject-level access control** and server-side query filtering by ACL — a separate workstream that intersects
+   this one only at cross-wiki query filtering.
+
+## Core model
+
+### Sources and the registry
+
+A **Source plugin** embodies a *kind*: `LocalSource`, `PageMetadataSource`, `WikitextSource`, `RemoteNeoWikiSource`,
+etc. A **registered Source** binds a plugin to config (often a specific wiki/instance). A single **Source registry**
+maps `sourceKey → Source`, and the Source object is the authority for everything about its Subjects: capabilities,
+base URI, how to resolve/produce them, and its localId grammar.
+
+A wiki farm is simply **more registered Sources** (per wiki, per kind); the identity format does not change. ACL and
+rich provenance are deliberately not part of this registry.
+
+### Identity
+
+A Subject id is a flat pair: **`(source, localId)`**.
+
+- The existing `SubjectId` is widened to carry a source, defaulting to local, so a bare nanoid still means a local
+  Subject (backward compatible). It is a qualified *id*, not a separate "reference" type: the same type is a Subject's
+  own identity and a Relation's target, much like a primary key and a foreign key.
+- `localId` is **polymorphic and opaque outside its Source**: a nanoid for local Subjects, a page id for page
+  metadata (`pagemeta:123`), a remote id or URI for federation. Each Source owns its localId grammar, validation,
+  stability, and minting. Generic code treats `(source, localId)` as opaque and routes resolution to the Source; the
+  global id-format check becomes source-delegated.
+- The structured pair is canonical; IRI and CURIE forms are escaped projections of it (the registry's
+  `source → base-URI` map is also the RDF prefix/URI map).
+- The source qualifier is about **provenance/resolvability, not uniqueness**. Nanoids are already collision-resistant
+  across wikis (enabling import/export); but *derived* ids such as `pagemeta:123` are not unique across wikis, so the
+  source key is what namespaces them in a shared graph.
+- The [ADR 14](../adr/014-improved-id-format.md) properties (fixed length, time-sortable) hold only for local
+  nanoids, not for arbitrary ids.
+
+### Capabilities
+
+Each Source declares its capabilities; because the id carries the source, capabilities are reachable from the id.
+Example sources:
+
+| Capability | Meaning | Local slot | Engineered adapter | Wikitext | Page metadata |
 |---|---|---|---|---|---|
 | `readable` | can be read | ✓ | ✓ | ✓ | ✓ |
-| `writeable` | can be edited through NeoWiki | ✓ | optional (write-back) | ✗ | ✗ |
-| `versioned` | an old page revision shows the value as it then was | ✓ | ✗ | ✓ if hard-coded, ✗ if computed/pulled | ✗ |
-| provenance | origin we can record | full (ours) | real (system/id/time) | weak (only the host page) | system |
+| `writeable` | editable through NeoWiki | ✓ | optional (write-back) | ✗ | ✗ |
+| `versioned` | an old page revision shows the then-value | ✓ | ✗ | ✓ if hard-coded | ✗ |
+| `queryable` | reachable via Cypher | ✓ | only if materialised | only if materialised | ✓ (page node) |
+| provenance | origin recorded | local | real (system/id/time) | weak (host page) | system |
 
-Notes:
+- `writeable` is additionally gated by **instance-locality**: a Subject is editable in its home wiki; cross-wiki is
+  read-only until a write-back adapter exists.
+- `queryable` is distinct from `readable`: a Subject is Cypher-queryable only if materialised in the (local or shared)
+  graph. A sourced-but-not-materialised Subject is viewable and fetchable by id, but not queryable.
 
-- `writeable` is **not** inherent. An engineered adapter can support **write-back** (ECHOLOT bi-directional flow).
-  We need not ship a writeable adapter initially, but the plugin system must not preclude one.
-- Provenance **quality** varies. Organic wikitext loses real provenance — we only know the page the wikitext is on.
-  Engineered adapters can record true provenance, which matters for ECHOLOT (T3.4 chain-of-production).
-- Read-only-ness comes **only** from the Source. It is unrelated to schema design (see below).
-- `versioned` is really about **history-page behaviour** — what an old page revision shows, which is why it matters.
-  Only values re-derived from versioned *input* render history-correct.
+### Schemas from Sources
 
-### The Source spectrum
+Schemas are resolved through Sources too and can be read-only: the page-metadata schema is code-defined (read-only by
+construction); a remote schema is remote-owned (read-only); a local schema is an ordinary writeable schema. There is
+one schema type throughout — read-only-ness comes from the Source, never from a schema "kind"
+([ADR 8](../adr/008-one-schema-per-subject.md)).
 
-- **Engineered end:** dedicated adapters via a plugin system — `RemoteNeoWikiSource`, a Wikibase source, an SMW source.
-  Typed, reliable, real provenance, potentially writeable.
-- **Organic end:** users wire it themselves — compute in Lua/wikitext, pull via ExternalData — landing as read-only,
-  weak-provenance Subjects. No code, no adapter.
+## Storage and query (Neo4j)
 
-Both ends are the **same abstraction**. `RemoteNeoWikiSource` and `WikitextSource` are part of the same plugin system.
+- The **page node stays** as the bookkeeping / index node.
+- **Page and approval metadata are materialised on the page node**, so they are queryable (including cross-wiki in a
+  shared graph). The read-only page-metadata **Subject** is a display projection over that data — synthesised on read,
+  with no separate Subject node. (Whether to *also* materialise it as a Subject node, to allow uniform `:Subject`
+  querying across page and subject metadata, is an open question.)
+- **Genuinely-new data** (free-form tables; optionally-cached federation) materialises as normal Subject nodes — never
+  as arbitrary keys on the page node (which would risk reserved-key collisions and pollute the index node).
+- **Wiki farm:** the shared graph tags every node (Subject and page) with its **instance**; uniqueness becomes
+  per-instance and derived ids are namespaced by source. Cross-wiki read/query is then a single query over the shared
+  graph (the owning wiki's page node is already present). Complexity concentrates in **write-routing** (edits go to the
+  home wiki) and **ACL-filtered cross-wiki queries**.
+- Rule of thumb: **materialise iff the data is not otherwise in the graph.**
 
-## Consumers
+## Rendering
 
-- **System page metadata** → a read-only, non-versioned **page-metadata Subject** backed by a code-defined, read-only
-  schema (`PageMetadata`: `name`, `creationTime`, `lastEditor`, `categories`). This exposes the page's own metadata as
-  a Subject (on retrieval, not in the graph db) — read-only, no slot backing, no versioning — so it can render in Views.
-- **External-owned state (e.g. approval)** → a statement provider contributing read-only statements onto the page-metadata Subject
-  (approval status maps naturally to the `select` type — Draft/Review/Approved). Storage is unchanged: still projected
-  to the Neo4j page node, so Cypher/Lua queries keep working; now also reachable via the Subject read path, hence
-  Views. User-set page metadata (page owner, audit date) is different — if user-set it is an ordinary **writeable**
-  Subject and a revision on change is correct; a control-document header then composes two Subjects (both render
-  through the normal View system).
-- **Federation / authority control** → `RemoteNeoWikiSource` (and similar) adapters. Read-only by default, optionally
-  writeable. Local materialisation is a per-deployment caching choice, not automatic.
-- **Organic computed/external values** → a `{{#set}}`-like, schema-backed wikitext surface producing read-only Subjects.
-  Unlocks ExternalData/Wikibase/SMW bridging organically.
-- **Confluence free-form tables** → see below.
+Views render via a by-subject-id placeholder that the client hydrates (revision-aware through the per-revision
+endpoint). For sourced Subjects this means the real work is (a) an addressable id and (b) a **source-aware
+subject-load path** — `SubjectContentRepository` server-side, the subject store and fetch endpoints client-side —
+with capability flags layered on top. "Per-page" resolution collapses into "by-id" (`pagemeta:<pageId>` is a
+deterministic id), so the access patterns reduce to **by-id and query**.
 
-Some of those might be defined in their own extensions to NeoWiki.
+## Relations across Sources
 
-## Confluence free-form tables
+A Relation targets a `(source, localId)` id; resolution routes to the target's Source. Cross-source relations are not
+blocked (Neo4j `MERGE` creates a stub for an absent target), but display needs the Source and `targetSchema`
+validation is limited when the target is remote. For an initial version, restrict Relation targets to resolvable
+Sources and open up cross-source relations later.
 
-The data must be **schema-backed** like any Subject (there are no schemaless Subjects — ADR 008). The schema might have
-mostly-optional, mostly-`text` properties; each page's
-table-Subject fills in whatever subset it uses. A single shared schema (such tables typically have well under 100
-properties) acts as a managed vocabulary, which is what gives name consistency and lets standard Views (infobox)
-render the data.
+## Refresh without an edit
 
-The "free-form" behaviour lives **entirely in a table UI**, not in the model: "pick an existing property or add a
-new row" simply calls the normal schema-edit and subject-edit operations. This is **not** an exception to ADR 015 —
-that ADR constrains our *standard dedicated editor*; a purpose-built table UI making a different UX choice over the
-same plain operations is fine. Picking an existing property converges users on `Status` instead of `status`/`State`;
-only genuinely-new properties edit the schema page.
+Generalise the "refresh page properties" need ([#782](https://github.com/ProfessionalWiki/NeoWiki/issues/782)) into a
+first-class **"refresh this page's sourced data"** operation — it serves approval state, computed wikitext values, and
+cached external pulls alike — shaped by the public-PHP-API decision
+([#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789)). The page-property provider registry is already
+invoked on graph rebuild, so re-injection on rebuild exists; the gap is the on-demand trigger.
 
-Two designs for the editing/storage surface, **undecided** — needs HW input:
+## Free-form tables (Confluence)
 
-- **Wikitext approach.** A `<propertiestable>` tag holds the table in the page body;
-  VE edits the tag content inline (PageExcerpts-style); on save it is parsed into a **read-only derived Subject**.
-  Wikitext is the source of truth. This is a Source, so it depends on the Source backbone. The tag can live in a
-  *separate extension* supporting both SMW and NeoWiki backends, keeping the wikitext/parsing out of NeoWiki core.
-- **Dedicated editor approach.** A NeoWiki table editor over a normal **writeable, versioned** slot Subject. No
-  wikitext. Loses the in-body / Confluence-parity authoring UX.
+The data is schema-backed like any Subject (there are no schemaless Subjects). The schema is an ordinary schema with
+mostly-optional, mostly-`text` properties; a single shared schema (such tables typically have well under 100
+properties) acts as a managed vocabulary, giving name consistency and letting standard Views render the data. The
+"free-form" behaviour — pick an existing property or add a row — lives **in a table UI** that calls the normal schema-
+and subject-edit operations; it is not a model change and not a new schema type.
 
-Perhaps the tag would name its Schema, e.g. `<propertiestable schema="Company">`, and/or there could be a default Schema.
+Two editing/storage options, undecided (needs HW input):
 
-Sequencing: the Source backbone is needed regardless (approval, federation, page metadata). The wikitext approach depends on it;
-The dedicated editor approach does not but is a separate editor effort. So we **build the Source backbone first**, resolve the approach choice
-with HW in parallel, then deliver the Confluence capability (or just the foundations for HW to build it).
+- **Wikitext-sourced.** A `<propertiestable>` tag holds the table in the page body, edited inline in the visual
+  editor; on save it is parsed into a read-only derived Subject. Wikitext is the source of truth; this is a Source and
+  depends on the Source backbone. The tag and parsing can live in a separate extension (supporting both SMW and
+  NeoWiki backends), keeping wikitext out of NeoWiki core.
+- **Dedicated editor.** A NeoWiki table editor over a normal writeable, versioned slot Subject; no wikitext, but loses
+  the in-body authoring parity.
 
-## Neo4j consequences
+The tag may name its schema (`<propertiestable schema="...">`), optionally defaulting to a page-type's schema or a
+configured default.
 
-- The **page node stays** as our bookkeeping/index node, unchanged.
-- **Read-only synthesised Subjects** (page metadata, approval) add **no new nodes** — they are assembled at read time
-  from the existing page-node data. Toggling the Page-metadata Source off therefore costs nothing.
-- **Genuinely-new data** (Confluence tables; optionally cached federation) materialises as normal Subject nodes —
-  **never** as arbitrary keys on the page node (avoids reserved-key collisions and keeps the infra node clean).
+## Fit with the farm and with ECHOLOT
 
-## The refresh primitive (generalises #782)
+The wiki farm and a federation of instances **share the identity model and differ in resolution**: the farm uses a
+shared graph (Subjects tagged by instance, cross-wiki read = one query); a federation uses separate instances reached
+by remote adapters. Same Source abstraction, pluggable resolution. The `source → base-URI` registry doubles as the RDF
+prefix/URI map, so federation identity and RDF identity are one mechanism. Coarse origin provenance is free from the
+id; rich chain-of-production provenance is a separate model.
 
-[#782](https://github.com/ProfessionalWiki/NeoWiki/issues/782) (refresh a page's projected data without an edit) is
-not approval-specific. The same operation is needed for any derived/sourced data that can go stale without a re-save:
-approval state, computed wikitext values, cached external pulls. Design it as a first-class "refresh this page's
-sourced data" operation, shaped by the public-PHP-API decision in
-[#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789), rather than a narrow approval hook. Note the existing
-`PagePropertyProvider` registry is already invoked on full rebuild, so rebuild re-injection largely exists; the gap is
-the on-demand trigger.
+## Out of scope / boundaries
 
-## What we are deliberately not doing
-
-- **Schemaless Subjects** — disallowed by ADR 008; everything stays schema-backed.
-- **Page as an editable, slot-backed Subject with "computed statements"** (the #830 Option A shape) — reintroduces the
-  approval revision-loop (an approval edit creates a new, unapproved revision). The page Subject is read-only instead.
-- **Generalising display away from Subjects** — keeps the View/editor UIs Subject-shaped; we relax only the
-  writeable/versioned assumptions.
-- **Global properties** — rejected previously ([GlobalProperties.md](GlobalProperties.md)); name consistency for
-  free-form tables is handled by the table UI's property picker over a normal shared schema.
-- **A new schema type** — one schema type only; read-only-ness comes from the Source, not the schema.
+- Schemaless Subjects ([ADR 8](../adr/008-one-schema-per-subject.md)).
+- A page modelled as an editable, slot-backed Subject with "computed statements" — an approval edit would create a
+  new, unapproved revision. The page-metadata Subject is read-only instead.
+- A parallel non-Subject rendering path: sourced data is surfaced as Subjects so the existing UIs apply.
+- Global properties ([GlobalProperties.md](GlobalProperties.md)); name consistency for free-form tables is handled by
+  the table UI over a shared schema.
+- A new schema type; read-only-ness comes from the Source.
+- Enforcing a remote instance's ACLs locally; rich provenance inside the Source model.
 
 ## Open questions
 
-Use case / product questions:
+Needs stakeholder (HW) input:
 
-1. **Confluence-like table approach** — is in-body VE authoring (Confluence parity) a hard requirement, or is a dedicated
-   NeoWiki table editor acceptable? (Decides whether the wikitext path exists at all.)
-2. **Is in-View rendering of page/approval metadata actually required**, or is queryable-for-dashboards enough for v1?
-   (The dashboard need is already serviceable via the REST/Cypher API; the header may be over-specified.)
-3. **Page owner / audit date** — user-set (→ ordinary writeable Subject, revision-on-change is correct) or
-   system-managed? Confirms which bucket they fall in and whether the header composes one Subject or two.
+1. **In-View vs query-enough.** Is rendering page/approval metadata inside a View required, or is
+   queryable-for-dashboards enough for a first version? (Sizes the work substantially.)
+2. **Free-form tables:** wikitext-sourced (in-body parity) or dedicated editor?
+3. **Page owner / audit date:** user-set (ordinary writeable Subject, a revision on change being correct) or
+   system-managed?
+4. **Farm topology:** confirm the farm uses a single shared graph.
 
-Product detail:
+Technical / design:
 
-4. **Which Subject does `<propertiestable>` bind to** — a dedicated child "properties" Subject, or the page's main
-   Subject? Likely differs for the free-form vs structured cases.
+5. **Source interface contract** for by-id and query (per-page being a deterministic by-id).
+6. **Materialisation of page metadata as Subject nodes** vs page-node-only — driven by whether uniform `:Subject`
+   querying across page and subject metadata is wanted.
+7. **Federation resolution** (fetch-at-read vs cache/materialise) and **shared-graph instance tagging** (the farm
+   deliverable proper).
+8. **History-page rendering** for non-history-correct sourced Subjects (show current values, or hide them?).
 
-Technical:
+## Sequencing
 
-5. **Source interface contract** — the three access patterns stress it differently: per-page resolution (page
-   metadata), by-id (federation), and query. Does one interface cover all, or do they fracture into special cases?
-6. **Federation materialisation** — fetch-at-read (no pollution, no local joins) vs cache/materialise (joins, but
-   staleness). Per-deployment, or a fixed default?
+1. **First slice:** a single-wiki page-metadata read-only Subject rendered in a View — the smallest end-to-end path
+   that proves read-only Subjects, read-only Schemas, the source-aware load seam, and the `(source, localId)`
+   identity. No external dependencies and no instance axis yet, but the id is designed so an instance qualifier can be
+   added without repaint.
+2. **No-regret win:** the refresh-without-edit operation for approval, independent of the larger questions.
+3. **De-risk:** pin down the Source interface contract (by-id + query) and the identity type.
+4. **Gated on the answers above:** in-View composition for control-document headers, free-form tables, and the
+   multi-wiki shared-graph + ACL-filtered query work.
 
 ## Related
 
 - ADRs: [008 one-schema-per-subject](../adr/008-one-schema-per-subject.md),
-  [015 dedicated editors](../adr/015-dedicated-editors.md), [018 views](../adr/018-views.md),
-  [019 graph database architecture](../adr/019-graph-database-architecture.md).
+  [014 improved-id-format](../adr/014-improved-id-format.md), [015 dedicated editors](../adr/015-dedicated-editors.md),
+  [018 views](../adr/018-views.md), [019 graph database architecture](../adr/019-graph-database-architecture.md).
 - Planning: [GlobalProperties](GlobalProperties.md), [RdfMapping](RdfMapping.md).
-- Issues: [#830](https://github.com/ProfessionalWiki/NeoWiki/issues/830) (an earlier RfC on this topic, now stale; this doc re-frames it),
-  [#782](https://github.com/ProfessionalWiki/NeoWiki/issues/782),
-  [#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789).
-  [#831](https://github.com/ProfessionalWiki/NeoWiki/issues/831) is related but out of scope here (persistence-layer
-  typed values).
-
+- Issues: [#830](https://github.com/ProfessionalWiki/NeoWiki/issues/830) (earlier RfC on this topic, now stale;
+  re-framed here), [#782](https://github.com/ProfessionalWiki/NeoWiki/issues/782) (refresh),
+  [#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789) (public PHP API),
+  [#831](https://github.com/ProfessionalWiki/NeoWiki/issues/831) (typed values — related but separate).
