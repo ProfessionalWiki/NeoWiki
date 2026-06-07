@@ -10,8 +10,14 @@ Violations are returned by:
 - `POST /neowiki/v0/subject/{subjectId}/validate` — dry-run validation of a proposed update-shape
   body against an existing Subject's Schema.
 - `POST /neowiki/v0/subject` and `PUT /neowiki/v0/subject/{subjectId}` — the write endpoints include
-  the resulting `violations` array in their `201`/`200` success body. Validation does not block the
-  write (see [ADR 21](../adr/021-add-backend-validation.md)).
+  the resulting `violations` array in their `201`/`200` success body. By default
+  (`$wgNeoWikiEnforceValidation = false`) the write always persists. When an admin enables
+  enforcement (`$wgNeoWikiEnforceValidation = true`), a write that introduces *new* blocking
+  violations is rejected with `422 Unprocessable Entity` and an `{ status, message, violations }`
+  body; `violations` carries the full proposed list, not just the newly-introduced subset.
+  Pre-existing violations (already present on the stored Subject under the current Schema) and
+  non-blocking codes such as [`schema-not-found`](#schema-not-found) never block, so editing an
+  already-invalid Subject stays possible. See [ADR 21](../adr/021-add-backend-validation.md).
 
 The `/validate` endpoints return `200 OK` with a `{violations: [...]}` body whenever the request is
 well-formed; violations in the body do not change the HTTP status. `400` is reserved for malformed
