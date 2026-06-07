@@ -302,7 +302,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testEnforcementBlockedReturns422(): void {
-		$this->setMwGlobals( 'wgNeoWikiValidationEnforced', true );
+		$this->setMwGlobals( 'wgNeoWikiEnforceValidation', true );
 
 		$this->createSchema(
 			'EnforcementSchema',

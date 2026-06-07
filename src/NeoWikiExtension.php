@@ -515,14 +515,11 @@ class NeoWikiExtension {
 		);
 	}
 
-	/**
-	 * Reads the flag fresh from MainConfig rather than from $this->config because the
-	 * NeoWikiExtension singleton (and the NeoWikiConfig it holds) is built once on first
-	 * getInstance() call, so a setMwGlobals('wgNeoWikiValidationEnforced', true) in
-	 * integration tests would not be observable through the baked config.
-	 */
 	private function isValidationEnforced(): bool {
-		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiValidationEnforced' ) === true;
+		// Behavioral config is read live from MainConfig (like Neo4jQueryLimits), so the admin's
+		// LocalSettings value applies per request and tests can override it via overrideConfigValue()
+		// without rebuilding the getInstance() singleton (which bakes only bootstrap config).
+		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiEnforceValidation' ) === true;
 	}
 
 	public function getSubjectValidator(): SubjectValidator {

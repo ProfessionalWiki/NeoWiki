@@ -140,7 +140,7 @@
 			"description": "Whether development UIs should be enabled",
 			"value": false
 		},
-		"NeoWikiValidationEnforced": {
+		"NeoWikiEnforceValidation": {
 			"description": "Whether write endpoints reject edits that introduce new constraint violations. When false, violations are surfaced in responses but writes always persist.",
 			"value": false
 		},
