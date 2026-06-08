@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UrlProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
@@ -445,6 +446,41 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->assertFalse( $this->presenterSpy->validationFailed );
 		$this->assertCount( 1, $this->presenterSpy->violations );
 		$this->assertSame( 'schema-not-found', $this->presenterSpy->violations[0]->code );
+	}
+
+	public function testEnforcementOnRejectsEditThatAddsBadValueAtNewIndex(): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( self::SCHEMA_NAME ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Website' => new UrlProperty(
+					core: new PropertyCore( description: '', required: false, default: null ),
+					multiple: true,
+					uniqueItems: false,
+				),
+			] )
+		) );
+		$subject = TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+			statements: new StatementList( [
+				TestStatement::build(
+					property: 'Website',
+					value: new StringValue( 'not-a-url' ),
+					propertyType: 'url',
+				),
+			] ),
+		);
+		$this->subjectRepository->updateSubject( $subject );
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'After',
+			[ 'Website' => [ 'propertyType' => 'url', 'value' => [ 'not-a-url', 'also-not-a-url' ] ] ],
+			null
+		);
+
+		$this->assertTrue( $this->presenterSpy->validationFailed );
 	}
 
 }
