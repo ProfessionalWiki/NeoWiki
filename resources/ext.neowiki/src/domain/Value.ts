@@ -123,3 +123,29 @@ export function valueToJson( value: Value ): unknown {
 			throw new Error( `Unsupported value type: ${ ( value as Value ).type }` );
 	}
 }
+
+/**
+ * Whether a Value carries no user content. Per-Value-Type:
+ *   - String: empty parts array (or all parts trim to '').
+ *   - Number/Boolean: never empty — 0 and false are legitimate values.
+ *   - Relation: empty relations array.
+ *   - undefined: empty.
+ */
+export function isValueEmpty( value: Value | undefined ): boolean {
+	if ( value === undefined ) {
+		return true;
+	}
+
+	switch ( value.type ) {
+		case ValueType.String:
+			return value.parts.length === 0 ||
+				value.parts.every( ( part ) => part.trim() === '' );
+		case ValueType.Number:
+		case ValueType.Boolean:
+			return false;
+		case ValueType.Relation:
+			return value.relations.length === 0;
+		default:
+			return true;
+	}
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	isValueEmpty,
 	newBooleanValue,
 	newNumberValue,
 	newRelation,
@@ -150,6 +151,43 @@ describe( 'relationValuesHaveSameTargets', () => {
 		] );
 
 		expect( relationValuesHaveSameTargets( a, b ) ).toBe( true );
+	} );
+
+} );
+
+describe( 'isValueEmpty', () => {
+
+	it( 'returns true for undefined', () => {
+		expect( isValueEmpty( undefined ) ).toBe( true );
+	} );
+
+	it( 'returns true for a StringValue with no parts', () => {
+		expect( isValueEmpty( newStringValue() ) ).toBe( true );
+	} );
+
+	it( 'treats whitespace-only StringValue parts as empty', () => {
+		expect( isValueEmpty( newStringValue( '' ) ) ).toBe( true );
+	} );
+
+	it( 'returns false for a StringValue with content', () => {
+		expect( isValueEmpty( newStringValue( 'x' ) ) ).toBe( false );
+	} );
+
+	it( 'returns false for NumberValue with 0 (zero is a value)', () => {
+		expect( isValueEmpty( newNumberValue( 0 ) ) ).toBe( false );
+	} );
+
+	it( 'returns false for BooleanValue with false (false is a value)', () => {
+		expect( isValueEmpty( newBooleanValue( false ) ) ).toBe( false );
+	} );
+
+	it( 'returns true for an empty RelationValue', () => {
+		expect( isValueEmpty( new RelationValue( [] ) ) ).toBe( true );
+	} );
+
+	it( 'returns false for a RelationValue carrying relations', () => {
+		const relation = newRelation( undefined, 's11111111111111' );
+		expect( isValueEmpty( new RelationValue( [ relation ] ) ) ).toBe( false );
 	} );
 
 } );
