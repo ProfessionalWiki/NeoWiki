@@ -1,0 +1,30 @@
+{
+	"mainSubject": "sVdemo1aaaaaaaa",
+	"subjects": {
+		"sVdemo1aaaaaaaa": {
+			"label": "Validation Clean",
+			"schema": "Validation Demo",
+			"statements": {
+				"Title": {
+					"type": "text",
+					"value": [ "All properties filled in" ]
+				},
+				"Homepage": {
+					"type": "url",
+					"value": [ "https://example.com" ]
+				},
+				"Tags": {
+					"type": "url",
+					"value": [
+						"https://example.com/a",
+						"https://example.com/b"
+					]
+				},
+				"Status": {
+					"type": "select",
+					"value": [ "o1valida1aaaaaa" ]
+				}
+			}
+		}
+	}
+}
