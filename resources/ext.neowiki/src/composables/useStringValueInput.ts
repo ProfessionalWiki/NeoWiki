@@ -59,9 +59,8 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		return internalValue.value ? internalValue.value.parts : [];
 	} );
 
-	function doValidateInputs( valuesToValidate: string[] ): { errors: ValidationMessages[]; validStrings: string[] } {
+	function doValidateInputs( valuesToValidate: string[] ): { errors: ValidationMessages[] } {
 		const perInputErrors: ValidationMessages[] = Array( valuesToValidate.length ).fill( {} );
-		const currentValidStrings: string[] = [];
 
 		valuesToValidate.forEach( ( inputValue, index ) => {
 			if ( property.value.uniqueItems && inputValue !== '' && valuesToValidate.slice( 0, index ).includes( inputValue ) ) {
@@ -69,16 +68,9 @@ export function useStringValueInput<P extends MultiStringProperty>(
 			} else {
 				perInputErrors[ index ] = validateValue( newStringValue( inputValue ), propertyType, property.value );
 			}
-
-			if ( Object.keys( perInputErrors[ index ] ).length === 0 ) {
-				currentValidStrings.push( inputValue );
-			}
 		} );
 
-		return {
-			errors: perInputErrors,
-			validStrings: currentValidStrings,
-		};
+		return { errors: perInputErrors };
 	}
 
 	function relevantViolations(): readonly SubjectViolation[] {
@@ -165,7 +157,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		const previousInputValues = userInputValues.value ?? displayValues.value;
 		userInputValues.value = currentInputValues;
 
-		const { errors, validStrings } = doValidateInputs( currentInputValues );
+		const { errors } = doValidateInputs( currentInputValues );
 
 		updateValidationMessages( errors );
 
@@ -189,18 +181,15 @@ export function useStringValueInput<P extends MultiStringProperty>(
 			}
 		}
 
-		let newStringValueInstance: StringValue | undefined;
-
-		if ( validStrings.length > 0 ) {
-			const tempValue = newStringValue( ...validStrings );
-			if ( tempValue.parts.length > 0 && tempValue.parts.some( ( s ) => s !== '' ) ) {
-				newStringValueInstance = tempValue;
-			} else {
-				newStringValueInstance = undefined;
-			}
-		} else {
-			newStringValueInstance = undefined;
-		}
+		// Emit every non-empty entry, including ones the live validator flags
+		// as invalid. The backend is the authoritative validator — stripping
+		// bad values here would silently drop the user's edit and bypass
+		// enforcement (e.g. changing one valid URL to "ftp://..." would be
+		// accepted because the proposed StringValue still matches the prior).
+		// newStringValue trims whitespace and filters empties.
+		const tempValue = newStringValue( ...currentInputValues );
+		const newStringValueInstance: StringValue | undefined =
+			tempValue.parts.length > 0 ? tempValue : undefined;
 
 		// TODO: Maybe we should have a unified way to handle deep comparison of values
 		// https://github.com/ProfessionalWiki/NeoWiki/pull/382#discussion_r2075610162

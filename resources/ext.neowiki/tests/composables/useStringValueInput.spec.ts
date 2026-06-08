@@ -255,7 +255,7 @@ describe( 'useStringValueInput', () => {
 	} );
 
 	describe( 'Validation (doValidateInputs and its effects)', () => {
-		it( 'preserves display values when input fails validation', () => {
+		it( 'emits invalid input through to the backend (backend is the authoritative validator)', () => {
 			const validationError = { error: 'Invalid URL' };
 			mockedValidateValue.mockReturnValue( validationError );
 			const testProperty = createMockPropertyDefinition( { multiple: false } );
@@ -266,12 +266,12 @@ describe( 'useStringValueInput', () => {
 			onInput( 'h' );
 
 			expect( displayValues.value ).toEqual( [ 'h' ] );
-			expect( getCurrentValue() ).toBeUndefined();
+			expect( getCurrentValue() ).toEqual( newStringValue( 'h' ) );
 			expect( fieldMessages.value ).toEqual( validationError );
-			expect( mockEmit ).not.toHaveBeenCalled();
+			expect( mockEmit ).toHaveBeenCalledWith( 'update:modelValue', newStringValue( 'h' ) );
 		} );
 
-		it( 'preserves display values when replacing valid input with invalid input', () => {
+		it( 'emits invalid replacement input so the backend sees it (no silent drop)', () => {
 			mockedValidateValue.mockReturnValue( {} );
 			const testProperty = createMockPropertyDefinition( { multiple: false } );
 			const { onInput, displayValues, getCurrentValue, fieldMessages } = createComposable( {
@@ -285,9 +285,9 @@ describe( 'useStringValueInput', () => {
 			onInput( 'h' );
 
 			expect( displayValues.value ).toEqual( [ 'h' ] );
-			expect( getCurrentValue() ).toBeUndefined();
+			expect( getCurrentValue() ).toEqual( newStringValue( 'h' ) );
 			expect( fieldMessages.value ).toEqual( validationError );
-			expect( mockEmit ).toHaveBeenCalledWith( 'update:modelValue', undefined );
+			expect( mockEmit ).toHaveBeenCalledWith( 'update:modelValue', newStringValue( 'h' ) );
 		} );
 
 		it( 'populates inputMessages and fieldMessages with errors from validateValue', () => {
