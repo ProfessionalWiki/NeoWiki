@@ -429,4 +429,201 @@ describe( 'useStringValueInput', () => {
 			expect( getCurrentValue() ).toBeUndefined();
 		} );
 	} );
+
+	describe( 'serverViolations', () => {
+		const createComposableWithViolations = (
+			violations: any[],
+			property: Partial<MultiStringProperty> = {},
+			emit = mockEmit,
+		): ReturnType<typeof useStringValueInput> & {
+			modelValueRef: Ref<Value | undefined>;
+			propertyRef: Ref<MultiStringProperty>;
+			serverViolationsRef: Ref<any[]>;
+		} => {
+			const modelValueRef = ref<Value | undefined>( undefined );
+			const propertyRef = ref( createMockPropertyDefinition( property ) ) as Ref<MultiStringProperty>;
+			const serverViolationsRef = ref<any[]>( violations );
+			mockedValidateValue.mockReturnValue( {} );
+
+			const result = useStringValueInput(
+				modelValueRef,
+				propertyRef,
+				emit,
+				mockPropertyType,
+				serverViolationsRef,
+			);
+			return { ...result, modelValueRef, propertyRef, serverViolationsRef };
+		};
+
+		it( 'shows server violation in fieldMessages for a single-value property when no live error exists', async () => {
+			const { fieldMessages } = createComposableWithViolations(
+				[ { propertyName: 'testProp', code: 'required', args: [], valuePartIndex: null } ],
+				{ name: new PropertyName( 'testProp' ), multiple: false },
+			);
+
+			// Trigger initial watch (immediate)
+			await nextTick();
+
+			expect( fieldMessages.value ).toEqual( { error: 'neowiki-field-required' } );
+		} );
+
+		it( 'does not show server violation for a different property name', async () => {
+			const { fieldMessages } = createComposableWithViolations(
+				[ { propertyName: 'OtherProp', code: 'required', args: [], valuePartIndex: null } ],
+				{ name: new PropertyName( 'testProp' ), multiple: false },
+			);
+
+			await nextTick();
+
+			expect( fieldMessages.value ).toEqual( {} );
+		} );
+
+		it( 'live error takes precedence over server violation for single-value property', async () => {
+			const liveError = { error: 'live-validation-error' };
+			mockedValidateValue.mockReturnValue( liveError );
+			const modelValueRef = ref<Value | undefined>( newStringValue( 'bad' ) );
+			const propertyRef = ref( createMockPropertyDefinition( {
+				name: new PropertyName( 'testProp' ),
+				multiple: false,
+			} ) ) as Ref<MultiStringProperty>;
+			const serverViolationsRef = ref( [
+				{ propertyName: 'testProp', code: 'required', args: [], valuePartIndex: null },
+			] );
+
+			const { fieldMessages } = useStringValueInput(
+				modelValueRef,
+				propertyRef,
+				mockEmit,
+				mockPropertyType,
+				serverViolationsRef,
+			);
+			await nextTick();
+
+			expect( fieldMessages.value ).toEqual( liveError );
+		} );
+
+		it( 'shows server violation in inputMessages for a multi-value property at the matching index', async () => {
+			const { inputMessages, onInput } = createComposableWithViolations(
+				[ { propertyName: 'testProp', code: 'invalid-url', args: [], valuePartIndex: 1 } ],
+				{ name: new PropertyName( 'testProp' ), multiple: true },
+			);
+
+			onInput( [ 'https://ok.example', 'bad' ] );
+			await nextTick();
+
+			expect( inputMessages.value[ 0 ] ).toEqual( {} );
+			expect( inputMessages.value[ 1 ] ).toEqual( { error: 'neowiki-field-invalid-url' } );
+		} );
+
+		it( 'emits clear-server-violation when user edits a single-value field that had a server violation', async () => {
+			mockedValidateValue.mockReturnValue( {} );
+			const { onInput } = createComposableWithViolations(
+				[ { propertyName: 'testProp', code: 'required', args: [], valuePartIndex: null } ],
+				{ name: new PropertyName( 'testProp' ), multiple: false },
+			);
+
+			onInput( 'some text' );
+
+			expect( mockEmit ).toHaveBeenCalledWith(
+				'clear-server-violation',
+				{ propertyName: 'testProp', valuePartIndex: null },
+			);
+		} );
+
+		it( 'does not emit clear-server-violation when no server violation exists for this property', async () => {
+			mockedValidateValue.mockReturnValue( {} );
+			const { onInput } = createComposableWithViolations(
+				[],
+				{ name: new PropertyName( 'testProp' ), multiple: false },
+			);
+
+			onInput( 'some text' );
+
+			expect( mockEmit ).not.toHaveBeenCalledWith( 'clear-server-violation', expect.anything() );
+		} );
+
+		it( 'emits clear-server-violation only for the changed index in a multi-value field', async () => {
+			mockedValidateValue.mockReturnValue( {} );
+			const modelValueRef = ref<Value | undefined>( newStringValue( 'https://ok.example', 'bad' ) );
+			const propertyRef = ref( createMockPropertyDefinition( {
+				name: new PropertyName( 'testProp' ),
+				multiple: true,
+			} ) ) as Ref<MultiStringProperty>;
+			const serverViolationsRef = ref( [
+				{ propertyName: 'testProp', code: 'invalid-url', args: [], valuePartIndex: 1 },
+			] );
+
+			const { onInput } = useStringValueInput(
+				modelValueRef,
+				propertyRef,
+				mockEmit,
+				mockPropertyType,
+				serverViolationsRef,
+			);
+			await nextTick();
+			mockEmit.mockClear();
+
+			// Edit index 1 (the one with a violation)
+			onInput( [ 'https://ok.example', 'fixed' ] );
+
+			expect( mockEmit ).toHaveBeenCalledWith(
+				'clear-server-violation',
+				{ propertyName: 'testProp', valuePartIndex: 1 },
+			);
+		} );
+
+		it( 'does not emit clear-server-violation when editing index 0 and violation is only at index 1', async () => {
+			mockedValidateValue.mockReturnValue( {} );
+			const modelValueRef = ref<Value | undefined>( newStringValue( 'first', 'bad' ) );
+			const propertyRef = ref( createMockPropertyDefinition( {
+				name: new PropertyName( 'testProp' ),
+				multiple: true,
+			} ) ) as Ref<MultiStringProperty>;
+			const serverViolationsRef = ref( [
+				{ propertyName: 'testProp', code: 'invalid-url', args: [], valuePartIndex: 1 },
+			] );
+
+			const { onInput } = useStringValueInput(
+				modelValueRef,
+				propertyRef,
+				mockEmit,
+				mockPropertyType,
+				serverViolationsRef,
+			);
+			await nextTick();
+			mockEmit.mockClear();
+
+			// Edit index 0 (no violation there)
+			onInput( [ 'changed', 'bad' ] );
+
+			expect( mockEmit ).not.toHaveBeenCalledWith( 'clear-server-violation', expect.anything() );
+		} );
+
+		it( 'recomputes messages when serverViolations ref changes', async () => {
+			mockedValidateValue.mockReturnValue( {} );
+			const modelValueRef = ref<Value | undefined>( undefined );
+			const propertyRef = ref( createMockPropertyDefinition( {
+				name: new PropertyName( 'testProp' ),
+				multiple: false,
+			} ) ) as Ref<MultiStringProperty>;
+			const serverViolationsRef = ref<any[]>( [] );
+
+			const { fieldMessages } = useStringValueInput(
+				modelValueRef,
+				propertyRef,
+				mockEmit,
+				mockPropertyType,
+				serverViolationsRef,
+			);
+			await nextTick();
+			expect( fieldMessages.value ).toEqual( {} );
+
+			serverViolationsRef.value = [
+				{ propertyName: 'testProp', code: 'required', args: [], valuePartIndex: null },
+			];
+			await nextTick();
+
+			expect( fieldMessages.value ).toEqual( { error: 'neowiki-field-required' } );
+		} );
+	} );
 } );

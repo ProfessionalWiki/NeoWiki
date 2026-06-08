@@ -50,6 +50,7 @@ import { newStringValue, StringValue, ValueType } from '@/domain/Value';
 import { resolveSelectLabel, SelectProperty, SelectType } from '@/domain/propertyTypes/Select.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<SelectProperty>>(),
@@ -61,7 +62,24 @@ const props = withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
-const validationError = ref<string | null>( null );
+const liveValidationError = ref<string | null>( null );
+
+function relevantServerViolations(): readonly SubjectViolation[] {
+	const name = props.property.name.toString();
+	return ( props.serverViolations ?? [] ).filter( ( v ) => v.propertyName === name );
+}
+
+const validationError = computed<string | null>( () => {
+	if ( liveValidationError.value !== null ) {
+		return liveValidationError.value;
+	}
+	// For Select (both single and multi), show the first relevant server violation.
+	const hit = relevantServerViolations()[ 0 ];
+	if ( hit ) {
+		return mw.message( `neowiki-field-${ hit.code }`, ...( hit.args as string[] ) ).text();
+	}
+	return null;
+} );
 
 const selectPlaceholder = computed( () =>
 	mw.message( 'neowiki-select-placeholder' ).text()
@@ -114,8 +132,17 @@ function validate(): void {
 		newStringValue( selection.value ) :
 		undefined;
 	const errors = propertyType.validate( value, props.property );
-	validationError.value = errors.length === 0 ? null :
+	liveValidationError.value = errors.length === 0 ? null :
 		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
+}
+
+function emitClearIfServerViolationPresent(): void {
+	if ( relevantServerViolations().length > 0 ) {
+		emit( 'clear-server-violation', {
+			propertyName: props.property.name.toString(),
+			valuePartIndex: null
+		} );
+	}
 }
 
 function onSingleSelect( selected: string ): void {
@@ -123,6 +150,7 @@ function onSingleSelect( selected: string ): void {
 	emit( 'update:modelValue', selection.value.length > 0 ?
 		newStringValue( selection.value ) : undefined );
 	validate();
+	emitClearIfServerViolationPresent();
 }
 
 function onInput(): void {
@@ -150,6 +178,7 @@ watch( chips, () => {
 		menuItems.value = [];
 		emit( 'update:modelValue', parts.length > 0 ? newStringValue( parts ) : undefined );
 		validate();
+		emitClearIfServerViolationPresent();
 	} );
 }, { deep: true } );
 

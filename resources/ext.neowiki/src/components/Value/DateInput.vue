@@ -30,7 +30,7 @@ import type { Value } from '@/domain/Value';
 </script>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconInfo, cdxIconCalendar } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, ValueType } from '@/domain/Value';
@@ -49,7 +49,23 @@ const props = withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
-const validationError = ref<string | null>( null );
+const liveValidationError = ref<string | null>( null );
+
+const validationError = computed<string | null>( () => {
+	if ( liveValidationError.value !== null ) {
+		return liveValidationError.value;
+	}
+	const name = props.property.name.toString();
+	const hit = ( props.serverViolations ?? [] )
+		.find( ( v ) => v.propertyName === name &&
+			( v.valuePartIndex === null || v.valuePartIndex === undefined ) );
+	if ( hit ) {
+		const formattedArgs = ( hit.args as string[] ).map( formatDateForDisplay );
+		return mw.message( `neowiki-field-${ hit.code }`, ...formattedArgs ).text();
+	}
+	return null;
+} );
+
 const internalInputValue = ref<string>( '' );
 
 const initializeInputValue = ( value: Value | undefined ): void => {
@@ -76,17 +92,25 @@ function onInput( newValue: string ): void {
 	const value = isoValue !== undefined ? newStringValue( isoValue ) : undefined;
 	emit( 'update:modelValue', value );
 	validate( value );
+
+	const name = props.property.name.toString();
+	const hadServerViolation = ( props.serverViolations ?? [] )
+		.some( ( v ) => v.propertyName === name &&
+			( v.valuePartIndex === null || v.valuePartIndex === undefined ) );
+	if ( hadServerViolation ) {
+		emit( 'clear-server-violation', { propertyName: name, valuePartIndex: null } );
+	}
 }
 
 function validate( value: StringValue | undefined ): void {
 	const errors = propertyType.validate( value, props.property );
 	if ( errors.length === 0 ) {
-		validationError.value = null;
+		liveValidationError.value = null;
 		return;
 	}
 	const error = errors[ 0 ];
 	const formattedArgs = ( ( error.args ?? [] ) as string[] ).map( formatDateForDisplay );
-	validationError.value = mw.message( `neowiki-field-${ error.code }`, ...formattedArgs ).text();
+	liveValidationError.value = mw.message( `neowiki-field-${ error.code }`, ...formattedArgs ).text();
 }
 
 watch( () => props.property, () => {

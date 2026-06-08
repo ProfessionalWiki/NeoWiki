@@ -7,6 +7,7 @@ import { MultiStringProperty } from '@/domain/PropertyDefinition.ts';
 import { PropertyType } from '@/domain/PropertyType.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { validateValue } from '@/composables/useValueValidation.ts';
+import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 
 interface UseStringValueInputReturn {
 	displayValues: ComputedRef<string[]>;
@@ -20,8 +21,12 @@ interface UseStringValueInputReturn {
 export function useStringValueInput<P extends MultiStringProperty>(
 	modelValue: Ref<Value | undefined>,
 	property: Ref<P>,
-	emit: ( e: 'update:modelValue', value: Value | undefined ) => void,
+	emit: {
+		( e: 'update:modelValue', value: Value | undefined ): void;
+		( e: 'clear-server-violation', payload: { propertyName: string; valuePartIndex: number | null } ): void;
+	},
 	propertyType: PropertyType,
+	serverViolations?: Ref<readonly SubjectViolation[] | undefined>,
 ): UseStringValueInputReturn {
 	const internalValue: Ref<StringValue | undefined> = ref( undefined );
 	const userInputValues: Ref<string[] | null> = ref( null );
@@ -76,27 +81,113 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		};
 	}
 
+	function relevantViolations(): readonly SubjectViolation[] {
+		const all = serverViolations?.value;
+		if ( !all ) {
+			return [];
+		}
+		const name = property.value.name.toString();
+		return all.filter( ( v ) => v.propertyName === name );
+	}
+
+	function mergeServerIntoInputMessages( liveErrors: ValidationMessages[] ): ValidationMessages[] {
+		const merged = [ ...liveErrors ];
+		for ( const v of relevantViolations() ) {
+			if ( typeof v.valuePartIndex !== 'number' ) {
+				continue;
+			}
+			const i = v.valuePartIndex;
+			if ( i < 0 || i >= merged.length ) {
+				continue;
+			}
+			const existing = merged[ i ];
+			if ( !existing || Object.keys( existing ).length === 0 ) {
+				merged[ i ] = {
+					error: mw.message(
+						`neowiki-field-${ v.code }`,
+						...( v.args as string[] ),
+					).text(),
+				};
+			}
+		}
+		return merged;
+	}
+
 	function getFieldMessagesForDisplay( errors: ValidationMessages[] ): ValidationMessages {
+		// A server-sourced field-level violation (valuePartIndex null) has no
+		// per-input slot to attach to, so we surface it through the field-level
+		// summary regardless of multi/single — otherwise something like a
+		// "required" violation on a multi-value property would silently vanish.
+		const fieldLevel = relevantViolations().find(
+			( v ) => v.valuePartIndex === null || v.valuePartIndex === undefined,
+		);
+
 		if ( property.value.multiple ) {
-			// We don't show a summary message for multiple inputs.
+			// For multi: live errors stay per-input (no live summary); only a
+			// server-sourced field-level violation surfaces in the summary slot.
+			if ( fieldLevel ) {
+				return {
+					error: mw.message(
+						`neowiki-field-${ fieldLevel.code }`,
+						...( fieldLevel.args as string[] ),
+					).text(),
+				};
+			}
 			return {};
 		}
 
-		return errors.find( ( error ) => error && Object.keys( error ).length > 0 ) || {};
+		// Single-value: live error wins, server field-level is the fallback.
+		const live = errors.find( ( e ) => e && Object.keys( e ).length > 0 );
+		if ( live ) {
+			return live;
+		}
+
+		if ( fieldLevel ) {
+			return {
+				error: mw.message(
+					`neowiki-field-${ fieldLevel.code }`,
+					...( fieldLevel.args as string[] ),
+				).text(),
+			};
+		}
+
+		return {};
 	}
 
 	function updateValidationMessages( errors: ValidationMessages[] ): void {
-		inputMessages.value = errors;
-		fieldMessages.value = getFieldMessagesForDisplay( errors );
+		const merged = mergeServerIntoInputMessages( errors );
+		inputMessages.value = merged;
+		fieldMessages.value = getFieldMessagesForDisplay( merged );
 	}
 
 	function onInput( newValue: string | string[] ): void {
 		const currentInputValues = typeof newValue === 'string' ? [ newValue ] : newValue;
+		const previousInputValues = userInputValues.value ?? displayValues.value;
 		userInputValues.value = currentInputValues;
 
 		const { errors, validStrings } = doValidateInputs( currentInputValues );
 
 		updateValidationMessages( errors );
+
+		// Emit clear-server-violation for the index that just changed, if a server
+		// violation existed there for this property.
+		const name = property.value.name.toString();
+		const relevant = relevantViolations();
+		if ( relevant.length > 0 ) {
+			if ( property.value.multiple ) {
+				// Identify which index changed by diffing against the previous values.
+				const len = Math.max( currentInputValues.length, previousInputValues.length );
+				for ( let i = 0; i < len; i++ ) {
+					if ( currentInputValues[ i ] !== previousInputValues[ i ] ) {
+						if ( relevant.some( ( v ) => v.valuePartIndex === i ) ) {
+							emit( 'clear-server-violation', { propertyName: name, valuePartIndex: i } );
+						}
+					}
+				}
+			} else if ( relevant.some( ( v ) => v.valuePartIndex === null || v.valuePartIndex === undefined ) ) {
+				emit( 'clear-server-violation', { propertyName: name, valuePartIndex: null } );
+			}
+		}
 
 		let newStringValueInstance: StringValue | undefined;
 
@@ -134,6 +225,13 @@ export function useStringValueInput<P extends MultiStringProperty>(
 	watch( property, () => {
 		updateValidationMessages( doValidateInputs( displayValues.value ).errors );
 	}, { deep: true } );
+
+	// Re-merge when server violations update (e.g. after a failed save).
+	if ( serverViolations ) {
+		watch( () => serverViolations.value, () => {
+			updateValidationMessages( doValidateInputs( displayValues.value ).errors );
+		}, { deep: true } );
+	}
 
 	const getCurrentValue = (): Value | undefined =>
 		internalValue.value;

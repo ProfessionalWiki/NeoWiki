@@ -195,4 +195,63 @@ describe( 'TextInput', () => {
 			expect( exposedValue ).toEqual( expectedValue );
 		} );
 	} );
+
+	describe( 'Server violations', () => {
+		it( 'passes serverViolations to useStringValueInput as the fifth argument', () => {
+			const violation = { propertyName: 'Foo', code: 'required', args: [], valuePartIndex: null };
+			newWrapper( {
+				property: newTextProperty( { name: 'Foo', multiple: false } ),
+				serverViolations: [ violation ],
+			} );
+
+			expect( useStringValueInput ).toHaveBeenCalledTimes( 1 );
+			const args = ( useStringValueInput as import( 'vitest' ).Mock ).mock.calls[ 0 ];
+			expect( args[ 4 ].value ).toEqual( [ violation ] );
+		} );
+
+		it( 'renders server-sourced error when composable surfaces it via fieldMessages', () => {
+			// The composable (mocked here) surfaces the resolved message. Verify the component renders it.
+			mockFieldMessages.value = { error: 'neowiki-field-required' };
+			const wrapper = newWrapper( {
+				property: newTextProperty( { name: 'Foo', multiple: false } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'required', args: [], valuePartIndex: null },
+				],
+			} );
+
+			expect( wrapper.text() ).toContain( 'neowiki-field-required' );
+		} );
+
+		it( 'passes server violations for a different property name through to the composable unchanged', () => {
+			// The composable is responsible for filtering by propertyName; the component passes it as-is.
+			const violation = { propertyName: 'OtherProp', code: 'required', args: [], valuePartIndex: null };
+			newWrapper( {
+				property: newTextProperty( { name: 'Foo', multiple: false } ),
+				serverViolations: [ violation ],
+			} );
+
+			const args = ( useStringValueInput as import( 'vitest' ).Mock ).mock.calls[ 0 ];
+			expect( args[ 4 ].value ).toEqual( [ violation ] );
+		} );
+
+		it( 'emits clear-server-violation when the composable emits it via the shared emit function', async () => {
+			const violation = { propertyName: 'Foo', code: 'required', args: [], valuePartIndex: null };
+			const wrapper = newWrapper( {
+				property: newTextProperty( { name: 'Foo', multiple: false } ),
+				serverViolations: [ violation ],
+			} );
+
+			// Simulate the composable calling emit('clear-server-violation', ...) by accessing the emit
+			// that was passed to useStringValueInput and calling it directly.
+			const capturedEmit = ( useStringValueInput as import( 'vitest' ).Mock ).mock.calls[ 0 ][ 2 ];
+			capturedEmit( 'clear-server-violation', { propertyName: 'Foo', valuePartIndex: null } );
+
+			await wrapper.vm.$nextTick();
+
+			expect( wrapper.emitted( 'clear-server-violation' ) ).toBeTruthy();
+			expect( wrapper.emitted( 'clear-server-violation' )![ 0 ] ).toEqual( [
+				{ propertyName: 'Foo', valuePartIndex: null },
+			] );
+		} );
+	} );
 } );

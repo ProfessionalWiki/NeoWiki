@@ -56,6 +56,7 @@ import { ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/component
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { Value, ValueType, RelationValue, newRelation, relationValuesHaveSameTargets } from '@/domain/Value';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<RelationProperty>>(),
@@ -70,9 +71,28 @@ const startIcon = NeoWikiServices.getComponentRegistry().getIcon( RelationType.t
 const emit = defineEmits<ValueInputEmits>();
 
 const internalValue = ref<RelationValue | undefined>( undefined );
-const fieldMessages = ref<ValidationMessages>( {} );
+const liveFieldMessages = ref<ValidationMessages>( {} );
 const touched = ref( false );
 const singleHasUnmatchedText = ref( false );
+
+function relevantServerViolations(): readonly SubjectViolation[] {
+	const name = props.property.name.toString();
+	return ( props.serverViolations ?? [] ).filter( ( v ) => v.propertyName === name );
+}
+
+const fieldMessages = computed<ValidationMessages>( () => {
+	if ( Object.keys( liveFieldMessages.value ).length > 0 ) {
+		return liveFieldMessages.value;
+	}
+	// Fall back to server violations (field-level, since NeoMultiLookupInput has no per-index slot).
+	const hit = relevantServerViolations()[ 0 ];
+	if ( hit ) {
+		return {
+			error: mw.message( `neowiki-field-${ hit.code }`, ...( hit.args as string[] ) ).text()
+		};
+	}
+	return {};
+} );
 
 const displayedFieldMessages = computed( (): ValidationMessages => {
 	if ( singleHasUnmatchedText.value ) {
@@ -93,6 +113,15 @@ const fieldStatus = computed( (): 'error' | 'default' => {
 	}
 	return 'default';
 } );
+
+function emitClearIfServerViolationPresent(): void {
+	if ( relevantServerViolations().length > 0 ) {
+		emit( 'clear-server-violation', {
+			propertyName: props.property.name.toString(),
+			valuePartIndex: null
+		} );
+	}
+}
 
 const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( RelationType.typeName );
 
@@ -137,7 +166,7 @@ function validateAndUpdateMessages(): void {
 		).text();
 	}
 
-	fieldMessages.value = overallErrorMessage ? { error: overallErrorMessage } : {};
+	liveFieldMessages.value = overallErrorMessage ? { error: overallErrorMessage } : {};
 }
 
 function onSingleSelectionChanged( id: string | null ): void {
@@ -156,6 +185,7 @@ function onSingleSelectionChanged( id: string | null ): void {
 
 	validateAndUpdateMessages();
 	emit( 'update:modelValue', newRelationValue );
+	emitClearIfServerViolationPresent();
 }
 
 function onSingleBlur( hasUnmatchedText: boolean ): void {
@@ -180,6 +210,7 @@ function onSelectionsChanged( ids: ( string | null )[] ): void {
 
 	validateAndUpdateMessages();
 	emit( 'update:modelValue', newRelationValue );
+	emitClearIfServerViolationPresent();
 }
 
 watch( () => props.property, () => {
