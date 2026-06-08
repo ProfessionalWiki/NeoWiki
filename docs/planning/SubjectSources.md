@@ -77,9 +77,6 @@ A Subject id is a flat pair: **`(source, localId)`**.
   global id-format check becomes source-delegated.
 - The structured pair is canonical; IRI and CURIE forms are escaped projections of it (the registry's
   `source → base-URI` map is also the RDF prefix/URI map).
-- The source qualifier is about **provenance/resolvability, not uniqueness**. Nanoids are already collision-resistant
-  across wikis (enabling import/export); but *derived* ids such as `pagemeta:123` are not unique across wikis, so the
-  source key is what namespaces them in a shared graph.
 - The [ADR 14](../adr/014-improved-id-format.md) properties (fixed length, time-sortable) hold only for local
   nanoids, not for arbitrary ids.
 
@@ -107,6 +104,20 @@ Schemas are resolved through Sources too and can be read-only: the page-metadata
 construction); a remote schema is remote-owned (read-only); a local schema is an ordinary writeable schema. There is
 one schema type throughout — read-only-ness comes from the Source, never from a schema "kind"
 ([ADR 8](../adr/008-one-schema-per-subject.md)).
+
+### Schema identity
+
+Schemas are identified by **name** ([ADR 17](../adr/017-names-as-identifiers.md)), not a generated id. A schema
+reference is `(source, name)`, and the schema's source is **independent of the subject's source**: a page-metadata
+Subject uses the built-in `PageMetadata` schema; a free-form-table Subject a local catalog schema; a federated Subject
+its home instance's schema; a Wikibase item a read-only schema the adapter **synthesizes** (Wikibase has none — the
+strategy, e.g. one schema per item or per type, is plugin-internal).
+
+Because schema names are a shared vocabulary rather than minted ids, a farm wants **global schemas**: a Galaxy is
+expected to share one schema set across all its wikis (confirm with HW), so the same "Company" means the same thing in
+every wiki and cross-wiki queries stay coherent. Hence the asymmetry: **subjects are per-wiki, schemas are farm-global**
+(built-ins are global by construction). Across *independent* instances no shared registry can be assumed, so references
+stay `(source, name)` with the mapping layer ([RdfMapping.md](RdfMapping.md)) aligning vocabularies.
 
 ## Storage and query (Neo4j)
 
@@ -196,7 +207,7 @@ Needs stakeholder (HW) input:
 2. **Free-form tables:** wikitext-sourced (in-body parity) or dedicated editor?
 3. **Page owner / audit date:** user-set (ordinary writeable Subject, a revision on change being correct) or
    system-managed?
-4. **Farm topology:** confirm the farm uses a single shared graph.
+4. **Farm topology:** confirm the farm uses a single shared graph and a single shared (global) schema set.
 
 Technical / design:
 
