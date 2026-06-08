@@ -10,7 +10,7 @@ confirmed it should graduate to an ADR.
 
 NeoWiki today assumes every Subject is local, editable, and versioned — stored in a MediaWiki revision slot and
 projected into Neo4j. Several needed capabilities do not fit that assumption: page and approval metadata, free-form
-tables, cross-wiki metadata in a wiki farm, references to other systems, and user-computed values.
+tables, cross-wiki metadata in a wiki farm, and data drawn from other systems.
 
 Proposed direction: **a Subject (and the Schema it uses) is produced by a pluggable Source.** The local revision slot
 is the default Source. Other Sources produce Subjects with reduced capabilities — notably not always writeable or
@@ -35,16 +35,16 @@ Primary drivers (committed work):
 
 Secondary / future (designed-for, not all committed):
 
-5. **Federation / authority control.** A shared authority instance other instances reference; more generally a
-   federation of interoperable instances with eventual two-way (write-back) flow.
-6. **User-computed / external values.** Values computed in wikitext/Lua or pulled via ExternalData / Wikibase / SMW,
-   surfaced as structured data.
-7. **RDF identity.** Stable per-source IRIs for export, plus coarse origin provenance. (Rich chain-of-production
+5. **Federation & external sources.** Read-only Subjects drawn from elsewhere: other NeoWiki instances
+   (authority-control, or a federation of interoperable instances, with eventual two-way write-back), or whole records
+   pulled from external systems (ExternalData, Wikibase, SMW). Page-scoped values computed/`{{#set}}` in wikitext are
+   not a separate case — see free-form tables below.
+6. **RDF identity.** Stable per-source IRIs for export, plus coarse origin provenance. (Rich chain-of-production
    provenance and rights are a separate model, out of scope here.)
 
 Orthogonal but interacting (tracked elsewhere):
 
-8. **Subject-level access control** and server-side query filtering by ACL — a separate workstream that intersects
+7. **Subject-level access control** and server-side query filtering by ACL — a separate workstream that intersects
    this one only at cross-wiki query filtering.
 
 ## Core model
@@ -58,6 +58,11 @@ base URI, how to resolve/produce them, and its localId grammar.
 
 A wiki farm is simply **more registered Sources** (per wiki, per kind); the identity format does not change. ACL and
 rich provenance are deliberately not part of this registry.
+
+Two composing mechanisms sit behind this: a **Source** produces whole Subjects, while a **statement provider**
+contributes statements to an existing Subject (the page-metadata Subject, for instance, aggregates providers for
+system metadata and approval). Data from elsewhere is never a loose value — it is either a sourced Subject or
+statements on one.
 
 ### Identity
 
@@ -116,7 +121,6 @@ one schema type throughout — read-only-ness comes from the Source, never from 
   per-instance and derived ids are namespaced by source. Cross-wiki read/query is then a single query over the shared
   graph (the owning wiki's page node is already present). Complexity concentrates in **write-routing** (edits go to the
   home wiki) and **ACL-filtered cross-wiki queries**.
-- Rule of thumb: **materialise iff the data is not otherwise in the graph.**
 
 ## Rendering
 
@@ -148,6 +152,9 @@ mostly-optional, mostly-`text` properties; a single shared schema (such tables t
 properties) acts as a managed vocabulary, giving name consistency and letting standard Views render the data. The
 "free-form" behaviour — pick an existing property or add a row — lives **in a table UI** that calls the normal schema-
 and subject-edit operations; it is not a model change and not a new schema type.
+
+Page-scoped values authored as `{{#set}}`-style wikitext are the same mechanism with a different authoring syntax:
+they become statements on a page-level Subject, not loose values.
 
 Two editing/storage options, undecided (needs HW input):
 
