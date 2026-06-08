@@ -7,9 +7,15 @@ namespace ProfessionalWiki\NeoWiki\Domain\Validation;
 class ViolationDiff {
 
 	/**
-	 * Returns violations in $proposed that are not present in $prior, identified
-	 * by (propertyName, code). Used by Replace-style writes to detect violations
-	 * introduced by an edit while ignoring pre-existing ones.
+	 * Returns violations in $proposed that are not present in $prior. Used by
+	 * Replace-style writes to detect violations introduced by an edit while
+	 * ignoring pre-existing ones.
+	 *
+	 * Identity is (propertyName, code, valuePartIndex). Including
+	 * valuePartIndex distinguishes per-value violations on multi-value
+	 * properties (e.g. url, select) so that adding a second bad value at a
+	 * new index is reported as new, even when prior already reported a
+	 * violation with the same code at a different index.
 	 *
 	 * @param Violation[] $proposed
 	 * @param Violation[] $prior
@@ -31,7 +37,9 @@ class ViolationDiff {
 	}
 
 	private static function key( Violation $violation ): string {
-		return ( $violation->propertyName?->text ?? '' ) . "\0" . $violation->code;
+		return ( $violation->propertyName?->text ?? '' )
+			. "\0" . $violation->code
+			. "\0" . ( $violation->valuePartIndex ?? '' );
 	}
 
 }

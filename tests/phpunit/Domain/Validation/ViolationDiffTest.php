@@ -89,8 +89,47 @@ class ViolationDiffTest extends TestCase {
 		$this->assertSame( [], $result );
 	}
 
+	public function testAddingASecondBadValueIsReportedAsNewWhenFirstAlreadyBad(): void {
+		$urlAtIndex0 = $this->invalidUrlAt( 0 );
+		$urlAtIndex1 = $this->invalidUrlAt( 1 );
+
+		$result = ViolationDiff::newViolations(
+			proposed: [ $urlAtIndex0, $urlAtIndex1 ],
+			prior: [ $urlAtIndex0 ],
+		);
+
+		$this->assertSame( [ $urlAtIndex1 ], $result );
+	}
+
+	public function testRepeatedBadValueAtSameIndexIsNotReportedAsNew(): void {
+		$urlAtIndex0 = $this->invalidUrlAt( 0 );
+
+		$result = ViolationDiff::newViolations(
+			proposed: [ $urlAtIndex0 ],
+			prior: [ $urlAtIndex0 ],
+		);
+
+		$this->assertSame( [], $result );
+	}
+
+	public function testNullAndZeroValuePartIndexAreDistinct(): void {
+		$indexZero = new Violation( new PropertyName( 'Website' ), 'invalid-url', valuePartIndex: 0 );
+		$indexNull = new Violation( new PropertyName( 'Website' ), 'invalid-url' );
+
+		$result = ViolationDiff::newViolations(
+			proposed: [ $indexNull ],
+			prior: [ $indexZero ],
+		);
+
+		$this->assertSame( [ $indexNull ], $result );
+	}
+
 	private function required( string $property ): Violation {
 		return new Violation( new PropertyName( $property ), 'required' );
+	}
+
+	private function invalidUrlAt( int $index ): Violation {
+		return new Violation( new PropertyName( 'Website' ), 'invalid-url', valuePartIndex: $index );
 	}
 
 }
