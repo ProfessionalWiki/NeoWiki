@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\EntryPoints\REST;
 
+use MediaWiki\MainConfigNames;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\ResponseInterface;
@@ -142,10 +143,23 @@ class CypherQueryApiTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testRateLimitedReturns429(): void {
-		// Rate-limit triggering requires PingLimiter setup that is too entangled
-		// with the MW session/request infrastructure to test in unit/integration style.
-		// Covered by manual testing or future end-to-end integration coverage.
-		$this->markTestIncomplete( 'Rate-limit gate is tested manually; PingLimiter is not easily triggered in integration tests.' );
+		$this->overrideConfigValue(
+			MainConfigNames::RateLimits,
+			[ 'neowiki-query' => [ 'user' => [ 0, 60 ] ] ]
+		);
+
+		$response = $this->executeRequest(
+			$this->stubServiceReturning( $this->emptyResult() ),
+			[ 'cypher' => 'MATCH (n) RETURN n' ],
+			authority: $this->mockUserAuthorityWithPermissions(
+				$this->getTestUser()->getUser(),
+				[ 'neowiki-query' ]
+			)
+		);
+		$body = $this->decodeBody( $response );
+
+		$this->assertSame( 429, $response->getStatusCode() );
+		$this->assertSame( 'rateLimitExceeded', $body['errorType'] );
 	}
 
 	private function executeRequest(
