@@ -11,6 +11,7 @@ import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClie
 import { UrlType } from '@/domain/propertyTypes/Url';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 
 function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSubjectRepository {
 	return new RestSubjectRepository(
@@ -291,6 +292,142 @@ describe( 'RestSubjectRepository', () => {
 			expect( subjectId.text ).toEqual( mockSubjectResponse.subject.id );
 
 			// TODO: check that it is not the main subject?
+		} );
+
+	} );
+
+	describe( 'updateSubject 422 handling', () => {
+
+		function make422Response( body: unknown ): Response {
+			return new Response( JSON.stringify( body ), {
+				status: 422,
+				headers: { 'Content-Type': 'application/json' },
+			} );
+		}
+
+		function make500Response( body: unknown = {} ): Response {
+			return new Response( JSON.stringify( body ), { status: 500 } );
+		}
+
+		const subjectUrl = 'https://example.com/rest.php/neowiki/v0/subject/s11111111111111';
+
+		function repoWith( response: Response ): RestSubjectRepository {
+			return newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ subjectUrl ]: response,
+			} ) );
+		}
+
+		it( 'throws ValidationFailedError with parsed violations on well-formed 422', async () => {
+			const body = {
+				status: 'error',
+				message: 'Validation failed',
+				violations: [
+					{ propertyName: 'Status', code: 'required', args: [], valuePartIndex: null },
+					{ propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 },
+					{ propertyName: null, code: 'schema-not-found', args: [ 'Person' ], valuePartIndex: null },
+				],
+			};
+
+			const promise = repoWith( make422Response( body ) )
+				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ) );
+
+			const error = await promise.catch( ( e ) => e );
+			expect( error ).toBeInstanceOf( ValidationFailedError );
+			expect( ( error as ValidationFailedError ).violations ).toEqual( [
+				{ propertyName: 'Status', code: 'required', args: [], valuePartIndex: null },
+				{ propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 },
+				{ propertyName: null, code: 'schema-not-found', args: [ 'Person' ], valuePartIndex: null },
+			] );
+		} );
+
+		it( 'throws generic Error (not ValidationFailedError) when 422 body has no violations field', async () => {
+			const promise = repoWith( make422Response( { status: 'error', message: 'Validation failed' } ) )
+				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ) );
+
+			await expect( promise ).rejects.toSatisfy(
+				( err ) => err instanceof Error && !( err instanceof ValidationFailedError ),
+			);
+			await expect( promise ).rejects.toThrowError( 'Error updating subject' );
+		} );
+
+		it( 'throws generic Error when 422 body has violations as a non-array', async () => {
+			const promise = repoWith( make422Response( { violations: { propertyName: 'Foo', code: 'required' } } ) )
+				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ) );
+
+			await expect( promise ).rejects.toSatisfy(
+				( err ) => err instanceof Error && !( err instanceof ValidationFailedError ),
+			);
+		} );
+
+		it( 'throws generic Error when a violation entry has a non-string code', async () => {
+			const promise = repoWith( make422Response( {
+				violations: [ { propertyName: 'Foo', code: 123, args: [], valuePartIndex: null } ],
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ) );
+
+			await expect( promise ).rejects.toSatisfy(
+				( err ) => err instanceof Error && !( err instanceof ValidationFailedError ),
+			);
+		} );
+
+		it( 'resolves normally on 200 (existing behaviour preserved)', async () => {
+			const mockResponse = { label: 'Updated' };
+			const response = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ subjectUrl ]: new Response( JSON.stringify( mockResponse ), { status: 200 } ),
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Updated', new StatementList( [] ) );
+
+			expect( response ).toEqual( mockResponse );
+		} );
+
+		it( 'throws generic Error on 500', async () => {
+			const promise = repoWith( make500Response() )
+				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ) );
+
+			await expect( promise ).rejects.toThrowError( 'Error updating subject' );
+			await expect( promise ).rejects.toSatisfy(
+				( err ) => !( err instanceof ValidationFailedError ),
+			);
+		} );
+
+	} );
+
+	describe( 'createMainSubject 422 handling', () => {
+
+		it( 'throws ValidationFailedError on well-formed 422', async () => {
+			const body = {
+				violations: [
+					{ propertyName: 'Status', code: 'required', args: [], valuePartIndex: null },
+				],
+			};
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/page/42/mainSubject':
+					new Response( JSON.stringify( body ), { status: 422, headers: { 'Content-Type': 'application/json' } } ),
+			} );
+
+			await expect(
+				newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
+					.createMainSubject( 42, 'Label', 'Schema', new StatementList( [] ) ),
+			).rejects.toBeInstanceOf( ValidationFailedError );
+		} );
+
+	} );
+
+	describe( 'createChildSubject 422 handling', () => {
+
+		it( 'throws ValidationFailedError on well-formed 422', async () => {
+			const body = {
+				violations: [
+					{ propertyName: 'Status', code: 'required', args: [], valuePartIndex: null },
+				],
+			};
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/page/42/childSubjects':
+					new Response( JSON.stringify( body ), { status: 422, headers: { 'Content-Type': 'application/json' } } ),
+			} );
+
+			await expect(
+				newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
+					.createChildSubject( 42, 'Label', 'Schema', new StatementList( [] ) ),
+			).rejects.toBeInstanceOf( ValidationFailedError );
 		} );
 
 	} );

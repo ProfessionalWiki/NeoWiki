@@ -10,6 +10,65 @@ import { StatementList, statementsToJson } from '@/domain/StatementList';
 import { type SchemaName } from '@/domain/Schema';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { Subject } from '@/domain/Subject';
+import type { SubjectViolation } from '@/domain/SubjectViolation';
+import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+
+function isShapedAsViolation( raw: unknown ): raw is SubjectViolation {
+	if ( typeof raw !== 'object' || raw === null ) {
+		return false;
+	}
+	const v = raw as Record<string, unknown>;
+
+	const propertyNameOk = v.propertyName === null || typeof v.propertyName === 'string';
+	const codeOk = typeof v.code === 'string' && v.code.length > 0;
+	const argsOk = v.args === undefined || Array.isArray( v.args );
+	const indexOk = v.valuePartIndex === undefined ||
+		v.valuePartIndex === null ||
+		typeof v.valuePartIndex === 'number';
+
+	return propertyNameOk && codeOk && argsOk && indexOk;
+}
+
+function parseViolations( body: unknown ): SubjectViolation[] | null {
+	if ( typeof body !== 'object' || body === null ) {
+		return null;
+	}
+	const violations = ( body as { violations?: unknown } ).violations;
+	if ( !Array.isArray( violations ) ) {
+		return null;
+	}
+	if ( !violations.every( isShapedAsViolation ) ) {
+		return null;
+	}
+	return violations.map( ( v ) => ( {
+		propertyName: v.propertyName,
+		code: v.code,
+		args: v.args ?? [],
+		valuePartIndex: v.valuePartIndex ?? null,
+	} ) );
+}
+
+async function throwOn422IfPossible( response: Response ): Promise<void> {
+	if ( response.status !== 422 ) {
+		return;
+	}
+	let body: unknown;
+	try {
+		body = await response.clone().json();
+	} catch {
+		// Body wasn't valid JSON — fall through to the generic-error path.
+		return;
+	}
+	const violations = parseViolations( body );
+	if ( violations === null ) {
+		console.error(
+			'RestSubjectRepository: malformed 422 body, falling through to generic error',
+			body,
+		);
+		return;
+	}
+	throw new ValidationFailedError( violations );
+}
 
 export type SubjectJson = {
 	id: string;
@@ -112,6 +171,8 @@ export class RestSubjectRepository implements SubjectRepository {
 			},
 		);
 
+		await throwOn422IfPossible( response );
+
 		if ( !response.ok ) {
 			throw new Error( 'Error creating main subject' );
 		}
@@ -144,6 +205,8 @@ export class RestSubjectRepository implements SubjectRepository {
 			},
 		);
 
+		await throwOn422IfPossible( response );
+
 		if ( !response.ok ) {
 			throw new Error( 'Error creating child subject' );
 		}
@@ -166,6 +229,8 @@ export class RestSubjectRepository implements SubjectRepository {
 				},
 			},
 		);
+
+		await throwOn422IfPossible( response );
 
 		if ( !response.ok ) {
 			throw new Error( 'Error updating subject' );
