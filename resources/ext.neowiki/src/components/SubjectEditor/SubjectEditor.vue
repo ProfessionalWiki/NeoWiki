@@ -10,7 +10,9 @@
 				:label="statement.propertyName.toString()"
 				:model-value="statement.value"
 				:property="props.schema.getPropertyDefinition( statement.propertyName )"
+				:server-violations="violationsFor( statement.propertyName.toString() )"
 				@update:model-value="emit( 'change' )"
+				@clear-server-violation="emit( 'clear-server-violation', $event )"
 			/>
 		</CdxField>
 	</div>
@@ -24,14 +26,25 @@ import { Statement } from '@/domain/Statement.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
 import { Schema } from '@/domain/Schema.ts';
+import type { SubjectViolation } from '@/domain/SubjectViolation';
+
 const props = defineProps<{
 	statements: StatementList;
 	schema: Schema;
+	serverViolations?: readonly SubjectViolation[];
 }>();
 
 const emit = defineEmits<{
 	change: [];
+	'clear-server-violation': [ { propertyName: string; valuePartIndex: number | null } ];
 }>();
+
+function violationsFor( propertyName: string ): readonly SubjectViolation[] {
+	if ( !props.serverViolations ) {
+		return [];
+	}
+	return props.serverViolations.filter( ( v ) => v.propertyName === propertyName );
+}
 
 onBeforeUpdate( () => {
 	valueEditors.value = [];

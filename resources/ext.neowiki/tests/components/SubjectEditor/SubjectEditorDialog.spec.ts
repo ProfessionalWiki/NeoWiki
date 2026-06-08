@@ -1,5 +1,5 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -16,13 +16,15 @@ import EditSummary from '@/components/common/EditSummary.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import type { SubjectViolation } from '@/domain/SubjectViolation';
 
 const $i18n = createI18nMock();
 
 const SubjectEditorStub = {
 	template: '<div class="subject-editor-stub"></div>',
-	props: [ 'statements', 'schema' ],
-	emits: [ 'change' ],
+	props: [ 'statements', 'schema', 'serverViolations' ],
+	emits: [ 'change', 'clear-server-violation' ],
 	setup() {
 		const getSubjectData = (): StatementList => new StatementList( [] );
 		return { getSubjectData };
@@ -63,7 +65,11 @@ describe( 'SubjectEditorDialog', () => {
 		new StatementList( [] ),
 	);
 
-	const mountComponent = ( canEditSchema: boolean, stubs: Record<string, any> = {} ): VueWrapper => {
+	const mountComponent = (
+		canEditSchema: boolean,
+		stubs: Record<string, any>,
+		onSave?: ( subject: any, comment: string ) => Promise<void>,
+	): VueWrapper => {
 		schemaAuthorizer = {
 			canEditSchema: vi.fn().mockResolvedValue( canEditSchema ),
 		};
@@ -71,7 +77,7 @@ describe( 'SubjectEditorDialog', () => {
 		return mount( SubjectEditorDialog, {
 			props: {
 				subject: mockSubject,
-				onSave: vi.fn(),
+				onSave: onSave ?? vi.fn(),
 				onSaveSchema: vi.fn(),
 				open: true,
 			},
@@ -102,7 +108,7 @@ describe( 'SubjectEditorDialog', () => {
 	} );
 
 	it( 'renders schema as a link when user has edit permissions', async () => {
-		const wrapper = mountComponent( true );
+		const wrapper = mountComponent( true, {} );
 		await flushPromises();
 
 		const schemaLink = wrapper.find( '.ext-neowiki-subject-editor-dialog-schema__link' );
@@ -111,7 +117,7 @@ describe( 'SubjectEditorDialog', () => {
 	} );
 
 	it( 'renders schema as plain text when user lacks edit permissions', async () => {
-		const wrapper = mountComponent( false );
+		const wrapper = mountComponent( false, {} );
 		await flushPromises();
 
 		const schemaLink = wrapper.find( '.ext-neowiki-subject-editor-dialog-schema__link' );
@@ -123,7 +129,7 @@ describe( 'SubjectEditorDialog', () => {
 	} );
 
 	it( 'opens SchemaEditorDialog when schema link is clicked', async () => {
-		const wrapper = mountComponent( true );
+		const wrapper = mountComponent( true, {} );
 		await flushPromises();
 
 		const schemaLink = wrapper.find( 'a.ext-neowiki-subject-editor-dialog-schema__link' );
@@ -257,5 +263,134 @@ describe( 'SubjectEditorDialog', () => {
 
 		expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 		expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
+	} );
+
+	const validationTestStubs = {
+		SubjectEditor: SubjectEditorStub,
+		SchemaEditorDialog: true,
+		EditSummary: EditSummaryStub,
+	};
+
+	describe( 'ValidationFailedError handling', () => {
+		it( 'flows server violations down to child inputs on ValidationFailedError', async () => {
+			const violation: SubjectViolation = {
+				propertyName: 'name',
+				code: 'required',
+				args: [],
+				valuePartIndex: null,
+			};
+			const onSave = vi.fn().mockRejectedValue( new ValidationFailedError( [ violation ] ) );
+			const wrapper = mountComponent( true, validationTestStubs, onSave );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			const passedViolations = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passedViolations ).toHaveLength( 1 );
+			expect( passedViolations[ 0 ].propertyName ).toBe( 'name' );
+			expect( passedViolations[ 0 ].code ).toBe( 'required' );
+		} );
+
+		it( 'keeps dialog open on ValidationFailedError', async () => {
+			const violation: SubjectViolation = {
+				propertyName: 'name',
+				code: 'required',
+				args: [],
+				valuePartIndex: null,
+			};
+			const onSave = vi.fn().mockRejectedValue( new ValidationFailedError( [ violation ] ) );
+			const wrapper = mountComponent( true, validationTestStubs, onSave );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+		} );
+
+		it( 'shows toast on ValidationFailedError', async () => {
+			const violation: SubjectViolation = {
+				propertyName: 'name',
+				code: 'required',
+				args: [],
+				valuePartIndex: null,
+			};
+			const onSave = vi.fn().mockRejectedValue( new ValidationFailedError( [ violation ] ) );
+			const wrapper = mountComponent( true, validationTestStubs, onSave );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( ( mw.notify as Mock ).mock.calls ).toContainEqual( [
+				expect.stringContaining( 'neowiki-subject-editor-validation-failed' ),
+				{ type: 'error' },
+			] );
+		} );
+
+		it( 'renders form-level banner for null-propertyName violation', async () => {
+			const violation: SubjectViolation = {
+				propertyName: null,
+				code: 'schema-not-found',
+				args: [ 'Person' ],
+				valuePartIndex: null,
+			};
+			const onSave = vi.fn().mockRejectedValue( new ValidationFailedError( [ violation ] ) );
+			const wrapper = mountComponent( true, validationTestStubs, onSave );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( wrapper.find( '.ext-neowiki-subject-editor__form-errors' ).exists() ).toBe( true );
+
+			const passedViolations = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passedViolations ).toHaveLength( 1 );
+			expect( passedViolations[ 0 ].propertyName ).toBeNull();
+		} );
+
+		it( 'drops the matching entry on clear-server-violation event from child', async () => {
+			const violation: SubjectViolation = {
+				propertyName: 'name',
+				code: 'required',
+				args: [],
+				valuePartIndex: null,
+			};
+			const onSave = vi.fn().mockRejectedValue( new ValidationFailedError( [ violation ] ) );
+			const wrapper = mountComponent( true, validationTestStubs, onSave );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( ( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[] ) ).toHaveLength( 1 );
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit(
+				'clear-server-violation',
+				{ propertyName: 'name', valuePartIndex: null },
+			);
+			await flushPromises();
+
+			const passedViolations = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passedViolations ).toHaveLength( 0 );
+		} );
+
+		it( 'falls back to existing generic-error path for non-ValidationFailedError throws', async () => {
+			const onSave = vi.fn().mockRejectedValue( new Error( 'Boom' ) );
+			const wrapper = mountComponent( true, validationTestStubs, onSave );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( ( mw.notify as Mock ).mock.calls ).toContainEqual( [
+				'Boom',
+				expect.objectContaining( {
+					title: expect.stringContaining( 'neowiki-subject-editor-error' ),
+					type: 'error',
+				} ),
+			] );
+		} );
 	} );
 } );

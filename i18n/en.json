@@ -66,6 +66,7 @@
 	"neowiki-field-invalid-date": "Please enter a valid date.",
 	"neowiki-field-invalid-option": "\"$1\" is not a valid option.",
 	"neowiki-field-single-value-only": "Only one value can be selected.",
+	"neowiki-field-schema-not-found": "The schema \"$1\" is missing. Restore it before saving.",
 	"neowiki-select-placeholder": "Select an option",
 	"neowiki-select-no-results": "No matching options.",
 	"neowiki-select-unknown-option": "(unknown option)",
@@ -126,6 +127,7 @@
 	"neowiki-subject-editor-summary-default": "Update subject via NeoWiki UI",
 	"neowiki-subject-editor-success": "Updated $1",
 	"neowiki-subject-editor-error": "Failed to update $1.",
+	"neowiki-subject-editor-validation-failed": "Validation failed for \"$1\". Please fix the highlighted fields.",
 
 	"neowiki-subject-lookup-placeholder": "Search for a subject",
 	"neowiki-subject-lookup-no-results": "No subjects found",
