@@ -101,8 +101,7 @@ Example sources:
 ### Schemas from Sources
 
 Schemas are resolved through Sources too and can be read-only: the page-metadata schema is code-defined (read-only by
-construction); a remote schema is remote-owned (read-only); a local schema is an ordinary writeable schema. There is
-one schema type throughout — read-only-ness comes from the Source, never from a schema "kind".
+construction); a remote schema is remote-owned (read-only); a local schema is an ordinary writeable schema.
 
 ### Schema identity
 
