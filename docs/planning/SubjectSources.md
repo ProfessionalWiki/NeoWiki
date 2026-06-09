@@ -1,10 +1,9 @@
 # Subject Sources
 
-Status: Exploration (pre-ADR). Started 2026-06-06 by Jeroen De Dauw based on approx 6 hours of investigation/design.
-Reviewed and refined by Opus 4.8 and Alistair.
+This is an early design document for stakeholder feedback before we start implementation and record decisions via a new ADR.
 
-A WIP exploration doc for team and stakeholder feedback, and a context seed for future work. If the direction is
-confirmed it should graduate to an ADR.
+Started 2026-06-06 by Jeroen De Dauw based on approx 6 hours of investigation/design.
+Reviewed and refined by Opus 4.8 and Alistair.
 
 ## Summary
 
