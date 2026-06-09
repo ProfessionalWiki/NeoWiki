@@ -102,8 +102,7 @@ Example sources:
 
 Schemas are resolved through Sources too and can be read-only: the page-metadata schema is code-defined (read-only by
 construction); a remote schema is remote-owned (read-only); a local schema is an ordinary writeable schema. There is
-one schema type throughout — read-only-ness comes from the Source, never from a schema "kind"
-([ADR 8](../adr/008-one-schema-per-subject.md)).
+one schema type throughout — read-only-ness comes from the Source, never from a schema "kind".
 
 ### Schema identity
 
@@ -137,9 +136,14 @@ stay `(source, name)` with the mapping layer ([RdfMapping.md](RdfMapping.md)) al
 
 Views render via a by-subject-id placeholder that the client hydrates (revision-aware through the per-revision
 endpoint). For sourced Subjects this means the real work is (a) an addressable id and (b) a **source-aware
-subject-load path** — `SubjectContentRepository` server-side, the subject store and fetch endpoints client-side —
-with capability flags layered on top. "Per-page" resolution collapses into "by-id" (`pagemeta:<pageId>` is a
-deterministic id), so the access patterns reduce to **by-id and query**.
+subject-load path** — server-side `SubjectLookup`, the by-id port behind the subject fetch endpoint and
+`SubjectResolver` (both current implementations resolve ids through the graph index, so Source dispatch sits in front
+of this port; `SubjectContentRepository` is page/revision-keyed and stays slot-only) — plus the subject store and
+fetch endpoints client-side, with capability flags layered on top. The schema-load path is part of the same seam: the
+frontend currently fetches schemas as raw `Schema:` page source via core's REST API rather than the NeoWiki schema
+endpoint, so source-resolved schemas (e.g. the code-defined page-metadata schema) need the fetch rerouted through the
+NeoWiki endpoint, and `Schema:` links need an answer for schemas with no page. "Per-page" resolution collapses into
+"by-id" (`pagemeta:<pageId>` is a deterministic id), so the access patterns reduce to **by-id and query**.
 
 ## Relations across Sources
 
@@ -154,7 +158,8 @@ Generalise the "refresh page properties" need ([#782](https://github.com/Profess
 first-class **"refresh this page's sourced data"** operation — it serves approval state, computed wikitext values, and
 cached external pulls alike — shaped by the public-PHP-API decision
 ([#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789)). The page-property provider registry is already
-invoked on graph rebuild, so re-injection on rebuild exists; the gap is the on-demand trigger.
+invoked on graph rebuild, so re-injection on rebuild exists for pages carrying the subject slot (rebuild does not
+visit other pages); the gap is the on-demand trigger.
 
 ## Free-form tables (Confluence)
 
@@ -238,4 +243,6 @@ Technical / design:
 - Issues: [#830](https://github.com/ProfessionalWiki/NeoWiki/issues/830) (earlier RfC on this topic, now stale;
   re-framed here), [#782](https://github.com/ProfessionalWiki/NeoWiki/issues/782) (refresh),
   [#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789) (public PHP API),
-  [#831](https://github.com/ProfessionalWiki/NeoWiki/issues/831) (typed values — related but separate).
+  [#831](https://github.com/ProfessionalWiki/NeoWiki/issues/831) (typed statement values — its shared-vs-separate
+  design question is gated on #830, which this doc re-frames; independent for the first slice, but a prerequisite for
+  type-aware querying of Subjects materialised from Sources, such as free-form tables and cached federation).
