@@ -190,6 +190,28 @@ describe( 'newUrlProperty', () => {
 	} );
 } );
 
+describe( 'createPropertyDefinitionFromJson', () => {
+	const type = new UrlType();
+
+	it( 'defaults uniqueItems to false when omitted, matching the backend', () => {
+		const property = type.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Links' ), type: 'url', description: '', required: false },
+			{ type: 'url' },
+		);
+
+		expect( property.uniqueItems ).toBe( false );
+	} );
+
+	it( 'preserves an explicit uniqueItems value', () => {
+		const property = type.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Links' ), type: 'url', description: '', required: false },
+			{ type: 'url', uniqueItems: true },
+		);
+
+		expect( property.uniqueItems ).toBe( true );
+	} );
+} );
+
 describe( 'validate', () => {
 	const urlType = new UrlType();
 

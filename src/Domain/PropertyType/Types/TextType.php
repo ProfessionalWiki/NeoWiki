@@ -59,10 +59,51 @@ class TextType implements PropertyType {
 			$violations[] = new Violation( propertyName: null, code: 'required' );
 		}
 
+		$violations = array_merge( $violations, $this->validateLengths( $value, $definition ) );
+
 		if ( $definition->enforcesUniqueValues()
 			&& count( array_unique( $value->strings ) ) !== count( $value->strings )
 		) {
 			$violations[] = new Violation( propertyName: null, code: 'unique' );
+		}
+
+		return $violations;
+	}
+
+	/**
+	 * @return Violation[]
+	 */
+	private function validateLengths( StringValue $value, TextProperty $definition ): array {
+		if ( !$definition->hasMinLength() && !$definition->hasMaxLength() ) {
+			return [];
+		}
+
+		$violations = [];
+
+		foreach ( $value->strings as $index => $part ) {
+			$length = mb_strlen( trim( $part ) );
+
+			if ( $length === 0 ) {
+				continue;
+			}
+
+			if ( $definition->hasMinLength() && $length < $definition->getMinLength() ) {
+				$violations[] = new Violation(
+					propertyName: null,
+					code: 'min-length',
+					args: [ $definition->getMinLength() ],
+					valuePartIndex: $index,
+				);
+			}
+
+			if ( $definition->hasMaxLength() && $length > $definition->getMaxLength() ) {
+				$violations[] = new Violation(
+					propertyName: null,
+					code: 'max-length',
+					args: [ $definition->getMaxLength() ],
+					valuePartIndex: $index,
+				);
+			}
 		}
 
 		return $violations;

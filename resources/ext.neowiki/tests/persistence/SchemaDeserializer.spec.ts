@@ -24,7 +24,7 @@ describe( 'SchemaDeserializer', () => {
 				description: '',
 				required: true,
 				multiple: false,
-				uniqueItems: true,
+				uniqueItems: false,
 			},
 			Age: {
 				name: new PropertyName( 'Age' ),

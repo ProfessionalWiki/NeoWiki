@@ -62,7 +62,7 @@ describe( 'RestSchemaRepository', () => {
 					description: '',
 					required: true,
 					multiple: false,
-					uniqueItems: true,
+					uniqueItems: false,
 				},
 			} );
 		} );
