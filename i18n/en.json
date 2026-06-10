@@ -169,7 +169,12 @@
 	"neowiki-schema-abandonment-keep-editing": "Keep editing",
 	"neowiki-schema-abandonment-save-schema": "Save schema only",
 
+	"neowiki-schema-invalid": "Schema content is invalid ({{PLURAL:$1|$1 error|$1 errors}}):",
+	"neowiki-schema-invalid-detail": "$1: $2",
+	"neowiki-schema-name-invalid": "Invalid schema name: $1",
 	"neowiki-layout-invalid": "Layout content is invalid ({{PLURAL:$1|$1 error|$1 errors}}):",
+	"neowiki-layout-invalid-detail": "$1: $2",
+	"neowiki-layout-name-invalid": "Invalid layout name: $1",
 
 	"neowiki-edit-layout": "Edit layout",
 	"neowiki-layout-display-schema": "Schema",

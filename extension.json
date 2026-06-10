@@ -47,8 +47,6 @@
 
 		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",
 
-		"EditFilter": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFilter",
-
 		"SpecialPage_initList": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSpecialPageInitList",
 
 		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn",
