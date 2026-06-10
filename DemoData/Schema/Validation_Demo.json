@@ -1,0 +1,30 @@
+{
+	"description": "A demo schema for trying out backend validation. Use it together with the Validation Demo hub page to see how the editor surfaces server-side errors next to each field.",
+	"propertyDefinitions": {
+		"Title": {
+			"type": "text",
+			"required": true,
+			"description": "Required. Save with this empty to see an inline error."
+		},
+		"Homepage": {
+			"type": "url",
+			"required": true,
+			"description": "Required. Must be a valid http or https URL."
+		},
+		"Tags": {
+			"type": "url",
+			"multiple": true,
+			"description": "Optional list of URLs. Each entry must be a valid http or https URL."
+		},
+		"Status": {
+			"type": "select",
+			"required": true,
+			"options": [
+				{ "id": "o1valida1aaaaaa", "label": "Draft" },
+				{ "id": "o1valida2aaaaaa", "label": "Approved" },
+				{ "id": "o1valida3aaaaaa", "label": "Archived" }
+			],
+			"description": "Required. Pick one of the three statuses."
+		}
+	}
+}

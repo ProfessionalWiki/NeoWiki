@@ -90,12 +90,28 @@
 				</template>
 			</CdxField>
 
+			<CdxMessage
+				v-if="anchorlessViolations.length > 0"
+				type="error"
+			>
+				<ul class="ext-neowiki-subject-editor__form-errors">
+					<li
+						v-for="( v, idx ) in anchorlessViolations"
+						:key="idx"
+					>
+						{{ formatViolationMessage( v ) }}
+					</li>
+				</ul>
+			</CdxMessage>
+
 			<SubjectEditor
 				v-if="statements"
 				ref="subjectEditorRef"
 				:statements="statements"
 				:schema="loadedSchema as Schema"
+				:server-violations="serverViolations"
 				@change="markChanged"
+				@clear-server-violation="handleClearViolation"
 			/>
 		</template>
 
@@ -151,6 +167,9 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
+import type { SubjectViolation } from '@/domain/SubjectViolation';
+import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import { CdxMessage } from '@wikimedia/codex';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCreator.vue';
@@ -229,6 +248,34 @@ interface SubjectEditorInstance {
 }
 
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
+
+const serverViolations = ref<SubjectViolation[]>( [] );
+
+const anchorlessViolations = computed<SubjectViolation[]>( () => {
+	// SubjectEditor renders one field per entry in `statements`, which the
+	// schema materialises from its property definitions. Anchor against that
+	// list — a violation referring to a missing-but-rendered field stays on
+	// the field, not the banner.
+	const renderedPropertyNames = new Set(
+		[ ...( statements.value ?? [] ) ].map( ( s ) => s.propertyName.toString() )
+	);
+	return serverViolations.value.filter( ( v ) => {
+		if ( v.propertyName === null ) {
+			return true;
+		}
+		return !renderedPropertyNames.has( v.propertyName );
+	} );
+} );
+
+function formatViolationMessage( v: SubjectViolation ): string {
+	return mw.message( `neowiki-field-${ v.code }`, ...( v.args as string[] ) ).text();
+}
+
+function handleClearViolation( payload: { propertyName: string; valuePartIndex: number | null } ): void {
+	serverViolations.value = serverViolations.value.filter(
+		( v ) => !( v.propertyName === payload.propertyName && v.valuePartIndex === payload.valuePartIndex )
+	);
+}
 
 const headerSubtitle = computed( (): string | null => {
 	if ( selectedSchemaOption.value === 'new' && !selectedSchemaName.value ) {
@@ -319,6 +366,7 @@ const statements = computed( (): StatementList | null =>
 
 watch( () => subjectStore.subjectCreatorOpen, async ( isOpen ) => {
 	if ( isOpen ) {
+		serverViolations.value = [];
 		await nextTick();
 		focusInitialInput( selectedSchemaOption.value );
 	} else {
@@ -362,6 +410,8 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		return;
 	}
 
+	serverViolations.value = [];
+
 	try {
 		if ( draftSchema.value ) {
 			await schemaStore.saveSchema( draftSchema.value, summary || undefined );
@@ -395,6 +445,14 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		setPendingNotification( 'neowiki-subject-creator-success' );
 		window.location.reload();
 	} catch ( error ) {
+		if ( error instanceof ValidationFailedError ) {
+			serverViolations.value = [ ...error.violations ];
+			mw.notify(
+				mw.msg( 'neowiki-subject-editor-validation-failed', label ),
+				{ type: 'error' }
+			);
+			return;
+		}
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),
 			{

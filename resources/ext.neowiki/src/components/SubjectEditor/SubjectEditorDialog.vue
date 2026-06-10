@@ -47,12 +47,28 @@
 				</CdxButton>
 			</template>
 
+			<CdxMessage
+				v-if="anchorlessViolations.length > 0"
+				type="error"
+			>
+				<ul class="ext-neowiki-subject-editor__form-errors">
+					<li
+						v-for="( v, idx ) in anchorlessViolations"
+						:key="idx"
+					>
+						{{ formatViolationMessage( v ) }}
+					</li>
+				</ul>
+			</CdxMessage>
+
 			<SubjectEditor
 				v-if="statements"
 				ref="subjectEditorRef"
 				:statements="statements"
 				:schema="loadedSchema as Schema"
+				:server-violations="serverViolations"
 				@change="markChanged"
+				@clear-server-violation="handleClearViolation"
 			/>
 			<div v-else>
 				Loading schema... <!-- Or some other loading indicator -->
@@ -91,7 +107,7 @@ import { ref, nextTick, computed, watch } from 'vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
-import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
+import { CdxButton, CdxDialog, CdxIcon, CdxMessage } from '@wikimedia/codex';
 import { cdxIconClose } from '@wikimedia/codex-icons';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
@@ -103,6 +119,8 @@ import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
+import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import type { SubjectViolation } from '@/domain/SubjectViolation';
 
 type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
 
@@ -127,6 +145,35 @@ const loadedSchema = ref<Schema | null>( null );
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
+const serverViolations = ref<SubjectViolation[]>( [] );
+
+const anchorlessViolations = computed<SubjectViolation[]>( () => {
+	// SubjectEditor renders one field per entry in `statements`, which the
+	// schema materialises from its property definitions (so empty/missing
+	// properties still get a field). Anchor against THAT list, not the
+	// raw subject — otherwise a violation on a missing-but-rendered field
+	// would be wrongly banner-routed even though the field is on screen.
+	const renderedPropertyNames = new Set(
+		[ ...( statements.value ?? [] ) ].map( ( s ) => s.propertyName.toString() )
+	);
+	return serverViolations.value.filter( ( v ) => {
+		if ( v.propertyName === null ) {
+			return true;
+		}
+		return !renderedPropertyNames.has( v.propertyName );
+	} );
+} );
+
+function formatViolationMessage( v: SubjectViolation ): string {
+	return mw.message( `neowiki-field-${ v.code }`, ...( v.args as string[] ) ).text();
+}
+
+function handleClearViolation( payload: { propertyName: string; valuePartIndex: number | null } ): void {
+	serverViolations.value = serverViolations.value.filter(
+		( v ) => !( v.propertyName === payload.propertyName && v.valuePartIndex === payload.valuePartIndex )
+	);
+}
+
 function close(): void {
 	emit( 'update:open', false );
 }
@@ -142,6 +189,7 @@ function onDialogUpdateOpen( value: boolean ): void {
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
 		resetChanged();
+		serverViolations.value = [];
 	}
 } );
 
@@ -175,11 +223,11 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		return;
 	}
 
+	serverViolations.value = [];
+
 	const updatedStatements = subjectEditorRef.value.getSubjectData();
 	// Filter out statements that don't have a value set.
 	const statementsToSave = [ ...updatedStatements ].filter( ( statement ) => statement.hasValue() );
-
-	console.log( 'statementsToSave', statementsToSave );
 	const updatedSubject = props.subject.withStatements( new StatementList( statementsToSave ) );
 	const subjectName = updatedSubject.getLabel();
 	const editSummary = summary || mw.msg( 'neowiki-subject-editor-summary-default' );
@@ -189,6 +237,14 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		mw.notify( mw.msg( 'neowiki-subject-editor-success', subjectName ), { type: 'success' } );
 		close();
 	} catch ( error ) {
+		if ( error instanceof ValidationFailedError ) {
+			serverViolations.value = [ ...error.violations ];
+			mw.notify(
+				mw.msg( 'neowiki-subject-editor-validation-failed', subjectName ),
+				{ type: 'error' }
+			);
+			return;
+		}
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),
 			{

@@ -49,7 +49,21 @@ const props = withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
-const validationError = ref<string | null>( null );
+const liveValidationError = ref<string | null>( null );
+
+const validationError = computed<string | null>( () => {
+	if ( liveValidationError.value !== null ) {
+		return liveValidationError.value;
+	}
+	const name = props.property.name.toString();
+	const hit = ( props.serverViolations ?? [] )
+		.find( ( v ) => v.propertyName === name &&
+			( v.valuePartIndex === null || v.valuePartIndex === undefined ) );
+	if ( hit ) {
+		return mw.message( `neowiki-field-${ hit.code }`, ...( hit.args as string[] ) ).text();
+	}
+	return null;
+} );
 
 // Hide the heading when it would duplicate the inline checkbox label
 // (subject-editor case: the caller passes the property name as the label).
@@ -64,7 +78,7 @@ const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( BooleanT
 
 function validate( value: BooleanValue ): void {
 	const errors = propertyType.validate( value, props.property );
-	validationError.value = errors.length === 0 ? null :
+	liveValidationError.value = errors.length === 0 ? null :
 		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
 }
 
@@ -73,6 +87,14 @@ function onInput( newValue: boolean ): void {
 	const value = newBooleanValue( newValue );
 	emit( 'update:modelValue', value );
 	validate( value );
+
+	const name = props.property.name.toString();
+	const hadServerViolation = ( props.serverViolations ?? [] )
+		.some( ( v ) => v.propertyName === name &&
+			( v.valuePartIndex === null || v.valuePartIndex === undefined ) );
+	if ( hadServerViolation ) {
+		emit( 'clear-server-violation', { propertyName: name, valuePartIndex: null } );
+	}
 }
 
 watch( () => props.modelValue, ( newValue ) => {

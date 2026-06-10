@@ -28,7 +28,7 @@ import type { Value } from '@/domain/Value';
 </script>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newNumberValue, NumberValue, ValueType } from '@/domain/Value';
@@ -48,7 +48,21 @@ const startIcon = NeoWikiServices.getComponentRegistry().getIcon( NumberType.typ
 
 const emit = defineEmits<ValueInputEmits>();
 
-const validationError = ref<string | null>( null );
+const liveValidationError = ref<string | null>( null );
+
+const validationError = computed<string | null>( () => {
+	if ( liveValidationError.value !== null ) {
+		return liveValidationError.value;
+	}
+	const name = props.property.name.toString();
+	const hit = ( props.serverViolations ?? [] )
+		.find( ( v ) => v.propertyName === name &&
+			( v.valuePartIndex === null || v.valuePartIndex === undefined ) );
+	if ( hit ) {
+		return mw.message( `neowiki-field-${ hit.code }`, ...( hit.args as string[] ) ).text();
+	}
+	return null;
+} );
 
 const internalInputValue = ref<string>( '' );
 
@@ -71,15 +85,23 @@ watch( () => props.modelValue, ( newValue ) => {
 const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( NumberType.typeName );
 
 function onInput( newValue: string ): void {
-	internalInputValue.value = newValue; // Update local state
+	internalInputValue.value = newValue;
 	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );
-	emit( 'update:modelValue', value ); // Emit for potential v-model usage
+	emit( 'update:modelValue', value );
 	validate( value );
+
+	const name = props.property.name.toString();
+	const hadServerViolation = ( props.serverViolations ?? [] )
+		.some( ( v ) => v.propertyName === name &&
+			( v.valuePartIndex === null || v.valuePartIndex === undefined ) );
+	if ( hadServerViolation ) {
+		emit( 'clear-server-violation', { propertyName: name, valuePartIndex: null } );
+	}
 }
 
 function validate( value: NumberValue | undefined ): void {
 	const errors = propertyType.validate( value, props.property );
-	validationError.value = errors.length === 0 ? null :
+	liveValidationError.value = errors.length === 0 ? null :
 		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
 }
 
@@ -87,12 +109,12 @@ watch( () => props.property, () => {
 	validate( props.modelValue && props.modelValue.type === ValueType.Number ? props.modelValue as NumberValue : undefined );
 } );
 
-const isValueEmpty = ( inputString: string ): boolean =>
+const isInputEmpty = ( inputString: string ): boolean =>
 	inputString === '' || isNaN( Number( inputString ) );
 
 defineExpose<ValueInputExposes>( {
 	getCurrentValue: function(): Value | undefined {
-		return isValueEmpty( internalInputValue.value ) ? undefined : newNumberValue( Number( internalInputValue.value ) );
+		return isInputEmpty( internalInputValue.value ) ? undefined : newNumberValue( Number( internalInputValue.value ) );
 	}
 } );
 

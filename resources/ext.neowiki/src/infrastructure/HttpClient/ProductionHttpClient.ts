@@ -5,7 +5,15 @@ export class ProductionHttpClient implements HttpClient {
 	private readonly axiosInstance: any;
 
 	public constructor() {
-		this.axiosInstance = axios.create();
+		// Accept 422 alongside 2xx so the persistence layer can read structured
+		// validation-failed bodies (the default axios behaviour throws on non-2xx
+		// with an opaque "Request failed with status code N"). Other non-2xx
+		// statuses keep the default rejection so CsrfSendingHttpClient's .catch()
+		// based 403 refresh-and-retry path still fires.
+		this.axiosInstance = axios.create( {
+			validateStatus: ( status: number ) =>
+				status === 422 || ( status >= 200 && status < 300 ),
+		} );
 	}
 
 	public async get( url: string, config?: Record<string, any> ): Promise<Response> {

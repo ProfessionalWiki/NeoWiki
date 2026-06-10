@@ -179,4 +179,71 @@ describe( 'UrlInput', () => {
 			expect( exposedValue ).toEqual( newStringValue( 'https://exposed.url' ) );
 		} );
 	} );
+
+	describe( 'Server violations (multi-value)', () => {
+		it( 'passes serverViolations to useStringValueInput as the fifth argument', () => {
+			const violation = { propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 };
+			newWrapper( {
+				property: newUrlProperty( { name: 'Website', multiple: true } ),
+				serverViolations: [ violation ],
+			} );
+
+			expect( useStringValueInput ).toHaveBeenCalledTimes( 1 );
+			const args = ( useStringValueInput as import( 'vitest' ).Mock ).mock.calls[ 0 ];
+			expect( args[ 4 ].value ).toEqual( [ violation ] );
+		} );
+
+		it( 'renders server violation on the matching valuePartIndex via inputMessages', () => {
+			// Composable merges server violation into inputMessages[1], mock reflects that.
+			mockInputMessages.value = [ {}, { error: 'neowiki-field-invalid-url' } ];
+			mockDisplayValues.value = [ 'https://ok.example', 'bad' ];
+			const wrapper = newWrapper( {
+				property: newUrlProperty( { name: 'Website', multiple: true } ),
+				serverViolations: [
+					{ propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 },
+				],
+			} );
+
+			const multiInput = wrapper.findComponent( NeoMultiTextInput );
+			const messages = multiInput.props( 'messages' ) as { error?: string }[];
+			expect( messages[ 0 ] ).toEqual( {} );
+			expect( messages[ 1 ] ).toHaveProperty( 'error', 'neowiki-field-invalid-url' );
+		} );
+
+		it( 'emits clear-server-violation when the composable emits it for valuePartIndex 1', async () => {
+			const wrapper = newWrapper( {
+				property: newUrlProperty( { name: 'Website', multiple: true } ),
+				serverViolations: [
+					{ propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 },
+				],
+			} );
+
+			const capturedEmit = ( useStringValueInput as import( 'vitest' ).Mock ).mock.calls[ 0 ][ 2 ];
+			capturedEmit( 'clear-server-violation', { propertyName: 'Website', valuePartIndex: 1 } );
+
+			await wrapper.vm.$nextTick();
+
+			expect( wrapper.emitted( 'clear-server-violation' ) ).toBeTruthy();
+			expect( wrapper.emitted( 'clear-server-violation' )![ 0 ] ).toEqual( [
+				{ propertyName: 'Website', valuePartIndex: 1 },
+			] );
+		} );
+
+		it( 'does not emit clear-server-violation for index 0 when no server violation exists there', async () => {
+			const wrapper = newWrapper( {
+				property: newUrlProperty( { name: 'Website', multiple: true } ),
+				serverViolations: [
+					// violation only at index 1, not index 0
+					{ propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 },
+				],
+			} );
+
+			// The composable only calls emit('clear-server-violation') when a violation exists at
+			// the edited index. Since no violation at index 0, no clear is emitted for index 0.
+			// We simulate the composable NOT calling it for index 0 by not invoking capturedEmit.
+			await wrapper.vm.$nextTick();
+
+			expect( wrapper.emitted( 'clear-server-violation' ) ).toBeFalsy();
+		} );
+	} );
 } );

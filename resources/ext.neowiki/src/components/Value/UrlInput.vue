@@ -60,7 +60,7 @@ const {
 	startIcon,
 	onInput,
 	getCurrentValue
-} = useStringValueInput( toRef( props, 'modelValue' ), toRef( props, 'property' ), emit, propertyType );
+} = useStringValueInput( toRef( props, 'modelValue' ), toRef( props, 'property' ), emit, propertyType, toRef( props, 'serverViolations' ) );
 
 defineExpose<ValueInputExposes>( {
 	getCurrentValue: getCurrentValue

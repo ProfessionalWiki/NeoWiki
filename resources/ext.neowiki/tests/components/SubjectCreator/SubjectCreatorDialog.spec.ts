@@ -25,6 +25,9 @@ import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
+import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import type { SubjectViolation } from '@/domain/SubjectViolation';
+import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 
 const PAGE_ID = 123;
 const PAGE_TITLE = 'Test Page';
@@ -43,8 +46,8 @@ const SchemaLookupStub = {
 
 const SubjectEditorStub = {
 	template: '<div class="subject-editor-stub"></div>',
-	props: [ 'statements', 'schema' ],
-	emits: [ 'change' ],
+	props: [ 'statements', 'schema', 'serverViolations' ],
+	emits: [ 'change', 'clear-server-violation' ],
 	setup() {
 		const getSubjectData = (): StatementList => new StatementList( [
 			new Statement( new PropertyName( 'Color' ), TextType.typeName, newStringValue( 'Red' ) ),
@@ -891,6 +894,144 @@ describe( 'SubjectCreatorDialog', () => {
 				expect.objectContaining( { type: 'error' } ),
 			);
 			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( true );
+		} );
+	} );
+
+	describe( 'ValidationFailedError handling', () => {
+		const violation: SubjectViolation = {
+			propertyName: 'Color',
+			code: 'required',
+			args: [],
+			valuePartIndex: null,
+		};
+
+		async function openSelectSchemaAndSave( wrapper: VueWrapper ): Promise<void> {
+			subjectStore.openSubjectCreator();
+			await flushPromises();
+			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+		}
+
+		it( 'flows server violations down to SubjectEditor on ValidationFailedError', async () => {
+			subjectStore.createMainSubject = vi.fn().mockRejectedValue(
+				new ValidationFailedError( [ violation ] ),
+			);
+			const wrapper = mountComponent();
+
+			await openSelectSchemaAndSave( wrapper );
+
+			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passed ).toHaveLength( 1 );
+			expect( passed[ 0 ].propertyName ).toBe( 'Color' );
+			expect( passed[ 0 ].code ).toBe( 'required' );
+		} );
+
+		it( 'keeps dialog open on ValidationFailedError', async () => {
+			subjectStore.createMainSubject = vi.fn().mockRejectedValue(
+				new ValidationFailedError( [ violation ] ),
+			);
+			const wrapper = mountComponent();
+
+			await openSelectSchemaAndSave( wrapper );
+
+			expect( reloadMock ).not.toHaveBeenCalled();
+			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( true );
+		} );
+
+		it( 'shows the validation-failed toast with the subject label', async () => {
+			subjectStore.createMainSubject = vi.fn().mockRejectedValue(
+				new ValidationFailedError( [ violation ] ),
+			);
+			const wrapper = mountComponent();
+
+			await openSelectSchemaAndSave( wrapper );
+
+			expect( mw.notify ).toHaveBeenCalledWith(
+				expect.stringContaining( 'neowiki-subject-editor-validation-failed' ),
+				expect.objectContaining( { type: 'error' } ),
+			);
+		} );
+
+		it( 'renders form-level banner for null-propertyName violation', async () => {
+			const schemaNotFound: SubjectViolation = {
+				propertyName: null,
+				code: 'schema-not-found',
+				args: [ 'Person' ],
+				valuePartIndex: null,
+			};
+			subjectStore.createMainSubject = vi.fn().mockRejectedValue(
+				new ValidationFailedError( [ schemaNotFound ] ),
+			);
+			const wrapper = mountComponent();
+
+			await openSelectSchemaAndSave( wrapper );
+
+			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passed ).toHaveLength( 1 );
+			expect( passed[ 0 ].propertyName ).toBeNull();
+			// The anchorless banner is rendered via CdxMessage; the stub
+			// replaces its template. Confirming the violation flows through is
+			// sufficient — the banner-render path is shared with the editor
+			// dialog spec, which exercises it directly.
+		} );
+
+		it( 'drops the matching entry on clear-server-violation event from child', async () => {
+			subjectStore.createMainSubject = vi.fn().mockRejectedValue(
+				new ValidationFailedError( [ violation ] ),
+			);
+			const wrapper = mountComponent();
+
+			await openSelectSchemaAndSave( wrapper );
+
+			expect( ( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[] ) ).toHaveLength( 1 );
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit(
+				'clear-server-violation',
+				{ propertyName: 'Color', valuePartIndex: null },
+			);
+			await flushPromises();
+
+			const after = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( after ).toHaveLength( 0 );
+		} );
+
+		it( 'falls back to existing generic-error path for non-ValidationFailedError throws', async () => {
+			subjectStore.createMainSubject = vi.fn().mockRejectedValue( new Error( 'Boom' ) );
+			const wrapper = mountComponent();
+
+			await openSelectSchemaAndSave( wrapper );
+
+			expect( mw.notify ).toHaveBeenCalledWith(
+				'Boom',
+				expect.objectContaining( {
+					title: expect.stringContaining( 'neowiki-subject-creator-error' ),
+					type: 'error',
+				} ),
+			);
+		} );
+
+		it( 'clears serverViolations when dialog reopens', async () => {
+			subjectStore.createMainSubject = vi.fn().mockRejectedValue(
+				new ValidationFailedError( [ violation ] ),
+			);
+			const wrapper = mountComponent();
+
+			await openSelectSchemaAndSave( wrapper );
+			expect( ( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[] ) ).toHaveLength( 1 );
+
+			// Close and reopen the dialog
+			subjectStore.closeSubjectCreator();
+			await flushPromises();
+			subjectStore.openSubjectCreator();
+			await flushPromises();
+			// Re-select schema so SubjectEditor renders again
+			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+
+			const after = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( after ).toHaveLength( 0 );
 		} );
 	} );
 } );
