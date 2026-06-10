@@ -1,13 +1,21 @@
 {
-	"mainSubject": "sVdemo1aaaaaaaa",
+	"mainSubject": "sVgd1VWVmdUSMp6",
 	"subjects": {
-		"sVdemo1aaaaaaaa": {
+		"sVgd1VWVmdUSMp6": {
 			"label": "Validation Clean",
 			"schema": "Validation Demo",
 			"statements": {
 				"Title": {
 					"type": "text",
 					"value": [ "All properties filled in" ]
+				},
+				"Summary": {
+					"type": "text",
+					"value": [ "A valid summary that is comfortably between ten and one hundred characters long." ]
+				},
+				"Aliases": {
+					"type": "text",
+					"value": [ "Clean sample", "Reference subject" ]
 				},
 				"Homepage": {
 					"type": "url",
@@ -20,9 +28,38 @@
 						"https://example.com/b"
 					]
 				},
+				"Score": {
+					"type": "number",
+					"value": 42.5
+				},
 				"Status": {
 					"type": "select",
-					"value": [ "o1valida1aaaaaa" ]
+					"value": [ "oVgd1htUPMmGZYT" ]
+				},
+				"Topics": {
+					"type": "select",
+					"value": [ "oVgd1Fzq3xfLnxJ", "oVgd1LjchzFUcLg" ]
+				},
+				"Featured": {
+					"type": "boolean",
+					"value": true
+				},
+				"Release date": {
+					"type": "date",
+					"value": [ "2024-06-15" ]
+				},
+				"Last reviewed": {
+					"type": "dateTime",
+					"value": [ "2024-06-15T09:30:00Z" ]
+				},
+				"Related product": {
+					"type": "relation",
+					"value": [
+						{
+							"id": "rVgd1keRxJzQR6e",
+							"target": "s1demo1aaaaaaa2"
+						}
+					]
 				}
 			}
 		}
