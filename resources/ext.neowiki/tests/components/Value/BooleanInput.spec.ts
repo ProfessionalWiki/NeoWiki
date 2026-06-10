@@ -141,4 +141,33 @@ describe( 'BooleanInput', () => {
 		const emitted = events?.[ 0 ]?.[ 0 ] as { type: ValueType } | undefined;
 		expect( emitted?.type ).toBe( ValueType.Boolean );
 	} );
+
+	describe( 'Server violations', () => {
+		function newWrapperWithViolationOnFoo(): VueWrapper {
+			return newWrapper( {
+				property: newBooleanProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'string', 'boolean' ], valuePartIndex: null },
+				],
+			} );
+		}
+
+		it( 'shows a field-level server violation as the field error', () => {
+			const wrapper = newWrapperWithViolationOnFoo();
+
+			const field = wrapper.findComponent( CdxField );
+			expect( field.props( 'status' ) ).toBe( 'error' );
+			expect( field.props( 'messages' ) ).toEqual( { error: 'neowiki-field-type-mismatch' } );
+		} );
+
+		it( 'emits clear-server-violation when the user edits the field', async () => {
+			const wrapper = newWrapperWithViolationOnFoo();
+
+			await wrapper.find( 'input[type="checkbox"]' ).setValue( true );
+
+			expect( wrapper.emitted( 'clear-server-violation' )![ 0 ] ).toEqual( [
+				{ propertyName: 'Foo', valuePartIndex: null },
+			] );
+		} );
+	} );
 } );
