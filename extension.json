@@ -339,6 +339,7 @@
 				"neowiki-field-invalid-date",
 				"neowiki-field-invalid-option",
 				"neowiki-field-single-value-only",
+				"neowiki-field-type-mismatch",
 				"neowiki-field-schema-not-found",
 				"neowiki-select-placeholder",
 				"neowiki-select-no-results",

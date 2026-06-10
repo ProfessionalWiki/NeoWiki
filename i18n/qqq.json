@@ -143,6 +143,7 @@
 	"neowiki-property-editor-options-unique": "Error shown in the schema editor when duplicate option values are entered for a select property.",
 	"neowiki-field-invalid-option": "Validation error shown when a selected value is not in the allowed options list. $1 is the invalid value.",
 	"neowiki-field-single-value-only": "Validation error shown when multiple values are selected for a single-select property.",
+	"neowiki-field-type-mismatch": "Validation error shown when a Statement's stored type no longer matches the property's current type (e.g. the Schema changed after the value was saved). $1 is the type the value was written as; $2 is the type the property now expects.",
 	"neowiki-field-schema-not-found": "Form-level error shown when the backend reports the Subject's Schema page is missing. $1 is the schema name.",
 	"neowiki-select-placeholder": "Placeholder text shown in the select dropdown before any option is chosen.",
 	"neowiki-select-no-results": "Message shown in the multi-select dropdown when the typed text does not match any available option.",

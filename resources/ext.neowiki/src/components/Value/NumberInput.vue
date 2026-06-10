@@ -28,13 +28,14 @@ import type { Value } from '@/domain/Value';
 </script>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newNumberValue, NumberValue, ValueType } from '@/domain/Value';
 import { NumberType, NumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<NumberProperty>>(),
@@ -50,19 +51,12 @@ const emit = defineEmits<ValueInputEmits>();
 
 const liveValidationError = ref<string | null>( null );
 
-const validationError = computed<string | null>( () => {
-	if ( liveValidationError.value !== null ) {
-		return liveValidationError.value;
-	}
-	const name = props.property.name.toString();
-	const hit = ( props.serverViolations ?? [] )
-		.find( ( v ) => v.propertyName === name &&
-			( v.valuePartIndex === null || v.valuePartIndex === undefined ) );
-	if ( hit ) {
-		return mw.message( `neowiki-field-${ hit.code }`, ...( hit.args as string[] ) ).text();
-	}
-	return null;
-} );
+const { validationError, clearServerViolation } = useFieldServerViolation(
+	() => props.property.name.toString(),
+	() => props.serverViolations,
+	liveValidationError,
+	( payload ) => emit( 'clear-server-violation', payload )
+);
 
 const internalInputValue = ref<string>( '' );
 
@@ -89,14 +83,7 @@ function onInput( newValue: string ): void {
 	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );
 	emit( 'update:modelValue', value );
 	validate( value );
-
-	const name = props.property.name.toString();
-	const hadServerViolation = ( props.serverViolations ?? [] )
-		.some( ( v ) => v.propertyName === name &&
-			( v.valuePartIndex === null || v.valuePartIndex === undefined ) );
-	if ( hadServerViolation ) {
-		emit( 'clear-server-violation', { propertyName: name, valuePartIndex: null } );
-	}
+	clearServerViolation();
 }
 
 function validate( value: NumberValue | undefined ): void {

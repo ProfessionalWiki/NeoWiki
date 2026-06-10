@@ -38,6 +38,7 @@ import { newBooleanValue, BooleanValue, ValueType } from '@/domain/Value';
 import { BooleanType, BooleanProperty } from '@/domain/propertyTypes/Boolean.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<BooleanProperty>>(),
@@ -51,19 +52,12 @@ const emit = defineEmits<ValueInputEmits>();
 
 const liveValidationError = ref<string | null>( null );
 
-const validationError = computed<string | null>( () => {
-	if ( liveValidationError.value !== null ) {
-		return liveValidationError.value;
-	}
-	const name = props.property.name.toString();
-	const hit = ( props.serverViolations ?? [] )
-		.find( ( v ) => v.propertyName === name &&
-			( v.valuePartIndex === null || v.valuePartIndex === undefined ) );
-	if ( hit ) {
-		return mw.message( `neowiki-field-${ hit.code }`, ...( hit.args as string[] ) ).text();
-	}
-	return null;
-} );
+const { validationError, clearServerViolation } = useFieldServerViolation(
+	() => props.property.name.toString(),
+	() => props.serverViolations,
+	liveValidationError,
+	( payload ) => emit( 'clear-server-violation', payload )
+);
 
 // Hide the heading when it would duplicate the inline checkbox label
 // (subject-editor case: the caller passes the property name as the label).
@@ -87,14 +81,7 @@ function onInput( newValue: boolean ): void {
 	const value = newBooleanValue( newValue );
 	emit( 'update:modelValue', value );
 	validate( value );
-
-	const name = props.property.name.toString();
-	const hadServerViolation = ( props.serverViolations ?? [] )
-		.some( ( v ) => v.propertyName === name &&
-			( v.valuePartIndex === null || v.valuePartIndex === undefined ) );
-	if ( hadServerViolation ) {
-		emit( 'clear-server-violation', { propertyName: name, valuePartIndex: null } );
-	}
+	clearServerViolation();
 }
 
 watch( () => props.modelValue, ( newValue ) => {

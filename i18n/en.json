@@ -66,6 +66,7 @@
 	"neowiki-field-invalid-date": "Please enter a valid date.",
 	"neowiki-field-invalid-option": "\"$1\" is not a valid option.",
 	"neowiki-field-single-value-only": "Only one value can be selected.",
+	"neowiki-field-type-mismatch": "This value was saved as type \"$1\" but the property now expects \"$2\".",
 	"neowiki-field-schema-not-found": "The schema \"$1\" is missing. Restore it before saving.",
 	"neowiki-select-placeholder": "Select an option",
 	"neowiki-select-no-results": "No matching options.",
