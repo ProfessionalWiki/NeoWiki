@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { ref, type Ref } from 'vue';
+import { ref, shallowRef, type Ref } from 'vue';
 import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
+import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 
 type SetupResult = ReturnType<typeof useFieldServerViolation> & {
+	serverViolations: Ref<readonly SubjectViolation[] | undefined>;
 	liveValidationError: Ref<string | null>;
-	emitClear: Mock;
+	emit: Mock;
 };
 
 vi.stubGlobal( 'mw', {
@@ -15,6 +17,15 @@ vi.stubGlobal( 'mw', {
 } );
 
 const PROPERTY_NAME = 'Homepage';
+
+function newProperty(): PropertyDefinition {
+	return {
+		name: new PropertyName( PROPERTY_NAME ),
+		type: 'text',
+		description: '',
+		required: false,
+	};
+}
 
 function fieldViolation( overrides: Partial<SubjectViolation> = {} ): SubjectViolation {
 	return {
@@ -27,15 +38,16 @@ function fieldViolation( overrides: Partial<SubjectViolation> = {} ): SubjectVio
 }
 
 function setup( violations: SubjectViolation[], live: string | null = null ): SetupResult {
+	const serverViolations = ref<readonly SubjectViolation[] | undefined>( violations );
 	const liveValidationError = ref<string | null>( live );
-	const emitClear = vi.fn();
+	const emit = vi.fn();
 	const composable = useFieldServerViolation(
-		() => PROPERTY_NAME,
-		() => violations,
+		shallowRef( newProperty() ),
+		serverViolations,
 		liveValidationError,
-		emitClear,
+		emit,
 	);
-	return { ...composable, liveValidationError, emitClear };
+	return { ...composable, serverViolations, liveValidationError, emit };
 }
 
 describe( 'useFieldServerViolation', () => {
@@ -60,6 +72,23 @@ describe( 'useFieldServerViolation', () => {
 			const { validationError } = setup( [ fieldViolation() ], 'live error' );
 
 			expect( validationError.value ).toBe( 'live error' );
+		} );
+
+		it( 'surfaces the server violation when the live error resolves', () => {
+			const { validationError, liveValidationError } = setup( [ fieldViolation() ], 'live error' );
+
+			liveValidationError.value = null;
+
+			expect( validationError.value ).toBe( 'neowiki-field-required' );
+		} );
+
+		it( 'stops surfacing the violation when the parent removes it', () => {
+			const { validationError, serverViolations } = setup( [ fieldViolation() ] );
+			expect( validationError.value ).toBe( 'neowiki-field-required' );
+
+			serverViolations.value = [];
+
+			expect( validationError.value ).toBeNull();
 		} );
 
 		it( 'ignores violations belonging to a different property', () => {
@@ -92,8 +121,8 @@ describe( 'useFieldServerViolation', () => {
 
 		it( 'applies the arg formatter to message args', () => {
 			const { validationError } = useFieldServerViolation(
-				() => PROPERTY_NAME,
-				() => [ fieldViolation( { code: 'min-value', args: [ '2025-01-01' ] } ) ],
+				shallowRef( newProperty() ),
+				ref<readonly SubjectViolation[] | undefined>( [ fieldViolation( { code: 'min-value', args: [ '2025-01-01' ] } ) ] ),
 				ref( null ),
 				vi.fn(),
 				( arg ) => `formatted(${ arg })`,
@@ -105,27 +134,38 @@ describe( 'useFieldServerViolation', () => {
 
 	describe( 'clearServerViolation', () => {
 		it( 'emits clear for the field when a matching field-level violation exists', () => {
-			const { clearServerViolation, emitClear } = setup( [ fieldViolation() ] );
+			const { clearServerViolation, emit } = setup( [ fieldViolation() ] );
 
 			clearServerViolation();
 
-			expect( emitClear ).toHaveBeenCalledWith( { propertyName: PROPERTY_NAME, valuePartIndex: null } );
+			expect( emit ).toHaveBeenCalledWith(
+				'clear-server-violation',
+				{ propertyName: PROPERTY_NAME, valuePartIndex: null },
+			);
 		} );
 
 		it( 'does not emit when there is no violation for the field', () => {
-			const { clearServerViolation, emitClear } = setup( [] );
+			const { clearServerViolation, emit } = setup( [] );
 
 			clearServerViolation();
 
-			expect( emitClear ).not.toHaveBeenCalled();
+			expect( emit ).not.toHaveBeenCalled();
+		} );
+
+		it( 'does not emit when the only violation is for a different property', () => {
+			const { clearServerViolation, emit } = setup( [ fieldViolation( { propertyName: 'OtherProperty' } ) ] );
+
+			clearServerViolation();
+
+			expect( emit ).not.toHaveBeenCalled();
 		} );
 
 		it( 'does not emit when the only violation is per-index', () => {
-			const { clearServerViolation, emitClear } = setup( [ fieldViolation( { valuePartIndex: 0 } ) ] );
+			const { clearServerViolation, emit } = setup( [ fieldViolation( { valuePartIndex: 0 } ) ] );
 
 			clearServerViolation();
 
-			expect( emitClear ).not.toHaveBeenCalled();
+			expect( emit ).not.toHaveBeenCalled();
 		} );
 	} );
 } );

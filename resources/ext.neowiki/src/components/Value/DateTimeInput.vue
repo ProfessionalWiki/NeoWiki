@@ -30,7 +30,7 @@ import type { Value } from '@/domain/Value';
 </script>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, toRef, watch } from 'vue';
 import { CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconInfo, cdxIconClock } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, ValueType } from '@/domain/Value';
@@ -53,10 +53,10 @@ const emit = defineEmits<ValueInputEmits>();
 const liveValidationError = ref<string | null>( null );
 
 const { validationError, clearServerViolation } = useFieldServerViolation(
-	() => props.property.name.toString(),
-	() => props.serverViolations,
+	toRef( props, 'property' ),
+	toRef( props, 'serverViolations' ),
 	liveValidationError,
-	( payload ) => emit( 'clear-server-violation', payload ),
+	emit,
 	formatDateTimeForDisplay
 );
 

@@ -86,4 +86,33 @@ describe( 'NumberInput', () => {
 			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
 		} );
 	} );
+
+	describe( 'Server violations', () => {
+		it( 'shows a field-level server violation as the field error', () => {
+			const wrapper = newWrapper( {
+				property: newNumberProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'number', 'string' ], valuePartIndex: null },
+				],
+			} );
+
+			expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
+			expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-type-mismatch' );
+		} );
+
+		it( 'emits clear-server-violation when the user edits the field', async () => {
+			const wrapper = newWrapper( {
+				property: newNumberProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'number', 'string' ], valuePartIndex: null },
+				],
+			} );
+
+			await wrapper.find( 'input' ).setValue( '12' );
+
+			expect( wrapper.emitted( 'clear-server-violation' )![ 0 ] ).toEqual( [
+				{ propertyName: 'Foo', valuePartIndex: null },
+			] );
+		} );
+	} );
 } );

@@ -31,7 +31,7 @@ import type { Value } from '@/domain/Value';
 </script>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
 import { CdxCheckbox, CdxField, CdxIcon } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newBooleanValue, BooleanValue, ValueType } from '@/domain/Value';
@@ -53,10 +53,10 @@ const emit = defineEmits<ValueInputEmits>();
 const liveValidationError = ref<string | null>( null );
 
 const { validationError, clearServerViolation } = useFieldServerViolation(
-	() => props.property.name.toString(),
-	() => props.serverViolations,
+	toRef( props, 'property' ),
+	toRef( props, 'serverViolations' ),
 	liveValidationError,
-	( payload ) => emit( 'clear-server-violation', payload )
+	emit
 );
 
 // Hide the heading when it would duplicate the inline checkbox label

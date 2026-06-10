@@ -187,4 +187,47 @@ describe( 'DateInput', () => {
 
 		expect( firstEvent.parts[ 0 ] ).toBe( date );
 	} );
+
+	describe( 'Server violations', () => {
+		it( 'shows a field-level server violation as the field error', () => {
+			const wrapper = newWrapper( {
+				property: newDateProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'date', 'number' ], valuePartIndex: null },
+				],
+			} );
+
+			expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
+			expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-type-mismatch' );
+		} );
+
+		it( 'emits clear-server-violation when the user edits the field', async () => {
+			const wrapper = newWrapper( {
+				property: newDateProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'date', 'number' ], valuePartIndex: null },
+				],
+			} );
+
+			await wrapper.find( 'input' ).setValue( '2025-06-15' );
+
+			expect( wrapper.emitted( 'clear-server-violation' )![ 0 ] ).toEqual( [
+				{ propertyName: 'Foo', valuePartIndex: null },
+			] );
+		} );
+
+		it( 'passes server-violation args to mw.message as formatted strings, not the raw ISO', () => {
+			const minimum = '2025-01-01';
+			newWrapper( {
+				property: newDateProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'min-value', args: [ minimum ], valuePartIndex: null },
+				],
+			} );
+
+			const minCall = findMessageCall( 'neowiki-field-min-value' );
+			expect( minCall?.[ 1 ] ).not.toBe( minimum );
+			expect( minCall?.[ 1 ] ).not.toMatch( /^\d{4}-\d{2}-\d{2}$/ );
+		} );
+	} );
 } );

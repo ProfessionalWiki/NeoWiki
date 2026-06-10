@@ -1,5 +1,7 @@
 import { computed, ComputedRef, Ref } from 'vue';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
+import { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
+import { ValueInputEmitFunction } from '@/components/Value/ValueInputContract.ts';
 
 interface FieldServerViolation {
 	validationError: ComputedRef<string | null>;
@@ -13,26 +15,27 @@ interface FieldServerViolation {
  * precedence — and clears it when the user edits the field.
  *
  * Only field-level violations (valuePartIndex null/undefined) are handled;
- * single-value inputs have no per-index slot. Multi-value inputs (Text and Url
- * via useStringValueInput, plus Select and Relation) do their own per-index
- * handling and do not use this.
+ * single-value inputs have no per-index slot. Text and Url (via
+ * useStringValueInput) merge per-index violations into their per-input slots;
+ * Select and Relation do their own inline lookup, surfacing the first
+ * violation for the property at field level.
  *
- * @param propertyName Getter for the field's property name.
- * @param serverViolations Getter for the violations passed to this input.
+ * @param property The field's Property Definition; violations are matched on its name.
+ * @param serverViolations The violations passed to this input.
  * @param liveValidationError The component's live client-side error, if any.
- * @param emitClear Emits clear-server-violation up to the parent.
+ * @param emit The component's emit function; used for clear-server-violation.
  * @param formatArg Per-arg formatter; Date/DateTime format their bounds for display.
  */
-export function useFieldServerViolation(
-	propertyName: () => string,
-	serverViolations: () => readonly SubjectViolation[] | undefined,
+export function useFieldServerViolation<P extends PropertyDefinition>(
+	property: Ref<P>,
+	serverViolations: Ref<readonly SubjectViolation[] | undefined>,
 	liveValidationError: Ref<string | null>,
-	emitClear: ( payload: { propertyName: string; valuePartIndex: number | null } ) => void,
+	emit: ValueInputEmitFunction,
 	formatArg: ( arg: string ) => string = ( arg ) => arg,
 ): FieldServerViolation {
 	const fieldLevelHit = (): SubjectViolation | undefined =>
-		( serverViolations() ?? [] ).find(
-			( v ) => v.propertyName === propertyName() &&
+		( serverViolations.value ?? [] ).find(
+			( v ) => v.propertyName === property.value.name.toString() &&
 				( v.valuePartIndex === null || v.valuePartIndex === undefined ),
 		);
 
@@ -52,7 +55,10 @@ export function useFieldServerViolation(
 
 	function clearServerViolation(): void {
 		if ( fieldLevelHit() ) {
-			emitClear( { propertyName: propertyName(), valuePartIndex: null } );
+			emit( 'clear-server-violation', {
+				propertyName: property.value.name.toString(),
+				valuePartIndex: null,
+			} );
 		}
 	}
 
