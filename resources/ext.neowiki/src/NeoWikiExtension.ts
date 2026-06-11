@@ -255,6 +255,11 @@ export class NeoWikiExtension {
 		return Neo.getInstance();
 	}
 
+	public getValidationDebounceMs(): number {
+		const value = mw.config.get( 'wgNeoWikiValidationDebounceMs' );
+		return typeof value === 'number' ? value : 300;
+	}
+
 	public newSubjectValidator(): SubjectValidator {
 		return new SubjectValidator(
 			this.getPropertyTypeRegistry(),
