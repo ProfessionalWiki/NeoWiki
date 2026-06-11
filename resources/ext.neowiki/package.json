@@ -32,7 +32,7 @@
 		"@wmde/eslint-config-wikimedia-typescript": "^0.2.14",
 		"axios": "^1.15.2",
 		"eslint": "^8.57.0",
-		"eslint-config-wikimedia": "^0.32.3",
+		"eslint-config-wikimedia": "^0.32.4",
 		"eslint-plugin-n": "^17.10.2",
 		"eslint-plugin-unicorn": "^55.0.0",
 		"jsdom": "^25.0.0",
