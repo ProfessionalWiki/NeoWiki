@@ -9,6 +9,7 @@ import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
@@ -45,7 +46,11 @@ const CloseConfirmationDialogStub = {
 
 describe( 'SubjectEditorDialog', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'message', 'msg', 'notify' ] } );
+		setupMwMock( {
+			functions: [ 'message', 'msg', 'notify', 'config' ],
+			// Debounce 0 makes the dry-run validation run synchronously in tests.
+			config: { wgNeoWikiValidationDebounceMs: 0 },
+		} );
 	} );
 
 	let pinia: ReturnType<typeof createPinia>;
@@ -105,6 +110,10 @@ describe( 'SubjectEditorDialog', () => {
 
 		schemaStore = useSchemaStore();
 		schemaStore.setSchema( 'TestSchema', mockSchema );
+
+		// The dry-run validation runs alongside the live validators; stub it so
+		// it does not reach the network and stays out of the way of these tests.
+		useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [] );
 	} );
 
 	it( 'renders schema as a link when user has edit permissions', async () => {
@@ -391,6 +400,64 @@ describe( 'SubjectEditorDialog', () => {
 					type: 'error',
 				} ),
 			] );
+		} );
+	} );
+
+	describe( 'Server-driven dry-run validation', () => {
+		const dryRunViolation: SubjectViolation = {
+			propertyName: 'name',
+			code: 'required',
+			args: [],
+			valuePartIndex: null,
+		};
+
+		it( 'surfaces dry-run violations when the editor reports a change', async () => {
+			const validate = vi.fn().mockResolvedValue( [ dryRunViolation ] );
+			useSubjectStore().validateSubjectUpdate = validate;
+			const wrapper = mountComponent( true, validationTestStubs );
+			await flushPromises();
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await flushPromises();
+
+			expect( validate ).toHaveBeenCalledWith(
+				mockSubject.getId(),
+				mockSubject.getLabel(),
+				expect.any( StatementList ),
+			);
+			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passed ).toHaveLength( 1 );
+			expect( passed[ 0 ].propertyName ).toBe( 'name' );
+		} );
+
+		it( 'runs the dry-run before saving so its violations surface inline', async () => {
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ dryRunViolation ] );
+			// onSave never resolves, so the dialog stays open and we can inspect
+			// the violations produced by the pre-save flush.
+			const onSave = vi.fn().mockReturnValue( new Promise<void>( () => {
+				// Intentionally never settles.
+			} ) );
+			const wrapper = mountComponent( true, validationTestStubs, onSave );
+			await flushPromises();
+
+			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passed ).toHaveLength( 1 );
+			expect( passed[ 0 ].propertyName ).toBe( 'name' );
+		} );
+
+		it( 'keeps editing working when the dry-run validation fails', async () => {
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockRejectedValue( new Error( 'network down' ) );
+			const wrapper = mountComponent( true, validationTestStubs );
+			await flushPromises();
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await flushPromises();
+
+			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passed ).toHaveLength( 0 );
 		} );
 	} );
 } );

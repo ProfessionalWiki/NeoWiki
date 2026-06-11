@@ -5,6 +5,7 @@ import type { StatementList } from '@/domain/StatementList';
 import type { SchemaName } from '@/domain/Schema';
 import { PageSubjects } from '@/domain/PageSubjects';
 import type { DeserializedPageSubjects } from '@/persistence/PageSubjectsDeserializer';
+import type { SubjectViolation } from '@/domain/SubjectViolation';
 
 export interface SubjectRepository extends SubjectLookup {
 
@@ -32,6 +33,10 @@ export interface SubjectRepository extends SubjectLookup {
 	updateSubject( id: SubjectId, label: string, statements: StatementList, comment?: string ): Promise<object>;
 
 	deleteSubject( id: SubjectId, comment?: string ): Promise<boolean>;
+
+	validateSubject( label: string, schemaName: SchemaName, statements: StatementList ): Promise<SubjectViolation[]>;
+
+	validateSubjectUpdate( id: SubjectId, label: string, statements: StatementList ): Promise<SubjectViolation[]>;
 
 }
 
@@ -63,6 +68,14 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 
 	public deleteSubject( id: SubjectId, _comment?: string ): Promise<boolean> {
 		return Promise.resolve( this.subjects.delete( id.text ) );
+	}
+
+	public validateSubject( _label: string, _schemaName: SchemaName, _statements: StatementList ): Promise<SubjectViolation[]> {
+		return Promise.resolve( [] );
+	}
+
+	public validateSubjectUpdate( _id: SubjectId, _label: string, _statements: StatementList ): Promise<SubjectViolation[]> {
+		return Promise.resolve( [] );
 	}
 
 }

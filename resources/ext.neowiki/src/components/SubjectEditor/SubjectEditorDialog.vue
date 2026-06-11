@@ -67,7 +67,8 @@
 				:statements="statements"
 				:schema="loadedSchema as Schema"
 				:server-violations="serverViolations"
-				@change="markChanged"
+				@change="handleEditorChange"
+				@focusout="handleEditorBlur"
 				@clear-server-violation="handleClearViolation"
 			/>
 			<div v-else>
@@ -112,6 +113,7 @@ import { cdxIconClose } from '@wikimedia/codex-icons';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
@@ -119,6 +121,8 @@ import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
+import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
+import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 
@@ -134,6 +138,7 @@ const props = defineProps<{
 const emit = defineEmits( [ 'update:open' ] );
 
 const schemaStore = useSchemaStore();
+const subjectStore = useSubjectStore();
 
 interface SubjectEditorInstance {
 	getSubjectData: () => StatementList;
@@ -145,7 +150,45 @@ const loadedSchema = ref<Schema | null>( null );
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
-const serverViolations = ref<SubjectViolation[]>( [] );
+const { violations: serverViolations, revalidate, flush, reset } = useSubjectValidation(
+	async () => {
+		if ( !subjectEditorRef.value ) {
+			return [];
+		}
+		const statements = [ ...subjectEditorRef.value.getSubjectData() ].filter( ( s ) => s.hasValue() );
+		try {
+			return await subjectStore.validateSubjectUpdate(
+				props.subject.getId(),
+				props.subject.getLabel(),
+				new StatementList( statements )
+			);
+		} catch ( error ) {
+			// The dry-run runs alongside the live validators and must never
+			// break editing or saving; the authoritative result is the save's
+			// own 422 response.
+			console.error( 'Subject validation dry-run failed:', error );
+			return [];
+		}
+	},
+	{ debounceMs: NeoWikiExtension.getInstance().getValidationDebounceMs() }
+);
+
+let dirtySinceValidation = false;
+
+function handleEditorChange(): void {
+	markChanged();
+	dirtySinceValidation = true;
+	revalidate();
+}
+
+function handleEditorBlur(): void {
+	// focusout bubbles on every field-to-field move; only flush when something
+	// actually changed since the last validation, to avoid redundant requests.
+	if ( dirtySinceValidation ) {
+		dirtySinceValidation = false;
+		flush();
+	}
+}
 
 const anchorlessViolations = computed<SubjectViolation[]>( () => {
 	// SubjectEditor renders one field per entry in `statements`, which the
@@ -189,7 +232,7 @@ function onDialogUpdateOpen( value: boolean ): void {
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
 		resetChanged();
-		serverViolations.value = [];
+		reset();
 	}
 } );
 
@@ -223,7 +266,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		return;
 	}
 
-	serverViolations.value = [];
+	await flush();
 
 	const updatedStatements = subjectEditorRef.value.getSubjectData();
 	// Filter out statements that don't have a value set.

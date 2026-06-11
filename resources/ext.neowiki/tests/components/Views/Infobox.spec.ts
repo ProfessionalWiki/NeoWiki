@@ -25,7 +25,7 @@ const $i18n = createI18nMock();
 
 describe( 'Infobox', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'message', 'msg' ] } );
+		setupMwMock( { functions: [ 'message', 'msg', 'config' ] } );
 		( globalThis as any ).mw.util = {
 			getUrl: vi.fn( ( title: string ) => `/wiki/${ title }` ),
 		};
@@ -92,6 +92,7 @@ describe( 'Infobox', () => {
 
 		subjectStore = useSubjectStore();
 		subjectStore.setSubject( mockSubject );
+		subjectStore.validateSubjectUpdate = vi.fn().mockResolvedValue( [] );
 	} );
 
 	it( 'renders the title correctly', () => {

@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Presentation;
 
 use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use Skin;
 
@@ -18,6 +19,11 @@ class FrontendModuleLoader {
 	public function load( OutputPage $out, Skin $skin ): void {
 		$out->addModules( 'ext.neowiki' );
 		$out->addModuleStyles( 'ext.neowiki.styles' );
+
+		$out->addJsConfigVars( [
+			'wgNeoWikiValidationDebounceMs' =>
+				MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiValidationDebounceMs' ),
+		] );
 
 		/** @var list<string> $modules populated by hook handlers */
 		$modules = [];

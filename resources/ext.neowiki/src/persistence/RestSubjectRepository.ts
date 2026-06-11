@@ -12,41 +12,7 @@ import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { Subject } from '@/domain/Subject';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
-
-function isShapedAsViolation( raw: unknown ): raw is SubjectViolation {
-	if ( typeof raw !== 'object' || raw === null ) {
-		return false;
-	}
-	const v = raw as Record<string, unknown>;
-
-	const propertyNameOk = v.propertyName === null || typeof v.propertyName === 'string';
-	const codeOk = typeof v.code === 'string' && v.code.length > 0;
-	const argsOk = v.args === undefined || Array.isArray( v.args );
-	const indexOk = v.valuePartIndex === undefined ||
-		v.valuePartIndex === null ||
-		typeof v.valuePartIndex === 'number';
-
-	return propertyNameOk && codeOk && argsOk && indexOk;
-}
-
-function parseViolations( body: unknown ): SubjectViolation[] | null {
-	if ( typeof body !== 'object' || body === null ) {
-		return null;
-	}
-	const violations = ( body as { violations?: unknown } ).violations;
-	if ( !Array.isArray( violations ) ) {
-		return null;
-	}
-	if ( !violations.every( isShapedAsViolation ) ) {
-		return null;
-	}
-	return violations.map( ( v ) => ( {
-		propertyName: v.propertyName,
-		code: v.code,
-		args: v.args ?? [],
-		valuePartIndex: v.valuePartIndex ?? null,
-	} ) );
-}
+import { parseViolations } from '@/persistence/violationParsing';
 
 async function throwOn422IfPossible( response: Response ): Promise<void> {
 	if ( response.status !== 422 ) {
@@ -255,6 +221,45 @@ export class RestSubjectRepository implements SubjectRepository {
 		}
 
 		return true;
+	}
+
+	public async validateSubject(
+		label: string,
+		schemaName: SchemaName,
+		statements: StatementList,
+	): Promise<SubjectViolation[]> {
+		return this.runValidation(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/validate`,
+			{ schema: schemaName, label, statements: statementsToJson( statements ) },
+		);
+	}
+
+	public async validateSubjectUpdate(
+		id: SubjectId,
+		label: string,
+		statements: StatementList,
+	): Promise<SubjectViolation[]> {
+		return this.runValidation(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }/validate`,
+			{ label, statements: statementsToJson( statements ) },
+		);
+	}
+
+	private async runValidation( url: string, payload: Record<string, unknown> ): Promise<SubjectViolation[]> {
+		let response: Response;
+		try {
+			response = await this.httpClient.post( url, payload, { headers: { 'Content-Type': 'application/json' } } );
+		} catch {
+			// 400/404 (malformed input / missing schema) reject in ProductionHttpClient — no live feedback, fall back silently.
+			return [];
+		}
+
+		if ( !response.ok ) {
+			return [];
+		}
+
+		const violations = parseViolations( await response.json() );
+		return violations ?? [];
 	}
 
 }

@@ -7,6 +7,7 @@ import { StatementList } from '@/domain/StatementList.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
+import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
@@ -46,6 +47,12 @@ export const useSubjectStore = defineStore( 'subject', {
 		async deleteSubject( subjectId: SubjectId, comment?: string ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSubjectRepository().deleteSubject( subjectId, comment );
 			this.subjects.delete( subjectId.text );
+		},
+		async validateSubject( label: string, schemaName: SchemaName, statements: StatementList ): Promise<SubjectViolation[]> {
+			return NeoWikiExtension.getInstance().getSubjectRepository().validateSubject( label, schemaName, statements );
+		},
+		async validateSubjectUpdate( id: SubjectId, label: string, statements: StatementList ): Promise<SubjectViolation[]> {
+			return NeoWikiExtension.getInstance().getSubjectRepository().validateSubjectUpdate( id, label, statements );
 		},
 		async createMainSubject( pageId: number, label: string, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
 			const subjectId = await NeoWikiExtension.getInstance().getSubjectRepository().createMainSubject(
