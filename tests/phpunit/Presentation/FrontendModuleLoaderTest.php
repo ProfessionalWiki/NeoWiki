@@ -20,6 +20,9 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 	/** @var array<int, string> */
 	private array $addedModuleStyles = [];
 
+	/** @var array<string, mixed> */
+	private array $addedJsConfigVars = [];
+
 	public function testAddsCoreModuleWhenNoExtensionsHandleHook(): void {
 		$this->clearHook( 'NeoWikiGetFrontendModules' );
 
@@ -70,8 +73,16 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $skin, $receivedSkin );
 	}
 
-	private function newLoader(): FrontendModuleLoader {
-		return new FrontendModuleLoader( $this->getServiceContainer()->getHookContainer() );
+	public function testEmitsConfiguredValidationDebounceJsConfigVar(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader( 450 )->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
+
+		$this->assertSame( 450, $this->addedJsConfigVars['wgNeoWikiValidationDebounceMs'] ?? null );
+	}
+
+	private function newLoader( int $validationDebounceMs = 300 ): FrontendModuleLoader {
+		return new FrontendModuleLoader( $this->getServiceContainer()->getHookContainer(), $validationDebounceMs );
 	}
 
 	private function newCapturingOutputPage(): OutputPage {
@@ -84,6 +95,15 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		$out->method( 'addModuleStyles' )->willReturnCallback(
 			function ( string|array $modules ): void {
 				$this->addedModuleStyles = array_merge( $this->addedModuleStyles, (array)$modules );
+			}
+		);
+		$out->method( 'addJsConfigVars' )->willReturnCallback(
+			function ( $keys, $value = null ): void {
+				if ( is_array( $keys ) ) {
+					$this->addedJsConfigVars = array_merge( $this->addedJsConfigVars, $keys );
+				} else {
+					$this->addedJsConfigVars[ $keys ] = $value;
+				}
 			}
 		);
 		return $out;
