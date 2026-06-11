@@ -30,7 +30,14 @@ export function useSubjectValidation(
 	}
 
 	async function run( expectedSequence: number ): Promise<void> {
-		const result = await validate();
+		let result: SubjectViolation[];
+		try {
+			result = await validate();
+		} catch {
+			// A failing validator must never break editing/saving or surface as an
+			// unhandled rejection; keep the last-known violations in place.
+			return;
+		}
 		if ( expectedSequence !== requestSequence ) {
 			return;
 		}
