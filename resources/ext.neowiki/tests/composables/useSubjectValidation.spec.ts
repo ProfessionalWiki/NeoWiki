@@ -23,16 +23,29 @@ describe( 'useSubjectValidation', () => {
 		expect( violations.value ).toEqual( [ violation( 'required' ) ] );
 	} );
 
-	it( 'discards a stale in-flight response when a newer run resolves first', async () => {
+	it( 'discards a stale response that resolves after a newer one', async () => {
+		let resolveStale!: ( value: SubjectViolation[] ) => void;
+		let resolveFresh!: ( value: SubjectViolation[] ) => void;
 		const validate = vi.fn()
-			.mockResolvedValueOnce( [ violation( 'stale' ) ] )
-			.mockResolvedValueOnce( [ violation( 'fresh' ) ] );
+			.mockImplementationOnce( () => new Promise<SubjectViolation[]>( ( resolve ) => {
+				resolveStale = resolve;
+			} ) )
+			.mockImplementationOnce( () => new Promise<SubjectViolation[]>( ( resolve ) => {
+				resolveFresh = resolve;
+			} ) );
 		const { violations, flush } = useSubjectValidation( validate, { debounceMs: 0 } );
 
-		const first = flush();
-		const second = flush();
-		await Promise.all( [ first, second ] );
+		flush();
+		flush();
 
+		// The newer (second) request resolves first.
+		resolveFresh( [ violation( 'fresh' ) ] );
+		await Promise.resolve();
+		expect( violations.value ).toEqual( [ violation( 'fresh' ) ] );
+
+		// The stale (first) request resolves afterwards and must be discarded by the guard.
+		resolveStale( [ violation( 'stale' ) ] );
+		await Promise.resolve();
 		expect( violations.value ).toEqual( [ violation( 'fresh' ) ] );
 	} );
 
