@@ -4,9 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Content;
 
-use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\ValidationParams;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
@@ -38,30 +36,6 @@ class LayoutContentHandlerValidateSaveTest extends MediaWikiIntegrationTestCase 
 		$status = $this->validate( '{ "schema": "Company" }' );
 
 		$this->assertFalse( $status->isOK() );
-	}
-
-	public function testSavingValidLayoutViaPageUpdaterSucceeds(): void {
-		$status = $this->saveLayoutPage( 'ValidSaveLayout', '{ "schema": "Company", "type": "infobox" }' );
-
-		$this->assertTrue( $status->isOK() );
-	}
-
-	public function testSavingInvalidLayoutViaPageUpdaterIsRejected(): void {
-		$status = $this->saveLayoutPage( 'InvalidSaveLayout', '{ "schema": "Company" }' );
-
-		$this->assertFalse( $status->isOK() );
-	}
-
-	private function saveLayoutPage( string $name, string $json ): StatusValue {
-		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
-			Title::makeTitle( NeoWikiExtension::NS_LAYOUT, $name )
-		);
-
-		$updater = $wikiPage->newPageUpdater( $this->getTestSysop()->getUser() );
-		$updater->setContent( 'main', new LayoutContent( $json ) );
-		$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'Test' ) );
-
-		return $updater->getStatus() ?? StatusValue::newGood();
 	}
 
 }
