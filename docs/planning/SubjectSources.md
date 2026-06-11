@@ -23,8 +23,8 @@ Primary drivers (committed work):
 1. **Wiki-farm metadata.** A farm of separate wikis needs unified metadata: each page's metadata and approval state
    queryable, sortable, and filterable **across all wikis** (e.g. "all pages approved before date X, farm-wide"), plus
    cross-wiki references in query results. This is the main reason a graph database was chosen, and the primary
-   near-term driver. Cross-wiki queryability implies the metadata must be **materialised in the (shared) graph**, not
-   only synthesised on read.
+   near-term driver. HW confirmed (2026-06-11) that this metadata **must be materialised in the (shared) graph**, not
+   only synthesised on read — materialisation is mandatory for it to be queryable.
 2. **External-owned state (document control).** Approval state, last reviewer, etc. are owned by another extension.
    They must be queryable for dashboards, viewable alongside Subject data, updatable **without creating a page
    revision**, and survive a graph rebuild.
@@ -50,8 +50,9 @@ Orthogonal but interacting (tracked elsewhere):
 
 ### Sources and the registry
 
-A **Source plugin** embodies a *kind*: `LocalSource`, `PageMetadataSource`, `WikitextSource`, `RemoteNeoWikiSource`,
-etc. A **registered Source** binds a plugin to config (often a specific wiki/instance). A single **Source registry**
+A **Source plugin** embodies a *kind* — core ones like `LocalSource` and `PageMetadataSource`, plus
+extension-registered ones such as a `RemoteNeoWikiSource` federation adapter or a `WikitextSource` for
+free-form tables. A **registered Source** binds a plugin to config (often a specific wiki/instance). A single **Source registry**
 maps `sourceKey → Source`, and the Source object is the authority for everything about its Subjects: capabilities,
 base URI, how to resolve/produce them, and its localId grammar.
 
@@ -110,19 +111,21 @@ Subject uses the built-in `PageMetadata` schema; a free-form-table Subject a loc
 its home instance's schema; a Wikibase item a read-only schema the adapter **synthesizes** (Wikibase has none — the
 strategy, e.g. one schema per item or per type, is plugin-internal).
 
-Because schema names are a shared vocabulary rather than minted ids, a farm wants **global schemas**: a Galaxy is
-expected to share one schema set across all its wikis (confirm with HW), so the same "Company" means the same thing in
-every wiki and cross-wiki queries stay coherent. Hence the asymmetry: **subjects are per-wiki, schemas are farm-global**
-(built-ins are global by construction). Across *independent* instances no shared registry can be assumed, so references
-stay `(source, name)` with the mapping layer ([RdfMapping.md](RdfMapping.md)) aligning vocabularies.
+In a farm, schemas are **per-wiki with a delivered common baseline** (HW, 2026-06-11): a Galaxy ships shared schemas to
+every wiki (e.g. the control-document schema), and each wiki may also define its own local schemas (e.g. an R&D wiki's
+product-line schema the others lack). The shared graph still allows **cross-wiki Cypher queries**, but a Subject whose
+schema is local to another wiki **cannot be rendered or edited cross-wiki via the View system or the normal editing
+UIs** — HW accepted this limitation for the MVP. Such cross-wiki access must **degrade gracefully** (an informative
+error or an import option), not break the page. Across *independent* instances no shared registry can be assumed, so
+references stay `(source, name)` with the mapping layer ([RdfMapping.md](RdfMapping.md)) aligning vocabularies.
 
 ## Storage and query (Neo4j)
 
 - The **page node stays** as the bookkeeping / index node.
-- **Page and approval metadata are materialised on the page node**, so they are queryable (including cross-wiki in a
-  shared graph). The read-only page-metadata **Subject** is a display projection over that data — synthesised on read,
-  with no separate Subject node. (Whether to *also* materialise it as a Subject node, to allow uniform `:Subject`
-  querying across page and subject metadata, is an open question.)
+- **Sourced data is materialised in the graph** — HW confirmed materialisation is **mandatory** (not read-time-only),
+  since everything must be Cypher-queryable. Page metadata lives on the page node; extension/approval data is a Subject
+  node. (A read-only page-metadata *Subject* for View-system display remains a model option but is **not** on HW's MVP
+  path, which is query-driven — see Open questions.)
 - **Genuinely-new data** (free-form tables; optionally-cached federation) materialises as normal Subject nodes — never
   as arbitrary keys on the page node (which would risk reserved-key collisions and pollute the index node).
 - **Wiki farm:** the shared graph tags every node (Subject and page) with its **instance**; uniqueness becomes
@@ -170,17 +173,10 @@ and subject-edit operations; it is not a model change and not a new schema type.
 Page-scoped values authored as `{{#set}}`-style wikitext are the same mechanism with a different authoring syntax:
 they become statements on a page-level Subject, not loose values.
 
-Two editing/storage options, undecided (needs HW input):
-
-- **Wikitext-sourced.** A `<propertiestable>` tag holds the table in the page body, edited inline in the visual
-  editor; on save it is parsed into a read-only derived Subject. Wikitext is the source of truth; this is a Source and
-  depends on the Source backbone. The tag and parsing can live in a separate extension (supporting both SMW and
-  NeoWiki backends), keeping wikitext out of NeoWiki core.
-- **Dedicated editor.** A NeoWiki table editor over a normal writeable, versioned slot Subject; no wikitext, but loses
-  the in-body authoring parity.
-
-The tag may name its schema (`<propertiestable schema="...">`), optionally defaulting to a page-type's schema or a
-configured default.
+The authoring/storage mechanism lives in an **extension**, not core: an extension can register its own read-only
+engineered Source that parses page wikitext (a `<propertiestable>`-style tag), or offer a dedicated editor over
+ordinary local Subjects. Core supplies only the engineered-source plugin point and the schema-backing — nothing
+Confluence- or wikitext-specific. The wikitext-vs-editor choice is HW's product decision.
 
 ## Fit with the farm and with ECHOLOT
 
@@ -203,34 +199,39 @@ id; rich chain-of-production provenance is a separate model.
 
 ## Open questions
 
-Needs stakeholder (HW) input:
+### Resolved with HW (2026-06-11)
 
-1. **In-View vs query-enough.** Is rendering page/approval metadata inside a View required, or is
-   queryable-for-dashboards enough for a first version? (Sizes the work substantially.)
-2. **Free-form tables:** wikitext-sourced (in-body parity) or dedicated editor?
-3. **Page owner / audit date:** user-set (ordinary writeable Subject, a revision on change being correct) or
-   system-managed?
-4. **Farm topology:** confirm the farm uses a single shared graph and a single shared (global) schema set.
+- **In-View vs query-enough → query-enough.** HW does not need page/approval metadata rendered via the View system for
+  the MVP; they query the shared graph (Cypher) and render dashboards in their own UI. So View-rendering of sourced
+  Subjects — the §Rendering load-seam work and the in-View parts of §Sequencing — is **off HW's MVP path**.
+- **Page owner / approval → split, accepted.** Page owner is user-set (edited via the page → a writeable Subject);
+  approval data is extension-managed (a separate Subject). HW accepts the two-Subject split and combines the data in
+  its own rendering.
+- **Farm topology → shared graph; per-wiki schemas.** Single shared graph confirmed. Schemas are per-wiki with a
+  delivered common baseline (not a single global set); the cross-wiki View limitation and graceful degradation are in
+  §Schema identity.
+- **Materialisation → mandatory** for all HW use cases (not read-time-only).
 
-Technical / design:
+### Still open
 
-5. **Source interface contract** for by-id and query (per-page being a deterministic by-id).
-6. **Materialisation of page metadata as Subject nodes** vs page-node-only — driven by whether uniform `:Subject`
-   querying across page and subject metadata is wanted.
-7. **Federation resolution** (fetch-at-read vs cache/materialise) and **shared-graph instance tagging** (the farm
-   deliverable proper).
-8. **History-page rendering** for non-history-correct sourced Subjects (show current values, or hide them?).
+- **Source interface contract** for by-id and query (per-page being a deterministic by-id).
+- **Federation resolution** (fetch-at-read vs cache/materialise) and **shared-graph instance tagging** (the farm
+  deliverable proper).
+- **History-page rendering** for non-history-correct sourced Subjects (show current values, or hide them?).
 
 ## Sequencing
 
-1. **First slice:** a single-wiki page-metadata read-only Subject rendered in a View — the smallest end-to-end path
-   that proves read-only Subjects, read-only Schemas, the source-aware load seam, and the `(source, localId)`
-   identity. No external dependencies and no instance axis yet, but the id is designed so an instance qualifier can be
-   added without repaint.
-2. **No-regret win:** the refresh-without-edit operation for approval, independent of the larger questions.
-3. **De-risk:** pin down the Source interface contract (by-id + query) and the identity type.
-4. **Gated on the answers above:** in-View composition for control-document headers, free-form tables, and the
-   multi-wiki shared-graph + ACL-filtered query work.
+HW's MVP path is **materialise sourced data as queryable Subjects, then query it** (their dashboards) — View-system
+rendering is off that path (query-enough). So:
+
+1. **HW MVP core:** materialise approval/page metadata as queryable Subjects, plus the refresh-without-edit operation
+   so extension data updates without a page revision. Largely reuses the existing page-property provider mechanism.
+2. **De-risk the model:** pin down the Source interface contract (by-id + query) and the `(source, localId)` identity
+   type — foundational, no stakeholder input needed.
+3. **Architecture-proving slice (lower HW priority):** a page-metadata read-only Subject rendered in a View — proves
+   read-only Subjects, read-only Schemas and the source-aware load seam, but View display is not on HW's MVP path.
+4. **Later:** the multi-wiki shared-graph + per-wiki-schema + graceful-degradation + ACL-filtered-query work; and, for
+   the general model rather than HW's MVP, in-View composition of multiple Subjects.
 
 ## Related
 
