@@ -2,7 +2,7 @@
 
 This is an early design document for stakeholder feedback before we start implementation and record decisions via a new ADR.
 
-Started 2026-06-06 by Jeroen De Dauw based on approx 6 hours of investigation/design.
+Started 2026-06-06 by Jeroen De Dauw based on approx 7.5 hours of investigation/design.
 Reviewed and refined by Opus 4.8 and Alistair.
 
 ## Summary
