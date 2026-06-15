@@ -71,7 +71,9 @@ class GetSchemaQueryTest extends TestCase {
             "required": false,
             "default": null,
             "multiple": false,
-            "uniqueItems": false
+            "uniqueItems": false,
+            "minLength": null,
+            "maxLength": null
         }
     }
 }

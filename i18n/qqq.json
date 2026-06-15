@@ -145,6 +145,8 @@
 	"neowiki-field-single-value-only": "Validation error shown when multiple values are selected for a single-select property.",
 	"neowiki-field-type-mismatch": "Validation error shown when a Statement's stored type no longer matches the property's current type (e.g. the Schema changed after the value was saved). $1 is the type the value was written as; $2 is the type the property now expects.",
 	"neowiki-field-schema-not-found": "Form-level error shown when the backend reports the Subject's Schema page is missing. $1 is the schema name.",
+	"neowiki-field-min-length": "Validation error shown when a text value is shorter than the property's minimum length. $1 is the minimum number of characters.",
+	"neowiki-field-max-length": "Validation error shown when a text value is longer than the property's maximum length. $1 is the maximum number of characters.",
 	"neowiki-select-placeholder": "Placeholder text shown in the select dropdown before any option is chosen.",
 	"neowiki-select-no-results": "Message shown in the multi-select dropdown when the typed text does not match any available option.",
 	"neowiki-field-invalid-datetime": "Validation error shown when the entered date and time value cannot be parsed. DateTime values must be strict ISO 8601 / xsd:dateTime strings with an explicit timezone offset or 'Z' (for example, '2025-06-15T12:00:00Z' or '2025-06-15T12:00:00+02:00'). Partial values such as year-only or date-only are rejected, and min/max bounds are inclusive.",

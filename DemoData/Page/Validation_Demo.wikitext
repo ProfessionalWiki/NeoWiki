@@ -14,18 +14,34 @@ With this flag on, writes that introduce new violations are rejected with HTTP 4
 
 * [[Validation Clean]] — a Subject with every property filled in correctly. Use it as the starting point for the recipes below.
 
-The [[Schema:Validation Demo|Validation Demo]] schema has four properties spanning the validation surface:
+The [[Schema:Validation Demo|Validation Demo]] schema has one or more properties for every validatable Property Type, so you can trigger each rule by typing a bad value in the editor:
 
 {| class="wikitable"
-! Property !! Type !! Notes
+! Property !! Type !! What to try
 |-
-| Title || text, required || A simple required text field.
+| Title || text, required || Clear it and save to see a "required" error.
+|-
+| Summary || text, minLength 10 / maxLength 100 || Type fewer than 10 or more than 100 characters to trigger a length violation. (This length rule was just added to the backend.)
+|-
+| Aliases || text, multi, unique || Add two identical entries to trigger a duplicate violation.
 |-
 | Homepage || url, required || A single required URL. Empty triggers a "required" error inline.
 |-
-| Tags || url, multi || Optional list of URLs. Changing one entry to a non-http(s) URL triggers a per-entry <code>invalid-url</code> violation under enforcement; only the offending sub-input is decorated.
+| Tags || url, multi || Change one entry to a non-http(s) URL to trigger a per-entry <code>invalid-url</code> violation; only the offending sub-input is decorated.
+|-
+| Score || number, 0–100, precision 2 || Enter a value below 0 or above 100 to trigger a bounds violation.
 |-
 | Status || select, required || A required choice between three options.
+|-
+| Topics || select, multi || Pick any combination of options.
+|-
+| Featured || boolean || A simple on/off flag.
+|-
+| Release date || date, 2020-01-01 – 2030-12-31 || Pick a date outside the range to trigger a bounds violation.
+|-
+| Last reviewed || dateTime, 2020-01-01 – 2030-12-31 (UTC) || Pick a moment outside the range to trigger a bounds violation.
+|-
+| Related product || relation to Product || Points at a Product subject.
 |}
 
 == Recipes ==

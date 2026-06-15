@@ -28,9 +28,9 @@ export class TextType extends BasePropertyType<TextProperty, StringValue> {
 		return {
 			...base,
 			multiple: json.multiple ?? false,
-			uniqueItems: json.uniqueItems ?? true,
-			minLength: json.minLength,
-			maxLength: json.maxLength,
+			uniqueItems: json.uniqueItems ?? false,
+			minLength: json.minLength ?? undefined,
+			maxLength: json.maxLength ?? undefined,
 		} as TextProperty;
 	}
 
@@ -46,7 +46,13 @@ export class TextType extends BasePropertyType<TextProperty, StringValue> {
 		// TODO: check property.multiple
 
 		for ( const part of value.parts ) {
-			if ( property.minLength !== undefined && part.trim().length < property.minLength ) {
+			const trimmedLength = part.trim().length;
+
+			if ( trimmedLength === 0 ) {
+				continue;
+			}
+
+			if ( property.minLength !== undefined && trimmedLength < property.minLength ) {
 				errors.push( {
 					code: 'min-length',
 					args: [ property.minLength ],
@@ -54,7 +60,7 @@ export class TextType extends BasePropertyType<TextProperty, StringValue> {
 				} );
 			}
 
-			if ( property.maxLength !== undefined && part.trim().length > property.maxLength ) {
+			if ( property.maxLength !== undefined && trimmedLength > property.maxLength ) {
 				errors.push( {
 					code: 'max-length',
 					args: [ property.maxLength ],

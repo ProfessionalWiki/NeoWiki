@@ -96,6 +96,28 @@ describe( 'newTextProperty', () => {
 	} );
 } );
 
+describe( 'createPropertyDefinitionFromJson', () => {
+	const type = new TextType();
+
+	it( 'defaults uniqueItems to false when omitted, matching the backend', () => {
+		const property = type.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Tags' ), type: 'text', description: '', required: false },
+			{ type: 'text' },
+		);
+
+		expect( property.uniqueItems ).toBe( false );
+	} );
+
+	it( 'preserves an explicit uniqueItems value', () => {
+		const property = type.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Tags' ), type: 'text', description: '', required: false },
+			{ type: 'text', uniqueItems: true },
+		);
+
+		expect( property.uniqueItems ).toBe( true );
+	} );
+} );
+
 describe( 'validate', () => {
 	const textType = new TextType();
 
@@ -188,6 +210,18 @@ describe( 'validate', () => {
 		} );
 
 		const errors = textType.validate( newStringValue( [ '123' ] ), property );
+
+		expect( errors ).toEqual( [] );
+	} );
+
+	it( 'treats null length bounds from backend serialization as unset', () => {
+		// The PHP serializer emits minLength/maxLength as null when unset; null must not act as a bound.
+		const property = textType.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Notes' ), type: 'text', description: '', required: false },
+			{ type: 'text', minLength: null, maxLength: null },
+		);
+
+		const errors = textType.validate( newStringValue( [ 'any non-empty value' ] ), property );
 
 		expect( errors ).toEqual( [] );
 	} );
