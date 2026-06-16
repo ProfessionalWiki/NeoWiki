@@ -21,7 +21,7 @@ NeoWiki has two stores, and understanding the split explains the rest of this gu
   in a dedicated `neo` revision slot. This is the source of truth, versioned like any other wiki content.
 - **Neo4j holds a regenerable secondary projection.** The graph database is a query-optimized copy of the canonical
   data. It can be wiped and rebuilt at any time from the revision slots via
-  `maintenance/RebuildGraphDatabases.php`, so it never holds data you cannot recover.
+  `maintenance/run.php NeoWiki:RebuildGraphDatabases`, so it never holds data you cannot recover.
 
 Although the projection is regenerable, **Neo4j is effectively required today**. The wiki throws a `RuntimeException`
 on *every* request until both Neo4j connection URLs are configured, and page edits that touch structured data fail if
@@ -163,7 +163,7 @@ If subject pages already exist in the wiki (for example after an import), build 
 canonical revision-slot data:
 
 ```sh
-php extensions/NeoWiki/maintenance/RebuildGraphDatabases.php
+php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
 
 ## Configuration reference

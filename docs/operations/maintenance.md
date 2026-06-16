@@ -15,11 +15,10 @@ secondary projection** in Neo4j. The graph can be wiped and rebuilt at any time 
 MediaWiki root:
 
 ```sh
-php extensions/NeoWiki/maintenance/RebuildGraphDatabases.php
+php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
 
-This is run by **full path**, not as a registered MediaWiki maintenance-script name (it is not registered with
-`maintenance/run.php`). It re-saves every Subject from each page's latest revision.
+It re-saves every Subject from each page's latest revision.
 
 Run it when you need to:
 
@@ -60,7 +59,7 @@ After upgrades that **change the projection encoding**, also rebuild the graph s
 format:
 
 ```sh
-php extensions/NeoWiki/maintenance/RebuildGraphDatabases.php
+php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
 
 Because NeoWiki is **pre-release software**, breaking schema and data-format changes can land between versions without
