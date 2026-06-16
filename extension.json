@@ -150,6 +150,14 @@
 				"default": { "timeoutSeconds": 30, "maxRows": 5000 },
 				"expensive": { "timeoutSeconds": 300, "maxRows": 50000 }
 			}
+		},
+		"NeoWikiNeo4jInternalWriteUrl": {
+			"description": "Bolt URL NeoWiki uses to write the graph projection to Neo4j.",
+			"value": null
+		},
+		"NeoWikiNeo4jInternalReadUrl": {
+			"description": "Bolt URL NeoWiki uses for read and query traffic against Neo4j; should use a least-privilege Neo4j user.",
+			"value": null
 		}
 	},
 
