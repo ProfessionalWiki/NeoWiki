@@ -121,11 +121,9 @@ wfLoadExtension( 'ParserFunctions' );
 $wgNeoWikiEnableDevelopmentUI = false; // keep dev UI off
 ```
 
-The two Neo4j URL settings have **no default**. Until both are set, the wiki throws a `RuntimeException` on every
-request. The URL format is `bolt://user:password@host:7687`; the `neo4j://` scheme and the other connection schemes
-supported by the laudis client also work. Note that these two settings are **not yet registered in
-`extension.json`**, so they do **not** appear on `Special:Version`. This is tracked in
-[issue #876](https://github.com/ProfessionalWiki/NeoWiki/issues/876).
+Both Neo4j URL settings are **required**: until both are set, the wiki throws a `RuntimeException` on every request.
+The URL format is `bolt://user:password@host:7687`; the `neo4j://` scheme and the other connection schemes supported
+by the laudis client also work.
 
 ### 4. Create the read-only Neo4j user
 
