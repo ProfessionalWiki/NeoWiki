@@ -5,83 +5,78 @@ order: 1
 
 # Installing NeoWiki
 
-NeoWiki is **pre-release software** (`0.0.0-alpha`, an experimental proof of concept). It is not production ready,
-and breaking changes — including breaking schema and data-format changes — can land at any time without a migration
-path. Treat any install as an **evaluation or pilot**, run it on disposable data, and expect to rebuild. Before
-exposing an instance to others, read the [security policy](../../SECURITY.md).
+NeoWiki is pre-release software. It is not production ready, and breaking changes can land at any time without a
+migration path. Treat any install as an evaluation or pilot and run it on disposable data.
 
-This guide covers two installation methods: a self-contained Docker stack (recommended for evaluation) and a manual
-install into an existing MediaWiki.
+There are two ways to install NeoWiki, both covered below. The Docker stack is self-contained and the fastest way to a
+working wiki, so use it for evaluation. The manual install adds NeoWiki to a MediaWiki you already run.
 
-## How NeoWiki stores data
+## Method A: Docker
 
-NeoWiki has two stores, and understanding the split explains the rest of this guide:
+You need:
 
-- **Canonical data lives in MediaWiki revision slots.** Every Schema, Subject, and Layout is stored as page content
-  in a dedicated `neo` revision slot. This is the source of truth, versioned like any other wiki content.
-- **Neo4j holds a regenerable secondary projection.** The graph database is a query-optimized copy of the canonical
-  data. It can be wiped and rebuilt at any time from the revision slots via
-  `maintenance/run.php NeoWiki:RebuildGraphDatabases`, so it never holds data you cannot recover.
+- Docker with Docker Compose
+- GNU Make
 
-Although the projection is regenerable, **Neo4j is effectively required today**. The wiki throws a `RuntimeException`
-on *every* request until both Neo4j connection URLs are configured, and page edits that touch structured data fail if
-Neo4j is unreachable. [ADR 019](../adr/019-graph-database-architecture.md) describes the longer-term intent of
-treating the graph backend as an optional, pluggable component; that is the direction, not the current behaviour.
+The commands assume a Unix-like shell, so on Windows run them under WSL.
 
-## Prerequisites
-
-| Requirement | Notes |
-|---|---|
-| MediaWiki ≥ 1.43.0 | The minimum supported core version. |
-| PHP 8.3 with `ext-json` | `composer.json` requires `^8.3` (PHP 8.3 or a later 8.x). |
-| Composer | NeoWiki has runtime Composer dependencies (e.g. `laudis/neo4j-php-client`, `opis/json-schema`). `vendor/` is not shipped, so `composer install` is mandatory. |
-| Neo4j 5.x reachable over Bolt | The graph backend. Must be reachable from the wiki over the Bolt protocol. |
-| Node (manual install only) | The frontend bundle must be built from source. Built and verified on **Node 24**. Not needed for the Docker method, which builds the bundle inside the image. |
-
-Recommended soft-dependency extensions. NeoWiki loads and runs without them, but you lose the corresponding
-functionality:
-
-- **Scribunto** — the Lua API (`nw.*` functions).
-- **CodeEditor** — syntax-highlighted JSON editing of Schema, Subject, and Layout pages.
-- **ParserFunctions** — commonly used alongside NeoWiki's own parser functions.
-
-## Method A — Docker (recommended)
-
-The repository ships a self-contained Docker stack that is the fastest way to get a working evaluation instance. Do
-not duplicate the recipe here — follow the **"Server deployment"** section of the
-[Docker deployment README](../../Docker/README.md). In short, after bringing the stack up you run:
+Download the `ProfessionalWiki/NeoWiki` repository and run these commands from its root:
 
 ```sh
+make up
 make install-db
 make load-neo4j-users
 make import-demo-data
 ```
 
-A few things about the bundled stack that matter for an evaluation:
+Open `http://localhost:8484` and log in as `AdminName` with the password `AdminPassword`.
 
-- **The stack ships its own databases.** It includes its own MariaDB and Neo4j services — you do not need to provide
-  either. The bundled Neo4j image is **Enterprise edition on an EVAL (non-production) license**. That license is fine
-  for evaluation but is not a basis for production use.
-- **The development UI is left ON.** The bundled `SettingsTemplate.php` enables the development-only UIs. For anything
-  beyond a throwaway demo, set `$wgNeoWikiEnableDevelopmentUI = false`, and change **every** value marked
-  `# Change for production` in `Docker/.env.dist` — at minimum `MARIADB_PASSWORD`, `MW_ADMIN_PASSWORD`,
-  `NEO4J_PASSWORD`, `NEO4J_PASSWORD_READ`, and `MW_SERVER`. The defaults are well-known and unsafe to expose.
+You now have a complete evaluation instance with the development UI enabled and demo data loaded.
 
-## Method B — Add to an existing MediaWiki (manual)
+### Optional: share the demo with others
 
-Use this method to add NeoWiki to a MediaWiki you already run. The steps below assume the extension is checked out
-at `extensions/NeoWiki/` under your MediaWiki root.
+By default, the stack runs on localhost. To let others reach it, host it on a server. Edit `Docker/.env` and change
+every value marked `# Change for production`, which covers the passwords and `MW_SERVER`. Then start the stack with the
+`server` profile, which adds automatic HTTPS through Caddy:
 
-### 1. Wire up Composer dependencies
+```sh
+docker compose --profile server up -d
+```
 
-NeoWiki's runtime dependencies are installed via MediaWiki's Composer merge plugin. Add NeoWiki's `composer.json` to
+Then run the make commands listed above against it. This is still an evaluation setup, not a production deployment.
+
+## Method B: Add to an existing MediaWiki
+
+Use this to add NeoWiki to a MediaWiki you already run. You provide the surrounding services yourself.
+
+### Requirements
+
+| Requirement               | Notes |
+|---------------------------|--|
+| MediaWiki 1.43.0 or later | |
+| PHP 8.3 with `ext-json`   | |
+| Composer                  | Installs NeoWiki's runtime dependencies. No `vendor/` is shipped. |
+| Neo4j 5.x over Bolt       | The graph backend. A reachable instance is required. |
+| Node.js 24 or later       | Needed only to build the frontend bundle in step 2. |
+
+These extensions are recommended. NeoWiki runs without them, but you lose the matching functionality:
+
+- **Scribunto** adds the Lua API and its `nw.*` functions.
+- **CodeEditor** adds JSON syntax highlighting when you edit Schema and Layout pages.
+- **ParserFunctions** is commonly used alongside NeoWiki's parser functions.
+
+The steps below assume the extension is checked out at `extensions/NeoWiki/` under your MediaWiki root.
+
+### 1. Install Composer dependencies
+
+NeoWiki's runtime dependencies are installed through MediaWiki's Composer merge plugin. Add NeoWiki's `composer.json` to
 your wiki's root `composer.local.json`:
 
 ```json
 { "extra": { "merge-plugin": { "include": [ "extensions/NeoWiki/composer.json" ] } } }
 ```
 
-Then, from the **MediaWiki root**, install the dependencies:
+Then run this from the MediaWiki root:
 
 ```sh
 composer update
@@ -89,17 +84,15 @@ composer update
 
 ### 2. Build the frontend bundle
 
-The compiled frontend lives in `resources/ext.neowiki/dist/`, which is **git-ignored**. A bare clone therefore ships
-no JavaScript or CSS, and ResourceLoader has nothing to serve — there is no working UI until you build it. The build
-runs standalone and requires Node (built and verified on **Node 24**):
+The compiled frontend is git-ignored, so a fresh clone ships no UI until you build it. The build is standalone and
+needs Node.js 24 or later:
 
 ```sh
 cd extensions/NeoWiki/resources/ext.neowiki
-npm ci && npm run build   # produces dist/neowiki.js + dist/neowiki.css
+npm ci && npm run build
 ```
 
-Shipping pre-built JavaScript with releases is the intended future fix, so that operators will not need Node at all.
-That is **not in place yet**, so building from source is currently mandatory.
+This produces `dist/neowiki.js` and `dist/neowiki.css`.
 
 ### 3. Load and configure the extension
 
@@ -108,103 +101,85 @@ Add the following to your `LocalSettings.php`:
 ```php
 wfLoadExtension( 'NeoWiki' );
 
-// Required — NeoWiki has no working state without a Neo4j connection.
-// Both URLs may point at the same Neo4j instance; use a least-privilege user for the read URL.
+// Required. NeoWiki has no working state without a Neo4j connection.
+// For a simple setup, point both URLs at the same Neo4j user.
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:SECRET@neo4j-host:7687';
-$wgNeoWikiNeo4jInternalReadUrl  = 'bolt://mediawiki_read:SECRET@neo4j-host:7687';
+$wgNeoWikiNeo4jInternalReadUrl  = 'bolt://neo4j:SECRET@neo4j-host:7687';
 
-// Recommended soft-deps for full functionality.
-wfLoadExtension( 'Scribunto' );      // Lua API
-wfLoadExtension( 'CodeEditor' );     // JSON editing of Schema/Subject/Layout pages
+// Recommended soft dependencies.
+wfLoadExtension( 'Scribunto' );
+wfLoadExtension( 'CodeEditor' );
 wfLoadExtension( 'ParserFunctions' );
-
-$wgNeoWikiEnableDevelopmentUI = false; // keep dev UI off
 ```
 
-Both Neo4j URL settings are **required**: until both are set, the wiki throws a `RuntimeException` on every request.
-The URL format is `bolt://user:password@host:7687`; the `neo4j://` scheme and the other connection schemes supported
-by the laudis client also work.
+Both URLs are required. Until both are set, the wiki throws a `RuntimeException` on every request. The format is
+`bolt://user:password@host:7687`.
 
-### 4. Create the read-only Neo4j user
+### 4. Run the updater
 
-NeoWiki expects the read URL to use a **least-privilege** user, so that read/query traffic cannot modify the graph
-([ADR 013](../adr/013-restrict-neo4j-access.md)). Create that user in Neo4j:
-
-```cypher
-CREATE USER mediawiki_read SET PASSWORD 'SECRET' CHANGE NOT REQUIRED;
-GRANT ROLE reader TO mediawiki_read;
-```
-
-Role-based access control is a **Neo4j Enterprise** feature. On **Community Edition** you cannot create the
-role-restricted user, so point both `$wgNeoWikiNeo4jInternalWriteUrl` and `$wgNeoWikiNeo4jInternalReadUrl` at the same
-user. This works, but you lose the read/write privilege-separation security layer described in ADR 013.
-
-### 5. Create uniqueness constraints
-
-NeoWiki does **not** create its graph uniqueness constraints automatically yet
-([issue #874](https://github.com/ProfessionalWiki/NeoWiki/issues/874)). Until that is wired into install, create them
-manually in Neo4j:
-
-```cypher
-CREATE CONSTRAINT Page_id IF NOT EXISTS FOR (n:Page) REQUIRE n.id IS UNIQUE;
-CREATE CONSTRAINT Subject_id IF NOT EXISTS FOR (n:Subject) REQUIRE n.id IS UNIQUE;
-```
-
-### 6. Finish the install
-
-NeoWiki adds no SQL tables of its own, but run MediaWiki's updater anyway — it is standard practice when installing
-any extension. From the MediaWiki root:
+Run this from the MediaWiki root:
 
 ```sh
 php maintenance/run.php update --quick
 ```
 
-If subject pages already exist in the wiki (for example after an import), build the Neo4j projection from the
-canonical revision-slot data:
+If your wiki already has subject pages, build the Neo4j projection from MediaWiki:
 
 ```sh
 php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
 
-## Configuration reference
+### 5. Verify your install
+
+1. **Create a Schema.** Go to Special:Schemas and create your first Schema
+2. **Add a Subject.** On an ordinary wiki page, use "Create subject" or "Manage subjects" to create your first Subject
+3. **Render a View.** On that same page, source edit the wikitext and add the following. With no id it renders the
+   page's Main Subject:
+   ```
+   {{#view:}}
+   ```
+
+4. **Query the graph.** Only this step checks the Neo4j projection. On any page, add a Cypher query that lists the
+   stored pages, independent of your data model:
+   ```
+   {{#cypher_raw: MATCH (p:Page) RETURN p.name }}
+   ```
+   The result renders as JSON. If Neo4j is unreachable, it renders an error instead.
+
+If all four steps work, your install is complete.
+
+## Key settings
+
+These are the settings you are most likely to change. For the full list with descriptions and defaults, see the
+`config` section of [`extension.json`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/extension.json).
 
 | Setting | Purpose | Default | Required |
 |---|---|---|---|
-| `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL NeoWiki writes the graph projection through | none | Yes |
-| `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read/query traffic (least-privilege user) | none | Yes |
-| `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No — keep `false` in production |
-| `$wgNeoWikiEnforceValidation` | Reject writes that introduce new constraint violations; when `false`, violations are reported but the write still persists | `false` | No |
-| `$wgNeoWikiQueryLimits` | Per-tier Cypher caps: `default` 30s/5000 rows, `expensive` 300s/50000 rows | see code | No |
+| `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | Yes |
+| `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | Yes |
+| `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
+| `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new constraint violations | `false` | No |
 
-NeoWiki also registers the following access-control and namespace defaults you may want to tune:
+## Production hardening
 
-- **Rights:** `neowiki-schema-edit`, `neowiki-layout-edit`, and `neowiki-query`. `neowiki-query` is granted to
-  **everyone** by default; restrict or grant it per group via `$wgGroupPermissions`.
-- **Rate limits** on `neowiki-query`: anonymous 10/60s, logged-in users 60/60s, bots 1000/60s. Adjust via
-  `$wgRateLimits`.
-- **Namespaces 7474–7477** are registered by NeoWiki. Watch for ID collisions with other extensions that use the same
-  range.
+NeoWiki is pre-release, so this is not needed for an evaluation. It applies later, when NeoWiki is production-ready.
 
-## Verify your install
+### Separate read and write Neo4j users
 
-Confirm the install end to end:
+This applies only to wikis that use Neo4j as the graph backend.
 
-1. **Create a Schema.** Create a page in the Schema namespace defining a simple type (e.g. a `Person` schema with a
-   `name` property). The CodeEditor soft-dependency gives you JSON syntax highlighting here.
-2. **Add a Subject.** On an ordinary wiki page, add a Subject that uses that Schema and set the property. Subjects
-   live on normal pages (in the `neo` slot), not in a dedicated namespace.
-3. **Render a View.** On a normal wiki page, add a view of the Subject and confirm it renders:
+Give read and query traffic its own Neo4j user that cannot modify the graph. Create a read-only user:
 
-   ```
-   {{#view: <your-subject-id>}}
-   ```
+```cypher
+CREATE USER neowiki_read SET PASSWORD 'SECRET' CHANGE NOT REQUIRED;
+GRANT ROLE reader TO neowiki_read;
+```
 
-4. **Hit a REST route.** Confirm the API responds. See the [REST API reference](../reference/rest-api.md) for the
-   full list of routes; for example, to fetch a Subject:
+Then update the read URL to use it. Leave the write URL on the full-access user:
 
-   ```sh
-   curl -s 'https://your-wiki.example/rest.php/neowiki/v0/subject/<your-subject-id>'
-   ```
+```php
+$wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:SECRET@neo4j-host:7687';
+$wgNeoWikiNeo4jInternalReadUrl  = 'bolt://neowiki_read:SECRET@neo4j-host:7687';
+```
 
-If all four steps work, the canonical store, the Neo4j projection, the frontend bundle, and the API are all wired up
-correctly.
+This needs Neo4j Enterprise. On Community Edition, keep both URLs on the same user.
