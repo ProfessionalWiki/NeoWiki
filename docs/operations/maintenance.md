@@ -20,7 +20,6 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
 It re-saves every Subject from each page's latest revision. Run it to:
 
 - Recover after a Neo4j wipe or restore.
-- Refresh the projection after an upgrade that changes how data is stored.
 - Fix drift, such as the stale `Page.name` values left by page moves.
 
 Two things to plan around:
@@ -29,6 +28,21 @@ Two things to plan around:
   guaranteed-clean result, wipe the Neo4j data volume before rebuilding.
 - It runs as a single sequential process with no batching or resume, so the time scales with the number of pages. Plan
   downtime on large wikis.
+
+## Upgrades
+
+NeoWiki adds no database tables of its own, so an upgrade is a code swap plus MediaWiki's standard updater. Update the
+NeoWiki code, then run the updater from the MediaWiki root:
+
+```sh
+php maintenance/run.php update --quick
+```
+
+If the new version changes how data is stored in the graph, [rebuild the projection](#rebuilding-the-graph) afterwards
+so it matches.
+
+NeoWiki is pre-release, so a new version can change the schema or data format with no migration path. Your evaluation
+data may not survive an upgrade, so be ready to rebuild it from scratch.
 
 ## Current limitations
 
