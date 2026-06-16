@@ -91,9 +91,7 @@ When a Subject is deleted but still has incoming relations from other Subjects, 
 ## Constraints
 
 Two uniqueness constraints are intended for the graph — `Page.id` is unique and `Subject.id` is unique. These are
-**not** created automatically yet; an operator must create them manually (see the
-[installation guide](../operations/installation.md)) until
-[#874](https://github.com/ProfessionalWiki/NeoWiki/issues/874) wires them into the install/rebuild path.
+**not** created automatically yet ([#874](https://github.com/ProfessionalWiki/NeoWiki/issues/874)).
 
 ## Related Documentation
 
