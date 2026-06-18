@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 use InvalidArgumentException;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
-use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Page\ProperPageIdentity;
@@ -186,17 +185,6 @@ class NeoWikiHooks {
 
 	public static function onRevisionUndeleted( RevisionRecord $restoredRevision, ?int $oldPageId ): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageUndelete( $restoredRevision );
-	}
-
-	public static function onPageMoveComplete(
-		LinkTarget $old,
-		LinkTarget $new,
-		UserIdentity $userIdentity,
-		int $pageId,
-		int $redirectId,
-		string $reason,
-		RevisionRecord $revision
-	): void {
 	}
 
 	public static function onEditFilter( EditPage $editPage, ?string $text, ?string $section, string &$error ): void {
