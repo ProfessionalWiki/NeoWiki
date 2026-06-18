@@ -107,11 +107,7 @@
 		"*": {
 			"neowiki-query": true
 		},
-		"sysop": {
-			"neowiki-schema-edit": true,
-			"neowiki-layout-edit": true
-		},
-		"interface-admin": {
+		"user": {
 			"neowiki-schema-edit": true,
 			"neowiki-layout-edit": true
 		}
