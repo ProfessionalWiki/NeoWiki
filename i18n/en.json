@@ -10,6 +10,10 @@
 	"neowiki-name": "NeoWiki",
 	"neowiki-description": "TODO",
 
+	"right-neowiki-schema-edit": "Create and edit NeoWiki schemas",
+	"right-neowiki-layout-edit": "Create and edit NeoWiki layouts",
+	"right-neowiki-query": "Run NeoWiki queries",
+
 	"specialpages-group-neowiki": "NeoWiki",
 	"neowiki-special-schemas": "Schemas",
 
