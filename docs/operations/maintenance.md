@@ -20,7 +20,7 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
 It re-saves every Subject from each page's latest revision. Run it to:
 
 - Recover after a Neo4j wipe or restore.
-- Fix drift, such as the stale `Page.name` values left by page moves.
+- Fix any drift between the Neo4j copy and the canonical revision slots.
 
 Two things to plan around:
 
@@ -46,9 +46,7 @@ data may not survive an upgrade, so be ready to rebuild it from scratch.
 
 ## Current limitations
 
-Two known limitations while NeoWiki is pre-release:
+One known limitation while NeoWiki is pre-release:
 
-- **Page moves do not update the graph.** Moving or renaming a page leaves its `Page.name` in Neo4j stale until you
-  rebuild. Tracked in #875.
 - **A Neo4j outage blocks writes.** Edits, deletes, and undeletes fail while Neo4j is unreachable; only reads and
   queries keep working. Tracked in #877.
