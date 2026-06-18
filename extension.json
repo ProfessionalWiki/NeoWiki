@@ -117,6 +117,16 @@
 		}
 	},
 
+	"GrantPermissions": {
+		"basic": {
+			"neowiki-query": true
+		},
+		"editpage": {
+			"neowiki-schema-edit": true,
+			"neowiki-layout-edit": true
+		}
+	},
+
 	"RateLimits": {
 		"neowiki-query": {
 			"anon": [ 10, 60 ],
