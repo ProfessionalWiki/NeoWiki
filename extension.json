@@ -260,7 +260,8 @@
 			"dependencies": [
 				"vue",
 				"pinia",
-				"mediawiki.user"
+				"mediawiki.user",
+				"mediawiki.storage"
 			],
 			"codexComponents": [
 				"CdxAccordion",
