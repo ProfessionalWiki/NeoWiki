@@ -14,7 +14,13 @@ If you are not familiar with the NeoWiki terminology yet, see [the glossary](../
 
 ### Medium Priority
 
-* Verify the current data model (Property-graph-like Subjects and multi-Subject support) is workable for provenance.
+* Provenance scope and ownership. The grant and the D2.1 spec call for fine-grained chain-of-production provenance
+  and rights metadata. Intended boundary: NeoWiki core provides the *foundation* — MediaWiki's per-revision
+  authorship/versioning of statements, extension points, and per-page named graphs (data origin) — while the
+  provenance/rights *model* (T2.4) and a dedicated provenance/rights plug-in (T3.4) provide the fine-grained
+  capture on top, rather than it being built into the core data model. Open: verify the data model and named-graph
+  design can carry what the plug-in needs, as distinct from operational per-page named graphs (see
+  [RdfMapping.md](RdfMapping.md) Q5).
 * Does the [RDF mapping stwaman proposal](RdfMapping.md) go in the right direction? What needs to be adjusted?
 * Is our [Graph Model](../reference/graph-model.md) OK? In particular, is it OK to have non-Subject data in there, like the connected
   MediaWiki pages? (80% likely, briefly covered in Vienna: can filter out these values when querying)
