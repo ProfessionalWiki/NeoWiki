@@ -281,7 +281,7 @@ ECHOLOT's provenance model (T2.4) have implications for named graph design?
 *Resolved: No CH conventions exist for named graph usage. Per-page named graphs are fine for operational
 purposes. Note: per-page named graphs record only data origin (which page), not chain-of-production provenance;
 the latter is handled by the provenance model (T2.4) and a dedicated provenance plug-in (T3.4) on top of NeoWiki's
-extension points and MediaWiki versioning, not by the base mapping. See [planning/ECHOLOT.md](ECHOLOT.md).*
+extension points and MediaWiki versioning, not by the base mapping. See [ECHOLOT.md](ECHOLOT.md).*
 
 **Q6: Base URI conventions.** Should the base URI be the wiki's URL (e.g., `https://mywiki.example.org/`)? Is
 there a convention in the ECHOLOT/ECCCH context for how services should mint URIs?
