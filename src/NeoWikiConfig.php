@@ -10,6 +10,7 @@ readonly class NeoWikiConfig {
 		public bool $enableDevelopmentUIs,
 		public string $neo4jInternalWriteUrl,
 		public string $neo4jInternalReadUrl,
+		public string $wikiId,
 	) {
 	}
 

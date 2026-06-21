@@ -29,6 +29,7 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 			$client = NeoWikiExtension::getInstance()->getNeo4jClient();
 			$client->run( 'MATCH (n) DETACH DELETE n' );
 			$client->run( 'DROP CONSTRAINT `Page id` IF EXISTS' );
+			$client->run( 'DROP CONSTRAINT `Page wiki_id id` IF EXISTS' );
 			$client->run( 'DROP CONSTRAINT `Subject id` IF EXISTS' );
 		}
 		catch ( \Exception ) {

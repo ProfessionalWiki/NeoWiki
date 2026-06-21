@@ -57,7 +57,8 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 			$this->pageId,
 			$this->schemaLookup,
 			$valueBuilderRegistry ?? Neo4jValueBuilderRegistry::withCoreBuilders(),
-			$this->logger
+			$this->logger,
+			'test_wiki',
 		);
 	}
 

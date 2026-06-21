@@ -14,7 +14,8 @@ class Neo4jSubjectUpdaterFactory {
 	public function __construct(
 		private readonly SchemaLookup $schemaLookup,
 		private readonly Neo4jValueBuilderRegistry $valueBuilderRegistry,
-		private readonly LoggerInterface $logger
+		private readonly LoggerInterface $logger,
+		private readonly string $wikiId,
 	) {
 	}
 
@@ -24,7 +25,8 @@ class Neo4jSubjectUpdaterFactory {
 			$pageId,
 			$this->schemaLookup,
 			$this->valueBuilderRegistry,
-			$this->logger
+			$this->logger,
+			$this->wikiId,
 		);
 	}
 

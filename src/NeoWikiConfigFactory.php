@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki;
 
 use MediaWiki\Config\Config;
+use MediaWiki\WikiMap\WikiMap;
 use RuntimeException;
 
 class NeoWikiConfigFactory {
@@ -14,6 +15,7 @@ class NeoWikiConfigFactory {
 			enableDevelopmentUIs: $config->get( 'NeoWikiEnableDevelopmentUI' ) === true,
 			neo4jInternalWriteUrl: $this->buildInternalWriteUrl( $config ),
 			neo4jInternalReadUrl: $this->builtInternalReadUrl( $config ),
+			wikiId: WikiMap::getCurrentWikiId(),
 		);
 	}
 
