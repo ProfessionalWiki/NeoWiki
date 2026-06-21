@@ -37,13 +37,27 @@ In the shared graph, node identity is **scoped per wiki**:
 The `wiki_id` is the same identifier the eventual Subject Sources identity model (`(source, localId)`, with
 Source-plugin-provided prefixing) will use, so this is its forward-compatible first increment.
 
+## Forward compatibility
+
+Concretely, when the full model lands:
+
+- A local Subject's `(source, localId)` is just `(wiki_id, nanoid)` — both already stored here — so it is *derived*,
+  not migrated. Page nodes keyed `(wiki_id, id)` are already the final shape.
+- The subject node keeps the **bare nanoid** as its stored id, with `wiki_id` as a property; `(source, localId)` is the
+  *reference* form (relation targets, view ids, fetch), resolved per source. Non-local sources are added later as their
+  own nodes — they change nothing stored here.
+
+This holds as long as the full model (a) uses the MW Wiki ID as the local source key, and (b) keeps the subject node's
+stored id the bare nanoid (the qualified id being a derived reference form, not the stored id). Changing either is a
+re-key — cheap while not in production, but a real change the broader Subject Sources ADR should ratify.
+
 ## Consequences
 
 - Fixes cross-wiki `Page` node overwrites, and enables per-wiki query filtering for the farm.
 - Revises the "`Page.id` is unique" statement in [graph-model](../reference/graph-model.md): uniqueness becomes
   per `(wiki_id, id)`. That reference doc is updated when this is implemented.
 - The change ripples into existing queries that look up a page node by id: they must include `wiki_id`.
-- The full namespacing model (subject-id prefixing via Source plugins) remains deferred to the Subject Sources work
+- The full namespacing model (subject-id prefixing via Source plugins) remains deferred to the Subject Sources work.
 
 ## Alternatives Considered
 
