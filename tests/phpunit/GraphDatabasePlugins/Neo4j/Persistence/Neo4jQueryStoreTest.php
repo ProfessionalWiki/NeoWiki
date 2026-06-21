@@ -18,6 +18,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
+use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
@@ -64,6 +66,24 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	private function newQueryStoreForWiki( string $wikiId ): Neo4jQueryStore {
+		$extension = NeoWikiExtension::getInstance();
+
+		return new Neo4jQueryStore(
+			client: $extension->getNeo4jClient(),
+			readOnlyClient: $extension->getReadOnlyNeo4jClient(),
+			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
+				schemaLookup: new InMemorySchemaLookup(
+					TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
+				),
+				valueBuilderRegistry: $extension->getValueBuilderRegistry(),
+				logger: new NullLogger(),
+				wikiId: $wikiId,
+			),
+			wikiId: $wikiId,
+		);
+	}
+
 	public function testSavesPageIdAndTitle(): void {
 		$store = $this->newQueryStore();
 
@@ -90,6 +110,121 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame(
 			'TestPage',
 			$page['name']
+		);
+	}
+
+	public function testSavesWikiIdOnPageNode(): void {
+		$store = $this->newQueryStoreForWiki( 'my_wiki' );
+
+		$store->savePage( TestPage::build( id: 42 ) );
+
+		$result = $store->runReadQuery( 'MATCH (page:Page {id: 42}) RETURN page.wiki_id AS wikiId' );
+
+		$this->assertSame( 'my_wiki', $result->first()->toRecursiveArray()['wikiId'] );
+	}
+
+	public function testSavesWikiIdOnSubjectNodes(): void {
+		$store = $this->newQueryStoreForWiki( 'my_wiki' );
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::GUID_2 ),
+			)
+		) );
+
+		$result = $store->runReadQuery(
+			'MATCH (subject:Subject) RETURN subject.id AS id, subject.wiki_id AS wikiId ORDER BY id'
+		)->toRecursiveArray();
+
+		$this->assertSame(
+			[
+				[ 'id' => self::GUID_1, 'wikiId' => 'my_wiki' ],
+				[ 'id' => self::GUID_2, 'wikiId' => 'my_wiki' ],
+			],
+			$result
+		);
+	}
+
+	public function testPagesWithSameIdInDifferentWikisDoNotOverwriteEachOther(): void {
+		$wikiA = $this->newQueryStoreForWiki( 'wiki_a' );
+		$wikiB = $this->newQueryStoreForWiki( 'wiki_b' );
+
+		$wikiA->savePage( TestPage::build( id: 42, properties: TestPageProperties::build( title: 'Page on wiki A' ) ) );
+		$wikiB->savePage( TestPage::build( id: 42, properties: TestPageProperties::build( title: 'Page on wiki B' ) ) );
+
+		$result = $this->newQueryStore()->runReadQuery(
+			'MATCH (page:Page {id: 42}) RETURN page.wiki_id AS wikiId, page.name AS name ORDER BY wikiId'
+		)->toRecursiveArray();
+
+		$this->assertSame(
+			[
+				[ 'wikiId' => 'wiki_a', 'name' => 'Page on wiki A' ],
+				[ 'wikiId' => 'wiki_b', 'name' => 'Page on wiki B' ],
+			],
+			$result
+		);
+	}
+
+	public function testDeletingPageOnlyDeletesItInItsOwnWiki(): void {
+		$wikiA = $this->newQueryStoreForWiki( 'wiki_a' );
+		$wikiB = $this->newQueryStoreForWiki( 'wiki_b' );
+
+		$wikiA->savePage( TestPage::build( id: 42, properties: TestPageProperties::build( title: 'Page on wiki A' ) ) );
+		$wikiB->savePage( TestPage::build( id: 42, properties: TestPageProperties::build( title: 'Page on wiki B' ) ) );
+
+		$wikiA->deletePage( new PageId( 42 ) );
+
+		$result = $this->newQueryStore()->runReadQuery(
+			'MATCH (page:Page {id: 42}) RETURN page.wiki_id AS wikiId, page.name AS name ORDER BY wikiId'
+		)->toRecursiveArray();
+
+		$this->assertSame(
+			[
+				[ 'wikiId' => 'wiki_b', 'name' => 'Page on wiki B' ],
+			],
+			$result
+		);
+	}
+
+	public function testSubjectsAreLinkedToTheirOwnWikiPageOnly(): void {
+		$wikiA = $this->newQueryStoreForWiki( 'wiki_a' );
+		$wikiB = $this->newQueryStoreForWiki( 'wiki_b' );
+
+		$wikiA->savePage( TestPage::build( id: 42, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+		$wikiB->savePage( TestPage::build( id: 42, mainSubject: TestSubject::build( id: self::GUID_2 ) ) );
+
+		$result = $this->newQueryStore()->runReadQuery(
+			'MATCH (page:Page {id: 42})-[:HasSubject]->(subject)
+			 RETURN page.wiki_id AS wikiId, subject.id AS subjectId ORDER BY wikiId, subjectId'
+		)->toRecursiveArray();
+
+		$this->assertSame(
+			[
+				[ 'wikiId' => 'wiki_a', 'subjectId' => self::GUID_1 ],
+				[ 'wikiId' => 'wiki_b', 'subjectId' => self::GUID_2 ],
+			],
+			$result
+		);
+	}
+
+	public function testDeletingPageOnlyDeletesItsOwnWikiSubjects(): void {
+		$wikiA = $this->newQueryStoreForWiki( 'wiki_a' );
+		$wikiB = $this->newQueryStoreForWiki( 'wiki_b' );
+
+		$wikiA->savePage( TestPage::build( id: 42, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+		$wikiB->savePage( TestPage::build( id: 42, mainSubject: TestSubject::build( id: self::GUID_2 ) ) );
+
+		$wikiA->deletePage( new PageId( 42 ) );
+
+		$result = $this->newQueryStore()->runReadQuery(
+			'MATCH (subject:Subject) RETURN subject.id AS id ORDER BY id'
+		)->toRecursiveArray();
+
+		$this->assertSame(
+			[ [ 'id' => self::GUID_2 ] ],
+			$result
 		);
 	}
 

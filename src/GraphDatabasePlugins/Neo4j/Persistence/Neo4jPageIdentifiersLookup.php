@@ -25,6 +25,9 @@ class Neo4jPageIdentifiersLookup implements PageIdentifiersLookup {
 				/**
 				 * @var SummarizedResult $result
 				 */
+				// The page is reached by traversing HasSubject from a globally-unique
+				// Subject id, so it is unambiguous without wiki-scoping: a Subject is only
+				// ever linked to its own wiki's page node.
 				$result = $transaction->run(
 					'
 					MATCH (page:Page)-[:HasSubject]->(subject {id: $subjectId})

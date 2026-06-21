@@ -57,6 +57,7 @@ class Neo4jQueryStoreTimeoutTest extends TestCase {
 			$this->createMock( ClientInterface::class ),
 			$readOnlyClient,
 			$this->createMock( Neo4jSubjectUpdaterFactory::class ),
+			'test_wiki',
 		);
 	}
 

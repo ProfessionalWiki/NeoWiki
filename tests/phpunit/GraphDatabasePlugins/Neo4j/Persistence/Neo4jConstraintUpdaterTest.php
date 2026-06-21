@@ -33,16 +33,18 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 
 		$updater->createDefaultConstraints();
 
-		$result = $store->runReadQuery( 'SHOW CONSTRAINTS YIELD name, type, entityType, labelsOrTypes, properties' );
+		$result = $store->runReadQuery(
+			'SHOW CONSTRAINTS YIELD name, type, entityType, labelsOrTypes, properties ORDER BY name'
+		);
 
 		$this->assertSame(
 			[
 				[
-					'name' => 'Page id',
+					'name' => 'Page wiki_id id',
 					'type' => 'NODE_PROPERTY_UNIQUENESS',
 					'entityType' => 'NODE',
 					'labelsOrTypes' => [ 'Page' ],
-					'properties' => [ 'id' ],
+					'properties' => [ 'wiki_id', 'id' ],
 				],
 				[
 					'name' => 'Subject id',
@@ -70,21 +72,39 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testPageWithDuplicateIdCannotBeCreated(): void {
+	public function testPageWithDuplicateIdInSameWikiCannotBeCreated(): void {
+		$this->newConstraintUpdater()->createDefaultConstraints();
+
+		$store = $this->newQueryStore();
+		$wikiId = NeoWikiExtension::getInstance()->config->wikiId;
+
+		$store->savePage( TestPage::build( id: 42 ) );
+
+		$this->expectException( Neo4jException::class );
+		$this->expectExceptionMessageMatches(
+			'/Neo.ClientError.Schema.ConstraintValidationFailed.*already exists with label `Page`/'
+		);
+
+		$store->runWriteQuery(
+			'CREATE (:Page {name: "Test", id: 42, wiki_id: "' . $wikiId . '"} )'
+		);
+	}
+
+	public function testPagesWithSameIdInDifferentWikisCanCoexist(): void {
 		$this->newConstraintUpdater()->createDefaultConstraints();
 
 		$store = $this->newQueryStore();
 
 		$store->savePage( TestPage::build( id: 42 ) );
 
-		$this->expectException( Neo4jException::class );
-		$this->expectExceptionMessageMatches(
-			'/Neo.ClientError.Schema.ConstraintValidationFailed.*already exists with label `Page` and property `id` = 42"/'
+		// A page with the same id but a different wiki_id must not violate the composite constraint.
+		$store->runWriteQuery(
+			'CREATE (:Page {name: "Test", id: 42, wiki_id: "some_other_wiki"} )'
 		);
 
-		$store->runWriteQuery(
-			'CREATE (:Page {name: "Test", id: 42} )'
-		);
+		$result = $store->runReadQuery( 'MATCH (page:Page {id: 42}) RETURN count(page) AS count' );
+
+		$this->assertSame( 2, $result->first()->toRecursiveArray()['count'] );
 	}
 
 	public function testSubjectWithDuplicateIdCannotBeCreated(): void {

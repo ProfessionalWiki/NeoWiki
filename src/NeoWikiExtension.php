@@ -233,8 +233,10 @@ class NeoWikiExtension {
 			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
 				schemaLookup: $schemaLookup, // Note: this is a hack, we should have a proper test environment
 				valueBuilderRegistry: $this->getValueBuilderRegistry(),
-				logger: LoggerFactory::getInstance( 'NeoWiki' )
+				logger: LoggerFactory::getInstance( 'NeoWiki' ),
+				wikiId: $this->config->wikiId,
 			),
+			wikiId: $this->config->wikiId,
 		);
 	}
 
