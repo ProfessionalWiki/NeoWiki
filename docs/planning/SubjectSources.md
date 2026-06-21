@@ -1,6 +1,8 @@
 # Subject Sources
 
-This is an early design document for stakeholder feedback before we start implementation and record decisions via a new ADR.
+This is the detailed design exploration behind [ADR 23: Subject Sources](../adr/023-subject-sources.md) and
+[ADR 22: Multi-wiki Graph Node Identity](../adr/022-multi-wiki-node-identity.md). The ADRs are the authoritative
+decision records; this doc goes deeper into the requirements, use cases, and reasoning that fed them.
 
 Started 2026-06-06 by Jeroen De Dauw based on approx 7.5 hours of investigation/design.
 Reviewed and refined by Opus 4.8 and Alistair.
@@ -11,10 +13,17 @@ NeoWiki today assumes every Subject is local, editable, and versioned — stored
 projected into Neo4j. Several needed capabilities do not fit that assumption: page and approval metadata, free-form
 tables, cross-wiki metadata in a wiki farm, and data drawn from other systems.
 
-Proposed direction: **a Subject (and the Schema it uses) is produced by a pluggable Source.** The local revision slot
-is the default Source. Other Sources produce Subjects with reduced capabilities — notably not always writeable or
-versioned. The UI continues to treat everything as Subjects and only learns to respect per-Source capability flags;
-sourced data is surfaced *as Subjects*, so it flows through the existing View, query, and editing surfaces.
+Proposed direction: **Subjects come from pluggable Sources.** The local revision slot is the default Source; other
+Sources supply Subjects too — another structured-data store on the same wiki (SMW, Wikibase), another NeoWiki, or an
+external system. A Subject's source decides one thing — **editability**: local Subjects are editable (per access
+rights) and versioned; sourced Subjects are **read-only** for now (writing back to a source is an end-of-roadmap
+option, kept open, not built). Whatever the source, a Subject renders through the existing Views (sourced ones
+read-only) and is queryable once materialised — there is no per-Source capability matrix, just the
+local-editable / sourced-read-only distinction.
+
+Separately, **page-facts** — approval state, system page metadata — are *not* Subjects. They are facts about a page,
+materialised on the page node and surfaced via query (Cypher / dashboards), not the View or editor. The Source system
+*could* model them as read-only Subjects, but for this use case we deliberately don't.
 
 ## Requirements / use cases
 
@@ -26,43 +35,44 @@ Primary drivers (committed work):
    near-term driver. HW confirmed (2026-06-11) that this metadata **must be materialised in the (shared) graph**, not
    only synthesised on read — materialisation is mandatory for it to be queryable.
 2. **External-owned state (document control).** Approval state, last reviewer, etc. are owned by another extension.
-   They must be queryable for dashboards, viewable alongside Subject data, updatable **without creating a page
-   revision**, and survive a graph rebuild.
-3. **System page metadata.** `name`, `creationTime`, `lastEditor`, `categories` already exist on the page node; they
-   need to be viewable through Views.
+   They must be queryable for dashboards, updatable **without creating a page revision**, and survive a graph rebuild.
+3. **System page metadata.** `name`, `creationTime`, `lastEditor`, `categories` already exist on the page node as
+   page-facts and are queryable — consumers render them in their own dashboards, not through NeoWiki Views.
 4. **Free-form tables (Confluence migration).** An inline key/value table that becomes queryable metadata.
 
 Secondary / future (designed-for, not all committed):
 
-5. **Federation & external sources.** Read-only Subjects drawn from elsewhere: other NeoWiki instances
-   (authority-control, or a federation of interoperable instances, with eventual two-way write-back), or whole records
-   pulled from external systems (ExternalData, Wikibase, SMW). Page-scoped values computed/`{{#set}}` in wikitext are
-   not a separate case — see free-form tables below.
-6. **RDF identity.** Stable per-source IRIs for export, plus coarse origin provenance. (Rich chain-of-production
+5. **On-wiki adoption of existing structured data (SMW / Wikibase).** Install NeoWiki on a wiki that already runs SMW
+   or Wikibase and expose that data as read-only Subjects — Cypher querying, Views, and AI-readiness over data you
+   already have, with a gradual migration path (eventually edit in NeoWiki and write back until you flip the
+   authority). A low-friction adoption wedge, and the easiest sourced case (the store is co-located, no network).
+6. **Federation & external sources.** Read-only Subjects from other NeoWiki instances (authority-control; a federation
+   of interoperable instances; eventual two-way write-back) or external systems (ExternalData, Wikibase.org).
+   Page-scoped computed/`{{#set}}` wikitext values are not a separate case — see free-form tables below.
+7. **RDF identity.** Stable per-source IRIs for export, plus coarse origin provenance. (Rich chain-of-production
    provenance and rights are a separate model, out of scope here.)
 
 Orthogonal but interacting (tracked elsewhere):
 
-7. **Subject-level access control** and server-side query filtering by ACL — a separate workstream that intersects
+8. **Subject-level access control** and server-side query filtering by ACL — a separate workstream that intersects
    this one only at cross-wiki query filtering.
 
 ## Core model
 
 ### Sources and the registry
 
-A **Source plugin** embodies a *kind* — core ones like `LocalSource` and `PageMetadataSource`, plus
-extension-registered ones such as a `RemoteNeoWikiSource` federation adapter or a `WikitextSource` for
-free-form tables. A **registered Source** binds a plugin to config (often a specific wiki/instance). A single **Source registry**
-maps `sourceKey → Source`, and the Source object is the authority for everything about its Subjects: capabilities,
-base URI, how to resolve/produce them, and its localId grammar.
+A **Source plugin** embodies a *kind* — core ones like `LocalSource`, plus extension-registered ones such as a
+`RemoteNeoWikiSource` federation adapter, an `SMWSource` / `WikibaseSource` for an on-wiki store, or a `WikitextSource`
+for free-form tables. A **registered Source** binds a plugin to config (often a specific wiki/instance). A single
+**Source registry** maps `sourceKey → Source`, and the Source object is the authority for everything about its
+Subjects: capabilities, base URI, how to resolve/produce them, and its localId grammar.
 
 A wiki farm is simply **more registered Sources** (per wiki, per kind); the identity format does not change. ACL and
 rich provenance are deliberately not part of this registry.
 
-Two composing mechanisms sit behind this: a **Source** produces whole Subjects, while a **statement provider**
-contributes statements to an existing Subject (the page-metadata Subject, for instance, aggregates providers for
-system metadata and approval). Data from elsewhere is never a loose value — it is either a sourced Subject or
-statements on one.
+Two mechanisms sit behind this: a **Source** produces whole Subjects, while **providers** contribute **page-facts**
+(system metadata, approval state) as properties on the page node. Data from elsewhere is never a loose value — it is
+either a sourced Subject or a page-fact on the page node.
 
 ### Identity
 
@@ -80,23 +90,17 @@ A Subject id is a flat pair: **`(source, localId)`**.
 - The [ADR 14](../adr/014-improved-id-format.md) properties (fixed length, time-sortable) hold only for local
   nanoids, not for arbitrary ids.
 
-### Capabilities
+### Editability and queryability
 
-Each Source declares its capabilities; because the id carries the source, capabilities are reachable from the id.
-Example sources:
+There is no per-Source capability matrix — just one distinction:
 
-| Capability | Meaning | Local slot | Engineered adapter | Wikitext | Page metadata |
-|---|---|---|---|---|---|
-| `readable` | can be read | ✓ | ✓ | ✓ | ✓ |
-| `writeable` | editable through NeoWiki | ✓ | optional (write-back) | ✗ | ✗ |
-| `versioned` | an old page revision shows the then-value | ✓ | ✗ | ✓ if hard-coded | ✗ |
-| `queryable` | reachable via Cypher | ✓ | only if materialised | only if materialised | ✓ (page node) |
-| provenance | origin recorded | local | real (system/id/time) | weak (host page) | system |
+- **Local Subjects** are editable through the normal editor (subject to access rights) and versioned.
+- **Sourced Subjects** are **read-only** through NeoWiki for now. Writing back to a source (so an edit propagates to
+  the origin) is an **end-of-roadmap** option — kept open via an optional per-Source write capability, not built.
 
-- `writeable` is additionally gated by **instance-locality**: a Subject is editable in its home wiki; cross-wiki is
-  read-only until a write-back adapter exists.
-- `queryable` is distinct from `readable`: a Subject is Cypher-queryable only if materialised in the (local or shared)
-  graph. A sourced-but-not-materialised Subject is viewable and fetchable by id, but not queryable.
+Querying is independent of source: a Subject is Cypher-queryable once **materialised** in the graph (materialisation
+is mandatory for query). History follows the origin — the local slot is versioned; a sourced Subject's history, if
+any, lives at its source. (Page-facts are not Subjects; see below.)
 
 ### Schemas from Sources
 
@@ -122,12 +126,11 @@ references stay `(source, name)` with the mapping layer ([RdfMapping.md](RdfMapp
 ## Storage and query (Neo4j)
 
 - The **page node stays** as the bookkeeping / index node.
-- **Sourced data is materialised in the graph** — HW confirmed materialisation is **mandatory** (not read-time-only),
-  since everything must be Cypher-queryable. Page metadata lives on the page node; extension/approval data is a Subject
-  node. (A read-only page-metadata *Subject* for View-system display remains a model option but is **not** on HW's MVP
-  path, which is query-driven — see Open questions.)
-- **Genuinely-new data** (free-form tables; optionally-cached federation) materialises as normal Subject nodes — never
-  as arbitrary keys on the page node (which would risk reserved-key collisions and pollute the index node).
+- **Page-facts** (system metadata, approval state) live as properties on the **page node** — query-only, not Subjects.
+  HW confirmed they must be **materialised** (not read-time-only) to be queryable.
+- **Subjects** materialise as Subject nodes — local ones from the slot, sourced ones (free-form tables, on-wiki
+  SMW/Wikibase, cached federation) as their own nodes; never as arbitrary keys on the page node (which would risk
+  reserved-key collisions and pollute the index node).
 - **Wiki farm:** the shared graph tags every node (Subject and page) with its **instance**; uniqueness becomes
   per-instance and derived ids are namespaced by source. Cross-wiki read/query is then a single query over the shared
   graph (the owning wiki's page node is already present). Complexity concentrates in **write-routing** (edits go to the
@@ -135,16 +138,13 @@ references stay `(source, name)` with the mapping layer ([RdfMapping.md](RdfMapp
 
 ## Rendering
 
-Views render via a by-subject-id placeholder that the client hydrates (revision-aware through the per-revision
-endpoint). For sourced Subjects this means the real work is (a) an addressable id and (b) a **source-aware
-subject-load path** — server-side `SubjectLookup`, the by-id port behind the subject fetch endpoint and
-`SubjectResolver` (both current implementations resolve ids through the graph index, so Source dispatch sits in front
-of this port; `SubjectContentRepository` is page/revision-keyed and stays slot-only) — plus the subject store and
-fetch endpoints client-side, with capability flags layered on top. The schema-load path is part of the same seam: the
-frontend currently fetches schemas as raw `Schema:` page source via core's REST API rather than the NeoWiki schema
-endpoint, so source-resolved schemas (e.g. the code-defined page-metadata schema) need the fetch rerouted through the
-NeoWiki endpoint, and `Schema:` links need an answer for schemas with no page. "Per-page" resolution collapses into
-"by-id" (`pagemeta:<pageId>` is a deterministic id), so the access patterns reduce to **by-id and query**.
+Local Subjects render through the existing View/editor as today — a by-subject-id placeholder hydrated client-side,
+revision-aware. **Sourced Subjects render the same way, read-only** (clearly marked as from their source, degrading
+gracefully if the source is unavailable). Making that work needs a **source-aware subject-load seam** (resolve the
+id's source, fetch from there, resolve its schema) — real work that rides on Sources existing, so it is **deferred,
+not dropped**.
+
+**Page-facts are not rendered through Views** — they are query-only (Cypher / dashboards).
 
 ## Relations across Sources
 
@@ -155,12 +155,12 @@ Sources and open up cross-source relations later.
 
 ## Refresh without an edit
 
-Generalise the "refresh page properties" need ([#782](https://github.com/ProfessionalWiki/NeoWiki/issues/782)) into a
-first-class **"refresh this page's sourced data"** operation — it serves approval state, computed wikitext values, and
-cached external pulls alike — shaped by the public-PHP-API decision
-([#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789)). The page-property provider registry is already
-invoked on graph rebuild, so re-injection on rebuild exists for pages carrying the subject slot (rebuild does not
-visit other pages); the gap is the on-demand trigger.
+Generalise the "refresh page properties" need ([#782](https://github.com/ProfessionalWiki/NeoWiki/issues/782), now
+[#889](https://github.com/ProfessionalWiki/NeoWiki/issues/889)) into a first-class **"refresh this page's sourced
+data"** operation — it serves approval state, computed wikitext values, and cached external pulls alike — shaped by the
+public-PHP-API decision ([#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789)). The page-property provider
+registry is already invoked on graph rebuild, so re-injection on rebuild exists for pages carrying the subject slot
+(rebuild does not visit other pages); the gap is the on-demand trigger.
 
 ## Free-form tables (Confluence)
 
@@ -186,12 +186,24 @@ by remote adapters. Same Source abstraction, pluggable resolution. The `source �
 prefix/URI map, so federation identity and RDF identity are one mechanism. Coarse origin provenance is free from the
 id; rich chain-of-production provenance is a separate model.
 
-## Out of scope / boundaries
+## Boundaries
+
+**Deferred (designed-for, not foreclosed) — build by demand, on top of the source foundation:**
+
+- Rendering sourced Subjects in Views (read-only) — see Rendering.
+- Editing sourced Subjects / write-back to a source — end-of-roadmap; enables, e.g., gradual migration off an on-wiki
+  SMW/Wikibase store and ECHOLOT bi-directional flow.
+- Remote federation and RDF/IRI export — gated on the foundation and on ECHOLOT input.
+
+**Won't (deliberate):**
 
 - Schemaless Subjects ([ADR 8](../adr/008-one-schema-per-subject.md)).
 - A page modelled as an editable, slot-backed Subject with "computed statements" — an approval edit would create a
-  new, unapproved revision. The page-metadata Subject is read-only instead.
-- A parallel non-Subject rendering path: sourced data is surfaced as Subjects so the existing UIs apply.
+  new, unapproved revision; page-facts stay non-Subject instead.
+- Modelling page-facts (approval, system metadata) as Subjects, or rendering them through the View/editor — they are
+  query-only by choice.
+- A per-Source capability matrix in the user-facing model — the single local-editable / sourced-read-only distinction
+  replaces it.
 - Global properties ([GlobalProperties.md](GlobalProperties.md)); name consistency for free-form tables is handled by
   the table UI over a shared schema.
 - A new schema type; read-only-ness comes from the Source.
@@ -201,12 +213,12 @@ id; rich chain-of-production provenance is a separate model.
 
 ### Resolved with HW (2026-06-11)
 
-- **In-View vs query-enough → query-enough.** HW does not need page/approval metadata rendered via the View system for
-  the MVP; they query the shared graph (Cypher) and render dashboards in their own UI. So View-rendering of sourced
-  Subjects — the §Rendering load-seam work and the in-View parts of §Sequencing — is **off HW's MVP path**.
-- **Page owner / approval → split, accepted.** Page owner is user-set (edited via the page → a writeable Subject);
-  approval data is extension-managed (a separate Subject). HW accepts the two-Subject split and combines the data in
-  its own rendering.
+- **In-View vs query-enough → query-enough.** HW does not need page/approval metadata in the View system for the MVP;
+  they query the shared graph (Cypher) and render dashboards in their own UI. So page-facts are query-only, and in-View
+  rendering of sourced Subjects is **deferred** (valuable, but not on HW's MVP path — see Boundaries).
+- **Page owner / approval → split, accepted.** User-set control-document metadata (owner, audit date) is an ordinary
+  editable Subject; approval state is an extension-owned page-fact. HW accepts the split and combines the two in its
+  own rendering.
 - **Farm topology → shared graph; per-wiki schemas.** Single shared graph confirmed. Schemas are per-wiki with a
   delivered common baseline (not a single global set); the cross-wiki View limitation and graceful degradation are in
   §Schema identity.
@@ -221,27 +233,30 @@ id; rich chain-of-production provenance is a separate model.
 
 ## Sequencing
 
-HW's MVP path is **materialise sourced data as queryable Subjects, then query it** (their dashboards) — View-system
-rendering is off that path (query-enough). So:
-
-1. **HW MVP core:** materialise approval/page metadata as queryable Subjects, plus the refresh-without-edit operation
-   so extension data updates without a page revision. Largely reuses the existing page-property provider mechanism.
-2. **De-risk the model:** pin down the Source interface contract (by-id + query) and the `(source, localId)` identity
-   type — foundational, no stakeholder input needed.
-3. **Architecture-proving slice (lower HW priority):** a page-metadata read-only Subject rendered in a View — proves
-   read-only Subjects, read-only Schemas and the source-aware load seam, but View display is not on HW's MVP path.
-4. **Later:** the multi-wiki shared-graph + per-wiki-schema + graceful-degradation + ACL-filtered-query work; and, for
-   the general model rather than HW's MVP, in-View composition of multiple Subjects.
+1. **HW MVP core (now):** materialise approval / page metadata (page-facts, query-only) via the existing page-property
+   mechanism; the refresh-without-edit operation ([#889](https://github.com/ProfessionalWiki/NeoWiki/issues/889));
+   and multi-wiki node identity ([#905](https://github.com/ProfessionalWiki/NeoWiki/issues/905)) for per-wiki query
+   filtering. Forward-compatible down-payments, not a separate system.
+2. **Source foundation:** the `(source, localId)` identity, the Source registry/interface (by-id + query +
+   capabilities, including an optional write capability), and the local store refactored as the default `LocalSource`.
+   The single system everything else builds on.
+3. **Source consumers (by demand, on the foundation):** sourced Subjects in Views (read-only); the on-wiki
+   SMW/Wikibase source (read-only) — the easiest sourced case and an adoption/migration wedge; remote federation and
+   RDF/IRI export (gated on ECHOLOT).
+4. **End-of-roadmap, by demand:** editing sourced Subjects / write-back (enables SMW/Wikibase migration and
+   bi-directional flow).
 
 ## Related
 
-- ADRs: [008 one-schema-per-subject](../adr/008-one-schema-per-subject.md),
+- ADRs: [023 subject sources](../adr/023-subject-sources.md) (the decision record for this doc),
+  [022 multi-wiki node identity](../adr/022-multi-wiki-node-identity.md),
+  [008 one-schema-per-subject](../adr/008-one-schema-per-subject.md),
   [014 improved-id-format](../adr/014-improved-id-format.md), [015 dedicated editors](../adr/015-dedicated-editors.md),
   [018 views](../adr/018-views.md), [019 graph database architecture](../adr/019-graph-database-architecture.md).
 - Planning: [GlobalProperties](GlobalProperties.md), [RdfMapping](RdfMapping.md).
-- Issues: [#830](https://github.com/ProfessionalWiki/NeoWiki/issues/830) (earlier RfC on this topic, now stale;
-  re-framed here), [#782](https://github.com/ProfessionalWiki/NeoWiki/issues/782) (refresh),
+- Issues: [#889](https://github.com/ProfessionalWiki/NeoWiki/issues/889) (refresh-without-edit; replaces the closed
+  #782), [#905](https://github.com/ProfessionalWiki/NeoWiki/issues/905) (multi-wiki node identity),
   [#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789) (public PHP API),
-  [#831](https://github.com/ProfessionalWiki/NeoWiki/issues/831) (typed statement values — its shared-vs-separate
-  design question is gated on #830, which this doc re-frames; independent for the first slice, but a prerequisite for
-  type-aware querying of Subjects materialised from Sources, such as free-form tables and cached federation).
+  [#831](https://github.com/ProfessionalWiki/NeoWiki/issues/831) (typed statement values — prerequisite for type-aware
+  querying of materialised Subjects), [#830](https://github.com/ProfessionalWiki/NeoWiki/issues/830) (earlier RfC,
+  closed/superseded).
