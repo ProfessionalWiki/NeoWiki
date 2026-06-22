@@ -11,7 +11,7 @@ migration path. Treat any install as an evaluation or pilot and run it on dispos
 There are two ways to install NeoWiki, both covered below. The Docker stack is self-contained and the fastest way to a
 working wiki, so use it for evaluation. The manual install adds NeoWiki to a MediaWiki you already run.
 
-To install the development environment, see the [README](../../README.md) instead.
+To install the development environment, see the [README](https://github.com/ProfessionalWiki/NeoWiki/blob/master/README.md) instead.
 
 ## Method A: Docker
 
