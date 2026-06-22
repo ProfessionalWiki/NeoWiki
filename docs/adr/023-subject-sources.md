@@ -32,23 +32,35 @@ The distinction:
 - **Local Subjects** are editable through the normal editor (subject to access rights) and versioned.
 - **Sourced Subjects** are read-only. Writing back to a source is deferred (see Open questions).
 
-Every Subject, whatever its source, renders through the existing Views (sourced ones read-only) and is queryable in
-the graph.
+Every Subject, whatever its source, renders through the existing Views (sourced ones read-only) and is queryable once
+materialised in the graph.
 
-### Page-facts are not Subjects
+Editability is the only capability the model varies today, and it bundles *editable + versioned* (local) against
+*read-only* (sourced). This is not a permanent two-state space: the deferred write-back capability will make some
+sourced Subjects writeable, reintroducing per-source variation — so "sourced ⇒ read-only" is the current scope, not a
+closed decision.
 
-Approval state and system page metadata (`name`, `creationTime`, `lastEditor`, `categories`) are **facts about a page**,
-not Subjects. They are stored as properties on the page node and surfaced via query (Cypher), not the View or editor.
-The Source model could represent them as read-only Subjects; for this use case it deliberately does not.
+### Page Properties are not exposed via Subjects
+
+Approval state and system page metadata (`name`, `creationTime`, `lastEditor`, `categories`) are
+[Page Properties](../concepts/glossary.md#page-property) — facts stored on the page node, the built-in ones plus any an
+extension contributes through the `PagePropertyProvider` plugin. They are surfaced via query (Cypher), not through the
+View or editor. The Source model could expose them as read-only Subjects; for this use case it deliberately does not —
+they stay Page Properties.
 
 ### Identity
 
 A Subject's id is a pair `(source, localId)`. The existing `SubjectId` ([ADR 14](014-improved-id-format.md)) is widened
 to carry a source, defaulting to local — a bare nanoid still means a local Subject. `localId` is opaque outside its
 Source (a nanoid locally; a page id or a remote id / URI elsewhere); each Source owns its grammar, validation, and
-minting. The structured pair is canonical; IRI and CURIE forms are projections of it, with the source-to-base-URI map
-doubling as the RDF prefix map. The first increment — per-wiki node identity in a shared graph — is decided in
-[ADR 22](022-multi-wiki-node-identity.md).
+minting. The pair is the canonical **reference** form (relation targets, view ids, fetch); IRI and CURIE forms are
+projections of it, with the source-to-base-URI map doubling as the RDF prefix map. ADR 14's fixed-length and
+time-sortable guarantees hold only for local nanoids, not for arbitrary `localId`s.
+
+This ratifies the two forward-compatibility assumptions of [ADR 22](022-multi-wiki-node-identity.md), which decided the
+first increment (per-wiki node identity in a shared graph): the local source key is the MediaWiki Wiki ID, and a local
+Subject stays **stored** as a bare nanoid (with `wiki_id` as a property), the `(source, localId)` pair being derived
+from it rather than a re-keying of stored data.
 
 ### Schemas come from Sources
 
@@ -64,7 +76,8 @@ cross-wiki through the View system, and such cross-wiki access degrades graceful
 - One model spans local data, on-wiki SMW/Wikibase adoption, cross-wiki farm metadata, and external/federated data,
   rather than separate mechanisms.
 - The View, query, and editing surfaces stay Subject-shaped; they gain only a read-only state for sourced Subjects.
-- Approval and page metadata are queryable without being Subjects, so recording them does not create a page revision.
+- Approval and page metadata stay Page Properties, queryable without being exposed as Subjects, so recording them does
+  not create a page revision.
 - Materialisation is required for a Subject to be queryable; sourced data that is not materialised is fetchable by id
   but not queryable.
 
@@ -84,8 +97,8 @@ Deferred and/or still being designed; consortium feedback is expected here.
   name consistency is handled per-schema, and farm schemas are per-wiki with a delivered baseline.
 - **Schemaless Subjects.** Disallowed ([ADR 8](008-one-schema-per-subject.md)); free-form tables use an ordinary
   schema edited through a table UI.
-- **Model page-facts (approval, metadata) as Subjects.** Rejected for this use case: they are facts about a page,
-  simpler as page-node properties; modelling them as slot-backed Subjects would make recording them a new, unapproved
+- **Model Page Properties (approval, metadata) as Subjects.** Rejected for this use case: they are facts about a page,
+  simpler kept on the page node; modelling them as slot-backed Subjects would make recording them a new, unapproved
   page revision.
 - **Materialization only.** We'd avoid adding subject sources and continue without support for displaying anything that is
   not a "normal local Subject" via the View system. You'd only be able to display it via userland scripting on top of queries.
