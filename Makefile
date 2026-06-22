@@ -49,7 +49,7 @@ help:
 
 # ---- Lifecycle (host only) ---------------------------------------------------
 
-.PHONY: up pull demo dev dev-tools _dev-tools-impl stop down logs ps bash
+.PHONY: up pull demo dev dev-tools _dev-tools-impl stop down remove logs ps bash
 
 up: ## Bring up try-it-out stack (no profile, prebuilt image)
 	$(DC) up -d
@@ -111,6 +111,9 @@ stop: ## Stop containers (preserves volumes)
 
 down: ## Stop and remove containers (preserves volumes)
 	$(DC) down --remove-orphans
+
+remove: ## Stop and remove containers AND volumes (deletes all data)
+	$(DC) down --volumes --remove-orphans
 
 logs: ## Tail logs from all services
 	$(DC_DEV) logs -f
@@ -362,11 +365,11 @@ ts-lint: _wait-node ## Run TS linter
 
 .PHONY: reset import-demo-data rebuild-graph-databases update-dot-php smoke-test
 
-# Wipe and reseed the dev stack. The down is stack-agnostic — --remove-orphans
-# reaps the dev sidecars too — so it uses $(DC); the up must be the dev variant,
-# since reset rebuilds the dev stack (note setup-test-neo below).
+# Wipe and reseed the dev stack. The teardown (make remove) is stack-agnostic —
+# --remove-orphans reaps the dev sidecars too — while the up must be the dev
+# variant, since reset rebuilds the dev stack (note setup-test-neo below).
 reset: ## Wipe DB + Neo4j volumes and reseed demo data (recreates the dev stack)
-	$(DC) down --volumes --remove-orphans
+	$(MAKE) --no-print-directory remove
 	$(DC_DEV) up -d
 	@$(MAKE) --no-print-directory _wait-mw
 	$(MAKE) --no-print-directory install-db
