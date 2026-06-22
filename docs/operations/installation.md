@@ -29,7 +29,8 @@ make demo
 ```
 
 This pulls the latest demo image, starts the stack, installs the wiki, and loads the demo
-data. Later, `make pull` refreshes the image and `make down` stops and removes the containers.
+data. Later, `make pull` refreshes the image, `make down` stops and removes the containers, and
+`make remove` also deletes the data volumes.
 
 For an empty wiki without the sample data, run `make up && make install-db && make load-neo4j-users` instead.
 
