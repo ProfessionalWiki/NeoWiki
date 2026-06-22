@@ -30,6 +30,13 @@ watcher, mailcatcher), runs first-time install and seed, and waits until the wik
 reachable. It prints the URL when ready (the default is `http://localhost:8484` but
 the actual port is auto-allocated; see [Reserved ports](Docker/README.md#reserved-host-ports)).
 
+Optionally run the below to populate your wiki with demo data. This command can be re-run
+to update demo-data pages with the latest demo content.
+
+```bash
+make import-demo-data
+```
+
 Mailcatcher web UI is at the port `make dev` printed (default `8025`,
 configurable via `MAILCATCHER_PORT` in `Docker/.env`).
 
