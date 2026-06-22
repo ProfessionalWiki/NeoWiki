@@ -23,7 +23,7 @@ PORT_RANGE_END := 8499
 # ---- Compose invocations -----------------------------------------------------
 
 DC := docker compose -p $(PROJECT_NAME) -f Docker/docker-compose.yml
-DC_DEV := $(DC) -f Docker/docker-compose.dev.yml --profile dev
+DC_DEV := $(DC) -f Docker/docker-compose.dev.yml
 DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
 
 IS_PODMAN := $(shell (docker --version 2>/dev/null | grep -qi podman || command -v podman >/dev/null 2>&1) && echo 1 || echo 0)
@@ -98,7 +98,7 @@ stop: ## Stop containers (preserves volumes)
 	$(DC_DEV) stop
 
 down: ## Stop and remove containers (preserves volumes)
-	$(DC_DEV) down
+	$(DC) down --remove-orphans
 
 logs: ## Tail logs from all services
 	$(DC_DEV) logs -f
@@ -339,7 +339,7 @@ ts-lint: _wait-node ## Run TS linter
 .PHONY: reset import-demo-data rebuild-graph-databases update-dot-php smoke-test
 
 reset: ## Wipe DB + Neo4j volumes and reseed demo data (containers stay)
-	$(DC_DEV) down --volumes
+	$(DC) down --volumes --remove-orphans
 	$(DC_DEV) up -d
 	@$(MAKE) --no-print-directory _wait-mw
 	$(MAKE) --no-print-directory install-db
