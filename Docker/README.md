@@ -72,10 +72,11 @@ inside the stack via `make bash` or `docker compose exec`.
 
 - `Dockerfile` — multi-stage build with `production-mw` (prebuilt demo), `final-mw`
   (release tag), and `dev-mw` (the dev image with mounted NeoWiki source).
-- `docker-compose.yml` — base services (`mediawiki`, `db`, `neo`, plus profile-gated
-  `test_neo`, `node`, `mailcatcher`, `caddy`).
+- `docker-compose.yml` — base "try-it-out" services (`mediawiki`, `db`, `neo`) plus
+  the profile-gated `caddy` (the `server` profile, for HTTPS hosting).
 - `docker-compose.dev.yml` — dev overlay; switches `mediawiki` to the dev image,
-  bind-mounts the NeoWiki source, and sets `MW_MODE=dev`.
+  bind-mounts the NeoWiki source, sets `MW_MODE=dev`, and adds the dev-only sidecars
+  `test_neo`, `node`, and `mailcatcher`.
 - `docker-compose.tools.yml` — opt-in overlay that exposes Neo4j to the host.
 - `SettingsTemplate.php` — `LocalSettings.php` that branches on `MW_MODE`.
 - `.env.dist` — tracked defaults; auto-copied to `.env` on first `make dev`.

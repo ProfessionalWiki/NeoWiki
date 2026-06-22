@@ -28,3 +28,44 @@ services:
       # inconsistency, but it stops a non-existent file from being bind-mounted as
       # an empty directory.
       - ./mediawiki/vendor:/var/www/html/w/vendor:z
+
+  # Dev-only sidecars. They live in this overlay (not the base file) so the base
+  # "try-it-out" stack stays minimal and so `make down` removes them as orphans
+  # regardless of the compose backend. See the Makefile `down` target.
+  test_neo:
+    image: neo4j:enterprise
+    restart: unless-stopped
+    volumes:
+      - test-neo4j-data:/data
+    environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=eval
+      # Hardcoded password (intentional): NeoWiki's test suite uses this
+      # fixed credential to connect to the test Neo4j instance. Do not
+      # parameterize without also updating the test configuration.
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_server_bolt_listen__address=:7689
+      - NEO4J_server_http_listen__address=:7475
+    healthcheck:
+      test: "wget http://localhost:7475/browser -O - | grep 'Neo4j Browser'"
+      interval: 5s
+      timeout: 1s
+      retries: 10
+
+  node:
+    image: node:24
+    restart: on-failure:3
+    working_dir: /workspace/resources/ext.neowiki
+    volumes:
+      - ../:/workspace:z
+    command: sh -c "npm install && npm run build:watch"
+    environment:
+      - npm_config_cache=/tmp/.npm
+
+  mailcatcher:
+    image: sj26/mailcatcher
+    restart: unless-stopped
+    ports:
+      - "${MAILCATCHER_PORT:-1080}:1080"
+
+volumes:
+  test-neo4j-data:
