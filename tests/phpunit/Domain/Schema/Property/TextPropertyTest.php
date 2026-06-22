@@ -21,7 +21,9 @@ class TextPropertyTest extends PropertyTestCase {
 	"required": false,
 	"default": null,
 	"multiple": false,
-	"uniqueItems": false
+	"uniqueItems": false,
+	"minLength": null,
+	"maxLength": null
 }
 JSON,
 			$this->deserializeAndReserialize(
@@ -43,7 +45,9 @@ JSON
 	"required": true,
 	"default": 42,
 	"multiple": true,
-	"uniqueItems": true
+	"uniqueItems": true,
+	"minLength": 2,
+	"maxLength": 40
 }
 JSON
 		);
@@ -58,7 +62,9 @@ JSON
 	"required": false,
 	"default": null,
 	"multiple": false,
-	"uniqueItems": false
+	"uniqueItems": false,
+	"minLength": null,
+	"maxLength": null
 }
 JSON
 		);
@@ -86,6 +92,11 @@ JSON
 }
 JSON
 		);
+	}
+
+	public function testExceptionOnInvalidMinLength(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->fromJson( '{ "type": "text", "minLength": "yes" }' );
 	}
 
 }

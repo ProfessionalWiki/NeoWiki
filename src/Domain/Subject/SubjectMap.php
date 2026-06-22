@@ -4,7 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
-class SubjectMap implements \Countable {
+use Countable;
+use InvalidArgumentException;
+
+class SubjectMap implements Countable {
 
 	/**
 	 * @var array<string, Subject>
@@ -71,6 +74,30 @@ class SubjectMap implements \Countable {
 		}
 
 		return new self( ...$subjects );
+	}
+
+	/**
+	 * @param SubjectId[] $idsInOrder
+	 * @throws InvalidArgumentException if $idsInOrder does not match this map's ids exactly (no missing, extra, or duplicate ids)
+	 */
+	public function withOrdering( array $idsInOrder ): self {
+		$reordered = [];
+
+		foreach ( $idsInOrder as $id ) {
+			if ( array_key_exists( $id->text, $reordered ) ) {
+				throw new InvalidArgumentException( 'Duplicate subject id in ordering: ' . $id->text );
+			}
+			if ( !array_key_exists( $id->text, $this->subjects ) ) {
+				throw new InvalidArgumentException( 'Unknown subject id in ordering: ' . $id->text );
+			}
+			$reordered[$id->text] = $this->subjects[$id->text];
+		}
+
+		if ( count( $reordered ) !== count( $this->subjects ) ) {
+			throw new InvalidArgumentException( 'Ordering does not include every subject in the map' );
+		}
+
+		return new self( ...$reordered );
 	}
 
 	public function isEmpty(): bool {

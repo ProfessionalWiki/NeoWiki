@@ -23,6 +23,8 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQuerySe
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
+use ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering\SetSubjectsOrderingAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering\SetSubjectsOrderingPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
@@ -72,6 +74,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetSubjectsOrderingApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
@@ -230,8 +233,10 @@ class NeoWikiExtension {
 			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
 				schemaLookup: $schemaLookup, // Note: this is a hack, we should have a proper test environment
 				valueBuilderRegistry: $this->getValueBuilderRegistry(),
-				logger: LoggerFactory::getInstance( 'NeoWiki' )
+				logger: LoggerFactory::getInstance( 'NeoWiki' ),
+				wikiId: $this->config->wikiId,
 			),
+			wikiId: $this->config->wikiId,
 		);
 	}
 
@@ -386,6 +391,14 @@ class NeoWikiExtension {
 
 	public function newSetMainSubjectAction( SetMainSubjectPresenter $presenter, Authority $authority ): SetMainSubjectAction {
 		return new SetMainSubjectAction(
+			presenter: $presenter,
+			subjectRepository: $this->getSubjectRepository(),
+			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+		);
+	}
+
+	public function newSetSubjectsOrderingAction( SetSubjectsOrderingPresenter $presenter, Authority $authority ): SetSubjectsOrderingAction {
+		return new SetSubjectsOrderingAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
 			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
@@ -598,6 +611,10 @@ class NeoWikiExtension {
 
 	public static function newSetMainSubjectApi(): SetMainSubjectApi {
 		return new SetMainSubjectApi( csrfValidator: self::getCsrfValidator() );
+	}
+
+	public static function newSetSubjectsOrderingApi(): SetSubjectsOrderingApi {
+		return new SetSubjectsOrderingApi( csrfValidator: self::getCsrfValidator() );
 	}
 
 	public static function newGetSchemaApi(): GetSchemaApi {

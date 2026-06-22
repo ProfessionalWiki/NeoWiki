@@ -1,30 +1,82 @@
 {
-	"description": "A demo schema for trying out backend validation. Use it together with the Validation Demo hub page to see how the editor surfaces server-side errors next to each field.",
+	"description": "A demo schema that exercises every validatable Property Type and its constraints. Open the paired Validation Clean subject in the editor and type bad values into each field to trigger the matching server-side violation. See the Validation Demo hub page for what to try.",
 	"propertyDefinitions": {
 		"Title": {
 			"type": "text",
 			"required": true,
-			"description": "Required. Save with this empty to see an inline error."
+			"description": "text, required. Clear it and save to see a required error."
+		},
+		"Summary": {
+			"type": "text",
+			"minLength": 10,
+			"maxLength": 100,
+			"description": "text, minLength 10 / maxLength 100. Type fewer than 10 or more than 100 characters to trigger a length violation."
+		},
+		"Aliases": {
+			"type": "text",
+			"multiple": true,
+			"uniqueItems": true,
+			"description": "text, multiple with uniqueItems. Add two identical entries to trigger a duplicate violation."
 		},
 		"Homepage": {
 			"type": "url",
 			"required": true,
-			"description": "Required. Must be a valid http or https URL."
+			"description": "url, required. Must be a valid http or https URL."
 		},
 		"Tags": {
 			"type": "url",
 			"multiple": true,
-			"description": "Optional list of URLs. Each entry must be a valid http or https URL."
+			"description": "url, multiple. Change one entry to a non-http(s) URL to trigger a per-entry invalid-url violation."
+		},
+		"Score": {
+			"type": "number",
+			"minimum": 0,
+			"maximum": 100,
+			"precision": 2,
+			"description": "number, minimum 0 / maximum 100, precision 2. Enter a value below 0 or above 100 to trigger a bounds violation."
 		},
 		"Status": {
 			"type": "select",
 			"required": true,
 			"options": [
-				{ "id": "o1valida1aaaaaa", "label": "Draft" },
-				{ "id": "o1valida2aaaaaa", "label": "Approved" },
-				{ "id": "o1valida3aaaaaa", "label": "Archived" }
+				{ "id": "oVgd1htUPMmGZYT", "label": "Draft" },
+				{ "id": "oVgd1CpH9LzBa3z", "label": "Review" },
+				{ "id": "oVgd1j5JPWsa8uw", "label": "Published" }
 			],
-			"description": "Required. Pick one of the three statuses."
+			"description": "select, single, required. Pick one of the three statuses."
+		},
+		"Topics": {
+			"type": "select",
+			"multiple": true,
+			"options": [
+				{ "id": "oVgd1Fzq3xfLnxJ", "label": "Red" },
+				{ "id": "oVgd1SGKB2LjGDQ", "label": "Green" },
+				{ "id": "oVgd1LjchzFUcLg", "label": "Blue" },
+				{ "id": "oVgd1UDq6CSaEHK", "label": "Yellow" }
+			],
+			"description": "select, multiple. Pick any combination of topics."
+		},
+		"Featured": {
+			"type": "boolean",
+			"description": "boolean. A simple on/off flag."
+		},
+		"Release date": {
+			"type": "date",
+			"minimum": "2020-01-01",
+			"maximum": "2030-12-31",
+			"description": "date, minimum 2020-01-01 / maximum 2030-12-31. Pick a date outside the range to trigger a bounds violation."
+		},
+		"Last reviewed": {
+			"type": "dateTime",
+			"minimum": "2020-01-01T00:00:00Z",
+			"maximum": "2030-12-31T23:59:59Z",
+			"description": "dateTime, minimum 2020-01-01T00:00:00Z / maximum 2030-12-31T23:59:59Z. Pick a moment outside the range to trigger a bounds violation."
+		},
+		"Related product": {
+			"type": "relation",
+			"relation": "Related product",
+			"targetSchema": "Product",
+			"description": "relation to a Product subject."
 		}
 	}
 }

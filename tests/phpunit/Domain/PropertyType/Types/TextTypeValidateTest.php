@@ -102,13 +102,93 @@ class TextTypeValidateTest extends TestCase {
 		$this->assertContains( 'unique', $codes );
 	}
 
+	public function testPartShorterThanMinLengthProducesMinLengthViolation(): void {
+		$violations = $this->type->validate(
+			new StringValue( 'abc', 'ab' ),
+			$this->newProperty( required: false, minLength: 3 )
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'min-length', $violations[0]->code );
+		$this->assertSame( [ 3 ], $violations[0]->args );
+		$this->assertSame( 1, $violations[0]->valuePartIndex );
+	}
+
+	public function testPartLongerThanMaxLengthProducesMaxLengthViolation(): void {
+		$violations = $this->type->validate(
+			new StringValue( 'ok', 'toolong' ),
+			$this->newProperty( required: false, maxLength: 4 )
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'max-length', $violations[0]->code );
+		$this->assertSame( [ 4 ], $violations[0]->args );
+		$this->assertSame( 1, $violations[0]->valuePartIndex );
+	}
+
+	public function testTrimmedLengthBelowMinimumProducesViolation(): void {
+		// Trimmed 'ab' has length 2 (< 3); the raw 6-character value would not.
+		$violations = $this->type->validate(
+			new StringValue( '  ab  ' ),
+			$this->newProperty( required: false, minLength: 3 )
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'min-length', $violations[0]->code );
+	}
+
+	public function testTrimmedLengthWithinMaximumProducesNoViolation(): void {
+		// Trimmed 'abcdef' has length 6 (<= 6); the raw 10-character value would exceed it.
+		$violations = $this->type->validate(
+			new StringValue( '  abcdef  ' ),
+			$this->newProperty( required: false, maxLength: 6 )
+		);
+
+		$this->assertSame( [], $violations );
+	}
+
+	public function testValueWithinLengthBoundsProducesNoViolation(): void {
+		$violations = $this->type->validate(
+			new StringValue( 'abcd' ),
+			$this->newProperty( required: false, minLength: 2, maxLength: 5 )
+		);
+
+		$this->assertSame( [], $violations );
+	}
+
+	public function testEmptyPartsAreSkippedForLengthValidation(): void {
+		$violations = $this->type->validate(
+			new StringValue( 'abc', '' ),
+			$this->newProperty( required: false, minLength: 3 )
+		);
+
+		$this->assertSame( [], $violations );
+	}
+
+	public function testRequiredEmptyValueDoesNotAlsoReportLengthViolation(): void {
+		$violations = $this->type->validate(
+			new StringValue( '' ),
+			$this->newProperty( required: true, minLength: 3 )
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'required', $violations[0]->code );
+	}
+
 	private function newProperty(
 		bool $required,
 		bool $uniqueItems = false,
+		?int $minLength = null,
+		?int $maxLength = null,
 	): TextProperty {
 		return TextProperty::fromPartialJson(
 			new PropertyCore( description: '', required: $required, default: null ),
-			[ 'multiple' => true, 'uniqueItems' => $uniqueItems ],
+			[
+				'multiple' => true,
+				'uniqueItems' => $uniqueItems,
+				'minLength' => $minLength,
+				'maxLength' => $maxLength,
+			],
 		);
 	}
 

@@ -222,6 +222,10 @@ DROP SILENT GRAPH <neo-page:42>
 - **RDF import.** This document covers the outbound direction (NeoWiki data to RDF). Importing RDF data into
   NeoWiki Subjects is a T3.2/T4.1 concern and has its own challenges (mapping external ontologies to NeoWiki
   Schemas).
+- **RDF-star / RDF 1.2.** The grant (T3.2) and the D2.1 system spec refer to "native RDF/RDF*" import/export. The
+  base mapping deliberately targets standard RDF 1.1 (Relation reification, see Design Principle 3), and common
+  target stores such as QLever do not support RDF-star. RDF-star is out of scope for now; it would only be
+  revisited given a concrete need, and then at the import/export serialization layer rather than the triple store.
 
 ## Open Questions
 
@@ -275,7 +279,9 @@ there CH/LOD conventions for named graph usage (e.g., per-source, per-dataset) t
 ECHOLOT's provenance model (T2.4) have implications for named graph design?
 
 *Resolved: No CH conventions exist for named graph usage. Per-page named graphs are fine for operational
-purposes.*
+purposes. Note: per-page named graphs record only data origin (which page), not chain-of-production provenance;
+the latter is handled by the provenance model (T2.4) and a dedicated provenance plug-in (T3.4) on top of NeoWiki's
+extension points and MediaWiki versioning, not by the base mapping. See [ECHOLOT.md](ECHOLOT.md).*
 
 **Q6: Base URI conventions.** Should the base URI be the wiki's URL (e.g., `https://mywiki.example.org/`)? Is
 there a convention in the ECHOLOT/ECCCH context for how services should mint URIs?

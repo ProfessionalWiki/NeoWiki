@@ -22,7 +22,8 @@ class Neo4jSubjectUpdater {
 		private readonly PageId $pageId,
 		private readonly SchemaLookup $schemaRepository,
 		private readonly Neo4jValueBuilderRegistry $valueBuilderRegistry,
-		private readonly LoggerInterface $logger
+		private readonly LoggerInterface $logger,
+		private readonly string $wikiId,
 	) {
 	}
 
@@ -52,6 +53,7 @@ class Neo4jSubjectUpdater {
 					[
 						'name' => $subject->label->text,
 						'id' => $subject->id->text,
+						'wiki_id' => $this->wikiId,
 					]
 				),
 			]
@@ -83,10 +85,11 @@ class Neo4jSubjectUpdater {
 
 	private function updateHasSubjectRelation( Subject $subject, bool $isMainSubject ): void {
 		$this->transaction->run(
-			'MATCH (page:Page {id: $pageId}), (subject {id: $subjectId})
+			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId}), (subject {id: $subjectId})
 					MERGE (page)-[:HasSubject {isMain: $isMainSubject}]->(subject)',
 			[
 				'pageId' => $this->pageId->id,
+				'wikiId' => $this->wikiId,
 				'subjectId' => $subject->id->text,
 				'isMainSubject' => $isMainSubject,
 			]

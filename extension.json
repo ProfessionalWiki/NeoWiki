@@ -41,7 +41,6 @@
 		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
 		"PageDeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageDeleteComplete",
 		"RevisionUndeleted": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionUndeleted",
-		"PageMoveComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageMoveComplete",
 
 		"CodeEditorGetPageLanguage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onCodeEditorGetPageLanguage",
 
@@ -105,11 +104,17 @@
 		"*": {
 			"neowiki-query": true
 		},
-		"sysop": {
+		"user": {
 			"neowiki-schema-edit": true,
 			"neowiki-layout-edit": true
+		}
+	},
+
+	"GrantPermissions": {
+		"basic": {
+			"neowiki-query": true
 		},
-		"interface-admin": {
+		"editpage": {
 			"neowiki-schema-edit": true,
 			"neowiki-layout-edit": true
 		}
@@ -148,6 +153,14 @@
 				"default": { "timeoutSeconds": 30, "maxRows": 5000 },
 				"expensive": { "timeoutSeconds": 300, "maxRows": 50000 }
 			}
+		},
+		"NeoWikiNeo4jInternalWriteUrl": {
+			"description": "Bolt URL NeoWiki uses to write the graph projection to Neo4j.",
+			"value": null
+		},
+		"NeoWikiNeo4jInternalReadUrl": {
+			"description": "Bolt URL NeoWiki uses for read and query traffic against Neo4j; should use a least-privilege Neo4j user.",
+			"value": null
 		}
 	},
 
@@ -177,6 +190,11 @@
 			"path": "/neowiki/v0/page/{pageId}/mainSubject",
 			"method": [ "PUT" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newSetMainSubjectApi"
+		},
+		{
+			"path": "/neowiki/v0/page/{pageId}/subjectsOrdering",
+			"method": [ "PUT" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newSetSubjectsOrderingApi"
 		},
 		{
 			"path": "/neowiki/v0/subject/{subjectId}",
@@ -251,7 +269,8 @@
 			"dependencies": [
 				"vue",
 				"pinia",
-				"mediawiki.user"
+				"mediawiki.user",
+				"mediawiki.storage"
 			],
 			"codexComponents": [
 				"CdxAccordion",
@@ -494,6 +513,8 @@
 				"neowiki-managesubjects-count",
 				"neowiki-managesubjects-main-subject-set",
 				"neowiki-managesubjects-main-subject-cleared",
+				"neowiki-managesubjects-reordered",
+				"neowiki-managesubjects-ordering-error",
 				"neowiki-managesubjects-main-subject-error",
 				"neowiki-managesubjects-main-subject-indicator",
 				"neowiki-managesubjects-other-subjects-heading",
@@ -502,6 +523,7 @@
 				"neowiki-managesubjects-row-promote",
 				"neowiki-managesubjects-row-demote",
 				"neowiki-managesubjects-row-more",
+				"neowiki-managesubjects-row-drag-handle",
 				"neowiki-managesubjects-statement-count",
 				"neowiki-managesubjects-no-statements",
 				"neowiki-managesubjects-delete-summary-default",

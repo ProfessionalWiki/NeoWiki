@@ -63,7 +63,7 @@ class SchemaLuaSerializerTest extends TestCase {
 
 	public function testTextPropertyMinimal(): void {
 		$schema = $this->schemaWith( [
-			'LegalName' => new TextProperty( $this->coreRequired(), multiple: false, uniqueItems: false ),
+			'LegalName' => new TextProperty( $this->coreRequired(), multiple: false, uniqueItems: false, minLength: null, maxLength: null ),
 		] );
 
 		$this->assertSame(
@@ -83,7 +83,7 @@ class SchemaLuaSerializerTest extends TestCase {
 	public function testTextPropertyWithDescriptionAndDefault(): void {
 		$core = new PropertyCore( description: 'City of residence', required: false, default: 'Berlin' );
 		$schema = $this->schemaWith( [
-			'City' => new TextProperty( $core, multiple: false, uniqueItems: false ),
+			'City' => new TextProperty( $core, multiple: false, uniqueItems: false, minLength: null, maxLength: null ),
 		] );
 
 		$prop = $this->newSerializer()->toLuaTable( $schema )['properties'][1];
@@ -94,7 +94,7 @@ class SchemaLuaSerializerTest extends TestCase {
 
 	public function testTextPropertyMultipleAndUniqueItems(): void {
 		$schema = $this->schemaWith( [
-			'Skills' => new TextProperty( $this->coreOptional(), multiple: true, uniqueItems: true ),
+			'Skills' => new TextProperty( $this->coreOptional(), multiple: true, uniqueItems: true, minLength: null, maxLength: null ),
 		] );
 
 		$prop = $this->newSerializer()->toLuaTable( $schema )['properties'][1];
@@ -218,9 +218,9 @@ class SchemaLuaSerializerTest extends TestCase {
 
 	public function testPropertyOrderMatchesDefinitionOrder(): void {
 		$schema = $this->schemaWith( [
-			'Zeta'  => new TextProperty( $this->coreOptional(), multiple: false, uniqueItems: false ),
-			'Alpha' => new TextProperty( $this->coreOptional(), multiple: false, uniqueItems: false ),
-			'Mu'    => new TextProperty( $this->coreOptional(), multiple: false, uniqueItems: false ),
+			'Zeta'  => new TextProperty( $this->coreOptional(), multiple: false, uniqueItems: false, minLength: null, maxLength: null ),
+			'Alpha' => new TextProperty( $this->coreOptional(), multiple: false, uniqueItems: false, minLength: null, maxLength: null ),
+			'Mu'    => new TextProperty( $this->coreOptional(), multiple: false, uniqueItems: false, minLength: null, maxLength: null ),
 		] );
 
 		$names = array_column(

@@ -29,7 +29,9 @@ class TestProperty {
 				default: $default
 			),
 			multiple: $multiple,
-			uniqueItems: false
+			uniqueItems: false,
+			minLength: null,
+			maxLength: null
 		);
 	}
 

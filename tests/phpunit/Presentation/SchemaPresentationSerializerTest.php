@@ -55,6 +55,8 @@ class SchemaPresentationSerializerTest extends TestCase {
 					'multiple' => false,
 					'default' => 'foo',
 					'uniqueItems' => false,
+					'minLength' => null,
+					'maxLength' => null,
 					'type' => TextType::NAME,
 				]
 			]
@@ -154,6 +156,8 @@ class SchemaPresentationSerializerTest extends TestCase {
 					'type' => 'text',
 					'multiple' => false,
 					'uniqueItems' => false,
+					'minLength' => null,
+					'maxLength' => null,
 				]
 			]
 		] );

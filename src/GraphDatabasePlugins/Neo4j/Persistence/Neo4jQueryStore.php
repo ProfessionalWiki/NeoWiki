@@ -23,6 +23,7 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, Neo4jQueryEngine,
 		private ClientInterface $client,
 		private ClientInterface $readOnlyClient,
 		private Neo4jSubjectUpdaterFactory $subjectUpdaterFactory,
+		private string $wikiId,
 	) {
 	}
 
@@ -32,8 +33,10 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, Neo4jQueryEngine,
 			[ $typedSetClauses, $typedParams, $properties ] = $this->extractTypedValues( $properties );
 
 			$cypher = '
-				// Create or update the page
-				MERGE (page:Page {id: $pageId})
+				// Create or update the page. Page identity is scoped per wiki so that
+				// pages from different wikis sharing the same id do not collide in a shared graph.
+				// The wiki_id is persisted by the MERGE pattern itself.
+				MERGE (page:Page {id: $pageId, wiki_id: $wikiId})
 				SET page += $properties
 				SET page.id = $pageId';
 
@@ -60,6 +63,7 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, Neo4jQueryEngine,
 				array_merge(
 					[
 						'pageId' => $page->getId()->id,
+						'wikiId' => $this->wikiId,
 						'subjectIds' => $page->getSubjects()->getAllSubjects()->getIdsAsTextArray(),
 						'properties' => new CypherMap( $properties ),
 					],
@@ -144,8 +148,8 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, Neo4jQueryEngine,
 	private function deletePageNode( TransactionInterface $transaction, PageId $pageId ): void {
 		// TODO: Redlinks: page should not always be deleted due to incoming links? Difference between ID and title in meaning
 		$transaction->run(
-			'MATCH (page:Page {id: $pageId}) DETACH DELETE page',
-			[ 'pageId' => $pageId->id ]
+			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId}) DETACH DELETE page',
+			[ 'pageId' => $pageId->id, 'wikiId' => $this->wikiId ]
 		);
 	}
 
@@ -158,9 +162,9 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, Neo4jQueryEngine,
 		 * @var SummarizedResult $results
 		 */
 		$results = $transaction->run(
-			'MATCH (page:Page {id: $pageId})-[:HasSubject]->(subject:Subject)
+			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId})-[:HasSubject]->(subject:Subject)
 				RETURN subject.id AS id, subject AS properties, labels(subject) AS labels',
-			[ 'pageId' => $pageId->id ]
+			[ 'pageId' => $pageId->id, 'wikiId' => $this->wikiId ]
 		);
 
 		return array_map(

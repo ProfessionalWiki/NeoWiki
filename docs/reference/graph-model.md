@@ -28,9 +28,15 @@ via Relations.
 Every page that contains structured data has a corresponding `:Page` node. These nodes make page metadata available
 for graph queries.
 
+Page identity is scoped per wiki. A shared graph can hold pages from multiple wikis (e.g. a wiki farm), and MediaWiki
+page ids are only unique within a single wiki. Each page node therefore carries a `wiki_id` and is identified by the
+`(wiki_id, id)` pair ([ADR 22](../adr/022-multi-wiki-node-identity.md)). In a single-wiki install there is one
+`wiki_id` value and behaviour is unchanged.
+
 | Property | Neo4j Type | Description |
 |----------|------------|-------------|
-| `id` | integer | MediaWiki page ID (unique) |
+| `wiki_id` | string | [MediaWiki Wiki ID](https://www.mediawiki.org/wiki/Manual:Wiki_ID) (database name + table prefix) of the owning wiki |
+| `id` | integer | MediaWiki page ID (unique per wiki) |
 | `name` | string | Page title |
 | `creationTime` | datetime | When the page was created |
 | `lastUpdated` | datetime | When the page was last modified |
@@ -51,6 +57,11 @@ their Schema (e.g., `:Subject:Person`, `:Subject:Company`). The Schema label cha
 |----------|------------|-------------|
 | `id` | string | Subject ID, 15 characters starting with `s` (unique) |
 | `name` | string | Subject label |
+| `wiki_id` | string | [MediaWiki Wiki ID](https://www.mediawiki.org/wiki/Manual:Wiki_ID) of the wiki that owns the Subject |
+
+Unlike page ids, Subject ids are globally unique nanoids ([ADR 14](../adr/014-improved-id-format.md)), so a Subject's
+identity is its `id` alone. The `wiki_id` is carried only for per-wiki query filtering in a shared graph; Subject-id
+namespacing is deferred ([ADR 22](../adr/022-multi-wiki-node-identity.md)).
 
 ### Dynamic properties
 
@@ -90,15 +101,15 @@ When a Subject is deleted but still has incoming relations from other Subjects, 
 
 ## Constraints
 
-Two uniqueness constraints are created on initialization:
-
-- `Page.id` is unique
-- `Subject.id` is unique
+Two uniqueness constraints are intended for the graph — the `(wiki_id, id)` pair is unique on `:Page` nodes
+([ADR 22](../adr/022-multi-wiki-node-identity.md)), and `Subject.id` is unique. These are **not** created
+automatically yet ([#874](https://github.com/ProfessionalWiki/NeoWiki/issues/874)).
 
 ## Related Documentation
 
 - [ADR 3: Neo4j as Graph Database](../adr/003-neo4j-as-graph-database.md)
 - [ADR 4: Use Dedicated Slot](../adr/004-use-dedicated-slot.md) — primary storage in MediaWiki revision slots
 - [ADR 13: Restrict Neo4j Access](../adr/013-restrict-neo4j-access.md) — backend-only access to Neo4j
+- [ADR 22: Multi-wiki Graph Node Identity](../adr/022-multi-wiki-node-identity.md) — per-wiki page identity in a shared graph
 - [Subject Format](subject-format.md) — JSON format for Subject data in revision slots
 - [Schema Format](schema-format.md) — JSON format for Schema definitions

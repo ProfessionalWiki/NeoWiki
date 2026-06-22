@@ -26,7 +26,7 @@ export class UrlType extends BasePropertyType<UrlProperty, StringValue> {
 		return {
 			...base,
 			multiple: json.multiple ?? false,
-			uniqueItems: json.uniqueItems ?? true,
+			uniqueItems: json.uniqueItems ?? false,
 		} as UrlProperty;
 	}
 
