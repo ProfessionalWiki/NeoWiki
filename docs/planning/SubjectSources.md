@@ -92,8 +92,6 @@ A Subject id is a flat pair: **`(source, localId)`**.
 
 ### Editability and queryability
 
-There is no per-Source capability matrix — just one distinction:
-
 - **Local Subjects** are editable through the normal editor (subject to access rights) and versioned.
 - **Sourced Subjects** are **read-only** through NeoWiki for now. Writing back to a source (so an edit propagates to
   the origin) is an **end-of-roadmap** option — kept open via an optional per-Source write capability, not built.
