@@ -81,5 +81,5 @@ $wgDebugLogGroups['neowiki'] = '/tmp/neowiki-debug.log';
 
 ### Try-it-out and server deployment
 
-For a prebuilt try-it-out stack or server deployment with Caddy, see
-[`Docker/README.md`](./Docker/README.md).
+For the prebuilt try-it-out stack or server deployment with Caddy, see
+[Installation](docs/operations/installation.md).

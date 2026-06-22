@@ -5,47 +5,14 @@ big structural changes will happen, and key functionality is still missing.
 
 This directory contains files for the Dockerized development environment and for the pre-built demo Docker image.
 
-## Prerequisites
+## Installing and running
 
-- Docker and Docker Compose
+This file is a reference for the `Docker/` directory itself. For instructions:
 
-## Develop NeoWiki
-
-For the developer workflow (`make dev`, `make phpunit`, etc.), see
-[`../README.md`](../README.md). All commands run from the extension root, not from
-`Docker/`.
-
-## Try it out (prebuilt image)
-
-Run NeoWiki against the published demo image without building locally. From the
-extension root:
-
-```bash
-cd ..              # extension root
-make up            # docker compose up -d, prebuilt ghcr image
-make install-db
-make load-neo4j-users
-make import-demo-data
-```
-
-Then open http://localhost:8484 and log in as `AdminName` (default password
-`AdminPassword`, configurable in `Docker/.env`).
-
-## Server deployment
-
-To deploy on a server with automatic HTTPS via Caddy:
-
-1. Copy `Docker/.env.dist` to `Docker/.env` and change all values marked with
-   `# Change for production`, including `MW_SERVER` (e.g. `https://wiki.example.com`).
-
-2. Start all services including Caddy:
-   ```bash
-   docker compose --profile server up -d
-   ```
-
-3. Run the install/load steps from the try-it-out section above.
-
-4. Access your wiki at the configured `MW_SERVER` URL.
+- Demo / try-it-out stack and server (Caddy) deployment: see
+  [Installation](../docs/operations/installation.md).
+- Developer workflow (`make dev`, `make phpunit`, etc.): see [`../README.md`](../README.md).
+  All commands run from the extension root, not from `Docker/`.
 
 ## Reserved host ports
 
@@ -70,8 +37,10 @@ inside the stack via `make bash` or `docker compose exec`.
 
 ## Files
 
-- `Dockerfile` — multi-stage build with `production-mw` (prebuilt demo), `final-mw`
-  (release tag), and `dev-mw` (the dev image with mounted NeoWiki source).
+- `Dockerfile` — multi-stage build: `production-mw` (MediaWiki + NeoWiki on the
+  production `php.ini`; intermediate, no `LocalSettings.php`), `final-mw` (the prebuilt
+  demo image published as `ghcr.io/professionalwiki/neowiki:latest`, which bakes in
+  `LocalSettings.php`), and `dev-mw` (the dev image with mounted NeoWiki source).
 - `docker-compose.yml` — base "try-it-out" services (`mediawiki`, `db`, `neo`) plus
   the profile-gated `caddy` (the `server` profile, for HTTPS hosting).
 - `docker-compose.dev.yml` — dev overlay; switches `mediawiki` to the dev image,
