@@ -100,9 +100,10 @@ properties are shown in Schema-defined order.
 
 ### View Type
 
-The visual format used to render a View. Examples: "infobox", "card", "table". View Types are registered via a plugin
-system, so extensions can define new View Types. Each View Type plugin defines how to render a Subject given a
-configuration.
+The visual format used to render a View. Examples: "infobox", "card", "table". View Types are designed to be
+registered via a plugin system so extensions can define new View Types, each plugin defining how to render a Subject
+given a configuration. This plugin system is not yet available to extensions: only the built-in `infobox` View Type
+exists (see [Extending NeoWiki](../reference/extending.md#not-yet-extensible)).
 
 
 
