@@ -66,10 +66,9 @@ from it rather than a re-keying of stored data.
 
 A schema is resolved through a Source and may be read-only (a code-defined built-in, or a remote-owned schema) or
 writeable (an ordinary local schema). A schema reference is `(source, name)` ([ADR 17](017-names-as-identifiers.md)),
-and a schema's source is independent of the subject's source (e.g., Subject from `WikitextSource`).
-In a farm, schemas are per-wiki with a delivered common
-baseline; a Subject whose schema is local to another wiki can be queried cross-wiki but not rendered or edited
-cross-wiki through the View system, and such cross-wiki access degrades gracefully rather than failing.
+and a schema's source is independent of the subject's source. Rendering a sourced Subject therefore resolves the
+schema through *its* Source, which may differ from the subject's. When a schema cannot be resolved — a foreign,
+offline, or removed schema — rendering degrades gracefully rather than breaking the page.
 
 ## Consequences
 
@@ -94,7 +93,7 @@ Deferred and/or still being designed; consortium feedback is expected here.
 ## Alternatives Considered
 
 - **Global properties / a single shared schema set.** Rejected ([planning/GlobalProperties.md](../planning/GlobalProperties.md));
-  name consistency is handled per-schema, and farm schemas are per-wiki with a delivered baseline.
+  name consistency is handled per-schema.
 - **Schemaless Subjects.** Disallowed ([ADR 8](008-one-schema-per-subject.md)); free-form tables use an ordinary
   schema edited through a table UI.
 - **Model Page Properties (approval, metadata) as Subjects.** Rejected for this use case: they are facts about a page,
