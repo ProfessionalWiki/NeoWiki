@@ -54,7 +54,8 @@ doubling as the RDF prefix map. The first increment — per-wiki node identity i
 
 A schema is resolved through a Source and may be read-only (a code-defined built-in, or a remote-owned schema) or
 writeable (an ordinary local schema). A schema reference is `(source, name)` ([ADR 17](017-names-as-identifiers.md)),
-and a schema's source is independent of the subject's source. In a farm, schemas are per-wiki with a delivered common
+and a schema's source is independent of the subject's source (i.e., Subject from `WikitextSource`).
+In a farm, schemas are per-wiki with a delivered common
 baseline; a Subject whose schema is local to another wiki can be queried cross-wiki but not rendered or edited
 cross-wiki through the View system, and such cross-wiki access degrades gracefully rather than failing.
 
@@ -71,24 +72,23 @@ cross-wiki through the View system, and such cross-wiki access degrades graceful
 
 Deferred and/or still being designed; consortium feedback is expected here.
 
-- **Federation resolution** — fetch-at-read vs cache/materialise; for triple-store backends, federated query.
+- **Federation resolution** — fetch-at-read vs cache/materialise; for triple-store backends, federated queries.
 - **RDF / IRI export and ontology mapping** — see [planning/RdfMapping.md](../planning/RdfMapping.md).
-- **Editing sourced Subjects (write-back)** — end-of-roadmap; enables gradual migration off an on-wiki SMW/Wikibase
-  store and bidirectional flow with other systems.
-- **Rendering sourced Subjects in Views** — read-only; needs a source-aware load path. Deferred, not foreclosed.
+- **Editing sourced Subjects (write-back)** — end-of-roadmap. How useful? Things like editing Wikibase Items
+  via NeoWiki UI, or editing data from a remote NeoWiki
 - **The Source interface contract** for by-id and query resolution.
 
 ## Alternatives Considered
 
-- **Surface all sourced data as editor-Subjects with capability flags.** Rejected: it conflates a "this is sourced"
-  read-only with an access-rights read-only, adding user-facing complexity for no benefit.
-- **Model page-facts (approval, metadata) as Subjects.** Rejected for this use case: they are facts about a page,
-  simpler as page-node properties; modelling them as slot-backed Subjects would make recording them a new, unapproved
-  page revision.
 - **Global properties / a single shared schema set.** Rejected ([planning/GlobalProperties.md](../planning/GlobalProperties.md));
   name consistency is handled per-schema, and farm schemas are per-wiki with a delivered baseline.
 - **Schemaless Subjects.** Disallowed ([ADR 8](008-one-schema-per-subject.md)); free-form tables use an ordinary
   schema edited through a table UI.
+- **Model page-facts (approval, metadata) as Subjects.** Rejected for this use case: they are facts about a page,
+  simpler as page-node properties; modelling them as slot-backed Subjects would make recording them a new, unapproved
+  page revision.
+- **Materialization only.** We'd avoid adding subject sources and continue without support for displaying anything that is
+  not a "normal local Subject" via the View system. You'd only be able to display it via userland scripting on top of queries.
 
 ## Related
 
