@@ -49,10 +49,22 @@ help:
 
 # ---- Lifecycle (host only) ---------------------------------------------------
 
-.PHONY: up dev dev-tools _dev-tools-impl stop down logs ps bash
+.PHONY: up pull demo dev dev-tools _dev-tools-impl stop down logs ps bash
 
 up: ## Bring up try-it-out stack (no profile, prebuilt image)
 	$(DC) up -d
+
+pull: ## Pull the latest prebuilt demo image
+	$(DC) pull
+
+demo: ## One-command demo: pull image, start stack, install + seed (idempotent)
+	$(DC) pull
+	$(DC) up -d
+	@$(MAKE) --no-print-directory _wait-mw
+	@$(MAKE) --no-print-directory _first-run-seed-demo
+	@echo ""
+	@echo "Demo wiki ready at: http://localhost:$$MW_SERVER_PORT"
+	@echo "Log in as AdminName (password: $$MW_ADMIN_PASSWORD)."
 
 dev: bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
@@ -164,6 +176,18 @@ _first-run-seed:
 		$(MAKE) --no-print-directory import-demo-data; \
 	fi
 	@# TS install/build are handled by the node sidecar on startup (npm install && npm run build:watch).
+
+# Demo variant of the seed: no dev-only steps (test_neo, composer install). Uses
+# $(DC) since the demo stack has no dev overlay. Idempotent like _first-run-seed.
+.PHONY: _first-run-seed-demo
+_first-run-seed-demo:
+	@if $(DC) exec -T db sh -c "mariadb -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e 'SELECT 1 FROM page LIMIT 1' 2>/dev/null" >/dev/null 2>&1; then \
+		echo "Wiki already initialized; skipping install."; \
+	else \
+		$(MAKE) --no-print-directory install-db; \
+		$(MAKE) --no-print-directory load-neo4j-users; \
+		$(MAKE) --no-print-directory import-demo-data; \
+	fi
 
 # ---- DB and Neo4j init -------------------------------------------------------
 
@@ -338,7 +362,10 @@ ts-lint: _wait-node ## Run TS linter
 
 .PHONY: reset import-demo-data rebuild-graph-databases update-dot-php smoke-test
 
-reset: ## Wipe DB + Neo4j volumes and reseed demo data (containers stay)
+# Wipe and reseed the dev stack. The down is stack-agnostic — --remove-orphans
+# reaps the dev sidecars too — so it uses $(DC); the up must be the dev variant,
+# since reset rebuilds the dev stack (note setup-test-neo below).
+reset: ## Wipe DB + Neo4j volumes and reseed demo data (recreates the dev stack)
 	$(DC) down --volumes --remove-orphans
 	$(DC_DEV) up -d
 	@$(MAKE) --no-print-directory _wait-mw

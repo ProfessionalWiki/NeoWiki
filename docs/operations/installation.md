@@ -22,19 +22,14 @@ You need:
 
 The commands assume a Unix-like shell, so on Windows run them under WSL.
 
-Download the `ProfessionalWiki/NeoWiki` repository and run these commands from its root:
+Download the `ProfessionalWiki/NeoWiki` repository and run this from its root:
 
 ```sh
-make up
-make install-db
-make load-neo4j-users
+make demo
 ```
 
-Optionally run the below to populate your wiki with demo data:
-
-```sh
-make import-demo-data
-```
+This pulls the latest demo image, starts the stack, installs the wiki, and loads the demo
+data. Later, `make pull` refreshes the image and `make down` stops and removes the containers.
 
 Open `http://localhost:8484` and log in as `AdminName` with the password `AdminPassword`.
 
@@ -50,7 +45,8 @@ every value marked `# Change for production`, which covers the passwords and `MW
 docker compose --profile server up -d
 ```
 
-Then run the make commands listed above against it. This is still an evaluation setup, not a production deployment.
+Then run `make install-db`, `make load-neo4j-users` and `make import-demo-data` against it. This is still an
+evaluation setup, not a production deployment.
 
 ## Method B: Add to an existing MediaWiki
 
