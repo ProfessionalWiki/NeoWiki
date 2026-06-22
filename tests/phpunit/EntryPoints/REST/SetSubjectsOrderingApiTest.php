@@ -125,7 +125,11 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 			] )
 		);
 
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
 		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertSame( 'error', $responseData['status'] );
+		$this->assertStringContainsString( self::UNKNOWN, $responseData['message'] );
 		$this->assertSame(
 			[ self::CHILD_1, self::CHILD_2, self::CHILD_3 ],
 			$this->savedSubjects( $pageId )->getChildSubjects()->getIdsAsTextArray(),
