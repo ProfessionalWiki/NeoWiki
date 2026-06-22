@@ -3,6 +3,22 @@
 <div style="color:var(--color-subtle, #54595d);max-width:560px;margin-top:4px">Schemas, infoboxes, relations, and Cypher, native to MediaWiki.</div>
 </div>
 
+This is a public demo of NeoWiki, an early-stage MediaWiki extension. Explore the examples below, edit anything you like (it is a sandbox and resets periodically, so you cannot break it), and tell us what works and what is missing via the [https://github.com/ProfessionalWiki/NeoWiki/issues issue tracker] or by [https://professional.wiki/en/contact contacting Professional Wiki].
+
+== Start here ==
+
+'''Just exploring'''
+
+* Structured data, queried in a page: [[Museum collection]] runs live graph queries over linked museums, artworks, and exhibitions.
+* Several Subjects on one page: open the Data tab on [{{fullurl:Rijksmuseum|action=subjects}} Rijksmuseum] to see the museum and its yearly visitor records as separate Subjects.
+* Every Subject is shaped by a [[Special:Schemas|Schema]], and [[Special:Layouts|Layouts]] control how Subjects are displayed.
+
+'''Trying it hands-on'''
+
+* Edit through a form and watch it update live: [[Subject views]] shows one Subject in three layouts at once, with edits propagating between them.
+* See how a Schema constrains data, with required fields, value ranges, and formats: [[Validation Demo]].
+* Create your own: start any page, then use "Create subject" in the NeoWiki section of the sidebar.
+
 == Explore by use case ==
 
 {{#invoke:Card|cards|
@@ -19,15 +35,9 @@ card1_title=Museum collection
 |card3_link=Research catalog
 }}
 
-== See how it works ==
-
-* Subjects hold your structured data. A page can have multiple. See the Data tab. Example: [{{fullurl:Rijksmuseum|action=subjects}} Rijksmuseum]
-* [[Special:Schemas]]. Every Subject is shaped by a Schema. View or manage Schemas via this list page.
-* [[Special:Layouts]]. Customize the presentation of Subjects via Layouts. Example usage: [[Subject views]].
-
 == Build on it ==
 
-* [[Developers|Developers hub]]: Cypher, parser functions, Lua, REST API.
+* [[Developers|Developers hub]]: Cypher, parser functions, the mw.neowiki Lua library, and the REST API, each with source shown alongside the rendered result.
 * [https://github.com/ProfessionalWiki/NeoWiki Source on GitHub]
 * [https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs Technical documentation]
 * [https://github.com/ProfessionalWiki/NeoWiki/issues Issue tracker]
@@ -36,7 +46,7 @@ card1_title=Museum collection
 
 '''NeoWiki''' is a MediaWiki extension for queryable structured data. See [https://neowiki.ai neowiki.ai] for downloads, documentation, and updates.
 
-NeoWiki is under active development. Public interfaces and structure will continue to change. This demo wiki may be reset periodically, and edits may not persist.
+NeoWiki is under active development: public interfaces and structure will continue to change, and this demo may be reset periodically.
 
-* [https://professional.wiki/en/contact Contact Professional Wiki] — the team behind NeoWiki
+* [https://professional.wiki/en/contact Contact Professional Wiki], the team behind NeoWiki
 * Follow NeoWiki: [https://mastodon.social/@NeoWiki Mastodon] · [https://bsky.app/profile/neowiki.bsky.social Bluesky] · [https://x.com/NeoWikiAI X]
