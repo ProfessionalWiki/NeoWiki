@@ -31,6 +31,8 @@ make demo
 This pulls the latest demo image, starts the stack, installs the wiki, and loads the demo
 data. Later, `make pull` refreshes the image and `make down` stops and removes the containers.
 
+For an empty wiki without the sample data, run `make up && make install-db && make load-neo4j-users` instead.
+
 Open `http://localhost:8484` and log in as `AdminName` with the password `AdminPassword`.
 
 You now have a complete evaluation instance with the development UI enabled and demo data loaded.
