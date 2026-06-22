@@ -49,7 +49,7 @@ help:
 
 # ---- Lifecycle (host only) ---------------------------------------------------
 
-.PHONY: up pull demo dev dev-tools _dev-tools-impl stop down remove logs ps bash
+.PHONY: up pull demo dev dev-tools _dev-tools-impl down remove logs ps bash
 
 up: ## Bring up try-it-out stack (no profile, prebuilt image)
 	$(DC) up -d
@@ -105,9 +105,6 @@ _dev-impl:
 	@echo ""
 	@echo "Dev wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Project:           $(PROJECT_NAME)"
-
-stop: ## Stop containers (preserves volumes)
-	$(DC_DEV) stop
 
 down: ## Stop and remove containers (preserves volumes)
 	$(DC) down --remove-orphans
