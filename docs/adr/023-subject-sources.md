@@ -54,7 +54,7 @@ doubling as the RDF prefix map. The first increment — per-wiki node identity i
 
 A schema is resolved through a Source and may be read-only (a code-defined built-in, or a remote-owned schema) or
 writeable (an ordinary local schema). A schema reference is `(source, name)` ([ADR 17](017-names-as-identifiers.md)),
-and a schema's source is independent of the subject's source (i.e., Subject from `WikitextSource`).
+and a schema's source is independent of the subject's source (e.g., Subject from `WikitextSource`).
 In a farm, schemas are per-wiki with a delivered common
 baseline; a Subject whose schema is local to another wiki can be queried cross-wiki but not rendered or edited
 cross-wiki through the View system, and such cross-wiki access degrades gracefully rather than failing.
