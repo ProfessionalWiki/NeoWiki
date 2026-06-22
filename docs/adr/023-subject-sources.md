@@ -4,36 +4,36 @@ Date: 2026-06-22
 
 Status: Draft
 
+Feedback desired! Also see the **Open questions** section below.
+
 ## Context
 
-NeoWiki assumes every Subject is local, editable, and versioned — stored in a MediaWiki revision slot
-([ADR 4](004-use-dedicated-slot.md)) and projected into the graph ([ADR 19](019-graph-database-architecture.md)).
-Several needed capabilities do not fit that assumption: page and approval metadata, free-form (Confluence-style)
-tables, cross-wiki metadata in a wiki farm, and structured data drawn from other systems (another NeoWiki, an on-wiki
-SMW or Wikibase store, external services).
+Prior to this ADR, NeoWiki assumed every Subject is local, editable, versioned, stored in a MediaWiki revision slot
+([ADR 4](004-use-dedicated-slot.md)), and projected into the graph ([ADR 19](019-graph-database-architecture.md)).
 
-The detailed exploration is in [planning/SubjectSources.md](../planning/SubjectSources.md). This ADR records the model.
-Sections under **Open questions** are where the design is still settling — notably federation and RDF — and where
-consortium feedback is expected.
+Several needed capabilities do not fit that assumption: cross-wiki metadata in a wiki farm, page and approval metadata, free-form (Confluence-style)
+tables, and structured data drawn from other systems (another NeoWiki, an on-wiki SMW or Wikibase store, external services).
+
+The detailed exploration is in [planning/SubjectSources.md](../planning/SubjectSources.md).
 
 ## Decision
 
 ### Subjects come from pluggable Sources
 
-A Subject is produced by a **Source**. The local revision slot is the default Source; others — an on-wiki SMW/Wikibase
-store, another NeoWiki, an external system — supply Subjects too. A **Source registry** maps a source key to its
+A Subject is produced by a **Source**. The local revision slot is the default Source; others, like an on-wiki SMW/Wikibase
+store, another NeoWiki, or an external system, can also supply Subjects. A **Source registry** maps a source key to its
 Source, which is the authority for its Subjects' capabilities, identity, and schema resolution. A wiki farm is simply
 more registered Sources.
 
-### A source decides editability; nothing else branches
+### A source decides editability
 
-There is no per-Source capability matrix. The only distinction:
+The distinction:
 
 - **Local Subjects** are editable through the normal editor (subject to access rights) and versioned.
 - **Sourced Subjects** are read-only. Writing back to a source is deferred (see Open questions).
 
-Every Subject, whatever its source, renders through the existing Views (sourced ones read-only) and is queryable once
-materialised in the graph.
+Every Subject, whatever its source, renders through the existing Views (sourced ones read-only) and is queryable in
+the graph.
 
 ### Page-facts are not Subjects
 
