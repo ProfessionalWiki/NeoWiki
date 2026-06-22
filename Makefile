@@ -101,7 +101,7 @@ bootstrap: ## Clone MW core into Docker/mediawiki/ and prep gitignored files (id
 			"$${MW_GIT_URL:-https://github.com/wikimedia/mediawiki}" \
 			Docker/mediawiki; \
 		echo "Fetching the bundled extensions/skins NeoWiki loads..."; \
-		git -C Docker/mediawiki submodule update --init --recursive \
+		git -C Docker/mediawiki submodule update --init --recursive --depth 1 \
 			extensions/CodeEditor \
 			extensions/ParserFunctions \
 			extensions/Scribunto \
