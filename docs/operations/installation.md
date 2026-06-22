@@ -3,13 +3,15 @@ title: Installation
 order: 1
 ---
 
-# Installing NeoWiki
+# Installing the NeoWiki Demo
 
 NeoWiki is pre-release software. It is not production ready, and breaking changes can land at any time without a
 migration path. Treat any install as an evaluation or pilot and run it on disposable data.
 
 There are two ways to install NeoWiki, both covered below. The Docker stack is self-contained and the fastest way to a
 working wiki, so use it for evaluation. The manual install adds NeoWiki to a MediaWiki you already run.
+
+To install the development environment, see the [README](../../README.md) instead.
 
 ## Method A: Docker
 
@@ -26,6 +28,11 @@ Download the `ProfessionalWiki/NeoWiki` repository and run these commands from i
 make up
 make install-db
 make load-neo4j-users
+```
+
+Optionally run the below to populate your wiki with demo data:
+
+```sh
 make import-demo-data
 ```
 
