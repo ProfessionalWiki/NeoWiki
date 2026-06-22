@@ -87,14 +87,30 @@ _dev-tools-impl:
 # Populates the gitignored prerequisites that the build context needs:
 # Docker/mediawiki/ (a vendored MediaWiki core checkout) and an empty
 # Docker/LocalSettings.local.php for the per-worktree override bind-mount.
+#
+# Only the bundled extensions/skins that Docker/SettingsTemplate.php loads are
+# fetched as submodules, not MediaWiki's full bundle, to keep the clone fast and
+# small. When you wfLoadExtension/wfLoadSkin something new there, add its
+# submodule to the list below.
 .PHONY: bootstrap
 bootstrap: ## Clone MW core into Docker/mediawiki/ and prep gitignored files (idempotent)
 	@if [ ! -d Docker/mediawiki/.git ]; then \
 		echo "Cloning MediaWiki $${MW_BRANCH:-REL1_43} into Docker/mediawiki/..."; \
-		git clone --depth 1 --recurse-submodules \
+		git clone --depth 1 \
 			--branch "$${MW_BRANCH:-REL1_43}" \
 			"$${MW_GIT_URL:-https://github.com/wikimedia/mediawiki}" \
 			Docker/mediawiki; \
+		echo "Fetching the bundled extensions/skins NeoWiki loads..."; \
+		git -C Docker/mediawiki submodule update --init --recursive \
+			extensions/CodeEditor \
+			extensions/ParserFunctions \
+			extensions/Scribunto \
+			extensions/SyntaxHighlight_GeSHi \
+			extensions/VisualEditor \
+			extensions/WikiEditor \
+			skins/MonoBook \
+			skins/Timeless \
+			skins/Vector; \
 	fi
 	@touch Docker/LocalSettings.local.php
 
