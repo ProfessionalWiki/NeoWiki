@@ -82,7 +82,12 @@
 	"neowiki-schema-abandonment-keep-editing": "Label for the button that returns to editing the subject.",
 	"neowiki-schema-abandonment-save-schema": "Label for the quiet button that saves only the schema and discards the subject.",
 
+	"neowiki-schema-invalid": "Error message shown when saving a structurally invalid Schema. Parameters:\n* $1 - number of validation errors",
+	"neowiki-schema-invalid-detail": "One line of detail for a single Schema validation error. Parameters:\n* $1 - JSON pointer to the location of the error\n* $2 - the validation error message",
+	"neowiki-schema-name-invalid": "Error message shown when a Schema page title is not a valid schema name (empty or reserved). Parameters:\n* $1 - the reason the name is invalid",
 	"neowiki-layout-invalid": "Error message shown when saving an invalid Layout. Parameters:\n* $1 - number of validation errors",
+	"neowiki-layout-invalid-detail": "One line of detail for a single Layout validation error. Parameters:\n* $1 - JSON pointer to the location of the error\n* $2 - the validation error message",
+	"neowiki-layout-name-invalid": "Error message shown when a Layout page title is not a valid layout name (empty). Parameters:\n* $1 - the reason the name is invalid",
 
 	"neowiki-edit-layout": "Aria label for the edit button on a Layout page.",
 	"neowiki-layout-display-schema": "Label for the schema field in the layout display.",

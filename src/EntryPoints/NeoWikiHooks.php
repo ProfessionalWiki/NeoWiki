@@ -4,8 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
-use InvalidArgumentException;
-use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
@@ -17,8 +15,6 @@ use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
@@ -27,10 +23,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutContentValidator;
-use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaErrorFormatter;
 use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 use MediaWiki\SpecialPage\SpecialPage;
 use Skin;
@@ -185,58 +178,6 @@ class NeoWikiHooks {
 
 	public static function onRevisionUndeleted( RevisionRecord $restoredRevision, ?int $oldPageId ): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageUndelete( $restoredRevision );
-	}
-
-	public static function onEditFilter( EditPage $editPage, ?string $text, ?string $section, string &$error ): void {
-		$text = $text ?? '';
-
-		if ( $editPage->getTitle()->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
-			self::validateSchemaEdit( $editPage, $text, $section, $error );
-		}
-
-		if ( $editPage->getTitle()->getNamespace() === NeoWikiExtension::NS_LAYOUT ) {
-			self::validateLayoutEdit( $editPage, $text, $error );
-		}
-	}
-
-	private static function validateSchemaEdit( EditPage $editPage, string $text, ?string $section, string &$error ): void {
-		try {
-			new SchemaName( $editPage->getTitle()->getText() );
-		} catch ( InvalidArgumentException $exception ) {
-			$error = Html::errorBox(
-				$exception->getMessage()
-			);
-		}
-
-		$contentValidator = SchemaContentValidator::newInstance();
-
-		if ( !$contentValidator->validate( $text ) ) {
-			$errors = $contentValidator->getErrors();
-			$error = Html::errorBox(
-				wfMessage( 'neowiki-schema-invalid', count( $errors ) )->escaped() .
-				JsonSchemaErrorFormatter::format( $errors )
-			);
-		}
-	}
-
-	private static function validateLayoutEdit( EditPage $editPage, string $text, string &$error ): void {
-		try {
-			new LayoutName( $editPage->getTitle()->getText() );
-		} catch ( InvalidArgumentException $exception ) {
-			$error = Html::errorBox(
-				$exception->getMessage()
-			);
-		}
-
-		$contentValidator = LayoutContentValidator::newInstance();
-
-		if ( !$contentValidator->validate( $text ) ) {
-			$errors = $contentValidator->getErrors();
-			$error = Html::errorBox(
-				wfMessage( 'neowiki-layout-invalid', count( $errors ) )->escaped() .
-				JsonSchemaErrorFormatter::format( $errors )
-			);
-		}
 	}
 
 	public static function onSpecialPageInitList( array &$specialPages ): void {
