@@ -51,25 +51,18 @@ Full example: [`src/RedHerbHooks.php`](https://github.com/ProfessionalWiki/NeoWi
 
 ### Property Types
 
-A Property Type defines a kind of structured value — its Value Type, validation, and Display Attributes.
-Implement the `PropertyType` interface, paired with a class extending `PropertyDefinition`:
-
-- `PropertyType` — `getTypeName()`, `getValueType()`, `getDisplayAttributeNames()`,
-  `buildPropertyDefinitionFromJson()`, and `validate()` (returns `Violation[]`).
-- `PropertyDefinition` subclass — holds the type-specific definition fields and implements
-  `getPropertyType()` and `nonCoreToJson()`.
-
-Register it with `NeoWikiRegistrar::addPropertyType()` (see "Getting started" above).
+A Property Type defines a kind of structured value — its Value Type, validation, and Display Attributes. Implement
+the `PropertyType` interface, paired with a class extending `PropertyDefinition` that holds the type-specific
+definition fields, and register it with `NeoWikiRegistrar::addPropertyType()` (see "Getting started" above). The
+linked example shows the methods to implement.
 
 Example: [`src/ColorType.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/ColorType.php)
 (`implements PropertyType`) and
 [`src/ColorProperty.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/ColorProperty.php)
 (`extends PropertyDefinition`).
 
-### Neo4j value builders
-
-When a Property Type stores a custom value, register a builder that converts the value to Neo4j scalars.
-Builders are keyed by the Property Type name:
+If your Property Type stores a value that isn't already a Neo4j scalar, also register a builder that converts it,
+keyed by the Property Type name:
 
 ```php
 $registrar->addNeo4jValueBuilder( ColorType::NAME, static fn ( $value ) => $value->toScalars() );
@@ -115,9 +108,8 @@ Example: [`src/RedHerbFrontendModulesHook.php`](https://github.com/ProfessionalW
 `NeoWikiExtension::getInstance()` exposes read-side services usable from any MediaWiki extension point
 (hooks, special pages):
 
-- `newSubjectAuthorizer( Authority )` — permission checks such as `canCreateChildSubject()` and
-  `canEditSubject()`.
-- `newPageSubjectsLookup()` — e.g. `pageHasMainSubject()`.
+- `newSubjectAuthorizer( Authority )` — subject permission checks.
+- `newPageSubjectsLookup()` — look up the subjects on a page.
 - `newSubjectContentRepository()` — read Subject data by id.
 - `newFrontendModuleLoader()` — mount NeoWiki's UI on any page.
 
