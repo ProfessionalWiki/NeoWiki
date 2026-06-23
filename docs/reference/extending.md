@@ -59,7 +59,7 @@ Implement the `PropertyType` interface, paired with a class extending `PropertyD
 - `PropertyDefinition` subclass — holds the type-specific definition fields and implements
   `getPropertyType()` and `nonCoreToJson()`.
 
-Register it with `NeoWikiRegistrar::addPropertyType()` (see "Getting hooked in" above).
+Register it with `NeoWikiRegistrar::addPropertyType()` (see "Getting started" above).
 
 Example: [`src/ColorType.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/ColorType.php)
 (`implements PropertyType`) and
