@@ -238,7 +238,7 @@ rendering is off that path (query-enough). So:
 - ADRs: [008 one-schema-per-subject](../adr/008-one-schema-per-subject.md),
   [014 improved-id-format](../adr/014-improved-id-format.md), [015 dedicated editors](../adr/015-dedicated-editors.md),
   [018 views](../adr/018-views.md), [019 graph database architecture](../adr/019-graph-database-architecture.md).
-- Planning: [GlobalProperties](GlobalProperties.md), [RdfMapping](RdfMapping.md).
+- Planning: [GlobalProperties](GlobalProperties.md), [RdfMapping](RdfMapping.md), [OntologyMapping](OntologyMapping.md).
 - Issues: [#830](https://github.com/ProfessionalWiki/NeoWiki/issues/830) (earlier RfC on this topic, now stale;
   re-framed here), [#782](https://github.com/ProfessionalWiki/NeoWiki/issues/782) (refresh),
   [#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789) (public PHP API),
