@@ -234,8 +234,10 @@ Custom SVG icons are also supported — pass an SVG string as the `icon`.
 
 These extension points are designed or partially present but not yet open to extensions:
 
-- **View Types / Layouts.** Only the built-in `infobox` View Type exists. [ADR 18](../adr/018-views.md)
-  designs the Layout and View system, but there is no public mechanism to register custom View Types yet.
+- **View Types.** The View Type plug-in system is built ([ADR 18](../adr/018-views.md)) and `ViewTypeRegistry`
+  is part of the public API, but `infobox` is the only built-in type and there is no wired-up registration path
+  for third-party extensions yet: unlike Property Types, the `neowiki.registration` hook exposes no View Type
+  registration.
 - **Graph database backends.** A `GraphDatabasePlugin` interface exists, but Neo4j is the only backend and
   is currently hardcoded.
 - **TypeScript types.** NeoWiki does not yet publish type definitions (`.d.ts`); TypeScript extension
