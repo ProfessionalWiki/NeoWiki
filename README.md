@@ -19,6 +19,11 @@ See [docs/](./docs/), especially [docs/concepts/glossary.md](./docs/concepts/glo
 
 ## Development
 
+Prerequisites:
+
+- Docker and Docker Compose
+- GNU Make
+
 To work on NeoWiki (edit code, run tests, see changes live), bring up the bundled dev stack:
 
 ```bash
