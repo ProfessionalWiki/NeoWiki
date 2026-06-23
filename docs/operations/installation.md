@@ -15,12 +15,12 @@ To install the development environment, see the [README on GitHub](https://githu
 
 ## Method A: Docker
 
-You need:
+Prerequisites:
 
-- Docker with Docker Compose
+- Docker and Docker Compose
 - GNU Make
 
-The commands assume a Unix-like shell, so on Windows run them under WSL.
+The below commands assume a Unix-like shell, so on Windows run them under WSL.
 
 Download the `ProfessionalWiki/NeoWiki` repository and run this from its root:
 
