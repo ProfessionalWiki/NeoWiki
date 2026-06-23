@@ -345,6 +345,7 @@
 				"neowiki-field-single-value-only",
 				"neowiki-field-type-mismatch",
 				"neowiki-field-schema-not-found",
+				"neowiki-field-label-required",
 				"neowiki-select-placeholder",
 				"neowiki-select-no-results",
 				"neowiki-select-unknown-option",

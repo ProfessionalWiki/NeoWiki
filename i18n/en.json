@@ -68,6 +68,7 @@
 	"neowiki-field-single-value-only": "Only one value can be selected.",
 	"neowiki-field-type-mismatch": "This value was saved as type \"$1\" but the property now expects \"$2\".",
 	"neowiki-field-schema-not-found": "The schema \"$1\" is missing. Restore it before saving.",
+	"neowiki-field-label-required": "Please provide a label for the subject.",
 	"neowiki-select-placeholder": "Select an option",
 	"neowiki-select-no-results": "No matching options.",
 	"neowiki-select-unknown-option": "(unknown option)",
