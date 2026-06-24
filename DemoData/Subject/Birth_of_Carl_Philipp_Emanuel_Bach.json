@@ -1,0 +1,16 @@
+{
+	"mainSubject": "s1bachaaaaaaab4",
+	"subjects": {
+		"s1bachaaaaaaab4": {
+			"label": "Birth of Carl Philipp Emanuel Bach",
+			"schema": "Birth",
+			"statements": {
+				"Brought into life": { "type": "relation", "value": [ { "id": "r1bachaaaaaaab2", "target": "s1bachaaaaaaaa7" } ] },
+				"By mother": { "type": "relation", "value": [ { "id": "r1bachaaaaaaab3", "target": "s1bachaaaaaaaa4" } ] },
+				"From father": { "type": "relation", "value": [ { "id": "r1bachaaaaaaab4", "target": "s1bachaaaaaaaa3" } ] },
+				"Took place at": { "type": "relation", "value": [ { "id": "r1bachaaaaaaab5", "target": "s1bachaaaaaaac3" } ] },
+				"Date": { "type": "date", "value": [ "1714-03-08" ] }
+			}
+		}
+	}
+}

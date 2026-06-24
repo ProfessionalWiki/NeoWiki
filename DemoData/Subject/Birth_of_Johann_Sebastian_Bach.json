@@ -1,0 +1,16 @@
+{
+	"mainSubject": "s1bachaaaaaaab2",
+	"subjects": {
+		"s1bachaaaaaaab2": {
+			"label": "Birth of Johann Sebastian Bach",
+			"schema": "Birth",
+			"statements": {
+				"Brought into life": { "type": "relation", "value": [ { "id": "r1bachaaaaaaaa3", "target": "s1bachaaaaaaaa3" } ] },
+				"By mother": { "type": "relation", "value": [ { "id": "r1bachaaaaaaaa4", "target": "s1bachaaaaaaaa2" } ] },
+				"From father": { "type": "relation", "value": [ { "id": "r1bachaaaaaaaa5", "target": "s1bachaaaaaaaa1" } ] },
+				"Took place at": { "type": "relation", "value": [ { "id": "r1bachaaaaaaaa6", "target": "s1bachaaaaaaac2" } ] },
+				"Date": { "type": "date", "value": [ "1685-03-21" ] }
+			}
+		}
+	}
+}
