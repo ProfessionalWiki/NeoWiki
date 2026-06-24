@@ -278,4 +278,82 @@ function p.schema( frame )
 	return renderRowsAsTable( rows, { 'Name', 'Type', 'Required', 'Details' } )
 end
 
+local PERSON_EVENTS_MONTHS = {
+	'January', 'February', 'March', 'April', 'May', 'June',
+	'July', 'August', 'September', 'October', 'November', 'December'
+}
+
+-- Formats an ISO yyyy-mm-dd string as "21 March 1685" without relying on
+-- MediaWiki's date parsing, which is unreliable for pre-modern years.
+local function personEventsFormatDate( iso )
+	local y, m, d = string.match( iso or '', '^(%d+)-(%d+)-(%d+)$' )
+	if not y then
+		return iso or ''
+	end
+	return tonumber( d ) .. ' ' .. ( PERSON_EVENTS_MONTHS[tonumber( m )] or m ) .. ' ' .. y
+end
+
+local function personEventsBirthLinks( rows )
+	local links = {}
+	for _, row in ipairs( rows or {} ) do
+		links[#links + 1] = '[[' .. row.birth .. ']]'
+	end
+	return links
+end
+
+-- Renders the current Person page's life events by reverse-querying the graph:
+-- the canonical edges run Birth -> Person, so "was born" (CIDOC P98i) is derived
+-- here rather than stored as an inverse edge. Date is read as b.Date[0] because
+-- the `date` property is stored as a string list; switch to toString(b.Date[0])
+-- if/when date is stored as a native Neo4j date.
+function p.personEvents( frame )
+	local name = mw.title.getCurrentTitle().text
+
+	local born = nw.query(
+		'MATCH (b:Birth)-[:`Brought into life`]->(p:Person {name: $name}) ' ..
+		'OPTIONAL MATCH (b)-[:`Took place at`]->(pl:Place) ' ..
+		'RETURN b.name AS birth, pl.name AS place, b.Date[0] AS date',
+		{ name = name }
+	)
+	local asFather = nw.query(
+		'MATCH (b:Birth)-[:`From father`]->(p:Person {name: $name}) RETURN b.name AS birth ORDER BY birth',
+		{ name = name }
+	)
+	local asMother = nw.query(
+		'MATCH (b:Birth)-[:`By mother`]->(p:Person {name: $name}) RETURN b.name AS birth ORDER BY birth',
+		{ name = name }
+	)
+
+	local parts = {}
+
+	if born and born[1] then
+		local row = born[1]
+		local sentence = 'Born'
+		if row.date and row.date ~= '' then
+			sentence = sentence .. ' ' .. personEventsFormatDate( row.date )
+		end
+		if row.place and row.place ~= '' then
+			sentence = sentence .. ' in [[' .. row.place .. ']]'
+		end
+		sentence = sentence .. ' (see [[' .. row.birth .. ']]).'
+		parts[#parts + 1] = sentence
+	end
+
+	local fatherLinks = personEventsBirthLinks( asFather )
+	if #fatherLinks > 0 then
+		parts[#parts + 1] = 'Father in ' .. table.concat( fatherLinks, ', ' ) .. '.'
+	end
+
+	local motherLinks = personEventsBirthLinks( asMother )
+	if #motherLinks > 0 then
+		parts[#parts + 1] = 'Mother in ' .. table.concat( motherLinks, ', ' ) .. '.'
+	end
+
+	if #parts == 0 then
+		return ''
+	end
+
+	return "'''Life events:''' " .. table.concat( parts, ' ' )
+end
+
 return p
