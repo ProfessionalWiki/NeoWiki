@@ -55,6 +55,21 @@ describe( 'newDateProperty', () => {
 
 } );
 
+describe( 'createPropertyDefinitionFromJson', () => {
+	const dateType = new DateType();
+
+	it( 'normalizes null minimum and maximum to undefined', () => {
+		// The PHP serializer emits these as null when unset; null must not leak into the string|undefined fields.
+		const property = dateType.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Date' ), type: 'date', description: '', required: false },
+			{ type: 'date', minimum: null, maximum: null },
+		);
+
+		expect( property.minimum ).toBeUndefined();
+		expect( property.maximum ).toBeUndefined();
+	} );
+} );
+
 describe( 'validate', () => {
 	const dateType = new DateType();
 

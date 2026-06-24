@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { newNumberProperty, NumberType } from '@/domain/propertyTypes/Number';
+import { newNumberProperty, NumberType, type NumberProperty } from '@/domain/propertyTypes/Number';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newNumberValue } from '@/domain/Value';
+
+function numberPropertyFromJson( json: Record<string, unknown> ): NumberProperty {
+	return new NumberType().createPropertyDefinitionFromJson(
+		{ name: new PropertyName( 'Year' ), type: 'number', description: '', required: false },
+		{ type: 'number', ...json },
+	);
+}
 
 describe( 'NumberType', () => {
 
@@ -81,6 +88,26 @@ describe( 'newNumberProperty', () => {
 	} );
 } );
 
+describe( 'createPropertyDefinitionFromJson', () => {
+
+	it( 'normalizes null precision, minimum and maximum to undefined', () => {
+		// The PHP serializer emits these as null when unset; null must not leak into the number|undefined fields.
+		const property = numberPropertyFromJson( { precision: null, minimum: null, maximum: null } );
+
+		expect( property.precision ).toBeUndefined();
+		expect( property.minimum ).toBeUndefined();
+		expect( property.maximum ).toBeUndefined();
+	} );
+
+	it( 'preserves zero precision, minimum and maximum as real values', () => {
+		const property = numberPropertyFromJson( { precision: 0, minimum: 0, maximum: 0 } );
+
+		expect( property.precision ).toBe( 0 );
+		expect( property.minimum ).toBe( 0 );
+		expect( property.maximum ).toBe( 0 );
+	} );
+} );
+
 describe( 'validate', () => {
 	const numberType = new NumberType();
 
@@ -150,5 +177,23 @@ describe( 'validate', () => {
 			code: 'max-value',
 			args: [ 100 ],
 		} ] );
+	} );
+
+	it( 'treats a null maximum from backend serialization as unset', () => {
+		// Regression: a null maximum coerced to 0, so any positive value reported "Maximum value is null".
+		const property = numberPropertyFromJson( { minimum: null, maximum: null } );
+
+		const errors = numberType.validate( newNumberValue( 2025 ), property );
+
+		expect( errors ).toEqual( [] );
+	} );
+
+	it( 'treats a null minimum from backend serialization as unset', () => {
+		// Regression: a null minimum coerced to 0, so any negative value reported "Minimum value is null".
+		const property = numberPropertyFromJson( { minimum: null, maximum: null } );
+
+		const errors = numberType.validate( newNumberValue( -5 ), property );
+
+		expect( errors ).toEqual( [] );
 	} );
 } );
