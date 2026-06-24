@@ -186,31 +186,41 @@ module.exports = exports = {
 	&__columns {
 		display: flex;
 		flex-wrap: wrap;
-		gap: @spacing-150;
+		gap: @spacing-75 @spacing-150;
 	}
 
+	// Each column shares the row width and wraps to its own line on narrow
+	// viewports. min-width: 0 lets the flex item shrink below its content's
+	// intrinsic width instead of forcing the card to overflow horizontally.
 	&__grid {
-		flex: 1 1 14rem;
+		flex: 1 1 16rem;
+		min-width: 0;
 		margin: 0;
 	}
 
+	// Key/value rows follow the infobox pattern: a fixed-fraction label and a
+	// flexible value that wraps long content.
 	&__row {
-		display: grid;
-		grid-template-columns: minmax( 8rem, max-content ) 1fr;
+		display: flex;
+		align-items: flex-start;
 		column-gap: @spacing-100;
 		padding: @spacing-50 0;
 		border-bottom: @border-subtle;
 	}
 
 	&__term {
+		flex: 0 0 40%;
 		margin: 0;
 		font-weight: @font-weight-bold;
 		color: @color-emphasized;
 	}
 
 	&__value {
+		flex: 0 1 60%;
+		min-width: 0;
 		margin: 0;
 		overflow-wrap: anywhere;
+		word-break: break-word;
 	}
 }
 </style>
