@@ -124,7 +124,7 @@ import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
-import { withoutRequiredViolations, type SubjectViolation } from '@/domain/SubjectViolation';
+import type { SubjectViolation } from '@/domain/SubjectViolation';
 
 type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
 
@@ -157,12 +157,14 @@ const { violations: serverViolations, revalidate, flush, reset } = useSubjectVal
 		}
 		const statements = [ ...subjectEditorRef.value.getSubjectData() ].filter( ( s ) => s.hasValue() );
 		try {
-			const violations = await subjectStore.validateSubjectUpdate(
+			// Unlike subject creation, editing an existing subject surfaces
+			// 'required' live: an empty required field here is a real gap, not a
+			// field the user is still on their way to filling in.
+			return await subjectStore.validateSubjectUpdate(
 				props.subject.getId(),
 				props.subject.getLabel(),
 				new StatementList( statements )
 			);
-			return withoutRequiredViolations( violations );
 		} catch ( error ) {
 			// The dry-run runs alongside the live validators and must never
 			// break editing or saving; the authoritative result is the save's

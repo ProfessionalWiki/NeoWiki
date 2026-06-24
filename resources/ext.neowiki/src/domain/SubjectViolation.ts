@@ -21,14 +21,13 @@ export interface SubjectViolation {
 }
 
 /**
- * 'required' violations flag fields the user has not filled in yet. Surfacing
- * them while the user is still editing nags about a mistake not yet made, so
- * they are withheld from the live dry-run. An empty required field is still
- * caught at save when backend enforcement is on (the 422 response); with
- * enforcement off (the current default) required is not yet surfaced in the
- * editor — a non-enforcing "warning" surface is future work. Every other
- * violation needs a value to occur, so the field was necessarily touched —
- * those stay visible live.
+ * Withholds 'required' violations from the live dry-run while *creating* a
+ * subject: every required field starts empty and the user is on their way to
+ * filling them in, so flagging them mid-creation nags about a mistake not yet
+ * made. Editing an existing subject surfaces 'required' normally — there an
+ * empty required field is a real gap, not a field still being filled in. Every
+ * other violation needs a value to occur, so the field was necessarily touched;
+ * those always show live.
  */
 export function withoutRequiredViolations(
 	violations: readonly SubjectViolation[],
