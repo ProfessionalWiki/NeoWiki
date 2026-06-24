@@ -22,7 +22,11 @@
 				</cdx-button>
 			</span>
 		</div>
-		<div class="ext-redherb-card__label">
+		<div
+			class="ext-redherb-card__label"
+			role="heading"
+			aria-level="2"
+		>
 			{{ subject.getLabel() }}
 		</div>
 		<dl
@@ -217,7 +221,9 @@ module.exports = exports = {
 	padding: @spacing-100;
 	border: @border-base;
 	border-radius: @border-radius-base;
+	color: @color-base;
 	background-color: @background-color-base;
+	line-height: @line-height-small;
 
 	&__header {
 		display: flex;
