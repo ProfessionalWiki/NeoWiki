@@ -10,8 +10,6 @@ NeoWiki's frontend is built with TypeScript and Vue. The PHP side has a clean ex
 `NeoWikiRegistration` hook hands extensions a registrar, with which they add Property Types, Neo4j value builders and
 Page Property Providers. The frontend has no equivalent. Property Types and their Vue components are hardcoded in core.
 An extension cannot add a frontend Property Type, or reuse NeoWiki's UI, without editing NeoWiki source and rebuilding.
-The DateTime Property Type showed the gap. Its PHP side lived in an extension via the hook, but its frontend had to be
-added to core.
 
 There are two related needs:
 
@@ -25,7 +23,7 @@ them as one effort.
 
 We want several things, in rough priority order:
 
-* Extensions reuse NeoWiki's frontend as building blocks: Vue components, domain objects, logic and repositories.
+* Extensions reuse NeoWiki's frontend as building blocks.
 * NeoWiki core stays in TypeScript.
 * Easy development for extension authors.
 * Easy deployment for sysadmins.
@@ -37,15 +35,13 @@ We want several things, in rough priority order:
 Some of these conflict.
 
 MediaWiki's ResourceLoader compiles `.vue` Single File Components server-side. A JS-only author can therefore ship real
-Vue components with no build step. The dialect is restricted. It uses the Composition API via `setup()`, and CommonJS
-with `require` and `module.exports`. It does not support `<script setup>` or TypeScript in the `<script>` block. See the
+Vue components with no build step. The dialect is restricted; see the
 [MediaWiki Vue.js docs](https://www.mediawiki.org/wiki/Vue.js). So the choice of option is not about whether JS authors
 can write extensions. They always can. It is about what the TypeScript author's experience looks like.
 
 Every option needs two pieces of shared groundwork. First, we expose a frontend API surface for extensions to build on.
-The bundle previously only mounted apps and exported nothing. Second, we add a frontend registration mechanism. The PHP
-hook had no frontend counterpart, and the registries were populated inline with hardcoded calls. Given those, three
-options sit on the Pareto frontier:
+The bundle previously only mounted apps and exported nothing. Second, we add a frontend registration mechanism. Given
+those, three options sit on the Pareto frontier:
 
 * **Option A: MediaWiki-native.** A public API barrel exported from the `ext.neowiki` ResourceLoader module, plus a
   frontend registration hook. Plain JS and SFC authoring needs no build step. TypeScript authors point their `tsconfig`
@@ -68,28 +64,24 @@ objects, stores, repositories and services for reuse as building blocks.
 
 NeoWiki also ships a frontend registration hook, `mw.hook( 'neowiki.registration' )`. It hands subscribers a
 `FrontendRegistrar`. A call to `registrar.registerPropertyType()` takes a plain object of type
-`PropertyTypeRegistration`. The object holds the display, input and attributes components, plus the type's behaviour
-such as `validate` and `getExampleValue`. An internal `PropertyTypeAdapter` extends NeoWiki's `BasePropertyType` and
-forwards each method to the plain object. A change to the Property Type contract breaks the adapter's compilation until
-handled, so the JavaScript registration shape and the TypeScript contract stay aligned.
+`PropertyTypeRegistration`. The object holds the display, input and attributes components, plus the type's behaviour.
+An internal `PropertyTypeAdapter` extends NeoWiki's `BasePropertyType` and forwards each method to the plain object. A
+change to the Property Type contract breaks the adapter's compilation until handled, so the JavaScript registration
+shape and the TypeScript contract stay aligned.
 
 Extensions register Property Types and consume NeoWiki's frontend in plain JavaScript, with no build step.
 
 ### TypeScript types
 
 TypeScript authoring is documentation, not a deliverable. A TypeScript author points their `tsconfig` `paths` at
-NeoWiki's source for types. They mark the shared runtime modules as external in their bundler: `ext.neowiki`, Vue,
-Codex and Pinia. Otherwise they bundle a second copy and break the shared store. NeoWiki ships nothing extra for this.
-It only needs documenting.
+NeoWiki's source for types. NeoWiki ships nothing extra for this. It only needs documenting.
 
 ### Rejected and deferred options
 
 We reject Option B, the unified build. It defeats the plugin model and breaks standard MediaWiki extension isolation.
-See Alternatives Considered.
 
-We defer Option C, the published npm package. It would add standard TypeScript ergonomics and use of the library
-outside MediaWiki. We do not need it until a consumer cannot check out NeoWiki next to its own code. Going from A to C
-later is mostly publishing to npm, since the runtime is the same module. See Alternatives Considered.
+We defer Option C, the published npm package. We do not need it until a consumer cannot check out NeoWiki next to its
+own code.
 
 ### A broad public API for now
 
@@ -108,15 +100,13 @@ production.
   core's views reactively, without a reload.
 * JS authors get no compile-time type safety at the registration boundary. Documentation and runtime tests enforce the
   contract instead. The RedHerb example extension registers through the hook and is exercised end-to-end, so it acts as
-  a living contract test. TypeScript authors opt into type safety by pointing `tsconfig` paths at NeoWiki's source.
-  There is none unless they do.
+  a living contract test. TypeScript authors opt into type safety; there is none unless they do.
 * Standard MediaWiki extension isolation holds. Extensions are ordinary ResourceLoader modules that depend on
   `ext.neowiki`. They build and release on their own cadence.
 * Registering a Property Type spans both layers. The PHP `NeoWikiRegistration` hook adds the backend type and the JS
   `neowiki.registration` hook adds the frontend. Authors do both.
-* The barrel is deliberately broad under the alpha contract. Two things remain before production. We narrow the barrel
-  to an intentional surface. We do a layering review, because it currently re-exports Persistence and Infrastructure
-  that extensions should not reach.
+* Two things remain before production. We narrow the barrel to an intentional surface. We do a layering review, because
+  it currently re-exports Persistence and Infrastructure that extensions should not reach.
 * The same `FrontendRegistrar` and `neowiki.registration` mechanism is the wiring point for registering other pluggable
   things. View Type registration ([ADR 18](018-views.md)) rides it next. Today `registerPropertyType` is the only
   registrar method, and `infobox` is the only built-in View Type.
