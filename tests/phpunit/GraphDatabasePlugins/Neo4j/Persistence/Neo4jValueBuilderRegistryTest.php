@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jTypedValue;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 
@@ -74,6 +75,18 @@ class Neo4jValueBuilderRegistryTest extends TestCase {
 		$this->assertEquals(
 			[ 'hello' ],
 			$registry->buildNeo4jValue( 'text', new StringValue( 'hello' ) )
+		);
+	}
+
+	public function testDateTimeBuilderProducesTypedValueWrappedInDatetimeConstructor(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$this->assertEquals(
+			new Neo4jTypedValue( 'datetime', [ '2024-01-01T12:00:00Z', '2025-06-15T08:30:00+02:00' ] ),
+			$registry->buildNeo4jValue(
+				'dateTime',
+				new StringValue( '2024-01-01T12:00:00Z', '2025-06-15T08:30:00+02:00' )
+			)
 		);
 	}
 
