@@ -44,19 +44,31 @@ class Neo4jSubjectUpdater {
 	}
 
 	private function updateNodeProperties( Subject $subject ): void {
+		$nodeProps = $this->statementsToNodeProperties( $subject->getStatements() );
+		[ $plainProps, $typedSetClauses, $typedParams ] = $this->extractTypedValues( $nodeProps );
+
+		$cypher = 'MERGE (n {id: $id}) SET n = $props';
+
+		if ( $typedSetClauses !== '' ) {
+			$cypher .= ', ' . $typedSetClauses;
+		}
+
 		$this->transaction->run(
-			'MERGE (n {id: $id}) SET n = $props',
-			[
-				'id' => $subject->id->text,
-				'props' => array_merge(
-					$this->statementsToNodeProperties( $subject->getStatements() ),
-					[
-						'name' => $subject->label->text,
-						'id' => $subject->id->text,
-						'wiki_id' => $this->wikiId,
-					]
-				),
-			]
+			$cypher,
+			array_merge(
+				[
+					'id' => $subject->id->text,
+					'props' => array_merge(
+						$plainProps,
+						[
+							'name' => $subject->label->text,
+							'id' => $subject->id->text,
+							'wiki_id' => $this->wikiId,
+						]
+					),
+				],
+				$typedParams
+			)
 		);
 	}
 
@@ -81,6 +93,35 @@ class Neo4jSubjectUpdater {
 		}
 
 		return $nodeProps;
+	}
+
+	/**
+	 * Splits node properties into plain values (settable via `SET n = $props`)
+	 * and typed values that need a Cypher constructor function.
+	 *
+	 * @param array<string, mixed> $nodeProps
+	 * @return array{ array<string, mixed>, string, array<string, mixed> }
+	 *         [ plainProps, typedSetClauses, typedParams ]
+	 */
+	private function extractTypedValues( array $nodeProps ): array {
+		$plainProps = [];
+		$setClauses = [];
+		$params = [];
+
+		foreach ( $nodeProps as $key => $value ) {
+			if ( !( $value instanceof Neo4jTypedValue ) ) {
+				$plainProps[$key] = $value;
+				continue;
+			}
+
+			$paramName = 'typed_' . count( $params );
+			$escapedKey = Cypher::escape( $key );
+
+			$setClauses[] = "n.$escapedKey = [v IN \$$paramName | {$value->cypherFunction}(v)]";
+			$params[$paramName] = $value->value;
+		}
+
+		return [ $plainProps, implode( ', ', $setClauses ), $params ];
 	}
 
 	private function updateHasSubjectRelation( Subject $subject, bool $isMainSubject ): void {
