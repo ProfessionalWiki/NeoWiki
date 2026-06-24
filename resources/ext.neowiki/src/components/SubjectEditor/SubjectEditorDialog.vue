@@ -239,6 +239,16 @@ watch( () => props.open, ( isOpen ) => {
 	}
 } );
 
+// Existing subjects are expected to be complete, so validate as soon as the
+// editor mounts for an open dialog: pre-existing violations (e.g. a now-empty
+// required field) surface immediately, without the user having to touch a field
+// first. (Subject creation deliberately does not do this — see the creator.)
+watch( subjectEditorRef, ( editor ) => {
+	if ( editor && props.open ) {
+		flush();
+	}
+} );
+
 watch( () => props.subject, async ( newSubject ) => {
 	if ( newSubject ) {
 		await checkEditPermission( newSubject.getSchemaName() );

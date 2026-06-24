@@ -478,5 +478,21 @@ describe( 'SubjectEditorDialog', () => {
 			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
 			expect( passed ).toEqual( [ requiredViolation ] );
 		} );
+
+		it( 'validates on open so an existing subject\'s violations surface without an edit', async () => {
+			const existingViolation: SubjectViolation = {
+				propertyName: 'name', code: 'required', args: [], valuePartIndex: null,
+			};
+			const validate = vi.fn().mockResolvedValue( [ existingViolation ] );
+			useSubjectStore().validateSubjectUpdate = validate;
+
+			const wrapper = mountComponent( true, validationTestStubs );
+			await flushPromises();
+
+			// No @change / @focusout: the dialog validated the existing subject on open.
+			expect( validate ).toHaveBeenCalled();
+			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passed ).toEqual( [ existingViolation ] );
+		} );
 	} );
 } );
