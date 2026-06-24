@@ -407,8 +407,8 @@ describe( 'SubjectEditorDialog', () => {
 	describe( 'Server-driven dry-run validation', () => {
 		const dryRunViolation: SubjectViolation = {
 			propertyName: 'name',
-			code: 'required',
-			args: [],
+			code: 'max-length',
+			args: [ 5 ],
 			valuePartIndex: null,
 		};
 
@@ -461,6 +461,21 @@ describe( 'SubjectEditorDialog', () => {
 
 			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
 			expect( passed ).toHaveLength( 0 );
+		} );
+
+		it( 'does not surface required violations from the dry-run; they wait for save', async () => {
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [
+				{ propertyName: 'name', code: 'required', args: [], valuePartIndex: null },
+			] );
+			const wrapper = mountComponent( true, validationTestStubs );
+			await flushPromises();
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'focusout' );
+			await flushPromises();
+
+			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passed ).toEqual( [] );
 		} );
 	} );
 } );

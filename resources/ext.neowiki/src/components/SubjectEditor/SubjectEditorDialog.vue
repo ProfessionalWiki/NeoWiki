@@ -124,7 +124,7 @@ import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
-import type { SubjectViolation } from '@/domain/SubjectViolation';
+import { withoutRequiredViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 
 type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
 
@@ -157,11 +157,12 @@ const { violations: serverViolations, revalidate, flush, reset } = useSubjectVal
 		}
 		const statements = [ ...subjectEditorRef.value.getSubjectData() ].filter( ( s ) => s.hasValue() );
 		try {
-			return await subjectStore.validateSubjectUpdate(
+			const violations = await subjectStore.validateSubjectUpdate(
 				props.subject.getId(),
 				props.subject.getLabel(),
 				new StatementList( statements )
 			);
+			return withoutRequiredViolations( violations );
 		} catch ( error ) {
 			// The dry-run runs alongside the live validators and must never
 			// break editing or saving; the authoritative result is the save's
