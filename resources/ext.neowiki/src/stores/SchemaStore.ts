@@ -2,6 +2,17 @@ import { defineStore } from 'pinia';
 import { Schema } from '@/domain/Schema.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
+/**
+ * Approximates MediaWiki title normalisation for a Schema name (schemas are
+ * wiki pages) so a duplicate-name check resolves to the same page a save would:
+ * trims, turns underscores into spaces, collapses runs of whitespace, and
+ * upper-cases the first character. The save remains the authoritative guard.
+ */
+export function normalizeSchemaName( name: string ): string {
+	const collapsed = name.trim().replace( /[\s_]+/g, ' ' );
+	return collapsed.charAt( 0 ).toUpperCase() + collapsed.slice( 1 );
+}
+
 export const useSchemaStore = defineStore( 'schema', {
 	state: () => ( {
 		schemas: new Map<string, Schema>(),
@@ -39,9 +50,12 @@ export const useSchemaStore = defineStore( 'schema', {
 		// Checks existence via the schema-names search (a 200 response) rather
 		// than getOrFetchSchema, which 404s for a missing name — those 404s are
 		// avoidable console/network noise when checking a not-yet-created name.
+		// The name is normalised so e.g. "person" or "Foo_Bar" matches the
+		// existing "Person" / "Foo Bar" the same way a save would.
 		async schemaNameExists( name: string ): Promise<boolean> {
-			const matches = await NeoWikiExtension.getInstance().getSchemaRepository().getSchemaNames( name );
-			return matches.includes( name );
+			const normalized = normalizeSchemaName( name );
+			const matches = await NeoWikiExtension.getInstance().getSchemaRepository().getSchemaNames( normalized );
+			return matches.some( ( match ) => normalizeSchemaName( match ) === normalized );
 		},
 		async saveSchema( schema: Schema, comment?: string ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSchemaRepository().saveSchema( schema, comment );
