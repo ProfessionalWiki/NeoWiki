@@ -74,7 +74,7 @@ Schemas have a name, description, and a list of Property Definitions
 ### Property Definition
 
 They always have a Property Name and a Property Type. Depending on the Type, they might have additional information.
-Property Types are registered via a plugin system and can be defined by extensions.
+Property Types can be defined by extensions.
 
 - A **name**. Example: "Website".
 - A **type**. Example: "url". (formerly "format")
@@ -99,9 +99,7 @@ properties are shown in Schema-defined order.
 
 ### View Type
 
-The visual format used to render a View. Examples: "infobox", "card", "table". View Types are registered via a plugin
-system, so extensions can define new View Types. Each View Type plugin defines how to render a Subject given a
-configuration.
+The visual format used to render a View. Examples: "infobox", "card", "table". View Types can be defined by extensions.
 
 
 
@@ -143,8 +141,7 @@ A key-value pair stored on the Page node in the graph database. Page Properties 
 itself, as opposed to Subject Statements, which are structured data about the entities described on the page.
 
 Built-in Page Properties include `name`, `creationTime`, `lastUpdated`, `categories`, and `lastEditor`. Extensions can
-contribute additional Page Properties via the Page Property Provider plugin system (see `PagePropertyProvider`
-interface).
+contribute additional Page Properties.
 
 When using Neo4j, Page Properties are available on every Page node and are queryable via Cypher
 (e.g., `MATCH (page:Page) WHERE page.lastUpdated > datetime("2024-01-01")`).
