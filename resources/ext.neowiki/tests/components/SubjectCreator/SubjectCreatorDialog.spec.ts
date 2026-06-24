@@ -1100,5 +1100,20 @@ describe( 'SubjectCreatorDialog', () => {
 			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
 			expect( passed ).toEqual( [] );
 		} );
+
+		it( 'does not run the dry-run while the schema is an unsaved draft', async () => {
+			subjectStore.validateSubject = vi.fn().mockResolvedValue( [] );
+			const wrapper = mountComponent();
+			await switchToNewSchema( wrapper );
+			await clickContinue( wrapper );
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'focusout' );
+			await flushPromises();
+
+			// The draft schema does not exist server-side yet, so a dry-run would
+			// only 404; it must wait until the schema is saved.
+			expect( subjectStore.validateSubject ).not.toHaveBeenCalled();
+		} );
 	} );
 } );
