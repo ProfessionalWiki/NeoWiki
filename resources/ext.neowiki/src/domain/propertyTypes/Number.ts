@@ -28,9 +28,9 @@ export class NumberType extends BasePropertyType<NumberProperty, NumberValue> {
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): NumberProperty {
 		return {
 			...base,
-			precision: json.precision,
-			minimum: json.minimum,
-			maximum: json.maximum,
+			precision: json.precision ?? undefined,
+			minimum: json.minimum ?? undefined,
+			maximum: json.maximum ?? undefined,
 		} as NumberProperty;
 	}
 
