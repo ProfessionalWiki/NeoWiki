@@ -29,7 +29,8 @@
 	"redherb-color-reorder-color": "Tooltip on the drag handle next to each palette entry, indicating the entry can be dragged to reorder the palette.",
 	"redherb-color-invalid-fallback": "Fallback text shown when a stored Color value cannot be rendered as a swatch. $1 is the raw, unparseable value.",
 	"redherb-card-caption": "Caption shown at the top of the RedHerb card View Type, identifying it as RedHerb's example view.",
-	"redherb-card-edit": "Accessible label for the edit button on the RedHerb card View Type, which opens the subject editor.\n{{Identical|Edit}}",
+	"redherb-card-edit-subject": "Label of the button on the RedHerb card View Type that opens the subject editor dialog.",
+	"redherb-card-edit-schema": "Label of the link on the RedHerb card View Type that opens the Subject's Schema page for editing.",
 	"redherb-card-edit-layout": "Label of the link on the RedHerb card View Type that opens the Layout page for editing.",
 	"neowiki-field-invalid-hex": "Validation error shown when a Color input value is not a valid 6-digit hex code.",
 	"neowiki-field-not-in-palette": "Validation error shown when a Color input value is not one of the property's allowed palette entries."

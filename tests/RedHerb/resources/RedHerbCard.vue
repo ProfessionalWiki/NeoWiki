@@ -8,18 +8,19 @@
 				{{ $i18n( 'redherb-card-caption' ).text() }}
 			</span>
 			<span class="ext-redherb-card__actions">
+				<cdx-button
+					v-if="canEditSubject"
+					weight="quiet"
+					action="progressive"
+					@click="openEditor"
+				>
+					{{ $i18n( 'redherb-card-edit-subject' ).text() }}
+				</cdx-button>
+				<a :href="schemaUrl">{{ $i18n( 'redherb-card-edit-schema' ).text() }}</a>
 				<a
 					v-if="layoutName"
 					:href="layoutUrl"
 				>{{ $i18n( 'redherb-card-edit-layout' ).text() }}</a>
-				<cdx-button
-					v-if="canEditSubject"
-					weight="quiet"
-					:aria-label="$i18n( 'redherb-card-edit' ).text()"
-					@click="openEditor"
-				>
-					<cdx-icon :icon="editIcon"></cdx-icon>
-				</cdx-button>
 			</span>
 		</div>
 		<div
@@ -90,7 +91,6 @@
 
 var vue = require( 'vue' );
 var codex = require( './codex.js' );
-var icons = require( './icons.json' );
 var nw = require( 'ext.neowiki' );
 
 // Example View Type: renders a Subject as a two-column card, loosely modelled on
@@ -106,7 +106,6 @@ var nw = require( 'ext.neowiki' );
 module.exports = exports = {
 	components: {
 		CdxButton: codex.CdxButton,
-		CdxIcon: codex.CdxIcon,
 		SubjectEditorDialog: nw.SubjectEditorDialog
 	},
 	props: {
@@ -138,6 +137,10 @@ module.exports = exports = {
 			return props.layoutName ?
 				mw.util.getUrl( 'Layout:' + props.layoutName, { action: 'edit' } ) :
 				'';
+		} );
+
+		var schemaUrl = vue.computed( function () {
+			return mw.util.getUrl( 'Schema:' + subject.value.getSchemaName(), { action: 'edit' } );
 		} );
 
 		var resolvedProperties = vue.computed( function () {
@@ -207,9 +210,9 @@ module.exports = exports = {
 		return {
 			subject: subject,
 			layoutUrl: layoutUrl,
+			schemaUrl: schemaUrl,
 			layoutSections: layoutSections,
 			editorOpen: editorOpen,
-			editIcon: icons.cdxIconEdit,
 			valueComponent: valueComponent,
 			openEditor: openEditor,
 			handleSaveSubject: handleSaveSubject,
