@@ -28,6 +28,7 @@
 	"redherb-color-remove-color": "Remove color",
 	"redherb-color-reorder-color": "Drag to reorder",
 	"redherb-color-invalid-fallback": "Unrecognised color value: $1",
+	"redherb-card-caption": "RedHerb card",
 	"neowiki-field-invalid-hex": "Please enter a 6-digit hex color like #ff5733.",
 	"neowiki-field-not-in-palette": "This color is not in the allowed palette."
 }

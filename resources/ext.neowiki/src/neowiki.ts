@@ -37,7 +37,11 @@ export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: Abort
 function fireRegistrationHook(): void {
 	const ext = NeoWikiExtension.getInstance();
 	mw.hook( 'neowiki.registration' ).fire(
-		new FrontendRegistrar( ext.getTypeSpecificComponentRegistry(), ext.getPropertyTypeRegistry() ),
+		new FrontendRegistrar(
+			ext.getTypeSpecificComponentRegistry(),
+			ext.getPropertyTypeRegistry(),
+			ext.getViewTypeRegistry(),
+		),
 	);
 }
 

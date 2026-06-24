@@ -7,6 +7,7 @@
 	var ColorDisplay = require( './ColorDisplay.vue' );
 	var ColorInput = require( './ColorInput.vue' );
 	var ColorAttributesEditor = require( './ColorAttributesEditor.vue' );
+	var RedHerbCard = require( './RedHerbCard.vue' );
 
 	var COLOR_TYPE_NAME = 'color';
 
@@ -56,6 +57,11 @@
 			attributesEditor: ColorAttributesEditor,
 			label: 'redherb-property-type-color',
 			icon: icons.cdxIconHighlight
+		} );
+
+		registrar.registerViewType( {
+			typeName: 'redherb-card',
+			component: RedHerbCard
 		} );
 	} );
 }() );

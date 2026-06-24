@@ -55,6 +55,18 @@ this directory as a working example alongside the index below.
   [`resources/ColorDisplay.vue`](resources/ColorDisplay.vue),
   [`resources/ColorInput.vue`](resources/ColorInput.vue),
   [`resources/ColorAttributesEditor.vue`](resources/ColorAttributesEditor.vue).
+- **Register a view type frontend** — the same `neowiki.registration` registrar offers
+  `registrar.registerViewType(...)`, at parity with property types. The object you pass
+  matches
+  [`ViewTypeRegistration.ts`](../../resources/ext.neowiki/src/domain/ViewTypeRegistration.ts):
+  a `typeName` plus the Vue `component` that renders it. The component conforms to the
+  [`ViewTypeContract.ts`](../../resources/ext.neowiki/src/components/Views/ViewTypeContract.ts)
+  prop shape (`subjectId`, `canEditSubject`, `layoutName`) and reads its Subject from
+  NeoWiki's store via `nw.useSubjectStore()`, which NeoWiki populates before mounting the
+  view. A registered `typeName` becomes selectable as a Layout's View Type; a `{{#view}}`
+  (or Main Subject) placeholder referencing it then renders through your component instead
+  of the built-in infobox. RedHerb: [`resources/init.js`](resources/init.js),
+  [`resources/RedHerbCard.vue`](resources/RedHerbCard.vue).
 - **Use NeoWiki's public JS API** — `require('ext.neowiki')`; exports are listed in
   [`public-api.ts`](../../resources/ext.neowiki/src/public-api.ts) (a re-export barrel).
   The value model and factories (`newStringValue`, `newNumberValue`) live in

@@ -8,6 +8,12 @@ describe( 'NeoWikiExtension registry caching', () => {
 		expect( ext.getTypeSpecificComponentRegistry() )
 			.toBe( ext.getTypeSpecificComponentRegistry() );
 	} );
+
+	it( 'returns the same ViewTypeRegistry instance on repeated calls so extension registrations persist', () => {
+		const ext = NeoWikiExtension.getInstance();
+		expect( ext.getViewTypeRegistry() )
+			.toBe( ext.getViewTypeRegistry() );
+	} );
 } );
 
 describe( 'NeoWikiExtension.getPinia', () => {
