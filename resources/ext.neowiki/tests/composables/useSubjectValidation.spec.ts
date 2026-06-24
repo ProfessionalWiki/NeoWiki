@@ -57,4 +57,20 @@ describe( 'useSubjectValidation', () => {
 
 		expect( validate ).toHaveBeenCalledTimes( 1 );
 	} );
+
+	it( 'does not validate on input in blur-only mode (debounceMs 0); only flush validates', async () => {
+		const validate = vi.fn().mockResolvedValue( [] );
+		const { revalidate, flush } = useSubjectValidation( validate, { debounceMs: 0 } );
+
+		revalidate();
+		revalidate();
+		revalidate();
+
+		// Blur-only mode: on-input revalidation must NOT fire a dry-run; only
+		// flush() (blur / pre-save) should.
+		expect( validate ).not.toHaveBeenCalled();
+
+		await flush();
+		expect( validate ).toHaveBeenCalledTimes( 1 );
+	} );
 } );
