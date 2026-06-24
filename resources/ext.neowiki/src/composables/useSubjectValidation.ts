@@ -45,14 +45,16 @@ export function useSubjectValidation(
 	}
 
 	function revalidate(): void {
+		if ( options.debounceMs <= 0 ) {
+			// Blur-only mode: validation runs only on flush() (blur / pre-save),
+			// never on input — so a zero debounce cuts traffic instead of firing
+			// a dry-run on every keystroke.
+			return;
+		}
+
 		clearTimer();
 		requestSequence++;
 		const expectedSequence = requestSequence;
-
-		if ( options.debounceMs <= 0 ) {
-			run( expectedSequence );
-			return;
-		}
 		debounceTimer = setTimeout( () => run( expectedSequence ), options.debounceMs );
 	}
 

@@ -48,7 +48,8 @@ describe( 'SubjectEditorDialog', () => {
 	beforeEach( () => {
 		setupMwMock( {
 			functions: [ 'message', 'msg', 'notify', 'config' ],
-			// Debounce 0 makes the dry-run validation run synchronously in tests.
+			// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
+			// (via flush()), which runs synchronously in tests.
 			config: { wgNeoWikiValidationDebounceMs: 0 },
 		} );
 	} );
@@ -411,13 +412,14 @@ describe( 'SubjectEditorDialog', () => {
 			valuePartIndex: null,
 		};
 
-		it( 'surfaces dry-run violations when the editor reports a change', async () => {
+		it( 'surfaces dry-run violations on blur after an edit', async () => {
 			const validate = vi.fn().mockResolvedValue( [ dryRunViolation ] );
 			useSubjectStore().validateSubjectUpdate = validate;
 			const wrapper = mountComponent( true, validationTestStubs );
 			await flushPromises();
 
 			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'focusout' );
 			await flushPromises();
 
 			expect( validate ).toHaveBeenCalledWith(
@@ -454,6 +456,7 @@ describe( 'SubjectEditorDialog', () => {
 			await flushPromises();
 
 			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'focusout' );
 			await flushPromises();
 
 			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
