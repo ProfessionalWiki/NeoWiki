@@ -19,6 +19,27 @@
 		<div class="ext-redherb-card__label">
 			{{ subject.getLabel() }}
 		</div>
+		<dl
+			v-if="wideProperties.length > 0"
+			class="ext-redherb-card__wide"
+		>
+			<div
+				v-for="resolved in wideProperties"
+				:key="resolved.propertyDefinition.name.toString()"
+				class="ext-redherb-card__wide-field"
+			>
+				<dt class="ext-redherb-card__term">
+					{{ resolved.propertyDefinition.name.toString() }}
+				</dt>
+				<dd class="ext-redherb-card__value">
+					<component
+						:is="valueComponent( resolved.propertyDefinition.type )"
+						:value="resolved.value"
+						:property="resolved.propertyDefinition"
+					></component>
+				</dd>
+			</div>
+		</dl>
 		<div class="ext-redherb-card__columns">
 			<dl
 				v-for="( column, index ) in columns"
@@ -69,7 +90,9 @@ var nw = require( 'ext.neowiki' );
 // subject / schema / layout stores; resolveDisplayProperties + the value-display
 // component registry to render each value with its property type's component;
 // and the shared SubjectEditorDialog for editing, shown only when the contract
-// reports canEditSubject. NeoWiki populates the stores before mounting the view.
+// reports canEditSubject. It also reads the Layout's settings — a
+// fullWidthProperties list — to decide which properties span the full width
+// instead of sitting in a column. NeoWiki populates the stores before mounting.
 module.exports = exports = {
 	components: {
 		CdxButton: codex.CdxButton,
@@ -108,11 +131,28 @@ module.exports = exports = {
 			return nw.resolveDisplayProperties( schema.value, subject.value, layout.value );
 		} );
 
-		// Split the rows into two side-by-side columns.
+		// The Layout's settings let the layout author customise this View Type.
+		// fullWidthProperties names the properties that should span the full card
+		// width; the rest are laid out in two columns.
+		var fullWidthNames = vue.computed( function () {
+			var names = layout.value ? layout.value.getSettings().fullWidthProperties : undefined;
+			return Array.isArray( names ) ? names : [];
+		} );
+
+		function isFullWidth( resolved ) {
+			return fullWidthNames.value.indexOf( resolved.propertyDefinition.name.toString() ) !== -1;
+		}
+
+		var wideProperties = vue.computed( function () {
+			return resolvedProperties.value.filter( isFullWidth );
+		} );
+
 		var columns = vue.computed( function () {
-			var all = resolvedProperties.value;
-			var half = Math.ceil( all.length / 2 );
-			return [ all.slice( 0, half ), all.slice( half ) ];
+			var compact = resolvedProperties.value.filter( function ( resolved ) {
+				return !isFullWidth( resolved );
+			} );
+			var half = Math.ceil( compact.length / 2 );
+			return [ compact.slice( 0, half ), compact.slice( half ) ];
 		} );
 
 		function valueComponent( propertyType ) {
@@ -143,6 +183,7 @@ module.exports = exports = {
 
 		return {
 			subject: subject,
+			wideProperties: wideProperties,
 			columns: columns,
 			editorOpen: editorOpen,
 			editIcon: icons.cdxIconEdit,
@@ -181,6 +222,21 @@ module.exports = exports = {
 		font-size: @font-size-x-large;
 		font-weight: @font-weight-bold;
 		margin-bottom: @spacing-75;
+	}
+
+	// Full-width fields ( Layout setting fullWidthProperties ): the label sits
+	// above the value so long text can use the whole card width.
+	&__wide {
+		margin: 0 0 @spacing-75;
+	}
+
+	&__wide-field {
+		padding: @spacing-50 0;
+		border-bottom: @border-subtle;
+	}
+
+	&__wide-field &__term {
+		margin-block-end: @spacing-25;
 	}
 
 	&__columns {

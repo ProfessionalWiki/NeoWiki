@@ -66,8 +66,10 @@ this directory as a working example alongside the index below.
   (`nw.useSubjectStore()` etc.), `nw.resolveDisplayProperties` plus the value-display
   component registry (`nw.NeoWikiServices.getComponentRegistry()`) to render each value with
   its property type's component, and the shared `nw.SubjectEditorDialog` for the edit
-  affordance (rendered only when `canEditSubject` is true). NeoWiki populates the stores
-  before mounting the view. A registered `typeName` becomes selectable as a Layout's View
+  affordance (rendered only when `canEditSubject` is true). It also reads the Layout's
+  settings (`layout.getSettings()`) — a `fullWidthProperties` list — to render those
+  properties full-width and the rest in two columns, showing how a View Type takes
+  per-Layout configuration. NeoWiki populates the stores before mounting the view. A registered `typeName` becomes selectable as a Layout's View
   Type; a `{{#view}}` (or Main Subject) placeholder referencing it then renders through your
   component instead of the built-in infobox. RedHerb: [`resources/init.js`](resources/init.js),
   [`resources/RedHerbCard.vue`](resources/RedHerbCard.vue).
