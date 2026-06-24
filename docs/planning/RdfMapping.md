@@ -206,7 +206,7 @@ DROP SILENT GRAPH <neo-page:42>
 - **Ontology mapping layer.** The [Global Properties](GlobalProperties.md) document concluded that ontology
   alignment (e.g., "Person.Name maps to `foaf:name`") should happen via a separate mapping layer, not by changing
   the data model. That layer is designed in [Ontology Mapping](OntologyMapping.md). The RDF mapping described here emits NeoWiki-native
-  predicates; the ontology mapping layer would emit additional triples using standard vocabulary terms. Note that
+  predicates; the ontology mapping layer instead projects the data into standard-ontology terms. Note that
   this layer might need to be quite expressive: CIDOC-CRM alignment isn't just predicate renaming — it requires
   generating intermediate nodes that don't exist in NeoWiki's data. For example, a simple NeoWiki "Creator" relation
   from an Object to a Person would need to expand to `E22_Human-Made_Object → P108i_was_produced_by →
