@@ -255,7 +255,9 @@ const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
 
 const { violations: serverViolations, revalidate, flush, reset } = useSubjectValidation(
 	async () => {
-		if ( !subjectEditorRef.value || !selectedSchemaName.value ) {
+		// A draft (unsaved) schema does not exist server-side yet, so a dry-run
+		// against it would only 404. Skip until the schema is saved.
+		if ( !subjectEditorRef.value || !selectedSchemaName.value || hasDraftSchema.value ) {
 			return [];
 		}
 		const statements = [ ...subjectEditorRef.value.getSubjectData() ].filter( ( s ) => s.hasValue() );
