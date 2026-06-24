@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s1bachaaaaaaac2",
+	"subjects": {
+		"s1bachaaaaaaac2": {
+			"label": "Eisenach",
+			"schema": "Place",
+			"statements": {
+				"Country": { "type": "text", "value": [ "Germany" ] },
+				"Coordinates": { "type": "text", "value": [ "50.9747, 10.3247" ] },
+				"Description": { "type": "text", "value": [ "Town in Thuringia, Germany; birthplace of Johann Sebastian Bach." ] }
+			}
+		}
+	}
+}

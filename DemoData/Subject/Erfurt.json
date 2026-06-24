@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s1bachaaaaaaac1",
+	"subjects": {
+		"s1bachaaaaaaac1": {
+			"label": "Erfurt",
+			"schema": "Place",
+			"statements": {
+				"Country": { "type": "text", "value": [ "Germany" ] },
+				"Coordinates": { "type": "text", "value": [ "50.9787, 11.0328" ] },
+				"Description": { "type": "text", "value": [ "City in Thuringia, Germany; birthplace of Johann Ambrosius Bach." ] }
+			}
+		}
+	}
+}
