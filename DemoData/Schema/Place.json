@@ -1,0 +1,17 @@
+{
+	"description": "A geographic place. Maps to CIDOC CRM E53 Place (http://www.cidoc-crm.org/cidoc-crm/E53_Place).",
+	"propertyDefinitions": {
+		"Country": {
+			"type": "text",
+			"description": "Country name. Denormalised label; no direct CIDOC property (a faithful model would use P89 falls within a containing E53 Place)."
+		},
+		"Coordinates": {
+			"type": "text",
+			"description": "Latitude and longitude. CIDOC P168 place is defined by (E94 Space Primitive)."
+		},
+		"Description": {
+			"type": "text",
+			"description": "Short description. CIDOC P3 has note."
+		}
+	}
+}

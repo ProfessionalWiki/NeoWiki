@@ -1,0 +1,14 @@
+{
+	"description": "A human being. Maps to CIDOC CRM E21 Person (http://www.cidoc-crm.org/cidoc-crm/E21_Person). Deliberately lean: life events such as birth live on their own Subjects, not as fields here.",
+	"propertyDefinitions": {
+		"Description": {
+			"type": "text",
+			"description": "Short biography. CIDOC P3 has note."
+		},
+		"Also known as": {
+			"type": "text",
+			"multiple": true,
+			"description": "Alternative names and appellations. CIDOC P1 is identified by (E41 Appellation)."
+		}
+	}
+}

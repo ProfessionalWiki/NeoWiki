@@ -1,0 +1,34 @@
+{
+	"description": "The birth of a person, modelled as its own event Subject. Maps to CIDOC CRM E67 Birth (http://www.cidoc-crm.org/cidoc-crm/E67_Birth).",
+	"propertyDefinitions": {
+		"Brought into life": {
+			"type": "relation",
+			"relation": "Brought into life",
+			"targetSchema": "Person",
+			"required": true,
+			"description": "The person born. CIDOC P98 brought into life (inverse P98i was born)."
+		},
+		"By mother": {
+			"type": "relation",
+			"relation": "By mother",
+			"targetSchema": "Person",
+			"description": "The mother. CIDOC P96 by mother."
+		},
+		"From father": {
+			"type": "relation",
+			"relation": "From father",
+			"targetSchema": "Person",
+			"description": "The father. CIDOC P97 from father."
+		},
+		"Took place at": {
+			"type": "relation",
+			"relation": "Took place at",
+			"targetSchema": "Place",
+			"description": "Where the birth happened. CIDOC P7 took place at."
+		},
+		"Date": {
+			"type": "date",
+			"description": "When the birth happened. CIDOC P4 has time-span (E52 Time-Span); the date is the time-span's value, collapsed here to a single date."
+		}
+	}
+}
