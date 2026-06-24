@@ -237,5 +237,6 @@ These extension points are designed or partially present but not yet open to ext
   registration.
 - **Graph database backends.** A `GraphDatabasePlugin` interface exists, but Neo4j is the only backend and
   is currently hardcoded.
-- **TypeScript types.** The plain-JavaScript path above is the supported way to extend the frontend; NeoWiki
-  publishes no `.d.ts` type definitions, so there is no typed path yet.
+- **TypeScript types.** Extending the frontend in plain JavaScript is the supported path by design (see
+  [#686](https://github.com/ProfessionalWiki/NeoWiki/issues/686)); a published type-definitions package is
+  deferred.
