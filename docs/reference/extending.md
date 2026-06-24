@@ -5,7 +5,10 @@ order: 7
 # Extending NeoWiki
 
 NeoWiki exposes extension points so other MediaWiki extensions can add custom Property Types, contribute
-data to the graph, and reuse NeoWiki's UI. This page is the reference for those extension points.
+page metadata to the graph, and reuse NeoWiki's UI. This page is the reference for those extension points.
+
+NeoWiki concepts referenced here — Subject, Schema, Property Type, Page Property — are defined in the
+[Glossary](../concepts/glossary.md).
 
 [RedHerb](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb) is a minimal, test-backed
 example extension shipped in the NeoWiki repository. NeoWiki's own tests exercise it, so its examples stay
@@ -40,7 +43,6 @@ Most backend extension points are registered through the `NeoWikiRegistration` h
 ```php
 public static function onNeoWikiRegistration( NeoWikiRegistrar $registrar ): void {
 	$registrar->addPropertyType( new ColorType() );
-	$registrar->addNeo4jValueBuilder( ColorType::NAME, static fn ( $value ) => $value->toScalars() );
 	$registrar->addPagePropertyProvider( new StaticPagePropertyProvider() );
 }
 ```
