@@ -7,14 +7,20 @@
 			<span class="ext-redherb-card__caption">
 				{{ $i18n( 'redherb-card-caption' ).text() }}
 			</span>
-			<cdx-button
-				v-if="canEditSubject"
-				weight="quiet"
-				:aria-label="$i18n( 'redherb-card-edit' ).text()"
-				@click="openEditor"
-			>
-				<cdx-icon :icon="editIcon"></cdx-icon>
-			</cdx-button>
+			<span class="ext-redherb-card__actions">
+				<a
+					v-if="layoutName"
+					:href="layoutUrl"
+				>{{ $i18n( 'redherb-card-edit-layout' ).text() }}</a>
+				<cdx-button
+					v-if="canEditSubject"
+					weight="quiet"
+					:aria-label="$i18n( 'redherb-card-edit' ).text()"
+					@click="openEditor"
+				>
+					<cdx-icon :icon="editIcon"></cdx-icon>
+				</cdx-button>
+			</span>
 		</div>
 		<div class="ext-redherb-card__label">
 			{{ subject.getLabel() }}
@@ -124,6 +130,12 @@ module.exports = exports = {
 			return props.layoutName ? layoutStore.getLayout( props.layoutName ) : undefined;
 		} );
 
+		var layoutUrl = vue.computed( function () {
+			return props.layoutName ?
+				mw.util.getUrl( 'Layout:' + props.layoutName, { action: 'edit' } ) :
+				'';
+		} );
+
 		var resolvedProperties = vue.computed( function () {
 			if ( !schema.value ) {
 				return [];
@@ -183,6 +195,7 @@ module.exports = exports = {
 
 		return {
 			subject: subject,
+			layoutUrl: layoutUrl,
 			wideProperties: wideProperties,
 			columns: columns,
 			editorOpen: editorOpen,
@@ -210,6 +223,12 @@ module.exports = exports = {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+	}
+
+	&__actions {
+		display: flex;
+		align-items: center;
+		gap: @spacing-50;
 	}
 
 	&__caption {

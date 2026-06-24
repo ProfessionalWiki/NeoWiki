@@ -30,6 +30,7 @@
 	"redherb-color-invalid-fallback": "Unrecognised color value: $1",
 	"redherb-card-caption": "RedHerb card",
 	"redherb-card-edit": "Edit",
+	"redherb-card-edit-layout": "Edit layout",
 	"neowiki-field-invalid-hex": "Please enter a 6-digit hex color like #ff5733.",
 	"neowiki-field-not-in-palette": "This color is not in the allowed palette."
 }
