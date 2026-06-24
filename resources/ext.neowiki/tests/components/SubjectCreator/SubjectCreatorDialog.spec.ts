@@ -1086,9 +1086,10 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( passed ).toHaveLength( 0 );
 		} );
 
-		it( 'does not surface required violations from the dry-run; they wait for save', async () => {
+		it( 'does not surface missing-value violations (required, label-required) from the dry-run; they wait for save', async () => {
 			subjectStore.validateSubject = vi.fn().mockResolvedValue( [
 				{ propertyName: 'Color', code: 'required', args: [], valuePartIndex: null },
+				{ propertyName: null, code: 'label-required', args: [], valuePartIndex: null },
 			] );
 			const wrapper = mountComponent();
 			await selectSchema( wrapper );
