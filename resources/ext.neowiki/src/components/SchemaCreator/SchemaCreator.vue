@@ -91,17 +91,15 @@ function onNameInput(): void {
 }
 
 async function checkDuplicateName( name: string, expectedSequence: number ): Promise<void> {
-	try {
-		await schemaStore.getOrFetchSchema( name );
+	const exists = await schemaStore.schemaNameExists( name );
 
-		if ( expectedSequence !== requestSequence ) {
-			return;
-		}
+	if ( expectedSequence !== requestSequence ) {
+		return;
+	}
 
+	if ( exists ) {
 		nameError.value = mw.msg( 'neowiki-schema-creator-name-taken' );
 		nameStatus.value = 'error';
-	} catch {
-		// Schema not found — name is available
 	}
 }
 
@@ -124,15 +122,13 @@ async function validate(): Promise<boolean> {
 		return false;
 	}
 
-	try {
-		await schemaStore.getOrFetchSchema( name );
+	if ( await schemaStore.schemaNameExists( name ) ) {
 		nameError.value = mw.msg( 'neowiki-schema-creator-name-taken' );
 		nameStatus.value = 'error';
 		return false;
-	} catch {
-		// Schema not found — name is available
-		return true;
 	}
+
+	return true;
 }
 
 function getSchema(): Schema | null {

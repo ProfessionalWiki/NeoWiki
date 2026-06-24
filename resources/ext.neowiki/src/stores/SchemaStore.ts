@@ -36,6 +36,13 @@ export const useSchemaStore = defineStore( 'schema', {
 			await Promise.all( schemaNames.map( ( name ) => this.getOrFetchSchema( name ) ) );
 			return schemaNames;
 		},
+		// Checks existence via the schema-names search (a 200 response) rather
+		// than getOrFetchSchema, which 404s for a missing name — those 404s are
+		// avoidable console/network noise when checking a not-yet-created name.
+		async schemaNameExists( name: string ): Promise<boolean> {
+			const matches = await NeoWikiExtension.getInstance().getSchemaRepository().getSchemaNames( name );
+			return matches.includes( name );
+		},
 		async saveSchema( schema: Schema, comment?: string ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSchemaRepository().saveSchema( schema, comment );
 			this.setSchema( schema.getName(), schema );
