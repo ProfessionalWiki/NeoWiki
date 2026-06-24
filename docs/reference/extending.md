@@ -5,7 +5,8 @@ order: 7
 # Extending NeoWiki
 
 NeoWiki exposes extension points so other MediaWiki extensions can add custom Property Types, contribute
-page metadata to the graph, and reuse NeoWiki's UI. This page is the reference for those extension points.
+page metadata to the graph, and reuse NeoWiki's UI. This page is the reference for those extension points and
+the APIs extensions build on.
 
 NeoWiki concepts referenced here — Subject, Schema, Property Type, Page Property — are defined in the
 [Glossary](../concepts/glossary.md).
@@ -89,22 +90,6 @@ Register with `NeoWikiRegistrar::addPagePropertyProvider()`. The context exposes
 creation and modification times, categories, and last editor. Example:
 [`src/StaticPagePropertyProvider.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/StaticPagePropertyProvider.php).
 
-### Loading frontend modules
-
-To load your own ResourceLoader modules alongside NeoWiki's UI, handle the `NeoWikiGetFrontendModules` hook:
-
-```php
-class MyExtFrontendModulesHook implements NeoWikiGetFrontendModulesHook {
-
-	public function onNeoWikiGetFrontendModules( array &$modules, OutputPage $out, Skin $skin ): void {
-		$modules[] = 'ext.myext';
-	}
-
-}
-```
-
-Example: [`src/RedHerbFrontendModulesHook.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbFrontendModulesHook.php).
-
 ### Reading NeoWiki data and authorization
 
 `NeoWikiExtension::getInstance()` exposes read-side services usable from any MediaWiki extension point
@@ -123,8 +108,10 @@ and [`src/Specials/SpecialRedHerbSubjectFinder.php`](https://github.com/Professi
 NeoWiki's frontend is built with TypeScript and Vue, but extensions consume it as plain JavaScript — no
 TypeScript build step is required.
 
-Declare a ResourceLoader module that depends on `ext.neowiki`, which makes `require( 'ext.neowiki' )`
-available, and load it via the `NeoWikiGetFrontendModules` hook above:
+### Loading your frontend
+
+Getting your JavaScript onto NeoWiki pages takes two steps. First, declare a ResourceLoader module that depends
+on `ext.neowiki`, which makes `require( 'ext.neowiki' )` available:
 
 ```json
 "ResourceModules": {
@@ -135,6 +122,20 @@ available, and load it via the `NeoWikiGetFrontendModules` hook above:
 	}
 }
 ```
+
+Then load that module alongside NeoWiki's UI by handling the `NeoWikiGetFrontendModules` hook:
+
+```php
+class MyExtFrontendModulesHook implements NeoWikiGetFrontendModulesHook {
+
+	public function onNeoWikiGetFrontendModules( array &$modules, OutputPage $out, Skin $skin ): void {
+		$modules[] = 'ext.myext';
+	}
+
+}
+```
+
+Example: [`src/RedHerbFrontendModulesHook.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbFrontendModulesHook.php).
 
 ### Registering a Property Type frontend
 
