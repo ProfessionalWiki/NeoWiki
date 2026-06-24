@@ -61,11 +61,15 @@ this directory as a working example alongside the index below.
   [`ViewTypeRegistration.ts`](../../resources/ext.neowiki/src/domain/ViewTypeRegistration.ts):
   a `typeName` plus the Vue `component` that renders it. The component conforms to the
   [`ViewTypeContract.ts`](../../resources/ext.neowiki/src/components/Views/ViewTypeContract.ts)
-  prop shape (`subjectId`, `canEditSubject`, `layoutName`) and reads its Subject from
-  NeoWiki's store via `nw.useSubjectStore()`, which NeoWiki populates before mounting the
-  view. A registered `typeName` becomes selectable as a Layout's View Type; a `{{#view}}`
-  (or Main Subject) placeholder referencing it then renders through your component instead
-  of the built-in infobox. RedHerb: [`resources/init.js`](resources/init.js),
+  prop shape (`subjectId`, `canEditSubject`, `layoutName`). The `redherb-card` example
+  assembles NeoWiki's own building blocks: the subject / schema / layout stores
+  (`nw.useSubjectStore()` etc.), `nw.resolveDisplayProperties` plus the value-display
+  component registry (`nw.NeoWikiServices.getComponentRegistry()`) to render each value with
+  its property type's component, and the shared `nw.SubjectEditorDialog` for the edit
+  affordance (rendered only when `canEditSubject` is true). NeoWiki populates the stores
+  before mounting the view. A registered `typeName` becomes selectable as a Layout's View
+  Type; a `{{#view}}` (or Main Subject) placeholder referencing it then renders through your
+  component instead of the built-in infobox. RedHerb: [`resources/init.js`](resources/init.js),
   [`resources/RedHerbCard.vue`](resources/RedHerbCard.vue).
 - **Use NeoWiki's public JS API** — `require('ext.neowiki')`; exports are listed in
   [`public-api.ts`](../../resources/ext.neowiki/src/public-api.ts) (a re-export barrel).

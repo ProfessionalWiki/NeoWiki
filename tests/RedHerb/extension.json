@@ -140,6 +140,7 @@
 						"cdxIconAdd",
 						"cdxIconClose",
 						"cdxIconDraggable",
+						"cdxIconEdit",
 						"cdxIconHighlight",
 						"cdxIconInfo"
 					]
@@ -153,6 +154,7 @@
 				"redherb-color-reorder-color",
 				"redherb-color-invalid-fallback",
 				"redherb-card-caption",
+				"redherb-card-edit",
 				"neowiki-field-invalid-hex",
 				"neowiki-field-not-in-palette",
 				"neowiki-field-required"

@@ -3,40 +3,79 @@
 		v-if="subject"
 		class="ext-redherb-card"
 	>
-		<div class="ext-redherb-card__caption">
-			{{ $i18n( 'redherb-card-caption' ).text() }}
+		<div class="ext-redherb-card__header">
+			<span class="ext-redherb-card__caption">
+				{{ $i18n( 'redherb-card-caption' ).text() }}
+			</span>
+			<cdx-button
+				v-if="canEditSubject"
+				weight="quiet"
+				:aria-label="$i18n( 'redherb-card-edit' ).text()"
+				@click="openEditor"
+			>
+				<cdx-icon :icon="editIcon"></cdx-icon>
+			</cdx-button>
 		</div>
 		<div class="ext-redherb-card__label">
 			{{ subject.getLabel() }}
 		</div>
-		<div class="ext-redherb-card__schema">
-			{{ subject.getSchemaName() }}
-		</div>
-		<ul
-			v-if="propertyNames.length > 0"
-			class="ext-redherb-card__properties"
-		>
-			<li
-				v-for="name in propertyNames"
-				:key="name"
+		<div class="ext-redherb-card__columns">
+			<dl
+				v-for="( column, index ) in columns"
+				:key="index"
+				class="ext-redherb-card__grid"
 			>
-				{{ name }}
-			</li>
-		</ul>
+				<div
+					v-for="resolved in column"
+					:key="resolved.propertyDefinition.name.toString()"
+					class="ext-redherb-card__row"
+				>
+					<dt class="ext-redherb-card__term">
+						{{ resolved.propertyDefinition.name.toString() }}
+					</dt>
+					<dd class="ext-redherb-card__value">
+						<component
+							:is="valueComponent( resolved.propertyDefinition.type )"
+							:value="resolved.value"
+							:property="resolved.propertyDefinition"
+						></component>
+					</dd>
+				</div>
+			</dl>
+		</div>
+		<subject-editor-dialog
+			v-if="canEditSubject"
+			:open="editorOpen"
+			:subject="subject"
+			:on-save="handleSaveSubject"
+			:on-save-schema="handleSaveSchema"
+			@update:open="editorOpen = $event"
+		></subject-editor-dialog>
 	</div>
 </template>
 
 <script>
+'use strict';
+
 var vue = require( 'vue' );
+var codex = require( './codex.js' );
+var icons = require( './icons.json' );
 var nw = require( 'ext.neowiki' );
 
-// Example View Type: renders a Subject as a compact card. The component receives
-// the ViewTypeProps contract ( subjectId, canEditSubject, layoutName ) and reads
-// the Subject from NeoWiki's store, which NeoWiki has already populated before it
-// mounts the view. A richer View Type would reuse NeoWiki's value-display
-// components ( see Infobox ); this stays to labels and property names to keep the
-// example minimal.
+// Example View Type: renders a Subject as a two-column card, loosely modelled on
+// the "document control" header BlueSpice shows on controlled documents. It
+// demonstrates assembling NeoWiki's building blocks from a separate extension:
+// the ViewTypeProps contract ( subjectId, canEditSubject, layoutName ); the
+// subject / schema / layout stores; resolveDisplayProperties + the value-display
+// component registry to render each value with its property type's component;
+// and the shared SubjectEditorDialog for editing, shown only when the contract
+// reports canEditSubject. NeoWiki populates the stores before mounting the view.
 module.exports = exports = {
+	components: {
+		CdxButton: codex.CdxButton,
+		CdxIcon: codex.CdxIcon,
+		SubjectEditorDialog: nw.SubjectEditorDialog
+	},
 	props: {
 		subjectId: { type: Object, required: true },
 		canEditSubject: { type: Boolean, required: true },
@@ -44,20 +83,73 @@ module.exports = exports = {
 	},
 	setup: function ( props ) {
 		var subjectStore = nw.useSubjectStore();
+		var schemaStore = nw.useSchemaStore();
+		var layoutStore = nw.useLayoutStore();
+		var componentRegistry = nw.NeoWikiServices.getComponentRegistry();
+
+		var editorOpen = vue.ref( false );
 
 		var subject = vue.computed( function () {
 			return subjectStore.getSubject( props.subjectId );
 		} );
 
-		var propertyNames = vue.computed( function () {
-			return subject.value.getNamesOfNonEmptyProperties().map( function ( name ) {
-				return name.toString();
-			} );
+		var schema = vue.computed( function () {
+			return schemaStore.getSchema( subject.value.getSchemaName() );
 		} );
+
+		var layout = vue.computed( function () {
+			return props.layoutName ? layoutStore.getLayout( props.layoutName ) : undefined;
+		} );
+
+		var resolvedProperties = vue.computed( function () {
+			if ( !schema.value ) {
+				return [];
+			}
+			return nw.resolveDisplayProperties( schema.value, subject.value, layout.value );
+		} );
+
+		// Split the rows into two side-by-side columns.
+		var columns = vue.computed( function () {
+			var all = resolvedProperties.value;
+			var half = Math.ceil( all.length / 2 );
+			return [ all.slice( 0, half ), all.slice( half ) ];
+		} );
+
+		function valueComponent( propertyType ) {
+			return componentRegistry.getValueDisplayComponent( propertyType );
+		}
+
+		function openEditor() {
+			Promise.all( [
+				schemaStore.fetchSchema( subject.value.getSchemaName() ),
+				subjectStore.fetchSubject( props.subjectId )
+			] ).then( function () {
+				editorOpen.value = true;
+			} ).catch( function ( error ) {
+				mw.notify(
+					error instanceof Error ? error.message : String( error ),
+					{ type: 'error' }
+				);
+			} );
+		}
+
+		function handleSaveSubject( updatedSubject, comment ) {
+			return subjectStore.updateSubject( updatedSubject, comment );
+		}
+
+		function handleSaveSchema( updatedSchema, comment ) {
+			return schemaStore.saveSchema( updatedSchema, comment );
+		}
 
 		return {
 			subject: subject,
-			propertyNames: propertyNames
+			columns: columns,
+			editorOpen: editorOpen,
+			editIcon: icons.cdxIconEdit,
+			valueComponent: valueComponent,
+			openEditor: openEditor,
+			handleSaveSubject: handleSaveSubject,
+			handleSaveSchema: handleSaveSchema
 		};
 	}
 };
@@ -67,11 +159,17 @@ module.exports = exports = {
 @import 'mediawiki.skin.variables.less';
 
 .ext-redherb-card {
-	max-width: 20rem;
+	margin-bottom: @spacing-100;
 	padding: @spacing-100;
 	border: @border-base;
 	border-radius: @border-radius-base;
 	background-color: @background-color-base;
+
+	&__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
 
 	&__caption {
 		color: @color-subtle;
@@ -82,16 +180,37 @@ module.exports = exports = {
 	&__label {
 		font-size: @font-size-x-large;
 		font-weight: @font-weight-bold;
+		margin-bottom: @spacing-75;
 	}
 
-	&__schema {
-		color: @color-subtle;
-		font-size: @font-size-small;
+	&__columns {
+		display: flex;
+		flex-wrap: wrap;
+		gap: @spacing-150;
 	}
 
-	&__properties {
-		margin-block-start: @spacing-75;
-		padding-inline-start: @spacing-150;
+	&__grid {
+		flex: 1 1 14rem;
+		margin: 0;
+	}
+
+	&__row {
+		display: grid;
+		grid-template-columns: minmax( 8rem, max-content ) 1fr;
+		column-gap: @spacing-100;
+		padding: @spacing-50 0;
+		border-bottom: @border-subtle;
+	}
+
+	&__term {
+		margin: 0;
+		font-weight: @font-weight-bold;
+		color: @color-emphasized;
+	}
+
+	&__value {
+		margin: 0;
+		overflow-wrap: anywhere;
 	}
 }
 </style>
