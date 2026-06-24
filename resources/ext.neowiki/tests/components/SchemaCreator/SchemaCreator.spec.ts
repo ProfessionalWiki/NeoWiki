@@ -4,7 +4,6 @@ import { createPinia, setActivePinia } from 'pinia';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
-import { newSchema } from '@/TestHelpers.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { Schema } from '@/domain/Schema.ts';
@@ -75,7 +74,7 @@ describe( 'SchemaCreator', () => {
 		setActivePinia( pinia );
 
 		schemaStore = useSchemaStore();
-		schemaStore.getOrFetchSchema = vi.fn().mockRejectedValue( new Error( 'Not found' ) );
+		schemaStore.schemaNameExists = vi.fn().mockResolvedValue( false );
 	} );
 
 	afterEach( () => {
@@ -118,7 +117,7 @@ describe( 'SchemaCreator', () => {
 	} );
 
 	it( 'shows name-taken error after debounce', async () => {
-		schemaStore.getOrFetchSchema = vi.fn().mockResolvedValue( newSchema( { title: EXISTING_SCHEMA_NAME } ) );
+		schemaStore.schemaNameExists = vi.fn().mockResolvedValue( true );
 
 		const wrapper = mountComponent();
 
@@ -143,16 +142,13 @@ describe( 'SchemaCreator', () => {
 		vi.advanceTimersByTime( DEBOUNCE_DELAY - 1 );
 		await flushPromises();
 
-		expect( schemaStore.getOrFetchSchema ).not.toHaveBeenCalled();
+		expect( schemaStore.schemaNameExists ).not.toHaveBeenCalled();
 	} );
 
 	it( 'cancels pending duplicate check when user types again', async () => {
-		schemaStore.getOrFetchSchema = vi.fn().mockImplementation( ( name: string ) => {
-			if ( name === EXISTING_SCHEMA_NAME ) {
-				return Promise.resolve( newSchema( { title: EXISTING_SCHEMA_NAME } ) );
-			}
-			return Promise.reject( new Error( 'Not found' ) );
-		} );
+		schemaStore.schemaNameExists = vi.fn().mockImplementation(
+			( name: string ) => Promise.resolve( name === EXISTING_SCHEMA_NAME ),
+		);
 
 		const wrapper = mountComponent();
 
@@ -167,15 +163,15 @@ describe( 'SchemaCreator', () => {
 
 		const field = wrapper.findComponent( { name: 'CdxField' } );
 		expect( field.props( 'status' ) ).toBe( 'default' );
-		expect( schemaStore.getOrFetchSchema ).toHaveBeenCalledWith( NEW_SCHEMA_NAME );
-		expect( schemaStore.getOrFetchSchema ).not.toHaveBeenCalledWith( EXISTING_SCHEMA_NAME );
+		expect( schemaStore.schemaNameExists ).toHaveBeenCalledWith( NEW_SCHEMA_NAME );
+		expect( schemaStore.schemaNameExists ).not.toHaveBeenCalledWith( EXISTING_SCHEMA_NAME );
 	} );
 
 	it( 'discards stale duplicate check result when user types during request', async () => {
-		let resolveSchemaPromise: ( value: Schema ) => void;
-		schemaStore.getOrFetchSchema = vi.fn().mockImplementation(
-			() => new Promise<Schema>( ( resolve ) => {
-				resolveSchemaPromise = resolve;
+		let resolveExists: ( value: boolean ) => void;
+		schemaStore.schemaNameExists = vi.fn().mockImplementation(
+			() => new Promise<boolean>( ( resolve ) => {
+				resolveExists = resolve;
 			} ),
 		);
 
@@ -188,7 +184,7 @@ describe( 'SchemaCreator', () => {
 
 		await nameInput.setValue( NEW_SCHEMA_NAME );
 
-		resolveSchemaPromise!( newSchema( { title: EXISTING_SCHEMA_NAME } ) );
+		resolveExists!( true );
 		await flushPromises();
 
 		const field = wrapper.findComponent( { name: 'CdxField' } );
@@ -207,7 +203,7 @@ describe( 'SchemaCreator', () => {
 		} );
 
 		it( 'returns false when name already exists', async () => {
-			schemaStore.getOrFetchSchema = vi.fn().mockResolvedValue( newSchema( { title: EXISTING_SCHEMA_NAME } ) );
+			schemaStore.schemaNameExists = vi.fn().mockResolvedValue( true );
 
 			const wrapper = mountComponent();
 
