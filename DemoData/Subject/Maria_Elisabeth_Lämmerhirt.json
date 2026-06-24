@@ -1,0 +1,12 @@
+{
+	"mainSubject": "s1bachaaaaaaaa2",
+	"subjects": {
+		"s1bachaaaaaaaa2": {
+			"label": "Maria Elisabeth Lämmerhirt",
+			"schema": "Person",
+			"statements": {
+				"Description": { "type": "text", "value": [ "Mother of Johann Sebastian Bach and wife of Johann Ambrosius Bach." ] }
+			}
+		}
+	}
+}

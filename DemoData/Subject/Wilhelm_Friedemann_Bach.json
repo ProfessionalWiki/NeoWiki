@@ -1,0 +1,13 @@
+{
+	"mainSubject": "s1bachaaaaaaaa6",
+	"subjects": {
+		"s1bachaaaaaaaa6": {
+			"label": "Wilhelm Friedemann Bach",
+			"schema": "Person",
+			"statements": {
+				"Description": { "type": "text", "value": [ "Composer and organist; eldest surviving son of Johann Sebastian Bach." ] },
+				"Also known as": { "type": "text", "value": [ "the Halle Bach" ] }
+			}
+		}
+	}
+}

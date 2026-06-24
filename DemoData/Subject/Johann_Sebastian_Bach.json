@@ -1,0 +1,13 @@
+{
+	"mainSubject": "s1bachaaaaaaaa3",
+	"subjects": {
+		"s1bachaaaaaaaa3": {
+			"label": "Johann Sebastian Bach",
+			"schema": "Person",
+			"statements": {
+				"Description": { "type": "text", "value": [ "German composer and organist of the Baroque period." ] },
+				"Also known as": { "type": "text", "value": [ "J. S. Bach" ] }
+			}
+		}
+	}
+}
