@@ -169,7 +169,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
-import { withoutRequiredViolations, type SubjectViolation } from '@/domain/SubjectViolation';
+import { withoutMissingValueViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { CdxMessage } from '@wikimedia/codex';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
@@ -267,7 +267,7 @@ const { violations: serverViolations, revalidate, flush, reset } = useSubjectVal
 				selectedSchemaName.value,
 				new StatementList( statements )
 			);
-			return withoutRequiredViolations( violations );
+			return withoutMissingValueViolations( violations );
 		} catch ( error ) {
 			// The dry-run runs alongside the live validators and must never
 			// break editing or saving; the authoritative result is the save's

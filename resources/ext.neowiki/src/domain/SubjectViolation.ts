@@ -21,16 +21,23 @@ export interface SubjectViolation {
 }
 
 /**
- * Withholds 'required' violations from the live dry-run while *creating* a
- * subject: every required field starts empty and the user is on their way to
- * filling them in, so flagging them mid-creation nags about a mistake not yet
- * made. Editing an existing subject surfaces 'required' normally — there an
+ * Codes for violations that fire only because a field (or the subject label)
+ * has not been filled in yet. They are the only violations that can occur on a
+ * field the user has not touched.
+ */
+const MISSING_VALUE_CODES: ReadonlySet<string> = new Set( [ 'required', 'label-required' ] );
+
+/**
+ * Withholds "you have not filled this in yet" violations from the live dry-run
+ * while *creating* a subject: every field starts empty and the user is on their
+ * way to filling them in, so flagging them mid-creation nags about a mistake
+ * not yet made. Editing an existing subject surfaces them normally — there an
  * empty required field is a real gap, not a field still being filled in. Every
  * other violation needs a value to occur, so the field was necessarily touched;
  * those always show live.
  */
-export function withoutRequiredViolations(
+export function withoutMissingValueViolations(
 	violations: readonly SubjectViolation[],
 ): SubjectViolation[] {
-	return violations.filter( ( v ) => v.code !== 'required' );
+	return violations.filter( ( v ) => !MISSING_VALUE_CODES.has( v.code ) );
 }
