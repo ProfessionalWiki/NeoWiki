@@ -30,11 +30,11 @@
 			{{ subject.getLabel() }}
 		</div>
 		<dl
-			v-if="wideProperties.length > 0"
+			v-if="layoutSections.wide.length > 0"
 			class="ext-redherb-card__wide"
 		>
 			<div
-				v-for="resolved in wideProperties"
+				v-for="resolved in layoutSections.wide"
 				:key="resolved.propertyDefinition.name.toString()"
 				class="ext-redherb-card__wide-field"
 			>
@@ -52,7 +52,7 @@
 		</dl>
 		<div class="ext-redherb-card__columns">
 			<dl
-				v-for="( column, index ) in columns"
+				v-for="( column, index ) in layoutSections.columns"
 				:key="index"
 				class="ext-redherb-card__grid"
 			>
@@ -159,16 +159,23 @@ module.exports = exports = {
 			return fullWidthNames.value.indexOf( resolved.propertyDefinition.name.toString() ) !== -1;
 		}
 
-		var wideProperties = vue.computed( function () {
-			return resolvedProperties.value.filter( isFullWidth );
-		} );
-
-		var columns = vue.computed( function () {
-			var compact = resolvedProperties.value.filter( function ( resolved ) {
-				return !isFullWidth( resolved );
+		// Partition the properties into the full-width fields and two columns of
+		// the rest, in a single pass.
+		var layoutSections = vue.computed( function () {
+			var wide = [];
+			var compact = [];
+			resolvedProperties.value.forEach( function ( resolved ) {
+				if ( isFullWidth( resolved ) ) {
+					wide.push( resolved );
+				} else {
+					compact.push( resolved );
+				}
 			} );
 			var half = Math.ceil( compact.length / 2 );
-			return [ compact.slice( 0, half ), compact.slice( half ) ];
+			return {
+				wide: wide,
+				columns: [ compact.slice( 0, half ), compact.slice( half ) ]
+			};
 		} );
 
 		function valueComponent( propertyType ) {
@@ -200,8 +207,7 @@ module.exports = exports = {
 		return {
 			subject: subject,
 			layoutUrl: layoutUrl,
-			wideProperties: wideProperties,
-			columns: columns,
+			layoutSections: layoutSections,
 			editorOpen: editorOpen,
 			editIcon: icons.cdxIconEdit,
 			valueComponent: valueComponent,
