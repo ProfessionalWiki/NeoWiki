@@ -463,10 +463,11 @@ describe( 'SubjectEditorDialog', () => {
 			expect( passed ).toHaveLength( 0 );
 		} );
 
-		it( 'does not surface required violations from the dry-run; they wait for save', async () => {
-			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [
-				{ propertyName: 'name', code: 'required', args: [], valuePartIndex: null },
-			] );
+		it( 'surfaces required violations from the dry-run; an existing subject flags missing required', async () => {
+			const requiredViolation: SubjectViolation = {
+				propertyName: 'name', code: 'required', args: [], valuePartIndex: null,
+			};
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ requiredViolation ] );
 			const wrapper = mountComponent( true, validationTestStubs );
 			await flushPromises();
 
@@ -475,7 +476,7 @@ describe( 'SubjectEditorDialog', () => {
 			await flushPromises();
 
 			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
-			expect( passed ).toEqual( [] );
+			expect( passed ).toEqual( [ requiredViolation ] );
 		} );
 	} );
 } );
