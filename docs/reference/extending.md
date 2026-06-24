@@ -72,8 +72,8 @@ $registrar->addNeo4jValueBuilder( ColorType::NAME, static fn ( $value ) => $valu
 
 ### Page Property Providers
 
-Page Property Providers contribute key/value metadata to the Page node in the graph (queryable via Cypher).
-Implement `PagePropertyProvider`:
+Page Property Providers contribute key/value metadata to the Page node in the graph (queryable via Cypher;
+Neo4j is currently the only graph backend). Implement `PagePropertyProvider`:
 
 ```php
 class StaticPagePropertyProvider implements PagePropertyProvider {
@@ -211,8 +211,10 @@ and [`resources/subjectFinder/`](https://github.com/ProfessionalWiki/NeoWiki/tre
 
 ### i18n and validation codes
 
-A frontend Property Type's `validate` returns `{ code }` objects. NeoWiki resolves each `code` as the
-message key `neowiki-field-<code>`; your extension must define those messages. For example, returning
+A Property Type validates in two places: the backend `PropertyType::validate()` (authoritative — returns
+`Violation[]`) and the frontend `validate` (immediate UX feedback — returns an array of `{ code }` objects,
+empty meaning valid). Implement both. NeoWiki resolves each frontend `code` as the message key
+`neowiki-field-<code>`; your extension must define those messages. For example, returning
 `{ code: 'invalid-hex' }` requires a `neowiki-field-invalid-hex` message (see RedHerb's
 [`i18n/en.json`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/i18n/en.json)).
 
@@ -234,6 +236,5 @@ These extension points are designed or partially present but not yet open to ext
   registration.
 - **Graph database backends.** A `GraphDatabasePlugin` interface exists, but Neo4j is the only backend and
   is currently hardcoded.
-- **TypeScript types.** NeoWiki does not yet publish type definitions (`.d.ts`); TypeScript extension
-  authors depend on NeoWiki's source or maintain local stubs. The plain-JavaScript path above is the
-  supported way to extend the frontend.
+- **TypeScript types.** The plain-JavaScript path above is the supported way to extend the frontend; NeoWiki
+  publishes no `.d.ts` type definitions, so there is no typed path yet.
