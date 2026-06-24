@@ -60,7 +60,7 @@ this directory as a working example alongside the index below.
   matches
   [`ViewTypeRegistration.ts`](../../resources/ext.neowiki/src/domain/ViewTypeRegistration.ts):
   a `typeName` plus the Vue `component` that renders it. The component conforms to the
-  [`ViewTypeContract.ts`](../../resources/ext.neowiki/src/components/Views/ViewTypeContract.ts)
+  [`ViewContract.ts`](../../resources/ext.neowiki/src/components/Views/ViewContract.ts)
   prop shape (`subjectId`, `canEditSubject`, `layoutName`). The `redherb-card` example
   assembles NeoWiki's own building blocks: the subject / schema / layout stores
   (`nw.useSubjectStore()` etc.), `nw.resolveDisplayProperties` plus the value-display

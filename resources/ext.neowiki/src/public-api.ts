@@ -25,7 +25,7 @@ export * from './components/SchemaEditor/Property/AttributesEditorContract';
 export * from './components/SchemaEditor/Property/minExceedsMax';
 export * from './components/Value/ValueDisplayContract';
 export * from './components/Value/ValueInputContract';
-export * from './components/Views/ViewTypeContract';
+export * from './components/Views/ViewContract';
 export * from './composables/useChangeDetection';
 export * from './composables/useCloseConfirmation';
 export * from './composables/useFieldServerViolation';

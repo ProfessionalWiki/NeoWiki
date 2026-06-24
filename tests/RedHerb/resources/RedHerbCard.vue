@@ -96,7 +96,7 @@ var nw = require( 'ext.neowiki' );
 // Example View Type: renders a Subject as a two-column card, loosely modelled on
 // the "document control" header BlueSpice shows on controlled documents. It
 // demonstrates assembling NeoWiki's building blocks from a separate extension:
-// the ViewTypeProps contract ( subjectId, canEditSubject, layoutName ); the
+// the ViewProps contract ( subjectId, canEditSubject, layoutName ); the
 // subject / schema / layout stores; resolveDisplayProperties + the value-display
 // component registry to render each value with its property type's component;
 // and the shared SubjectEditorDialog for editing, shown only when the contract

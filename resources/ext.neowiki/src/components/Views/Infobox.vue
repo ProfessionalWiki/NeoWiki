@@ -70,9 +70,9 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';
 import { resolveDisplayProperties, type ResolvedProperty } from '@/domain/resolveDisplayProperties.ts';
-import type { ViewTypeProps } from '@/components/Views/ViewTypeContract.ts';
+import type { ViewProps } from '@/components/Views/ViewContract.ts';
 
-const props = defineProps<ViewTypeProps>();
+const props = defineProps<ViewProps>();
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
