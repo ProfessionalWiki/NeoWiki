@@ -90,7 +90,10 @@ function onInput( newValue: string ): void {
 }
 
 function validate( value: StringValue | undefined ): void {
-	const errors = propertyType.validate( value, props.property );
+	// Suppress the live 'required' error so an untouched datetime field isn't
+	// flagged before the user has entered a value; the server still enforces it.
+	const errors = propertyType.validate( value, props.property )
+		.filter( ( e ) => e.code !== 'required' );
 	if ( errors.length === 0 ) {
 		liveValidationError.value = null;
 		return;

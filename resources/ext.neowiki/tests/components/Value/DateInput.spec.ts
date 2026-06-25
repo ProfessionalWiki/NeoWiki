@@ -66,10 +66,22 @@ describe( 'DateInput', () => {
 		expect( wrapper.find( 'input' ).attributes( 'max' ) ).toBe( '2030-12-31' );
 	} );
 
-	it( 'shows required error when required property has empty value', () => {
+	it( 'does not flag an empty required date before the user has picked a value', () => {
 		const wrapper = newWrapper( {
 			modelValue: undefined,
 			property: newDateProperty( { required: true } ),
+		} );
+
+		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'default' );
+		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toEqual( {} );
+	} );
+
+	it( 'still surfaces a server-sourced required violation on the date field', () => {
+		const wrapper = newWrapper( {
+			property: newDateProperty( { name: 'Foo', required: true } ),
+			serverViolations: [
+				{ propertyName: 'Foo', code: 'required', args: [], valuePartIndex: null },
+			],
 		} );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
