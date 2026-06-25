@@ -7,7 +7,7 @@
 		},
 		"Coordinates": {
 			"type": "text",
-			"description": "Latitude and longitude. CIDOC P168 place is defined by (E94 Space Primitive)."
+			"description": "Latitude and longitude display label. CIDOC P168 place is defined by (E94 Space Primitive); a faithful model would store a WKT/GML geometry literal (e.g. POINT(longitude latitude)), not this human-readable string."
 		},
 		"Description": {
 			"type": "text",

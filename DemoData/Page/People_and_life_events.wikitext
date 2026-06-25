@@ -41,7 +41,7 @@ This dataset partially maps to [http://www.cidoc-crm.org/ CIDOC CRM]. The canoni
 |-
 | Person / Place: Description || P3 has note (E62 String) || http://www.cidoc-crm.org/cidoc-crm/P3_has_note
 |-
-| Place: Coordinates || P168 place is defined by (E94 Space Primitive) || http://www.cidoc-crm.org/cidoc-crm/P168_place_is_defined_by
+| Place: Coordinates || P168 place is defined by (E94 Space Primitive); stored as a lat/long display label, not a WKT/GML geometry literal || http://www.cidoc-crm.org/cidoc-crm/P168_place_is_defined_by
 |-
 | Place: Country || No direct CIDOC property: denormalised country-name label (a faithful model would use P89 falls within a containing E53 Place) || http://www.cidoc-crm.org/cidoc-crm/P89_falls_within
 |}
