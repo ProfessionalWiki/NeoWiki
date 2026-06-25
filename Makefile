@@ -26,10 +26,19 @@ DC := docker compose -p $(PROJECT_NAME) -f Docker/docker-compose.yml
 DC_DEV := $(DC) -f Docker/docker-compose.dev.yml
 DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
 
-IS_PODMAN := $(shell (docker --version 2>/dev/null | grep -qi podman || command -v podman >/dev/null 2>&1) && echo 1 || echo 0)
+# Detect the engine from what `docker` actually is (its version string), not from
+# whether a `podman` binary happens to exist: a stray podman binary alongside real
+# Docker must not flip this, or exec would run as container-root and write
+# root-owned files into bind mounts. `docker --version` is daemon-independent, so it
+# is safe to evaluate on every make invocation (unlike `docker info`).
+IS_PODMAN := $(shell docker --version 2>/dev/null | grep -qi podman && echo 1 || echo 0)
 ifeq ($(IS_PODMAN),1)
+	# Rootless Podman maps container-root to the host user, so bind-mount writes
+	# already land with host ownership. Forcing --user would map into the subuid range.
 	EXEC_USER :=
 else
+	# Rootful Docker does no UID remap: run exec as the host uid:gid so files written
+	# into bind mounts are owned by the host user, not root.
 	EXEC_USER := --user $(shell id -u):$(shell id -g)
 endif
 
@@ -49,15 +58,23 @@ help:
 
 # ---- Lifecycle (host only) ---------------------------------------------------
 
-.PHONY: up pull demo dev dev-tools _dev-tools-impl down remove logs ps bash
+.PHONY: up pull demo dev dev-tools _dev-tools-impl down remove logs ps bash _preflight doctor
 
-up: ## Bring up try-it-out stack (no profile, prebuilt image)
+# Fail fast on a broken Docker runtime (Docker or Compose missing, daemon down or
+# denied) before the lifecycle targets do expensive work. Source: Docker/scripts/preflight.sh.
+_preflight:
+	@./Docker/scripts/preflight.sh
+
+doctor: ## Diagnose dev-environment prerequisites (Docker runtime)
+	@PREFLIGHT_VERBOSE=1 ./Docker/scripts/preflight.sh
+
+up: _preflight ## Bring up try-it-out stack (no profile, prebuilt image)
 	$(DC) up -d
 
-pull: ## Pull the latest prebuilt demo image
+pull: _preflight ## Pull the latest prebuilt demo image
 	$(DC) pull
 
-demo: ## One-command demo: pull image, start stack, install + seed (idempotent)
+demo: _preflight ## One-command demo: pull image, start stack, install + seed (idempotent)
 	$(DC) pull
 	$(DC) up -d
 	@$(MAKE) --no-print-directory _wait-mw
@@ -66,10 +83,10 @@ demo: ## One-command demo: pull image, start stack, install + seed (idempotent)
 	@echo "Demo wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Log in as AdminName (password: $$MW_ADMIN_PASSWORD)."
 
-dev: bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
+dev: _preflight bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
 
-dev-tools: bootstrap ensure-port ## Like 'dev' but also exposes Neo4j Browser/Bolt to host
+dev-tools: _preflight bootstrap ensure-port ## Like 'dev' but also exposes Neo4j Browser/Bolt to host
 	@$(MAKE) --no-print-directory _dev-tools-impl
 
 _dev-tools-impl:
@@ -161,8 +178,9 @@ endif
 # does not need docker. Kept out of the default PHP/TS test targets so the host
 # can opt in.
 .PHONY: test-scripts
-test-scripts: ## Run shell-script tests (set-port.sh, etc.)
+test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-set-port.sh
+	@./Docker/tests/test-preflight.sh
 
 # ---- Health gate -------------------------------------------------------------
 

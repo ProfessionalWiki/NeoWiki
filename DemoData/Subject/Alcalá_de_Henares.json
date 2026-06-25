@@ -1,0 +1,23 @@
+{
+	"mainSubject": "sEpfwJLnT4bH9xC",
+	"subjects": {
+		"sEpfwJLnT4bH9xC": {
+			"label": "Alcalá de Henares",
+			"schema": "City",
+			"statements": {
+				"Country": {
+					"type": "text",
+					"value": [ "Spain" ]
+				},
+				"Population": {
+					"type": "number",
+					"value": 200702
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.ayto-alcaladehenares.es" ]
+				}
+			}
+		}
+	}
+}

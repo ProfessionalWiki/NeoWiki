@@ -327,7 +327,12 @@ class NeoWikiExtension {
 	}
 
 	public function newFrontendModuleLoader(): FrontendModuleLoader {
-		return new FrontendModuleLoader( MediaWikiServices::getInstance()->getHookContainer() );
+		$debounceMs = MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiValidationDebounceMs' );
+
+		return new FrontendModuleLoader(
+			MediaWikiServices::getInstance()->getHookContainer(),
+			is_int( $debounceMs ) ? $debounceMs : 300,
+		);
 	}
 
 	public function newSubjectContentRepository(): SubjectContentRepository {

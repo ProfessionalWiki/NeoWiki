@@ -83,7 +83,8 @@
 				<CdxTextInput
 					v-model="subjectLabel"
 					:placeholder="$i18n( 'neowiki-subject-creator-label-placeholder' ).text()"
-					@input="markChanged"
+					@input="handleEditorChange"
+					@blur="handleEditorBlur"
 				/>
 				<template #label>
 					{{ $i18n( 'neowiki-subject-creator-label-field' ).text() }}
@@ -110,7 +111,8 @@
 				:statements="statements"
 				:schema="loadedSchema as Schema"
 				:server-violations="serverViolations"
-				@change="markChanged"
+				@change="handleEditorChange"
+				@focusout="handleEditorBlur"
 				@clear-server-violation="handleClearViolation"
 			/>
 		</template>
@@ -167,7 +169,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
-import type { SubjectViolation } from '@/domain/SubjectViolation';
+import { withoutMissingValueViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { CdxMessage } from '@wikimedia/codex';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
@@ -180,6 +182,8 @@ import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonme
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
+import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
+import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 
 const props = defineProps<{
@@ -249,7 +253,48 @@ interface SubjectEditorInstance {
 
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
 
-const serverViolations = ref<SubjectViolation[]>( [] );
+const { violations: serverViolations, revalidate, flush, reset } = useSubjectValidation(
+	async () => {
+		// A draft (unsaved) schema does not exist server-side yet, so a dry-run
+		// against it would only 404. Skip until the schema is saved.
+		if ( !subjectEditorRef.value || !selectedSchemaName.value || hasDraftSchema.value ) {
+			return [];
+		}
+		const statements = [ ...subjectEditorRef.value.getSubjectData() ].filter( ( s ) => s.hasValue() );
+		try {
+			const violations = await subjectStore.validateSubject(
+				subjectLabel.value.trim(),
+				selectedSchemaName.value,
+				new StatementList( statements )
+			);
+			return withoutMissingValueViolations( violations );
+		} catch ( error ) {
+			// The dry-run runs alongside the live validators and must never
+			// break editing or saving; the authoritative result is the save's
+			// own 422 response.
+			console.error( 'Subject validation dry-run failed:', error );
+			return [];
+		}
+	},
+	{ debounceMs: NeoWikiExtension.getInstance().getValidationDebounceMs() }
+);
+
+let dirtySinceValidation = false;
+
+function handleEditorChange(): void {
+	markChanged();
+	dirtySinceValidation = true;
+	revalidate();
+}
+
+function handleEditorBlur(): void {
+	// focusout bubbles on every field-to-field move; only flush when something
+	// actually changed since the last validation, to avoid redundant requests.
+	if ( dirtySinceValidation ) {
+		dirtySinceValidation = false;
+		flush();
+	}
+}
 
 const anchorlessViolations = computed<SubjectViolation[]>( () => {
 	// SubjectEditor renders one field per entry in `statements`, which the
@@ -366,7 +411,7 @@ const statements = computed( (): StatementList | null =>
 
 watch( () => subjectStore.subjectCreatorOpen, async ( isOpen ) => {
 	if ( isOpen ) {
-		serverViolations.value = [];
+		reset();
 		await nextTick();
 		focusInitialInput( selectedSchemaOption.value );
 	} else {
@@ -410,7 +455,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		return;
 	}
 
-	serverViolations.value = [];
+	await flush();
 
 	try {
 		if ( draftSchema.value ) {

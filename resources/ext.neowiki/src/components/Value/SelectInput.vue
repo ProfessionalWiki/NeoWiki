@@ -131,7 +131,10 @@ function validate(): void {
 	const value = selection.value.length > 0 ?
 		newStringValue( selection.value ) :
 		undefined;
-	const errors = propertyType.validate( value, props.property );
+	// 'required' is deferred to the server (surfaced at save) like every other
+	// input; we do not flag an empty select before the user has chosen a value.
+	const errors = propertyType.validate( value, props.property )
+		.filter( ( e ) => e.code !== 'required' );
 	liveValidationError.value = errors.length === 0 ? null :
 		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
 }

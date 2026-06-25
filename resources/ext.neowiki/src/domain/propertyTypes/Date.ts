@@ -92,8 +92,8 @@ export class DateType extends BasePropertyType<DateProperty, StringValue> {
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): DateProperty {
 		return {
 			...base,
-			minimum: json.minimum,
-			maximum: json.maximum,
+			minimum: json.minimum ?? undefined,
+			maximum: json.maximum ?? undefined,
 		} as DateProperty;
 	}
 

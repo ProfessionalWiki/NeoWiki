@@ -184,6 +184,9 @@ describe( 'SubjectCreatorDialog', () => {
 			config: {
 				wgArticleId: PAGE_ID,
 				wgTitle: PAGE_TITLE,
+				// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
+				// (via flush()), which runs synchronously in tests.
+				wgNeoWikiValidationDebounceMs: 0,
 			},
 		} );
 
@@ -193,6 +196,9 @@ describe( 'SubjectCreatorDialog', () => {
 		subjectStore = useSubjectStore();
 		subjectStore.createMainSubject = vi.fn().mockResolvedValue( new SubjectId( 's11111111111111' ) );
 		subjectStore.createChildSubject = vi.fn().mockResolvedValue( new SubjectId( 's11111111111112' ) );
+		// The dry-run validation runs alongside the live validators; stub it so
+		// it does not reach the network and stays out of the way of these tests.
+		subjectStore.validateSubject = vi.fn().mockResolvedValue( [] );
 
 		schemaStore = useSchemaStore();
 		schemaStore.getOrFetchSchema = vi.fn().mockResolvedValue( newSchema( { title: SCHEMA_NAME } ) );
@@ -1032,6 +1038,83 @@ describe( 'SubjectCreatorDialog', () => {
 
 			const after = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
 			expect( after ).toHaveLength( 0 );
+		} );
+	} );
+
+	describe( 'Server-driven dry-run validation', () => {
+		const dryRunViolation: SubjectViolation = {
+			propertyName: 'Color',
+			code: 'max-length',
+			args: [ 5 ],
+			valuePartIndex: null,
+		};
+
+		async function selectSchema( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+		}
+
+		it( 'surfaces dry-run violations on blur after an edit', async () => {
+			subjectStore.validateSubject = vi.fn().mockResolvedValue( [ dryRunViolation ] );
+			const wrapper = mountComponent();
+			await selectSchema( wrapper );
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'focusout' );
+			await flushPromises();
+
+			expect( subjectStore.validateSubject ).toHaveBeenCalledWith(
+				PAGE_TITLE,
+				SCHEMA_NAME,
+				expect.any( StatementList ),
+			);
+			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passed ).toHaveLength( 1 );
+			expect( passed[ 0 ].propertyName ).toBe( 'Color' );
+		} );
+
+		it( 'keeps editing working when the dry-run validation fails', async () => {
+			subjectStore.validateSubject = vi.fn().mockRejectedValue( new Error( 'network down' ) );
+			const wrapper = mountComponent();
+			await selectSchema( wrapper );
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'focusout' );
+			await flushPromises();
+
+			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passed ).toHaveLength( 0 );
+		} );
+
+		it( 'does not surface missing-value violations (required, label-required) from the dry-run; they wait for save', async () => {
+			subjectStore.validateSubject = vi.fn().mockResolvedValue( [
+				{ propertyName: 'Color', code: 'required', args: [], valuePartIndex: null },
+				{ propertyName: null, code: 'label-required', args: [], valuePartIndex: null },
+			] );
+			const wrapper = mountComponent();
+			await selectSchema( wrapper );
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'focusout' );
+			await flushPromises();
+
+			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+			expect( passed ).toEqual( [] );
+		} );
+
+		it( 'does not run the dry-run while the schema is an unsaved draft', async () => {
+			subjectStore.validateSubject = vi.fn().mockResolvedValue( [] );
+			const wrapper = mountComponent();
+			await switchToNewSchema( wrapper );
+			await clickContinue( wrapper );
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'focusout' );
+			await flushPromises();
+
+			// The draft schema does not exist server-side yet, so a dry-run would
+			// only 404; it must wait until the schema is saved.
+			expect( subjectStore.validateSubject ).not.toHaveBeenCalled();
 		} );
 	} );
 } );

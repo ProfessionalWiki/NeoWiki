@@ -12,12 +12,17 @@ class FrontendModuleLoader {
 
 	public function __construct(
 		private readonly HookContainer $hookContainer,
+		private readonly int $validationDebounceMs,
 	) {
 	}
 
 	public function load( OutputPage $out, Skin $skin ): void {
 		$out->addModules( 'ext.neowiki' );
 		$out->addModuleStyles( 'ext.neowiki.styles' );
+
+		$out->addJsConfigVars( [
+			'wgNeoWikiValidationDebounceMs' => $this->validationDebounceMs,
+		] );
 
 		/** @var list<string> $modules populated by hook handlers */
 		$modules = [];

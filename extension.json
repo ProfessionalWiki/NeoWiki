@@ -150,6 +150,10 @@
 		"NeoWikiAutoRenderMainSubject": {
 			"description": "Whether a page's Main Subject is automatically rendered (as an infobox) on content pages.",
 			"value": true
+    },
+		"NeoWikiValidationDebounceMs": {
+			"description": "Debounce delay in milliseconds before the subject editor sends a server-side dry-run validation request. 0 disables the timer, so validation only runs on blur or pre-save.",
+			"value": 300
 		},
 		"NeoWikiQueryLimits": {
 			"description": "Per-tier per-query resource caps. Keys: 'default' (users without apihighlimits) and 'expensive' (users with apihighlimits). Each value: { timeoutSeconds, maxRows }.",
@@ -362,6 +366,7 @@
 				"neowiki-field-single-value-only",
 				"neowiki-field-type-mismatch",
 				"neowiki-field-schema-not-found",
+				"neowiki-field-label-required",
 				"neowiki-select-placeholder",
 				"neowiki-select-no-results",
 				"neowiki-select-unknown-option",
