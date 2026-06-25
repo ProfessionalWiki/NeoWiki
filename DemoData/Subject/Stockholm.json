@@ -1,0 +1,23 @@
+{
+	"mainSubject": "sEpfwJLnZ7hN4qT",
+	"subjects": {
+		"sEpfwJLnZ7hN4qT": {
+			"label": "Stockholm",
+			"schema": "City",
+			"statements": {
+				"Country": {
+					"type": "text",
+					"value": [ "Sweden" ]
+				},
+				"Population": {
+					"type": "number",
+					"value": 996264
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.stockholm.se" ]
+				}
+			}
+		}
+	}
+}

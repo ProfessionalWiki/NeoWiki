@@ -1,0 +1,23 @@
+{
+	"mainSubject": "sEpfwJLnW5dG3kP",
+	"subjects": {
+		"sEpfwJLnW5dG3kP": {
+			"label": "Antwerp",
+			"schema": "City",
+			"statements": {
+				"Country": {
+					"type": "text",
+					"value": [ "Belgium" ]
+				},
+				"Population": {
+					"type": "number",
+					"value": 565039
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.antwerpen.be" ]
+				}
+			}
+		}
+	}
+}
