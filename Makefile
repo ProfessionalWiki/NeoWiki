@@ -51,8 +51,8 @@ help:
 
 .PHONY: up pull demo dev dev-tools _dev-tools-impl down remove logs ps bash _preflight doctor
 
-# Fail fast on a broken Docker runtime (no Compose v2, daemon down or denied) before
-# the lifecycle targets do expensive work. Source of truth: Docker/scripts/preflight.sh.
+# Fail fast on a broken Docker runtime (Docker or Compose missing, daemon down or
+# denied) before the lifecycle targets do expensive work. Source: Docker/scripts/preflight.sh.
 _preflight:
 	@./Docker/scripts/preflight.sh
 
@@ -62,7 +62,7 @@ doctor: ## Diagnose dev-environment prerequisites (Docker runtime)
 up: _preflight ## Bring up try-it-out stack (no profile, prebuilt image)
 	$(DC) up -d
 
-pull: ## Pull the latest prebuilt demo image
+pull: _preflight ## Pull the latest prebuilt demo image
 	$(DC) pull
 
 demo: _preflight ## One-command demo: pull image, start stack, install + seed (idempotent)

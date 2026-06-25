@@ -31,7 +31,7 @@ chmod +x "$DOCKER_STUB"
 # Run the SUT against the stub. A high, normally-free port range and an absent
 # PODMAN_BIN keep the warning checks quiet during hard-check cases.
 run_sut() {
-    DOCKER_BIN="$DOCKER_STUB" \
+    DOCKER_BIN="${DOCKER_BIN:-$DOCKER_STUB}" \
     PODMAN_BIN="${PODMAN_BIN:-neowiki-no-such-podman}" \
     PORT_RANGE_START="${PORT_RANGE_START:-38484}" \
     PORT_RANGE_END="${PORT_RANGE_END:-38499}" \
@@ -57,11 +57,11 @@ assert_exit "Healthy runtime passes" 0 "$rc"
 if [ -z "$out" ]; then ok "Non-verbose success is silent"; else fail "Non-verbose success should be silent (got: $out)"; fi
 
 echo
-color '36' "Case 2: compose v2 missing -> exit 1 + install guidance"
+color '36' "Case 2: docker compose missing -> exit 1 + install guidance"
 rc=0; out=$(STUB_COMPOSE_RC=1 run_sut 2>&1) || rc=$?
 assert_exit "Missing compose fails" 1 "$rc"
-assert_contains "Names the compose subcommand" "docker compose" "$out"
-assert_contains "Gives an install hint" "docker-compose-v2" "$out"
+assert_contains "Names the compose command" "docker compose" "$out"
+assert_contains "Links the install docs" "docs.docker.com/compose/install" "$out"
 
 echo
 color '36' "Case 3: daemon unreachable -> exit 1 + daemon guidance"
@@ -131,8 +131,16 @@ echo
 color '36' "Case 9: verbose mode (make doctor) prints checks + summary"
 rc=0; out=$(PREFLIGHT_VERBOSE=1 run_sut 2>&1) || rc=$?
 assert_exit "Verbose healthy run passes" 0 "$rc"
-assert_contains "Verbose shows the compose check" "Docker Compose v2 available" "$out"
+assert_contains "Verbose shows the compose check" "Docker Compose available" "$out"
 assert_contains "Verbose shows the success summary" "All prerequisites satisfied" "$out"
+
+echo
+color '36' "Case 10: docker binary absent -> install-Docker message, compose/daemon skipped"
+rc=0; out=$(DOCKER_BIN="neowiki-no-such-docker" run_sut 2>&1) || rc=$?
+assert_exit "Absent docker fails" 1 "$rc"
+assert_contains "Says Docker was not found" "Docker (or a compatible runtime" "$out"
+assert_contains "Links the get-docker docs" "docs.docker.com/get-docker" "$out"
+if printf '%s' "$out" | grep -qF "docker compose"; then fail "Compose check should be skipped when docker is absent"; else ok "Compose/daemon checks skipped when docker absent"; fi
 
 echo
 if [ "$FAILS" -eq 0 ]; then color '32' "All $PASSES checks passed."; exit 0
