@@ -147,6 +147,10 @@
 			"description": "Whether write endpoints reject edits that introduce new constraint violations. When false, violations are surfaced in responses but writes always persist.",
 			"value": false
 		},
+		"NeoWikiAutoRenderMainSubject": {
+			"description": "Whether a page's Main Subject is automatically rendered (as an infobox) on content pages.",
+			"value": true
+		},
 		"NeoWikiQueryLimits": {
 			"description": "Per-tier per-query resource caps. Keys: 'default' (users without apihighlimits) and 'expensive' (users with apihighlimits). Each value: { timeoutSeconds, maxRows }.",
 			"value": {

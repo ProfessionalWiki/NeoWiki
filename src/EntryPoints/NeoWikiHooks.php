@@ -51,6 +51,10 @@ class NeoWikiHooks {
 		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $skin );
 		$out->addHtml( self::getNeoWikiAppHtml( $out ) );
 
+		if ( !NeoWikiExtension::getInstance()->shouldAutoRenderMainSubject() ) {
+			return;
+		}
+
 		$revisionId = self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
 		$builder = NeoWikiExtension::getInstance()->newViewHtmlBuilder();
 

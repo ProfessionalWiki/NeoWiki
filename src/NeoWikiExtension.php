@@ -291,6 +291,13 @@ class NeoWikiExtension {
 		return $this->config->enableDevelopmentUIs;
 	}
 
+	public function shouldAutoRenderMainSubject(): bool {
+		// Behavioral config read live from MainConfig (like NeoWikiEnforceValidation),
+		// so the admin's LocalSettings value applies per request and tests can override
+		// it via overrideConfigValue() without rebuilding the getInstance() singleton.
+		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiAutoRenderMainSubject' ) === true;
+	}
+
 	public function getPageContentFetcher(): PageContentFetcher {
 		return new PageContentFetcher(
 			MediaWikiServices::getInstance()->getTitleParser(),
