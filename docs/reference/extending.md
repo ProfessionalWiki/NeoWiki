@@ -105,8 +105,8 @@ and [`src/Specials/SpecialRedHerbSubjectFinder.php`](https://github.com/Professi
 
 ## Frontend extension points (JS/Vue)
 
-NeoWiki's frontend is built with TypeScript and Vue, but extensions consume it as plain JavaScript — no
-TypeScript build step is required.
+NeoWiki's frontend is built with TypeScript and Vue. Extensions consume it as plain JavaScript and need no build step.
+You can also author in TypeScript with types; see "Authoring in TypeScript" below.
 
 ### Loading your frontend
 
@@ -208,6 +208,27 @@ Examples: [`resources/createChild/`](https://github.com/ProfessionalWiki/NeoWiki
 [`resources/editMainSubject/`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/editMainSubject),
 and [`resources/subjectFinder/`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/subjectFinder).
 
+### Authoring in TypeScript
+
+Plain JavaScript is the simplest path and needs no build step. You can instead write your extension in TypeScript and
+get types for NeoWiki's API. This is configuration on your side; NeoWiki ships nothing extra for it. See
+[ADR 24](../adr/024-frontend-extension-mechanism.md) for the reasoning.
+
+Point your `tsconfig.json` `paths` at NeoWiki's barrel source, which sits next to your extension in `extensions/`:
+
+```json
+"paths": {
+	"ext.neowiki": [ "../NeoWiki/resources/ext.neowiki/src/public-api" ]
+}
+```
+
+You then get types on the same specifier you load at runtime, for example
+`import { ValueType, newStringValue } from 'ext.neowiki';` and
+`import type { PropertyTypeRegistration } from 'ext.neowiki';`. Mark the modules NeoWiki already provides as external
+in your bundler, so you do not ship a second copy and break the shared store: `ext.neowiki`, `vue`, `@wikimedia/codex`,
+`@wikimedia/codex-icons` and `pinia`. At runtime your built JavaScript loads the same `ext.neowiki` module as the rest
+of the page.
+
 ## Conventions
 
 ### i18n and validation codes
@@ -237,6 +258,6 @@ These extension points are designed or partially present but not yet open to ext
   registration.
 - **Graph database backends.** A `GraphDatabasePlugin` interface exists, but Neo4j is the only backend and
   is currently hardcoded.
-- **TypeScript types.** Extending the frontend in plain JavaScript is the supported path by design (see
-  [#686](https://github.com/ProfessionalWiki/NeoWiki/issues/686)); a published type-definitions package is
-  deferred.
+- **A published TypeScript types package.** TypeScript authors get types today by pointing their `tsconfig` at
+  NeoWiki's source (see "Authoring in TypeScript" and [ADR 24](../adr/024-frontend-extension-mechanism.md)). A
+  published, versioned package is deferred until a consumer needs types without a NeoWiki checkout.
