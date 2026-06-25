@@ -147,6 +147,10 @@
 			"description": "Whether write endpoints reject edits that introduce new constraint violations. When false, violations are surfaced in responses but writes always persist.",
 			"value": false
 		},
+		"NeoWikiAutoRenderMainSubject": {
+			"description": "Whether a page's Main Subject is automatically rendered (as an infobox) on content pages.",
+			"value": true
+    },
 		"NeoWikiValidationDebounceMs": {
 			"description": "Debounce delay in milliseconds before the subject editor sends a server-side dry-run validation request. 0 disables the timer, so validation only runs on blur or pre-save.",
 			"value": 300

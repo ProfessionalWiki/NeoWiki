@@ -166,6 +166,7 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | Yes |
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new constraint violations | `false` | No |
+| `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
 
 ## Production hardening
 
