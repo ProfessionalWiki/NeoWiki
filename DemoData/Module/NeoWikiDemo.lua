@@ -293,67 +293,43 @@ local function personEventsFormatDate( iso )
 	return tonumber( d ) .. ' ' .. ( PERSON_EVENTS_MONTHS[tonumber( m )] or m ) .. ' ' .. y
 end
 
-local function personEventsBirthLinks( rows )
-	local links = {}
-	for _, row in ipairs( rows or {} ) do
-		links[#links + 1] = '[[' .. row.birth .. ']]'
-	end
-	return links
-end
+local PERSON_EVENTS_ROLES = {
+	['Brought into life'] = 'Born',
+	['By mother'] = 'Mother',
+	['From father'] = 'Father',
+}
 
--- Renders the current Person page's life events by reverse-querying the graph:
--- the canonical edges run Birth -> Person, so "was born" (CIDOC P98i) is derived
--- here rather than stored as an inverse edge. Date is read as b.Date[0] because
--- the `date` property is stored as a string list; switch to toString(b.Date[0])
--- if/when date is stored as a native Neo4j date.
+-- Renders the current Person page's life events as a table by reverse-querying
+-- the graph: the canonical edges run Birth -> Person, so a person's role in each
+-- event ("was born" / CIDOC P98i, mother, father) is derived here rather than
+-- stored as an inverse edge. Date is read as b.Date[0] because the `date` property
+-- is stored as a string list; switch to toString(b.Date[0]) if/when date is stored
+-- as a native Neo4j date.
 function p.personEvents( frame )
 	local name = mw.title.getCurrentTitle().text
 
-	local born = nw.query(
-		'MATCH (b:Birth)-[:`Brought into life`]->(p:Person {name: $name}) ' ..
+	local events = nw.query(
+		'MATCH (b:Birth)-[r]->(p:Person {name: $name}) ' ..
 		'OPTIONAL MATCH (b)-[:`Took place at`]->(pl:Place) ' ..
-		'RETURN b.name AS birth, pl.name AS place, b.Date[0] AS date',
-		{ name = name }
-	)
-	local asFather = nw.query(
-		'MATCH (b:Birth)-[:`From father`]->(p:Person {name: $name}) RETURN b.name AS birth, b.Date[0] AS date ORDER BY date',
-		{ name = name }
-	)
-	local asMother = nw.query(
-		'MATCH (b:Birth)-[:`By mother`]->(p:Person {name: $name}) RETURN b.name AS birth, b.Date[0] AS date ORDER BY date',
+		'RETURN type(r) AS role, b.name AS event, b.Date[0] AS date, pl.name AS place ORDER BY date',
 		{ name = name }
 	)
 
-	local parts = {}
-
-	if born and born[1] then
-		local row = born[1]
-		local sentence = 'Born'
-		if row.date and row.date ~= '' then
-			sentence = sentence .. ' ' .. personEventsFormatDate( row.date )
-		end
-		if row.place and row.place ~= '' then
-			sentence = sentence .. ' in [[' .. row.place .. ']]'
-		end
-		sentence = sentence .. ' (see [[' .. row.birth .. ']]).'
-		parts[#parts + 1] = sentence
-	end
-
-	local fatherLinks = personEventsBirthLinks( asFather )
-	if #fatherLinks > 0 then
-		parts[#parts + 1] = 'Father in ' .. table.concat( fatherLinks, ', ' ) .. '.'
-	end
-
-	local motherLinks = personEventsBirthLinks( asMother )
-	if #motherLinks > 0 then
-		parts[#parts + 1] = 'Mother in ' .. table.concat( motherLinks, ', ' ) .. '.'
-	end
-
-	if #parts == 0 then
+	if not events or #events == 0 then
 		return ''
 	end
 
-	return "'''Life events:''' " .. table.concat( parts, ' ' )
+	local rows = {}
+	for _, e in ipairs( events ) do
+		rows[#rows + 1] = {
+			Role = PERSON_EVENTS_ROLES[e.role] or e.role,
+			Event = e.event,
+			Date = e.date and personEventsFormatDate( e.date ) or '',
+			Place = e.place or '',
+		}
+	end
+
+	return "'''Life events'''\n" .. renderRowsAsTable( rows, { 'Role', 'Event', 'Date', 'Place' }, { 'Event', 'Place' } )
 end
 
 return p
