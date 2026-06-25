@@ -49,15 +49,31 @@ help:
 
 # ---- Lifecycle (host only) ---------------------------------------------------
 
-.PHONY: up pull demo dev dev-tools _dev-tools-impl down remove logs ps bash
+.PHONY: up pull demo dev dev-tools _dev-tools-impl down remove logs ps bash _check-compose
 
-up: ## Bring up try-it-out stack (no profile, prebuilt image)
+# Fail fast if the `docker compose` subcommand (Compose v2+) is unavailable.
+# The dev stack is driven entirely through `docker compose`; a standalone
+# `docker-compose` binary does not satisfy this, and the compose files use
+# modern Compose Spec features (e.g. `!reset`) that the legacy V1 cannot parse.
+_check-compose:
+	@docker compose version >/dev/null 2>&1 || { \
+		echo "Error: the 'docker compose' command (Docker Compose v2+) is required but was not found." >&2; \
+		echo "" >&2; \
+		echo "NeoWiki's dev environment calls 'docker compose' (with a space). A standalone" >&2; \
+		echo "'docker-compose' binary or the legacy V1 does not satisfy this. Install the plugin:" >&2; \
+		echo "  Ubuntu/Debian:  sudo apt-get install docker-compose-v2" >&2; \
+		echo "  Other systems:  https://docs.docker.com/compose/install/" >&2; \
+		echo "Then verify with: docker compose version" >&2; \
+		exit 1; \
+	}
+
+up: _check-compose ## Bring up try-it-out stack (no profile, prebuilt image)
 	$(DC) up -d
 
 pull: ## Pull the latest prebuilt demo image
 	$(DC) pull
 
-demo: ## One-command demo: pull image, start stack, install + seed (idempotent)
+demo: _check-compose ## One-command demo: pull image, start stack, install + seed (idempotent)
 	$(DC) pull
 	$(DC) up -d
 	@$(MAKE) --no-print-directory _wait-mw
@@ -66,10 +82,10 @@ demo: ## One-command demo: pull image, start stack, install + seed (idempotent)
 	@echo "Demo wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Log in as AdminName (password: $$MW_ADMIN_PASSWORD)."
 
-dev: bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
+dev: _check-compose bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
 
-dev-tools: bootstrap ensure-port ## Like 'dev' but also exposes Neo4j Browser/Bolt to host
+dev-tools: _check-compose bootstrap ensure-port ## Like 'dev' but also exposes Neo4j Browser/Bolt to host
 	@$(MAKE) --no-print-directory _dev-tools-impl
 
 _dev-tools-impl:
