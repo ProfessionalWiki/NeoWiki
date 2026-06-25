@@ -28,11 +28,10 @@ exit 0
 STUB
 chmod +x "$DOCKER_STUB"
 
-# Run the SUT against the stub. A high, normally-free port range and an absent
-# PODMAN_BIN keep the warning checks quiet during hard-check cases.
+# Run the SUT against the stub. A high, normally-free port range keeps the port
+# warning quiet during hard-check cases.
 run_sut() {
     DOCKER_BIN="${DOCKER_BIN:-$DOCKER_STUB}" \
-    PODMAN_BIN="${PODMAN_BIN:-neowiki-no-such-podman}" \
     PORT_RANGE_START="${PORT_RANGE_START:-38484}" \
     PORT_RANGE_END="${PORT_RANGE_END:-38499}" \
     STUB_COMPOSE_RC="${STUB_COMPOSE_RC:-0}" \
@@ -77,17 +76,20 @@ assert_contains "Reports compose failure" "docker compose" "$out"
 assert_contains "Reports daemon failure" "daemon" "$out"
 
 echo
-color '36' "Case 5: docker --version reports podman -> engine warning, exit 0"
-rc=0; out=$(STUB_VERSION="podman version 4.9.0" run_sut 2>&1) || rc=$?
-assert_exit "Podman engine still passes" 0 "$rc"
-assert_contains "Warns about podman" "Podman" "$out"
+color '36' "Case 5: docker --version reports podman -> reported as the Podman engine, exit 0"
+rc=0; out=$(PREFLIGHT_VERBOSE=1 STUB_VERSION="podman version 4.9.0" run_sut 2>&1) || rc=$?
+assert_exit "Podman engine passes" 0 "$rc"
+assert_contains "Reports the Podman engine" "Engine: Podman" "$out"
 
 echo
-color '36' "Case 6: a podman binary present (Docker --version) -> engine warning"
-# PODMAN_BIN=sh stands in for an installed podman binary that `command -v` finds.
-rc=0; out=$(PODMAN_BIN="sh" run_sut 2>&1) || rc=$?
-assert_exit "Podman-binary misdetection still passes" 0 "$rc"
-assert_contains "Warns on stray podman binary" "Podman" "$out"
+color '36' "Case 6: real Docker with a stray podman binary -> reported as Docker, not flagged"
+# PODMAN_BIN=sh stands in for an installed podman binary (passed through to the SUT's
+# environment). Detection keys only on `docker --version`, so it must be ignored;
+# this guards against reintroducing the binary-presence misdetection.
+rc=0; out=$(PREFLIGHT_VERBOSE=1 PODMAN_BIN="sh" run_sut 2>&1) || rc=$?
+assert_exit "Docker passes despite a stray podman binary" 0 "$rc"
+assert_contains "Reports the Docker engine" "Engine: Docker" "$out"
+if printf '%s' "$out" | grep -qiF "podman"; then fail "A stray podman binary must not be flagged"; else ok "No spurious podman warning"; fi
 
 echo
 color '36' "Case 7: entire dev port range occupied -> saturation warning, exit 0"

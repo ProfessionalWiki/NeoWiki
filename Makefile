@@ -26,10 +26,19 @@ DC := docker compose -p $(PROJECT_NAME) -f Docker/docker-compose.yml
 DC_DEV := $(DC) -f Docker/docker-compose.dev.yml
 DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
 
-IS_PODMAN := $(shell (docker --version 2>/dev/null | grep -qi podman || command -v podman >/dev/null 2>&1) && echo 1 || echo 0)
+# Detect the engine from what `docker` actually is (its version string), not from
+# whether a `podman` binary happens to exist: a stray podman binary alongside real
+# Docker must not flip this, or exec would run as container-root and write
+# root-owned files into bind mounts. `docker --version` is daemon-independent, so it
+# is safe to evaluate on every make invocation (unlike `docker info`).
+IS_PODMAN := $(shell docker --version 2>/dev/null | grep -qi podman && echo 1 || echo 0)
 ifeq ($(IS_PODMAN),1)
+	# Rootless Podman maps container-root to the host user, so bind-mount writes
+	# already land with host ownership. Forcing --user would map into the subuid range.
 	EXEC_USER :=
 else
+	# Rootful Docker does no UID remap: run exec as the host uid:gid so files written
+	# into bind mounts are owned by the host user, not root.
 	EXEC_USER := --user $(shell id -u):$(shell id -g)
 endif
 

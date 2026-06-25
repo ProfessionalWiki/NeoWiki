@@ -14,7 +14,6 @@ set -u
 
 DOCKER_BIN="${DOCKER_BIN:-docker}"
 PREFLIGHT_VERBOSE="${PREFLIGHT_VERBOSE:-}"
-PODMAN_BIN="${PODMAN_BIN:-podman}"
 PORT_RANGE_START="${PORT_RANGE_START:-8484}"
 PORT_RANGE_END="${PORT_RANGE_END:-8499}"
 
@@ -71,15 +70,18 @@ check_daemon() {
     } >&2
 }
 
-# Surface the detected engine so a Podman misdetection (a stray podman binary on a
-# Docker host) is visible rather than silently writing root-owned files into bind
-# mounts. Mirrors the Makefile IS_PODMAN heuristic.
+# Report the detected container engine. Mirrors the Makefile's IS_PODMAN detection
+# (docker --version) so `make doctor` reflects how exec'd tooling runs: rootless
+# Podman maps container-root to the host user, while Docker needs an explicit
+# --user to keep bind-mount files from being written as root. Informational only —
+# detection keys on the runtime identity, not on a stray podman binary, so there is
+# nothing to warn about here.
 check_engine() {
-    if "$DOCKER_BIN" --version 2>/dev/null | grep -qi podman || command -v "$PODMAN_BIN" >/dev/null 2>&1; then
-        warn "Podman detected — tooling runs as the container user. If this host actually uses Docker, a stray 'podman' binary can misroute bind-mount file ownership."
-        return
+    if "$DOCKER_BIN" --version 2>/dev/null | grep -qi podman; then
+        pass "Engine: Podman (rootless; tooling runs as the container user)"
+    else
+        pass "Engine: Docker (tooling runs as host uid:gid)"
     fi
-    pass "Engine: Docker (tooling runs as host uid:gid)"
 }
 
 # Warn only when the whole dev port range is saturated, never on a stack holding
