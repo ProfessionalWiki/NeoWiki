@@ -1,0 +1,23 @@
+{
+	"mainSubject": "sEpfwJLnQ2vK7mR",
+	"subjects": {
+		"sEpfwJLnQ2vK7mR": {
+			"label": "Aix-en-Provence",
+			"schema": "City",
+			"statements": {
+				"Country": {
+					"type": "text",
+					"value": [ "France" ]
+				},
+				"Population": {
+					"type": "number",
+					"value": 149695
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.aixenprovence.fr" ]
+				}
+			}
+		}
+	}
+}

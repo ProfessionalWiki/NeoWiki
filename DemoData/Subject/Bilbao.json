@@ -1,0 +1,23 @@
+{
+	"mainSubject": "sEpfwJLnY6fM8nU",
+	"subjects": {
+		"sEpfwJLnY6fM8nU": {
+			"label": "Bilbao",
+			"schema": "City",
+			"statements": {
+				"Country": {
+					"type": "text",
+					"value": [ "Spain" ]
+				},
+				"Population": {
+					"type": "number",
+					"value": 347342
+				},
+				"Website": {
+					"type": "url",
+					"value": [ "https://www.bilbao.eus" ]
+				}
+			}
+		}
+	}
+}
