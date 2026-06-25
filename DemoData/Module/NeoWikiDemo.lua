@@ -316,11 +316,11 @@ function p.personEvents( frame )
 		{ name = name }
 	)
 	local asFather = nw.query(
-		'MATCH (b:Birth)-[:`From father`]->(p:Person {name: $name}) RETURN b.name AS birth ORDER BY birth',
+		'MATCH (b:Birth)-[:`From father`]->(p:Person {name: $name}) RETURN b.name AS birth, b.Date[0] AS date ORDER BY date',
 		{ name = name }
 	)
 	local asMother = nw.query(
-		'MATCH (b:Birth)-[:`By mother`]->(p:Person {name: $name}) RETURN b.name AS birth ORDER BY birth',
+		'MATCH (b:Birth)-[:`By mother`]->(p:Person {name: $name}) RETURN b.name AS birth, b.Date[0] AS date ORDER BY date',
 		{ name = name }
 	)
 
