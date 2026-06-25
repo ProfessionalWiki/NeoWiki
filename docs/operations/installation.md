@@ -17,7 +17,8 @@ To install the development environment, see the [README on GitHub](https://githu
 
 Prerequisites:
 
-- Docker and Docker Compose
+- Docker (or a compatible runtime such as Podman)
+- Docker Compose v2+ (with the `docker compose` subcommand, not the legacy standalone `docker-compose` v1. Verify with `docker compose version`)
 - GNU Make
 
 The below commands assume a Unix-like shell, so on Windows run them under WSL.

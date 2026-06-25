@@ -21,7 +21,8 @@ See [docs/](./docs/), especially [docs/concepts/glossary.md](./docs/concepts/glo
 
 Prerequisites:
 
-- Docker and Docker Compose
+- Docker (or a compatible runtime such as Podman)
+- Docker Compose v2+ (with the `docker compose` subcommand, not the legacy standalone `docker-compose` v1. Verify with `docker compose version`)
 - GNU Make
 
 To work on NeoWiki (edit code, run tests, see changes live), bring up the bundled dev stack:
