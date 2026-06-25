@@ -8,7 +8,8 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SUT="$SCRIPT_DIR/../scripts/preflight.sh"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
+HOLDERS=()
+trap 'for p in "${HOLDERS[@]:-}"; do kill "$p" 2>/dev/null; done; rm -rf "$WORK"' EXIT
 
 PASSES=0
 FAILS=0
@@ -90,20 +91,31 @@ assert_contains "Warns on stray podman binary" "Podman" "$out"
 
 echo
 color '36' "Case 7: entire dev port range occupied -> saturation warning, exit 0"
+# Robust holder mirroring test-set-port.sh: a large backlog plus an accept loop so
+# the kernel does not RST probes and make is_port_free wrongly report the port free.
+# The PID is registered in HOLDERS so the EXIT trap reaps it on interrupt.
 hold_port() {
     python3 -c "
-import socket, time, sys
+import socket, time, sys, threading
 s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-s.bind(('127.0.0.1', $1)); s.listen(1)
+s.bind(('127.0.0.1', $1)); s.listen(128)
+def accept_loop():
+    while True:
+        try:
+            conn, _ = s.accept(); conn.close()
+        except Exception:
+            break
+threading.Thread(target=accept_loop, daemon=True).start()
 sys.stdout.write('ready\n'); sys.stdout.flush(); time.sleep(60)
 " & HELD_PID=$!
+    HOLDERS+=("$HELD_PID")
     for _ in 1 2 3 4 5 6 7 8 9 10; do
         (echo > /dev/tcp/127.0.0.1/"$1") 2>/dev/null && return 0; sleep 0.1
     done
     return 1
 }
 TESTPORT=39191
-hold_port "$TESTPORT"
+hold_port "$TESTPORT" || fail "Could not hold test port $TESTPORT (occupied?) — Case 7 result unreliable"
 rc=0; out=$(PORT_RANGE_START="$TESTPORT" PORT_RANGE_END="$TESTPORT" run_sut 2>&1) || rc=$?
 kill "$HELD_PID" 2>/dev/null; wait "$HELD_PID" 2>/dev/null || true
 assert_exit "Saturated range still passes" 0 "$rc"
@@ -117,7 +129,8 @@ if printf '%s' "$out" | grep -qF "No free host port"; then fail "Should not warn
 
 echo
 color '36' "Case 9: verbose mode (make doctor) prints checks + summary"
-out=$(PREFLIGHT_VERBOSE=1 run_sut 2>&1)
+rc=0; out=$(PREFLIGHT_VERBOSE=1 run_sut 2>&1) || rc=$?
+assert_exit "Verbose healthy run passes" 0 "$rc"
 assert_contains "Verbose shows the compose check" "Docker Compose v2 available" "$out"
 assert_contains "Verbose shows the success summary" "All prerequisites satisfied" "$out"
 
