@@ -70,10 +70,22 @@ describe( 'DateTimeInput', () => {
 		expect( wrapper.find( 'input' ).attributes( 'max' ) ).toBe( toLocalInputValue( maximum ) );
 	} );
 
-	it( 'shows required error when required property has empty value', () => {
+	it( 'does not flag an empty required datetime before the user has picked a value', () => {
 		const wrapper = newWrapper( {
 			modelValue: undefined,
 			property: newDateTimeProperty( { required: true } ),
+		} );
+
+		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'default' );
+		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toEqual( {} );
+	} );
+
+	it( 'still surfaces a server-sourced required violation on the datetime field', () => {
+		const wrapper = newWrapper( {
+			property: newDateTimeProperty( { name: 'Foo', required: true } ),
+			serverViolations: [
+				{ propertyName: 'Foo', code: 'required', args: [], valuePartIndex: null },
+			],
 		} );
 
 		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
