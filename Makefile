@@ -177,8 +177,9 @@ endif
 # does not need docker. Kept out of the default PHP/TS test targets so the host
 # can opt in.
 .PHONY: test-scripts
-test-scripts: ## Run shell-script tests (set-port.sh, etc.)
+test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-set-port.sh
+	@./Docker/tests/test-preflight.sh
 
 # ---- Health gate -------------------------------------------------------------
 
