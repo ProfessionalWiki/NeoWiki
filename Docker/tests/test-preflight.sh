@@ -50,9 +50,10 @@ assert_contains() {
 }
 
 echo
-color '36' "Case 1: healthy runtime -> exit 0"
-rc=0; run_sut >/dev/null 2>&1 || rc=$?
+color '36' "Case 1: healthy runtime -> exit 0, silent in non-verbose mode"
+rc=0; out=$(run_sut 2>/dev/null) || rc=$?
 assert_exit "Healthy runtime passes" 0 "$rc"
+if [ -z "$out" ]; then ok "Non-verbose success is silent"; else fail "Non-verbose success should be silent (got: $out)"; fi
 
 echo
 color '36' "Case 2: compose v2 missing -> exit 1 + install guidance"
@@ -73,6 +74,52 @@ rc=0; out=$(STUB_COMPOSE_RC=1 STUB_INFO_RC=1 run_sut 2>&1) || rc=$?
 assert_exit "Both broken fails" 1 "$rc"
 assert_contains "Reports compose failure" "docker compose" "$out"
 assert_contains "Reports daemon failure" "daemon" "$out"
+
+echo
+color '36' "Case 5: docker --version reports podman -> engine warning, exit 0"
+rc=0; out=$(STUB_VERSION="podman version 4.9.0" run_sut 2>&1) || rc=$?
+assert_exit "Podman engine still passes" 0 "$rc"
+assert_contains "Warns about podman" "Podman" "$out"
+
+echo
+color '36' "Case 6: a podman binary present (Docker --version) -> engine warning"
+# PODMAN_BIN=sh stands in for an installed podman binary that `command -v` finds.
+rc=0; out=$(PODMAN_BIN="sh" run_sut 2>&1) || rc=$?
+assert_exit "Podman-binary misdetection still passes" 0 "$rc"
+assert_contains "Warns on stray podman binary" "Podman" "$out"
+
+echo
+color '36' "Case 7: entire dev port range occupied -> saturation warning, exit 0"
+hold_port() {
+    python3 -c "
+import socket, time, sys
+s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(('127.0.0.1', $1)); s.listen(1)
+sys.stdout.write('ready\n'); sys.stdout.flush(); time.sleep(60)
+" & HELD_PID=$!
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        (echo > /dev/tcp/127.0.0.1/"$1") 2>/dev/null && return 0; sleep 0.1
+    done
+    return 1
+}
+TESTPORT=39191
+hold_port "$TESTPORT"
+rc=0; out=$(PORT_RANGE_START="$TESTPORT" PORT_RANGE_END="$TESTPORT" run_sut 2>&1) || rc=$?
+kill "$HELD_PID" 2>/dev/null; wait "$HELD_PID" 2>/dev/null || true
+assert_exit "Saturated range still passes" 0 "$rc"
+assert_contains "Warns range is saturated" "No free host port" "$out"
+
+echo
+color '36' "Case 8: a free port in range -> no port warning"
+rc=0; out=$(PORT_RANGE_START=39192 PORT_RANGE_END=39199 run_sut 2>&1) || rc=$?
+assert_exit "Free range passes" 0 "$rc"
+if printf '%s' "$out" | grep -qF "No free host port"; then fail "Should not warn when a port is free"; else ok "No spurious port warning"; fi
+
+echo
+color '36' "Case 9: verbose mode (make doctor) prints checks + summary"
+out=$(PREFLIGHT_VERBOSE=1 run_sut 2>&1)
+assert_contains "Verbose shows the compose check" "Docker Compose v2 available" "$out"
+assert_contains "Verbose shows the success summary" "All prerequisites satisfied" "$out"
 
 echo
 if [ "$FAILS" -eq 0 ]; then color '32' "All $PASSES checks passed."; exit 0

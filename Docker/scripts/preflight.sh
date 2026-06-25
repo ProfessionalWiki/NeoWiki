@@ -12,11 +12,19 @@ set -u
 
 DOCKER_BIN="${DOCKER_BIN:-docker}"
 PREFLIGHT_VERBOSE="${PREFLIGHT_VERBOSE:-}"
+PODMAN_BIN="${PODMAN_BIN:-podman}"
+PORT_RANGE_START="${PORT_RANGE_START:-8484}"
+PORT_RANGE_END="${PORT_RANGE_END:-8499}"
 
 failed=0
 
 pass() { [ -n "$PREFLIGHT_VERBOSE" ] && printf '  \033[32m✓\033[0m %s\n' "$1"; return 0; }
 fail() { printf '  \033[31m✗\033[0m %s\n' "$1" >&2; failed=1; }
+warn() { printf '  \033[33m!\033[0m %s\n' "$1" >&2; }
+
+is_port_free() {
+    ! (echo > "/dev/tcp/127.0.0.1/$1") 2>/dev/null
+}
 
 # Compose v2 present. `docker compose version` is a client-side probe and does not
 # touch the daemon, so it is necessary but not sufficient (see check_daemon).
@@ -51,10 +59,36 @@ check_daemon() {
     } >&2
 }
 
+# Surface the detected engine so a Podman misdetection (a stray podman binary on a
+# Docker host) is visible rather than silently writing root-owned files into bind
+# mounts. Mirrors the Makefile IS_PODMAN heuristic.
+check_engine() {
+    if "$DOCKER_BIN" --version 2>/dev/null | grep -qi podman || command -v "$PODMAN_BIN" >/dev/null 2>&1; then
+        warn "Podman detected — tooling runs as the container user. If this host actually uses Docker, a stray 'podman' binary can misroute bind-mount file ownership."
+        return
+    fi
+    pass "Engine: Docker (tooling runs as host uid:gid)"
+}
+
+# Warn only when the whole dev port range is saturated, never on a stack holding
+# its own single port.
+check_ports() {
+    local p
+    for p in $(seq "$PORT_RANGE_START" "$PORT_RANGE_END"); do
+        if is_port_free "$p"; then
+            pass "Free host port available in $PORT_RANGE_START-$PORT_RANGE_END"
+            return
+        fi
+    done
+    warn "No free host port in $PORT_RANGE_START-$PORT_RANGE_END — the entire dev range is in use."
+}
+
 run_preflight() {
     [ -n "$PREFLIGHT_VERBOSE" ] && echo "Checking dev-environment prerequisites..."
     check_compose
     check_daemon
+    check_engine
+    check_ports
 
     if [ "$failed" -ne 0 ]; then
         echo "" >&2
