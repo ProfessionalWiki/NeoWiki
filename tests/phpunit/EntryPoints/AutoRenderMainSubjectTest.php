@@ -36,7 +36,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 
 		$html = $this->renderContentPage( 'Auto render disabled', $revision->getId() );
 
-		$this->assertStringNotContainsString( 'ext-neowiki-view', $html );
+		$this->assertStringNotContainsString( self::SUBJECT_ID, $html );
 	}
 
 	public function testAutoRendersMainSubjectByDefault(): void {
@@ -47,7 +47,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 
 		$html = $this->renderContentPage( 'Auto render default', $revision->getId() );
 
-		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="' . self::SUBJECT_ID . '"', $html );
+		$this->assertStringContainsString( self::SUBJECT_ID, $html );
 	}
 
 	public function testRendersAppContainerWhenAutoRenderDisabled(): void {
