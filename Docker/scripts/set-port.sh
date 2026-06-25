@@ -7,7 +7,10 @@ set -e
 
 REQUESTED="${1:-}"
 ENV_FILE="${ENV_FILE:-Docker/.env}"
-LOCK_FILE="/tmp/.neowiki-port-allocation.lock"
+LOCK_FILE="${LOCK_FILE:-${TMPDIR:-/tmp}/.neowiki-port-allocation.$(id -u).lock}"
+LOCK_DIR="${LOCK_DIR:-${TMPDIR:-/tmp}/.neowiki-port-allocation.$(id -u).lock.d}"
+LOCK_TIMEOUT="${LOCK_TIMEOUT:-100}"
+FLOCK_BIN="${FLOCK_BIN:-flock}"
 
 # Reserved ranges. Document any change in Docker/README.md.
 MW_RANGE_START="${PORT_RANGE_START:-8484}"
@@ -65,10 +68,51 @@ allocate() {
     return 1
 }
 
-# Take the lock once around the whole allocation pass so concurrent worktrees
-# do not pick the same port between is_port_free and the eventual bind.
-exec 200>"$LOCK_FILE"
-flock -x 200
+# Serialize concurrent allocation passes by the same user (e.g. parallel
+# worktrees) so two runs do not both read the same port as free and claim it.
+# Prefer flock(1): a kernel-managed lock released automatically on process death,
+# even on SIGKILL. Where flock is unavailable (stock macOS does not ship it), fall
+# back to a portable directory mutex. The lock is per-user (paths carry the uid)
+# so distinct users on a shared host never contend.
+#
+# Best-effort either way: the lock is released when this pass exits, before the
+# caller binds the port, so it narrows but cannot fully eliminate a same-port
+# race between cold-start worktrees.
+acquire_lock() {
+    if command -v "$FLOCK_BIN" >/dev/null 2>&1; then
+        exec 200>"$LOCK_FILE"
+        "$FLOCK_BIN" -x 200
+        return
+    fi
+    acquire_dir_lock
+}
+
+# Directory-mutex fallback for hosts without flock(1). A directory has no kernel
+# auto-release, so a lock orphaned by a crashed run is reclaimed by checking the
+# recorded holder PID's liveness. The steal renames first so only one racer can
+# reclaim a given stale lock (an unconditional rm could delete a fresh lock that
+# another run just took). A reused holder PID reads as alive, so recovery waits
+# out LOCK_TIMEOUT instead — a bounded delay, never a deadlock.
+acquire_dir_lock() {
+    local waited=0 holder
+    until mkdir "$LOCK_DIR" 2>/dev/null; do
+        holder=$( cat "$LOCK_DIR/pid" 2>/dev/null || true )
+        if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
+            mv "$LOCK_DIR" "$LOCK_DIR.stale.$$" 2>/dev/null && rm -rf "$LOCK_DIR.stale.$$"
+            continue
+        fi
+        waited=$(( waited + 1 ))
+        if [ "$waited" -ge "$LOCK_TIMEOUT" ]; then
+            echo "Timed out waiting for the port-allocation lock ($LOCK_DIR)." >&2
+            return 1
+        fi
+        sleep 0.1
+    done
+    echo $$ > "$LOCK_DIR/pid"
+    trap 'rm -rf "$LOCK_DIR"' EXIT
+}
+
+acquire_lock
 
 if [ -n "$REQUESTED" ]; then
     if ! is_port_free "$REQUESTED"; then
