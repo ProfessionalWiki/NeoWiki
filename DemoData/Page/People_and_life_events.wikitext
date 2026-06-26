@@ -49,7 +49,7 @@ This dataset partially maps to [http://www.cidoc-crm.org/ CIDOC CRM]. The canoni
 == How this is built ==
 
 * Schemas: [[Schema:Person]], [[Schema:Birth]], [[Schema:Place]]
-* The "was born" line on each person page is computed by [[Module:NeoWikiDemo]] (the <code>personEvents</code> function), which reverse-queries the graph rather than storing an inverse edge. This Lua reverse-query is the display approach available today; it runs outside the view system, so schema-configured display attributes do not apply, and a first-class display path for inverse and child Subjects is an open question.
+* The "was born" line on each person page is computed by [[Module:NeoWikiDemo]] (the <code>personEvents</code> function), which reverse-queries the graph rather than storing an inverse edge. This Lua reverse-query is the display approach available today; using the view system for first-class display is an open task.
 * The tables above come from Cypher queries via [[Module:NeoWikiDemo]].
 * See the source of one subject: [{{fullurl:Birth of Johann Sebastian Bach|action=edit}} Edit Birth of Johann Sebastian Bach]
 * [{{fullurl:{{FULLPAGENAME}}|action=edit}} Edit this page]
