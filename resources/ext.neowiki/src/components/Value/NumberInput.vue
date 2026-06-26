@@ -87,7 +87,10 @@ function onInput( newValue: string ): void {
 }
 
 function validate( value: NumberValue | undefined ): void {
-	const errors = propertyType.validate( value, props.property );
+	// Suppress the live 'required' error so an empty number field isn't
+	// flagged before the user has entered a value; the server still enforces it.
+	const errors = propertyType.validate( value, props.property )
+		.filter( ( e ) => e.code !== 'required' );
 	liveValidationError.value = errors.length === 0 ? null :
 		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
 }
