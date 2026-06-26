@@ -5,3 +5,9 @@ Edits in any view also propagate to the others without a page reload.
 Sandbox Subject uses a dedicated [[Schema:Sandbox|Sandbox]] schema, so editing it here won't affect any other Subject in the demo wiki.
 
 {{#invoke:SubjectRow|render|s1demo9aaaaaaa1|s1demo9aaaaaaa1@SandboxCompact|s1demo9aaaaaaa1@SandboxDetail}}
+
+== Custom View Types ==
+
+View Types are extensible: an extension can register a new way to render Subjects. The [[Layout:SandboxCard|SandboxCard]] layout uses <code>redherb-card</code>, a custom View Type from the bundled RedHerb example extension. It arranges the data as a two-column "document control" card and reads a <code>fullWidthProperties</code> setting from the Layout to span the Description across both columns.
+
+{{#view:s1demo9aaaaaaa1|layout=SandboxCard}}

@@ -153,7 +153,14 @@ export class NeoWikiExtension {
 		return registry;
 	}
 
+	private viewTypeRegistry: ViewTypeRegistry | undefined;
+
 	public getViewTypeRegistry(): ViewTypeRegistry {
+		this.viewTypeRegistry ??= this.newViewTypeRegistry();
+		return this.viewTypeRegistry;
+	}
+
+	private newViewTypeRegistry(): ViewTypeRegistry {
 		const registry = new ViewTypeRegistry();
 		registry.registerType( 'infobox', Infobox );
 		return registry;

@@ -182,6 +182,40 @@ with [`ColorDisplay.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/maste
 [`ColorInput.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/ColorInput.vue),
 and [`ColorAttributesEditor.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/ColorAttributesEditor.vue).
 
+### Registering a View Type frontend
+
+A View Type renders a Subject in a particular visual format; `infobox` is the only built-in one. Register a Vue
+component for a new View Type through the same `neowiki.registration` hook, at parity with Property Types:
+
+```javascript
+var nw = require( 'ext.neowiki' );
+var RedHerbCard = require( './RedHerbCard.vue' );
+
+mw.hook( 'neowiki.registration' ).add( function ( registrar ) {
+	registrar.registerViewType( {
+		typeName: 'redherb-card',
+		component: RedHerbCard
+	} );
+} );
+```
+
+The registration object's shape is defined by
+[`ViewTypeRegistration.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/domain/ViewTypeRegistration.ts):
+a `typeName` and the Vue `component` that renders it. The component conforms to the `ViewProps` prop shape
+([`ViewContract.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/Views/ViewContract.ts)):
+the `subjectId` to render, a `canEditSubject` flag, and an optional `layoutName`. Resolve any Layout-specific
+configuration (Display Rules and Settings) from the layout store using `layoutName`. Once registered, the
+`typeName` becomes selectable as a Layout's View Type, and a `{{#view}}` (or Main Subject) placeholder that
+references it renders through your component instead of the built-in infobox.
+
+The `redherb-card` example reuses NeoWiki's own building blocks rather than rendering values by hand: the subject,
+schema, and layout stores; `nw.resolveDisplayProperties` together with the value-display component registry to
+render each value through its Property Type's component; and the shared `nw.SubjectEditorDialog` for editing when
+`canEditSubject` is true.
+
+Full example: [`resources/init.js`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/init.js)
+with [`RedHerbCard.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/RedHerbCard.vue).
+
 ### Using NeoWiki's public JS API
 
 `require( 'ext.neowiki' )` returns NeoWiki's public API barrel; its exports are listed in
@@ -231,10 +265,6 @@ Custom SVG icons are also supported — pass an SVG string as the `icon`.
 
 These extension points are designed or partially present but not yet open to extensions:
 
-- **View Types.** The View Type plug-in system is built ([ADR 18](../adr/018-views.md)) and `ViewTypeRegistry`
-  is part of the public API, but `infobox` is the only built-in type and there is no wired-up registration path
-  for third-party extensions yet: unlike Property Types, the `neowiki.registration` hook exposes no View Type
-  registration.
 - **Graph database backends.** A `GraphDatabasePlugin` interface exists, but Neo4j is the only backend and
   is currently hardcoded.
 - **TypeScript types.** Extending the frontend in plain JavaScript is the supported path by design (see

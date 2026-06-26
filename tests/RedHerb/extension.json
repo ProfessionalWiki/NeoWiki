@@ -132,6 +132,7 @@
 				"ColorDisplay.vue",
 				"ColorInput.vue",
 				"ColorAttributesEditor.vue",
+				"RedHerbCard.vue",
 				{
 					"name": "icons.json",
 					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
@@ -151,6 +152,10 @@
 				"redherb-color-remove-color",
 				"redherb-color-reorder-color",
 				"redherb-color-invalid-fallback",
+				"redherb-card-caption",
+				"redherb-card-edit-subject",
+				"redherb-card-edit-schema",
+				"redherb-card-edit-layout",
 				"neowiki-field-invalid-hex",
 				"neowiki-field-not-in-palette",
 				"neowiki-field-required"

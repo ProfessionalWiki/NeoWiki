@@ -67,25 +67,12 @@ import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { SubjectId } from '@/domain/SubjectId.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';
 import { resolveDisplayProperties, type ResolvedProperty } from '@/domain/resolveDisplayProperties.ts';
+import type { ViewProps } from '@/components/Views/ViewContract.ts';
 
-const props = defineProps( {
-	subjectId: {
-		type: SubjectId,
-		required: true
-	},
-	canEditSubject: {
-		type: Boolean,
-		required: true
-	},
-	layoutName: {
-		type: String,
-		default: undefined
-	}
-} );
+const props = defineProps<ViewProps>();
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();

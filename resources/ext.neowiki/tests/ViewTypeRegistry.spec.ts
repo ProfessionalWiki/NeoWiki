@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { watchEffect } from 'vue';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
 import type { Component } from 'vue';
 
@@ -41,6 +42,24 @@ describe( 'ViewTypeRegistry', () => {
 			const registry = new ViewTypeRegistry();
 
 			expect( registry.hasType( 'infobox' ) ).toBe( false );
+		} );
+
+	} );
+
+	describe( 'reactivity', () => {
+
+		it( 'notifies a consumer that already read the registry when a type is registered later', () => {
+			const registry = new ViewTypeRegistry();
+			const observed: boolean[] = [];
+
+			const stop = watchEffect( () => {
+				observed.push( registry.hasType( 'card' ) );
+			}, { flush: 'sync' } );
+
+			registry.registerType( 'card', { name: 'Card' } as unknown as Component );
+			stop();
+
+			expect( observed ).toEqual( [ false, true ] );
 		} );
 
 	} );
