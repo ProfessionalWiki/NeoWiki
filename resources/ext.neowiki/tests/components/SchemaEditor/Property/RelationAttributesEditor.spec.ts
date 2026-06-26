@@ -117,6 +117,7 @@ describe( 'RelationAttributesEditor', () => {
 			const props = fieldProps( wrapper, '.relation-attributes__relation' );
 			expect( props.status ).toBe( 'error' );
 			expect( props.messages ).toEqual( { error: 'Relation type is required.' } );
+			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 
 		it( 'shows a required error when the target schema is empty', () => {

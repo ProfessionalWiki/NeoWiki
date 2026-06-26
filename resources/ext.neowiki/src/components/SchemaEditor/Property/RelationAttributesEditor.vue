@@ -77,8 +77,9 @@ const targetSchemaError = computed<string | null>( () =>
 
 const updateRelation = ( value: string ): void => {
 	relationInput.value = value;
-	if ( value.trim() !== '' ) {
-		emit( 'update:property', { relation: value } );
+	const trimmed = value.trim();
+	if ( trimmed !== '' ) {
+		emit( 'update:property', { relation: trimmed } );
 	}
 };
 

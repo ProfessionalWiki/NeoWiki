@@ -118,6 +118,7 @@ describe( 'SchemaLookup', () => {
 		const lookup = wrapper.findComponent( CdxLookup );
 
 		expect( lookup.props( 'selected' ) ).toBe( 'Product' );
+		expect( lookup.props( 'inputValue' ) ).toBe( 'Product' );
 		expect( lookup.props( 'menuItems' ) ).toEqual( [ { label: 'Product', value: 'Product' } ] );
 	} );
 
@@ -128,10 +129,12 @@ describe( 'SchemaLookup', () => {
 		await wrapper.setProps( { selected: 'NewSchema' } );
 
 		expect( lookup.props( 'selected' ) ).toBe( 'NewSchema' );
+		expect( lookup.props( 'inputValue' ) ).toBe( 'NewSchema' );
 		expect( lookup.props( 'menuItems' ) ).toEqual( [ { label: 'NewSchema', value: 'NewSchema' } ] );
 
 		await wrapper.setProps( { selected: null } );
 
+		expect( lookup.props( 'inputValue' ) ).toBe( '' );
 		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
 	} );
 

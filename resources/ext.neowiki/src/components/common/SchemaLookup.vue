@@ -3,6 +3,7 @@
 		<CdxLookup
 			ref="lookupRef"
 			v-model:selected="selectedSchema"
+			v-model:input-value="inputText"
 			:menu-items="menuItems"
 			:start-icon="cdxIconSearch"
 			:placeholder="$i18n( 'neowiki-subject-creator-schema-search-placeholder' ).text()"
@@ -29,6 +30,7 @@ const emit = defineEmits<{
 
 const schemaStore = useSchemaStore();
 const selectedSchema = ref<string | null>( props.selected ?? null );
+const inputText = ref<string>( props.selected ?? '' );
 const menuItems = ref<MenuItemData[]>(
 	props.selected ? [ { label: props.selected, value: props.selected } ] : []
 );
@@ -37,6 +39,7 @@ let requestSequence = 0;
 
 watch( () => props.selected, ( value ) => {
 	selectedSchema.value = value ?? null;
+	inputText.value = value ?? '';
 	if ( value && !menuItems.value.some( ( item ) => item.value === value ) ) {
 		menuItems.value = [ { label: value, value: value } ];
 	} else if ( !value ) {
