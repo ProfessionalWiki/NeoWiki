@@ -47,6 +47,11 @@ page ids are only unique within a single wiki. Each page node therefore carries 
 `creationTime` and `lastUpdated` are stored as Neo4j datetime values (ISO 8601), converted from MediaWiki's
 `YmdHis` timestamp format.
 
+`namespaceId` holds MediaWiki's canonical namespace ID. Built-in namespaces (e.g. `0` main, `12` Help, `14`
+Category) have the same ID on every wiki, so filtering by `namespaceId` behaves consistently across a graph
+shared by multiple wikis. Custom namespaces defined via `$wgExtraNamespaces` get per-wiki IDs that may differ in
+meaning between wikis, so pair `namespaceId` with `wiki_id` to filter those unambiguously.
+
 ## Subject Nodes
 
 Each Subject stored on a page gets a `:Subject` node. Subject nodes carry two labels: `Subject` and the name of
