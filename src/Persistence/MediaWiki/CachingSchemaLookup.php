@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
@@ -50,12 +51,7 @@ class CachingSchemaLookup implements SchemaLookup {
 
 		/** @var Schema|null $schema */
 		$schema = $this->cache->getWithSetCallback(
-			$this->cache->makeKey(
-				'neowiki-schema',
-				self::CACHE_VERSION,
-				$title->getArticleID(),
-				$title->getLatestRevID()
-			),
+			$this->makeCacheKey( $title ),
 			WANObjectCache::TTL_DAY,
 			function ( mixed $oldValue, int &$ttl, array &$setOpts ) use ( $schemaName ): ?Schema {
 				// Make caching replica-lag aware: if the schema content is read
@@ -68,6 +64,19 @@ class CachingSchemaLookup implements SchemaLookup {
 		);
 
 		return $schema;
+	}
+
+	/**
+	 * Keyed by the Schema page's article id and latest revision id, so editing
+	 * the Schema yields a new key and the old entry is never served again.
+	 */
+	private function makeCacheKey( Title $title ): string {
+		return $this->cache->makeKey(
+			'neowiki-schema',
+			self::CACHE_VERSION,
+			$title->getArticleID(),
+			$title->getLatestRevID()
+		);
 	}
 
 }
