@@ -193,8 +193,10 @@ See [ADR 014](../adr/014-improved-id-format.md) for details on the ID format.
 
 Returns the same statement format as storage, with additional fields:
 - `requestedId`: The ID that was requested
-- Each subject includes `id`, `pageId`, and `pageTitle` fields. `pageTitle` is the full page
-  title including the namespace prefix (e.g. `Help:Installation`).
+- Each subject includes `id`, `pageId`, `pageTitle`, and `pageNamespaceId` fields. `pageTitle` is the
+  full page title including the namespace prefix (e.g. `Help:Installation`); `pageNamespaceId` is the
+  page's canonical MediaWiki namespace ID (e.g. `0` for the main namespace, `12` for Help), which is
+  stable regardless of the wiki's content language.
 
 ### Writing Subjects
 
@@ -222,8 +224,8 @@ Full replace of the Subject's writable state (label and statements). The request
 | `statements` | Yes | Map of property name to Statement. Property names not in the map are deleted from the Subject. Pass `{}` to clear all statements. |
 | `comment` | No | Optional edit summary. |
 
-The Subject's `id`, `schema`, `pageId`, and `pageTitle` are immutable after creation and are
-not part of the request body. If sent, they are ignored.
+The Subject's `id`, `schema`, `pageId`, `pageTitle`, and `pageNamespaceId` are immutable after creation
+and are not part of the request body. If sent, they are ignored.
 
 Relation IDs can be omitted for new relations (a fresh ID is generated server-side).
 

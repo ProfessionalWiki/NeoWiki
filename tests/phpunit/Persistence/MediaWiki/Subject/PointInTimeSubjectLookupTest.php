@@ -157,6 +157,7 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 			new PageIdentifiers(
 				new PageId( $crossPageRevision->getPage()->getId() ),
 				'PitTestCrossPage',
+				0,
 			),
 		);
 
@@ -180,6 +181,7 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 			new PageIdentifiers(
 				new PageId( 404404404 ),
 				'NonexistentPage',
+				0,
 			),
 		);
 

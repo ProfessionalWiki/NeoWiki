@@ -92,6 +92,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						],
 						pageId: null,
 						pageTitle: null,
+						pageNamespaceId: null,
 					),
 					's11111111111ca2' => new GetSubjectResponseItem(
 						id: 's11111111111ca2',
@@ -100,6 +101,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						statements: [],
 						pageId: null,
 						pageTitle: null,
+						pageNamespaceId: null,
 					),
 					's11111111111ca3' => new GetSubjectResponseItem(
 						id: 's11111111111ca3',
@@ -108,6 +110,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						statements: [],
 						pageId: null,
 						pageTitle: null,
+						pageNamespaceId: null,
 					),
 					's11111111111ca1' => new GetSubjectResponseItem(
 						id: 's11111111111ca1',
@@ -116,6 +119,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						statements: [],
 						pageId: null,
 						pageTitle: null,
+						pageNamespaceId: null,
 					),
 				]
 			),
@@ -315,7 +319,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 		$referenced = TestSubject::build( id: 's11111111111tar' );
 		$subjectLookup = new InMemorySubjectLookup( $referenced );
 		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup( [
-			[ $referenced->id, new PageIdentifiers( new PageId( 137 ), 'Target Page' ) ],
+			[ $referenced->id, new PageIdentifiers( new PageId( 137 ), 'Target Page', 12 ) ],
 		] );
 
 		$presenter = $this->newSpyPresenter();
@@ -325,6 +329,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$this->assertSame( 137, $presenter->response->referencedSubjects['s11111111111tar']->pageId );
 		$this->assertSame( 'Target Page', $presenter->response->referencedSubjects['s11111111111tar']->pageTitle );
+		$this->assertSame( 12, $presenter->response->referencedSubjects['s11111111111tar']->pageNamespaceId );
 	}
 
 	public function testReferencedSubjectsAndSchemasAreNullWhenNotRequested(): void {
