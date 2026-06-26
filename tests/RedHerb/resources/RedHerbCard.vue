@@ -16,9 +16,12 @@
 				>
 					{{ $i18n( 'redherb-card-edit-subject' ).text() }}
 				</cdx-button>
-				<a :href="schemaUrl">{{ $i18n( 'redherb-card-edit-schema' ).text() }}</a>
 				<a
-					v-if="layoutName"
+					v-if="canEditSchema"
+					:href="schemaUrl"
+				>{{ $i18n( 'redherb-card-edit-schema' ).text() }}</a>
+				<a
+					v-if="layoutName && canEditLayout"
 					:href="layoutUrl"
 				>{{ $i18n( 'redherb-card-edit-layout' ).text() }}</a>
 			</span>
@@ -118,6 +121,8 @@ module.exports = exports = {
 		var schemaStore = nw.useSchemaStore();
 		var layoutStore = nw.useLayoutStore();
 		var componentRegistry = nw.NeoWikiServices.getComponentRegistry();
+		var schemaPermissions = nw.useSchemaPermissions();
+		var layoutPermissions = nw.useLayoutPermissions();
 
 		var editorOpen = vue.ref( false );
 
@@ -142,6 +147,24 @@ module.exports = exports = {
 		var schemaUrl = vue.computed( function () {
 			return mw.util.getUrl( 'Schema:' + subject.value.getSchemaName(), { action: 'edit' } );
 		} );
+
+		// Only offer the Schema / Layout edit links to viewers who can actually edit
+		// those pages, mirroring how canEditSubject gates the subject editor.
+		vue.watch( function () {
+			return subject.value ? subject.value.getSchemaName() : undefined;
+		}, function ( schemaName ) {
+			if ( schemaName ) {
+				schemaPermissions.checkEditPermission( schemaName );
+			}
+		}, { immediate: true } );
+
+		vue.watch( function () {
+			return props.layoutName;
+		}, function ( layoutName ) {
+			if ( layoutName ) {
+				layoutPermissions.checkEditPermission( layoutName );
+			}
+		}, { immediate: true } );
 
 		var resolvedProperties = vue.computed( function () {
 			if ( !schema.value ) {
@@ -211,6 +234,8 @@ module.exports = exports = {
 			subject: subject,
 			layoutUrl: layoutUrl,
 			schemaUrl: schemaUrl,
+			canEditSchema: schemaPermissions.canEditSchema,
+			canEditLayout: layoutPermissions.canEditLayout,
 			layoutSections: layoutSections,
 			editorOpen: editorOpen,
 			valueComponent: valueComponent,
