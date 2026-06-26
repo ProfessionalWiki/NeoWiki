@@ -31,7 +31,7 @@ class Neo4jPageIdentifiersLookup implements PageIdentifiersLookup {
 				$result = $transaction->run(
 					'
 					MATCH (page:Page)-[:HasSubject]->(subject {id: $subjectId})
-					RETURN page.id AS id, page.name as name',
+					RETURN page.id AS id, page.name AS name, page.namespaceId AS namespaceId',
 					[ 'subjectId' => $subjectId->text ]
 				);
 
@@ -40,10 +40,11 @@ class Neo4jPageIdentifiersLookup implements PageIdentifiersLookup {
 				if ( array_key_exists( 0, $arrayResult ) && is_array( $arrayResult[0] ) ) {
 					$page = $arrayResult[0];
 
-					if ( array_key_exists( 'id', $page ) && array_key_exists( 'name', $page ) ) {
+					if ( array_key_exists( 'id', $page ) && array_key_exists( 'name', $page ) && array_key_exists( 'namespaceId', $page ) ) {
 						return new PageIdentifiers(
 							id: new PageId( (int)$page['id'] ),
-							title: $page['name']
+							title: $page['name'],
+							namespaceId: (int)$page['namespaceId'],
 						);
 					}
 				}

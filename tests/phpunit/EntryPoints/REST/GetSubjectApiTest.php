@@ -209,6 +209,7 @@ JSON,
             "schema": "GetSubjectApiTestSchema",
             "pageId": $firstPageId,
             "pageTitle": "GetSubjectApiTest0000",
+            "pageNamespaceId": 0,
             "statements": {
                 "MyRelation": {
                 	"type": "relation",
@@ -231,6 +232,7 @@ JSON,
             "schema": "GetSubjectApiTestSchema",
             "pageId": $firstPageId,
             "pageTitle": "GetSubjectApiTest0000",
+            "pageNamespaceId": 0,
             "statements": []
         },
         "sTestGSA1111113": {
@@ -239,6 +241,7 @@ JSON,
             "schema": "GetSubjectApiTestSchema",
             "pageId": $secondPageId,
             "pageTitle": "GetSubjectApiTest0002",
+            "pageNamespaceId": 0,
             "statements": {
                 "MyRelation": {
                 "type": "relation",
