@@ -12,40 +12,42 @@
 	</span>
 	<i18n-slot
 		v-else
-		:message-key="'redherb-color-invalid-fallback'"
+		message-key="redherb-color-invalid-fallback"
 	>
 		<code>{{ rawValue }}</code>
 	</i18n-slot>
 </template>
 
 <script>
-var vue = require( 'vue' );
-var nw = require( 'ext.neowiki' );
+const vue = require( 'vue' );
+const nw = require( 'ext.neowiki' );
 
 // Display intentionally checks format only and ignores input-time
 // constraints like allowedColors: a stored value that was valid when
 // it was saved should keep rendering as a swatch even if the schema's
 // palette has since narrowed.
-var HEX_REGEX = require( './hexRegex.js' );
+const HEX_REGEX = require( './hexRegex.js' );
 
+// @vue/component
 module.exports = exports = {
 	components: {
 		I18nSlot: nw.I18nSlot
 	},
 	props: {
 		value: { type: Object, required: true },
+		// eslint-disable-next-line vue/no-unused-properties -- received per the display-component contract; declared so it does not fall through as an attribute
 		property: { type: Object, required: true }
 	},
 	setup: function ( props ) {
-		var rawValue = vue.computed( function () {
+		const rawValue = vue.computed( () => {
 			if ( props.value.type !== nw.ValueType.String ) {
 				return '';
 			}
 			return props.value.parts[ 0 ] || '';
 		} );
 
-		var parsedHex = vue.computed( function () {
-			var raw = rawValue.value;
+		const parsedHex = vue.computed( () => {
+			const raw = rawValue.value;
 			return HEX_REGEX.test( raw ) ? raw : null;
 		} );
 

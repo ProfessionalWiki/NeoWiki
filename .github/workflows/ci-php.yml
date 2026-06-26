@@ -5,12 +5,14 @@ on:
   push:
     paths-ignore:
       - '.github/workflows/ci-ts.yml'
+      - '.github/workflows/ci-redherb.yml'
       - '.github/workflows/neo-ci-ts.yml'
       - 'resources/**'
       - 'Neo/neojs/**'
   pull_request:
     paths-ignore:
       - '.github/workflows/ci-ts.yml'
+      - '.github/workflows/ci-redherb.yml'
       - '.github/workflows/neo-ci-ts.yml'
       - 'resources/**'
       - 'Neo/neojs/**'

@@ -25,13 +25,12 @@
 </template>
 
 <script>
-'use strict';
+const vue = require( 'vue' );
+const codex = require( './codex.js' );
+const nw = require( 'ext.neowiki' );
+const DIALOG_STATE_KEY = require( './constants.js' ).DIALOG_STATE_KEY;
 
-var vue = require( 'vue' );
-var codex = require( './codex.js' );
-var nw = require( 'ext.neowiki' );
-var DIALOG_STATE_KEY = require( './constants.js' ).DIALOG_STATE_KEY;
-
+// @vue/component
 module.exports = exports = {
 	components: {
 		CdxDialog: codex.CdxDialog,
@@ -40,14 +39,14 @@ module.exports = exports = {
 		SubjectEditor: nw.SubjectEditor
 	},
 	setup: function () {
-		var state = vue.inject( DIALOG_STATE_KEY );
-		var schemaStore = nw.useSchemaStore();
-		var subjectStore = nw.useSubjectStore();
+		const state = vue.inject( DIALOG_STATE_KEY );
+		const schemaStore = nw.useSchemaStore();
+		const subjectStore = nw.useSubjectStore();
 
-		var label = vue.ref( '' );
-		var editorRef = vue.ref( null );
-		var loadedSubject = vue.shallowRef( null );
-		var loadedSchema = vue.shallowRef( null );
+		const label = vue.ref( '' );
+		const editorRef = vue.ref( null );
+		const loadedSubject = vue.shallowRef( null );
+		const loadedSchema = vue.shallowRef( null );
 
 		function reset() {
 			loadedSubject.value = null;
@@ -61,17 +60,17 @@ module.exports = exports = {
 		}
 
 		function loadSubjectAndSchema( subjectIdText ) {
-			var subjectId = new nw.SubjectId( subjectIdText );
+			const subjectId = new nw.SubjectId( subjectIdText );
 			subjectStore.getOrFetchSubject( subjectId )
-				.then( function ( subject ) {
+				.then( ( subject ) => {
 					loadedSubject.value = subject;
 					label.value = subject.getLabel();
 					return schemaStore.getOrFetchSchema( subject.getSchemaName() );
 				} )
-				.then( function ( schema ) {
+				.then( ( schema ) => {
 					loadedSchema.value = schema;
 				} )
-				.catch( function ( err ) {
+				.catch( ( err ) => {
 					mw.log.error( err );
 					mw.notify(
 						err instanceof Error ? err.message : String( err ),
@@ -81,9 +80,7 @@ module.exports = exports = {
 				} );
 		}
 
-		vue.watch( function () {
-			return state.subjectId;
-		}, function ( newId ) {
+		vue.watch( () => state.subjectId, ( newId ) => {
 			if ( newId !== null ) {
 				loadSubjectAndSchema( newId );
 			} else {
@@ -91,7 +88,7 @@ module.exports = exports = {
 			}
 		} );
 
-		var statements = vue.computed( function () {
+		const statements = vue.computed( () => {
 			if ( loadedSchema.value === null || loadedSubject.value === null ) {
 				return null;
 			}
@@ -109,21 +106,21 @@ module.exports = exports = {
 		}
 
 		function onSave() {
-			var trimmed = label.value.trim();
+			const trimmed = label.value.trim();
 			if ( trimmed === '' || editorRef.value === null || loadedSubject.value === null ) {
 				return;
 			}
-			var newStatements = editorRef.value.getSubjectData();
-			var updatedSubject = loadedSubject.value
+			const newStatements = editorRef.value.getSubjectData();
+			const updatedSubject = loadedSubject.value
 				.withLabel( trimmed )
 				.withStatements( newStatements );
 
 			subjectStore.updateSubject( updatedSubject )
-				.then( function () {
+				.then( () => {
 					mw.notify( mw.message( 'redherb-edit-main-subject-success' ).text() );
 					close();
 				} )
-				.catch( function ( err ) {
+				.catch( ( err ) => {
 					mw.log.error( err );
 					mw.notify(
 						err instanceof Error ? err.message : String( err ),
