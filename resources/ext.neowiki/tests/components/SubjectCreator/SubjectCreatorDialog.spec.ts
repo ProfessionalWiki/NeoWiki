@@ -2,7 +2,7 @@ import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
-import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
+import SchemaLookup from '@/components/common/SchemaLookup.vue';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import { createPinia, setActivePinia } from 'pinia';

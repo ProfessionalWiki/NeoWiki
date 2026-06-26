@@ -176,7 +176,7 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCreator.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
-import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
+import SchemaLookup from '@/components/common/SchemaLookup.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonmentDialog.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';

@@ -1,6 +1,6 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SchemaLookup from '@/components/SubjectCreator/SchemaLookup.vue';
+import SchemaLookup from '@/components/common/SchemaLookup.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { CdxLookup } from '@wikimedia/codex';
@@ -14,8 +14,9 @@ describe( 'SchemaLookup', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore: any;
 
-	const mountComponent = (): VueWrapper => (
+	const mountComponent = ( props: Record<string, unknown> = {} ): VueWrapper => (
 		mount( SchemaLookup, {
+			props,
 			global: {
 				mocks: {
 					$i18n,
@@ -110,6 +111,28 @@ describe( 'SchemaLookup', () => {
 		expect( lookup.props( 'menuItems' ) ).toEqual( [
 			{ label: 'SecondSchema', value: 'SecondSchema', description: 'Fresh' },
 		] );
+	} );
+
+	it( 'reflects the selected prop on the lookup', () => {
+		const wrapper = mountComponent( { selected: 'Product' } );
+		const lookup = wrapper.findComponent( CdxLookup );
+
+		expect( lookup.props( 'selected' ) ).toBe( 'Product' );
+		expect( lookup.props( 'menuItems' ) ).toEqual( [ { label: 'Product', value: 'Product' } ] );
+	} );
+
+	it( 'updates the lookup when the selected prop changes after mount', async () => {
+		const wrapper = mountComponent();
+		const lookup = wrapper.findComponent( CdxLookup );
+
+		await wrapper.setProps( { selected: 'NewSchema' } );
+
+		expect( lookup.props( 'selected' ) ).toBe( 'NewSchema' );
+		expect( lookup.props( 'menuItems' ) ).toEqual( [ { label: 'NewSchema', value: 'NewSchema' } ] );
+
+		await wrapper.setProps( { selected: null } );
+
+		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
 	} );
 
 	it( 'exposes focus method', () => {
