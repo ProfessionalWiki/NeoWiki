@@ -57,10 +57,26 @@ describe( 'RelationAttributesEditor', () => {
 
 		it( 'passes the current target schema to SchemaLookup', () => {
 			const wrapper = newWrapper( {
-				property: relationProperty( { targetSchema: 'Product' } ),
+				property: relationProperty( { targetSchema: 'Office' } ),
 			} );
 
-			expect( wrapper.findComponent( SchemaLookupStub ).props( 'selected' ) ).toBe( 'Product' );
+			expect( wrapper.findComponent( SchemaLookupStub ).props( 'selected' ) ).toBe( 'Office' );
+		} );
+
+		it( 'displays the stored relation in the input', () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { relation: 'Has gadget' } ),
+			} );
+
+			expect( wrapper.findComponent( CdxTextInput ).props( 'modelValue' ) ).toBe( 'Has gadget' );
+		} );
+
+		it( 'displays the property name when the relation is empty', () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { relation: '', name: new PropertyName( 'Main product' ) } ),
+			} );
+
+			expect( wrapper.findComponent( CdxTextInput ).props( 'modelValue' ) ).toBe( 'Main product' );
 		} );
 	} );
 
@@ -109,6 +125,13 @@ describe( 'RelationAttributesEditor', () => {
 	} );
 
 	describe( 'validation', () => {
+		it( 'shows no errors when relation and target schema are set', () => {
+			const wrapper = newWrapper();
+
+			expect( fieldProps( wrapper, '.relation-attributes__relation' ).status ).toBe( 'default' );
+			expect( fieldProps( wrapper, '.relation-attributes__target-schema' ).status ).toBe( 'default' );
+		} );
+
 		it( 'shows a required error when the relation is cleared', async () => {
 			const wrapper = newWrapper();
 
