@@ -51,6 +51,7 @@ class RestGetPageSubjectsPresenter implements GetPageSubjectsPresenter {
 			if ( $subject->pageId !== null ) {
 				$entry['pageId'] = $subject->pageId;
 				$entry['pageTitle'] = $subject->pageTitle;
+				$entry['pageNamespaceId'] = $subject->pageNamespaceId;
 			}
 
 			$entry['statements'] = $subject->statements;
