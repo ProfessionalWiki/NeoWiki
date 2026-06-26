@@ -1,0 +1,13 @@
+{
+	"mainSubject": "s1bachaaaaaaaa5",
+	"subjects": {
+		"s1bachaaaaaaaa5": {
+			"label": "Anna Magdalena Bach",
+			"schema": "Person",
+			"statements": {
+				"Description": { "type": "text", "value": [ "Second wife of Johann Sebastian Bach; mother of Johann Christian Bach." ] },
+				"Also known as": { "type": "text", "value": [ "Anna Magdalena Wilcke" ] }
+			}
+		}
+	}
+}

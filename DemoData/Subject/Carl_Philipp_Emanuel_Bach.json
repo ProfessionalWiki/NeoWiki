@@ -1,0 +1,13 @@
+{
+	"mainSubject": "s1bachaaaaaaaa7",
+	"subjects": {
+		"s1bachaaaaaaaa7": {
+			"label": "Carl Philipp Emanuel Bach",
+			"schema": "Person",
+			"statements": {
+				"Description": { "type": "text", "value": [ "Composer; second surviving son of Johann Sebastian Bach." ] },
+				"Also known as": { "type": "text", "value": [ "C. P. E. Bach", "the Berlin Bach", "the Hamburg Bach" ] }
+			}
+		}
+	}
+}

@@ -1,0 +1,3 @@
+'''Johann Sebastian Bach''' was a German composer and organist of the Baroque period, born in [[Eisenach]] in 1685. He was the son of [[Johann Ambrosius Bach]] and the father of [[Wilhelm Friedemann Bach]], [[Carl Philipp Emanuel Bach]], and [[Johann Christian Bach]].
+
+{{#invoke:NeoWikiDemo|personEvents}}

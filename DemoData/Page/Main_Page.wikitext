@@ -33,6 +33,10 @@ card1_title=Museum collection
 |card3_title=Research catalog
 |card3_description=Track publications, authors, institutions, and projects.
 |card3_link=Research catalog
+
+|card4_title=People and life events
+|card4_description=Model births as their own Subjects, in CIDOC CRM style.
+|card4_link=People and life events
 }}
 
 == Build on it ==

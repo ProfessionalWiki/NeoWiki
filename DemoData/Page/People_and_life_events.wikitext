@@ -1,0 +1,55 @@
+A demo dataset that models people and their births as separate Subjects, in the event-centric style of CIDOC CRM (the cultural-heritage reference model that Arches is built on). It uses three generations of the Bach family, scoped deliberately rather than exhaustively. The data is curated for demonstration and is not authoritative.
+
+== Featured ==
+
+{{#invoke:SubjectRow|render|s1bachaaaaaaab2|s1bachaaaaaaaa3}}
+
+== Who was born where, and when? ==
+
+{{#invoke:NeoWikiDemo|query|MATCH (b:Birth)-[:`Brought into life`]->(p:Person) OPTIONAL MATCH (b)-[:`Took place at`]->(pl:Place) RETURN p.name AS Person, pl.name AS Place, b.Date[0] AS Date ORDER BY Date|columns=Person, Place, Date|linkColumns=Person, Place}}
+
+== Browse ==
+
+Each birth is its own Subject linking a child, mother, father, place, and date. Johann Sebastian Bach appears in four births, once as a child and three times as a father, which a person-centric model could not express cleanly.
+
+{{#invoke:NeoWikiDemo|query|MATCH (b:Birth)-[:`Brought into life`]->(c:Person) OPTIONAL MATCH (b)-[:`By mother`]->(m:Person) OPTIONAL MATCH (b)-[:`From father`]->(f:Person) OPTIONAL MATCH (b)-[:`Took place at`]->(pl:Place) RETURN c.name AS Child, m.name AS Mother, f.name AS Father, pl.name AS Place, b.Date[0] AS Date ORDER BY Date|columns=Child, Mother, Father, Place, Date|linkColumns=Child, Mother, Father, Place}}
+
+== Mapping to CIDOC CRM ==
+
+This dataset partially maps to [http://www.cidoc-crm.org/ CIDOC CRM]. The canonical statements run from the event to the person (E67 Birth, P98 brought into life, E21 Person); the reverse "was born" (P98i) is not stored as a separate edge but derived by [[Module:NeoWikiDemo]] reverse-querying the graph, which is how CIDOC inverse properties work.
+
+{| class="wikitable"
+! NeoWiki !! CIDOC CRM !! URI
+|-
+| Schema Person || E21 Person || http://www.cidoc-crm.org/cidoc-crm/E21_Person
+|-
+| Schema Birth || E67 Birth || http://www.cidoc-crm.org/cidoc-crm/E67_Birth
+|-
+| Schema Place || E53 Place || http://www.cidoc-crm.org/cidoc-crm/E53_Place
+|-
+| Birth: Brought into life || P98 brought into life (inverse P98i was born) || http://www.cidoc-crm.org/cidoc-crm/P98_brought_into_life
+|-
+| Birth: By mother || P96 by mother || http://www.cidoc-crm.org/cidoc-crm/P96_by_mother
+|-
+| Birth: From father || P97 from father || http://www.cidoc-crm.org/cidoc-crm/P97_from_father
+|-
+| Birth: Took place at || P7 took place at || http://www.cidoc-crm.org/cidoc-crm/P7_took_place_at
+|-
+| Birth: Date || P4 has time-span (E52 Time-Span; the date is the time-span's P82 value, collapsed to one date) || http://www.cidoc-crm.org/cidoc-crm/P4_has_time-span
+|-
+| Person: Also known as || P1 is identified by (E41 Appellation) || http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by
+|-
+| Person / Place: Description || P3 has note (E62 String) || http://www.cidoc-crm.org/cidoc-crm/P3_has_note
+|-
+| Place: Coordinates || P168 place is defined by (E94 Space Primitive); stored as a lat/long display label, not a WKT/GML geometry literal || http://www.cidoc-crm.org/cidoc-crm/P168_place_is_defined_by
+|-
+| Place: Country || No direct CIDOC property: denormalised country-name label (a faithful model would use P89 falls within a containing E53 Place) || http://www.cidoc-crm.org/cidoc-crm/P89_falls_within
+|}
+
+== How this is built ==
+
+* Schemas: [[Schema:Person]], [[Schema:Birth]], [[Schema:Place]]
+* The "was born" line on each person page is computed by [[Module:NeoWikiDemo]] (the <code>personEvents</code> function), which reverse-queries the graph rather than storing an inverse edge.
+* The tables above come from Cypher queries via [[Module:NeoWikiDemo]].
+* See the source of one subject: [{{fullurl:Birth of Johann Sebastian Bach|action=edit}} Edit Birth of Johann Sebastian Bach]
+* [{{fullurl:{{FULLPAGENAME}}|action=edit}} Edit this page]

@@ -278,4 +278,58 @@ function p.schema( frame )
 	return renderRowsAsTable( rows, { 'Name', 'Type', 'Required', 'Details' } )
 end
 
+local PERSON_EVENTS_MONTHS = {
+	'January', 'February', 'March', 'April', 'May', 'June',
+	'July', 'August', 'September', 'October', 'November', 'December'
+}
+
+-- Formats an ISO yyyy-mm-dd string as "21 March 1685" without relying on
+-- MediaWiki's date parsing, which is unreliable for pre-modern years.
+local function personEventsFormatDate( iso )
+	local y, m, d = string.match( iso or '', '^(%d+)-(%d+)-(%d+)$' )
+	if not y then
+		return iso or ''
+	end
+	return tonumber( d ) .. ' ' .. ( PERSON_EVENTS_MONTHS[tonumber( m )] or m ) .. ' ' .. y
+end
+
+local PERSON_EVENTS_ROLES = {
+	['Brought into life'] = 'Born',
+	['By mother'] = 'Mother',
+	['From father'] = 'Father',
+}
+
+-- Renders the current Person page's life events as a table by reverse-querying
+-- the graph: the canonical edges run Birth -> Person, so a person's role in each
+-- event ("was born" / CIDOC P98i, mother, father) is derived here rather than
+-- stored as an inverse edge. Date is read as b.Date[0] because the `date` property
+-- is stored as a string list; switch to toString(b.Date[0]) if/when date is stored
+-- as a native Neo4j date.
+function p.personEvents( frame )
+	local name = mw.title.getCurrentTitle().text
+
+	local events = nw.query(
+		'MATCH (b:Birth)-[r]->(p:Person {name: $name}) ' ..
+		'OPTIONAL MATCH (b)-[:`Took place at`]->(pl:Place) ' ..
+		'RETURN type(r) AS role, b.name AS event, b.Date[0] AS date, pl.name AS place ORDER BY date',
+		{ name = name }
+	)
+
+	if not events or #events == 0 then
+		return ''
+	end
+
+	local rows = {}
+	for _, e in ipairs( events ) do
+		rows[#rows + 1] = {
+			Role = PERSON_EVENTS_ROLES[e.role] or e.role,
+			Event = e.event,
+			Date = e.date and personEventsFormatDate( e.date ) or '',
+			Place = e.place or '',
+		}
+	end
+
+	return "'''Life events'''\n" .. renderRowsAsTable( rows, { 'Role', 'Event', 'Date', 'Place' }, { 'Event', 'Place' } )
+end
+
 return p

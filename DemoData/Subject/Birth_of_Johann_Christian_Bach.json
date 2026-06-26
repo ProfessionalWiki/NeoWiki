@@ -1,0 +1,16 @@
+{
+	"mainSubject": "s1bachaaaaaaab5",
+	"subjects": {
+		"s1bachaaaaaaab5": {
+			"label": "Birth of Johann Christian Bach",
+			"schema": "Birth",
+			"statements": {
+				"Brought into life": { "type": "relation", "value": [ { "id": "r1bachaaaaaaab6", "target": "s1bachaaaaaaaa8" } ] },
+				"By mother": { "type": "relation", "value": [ { "id": "r1bachaaaaaaab7", "target": "s1bachaaaaaaaa5" } ] },
+				"From father": { "type": "relation", "value": [ { "id": "r1bachaaaaaaab8", "target": "s1bachaaaaaaaa3" } ] },
+				"Took place at": { "type": "relation", "value": [ { "id": "r1bachaaaaaaab9", "target": "s1bachaaaaaaac4" } ] },
+				"Date": { "type": "date", "value": [ "1735-09-05" ] }
+			}
+		}
+	}
+}
