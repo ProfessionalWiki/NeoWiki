@@ -77,7 +77,10 @@ describe( 'DateInput', () => {
 	} );
 
 	it( 'still surfaces a server-sourced required violation on the date field', () => {
+		// A valid value is supplied so live validation cannot itself emit
+		// 'required'; the surfaced error therefore proves the server path.
 		const wrapper = newWrapper( {
+			modelValue: newStringValue( '2025-06-15' ),
 			property: newDateProperty( { name: 'Foo', required: true } ),
 			serverViolations: [
 				{ propertyName: 'Foo', code: 'required', args: [], valuePartIndex: null },
