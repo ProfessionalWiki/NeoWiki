@@ -11,6 +11,8 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ObjectCache\WANObjectCache;
+use Wikimedia\Rdbms\Database;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * Caches deserialized Schemas so that concurrent reads (most notably the
@@ -27,6 +29,7 @@ class CachingSchemaLookup implements SchemaLookup {
 		private readonly WANObjectCache $cache,
 		private readonly TitleFactory $titleFactory,
 		private readonly Authority $authority,
+		private readonly IConnectionProvider $connectionProvider,
 	) {
 	}
 
@@ -54,7 +57,14 @@ class CachingSchemaLookup implements SchemaLookup {
 				$title->getLatestRevID()
 			),
 			WANObjectCache::TTL_DAY,
-			fn(): ?Schema => $this->schemaLookup->getSchema( $schemaName )
+			function ( mixed $oldValue, int &$ttl, array &$setOpts ) use ( $schemaName ): ?Schema {
+				// Make caching replica-lag aware: if the schema content is read
+				// from a lagged replica, WANObjectCache reduces the TTL instead of
+				// pinning that content under the new revision's key for the full
+				// TTL. Closes the narrow read-after-edit staleness window.
+				$setOpts += Database::getCacheSetOptions( $this->connectionProvider->getReplicaDatabase() );
+				return $this->schemaLookup->getSchema( $schemaName );
+			}
 		);
 
 		return $schema;
