@@ -87,11 +87,9 @@
 </template>
 
 <script>
-'use strict';
-
-var vue = require( 'vue' );
-var codex = require( './codex.js' );
-var nw = require( 'ext.neowiki' );
+const vue = require( 'vue' );
+const codex = require( './codex.js' );
+const nw = require( 'ext.neowiki' );
 
 // Example View Type: renders a Subject as a two-column card, loosely modelled on
 // the "document control" header BlueSpice shows on controlled documents. It
@@ -103,6 +101,7 @@ var nw = require( 'ext.neowiki' );
 // reports canEditSubject. It also reads the Layout's settings — a
 // fullWidthProperties list — to decide which properties span the full width
 // instead of sitting in a column. NeoWiki populates the stores before mounting.
+// @vue/component
 module.exports = exports = {
 	components: {
 		CdxButton: codex.CdxButton,
@@ -114,36 +113,26 @@ module.exports = exports = {
 		layoutName: { type: String, default: undefined }
 	},
 	setup: function ( props ) {
-		var subjectStore = nw.useSubjectStore();
-		var schemaStore = nw.useSchemaStore();
-		var layoutStore = nw.useLayoutStore();
-		var componentRegistry = nw.NeoWikiServices.getComponentRegistry();
+		const subjectStore = nw.useSubjectStore();
+		const schemaStore = nw.useSchemaStore();
+		const layoutStore = nw.useLayoutStore();
+		const componentRegistry = nw.NeoWikiServices.getComponentRegistry();
 
-		var editorOpen = vue.ref( false );
+		const editorOpen = vue.ref( false );
 
-		var subject = vue.computed( function () {
-			return subjectStore.getSubject( props.subjectId );
-		} );
+		const subject = vue.computed( () => subjectStore.getSubject( props.subjectId ) );
 
-		var schema = vue.computed( function () {
-			return schemaStore.getSchema( subject.value.getSchemaName() );
-		} );
+		const schema = vue.computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) );
 
-		var layout = vue.computed( function () {
-			return props.layoutName ? layoutStore.getLayout( props.layoutName ) : undefined;
-		} );
+		const layout = vue.computed( () => props.layoutName ? layoutStore.getLayout( props.layoutName ) : undefined );
 
-		var layoutUrl = vue.computed( function () {
-			return props.layoutName ?
-				mw.util.getUrl( 'Layout:' + props.layoutName, { action: 'edit' } ) :
-				'';
-		} );
+		const layoutUrl = vue.computed( () => props.layoutName ?
+			mw.util.getUrl( 'Layout:' + props.layoutName, { action: 'edit' } ) :
+			'' );
 
-		var schemaUrl = vue.computed( function () {
-			return mw.util.getUrl( 'Schema:' + subject.value.getSchemaName(), { action: 'edit' } );
-		} );
+		const schemaUrl = vue.computed( () => mw.util.getUrl( 'Schema:' + subject.value.getSchemaName(), { action: 'edit' } ) );
 
-		var resolvedProperties = vue.computed( function () {
+		const resolvedProperties = vue.computed( () => {
 			if ( !schema.value ) {
 				return [];
 			}
@@ -153,28 +142,28 @@ module.exports = exports = {
 		// The Layout's settings let the layout author customise this View Type.
 		// fullWidthProperties names the properties that should span the full card
 		// width; the rest are laid out in two columns.
-		var fullWidthNames = vue.computed( function () {
-			var names = layout.value ? layout.value.getSettings().fullWidthProperties : undefined;
+		const fullWidthNames = vue.computed( () => {
+			const names = layout.value ? layout.value.getSettings().fullWidthProperties : undefined;
 			return Array.isArray( names ) ? names : [];
 		} );
 
 		function isFullWidth( resolved ) {
-			return fullWidthNames.value.indexOf( resolved.propertyDefinition.name.toString() ) !== -1;
+			return fullWidthNames.value.includes( resolved.propertyDefinition.name.toString() );
 		}
 
 		// Partition the properties into the full-width fields and two columns of
 		// the rest, in a single pass.
-		var layoutSections = vue.computed( function () {
-			var wide = [];
-			var compact = [];
-			resolvedProperties.value.forEach( function ( resolved ) {
+		const layoutSections = vue.computed( () => {
+			const wide = [];
+			const compact = [];
+			resolvedProperties.value.forEach( ( resolved ) => {
 				if ( isFullWidth( resolved ) ) {
 					wide.push( resolved );
 				} else {
 					compact.push( resolved );
 				}
 			} );
-			var half = Math.ceil( compact.length / 2 );
+			const half = Math.ceil( compact.length / 2 );
 			return {
 				wide: wide,
 				columns: [ compact.slice( 0, half ), compact.slice( half ) ]
@@ -189,9 +178,9 @@ module.exports = exports = {
 			Promise.all( [
 				schemaStore.fetchSchema( subject.value.getSchemaName() ),
 				subjectStore.fetchSubject( props.subjectId )
-			] ).then( function () {
+			] ).then( () => {
 				editorOpen.value = true;
-			} ).catch( function ( error ) {
+			} ).catch( ( error ) => {
 				mw.notify(
 					error instanceof Error ? error.message : String( error ),
 					{ type: 'error' }

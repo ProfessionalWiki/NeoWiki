@@ -1,26 +1,26 @@
 ( function () {
 	'use strict';
 
-	var Vue = require( 'vue' );
-	var codex = require( './codex.js' );
-	var nw = require( 'ext.neowiki' );
-	var CreateChildDialog = require( './CreateChildDialog.vue' );
-	var DIALOG_OPEN_KEY = require( './constants.js' ).DIALOG_OPEN_KEY;
+	const Vue = require( 'vue' );
+	const codex = require( './codex.js' );
+	const nw = require( 'ext.neowiki' );
+	const CreateChildDialog = require( './CreateChildDialog.vue' );
+	const DIALOG_OPEN_KEY = require( './constants.js' ).DIALOG_OPEN_KEY;
 
-	var TRIGGER_SELECTOR = '.ext-redherb-create-child-company-trigger';
+	const TRIGGER_SELECTOR = '.ext-redherb-create-child-company-trigger';
 
-	var open = Vue.ref( false );
-	var mounted = false;
+	const open = Vue.ref( false );
+	let mounted = false;
 
 	function ensureMounted() {
 		if ( mounted ) {
 			return;
 		}
-		var host = document.createElement( 'div' );
+		const host = document.createElement( 'div' );
 		host.className = 'ext-redherb-create-child-mount';
 		document.body.appendChild( host );
 
-		var app = Vue.createMwApp( CreateChildDialog )
+		const app = Vue.createMwApp( CreateChildDialog )
 			.directive( 'tooltip', codex.CdxTooltip );
 		app.use( nw.NeoWikiExtension.getInstance().getPinia() );
 		nw.NeoWikiServices.registerServices( app );
@@ -30,7 +30,7 @@
 	}
 
 	function handleClick( ev ) {
-		var trigger = ev.target.closest( TRIGGER_SELECTOR );
+		const trigger = ev.target.closest( TRIGGER_SELECTOR );
 		if ( trigger === null ) {
 			return;
 		}
@@ -40,7 +40,7 @@
 		open.value = true;
 	}
 
-	queueMicrotask( function () {
+	queueMicrotask( () => {
 		document.body.addEventListener( 'click', handleClick );
 	} );
 }() );

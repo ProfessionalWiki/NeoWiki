@@ -143,9 +143,9 @@ A backend Property Type needs a matching frontend: a display component, an input
 attributes editor. Register them through the `neowiki.registration` JS hook:
 
 ```javascript
-var nw = require( 'ext.neowiki' );
+const nw = require( 'ext.neowiki' );
 
-mw.hook( 'neowiki.registration' ).add( function ( registrar ) {
+mw.hook( 'neowiki.registration' ).add( ( registrar ) => {
 	registrar.registerPropertyType( {
 		typeName: 'color',
 		valueType: nw.ValueType.String,
@@ -188,10 +188,10 @@ A View Type renders a Subject in a particular visual format; `infobox` is the on
 component for a new View Type through the same `neowiki.registration` hook, at parity with Property Types:
 
 ```javascript
-var nw = require( 'ext.neowiki' );
-var RedHerbCard = require( './RedHerbCard.vue' );
+const nw = require( 'ext.neowiki' );
+const RedHerbCard = require( './RedHerbCard.vue' );
 
-mw.hook( 'neowiki.registration' ).add( function ( registrar ) {
+mw.hook( 'neowiki.registration' ).add( ( registrar ) => {
 	registrar.registerViewType( {
 		typeName: 'redherb-card',
 		component: RedHerbCard
@@ -230,8 +230,8 @@ To build a Vue feature wired to NeoWiki's services, obtain NeoWiki's Pinia insta
 services on your app:
 
 ```javascript
-var nw = require( 'ext.neowiki' );
-var app = Vue.createMwApp( MyComponent );
+const nw = require( 'ext.neowiki' );
+const app = Vue.createMwApp( MyComponent );
 
 app.use( nw.NeoWikiExtension.getInstance().getPinia() );
 nw.NeoWikiServices.registerServices( app );

@@ -1,0 +1,42 @@
+name: NeoWiki CI (RedHerb example)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/ci-redherb.yml'
+      - 'tests/RedHerb/**'
+  pull_request:
+    paths:
+      - '.github/workflows/ci-redherb.yml'
+      - 'tests/RedHerb/**'
+
+jobs:
+  lint:
+    name: "Linting"
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./tests/RedHerb
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Silence warnings
+        run: |
+          echo "::remove-matcher owner=eslint-compact::"
+          echo "::remove-matcher owner=eslint-stylish::"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
