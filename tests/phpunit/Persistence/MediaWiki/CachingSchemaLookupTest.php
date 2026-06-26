@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use PHPUnit\Framework\TestCase;
@@ -23,7 +24,7 @@ class CachingSchemaLookupTest extends TestCase {
 	public function testCachesSchemaSoTheInnerLookupRunsOnce(): void {
 		$inner = $this->newSpyLookup();
 
-		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 100 ) );
+		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 100 ), $this->newAuthority() );
 		$first = $lookup->getSchema( new SchemaName( 'Person' ) );
 		$second = $lookup->getSchema( new SchemaName( 'Person' ) );
 
@@ -35,7 +36,7 @@ class CachingSchemaLookupTest extends TestCase {
 	public function testReloadsWhenTheSchemaRevisionChanges(): void {
 		$inner = $this->newSpyLookup();
 
-		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 101 ) );
+		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 101 ), $this->newAuthority() );
 		$lookup->getSchema( new SchemaName( 'Person' ) );
 		$lookup->getSchema( new SchemaName( 'Person' ) );
 
@@ -50,9 +51,23 @@ class CachingSchemaLookupTest extends TestCase {
 		$factory = $this->createMock( TitleFactory::class );
 		$factory->method( 'newFromText' )->willReturn( $title );
 
-		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $factory );
+		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $factory, $this->newAuthority() );
 
 		$this->assertNull( $lookup->getSchema( new SchemaName( 'Missing' ) ) );
+		$this->assertSame( 0, $inner->calls );
+	}
+
+	public function testReturnsNullWithoutHittingTheInnerLookupWhenTheUserCannotRead(): void {
+		$inner = $this->newSpyLookup();
+
+		$lookup = new CachingSchemaLookup(
+			$inner,
+			$this->newCache(),
+			$this->newTitleFactory( 1, 100, 100 ),
+			$this->newAuthority( canRead: false )
+		);
+
+		$this->assertNull( $lookup->getSchema( new SchemaName( 'Person' ) ) );
 		$this->assertSame( 0, $inner->calls );
 	}
 
@@ -68,7 +83,7 @@ class CachingSchemaLookupTest extends TestCase {
 			}
 		};
 
-		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 100 ) );
+		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 100 ), $this->newAuthority() );
 		$this->assertNull( $lookup->getSchema( new SchemaName( 'Broken' ) ) );
 		$this->assertNull( $lookup->getSchema( new SchemaName( 'Broken' ) ) );
 
@@ -107,6 +122,12 @@ class CachingSchemaLookupTest extends TestCase {
 
 	private function newCache(): WANObjectCache {
 		return new WANObjectCache( [ 'cache' => new HashBagOStuff() ] );
+	}
+
+	private function newAuthority( bool $canRead = true ): Authority {
+		$authority = $this->createMock( Authority::class );
+		$authority->method( 'probablyCan' )->willReturn( $canRead );
+		return $authority;
 	}
 
 }

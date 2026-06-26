@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
@@ -25,6 +26,7 @@ class CachingSchemaLookup implements SchemaLookup {
 		private readonly SchemaLookup $schemaLookup,
 		private readonly WANObjectCache $cache,
 		private readonly TitleFactory $titleFactory,
+		private readonly Authority $authority,
 	) {
 	}
 
@@ -32,6 +34,14 @@ class CachingSchemaLookup implements SchemaLookup {
 		$title = $this->titleFactory->newFromText( $schemaName->getText(), NeoWikiExtension::NS_SCHEMA );
 
 		if ( $title === null || !$title->exists() ) {
+			return null;
+		}
+
+		// The cached value is user-independent schema content; the inner lookup
+		// also applies a per-user read check while loading. Repeat it here,
+		// before the cache, so a cache hit cannot serve a Schema to a user who
+		// may not read its page.
+		if ( !$this->authority->probablyCan( 'read', $title ) ) {
 			return null;
 		}
 

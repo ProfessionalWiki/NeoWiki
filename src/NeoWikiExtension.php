@@ -448,7 +448,8 @@ class NeoWikiExtension {
 				schemaDeserializer: $this->getPersistenceSchemaDeserializer()
 			),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
-			titleFactory: MediaWikiServices::getInstance()->getTitleFactory()
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			authority: $this->getRequestAuthority()
 		);
 	}
 
