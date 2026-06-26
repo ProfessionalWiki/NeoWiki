@@ -87,6 +87,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepos
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
@@ -440,10 +441,14 @@ class NeoWikiExtension {
 	}
 
 	public function getSchemaLookup(): SchemaLookup {
-		return new WikiPageSchemaLookup(
-			pageContentFetcher: $this->getPageContentFetcher(),
-			authority: $this->getRequestAuthority(),
-			schemaDeserializer: $this->getPersistenceSchemaDeserializer()
+		return new CachingSchemaLookup(
+			schemaLookup: new WikiPageSchemaLookup(
+				pageContentFetcher: $this->getPageContentFetcher(),
+				authority: $this->getRequestAuthority(),
+				schemaDeserializer: $this->getPersistenceSchemaDeserializer()
+			),
+			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory()
 		);
 	}
 
