@@ -94,7 +94,7 @@ Option B: include info on the statement (property) level
 }
 ```
 
-Option B2: option B with possible approach for [special values](https://github.com/ProfessionalWiki/NeoWiki/issues/356)
+Option B2: option B with possible approach for [special values](https://github.com/ProfessionalWiki/NeoWiki/issues/937)
 
 ```json
 {
