@@ -130,8 +130,10 @@ Passing a value to another extension's parser function:
 Executes a read-only Cypher query and returns the raw results as JSON in a code block. Mainly
 useful for development and debugging.
 
-For end-user dashboards, formatted query result rendering and a Lua `nw.query()` function are
-planned (see [#736](https://github.com/ProfessionalWiki/NeoWiki/issues/736)).
+For end-user dashboards, formatted query result rendering is planned (see
+[#809](https://github.com/ProfessionalWiki/NeoWiki/issues/809)). A Lua
+[`nw.query()`](lua-api.md#nwquerycypher-params) function is already available for building
+custom result formatting in templates.
 
 ### Syntax
 
