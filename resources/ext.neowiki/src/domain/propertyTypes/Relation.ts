@@ -37,7 +37,6 @@ export class RelationType extends BasePropertyType<RelationProperty, RelationVal
 			relation: json.relation,
 			targetSchema: json.targetSchema,
 			multiple: json.multiple ?? false,
-			uniqueItems: json.uniqueItems ?? true,
 		} as RelationProperty;
 	}
 
