@@ -13,21 +13,36 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { CdxLookup } from '@wikimedia/codex';
 import { cdxIconSearch } from '@wikimedia/codex-icons';
 import type { MenuItemData } from '@wikimedia/codex';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+
+const props = defineProps<{
+	selected?: string | null;
+}>();
 
 const emit = defineEmits<{
 	'select': [ schemaName: string ];
 }>();
 
 const schemaStore = useSchemaStore();
-const selectedSchema = ref<string | null>( null );
-const menuItems = ref<MenuItemData[]>( [] );
+const selectedSchema = ref<string | null>( props.selected ?? null );
+const menuItems = ref<MenuItemData[]>(
+	props.selected ? [ { label: props.selected, value: props.selected } ] : []
+);
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 let requestSequence = 0;
+
+watch( () => props.selected, ( value ) => {
+	selectedSchema.value = value ?? null;
+	if ( value && !menuItems.value.some( ( item ) => item.value === value ) ) {
+		menuItems.value = [ { label: value, value: value } ];
+	} else if ( !value ) {
+		menuItems.value = [];
+	}
+} );
 
 async function onLookupInput( value: string ): Promise<void> {
 	if ( !value ) {
