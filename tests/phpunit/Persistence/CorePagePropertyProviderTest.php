@@ -19,7 +19,7 @@ class CorePagePropertyProviderTest extends TestCase {
 		$properties = $this->getPropertiesForContext();
 
 		$this->assertSame(
-			[ 'name', 'creationTime', 'lastUpdated', 'categories', 'lastEditor' ],
+			[ 'name', 'namespaceId', 'creationTime', 'lastUpdated', 'categories', 'lastEditor' ],
 			array_keys( $properties )
 		);
 	}
@@ -28,6 +28,12 @@ class CorePagePropertyProviderTest extends TestCase {
 		$properties = $this->getPropertiesForContext( pageTitle: 'Test Page' );
 
 		$this->assertSame( 'Test Page', $properties['name'] );
+	}
+
+	public function testNamespaceIdMatchesContext(): void {
+		$properties = $this->getPropertiesForContext( namespaceId: 12 );
+
+		$this->assertSame( 12, $properties['namespaceId'] );
 	}
 
 	public function testCreationTimeIsPageDateTime(): void {
@@ -61,6 +67,7 @@ class CorePagePropertyProviderTest extends TestCase {
 	 */
 	private function getPropertiesForContext(
 		string $pageTitle = 'Default Title',
+		int $namespaceId = 0,
 		string $creationTime = '20230101000000',
 		string $modificationTime = '20230101000000',
 		array $categories = [],
@@ -70,6 +77,7 @@ class CorePagePropertyProviderTest extends TestCase {
 			new PagePropertyProviderContext(
 				pageId: new PageId( 1 ),
 				pageTitle: $pageTitle,
+				namespaceId: $namespaceId,
 				creationTime: $creationTime,
 				modificationTime: $modificationTime,
 				categories: $categories,

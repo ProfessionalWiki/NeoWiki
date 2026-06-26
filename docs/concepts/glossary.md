@@ -140,8 +140,8 @@ Display Rules have:
 A key-value pair stored on the Page node in the graph database. Page Properties are metadata about the wiki page
 itself, as opposed to Subject Statements, which are structured data about the entities described on the page.
 
-Built-in Page Properties include `name`, `creationTime`, `lastUpdated`, `categories`, and `lastEditor`. Extensions can
-contribute additional Page Properties.
+Built-in Page Properties include `name`, `namespaceId`, `creationTime`, `lastUpdated`, `categories`, and `lastEditor`.
+Extensions can contribute additional Page Properties.
 
 When using Neo4j, Page Properties are available on every Page node and are queryable via Cypher
 (e.g., `MATCH (page:Page) WHERE page.lastUpdated > datetime("2024-01-01")`).

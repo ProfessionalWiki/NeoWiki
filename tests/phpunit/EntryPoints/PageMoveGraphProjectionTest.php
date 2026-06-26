@@ -51,13 +51,4 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		DeferredUpdates::doUpdates();
 	}
 
-	private function readPageNodeName( int $pageId ): ?string {
-		$result = $this->newNeo4jQueryStore()->runReadQuery(
-			'MATCH (page:Page {id: $pageId}) RETURN page.name AS name',
-			[ 'pageId' => $pageId ]
-		);
-
-		return $result->first()->toRecursiveArray()['name'] ?? null;
-	}
-
 }
