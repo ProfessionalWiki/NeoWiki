@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, type MockedFunction } from 'vites
 import { nextTick } from 'vue';
 
 vi.mock( '@/composables/useValueValidation.ts', () => ( {
-	validateValue: vi.fn(),
+	liveValidationMessages: vi.fn(),
 } ) );
 
 vi.mock( '@/NeoWikiServices.ts', () => ( {
@@ -14,14 +14,14 @@ vi.mock( '@/NeoWikiServices.ts', () => ( {
 	},
 } ) );
 
-import { validateValue } from '@/composables/useValueValidation.ts';
+import { liveValidationMessages } from '@/composables/useValueValidation.ts';
 import { useStringValueInput } from '@/composables/useStringValueInput.ts';
 import { Value, newStringValue, ValueType } from '@/domain/Value.ts';
 import { MultiStringProperty, PropertyName, PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import { PropertyType, ValueValidationError } from '@/domain/PropertyType.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
-const mockedValidateValue = validateValue as MockedFunction<typeof validateValue>;
+const mockedLiveValidationMessages = liveValidationMessages as MockedFunction<typeof liveValidationMessages>;
 
 vi.stubGlobal( 'mw', {
 	message: vi.fn( ( key: string ) => ( {
@@ -68,7 +68,7 @@ describe( 'useStringValueInput', () => {
 
 	beforeEach( () => {
 		vi.clearAllMocks();
-		mockedValidateValue.mockReturnValue( {} );
+		mockedLiveValidationMessages.mockReturnValue( {} );
 
 		mockPropertyType = createMockPropertyType( mockPropertyTypeNameFromComposable );
 
@@ -97,7 +97,7 @@ describe( 'useStringValueInput', () => {
 
 			const { fieldMessages, inputMessages } = createComposable( { modelValue: undefined, property: testProperty } );
 
-			expect( mockedValidateValue ).not.toHaveBeenCalled();
+			expect( mockedLiveValidationMessages ).not.toHaveBeenCalled();
 			expect( fieldMessages.value ).toEqual( {} );
 			expect( inputMessages.value ).toEqual( [] );
 		} );
@@ -110,12 +110,12 @@ describe( 'useStringValueInput', () => {
 
 		it( 'initializes internalValue with a StringValue-like object if modelValue is a valid StringValue', () => {
 			const initialValue = newStringValue( 'hello' );
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { getCurrentValue } = createComposable( { modelValue: initialValue } );
 			const currentValue = getCurrentValue();
 
 			expect( currentValue ).toEqual( newStringValue( 'hello' ) );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( initialValue, mockPropertyType, expect.any( Object ) );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( initialValue, mockPropertyType, expect.any( Object ) );
 		} );
 
 		it( 'initializes internalValue to undefined if modelValue is StringValue with only empty strings', () => {
@@ -133,24 +133,24 @@ describe( 'useStringValueInput', () => {
 		} );
 
 		it( 'initializes displayValues correctly based on modelValue', () => {
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { displayValues } = createComposable( { modelValue: newStringValue( 'test1', 'test2' ) } );
 
 			expect( displayValues.value ).toEqual( [ 'test1', 'test2' ] );
-			expect( mockedValidateValue ).toHaveBeenCalledTimes( 2 );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'test1' ), mockPropertyType, expect.any( Object ) );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'test2' ), mockPropertyType, expect.any( Object ) );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledTimes( 2 );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'test1' ), mockPropertyType, expect.any( Object ) );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'test2' ), mockPropertyType, expect.any( Object ) );
 		} );
 
 		it( 'initializes displayValues to an empty array if modelValue is undefined', () => {
 			const { displayValues } = createComposable( { modelValue: undefined } );
 
 			expect( displayValues.value ).toEqual( [] );
-			expect( mockedValidateValue ).not.toHaveBeenCalled();
+			expect( mockedLiveValidationMessages ).not.toHaveBeenCalled();
 		} );
 
 		it( 'fetches startIcon using ComponentRegistry and provides it via computed ref', () => {
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { startIcon } = createComposable();
 
 			expect( startIcon ).toBe( 'testIcon' );
@@ -161,7 +161,7 @@ describe( 'useStringValueInput', () => {
 	describe( 'onInput', () => {
 		it( 'updates internalValue and emits update:modelValue for a single valid input', () => {
 			const currentProperty = createMockPropertyDefinition( { multiple: false } );
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { onInput, getCurrentValue, inputMessages, fieldMessages } = createComposable( {
 				property: currentProperty,
 			} );
@@ -171,14 +171,14 @@ describe( 'useStringValueInput', () => {
 			const currentValue = getCurrentValue();
 			expect( currentValue ).toEqual( newStringValue( 'new value' ) );
 			expect( mockEmit ).toHaveBeenCalledWith( 'update:modelValue', currentValue );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'new value' ), mockPropertyType, currentProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'new value' ), mockPropertyType, currentProperty );
 			expect( inputMessages.value ).toEqual( [ {} ] );
 			expect( fieldMessages.value ).toEqual( {} );
 		} );
 
 		it( 'updates internalValue and emits for multiple valid inputs', () => {
 			const currentProperty = createMockPropertyDefinition( { multiple: true } );
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { onInput, getCurrentValue, inputMessages, fieldMessages } = createComposable( {
 				property: currentProperty,
 			} );
@@ -188,33 +188,33 @@ describe( 'useStringValueInput', () => {
 			const currentValue = getCurrentValue();
 			expect( currentValue ).toEqual( newStringValue( 'val1', 'val2' ) );
 			expect( mockEmit ).toHaveBeenCalledWith( 'update:modelValue', currentValue );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'val1' ), mockPropertyType, currentProperty );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'val2' ), mockPropertyType, currentProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'val1' ), mockPropertyType, currentProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'val2' ), mockPropertyType, currentProperty );
 			expect( inputMessages.value ).toEqual( [ {}, {} ] );
 			expect( fieldMessages.value ).toEqual( {} );
 		} );
 
 		it( 'sets internalValue to undefined if all inputs become empty', () => {
 			const currentProperty = createMockPropertyDefinition( { multiple: false } );
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { onInput, getCurrentValue, inputMessages, fieldMessages } = createComposable( {
 				modelValue: newStringValue( 'initial' ),
 				property: currentProperty,
 			} );
-			mockedValidateValue.mockClear();
+			mockedLiveValidationMessages.mockClear();
 
 			onInput( '' );
 
 			expect( getCurrentValue() ).toBeUndefined();
 			expect( mockEmit ).toHaveBeenCalledWith( 'update:modelValue', undefined );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( '' ), mockPropertyType, currentProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( '' ), mockPropertyType, currentProperty );
 			expect( inputMessages.value ).toEqual( [ {} ] );
 			expect( fieldMessages.value ).toEqual( {} );
 		} );
 
 		it( 'filters out empty strings from multiple inputs before creating StringValue for internal state, but validates all', () => {
 			const currentProperty = createMockPropertyDefinition( { multiple: true } );
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { onInput, getCurrentValue, inputMessages, fieldMessages } = createComposable( {
 				property: currentProperty,
 			} );
@@ -225,10 +225,10 @@ describe( 'useStringValueInput', () => {
 			expect( currentValue ).toEqual( newStringValue( 'val1', 'val3' ) );
 			expect( mockEmit ).toHaveBeenCalledWith( 'update:modelValue', currentValue );
 
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'val1' ), mockPropertyType, currentProperty );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( '' ), mockPropertyType, currentProperty );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'val3' ), mockPropertyType, currentProperty );
-			expect( mockedValidateValue ).toHaveBeenCalledTimes( 4 );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'val1' ), mockPropertyType, currentProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( '' ), mockPropertyType, currentProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'val3' ), mockPropertyType, currentProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledTimes( 4 );
 
 			expect( inputMessages.value ).toEqual( [ {}, {}, {}, {} ] );
 			expect( fieldMessages.value ).toEqual( {} );
@@ -236,19 +236,19 @@ describe( 'useStringValueInput', () => {
 
 		it( 'sets internalValue to undefined if only empty strings are provided in multiple inputs', () => {
 			const currentProperty = createMockPropertyDefinition( { multiple: true } );
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { onInput, getCurrentValue, inputMessages, fieldMessages } = createComposable( {
 				modelValue: newStringValue( 'initial' ),
 				property: currentProperty,
 			} );
-			mockedValidateValue.mockClear();
+			mockedLiveValidationMessages.mockClear();
 
 			onInput( [ '', '' ] );
 
 			expect( getCurrentValue() ).toBeUndefined();
 			expect( mockEmit ).toHaveBeenCalledWith( 'update:modelValue', undefined );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( '' ), mockPropertyType, currentProperty );
-			expect( mockedValidateValue ).toHaveBeenCalledTimes( 2 );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( '' ), mockPropertyType, currentProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledTimes( 2 );
 			expect( inputMessages.value ).toEqual( [ {}, {} ] );
 			expect( fieldMessages.value ).toEqual( {} );
 		} );
@@ -257,7 +257,7 @@ describe( 'useStringValueInput', () => {
 	describe( 'Validation (doValidateInputs and its effects)', () => {
 		it( 'emits invalid input through to the backend (backend is the authoritative validator)', () => {
 			const validationError = { error: 'Invalid URL' };
-			mockedValidateValue.mockReturnValue( validationError );
+			mockedLiveValidationMessages.mockReturnValue( validationError );
 			const testProperty = createMockPropertyDefinition( { multiple: false } );
 			const { onInput, displayValues, getCurrentValue, fieldMessages } = createComposable( {
 				property: testProperty,
@@ -272,7 +272,7 @@ describe( 'useStringValueInput', () => {
 		} );
 
 		it( 'emits invalid replacement input so the backend sees it (no silent drop)', () => {
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const testProperty = createMockPropertyDefinition( { multiple: false } );
 			const { onInput, displayValues, getCurrentValue, fieldMessages } = createComposable( {
 				modelValue: newStringValue( 'https://example.com' ),
@@ -280,7 +280,7 @@ describe( 'useStringValueInput', () => {
 			} );
 
 			const validationError = { error: 'Invalid URL' };
-			mockedValidateValue.mockReturnValue( validationError );
+			mockedLiveValidationMessages.mockReturnValue( validationError );
 
 			onInput( 'h' );
 
@@ -290,18 +290,18 @@ describe( 'useStringValueInput', () => {
 			expect( mockEmit ).toHaveBeenCalledWith( 'update:modelValue', newStringValue( 'h' ) );
 		} );
 
-		it( 'populates inputMessages and fieldMessages with errors from validateValue', () => {
-			const validationError = { error: 'Invalid from validateValue' };
-			mockedValidateValue.mockReturnValue( validationError );
+		it( 'populates inputMessages and fieldMessages with errors from liveValidationMessages', () => {
+			const validationError = { error: 'Invalid from liveValidationMessages' };
+			mockedLiveValidationMessages.mockReturnValue( validationError );
 			const testProperty = createMockPropertyDefinition( { multiple: false } );
 			const { onInput, inputMessages, fieldMessages } = createComposable( {
 				property: testProperty,
 			} );
-			mockedValidateValue.mockClear();
+			mockedLiveValidationMessages.mockClear();
 
 			onInput( 'trigger validation' );
 
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'trigger validation' ), mockPropertyType, testProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'trigger validation' ), mockPropertyType, testProperty );
 			expect( inputMessages.value ).toEqual( [ validationError ] );
 			expect( fieldMessages.value ).toEqual( validationError );
 		} );
@@ -309,7 +309,7 @@ describe( 'useStringValueInput', () => {
 		it( 'populates inputMessages but not fieldMessages for multiple inputs with errors', () => {
 			const validationError1 = { error: 'Error 1' };
 			const validationError3 = { warning: 'Warning 3' };
-			mockedValidateValue
+			mockedLiveValidationMessages
 				.mockReturnValueOnce( validationError1 )
 				.mockReturnValueOnce( {} )
 				.mockReturnValueOnce( validationError3 );
@@ -317,30 +317,30 @@ describe( 'useStringValueInput', () => {
 			const { onInput, inputMessages, fieldMessages } = createComposable( {
 				property: testProperty,
 			} );
-			mockedValidateValue.mockClear();
+			mockedLiveValidationMessages.mockClear();
 
 			onInput( [ 'input1', 'input2', 'input3' ] );
 
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'input1' ), mockPropertyType, testProperty );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'input2' ), mockPropertyType, testProperty );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'input3' ), mockPropertyType, testProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'input1' ), mockPropertyType, testProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'input2' ), mockPropertyType, testProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'input3' ), mockPropertyType, testProperty );
 			expect( inputMessages.value ).toEqual( [ validationError1, {}, validationError3 ] );
 			expect( fieldMessages.value ).toEqual( {} );
 		} );
 
 		it( 'handles uniqueItems validation for multiple inputs', () => {
 			const testProperty = createMockPropertyDefinition( { multiple: true, uniqueItems: true } );
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { onInput, inputMessages, fieldMessages } = createComposable( {
 				property: testProperty,
 			} );
-			mockedValidateValue.mockClear();
+			mockedLiveValidationMessages.mockClear();
 
 			onInput( [ 'duplicate', 'unique', 'duplicate' ] );
 
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'duplicate' ), mockPropertyType, testProperty );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newStringValue( 'unique' ), mockPropertyType, testProperty );
-			expect( mockedValidateValue ).toHaveBeenCalledTimes( 2 );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'duplicate' ), mockPropertyType, testProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newStringValue( 'unique' ), mockPropertyType, testProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledTimes( 2 );
 
 			expect( inputMessages.value[ 0 ] ).toEqual( {} );
 			expect( inputMessages.value[ 1 ] ).toEqual( {} );
@@ -348,15 +348,15 @@ describe( 'useStringValueInput', () => {
 			expect( fieldMessages.value ).toEqual( {} );
 		} );
 
-		it( 'initial validation is run on setup with modelValue, calling validateValue', () => {
+		it( 'initial validation is run on setup with modelValue, calling liveValidationMessages', () => {
 			const initialValue = newStringValue( 'initial value' );
 			const validationError = { error: 'Initial validation error' };
-			mockedValidateValue.mockReturnValue( validationError );
+			mockedLiveValidationMessages.mockReturnValue( validationError );
 			const currentProperty = createMockPropertyDefinition( {} );
 
 			const { inputMessages, fieldMessages } = createComposable( { modelValue: initialValue, property: currentProperty } );
 
-			expect( mockedValidateValue ).toHaveBeenCalledWith( initialValue, mockPropertyType, currentProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( initialValue, mockPropertyType, currentProperty );
 			expect( inputMessages.value ).toEqual( [ validationError ] );
 			expect( fieldMessages.value ).toEqual( validationError );
 		} );
@@ -368,20 +368,20 @@ describe( 'useStringValueInput', () => {
 			const modelValueRef = ref<Value | undefined>( initialModelValue );
 			const propertyRef = ref( createMockPropertyDefinition( { multiple: false } ) ) as Ref<MultiStringProperty>;
 
-			mockedValidateValue.mockReturnValueOnce( {} );
+			mockedLiveValidationMessages.mockReturnValueOnce( {} );
 			const composableInstance = useStringValueInput( modelValueRef, propertyRef, mockEmit, mockPropertyType );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( initialModelValue, mockPropertyType, propertyRef.value );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( initialModelValue, mockPropertyType, propertyRef.value );
 			expect( composableInstance.inputMessages.value ).toEqual( [ {} ] );
 			expect( composableInstance.fieldMessages.value ).toEqual( {} );
 
 			const newModelValue = newStringValue( 'changed' );
 			const validationError = { error: 'Error on changed' };
-			mockedValidateValue.mockReset().mockReturnValue( validationError );
+			mockedLiveValidationMessages.mockReset().mockReturnValue( validationError );
 
 			modelValueRef.value = newModelValue;
 			await nextTick();
 
-			expect( mockedValidateValue ).toHaveBeenCalledWith( newModelValue, mockPropertyType, propertyRef.value );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( newModelValue, mockPropertyType, propertyRef.value );
 			expect( composableInstance.getCurrentValue() ).toEqual( newStringValue( 'changed' ) );
 			expect( composableInstance.inputMessages.value ).toEqual( [ validationError ] );
 			expect( composableInstance.fieldMessages.value ).toEqual( validationError );
@@ -392,22 +392,22 @@ describe( 'useStringValueInput', () => {
 			const modelValueRef = ref<Value | undefined>( initialModelValue );
 			const propertyRef = ref( createMockPropertyDefinition( { required: false, multiple: false } ) ) as Ref<MultiStringProperty>;
 
-			mockedValidateValue.mockReturnValueOnce( {} );
+			mockedLiveValidationMessages.mockReturnValueOnce( {} );
 			const { inputMessages, fieldMessages: composableFieldMessages, displayValues } = useStringValueInput( modelValueRef, propertyRef, mockEmit, mockPropertyType );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( initialModelValue, mockPropertyType, propertyRef.value );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( initialModelValue, mockPropertyType, propertyRef.value );
 			expect( inputMessages.value ).toEqual( [ {} ] );
 			expect( composableFieldMessages.value ).toEqual( {} );
 
 			let newTestProperty = createMockPropertyDefinition( { required: true, multiple: false } );
 			newTestProperty = markRaw( newTestProperty );
 			const validationErrorOnPropChange = { error: 'Error on prop change' };
-			mockedValidateValue.mockReset().mockReturnValue( validationErrorOnPropChange );
+			mockedLiveValidationMessages.mockReset().mockReturnValue( validationErrorOnPropChange );
 
 			propertyRef.value = newTestProperty;
 			await nextTick();
 
 			const currentValueForValidation = displayValues.value.length > 0 ? newStringValue( ...displayValues.value ) : newStringValue( '' );
-			expect( mockedValidateValue ).toHaveBeenCalledWith( currentValueForValidation, mockPropertyType, newTestProperty );
+			expect( mockedLiveValidationMessages ).toHaveBeenCalledWith( currentValueForValidation, mockPropertyType, newTestProperty );
 			expect( inputMessages.value ).toEqual( [ validationErrorOnPropChange ] );
 			expect( composableFieldMessages.value ).toEqual( validationErrorOnPropChange );
 		} );
@@ -415,7 +415,7 @@ describe( 'useStringValueInput', () => {
 
 	describe( 'getCurrentValue', () => {
 		it( 'returns the current internalValue', () => {
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { getCurrentValue, onInput } = createComposable();
 
 			expect( getCurrentValue() ).toBeUndefined();
@@ -443,7 +443,7 @@ describe( 'useStringValueInput', () => {
 			const modelValueRef = ref<Value | undefined>( undefined );
 			const propertyRef = ref( createMockPropertyDefinition( property ) ) as Ref<MultiStringProperty>;
 			const serverViolationsRef = ref<any[]>( violations );
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 
 			const result = useStringValueInput(
 				modelValueRef,
@@ -480,7 +480,7 @@ describe( 'useStringValueInput', () => {
 
 		it( 'live error takes precedence over server violation for single-value property', async () => {
 			const liveError = { error: 'live-validation-error' };
-			mockedValidateValue.mockReturnValue( liveError );
+			mockedLiveValidationMessages.mockReturnValue( liveError );
 			const modelValueRef = ref<Value | undefined>( newStringValue( 'bad' ) );
 			const propertyRef = ref( createMockPropertyDefinition( {
 				name: new PropertyName( 'testProp' ),
@@ -516,7 +516,7 @@ describe( 'useStringValueInput', () => {
 		} );
 
 		it( 'emits clear-server-violation when user edits a single-value field that had a server violation', async () => {
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { onInput } = createComposableWithViolations(
 				[ { propertyName: 'testProp', code: 'required', args: [], valuePartIndex: null } ],
 				{ name: new PropertyName( 'testProp' ), multiple: false },
@@ -531,7 +531,7 @@ describe( 'useStringValueInput', () => {
 		} );
 
 		it( 'does not emit clear-server-violation when no server violation exists for this property', async () => {
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const { onInput } = createComposableWithViolations(
 				[],
 				{ name: new PropertyName( 'testProp' ), multiple: false },
@@ -543,7 +543,7 @@ describe( 'useStringValueInput', () => {
 		} );
 
 		it( 'emits clear-server-violation only for the changed index in a multi-value field', async () => {
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const modelValueRef = ref<Value | undefined>( newStringValue( 'https://ok.example', 'bad' ) );
 			const propertyRef = ref( createMockPropertyDefinition( {
 				name: new PropertyName( 'testProp' ),
@@ -573,7 +573,7 @@ describe( 'useStringValueInput', () => {
 		} );
 
 		it( 'does not emit clear-server-violation when editing index 0 and violation is only at index 1', async () => {
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const modelValueRef = ref<Value | undefined>( newStringValue( 'first', 'bad' ) );
 			const propertyRef = ref( createMockPropertyDefinition( {
 				name: new PropertyName( 'testProp' ),
@@ -600,7 +600,7 @@ describe( 'useStringValueInput', () => {
 		} );
 
 		it( 'recomputes messages when serverViolations ref changes', async () => {
-			mockedValidateValue.mockReturnValue( {} );
+			mockedLiveValidationMessages.mockReturnValue( {} );
 			const modelValueRef = ref<Value | undefined>( undefined );
 			const propertyRef = ref( createMockPropertyDefinition( {
 				name: new PropertyName( 'testProp' ),

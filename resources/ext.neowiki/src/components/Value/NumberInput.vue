@@ -36,6 +36,7 @@ import { NumberType, NumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
+import { liveValidationErrors } from '@/composables/useValueValidation.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<NumberProperty>>(),
@@ -87,7 +88,7 @@ function onInput( newValue: string ): void {
 }
 
 function validate( value: NumberValue | undefined ): void {
-	const errors = propertyType.validate( value, props.property );
+	const errors = liveValidationErrors( value, propertyType, props.property );
 	liveValidationError.value = errors.length === 0 ? null :
 		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
 }

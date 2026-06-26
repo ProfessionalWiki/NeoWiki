@@ -39,6 +39,7 @@ import { fromLocalInputValue, toLocalInputValue } from '@/domain/propertyTypes/d
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
+import { liveValidationErrors } from '@/composables/useValueValidation.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<DateTimeProperty>>(),
@@ -90,10 +91,7 @@ function onInput( newValue: string ): void {
 }
 
 function validate( value: StringValue | undefined ): void {
-	// Suppress the live 'required' error so an untouched datetime field isn't
-	// flagged before the user has entered a value; the server still enforces it.
-	const errors = propertyType.validate( value, props.property )
-		.filter( ( e ) => e.code !== 'required' );
+	const errors = liveValidationErrors( value, propertyType, props.property );
 	if ( errors.length === 0 ) {
 		liveValidationError.value = null;
 		return;

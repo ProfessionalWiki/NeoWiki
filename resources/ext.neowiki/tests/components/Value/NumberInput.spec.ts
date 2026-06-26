@@ -47,6 +47,33 @@ describe( 'NumberInput', () => {
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-max-value' );
 	} );
 
+	it( 'does not flag required after the user clears the value', async () => {
+		const wrapper = newWrapper( {
+			modelValue: newNumberValue( 42 ),
+			property: newNumberProperty( { required: true } ),
+		} );
+
+		await wrapper.find( 'input' ).setValue( '' );
+
+		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'default' );
+		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toEqual( {} );
+	} );
+
+	it( 'still surfaces a server-sourced required violation on the number field', () => {
+		// A valid value is supplied so live validation cannot itself emit
+		// 'required'; the surfaced error therefore proves the server path.
+		const wrapper = newWrapper( {
+			modelValue: newNumberValue( 42 ),
+			property: newNumberProperty( { name: 'Foo', required: true } ),
+			serverViolations: [
+				{ propertyName: 'Foo', code: 'required', args: [], valuePartIndex: null },
+			],
+		} );
+
+		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
+		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-required' );
+	} );
+
 	describe( 'getCurrentValue', () => {
 		it( 'returns initial value', () => {
 			const wrapper = newWrapper( {

@@ -6,7 +6,7 @@ import { newStringValue, ValueType } from '@/domain/Value.ts';
 import { MultiStringProperty } from '@/domain/PropertyDefinition.ts';
 import { PropertyType } from '@/domain/PropertyType.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { validateValue } from '@/composables/useValueValidation.ts';
+import { liveValidationMessages } from '@/composables/useValueValidation.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 
 interface UseStringValueInputReturn {
@@ -66,7 +66,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 			if ( property.value.uniqueItems && inputValue !== '' && valuesToValidate.slice( 0, index ).includes( inputValue ) ) {
 				perInputErrors[ index ] = { error: mw.message( 'neowiki-field-unique' ).text() };
 			} else {
-				perInputErrors[ index ] = validateValue( newStringValue( inputValue ), propertyType, property.value );
+				perInputErrors[ index ] = liveValidationMessages( newStringValue( inputValue ), propertyType, property.value );
 			}
 		} );
 

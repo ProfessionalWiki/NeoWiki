@@ -39,6 +39,7 @@ import { BooleanType, BooleanProperty } from '@/domain/propertyTypes/Boolean.ts'
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
+import { liveValidationErrors } from '@/composables/useValueValidation.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<BooleanProperty>>(),
@@ -71,7 +72,7 @@ const internalValue = ref<boolean>( toBoolean( props.modelValue ) );
 const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( BooleanType.typeName );
 
 function validate( value: BooleanValue ): void {
-	const errors = propertyType.validate( value, props.property );
+	const errors = liveValidationErrors( value, propertyType, props.property );
 	liveValidationError.value = errors.length === 0 ? null :
 		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
 }
