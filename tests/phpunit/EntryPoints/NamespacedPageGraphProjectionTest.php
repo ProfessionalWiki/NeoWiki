@@ -36,6 +36,19 @@ class NamespacedPageGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testPageNodeNameUsesContentLanguageNamespacePrefix(): void {
+		$this->setContentLang( 'de' );
+
+		$revision = $this->createPageWithSubjects( self::PAGE_NAME, TestSubject::build() );
+
+		// The German content language localizes the "Help" namespace to "Hilfe", proving the
+		// stored name uses the content-language prefix, not a canonical or interface-language one.
+		$this->assertSame(
+			'Hilfe:Namespaced subject page',
+			$this->readPageNodeName( $revision->getPageId() )
+		);
+	}
+
 	public function testPageNodeStoresNamespaceId(): void {
 		$revision = $this->createPageWithSubjects( self::PAGE_NAME, TestSubject::build() );
 
