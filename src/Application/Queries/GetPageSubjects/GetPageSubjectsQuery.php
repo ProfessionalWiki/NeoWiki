@@ -72,6 +72,7 @@ readonly class GetPageSubjectsQuery {
 			statements: $this->arrayifyStatements( $subject->getStatements() ),
 			pageId: $pageIdentifiers?->getId()->id,
 			pageTitle: $pageIdentifiers?->getTitle(),
+			pageNamespaceId: $pageIdentifiers?->getNamespaceId(),
 		);
 	}
 
