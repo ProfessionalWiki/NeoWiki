@@ -92,6 +92,20 @@ describe( 'SchemaPicker', () => {
 			expect( combobox.props( 'menuItems' ) ).toHaveLength( 3 );
 		} );
 
+		it( 'restores the full menu after a selection is committed', async () => {
+			const wrapper = await mountLoaded();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
+
+			typeText( combobox, 'off' );
+			await nextTick();
+			expect( combobox.props( 'menuItems' ) ).toHaveLength( 1 );
+
+			combobox.vm.$emit( 'update:selected', 'Office' );
+			await nextTick();
+
+			expect( combobox.props( 'menuItems' ) ).toHaveLength( 3 );
+		} );
+
 		it( 'leaves the menu empty without throwing when loading schemas fails', async () => {
 			const consoleError = vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 			schemaStore.getAllSchemaSummaries = vi.fn().mockRejectedValue( new Error( 'load failed' ) );
@@ -129,6 +143,15 @@ describe( 'SchemaPicker', () => {
 			const combobox = wrapper.findComponent( CdxComboboxStub );
 
 			combobox.vm.$emit( 'update:selected', 'Office ' );
+
+			expect( wrapper.emitted( 'select' )?.[ 0 ] ).toEqual( [ 'Office' ] );
+		} );
+
+		it( 'commits the canonical schema name when the input differs only in case', async () => {
+			const wrapper = await mountLoaded();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
+
+			combobox.vm.$emit( 'update:selected', 'office' );
 
 			expect( wrapper.emitted( 'select' )?.[ 0 ] ).toEqual( [ 'Office' ] );
 		} );

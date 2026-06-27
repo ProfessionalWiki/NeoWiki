@@ -16,7 +16,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { CdxCombobox } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 
 const props = defineProps<{
@@ -58,7 +58,8 @@ watch( () => props.selected, ( value ) => {
 } );
 
 function findSchema( name: string ): SchemaSummary | undefined {
-	return summaries.value.find( ( summary ) => summary.name === name.trim() );
+	const normalized = normalizeSchemaName( name );
+	return summaries.value.find( ( summary ) => summary.name === normalized );
 }
 
 function filterSchemas( event: Event ): void {
@@ -66,12 +67,16 @@ function filterSchemas( event: Event ): void {
 }
 
 // CdxCombobox's `selected` tracks the typed text, not only menu picks, so only
-// commit it when it resolves to an exact existing schema, and emit that schema's
-// canonical name rather than the raw input (which may carry surrounding whitespace).
+// commit it when it resolves to an exact existing schema. The name is matched the
+// way a save would normalise it (case-insensitive first letter, collapsed
+// whitespace), and the schema's canonical name is emitted rather than the raw input.
+// Resetting the filter on commit restores the full menu, so reopening the picker
+// without leaving the field browses every schema again rather than the stale filter.
 function onSelect( value: string ): void {
 	const schema = findSchema( value );
 	if ( schema && schema.name !== props.selected ) {
 		emit( 'select', schema.name );
+		query.value = '';
 	}
 }
 
