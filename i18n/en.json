@@ -234,7 +234,6 @@
 	"neowiki-layout-creator-name-required": "Please enter a layout name.",
 	"neowiki-layout-creator-name-taken": "A layout with this name already exists.",
 	"neowiki-layout-creator-schema-field": "Schema",
-	"neowiki-layout-creator-schema-placeholder": "Select a schema",
 	"neowiki-layout-creator-view-type-field": "View type",
 	"neowiki-layout-creator-view-type-placeholder": "Select a view type",
 	"neowiki-layout-creator-save": "Create layout",

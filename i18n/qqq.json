@@ -139,7 +139,6 @@
 	"neowiki-layout-creator-name-required": "Error shown when the layout name field is empty in the layout creation dialog.",
 	"neowiki-layout-creator-name-taken": "Error shown when a layout with the entered name already exists in the layout creation dialog.",
 	"neowiki-layout-creator-schema-field": "Label for the schema selector in the layout creation dialog.",
-	"neowiki-layout-creator-schema-placeholder": "Placeholder text for the schema selector in the layout creation dialog.",
 	"neowiki-layout-creator-view-type-field": "Label for the view type selector in the layout creation dialog.",
 	"neowiki-layout-creator-view-type-placeholder": "Placeholder text for the view type selector in the layout creation dialog.",
 	"neowiki-layout-creator-save": "Label for the save button in the layout creation dialog.",

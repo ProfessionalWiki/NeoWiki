@@ -16,11 +16,9 @@
 		</CdxField>
 
 		<CdxField>
-			<CdxSelect
-				v-model:selected="selectedSchema"
-				:menu-items="schemaMenuItems"
-				:default-label="$i18n( 'neowiki-layout-creator-schema-placeholder' ).text()"
-				@update:selected="onSchemaSelected"
+			<SchemaPicker
+				:selected="selectedSchema"
+				@select="onSchemaSelected"
 			/>
 			<template #label>
 				{{ $i18n( 'neowiki-layout-creator-schema-field' ).text() }}
@@ -61,13 +59,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef, onMounted } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 import { CdxField, CdxMessage, CdxSelect, CdxTextInput } from '@wikimedia/codex';
 import type { MenuItemData, ValidationStatusType } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { Layout, type DisplayRule } from '@/domain/Layout.ts';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import DisplayRuleList from '@/components/LayoutEditor/DisplayRuleList.vue';
+import SchemaPicker from '@/components/common/SchemaPicker.vue';
 
 const emit = defineEmits<{
 	change: [];
@@ -84,16 +83,11 @@ const nameStatus = ref<ValidationStatusType>( 'default' );
 const nameInputRef = ref<InstanceType<typeof CdxTextInput> | null>( null );
 const selectedSchema = ref<string | null>( null );
 const selectedViewType = ref<string | null>( null );
-const schemaNames = ref<string[]>( [] );
 const schemaProperties = shallowRef<PropertyDefinition[]>( [] );
 const schemaFetchFailed = ref( false );
 const currentDisplayRules = shallowRef<DisplayRule[]>( [] );
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let requestSequence = 0;
-
-const schemaMenuItems = computed<MenuItemData[]>( () =>
-	schemaNames.value.map( ( name ) => ( { label: name, value: name } ) )
-);
 
 const viewTypeMenuItems = computed<MenuItemData[]>( () =>
 	NeoWikiServices.getViewTypeRegistry().getTypeNames().map(
@@ -101,31 +95,20 @@ const viewTypeMenuItems = computed<MenuItemData[]>( () =>
 	)
 );
 
-onMounted( async () => {
-	try {
-		schemaNames.value = await schemaRepo.getSchemaNames( '' );
-	} catch ( error ) {
-		console.error( 'Failed to fetch schema names:', error );
-	}
-} );
-
 function onChange(): void {
 	emit( 'change' );
 }
 
-async function onSchemaSelected(): Promise<void> {
+async function onSchemaSelected( schemaName: string ): Promise<void> {
+	selectedSchema.value = schemaName;
 	schemaProperties.value = [];
 	schemaFetchFailed.value = false;
 
 	currentDisplayRules.value = [];
 	emit( 'change' );
 
-	if ( !selectedSchema.value ) {
-		return;
-	}
-
 	try {
-		const schema = await schemaRepo.getSchema( selectedSchema.value );
+		const schema = await schemaRepo.getSchema( schemaName );
 		schemaProperties.value = [ ...schema.getPropertyDefinitions() ];
 	} catch ( error ) {
 		console.error( 'Failed to fetch schema:', error );
