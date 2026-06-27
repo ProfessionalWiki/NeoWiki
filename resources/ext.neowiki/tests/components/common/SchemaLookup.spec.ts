@@ -156,6 +156,16 @@ describe( 'SchemaLookup', () => {
 		expect( wrapper.emitted( 'select' )?.[ 0 ] ).toEqual( [ '' ] );
 	} );
 
+	it( 'does not emit a clear while the user is typing a replacement', () => {
+		const wrapper = mountComponent( { selected: 'Product' } );
+		const lookup = wrapper.findComponent( CdxLookup );
+
+		lookup.vm.$emit( 'update:input-value', 'Off' );
+		lookup.vm.$emit( 'update:selected', null );
+
+		expect( wrapper.emitted( 'select' ) ).toBeFalsy();
+	} );
+
 	it( 'exposes focus method', () => {
 		const CdxLookupStub = {
 			template: '<div><input /></div>',
