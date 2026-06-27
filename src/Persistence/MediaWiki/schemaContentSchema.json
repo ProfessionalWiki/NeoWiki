@@ -52,13 +52,13 @@
 								"properties": {
 									"relation": {
 										"type": "string",
-										"pattern": "\\S",
-										"$error": "The relation type must not be empty."
+										"pattern": "^\\S(.*\\S)?$",
+										"$error": "The relation type must not be empty or have surrounding whitespace."
 									},
 									"targetSchema": {
 										"type": "string",
-										"pattern": "\\S",
-										"$error": "The target schema must not be empty."
+										"pattern": "^\\S(.*\\S)?$",
+										"$error": "The target schema must not be empty or have surrounding whitespace."
 									}
 								}
 							}

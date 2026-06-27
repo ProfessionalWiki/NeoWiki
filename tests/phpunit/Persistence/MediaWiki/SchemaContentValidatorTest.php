@@ -143,7 +143,10 @@ JSON
 			)
 		);
 
-		$this->assertContains( 'The relation type must not be empty.', $validator->getErrors() );
+		$this->assertContains(
+			'The relation type must not be empty or have surrounding whitespace.',
+			$validator->getErrors()
+		);
 	}
 
 	public function testWhitespaceOnlyRelationTypeFailsValidation(): void {
@@ -155,7 +158,25 @@ JSON
 			)
 		);
 
-		$this->assertContains( 'The relation type must not be empty.', $validator->getErrors() );
+		$this->assertContains(
+			'The relation type must not be empty or have surrounding whitespace.',
+			$validator->getErrors()
+		);
+	}
+
+	public function testRelationTypeWithSurroundingWhitespaceFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "relation", "relation": "Likes ", "targetSchema": "Person" }' )
+			)
+		);
+
+		$this->assertContains(
+			'The relation type must not be empty or have surrounding whitespace.',
+			$validator->getErrors()
+		);
 	}
 
 	public function testEmptyTargetSchemaFailsValidation(): void {
@@ -167,7 +188,25 @@ JSON
 			)
 		);
 
-		$this->assertContains( 'The target schema must not be empty.', $validator->getErrors() );
+		$this->assertContains(
+			'The target schema must not be empty or have surrounding whitespace.',
+			$validator->getErrors()
+		);
+	}
+
+	public function testTargetSchemaWithSurroundingWhitespaceFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "relation", "relation": "Likes", "targetSchema": " Person" }' )
+			)
+		);
+
+		$this->assertContains(
+			'The target schema must not be empty or have surrounding whitespace.',
+			$validator->getErrors()
+		);
 	}
 
 	/**
