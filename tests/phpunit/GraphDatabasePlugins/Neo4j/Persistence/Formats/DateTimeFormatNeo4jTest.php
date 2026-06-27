@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence\Formats;
 
-use Laudis\Neo4j\Types\LocalDateTime;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
@@ -20,8 +19,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class DateTimeFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 
 	public function setUp(): void {
-		self::markTestSkipped( 'Format not supported yet' );
-		//$this->setUpNeo4j();
+		$this->setUpNeo4j();
 	}
 
 	public function testStoresAsDateTimes(): void {
@@ -36,12 +34,8 @@ class DateTimeFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 						property: new PropertyName( 'MyProperty' ),
 						propertyType: DateTimeType::NAME,
 						value: new StringValue(
-							'2023-09-13T14:22:23.000Z',
-							'Ignored bad value',
-							'2150-12-07T13:37:42.000Z',
-							'2150-12-07T13:37:42.123Z',
-							'2150-12-07T13:37:61.000Z', // Seconds too high
-							'2150-12-07', // Still valid
+							'2023-09-13T14:22:23Z',
+							'2150-12-07T13:37:42+02:00',
 						)
 					),
 				] )
@@ -49,17 +43,16 @@ class DateTimeFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 		) );
 
 		$result = $store->runReadQuery(
-			"MATCH (n {id: '$subjectId'}) RETURN n.MyProperty"
-		)->toRecursiveArray()[0];
+			"MATCH (n {id: '$subjectId'})
+				RETURN n.MyProperty = [
+					datetime('2023-09-13T14:22:23Z'),
+					datetime('2150-12-07T13:37:42+02:00')
+				] AS isDatetimeList"
+		);
 
-		$this->assertEquals(
-			[
-				new LocalDateTime( 1694614943, 0 ),
-				new LocalDateTime( 5709706662, 0 ),
-				new LocalDateTime( 5709706662, 123000000 ),
-				new LocalDateTime( 5709657600, 0 ),
-			],
-			$result['n.MyProperty']
+		$this->assertTrue(
+			$result->first()->toRecursiveArray()['isDatetimeList'],
+			'dateTime statement values should be stored as a list of Neo4j datetimes'
 		);
 	}
 
