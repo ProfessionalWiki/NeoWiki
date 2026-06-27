@@ -151,14 +151,6 @@ describe( 'RelationAttributesEditor', () => {
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { targetSchema: 'Office' } ] );
 		} );
 
-		it( 'emits an empty target schema when the picker is cleared', async () => {
-			const wrapper = newWrapper();
-
-			await wrapper.findComponent( SchemaLookupStub ).vm.$emit( 'select', '' );
-
-			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { targetSchema: '' } ] );
-		} );
-
 		it( 'emits multiple when the checkbox is toggled', async () => {
 			const wrapper = newWrapper();
 

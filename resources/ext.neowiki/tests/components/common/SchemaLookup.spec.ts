@@ -91,6 +91,18 @@ describe( 'SchemaLookup', () => {
 
 			expect( combobox.props( 'menuItems' ) ).toHaveLength( 3 );
 		} );
+
+		it( 'leaves the menu empty without throwing when loading schemas fails', async () => {
+			const consoleError = vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+			schemaStore.getAllSchemaSummaries = vi.fn().mockRejectedValue( new Error( 'load failed' ) );
+
+			const wrapper = await mountLoaded();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
+
+			expect( combobox.props( 'menuItems' ) ).toEqual( [] );
+			expect( consoleError ).toHaveBeenCalled();
+			consoleError.mockRestore();
+		} );
 	} );
 
 	describe( 'committing a selection', () => {
@@ -108,6 +120,24 @@ describe( 'SchemaLookup', () => {
 			const combobox = wrapper.findComponent( CdxComboboxStub );
 
 			combobox.vm.$emit( 'update:selected', 'Off' );
+
+			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
+		} );
+
+		it( 'commits the canonical schema name when the input has surrounding whitespace', async () => {
+			const wrapper = await mountLoaded();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
+
+			combobox.vm.$emit( 'update:selected', 'Office ' );
+
+			expect( wrapper.emitted( 'select' )?.[ 0 ] ).toEqual( [ 'Office' ] );
+		} );
+
+		it( 'does not re-emit when the value already equals the committed schema', async () => {
+			const wrapper = await mountLoaded( { selected: 'Office' } );
+			const combobox = wrapper.findComponent( CdxComboboxStub );
+
+			combobox.vm.$emit( 'update:selected', 'Office' );
 
 			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
 		} );

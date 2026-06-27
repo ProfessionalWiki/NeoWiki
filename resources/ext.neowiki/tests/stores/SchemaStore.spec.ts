@@ -34,6 +34,10 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 		return { name, description: '', propertyCount: 0 };
 	}
 
+	function manySummaries( count: number, prefix: string ): ReturnType<typeof summary>[] {
+		return Array.from( { length: count }, ( _value, index ) => summary( `${ prefix }${ index }` ) );
+	}
+
 	function withRepository( repository: Record<string, unknown> ): void {
 		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue(
 			{ getSchemaRepository: () => repository } as unknown as NeoWikiExtension,
@@ -48,16 +52,32 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 		vi.restoreAllMocks();
 	} );
 
-	it( 'pages through every schema summary', async () => {
+	it( 'pages through every schema summary across multiple pages', async () => {
 		const getSchemaSummaries = vi.fn()
-			.mockResolvedValueOnce( { schemas: [ summary( 'A' ), summary( 'B' ) ], totalRows: 3 } )
-			.mockResolvedValueOnce( { schemas: [ summary( 'C' ) ], totalRows: 3 } );
+			.mockResolvedValueOnce( { schemas: manySummaries( 50, 'A' ), totalRows: 60 } )
+			.mockResolvedValueOnce( { schemas: manySummaries( 10, 'B' ), totalRows: 60 } );
 		withRepository( { getSchemaSummaries } );
 
 		const result = await useSchemaStore().getAllSchemaSummaries();
 
-		expect( result.map( ( item ) => item.name ) ).toEqual( [ 'A', 'B', 'C' ] );
-		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, 2, 50 );
+		expect( result ).toHaveLength( 60 );
+		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 1, 0, 50 );
+		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, 50, 50 );
+	} );
+
+	it( 'advances by page size, not loaded count, when a page omits unloadable schemas', async () => {
+		// The endpoint counts 60 schema pages in totalRows but can only load 49 in the
+		// first window (one is restricted or malformed) and 10 in the second.
+		const getSchemaSummaries = vi.fn()
+			.mockResolvedValueOnce( { schemas: manySummaries( 49, 'A' ), totalRows: 60 } )
+			.mockResolvedValueOnce( { schemas: manySummaries( 10, 'B' ), totalRows: 60 } );
+		withRepository( { getSchemaSummaries } );
+
+		const result = await useSchemaStore().getAllSchemaSummaries();
+
+		expect( result ).toHaveLength( 59 );
+		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, 50, 50 );
+		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
 	} );
 
 	it( 'caches the summaries and does not refetch on the next call', async () => {

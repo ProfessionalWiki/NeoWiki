@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { CdxCombobox } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -31,56 +31,57 @@ const emit = defineEmits<{
 const schemaStore = useSchemaStore();
 const selectedSchema = ref<string>( props.selected ?? '' );
 const summaries = ref<SchemaSummary[]>( [] );
-const menuItems = ref<MenuItemData[]>( [] );
+const query = ref<string>( '' );
 const comboboxRef = ref<InstanceType<typeof CdxCombobox> | null>( null );
 
+const menuItems = computed<MenuItemData[]>( () => {
+	const matches = query.value === '' ?
+		summaries.value :
+		summaries.value.filter( ( summary ) => summary.name.toLowerCase().includes( query.value ) );
+	return matches.map( ( summary ) => ( {
+		label: summary.name,
+		value: summary.name,
+		description: summary.description || undefined
+	} ) );
+} );
+
 onMounted( async () => {
-	summaries.value = await schemaStore.getAllSchemaSummaries();
-	showAllSchemas();
+	try {
+		summaries.value = await schemaStore.getAllSchemaSummaries();
+	} catch ( error ) {
+		console.error( 'Failed to load schemas for the picker:', error );
+	}
 } );
 
 watch( () => props.selected, ( value ) => {
 	selectedSchema.value = value ?? '';
 } );
 
-function toMenuItems( items: SchemaSummary[] ): MenuItemData[] {
-	return items.map( ( summary ) => ( {
-		label: summary.name,
-		value: summary.name,
-		description: summary.description || undefined
-	} ) );
-}
-
-function showAllSchemas(): void {
-	menuItems.value = toMenuItems( summaries.value );
-}
-
 function findSchema( name: string ): SchemaSummary | undefined {
 	return summaries.value.find( ( summary ) => summary.name === name.trim() );
 }
 
 function filterSchemas( event: Event ): void {
-	const query = ( event.target as HTMLInputElement ).value.trim().toLowerCase();
-	const matches = query === '' ?
-		summaries.value :
-		summaries.value.filter( ( summary ) => summary.name.toLowerCase().includes( query ) );
-	menuItems.value = toMenuItems( matches );
+	query.value = ( event.target as HTMLInputElement ).value.trim().toLowerCase();
 }
 
 // CdxCombobox's `selected` tracks the typed text, not only menu picks, so only
-// commit it when it is an exact existing schema name.
+// commit it when it resolves to an exact existing schema, and emit that schema's
+// canonical name rather than the raw input (which may carry surrounding whitespace).
 function onSelect( value: string ): void {
-	if ( findSchema( value ) && value !== props.selected ) {
-		emit( 'select', value );
+	const schema = findSchema( value );
+	if ( schema && schema.name !== props.selected ) {
+		emit( 'select', schema.name );
 	}
 }
 
 // On blur, snap `selected` back to the committed schema (empty for a target schema
 // that has not been set yet) so unconfirmed typing reverts and the field only ever
-// shows an existing schema. Restoring the full menu lets the committed label render.
+// shows an existing schema. Clearing the query restores the full menu so the
+// committed label renders.
 function reconcileOnBlur(): void {
 	selectedSchema.value = props.selected ?? '';
-	showAllSchemas();
+	query.value = '';
 	emit( 'blur' );
 }
 

@@ -44,11 +44,6 @@ export const useSchemaStore = defineStore( 'schema', {
 			}
 			return this.getSchema( name );
 		},
-		async searchAndFetchMissingSchemas( search: string ): Promise<string[]> {
-			const schemaNames = await NeoWikiExtension.getInstance().getSchemaRepository().getSchemaNames( search );
-			await Promise.all( schemaNames.map( ( name ) => this.getOrFetchSchema( name ) ) );
-			return schemaNames;
-		},
 		// Loads every Schema summary (name + description) once and caches it so the
 		// schema picker can show the full list and filter client-side. The cache is
 		// cleared on saveSchema. Pages through the summaries endpoint (capped at 50).
@@ -58,13 +53,18 @@ export const useSchemaStore = defineStore( 'schema', {
 			}
 
 			const repository = NeoWikiExtension.getInstance().getSchemaRepository();
+			const pageSize = 50;
 			const summaries: SchemaSummary[] = [];
 
-			let page = await repository.getSchemaSummaries( 0, 50 );
-			summaries.push( ...page.schemas );
+			const firstPage = await repository.getSchemaSummaries( 0, pageSize );
+			summaries.push( ...firstPage.schemas );
 
-			while ( summaries.length < page.totalRows && page.schemas.length > 0 ) {
-				page = await repository.getSchemaSummaries( summaries.length, 50 );
+			// Page by request offset, not by loaded count: the endpoint counts every
+			// Schema page in totalRows but omits ones it cannot load (restricted or
+			// malformed), so advancing by summaries.length would re-request earlier
+			// names and duplicate entries. Stop once the offset passes the total.
+			for ( let offset = pageSize; offset < firstPage.totalRows; offset += pageSize ) {
+				const page = await repository.getSchemaSummaries( offset, pageSize );
 				summaries.push( ...page.schemas );
 			}
 
