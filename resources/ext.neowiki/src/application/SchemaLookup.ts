@@ -1,9 +1,21 @@
 import type { Schema, SchemaName } from '@/domain/Schema';
 
+export interface SchemaSummary {
+	name: string;
+	description: string;
+	propertyCount: number;
+}
+
+export interface SchemaSummaryPage {
+	schemas: SchemaSummary[];
+	totalRows: number;
+}
+
 export interface SchemaLookup {
 
 	getSchema( schemaName: SchemaName ): Promise<Schema>;
 	getSchemaNames( search: string ): Promise<string[]>;
+	getSchemaSummaries( offset: number, limit: number ): Promise<SchemaSummaryPage>;
 
 }
 
@@ -29,6 +41,19 @@ export class InMemorySchemaLookup implements SchemaLookup {
 
 	public async getSchemaNames(): Promise<string[]> {
 		return [ ...this.schemaNames ];
+	}
+
+	public async getSchemaSummaries( offset: number, limit: number ): Promise<SchemaSummaryPage> {
+		const summaries = [ ...this.schemas.values() ].map( ( schema ) => ( {
+			name: schema.getName(),
+			description: schema.getDescription(),
+			propertyCount: [ ...schema.getPropertyDefinitions() ].length,
+		} ) );
+
+		return {
+			schemas: summaries.slice( offset, offset + limit ),
+			totalRows: summaries.length,
+		};
 	}
 
 	public clearSchemas(): void {

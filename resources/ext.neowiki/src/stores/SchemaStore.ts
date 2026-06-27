@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { Schema } from '@/domain/Schema.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
+import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 
 /**
  * Approximates MediaWiki title normalisation for a Schema name (schemas are
@@ -16,6 +17,7 @@ export function normalizeSchemaName( name: string ): string {
 export const useSchemaStore = defineStore( 'schema', {
 	state: () => ( {
 		schemas: new Map<string, Schema>(),
+		allSummaries: null as SchemaSummary[] | null,
 	} ),
 	getters: {
 		getSchemas: ( state ) => state.schemas,
@@ -47,6 +49,28 @@ export const useSchemaStore = defineStore( 'schema', {
 			await Promise.all( schemaNames.map( ( name ) => this.getOrFetchSchema( name ) ) );
 			return schemaNames;
 		},
+		// Loads every Schema summary (name + description) once and caches it so the
+		// schema picker can show the full list and filter client-side. The cache is
+		// cleared on saveSchema. Pages through the summaries endpoint (capped at 50).
+		async getAllSchemaSummaries(): Promise<SchemaSummary[]> {
+			if ( this.allSummaries !== null ) {
+				return this.allSummaries;
+			}
+
+			const repository = NeoWikiExtension.getInstance().getSchemaRepository();
+			const summaries: SchemaSummary[] = [];
+
+			let page = await repository.getSchemaSummaries( 0, 50 );
+			summaries.push( ...page.schemas );
+
+			while ( summaries.length < page.totalRows && page.schemas.length > 0 ) {
+				page = await repository.getSchemaSummaries( summaries.length, 50 );
+				summaries.push( ...page.schemas );
+			}
+
+			this.allSummaries = summaries;
+			return summaries;
+		},
 		// Checks existence via the schema-names search (a 200 response) rather
 		// than getOrFetchSchema, which 404s for a missing name — those 404s are
 		// avoidable console/network noise when checking a not-yet-created name.
@@ -60,6 +84,7 @@ export const useSchemaStore = defineStore( 'schema', {
 		async saveSchema( schema: Schema, comment?: string ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSchemaRepository().saveSchema( schema, comment );
 			this.setSchema( schema.getName(), schema );
+			this.allSummaries = null;
 		},
 	},
 } );
