@@ -88,7 +88,18 @@ run_sut() {
     ENV_FILE="$ENV_FILE" \
     PORT_RANGE_START="$TEST_RANGE_START" \
     PORT_RANGE_END="$TEST_RANGE_END" \
+    LOCK_DIR="${LOCK_DIR:-$WORK/lock.d}" \
+    LOCK_FILE="${LOCK_FILE:-$WORK/lock.file}" \
+    LOCK_TIMEOUT="${LOCK_TIMEOUT:-100}" \
+    FLOCK_BIN="${FLOCK_BIN:-flock}" \
         bash "$SUT" "$arg"
+}
+
+# Run the SUT as if flock(1) were unavailable (stock macOS), forcing the portable
+# directory-mutex fallback. Points FLOCK_BIN at a non-existent command so the
+# script's own `command -v` probe fails, exactly as on a host without flock.
+run_sut_no_flock() {
+    FLOCK_BIN="neowiki-no-such-flock" run_sut "$@"
 }
 
 reset_env() {
@@ -201,6 +212,30 @@ else
     fail "Error message should mention in-use. Got: $err_output"
 fi
 release_all
+
+echo
+color '36' "Case 8: flock unavailable (stock macOS) -> still allocates in-range"
+reset_env ""
+rc=0
+run_sut_no_flock "" >/dev/null 2>&1 || rc=$?
+assert_eq "Exits cleanly without flock" "$rc" "0"
+assert_in_range "MW port allocated without flock" "$(env_value MW_SERVER_PORT)" "$TEST_RANGE_START" "$TEST_RANGE_END"
+
+echo
+color '36' "Case 9: fallback path recovers a stale lock from a crashed run"
+reset_env ""
+stale_dir="$WORK/stale-lock.d"
+rm -rf "$stale_dir"; mkdir -p "$stale_dir"
+# A PID above pid_max can never be a live process, so the recorded holder reads
+# as dead deterministically (no spawn/kill/PID-reuse timing to flake on).
+echo 2147483647 > "$stale_dir/pid"
+rc=0
+LOCK_DIR="$stale_dir" LOCK_TIMEOUT=5 run_sut_no_flock "" >/dev/null 2>&1 || rc=$?
+assert_eq "Recovers from stale lock and exits cleanly" "$rc" "0"
+assert_in_range "MW port allocated despite stale lock" "$(env_value MW_SERVER_PORT)" "$TEST_RANGE_START" "$TEST_RANGE_END"
+# The stale dir is reclaimed and cleaned up only on the fallback path; if the
+# flock branch had run instead it would sit untouched. This pins the path.
+assert_eq "Stale lock reclaimed (fallback path exercised)" "$([ -e "$stale_dir" ] && echo present || echo gone)" "gone"
 
 # ---- Summary -----------------------------------------------------------------
 
