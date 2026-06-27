@@ -91,6 +91,30 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 1 );
 	} );
 
+	it( 'shares one in-flight request across concurrent callers', async () => {
+		const getSchemaSummaries = vi.fn().mockResolvedValue( { schemas: [ summary( 'A' ) ], totalRows: 1 } );
+		withRepository( { getSchemaSummaries } );
+		const store = useSchemaStore();
+
+		await Promise.all( [ store.getAllSchemaSummaries(), store.getAllSchemaSummaries() ] );
+
+		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'releases the in-flight request after a failure so the next call retries', async () => {
+		const getSchemaSummaries = vi.fn()
+			.mockRejectedValueOnce( new Error( 'load failed' ) )
+			.mockResolvedValueOnce( { schemas: [ summary( 'A' ) ], totalRows: 1 } );
+		withRepository( { getSchemaSummaries } );
+		const store = useSchemaStore();
+
+		await expect( store.getAllSchemaSummaries() ).rejects.toThrow( 'load failed' );
+		const result = await store.getAllSchemaSummaries();
+
+		expect( result ).toEqual( [ summary( 'A' ) ] );
+		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
+	} );
+
 	it( 'refetches summaries after a schema is saved', async () => {
 		const getSchemaSummaries = vi.fn().mockResolvedValue( { schemas: [ summary( 'A' ) ], totalRows: 1 } );
 		const saveSchema = vi.fn().mockResolvedValue( undefined );
