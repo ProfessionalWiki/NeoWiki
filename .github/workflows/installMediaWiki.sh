@@ -13,6 +13,16 @@ cd mediawiki
 composer install
 php maintenance/install.php --dbtype sqlite --dbuser root --dbname mw --dbpath $(pwd) --pass AdminPassword WikiName AdminUser
 
+# MediaWiki 1.46 replaced `phpunit.xml.dist` with `phpunit.xml.template`, which
+# is turned into a runnable `phpunit.xml` by `generatePHPUnitConfig.php`. The
+# extension's `composer phpunit` script invokes `-c phpunit.xml.dist`, so on
+# branches that only ship a template, generate the config and expose it under the
+# name the script expects. Generated here (after `composer install` provides the
+# autoloader, before the extension load lines are appended to LocalSettings.php).
+if [ ! -f phpunit.xml.dist ] && [ -f phpunit.xml.template ]; then
+    php tests/phpunit/generatePHPUnitConfig.php
+    cp phpunit.xml phpunit.xml.dist
+fi
 
 cat <<'EOT' >> LocalSettings.php
 error_reporting(E_ALL| E_STRICT);
