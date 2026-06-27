@@ -25,8 +25,9 @@
 				{{ $i18n( 'neowiki-property-editor-target-schema' ).text() }}
 			</template>
 			<SchemaLookup
-				:selected="property.targetSchema ?? null"
+				:selected="property.targetSchema || null"
 				@select="updateTargetSchema"
+				@blur="targetSchemaTouched = true"
 			/>
 		</CdxField>
 
@@ -54,7 +55,7 @@ const emit = defineEmits<AttributesEditorEmits<RelationProperty>>();
 const relationInput = ref( props.property.relation || props.property.name.toString() );
 
 watch( () => props.property.relation, ( newValue ) => {
-	relationInput.value = newValue || props.property.name.toString();
+	relationInput.value = newValue;
 } );
 
 onMounted( () => {
@@ -69,18 +70,17 @@ const relationError = computed<string | null>( () =>
 		null
 );
 
+const targetSchemaTouched = ref( false );
+
 const targetSchemaError = computed<string | null>( () =>
-	( props.property.targetSchema ?? '' ).trim() === '' ?
+	targetSchemaTouched.value && ( props.property.targetSchema ?? '' ).trim() === '' ?
 		mw.message( 'neowiki-property-editor-target-schema-required' ).text() :
 		null
 );
 
 const updateRelation = ( value: string ): void => {
 	relationInput.value = value;
-	const trimmed = value.trim();
-	if ( trimmed !== '' ) {
-		emit( 'update:property', { relation: trimmed } );
-	}
+	emit( 'update:property', { relation: value.trim() } );
 };
 
 const updateTargetSchema = ( schemaName: string ): void => {
