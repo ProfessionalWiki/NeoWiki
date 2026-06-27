@@ -111,6 +111,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
+import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import SchemaCreatorDialog from './SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
@@ -165,12 +166,6 @@ const columns: TableColumn[] = [
 
 function schemaUrl( name: string ): string {
 	return mw.util.getUrl( `Schema:${ name }` );
-}
-
-interface SchemaSummary {
-	name: string;
-	description: string;
-	propertyCount: number;
 }
 
 async function fetchSchemas( offset: number, limit: number ): Promise<void> {

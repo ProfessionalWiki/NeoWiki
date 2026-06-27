@@ -120,4 +120,109 @@ JSON
 		);
 	}
 
+	public function testValidRelationPropertyPassesValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty( '{ "type": "relation", "relation": "Likes", "targetSchema": "Person" }' )
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
+	public function testEmptyRelationTypeFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "relation", "relation": "", "targetSchema": "Person" }' )
+			)
+		);
+
+		$this->assertContains(
+			'The relation type must not be empty or have surrounding whitespace.',
+			$validator->getErrors()
+		);
+	}
+
+	public function testWhitespaceOnlyRelationTypeFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "relation", "relation": "   ", "targetSchema": "Person" }' )
+			)
+		);
+
+		$this->assertContains(
+			'The relation type must not be empty or have surrounding whitespace.',
+			$validator->getErrors()
+		);
+	}
+
+	public function testRelationTypeWithSurroundingWhitespaceFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "relation", "relation": "Likes ", "targetSchema": "Person" }' )
+			)
+		);
+
+		$this->assertContains(
+			'The relation type must not be empty or have surrounding whitespace.',
+			$validator->getErrors()
+		);
+	}
+
+	public function testEmptyTargetSchemaFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "relation", "relation": "Likes", "targetSchema": "" }' )
+			)
+		);
+
+		$this->assertContains(
+			'The target schema must not be empty or have surrounding whitespace.',
+			$validator->getErrors()
+		);
+	}
+
+	public function testTargetSchemaWithSurroundingWhitespaceFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "relation", "relation": "Likes", "targetSchema": " Person" }' )
+			)
+		);
+
+		$this->assertContains(
+			'The target schema must not be empty or have surrounding whitespace.',
+			$validator->getErrors()
+		);
+	}
+
+	/**
+	 * Wraps the property under test between two valid siblings so a regression that only
+	 * inspects the first or last property definition is caught.
+	 */
+	private function schemaWithProperty( string $propertyJson ): string {
+		return <<<JSON
+{
+	"propertyDefinitions": {
+		"before": { "type": "text" },
+		"offending": $propertyJson,
+		"after": { "type": "text" }
+	}
+}
+JSON;
+	}
+
 }

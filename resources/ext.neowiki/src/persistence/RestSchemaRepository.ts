@@ -1,6 +1,7 @@
 import { Schema, type SchemaName } from '@/domain/Schema';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { SchemaRepository } from '@/application/SchemaRepository';
+import type { SchemaSummaryPage } from '@/application/SchemaLookup';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
 import { PageSaver } from '@/persistence/PageSaver.ts';
@@ -42,6 +43,18 @@ export class RestSchemaRepository implements SchemaRepository {
 
 		if ( !response.ok ) {
 			throw new Error( 'Error fetching schemas' );
+		}
+
+		return await response.json();
+	}
+
+	public async getSchemaSummaries( offset: number, limit: number ): Promise<SchemaSummaryPage> {
+		const response = await this.httpClient.get(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/schemas?limit=${ limit }&offset=${ offset }`,
+		);
+
+		if ( !response.ok ) {
+			throw new Error( 'Error fetching schema summaries' );
 		}
 
 		return await response.json();

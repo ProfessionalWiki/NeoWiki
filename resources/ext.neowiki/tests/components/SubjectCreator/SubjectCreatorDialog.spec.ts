@@ -2,7 +2,7 @@ import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
-import SchemaLookup from '@/components/common/SchemaLookup.vue';
+import SchemaPicker from '@/components/common/SchemaPicker.vue';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import EditSummary from '@/components/common/EditSummary.vue';
 import { createPinia, setActivePinia } from 'pinia';
@@ -36,7 +36,7 @@ const NEW_SCHEMA_NAME = 'NewSchema';
 
 vi.mock( '@/composables/useSchemaPermissions.ts' );
 
-const SchemaLookupStub = {
+const SchemaPickerStub = {
 	template: '<div class="schema-lookup-stub"></div>',
 	emits: [ 'select' ],
 	methods: {
@@ -129,7 +129,7 @@ describe( 'SubjectCreatorDialog', () => {
 			global: {
 				plugins: [ pinia ],
 				stubs: {
-					SchemaLookup: SchemaLookupStub,
+					SchemaPicker: SchemaPickerStub,
 					SubjectEditor: SubjectEditorStub,
 					SchemaCreator: SchemaCreatorStub,
 					EditSummary: EditSummaryStub,
@@ -246,7 +246,7 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
 		expect( wrapper.find( '.cdx-toggle-button-group-stub' ).exists() ).toBe( true );
 
-		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( false );
@@ -273,7 +273,7 @@ describe( 'SubjectCreatorDialog', () => {
 	it( 'shows label input and SubjectEditor after schema selection', async () => {
 		const wrapper = mountComponent();
 
-		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		expect( wrapper.find( '.cdx-text-input-stub' ).exists() ).toBe( true );
@@ -284,7 +284,7 @@ describe( 'SubjectCreatorDialog', () => {
 	it( 'defaults label to page title', async () => {
 		const wrapper = mountComponent();
 
-		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		const labelInput = wrapper.find( '.cdx-text-input-stub' );
@@ -294,7 +294,7 @@ describe( 'SubjectCreatorDialog', () => {
 	it( 'calls createMainSubject on save with correct arguments', async () => {
 		const wrapper = mountComponent();
 
-		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', 'test summary' );
@@ -312,7 +312,7 @@ describe( 'SubjectCreatorDialog', () => {
 	it( 'does not pass summary when it is empty', async () => {
 		const wrapper = mountComponent();
 
-		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
@@ -330,7 +330,7 @@ describe( 'SubjectCreatorDialog', () => {
 	it( 'calls createChildSubject when the page already has a main subject', async () => {
 		const wrapper = mountComponent( {}, { pageHasMainSubject: true } );
 
-		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', 'test summary' );
@@ -351,7 +351,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		subjectStore.openSubjectCreator();
 		await flushPromises();
-		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
@@ -368,7 +368,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		subjectStore.openSubjectCreator();
 		await flushPromises();
-		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
@@ -386,7 +386,7 @@ describe( 'SubjectCreatorDialog', () => {
 	it( 'does not save when label is empty', async () => {
 		const wrapper = mountComponent();
 
-		await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		const labelInput = wrapper.find( '.cdx-text-input-stub' );
@@ -413,7 +413,7 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( wrapper.find( '.ext-neowiki-subject-creator-continue' ).exists() ).toBe( true );
 		} );
 
-		it( 'does not show SchemaLookup when "Create new" is selected', async () => {
+		it( 'does not show SchemaPicker when "Create new" is selected', async () => {
 			const wrapper = mountComponent();
 
 			await switchToNewSchema( wrapper );
@@ -591,7 +591,7 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'shows back button after selecting a schema', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
 			expect( wrapper.find( '.ext-neowiki-subject-creator-back-button' ).exists() ).toBe( true );
@@ -600,7 +600,7 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'returns to schema selection when back button is clicked', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
 			expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( true );
@@ -655,7 +655,7 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'returns to schema selector when clicking back after selecting existing schema', async () => {
 			const wrapper = mountComponent();
 
-			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
 			await wrapper.find( '.ext-neowiki-subject-creator-back-button' ).trigger( 'click' );
@@ -672,7 +672,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			subjectStore.openSubjectCreator();
 			await flushPromises();
-			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
 			const labelInput = wrapper.find( '.cdx-text-input-stub' );
@@ -706,7 +706,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			subjectStore.openSubjectCreator();
 			await flushPromises();
-			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
 			const labelInput = wrapper.find( '.cdx-text-input-stub' );
@@ -729,7 +729,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			subjectStore.openSubjectCreator();
 			await flushPromises();
-			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
 			const labelInput = wrapper.find( '.cdx-text-input-stub' );
@@ -830,7 +830,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			subjectStore.openSubjectCreator();
 			await flushPromises();
-			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
 			const labelInput = wrapper.find( '.cdx-text-input-stub' );
@@ -914,7 +914,7 @@ describe( 'SubjectCreatorDialog', () => {
 		async function openSelectSchemaAndSave( wrapper: VueWrapper ): Promise<void> {
 			subjectStore.openSubjectCreator();
 			await flushPromises();
-			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
 			await flushPromises();
@@ -1033,7 +1033,7 @@ describe( 'SubjectCreatorDialog', () => {
 			subjectStore.openSubjectCreator();
 			await flushPromises();
 			// Re-select schema so SubjectEditor renders again
-			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 
 			const after = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
@@ -1050,7 +1050,7 @@ describe( 'SubjectCreatorDialog', () => {
 		};
 
 		async function selectSchema( wrapper: VueWrapper ): Promise<void> {
-			await wrapper.findComponent( SchemaLookup ).vm.$emit( 'select', SCHEMA_NAME );
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
 		}
 

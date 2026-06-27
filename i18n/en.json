@@ -103,7 +103,7 @@
 	"neowiki-subject-creator-schema-title": "Have an existing schema?",
 	"neowiki-subject-creator-existing-schema": "Use existing",
 	"neowiki-subject-creator-new-schema": "Create new",
-	"neowiki-subject-creator-schema-search-placeholder": "Search for a schema",
+	"neowiki-schema-picker-placeholder": "Select a schema",
 	"neowiki-subject-creator-label-field": "Subject label",
 	"neowiki-subject-creator-label-placeholder": "Enter a label for the subject",
 	"neowiki-subject-creator-save": "Create subject",
