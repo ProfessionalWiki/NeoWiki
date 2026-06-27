@@ -107,6 +107,14 @@ describe( 'RelationAttributesEditor', () => {
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { relation: 'Owns' } ] );
 		} );
 
+		it( 'emits the relation trimmed of surrounding whitespace', async () => {
+			const wrapper = newWrapper();
+
+			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', '  Owns  ' );
+
+			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { relation: 'Owns' } ] );
+		} );
+
 		it( 'emits targetSchema when the picker selects a schema', async () => {
 			const wrapper = newWrapper();
 
@@ -136,6 +144,17 @@ describe( 'RelationAttributesEditor', () => {
 			const wrapper = newWrapper();
 
 			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', '' );
+
+			const props = fieldProps( wrapper, '.relation-attributes__relation' );
+			expect( props.status ).toBe( 'error' );
+			expect( props.messages ).toEqual( { error: 'Relation type is required.' } );
+			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
+		} );
+
+		it( 'treats a whitespace-only relation as required and does not emit it', async () => {
+			const wrapper = newWrapper();
+
+			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', '   ' );
 
 			const props = fieldProps( wrapper, '.relation-attributes__relation' );
 			expect( props.status ).toBe( 'error' );
