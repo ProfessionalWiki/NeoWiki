@@ -204,6 +204,7 @@ class NeoWikiExtension {
 			new PagePropertiesBuilder(
 				revisionStore: MediaWikiServices::getInstance()->getRevisionStore(),
 				contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory(),
+				titleFormatter: MediaWikiServices::getInstance()->getTitleFormatter(),
 				providerRegistry: $this->getPagePropertyProviderRegistry(),
 			)
 		);

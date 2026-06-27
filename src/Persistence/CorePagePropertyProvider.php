@@ -13,6 +13,7 @@ class CorePagePropertyProvider implements PagePropertyProvider {
 	public function getProperties( PagePropertyProviderContext $context ): array {
 		return [
 			'name' => $context->pageTitle,
+			'namespaceId' => $context->namespaceId,
 			'creationTime' => new PageDateTime( $context->creationTime ),
 			'lastUpdated' => new PageDateTime( $context->modificationTime ),
 			'categories' => $context->categories,

@@ -193,7 +193,8 @@ See [ADR 014](../adr/014-improved-id-format.md) for details on the ID format.
 
 Returns the same statement format as storage, with additional fields:
 - `requestedId`: The ID that was requested
-- Each subject includes `id`, `pageId`, and `pageTitle` fields
+- Each subject includes `id`, `pageId`, and `pageTitle` fields. `pageTitle` is the full page
+  title including the namespace prefix (e.g. `Help:Installation`).
 
 ### Writing Subjects
 
