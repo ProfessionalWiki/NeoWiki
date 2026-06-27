@@ -9,6 +9,7 @@
 			:placeholder="$i18n( 'neowiki-subject-creator-schema-search-placeholder' ).text()"
 			@input="onLookupInput"
 			@update:selected="onSchemaSelected"
+			@blur="reconcileOnBlur"
 		/>
 	</div>
 </template>
@@ -31,21 +32,16 @@ const emit = defineEmits<{
 const schemaStore = useSchemaStore();
 const selectedSchema = ref<string | null>( props.selected ?? null );
 const inputText = ref<string>( props.selected ?? '' );
-const menuItems = ref<MenuItemData[]>(
-	props.selected ? [ { label: props.selected, value: props.selected } ] : []
-);
+const menuItems = ref<MenuItemData[]>( [] );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 let requestSequence = 0;
 
-watch( () => props.selected, ( value ) => {
-	selectedSchema.value = value ?? null;
-	inputText.value = value ?? '';
-	if ( value && !menuItems.value.some( ( item ) => item.value === value ) ) {
-		menuItems.value = [ { label: value, value: value } ];
-	} else if ( !value ) {
-		menuItems.value = [];
-	}
-} );
+function syncFromSelected(): void {
+	selectedSchema.value = props.selected ?? null;
+	inputText.value = props.selected ?? '';
+}
+
+watch( () => props.selected, syncFromSelected );
 
 async function onLookupInput( value: string ): Promise<void> {
 	if ( !value ) {
@@ -80,9 +76,25 @@ async function onLookupInput( value: string ): Promise<void> {
 function onSchemaSelected( schemaName: string | null ): void {
 	if ( schemaName ) {
 		emit( 'select', schemaName );
-	} else if ( !inputText.value ) {
-		emit( 'select', '' );
 	}
+}
+
+// The field may only hold a schema that was picked from the menu. CdxLookup nulls
+// its selection while the user types, so on blur reconcile the unconfirmed text:
+// clear when emptied, otherwise revert to the last committed value.
+function reconcileOnBlur(): void {
+	if ( selectedSchema.value !== null ) {
+		return;
+	}
+
+	if ( inputText.value === '' ) {
+		if ( props.selected ) {
+			emit( 'select', '' );
+		}
+		return;
+	}
+
+	syncFromSelected();
 }
 
 function focus(): void {

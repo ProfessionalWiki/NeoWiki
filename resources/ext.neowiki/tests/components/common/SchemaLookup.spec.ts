@@ -1,5 +1,6 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextTick } from 'vue';
 import SchemaLookup from '@/components/common/SchemaLookup.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -37,133 +38,177 @@ describe( 'SchemaLookup', () => {
 		schemaStore.searchAndFetchMissingSchemas = vi.fn().mockResolvedValue( [] );
 	} );
 
-	it( 'searches for schemas when input changes', () => {
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
+	describe( 'searching', () => {
+		it( 'searches for schemas when input changes', () => {
+			const wrapper = mountComponent();
+			const lookup = wrapper.findComponent( CdxLookup );
 
-		lookup.vm.$emit( 'input', 'test query' );
+			lookup.vm.$emit( 'input', 'test query' );
 
-		expect( schemaStore.searchAndFetchMissingSchemas ).toHaveBeenCalledWith( 'test query' );
-	} );
-
-	it( 'updates menu items with search results', async () => {
-		const mockResults = [ 'Schema1', 'Schema2' ];
-		schemaStore.searchAndFetchMissingSchemas.mockResolvedValue( mockResults );
-		schemaStore.schemas.set( 'Schema1', new Schema( 'Schema1', 'First description', new PropertyDefinitionList( [] ) ) );
-		schemaStore.schemas.set( 'Schema2', new Schema( 'Schema2', 'Second description', new PropertyDefinitionList( [] ) ) );
-
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
-
-		lookup.vm.$emit( 'input', 'test' );
-		await flushPromises();
-
-		expect( lookup.props( 'menuItems' ) ).toEqual( [
-			{ label: 'Schema1', value: 'Schema1', description: 'First description' },
-			{ label: 'Schema2', value: 'Schema2', description: 'Second description' },
-		] );
-	} );
-
-	it( 'omits description from menu items when schema has empty description', async () => {
-		schemaStore.searchAndFetchMissingSchemas.mockResolvedValue( [ 'WithDesc', 'NoDesc' ] );
-		schemaStore.schemas.set( 'WithDesc', new Schema( 'WithDesc', 'Has a description', new PropertyDefinitionList( [] ) ) );
-		schemaStore.schemas.set( 'NoDesc', new Schema( 'NoDesc', '', new PropertyDefinitionList( [] ) ) );
-
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
-
-		lookup.vm.$emit( 'input', 'test' );
-		await flushPromises();
-
-		expect( lookup.props( 'menuItems' ) ).toEqual( [
-			{ label: 'WithDesc', value: 'WithDesc', description: 'Has a description' },
-			{ label: 'NoDesc', value: 'NoDesc', description: undefined },
-		] );
-	} );
-
-	it( 'discards stale search results when a newer request completes first', async () => {
-		let resolveFirst: ( value: string[] ) => void;
-		const firstCallPromise = new Promise<string[]>( ( resolve ) => {
-			resolveFirst = resolve;
+			expect( schemaStore.searchAndFetchMissingSchemas ).toHaveBeenCalledWith( 'test query' );
 		} );
 
-		schemaStore.searchAndFetchMissingSchemas = vi.fn()
-			.mockReturnValueOnce( firstCallPromise )
-			.mockResolvedValueOnce( [ 'SecondSchema' ] );
+		it( 'updates menu items with search results', async () => {
+			schemaStore.searchAndFetchMissingSchemas.mockResolvedValue( [ 'Schema1', 'Schema2' ] );
+			schemaStore.schemas.set( 'Schema1', new Schema( 'Schema1', 'First description', new PropertyDefinitionList( [] ) ) );
+			schemaStore.schemas.set( 'Schema2', new Schema( 'Schema2', 'Second description', new PropertyDefinitionList( [] ) ) );
 
-		schemaStore.schemas.set( 'FirstSchema', new Schema( 'FirstSchema', 'Stale', new PropertyDefinitionList( [] ) ) );
-		schemaStore.schemas.set( 'SecondSchema', new Schema( 'SecondSchema', 'Fresh', new PropertyDefinitionList( [] ) ) );
+			const wrapper = mountComponent();
+			const lookup = wrapper.findComponent( CdxLookup );
 
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
+			lookup.vm.$emit( 'input', 'test' );
+			await flushPromises();
 
-		lookup.vm.$emit( 'input', 'first' );
-		lookup.vm.$emit( 'input', 'second' );
-		await flushPromises();
+			expect( lookup.props( 'menuItems' ) ).toEqual( [
+				{ label: 'Schema1', value: 'Schema1', description: 'First description' },
+				{ label: 'Schema2', value: 'Schema2', description: 'Second description' },
+			] );
+		} );
 
-		expect( lookup.props( 'menuItems' ) ).toEqual( [
-			{ label: 'SecondSchema', value: 'SecondSchema', description: 'Fresh' },
-		] );
+		it( 'omits description from menu items when schema has empty description', async () => {
+			schemaStore.searchAndFetchMissingSchemas.mockResolvedValue( [ 'WithDesc', 'NoDesc' ] );
+			schemaStore.schemas.set( 'WithDesc', new Schema( 'WithDesc', 'Has a description', new PropertyDefinitionList( [] ) ) );
+			schemaStore.schemas.set( 'NoDesc', new Schema( 'NoDesc', '', new PropertyDefinitionList( [] ) ) );
 
-		resolveFirst!( [ 'FirstSchema' ] );
-		await flushPromises();
+			const wrapper = mountComponent();
+			const lookup = wrapper.findComponent( CdxLookup );
 
-		expect( lookup.props( 'menuItems' ) ).toEqual( [
-			{ label: 'SecondSchema', value: 'SecondSchema', description: 'Fresh' },
-		] );
+			lookup.vm.$emit( 'input', 'test' );
+			await flushPromises();
+
+			expect( lookup.props( 'menuItems' ) ).toEqual( [
+				{ label: 'WithDesc', value: 'WithDesc', description: 'Has a description' },
+				{ label: 'NoDesc', value: 'NoDesc', description: undefined },
+			] );
+		} );
+
+		it( 'discards stale search results when a newer request completes first', async () => {
+			let resolveFirst: ( value: string[] ) => void;
+			const firstCallPromise = new Promise<string[]>( ( resolve ) => {
+				resolveFirst = resolve;
+			} );
+
+			schemaStore.searchAndFetchMissingSchemas = vi.fn()
+				.mockReturnValueOnce( firstCallPromise )
+				.mockResolvedValueOnce( [ 'SecondSchema' ] );
+
+			schemaStore.schemas.set( 'FirstSchema', new Schema( 'FirstSchema', 'Stale', new PropertyDefinitionList( [] ) ) );
+			schemaStore.schemas.set( 'SecondSchema', new Schema( 'SecondSchema', 'Fresh', new PropertyDefinitionList( [] ) ) );
+
+			const wrapper = mountComponent();
+			const lookup = wrapper.findComponent( CdxLookup );
+
+			lookup.vm.$emit( 'input', 'first' );
+			lookup.vm.$emit( 'input', 'second' );
+			await flushPromises();
+
+			expect( lookup.props( 'menuItems' ) ).toEqual( [
+				{ label: 'SecondSchema', value: 'SecondSchema', description: 'Fresh' },
+			] );
+
+			resolveFirst!( [ 'FirstSchema' ] );
+			await flushPromises();
+
+			expect( lookup.props( 'menuItems' ) ).toEqual( [
+				{ label: 'SecondSchema', value: 'SecondSchema', description: 'Fresh' },
+			] );
+		} );
 	} );
 
-	it( 'reflects the selected prop on the lookup', () => {
-		const wrapper = mountComponent( { selected: 'Product' } );
-		const lookup = wrapper.findComponent( CdxLookup );
+	describe( 'committing a selection', () => {
+		it( 'emits the chosen schema when one is selected', () => {
+			const wrapper = mountComponent();
+			const lookup = wrapper.findComponent( CdxLookup );
 
-		expect( lookup.props( 'selected' ) ).toBe( 'Product' );
-		expect( lookup.props( 'inputValue' ) ).toBe( 'Product' );
-		expect( lookup.props( 'menuItems' ) ).toEqual( [ { label: 'Product', value: 'Product' } ] );
+			lookup.vm.$emit( 'update:selected', 'Product' );
+
+			expect( wrapper.emitted( 'select' )?.[ 0 ] ).toEqual( [ 'Product' ] );
+		} );
+
+		it( 'does not emit while the selection is being changed by typing', () => {
+			const wrapper = mountComponent( { selected: 'Product' } );
+			const lookup = wrapper.findComponent( CdxLookup );
+
+			lookup.vm.$emit( 'update:input-value', 'Off' );
+			lookup.vm.$emit( 'update:selected', null );
+
+			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
+		} );
+
+		it( 'keeps a chosen schema untouched on blur', () => {
+			const wrapper = mountComponent( { selected: 'Product' } );
+			const lookup = wrapper.findComponent( CdxLookup );
+
+			lookup.vm.$emit( 'update:selected', 'Office' );
+			lookup.vm.$emit( 'update:input-value', 'Office' );
+			lookup.vm.$emit( 'blur' );
+
+			expect( wrapper.emitted( 'select' ) ).toEqual( [ [ 'Office' ] ] );
+		} );
 	} );
 
-	it( 'updates the lookup when the selected prop changes after mount', async () => {
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
+	describe( 'rejecting invalid input', () => {
+		it( 'reverts unmatched typed text to the committed schema on blur', async () => {
+			const wrapper = mountComponent( { selected: 'Product' } );
+			const lookup = wrapper.findComponent( CdxLookup );
 
-		await wrapper.setProps( { selected: 'NewSchema' } );
+			lookup.vm.$emit( 'update:selected', null );
+			lookup.vm.$emit( 'update:input-value', 'Produc' );
+			lookup.vm.$emit( 'blur' );
+			await nextTick();
 
-		expect( lookup.props( 'selected' ) ).toBe( 'NewSchema' );
-		expect( lookup.props( 'inputValue' ) ).toBe( 'NewSchema' );
-		expect( lookup.props( 'menuItems' ) ).toEqual( [ { label: 'NewSchema', value: 'NewSchema' } ] );
-
-		await wrapper.setProps( { selected: null } );
-
-		expect( lookup.props( 'inputValue' ) ).toBe( '' );
-		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
+			expect( lookup.props( 'inputValue' ) ).toBe( 'Product' );
+			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
+		} );
 	} );
 
-	it( 'emits the selected schema when one is chosen', () => {
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
+	describe( 'clearing', () => {
+		it( 'clears the selection when the field is emptied and blurred', () => {
+			const wrapper = mountComponent( { selected: 'Product' } );
+			const lookup = wrapper.findComponent( CdxLookup );
 
-		lookup.vm.$emit( 'update:selected', 'Product' );
+			lookup.vm.$emit( 'update:selected', null );
+			lookup.vm.$emit( 'update:input-value', '' );
+			lookup.vm.$emit( 'blur' );
 
-		expect( wrapper.emitted( 'select' )?.[ 0 ] ).toEqual( [ 'Product' ] );
+			expect( wrapper.emitted( 'select' )?.[ 0 ] ).toEqual( [ '' ] );
+		} );
+
+		it( 'does not emit a clear when an unset field is blurred', () => {
+			const wrapper = mountComponent();
+			const lookup = wrapper.findComponent( CdxLookup );
+
+			lookup.vm.$emit( 'update:selected', null );
+			lookup.vm.$emit( 'update:input-value', '' );
+			lookup.vm.$emit( 'blur' );
+
+			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
+		} );
 	} );
 
-	it( 'emits an empty selection when the lookup is cleared', () => {
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
+	describe( 'reflecting the selected prop', () => {
+		it( 'shows the selected schema in the field', () => {
+			const wrapper = mountComponent( { selected: 'Product' } );
+			const lookup = wrapper.findComponent( CdxLookup );
 
-		lookup.vm.$emit( 'update:selected', null );
+			expect( lookup.props( 'selected' ) ).toBe( 'Product' );
+			expect( lookup.props( 'inputValue' ) ).toBe( 'Product' );
+		} );
 
-		expect( wrapper.emitted( 'select' )?.[ 0 ] ).toEqual( [ '' ] );
-	} );
+		it( 'updates the field when the selected prop changes', async () => {
+			const wrapper = mountComponent();
+			const lookup = wrapper.findComponent( CdxLookup );
 
-	it( 'does not emit a clear while the user is typing a replacement', () => {
-		const wrapper = mountComponent( { selected: 'Product' } );
-		const lookup = wrapper.findComponent( CdxLookup );
+			await wrapper.setProps( { selected: 'NewSchema' } );
 
-		lookup.vm.$emit( 'update:input-value', 'Off' );
-		lookup.vm.$emit( 'update:selected', null );
+			expect( lookup.props( 'selected' ) ).toBe( 'NewSchema' );
+			expect( lookup.props( 'inputValue' ) ).toBe( 'NewSchema' );
 
-		expect( wrapper.emitted( 'select' ) ).toBeFalsy();
+			await wrapper.setProps( { selected: null } );
+
+			expect( lookup.props( 'selected' ) ).toBe( null );
+			expect( lookup.props( 'inputValue' ) ).toBe( '' );
+		} );
 	} );
 
 	it( 'exposes focus method', () => {
