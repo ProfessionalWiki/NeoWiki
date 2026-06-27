@@ -89,11 +89,11 @@ describe( 'RelationAttributesEditor', () => {
 
 		it( 'clears the displayed relation when the stored relation is emptied', async () => {
 			const wrapper = newWrapper( {
-				property: relationProperty( { relation: 'Has product', name: new PropertyName( 'Main product' ) } ),
+				property: relationProperty( { relation: 'Has product' } ),
 			} );
 
 			await wrapper.setProps( {
-				property: relationProperty( { relation: '', name: new PropertyName( 'Main product' ) } ),
+				property: relationProperty( { relation: '' } ),
 			} );
 
 			expect( wrapper.findComponent( CdxTextInput ).props( 'modelValue' ) ).toBe( '' );
