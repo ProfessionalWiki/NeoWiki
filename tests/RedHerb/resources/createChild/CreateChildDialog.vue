@@ -25,15 +25,14 @@
 </template>
 
 <script>
-'use strict';
+const vue = require( 'vue' );
+const codex = require( './codex.js' );
+const nw = require( 'ext.neowiki' );
+const DIALOG_OPEN_KEY = require( './constants.js' ).DIALOG_OPEN_KEY;
 
-var vue = require( 'vue' );
-var codex = require( './codex.js' );
-var nw = require( 'ext.neowiki' );
-var DIALOG_OPEN_KEY = require( './constants.js' ).DIALOG_OPEN_KEY;
+const SCHEMA_NAME = 'Company';
 
-var SCHEMA_NAME = 'Company';
-
+// @vue/component
 module.exports = exports = {
 	components: {
 		CdxDialog: codex.CdxDialog,
@@ -42,18 +41,18 @@ module.exports = exports = {
 		SubjectEditor: nw.SubjectEditor
 	},
 	setup: function () {
-		var open = vue.inject( DIALOG_OPEN_KEY );
-		var schemaStore = nw.useSchemaStore();
-		var subjectStore = nw.useSubjectStore();
+		const open = vue.inject( DIALOG_OPEN_KEY );
+		const schemaStore = nw.useSchemaStore();
+		const subjectStore = nw.useSubjectStore();
 
-		var label = vue.ref( '' );
-		var editorRef = vue.ref( null );
-		var loadedSchema = vue.shallowRef( null );
+		const label = vue.ref( '' );
+		const editorRef = vue.ref( null );
+		const loadedSchema = vue.shallowRef( null );
 
 		function loadSchema() {
-			schemaStore.getOrFetchSchema( SCHEMA_NAME ).then( function ( schema ) {
+			schemaStore.getOrFetchSchema( SCHEMA_NAME ).then( ( schema ) => {
 				loadedSchema.value = schema;
-			} ).catch( function ( err ) {
+			} ).catch( ( err ) => {
 				loadedSchema.value = null;
 				mw.log.error( err );
 				mw.notify(
@@ -64,7 +63,7 @@ module.exports = exports = {
 			} );
 		}
 
-		vue.watch( open, function ( isOpen ) {
+		vue.watch( open, ( isOpen ) => {
 			if ( isOpen && loadedSchema.value === null ) {
 				loadSchema();
 			}
@@ -73,7 +72,7 @@ module.exports = exports = {
 			}
 		} );
 
-		var statements = vue.computed( function () {
+		const statements = vue.computed( () => {
 			if ( loadedSchema.value === null ) {
 				return null;
 			}
@@ -91,18 +90,18 @@ module.exports = exports = {
 		}
 
 		function onSave() {
-			var trimmed = label.value.trim();
+			const trimmed = label.value.trim();
 			if ( trimmed === '' || editorRef.value === null ) {
 				return;
 			}
-			var pageId = mw.config.get( 'wgArticleId' );
-			var statements = editorRef.value.getSubjectData();
-			subjectStore.createChildSubject( pageId, trimmed, SCHEMA_NAME, statements )
-				.then( function () {
+			const pageId = mw.config.get( 'wgArticleId' );
+			const subjectStatements = editorRef.value.getSubjectData();
+			subjectStore.createChildSubject( pageId, trimmed, SCHEMA_NAME, subjectStatements )
+				.then( () => {
 					mw.notify( mw.message( 'redherb-create-child-success' ).text() );
 					open.value = false;
 				} )
-				.catch( function ( err ) {
+				.catch( ( err ) => {
 					mw.log.error( err );
 					mw.notify(
 						mw.message( 'redherb-create-child-error' ).text(),

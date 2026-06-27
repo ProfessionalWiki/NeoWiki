@@ -34,12 +34,11 @@
 </template>
 
 <script>
-'use strict';
+const vue = require( 'vue' );
+const codex = require( './codex.js' );
+const nw = require( 'ext.neowiki' );
 
-var vue = require( 'vue' );
-var codex = require( './codex.js' );
-var nw = require( 'ext.neowiki' );
-
+// @vue/component
 module.exports = exports = {
 	components: {
 		CdxField: codex.CdxField,
@@ -48,15 +47,13 @@ module.exports = exports = {
 		Infobox: nw.Infobox
 	},
 	setup: function () {
-		var schemaName = vue.ref( '' );
-		var selectedSubjectId = vue.ref( null );
-		var loadedSubjectId = vue.ref( null );
+		const schemaName = vue.ref( '' );
+		const selectedSubjectId = vue.ref( null );
+		const loadedSubjectId = vue.ref( null );
 
-		var trimmedSchemaName = vue.computed( function () {
-			return schemaName.value.trim();
-		} );
+		const trimmedSchemaName = vue.computed( () => schemaName.value.trim() );
 
-		var renderableSubjectId = vue.computed( function () {
+		const renderableSubjectId = vue.computed( () => {
 			if ( loadedSubjectId.value === null ) {
 				return null;
 			}
@@ -71,10 +68,10 @@ module.exports = exports = {
 			}
 			nw.NeoWikiExtension.getInstance().getStoreStateLoader()
 				.loadSubjectsAndSchemas( new Set( [ id ] ) )
-				.then( function () {
+				.then( () => {
 					loadedSubjectId.value = id;
 				} )
-				.catch( function ( err ) {
+				.catch( ( err ) => {
 					mw.log.error( err );
 					mw.notify(
 						err instanceof Error ? err.message : String( err ),

@@ -12,7 +12,7 @@
 				v-tooltip="property.description"
 				:icon="infoIcon"
 				size="small"
-			/>
+			></cdx-icon>
 		</template>
 		<div class="ext-redherb-color-input__row">
 			<span
@@ -27,20 +27,21 @@
 				:start-icon="startIcon"
 				:model-value="displayValues[ 0 ] || ''"
 				@update:model-value="onInput"
-			/>
+			></cdx-text-input>
 		</div>
 	</cdx-field>
 </template>
 
 <script>
-var vue = require( 'vue' );
-var codex = require( './codex.js' );
-var icons = require( './icons.json' );
-var nw = require( 'ext.neowiki' );
+const vue = require( 'vue' );
+const codex = require( './codex.js' );
+const icons = require( './icons.json' );
+const nw = require( 'ext.neowiki' );
 
-var COLOR_TYPE_NAME = 'color';
-var HEX_REGEX = require( './hexRegex.js' );
+const COLOR_TYPE_NAME = 'color';
+const HEX_REGEX = require( './hexRegex.js' );
 
+// @vue/component
 module.exports = exports = {
 	components: {
 		CdxField: codex.CdxField,
@@ -49,22 +50,23 @@ module.exports = exports = {
 	},
 	props: {
 		property: { type: Object, required: true },
+		// eslint-disable-next-line vue/no-unused-properties -- consumed via vue.toRef( props, 'modelValue' ), which the rule cannot detect
 		modelValue: { type: Object, default: undefined },
 		label: { type: String, default: '' }
 	},
 	emits: [ 'update:modelValue' ],
 	setup: function ( props, ctx ) {
-		var propertyType = nw.NeoWikiServices.getPropertyTypeRegistry().getType( COLOR_TYPE_NAME );
+		const propertyType = nw.NeoWikiServices.getPropertyTypeRegistry().getType( COLOR_TYPE_NAME );
 
-		var stringInput = nw.useStringValueInput(
+		const stringInput = nw.useStringValueInput(
 			vue.toRef( props, 'modelValue' ),
 			vue.toRef( props, 'property' ),
 			ctx.emit,
 			propertyType
 		);
 
-		var previewHex = vue.computed( function () {
-			var raw = stringInput.displayValues.value[ 0 ] || '';
+		const previewHex = vue.computed( () => {
+			const raw = stringInput.displayValues.value[ 0 ] || '';
 			return HEX_REGEX.test( raw ) ? raw : '';
 		} );
 
@@ -103,14 +105,7 @@ module.exports = exports = {
 		flex-shrink: 0;
 
 		&--empty {
-			background:
-				repeating-linear-gradient(
-					45deg,
-					@background-color-neutral-subtle,
-					@background-color-neutral-subtle 4px,
-					@background-color-neutral 4px,
-					@background-color-neutral 8px
-				);
+			background: repeating-linear-gradient( 45deg, @background-color-neutral-subtle, @background-color-neutral-subtle 4px, @background-color-neutral 4px, @background-color-neutral 8px );
 		}
 	}
 
