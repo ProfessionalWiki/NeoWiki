@@ -31,7 +31,39 @@
 						"uniqueItems": {
 							"type": "boolean"
 						}
-					}
+					},
+					"allOf": [
+						{
+							"if": {
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"const": "relation"
+									}
+								}
+							},
+							"then": {
+								"required": [
+									"relation",
+									"targetSchema"
+								],
+								"properties": {
+									"relation": {
+										"type": "string",
+										"pattern": "\\S",
+										"$error": "The relation type must not be empty."
+									},
+									"targetSchema": {
+										"type": "string",
+										"pattern": "\\S",
+										"$error": "The target schema must not be empty."
+									}
+								}
+							}
+						}
+					]
 				}
 			}
 		}
