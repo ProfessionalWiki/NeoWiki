@@ -16,7 +16,7 @@
 		</CdxField>
 
 		<CdxField>
-			<SchemaLookup
+			<SchemaPicker
 				:selected="selectedSchema"
 				@select="onSchemaSelected"
 			/>
@@ -66,7 +66,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { Layout, type DisplayRule } from '@/domain/Layout.ts';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import DisplayRuleList from '@/components/LayoutEditor/DisplayRuleList.vue';
-import SchemaLookup from '@/components/common/SchemaLookup.vue';
+import SchemaPicker from '@/components/common/SchemaPicker.vue';
 
 const emit = defineEmits<{
 	change: [];
