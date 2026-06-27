@@ -1,7 +1,7 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
-import SchemaLookup from '@/components/common/SchemaLookup.vue';
+import SchemaPicker from '@/components/common/SchemaPicker.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { createI18nMock } from '../../VueTestHelpers.ts';
@@ -20,12 +20,12 @@ const SUMMARIES = [
 	{ name: 'City', description: '', propertyCount: 3 },
 ];
 
-describe( 'SchemaLookup', () => {
+describe( 'SchemaPicker', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore: any;
 
 	const mountComponent = ( props: Record<string, unknown> = {} ): VueWrapper => (
-		mount( SchemaLookup, {
+		mount( SchemaPicker, {
 			props,
 			global: {
 				mocks: {
@@ -204,7 +204,7 @@ describe( 'SchemaLookup', () => {
 			template: '<div><input /></div>',
 		};
 
-		const wrapper = mount( SchemaLookup, {
+		const wrapper = mount( SchemaPicker, {
 			global: {
 				mocks: {
 					$i18n,

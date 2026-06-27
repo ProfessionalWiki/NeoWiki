@@ -24,7 +24,7 @@
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-target-schema' ).text() }}
 			</template>
-			<SchemaLookup
+			<SchemaPicker
 				:selected="property.targetSchema || null"
 				@select="updateTargetSchema"
 				@blur="targetSchemaTouched = true"
@@ -47,7 +47,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { CdxCheckbox, CdxField, CdxTextInput } from '@wikimedia/codex';
 import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import SchemaLookup from '@/components/common/SchemaLookup.vue';
+import SchemaPicker from '@/components/common/SchemaPicker.vue';
 
 const props = defineProps<AttributesEditorProps<RelationProperty>>();
 const emit = defineEmits<AttributesEditorEmits<RelationProperty>>();

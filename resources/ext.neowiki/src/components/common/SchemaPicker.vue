@@ -1,10 +1,10 @@
 <template>
-	<div class="ext-neowiki-schema-lookup">
+	<div class="ext-neowiki-schema-picker">
 		<CdxCombobox
 			ref="comboboxRef"
 			v-model:selected="selectedSchema"
 			:menu-items="menuItems"
-			:placeholder="$i18n( 'neowiki-schema-lookup-placeholder' ).text()"
+			:placeholder="$i18n( 'neowiki-schema-picker-placeholder' ).text()"
 			@input="filterSchemas"
 			@update:selected="onSelect"
 			@blur="reconcileOnBlur"
@@ -94,7 +94,7 @@ defineExpose( { focus } );
 </script>
 
 <style lang="less">
-.ext-neowiki-schema-lookup .cdx-combobox {
+.ext-neowiki-schema-picker .cdx-combobox {
 	width: 100%;
 }
 </style>
