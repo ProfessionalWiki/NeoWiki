@@ -1,24 +1,23 @@
 <template>
 	<div class="ext-neowiki-schema-lookup">
-		<CdxLookup
-			ref="lookupRef"
+		<CdxCombobox
+			ref="comboboxRef"
 			v-model:selected="selectedSchema"
-			v-model:input-value="inputText"
 			:menu-items="menuItems"
-			:start-icon="cdxIconSearch"
-			:placeholder="$i18n( 'neowiki-subject-creator-schema-search-placeholder' ).text()"
-			@input="onLookupInput"
-			@update:selected="onSchemaSelected"
+			:placeholder="$i18n( 'neowiki-schema-lookup-placeholder' ).text()"
+			@input="filterSchemas"
+			@update:selected="onSelect"
+			@blur="reconcileOnBlur"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { CdxLookup } from '@wikimedia/codex';
-import { cdxIconSearch } from '@wikimedia/codex-icons';
+import { onMounted, ref, watch } from 'vue';
+import { CdxCombobox } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 
 const props = defineProps<{
 	selected?: string | null;
@@ -26,69 +25,75 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	'select': [ schemaName: string ];
+	'blur': [];
 }>();
 
 const schemaStore = useSchemaStore();
-const selectedSchema = ref<string | null>( props.selected ?? null );
-const inputText = ref<string>( props.selected ?? '' );
-const menuItems = ref<MenuItemData[]>(
-	props.selected ? [ { label: props.selected, value: props.selected } ] : []
-);
-const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
-let requestSequence = 0;
+const selectedSchema = ref<string>( props.selected ?? '' );
+const summaries = ref<SchemaSummary[]>( [] );
+const menuItems = ref<MenuItemData[]>( [] );
+const comboboxRef = ref<InstanceType<typeof CdxCombobox> | null>( null );
 
-watch( () => props.selected, ( value ) => {
-	selectedSchema.value = value ?? null;
-	inputText.value = value ?? '';
-	if ( value && !menuItems.value.some( ( item ) => item.value === value ) ) {
-		menuItems.value = [ { label: value, value: value } ];
-	} else if ( !value ) {
-		menuItems.value = [];
-	}
+onMounted( async () => {
+	summaries.value = await schemaStore.getAllSchemaSummaries();
+	showAllSchemas();
 } );
 
-async function onLookupInput( value: string ): Promise<void> {
-	if ( !value ) {
-		menuItems.value = [];
-		return;
-	}
+watch( () => props.selected, ( value ) => {
+	selectedSchema.value = value ?? '';
+} );
 
-	const currentSequence = ++requestSequence;
+function toMenuItems( items: SchemaSummary[] ): MenuItemData[] {
+	return items.map( ( summary ) => ( {
+		label: summary.name,
+		value: summary.name,
+		description: summary.description || undefined
+	} ) );
+}
 
-	try {
-		const schemaNames = await schemaStore.searchAndFetchMissingSchemas( value );
+function showAllSchemas(): void {
+	menuItems.value = toMenuItems( summaries.value );
+}
 
-		if ( currentSequence !== requestSequence ) {
-			return;
-		}
+function findSchema( name: string ): SchemaSummary | undefined {
+	return summaries.value.find( ( summary ) => summary.name === name.trim() );
+}
 
-		menuItems.value = schemaNames.map( ( name ) => ( {
-			label: name,
-			value: name,
-			description: schemaStore.getSchema( name ).getDescription() || undefined
-		} ) );
-	} catch ( error ) {
-		if ( currentSequence !== requestSequence ) {
-			return;
-		}
+function filterSchemas( event: Event ): void {
+	const query = ( event.target as HTMLInputElement ).value.trim().toLowerCase();
+	const matches = query === '' ?
+		summaries.value :
+		summaries.value.filter( ( summary ) => summary.name.toLowerCase().includes( query ) );
+	menuItems.value = toMenuItems( matches );
+}
 
-		console.error( 'Error searching schemas:', error );
-		menuItems.value = [];
+// CdxCombobox's `selected` tracks the typed text, not only menu picks, so only
+// commit it when it is an exact existing schema name.
+function onSelect( value: string ): void {
+	if ( findSchema( value ) && value !== props.selected ) {
+		emit( 'select', value );
 	}
 }
 
-function onSchemaSelected( schemaName: string ): void {
-	if ( schemaName ) {
-		emit( 'select', schemaName );
-	}
+// On blur, snap `selected` back to the committed schema (empty for a target schema
+// that has not been set yet) so unconfirmed typing reverts and the field only ever
+// shows an existing schema. Restoring the full menu lets the committed label render.
+function reconcileOnBlur(): void {
+	selectedSchema.value = props.selected ?? '';
+	showAllSchemas();
+	emit( 'blur' );
 }
 
 function focus(): void {
-	// CdxLookup component does not expose a focus method,
-	// so we need to find the input element and focus it directly.
-	const input = ( lookupRef.value?.$el as HTMLElement )?.querySelector( 'input' );
+	const input = ( comboboxRef.value?.$el as HTMLElement )?.querySelector( 'input' );
 	input?.focus();
 }
 
 defineExpose( { focus } );
 </script>
+
+<style lang="less">
+.ext-neowiki-schema-lookup .cdx-combobox {
+	width: 100%;
+}
+</style>

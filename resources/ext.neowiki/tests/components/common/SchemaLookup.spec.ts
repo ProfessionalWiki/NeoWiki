@@ -1,14 +1,24 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextTick } from 'vue';
 import SchemaLookup from '@/components/common/SchemaLookup.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { CdxLookup } from '@wikimedia/codex';
 import { createI18nMock } from '../../VueTestHelpers.ts';
-import { Schema } from '@/domain/Schema.ts';
-import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 
 const $i18n = createI18nMock();
+
+const CdxComboboxStub = {
+	props: [ 'selected', 'menuItems' ],
+	emits: [ 'update:selected', 'input', 'blur' ],
+	template: '<div class="cdx-combobox-stub"></div>',
+};
+
+const SUMMARIES = [
+	{ name: 'Product', description: 'A product', propertyCount: 2 },
+	{ name: 'Office', description: 'A physical location', propertyCount: 4 },
+	{ name: 'City', description: '', propertyCount: 3 },
+];
 
 describe( 'SchemaLookup', () => {
 	let pinia: ReturnType<typeof createPinia>;
@@ -23,123 +33,144 @@ describe( 'SchemaLookup', () => {
 				},
 				plugins: [ pinia ],
 				stubs: {
-					CdxLookup: true,
+					CdxCombobox: CdxComboboxStub,
 				},
 			},
 		} )
 	);
+
+	async function mountLoaded( props: Record<string, unknown> = {} ): Promise<VueWrapper> {
+		const wrapper = mountComponent( props );
+		await flushPromises();
+		return wrapper;
+	}
+
+	function typeText( combobox: VueWrapper, value: string ): void {
+		combobox.vm.$emit( 'input', { target: { value } } );
+	}
 
 	beforeEach( () => {
 		pinia = createPinia();
 		setActivePinia( pinia );
 
 		schemaStore = useSchemaStore();
-		schemaStore.searchAndFetchMissingSchemas = vi.fn().mockResolvedValue( [] );
+		schemaStore.getAllSchemaSummaries = vi.fn().mockResolvedValue( SUMMARIES );
 	} );
 
-	it( 'searches for schemas when input changes', () => {
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
+	describe( 'browsing and filtering', () => {
+		it( 'populates the menu with all schemas and their descriptions on mount', async () => {
+			const wrapper = await mountLoaded();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
 
-		lookup.vm.$emit( 'input', 'test query' );
-
-		expect( schemaStore.searchAndFetchMissingSchemas ).toHaveBeenCalledWith( 'test query' );
-	} );
-
-	it( 'updates menu items with search results', async () => {
-		const mockResults = [ 'Schema1', 'Schema2' ];
-		schemaStore.searchAndFetchMissingSchemas.mockResolvedValue( mockResults );
-		schemaStore.schemas.set( 'Schema1', new Schema( 'Schema1', 'First description', new PropertyDefinitionList( [] ) ) );
-		schemaStore.schemas.set( 'Schema2', new Schema( 'Schema2', 'Second description', new PropertyDefinitionList( [] ) ) );
-
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
-
-		lookup.vm.$emit( 'input', 'test' );
-		await flushPromises();
-
-		expect( lookup.props( 'menuItems' ) ).toEqual( [
-			{ label: 'Schema1', value: 'Schema1', description: 'First description' },
-			{ label: 'Schema2', value: 'Schema2', description: 'Second description' },
-		] );
-	} );
-
-	it( 'omits description from menu items when schema has empty description', async () => {
-		schemaStore.searchAndFetchMissingSchemas.mockResolvedValue( [ 'WithDesc', 'NoDesc' ] );
-		schemaStore.schemas.set( 'WithDesc', new Schema( 'WithDesc', 'Has a description', new PropertyDefinitionList( [] ) ) );
-		schemaStore.schemas.set( 'NoDesc', new Schema( 'NoDesc', '', new PropertyDefinitionList( [] ) ) );
-
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
-
-		lookup.vm.$emit( 'input', 'test' );
-		await flushPromises();
-
-		expect( lookup.props( 'menuItems' ) ).toEqual( [
-			{ label: 'WithDesc', value: 'WithDesc', description: 'Has a description' },
-			{ label: 'NoDesc', value: 'NoDesc', description: undefined },
-		] );
-	} );
-
-	it( 'discards stale search results when a newer request completes first', async () => {
-		let resolveFirst: ( value: string[] ) => void;
-		const firstCallPromise = new Promise<string[]>( ( resolve ) => {
-			resolveFirst = resolve;
+			expect( combobox.props( 'menuItems' ) ).toEqual( [
+				{ label: 'Product', value: 'Product', description: 'A product' },
+				{ label: 'Office', value: 'Office', description: 'A physical location' },
+				{ label: 'City', value: 'City', description: undefined },
+			] );
 		} );
 
-		schemaStore.searchAndFetchMissingSchemas = vi.fn()
-			.mockReturnValueOnce( firstCallPromise )
-			.mockResolvedValueOnce( [ 'SecondSchema' ] );
+		it( 'filters the menu to schemas matching the typed text', async () => {
+			const wrapper = await mountLoaded();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
 
-		schemaStore.schemas.set( 'FirstSchema', new Schema( 'FirstSchema', 'Stale', new PropertyDefinitionList( [] ) ) );
-		schemaStore.schemas.set( 'SecondSchema', new Schema( 'SecondSchema', 'Fresh', new PropertyDefinitionList( [] ) ) );
+			typeText( combobox, 'off' );
+			await nextTick();
 
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
+			expect( combobox.props( 'menuItems' ) ).toEqual( [
+				{ label: 'Office', value: 'Office', description: 'A physical location' },
+			] );
+		} );
 
-		lookup.vm.$emit( 'input', 'first' );
-		lookup.vm.$emit( 'input', 'second' );
-		await flushPromises();
+		it( 'shows all schemas again when the input is cleared', async () => {
+			const wrapper = await mountLoaded();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
 
-		expect( lookup.props( 'menuItems' ) ).toEqual( [
-			{ label: 'SecondSchema', value: 'SecondSchema', description: 'Fresh' },
-		] );
+			typeText( combobox, 'off' );
+			typeText( combobox, '' );
+			await nextTick();
 
-		resolveFirst!( [ 'FirstSchema' ] );
-		await flushPromises();
-
-		expect( lookup.props( 'menuItems' ) ).toEqual( [
-			{ label: 'SecondSchema', value: 'SecondSchema', description: 'Fresh' },
-		] );
+			expect( combobox.props( 'menuItems' ) ).toHaveLength( 3 );
+		} );
 	} );
 
-	it( 'reflects the selected prop on the lookup', () => {
-		const wrapper = mountComponent( { selected: 'Product' } );
-		const lookup = wrapper.findComponent( CdxLookup );
+	describe( 'committing a selection', () => {
+		it( 'emits the schema when an exact schema name is selected', async () => {
+			const wrapper = await mountLoaded();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
 
-		expect( lookup.props( 'selected' ) ).toBe( 'Product' );
-		expect( lookup.props( 'inputValue' ) ).toBe( 'Product' );
-		expect( lookup.props( 'menuItems' ) ).toEqual( [ { label: 'Product', value: 'Product' } ] );
+			combobox.vm.$emit( 'update:selected', 'Office' );
+
+			expect( wrapper.emitted( 'select' )?.[ 0 ] ).toEqual( [ 'Office' ] );
+		} );
+
+		it( 'does not emit for a value that is not a schema name', async () => {
+			const wrapper = await mountLoaded();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
+
+			combobox.vm.$emit( 'update:selected', 'Off' );
+
+			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
+		} );
 	} );
 
-	it( 'updates the lookup when the selected prop changes after mount', async () => {
-		const wrapper = mountComponent();
-		const lookup = wrapper.findComponent( CdxLookup );
+	describe( 'rejecting invalid input', () => {
+		it( 'reverts to the committed schema and restores the menu on blur', async () => {
+			const wrapper = await mountLoaded( { selected: 'Product' } );
+			const combobox = wrapper.findComponent( CdxComboboxStub );
 
-		await wrapper.setProps( { selected: 'NewSchema' } );
+			combobox.vm.$emit( 'update:selected', 'xyz' );
+			combobox.vm.$emit( 'blur' );
+			await nextTick();
 
-		expect( lookup.props( 'selected' ) ).toBe( 'NewSchema' );
-		expect( lookup.props( 'inputValue' ) ).toBe( 'NewSchema' );
-		expect( lookup.props( 'menuItems' ) ).toEqual( [ { label: 'NewSchema', value: 'NewSchema' } ] );
+			expect( combobox.props( 'selected' ) ).toBe( 'Product' );
+			expect( combobox.props( 'menuItems' ) ).toHaveLength( 3 );
+			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
+		} );
 
-		await wrapper.setProps( { selected: null } );
+		it( 'leaves a not-yet-set field empty on blur', async () => {
+			const wrapper = await mountLoaded();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
 
-		expect( lookup.props( 'inputValue' ) ).toBe( '' );
-		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
+			combobox.vm.$emit( 'update:selected', 'xyz' );
+			combobox.vm.$emit( 'blur' );
+			await nextTick();
+
+			expect( combobox.props( 'selected' ) ).toBe( '' );
+			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
+		} );
+
+		it( 'emits blur so the consumer can mark the field touched', async () => {
+			const wrapper = await mountLoaded();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
+
+			combobox.vm.$emit( 'blur' );
+
+			expect( wrapper.emitted( 'blur' ) ).toBeTruthy();
+		} );
+	} );
+
+	describe( 'reflecting the selected prop', () => {
+		it( 'shows the selected schema in the field', () => {
+			const wrapper = mountComponent( { selected: 'Product' } );
+			const combobox = wrapper.findComponent( CdxComboboxStub );
+
+			expect( combobox.props( 'selected' ) ).toBe( 'Product' );
+		} );
+
+		it( 'updates the field when the selected prop changes', async () => {
+			const wrapper = mountComponent();
+			const combobox = wrapper.findComponent( CdxComboboxStub );
+
+			await wrapper.setProps( { selected: 'NewSchema' } );
+			expect( combobox.props( 'selected' ) ).toBe( 'NewSchema' );
+
+			await wrapper.setProps( { selected: null } );
+			expect( combobox.props( 'selected' ) ).toBe( '' );
+		} );
 	} );
 
 	it( 'exposes focus method', () => {
-		const CdxLookupStub = {
+		const CdxComboboxInputStub = {
 			template: '<div><input /></div>',
 		};
 
@@ -150,7 +181,7 @@ describe( 'SchemaLookup', () => {
 				},
 				plugins: [ pinia ],
 				stubs: {
-					CdxLookup: CdxLookupStub,
+					CdxCombobox: CdxComboboxInputStub,
 				},
 			},
 		} );

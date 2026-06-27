@@ -52,6 +52,7 @@
 	"neowiki-subject-editor-error": "Error notification title shown when updating a subject fails. $1 is the subject label.",
 	"neowiki-subject-editor-validation-failed": "Toast title shown when the backend rejects a Subject save under enforcement. $1 is the Subject label.",
 	"neowiki-subject-lookup-placeholder": "Placeholder text shown in the subject search input field.",
+	"neowiki-schema-lookup-placeholder": "Placeholder text shown in the schema picker input field.",
 	"neowiki-subject-lookup-no-results": "Message shown in the subject lookup dropdown when no subjects match the search query.",
 	"neowiki-subject-lookup-no-match": "Error message shown in the subject lookup when the user types text but does not select a subject from the dropdown results.",
 
