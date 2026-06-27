@@ -128,7 +128,7 @@ export { default as SchemaEditorDialog } from './components/SchemaEditor/SchemaE
 export { default as SchemaCreatorDialog } from './components/SchemasPage/SchemaCreatorDialog.vue';
 export { default as SchemasPage } from './components/SchemasPage/SchemasPage.vue';
 export { default as SchemaAbandonmentDialog } from './components/SubjectCreator/SchemaAbandonmentDialog.vue';
-export { default as SchemaLookup } from './components/common/SchemaLookup.vue';
+export { default as SchemaPicker } from './components/common/SchemaPicker.vue';
 export { default as SubjectCreatorDialog } from './components/SubjectCreator/SubjectCreatorDialog.vue';
 export { default as SubjectEditor } from './components/SubjectEditor/SubjectEditor.vue';
 export { default as SubjectEditorDialog } from './components/SubjectEditor/SubjectEditorDialog.vue';

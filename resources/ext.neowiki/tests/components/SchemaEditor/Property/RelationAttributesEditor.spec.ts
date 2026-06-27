@@ -7,7 +7,7 @@ import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { createI18nMock, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
 
-const SchemaLookupStub = {
+const SchemaPickerStub = {
 	props: [ 'selected' ],
 	emits: [ 'select', 'blur' ],
 	template: '<div class="schema-lookup-stub"></div>',
@@ -37,7 +37,7 @@ describe( 'RelationAttributesEditor', () => {
 			},
 			global: {
 				mocks: { $i18n: createI18nMock() },
-				stubs: { SchemaLookup: SchemaLookupStub },
+				stubs: { SchemaPicker: SchemaPickerStub },
 			},
 		} );
 	}
@@ -51,24 +51,24 @@ describe( 'RelationAttributesEditor', () => {
 			const wrapper = newWrapper();
 
 			expect( wrapper.find( '.relation-attributes__relation' ).exists() ).toBe( true );
-			expect( wrapper.findComponent( SchemaLookupStub ).exists() ).toBe( true );
+			expect( wrapper.findComponent( SchemaPickerStub ).exists() ).toBe( true );
 			expect( wrapper.find( 'input[type="checkbox"]' ).exists() ).toBe( true );
 		} );
 
-		it( 'passes the current target schema to SchemaLookup', () => {
+		it( 'passes the current target schema to SchemaPicker', () => {
 			const wrapper = newWrapper( {
 				property: relationProperty( { targetSchema: 'Office' } ),
 			} );
 
-			expect( wrapper.findComponent( SchemaLookupStub ).props( 'selected' ) ).toBe( 'Office' );
+			expect( wrapper.findComponent( SchemaPickerStub ).props( 'selected' ) ).toBe( 'Office' );
 		} );
 
-		it( 'passes null to SchemaLookup when no target schema is set', () => {
+		it( 'passes null to SchemaPicker when no target schema is set', () => {
 			const wrapper = newWrapper( {
 				property: relationProperty( { targetSchema: '' } ),
 			} );
 
-			expect( wrapper.findComponent( SchemaLookupStub ).props( 'selected' ) ).toBe( null );
+			expect( wrapper.findComponent( SchemaPickerStub ).props( 'selected' ) ).toBe( null );
 		} );
 
 		it( 'displays the stored relation in the input', () => {
@@ -146,7 +146,7 @@ describe( 'RelationAttributesEditor', () => {
 		it( 'emits targetSchema when the picker selects a schema', async () => {
 			const wrapper = newWrapper();
 
-			await wrapper.findComponent( SchemaLookupStub ).vm.$emit( 'select', 'Office' );
+			await wrapper.findComponent( SchemaPickerStub ).vm.$emit( 'select', 'Office' );
 
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { targetSchema: 'Office' } ] );
 		} );
@@ -201,7 +201,7 @@ describe( 'RelationAttributesEditor', () => {
 				property: relationProperty( { targetSchema: '' } ),
 			} );
 
-			await wrapper.findComponent( SchemaLookupStub ).vm.$emit( 'blur' );
+			await wrapper.findComponent( SchemaPickerStub ).vm.$emit( 'blur' );
 
 			const props = fieldProps( wrapper, '.relation-attributes__target-schema' );
 			expect( props.status ).toBe( 'error' );
