@@ -42,7 +42,7 @@ const emit = defineEmits<AttributesEditorEmits<SelectProperty>>();
 const optionsError = ref<string | null>( null );
 
 const optionChips = computed( (): ChipInputItem[] =>
-	props.property.options.map( ( option ) => ( { value: option.label } ) )
+	( props.property.options ?? [] ).map( ( option ) => ( { value: option.label } ) )
 );
 
 const updateOptions = ( chips: ChipInputItem[] ): void => {

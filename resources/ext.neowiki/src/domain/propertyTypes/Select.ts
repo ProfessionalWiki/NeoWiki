@@ -18,7 +18,7 @@ export interface SelectProperty extends PropertyDefinition {
 }
 
 export function resolveSelectLabel( property: SelectProperty, id: string ): string | undefined {
-	return property.options.find( ( option ) => option.id === id )?.label;
+	return property.options?.find( ( option ) => option.id === id )?.label;
 }
 
 export class SelectType extends BasePropertyType<SelectProperty, StringValue> {
@@ -32,7 +32,7 @@ export class SelectType extends BasePropertyType<SelectProperty, StringValue> {
 	}
 
 	public getExampleValue( property: SelectProperty ): StringValue {
-		return newStringValue( property.options[ 0 ]?.id ?? '' );
+		return newStringValue( property.options?.[ 0 ]?.id ?? '' );
 	}
 
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): SelectProperty {
@@ -52,7 +52,7 @@ export class SelectType extends BasePropertyType<SelectProperty, StringValue> {
 			return errors;
 		}
 
-		const validIds = new Set( property.options.map( ( option ) => option.id ) );
+		const validIds = new Set( ( property.options ?? [] ).map( ( option ) => option.id ) );
 
 		for ( const part of value.parts ) {
 			if ( !validIds.has( part ) ) {
