@@ -143,6 +143,14 @@ describe( 'RelationAttributesEditor', () => {
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { relation: '' } ] );
 		} );
 
+		it( 'emits an empty relation for whitespace-only input', async () => {
+			const wrapper = newWrapper();
+
+			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', '   ' );
+
+			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { relation: '' } ] );
+		} );
+
 		it( 'emits targetSchema when the picker selects a schema', async () => {
 			const wrapper = newWrapper();
 
