@@ -138,6 +138,24 @@ describe( 'SchemaLookup', () => {
 		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
 	} );
 
+	it( 'emits the selected schema when one is chosen', () => {
+		const wrapper = mountComponent();
+		const lookup = wrapper.findComponent( CdxLookup );
+
+		lookup.vm.$emit( 'update:selected', 'Product' );
+
+		expect( wrapper.emitted( 'select' )?.[ 0 ] ).toEqual( [ 'Product' ] );
+	} );
+
+	it( 'emits an empty selection when the lookup is cleared', () => {
+		const wrapper = mountComponent();
+		const lookup = wrapper.findComponent( CdxLookup );
+
+		lookup.vm.$emit( 'update:selected', null );
+
+		expect( wrapper.emitted( 'select' )?.[ 0 ] ).toEqual( [ '' ] );
+	} );
+
 	it( 'exposes focus method', () => {
 		const CdxLookupStub = {
 			template: '<div><input /></div>',

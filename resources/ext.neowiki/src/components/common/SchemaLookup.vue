@@ -77,10 +77,8 @@ async function onLookupInput( value: string ): Promise<void> {
 	}
 }
 
-function onSchemaSelected( schemaName: string ): void {
-	if ( schemaName ) {
-		emit( 'select', schemaName );
-	}
+function onSchemaSelected( schemaName: string | null ): void {
+	emit( 'select', schemaName ?? '' );
 }
 
 function focus(): void {

@@ -63,6 +63,14 @@ describe( 'RelationAttributesEditor', () => {
 			expect( wrapper.findComponent( SchemaLookupStub ).props( 'selected' ) ).toBe( 'Office' );
 		} );
 
+		it( 'passes null to SchemaLookup when no target schema is set', () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { targetSchema: '' } ),
+			} );
+
+			expect( wrapper.findComponent( SchemaLookupStub ).props( 'selected' ) ).toBe( null );
+		} );
+
 		it( 'displays the stored relation in the input', () => {
 			const wrapper = newWrapper( {
 				property: relationProperty( { relation: 'Has gadget' } ),
@@ -77,6 +85,18 @@ describe( 'RelationAttributesEditor', () => {
 			} );
 
 			expect( wrapper.findComponent( CdxTextInput ).props( 'modelValue' ) ).toBe( 'Main product' );
+		} );
+
+		it( 'clears the displayed relation when the stored relation is emptied', async () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { relation: 'Has product', name: new PropertyName( 'Main product' ) } ),
+			} );
+
+			await wrapper.setProps( {
+				property: relationProperty( { relation: '', name: new PropertyName( 'Main product' ) } ),
+			} );
+
+			expect( wrapper.findComponent( CdxTextInput ).props( 'modelValue' ) ).toBe( '' );
 		} );
 	} );
 
@@ -115,12 +135,28 @@ describe( 'RelationAttributesEditor', () => {
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { relation: 'Owns' } ] );
 		} );
 
+		it( 'emits an empty relation when the field is cleared', async () => {
+			const wrapper = newWrapper();
+
+			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', '' );
+
+			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { relation: '' } ] );
+		} );
+
 		it( 'emits targetSchema when the picker selects a schema', async () => {
 			const wrapper = newWrapper();
 
 			await wrapper.findComponent( SchemaLookupStub ).vm.$emit( 'select', 'Office' );
 
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { targetSchema: 'Office' } ] );
+		} );
+
+		it( 'emits an empty target schema when the picker is cleared', async () => {
+			const wrapper = newWrapper();
+
+			await wrapper.findComponent( SchemaLookupStub ).vm.$emit( 'select', '' );
+
+			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { targetSchema: '' } ] );
 		} );
 
 		it( 'emits multiple when the checkbox is toggled', async () => {
@@ -148,10 +184,9 @@ describe( 'RelationAttributesEditor', () => {
 			const props = fieldProps( wrapper, '.relation-attributes__relation' );
 			expect( props.status ).toBe( 'error' );
 			expect( props.messages ).toEqual( { error: 'Relation type is required.' } );
-			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 
-		it( 'treats a whitespace-only relation as required and does not emit it', async () => {
+		it( 'treats a whitespace-only relation as required', async () => {
 			const wrapper = newWrapper();
 
 			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', '   ' );
@@ -159,7 +194,6 @@ describe( 'RelationAttributesEditor', () => {
 			const props = fieldProps( wrapper, '.relation-attributes__relation' );
 			expect( props.status ).toBe( 'error' );
 			expect( props.messages ).toEqual( { error: 'Relation type is required.' } );
-			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 
 		it( 'shows a required error when the target schema is empty', () => {
