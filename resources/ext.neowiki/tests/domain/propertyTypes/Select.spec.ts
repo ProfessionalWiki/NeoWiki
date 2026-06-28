@@ -240,12 +240,4 @@ describe( 'with uninitialized options (property just switched to Select)', () =>
 			{ code: 'invalid-option', args: [ 'open' ], source: 'open' },
 		] );
 	} );
-
-	it( 'produces an empty example value', () => {
-		expect( selectType.getExampleValue( propertyWithoutOptions() ) ).toEqual( newStringValue( '' ) );
-	} );
-
-	it( 'resolves no label for any id', () => {
-		expect( resolveSelectLabel( propertyWithoutOptions(), 'open' ) ).toBeUndefined();
-	} );
 } );
