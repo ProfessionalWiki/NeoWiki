@@ -31,7 +31,10 @@
 
 	"neowiki-page-tools-label": "Heading for the NeoWiki section in the MediaWiki sidebar (shown as a group label in legacy skins and inside the page tools menu in modern Vector).",
 	"neowiki-page-tools-create-subject": "Label for the sidebar link that opens the 'create subject' dialog. The dialog creates a main subject if the page has none, or a child subject otherwise.",
+	"neowiki-page-tools-manage-subjects": "Label for the sidebar link to the Subject management page, shown to users who may edit. See neowiki-page-tools-view-subjects for the read-only variant.",
+	"neowiki-page-tools-view-subjects": "Read-only counterpart of neowiki-page-tools-manage-subjects: label for the sidebar link to the Subject management page, shown to users who lack edit permission.",
 	"neowiki-page-tools-edit-json": "Label for the sidebar link that navigates to Special:NeoJson for the current page. Only visible when development UIs are enabled.",
+	"neowiki-page-tools-view-json": "Read-only counterpart of neowiki-page-tools-edit-json: label for the sidebar link to Special:NeoJson, shown to users who lack edit permission. Only visible when development UIs are enabled.",
 
 	"neowiki-subject-creator-creating-schema": "Subtitle shown in the subject creator dialog header when the user is creating a new schema.",
 	"neowiki-subject-creator-create-schema": "Label for the button that creates a new schema in the subject creator dialog.",

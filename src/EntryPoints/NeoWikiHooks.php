@@ -236,13 +236,15 @@ class NeoWikiHooks {
 		}
 
 		$extension = NeoWikiExtension::getInstance();
+		$authorizer = $extension->newSubjectAuthorizer( $skin->getAuthority() );
 
 		$pageToolsItems = ( new PageToolsBuilder() )->build(
 			title: $title,
 			isContentNamespace: MediaWikiServices::getInstance()
 				->getNamespaceInfo()
 				->isContent( $title->getNamespace() ),
-			canCreateMainSubject: $extension->newSubjectAuthorizer( $skin->getAuthority() )->canCreateMainSubject(),
+			canCreateMainSubject: $authorizer->canCreateMainSubject(),
+			canEditSubject: $authorizer->canEditSubject(),
 			isLatestRevision: self::pageIsLatestRevision( $skin->getOutput() ),
 			devUiEnabled: $extension->isDevelopmentUIEnabled(),
 			currentAction: MediaWikiServices::getInstance()
