@@ -4,6 +4,7 @@ These docs are aimed at developers working on or interfacing with NeoWiki.
 
 Key docs:
 * [Glossary](concepts/glossary.md) - Definitions of NeoWiki concepts. We use these as Ubiquitous Language (UI, code, docs, etc)
+* [Qualifiers and References](concepts/qualifiers-and-references.md) - How NeoWiki models qualifiers, references, and rank (for people coming from Wikibase)
 * [Parser Functions](reference/parser-functions.md) - Reference for `{{#view}}`, `{{#neowiki_value}}`, and `{{#cypher_raw}}`
 * [Lua API](reference/lua-api.md) - Reference for the `mw.neowiki` Scribunto library
 * [Schema Format](reference/schema-format.md) - JSON format for Schema definitions
