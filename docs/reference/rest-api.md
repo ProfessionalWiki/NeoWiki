@@ -2,6 +2,15 @@
 title: REST API
 order: 3
 ---
+
+<!-- DOC INTENT — read before editing.
+Audience: developers deciding if NeoWiki's API fits, and developers doing a specific task with it.
+Job: let them scan what the API can do and find the right endpoint fast.
+Keep out: how the API/spec is built, CI/test mechanics, generator internals — those live in code and tests.
+Order: group by resource; keep a resource's operations together; lead with the common reads; cross-link, don't restate.
+Voice: terse — every sentence earns its place; link to the format docs instead of repeating them.
+-->
+
 # REST API
 
 NeoWiki's REST API lives under `/rest.php/neowiki/v0/*` and uses JSON. It covers Subjects (structured
