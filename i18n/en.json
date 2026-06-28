@@ -33,7 +33,9 @@
 	"neowiki-page-tools-label": "NeoWiki",
 	"neowiki-page-tools-create-subject": "Create subject",
 	"neowiki-page-tools-manage-subjects": "Manage subjects",
+	"neowiki-page-tools-view-subjects": "View subjects",
 	"neowiki-page-tools-edit-json": "View or edit JSON",
+	"neowiki-page-tools-view-json": "View JSON",
 
 	"neowiki-property-editor-name": "Name",
 	"neowiki-property-editor-type": "Type",

@@ -83,12 +83,26 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
+	public function testUsesViewLabelsWhenUserCannotEditSubjects(): void {
+		$this->assertSame(
+			[
+				$this->manageSubjectsItem( 'neowiki-page-tools-view-subjects' ),
+				$this->editJsonItem( 'neowiki-page-tools-view-json' ),
+			],
+			$this->build(
+				canCreateMainSubject: false,
+				canEditSubject: false
+			)
+		);
+	}
+
 	/**
 	 * @return list<array<string, mixed>>
 	 */
 	private function build(
 		bool $isContentNamespace = true,
 		bool $canCreateMainSubject = true,
+		bool $canEditSubject = true,
 		bool $isLatestRevision = true,
 		bool $devUiEnabled = true,
 		string $currentAction = 'view'
@@ -97,6 +111,7 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 			title: Title::newFromText( self::PAGE_NAME ),
 			isContentNamespace: $isContentNamespace,
 			canCreateMainSubject: $canCreateMainSubject,
+			canEditSubject: $canEditSubject,
 			isLatestRevision: $isLatestRevision,
 			devUiEnabled: $devUiEnabled,
 			currentAction: $currentAction
@@ -120,9 +135,9 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @return array<string, mixed>
 	 */
-	private function manageSubjectsItem(): array {
+	private function manageSubjectsItem( string $messageKey = 'neowiki-page-tools-manage-subjects' ): array {
 		return [
-			'text' => wfMessage( 'neowiki-page-tools-manage-subjects' )->text(),
+			'text' => wfMessage( $messageKey )->text(),
 			'href' => Title::newFromText( self::PAGE_NAME )->getLocalURL( [ 'action' => 'subjects' ] ),
 			'id' => 't-neowiki-manage-subjects',
 		];
@@ -131,9 +146,9 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @return array<string, mixed>
 	 */
-	private function editJsonItem(): array {
+	private function editJsonItem( string $messageKey = 'neowiki-page-tools-edit-json' ): array {
 		return [
-			'text' => wfMessage( 'neowiki-page-tools-edit-json' )->text(),
+			'text' => wfMessage( $messageKey )->text(),
 			'href' => SkinComponentUtils::makeSpecialUrlSubpage( 'NeoJson', self::PAGE_NAME ),
 			'id' => 't-neowiki-edit-json',
 		];

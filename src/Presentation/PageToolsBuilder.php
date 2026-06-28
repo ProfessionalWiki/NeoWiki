@@ -17,6 +17,7 @@ class PageToolsBuilder {
 		Title $title,
 		bool $isContentNamespace,
 		bool $canCreateMainSubject,
+		bool $canEditSubject,
 		bool $isLatestRevision,
 		bool $devUiEnabled,
 		string $currentAction
@@ -40,7 +41,9 @@ class PageToolsBuilder {
 
 		if ( $title->canExist() && $currentAction !== SubjectsAction::ACTION_NAME ) {
 			$items[] = [
-				'text' => wfMessage( 'neowiki-page-tools-manage-subjects' )->text(),
+				'text' => wfMessage(
+					$canEditSubject ? 'neowiki-page-tools-manage-subjects' : 'neowiki-page-tools-view-subjects'
+				)->text(),
 				'href' => $title->getLocalURL( [ 'action' => SubjectsAction::ACTION_NAME ] ),
 				'id' => 't-neowiki-manage-subjects',
 			];
@@ -48,7 +51,9 @@ class PageToolsBuilder {
 
 		if ( $devUiEnabled ) {
 			$items[] = [
-				'text' => wfMessage( 'neowiki-page-tools-edit-json' )->text(),
+				'text' => wfMessage(
+					$canEditSubject ? 'neowiki-page-tools-edit-json' : 'neowiki-page-tools-view-json'
+				)->text(),
 				'href' => SkinComponentUtils::makeSpecialUrlSubpage( 'NeoJson', $title->getFullText() ),
 				'id' => 't-neowiki-edit-json',
 			];
