@@ -4,126 +4,86 @@ order: 3
 ---
 # REST API
 
-NeoWiki's REST API lives under `/neowiki/v0/*`, served from the wiki's REST entry point at `/rest.php`.
-It exposes Subjects, Schemas, Layouts, and a read-only graph query endpoint as JSON over HTTP. The
-tables below are the complete `v0` surface — no installation required to read them.
+NeoWiki's REST API lives under `/rest.php/neowiki/v0/*` and uses JSON. It covers Subjects (structured
+entities) with their Schemas and Layouts, plus a read-only Cypher endpoint for querying the graph.
 
-Requests and responses are JSON. Reads are public unless the wiki restricts them; writes require a
-logged-in user with edit rights and a CSRF token. Path parameters are shown in `{braces}`.
+Reads are public unless the wiki restricts them. Writes require a logged-in user with edit rights and a
+CSRF token.
 
 ## Endpoints
 
-<!-- REST-ENDPOINTS:START — this table is the install-free REST reference. It is drift-checked against
-     extension.json by tests/phpunit/EntryPoints/REST/RestApiDocsCoverageTest: keep exactly one row per
-     registered route, with the path written exactly as in extension.json. -->
+<!-- REST-ENDPOINTS:START — drift-checked against extension.json by
+     tests/phpunit/EntryPoints/REST/RestApiDocsCoverageTest. Add or remove a row whenever you add or
+     remove a RestRoute, writing the path exactly as in extension.json. -->
 
 ### Subjects
 
-A Subject is a structured entity — a person, a product, an event. See the
-[Subject format](subject-format.md) for the request and response body shape.
+Read, change, and validate Subjects. New Subjects are created on a page — see
+[Pages and Subjects](#pages-and-subjects). For the body shape, see [Subject format](subject-format.md).
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/subject/{subjectId}` | Fetch one Subject by ID. Optional `revisionId`; optional `expand` of `page` and `relations`. |
+| `GET /neowiki/v0/subject/{subjectId}` | Fetch a Subject. Optional `revisionId`; `expand` with `page` or `relations`. |
 | `PUT /neowiki/v0/subject/{subjectId}` | Replace a Subject's label and statements. |
 | `DELETE /neowiki/v0/subject/{subjectId}` | Delete a Subject. |
-| `POST /neowiki/v0/subject/validate` | Validate a proposed new Subject against its Schema without saving it. |
-| `POST /neowiki/v0/subject/{subjectId}/validate` | Validate a proposed update to an existing Subject without saving it. |
-| `GET /neowiki/v0/subject-labels` | Search Subject labels within a Schema; returns `id`/`label` pairs for autocomplete. |
+| `POST /neowiki/v0/subject/validate` | Check whether a new Subject is valid, without saving it. |
+| `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. |
+| `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. |
 
 ### Pages and Subjects
 
-Each wiki page carries one optional main Subject and an ordered list of child Subjects.
+A page holds one optional main Subject and an ordered list of child Subjects. These endpoints create
+Subjects and arrange them.
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/page/{pageId}/subjects` | List a page's main and child Subjects. Optional `expand` of `schemas` and `relations`. |
+| `GET /neowiki/v0/page/{pageId}/subjects` | List a page's main and child Subjects. `expand` with `schemas` or `relations`. |
 | `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. |
-| `PUT /neowiki/v0/page/{pageId}/mainSubject` | Promote an existing child Subject to main, or clear the main Subject. |
+| `PUT /neowiki/v0/page/{pageId}/mainSubject` | Promote a child Subject to main, or clear it. |
 | `POST /neowiki/v0/page/{pageId}/childSubjects` | Create a child Subject on the page. |
-| `PUT /neowiki/v0/page/{pageId}/subjectsOrdering` | Reorder the page's child Subjects and set its main Subject. |
+| `PUT /neowiki/v0/page/{pageId}/subjectsOrdering` | Reorder child Subjects and set the main Subject. |
 
 ### Schemas
 
-A Schema defines a Subject type: its properties, their types, and their constraints. See the
+A Schema defines a Subject type and its properties. For the body shape, see
 [Schema format](schema-format.md).
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/schemas` | List Schema summaries, paginated via `limit` and `offset`. |
-| `GET /neowiki/v0/schema/{schemaName}` | Fetch one Schema's full definition by name. |
-| `GET /neowiki/v0/schema-names/{search}` | Autocomplete Schema names by case-insensitive prefix. |
+| `GET /neowiki/v0/schemas` | List Schemas. Paginated with `limit` and `offset`. |
+| `GET /neowiki/v0/schema/{schemaName}` | Fetch a Schema by name. |
+| `GET /neowiki/v0/schema-names/{search}` | Find Schema names by prefix. |
 
 ### Layouts
 
-A Layout describes how a Subject of a given Schema is displayed.
+A Layout defines how a Subject is displayed.
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/layouts` | List Layout summaries, paginated via `limit` and `offset`. |
-| `GET /neowiki/v0/layout/{layoutName}` | Fetch one Layout's full definition by name. |
+| `GET /neowiki/v0/layouts` | List Layouts. Paginated with `limit` and `offset`. |
+| `GET /neowiki/v0/layout/{layoutName}` | Fetch a Layout by name. |
 
 ### Query
 
 | Endpoint | Description |
 |---|---|
-| `POST /neowiki/v0/query/cypher` | Run a read-only [Cypher query](query-api.md) against the graph backend. |
+| `POST /neowiki/v0/query/cypher` | Run a read-only Cypher query against the graph. See [Query API](query-api.md). |
 
 <!-- REST-ENDPOINTS:END -->
 
 ## Stability
 
-Pre-1.0. Endpoints, payloads, and the emitted spec may change without notice until 1.0. Do not treat
-`/neowiki/v0/*` as stable for third-party integrations yet.
+**Pre-1.0.** Endpoints and payloads may change without notice. Don't build third-party integrations on
+`/neowiki/v0/*` yet.
 
-## Machine-readable spec
+## Full specification
 
-The tables above are the human reference. For the full OpenAPI 3.0 contract — every parameter, body
-field, and response — NeoWiki emits one at request time from the handler metadata via MediaWiki core's
-`ModuleSpecHandler`. There is no hand-maintained spec file; it is generated.
-
-The spec endpoints are not registered by default. Add this to `LocalSettings.php` to expose them:
+Every endpoint also publishes a complete OpenAPI 3.0 description — parameters, request bodies, and
+responses — generated from the live handlers. Enable it in `LocalSettings.php`:
 
 ```php
 $wgRestAPIAdditionalRouteFiles[] = 'includes/Rest/specs.v0.json';
 ```
 
-Then:
-
-- **Full spec:** `/rest.php/specs/v0/module/-`
-- **Discovery (list of modules):** `/rest.php/specs/v0/discovery`
-
-On the local dev wiki: `http://localhost:8484/rest.php/specs/v0/module/-`.
-
-Paste the emitted JSON into [editor.swagger.io](https://editor.swagger.io) or a similar viewer for a
-visual browse.
-
-### How the spec is built
-
-`ModuleSpecHandler` combines two sources at request time:
-
-- `extension.json` — the `RestRoutes` array (paths, HTTP methods).
-- REST handler classes under `src/EntryPoints/REST/` — `getParamSettings()` and `getBodyParamSettings()`
-  (param names, types, required flags, descriptions).
-
-To add an endpoint: register its route in `extension.json`, set `PARAM_DESCRIPTION` on every parameter
-and body field on the handler, and add a row to the [Endpoints](#endpoints) table above. The spec is
-picked up automatically; the table row is enforced by the drift check below.
-
-## Drift checks
-
-Two CI tests keep this surface honest:
-
-- `tests/phpunit/EntryPoints/REST/RestApiDocsCoverageTest` asserts the [Endpoints](#endpoints) table
-  lists every route in `extension.json` and no others, so this page cannot silently fall out of sync
-  with the registered routes.
-- `tests/phpunit/EntryPoints/REST/ModuleSpecHandlerNeoWikiTest` asserts the generated OpenAPI spec
-  matches the handlers:
-  - Every route registered in `extension.json` appears in the emitted spec with the expected methods.
-  - Every path or query parameter declared in `getParamSettings()` is rendered into the operation's `parameters`.
-  - Every body field declared in `getBodyParamSettings()` is rendered into the operation's `requestBody`.
-  - Every path or query parameter in the emitted spec carries a non-empty `description`.
-
-What these catch: a new route that nobody documented (docs test), and the framework silently dropping a
-declaration (spec test). What they do not catch: intentional removal of a declaration — that is covered
-by the per-handler tests that exercise the affected behaviour.
+Then fetch `/rest.php/specs/v0/module/-` and open it in [editor.swagger.io](https://editor.swagger.io)
+or any OpenAPI viewer.
