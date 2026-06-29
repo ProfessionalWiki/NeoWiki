@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newSelectProperty, resolveSelectLabel, SelectProperty, SelectType } from '@/domain/propertyTypes/Select';
+import { newSelectProperty, resolveSelectLabel, SelectType } from '@/domain/propertyTypes/Select';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue } from '@/domain/Value';
 
@@ -212,32 +212,5 @@ describe( 'resolveSelectLabel', () => {
 		} );
 
 		expect( resolveSelectLabel( property, 'unknown' ) ).toBeUndefined();
-	} );
-} );
-
-describe( 'with uninitialized options (property just switched to Select)', () => {
-	const selectType = new SelectType();
-
-	// Reproduces a property that was switched to Select via the type dropdown: a bare
-	// PropertyDefinition whose Select-specific fields are not yet set. The deserializer
-	// only defaults options to [] once the schema is saved and reloaded.
-	function propertyWithoutOptions(): SelectProperty {
-		return {
-			name: new PropertyName( 'Status' ),
-			type: SelectType.typeName,
-			description: '',
-			required: false,
-			default: undefined,
-		} as unknown as SelectProperty;
-	}
-
-	it( 'validates an empty value as having no errors', () => {
-		expect( selectType.validate( undefined, propertyWithoutOptions() ) ).toEqual( [] );
-	} );
-
-	it( 'treats any chosen value as an invalid option', () => {
-		expect( selectType.validate( newStringValue( 'open' ), propertyWithoutOptions() ) ).toEqual( [
-			{ code: 'invalid-option', args: [ 'open' ], source: 'open' },
-		] );
 	} );
 } );

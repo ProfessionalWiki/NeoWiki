@@ -17,8 +17,9 @@
 				{{ $i18n( 'neowiki-property-editor-type' ).text() }}
 			</template>
 			<CdxSelect
-				v-model:selected="localProperty.type"
+				:selected="localProperty.type"
 				:menu-items="typeOptions"
+				@update:selected="changePropertyType"
 			/>
 		</CdxField>
 
@@ -103,6 +104,24 @@ function updatePropertyAttributes<T extends PropertyDefinition>( attributes: Par
 		...localProperty.value,
 		...attributes
 	};
+}
+
+const propertyTypeRegistry = NeoWikiServices.getPropertyTypeRegistry();
+
+// Rebuild the property when the type changes so its type-specific fields are
+// initialized (e.g. a Select gets an empty options list). Otherwise the editors
+// for the new type would receive a property missing the fields they expect.
+function changePropertyType( type: string ): void {
+	localProperty.value = propertyTypeRegistry.getType( type ).createPropertyDefinitionFromJson(
+		{
+			name: localProperty.value.name,
+			type: type,
+			description: localProperty.value.description,
+			required: localProperty.value.required,
+			default: undefined
+		} as PropertyDefinition,
+		{}
+	);
 }
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();

@@ -86,7 +86,7 @@ const selectPlaceholder = computed( () =>
 );
 
 const singleMenuItems = computed( (): MenuItemData[] =>
-	( props.property.options ?? [] ).map( ( option ) => ( {
+	props.property.options.map( ( option ) => ( {
 		value: option.id,
 		label: option.label
 	} ) )
@@ -121,7 +121,7 @@ const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( SelectTy
 
 function getFilteredOptions(): MenuItemData[] {
 	const query = String( inputValue.value ).toLowerCase();
-	return ( props.property.options ?? [] )
+	return props.property.options
 		.filter( ( option ) => !selection.value.includes( option.id ) )
 		.filter( ( option ) => query === '' || option.label.toLowerCase().includes( query ) )
 		.map( ( option ) => ( { value: option.id, label: option.label } ) );
