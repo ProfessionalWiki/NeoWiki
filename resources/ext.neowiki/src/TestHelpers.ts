@@ -4,6 +4,8 @@ import { Schema } from '@/domain/Schema';
 import { StatementList } from '@/domain/StatementList';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { SubjectWithContext } from '@/domain/SubjectWithContext';
+import { PropertyName } from '@/domain/PropertyDefinition';
+import type { DisplayRule } from '@/domain/Layout';
 
 export const DEFAULT_SUBJECT_ID = 's11111111111111';
 export const DEFAULT_TEST_SUBJECT_LABEL = 'Test subject';
@@ -49,4 +51,8 @@ export function newSchema( {
 		description,
 		properties ?? new PropertyDefinitionList( [] ),
 	);
+}
+
+export function newDisplayRules( ...names: string[] ): DisplayRule[] {
+	return names.map( ( name ) => ( { property: new PropertyName( name ) } ) );
 }

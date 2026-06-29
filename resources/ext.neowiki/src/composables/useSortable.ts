@@ -3,6 +3,7 @@ import { onBeforeUnmount, Ref, watch } from 'vue';
 
 export interface UseSortableOptions {
 	handle?: string;
+	draggable?: string;
 	ghostClass?: string;
 	group?: Sortable.Options[ 'group' ];
 	sort?: boolean;
@@ -15,8 +16,10 @@ export function useSortable( containerRef: Ref<HTMLElement | null>, options: Use
 
 	function attach( container: HTMLElement ): void {
 		// Build options conditionally: sortablejs merges with its defaults using
-		// Object.assign, so passing `undefined` for `sort` or `group` clobbers
-		// sortablejs's default (sort: true) and silently disables reordering.
+		// Object.assign, so passing `undefined` for `sort`, `group`, or
+		// `draggable` clobbers sortablejs's default (e.g. sort: true,
+		// draggable: '>*') and silently disables reordering or makes nothing
+		// draggable.
 		const sortableOptions: Sortable.Options = {
 			handle: options.handle,
 			animation: 150,
@@ -47,6 +50,9 @@ export function useSortable( containerRef: Ref<HTMLElement | null>, options: Use
 		}
 		if ( options.sort !== undefined ) {
 			sortableOptions.sort = options.sort;
+		}
+		if ( options.draggable !== undefined ) {
+			sortableOptions.draggable = options.draggable;
 		}
 		instance = Sortable.create( container, sortableOptions );
 	}
