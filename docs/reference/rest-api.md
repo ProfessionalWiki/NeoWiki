@@ -87,12 +87,17 @@ A Layout defines how a Subject is displayed.
 
 ## Full specification
 
-Every endpoint also publishes a complete OpenAPI 3.0 description — parameters, request bodies, and
-responses — generated from the live handlers. Enable it in `LocalSettings.php`:
+Every endpoint also publishes a complete OpenAPI 3.0 description: parameters, request bodies, and
+responses.
+
+Browse it live on the demo wiki:
+[neowiki.dev/w/rest.php/specs/v0/module/-](https://neowiki.dev/w/rest.php/specs/v0/module/-).
+Paste that JSON into [editor.swagger.io](https://editor.swagger.io) or any OpenAPI viewer.
+
+To expose it on your own wiki, register the spec routes in `LocalSettings.php`:
 
 ```php
 $wgRestAPIAdditionalRouteFiles[] = 'includes/Rest/specs.v0.json';
 ```
 
-Then fetch `/rest.php/specs/v0/module/-` and open it in [editor.swagger.io](https://editor.swagger.io)
-or any OpenAPI viewer.
+Then fetch `/rest.php/specs/v0/module/-` on your wiki.
