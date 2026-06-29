@@ -29,7 +29,7 @@ export default defineConfig( {
 				format: 'cjs',
 				exports: 'named',
 				assetFileNames: ( assetInfo ) => {
-					if ( assetInfo.name === 'style.css' ) {
+					if ( assetInfo.name && assetInfo.name.endsWith( '.css' ) ) {
 						return 'neowiki.css';
 					}
 					return assetInfo.name || 'unknown';
