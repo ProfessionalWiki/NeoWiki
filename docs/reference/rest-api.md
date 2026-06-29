@@ -13,11 +13,13 @@ Voice: terse — every sentence earns its place; link to the format docs instead
 
 # REST API
 
-NeoWiki's REST API lives under `/rest.php/neowiki/v0/*` and uses JSON. It covers Subjects (structured
-entities) with their Schemas and Layouts, plus a read-only Cypher endpoint for querying the graph.
+NeoWiki's REST API lives under `/rest.php/neowiki/v0/*` and uses JSON.
 
-Reads are public unless the wiki restricts them. Writes require a logged-in user with edit rights and a
-CSRF token.
+By default, reads are public and writes require a logged-in user with edit rights and a CSRF token. Additional
+permissions might be required depending on the wiki configuration.
+
+You can find all endpoints in [the OpenAPI 3.0 description](#full-specification) exposed via the REST API itself.
+Demo wiki example: [neowiki.dev/w/rest.php/specs/v0/module/-](https://neowiki.dev/w/rest.php/specs/v0/module/-)
 
 ## Endpoints
 
