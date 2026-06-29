@@ -39,6 +39,18 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testMovingPageToAnotherNamespaceUpdatesNamespaceId(): void {
+		$revision = $this->createPageWithSubjects( 'Namespace move source', TestSubject::build() );
+		$pageId = $revision->getPageId();
+
+		$this->movePage( 'Namespace move source', 'Help:Namespace move target' );
+
+		$this->assertSame(
+			NS_HELP,
+			$this->readPageNodeNamespaceId( $pageId )
+		);
+	}
+
 	private function movePage( string $from, string $to ): void {
 		$movePage = MediaWikiServices::getInstance()->getMovePageFactory()->newMovePage(
 			Title::newFromText( $from ),
