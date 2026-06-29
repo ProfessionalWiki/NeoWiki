@@ -1,5 +1,5 @@
 import { markRaw, ref, Ref } from 'vue';
-import { describe, it, expect, vi, beforeEach, type MockedFunction } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type MockedFunction } from 'vitest';
 import { nextTick } from 'vue';
 
 vi.mock( '@/composables/useValueValidation.ts', () => ( {
@@ -59,10 +59,12 @@ const createMockPropertyType = ( typeName: string, options: Partial<PropertyType
 	...( options as any ),
 } );
 
+type EmitMock = Parameters<typeof useStringValueInput>[ 2 ] & Mock;
+
 describe( 'useStringValueInput', () => {
 	let mockModelValue: Ref<Value | undefined>;
 	let mockProperty: Ref<MultiStringProperty>;
-	let mockEmit: ReturnType<typeof vi.fn>;
+	let mockEmit: EmitMock;
 	const mockPropertyTypeNameFromComposable = 'TestStringProperty';
 	let mockPropertyType: PropertyType;
 
@@ -76,7 +78,7 @@ describe( 'useStringValueInput', () => {
 
 		mockModelValue = ref( undefined );
 		mockProperty = ref( createMockPropertyDefinition( {} ) ) as Ref<MultiStringProperty>;
-		mockEmit = vi.fn();
+		mockEmit = vi.fn() as unknown as EmitMock;
 	} );
 
 	const createComposable = ( options: { modelValue?: Value | undefined; property?: Partial<MultiStringProperty> } = {}, emit = mockEmit ): ReturnType<typeof useStringValueInput> => {
