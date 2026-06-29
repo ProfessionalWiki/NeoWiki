@@ -235,7 +235,7 @@ describe( 'RelationDisplay.vue', () => {
 		} );
 
 		it( 'renders the linkable subject correctly', () => {
-			const children = wrapper.findAll( 'div > div > :is(a, span)' );
+			const children = wrapper.findAll( 'div > :is(a, span)' );
 			const linkChild = children[ 0 ];
 			expect( linkChild.element.tagName ).toBe( 'A' );
 			expect( linkChild.attributes( 'href' ) ).toBe( TEST_DATA.LINKABLE.URL );
@@ -243,7 +243,7 @@ describe( 'RelationDisplay.vue', () => {
 		} );
 
 		it( 'renders the subject that causes a fetch error correctly', () => {
-			const children = wrapper.findAll( 'div > div > :is(a, span)' );
+			const children = wrapper.findAll( 'div > :is(a, span)' );
 			const errorChild = children[ 1 ];
 			expect( errorChild.element.tagName ).toBe( 'SPAN' );
 			expect( errorChild.text() ).toBe( TEST_DATA.ERROR_FETCH.ID );
@@ -252,7 +252,7 @@ describe( 'RelationDisplay.vue', () => {
 		} );
 
 		it( 'renders the not-found subject correctly', () => {
-			const children = wrapper.findAll( 'div > div > :is(a, span)' );
+			const children = wrapper.findAll( 'div > :is(a, span)' );
 			const notFoundChild = children[ 2 ];
 			expect( notFoundChild.element.tagName ).toBe( 'SPAN' );
 			expect( notFoundChild.text() ).toBe( TEST_DATA.NOT_FOUND.ID );
@@ -261,7 +261,7 @@ describe( 'RelationDisplay.vue', () => {
 		} );
 
 		it( 'renders the subject with no URL correctly', () => {
-			const children = wrapper.findAll( 'div > div > :is(a, span)' );
+			const children = wrapper.findAll( 'div > :is(a, span)' );
 			const noUrlChild = children[ 3 ];
 			expect( noUrlChild.element.tagName ).toBe( 'SPAN' );
 			expect( noUrlChild.text() ).toBe( TEST_DATA.NO_URL.LABEL );
@@ -270,7 +270,7 @@ describe( 'RelationDisplay.vue', () => {
 		} );
 
 		it( 'renders all four items', () => {
-			const children = wrapper.findAll( 'div > div > :is(a, span)' );
+			const children = wrapper.findAll( 'div > :is(a, span)' );
 			expect( children ).toHaveLength( 4 );
 		} );
 	} );
@@ -285,6 +285,6 @@ describe( 'RelationDisplay.vue', () => {
 
 		await wrapper.vm.$nextTick();
 
-		expect( wrapper.find( 'div > div > :is(a, span)' ).exists() ).toBe( false );
+		expect( wrapper.find( 'div > :is(a, span)' ).exists() ).toBe( false );
 	} );
 } );
