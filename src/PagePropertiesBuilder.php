@@ -9,6 +9,7 @@ use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\TitleFormatter;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
@@ -20,6 +21,7 @@ readonly class PagePropertiesBuilder {
 	public function __construct(
 		private RevisionStore $revisionStore,
 		private IContentHandlerFactory $contentHandlerFactory,
+		private TitleFormatter $titleFormatter,
 		private PagePropertyProviderRegistry $providerRegistry,
 	) {
 	}
@@ -37,9 +39,12 @@ readonly class PagePropertiesBuilder {
 	}
 
 	private function buildContext( RevisionRecord $revision, ?UserIdentity $user ): PagePropertyProviderContext {
+		$linkTarget = $revision->getPageAsLinkTarget();
+
 		return new PagePropertyProviderContext(
 			pageId: new PageId( $revision->getPageId() ),
-			pageTitle: $revision->getPageAsLinkTarget()->getText(),
+			pageTitle: $this->titleFormatter->getPrefixedText( $linkTarget ),
+			namespaceId: $linkTarget->getNamespace(),
 			creationTime: $this->getCreationTime( $revision ),
 			modificationTime: $this->getModificationTime( $revision ),
 			categories: $this->getCategories( $revision ),

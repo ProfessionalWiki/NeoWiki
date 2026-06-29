@@ -86,4 +86,22 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		);
 	}
 
+	protected function readPageNodeName( int $pageId ): ?string {
+		$result = $this->newNeo4jQueryStore()->runReadQuery(
+			'MATCH (page:Page {id: $pageId}) RETURN page.name AS name',
+			[ 'pageId' => $pageId ]
+		);
+
+		return $result->first()->toRecursiveArray()['name'] ?? null;
+	}
+
+	protected function readPageNodeNamespaceId( int $pageId ): ?int {
+		$result = $this->newNeo4jQueryStore()->runReadQuery(
+			'MATCH (page:Page {id: $pageId}) RETURN page.namespaceId AS namespaceId',
+			[ 'pageId' => $pageId ]
+		);
+
+		return $result->first()->toRecursiveArray()['namespaceId'] ?? null;
+	}
+
 }

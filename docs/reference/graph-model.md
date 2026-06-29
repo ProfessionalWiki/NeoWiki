@@ -37,7 +37,8 @@ page ids are only unique within a single wiki. Each page node therefore carries 
 |----------|------------|-------------|
 | `wiki_id` | string | [MediaWiki Wiki ID](https://www.mediawiki.org/wiki/Manual:Wiki_ID) (database name + table prefix) of the owning wiki |
 | `id` | integer | MediaWiki page ID (unique per wiki) |
-| `name` | string | Page title |
+| `name` | string | Full page title, including the namespace prefix (e.g. `Help:Installation`) |
+| `namespaceId` | integer | MediaWiki namespace ID of the page (e.g. `0` for the main namespace, `12` for Help) |
 | `creationTime` | datetime | When the page was created |
 | `lastUpdated` | datetime | When the page was last modified |
 | `lastEditor` | string | Username of the last editor |
