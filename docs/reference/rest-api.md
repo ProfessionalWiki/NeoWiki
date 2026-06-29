@@ -87,8 +87,8 @@ A Layout defines how a Subject is displayed.
 
 ## Full specification
 
-Every endpoint also publishes a complete OpenAPI 3.0 description — parameters, request bodies, and
-responses — generated from the live handlers.
+Every endpoint also publishes a complete OpenAPI 3.0 description: parameters, request bodies, and
+responses.
 
 Browse it live on the demo wiki:
 [neowiki.dev/w/rest.php/specs/v0/module/-](https://neowiki.dev/w/rest.php/specs/v0/module/-).
