@@ -1,10 +1,10 @@
 import { mount, VueWrapper } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import DisplayRuleList from '@/components/LayoutEditor/DisplayRuleList.vue';
-import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import type { DisplayRule } from '@/domain/Layout.ts';
-import { TextType } from '@/domain/propertyTypes/Text.ts';
+import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
+import { newDisplayRules } from '@/TestHelpers';
 import { createI18nMock } from '../../VueTestHelpers.ts';
 
 vi.mock( 'sortablejs', () => ( {
@@ -16,11 +16,7 @@ vi.mock( 'sortablejs', () => ( {
 const HIDDEN_CLASS = 'ext-neowiki-display-rule-list__item--hidden';
 
 function property( name: string ): PropertyDefinition {
-	return createPropertyDefinitionFromJson( name, { type: TextType.typeName } );
-}
-
-function rules( ...names: string[] ): DisplayRule[] {
-	return names.map( ( name ) => ( { property: new PropertyName( name ) } ) );
+	return newTextProperty( { name } );
 }
 
 function createWrapper( schemaProperties: PropertyDefinition[], displayRules: DisplayRule[] ): VueWrapper {
@@ -56,7 +52,7 @@ describe( 'DisplayRuleList', () => {
 	} );
 
 	it( 'orders shown rows by rule order then hidden rows by schema order, flagging hidden ones', () => {
-		const wrapper = createWrapper( schemaProperties, rules( 'Gamma', 'Beta' ) );
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Gamma', 'Beta' ) );
 		const rows = wrapper.findAll( '.ext-neowiki-display-rule-list__item' );
 
 		expect( rows.map( ( row ) => row.text() ) ).toEqual( [ 'Gamma', 'Beta', 'Alpha', 'Delta' ] );
@@ -75,7 +71,7 @@ describe( 'DisplayRuleList', () => {
 	} );
 
 	it( 'appends a rule when showing a hidden property', async () => {
-		const wrapper = createWrapper( schemaProperties, rules( 'Beta' ) );
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Beta' ) );
 		const rows = wrapper.findAll( '.ext-neowiki-display-rule-list__item' );
 		const gammaRowIndex = rows.findIndex( ( row ) => row.text() === 'Gamma' );
 		const toggles = wrapper.findAll( '.ext-neowiki-display-rule-list__item__action' );
@@ -86,7 +82,7 @@ describe( 'DisplayRuleList', () => {
 	} );
 
 	it( 'removes a rule when hiding a shown property in a custom state', async () => {
-		const wrapper = createWrapper( schemaProperties, rules( 'Alpha', 'Beta', 'Gamma' ) );
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Alpha', 'Beta', 'Gamma' ) );
 		const toggles = wrapper.findAll( '.ext-neowiki-display-rule-list__item__action' );
 
 		await toggles[ 1 ].trigger( 'click' );
@@ -95,7 +91,7 @@ describe( 'DisplayRuleList', () => {
 	} );
 
 	it( 'reveals hidden properties in schema order while preserving the shown order when "show all" is used', async () => {
-		const wrapper = createWrapper( schemaProperties, rules( 'Gamma', 'Beta' ) );
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Gamma', 'Beta' ) );
 
 		await wrapper.find( '.ext-neowiki-display-rule-list__reset' ).trigger( 'click' );
 
@@ -103,7 +99,7 @@ describe( 'DisplayRuleList', () => {
 	} );
 
 	it( 'shows the "show all" action when a property is hidden', () => {
-		const wrapper = createWrapper( schemaProperties, rules( 'Beta' ) );
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Beta' ) );
 
 		expect( wrapper.find( '.ext-neowiki-display-rule-list__reset' ).exists() ).toBe( true );
 	} );
@@ -115,13 +111,13 @@ describe( 'DisplayRuleList', () => {
 	} );
 
 	it( 'hides the "show all" action when every property is shown in a custom order', () => {
-		const wrapper = createWrapper( schemaProperties, rules( 'Delta', 'Gamma', 'Beta', 'Alpha' ) );
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Delta', 'Gamma', 'Beta', 'Alpha' ) );
 
 		expect( wrapper.find( '.ext-neowiki-display-rule-list__reset' ).exists() ).toBe( false );
 	} );
 
 	it( 'renders a drag handle only on shown rows, not on hidden ones', () => {
-		const wrapper = createWrapper( schemaProperties, rules( 'Gamma', 'Beta' ) );
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Gamma', 'Beta' ) );
 		const rows = wrapper.findAll( '.ext-neowiki-display-rule-list__item' );
 
 		const hasHandle = rows.map(
@@ -132,15 +128,15 @@ describe( 'DisplayRuleList', () => {
 	} );
 
 	it( 'gives each toggle a tooltip naming the action it performs', () => {
-		const wrapper = createWrapper( schemaProperties, rules( 'Alpha', 'Beta' ) );
-		const toggles = wrapper.findAll( '.ext-neowiki-display-rule-list__item__action' );
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Alpha', 'Beta' ) );
+		const tooltips = wrapper.findAll( '.ext-neowiki-display-rule-list__item__action-tooltip' );
 
-		expect( toggles[ 0 ].attributes( 'title' ) ).toBe( 'neowiki-layout-editor-hide-property' );
-		expect( toggles[ 2 ].attributes( 'title' ) ).toBe( 'neowiki-layout-editor-show-property' );
+		expect( tooltips[ 0 ].attributes( 'title' ) ).toBe( 'neowiki-layout-editor-hide-property' );
+		expect( tooltips[ 2 ].attributes( 'title' ) ).toBe( 'neowiki-layout-editor-show-property' );
 	} );
 
 	it( 'disables the hide toggle of the only shown property', () => {
-		const wrapper = createWrapper( schemaProperties, rules( 'Beta' ) );
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Beta' ) );
 		const toggles = wrapper.findAll( '.ext-neowiki-display-rule-list__item__action' );
 
 		expect( toggles[ 0 ].attributes( 'disabled' ) ).toBeDefined();
@@ -148,18 +144,21 @@ describe( 'DisplayRuleList', () => {
 	} );
 
 	it( 'keeps hide toggles enabled when more than one property is shown', () => {
-		const wrapper = createWrapper( schemaProperties, rules( 'Alpha', 'Beta' ) );
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Alpha', 'Beta' ) );
 		const toggles = wrapper.findAll( '.ext-neowiki-display-rule-list__item__action' );
 
 		expect( toggles[ 0 ].attributes( 'disabled' ) ).toBeUndefined();
 		expect( toggles[ 1 ].attributes( 'disabled' ) ).toBeUndefined();
 	} );
 
-	it( 'labels the disabled toggle of the only shown property with the keep-one-shown message', () => {
-		const wrapper = createWrapper( schemaProperties, rules( 'Beta' ) );
-		const toggle = wrapper.find( '.ext-neowiki-display-rule-list__item__action' );
+	it( 'puts the keep-one-shown tooltip on a non-disabled wrapper, not the disabled button', () => {
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Beta' ) );
+		const button = wrapper.find( '.ext-neowiki-display-rule-list__item__action' );
+		const tooltip = wrapper.find( '.ext-neowiki-display-rule-list__item__action-tooltip' );
 
-		expect( toggle.attributes( 'title' ) ).toBe( 'neowiki-layout-editor-keep-one-shown' );
+		expect( button.attributes( 'disabled' ) ).toBeDefined();
+		expect( button.attributes( 'title' ) ).toBeUndefined();
+		expect( tooltip.attributes( 'title' ) ).toBe( 'neowiki-layout-editor-keep-one-shown' );
 	} );
 
 } );

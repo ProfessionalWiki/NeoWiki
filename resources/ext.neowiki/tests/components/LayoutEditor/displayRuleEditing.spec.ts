@@ -4,13 +4,10 @@ import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import type { DisplayRule } from '@/domain/Layout.ts';
 import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
+import { newDisplayRules } from '@/TestHelpers';
 
 function properties( ...names: string[] ): PropertyDefinition[] {
 	return names.map( ( name ) => newTextProperty( { name } ) );
-}
-
-function rules( ...names: string[] ): DisplayRule[] {
-	return names.map( ( name ) => ( { property: new PropertyName( name ) } ) );
 }
 
 function rowState( schemaProperties: PropertyDefinition[], displayRules: DisplayRule[] ): [ string, boolean ][] {
@@ -39,7 +36,7 @@ describe( 'unifiedRows', () => {
 	it( 'lists shown properties in rule order followed by hidden ones in schema order', () => {
 		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
 
-		expect( rowState( schemaProperties, rules( 'Gamma', 'Beta' ) ) ).toEqual( [
+		expect( rowState( schemaProperties, newDisplayRules( 'Gamma', 'Beta' ) ) ).toEqual( [
 			[ 'Gamma', true ],
 			[ 'Beta', true ],
 			[ 'Alpha', false ],
@@ -50,7 +47,7 @@ describe( 'unifiedRows', () => {
 	it( 'skips rules referencing unknown properties', () => {
 		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma' );
 
-		expect( rowState( schemaProperties, rules( 'Beta', 'Unknown' ) ) ).toEqual( [
+		expect( rowState( schemaProperties, newDisplayRules( 'Beta', 'Unknown' ) ) ).toEqual( [
 			[ 'Beta', true ],
 			[ 'Alpha', false ],
 			[ 'Gamma', false ],
@@ -72,7 +69,7 @@ describe( 'rulesAfterToggle', () => {
 	it( 'appends a rule when showing a hidden property in a custom state', () => {
 		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
 
-		const result = rulesAfterToggle( schemaProperties, rules( 'Beta' ), 'Gamma' );
+		const result = rulesAfterToggle( schemaProperties, newDisplayRules( 'Beta' ), 'Gamma' );
 
 		expect( ruleNames( result ) ).toEqual( [ 'Beta', 'Gamma' ] );
 	} );
@@ -80,7 +77,7 @@ describe( 'rulesAfterToggle', () => {
 	it( 'removes the rule when hiding a shown property in a custom state', () => {
 		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
 
-		const result = rulesAfterToggle( schemaProperties, rules( 'Alpha', 'Beta', 'Gamma' ), 'Beta' );
+		const result = rulesAfterToggle( schemaProperties, newDisplayRules( 'Alpha', 'Beta', 'Gamma' ), 'Beta' );
 
 		expect( ruleNames( result ) ).toEqual( [ 'Alpha', 'Gamma' ] );
 	} );
@@ -106,7 +103,7 @@ describe( 'rulesAfterShowingAll', () => {
 	it( 'appends hidden properties in schema order while preserving the shown order', () => {
 		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
 
-		const result = rulesAfterShowingAll( schemaProperties, rules( 'Gamma', 'Beta' ) );
+		const result = rulesAfterShowingAll( schemaProperties, newDisplayRules( 'Gamma', 'Beta' ) );
 
 		expect( ruleNames( result ) ).toEqual( [ 'Gamma', 'Beta', 'Alpha', 'Delta' ] );
 	} );
@@ -114,7 +111,7 @@ describe( 'rulesAfterShowingAll', () => {
 	it( 'leaves the order unchanged when every property is already shown', () => {
 		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
 
-		const result = rulesAfterShowingAll( schemaProperties, rules( 'Delta', 'Gamma', 'Beta', 'Alpha' ) );
+		const result = rulesAfterShowingAll( schemaProperties, newDisplayRules( 'Delta', 'Gamma', 'Beta', 'Alpha' ) );
 
 		expect( ruleNames( result ) ).toEqual( [ 'Delta', 'Gamma', 'Beta', 'Alpha' ] );
 	} );
@@ -146,7 +143,7 @@ describe( 'rulesAfterReorder', () => {
 	it( 'reorders the shown rules in a custom state, leaving hidden properties out', () => {
 		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
 
-		const result = rulesAfterReorder( schemaProperties, rules( 'Alpha', 'Beta', 'Gamma' ), 0, 2 );
+		const result = rulesAfterReorder( schemaProperties, newDisplayRules( 'Alpha', 'Beta', 'Gamma' ), 0, 2 );
 
 		expect( ruleNames( result ) ).toEqual( [ 'Beta', 'Gamma', 'Alpha' ] );
 	} );

@@ -45,16 +45,20 @@
 				>
 					<CdxIcon :icon="cdxIconDraggable" />
 				</span>
-				<CdxButton
-					class="ext-neowiki-display-rule-list__item__action"
-					weight="quiet"
-					:disabled="lastShown( row.shown )"
-					:aria-label="$i18n( toggleMessageKey( row.shown ) ).text()"
+				<span
+					class="ext-neowiki-display-rule-list__item__action-tooltip"
 					:title="$i18n( toggleMessageKey( row.shown ) ).text()"
-					@click="onToggle( row.property.name.toString() )"
 				>
-					<CdxIcon :icon="row.shown ? cdxIconEye : cdxIconEyeClosed" />
-				</CdxButton>
+					<CdxButton
+						class="ext-neowiki-display-rule-list__item__action"
+						weight="quiet"
+						:disabled="lastShown( row.shown )"
+						:aria-label="$i18n( toggleMessageKey( row.shown ) ).text()"
+						@click="onToggle( row.property.name.toString() )"
+					>
+						<CdxIcon :icon="row.shown ? cdxIconEye : cdxIconEyeClosed" />
+					</CdxButton>
+				</span>
 				<span class="ext-neowiki-display-rule-list__item__name">
 					{{ row.property.name.toString() }}
 				</span>
@@ -111,6 +115,10 @@ function lastShown( shown: boolean ): boolean {
 
 useSortable( listRef, {
 	handle: '.ext-neowiki-display-rule-list__item__drag-handle',
+	// Only shown rows take part in sorting. Hidden rows have no handle (can't be
+	// grabbed) and excluding them here stops a shown row from being dropped into
+	// the hidden region, where it would otherwise snap back on the next render.
+	draggable: '.ext-neowiki-display-rule-list__item:not(.ext-neowiki-display-rule-list__item--hidden)',
 	ghostClass: 'ext-neowiki-display-rule-list__item--ghost',
 	onReorder( oldIndex: number, newIndex: number ): void {
 		emit( 'update:display-rules', rulesAfterReorder( props.schemaProperties, props.displayRules, oldIndex, newIndex ) );
@@ -200,8 +208,17 @@ useSortable( listRef, {
 			}
 		}
 
-		&__action {
+		&__action-tooltip {
+			display: inline-flex;
 			flex-shrink: 0;
+
+			// A disabled button receives no pointer events, so the browser never
+			// surfaces its title tooltip on hover. Letting events fall through to
+			// this wrapper makes its title the hover target, so the "at least one
+			// must stay shown" explanation shows even while the toggle is disabled.
+			.cdx-button:disabled {
+				pointer-events: none;
+			}
 		}
 	}
 }

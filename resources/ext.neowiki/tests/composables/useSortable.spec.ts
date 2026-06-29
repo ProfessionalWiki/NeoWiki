@@ -56,7 +56,7 @@ describe( 'useSortable', () => {
 		expect( mockCreate ).not.toHaveBeenCalled();
 	} );
 
-	it( 'omits sort and group from sortablejs options when not provided (preserves sortablejs defaults)', () => {
+	it( 'omits sort, group, and draggable from sortablejs options when not provided (preserves sortablejs defaults)', () => {
 		const containerRef = ref<HTMLElement | null>( document.createElement( 'ul' ) );
 
 		mountComposable( containerRef, { onReorder: vi.fn() } );
@@ -64,9 +64,11 @@ describe( 'useSortable', () => {
 		const optsPassed = lastOptions();
 		// sortablejs defaults sort to true; passing `sort: undefined` would clobber that.
 		// Same for group — it has internal default-group handling that breaks if you
-		// force an `undefined` value into the options object.
+		// force an `undefined` value into the options object. draggable defaults to
+		// '>*'; forcing `undefined` would make nothing draggable.
 		expect( 'sort' in optsPassed ).toBe( false );
 		expect( 'group' in optsPassed ).toBe( false );
+		expect( 'draggable' in optsPassed ).toBe( false );
 	} );
 
 	it( 'passes sort and group through when explicitly provided', () => {
@@ -78,6 +80,14 @@ describe( 'useSortable', () => {
 		const optsPassed = lastOptions();
 		expect( optsPassed.sort ).toBe( false );
 		expect( optsPassed.group ).toEqual( group );
+	} );
+
+	it( 'passes draggable through when explicitly provided', () => {
+		const containerRef = ref<HTMLElement | null>( document.createElement( 'ul' ) );
+
+		mountComposable( containerRef, { draggable: '.item:not(.item--hidden)' } );
+
+		expect( lastOptions().draggable ).toBe( '.item:not(.item--hidden)' );
 	} );
 
 	it( 'creates a SortableJS instance when the container ref becomes non-null after mount', async () => {
