@@ -1,7 +1,7 @@
 import type { MultiStringProperty, PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
-import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
+import { BasePropertyType } from '@/domain/PropertyType';
 
 export interface TextProperty extends MultiStringProperty {
 
@@ -32,48 +32,6 @@ export class TextType extends BasePropertyType<TextProperty, StringValue> {
 			minLength: json.minLength ?? undefined,
 			maxLength: json.maxLength ?? undefined,
 		} as TextProperty;
-	}
-
-	public validate( value: StringValue | undefined, property: TextProperty ): ValueValidationError[] {
-		const errors: ValueValidationError[] = [];
-		value = value === undefined ? newStringValue() : value;
-
-		if ( property.required && value.parts.length === 0 ) {
-			errors.push( { code: 'required' } );
-			return errors;
-		}
-
-		// TODO: check property.multiple
-
-		for ( const part of value.parts ) {
-			const trimmedLength = part.trim().length;
-
-			if ( trimmedLength === 0 ) {
-				continue;
-			}
-
-			if ( property.minLength !== undefined && trimmedLength < property.minLength ) {
-				errors.push( {
-					code: 'min-length',
-					args: [ property.minLength ],
-					source: part,
-				} );
-			}
-
-			if ( property.maxLength !== undefined && trimmedLength > property.maxLength ) {
-				errors.push( {
-					code: 'max-length',
-					args: [ property.maxLength ],
-					source: part,
-				} );
-			}
-		}
-
-		if ( property.uniqueItems && new Set( value.parts ).size !== value.parts.length ) {
-			errors.push( { code: 'unique' } ); // TODO: add source
-		}
-
-		return errors;
 	}
 
 }

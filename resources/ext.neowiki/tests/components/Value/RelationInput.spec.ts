@@ -127,31 +127,19 @@ describe( 'RelationInput', () => {
 			expect( field.props( 'status' ) ).toBe( 'default' );
 		} );
 
-		it( 'shows validation error after blur for required empty field', async () => {
-			const wrapper = newWrapper( {
-				property: newRelationProperty( { required: true } ),
+		it( 'passes field status to SubjectLookup', () => {
+			const clean = newWrapper( {
+				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
 			} );
+			expect( clean.findComponent( SubjectLookup ).props( 'status' ) ).toBe( 'default' );
 
-			wrapper.findComponent( SubjectLookup ).vm.$emit( 'blur', false );
-			await wrapper.vm.$nextTick();
-
-			const field = wrapper.findComponent( CdxField );
-			expect( field.props( 'messages' ) ).toEqual( { error: 'neowiki-field-required' } );
-			expect( field.props( 'status' ) ).toBe( 'error' );
-		} );
-
-		it( 'passes field status to SubjectLookup', async () => {
-			const wrapper = newWrapper( {
-				property: newRelationProperty( { required: true } ),
+			const withViolation = newWrapper( {
+				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				serverViolations: [
+					{ propertyName: 'Owner', code: 'required', args: [], valuePartIndex: null },
+				],
 			} );
-			const lookup = wrapper.findComponent( SubjectLookup );
-
-			expect( lookup.props( 'status' ) ).toBe( 'default' );
-
-			lookup.vm.$emit( 'blur', false );
-			await wrapper.vm.$nextTick();
-
-			expect( lookup.props( 'status' ) ).toBe( 'error' );
+			expect( withViolation.findComponent( SubjectLookup ).props( 'status' ) ).toBe( 'error' );
 		} );
 
 		it( 'suppresses required error when SubjectLookup reports unmatched text', async () => {
@@ -169,8 +157,7 @@ describe( 'RelationInput', () => {
 
 		it( 'surfaces a server violation on an untouched single relation', () => {
 			const wrapper = newWrapper( {
-				// Optional field so the live client check produces nothing; the message
-				// can only originate from the server-sourced violation.
+				// The message can only originate from the server-sourced violation.
 				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
 				serverViolations: [
 					{ propertyName: 'Owner', code: 'type-mismatch', args: [], valuePartIndex: null },
@@ -253,9 +240,12 @@ describe( 'RelationInput', () => {
 			expect( wrapper.emitted( 'update:modelValue' )![ 0 ][ 0 ] ).toBeUndefined();
 		} );
 
-		it( 'shows validation messages immediately for required empty field', () => {
+		it( 'surfaces a server field-level violation for a multiple relation', () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { required: true, multiple: true } ),
+				property: newRelationProperty( { name: 'Owners', required: true, multiple: true } ),
+				serverViolations: [
+					{ propertyName: 'Owners', code: 'required', args: [], valuePartIndex: null },
+				],
 			} );
 
 			expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toEqual(
@@ -263,9 +253,12 @@ describe( 'RelationInput', () => {
 			);
 		} );
 
-		it( 'field status remains default even with validation error', () => {
+		it( 'keeps field status default for a multiple relation even with a violation', () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { required: true, multiple: true } ),
+				property: newRelationProperty( { name: 'Owners', required: true, multiple: true } ),
+				serverViolations: [
+					{ propertyName: 'Owners', code: 'required', args: [], valuePartIndex: null },
+				],
 			} );
 
 			expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'default' );

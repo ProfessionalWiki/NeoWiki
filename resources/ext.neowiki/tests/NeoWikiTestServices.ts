@@ -12,7 +12,6 @@ export class NeoWikiTestServices extends NeoWikiServices {
 			[ Service.ComponentRegistry ]: neoWiki.getTypeSpecificComponentRegistry(),
 			[ Service.SchemaAuthorizer ]: neoWiki.newSchemaAuthorizer(),
 			[ Service.SubjectAuthorizer ]: neoWiki.newSubjectAuthorizer(),
-			[ Service.SubjectValidator ]: neoWiki.newSubjectValidator(),
 			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry(),
 			[ Service.SchemaRepository ]: new InMemorySchemaRepository( [] ),
 			[ Service.SubjectLabelSearch ]: { searchSubjectLabels: () => Promise.resolve( [] ) } as SubjectLabelSearch,

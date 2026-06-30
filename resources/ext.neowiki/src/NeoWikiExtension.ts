@@ -60,7 +60,6 @@ import RelationAttributesEditor from '@/components/SchemaEditor/Property/Relatio
 import DateTimeAttributesEditor from '@/components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
 import DateAttributesEditor from '@/components/SchemaEditor/Property/DateAttributesEditor.vue';
 import BooleanAttributesEditor from '@/components/SchemaEditor/Property/BooleanAttributesEditor.vue';
-import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader.ts';
 import { createPinia } from 'pinia';
@@ -265,12 +264,6 @@ export class NeoWikiExtension {
 	public getValidationDebounceMs(): number {
 		const value = mw.config.get( 'wgNeoWikiValidationDebounceMs' );
 		return typeof value === 'number' ? value : 300;
-	}
-
-	public newSubjectValidator(): SubjectValidator {
-		return new SubjectValidator(
-			this.getPropertyTypeRegistry(),
-		);
 	}
 
 	public getPropertyTypeRegistry(): PropertyTypeRegistry {

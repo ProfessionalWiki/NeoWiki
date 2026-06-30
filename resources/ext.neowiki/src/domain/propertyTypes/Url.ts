@@ -1,6 +1,6 @@
 import { MultiStringProperty, PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
-import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
+import { BasePropertyType } from '@/domain/PropertyType';
 
 export interface UrlProperty extends MultiStringProperty {
 
@@ -28,32 +28,6 @@ export class UrlType extends BasePropertyType<UrlProperty, StringValue> {
 			multiple: json.multiple ?? false,
 			uniqueItems: json.uniqueItems ?? false,
 		} as UrlProperty;
-	}
-
-	public validate( value: StringValue | undefined, property: UrlProperty ): ValueValidationError[] {
-		const errors: ValueValidationError[] = [];
-		value = value === undefined ? newStringValue() : value;
-
-		if ( property.required && value.parts.length === 0 ) {
-			errors.push( { code: 'required' } );
-			return errors;
-		}
-
-		// TODO: check property.multiple
-
-		for ( const part of value.parts ) {
-			const url = part.trim();
-
-			if ( url !== '' && !isValidUrl( url ) ) {
-				errors.push( { code: 'invalid-url', source: part } );
-			}
-		}
-
-		if ( property.uniqueItems && new Set( value.parts ).size !== value.parts.length ) {
-			errors.push( { code: 'unique' } ); // TODO: add source
-		}
-
-		return errors;
 	}
 
 }

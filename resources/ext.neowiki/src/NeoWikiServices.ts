@@ -3,7 +3,6 @@ import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry.t
 import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
 import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
-import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
@@ -15,7 +14,6 @@ export enum Service { // TODO: make private
 	ComponentRegistry = 'ComponentRegistry',
 	SchemaAuthorizer = 'SchemaAuthorizer',
 	SubjectAuthorizer = 'SubjectAuthorizer',
-	SubjectValidator = 'SubjectValidator',
 	PropertyTypeRegistry = 'PropertyTypeRegistry',
 	SchemaRepository = 'SchemaRepository',
 	SubjectLabelSearch = 'SubjectLabelSearch',
@@ -39,7 +37,6 @@ export class NeoWikiServices {
 			[ Service.ComponentRegistry ]: neoWiki.getTypeSpecificComponentRegistry(),
 			[ Service.SchemaAuthorizer ]: neoWiki.newSchemaAuthorizer(),
 			[ Service.SubjectAuthorizer ]: neoWiki.newSubjectAuthorizer(),
-			[ Service.SubjectValidator ]: neoWiki.newSubjectValidator(),
 			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry(),
 			[ Service.SchemaRepository ]: neoWiki.getSchemaRepository(),
 			[ Service.SubjectLabelSearch ]: neoWiki.getSubjectLabelSearch(),
@@ -63,10 +60,6 @@ export class NeoWikiServices {
 
 	public static getSubjectAuthorizer(): SubjectAuthorizer {
 		return inject( Service.SubjectAuthorizer ) as SubjectAuthorizer;
-	}
-
-	public static getSubjectValidator(): SubjectValidator {
-		return inject( Service.SubjectValidator ) as SubjectValidator;
 	}
 
 	public static getSchemaRepository(): SchemaRepository {
