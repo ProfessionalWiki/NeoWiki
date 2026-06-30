@@ -12,7 +12,6 @@ function minimalRegistration( overrides: Partial<PropertyTypeRegistration> = {} 
 		displayAttributeNames: [ 'color' ],
 		createPropertyDefinitionFromJson: ( base ) => base,
 		getExampleValue: () => newStringValue( 'x' ),
-		validate: () => [],
 		displayComponent: stub,
 		inputComponent: stub,
 		attributesEditor: stub,
@@ -36,11 +35,5 @@ describe( 'PropertyTypeAdapter', () => {
 	it( 'delegates getDisplayAttributeNames to the registration', () => {
 		const adapter = new PropertyTypeAdapter( minimalRegistration( { displayAttributeNames: [ 'size' ] } ) );
 		expect( adapter.getDisplayAttributeNames() ).toEqual( [ 'size' ] );
-	} );
-
-	it( 'delegates validate to the registration', () => {
-		const validate = (): { code: string }[] => [ { code: 'err' } ];
-		const adapter = new PropertyTypeAdapter( minimalRegistration( { validate } ) );
-		expect( adapter.validate( undefined, {} as any ) ).toEqual( [ { code: 'err' } ] );
 	} );
 } );

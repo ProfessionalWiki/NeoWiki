@@ -60,37 +60,3 @@ describe( 'newBooleanProperty', () => {
 		expect( property.default ).toStrictEqual( newBooleanValue( false ) );
 	} );
 } );
-
-describe( 'validate', () => {
-	const type = new BooleanType();
-
-	it( 'returns no errors for a false value', () => {
-		const errors = type.validate( newBooleanValue( false ), newBooleanProperty() );
-
-		expect( errors ).toEqual( [] );
-	} );
-
-	it( 'returns no errors for a true value', () => {
-		const errors = type.validate( newBooleanValue( true ), newBooleanProperty() );
-
-		expect( errors ).toEqual( [] );
-	} );
-
-	it( 'returns no errors for an undefined value when optional', () => {
-		const errors = type.validate( undefined, newBooleanProperty( { required: false } ) );
-
-		expect( errors ).toEqual( [] );
-	} );
-
-	it( 'returns a required error for an undefined value when required', () => {
-		const errors = type.validate( undefined, newBooleanProperty( { required: true } ) );
-
-		expect( errors ).toEqual( [ { code: 'required' } ] );
-	} );
-
-	it( 'returns no errors for a false value when required', () => {
-		const errors = type.validate( newBooleanValue( false ), newBooleanProperty( { required: true } ) );
-
-		expect( errors ).toEqual( [] );
-	} );
-} );

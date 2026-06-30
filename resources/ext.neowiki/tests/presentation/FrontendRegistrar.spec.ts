@@ -15,7 +15,6 @@ function registration( typeName: string ): PropertyTypeRegistration {
 		displayAttributeNames: [],
 		createPropertyDefinitionFromJson: ( base ) => base,
 		getExampleValue: () => newStringValue( 'x' ),
-		validate: () => [],
 		displayComponent: stub,
 		inputComponent: stub,
 		attributesEditor: stub,

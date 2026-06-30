@@ -1,7 +1,7 @@
 import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
-import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
+import { BasePropertyType } from '@/domain/PropertyType';
 
 export interface DateTimeProperty extends PropertyDefinition {
 
@@ -110,44 +110,6 @@ export class DateTimeType extends BasePropertyType<DateTimeProperty, StringValue
 			minimum: json.minimum ?? undefined,
 			maximum: json.maximum ?? undefined,
 		} as DateTimeProperty;
-	}
-
-	public validate( value: StringValue | undefined, property: DateTimeProperty ): ValueValidationError[] {
-		const errors: ValueValidationError[] = [];
-
-		if ( property.required && value === undefined ) {
-			errors.push( { code: 'required' } );
-			return errors;
-		}
-
-		if ( value !== undefined && value.parts.length > 0 ) {
-			const timestamp = parseStrictDateTime( value.parts[ 0 ] );
-
-			if ( timestamp === null ) {
-				errors.push( { code: 'invalid-datetime' } );
-				return errors;
-			}
-
-			const minimum = property.minimum;
-			const minimumTimestamp = minimum !== undefined ? parseStrictDateTime( minimum ) : null;
-			if ( minimum !== undefined && minimumTimestamp !== null && timestamp < minimumTimestamp ) {
-				errors.push( {
-					code: 'min-value',
-					args: [ minimum ],
-				} );
-			}
-
-			const maximum = property.maximum;
-			const maximumTimestamp = maximum !== undefined ? parseStrictDateTime( maximum ) : null;
-			if ( maximum !== undefined && maximumTimestamp !== null && timestamp > maximumTimestamp ) {
-				errors.push( {
-					code: 'max-value',
-					args: [ maximum ],
-				} );
-			}
-		}
-
-		return errors;
 	}
 
 }

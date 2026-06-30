@@ -1,7 +1,7 @@
 import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { type BooleanValue, newBooleanValue, ValueType } from '@/domain/Value';
-import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
+import { BasePropertyType } from '@/domain/PropertyType';
 
 export type BooleanProperty = PropertyDefinition;
 
@@ -21,16 +21,6 @@ export class BooleanType extends BasePropertyType<BooleanProperty, BooleanValue>
 
 	public createPropertyDefinitionFromJson( base: PropertyDefinition ): BooleanProperty {
 		return { ...base } as BooleanProperty;
-	}
-
-	public validate( value: BooleanValue | undefined, property: BooleanProperty ): ValueValidationError[] {
-		const errors: ValueValidationError[] = [];
-
-		if ( property.required && value === undefined ) {
-			errors.push( { code: 'required' } );
-		}
-
-		return errors;
 	}
 
 }
