@@ -55,6 +55,7 @@ use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
@@ -364,6 +365,13 @@ class NeoWikiExtension {
 			authority: RequestContext::getMain()->getUser(),
 			pageContentSaver: $this->getPageContentSaver(),
 			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
+		);
+	}
+
+	public function newSubjectPageRebuilder(): SubjectPageRebuilder {
+		return new SubjectPageRebuilder(
+			$this->getStoreContentUC(),
+			MediaWikiServices::getInstance()->getWikiPageFactory()
 		);
 	}
 
