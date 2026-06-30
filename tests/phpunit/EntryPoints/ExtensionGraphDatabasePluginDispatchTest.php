@@ -22,6 +22,7 @@ use ProfessionalWiki\RedHerb\RedHerbGraphDatabasePlugin;
  * the live registered instance back out of the registry and confirms it recorded the
  * save/delete events that NeoWikiExtension::getGraphDatabasePlugin() fanned out to it.
  *
+ * @covers \ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin
  * @covers \ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry
  * @group Database
  */

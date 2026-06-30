@@ -226,6 +226,10 @@ class NeoWikiExtension {
 	public function getGraphDatabasePluginRegistry(): GraphDatabasePluginRegistry {
 		if ( !isset( $this->graphDatabasePluginRegistry ) ) {
 			$this->graphDatabasePluginRegistry = new GraphDatabasePluginRegistry();
+			// Registry order is not guaranteed: building the Neo4j plugin can transitively fire the
+			// NeoWikiRegistration hook (getNeo4jPlugin -> getSchemaLookup -> getPropertyTypeRegistry),
+			// so extension plugins may be registered before or after this core seed depending on which
+			// accessor runs first. The composite fan-out is order-independent; do not rely on order.
 			$this->graphDatabasePluginRegistry->addPlugin(
 				$this->getNeo4jPlugin()->getGraphDatabasePlugin()
 			);
