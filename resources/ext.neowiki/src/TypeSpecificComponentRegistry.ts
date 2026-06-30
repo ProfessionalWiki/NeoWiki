@@ -13,6 +13,8 @@ export class TypeSpecificComponentRegistry {
 
 	private typeMap: Map<string, TypeSpecificStuff> = new Map();
 
+	private unknownFallback: TypeSpecificStuff | undefined;
+
 	public registerType(
 		propertyType: string,
 		stuff: TypeSpecificStuff,
@@ -21,18 +23,34 @@ export class TypeSpecificComponentRegistry {
 	}
 
 	/**
+	 * Components used to render a property type that is not registered (e.g. owned
+	 * by a disabled or failed extension). When set, the per-type getters degrade to
+	 * these instead of throwing, so a single unknown type does not take down the
+	 * whole view. The fallback is never offered as a selectable type.
+	 */
+	public setUnknownFallback( stuff: TypeSpecificStuff ): void {
+		this.unknownFallback = stuff;
+	}
+
+	/**
 	 * Returns a Component following ValueDisplayContract.vue.
 	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
 	 */
 	public getValueDisplayComponent( propertyType: string ): Component {
-		return this.getTypeOrThrow( propertyType ).valueDisplayComponent;
+		return this.resolveType( propertyType ).valueDisplayComponent;
 	}
 
-	private getTypeOrThrow( propertyType: string ): TypeSpecificStuff {
-		if ( !this.typeMap.has( propertyType ) ) {
-			throw new Error( `Unknown property type: ${ propertyType }` );
+	private resolveType( propertyType: string ): TypeSpecificStuff {
+		const stuff = this.typeMap.get( propertyType );
+		if ( stuff !== undefined ) {
+			return stuff;
 		}
-		return this.typeMap.get( propertyType )!;
+
+		if ( this.unknownFallback !== undefined ) {
+			return this.unknownFallback;
+		}
+
+		throw new Error( `Unknown property type: ${ propertyType }` );
 	}
 
 	/**
@@ -40,7 +58,7 @@ export class TypeSpecificComponentRegistry {
 	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
 	 */
 	public getValueEditingComponent( propertyType: string ): Component {
-		return this.getTypeOrThrow( propertyType ).valueEditor;
+		return this.resolveType( propertyType ).valueEditor;
 	}
 
 	/**
@@ -48,7 +66,7 @@ export class TypeSpecificComponentRegistry {
 	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
 	 */
 	public getAttributesEditor( propertyType: string ): Component {
-		return this.getTypeOrThrow( propertyType ).attributesEditor;
+		return this.resolveType( propertyType ).attributesEditor;
 	}
 
 	public getPropertyTypes(): string[] {
@@ -65,11 +83,11 @@ export class TypeSpecificComponentRegistry {
 	}
 
 	public getIcon( propertyType: string ): Icon {
-		return this.getTypeOrThrow( propertyType ).icon;
+		return this.resolveType( propertyType ).icon;
 	}
 
 	public getLabel( propertyType: string ): string {
-		return this.getTypeOrThrow( propertyType ).label;
+		return this.resolveType( propertyType ).label;
 	}
 
 }

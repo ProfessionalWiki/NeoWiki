@@ -66,6 +66,10 @@ export class PropertyTypeRegistry {
 		return type;
 	}
 
+	public hasType( typeName: string ): boolean {
+		return this.propertyTypes.has( typeName );
+	}
+
 	public getTypeNames(): string[] {
 		return Array.from( this.propertyTypes.keys() );
 	}

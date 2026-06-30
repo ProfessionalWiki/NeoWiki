@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newNumberValue, newRelation, newStringValue, RelationValue } from '@/domain/Value';
+import { newNumberValue, newRelation, newStringValue, newUnknownValue, RelationValue } from '@/domain/Value';
 import { Neo } from '@/Neo';
 
 describe( 'ValueDeserializer', () => {
@@ -46,6 +46,14 @@ describe( 'ValueDeserializer', () => {
 
 	it( 'throws error on invalid relation json', () => {
 		expect( () => deserializer.deserialize( { foo: 'bar' }, 'relation' ) ).toThrow( 'Invalid relation value: {"foo":"bar"}' );
+	} );
+
+	it( 'wraps a value of an unregistered type as an UnknownValue, preserving the raw data', () => {
+		const raw = { hex: '#ff0000' };
+
+		const value = deserializer.deserialize( raw, 'color' );
+
+		expect( value ).toEqual( newUnknownValue( 'color', raw ) );
 	} );
 
 } );
