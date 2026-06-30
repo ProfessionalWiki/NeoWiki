@@ -4,9 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
 
 class SpyGraphDatabasePlugin implements GraphDatabasePlugin {
 

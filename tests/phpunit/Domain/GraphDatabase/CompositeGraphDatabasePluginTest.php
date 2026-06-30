@@ -2,16 +2,16 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\Persistence;
+namespace ProfessionalWiki\NeoWiki\Tests\Domain\GraphDatabase;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Persistence\CompositeGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Persistence\CompositeGraphDatabasePlugin
+ * @covers \ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin
  */
 class CompositeGraphDatabasePluginTest extends TestCase {
 

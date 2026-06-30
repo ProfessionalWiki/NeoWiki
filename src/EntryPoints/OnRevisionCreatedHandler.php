@@ -8,7 +8,7 @@ use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
-use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
