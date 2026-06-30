@@ -16,21 +16,22 @@ class SubjectPageRebuilder {
 	) {
 	}
 
-	public function rebuild( Title $title ): bool {
+	public function rebuild( Title $title ): PageRefreshOutcome {
 		$revision = $this->wikiPageFactory->newFromTitle( $title )->getRevisionRecord();
 
 		if ( $revision === null ) {
-			return false;
+			return PageRefreshOutcome::SkippedMissingRevision;
 		}
 
 		$user = $revision->getUser();
 
 		if ( $user === null ) {
-			return false;
+			return PageRefreshOutcome::SkippedMissingRevisionAuthor;
 		}
 
-		$this->handler->onRevisionCreated( $revision, $user );
-		return true;
+		return $this->handler->onRevisionCreated( $revision, $user )
+			? PageRefreshOutcome::Refreshed
+			: PageRefreshOutcome::SkippedMissingSubjectSlot;
 	}
 
 }
