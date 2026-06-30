@@ -80,11 +80,8 @@ function relevantServerViolations(): readonly SubjectViolation[] {
 	return ( props.serverViolations ?? [] ).filter( ( v ) => v.propertyName === name );
 }
 
-const fieldMessages = computed<ValidationMessages>( () => {
-	if ( Object.keys( liveFieldMessages.value ).length > 0 ) {
-		return liveFieldMessages.value;
-	}
-	// Fall back to server violations (field-level, since NeoMultiLookupInput has no per-index slot).
+// Field-level server violation (NeoMultiLookupInput has no per-index slot).
+function serverFieldMessages(): ValidationMessages {
 	const hit = relevantServerViolations()[ 0 ];
 	if ( hit ) {
 		return {
@@ -92,6 +89,13 @@ const fieldMessages = computed<ValidationMessages>( () => {
 		};
 	}
 	return {};
+}
+
+const fieldMessages = computed<ValidationMessages>( () => {
+	if ( Object.keys( liveFieldMessages.value ).length > 0 ) {
+		return liveFieldMessages.value;
+	}
+	return serverFieldMessages();
 } );
 
 const displayedFieldMessages = computed( (): ValidationMessages => {
@@ -101,17 +105,16 @@ const displayedFieldMessages = computed( (): ValidationMessages => {
 	if ( props.property.multiple || touched.value ) {
 		return fieldMessages.value;
 	}
-	return {};
+	// Server-sourced violations (dry-run / save-time 422) surface before the field
+	// is touched; only the live client check waits for blur.
+	return serverFieldMessages();
 } );
 
 const fieldStatus = computed( (): 'error' | 'default' => {
 	if ( props.property.multiple || singleHasUnmatchedText.value ) {
 		return 'default';
 	}
-	if ( touched.value && fieldMessages.value.error ) {
-		return 'error';
-	}
-	return 'default';
+	return displayedFieldMessages.value.error !== undefined ? 'error' : 'default';
 } );
 
 function emitClearIfServerViolationPresent(): void {
