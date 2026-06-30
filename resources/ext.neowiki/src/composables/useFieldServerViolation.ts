@@ -11,8 +11,8 @@ interface FieldServerViolation {
 /**
  * Field-level server-violation handling shared by the single-value inputs
  * (Boolean, Number, Date, DateTime). Merges a server-sourced violation for
- * this property into the displayed error — live client-side errors take
- * precedence — and clears it when the user edits the field.
+ * this property as the displayed error and clears it when the user edits the
+ * field.
  *
  * Only field-level violations (valuePartIndex null/undefined) are handled;
  * single-value inputs have no per-index slot. Text and Url (via
@@ -22,14 +22,12 @@ interface FieldServerViolation {
  *
  * @param property The field's Property Definition; violations are matched on its name.
  * @param serverViolations The violations passed to this input.
- * @param liveValidationError The component's live client-side error, if any.
  * @param emit The component's emit function; used for clear-server-violation.
  * @param formatArg Per-arg formatter; Date/DateTime format their bounds for display.
  */
 export function useFieldServerViolation<P extends PropertyDefinition>(
 	property: Ref<P>,
 	serverViolations: Ref<readonly SubjectViolation[] | undefined>,
-	liveValidationError: Ref<string | null>,
 	emit: ValueInputEmitFunction,
 	formatArg: ( arg: string ) => string = ( arg ) => arg,
 ): FieldServerViolation {
@@ -40,9 +38,6 @@ export function useFieldServerViolation<P extends PropertyDefinition>(
 		);
 
 	const validationError = computed<string | null>( () => {
-		if ( liveValidationError.value !== null ) {
-			return liveValidationError.value;
-		}
 		const hit = fieldLevelHit();
 		if ( hit ) {
 			return mw.message(

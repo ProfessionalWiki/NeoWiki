@@ -1,7 +1,7 @@
 import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
-import { BasePropertyType, ValueValidationError } from '@/domain/PropertyType';
+import { BasePropertyType } from '@/domain/PropertyType';
 
 export interface SelectOption {
 
@@ -41,34 +41,6 @@ export class SelectType extends BasePropertyType<SelectProperty, StringValue> {
 			options: ( json.options ?? [] ) as SelectOption[],
 			multiple: json.multiple ?? false,
 		} as SelectProperty;
-	}
-
-	public validate( value: StringValue | undefined, property: SelectProperty ): ValueValidationError[] {
-		const errors: ValueValidationError[] = [];
-		value = value === undefined ? newStringValue() : value;
-
-		if ( property.required && value.parts.length === 0 ) {
-			errors.push( { code: 'required' } );
-			return errors;
-		}
-
-		const validIds = new Set( property.options.map( ( option ) => option.id ) );
-
-		for ( const part of value.parts ) {
-			if ( !validIds.has( part ) ) {
-				errors.push( {
-					code: 'invalid-option',
-					args: [ part ],
-					source: part,
-				} );
-			}
-		}
-
-		if ( !property.multiple && value.parts.length > 1 ) {
-			errors.push( { code: 'single-value-only' } );
-		}
-
-		return errors;
 	}
 
 }

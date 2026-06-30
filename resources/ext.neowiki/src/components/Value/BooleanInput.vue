@@ -35,9 +35,8 @@ import { computed, ref, toRef, watch } from 'vue';
 import { CdxCheckbox, CdxField, CdxIcon } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newBooleanValue, BooleanValue, ValueType } from '@/domain/Value';
-import { BooleanType, BooleanProperty } from '@/domain/propertyTypes/Boolean.ts';
+import { BooleanProperty } from '@/domain/propertyTypes/Boolean.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
 
 const props = withDefaults(
@@ -50,12 +49,9 @@ const props = withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
-const liveValidationError = ref<string | null>( null );
-
 const { validationError, clearServerViolation } = useFieldServerViolation(
 	toRef( props, 'property' ),
 	toRef( props, 'serverViolations' ),
-	liveValidationError,
 	emit
 );
 
@@ -68,29 +64,15 @@ const toBoolean = ( value: Value | undefined ): boolean =>
 
 const internalValue = ref<boolean>( toBoolean( props.modelValue ) );
 
-const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( BooleanType.typeName );
-
-function validate( value: BooleanValue ): void {
-	const errors = propertyType.validate( value, props.property );
-	liveValidationError.value = errors.length === 0 ? null :
-		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
-}
-
 function onInput( newValue: boolean ): void {
 	internalValue.value = newValue;
 	const value = newBooleanValue( newValue );
 	emit( 'update:modelValue', value );
-	validate( value );
 	clearServerViolation();
 }
 
 watch( () => props.modelValue, ( newValue ) => {
 	internalValue.value = toBoolean( newValue );
-	validate( newBooleanValue( internalValue.value ) );
-} );
-
-watch( () => props.property, () => {
-	validate( newBooleanValue( internalValue.value ) );
 } );
 
 defineExpose<ValueInputExposes>( {
@@ -98,6 +80,4 @@ defineExpose<ValueInputExposes>( {
 		return newBooleanValue( internalValue.value );
 	}
 } );
-
-validate( newBooleanValue( internalValue.value ) );
 </script>

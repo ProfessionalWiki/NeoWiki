@@ -2,8 +2,7 @@
  * Frontend mirror of the backend's Violation wire shape (see
  * src/Domain/Validation/Violation.php). Read from the backend by the
  * persistence layer — either deserialising a 422 response body on save, or
- * the dry-run validate endpoints' 200 body. The live per-input
- * ValueValidationError type covers client-side validation.
+ * the dry-run validate endpoints' 200 body.
  *
  * propertyName === null is used for subject-level violations such as
  * 'schema-not-found' that don't anchor to a specific field.

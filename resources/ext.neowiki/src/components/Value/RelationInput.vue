@@ -71,8 +71,6 @@ const startIcon = NeoWikiServices.getComponentRegistry().getIcon( RelationType.t
 const emit = defineEmits<ValueInputEmits>();
 
 const internalValue = ref<RelationValue | undefined>( undefined );
-const liveFieldMessages = ref<ValidationMessages>( {} );
-const touched = ref( false );
 const singleHasUnmatchedText = ref( false );
 
 function relevantServerViolations(): readonly SubjectViolation[] {
@@ -91,22 +89,10 @@ function serverFieldMessages(): ValidationMessages {
 	return {};
 }
 
-const fieldMessages = computed<ValidationMessages>( () => {
-	if ( Object.keys( liveFieldMessages.value ).length > 0 ) {
-		return liveFieldMessages.value;
-	}
-	return serverFieldMessages();
-} );
-
 const displayedFieldMessages = computed( (): ValidationMessages => {
 	if ( singleHasUnmatchedText.value ) {
 		return {};
 	}
-	if ( props.property.multiple || touched.value ) {
-		return fieldMessages.value;
-	}
-	// Server-sourced violations (dry-run / save-time 422) surface before the field
-	// is touched; only the live client check waits for blur.
 	return serverFieldMessages();
 } );
 
@@ -126,8 +112,6 @@ function emitClearIfServerViolationPresent(): void {
 	}
 }
 
-const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( RelationType.typeName );
-
 function initializeInternalValue( value: Value | undefined ): void {
 	if ( value && value.type === ValueType.Relation ) {
 		const relValue = value as RelationValue;
@@ -141,7 +125,6 @@ initializeInternalValue( props.modelValue );
 
 watch( () => props.modelValue, ( newValue ) => {
 	initializeInternalValue( newValue );
-	validateAndUpdateMessages();
 } );
 
 const selectedId = computed( (): string | null => {
@@ -158,20 +141,6 @@ const selectedIds = computed( (): ( string | null )[] => {
 	return internalValue.value.relations.map( ( r ) => r.target.text );
 } );
 
-function validateAndUpdateMessages(): void {
-	const errors = propertyType.validate( internalValue.value, props.property );
-
-	let overallErrorMessage: string | null = null;
-	const firstError = errors[ 0 ];
-	if ( firstError ) {
-		overallErrorMessage = mw.message(
-			`neowiki-field-${ firstError.code }`, ...( firstError.args ?? [] )
-		).text();
-	}
-
-	liveFieldMessages.value = overallErrorMessage ? { error: overallErrorMessage } : {};
-}
-
 function onSingleSelectionChanged( id: string | null ): void {
 	singleHasUnmatchedText.value = false;
 
@@ -186,13 +155,11 @@ function onSingleSelectionChanged( id: string | null ): void {
 		internalValue.value = newRelationValue;
 	}
 
-	validateAndUpdateMessages();
 	emit( 'update:modelValue', newRelationValue );
 	emitClearIfServerViolationPresent();
 }
 
 function onSingleBlur( hasUnmatchedText: boolean ): void {
-	touched.value = true;
 	singleHasUnmatchedText.value = hasUnmatchedText;
 }
 
@@ -211,17 +178,9 @@ function onSelectionsChanged( ids: ( string | null )[] ): void {
 		internalValue.value = newRelationValue;
 	}
 
-	validateAndUpdateMessages();
 	emit( 'update:modelValue', newRelationValue );
 	emitClearIfServerViolationPresent();
 }
-
-watch( () => props.property, () => {
-	validateAndUpdateMessages();
-}, { deep: true } );
-
-// Initial validation
-validateAndUpdateMessages();
 
 defineExpose<ValueInputExposes>( {
 	getCurrentValue: function(): Value | undefined {

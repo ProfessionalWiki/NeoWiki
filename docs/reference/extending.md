@@ -158,7 +158,6 @@ mw.hook( 'neowiki.registration' ).add( ( registrar ) => {
 		getExampleValue: function () {
 			return nw.newStringValue( '#ff5733' );
 		},
-		validate: validate,
 		displayComponent: ColorDisplay,
 		inputComponent: ColorInput,
 		attributesEditor: ColorAttributesEditor,
@@ -267,12 +266,11 @@ of the page.
 
 ### i18n and validation codes
 
-A Property Type validates in two places: the backend `PropertyType::validate()` (authoritative — returns
-`Violation[]`) and the frontend `validate` (immediate UX feedback — returns an array of `{ code }` objects,
-empty meaning valid). Implement both. NeoWiki resolves each frontend `code` as the message key
-`neowiki-field-<code>`; your extension must define those messages. For example, returning
-`{ code: 'invalid-hex' }` requires a `neowiki-field-invalid-hex` message (see RedHerb's
-[`i18n/en.json`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/i18n/en.json)).
+A Property Type is validated on the backend by `PropertyType::validate()` (returns `Violation[]`). The
+frontend does not validate; it surfaces the violations the server returns. NeoWiki resolves each violation
+`code` as the message key `neowiki-field-<code>`, so your extension must define those messages. For example,
+a backend validator that returns the code `invalid-hex` requires a `neowiki-field-invalid-hex` message (see
+RedHerb's [`i18n/en.json`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/i18n/en.json)).
 
 ### Icons
 

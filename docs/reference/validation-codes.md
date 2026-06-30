@@ -1,8 +1,7 @@
 # Validation Codes
 
 Constraint violations returned by NeoWiki's backend validation API use stable `code` strings.
-This document is the authoritative reference, shared between the PHP backend implementation and
-(in a future round) the TS frontend implementation.
+This document is the authoritative reference for NeoWiki's PHP backend validation.
 
 Violations are returned by:
 
@@ -197,15 +196,11 @@ Reconciling that asymmetry is left to the enforcement tier (ADR 21).
 
 ## Known limitations (Foundation round)
 
-The PHP `SubjectValidator` is intentionally more rigorous than the current TS `SubjectValidator`
-on two checks:
+The PHP `SubjectValidator` performs two Subject-level checks:
 
 - **`required`** — PHP iterates the Schema's properties to catch absent-required cases.
 - **`type-mismatch`** — PHP compares the Statement's writer's-schema type against the Schema's
   current type and surfaces drift per ADR 11 / ADR 12.
-
-The TS top-level validator does not yet do either; alignment will happen in the tier-two TS
-rework and is the intended direction (PHP first, TS catches up).
 
 ### Deliberate behavior, not a gap
 
@@ -215,31 +210,6 @@ rework and is the intended direction (PHP first, TS catches up).
   one Schema per Subject, not that every Statement on that Subject must reference an extant
   Property. If surfacing these as violations becomes useful (e.g. for migration UIs), it can be
   added as a separate code without changing the current behavior.
-
-Remaining gaps:
-
-- **TextType min-length / max-length.** TS `TextType` validates min/max-length per part with
-  `min-length` / `max-length` codes. PHP's `TextProperty` does not yet expose `minLength` /
-  `maxLength` fields, so PHP `TextType::validate` does not emit these codes. Adding the fields
-  to PHP `TextProperty` and the corresponding codes here is a future enhancement.
-- **RelationType invalid-subject-id.** TS emits `invalid-subject-id` per relation whose target
-  fails ID validation. PHP rejects invalid `SubjectId` strings at constructor time, so this code
-  is unreachable on the PHP side — a `RelationValue` cannot hold an invalid target. The TS code
-  exists for client-side parity but PHP currently does not emit it.
-
-## Synchronization contract
-
-PHP and TS implementations share the codes above. When changing or adding a code:
-
-1. Add the case to the affected PropertyType's test file on **both** sides (TS spec.ts + PHP
-   ValidateTest.php).
-2. Implement on both sides.
-3. Update this document.
-
-Reviewers should reject one-sided code changes. If a TS implementation grows a new code, this
-document and the PHP implementation should grow with it in the same PR (or an immediate
-follow-up). Drift between the two implementations is the primary risk this discipline guards
-against.
 
 ## Adding a new validation code
 

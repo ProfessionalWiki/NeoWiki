@@ -6,7 +6,6 @@ import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts
 
 type SetupResult = ReturnType<typeof useFieldServerViolation> & {
 	serverViolations: Ref<readonly SubjectViolation[] | undefined>;
-	liveValidationError: Ref<string | null>;
 	emit: Mock;
 };
 
@@ -37,17 +36,15 @@ function fieldViolation( overrides: Partial<SubjectViolation> = {} ): SubjectVio
 	};
 }
 
-function setup( violations: SubjectViolation[], live: string | null = null ): SetupResult {
+function setup( violations: SubjectViolation[] ): SetupResult {
 	const serverViolations = ref<readonly SubjectViolation[] | undefined>( violations );
-	const liveValidationError = ref<string | null>( live );
 	const emit = vi.fn();
 	const composable = useFieldServerViolation(
 		shallowRef( newProperty() ),
 		serverViolations,
-		liveValidationError,
 		emit,
 	);
-	return { ...composable, serverViolations, liveValidationError, emit };
+	return { ...composable, serverViolations, emit };
 }
 
 describe( 'useFieldServerViolation', () => {
@@ -56,30 +53,16 @@ describe( 'useFieldServerViolation', () => {
 	} );
 
 	describe( 'validationError', () => {
-		it( 'is null when there are no violations and no live error', () => {
+		it( 'is null when there are no violations', () => {
 			const { validationError } = setup( [] );
 
 			expect( validationError.value ).toBeNull();
 		} );
 
-		it( 'formats the field-level server violation when there is no live error', () => {
+		it( 'formats the field-level server violation', () => {
 			const { validationError } = setup( [ fieldViolation( { code: 'type-mismatch', args: [ 'url', 'number' ] } ) ] );
 
 			expect( validationError.value ).toBe( 'neowiki-field-type-mismatch|url|number' );
-		} );
-
-		it( 'prefers the live error over a server violation on the same field', () => {
-			const { validationError } = setup( [ fieldViolation() ], 'live error' );
-
-			expect( validationError.value ).toBe( 'live error' );
-		} );
-
-		it( 'surfaces the server violation when the live error resolves', () => {
-			const { validationError, liveValidationError } = setup( [ fieldViolation() ], 'live error' );
-
-			liveValidationError.value = null;
-
-			expect( validationError.value ).toBe( 'neowiki-field-required' );
 		} );
 
 		it( 'stops surfacing the violation when the parent removes it', () => {
@@ -123,7 +106,6 @@ describe( 'useFieldServerViolation', () => {
 			const { validationError } = useFieldServerViolation(
 				shallowRef( newProperty() ),
 				ref<readonly SubjectViolation[] | undefined>( [ fieldViolation( { code: 'min-value', args: [ '2025-01-01' ] } ) ] ),
-				ref( null ),
 				vi.fn(),
 				( arg ) => `formatted(${ arg })`,
 			);

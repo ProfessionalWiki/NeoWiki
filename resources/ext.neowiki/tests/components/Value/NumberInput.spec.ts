@@ -36,17 +36,6 @@ describe( 'NumberInput', () => {
 		expect( wrapper.text() ).toContain( 'Test Label' );
 	} );
 
-	it( 'validates maxValue for the number', async () => {
-		const wrapper = newWrapper( {
-			property: newNumberProperty( { minimum: 42, maximum: 50 } ),
-		} );
-
-		await wrapper.find( 'input' ).setValue( 51 );
-
-		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-max-value' );
-	} );
-
 	describe( 'getCurrentValue', () => {
 		it( 'returns initial value', () => {
 			const wrapper = newWrapper( {
