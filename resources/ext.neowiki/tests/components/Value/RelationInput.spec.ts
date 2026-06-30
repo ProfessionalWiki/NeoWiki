@@ -166,6 +166,37 @@ describe( 'RelationInput', () => {
 			expect( field.props( 'messages' ) ).toEqual( {} );
 			expect( field.props( 'status' ) ).toBe( 'default' );
 		} );
+
+		it( 'surfaces a server violation on an untouched single relation', () => {
+			const wrapper = newWrapper( {
+				// Optional field so the live client check produces nothing; the message
+				// can only originate from the server-sourced violation.
+				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				serverViolations: [
+					{ propertyName: 'Owner', code: 'type-mismatch', args: [], valuePartIndex: null },
+				],
+			} );
+
+			const field = wrapper.findComponent( CdxField );
+			expect( field.props( 'messages' ) ).toEqual( { error: 'neowiki-field-type-mismatch' } );
+			expect( field.props( 'status' ) ).toBe( 'error' );
+		} );
+
+		it( 'keeps a server violation suppressed while the lookup reports unmatched text', async () => {
+			const wrapper = newWrapper( {
+				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				serverViolations: [
+					{ propertyName: 'Owner', code: 'type-mismatch', args: [], valuePartIndex: null },
+				],
+			} );
+
+			wrapper.findComponent( SubjectLookup ).vm.$emit( 'blur', true );
+			await wrapper.vm.$nextTick();
+
+			const field = wrapper.findComponent( CdxField );
+			expect( field.props( 'messages' ) ).toEqual( {} );
+			expect( field.props( 'status' ) ).toBe( 'default' );
+		} );
 	} );
 
 	describe( 'multiple mode', () => {
