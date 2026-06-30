@@ -94,10 +94,10 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\ExplainCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\KeywordCypherQueryValidator;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
@@ -120,7 +120,7 @@ class NeoWikiExtension {
 	private bool $extensionsRegistered = false;
 	private SubjectRepository $subjectRepository;
 	private CompositeGraphDatabasePlugin $graphDatabasePlugin;
-	private ?Neo4jQueryStore $neo4jQueryStore = null;
+	private ?Neo4jPlugin $neo4jPlugin = null;
 	private ClientInterface $neo4jClient;
 	private ClientInterface $readOnlyNeo4jClient;
 
@@ -213,31 +213,34 @@ class NeoWikiExtension {
 	public function getGraphDatabasePlugin(): GraphDatabasePlugin {
 		if ( !isset( $this->graphDatabasePlugin ) ) {
 			$this->graphDatabasePlugin = new CompositeGraphDatabasePlugin(
-				$this->getNeo4jPlugin()
+				$this->getNeo4jPlugin()->getGraphDatabasePlugin()
 			);
 		}
 
 		return $this->graphDatabasePlugin;
 	}
 
-	public function getNeo4jPlugin(): Neo4jQueryStore {
-		if ( $this->neo4jQueryStore === null ) {
-			$this->neo4jQueryStore = $this->newNeo4jQueryStore( $this->getSchemaLookup() );
+	public function getNeo4jPlugin(): Neo4jPlugin {
+		if ( $this->neo4jPlugin === null ) {
+			$this->neo4jPlugin = $this->buildNeo4jPlugin( $this->getSchemaLookup() );
 		}
 
-		return $this->neo4jQueryStore;
+		return $this->neo4jPlugin;
 	}
 
+	// Test seam: lets tests build a store with a custom SchemaLookup.
+	// This is a hack; we should have a proper test environment.
 	public function newNeo4jQueryStore( SchemaLookup $schemaLookup ): Neo4jQueryStore {
-		return new Neo4jQueryStore(
+		return $this->buildNeo4jPlugin( $schemaLookup )->getQueryStore();
+	}
+
+	private function buildNeo4jPlugin( SchemaLookup $schemaLookup ): Neo4jPlugin {
+		return new Neo4jPlugin(
 			client: $this->getNeo4jClient(),
 			readOnlyClient: $this->getReadOnlyNeo4jClient(),
-			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
-				schemaLookup: $schemaLookup, // Note: this is a hack, we should have a proper test environment
-				valueBuilderRegistry: $this->getValueBuilderRegistry(),
-				logger: LoggerFactory::getInstance( 'NeoWiki' ),
-				wikiId: $this->config->wikiId,
-			),
+			schemaLookup: $schemaLookup,
+			valueBuilderRegistry: $this->getValueBuilderRegistry(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 			wikiId: $this->config->wikiId,
 		);
 	}
@@ -273,7 +276,7 @@ class NeoWikiExtension {
 
 	public function newCypherQueryService(): Neo4jQueryService {
 		return new Neo4jQueryService(
-			$this->getNeo4jPlugin(),
+			$this->getNeo4jPlugin()->getQueryStore(),
 			$this->getCypherQueryValidator(),
 			new Neo4jResultNormalizer(),
 		);
@@ -286,7 +289,7 @@ class NeoWikiExtension {
 	}
 
 	public function getWriteQueryEngine(): Neo4jWriteQueryEngine {
-		return $this->getNeo4jPlugin();
+		return $this->getNeo4jPlugin()->getQueryStore();
 	}
 
 	public function isDevelopmentUIEnabled(): bool {
