@@ -4,10 +4,13 @@ import { InMemorySubjectLookup } from '@/domain/SubjectLookup';
 import type { StatementList } from '@/domain/StatementList';
 import type { SchemaName } from '@/domain/Schema';
 import { PageSubjects } from '@/domain/PageSubjects';
+import { SubjectMap } from '@/domain/SubjectMap';
 import type { DeserializedPageSubjects } from '@/persistence/PageSubjectsDeserializer';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 
 export interface SubjectRepository extends SubjectLookup {
+
+	getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectMap>;
 
 	getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects>;
 
@@ -48,6 +51,13 @@ export interface SubjectRepository extends SubjectLookup {
 }
 
 export class StubSubjectRepository extends InMemorySubjectLookup implements SubjectRepository {
+
+	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectMap> {
+		const subject = await this.getSubject( id );
+		const referencedSubjects = await subject.getReferencedSubjects( this );
+
+		return new SubjectMap( subject, ...referencedSubjects );
+	}
 
 	public getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects> {
 		return Promise.resolve( {

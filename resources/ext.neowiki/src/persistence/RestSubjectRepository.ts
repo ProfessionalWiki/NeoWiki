@@ -10,6 +10,7 @@ import { StatementList, statementsToJson } from '@/domain/StatementList';
 import { type SchemaName } from '@/domain/Schema';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { Subject } from '@/domain/Subject';
+import { SubjectMap } from '@/domain/SubjectMap';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { parseViolations } from '@/persistence/violationParsing';
@@ -115,6 +116,29 @@ export class RestSubjectRepository implements SubjectRepository {
 	}
 
 	public async getSubject( id: SubjectId ): Promise<Subject> {
+		const bundle = await this.fetchSubjectBundle( id );
+
+		return this.subjectDeserializer.deserialize( bundle.subjects[ bundle.requestedId ] );
+	}
+
+	/**
+	 * The `expand=relations` response bundles the requested Subject together with
+	 * every Subject its relations target, so a View can resolve relation labels
+	 * without re-fetching each target individually.
+	 */
+	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectMap> {
+		const bundle = await this.fetchSubjectBundle( id );
+
+		return new SubjectMap(
+			...Object.values( bundle.subjects ).map(
+				( subjectData ) => this.subjectDeserializer.deserialize( subjectData ),
+			),
+		);
+	}
+
+	private async fetchSubjectBundle(
+		id: SubjectId,
+	): Promise<{ requestedId: string; subjects: Record<string, SubjectJson> }> {
 		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`;
 
 		if ( this.revisionId !== undefined ) {
@@ -133,9 +157,7 @@ export class RestSubjectRepository implements SubjectRepository {
 			throw new Error( 'Subject not found' );
 		}
 
-		const subjectData = data.subjects[ data.requestedId ];
-
-		return this.subjectDeserializer.deserialize( subjectData );
+		return { requestedId: data.requestedId, subjects: data.subjects };
 	}
 
 	public async createMainSubject(

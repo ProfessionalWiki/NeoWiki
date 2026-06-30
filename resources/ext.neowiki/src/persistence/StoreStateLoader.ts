@@ -44,27 +44,23 @@ export class StoreStateLoader {
 	}
 
 	private async loadForSubject( subjectId: SubjectId ): Promise<void> {
-		const subjectStore = useSubjectStore(); // TODO: inject
-		const schemaStore = useSchemaStore(); // TODO: inject
+		// The repository bundles the requested Subject with the Subjects its
+		// relations target, so storing them all avoids a re-fetch per relation.
+		const subjects = await this.subjectRepo.getSubjectWithReferencedSubjects( subjectId );
+		const requestedSubject = subjects.get( subjectId );
 
-		const subject = await this.subjectRepo.getSubject( subjectId );
-
-		if ( subject !== undefined ) {
-			subjectStore.setSubject( subject );
-
-			const schema = await this.schemaRepo.getSchema( subject.getSchemaName() ); // TODO: handle not found
-			schemaStore.setSchema( subject.getSchemaName(), schema );
-
-			const referencedSubjects = await subject.getReferencedSubjects( this.subjectRepo );
-			for ( const referencedSubject of referencedSubjects ) {
-				subjectStore.setSubject( referencedSubject );
-			}
-
-			// TODO: we can just call await schemaStore.getOrFetchSchema().
-			// Shall we remove the getOrFetch methods from the Stores?
-			// If we keep them, we can just as well use them here.
-			// Argument for removal: keep the Stores simple.
+		if ( requestedSubject === undefined ) {
+			return;
 		}
+
+		const subjectStore = useSubjectStore(); // TODO: inject
+		for ( const subject of subjects ) {
+			subjectStore.setSubject( subject );
+		}
+
+		const schemaStore = useSchemaStore(); // TODO: inject
+		const schema = await this.schemaRepo.getSchema( requestedSubject.getSchemaName() ); // TODO: handle not found
+		schemaStore.setSchema( requestedSubject.getSchemaName(), schema );
 	}
 
 }
