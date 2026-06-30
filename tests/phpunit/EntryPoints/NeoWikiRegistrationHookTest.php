@@ -41,4 +41,10 @@ class NeoWikiRegistrationHookTest extends MediaWikiIntegrationTestCase {
 		$this->assertTrue( $registry->hasBuilder( 'color' ) );
 	}
 
+	public function testRedHerbRegistersGraphDatabasePlugin(): void {
+		$plugins = NeoWikiExtension::getInstance()->getGraphDatabasePluginRegistry()->getPlugins();
+
+		$this->assertGreaterThan( 1, count( $plugins ), 'Should have more than just the core Neo4j plugin' );
+	}
+
 }

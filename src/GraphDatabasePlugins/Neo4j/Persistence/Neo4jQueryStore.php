@@ -12,7 +12,7 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Types\CypherMap;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageValue;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageValueType;
-use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
