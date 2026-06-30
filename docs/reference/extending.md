@@ -90,6 +90,28 @@ Register with `NeoWikiRegistrar::addPagePropertyProvider()`. The context exposes
 creation and modification times, categories, and last editor. Example:
 [`src/StaticPagePropertyProvider.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/StaticPagePropertyProvider.php).
 
+### Refreshing a page's data without an edit
+
+A page's graph data is written on edit and on full rebuild. When data your extension contributes through a
+`PagePropertyProvider` changes *outside* an edit — for example an approval extension marking a revision approved —
+the graph keeps the old value until the page is next saved. Trigger a refresh on demand:
+
+```php
+$outcome = NeoWikiExtension::getInstance()
+	->newSubjectPageRebuilder()
+	->rebuild( $title );
+```
+
+NeoWiki re-runs every registered `PagePropertyProvider` for the page (and re-reads its subject slot) and updates
+the Page node. No new revision is created. `rebuild()` returns a `PageRefreshOutcome`:
+
+- `Refreshed` — the Page node was updated.
+- `SkippedMissingRevision` — the page has no current revision.
+- `SkippedMissingRevisionAuthor` — the current revision has no visible author.
+- `SkippedMissingSubjectSlot` — the page carries no NeoWiki subject slot, so there was nothing to write.
+
+Genuine failures (such as the graph store being unreachable) throw rather than returning an outcome.
+
 ### Reading NeoWiki data and authorization
 
 `NeoWikiExtension::getInstance()` exposes read-side services usable from any MediaWiki extension point
