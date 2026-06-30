@@ -48,6 +48,7 @@ use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
@@ -120,6 +121,7 @@ class NeoWikiExtension {
 	private bool $extensionsRegistered = false;
 	private SubjectRepository $subjectRepository;
 	private CompositeGraphDatabasePlugin $graphDatabasePlugin;
+	private GraphDatabasePluginRegistry $graphDatabasePluginRegistry;
 	private ?Neo4jPlugin $neo4jPlugin = null;
 	private ClientInterface $neo4jClient;
 	private ClientInterface $readOnlyNeo4jClient;
@@ -175,6 +177,7 @@ class NeoWikiExtension {
 				$this->getPropertyTypeRegistry(),
 				$this->getValueBuilderRegistry(),
 				$this->getPagePropertyProviderRegistry(),
+				$this->getGraphDatabasePluginRegistry(),
 			) ]
 		);
 	}
@@ -213,11 +216,24 @@ class NeoWikiExtension {
 	public function getGraphDatabasePlugin(): GraphDatabasePlugin {
 		if ( !isset( $this->graphDatabasePlugin ) ) {
 			$this->graphDatabasePlugin = new CompositeGraphDatabasePlugin(
-				$this->getNeo4jPlugin()->getGraphDatabasePlugin()
+				...$this->getGraphDatabasePluginRegistry()->getPlugins()
 			);
 		}
 
 		return $this->graphDatabasePlugin;
+	}
+
+	public function getGraphDatabasePluginRegistry(): GraphDatabasePluginRegistry {
+		if ( !isset( $this->graphDatabasePluginRegistry ) ) {
+			$this->graphDatabasePluginRegistry = new GraphDatabasePluginRegistry();
+			$this->graphDatabasePluginRegistry->addPlugin(
+				$this->getNeo4jPlugin()->getGraphDatabasePlugin()
+			);
+		}
+
+		$this->ensureExtensionsRegistered();
+
+		return $this->graphDatabasePluginRegistry;
 	}
 
 	public function getNeo4jPlugin(): Neo4jPlugin {
