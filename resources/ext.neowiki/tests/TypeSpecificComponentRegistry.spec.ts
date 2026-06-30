@@ -139,4 +139,46 @@ describe( 'TypeSpecificComponentRegistry', () => {
 		} );
 	} );
 
+	describe( 'unknown fallback', () => {
+
+		const fallback: TypeSpecificStuff = {
+			valueDisplayComponent: { name: 'UnknownDisplay' } as any,
+			valueEditor: { name: 'UnknownEditor' } as any,
+			attributesEditor: { name: 'UnknownAttributes' } as any,
+			label: 'fallback-label',
+			icon: 'fallback-icon',
+		};
+
+		function newRegistryWithFallback(): TypeSpecificComponentRegistry {
+			const registry = new TypeSpecificComponentRegistry();
+			registerComponent( registry, 'string', { valueDisplayComponent: { name: 'StringDisplay' } as any } );
+			registry.setUnknownFallback( fallback );
+			return registry;
+		}
+
+		it( 'returns the fallback components for an unregistered type', () => {
+			const registry = newRegistryWithFallback();
+
+			expect( registry.getValueDisplayComponent( 'color' ) ).toBe( fallback.valueDisplayComponent );
+			expect( registry.getValueEditingComponent( 'color' ) ).toBe( fallback.valueEditor );
+			expect( registry.getAttributesEditor( 'color' ) ).toBe( fallback.attributesEditor );
+			expect( registry.getLabel( 'color' ) ).toBe( 'fallback-label' );
+			expect( registry.getIcon( 'color' ) ).toBe( 'fallback-icon' );
+		} );
+
+		it( 'still returns the registered component for a known type', () => {
+			const registry = newRegistryWithFallback();
+
+			expect( registry.getValueDisplayComponent( 'string' ) ).toStrictEqual( { name: 'StringDisplay' } );
+		} );
+
+		it( 'does not list the fallback among the selectable types', () => {
+			const registry = newRegistryWithFallback();
+
+			expect( registry.getPropertyTypes() ).toEqual( [ 'string' ] );
+			expect( registry.getLabelsAndIcons().map( ( entry ) => entry.value ) ).toEqual( [ 'string' ] );
+		} );
+
+	} );
+
 } );

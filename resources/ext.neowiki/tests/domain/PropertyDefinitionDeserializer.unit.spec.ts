@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { PropertyDefinitionDeserializer } from '@/domain/PropertyDefinition';
-import { newBooleanValue, newNumberValue, newStringValue } from '@/domain/Value';
+import { newBooleanValue, newNumberValue, newStringValue, newUnknownValue } from '@/domain/Value';
 import { TextProperty, TextType } from '@/domain/propertyTypes/Text';
 import { NumberProperty, NumberType } from '@/domain/propertyTypes/Number';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
@@ -110,12 +110,43 @@ it( 'creates a relation property definition with all fields', () => {
 	expect( property.multiple ).toBe( true );
 } );
 
-it( 'throws an error for an unsupported type', () => {
+it( 'degrades gracefully to a placeholder definition for an unregistered type', () => {
 	const json = {
-		type: 'unsupported',
+		type: 'color',
+		description: 'Brand colour',
+		required: true,
 	};
 
-	expect( () => serializer.propertyDefinitionFromJson( 'test', json ) ).toThrow( 'Unknown property type: unsupported' );
+	const property = serializer.propertyDefinitionFromJson( 'test', json );
+
+	expect( property.type ).toBe( 'color' );
+	expect( property.name.toString() ).toBe( 'test' );
+	expect( property.description ).toBe( 'Brand colour' );
+	expect( property.required ).toBe( true );
+} );
+
+it( 'preserves the raw default value of an unregistered type', () => {
+	const json = {
+		type: 'color',
+		default: { hex: '#ff0000' },
+	};
+
+	const property = serializer.propertyDefinitionFromJson( 'test', json );
+
+	expect( property.default ).toEqual( newUnknownValue( 'color', { hex: '#ff0000' } ) );
+} );
+
+it( 'preserves the type-specific keys of an unregistered type so they survive a re-save', () => {
+	const json = {
+		type: 'color',
+		palette: 'warm',
+		minimum: 0,
+	};
+
+	const property = serializer.propertyDefinitionFromJson( 'test', json ) as unknown as Record<string, unknown>;
+
+	expect( property.palette ).toBe( 'warm' );
+	expect( property.minimum ).toBe( 0 );
 } );
 
 it( 'creates definitions without default value', () => {

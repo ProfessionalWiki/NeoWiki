@@ -211,11 +211,44 @@ describe( 'RestSubjectRepository', () => {
 			};
 		}
 
-		it( 'skips referenced Subjects that fail to deserialize', async () => {
+		function undeserializableSubject( id: string ): object {
+			return {
+				id: id,
+				label: 'Broken',
+				schema: 'Product',
+				pageId: 4,
+				pageTitle: 'Broken',
+				statements: {
+					// Missing the required `type`, so the statement cannot be deserialized.
+					Mystery: {
+						value: 'x',
+					},
+				},
+			};
+		}
+
+		it( 'includes referenced Subjects that use an unregistered property type instead of skipping them', async () => {
 			const repository = repositoryReturning( {
 				requestedId: requestedId,
 				subjects: {
 					[ referencedId1 ]: subjectWithUnknownPropertyType( referencedId1 ),
+					[ requestedId ]: bundleResponse.subjects[ requestedId ],
+					[ referencedId2 ]: bundleResponse.subjects[ referencedId2 ],
+				},
+			} );
+
+			const { referencedSubjects } =
+				await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( referencedSubjects.map( ( subject ) => subject.getId().text ) )
+				.toEqual( [ referencedId1, referencedId2 ] );
+		} );
+
+		it( 'skips referenced Subjects that fail to deserialize', async () => {
+			const repository = repositoryReturning( {
+				requestedId: requestedId,
+				subjects: {
+					[ referencedId1 ]: undeserializableSubject( referencedId1 ),
 					[ requestedId ]: bundleResponse.subjects[ requestedId ],
 					[ referencedId2 ]: bundleResponse.subjects[ referencedId2 ],
 				},
@@ -232,12 +265,12 @@ describe( 'RestSubjectRepository', () => {
 			const repository = repositoryReturning( {
 				requestedId: requestedId,
 				subjects: {
-					[ requestedId ]: subjectWithUnknownPropertyType( requestedId ),
+					[ requestedId ]: undeserializableSubject( requestedId ),
 				},
 			} );
 
 			await expect( repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) ) )
-				.rejects.toThrow( 'Unknown property type' );
+				.rejects.toThrow( 'Invalid statement JSON' );
 		} );
 
 	} );
