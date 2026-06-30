@@ -54,12 +54,23 @@ services:
   node:
     image: node:24
     restart: on-failure:3
+    # Run as the host user so node_modules/ and dist/ written into the bind mount
+    # are host-owned, matching the Makefile's EXEC_USER. The Makefile exports
+    # NODE_USER (host uid:gid under rootful Docker, 0:0 under rootless Podman, which
+    # remaps container-root to the host user). The 1000:1000 default only covers a
+    # manual `docker compose up` (outside make) on a host whose uid is 1000.
+    user: "${NODE_USER:-1000:1000}"
     working_dir: /workspace/resources/ext.neowiki
     volumes:
       - ../:/workspace:z
     command: sh -c "npm install && npm run build:watch"
     environment:
       - npm_config_cache=/tmp/.npm
+      # NODE_USER is the host's `id -u`, which on another machine may have no
+      # /etc/passwd entry in node:24 — HOME would then default to the unwritable
+      # '/'. Give npm a writable HOME for its logs/config. (On a uid-1000 host this
+      # is a no-op: uid 1000 is the image's `node` user, HOME=/home/node.)
+      - HOME=/tmp
 
   mailcatcher:
     image: sj26/mailcatcher

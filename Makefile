@@ -36,11 +36,19 @@ ifeq ($(IS_PODMAN),1)
 	# Rootless Podman maps container-root to the host user, so bind-mount writes
 	# already land with host ownership. Forcing --user would map into the subuid range.
 	EXEC_USER :=
+	# The node sidecar runs as container-root, which Podman remaps to the host user.
+	NODE_USER := 0:0
 else
 	# Rootful Docker does no UID remap: run exec as the host uid:gid so files written
 	# into bind mounts are owned by the host user, not root.
 	EXEC_USER := --user $(shell id -u):$(shell id -g)
+	# The node sidecar is a long-running service, so its user is set at compose-up
+	# time (not via exec): run it as the host uid:gid so node_modules/ and dist/ are
+	# host-owned, matching EXEC_USER. Otherwise the host-user TS targets cannot write
+	# them. Exported so `docker compose` interpolates ${NODE_USER} in the dev compose.
+	NODE_USER := $(shell id -u):$(shell id -g)
 endif
+export NODE_USER
 
 EXEC_MW := $(DC) exec -T $(EXEC_USER) mediawiki
 EXEC_MW_ROOT := $(DC) exec -T mediawiki
