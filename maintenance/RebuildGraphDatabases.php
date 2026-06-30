@@ -4,9 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Maintenance;
 
+use LogicException;
 use Maintenance;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
@@ -32,10 +34,7 @@ class RebuildGraphDatabases extends Maintenance {
 
 		$this->outputChanneled( 'Rebuilding graph databases for ' . count( $pageIds ) . ' subject pages...' );
 
-		$rebuilder = new SubjectPageRebuilder(
-			NeoWikiExtension::getInstance()->getStoreContentUC(),
-			MediaWikiServices::getInstance()->getWikiPageFactory()
-		);
+		$rebuilder = NeoWikiExtension::getInstance()->newSubjectPageRebuilder();
 
 		$rebuilt = 0;
 
@@ -56,13 +55,25 @@ class RebuildGraphDatabases extends Maintenance {
 			return false;
 		}
 
-		if ( !$rebuilder->rebuild( $title ) ) {
-			$this->outputChanneled( 'Skipped ' . $title->getPrefixedText() . ': no current revision' );
-			return false;
+		$outcome = $rebuilder->rebuild( $title );
+		$name = $title->getPrefixedText();
+
+		if ( $outcome === PageRefreshOutcome::Refreshed ) {
+			$this->outputChanneled( "Rebuilt $name" );
+			return true;
 		}
 
-		$this->outputChanneled( 'Rebuilt ' . $title->getPrefixedText() );
-		return true;
+		$this->outputChanneled( "Skipped $name: " . self::skipReason( $outcome ) );
+		return false;
+	}
+
+	private static function skipReason( PageRefreshOutcome $outcome ): string {
+		return match ( $outcome ) {
+			PageRefreshOutcome::SkippedMissingRevision => 'no current revision',
+			PageRefreshOutcome::SkippedMissingRevisionAuthor => 'current revision has no author',
+			PageRefreshOutcome::SkippedMissingSubjectSlot => 'no subject slot',
+			PageRefreshOutcome::Refreshed => throw new LogicException( 'Refreshed is not a skip reason' ),
+		};
 	}
 
 	/**
