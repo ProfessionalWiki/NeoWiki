@@ -28,6 +28,10 @@ export class SubjectValidator {
 			return true; // Statements for unknown properties are considered valid
 		}
 
+		if ( !this.propertyTypeRegistry.hasType( statement.propertyType ) ) {
+			return true; // Cannot validate a type owned by an unavailable extension
+		}
+
 		const errors =
 			this.getPropertyType( statement )
 				.validate(

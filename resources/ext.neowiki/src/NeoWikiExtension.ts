@@ -51,7 +51,10 @@ import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import { Neo } from '@/Neo.ts';
 // import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
-import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconClock, cdxIconCalendar, cdxIconCheck } from '@wikimedia/codex-icons';
+import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconClock, cdxIconCalendar, cdxIconCheck, cdxIconAlert } from '@wikimedia/codex-icons';
+import UnknownValueDisplay from '@/components/Value/UnknownValueDisplay.vue';
+import UnknownValueInput from '@/components/Value/UnknownValueInput.vue';
+import UnknownAttributesEditor from '@/components/SchemaEditor/Property/UnknownAttributesEditor.vue';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
@@ -148,6 +151,16 @@ export class NeoWikiExtension {
 			attributesEditor: BooleanAttributesEditor,
 			label: 'neowiki-property-type-boolean',
 			icon: cdxIconCheck,
+		} );
+
+		// Render any property type that is not registered (e.g. owned by a disabled
+		// or failed extension) with read-only placeholders instead of throwing.
+		registry.setUnknownFallback( {
+			valueDisplayComponent: UnknownValueDisplay,
+			valueEditor: UnknownValueInput,
+			attributesEditor: UnknownAttributesEditor,
+			label: 'neowiki-property-type-unknown',
+			icon: cdxIconAlert,
 		} );
 
 		return registry;

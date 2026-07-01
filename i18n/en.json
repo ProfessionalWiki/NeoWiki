@@ -25,6 +25,10 @@
 	"neowiki-property-type-datetime": "Date & Time",
 	"neowiki-property-type-date": "Date",
 	"neowiki-property-type-boolean": "Boolean",
+	"neowiki-property-type-unknown": "Unknown type",
+	"neowiki-property-type-unknown-note": "Unsupported type: $1",
+	"neowiki-property-type-unknown-input-note": "Unsupported type \"$1\". This value cannot be edited and is preserved as-is.",
+	"neowiki-property-type-unknown-notification": "Some data on this page uses the property type \"$1\" from an extension that is not available. It is shown as stored but cannot be displayed or edited normally.",
 	"neowiki-boolean-true": "Yes",
 	"neowiki-boolean-false": "No",
 

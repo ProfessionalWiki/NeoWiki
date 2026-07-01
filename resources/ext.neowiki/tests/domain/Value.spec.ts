@@ -5,6 +5,7 @@ import {
 	newNumberValue,
 	newRelation,
 	newStringValue,
+	newUnknownValue,
 	relationValuesHaveSameTargets,
 	RelationValue,
 	type Value,
@@ -78,6 +79,26 @@ describe( 'valueToJson', () => {
 		} as unknown as Value;
 
 		expect( () => valueToJson( value ) ).toThrow( 'Unsupported value type: test' );
+	} );
+
+	it( 'round-trips an UnknownValue back to its raw stored value', () => {
+		const raw = { custom: [ 'red', 'green' ], shade: 3 };
+
+		const json = valueToJson( newUnknownValue( 'color', raw ) );
+
+		expect( json ).toBe( raw );
+	} );
+
+} );
+
+describe( 'newUnknownValue', () => {
+
+	it( 'captures the original type name and the raw value', () => {
+		const value = newUnknownValue( 'color', [ '#fff' ] );
+
+		expect( value.type ).toBe( ValueType.Unknown );
+		expect( value.typeName ).toBe( 'color' );
+		expect( value.raw ).toEqual( [ '#fff' ] );
 	} );
 
 } );
@@ -188,6 +209,10 @@ describe( 'isValueEmpty', () => {
 	it( 'returns false for a RelationValue carrying relations', () => {
 		const relation = newRelation( undefined, 's11111111111111' );
 		expect( isValueEmpty( new RelationValue( [ relation ] ) ) ).toBe( false );
+	} );
+
+	it( 'returns false for an UnknownValue (it still carries stored data)', () => {
+		expect( isValueEmpty( newUnknownValue( 'color', [ '#fff' ] ) ) ).toBe( false );
 	} );
 
 } );

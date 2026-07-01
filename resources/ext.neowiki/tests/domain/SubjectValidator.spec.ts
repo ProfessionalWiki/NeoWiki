@@ -7,7 +7,7 @@ import { StatementList } from '@/domain/StatementList';
 import { Statement } from '@/domain/Statement';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
-import { newStringValue, Value, ValueType } from '@/domain/Value';
+import { newStringValue, newUnknownValue, Value, ValueType } from '@/domain/Value';
 import { newSubject } from '@/TestHelpers';
 
 describe( 'SubjectValidator', () => {
@@ -104,6 +104,25 @@ describe( 'SubjectValidator', () => {
 			);
 
 			const subject = newValidSubjectWithProperty();
+			const schema = newSchema( [ exampleProperty ] );
+
+			expect( validator.validate( subject, schema ) ).toBe( true );
+		} );
+
+		it( 'treats a statement as valid when its property type is not registered', () => {
+			const validator = new SubjectValidator(
+				getFormatRegistryWithMockPropertyType( false ),
+			);
+
+			const subject = newSubject( {
+				statements: new StatementList( [
+					new Statement(
+						new PropertyName( exampleProperty ),
+						'color',
+						newUnknownValue( 'color', { hex: '#ff0000' } ),
+					),
+				] ),
+			} );
 			const schema = newSchema( [ exampleProperty ] );
 
 			expect( validator.validate( subject, schema ) ).toBe( true );
