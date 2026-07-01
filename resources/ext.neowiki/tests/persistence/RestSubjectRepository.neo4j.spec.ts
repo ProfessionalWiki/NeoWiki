@@ -7,6 +7,7 @@ import { Statement } from '@/domain/Statement';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue } from '@/domain/Value';
 import { TextType } from '@/domain/propertyTypes/Text';
+import { RelationType } from '@/domain/propertyTypes/Relation';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
 import { UrlType } from '@/domain/propertyTypes/Url';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
@@ -99,6 +100,99 @@ describe( 'RestSubjectRepository', () => {
 
 			await expect( repository.getSubject( new SubjectId( ID ) ) )
 				.rejects.toThrow( 'No response found for URL: ' + url );
+		} );
+
+	} );
+
+	describe( 'getSubjectWithReferencedSubjects', () => {
+
+		const requestedId = 's11111111111111';
+		const referencedId1 = 's22222222222222';
+		const referencedId2 = 's33333333333333';
+
+		const bundleResponse = {
+			requestedId: requestedId,
+			subjects: {
+				[ requestedId ]: {
+					id: requestedId,
+					label: 'Main',
+					schema: 'Company',
+					pageId: 1,
+					pageTitle: 'Main',
+					statements: {
+						Products: {
+							value: [ { target: referencedId1 }, { target: referencedId2 } ],
+							type: RelationType.typeName,
+						},
+					},
+				},
+				[ referencedId1 ]: {
+					id: referencedId1,
+					label: 'Product One',
+					schema: 'Product',
+					pageId: 2,
+					pageTitle: 'Product One',
+					statements: {},
+				},
+				[ referencedId2 ]: {
+					id: referencedId2,
+					label: 'Product Two',
+					schema: 'Product',
+					pageId: 3,
+					pageTitle: 'Product Two',
+					statements: {},
+				},
+			},
+		};
+
+		function repositoryReturning( response: object ): RestSubjectRepository {
+			return newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ `https://example.com/rest.php/neowiki/v0/subject/${ requestedId }?expand=page|relations` ]:
+					new Response( JSON.stringify( response ), { status: 200 } ),
+			} ) );
+		}
+
+		it( 'returns the requested Subject together with every bundled referenced Subject', async () => {
+			const repository = repositoryReturning( bundleResponse );
+
+			const subjects = await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( subjects.keys().sort() ).toEqual(
+				[ requestedId, referencedId1, referencedId2 ].sort(),
+			);
+			expect( subjects.get( new SubjectId( requestedId ) )?.getLabel() ).toBe( 'Main' );
+			expect( subjects.get( new SubjectId( referencedId1 ) )?.getLabel() ).toBe( 'Product One' );
+			expect( subjects.get( new SubjectId( referencedId2 ) )?.getLabel() ).toBe( 'Product Two' );
+		} );
+
+		it( 'deserializes referenced Subjects with their page context', async () => {
+			const repository = repositoryReturning( bundleResponse );
+
+			const subjects = await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			const referenced = subjects.get( new SubjectId( referencedId1 ) ) as SubjectWithContext;
+			expect( referenced.getPageIdentifiers().getPageName() ).toBe( 'Product One' );
+		} );
+
+		it( 'issues a single request for the whole bundle', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				[ `https://example.com/rest.php/neowiki/v0/subject/${ requestedId }?expand=page|relations` ]:
+					new Response( JSON.stringify( bundleResponse ), { status: 200 } ),
+			} );
+			const getSpy = vi.spyOn( inMemoryHttpClient, 'get' );
+
+			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
+
+			await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( getSpy ).toHaveBeenCalledOnce();
+		} );
+
+		it( 'throws when the requested Subject is missing from the response', async () => {
+			const repository = repositoryReturning( {} );
+
+			await expect( repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) ) )
+				.rejects.toThrow( 'Subject not found' );
 		} );
 
 	} );
