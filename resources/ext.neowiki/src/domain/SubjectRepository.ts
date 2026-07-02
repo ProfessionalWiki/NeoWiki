@@ -4,13 +4,23 @@ import { InMemorySubjectLookup } from '@/domain/SubjectLookup';
 import type { StatementList } from '@/domain/StatementList';
 import type { SchemaName } from '@/domain/Schema';
 import { PageSubjects } from '@/domain/PageSubjects';
-import { SubjectMap } from '@/domain/SubjectMap';
+import type { Subject } from '@/domain/Subject';
 import type { DeserializedPageSubjects } from '@/persistence/PageSubjectsDeserializer';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 
+export interface SubjectWithReferencedSubjects {
+	requestedSubject: Subject;
+	referencedSubjects: Subject[];
+}
+
 export interface SubjectRepository extends SubjectLookup {
 
-	getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectMap>;
+	/**
+	 * Returns the Subject together with the Subjects its relations target,
+	 * so relation labels can be shown without fetching each target individually.
+	 * Referenced Subjects that cannot be loaded are omitted rather than failing the whole call.
+	 */
+	getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectWithReferencedSubjects>;
 
 	getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects>;
 
@@ -52,11 +62,13 @@ export interface SubjectRepository extends SubjectLookup {
 
 export class StubSubjectRepository extends InMemorySubjectLookup implements SubjectRepository {
 
-	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectMap> {
+	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectWithReferencedSubjects> {
 		const subject = await this.getSubject( id );
-		const referencedSubjects = await subject.getReferencedSubjects( this );
 
-		return new SubjectMap( subject, ...referencedSubjects );
+		return {
+			requestedSubject: subject,
+			referencedSubjects: [ ...await subject.getReferencedSubjects( this ) ],
+		};
 	}
 
 	public getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects> {

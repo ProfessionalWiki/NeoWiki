@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader';
 import { StubSubjectRepository } from '@/domain/SubjectRepository';
+import type { SubjectWithReferencedSubjects } from '@/domain/SubjectRepository';
 import { InMemorySchemaRepository } from '@/application/SchemaRepository';
 import { InMemoryLayoutLookup } from '@/application/LayoutLookup';
-import { SubjectMap } from '@/domain/SubjectMap';
 import { SubjectId } from '@/domain/SubjectId';
 import { Subject } from '@/domain/Subject';
 import { newSchema, newSubject } from '@/TestHelpers';
@@ -27,20 +27,16 @@ class RecordingSubjectRepository extends StubSubjectRepository {
 
 	public getSubjectWithReferencedSubjectsCallCount = 0;
 
-	public constructor( private readonly bundle: SubjectMap ) {
-		super( [] );
+	public constructor( private readonly bundle: SubjectWithReferencedSubjects ) {
+		super( [ bundle.requestedSubject, ...bundle.referencedSubjects ] );
 	}
 
 	public override async getSubject( id: SubjectId ): Promise<Subject> {
 		this.getSubjectCallCount++;
-		const subject = this.bundle.get( id );
-		if ( subject === undefined ) {
-			throw new Error( `Subject ${ id.text } not found` );
-		}
-		return subject;
+		return super.getSubject( id );
 	}
 
-	public override async getSubjectWithReferencedSubjects( _id: SubjectId ): Promise<SubjectMap> {
+	public override async getSubjectWithReferencedSubjects( _id: SubjectId ): Promise<SubjectWithReferencedSubjects> {
 		this.getSubjectWithReferencedSubjectsCallCount++;
 		return this.bundle;
 	}
@@ -78,7 +74,9 @@ describe( 'StoreStateLoader', () => {
 		const main = newMainSubjectWithRelationsTo( referencedId1, referencedId2 );
 		const referenced1 = newSubject( { id: referencedId1, label: 'Product One', schemaName: 'Product' } );
 		const referenced2 = newSubject( { id: referencedId2, label: 'Product Two', schemaName: 'Product' } );
-		const repository = new RecordingSubjectRepository( new SubjectMap( main, referenced1, referenced2 ) );
+		const repository = new RecordingSubjectRepository(
+			{ requestedSubject: main, referencedSubjects: [ referenced1, referenced2 ] },
+		);
 
 		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
 
@@ -92,7 +90,9 @@ describe( 'StoreStateLoader', () => {
 		const main = newMainSubjectWithRelationsTo( referencedId1, referencedId2 );
 		const referenced1 = newSubject( { id: referencedId1, label: 'Product One', schemaName: 'Product' } );
 		const referenced2 = newSubject( { id: referencedId2, label: 'Product Two', schemaName: 'Product' } );
-		const repository = new RecordingSubjectRepository( new SubjectMap( main, referenced1, referenced2 ) );
+		const repository = new RecordingSubjectRepository(
+			{ requestedSubject: main, referencedSubjects: [ referenced1, referenced2 ] },
+		);
 
 		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
 
@@ -103,7 +103,9 @@ describe( 'StoreStateLoader', () => {
 	it( 'stores the schema of the requested Subject', async () => {
 		const main = newMainSubjectWithRelationsTo( referencedId1 );
 		const referenced1 = newSubject( { id: referencedId1, label: 'Product One', schemaName: 'Product' } );
-		const repository = new RecordingSubjectRepository( new SubjectMap( main, referenced1 ) );
+		const repository = new RecordingSubjectRepository(
+			{ requestedSubject: main, referencedSubjects: [ referenced1 ] },
+		);
 
 		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
 

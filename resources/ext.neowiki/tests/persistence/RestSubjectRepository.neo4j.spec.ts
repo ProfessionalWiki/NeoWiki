@@ -113,6 +113,14 @@ describe( 'RestSubjectRepository', () => {
 		const bundleResponse = {
 			requestedId: requestedId,
 			subjects: {
+				[ referencedId1 ]: {
+					id: referencedId1,
+					label: 'Product One',
+					schema: 'Product',
+					pageId: 2,
+					pageTitle: 'Product One',
+					statements: {},
+				},
 				[ requestedId ]: {
 					id: requestedId,
 					label: 'Main',
@@ -125,14 +133,6 @@ describe( 'RestSubjectRepository', () => {
 							type: RelationType.typeName,
 						},
 					},
-				},
-				[ referencedId1 ]: {
-					id: referencedId1,
-					label: 'Product One',
-					schema: 'Product',
-					pageId: 2,
-					pageTitle: 'Product One',
-					statements: {},
 				},
 				[ referencedId2 ]: {
 					id: referencedId2,
@@ -155,22 +155,22 @@ describe( 'RestSubjectRepository', () => {
 		it( 'returns the requested Subject together with every bundled referenced Subject', async () => {
 			const repository = repositoryReturning( bundleResponse );
 
-			const subjects = await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+			const { requestedSubject, referencedSubjects } =
+				await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
 
-			expect( subjects.keys().sort() ).toEqual(
-				[ requestedId, referencedId1, referencedId2 ].sort(),
+			expect( requestedSubject.getLabel() ).toBe( 'Main' );
+			expect( referencedSubjects.map( ( subject ) => subject.getLabel() ) ).toEqual(
+				[ 'Product One', 'Product Two' ],
 			);
-			expect( subjects.get( new SubjectId( requestedId ) )?.getLabel() ).toBe( 'Main' );
-			expect( subjects.get( new SubjectId( referencedId1 ) )?.getLabel() ).toBe( 'Product One' );
-			expect( subjects.get( new SubjectId( referencedId2 ) )?.getLabel() ).toBe( 'Product Two' );
 		} );
 
 		it( 'deserializes referenced Subjects with their page context', async () => {
 			const repository = repositoryReturning( bundleResponse );
 
-			const subjects = await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+			const { referencedSubjects } =
+				await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
 
-			const referenced = subjects.get( new SubjectId( referencedId1 ) ) as SubjectWithContext;
+			const referenced = referencedSubjects[ 0 ] as SubjectWithContext;
 			expect( referenced.getPageIdentifiers().getPageName() ).toBe( 'Product One' );
 		} );
 
@@ -193,6 +193,51 @@ describe( 'RestSubjectRepository', () => {
 
 			await expect( repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) ) )
 				.rejects.toThrow( 'Subject not found' );
+		} );
+
+		function subjectWithUnknownPropertyType( id: string ): object {
+			return {
+				id: id,
+				label: 'Broken',
+				schema: 'Product',
+				pageId: 4,
+				pageTitle: 'Broken',
+				statements: {
+					Mystery: {
+						value: 'x',
+						type: 'unregistered-property-type',
+					},
+				},
+			};
+		}
+
+		it( 'skips referenced Subjects that fail to deserialize', async () => {
+			const repository = repositoryReturning( {
+				requestedId: requestedId,
+				subjects: {
+					[ referencedId1 ]: subjectWithUnknownPropertyType( referencedId1 ),
+					[ requestedId ]: bundleResponse.subjects[ requestedId ],
+					[ referencedId2 ]: bundleResponse.subjects[ referencedId2 ],
+				},
+			} );
+
+			const { requestedSubject, referencedSubjects } =
+				await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( requestedSubject.getLabel() ).toBe( 'Main' );
+			expect( referencedSubjects.map( ( subject ) => subject.getId().text ) ).toEqual( [ referencedId2 ] );
+		} );
+
+		it( 'throws when the requested Subject fails to deserialize', async () => {
+			const repository = repositoryReturning( {
+				requestedId: requestedId,
+				subjects: {
+					[ requestedId ]: subjectWithUnknownPropertyType( requestedId ),
+				},
+			} );
+
+			await expect( repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) ) )
+				.rejects.toThrow( 'Unknown property type' );
 		} );
 
 	} );
