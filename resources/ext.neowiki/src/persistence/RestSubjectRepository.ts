@@ -1,4 +1,4 @@
-import type { SubjectRepository } from '@/domain/SubjectRepository';
+import type { SubjectRepository, SubjectWithReferencedSubjects } from '@/domain/SubjectRepository';
 import { SubjectId } from '@/domain/SubjectId';
 import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
 import {
@@ -10,7 +10,6 @@ import { StatementList, statementsToJson } from '@/domain/StatementList';
 import { type SchemaName } from '@/domain/Schema';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { Subject } from '@/domain/Subject';
-import { SubjectMap } from '@/domain/SubjectMap';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { parseViolations } from '@/persistence/violationParsing';
@@ -46,6 +45,11 @@ export type SubjectJson = {
 	pageTitle: string;
 	requestedId: string;
 	value?: unknown;
+};
+
+type SubjectBundleJson = {
+	requestedId: string;
+	subjects: Record<string, SubjectJson>;
 };
 
 export class RestSubjectRepository implements SubjectRepository {
@@ -125,20 +129,35 @@ export class RestSubjectRepository implements SubjectRepository {
 	 * The `expand=relations` response bundles the requested Subject together with
 	 * every Subject its relations target, so a View can resolve relation labels
 	 * without re-fetching each target individually.
+	 *
+	 * Referenced Subjects that fail to deserialize are skipped: a broken relation
+	 * target should not prevent the requested Subject from loading.
 	 */
-	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectMap> {
+	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectWithReferencedSubjects> {
 		const bundle = await this.fetchSubjectBundle( id );
 
-		return new SubjectMap(
-			...Object.values( bundle.subjects ).map(
-				( subjectData ) => this.subjectDeserializer.deserialize( subjectData ),
-			),
-		);
+		return {
+			requestedSubject: this.subjectDeserializer.deserialize( bundle.subjects[ bundle.requestedId ] ),
+			referencedSubjects: this.deserializeReferencedSubjects( bundle ),
+		};
 	}
 
-	private async fetchSubjectBundle(
-		id: SubjectId,
-	): Promise<{ requestedId: string; subjects: Record<string, SubjectJson> }> {
+	private deserializeReferencedSubjects( bundle: SubjectBundleJson ): Subject[] {
+		return Object.entries( bundle.subjects )
+			.filter( ( [ id ] ) => id !== bundle.requestedId )
+			.map( ( [ , subjectData ] ) => this.deserializeOrNull( subjectData ) )
+			.filter( ( subject ): subject is Subject => subject !== null );
+	}
+
+	private deserializeOrNull( subjectData: SubjectJson ): Subject|null {
+		try {
+			return this.subjectDeserializer.deserialize( subjectData );
+		} catch ( _error ) {
+			return null;
+		}
+	}
+
+	private async fetchSubjectBundle( id: SubjectId ): Promise<SubjectBundleJson> {
 		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`;
 
 		if ( this.revisionId !== undefined ) {

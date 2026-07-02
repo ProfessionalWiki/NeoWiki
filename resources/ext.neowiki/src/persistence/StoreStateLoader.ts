@@ -46,15 +46,12 @@ export class StoreStateLoader {
 	private async loadForSubject( subjectId: SubjectId ): Promise<void> {
 		// The repository bundles the requested Subject with the Subjects its
 		// relations target, so storing them all avoids a re-fetch per relation.
-		const subjects = await this.subjectRepo.getSubjectWithReferencedSubjects( subjectId );
-		const requestedSubject = subjects.get( subjectId );
-
-		if ( requestedSubject === undefined ) {
-			return;
-		}
+		const { requestedSubject, referencedSubjects } =
+			await this.subjectRepo.getSubjectWithReferencedSubjects( subjectId );
 
 		const subjectStore = useSubjectStore(); // TODO: inject
-		for ( const subject of subjects ) {
+		subjectStore.setSubject( requestedSubject );
+		for ( const subject of referencedSubjects ) {
 			subjectStore.setSubject( subject );
 		}
 
