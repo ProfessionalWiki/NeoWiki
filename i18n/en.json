@@ -168,6 +168,7 @@
 	"neowiki-schemas-column-description": "Description",
 	"neowiki-schemas-column-properties": "Properties",
 	"neowiki-schemas-empty": "No schemas have been created yet.",
+	"neowiki-schema-sidebar-all-schemas": "All schemas",
 
 	"neowiki-schema-delete": "Delete schema",
 	"neowiki-schema-delete-confirm-title": "Delete schema?",

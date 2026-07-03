@@ -74,6 +74,7 @@
 	"neowiki-schemas-column-description": "Column header for schema description in the schemas list table on [[Special:Schemas]].",
 	"neowiki-schemas-column-properties": "Column header for the number of property definitions in the schemas list table on [[Special:Schemas]].",
 	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]].",
+	"neowiki-schema-sidebar-all-schemas": "Label for the link in the NeoWiki section of the sidebar on Schema pages that navigates to [[Special:Schemas]].",
 
 	"neowiki-schema-delete": "Aria label for the delete button on a Schema row in the schemas list.",
 	"neowiki-schema-delete-confirm-title": "Title of the confirmation dialog shown when deleting a schema.",
@@ -109,7 +110,7 @@
 	"neowiki-layout-display-rule-type": "Column header for the property type in the display rules table.",
 	"neowiki-layout-display-rule-attributes": "Column header for display attributes in the display rules table.",
 	"neowiki-layout-display-no-rules": "Message shown when a layout has no display rules, meaning all schema properties are shown in their default order.",
-	"neowiki-layout-sidebar-all-layouts": "Label for the link in the Tools sidebar on Layout pages that navigates to [[Special:Layouts]].",
+	"neowiki-layout-sidebar-all-layouts": "Label for the link in the NeoWiki section of the sidebar on Layout pages that navigates to [[Special:Layouts]].",
 
 	"neowiki-editing-layout": "Title of the dialog for editing a layout. $1 is the layout name.",
 	"neowiki-save-layout": "Label for the save button in the layout editor dialog.",

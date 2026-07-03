@@ -223,22 +223,10 @@ class NeoWikiHooks {
 			return;
 		}
 
-		if ( $title->getNamespace() === NeoWikiExtension::NS_LAYOUT ) {
-			$sidebar['TOOLBOX'] ??= [];
-			array_unshift(
-				$sidebar['TOOLBOX'],
-				[
-					'text' => wfMessage( 'neowiki-layout-sidebar-all-layouts' )->text(),
-					'href' => SpecialPage::getTitleFor( 'Layouts' )->getLocalURL(),
-					'id' => 't-neowiki-layouts',
-				]
-			);
-		}
-
 		$extension = NeoWikiExtension::getInstance();
 		$authorizer = $extension->newSubjectAuthorizer( $skin->getAuthority() );
 
-		$pageToolsItems = ( new PageToolsBuilder() )->build(
+		$neoWikiTools = ( new PageToolsBuilder() )->build(
 			title: $title,
 			isContentNamespace: MediaWikiServices::getInstance()
 				->getNamespaceInfo()
@@ -252,11 +240,45 @@ class NeoWikiHooks {
 				->getActionName( $skin->getContext() )
 		);
 
-		if ( $pageToolsItems !== [] ) {
+		if ( $title->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
+			$neoWikiTools[] = self::allPagesLink(
+				$skin,
+				specialPage: 'Schemas',
+				message: 'neowiki-schema-sidebar-all-schemas',
+				linkId: 't-neowiki-schemas'
+			);
+		}
+
+		if ( $title->getNamespace() === NeoWikiExtension::NS_LAYOUT ) {
+			$neoWikiTools[] = self::allPagesLink(
+				$skin,
+				specialPage: 'Layouts',
+				message: 'neowiki-layout-sidebar-all-layouts',
+				linkId: 't-neowiki-layouts'
+			);
+		}
+
+		if ( $neoWikiTools !== [] ) {
 			// The section array key is used by MediaWiki as the message key for
 			// the section heading, so it must match an existing message name.
-			$sidebar['neowiki-page-tools-label'] = $pageToolsItems;
+			$sidebar['neowiki-page-tools-label'] = $neoWikiTools;
 		}
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function allPagesLink(
+		Skin $skin,
+		string $specialPage,
+		string $message,
+		string $linkId
+	): array {
+		return [
+			'text' => $skin->msg( $message )->text(),
+			'href' => SpecialPage::getTitleFor( $specialPage )->getLocalURL(),
+			'id' => $linkId,
+		];
 	}
 
 	public static function onSkinTemplateNavigationUniversal( SkinTemplate $sktemplate, array &$links ): void {
