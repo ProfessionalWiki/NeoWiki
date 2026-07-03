@@ -82,6 +82,9 @@ class CorePagePropertyProviderTest extends TestCase {
 				modificationTime: $modificationTime,
 				categories: $categories,
 				lastEditor: $lastEditor,
+				content: 'Whatever content',
+				contentModel: 'wikitext',
+				parserProperties: [],
 			)
 		);
 	}

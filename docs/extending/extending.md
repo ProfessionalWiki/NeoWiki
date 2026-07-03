@@ -104,7 +104,15 @@ class StaticPagePropertyProvider implements PagePropertyProvider {
 Register with `NeoWikiRegistrar::addPagePropertyProvider()`. Keys are merged across all providers into one
 key/value map, with the last-registered provider winning on a key collision, so namespace your keys (e.g. with an
 extension prefix). The context exposes the page id, title and namespace, creation and modification times,
-categories, and last editor. Example:
+categories, and last editor, plus the revision's main slot content, so providers can derive Page Properties from
+the content without re-fetching or re-parsing it.
+
+To derive Page Properties from the content, prefer the parse products: `categories`, and `parserProperties` — the
+MediaWiki page properties recorded during parsing (e.g. those a parser hook sets via
+`ParserOutput::setPageProperty`). These are template-expansion-safe and robust. (Note that `parserProperties` are
+an input from MediaWiki's parse; they are not the NeoWiki Page Properties this provider returns.) The raw main
+slot `content` and its `contentModel` are also exposed, but scraping raw wikitext is fragile — reach for them
+mainly when handling a custom, non-wikitext content model that the parse products do not cover. Example:
 [`src/StaticPagePropertyProvider.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/StaticPagePropertyProvider.php).
 
 ### Edit notices
