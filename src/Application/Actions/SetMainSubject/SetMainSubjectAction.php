@@ -21,11 +21,12 @@ readonly class SetMainSubjectAction {
 	}
 
 	public function setMainSubject( SetMainSubjectRequest $request ): void {
-		if ( !$this->subjectAuthorizer->canEditSubject() ) {
+		$pageId = new PageId( $request->pageId );
+
+		if ( !$this->subjectAuthorizer->canEditSubject( $pageId ) ) {
 			throw new \RuntimeException( 'You do not have the necessary permissions to change the main subject' );
 		}
 
-		$pageId = new PageId( $request->pageId );
 		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageId );
 		$previousMain = $pageSubjects->getMainSubject();
 

@@ -7,10 +7,14 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 
 /**
@@ -36,10 +40,26 @@ class DeleteSubjectActionTest extends TestCase {
 		$this->assertSame( 'Removed by curator', $repository->comments[self::SUBJECT_ID] );
 	}
 
+	public function testAuthorizesAgainstTheSubjectsResolvedPage(): void {
+		$authorizer = new SpySubjectAuthorizer();
+		$action = new DeleteSubjectAction(
+			$this->newRepositoryWithSubject(),
+			$authorizer,
+			new InMemoryPageIdentifiersLookup( [
+				[ new SubjectId( self::SUBJECT_ID ), new PageIdentifiers( new PageId( 7 ), 'Owning page', 0 ) ]
+			] )
+		);
+
+		$action->deleteSubject( new SubjectId( self::SUBJECT_ID ), null );
+
+		$this->assertEquals( new PageId( 7 ), $authorizer->authorizedPageId );
+	}
+
 	public function testThrowsWhenUserMayNotDeleteSubject(): void {
 		$action = new DeleteSubjectAction(
 			new InMemorySubjectRepository(),
-			new FailingSubjectAuthorizer()
+			new FailingSubjectAuthorizer(),
+			$this->pageIdentifiersLookupWithSubject()
 		);
 
 		$this->expectException( \RuntimeException::class );
@@ -55,7 +75,17 @@ class DeleteSubjectActionTest extends TestCase {
 	}
 
 	private function newAction( SubjectRepository $repository ): DeleteSubjectAction {
-		return new DeleteSubjectAction( $repository, new SucceedingSubjectAuthorizer() );
+		return new DeleteSubjectAction(
+			$repository,
+			new SucceedingSubjectAuthorizer(),
+			$this->pageIdentifiersLookupWithSubject()
+		);
+	}
+
+	private function pageIdentifiersLookupWithSubject(): InMemoryPageIdentifiersLookup {
+		return new InMemoryPageIdentifiersLookup( [
+			[ new SubjectId( self::SUBJECT_ID ), new PageIdentifiers( new PageId( 1 ), 'Test page', 0 ) ]
+		] );
 	}
 
 }

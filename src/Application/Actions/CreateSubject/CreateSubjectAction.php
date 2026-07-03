@@ -39,14 +39,19 @@ readonly class CreateSubjectAction {
 			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
 		}
 
-		if ( ( $request->isMainSubject && !$this->subjectAuthorizer->canCreateMainSubject(
-				) ) || !$this->subjectAuthorizer->canCreateChildSubject() ) {
+		$pageId = new PageId( $request->pageId );
+
+		$authorized = $request->isMainSubject
+			? $this->subjectAuthorizer->canCreateMainSubject( $pageId )
+			: $this->subjectAuthorizer->canCreateChildSubject( $pageId );
+
+		if ( !$authorized ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to create this subject' );
 		}
 
 		$subject = $this->buildSubject( $request );
 
-		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( new PageId( $request->pageId ) );
+		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageId );
 
 		try {
 			if ( $request->isMainSubject ) {
@@ -66,7 +71,7 @@ readonly class CreateSubjectAction {
 			return;
 		}
 
-		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ), $request->comment );
+		$this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $request->comment );
 		$this->presenter->presentCreated( $subject->id->text, $violations );
 	}
 

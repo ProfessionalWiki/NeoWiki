@@ -32,6 +32,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
@@ -168,6 +169,23 @@ class CreateSubjectActionTest extends TestCase {
 				statements: []
 			)
 		);
+	}
+
+	public function testMainSubjectCreationDoesNotRequireChildPermission(): void {
+		$this->authorizer = new SpySubjectAuthorizer( mainAllowed: true, childAllowed: false );
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: 'some-schema-id',
+				statements: []
+			)
+		);
+
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
 	}
 
 	public function testCommentIsPassedToRepository(): void {
