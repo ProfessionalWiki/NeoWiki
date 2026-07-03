@@ -13,6 +13,14 @@ readonly class PagePropertyProviderContext {
 	 * @param string $modificationTime In the standard MediaWiki format, ie 20230726163439
 	 * @param string[] $categories
 	 * @param string $lastEditor Plain username of the last editor, e.g. "JohnDoe". Empty string if unknown.
+	 * @param string $content Serialized main slot content of the revision, e.g. the wikitext.
+	 *   Empty string if the content is unavailable.
+	 * @param string $contentModel Content model of the main slot, e.g. "wikitext".
+	 *   Empty string if the content is unavailable.
+	 * @param array<string, int|float|string|bool|null> $parserProperties Properties recorded during parsing of the
+	 *   content (MediaWiki page properties, e.g. "defaultsort" or values set by parser hooks via
+	 *   ParserOutput::setPageProperty). These are inputs from the parse, not to be confused with the NeoWiki
+	 *   Page Properties that providers return.
 	 */
 	public function __construct(
 		public PageId $pageId,
@@ -22,6 +30,9 @@ readonly class PagePropertyProviderContext {
 		public string $modificationTime,
 		public array $categories,
 		public string $lastEditor,
+		public string $content,
+		public string $contentModel,
+		public array $parserProperties,
 	) {
 	}
 

@@ -87,7 +87,10 @@ class StaticPagePropertyProvider implements PagePropertyProvider {
 ```
 
 Register with `NeoWikiRegistrar::addPagePropertyProvider()`. The context exposes the page id, title,
-creation and modification times, categories, and last editor. Example:
+creation and modification times, categories, and last editor. It also exposes the revision's main slot
+content (plus its content model) and the properties recorded during parsing of that content (MediaWiki
+page properties, e.g. those set by parser hooks via `ParserOutput::setPageProperty`), so providers can
+derive Page Properties from the page content without re-fetching or re-parsing it. Example:
 [`src/StaticPagePropertyProvider.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/StaticPagePropertyProvider.php).
 
 ### Reading NeoWiki data and authorization
