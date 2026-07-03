@@ -28,7 +28,7 @@ intended to drive both export (native → ontology) and, later, import (ontology
 The central difficulty is that good ontology mapping is **not predicate renaming**: CIDOC-CRM and similar ontologies
 are event-centric and require *synthesizing intermediate nodes that do not exist in NeoWiki's data*. The mapping is a
 graph-to-graph transformation governed by reusable patterns. Most of this document is about expressing those patterns,
-where they come from, and the import direction.
+where they come from, the import direction, and validating what the projections produce.
 
 > Terminology note: ECHOLOT partners often say "RDF mapping" for *this* — ontology alignment. In our docs,
 > [RdfMapping.md](RdfMapping.md) is the **native projection** (the default target vocabulary); this document is about
@@ -99,7 +99,8 @@ NeoWiki gives a natural anchor: **Relations carry a persistent ID** ([ADR 10](..
 The mediating CIDOC-CRM event node can derive its IRI from that Relation ID, so the `E12_Production` for a given Creator
 relation is the same node on every projection. Where no native ID exists (e.g. a literal-valued statement that expands
 structurally), the IRI is derived deterministically from the source Subject IRI plus the rule and a stable position key.
-Stable synthesized-node identity is also what makes the import direction tractable (below).
+Stable synthesized-node identity is also what makes the import direction tractable and validation reports traceable
+back to the wiki (both below).
 
 ## Design principles
 
@@ -198,6 +199,33 @@ So a Mapping should aim to be a bidirectional *definition*, while import and exp
 import pipeline mechanics live with T4.1. How far to shape the export formalism now for later invertibility is an open
 question.
 
+## Validating projections
+
+Ontology projections raise a validation question that native Subject validation
+([ADR 21](../adr/021-add-backend-validation.md)) cannot answer: does the projected RDF conform to the target
+ontology's expectations? Shapes for the target ontology — e.g. SHACL emitted by the T2.3 library (Q3) — can answer it,
+and two distinct failure sources make that worthwhile:
+
+- **Mapping bugs.** A rule produces structurally wrong output for every Subject it matches. Validating the projection
+  of a few sample Subjects at mapping-authoring time is effectively unit-testing the mapping.
+- **Data gaps.** The mapping is correct, but the data does not meet the target's requirements (e.g. a rights statement
+  the target ontology mandates is missing). These are per-Subject curation findings.
+
+Proposed division of labour: shape engines run in external quality tooling (T4.5), not in the wiki's editing path.
+NeoWiki's job is to keep projections checkable and findings traceable:
+
+- Export of projected RDF for a given mapping (per page and in bulk), so external validators have input.
+- Per-page named graphs ([RdfMapping.md](RdfMapping.md#named-graphs)) make re-validation incremental: only pages whose
+  graphs changed since the last run need re-checking.
+- **Traceability requirement.** A validation report references ontology-projection nodes, but the people acting on it
+  work in the wiki. Reports must be translatable back to the originating page, Subject, and property. The anchors
+  exist by construction — focus node → named graph → page; synthesized-node IRI → Relation ID → Statement; violated
+  path → the rule that emits it → the native construct the rule matches — so rules must retain that provenance.
+
+Conformance to a target ontology is a publication and import concern, not an editing concern: findings surface as
+reports and worklists (and can feed back into tightening native Schemas or mapping defaults), not as inline errors in
+the Subject editor, which stays native-validation-only.
+
 ## Scope
 
 **In scope:** defining Mappings (Schema-, Statement-, and Relation-level rules; node synthesis / path expansion;
@@ -243,9 +271,10 @@ What exactly does NeoWiki consume from the library, in what format, over what in
 the boundary between the Mapping (correspondence), the import executor (pattern recognition), and T4.1/T4.2 (pipeline,
 reconciliation)?
 
-**Q5: Validation via SHACL.** If the T2.3 library emits SHACL shapes, should NeoWiki consume them for validation
-(T3.1 constraints, T4.5 quality checks), and is mapping-time validation in scope here or in the validation workstream
-([ADR 12](../adr/012-backend-validation.md) / [ADR 21](../adr/021-add-backend-validation.md))?
+**Q5: Validation via SHACL.** [Validating projections](#validating-projections) proposes consuming shapes emitted by
+the T2.3 library to check ontology projections, with the engines in the T4.5 tooling rather than in NeoWiki. Open:
+which shapes the library actually emits and their coverage per ontology; and where findings surface for curators
+(report pages, a dashboard, an API the quality component writes back to) — in NeoWiki core or a plug-in.
 
 **Q6: One mapping per target vs combined.** A separate Mapping per (Schema, target ontology), or a single multi-target
 mapping per Schema? Per-target is more modular and independently installable; combined may reduce duplication for shared
@@ -274,5 +303,6 @@ vocabulary is in the store" a per-store configuration rather than a single globa
   [017 names as identifiers](../adr/017-names-as-identifiers.md),
   [019 graph database architecture](../adr/019-graph-database-architecture.md).
 - ECHOLOT tasks: T3.1 (standard schemas / ontology reuse), T3.2 (RDF export and import), T2.3 (semantic
-  interoperability / ontology patterns), T4.1 (import/transformation pipelines), T4.2 (reconciliation).
+  interoperability / ontology patterns), T4.1 (import/transformation pipelines), T4.2 (reconciliation), T4.5
+  (quality checks).
 - Issue: [#723](https://github.com/ProfessionalWiki/NeoWiki/issues/723) (RDF mapping discussion).
