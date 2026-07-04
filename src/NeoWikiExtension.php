@@ -215,7 +215,12 @@ class NeoWikiExtension {
 
 	public function getGraphDatabasePlugin(): GraphDatabasePlugin {
 		if ( !isset( $this->graphDatabasePlugin ) ) {
+			// Seed core's Neo4j plugin directly into the composite, not the registry. Registering it via
+			// the registry would make getGraphDatabasePluginRegistry() build the Neo4j plugin, whose
+			// construction transitively fires the NeoWikiRegistration hook and re-enters that accessor.
+			// Composing core here keeps the registry extension-only and the plugin order deterministic.
 			$this->graphDatabasePlugin = new CompositeGraphDatabasePlugin(
+				$this->getNeo4jPlugin()->getGraphDatabasePlugin(),
 				...$this->getGraphDatabasePluginRegistry()->getPlugins()
 			);
 		}
@@ -226,13 +231,6 @@ class NeoWikiExtension {
 	public function getGraphDatabasePluginRegistry(): GraphDatabasePluginRegistry {
 		if ( !isset( $this->graphDatabasePluginRegistry ) ) {
 			$this->graphDatabasePluginRegistry = new GraphDatabasePluginRegistry();
-			// Registry order is not guaranteed: building the Neo4j plugin can transitively fire the
-			// NeoWikiRegistration hook (getNeo4jPlugin -> getSchemaLookup -> getPropertyTypeRegistry),
-			// so extension plugins may be registered before or after this core seed depending on which
-			// accessor runs first. The composite fan-out is order-independent; do not rely on order.
-			$this->graphDatabasePluginRegistry->addPlugin(
-				$this->getNeo4jPlugin()->getGraphDatabasePlugin()
-			);
 		}
 
 		$this->ensureExtensionsRegistered();
