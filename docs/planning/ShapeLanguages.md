@@ -35,7 +35,7 @@ validator behind REST endpoints returns structured violations
 ([ADR 21](../adr/021-add-backend-validation.md), amended by ADR 25 in
 [#973](https://github.com/ProfessionalWiki/NeoWiki/pull/973); [codes reference](../reference/validation-codes.md)),
 and the editing UI renders what the server returns. For RDF, the wiki's data is *projected*: a native projection
-([RdfMapping](RdfMapping.md)) and per-store ontology projections
+([NativeRdfProjection](NativeRdfProjection.md)) and per-store ontology projections
 ([OntologyMapping](OntologyMapping.md), in review in [#920](https://github.com/ProfessionalWiki/NeoWiki/pull/920)).
 
 ## Why not as the internal format or engine
@@ -78,7 +78,7 @@ where they fit:
 
 Generate SHACL (and, given demand, ShEx) from native Schemas, expressed over the projection vocabularies. Consumers
 of NeoWiki RDF get a machine-readable contract for the data's structure; the Wikibase-adjacent community gets
-artifacts in a familiar form. This complements the self-description question in [RdfMapping](RdfMapping.md) (Q10) and
+artifacts in a familiar form. This complements the self-description question in [NativeRdfProjection](NativeRdfProjection.md) (Q10) and
 the possible JSON Schema output mentioned in [ADR 9](../adr/009-move-away-from-json-schema.md) — one
 schema-translation surface with several output formats. Cheap to build: a serializer, no engine.
 
@@ -133,7 +133,7 @@ something the boundary approach above cannot serve?
 ## Related
 
 - Planning: [OntologyMapping](OntologyMapping.md) (projection validation, mapping formalism),
-  [RdfMapping](RdfMapping.md) (native projection), [GlobalProperties](GlobalProperties.md),
+  [NativeRdfProjection](NativeRdfProjection.md) (native projection), [GlobalProperties](GlobalProperties.md),
   [ECHOLOT](ECHOLOT.md).
 - ADRs: [006 schemas](../adr/006-schemas.md), [009 move away from JSON Schema](../adr/009-move-away-from-json-schema.md)
   (records ShEx/SHACL as considered alternatives), [011 writer's schema](../adr/011-include-writers-schema.md),
