@@ -6,6 +6,11 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId;
+use Laudis\Neo4j\Types\Duration;
+use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
@@ -168,6 +173,59 @@ class Neo4jResultNormalizerTest extends TestCase {
 			$converted[1]['p']['nodes']
 		);
 		$this->assertSame( 9, $converted[1]['p']['relationships'][1]['id'] );
+	}
+
+	public function testZonedDatetimeBecomesIsoStringWithOffset(): void {
+		$result = new CypherList( [ new CypherMap( [
+			'at' => new DateTime( 1694614943, 123000000, 7200, false ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'at' => '2023-09-13T16:22:23.123+02:00' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
+	public function testZoneIdDatetimeBecomesIsoStringWithOffset(): void {
+		$result = new CypherList( [ new CypherMap( [
+			'at' => new DateTimeZoneId( 1694614943, 0, 'UTC' ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'at' => '2023-09-13T14:22:23+00:00' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
+	public function testLocalDatetimeBecomesIsoStringWithoutOffset(): void {
+		$result = new CypherList( [ new CypherMap( [
+			'at' => new LocalDateTime( 1694614943, 500000000 ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'at' => '2023-09-13T14:22:23.5' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
+	public function testDateBecomesIsoDateString(): void {
+		$result = new CypherList( [ new CypherMap( [ 'on' => new Date( 19631 ) ] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'on' => '2023-10-01' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
+	public function testOtherPropertyObjectsBecomeTheirArrayRepresentation(): void {
+		$result = new CypherList( [ new CypherMap( [
+			'for' => new Duration( 1, 2, 3, 4 ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'for' => [ 'months' => 1, 'days' => 2, 'seconds' => 3, 'nanoseconds' => 4 ] ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
 	}
 
 	public function testUnknownObjectTypeThrows(): void {

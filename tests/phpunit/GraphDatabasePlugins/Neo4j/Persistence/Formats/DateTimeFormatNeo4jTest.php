@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -59,6 +60,24 @@ class DateTimeFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 			[ 1694614943000, 5709699462123 ],
 			$result->first()->get( 'millis' )->toArray(),
 			'parseable values should be stored as Neo4j datetimes, malformed ones omitted'
+		);
+	}
+
+	public function testStoredDatetimesNormalizeToIsoStrings(): void {
+		$subjectId = $this->savePageWithDateTimeStatement();
+
+		$rows = ( new Neo4jResultNormalizer() )->convertRows(
+			$this->readGraph(
+				"MATCH (n {id: '$subjectId'}) RETURN n.MyProperty AS dateTimes"
+			)
+		);
+
+		$this->assertSame(
+			[ 1 => [ 'dateTimes' => [
+				1 => '2023-09-13T14:22:23+00:00',
+				2 => '2150-12-07T13:37:42.123+02:00',
+			] ] ],
+			$rows
 		);
 	}
 

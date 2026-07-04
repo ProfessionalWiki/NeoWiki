@@ -4,8 +4,15 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
+use DateTimeImmutable;
+use DateTimeZone;
+use Laudis\Neo4j\Types\AbstractCypherObject;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId;
+use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
@@ -64,9 +71,67 @@ class Neo4jResultNormalizer {
 			];
 		}
 
+		if ( $value instanceof AbstractCypherObject ) {
+			return $this->convertPropertyObject( $value );
+		}
+
 		throw new RuntimeException(
 			sprintf( 'Unsupported Cypher value type: %s', get_debug_type( $value ) )
 		);
+	}
+
+	private function convertPropertyObject( AbstractCypherObject $value ): string|array {
+		if ( $value instanceof DateTime ) {
+			return $this->offsetDateTimeToIso( $value );
+		}
+
+		if ( $value instanceof DateTimeZoneId ) {
+			return $this->zoneIdDateTimeToIso( $value );
+		}
+
+		if ( $value instanceof LocalDateTime ) {
+			return $value->toDateTime()->format( 'Y-m-d\TH:i:s' )
+				. $this->fractionalSeconds( $value->getNanoseconds() );
+		}
+
+		if ( $value instanceof Date ) {
+			return $value->toDateTime()->format( 'Y-m-d' );
+		}
+
+		return $this->convertAssociative( $value->toArray() );
+	}
+
+	private function offsetDateTimeToIso( DateTime $value ): string {
+		$offset = $this->offsetFromSeconds( $value->getTimeZoneOffsetSeconds() );
+
+		return ( new DateTimeImmutable( '@' . $value->getSeconds() ) )
+			->setTimezone( new DateTimeZone( $offset ) )
+			->format( 'Y-m-d\TH:i:s' )
+			. $this->fractionalSeconds( $value->getNanoseconds() )
+			. $offset;
+	}
+
+	private function zoneIdDateTimeToIso( DateTimeZoneId $value ): string {
+		$dateTime = $value->toDateTime();
+
+		return $dateTime->format( 'Y-m-d\TH:i:s' )
+			. $this->fractionalSeconds( $value->getNanoseconds() )
+			. $dateTime->format( 'P' );
+	}
+
+	private function offsetFromSeconds( int $offsetSeconds ): string {
+		$sign = $offsetSeconds < 0 ? '-' : '+';
+		$absoluteSeconds = abs( $offsetSeconds );
+
+		return sprintf( '%s%02d:%02d', $sign, intdiv( $absoluteSeconds, 3600 ), intdiv( $absoluteSeconds % 3600, 60 ) );
+	}
+
+	private function fractionalSeconds( int $nanoseconds ): string {
+		if ( $nanoseconds === 0 ) {
+			return '';
+		}
+
+		return rtrim( sprintf( '.%09d', $nanoseconds ), '0' );
 	}
 
 	private function convertList( CypherList $list ): array {
