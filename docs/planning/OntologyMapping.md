@@ -106,7 +106,10 @@ should be and where the burden sits:
 
 The fork is settled outside this document — it is a schema-model and editing-UX decision, exercised through the shared
 toy model ([Neutral Person to Many Standards](https://docs.google.com/spreadsheets/d/1j2_7j8RCUJrrMsfZaXtqHQOwp9cN9F8HIBtd3pfsToU/edit))
-that expresses one person model across several ontologies. What matters here is that the formalism needs synthesis
+that expresses one person model across several ontologies. The same toy model doubles as the first end-to-end
+exercise of this document's approach: implement its neutral person schema in NeoWiki, define a Mapping for it, and
+project to EDM first — the near-1:1 tier — proving or disproving the mechanism by doing (proposed at the 2026-07-03
+WP2/3/4 call). What matters here is that the formalism needs synthesis
 capability under **either** route: not every wiki will model maximally nested (a mapping must handle whatever the
 native model is), and sibling targets decompose differently — EDM stays flat where CIDOC-CRM wants events — so no
 single nesting depth spares all projections. Route (b) reduces how often synthesis fires; it does not remove the
@@ -279,7 +282,9 @@ with deep CIDOC-CRM / EDM / RDF experience.
      minimizing ontology knowledge in NeoWiki. Depends on what the library can emit and how stable that interface is.
 
   These are not mutually exclusive: e.g. consume patterns from (3), expressed in a formalism like (2), executed via (1).
-  What combination do partners recommend?
+  What combination do partners recommend? Independent of the combination: survey existing CH mapping tooling before
+  building — mature ontology-mapping frameworks exist in this space, and reusing or aligning with one may beat
+  rebuilding (George, 2026-07-03).
 
 **Q2: Expressiveness for node synthesis.** Whatever formalism is chosen, can it express path expansion and
 intermediate-node minting (the `E12_Production` case) — not just term substitution? Are SHACL Advanced Features
@@ -298,7 +303,10 @@ reconciliation)?
 **Q5: Validation via SHACL.** [Validating projections](#validating-projections) proposes consuming shapes emitted by
 the T2.3 library to check ontology projections, with the engines in the T4.5 tooling rather than in NeoWiki. Open:
 which shapes the library actually emits and their coverage per ontology; and where findings surface for curators
-(report pages, a dashboard, an API the quality component writes back to) — in NeoWiki core or a plug-in.
+(report pages, a dashboard, an API the quality component writes back to) — in NeoWiki core or a plug-in. Candidate
+engine (suggested 2026-07-03): [rudof](https://github.com/rudof-project/rudof) — Rust, SHACL + ShEx, has an MCP
+interface, and can validate a QLever endpoint directly; endpoint-side validation still needs the traceability path
+above, since the store has no sync-back to the wiki.
 
 **Q6: One mapping per target vs combined.** A separate Mapping per (Schema, target ontology), or a single multi-target
 mapping per Schema? Per-target is more modular and independently installable; combined may reduce duplication for shared
