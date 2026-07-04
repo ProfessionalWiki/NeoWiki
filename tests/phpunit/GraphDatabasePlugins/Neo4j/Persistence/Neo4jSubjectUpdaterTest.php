@@ -12,9 +12,9 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use DateTimeImmutable;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jTypedValue;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdater;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
@@ -103,7 +103,7 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 		);
 	}
 
-	public function testReturnsTypedValueForDateTimeStatements(): void {
+	public function testConvertsDateTimeStatementValuesToDateTimeObjects(): void {
 		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
 
 		$statements = new StatementList( [
@@ -118,7 +118,7 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 		$this->assertEquals(
 			[
 				'P1' => [ 'plain' ],
-				'P2' => new Neo4jTypedValue( 'datetime', [ '2024-01-01T12:00:00Z' ] ),
+				'P2' => [ new DateTimeImmutable( '2024-01-01T12:00:00Z' ) ],
 			],
 			$this->newSubjectUpdater( $registry )->statementsToNodeProperties( $statements )
 		);

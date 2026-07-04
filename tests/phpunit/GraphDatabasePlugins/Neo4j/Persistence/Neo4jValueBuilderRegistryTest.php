@@ -4,10 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jTypedValue;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 
@@ -78,14 +78,38 @@ class Neo4jValueBuilderRegistryTest extends TestCase {
 		);
 	}
 
-	public function testDateTimeBuilderProducesTypedValueWrappedInDatetimeConstructor(): void {
+	public function testDateTimeBuilderConvertsStringsToDateTimeObjects(): void {
 		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
 
 		$this->assertEquals(
-			new Neo4jTypedValue( 'datetime', [ '2024-01-01T12:00:00Z', '2025-06-15T08:30:00+02:00' ] ),
+			[
+				new DateTimeImmutable( '2024-01-01T12:00:00Z' ),
+				new DateTimeImmutable( '2025-06-15T08:30:00+02:00' ),
+			],
 			$registry->buildNeo4jValue(
 				'dateTime',
 				new StringValue( '2024-01-01T12:00:00Z', '2025-06-15T08:30:00+02:00' )
+			)
+		);
+	}
+
+	public function testDateTimeBuilderDropsValuesThatAreNotStrictIsoDateTimes(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$this->assertEquals(
+			[
+				new DateTimeImmutable( '2024-01-01T12:00:00Z' ),
+				new DateTimeImmutable( '2026-05-05T05:05:05+02:00' ),
+			],
+			$registry->buildNeo4jValue(
+				'dateTime',
+				new StringValue(
+					'2024-01-01T12:00:00Z',
+					'Ignored bad value',
+					'2024-01-01T12:00:00',
+					'2024-02-30T00:00:00Z',
+					'2026-05-05T05:05:05+02:00',
+				)
 			)
 		);
 	}
