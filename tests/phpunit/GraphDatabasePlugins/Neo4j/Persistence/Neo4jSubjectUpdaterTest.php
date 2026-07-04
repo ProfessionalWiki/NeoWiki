@@ -124,6 +124,37 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 		);
 	}
 
+	public function testWarnsWhenDateTimeValuesAreDroppedFromTheProjection(): void {
+		$statements = new StatementList( [
+			TestStatement::build(
+				property: 'P1',
+				value: new StringValue( '2024-01-01T12:00:00Z', 'not a datetime', '2025-06-15T08:30:00+02:00' ),
+				propertyType: 'dateTime'
+			),
+		] );
+
+		$this->newSubjectUpdater()->statementsToNodeProperties( $statements );
+
+		$this->assertSame(
+			[ 'Dropped 1 unpersistable value(s) of property "P1" on page 1333333337 when projecting to the graph' ],
+			$this->logger->getLogCalls()->getMessages()
+		);
+	}
+
+	public function testDoesNotWarnWhenAllDateTimeValuesPersist(): void {
+		$statements = new StatementList( [
+			TestStatement::build(
+				property: 'P1',
+				value: new StringValue( '2024-01-01T12:00:00Z', '2025-06-15T08:30:00+02:00' ),
+				propertyType: 'dateTime'
+			),
+		] );
+
+		$this->newSubjectUpdater()->statementsToNodeProperties( $statements );
+
+		$this->assertSame( [], $this->logger->getLogCalls()->getMessages() );
+	}
+
 	public function testSkipsStatementsWithRelationType(): void {
 		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
 
