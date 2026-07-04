@@ -24,7 +24,7 @@ class OnRevisionCreatedHandler {
 	) {
 	}
 
-	public function onRevisionCreated( RevisionRecord $revisionRecord, UserIdentity $user ): bool {
+	public function onRevisionCreated( RevisionRecord $revisionRecord, ?UserIdentity $user ): bool {
 		return $this->storeRevisionRecord( $revisionRecord, $user );
 	}
 

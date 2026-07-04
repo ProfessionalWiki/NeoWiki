@@ -51,12 +51,12 @@ class SubjectPageRebuilderTest extends TestCase {
 		$this->assertSame( [], $this->handler->calls );
 	}
 
-	public function testReturnsSkippedMissingRevisionAuthorWhenRevisionHasNoAuthor(): void {
+	public function testRefreshesWithNullAuthorWhenRevisionHasNoVisibleAuthor(): void {
 		$outcome = $this->newRebuilder( $this->newRevisionWithoutAuthor() )
 			->rebuild( Title::makeTitle( NS_MAIN, 'AuthorlessPage' ) );
 
-		$this->assertSame( PageRefreshOutcome::SkippedMissingRevisionAuthor, $outcome );
-		$this->assertSame( [], $this->handler->calls );
+		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
+		$this->assertNull( $this->handler->calls[0]['user'] );
 	}
 
 	public function testPassesRevisionAuthorToHandler(): void {

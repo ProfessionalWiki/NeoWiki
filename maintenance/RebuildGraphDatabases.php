@@ -70,7 +70,6 @@ class RebuildGraphDatabases extends Maintenance {
 	private static function skipReason( PageRefreshOutcome $outcome ): string {
 		return match ( $outcome ) {
 			PageRefreshOutcome::SkippedMissingRevision => 'no current revision',
-			PageRefreshOutcome::SkippedMissingRevisionAuthor => 'current revision has no author',
 			PageRefreshOutcome::SkippedMissingSubjectSlot => 'no subject slot',
 			PageRefreshOutcome::Refreshed => throw new LogicException( 'Refreshed is not a skip reason' ),
 		};

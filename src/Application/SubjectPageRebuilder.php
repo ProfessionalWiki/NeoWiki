@@ -23,13 +23,7 @@ class SubjectPageRebuilder {
 			return PageRefreshOutcome::SkippedMissingRevision;
 		}
 
-		$user = $revision->getUser();
-
-		if ( $user === null ) {
-			return PageRefreshOutcome::SkippedMissingRevisionAuthor;
-		}
-
-		return $this->handler->onRevisionCreated( $revision, $user )
+		return $this->handler->onRevisionCreated( $revision, $revision->getUser() )
 			? PageRefreshOutcome::Refreshed
 			: PageRefreshOutcome::SkippedMissingSubjectSlot;
 	}

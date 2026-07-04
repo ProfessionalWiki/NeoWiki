@@ -11,6 +11,5 @@ namespace ProfessionalWiki\NeoWiki\Application;
 enum PageRefreshOutcome: string {
 	case Refreshed = 'refreshed';
 	case SkippedMissingRevision = 'skippedMissingRevision';
-	case SkippedMissingRevisionAuthor = 'skippedMissingRevisionAuthor';
 	case SkippedMissingSubjectSlot = 'skippedMissingSubjectSlot';
 }

@@ -107,7 +107,6 @@ the Page node. No new revision is created. `rebuild()` returns a `PageRefreshOut
 
 - `Refreshed` — the Page node was updated.
 - `SkippedMissingRevision` — the page has no current revision.
-- `SkippedMissingRevisionAuthor` — the current revision has no visible author.
 - `SkippedMissingSubjectSlot` — the page carries no NeoWiki subject slot, so there was nothing to write.
 
 Genuine failures (such as the graph store being unreachable) throw rather than returning an outcome.
