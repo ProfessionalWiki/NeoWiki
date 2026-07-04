@@ -49,6 +49,14 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->graphStore->savedPages );
 	}
 
+	public function testOnPageUndeleteReprojectsRestoredPage(): void {
+		$revision = $this->createPageWithSubjects( 'Restored page', TestSubject::build() );
+
+		$this->newHandler()->onPageUndelete( $revision );
+
+		$this->assertCount( 1, $this->graphStore->savedPages );
+	}
+
 	private function newHandler(): OnRevisionCreatedHandler {
 		$services = $this->getServiceContainer();
 
