@@ -257,6 +257,6 @@ id; rich chain-of-production provenance is a separate model.
 - Issues: [#889](https://github.com/ProfessionalWiki/NeoWiki/issues/889) (refresh-without-edit; replaces the closed
   #782), [#905](https://github.com/ProfessionalWiki/NeoWiki/issues/905) (multi-wiki node identity),
   [#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789) (public PHP API),
-  [#831](https://github.com/ProfessionalWiki/NeoWiki/issues/831) (typed statement values — prerequisite for type-aware
-  querying of materialised Subjects), [#830](https://github.com/ProfessionalWiki/NeoWiki/issues/830) (earlier RfC,
+  [#831](https://github.com/ProfessionalWiki/NeoWiki/issues/831) (typed statement values — related, independent work;
+  not a prerequisite of this), [#830](https://github.com/ProfessionalWiki/NeoWiki/issues/830) (earlier RfC,
   closed/superseded).
