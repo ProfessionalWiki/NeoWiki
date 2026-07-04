@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\RedHerb\RedHerbGraphDatabasePlugin;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar
@@ -44,7 +45,9 @@ class NeoWikiRegistrationHookTest extends MediaWikiIntegrationTestCase {
 	public function testRedHerbRegistersGraphDatabasePlugin(): void {
 		$plugins = NeoWikiExtension::getInstance()->getGraphDatabasePluginRegistry()->getPlugins();
 
-		$this->assertGreaterThan( 1, count( $plugins ), 'Should have more than just the core Neo4j plugin' );
+		// The registry holds extension-contributed plugins only; core Neo4j is composed separately.
+		$this->assertCount( 1, $plugins );
+		$this->assertContainsOnlyInstancesOf( RedHerbGraphDatabasePlugin::class, $plugins );
 	}
 
 }
