@@ -28,7 +28,8 @@ intended to drive both export (native → ontology) and, later, import (ontology
 The central difficulty is that good ontology mapping is **not predicate renaming**: CIDOC-CRM and similar ontologies
 are event-centric and require *synthesizing intermediate nodes that do not exist in NeoWiki's data*. The mapping is a
 graph-to-graph transformation governed by reusable patterns. Most of this document is about expressing those patterns,
-where they come from, the import direction, and validating what the projections produce.
+where they come from, how the open flat-vs-nested modelling fork affects them, the import direction, and validating
+what the projections produce.
 
 > Terminology note: ECHOLOT partners often say "RDF mapping" for *this* — ontology alignment. In our docs,
 > [RdfMapping.md](RdfMapping.md) is the **native projection** (the default target vocabulary); this document is about
@@ -88,6 +89,28 @@ E22_Human-Made_Object  →  P108i_was_produced_by  →  E12_Production  →  P14
 The `E12_Production` node has **no counterpart in NeoWiki's data**. The mapping must mint it. This is the crux: any
 mapping formalism we adopt has to express **path expansion and node synthesis**, not just renaming. A formalism that
 only substitutes terms covers EDM but fails CIDOC-CRM — and CIDOC-CRM is the one that matters most for the case studies.
+
+### Flat vs nested native modelling (open fork)
+
+Where the structure comes from is itself undecided (2026-06-24 data-modelling call with takin and OEAW). NeoWiki can
+already express intermediate nodes as child Subjects linked by Relations; the fork is about what the modelling norm
+should be and where the burden sits:
+
+- **(a) Flat native Schemas** (e.g. birthplace directly on Person), with intermediate nodes synthesized at projection
+  time by the mapping. The cost lands in this document: the mapping must coordinate several flat fields into shared
+  nodes (birthplace and birth date must land on the *same* `E67_Birth` node).
+- **(b) Nested structure inside Schemas** (nested arrays / sub-subjects), so the native data already carries the
+  intermediate nodes and their mapping collapses toward term substitution. The cost shifts to the schema model and the
+  editing UI, which must project the nesting down into an accessible form — what Arches and ResearchSpace do. George
+  Bruseker leans (b) if the UI can project down.
+
+The fork is settled outside this document — it is a schema-model and editing-UX decision, exercised through the shared
+toy model ([Neutral Person to Many Standards](https://docs.google.com/spreadsheets/d/1j2_7j8RCUJrrMsfZaXtqHQOwp9cN9F8HIBtd3pfsToU/edit))
+that expresses one person model across several ontologies. What matters here is that the formalism needs synthesis
+capability under **either** route: not every wiki will model maximally nested (a mapping must handle whatever the
+native model is), and sibling targets decompose differently — EDM stays flat where CIDOC-CRM wants events — so no
+single nesting depth spares all projections. Route (b) reduces how often synthesis fires; it does not remove the
+requirement (Q2, Q10).
 
 ### Identity for synthesized nodes
 
@@ -292,6 +315,11 @@ the native projection vs Views?
 native + one or more ontologies), and is a native projection always available as a baseline? This makes "which
 vocabulary is in the store" a per-store configuration rather than a single global choice.
 
+**Q10: Flat vs nested native modelling.** The [fork above](#flat-vs-nested-native-modelling-open-fork): should
+case-study data live in flat Schemas with the mapping synthesizing intermediate nodes, or in nested Schemas with the
+editing UI projecting the nesting down? Settled through the toy model, outside this document. If (b) wins: what does
+nesting look like in the schema format, and how much of the synthesis machinery here stops being exercised in practice?
+
 ## Related
 
 - Planning: [RdfMapping](RdfMapping.md) (the native projection / default target),
@@ -305,4 +333,7 @@ vocabulary is in the store" a per-store configuration rather than a single globa
 - ECHOLOT tasks: T3.1 (standard schemas / ontology reuse), T3.2 (RDF export and import), T2.3 (semantic
   interoperability / ontology patterns), T4.1 (import/transformation pipelines), T4.2 (reconciliation), T4.5
   (quality checks).
+- Toy model: [Neutral Person to Many Standards](https://docs.google.com/spreadsheets/d/1j2_7j8RCUJrrMsfZaXtqHQOwp9cN9F8HIBtd3pfsToU/edit)
+  — one person model expressed across several ontologies (takin); shared evaluation vehicle for the modelling fork and
+  the first mappings.
 - Issue: [#723](https://github.com/ProfessionalWiki/NeoWiki/issues/723) (RDF mapping discussion).

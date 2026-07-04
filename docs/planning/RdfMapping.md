@@ -10,6 +10,14 @@ This document proposes how NeoWiki's data model maps to RDF triples for the SPAR
 [ADR 19](../adr/019-graph-database-architecture.md). The mapping determines what RDF a triple store contains
 and therefore what SPARQL queries users can write. It also defines the shape of RDF exports.
 
+Specifically, this is the **native projection**: NeoWiki's own vocabulary, lossless, and the default when no ontology
+mapping is configured. It is one of several sibling projections a wiki can run — a store can instead hold a
+standard-ontology projection (CIDOC-CRM, EDM, …) defined via an [Ontology Mapping](OntologyMapping.md). Each
+configured store holds exactly one projection and is queried in that projection's vocabulary. The per-store machinery
+specified here — IRI minting, named graphs, the sync mechanism — is shared by all projections, so the SPARQL plugin is
+parameterized by projection rather than hardwired to this one. Read this document before
+[OntologyMapping.md](OntologyMapping.md), which builds on it.
+
 This is a strawman proposal. Many decisions here need input from partners with RDF and Linked Open Data expertise,
 particularly regarding ontology alignment and cultural heritage conventions. [Open questions](#open-questions) are
 collected at the end. Discussion is tracked in [#723](https://github.com/ProfessionalWiki/NeoWiki/issues/723).
