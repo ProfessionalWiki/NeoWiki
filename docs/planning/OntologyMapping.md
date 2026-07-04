@@ -10,16 +10,16 @@ Status: Draft strawman, for discussion with ECHOLOT partners (T2.3 and T3.x).
 ## Summary
 
 NeoWiki defines its own native Schemas ([ADR 6](../adr/006-schemas.md)). For RDF and SPARQL it projects that data into
-RDF; the base projection uses NeoWiki-native predicates ([RdfMapping.md](RdfMapping.md)). For interoperability — the
-core of ECHOLOT (SO2, T3.1, T3.2) — the data must instead be available in established cultural-heritage ontologies such
-as CIDOC-CRM, EDM, HDTO, and BIBFRAME.
+RDF; the native projection uses NeoWiki-native predicates ([NativeRdfProjection.md](NativeRdfProjection.md)). For
+interoperability — the core of ECHOLOT (SO2, T3.1, T3.2) — the data must instead be available in established
+cultural-heritage ontologies such as CIDOC-CRM, EDM, HDTO, and BIBFRAME.
 
 An **ontology mapping** projects native NeoWiki data **directly into a target ontology**. That ontology RDF is what a
 configured triple store holds and what SPARQL queries run against. The NeoWiki-native projection
-([RdfMapping.md](RdfMapping.md)) and each target ontology are **sibling projections** of the same source data, selected
-per store rather than stacked: a store is configured with one projection, and different stores can hold different
-projections of the same wiki. The native projection is the default (used when no ontology mapping is configured) and
-the lossless-export target; ontology mappings define the other targets.
+([NativeRdfProjection.md](NativeRdfProjection.md)) and each target ontology are **sibling projections** of the same
+source data, selected per store rather than stacked: a store is configured with one projection, and different stores
+can hold different projections of the same wiki. The native projection is the default (used when no ontology mapping
+is configured) and the lossless-export target; ontology mappings define the other targets.
 
 Mappings are first-class, authorable, installable objects, kept separate from Schemas so the native data model is not
 deformed to fit an ontology. A mapping defines the **correspondence** between NeoWiki's model and an ontology, and is
@@ -31,17 +31,17 @@ graph-to-graph transformation governed by reusable patterns. Most of this docume
 where they come from, how the open flat-vs-nested modelling fork affects them, the import direction, and validating
 what the projections produce.
 
-> Terminology note: ECHOLOT partners often say "RDF mapping" for *this* — ontology alignment. In our docs,
-> [RdfMapping.md](RdfMapping.md) is the **native projection** (the default target vocabulary); this document is about
-> projecting into **standard ontologies**.
+> Terminology note: ECHOLOT partners often say "RDF mapping" for ontology alignment — that is *this* document. The
+> native vocabulary and the projection infrastructure shared by all projections (IRIs, named graphs, sync) live in
+> [NativeRdfProjection.md](NativeRdfProjection.md).
 
 ## Projections, not layers
 
 A triple store holds **one projection** of the wiki's data, in one target vocabulary, and SPARQL queries against it are
 written in that vocabulary.
 
-- The **native projection** ([RdfMapping.md](RdfMapping.md)) is the default target. A wiki with no ontology mapping
-  configured still gets RDF and SPARQL, in NeoWiki-native terms.
+- The **native projection** ([NativeRdfProjection.md](NativeRdfProjection.md)) is the default target. A wiki with no
+  ontology mapping configured still gets RDF and SPARQL, in NeoWiki-native terms.
 - An **ontology mapping** defines an alternative target (CIDOC-CRM, EDM, …). Configure a store with that mapping and it
   holds ontology RDF; SPARQL against it is written in that ontology.
 - Projections are **pluggable per store**, consistent with [ADR 19](../adr/019-graph-database-architecture.md) (each
@@ -115,8 +115,8 @@ requirement (Q2, Q10).
 ### Identity for synthesized nodes
 
 Synthesized nodes need stable, deterministic IRIs so that re-projecting a page is idempotent and the per-page
-named-graph sync in [RdfMapping.md](RdfMapping.md#named-graphs) (`DROP GRAPH` + `INSERT DATA`) stays correct for an
-ontology store too.
+named-graph sync in [NativeRdfProjection.md](NativeRdfProjection.md#named-graphs) (`DROP GRAPH` + `INSERT DATA`)
+stays correct for an ontology store too.
 
 NeoWiki gives a natural anchor: **Relations carry a persistent ID** ([ADR 10](../adr/010-add-guids-to-relations.md)).
 The mediating CIDOC-CRM event node can derive its IRI from that Relation ID, so the `E12_Production` for a given Creator
@@ -238,8 +238,8 @@ Proposed division of labour: shape engines run in external quality tooling (T4.5
 NeoWiki's job is to keep projections checkable and findings traceable:
 
 - Export of projected RDF for a given mapping (per page and in bulk), so external validators have input.
-- Per-page named graphs ([RdfMapping.md](RdfMapping.md#named-graphs)) make re-validation incremental: only pages whose
-  graphs changed since the last run need re-checking.
+- Per-page named graphs ([NativeRdfProjection.md](NativeRdfProjection.md#named-graphs)) make re-validation
+  incremental: only pages whose graphs changed since the last run need re-checking.
 - **Traceability requirement.** A validation report references ontology-projection nodes, but the people acting on it
   work in the wiki. Reports must be translatable back to the originating page, Subject, and property. The anchors
   exist by construction — focus node → named graph → page; synthesized-node IRI → Relation ID → Statement; violated
@@ -257,7 +257,8 @@ native projection as the default target; the Mapping as a bidirectional definiti
 
 **Out of scope (separate concerns, cross-referenced):**
 
-- The native projection itself — [RdfMapping.md](RdfMapping.md).
+- The native projection and the shared projection infrastructure (IRIs, named graphs, sync) —
+  [NativeRdfProjection.md](NativeRdfProjection.md).
 - The import *pipeline* mechanics and orchestration — T4.1.
 - Reconciliation / entity linking / `owl:sameAs` minting — WP4 (T4.2); mapped IRIs are its input.
 - Rich chain-of-production provenance and rights — T2.4 model and a T3.4 plug-in (see [ECHOLOT.md](ECHOLOT.md)).
@@ -322,7 +323,7 @@ nesting look like in the schema format, and how much of the synthesis machinery 
 
 ## Related
 
-- Planning: [RdfMapping](RdfMapping.md) (the native projection / default target),
+- Planning: [NativeRdfProjection](NativeRdfProjection.md) (the native projection and shared per-store infrastructure),
   [GlobalProperties](GlobalProperties.md) (why mapping is separate from the data model),
   [SubjectSources](SubjectSources.md) (the `source → base-URI` registry that is also the RDF prefix/URI map),
   [ECHOLOT](ECHOLOT.md).

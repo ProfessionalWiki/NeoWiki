@@ -20,8 +20,9 @@ If you are not familiar with the NeoWiki terminology yet, see [the glossary](../
   provenance/rights *model* (T2.4) and a dedicated provenance/rights plug-in (T3.4) provide the fine-grained
   capture on top, rather than it being built into the core data model. Open: verify the data model and named-graph
   design can carry what the plug-in needs, as distinct from operational per-page named graphs (see
-  [RdfMapping.md](RdfMapping.md) Q5).
-* Does the [RDF mapping stwaman proposal](RdfMapping.md) go in the right direction? What needs to be adjusted?
+  [NativeRdfProjection.md](NativeRdfProjection.md) Q5).
+* Does the [native RDF projection strawman proposal](NativeRdfProjection.md) go in the right direction? What needs to
+  be adjusted? Same question for the [ontology mapping strawman](OntologyMapping.md).
 * Is our [Graph Model](../reference/graph-model.md) OK? In particular, is it OK to have non-Subject data in there, like the connected
   MediaWiki pages? (80% likely, briefly covered in Vienna: can filter out these values when querying)
 * How important is multilinguality for ECHOLOT? Do we need to provide anything beyond our current data model to support that?
