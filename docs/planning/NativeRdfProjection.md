@@ -260,6 +260,11 @@ are emitted regardless, and the ontology mapping translates to standard ontology
 namespace (`$base/prop/Name`), since it is more natural for RDF and the ontology mapping handles ontology
 alignment.*
 
+*Additional input (2026-07-03): when authoring ontology mappings, same-named properties across Schemas must be
+disambiguated as (Schema, property) pairs regardless of predicate scope, and with a flat namespace any mapping rule
+that reads the native projection needs an `rdf:type` constraint to select the right Schema's property. Recorded as a
+cost of the flat resolution, not a reversal.*
+
 **Q2: Standard vocabulary in the native projection.** The strawman uses `rdf:type`, `rdfs:label`, and `dcterms:created`
 / `dcterms:modified`. Should more standard predicates be used in the native projection (e.g., `foaf:name` for labels,
 `dcterms:title` for page names)? Or should all standard vocabulary alignment happen in the ontology mapping?
@@ -328,4 +333,7 @@ added later (e.g., via `rdf:List` or index properties).*
 
 **Q10: Schema namespace page.** Should NeoWiki emit an RDFS/OWL definition for each Schema (as a class) and each
 Property Definition (as a property with domain/range)? This would make the RDF self-describing. Tentative answer:
-yes, but as a separate enhancement, not blocking the initial projection.
+yes, but as a separate enhancement, not blocking the initial projection. Partner demand recorded (takin, 2026-07-03):
+an RDFS export of local Schemas is wanted as an input for authoring ontology mappings — a wiki's Schemas are
+effectively its own ontology, and the native projection should be able to say so in RDF. See also the generated shape
+exports in [ShapeLanguages.md](ShapeLanguages.md).

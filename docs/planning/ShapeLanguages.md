@@ -89,7 +89,10 @@ that ontology's expectations — both that the mapping produces correct structur
 mapping-authoring time) and that the data meets the target's requirements (e.g. a mandatory rights statement is
 missing). Engines run in external quality tooling (T4.5), not in the wiki's editing path; NeoWiki provides projected
 RDF, incremental re-validation via per-page named graphs, and traceability of findings back to page, Subject, and
-property. Detailed in [OntologyMapping](OntologyMapping.md) ("Validating projections").
+property. Detailed in [OntologyMapping](OntologyMapping.md) ("Validating projections"). A candidate engine
+(suggested 2026-07-03): [rudof](https://github.com/rudof-project/rudof) — Rust, SHACL + ShEx, MCP interface, can
+validate a QLever endpoint directly; endpoint-side validation still needs the traceability path here, since the
+store has no sync-back to the wiki.
 
 Workflow-wise, conformance is a publication and import concern, surfaced as reports and worklists — the pattern
 Wikidata uses for property-constraint reports — and as pre-publication gates where output must pass a target's
