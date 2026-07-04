@@ -1,4 +1,4 @@
-# RDF Mapping Design
+# Native RDF Projection
 
 Written 2026-02-23 by Jeroen De Dauw with help from Claude Opus 4.6
 
@@ -6,9 +6,22 @@ Status: Draft, incorporating feedback from ECHOLOT partners (Bilbao meeting Marc
 
 ## Purpose
 
-This document proposes how NeoWiki's data model maps to RDF triples for the SPARQL plugin described in
-[ADR 19](../adr/019-graph-database-architecture.md). The mapping determines what RDF a triple store contains
+This document specifies how NeoWiki's data model projects to RDF triples for the SPARQL plugin described in
+[ADR 19](../adr/019-graph-database-architecture.md). The projection determines what RDF a triple store contains
 and therefore what SPARQL queries users can write. It also defines the shape of RDF exports.
+
+It has two jobs:
+
+1. **Specify the native projection** — RDF in NeoWiki's own vocabulary: lossless, self-sufficient, and the default
+   when no ontology mapping is configured.
+2. **Specify the projection infrastructure shared by all projections** — the IRI and namespace regime, per-page
+   named graphs, and the sync mechanism. An ontology store reuses all of this; only the triples inside each page's
+   graph differ.
+
+Everything specific to non-native targets — projecting into CIDOC-CRM, EDM, and other standard ontologies — lives in
+[OntologyMapping.md](OntologyMapping.md), which builds on this document. Native and ontology projections are
+siblings: a configured store holds exactly one projection and is queried in that projection's vocabulary, so the
+SPARQL plugin is parameterized by projection rather than hardwired to the native one. Read this document first.
 
 This is a strawman proposal. Many decisions here need input from partners with RDF and Linked Open Data expertise,
 particularly regarding ontology alignment and cultural heritage conventions. [Open questions](#open-questions) are
@@ -50,7 +63,7 @@ Standard prefixes used alongside:
 | `xsd:` | `http://www.w3.org/2001/XMLSchema#` |
 | `dcterms:` | `http://purl.org/dc/terms/` |
 
-## Mapping
+## Projection
 
 ### Subjects
 
@@ -84,10 +97,10 @@ neo-subj:s0gje3k4m8n2p1q  neo-prop:Website  "https://example.com"^^xsd:anyURI ;
 
 ### Relations
 
-Relations are the most complex part of the mapping because they carry their own ID and optional properties,
+Relations are the most complex part of the projection because they carry their own ID and optional properties,
 similar to Wikibase qualifiers.
 
-The mapping uses a **two-layer approach** inspired by [Wikibase's RDF model](https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format):
+The projection uses a **two-layer approach** inspired by [Wikibase's RDF model](https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format):
 
 **Layer 1 — Direct triples** for simple queries:
 
@@ -183,7 +196,7 @@ GRAPH neo-page:42 {
 
 On each page save, the SPARQL plugin:
 
-1. Maps the `Page` domain object to RDF triples (using the mapping above).
+1. Maps the `Page` domain object to RDF triples (using the projection above).
 2. Issues a SPARQL Update to the configured endpoint:
    ```sparql
    DROP SILENT GRAPH <neo-page:42> ;
@@ -203,27 +216,27 @@ DROP SILENT GRAPH <neo-page:42>
 
 ## What This Does Not Cover
 
-- **Ontology mapping layer.** The [Global Properties](GlobalProperties.md) document concluded that ontology
-  alignment (e.g., "Person.Name maps to `foaf:name`") should happen via a separate mapping layer, not by changing
-  the data model. That layer is a separate design effort. The RDF mapping described here emits NeoWiki-native
-  predicates; the ontology mapping layer would emit additional triples using standard vocabulary terms. Note that
-  this layer might need to be quite expressive: CIDOC-CRM alignment isn't just predicate renaming — it requires
+- **Ontology mapping.** The [Global Properties](GlobalProperties.md) document concluded that ontology alignment
+  (e.g., "Person.Name maps to `foaf:name`") should happen via a separate ontology mapping, not by changing the data
+  model. That mapping is designed in [Ontology Mapping](OntologyMapping.md). The projection described here emits
+  NeoWiki-native predicates; an ontology mapping instead projects the data into standard-ontology terms. Note that
+  ontology mappings need to be quite expressive: CIDOC-CRM alignment isn't just predicate renaming — it requires
   generating intermediate nodes that don't exist in NeoWiki's data. For example, a simple NeoWiki "Creator" relation
   from an Object to a Person would need to expand to `E22_Human-Made_Object → P108i_was_produced_by →
   E12_Production → P14_carried_out_by → E39_Actor` in CIDOC-CRM, creating the Production event node in RDF.
   At the ECHOLOT meeting in Bilbao (March 2026), the consortium agreed that wiki admins should be able to define
-  mappings between ontologies they care about and the NeoWiki Schemas of their wiki. This confirms the mapping
-  layer approach and means several open questions below (Q1, Q2, Q4) are less critical for the base mapping,
-  since ontology alignment is handled separately. The plan is that NeoWiki provides the mapping mechanism, data
-  modellers in the project create standard mapping + Schema bundles (e.g., for CIDOC-CRM), and users can
-  optionally install those bundles where relevant.
+  mappings between ontologies they care about and the NeoWiki Schemas of their wiki. This confirms the
+  separate-mapping approach and means several open questions below (Q1, Q2, Q4) are less critical for the native
+  projection, since ontology alignment is handled separately. The plan is that NeoWiki provides the mapping
+  mechanism, data modellers in the project create standard mapping + Schema bundles (e.g., for CIDOC-CRM), and users
+  can optionally install those bundles where relevant.
 - **Schema definitions as RDF.** Schemas could be expressed as RDFS/OWL classes with property constraints (similar
   to SHACL shapes). This is potentially valuable for validation and documentation, but is a separate concern.
 - **RDF import.** This document covers the outbound direction (NeoWiki data to RDF). Importing RDF data into
   NeoWiki Subjects is a T3.2/T4.1 concern and has its own challenges (mapping external ontologies to NeoWiki
   Schemas).
 - **RDF-star / RDF 1.2.** The grant (T3.2) and the D2.1 system spec refer to "native RDF/RDF*" import/export. The
-  base mapping deliberately targets standard RDF 1.1 (Relation reification, see Design Principle 3), and common
+  native projection deliberately targets standard RDF 1.1 (Relation reification, see Design Principle 3), and common
   target stores such as QLever do not support RDF-star. RDF-star is out of scope for now; it would only be
   revisited given a concrete need, and then at the import/export serialization layer rather than the triple store.
 
@@ -241,19 +254,19 @@ predicate? The flat approach is more natural for RDF and enables cross-schema qu
 equivalence that NeoWiki does not enforce. The scoped approach is faithful to the data model but unusual in RDF.
 
 *Feedback: The scoped approach would not be objectionable but makes ontology mapping harder — it duplicates
-properties and requires inference for mappings to function at a more general level. With the ontology mapping
-layer confirmed (see above), this question is less critical for the base mapping: NeoWiki-native predicates are
-emitted regardless, and the mapping layer translates to standard ontology terms. Tentative resolution: flat
-namespace (`$base/prop/Name`), since it is more natural for RDF and the mapping layer handles ontology
+properties and requires inference for mappings to function at a more general level. With the separate ontology
+mapping confirmed (see above), this question is less critical for the native projection: NeoWiki-native predicates
+are emitted regardless, and the ontology mapping translates to standard ontology terms. Tentative resolution: flat
+namespace (`$base/prop/Name`), since it is more natural for RDF and the ontology mapping handles ontology
 alignment.*
 
-**Q2: Standard vocabulary in the base mapping.** The strawman uses `rdf:type`, `rdfs:label`, and `dcterms:created`
-/ `dcterms:modified`. Should more standard predicates be used in the base mapping (e.g., `foaf:name` for labels,
-`dcterms:title` for page names)? Or should all standard vocabulary alignment happen in the ontology mapping layer?
+**Q2: Standard vocabulary in the native projection.** The strawman uses `rdf:type`, `rdfs:label`, and `dcterms:created`
+/ `dcterms:modified`. Should more standard predicates be used in the native projection (e.g., `foaf:name` for labels,
+`dcterms:title` for page names)? Or should all standard vocabulary alignment happen in the ontology mapping?
 
-*Less critical given the confirmed ontology mapping layer. Tentative resolution: keep the base mapping minimal
+*Less critical given the confirmed ontology mapping. Tentative resolution: keep the native projection minimal
 with the current standard predicates (`rdf:type`, `rdfs:label`, `dcterms:created/modified`). Further standard
-vocabulary alignment happens in the mapping layer.*
+vocabulary alignment happens in the ontology mapping.*
 
 **Q3: Relation representation.** The strawman uses Wikibase-style reification (a dedicated Relation node with
 `source`, `target`, `relationType`, and properties). Is this the right approach for the CH/LOD community? Are
@@ -263,16 +276,16 @@ there conventions we should follow? Should we plan the data model with future RD
 model (relationships mediated through events) which is quite different from NeoWiki's entity-property model. For
 example, a simple "Creator" relation in NeoWiki would correspond to the CIDOC-CRM path
 `E22_Human-Made_Object → P108i_was_produced_by → E12_Production → P14_carried_out_by → E39_Actor`, where the
-Production event is an intermediate entity that doesn't exist in NeoWiki's data. Does this affect the base RDF
-mapping, or is it purely an ontology mapping layer concern?
+Production event is an intermediate entity that doesn't exist in NeoWiki's data. Does this affect the native
+projection, or is it purely an ontology-mapping concern?
 
 *Feedback (TIB, Kolja, from Wikibase experience): Three approaches exist: (1) basic entity-property — simplest,
 (2) event-centric — more performant for queries but data not visible on the subject's page, (3) qualifier-based
 — familiar from Wikidata, all data on one page. The event-centric UX downside could be mitigated by displaying
 related pages on a subject's page (like transclusion of the named graph up to a defined depth). For SPARQL, the
-query limitations that SMW had with qualifiers do not occur. Tentative resolution: confirmed as an ontology
-mapping layer concern, not a base mapping concern. The base mapping represents NeoWiki's native data model;
-CIDOC-CRM event expansion happens in the mapping layer.*
+query limitations that SMW had with qualifiers do not occur. Tentative resolution: confirmed as an ontology-mapping
+concern, not a native-projection concern. The native projection represents NeoWiki's native data model; CIDOC-CRM
+event expansion happens in the ontology mapping.*
 
 **Q5: Named graph conventions.** Per-page named graphs are proposed for operational reasons (efficient sync). Are
 there CH/LOD conventions for named graph usage (e.g., per-source, per-dataset) that we should align with? Does
@@ -281,7 +294,7 @@ ECHOLOT's provenance model (T2.4) have implications for named graph design?
 *Resolved: No CH conventions exist for named graph usage. Per-page named graphs are fine for operational
 purposes. Note: per-page named graphs record only data origin (which page), not chain-of-production provenance;
 the latter is handled by the provenance model (T2.4) and a dedicated provenance plug-in (T3.4) on top of NeoWiki's
-extension points and MediaWiki versioning, not by the base mapping. See [ECHOLOT.md](ECHOLOT.md).*
+extension points and MediaWiki versioning, not by the native projection. See [ECHOLOT.md](ECHOLOT.md).*
 
 **Q6: Base URI conventions.** Should the base URI be the wiki's URL (e.g., `https://mywiki.example.org/`)? Is
 there a convention in the ECHOLOT/ECCCH context for how services should mint URIs?
@@ -302,17 +315,17 @@ choice, not an architectural one.*
 
 **Q8: Property type in RDF.** NeoWiki Statements include the "writer's schema" (the property type at write time).
 Should this be emitted as a triple on the Subject or Relation node? It's metadata about the statement, not about
-the entity. Probably only useful for debugging / round-tripping. Tentative answer: omit from base mapping, include
+the entity. Probably only useful for debugging / round-tripping. Tentative answer: omit from native projection, include
 in a "full export" mode.
 
 **Q9: Ordering of multi-valued properties.** NeoWiki stores multi-valued properties as ordered arrays. RDF triple
-sets are unordered. Accept the ordering loss for the base mapping? Or emit ordering information (adds complexity)?
+sets are unordered. Accept the ordering loss for the native projection? Or emit ordering information (adds complexity)?
 Tentative answer: accept the loss; ordering is a display concern handled by Views.
 
 *Feedback: Question raised whether ordering truly matters for some use cases (e.g., pages in a book). Tentative
-answer unchanged: accept ordering loss in the base mapping. If specific use cases require ordering, it can be
+answer unchanged: accept ordering loss in the native projection. If specific use cases require ordering, it can be
 added later (e.g., via `rdf:List` or index properties).*
 
 **Q10: Schema namespace page.** Should NeoWiki emit an RDFS/OWL definition for each Schema (as a class) and each
 Property Definition (as a property with domain/range)? This would make the RDF self-describing. Tentative answer:
-yes, but as a separate enhancement, not blocking the initial mapping.
+yes, but as a separate enhancement, not blocking the initial projection.
