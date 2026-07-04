@@ -4,8 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
-use DateTimeImmutable;
-use DateTimeZone;
 use Laudis\Neo4j\Types\AbstractCypherObject;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -13,9 +11,11 @@ use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime;
 use Laudis\Neo4j\Types\DateTimeZoneId;
 use Laudis\Neo4j\Types\LocalDateTime;
+use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
+use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use RuntimeException;
 
@@ -98,17 +98,28 @@ class Neo4jResultNormalizer {
 			return $value->toDateTime()->format( 'Y-m-d' );
 		}
 
+		if ( $value instanceof Time ) {
+			return $this->timeOfDayToIso( $value->getNanoSeconds() )
+				. $this->offsetFromSeconds( $value->getTzOffsetSeconds() );
+		}
+
+		if ( $value instanceof LocalTime ) {
+			return $this->timeOfDayToIso( $value->getNanoseconds() );
+		}
+
 		return $this->convertAssociative( $value->toArray() );
 	}
 
 	private function offsetDateTimeToIso( DateTime $value ): string {
-		$offset = $this->offsetFromSeconds( $value->getTimeZoneOffsetSeconds() );
+		$offsetSeconds = $value->getTimeZoneOffsetSeconds();
 
-		return ( new DateTimeImmutable( '@' . $value->getSeconds() ) )
-			->setTimezone( new DateTimeZone( $offset ) )
-			->format( 'Y-m-d\TH:i:s' )
+		// toDateTime() yields the correct UTC instant for both legacy and non-legacy
+		// wire encodings; adding the offset gives the wall-clock time to render.
+		$wallClockTimestamp = $value->toDateTime()->getTimestamp() + $offsetSeconds;
+
+		return gmdate( 'Y-m-d\TH:i:s', $wallClockTimestamp )
 			. $this->fractionalSeconds( $value->getNanoseconds() )
-			. $offset;
+			. $this->offsetFromSeconds( $offsetSeconds );
 	}
 
 	private function zoneIdDateTimeToIso( DateTimeZoneId $value ): string {
@@ -117,6 +128,17 @@ class Neo4jResultNormalizer {
 		return $dateTime->format( 'Y-m-d\TH:i:s' )
 			. $this->fractionalSeconds( $value->getNanoseconds() )
 			. $dateTime->format( 'P' );
+	}
+
+	private function timeOfDayToIso( int $nanosecondsSinceMidnight ): string {
+		$seconds = intdiv( $nanosecondsSinceMidnight, 1_000_000_000 );
+
+		return sprintf(
+			'%02d:%02d:%02d',
+			intdiv( $seconds, 3600 ),
+			intdiv( $seconds % 3600, 60 ),
+			$seconds % 60
+		) . $this->fractionalSeconds( $nanosecondsSinceMidnight % 1_000_000_000 );
 	}
 
 	private function offsetFromSeconds( int $offsetSeconds ): string {

@@ -11,8 +11,10 @@ use Laudis\Neo4j\Types\DateTime;
 use Laudis\Neo4j\Types\DateTimeZoneId;
 use Laudis\Neo4j\Types\Duration;
 use Laudis\Neo4j\Types\LocalDateTime;
+use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
+use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use PHPUnit\Framework\TestCase;
@@ -186,6 +188,29 @@ class Neo4jResultNormalizerTest extends TestCase {
 		);
 	}
 
+	public function testSubMinuteOffsetDatetimeKeepsWallClockAccurate(): void {
+		$result = new CypherList( [ new CypherMap( [
+			'at' => new DateTime( 1623758400, 0, 1172, false ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'at' => '2021-06-15T12:19:32+00:19' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
+	public function testLegacyBoltDatetimeIsNotDoubleOffset(): void {
+		// On a legacy (pre-Bolt-v5) connection getSeconds() is the local epoch, not UTC.
+		$result = new CypherList( [ new CypherMap( [
+			'at' => new DateTime( 1623759572, 0, 1172, true ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'at' => '2021-06-15T12:19:32+00:19' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
 	public function testZoneIdDatetimeBecomesIsoStringWithOffset(): void {
 		$result = new CypherList( [ new CypherMap( [
 			'at' => new DateTimeZoneId( 1694614943, 0, 'UTC' ),
@@ -213,6 +238,28 @@ class Neo4jResultNormalizerTest extends TestCase {
 
 		$this->assertSame(
 			[ 1 => [ 'on' => '2023-10-01' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
+	public function testTimeBecomesIsoTimeWithOffset(): void {
+		$result = new CypherList( [ new CypherMap( [
+			'at' => new Time( 51743500000000, 7200 ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'at' => '14:22:23.5+02:00' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
+	public function testLocalTimeBecomesIsoTimeWithoutOffset(): void {
+		$result = new CypherList( [ new CypherMap( [
+			'at' => new LocalTime( 34200000000000 ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'at' => '09:30:00' ] ],
 			$this->newNormalizer()->convertRows( $result )
 		);
 	}
