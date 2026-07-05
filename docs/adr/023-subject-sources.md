@@ -2,9 +2,9 @@
 
 Date: 2026-06-22
 
-Status: Draft
+Status: Accepted (2026-07-06)
 
-Feedback desired! Also see the **Open questions** section below.
+Feedback remains welcome on the **Open questions** section below.
 
 ## Context
 
