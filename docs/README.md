@@ -23,3 +23,4 @@ Key docs:
 * A numbered, dated decision → `adr/`
 * Work-in-progress exploration → `planning/` (not published to the website)
 * Sysadmin install, maintenance, or deployment guide → `operations/`
+* Planning docs that solicit feedback link their feedback thread at the top; read that thread before revising the doc

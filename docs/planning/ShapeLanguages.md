@@ -133,6 +133,11 @@ Schemas, as a test of the import-bootstrap direction?
 **Q5: The position itself.** Does anyone see a use case that requires shapes as the *internal* format or engine —
 something the boundary approach above cannot serve?
 
+*First response (Wikibase-community, 2026-07), arguing for deeper integration: an internal schema language will
+accrete features over time and lag the standards it re-invents, so the GUI editor could instead emit a growing subset
+of ShEx/SHACL; and RDF-closeness is itself an adoption driver — early Wikibase lost LOD-community contributors once it
+was clear RDF stays downstream of the wikipage. The stored-subset direction is the trade-off point 4 above weighs.*
+
 ## Related
 
 - Planning: [OntologyMapping](OntologyMapping.md) (projection validation, mapping formalism),
