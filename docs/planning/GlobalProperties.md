@@ -100,11 +100,6 @@ Two use cases sharpen both columns above:
 - **For local properties: serving many masters (takin).** ECHOLOT targets several ontologies at once (CIDOC-CRM, EDM,
   Wikidata's model). Committing the data model to any one of them forces awkward translations to all the others, or
   "Frankenstein models" mixing several; neutral local Schemas mapped outward keep every target first-class.
-- **For global properties: cross-schema semantic identity (Wikibase-community feedback, 2026-07).** Generic
-  relations — parent/child nesting, or "has member" on both a soccer club and an artist collective — are naturally one
-  property whose meaning spans schemas, and RDF modelling leans on such shared properties. Under local properties that
-  identity is not stated in the data model; it is recovered in the ontology mapping, where several local properties
-  map to the same term.
 
 Whether local-plus-mappings delivers the load-and-go experience is to be tested empirically (proposed 2026-07-03):
 implement the shared person toy model as a native Schema, define an ontology mapping for it, and project to EDM end
