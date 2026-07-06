@@ -13,14 +13,14 @@ round-trip on every check loses instant feedback.
 Since then:
 
 * The duplicated validators drifted. Each Property Type had a validator in both PHP and TypeScript, and the two
-  diverged in several places — the "keeping it in sync with frontend behavior" cost that ADR 21 recorded materialised
-  as real bugs.
-* The server-driven flow shipped. A debounced dry-run endpoint (`POST .../subject/validate`) returns constraint
-  violations as the user edits, and save-time enforcement returns them as a 422. The flow was demoed and signed off:
-  the debounced round-trip surfaces feedback quickly enough that giving up strictly-local validation is acceptable.
-* The frontend extension API (`PropertyTypeRegistration`) also carried a client `validate` hook. That duplicated the
-  server-side validator a custom type already registers (for example RedHerb's `ColorType`), so it had the same drift
-  problem.
+  diverged in places: the PHP validators treat whitespace-only values as missing when checking `required`, while
+  the TypeScript ones accept them. The duplication also produced user-facing bugs, such as the client-side number
+  validator turning unset bounds into blocking errors ([#756](https://github.com/ProfessionalWiki/NeoWiki/issues/756)).
+* The server-driven flow shipped ([#886](https://github.com/ProfessionalWiki/NeoWiki/pull/886)): a debounced
+  dry-run endpoint (`POST .../subject/validate`) returns constraint violations as the user edits, and save-time
+  enforcement returns them as a 422.
+* The frontend extension API (`PropertyTypeRegistration`) also carried a client `validate` hook, duplicating the
+  server-side validator a custom type already registers (for example RedHerb's `ColorType`).
 
 ## Decision
 
