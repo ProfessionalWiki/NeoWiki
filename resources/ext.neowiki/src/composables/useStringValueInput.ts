@@ -6,7 +6,6 @@ import { newStringValue, ValueType } from '@/domain/Value.ts';
 import { MultiStringProperty } from '@/domain/PropertyDefinition.ts';
 import { PropertyType } from '@/domain/PropertyType.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { validateValue } from '@/composables/useValueValidation.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 
 interface UseStringValueInputReturn {
@@ -59,20 +58,6 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		return internalValue.value ? internalValue.value.parts : [];
 	} );
 
-	function doValidateInputs( valuesToValidate: string[] ): { errors: ValidationMessages[] } {
-		const perInputErrors: ValidationMessages[] = Array( valuesToValidate.length ).fill( {} );
-
-		valuesToValidate.forEach( ( inputValue, index ) => {
-			if ( property.value.uniqueItems && inputValue !== '' && valuesToValidate.slice( 0, index ).includes( inputValue ) ) {
-				perInputErrors[ index ] = { error: mw.message( 'neowiki-field-unique' ).text() };
-			} else {
-				perInputErrors[ index ] = validateValue( newStringValue( inputValue ), propertyType, property.value );
-			}
-		} );
-
-		return { errors: perInputErrors };
-	}
-
 	function relevantViolations(): readonly SubjectViolation[] {
 		const all = serverViolations?.value;
 		if ( !all ) {
@@ -82,8 +67,8 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		return all.filter( ( v ) => v.propertyName === name );
 	}
 
-	function mergeServerIntoInputMessages( liveErrors: ValidationMessages[] ): ValidationMessages[] {
-		const merged = [ ...liveErrors ];
+	function mergeServerIntoInputMessages( baseMessages: ValidationMessages[] ): ValidationMessages[] {
+		const merged = [ ...baseMessages ];
 		for ( const v of relevantViolations() ) {
 			if ( typeof v.valuePartIndex !== 'number' ) {
 				continue;
@@ -115,7 +100,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		);
 
 		if ( property.value.multiple ) {
-			// For multi: live errors stay per-input (no live summary); only a
+			// For multi: per-input server violations stay in their slots; only a
 			// server-sourced field-level violation surfaces in the summary slot.
 			if ( fieldLevel ) {
 				return {
@@ -128,10 +113,11 @@ export function useStringValueInput<P extends MultiStringProperty>(
 			return {};
 		}
 
-		// Single-value: live error wins, server field-level is the fallback.
-		const live = errors.find( ( e ) => e && Object.keys( e ).length > 0 );
-		if ( live ) {
-			return live;
+		// Single-value: a per-input server violation wins, the field-level
+		// violation is the fallback.
+		const perInput = errors.find( ( e ) => e && Object.keys( e ).length > 0 );
+		if ( perInput ) {
+			return perInput;
 		}
 
 		if ( fieldLevel ) {
@@ -146,8 +132,8 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		return {};
 	}
 
-	function updateValidationMessages( errors: ValidationMessages[] ): void {
-		const merged = mergeServerIntoInputMessages( errors );
+	function updateValidationMessages( values: string[] ): void {
+		const merged = mergeServerIntoInputMessages( values.map( () => ( {} ) ) );
 		inputMessages.value = merged;
 		fieldMessages.value = getFieldMessagesForDisplay( merged );
 	}
@@ -157,9 +143,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		const previousInputValues = userInputValues.value ?? displayValues.value;
 		userInputValues.value = currentInputValues;
 
-		const { errors } = doValidateInputs( currentInputValues );
-
-		updateValidationMessages( errors );
+		updateValidationMessages( currentInputValues );
 
 		// Emit clear-server-violation for the index that just changed, if a server
 		// violation existed there for this property.
@@ -181,8 +165,8 @@ export function useStringValueInput<P extends MultiStringProperty>(
 			}
 		}
 
-		// Emit every non-empty entry, including ones the live validator flags
-		// as invalid. The backend is the authoritative validator — stripping
+		// Emit every non-empty entry, including ones that are invalid. The
+		// backend is the authoritative validator — stripping
 		// bad values here would silently drop the user's edit and bypass
 		// enforcement (e.g. changing one valid URL to "ftp://..." would be
 		// accepted because the proposed StringValue still matches the prior).
@@ -207,18 +191,18 @@ export function useStringValueInput<P extends MultiStringProperty>(
 			userInputValues.value = null;
 		}
 
-		updateValidationMessages( doValidateInputs( displayValues.value ).errors );
+		updateValidationMessages( displayValues.value );
 	}, { immediate: true } );
 
 	// Watch for changes in property configuration (e.g., required, uniqueItems)
 	watch( property, () => {
-		updateValidationMessages( doValidateInputs( displayValues.value ).errors );
+		updateValidationMessages( displayValues.value );
 	}, { deep: true } );
 
 	// Re-merge when server violations update (e.g. after a failed save).
 	if ( serverViolations ) {
 		watch( () => serverViolations.value, () => {
-			updateValidationMessages( doValidateInputs( displayValues.value ).errors );
+			updateValidationMessages( displayValues.value );
 		}, { deep: true } );
 	}
 

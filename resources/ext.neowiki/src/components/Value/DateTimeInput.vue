@@ -34,10 +34,9 @@ import { ref, toRef, watch } from 'vue';
 import { CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconInfo, cdxIconClock } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, ValueType } from '@/domain/Value';
-import { DateTimeType, DateTimeProperty, formatDateTimeForDisplay } from '@/domain/propertyTypes/DateTime.ts';
+import { DateTimeProperty, formatDateTimeForDisplay } from '@/domain/propertyTypes/DateTime.ts';
 import { fromLocalInputValue, toLocalInputValue } from '@/domain/propertyTypes/dateTimeConversion.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
 
 const props = withDefaults(
@@ -50,12 +49,9 @@ const props = withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
-const liveValidationError = ref<string | null>( null );
-
 const { validationError, clearServerViolation } = useFieldServerViolation(
 	toRef( props, 'property' ),
 	toRef( props, 'serverViolations' ),
-	liveValidationError,
 	emit,
 	formatDateTimeForDisplay
 );
@@ -75,37 +71,15 @@ initializeInputValue( props.modelValue );
 
 watch( () => props.modelValue, ( newValue ) => {
 	initializeInputValue( newValue );
-	validate( newValue && newValue.type === ValueType.String ? newValue as StringValue : undefined );
 } );
-
-const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( DateTimeType.typeName );
 
 function onInput( newValue: string ): void {
 	internalInputValue.value = newValue;
 	const isoValue = fromLocalInputValue( newValue );
 	const value = isoValue !== undefined ? newStringValue( isoValue ) : undefined;
 	emit( 'update:modelValue', value );
-	validate( value );
 	clearServerViolation();
 }
-
-function validate( value: StringValue | undefined ): void {
-	// Suppress the live 'required' error so an untouched datetime field isn't
-	// flagged before the user has entered a value; the server still enforces it.
-	const errors = propertyType.validate( value, props.property )
-		.filter( ( e ) => e.code !== 'required' );
-	if ( errors.length === 0 ) {
-		liveValidationError.value = null;
-		return;
-	}
-	const error = errors[ 0 ];
-	const formattedArgs = ( ( error.args ?? [] ) as string[] ).map( formatDateTimeForDisplay );
-	liveValidationError.value = mw.message( `neowiki-field-${ error.code }`, ...formattedArgs ).text();
-}
-
-watch( () => props.property, () => {
-	validate( props.modelValue && props.modelValue.type === ValueType.String ? props.modelValue as StringValue : undefined );
-} );
 
 defineExpose<ValueInputExposes>( {
 	getCurrentValue: function(): Value | undefined {
@@ -113,6 +87,4 @@ defineExpose<ValueInputExposes>( {
 		return isoValue !== undefined ? newStringValue( isoValue ) : undefined;
 	}
 } );
-
-validate( props.modelValue && props.modelValue.type === ValueType.String ? props.modelValue as StringValue : undefined );
 </script>

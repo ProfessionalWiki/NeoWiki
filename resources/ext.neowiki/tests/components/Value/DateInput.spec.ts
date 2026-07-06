@@ -91,50 +91,6 @@ describe( 'DateInput', () => {
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-required' );
 	} );
 
-	it( 'shows min-value error when input is before minimum', async () => {
-		const wrapper = newWrapper( {
-			property: newDateProperty( { minimum: '2025-01-01' } ),
-		} );
-
-		await wrapper.find( 'input' ).setValue( '2024-12-31' );
-
-		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-min-value' );
-	} );
-
-	it( 'passes the minimum bound to mw.message as a formatted string, not the raw ISO', async () => {
-		const minimum = '2025-01-01';
-		const wrapper = newWrapper( { property: newDateProperty( { minimum } ) } );
-
-		await wrapper.find( 'input' ).setValue( '2024-12-31' );
-
-		const minCall = findMessageCall( 'neowiki-field-min-value' );
-		expect( minCall?.[ 1 ] ).not.toBe( minimum );
-		expect( minCall?.[ 1 ] ).not.toMatch( /^\d{4}-\d{2}-\d{2}$/ );
-	} );
-
-	it( 'shows max-value error when input is after maximum', async () => {
-		const wrapper = newWrapper( {
-			property: newDateProperty( { maximum: '2025-12-31' } ),
-		} );
-
-		await wrapper.find( 'input' ).setValue( '2026-01-01' );
-
-		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
-		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-max-value' );
-	} );
-
-	it( 'passes the maximum bound to mw.message as a formatted string, not the raw ISO', async () => {
-		const maximum = '2025-12-31';
-		const wrapper = newWrapper( { property: newDateProperty( { maximum } ) } );
-
-		await wrapper.find( 'input' ).setValue( '2026-01-01' );
-
-		const maxCall = findMessageCall( 'neowiki-field-max-value' );
-		expect( maxCall?.[ 1 ] ).not.toBe( maximum );
-		expect( maxCall?.[ 1 ] ).not.toMatch( /^\d{4}-\d{2}-\d{2}$/ );
-	} );
-
 	it( 'emits update:modelValue as the typed date string', async () => {
 		const wrapper = newWrapper();
 
