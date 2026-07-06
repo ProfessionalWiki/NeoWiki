@@ -4,7 +4,7 @@ Written 2026-02-23 by Jeroen De Dauw with help from Claude Opus 4.6
 
 Status: Draft, incorporating feedback from ECHOLOT partners (Bilbao meeting March 2026 and async discussion)
 
-Feedback: [discussion #999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
+Discussion: [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
 
 ## Purpose
 
