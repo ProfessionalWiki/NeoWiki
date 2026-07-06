@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Maintenance;
 
+use Exception;
 use LogicException;
 use Maintenance;
 use MediaWiki\MediaWikiServices;
@@ -55,8 +56,15 @@ class RebuildGraphDatabases extends Maintenance {
 			return false;
 		}
 
-		$outcome = $rebuilder->rebuild( $title );
 		$name = $title->getPrefixedText();
+
+		try {
+			$outcome = $rebuilder->rebuild( $title );
+		}
+		catch ( Exception $e ) {
+			$this->outputChanneled( "Failed $name: " . $e->getMessage() );
+			return false;
+		}
 
 		if ( $outcome === PageRefreshOutcome::Refreshed ) {
 			$this->outputChanneled( "Rebuilt $name" );
