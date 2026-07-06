@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
@@ -17,6 +19,7 @@ readonly class NeoWikiRegistrar {
 		private PropertyTypeRegistry $propertyTypeRegistry,
 		private Neo4jValueBuilderRegistry $valueBuilderRegistry,
 		private PagePropertyProviderRegistry $pagePropertyProviderRegistry,
+		private GraphDatabasePluginRegistry $graphDatabasePluginRegistry,
 	) {
 	}
 
@@ -33,6 +36,10 @@ readonly class NeoWikiRegistrar {
 
 	public function addPagePropertyProvider( PagePropertyProvider $provider ): void {
 		$this->pagePropertyProviderRegistry->addProvider( $provider );
+	}
+
+	public function addGraphDatabasePlugin( GraphDatabasePlugin $plugin ): void {
+		$this->graphDatabasePluginRegistry->addPlugin( $plugin );
 	}
 
 }

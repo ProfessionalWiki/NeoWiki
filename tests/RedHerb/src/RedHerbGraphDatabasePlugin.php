@@ -2,13 +2,18 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
+namespace ProfessionalWiki\RedHerb;
 
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 
-class SpyGraphDatabasePlugin implements GraphDatabasePlugin {
+/**
+ * Example of an extension-contributed graph-database backend. A real plugin would project the
+ * page and its subjects into its own store here; this example just records what it received so
+ * tests can verify the registry dispatches page events to extension-registered plugins.
+ */
+class RedHerbGraphDatabasePlugin implements GraphDatabasePlugin {
 
 	/** @var Page[] */
 	public array $savedPages = [];

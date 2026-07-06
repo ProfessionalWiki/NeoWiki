@@ -12,6 +12,7 @@ class RedHerbHooks {
 		$registrar->addPropertyType( new ColorType() );
 		$registrar->addNeo4jValueBuilder( ColorType::NAME, static fn( $value ) => $value->toScalars() );
 		$registrar->addPagePropertyProvider( new StaticPagePropertyProvider() );
+		$registrar->addGraphDatabasePlugin( new RedHerbGraphDatabasePlugin() );
 	}
 
 }
