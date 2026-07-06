@@ -7,6 +7,8 @@ Started 2026-06-24 by Jeroen De Dauw with help from Claude Opus 4.8.
 
 Status: Draft strawman, for discussion with ECHOLOT partners (T2.3 and T3.x).
 
+Feedback: [discussion #996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
+
 ## Summary
 
 NeoWiki defines its own native Schemas ([ADR 6](../adr/006-schemas.md)). For RDF and SPARQL it projects that data into
