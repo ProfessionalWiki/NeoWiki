@@ -17,7 +17,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultN
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\ParserFunction\CypherRawParserFunction;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\KeywordCypherQueryValidator;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryEngine;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReadQueryEngine;
 use RuntimeException;
 
 /**
@@ -43,13 +43,13 @@ class CypherRawParserFunctionTest extends TestCase {
 		return $parser;
 	}
 
-	private function createDummyQueryEngine(): Neo4jQueryEngine {
+	private function createDummyQueryEngine(): Neo4jReadQueryEngine {
 		// Create a simple mock that won't be called
-		return $this->createMock( Neo4jQueryEngine::class );
+		return $this->createMock( Neo4jReadQueryEngine::class );
 	}
 
-	private function createQueryEngineWithData( array $returnData ): Neo4jQueryEngine {
-		$queryEngine = $this->createMock( Neo4jQueryEngine::class );
+	private function createQueryEngineWithData( array $returnData ): Neo4jReadQueryEngine {
+		$queryEngine = $this->createMock( Neo4jReadQueryEngine::class );
 
 		$cypherMaps = array_map(
 			fn( array $row ) => new CypherMap( $row ),
@@ -65,8 +65,8 @@ class CypherRawParserFunctionTest extends TestCase {
 		return $queryEngine;
 	}
 
-	private function createQueryEngineWithException( Exception $exception ): Neo4jQueryEngine {
-		$queryEngine = $this->createMock( Neo4jQueryEngine::class );
+	private function createQueryEngineWithException( Exception $exception ): Neo4jReadQueryEngine {
+		$queryEngine = $this->createMock( Neo4jReadQueryEngine::class );
 		$queryEngine
 			->method( 'runReadQuery' )
 			->willThrowException( $exception );
@@ -74,7 +74,7 @@ class CypherRawParserFunctionTest extends TestCase {
 	}
 
 	private function createParserFunction(
-		Neo4jQueryEngine $engine,
+		Neo4jReadQueryEngine $engine,
 		?CypherQueryValidator $validator = null,
 	): CypherRawParserFunction {
 		$validator ??= new KeywordCypherQueryValidator();

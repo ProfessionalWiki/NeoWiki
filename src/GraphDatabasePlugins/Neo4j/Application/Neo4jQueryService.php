@@ -14,14 +14,14 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\Pa
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryTimeoutException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\WriteQueryRejectedException;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryEngine;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReadQueryEngine;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use Throwable;
 
 readonly class Neo4jQueryService {
 
 	public function __construct(
-		private Neo4jQueryEngine $queryEngine,
+		private Neo4jReadQueryEngine $queryEngine,
 		private CypherQueryValidator $validator,
 		private Neo4jResultNormalizer $normalizer,
 	) {

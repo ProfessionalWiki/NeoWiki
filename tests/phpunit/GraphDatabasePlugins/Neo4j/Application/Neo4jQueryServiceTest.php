@@ -22,7 +22,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLi
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryRequest;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryEngine;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReadQueryEngine;
 use RuntimeException;
 use Throwable;
 
@@ -232,7 +232,7 @@ class Neo4jQueryServiceTest extends TestCase {
 
 	public function testParametersAreForwardedToEngine(): void {
 		$capturedParameters = null;
-		$engine = new class( $capturedParameters ) implements Neo4jQueryEngine {
+		$engine = new class( $capturedParameters ) implements Neo4jReadQueryEngine {
 			public function __construct( public mixed &$captured ) {
 			}
 
@@ -251,7 +251,7 @@ class Neo4jQueryServiceTest extends TestCase {
 	}
 
 	private function newService(
-		Neo4jQueryEngine $engine,
+		Neo4jReadQueryEngine $engine,
 		?CypherQueryValidator $validator = null,
 	): Neo4jQueryService {
 		return new Neo4jQueryService(
@@ -280,7 +280,7 @@ class Neo4jQueryServiceTest extends TestCase {
 	 * @param array<int, array<string,mixed>> $rows
 	 * @param list<string> $keys Column names to expose via SummarizedResult::keys(); defaults to the keys of the first row.
 	 */
-	private function stubEngineWithRows( array $rows, array $keys = [] ): Neo4jQueryEngine {
+	private function stubEngineWithRows( array $rows, array $keys = [] ): Neo4jReadQueryEngine {
 		$cypherMaps = array_map( fn( array $row ): CypherMap => new CypherMap( $row ), $rows );
 		$summary = null;
 		if ( $keys === [] && $rows !== [] ) {
@@ -288,7 +288,7 @@ class Neo4jQueryServiceTest extends TestCase {
 		}
 		$result = new SummarizedResult( $summary, new CypherList( $cypherMaps ), $keys );
 
-		return new class( $result ) implements Neo4jQueryEngine {
+		return new class( $result ) implements Neo4jReadQueryEngine {
 			public function __construct( private readonly SummarizedResult $result ) {
 			}
 
@@ -298,8 +298,8 @@ class Neo4jQueryServiceTest extends TestCase {
 		};
 	}
 
-	private function stubEngineCapturingTimeout( mixed &$capturedTimeout ): Neo4jQueryEngine {
-		return new class( $capturedTimeout ) implements Neo4jQueryEngine {
+	private function stubEngineCapturingTimeout( mixed &$capturedTimeout ): Neo4jReadQueryEngine {
+		return new class( $capturedTimeout ) implements Neo4jReadQueryEngine {
 			public function __construct( private mixed &$captured ) {
 			}
 
@@ -311,8 +311,8 @@ class Neo4jQueryServiceTest extends TestCase {
 		};
 	}
 
-	private function stubEngineThrowing( Throwable $exception ): Neo4jQueryEngine {
-		return new class( $exception ) implements Neo4jQueryEngine {
+	private function stubEngineThrowing( Throwable $exception ): Neo4jReadQueryEngine {
+		return new class( $exception ) implements Neo4jReadQueryEngine {
 			public function __construct( private readonly Throwable $exception ) {
 			}
 

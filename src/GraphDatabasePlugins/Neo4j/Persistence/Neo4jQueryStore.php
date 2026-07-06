@@ -17,7 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-readonly class Neo4jQueryStore implements GraphDatabasePlugin, Neo4jQueryEngine, Neo4jWriteQueryEngine {
+readonly class Neo4jQueryStore implements GraphDatabasePlugin, Neo4jReadQueryEngine, Neo4jWriteQueryEngine {
 
 	public function __construct(
 		private ClientInterface $client,

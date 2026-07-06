@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
 
-interface Neo4jQueryEngine {
+interface Neo4jReadQueryEngine {
 
 	public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult;
 
