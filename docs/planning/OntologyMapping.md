@@ -347,4 +347,5 @@ nesting look like in the schema format, and how much of the synthesis machinery 
 - Toy model: [Neutral Person to Many Standards](https://docs.google.com/spreadsheets/d/1j2_7j8RCUJrrMsfZaXtqHQOwp9cN9F8HIBtd3pfsToU/edit)
   — one person model expressed across several ontologies (takin); shared evaluation vehicle for the modelling fork and
   the first mappings.
-- Issue: [#723](https://github.com/ProfessionalWiki/NeoWiki/issues/723) (RDF mapping discussion).
+- Discussions: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996) (feedback on this doc),
+  [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999) (native projection feedback).
