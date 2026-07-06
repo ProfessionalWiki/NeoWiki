@@ -49,7 +49,7 @@ class Neo4jPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testFindsIdOfPage(): void {
-		$queryStore = NeoWikiExtension::getInstance()->newNeo4jQueryStore(
+		$queryStore = NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
 			)

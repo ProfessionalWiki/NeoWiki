@@ -4,12 +4,14 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
+use Laudis\Neo4j\Databags\SummarizedResult;
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\TextContent;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -17,7 +19,6 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
@@ -78,28 +79,30 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		}
 	}
 
-	protected function newNeo4jQueryStore(): Neo4jQueryStore {
-		return NeoWikiExtension::getInstance()->newNeo4jQueryStore(
+	protected function newProjectionStore(): GraphDatabasePlugin {
+		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
 			)
 		);
 	}
 
+	protected function readGraph( string $cypher, array $parameters = [] ): SummarizedResult {
+		return NeoWikiExtension::getInstance()->getNeo4jPlugin()->getReadQueryEngine()->runReadQuery( $cypher, $parameters );
+	}
+
+	protected function writeGraph( string $cypher ): SummarizedResult {
+		return NeoWikiExtension::getInstance()->getNeo4jPlugin()->getWriteQueryEngine()->runWriteQuery( $cypher );
+	}
+
 	protected function readPageNodeName( int $pageId ): ?string {
-		$result = $this->newNeo4jQueryStore()->runReadQuery(
-			'MATCH (page:Page {id: $pageId}) RETURN page.name AS name',
-			[ 'pageId' => $pageId ]
-		);
+		$result = $this->readGraph( 'MATCH (page:Page {id: $pageId}) RETURN page.name AS name', [ 'pageId' => $pageId ] );
 
 		return $result->first()->toRecursiveArray()['name'] ?? null;
 	}
 
 	protected function readPageNodeNamespaceId( int $pageId ): ?int {
-		$result = $this->newNeo4jQueryStore()->runReadQuery(
-			'MATCH (page:Page {id: $pageId}) RETURN page.namespaceId AS namespaceId',
-			[ 'pageId' => $pageId ]
-		);
+		$result = $this->readGraph( 'MATCH (page:Page {id: $pageId}) RETURN page.namespaceId AS namespaceId', [ 'pageId' => $pageId ] );
 
 		return $result->first()->toRecursiveArray()['namespaceId'] ?? null;
 	}

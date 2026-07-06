@@ -25,7 +25,7 @@ class DateFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testStoresAsDates(): void {
-		$store = $this->newNeo4jQueryStore();
+		$store = $this->newProjectionStore();
 		$subjectId = TestSubject::uniqueId();
 
 		$store->savePage( TestPage::build(
@@ -41,7 +41,7 @@ class DateFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 			),
 		) );
 
-		$result = $store->runReadQuery(
+		$result = $this->readGraph(
 			"MATCH (n {id: '$subjectId'}) RETURN n.MyProperty[0] + duration('P3D') AS ModifiedDate1, n.MyProperty[1] as Date2"
 		)->toRecursiveArray()[0];
 

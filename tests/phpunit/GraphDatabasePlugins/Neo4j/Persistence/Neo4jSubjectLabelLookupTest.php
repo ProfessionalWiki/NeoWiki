@@ -6,12 +6,12 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Contracts\ClientInterface;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookupResult;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
@@ -119,8 +119,8 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		) );
 	}
 
-	private function newQueryStore(): Neo4jQueryStore {
-		return NeoWikiExtension::getInstance()->newNeo4jQueryStore(
+	private function newQueryStore(): GraphDatabasePlugin {
+		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
 				TestSchema::build( name: 'Recipe' ),

@@ -8,8 +8,10 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReadQueryEngine;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -46,6 +48,14 @@ readonly class Neo4jPlugin {
 	}
 
 	public function getQueryStore(): Neo4jQueryStore {
+		return $this->queryStore;
+	}
+
+	public function getReadQueryEngine(): Neo4jReadQueryEngine {
+		return $this->queryStore;
+	}
+
+	public function getWriteQueryEngine(): Neo4jWriteQueryEngine {
 		return $this->queryStore;
 	}
 
