@@ -112,14 +112,14 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function saveSubjects( SubjectMap $subjects ): void {
-		$this->newQueryStore()->savePage( TestPage::build(
+		$this->newProjectionStore()->savePage( TestPage::build(
 			id: 1,
 			properties: TestPageProperties::build( title: 'Foo' ),
 			childSubjects: $subjects
 		) );
 	}
 
-	private function newQueryStore(): GraphDatabasePlugin {
+	protected function newProjectionStore(): GraphDatabasePlugin {
 		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),

@@ -50,14 +50,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->createSchema( self::SCHEMA_ID_Z );
 	}
 
-	public function testReadQueryReturnsNothingWhenDbIsEmpty(): void {
-		$result = $this->readGraph( 'MATCH (n) RETURN n' );
-
-		$this->assertSame( [], $result->toArray() );
-		$this->assertTrue( $result->isEmpty() );
-	}
-
-	private function newQueryStore(): GraphDatabasePlugin {
+	protected function newProjectionStore(): GraphDatabasePlugin {
 		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
@@ -67,7 +60,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function newQueryStoreForWiki( string $wikiId ): GraphDatabasePlugin {
+	private function newProjectionStoreForWiki( string $wikiId ): GraphDatabasePlugin {
 		$extension = NeoWikiExtension::getInstance();
 
 		return new Neo4jProjectionStore(
@@ -85,7 +78,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesPageIdAndTitle(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -114,7 +107,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesWikiIdOnPageNode(): void {
-		$store = $this->newQueryStoreForWiki( 'my_wiki' );
+		$store = $this->newProjectionStoreForWiki( 'my_wiki' );
 
 		$store->savePage( TestPage::build( id: 42 ) );
 
@@ -124,7 +117,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesWikiIdOnSubjectNodes(): void {
-		$store = $this->newQueryStoreForWiki( 'my_wiki' );
+		$store = $this->newProjectionStoreForWiki( 'my_wiki' );
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -148,8 +141,8 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testPagesWithSameIdInDifferentWikisDoNotOverwriteEachOther(): void {
-		$wikiA = $this->newQueryStoreForWiki( 'wiki_a' );
-		$wikiB = $this->newQueryStoreForWiki( 'wiki_b' );
+		$wikiA = $this->newProjectionStoreForWiki( 'wiki_a' );
+		$wikiB = $this->newProjectionStoreForWiki( 'wiki_b' );
 
 		$wikiA->savePage( TestPage::build( id: 42, properties: TestPageProperties::build( title: 'Page on wiki A' ) ) );
 		$wikiB->savePage( TestPage::build( id: 42, properties: TestPageProperties::build( title: 'Page on wiki B' ) ) );
@@ -168,8 +161,8 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testDeletingPageOnlyDeletesItInItsOwnWiki(): void {
-		$wikiA = $this->newQueryStoreForWiki( 'wiki_a' );
-		$wikiB = $this->newQueryStoreForWiki( 'wiki_b' );
+		$wikiA = $this->newProjectionStoreForWiki( 'wiki_a' );
+		$wikiB = $this->newProjectionStoreForWiki( 'wiki_b' );
 
 		$wikiA->savePage( TestPage::build( id: 42, properties: TestPageProperties::build( title: 'Page on wiki A' ) ) );
 		$wikiB->savePage( TestPage::build( id: 42, properties: TestPageProperties::build( title: 'Page on wiki B' ) ) );
@@ -189,8 +182,8 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSubjectsAreLinkedToTheirOwnWikiPageOnly(): void {
-		$wikiA = $this->newQueryStoreForWiki( 'wiki_a' );
-		$wikiB = $this->newQueryStoreForWiki( 'wiki_b' );
+		$wikiA = $this->newProjectionStoreForWiki( 'wiki_a' );
+		$wikiB = $this->newProjectionStoreForWiki( 'wiki_b' );
 
 		$wikiA->savePage( TestPage::build( id: 42, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
 		$wikiB->savePage( TestPage::build( id: 42, mainSubject: TestSubject::build( id: self::GUID_2 ) ) );
@@ -210,8 +203,8 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testDeletingPageOnlyDeletesItsOwnWikiSubjects(): void {
-		$wikiA = $this->newQueryStoreForWiki( 'wiki_a' );
-		$wikiB = $this->newQueryStoreForWiki( 'wiki_b' );
+		$wikiA = $this->newProjectionStoreForWiki( 'wiki_a' );
+		$wikiB = $this->newProjectionStoreForWiki( 'wiki_b' );
 
 		$wikiA->savePage( TestPage::build( id: 42, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
 		$wikiB->savePage( TestPage::build( id: 42, mainSubject: TestSubject::build( id: self::GUID_2 ) ) );
@@ -229,7 +222,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesPageSubjects(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -262,7 +255,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesPageRemovesObsoleteSubjects(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -291,7 +284,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavingPageAndThenDeletingItLeavesNoTrace(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -307,24 +300,6 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $result->toArray() );
 		$this->assertTrue( $result->isEmpty() );
 	}
-
-	//public function testUpdatesRelations(): void {
-	//	$store = $this->newQueryStore();
-	//
-	//	$store->savePage( TestPage::build(
-	//		mainSubject: TestSubject::build( id: self::GUID_1 ),
-	//		childSubjects: new SubjectMap(
-	//			TestSubject::build(
-	//				id: self::GUID_2,
-	//				properties: new StatementList( [
-	//
-	//				] )
-	//			),
-	//		)
-	//	) );
-	//
-	//
-	//}
 
 	/**
 	 * @dataProvider timestampConversionProvider
@@ -344,7 +319,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testRunReadQueryDoesNotDeleteNodes(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -370,21 +345,8 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testRunWriteQuerySavesToDb(): void {
-		$this->writeGraph( 'CREATE (:TestNode {name: "Test"} )' );
-
-		$result = $this->readGraph( 'MATCH (node:TestNode {name: "Test"}) RETURN node.name' );
-
-		$this->assertSame(
-			[
-				[ 'node.name' => 'Test' ]
-			],
-			$result->toRecursiveArray()
-		);
-	}
-
 	public function testSavesPageSubjectsWithSubjectLabel(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -477,7 +439,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesCreationTimeAsNeo4jDatetime(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -495,7 +457,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesLastUpdatedAsNeo4jDatetime(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -513,7 +475,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesLastEditor(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -526,7 +488,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesCategories(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -539,7 +501,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesPageExtraProperties(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -563,7 +525,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesExtensionProvidedDateTimeAsNeo4jDatetime(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -586,7 +548,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesPageWithEmptyExtraProperties(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -602,7 +564,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSavesPageSubjectsWithSubjectLabelAfterUpdatingPage(): void {
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,

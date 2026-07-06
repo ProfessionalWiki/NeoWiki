@@ -5,14 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Exception\Neo4jException;
-use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jConstraintUpdater;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jConstraintUpdater
@@ -63,18 +60,10 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function newQueryStore(): GraphDatabasePlugin {
-		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
-			new InMemorySchemaLookup(
-				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
-			)
-		);
-	}
-
 	public function testPageWithDuplicateIdInSameWikiCannotBeCreated(): void {
 		$this->newConstraintUpdater()->createDefaultConstraints();
 
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 		$wikiId = NeoWikiExtension::getInstance()->config->wikiId;
 
 		$store->savePage( TestPage::build( id: 42 ) );
@@ -92,7 +81,7 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 	public function testPagesWithSameIdInDifferentWikisCanCoexist(): void {
 		$this->newConstraintUpdater()->createDefaultConstraints();
 
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build( id: 42 ) );
 
@@ -109,7 +98,7 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 	public function testSubjectWithDuplicateIdCannotBeCreated(): void {
 		$this->newConstraintUpdater()->createDefaultConstraints();
 
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
