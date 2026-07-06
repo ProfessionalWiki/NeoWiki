@@ -4,7 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
+use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Revision\RevisionSlots;
 use MediaWiki\User\UserIdentityValue;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
@@ -47,6 +49,20 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertFalse( $wrote );
 		$this->assertSame( [], $this->graphStore->savedPages );
+	}
+
+	public function testPropagatesReadFailureWhenSubjectSlotIsPresentButUnreadable(): void {
+		$slots = $this->createStub( RevisionSlots::class );
+		$slots->method( 'getContent' )->willThrowException( new RevisionAccessException( 'blob read failed' ) );
+
+		$revision = $this->createStub( RevisionRecord::class );
+		$revision->method( 'getPageId' )->willReturn( 42 );
+		$revision->method( 'hasSlot' )->willReturn( true );
+		$revision->method( 'getSlots' )->willReturn( $slots );
+
+		$this->expectException( RevisionAccessException::class );
+
+		$this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
 	}
 
 	public function testOnPageUndeleteReprojectsRestoredPage(): void {
