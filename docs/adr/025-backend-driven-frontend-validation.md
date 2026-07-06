@@ -36,11 +36,11 @@ This adopts the "Backend-only validation (frontend calls API)" approach that ADR
 
 Pros:
 
-* A single canonical validator in PHP. No PHP/TypeScript sync burden, and no drift bugs.
+* A single canonical validator in PHP. No PHP/TypeScript sync burden.
 * Core and extension Property Types validate the same way, through the server.
 * Less frontend code to carry.
 
 Cons:
 
-* Validation feedback depends on the server round-trip, making the UIs less snappy. We also have to implement debouncing.
+* Validation feedback depends on the server round-trip, making the UIs less snappy.
 * We no longer provide TS or JS validation code that can be used in other applications.
