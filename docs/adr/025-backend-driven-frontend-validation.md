@@ -10,21 +10,16 @@ Status: Accepted. Amends [ADR 21](021-add-backend-validation.md).
 and explicitly rejected the "Backend-only validation (frontend calls API)" alternative on the grounds that a network
 round-trip on every check loses instant feedback.
 
-Since then:
+Since then the server-driven flow shipped ([#886](https://github.com/ProfessionalWiki/NeoWiki/pull/886)): a debounced
+dry-run endpoint (`POST .../subject/validate`) returns constraint violations as the user edits, and save-time
+enforcement returns them as a 422.
 
-* The duplicated validators drifted. Each Property Type had a validator in both PHP and TypeScript, and the two
-  diverged in places: the PHP validators treat whitespace-only values as missing when checking `required`, while
-  the TypeScript ones accept them. The duplication also produced user-facing bugs, such as the client-side number
-  validator turning unset bounds into blocking errors ([#756](https://github.com/ProfessionalWiki/NeoWiki/issues/756)).
-* The server-driven flow shipped ([#886](https://github.com/ProfessionalWiki/NeoWiki/pull/886)): a debounced
-  dry-run endpoint (`POST .../subject/validate`) returns constraint violations as the user edits, and save-time
-  enforcement returns them as a 422.
-* The frontend extension API (`PropertyTypeRegistration`) also carried a client `validate` hook, duplicating the
-  server-side validator a custom type already registers (for example RedHerb's `ColorType`).
+It has also become clear that many edits will happen through alternative UIs, lowering the value of having an
+additional TypeScript implementation of the validators, and raising the relative maintenance burden.
 
 ## Decision
 
-Remove the duplicated client-side validation logic. The frontend no longer computes violations locally; it still
+Remove the client-side validation logic. The frontend no longer computes violations locally; it still
 surfaces them inline, but the violations now come from the server — the dry-run while editing, and the 422 at save.
 
 Concretely:
@@ -47,8 +42,5 @@ Pros:
 
 Cons:
 
-* Validation feedback depends on the server round-trip. The debounced dry-run makes this near-instant in practice,
-  but it is no longer strictly local, and the standalone-TypeScript-library reuse case noted in ADR 21 is not served
-  by the frontend.
-* An extension author who wants a custom Property Type validated must register a server-side PHP validator; there is
-  no client-only validation hook.
+* Validation feedback depends on the server round-trip, making the UIs less snappy. We also have to implement debouncing.
+* We no longer provide TS or JS validation code that can be used in other applications.
