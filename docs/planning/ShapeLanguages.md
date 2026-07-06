@@ -5,6 +5,8 @@ Written 2026-07-03 by Jeroen De Dauw with help from Claude Fable 5.
 Status: Position for discussion with ECHOLOT partners (T2.3, T3.x, T4.5). We are explicitly after disagreement and
 additions: if an argument below is wrong, or a use case is missing, please say so.
 
+Discussion: [#997](https://github.com/ProfessionalWiki/NeoWiki/discussions/997).
+
 ## Position
 
 [SHACL](https://www.w3.org/TR/shacl/) (a W3C Recommendation) and [ShEx](https://shex.io/) (used by Wikidata for its

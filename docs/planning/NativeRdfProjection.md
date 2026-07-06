@@ -4,6 +4,8 @@ Written 2026-02-23 by Jeroen De Dauw with help from Claude Opus 4.6
 
 Status: Draft, incorporating feedback from ECHOLOT partners (Bilbao meeting March 2026 and async discussion)
 
+Discussion: [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
+
 ## Purpose
 
 This document specifies how NeoWiki's data model projects to RDF triples for the SPARQL plugin described in
@@ -25,7 +27,7 @@ SPARQL plugin is parameterized by projection rather than hardwired to the native
 
 This is a strawman proposal. Many decisions here need input from partners with RDF and Linked Open Data expertise,
 particularly regarding ontology alignment and cultural heritage conventions. [Open questions](#open-questions) are
-collected at the end. Discussion is tracked in [#723](https://github.com/ProfessionalWiki/NeoWiki/issues/723).
+collected at the end.
 
 ## Design Principles
 
