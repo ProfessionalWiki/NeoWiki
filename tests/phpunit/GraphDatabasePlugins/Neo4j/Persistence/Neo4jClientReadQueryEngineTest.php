@@ -20,8 +20,8 @@ class Neo4jClientReadQueryEngineTest extends TestCase {
 		$capturedConfig = null;
 		$readOnlyClient = $this->newClientCapturingConfig( $capturedConfig );
 
-		$store = $this->newStore( $readOnlyClient );
-		$store->runReadQuery( 'MATCH (n) RETURN n', [], 30 );
+		$engine = $this->newReadQueryEngine( $readOnlyClient );
+		$engine->runReadQuery( 'MATCH (n) RETURN n', [], 30 );
 
 		$this->assertNotNull( $capturedConfig );
 		$this->assertSame( 30.0, $capturedConfig->getTimeout() );
@@ -31,8 +31,8 @@ class Neo4jClientReadQueryEngineTest extends TestCase {
 		$capturedConfig = 'sentinel-not-overwritten';
 		$readOnlyClient = $this->newClientCapturingConfig( $capturedConfig );
 
-		$store = $this->newStore( $readOnlyClient );
-		$store->runReadQuery( 'MATCH (n) RETURN n', [] );
+		$engine = $this->newReadQueryEngine( $readOnlyClient );
+		$engine->runReadQuery( 'MATCH (n) RETURN n', [] );
 
 		$this->assertNull( $capturedConfig );
 	}
@@ -51,7 +51,7 @@ class Neo4jClientReadQueryEngineTest extends TestCase {
 		return $client;
 	}
 
-	private function newStore( ClientInterface $readOnlyClient ): Neo4jClientReadQueryEngine {
+	private function newReadQueryEngine( ClientInterface $readOnlyClient ): Neo4jClientReadQueryEngine {
 		return new Neo4jClientReadQueryEngine( $readOnlyClient );
 	}
 

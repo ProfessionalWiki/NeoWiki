@@ -67,7 +67,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function newQueryStoreForWiki( string $wikiId ): Neo4jProjectionStore {
+	private function newQueryStoreForWiki( string $wikiId ): GraphDatabasePlugin {
 		$extension = NeoWikiExtension::getInstance();
 
 		return new Neo4jProjectionStore(
