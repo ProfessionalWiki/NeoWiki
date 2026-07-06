@@ -7,7 +7,9 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientReadQueryEngine;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientWriteQueryEngine;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jProjectionStore;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReadQueryEngine;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
@@ -16,11 +18,14 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Composition root for the Neo4j graph-database backend: owns the assembly of the
- * Neo4jQueryStore from the dependencies core injects. A new backend copies this shape.
+ * projection store and read/write query engines from the dependencies core injects.
+ * A new backend copies this shape.
  */
 readonly class Neo4jPlugin {
 
-	private Neo4jQueryStore $queryStore;
+	private GraphDatabasePlugin $projectionStore;
+	private Neo4jReadQueryEngine $readQueryEngine;
+	private Neo4jWriteQueryEngine $writeQueryEngine;
 
 	public function __construct(
 		ClientInterface $client,
@@ -30,9 +35,8 @@ readonly class Neo4jPlugin {
 		LoggerInterface $logger,
 		string $wikiId,
 	) {
-		$this->queryStore = new Neo4jQueryStore(
+		$this->projectionStore = new Neo4jProjectionStore(
 			client: $client,
-			readOnlyClient: $readOnlyClient,
 			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
 				schemaLookup: $schemaLookup,
 				valueBuilderRegistry: $valueBuilderRegistry,
@@ -41,22 +45,20 @@ readonly class Neo4jPlugin {
 			),
 			wikiId: $wikiId,
 		);
+		$this->readQueryEngine = new Neo4jClientReadQueryEngine( $readOnlyClient );
+		$this->writeQueryEngine = new Neo4jClientWriteQueryEngine( $client );
 	}
 
 	public function getGraphDatabasePlugin(): GraphDatabasePlugin {
-		return $this->queryStore;
-	}
-
-	public function getQueryStore(): Neo4jQueryStore {
-		return $this->queryStore;
+		return $this->projectionStore;
 	}
 
 	public function getReadQueryEngine(): Neo4jReadQueryEngine {
-		return $this->queryStore;
+		return $this->readQueryEngine;
 	}
 
 	public function getWriteQueryEngine(): Neo4jWriteQueryEngine {
-		return $this->queryStore;
+		return $this->writeQueryEngine;
 	}
 
 }

@@ -18,7 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jProjectionStore;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
 use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
@@ -31,10 +31,10 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore
+ * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jProjectionStore
  * @group Database
  */
-class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
+class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 	private const GUID_1 = 'sTestNQS1111111';
 	private const GUID_2 = 'sTestNQS1111112';
@@ -67,12 +67,11 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function newQueryStoreForWiki( string $wikiId ): Neo4jQueryStore {
+	private function newQueryStoreForWiki( string $wikiId ): Neo4jProjectionStore {
 		$extension = NeoWikiExtension::getInstance();
 
-		return new Neo4jQueryStore(
+		return new Neo4jProjectionStore(
 			client: $extension->getNeo4jClient(),
-			readOnlyClient: $extension->getReadOnlyNeo4jClient(),
 			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
 				schemaLookup: new InMemorySchemaLookup(
 					TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
@@ -333,7 +332,7 @@ class Neo4jQueryStoreTest extends NeoWikiIntegrationTestCase {
 	public function testFormatMediaWikiTimestamp( string $mwTime, string $neoTime ): void {
 		$this->assertSame(
 			$neoTime,
-			Neo4jQueryStore::mediaWikiTimestampToNeo4jFormat( $mwTime )
+			Neo4jProjectionStore::mediaWikiTimestampToNeo4jFormat( $mwTime )
 		);
 	}
 

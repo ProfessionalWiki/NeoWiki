@@ -8,7 +8,6 @@ use DateTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
-use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Types\CypherMap;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageValue;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageValueType;
@@ -17,11 +16,10 @@ use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
-readonly class Neo4jQueryStore implements GraphDatabasePlugin, Neo4jReadQueryEngine, Neo4jWriteQueryEngine {
+readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 
 	public function __construct(
 		private ClientInterface $client,
-		private ClientInterface $readOnlyClient,
 		private Neo4jSubjectUpdaterFactory $subjectUpdaterFactory,
 		private string $wikiId,
 	) {
@@ -204,28 +202,6 @@ readonly class Neo4jQueryStore implements GraphDatabasePlugin, Neo4jReadQueryEng
 			RETURN incomingRelation',
 			[ 'subjectId' => $subjectId->text ]
 		)->isEmpty() === false;
-	}
-
-	public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
-		$transactionConfig = $timeoutSeconds === null
-			? null
-			: TransactionConfiguration::default()->withTimeout( (float)$timeoutSeconds );
-
-		return $this->readOnlyClient->readTransaction(
-			function ( TransactionInterface $transaction ) use ( $cypher, $parameters ): SummarizedResult {
-				return $transaction->run( $cypher, $parameters );
-			},
-			null,
-			$transactionConfig
-		);
-	}
-
-	public function runWriteQuery( string $cypher ): SummarizedResult {
-		return $this->client->writeTransaction(
-			function ( TransactionInterface $transaction ) use ( $cypher ): SummarizedResult {
-				return $transaction->run( $cypher );
-			}
-		);
 	}
 
 }

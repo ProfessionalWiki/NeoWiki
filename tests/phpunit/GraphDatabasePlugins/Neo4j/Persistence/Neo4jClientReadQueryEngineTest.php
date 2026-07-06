@@ -9,13 +9,12 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Types\CypherList;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientReadQueryEngine;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore
+ * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientReadQueryEngine
  */
-class Neo4jQueryStoreTimeoutTest extends TestCase {
+class Neo4jClientReadQueryEngineTest extends TestCase {
 
 	public function testTimeoutIsForwardedAsTransactionConfiguration(): void {
 		$capturedConfig = null;
@@ -52,13 +51,8 @@ class Neo4jQueryStoreTimeoutTest extends TestCase {
 		return $client;
 	}
 
-	private function newStore( ClientInterface $readOnlyClient ): Neo4jQueryStore {
-		return new Neo4jQueryStore(
-			$this->createMock( ClientInterface::class ),
-			$readOnlyClient,
-			$this->createMock( Neo4jSubjectUpdaterFactory::class ),
-			'test_wiki',
-		);
+	private function newStore( ClientInterface $readOnlyClient ): Neo4jClientReadQueryEngine {
+		return new Neo4jClientReadQueryEngine( $readOnlyClient );
 	}
 
 }
