@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
+namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
 
