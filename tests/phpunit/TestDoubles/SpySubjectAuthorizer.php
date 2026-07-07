@@ -18,7 +18,7 @@ class SpySubjectAuthorizer implements SubjectAuthorizer {
 		private bool $mainAllowed = true,
 		private bool $childAllowed = true,
 		private bool $editAllowed = true,
-		private bool $deleteAllowed = true,
+		private bool $writeAllowed = true,
 	) {
 	}
 
@@ -37,9 +37,9 @@ class SpySubjectAuthorizer implements SubjectAuthorizer {
 		return $this->editAllowed;
 	}
 
-	public function canDeleteSubject( ?PageId $pageId ): bool {
+	public function authorizeEdit( ?PageId $pageId ): bool {
 		$this->authorizedPageId = $pageId;
-		return $this->deleteAllowed;
+		return $this->writeAllowed;
 	}
 
 }

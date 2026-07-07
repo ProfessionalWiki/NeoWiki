@@ -32,7 +32,6 @@ use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
@@ -187,7 +186,9 @@ class ReplaceSubjectActionTest extends TestCase {
 		$subject = TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) );
 		$this->subjectRepository->updateSubject( $subject );
 
-		$action = $this->newAction( new FailingSubjectAuthorizer() );
+		// The write authorizer denies even though the hint checks would allow: the action must
+		// gate the replace on authorizeEdit, not on a can* hint.
+		$action = $this->newAction( new SpySubjectAuthorizer( writeAllowed: false ) );
 
 		$this->expectException( SubjectEditNotAuthorizedException::class );
 

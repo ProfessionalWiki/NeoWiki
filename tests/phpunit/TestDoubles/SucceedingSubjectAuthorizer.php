@@ -20,7 +20,7 @@ class SucceedingSubjectAuthorizer implements SubjectAuthorizer {
 		return true;
 	}
 
-	public function canDeleteSubject( ?PageId $pageId ): bool {
+	public function authorizeEdit( ?PageId $pageId ): bool {
 		return true;
 	}
 }

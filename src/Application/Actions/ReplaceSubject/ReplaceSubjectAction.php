@@ -48,7 +48,7 @@ readonly class ReplaceSubjectAction {
 		// returns null), so the request 404s before any write rather than touching a protected page.
 		$pageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
 
-		if ( !$this->subjectAuthorizer->canEditSubject( $pageId ) ) {
+		if ( !$this->subjectAuthorizer->authorizeEdit( $pageId ) ) {
 			throw new SubjectEditNotAuthorizedException();
 		}
 

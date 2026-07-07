@@ -41,11 +41,7 @@ readonly class CreateSubjectAction {
 
 		$pageId = new PageId( $request->pageId );
 
-		$authorized = $request->isMainSubject
-			? $this->subjectAuthorizer->canCreateMainSubject( $pageId )
-			: $this->subjectAuthorizer->canCreateChildSubject( $pageId );
-
-		if ( !$authorized ) {
+		if ( !$this->subjectAuthorizer->authorizeEdit( $pageId ) ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to create this subject' );
 		}
 

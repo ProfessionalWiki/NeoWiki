@@ -24,7 +24,7 @@ readonly class SetSubjectsOrderingAction {
 	public function setOrdering( SetSubjectsOrderingRequest $request ): void {
 		$pageId = new PageId( $request->pageId );
 
-		if ( !$this->subjectAuthorizer->canEditSubject( $pageId ) ) {
+		if ( !$this->subjectAuthorizer->authorizeEdit( $pageId ) ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to change the subject ordering' );
 		}
 

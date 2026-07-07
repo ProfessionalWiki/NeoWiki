@@ -12,8 +12,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 use RuntimeException;
 
@@ -187,10 +187,12 @@ class SetSubjectsOrderingActionTest extends TestCase {
 	}
 
 	public function testThrowsWhenUserMayNotEditSubject(): void {
+		// The write authorizer denies even though the hint checks would allow: the action must
+		// gate the change on authorizeEdit, not on a can* hint.
 		$action = new SetSubjectsOrderingAction(
 			presenter: $this->newSpyPresenter(),
 			subjectRepository: new InMemorySubjectRepository(),
-			subjectAuthorizer: new FailingSubjectAuthorizer(),
+			subjectAuthorizer: new SpySubjectAuthorizer( writeAllowed: false ),
 		);
 
 		$this->expectException( RuntimeException::class );

@@ -32,8 +32,8 @@ class SpecialNeoJson extends SpecialPage {
 			return;
 		}
 
-		// This page edits the target page's Subject content, so gate it on per-title edit rights.
-		// Runs before the form is built, so it also blocks the POST that would otherwise write.
+		// This page edits the target page's Subject content. Deny early, before rendering the form,
+		// for users who cannot edit the page. The POST write itself is authorized in onSubmit().
 		if ( !NeoWikiExtension::getInstance()->newSubjectAuthorizer( $this->getAuthority() )
 				->canEditSubject( new PageId( $title->getId() ) ) ) {
 			throw new PermissionsError( 'edit' );
@@ -85,8 +85,14 @@ class SpecialNeoJson extends SpecialPage {
 	}
 
 	private function onSubmit( array $formData, Title $title ): bool {
-		// Precondition: execute() has already authorized per-title edit on $title before building this
-		// form, so this write is gated. Keep that check ahead of addHtmlForm() if this is ever refactored.
+		// This is the actual Subject write, so authorize it with authorizeEdit (authorizeWrite):
+		// it enforces per-title edit rights against the primary database and counts the edit rate
+		// limit, unlike the side-effect-free canEditSubject gate in execute().
+		if ( !NeoWikiExtension::getInstance()->newSubjectAuthorizer( $this->getAuthority() )
+				->authorizeEdit( new PageId( $title->getId() ) ) ) {
+			throw new PermissionsError( 'edit' );
+		}
+
 		$content = SubjectContent::newFromData(
 			NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize( $formData['json'] )
 		);

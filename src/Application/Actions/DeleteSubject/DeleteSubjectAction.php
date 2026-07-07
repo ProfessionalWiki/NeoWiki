@@ -25,7 +25,7 @@ readonly class DeleteSubjectAction {
 		// unresolvable Subject results in a no-op delete rather than a write to a protected page.
 		$pageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
 
-		if ( !$this->subjectAuthorizer->canDeleteSubject( $pageId ) ) {
+		if ( !$this->subjectAuthorizer->authorizeEdit( $pageId ) ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to delete this subject' );
 		}
 

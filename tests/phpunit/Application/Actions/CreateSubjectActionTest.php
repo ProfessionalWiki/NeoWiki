@@ -31,10 +31,9 @@ use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use RuntimeException;
@@ -155,7 +154,9 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	public function testUserIsNotAllowedToCreateSubject(): void {
-		$this->authorizer = new FailingSubjectAuthorizer();
+		// The write authorizer denies even though the hint checks would allow: the action must
+		// gate the creation on authorizeEdit, not on a can* hint.
+		$this->authorizer = new SpySubjectAuthorizer( writeAllowed: false );
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'You do not have the necessary permissions to create this subject' );
@@ -169,23 +170,6 @@ class CreateSubjectActionTest extends TestCase {
 				statements: []
 			)
 		);
-	}
-
-	public function testMainSubjectCreationDoesNotRequireChildPermission(): void {
-		$this->authorizer = new SpySubjectAuthorizer( mainAllowed: true, childAllowed: false );
-		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
-
-		$this->newCreateSubjectAction()->createSubject(
-			new CreateSubjectRequest(
-				pageId: 1,
-				isMainSubject: true,
-				label: 'Some Label',
-				schemaName: 'some-schema-id',
-				statements: []
-			)
-		);
-
-		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
 	}
 
 	public function testCommentIsPassedToRepository(): void {
