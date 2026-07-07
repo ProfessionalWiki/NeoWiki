@@ -15,7 +15,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\Wr
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua\CypherQueryRunner;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryEngine;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jReadQueryEngine;
 use RuntimeException;
 
 /**
@@ -24,7 +24,7 @@ use RuntimeException;
 class CypherQueryRunnerTest extends TestCase {
 
 	private function newRunner(
-		Neo4jQueryEngine $engine,
+		Neo4jReadQueryEngine $engine,
 		?CypherQueryValidator $validator = null
 	): CypherQueryRunner {
 		$validator ??= new class implements CypherQueryValidator {
@@ -44,8 +44,8 @@ class CypherQueryRunnerTest extends TestCase {
 		);
 	}
 
-	private function stubEngine( SummarizedResult $result ): Neo4jQueryEngine {
-		return new class( $result ) implements Neo4jQueryEngine {
+	private function stubEngine( SummarizedResult $result ): Neo4jReadQueryEngine {
+		return new class( $result ) implements Neo4jReadQueryEngine {
 			public string $lastCypher = '';
 			public array $lastParams = [];
 
@@ -99,7 +99,7 @@ class CypherQueryRunnerTest extends TestCase {
 	}
 
 	public function testWriteQueryPropagatesWriteQueryRejectedException(): void {
-		$engine = new class implements Neo4jQueryEngine {
+		$engine = new class implements Neo4jReadQueryEngine {
 			public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
 				throw new \LogicException( 'engine must not be called for a rejected query' );
 			}
@@ -141,7 +141,7 @@ class CypherQueryRunnerTest extends TestCase {
 	}
 
 	public function testEngineFailurePropagatesAsBackendUnavailableException(): void {
-		$engine = new class implements Neo4jQueryEngine {
+		$engine = new class implements Neo4jReadQueryEngine {
 			public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
 				throw new RuntimeException( 'connection refused' );
 			}

@@ -97,7 +97,6 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jPageIde
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\ExplainCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\KeywordCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
@@ -247,10 +246,10 @@ class NeoWikiExtension {
 		return $this->neo4jPlugin;
 	}
 
-	// Test seam: lets tests build a store with a custom SchemaLookup.
+	// Test seam: lets tests build a projection store with a custom SchemaLookup.
 	// This is a hack; we should have a proper test environment.
-	public function newNeo4jQueryStore( SchemaLookup $schemaLookup ): Neo4jQueryStore {
-		return $this->buildNeo4jPlugin( $schemaLookup )->getQueryStore();
+	public function newNeo4jProjectionStore( SchemaLookup $schemaLookup ): GraphDatabasePlugin {
+		return $this->buildNeo4jPlugin( $schemaLookup )->getGraphDatabasePlugin();
 	}
 
 	private function buildNeo4jPlugin( SchemaLookup $schemaLookup ): Neo4jPlugin {
@@ -295,7 +294,7 @@ class NeoWikiExtension {
 
 	public function newCypherQueryService(): Neo4jQueryService {
 		return new Neo4jQueryService(
-			$this->getNeo4jPlugin()->getQueryStore(),
+			$this->getNeo4jPlugin()->getReadQueryEngine(),
 			$this->getCypherQueryValidator(),
 			new Neo4jResultNormalizer(),
 		);
@@ -308,7 +307,7 @@ class NeoWikiExtension {
 	}
 
 	public function getWriteQueryEngine(): Neo4jWriteQueryEngine {
-		return $this->getNeo4jPlugin()->getQueryStore();
+		return $this->getNeo4jPlugin()->getWriteQueryEngine();
 	}
 
 	public function isDevelopmentUIEnabled(): bool {

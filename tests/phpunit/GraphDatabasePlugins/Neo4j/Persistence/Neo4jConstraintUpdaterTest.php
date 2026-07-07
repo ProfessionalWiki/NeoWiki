@@ -7,12 +7,9 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 use Laudis\Neo4j\Exception\Neo4jException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jConstraintUpdater;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jConstraintUpdater
@@ -29,11 +26,10 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 
 	public function testDefaultConstraintsAreCreated(): void {
 		$updater = $this->newConstraintUpdater();
-		$store = $this->newQueryStore();
 
 		$updater->createDefaultConstraints();
 
-		$result = $store->runReadQuery(
+		$result = $this->readGraph(
 			'SHOW CONSTRAINTS YIELD name, type, entityType, labelsOrTypes, properties ORDER BY name'
 		);
 
@@ -64,18 +60,10 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function newQueryStore(): Neo4jQueryStore {
-		return NeoWikiExtension::getInstance()->newNeo4jQueryStore(
-			new InMemorySchemaLookup(
-				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
-			)
-		);
-	}
-
 	public function testPageWithDuplicateIdInSameWikiCannotBeCreated(): void {
 		$this->newConstraintUpdater()->createDefaultConstraints();
 
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 		$wikiId = NeoWikiExtension::getInstance()->config->wikiId;
 
 		$store->savePage( TestPage::build( id: 42 ) );
@@ -85,7 +73,7 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 			'/Neo.ClientError.Schema.ConstraintValidationFailed.*already exists with label `Page`/'
 		);
 
-		$store->runWriteQuery(
+		$this->writeGraph(
 			'CREATE (:Page {name: "Test", id: 42, wiki_id: "' . $wikiId . '"} )'
 		);
 	}
@@ -93,16 +81,16 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 	public function testPagesWithSameIdInDifferentWikisCanCoexist(): void {
 		$this->newConstraintUpdater()->createDefaultConstraints();
 
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build( id: 42 ) );
 
 		// A page with the same id but a different wiki_id must not violate the composite constraint.
-		$store->runWriteQuery(
+		$this->writeGraph(
 			'CREATE (:Page {name: "Test", id: 42, wiki_id: "some_other_wiki"} )'
 		);
 
-		$result = $store->runReadQuery( 'MATCH (page:Page {id: 42}) RETURN count(page) AS count' );
+		$result = $this->readGraph( 'MATCH (page:Page {id: 42}) RETURN count(page) AS count' );
 
 		$this->assertSame( 2, $result->first()->toRecursiveArray()['count'] );
 	}
@@ -110,7 +98,7 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 	public function testSubjectWithDuplicateIdCannotBeCreated(): void {
 		$this->newConstraintUpdater()->createDefaultConstraints();
 
-		$store = $this->newQueryStore();
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
@@ -122,7 +110,7 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 			'/Neo.ClientError.Schema.ConstraintValidationFailed.*already exists with label `Subject` and property `id` = \'' . self::SUBJECT_ID . '\'"/'
 		);
 
-		$store->runWriteQuery(
+		$this->writeGraph(
 			'CREATE (:Subject {name: "Test", id: "' . self::SUBJECT_ID . '"} )'
 		);
 	}

@@ -9,20 +9,19 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Types\CypherList;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientReadQueryEngine;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore
+ * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientReadQueryEngine
  */
-class Neo4jQueryStoreTimeoutTest extends TestCase {
+class Neo4jClientReadQueryEngineTest extends TestCase {
 
 	public function testTimeoutIsForwardedAsTransactionConfiguration(): void {
 		$capturedConfig = null;
 		$readOnlyClient = $this->newClientCapturingConfig( $capturedConfig );
 
-		$store = $this->newStore( $readOnlyClient );
-		$store->runReadQuery( 'MATCH (n) RETURN n', [], 30 );
+		$engine = $this->newReadQueryEngine( $readOnlyClient );
+		$engine->runReadQuery( 'MATCH (n) RETURN n', [], 30 );
 
 		$this->assertNotNull( $capturedConfig );
 		$this->assertSame( 30.0, $capturedConfig->getTimeout() );
@@ -32,8 +31,8 @@ class Neo4jQueryStoreTimeoutTest extends TestCase {
 		$capturedConfig = 'sentinel-not-overwritten';
 		$readOnlyClient = $this->newClientCapturingConfig( $capturedConfig );
 
-		$store = $this->newStore( $readOnlyClient );
-		$store->runReadQuery( 'MATCH (n) RETURN n', [] );
+		$engine = $this->newReadQueryEngine( $readOnlyClient );
+		$engine->runReadQuery( 'MATCH (n) RETURN n', [] );
 
 		$this->assertNull( $capturedConfig );
 	}
@@ -52,13 +51,8 @@ class Neo4jQueryStoreTimeoutTest extends TestCase {
 		return $client;
 	}
 
-	private function newStore( ClientInterface $readOnlyClient ): Neo4jQueryStore {
-		return new Neo4jQueryStore(
-			$this->createMock( ClientInterface::class ),
-			$readOnlyClient,
-			$this->createMock( Neo4jSubjectUpdaterFactory::class ),
-			'test_wiki',
-		);
+	private function newReadQueryEngine( ClientInterface $readOnlyClient ): Neo4jClientReadQueryEngine {
+		return new Neo4jClientReadQueryEngine( $readOnlyClient );
 	}
 
 }
