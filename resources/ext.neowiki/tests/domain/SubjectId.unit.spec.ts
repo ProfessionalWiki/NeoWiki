@@ -10,9 +10,23 @@ describe( 'Subject', () => {
 		expect( subjectId.text ).toBe( GUID );
 	} );
 
-	// TODO  It seems vitest does not support toThrowError
-	// it( 'throws exception when given an invalid GUID', () => {
-	// 	const GUID = '7777-0000-000000000001';
-	// 	expect( () => new SubjectId( GUID ) ).toThrowError();
-	// } );
+	it( 'throws when given an invalid ID', () => {
+		expect( () => new SubjectId( '7777-0000-000000000001' ) ).toThrowError();
+	} );
+
+	it( 'has local source and itself as localId for a bare ID', () => {
+		const subjectId = new SubjectId( 's11111111111111' );
+
+		expect( subjectId.getSource() ).toBeNull();
+		expect( subjectId.getLocalId() ).toBe( 's11111111111111' );
+	} );
+
+	it( 'exposes source and localId for a qualified ID', () => {
+		const subjectId = new SubjectId( 'enwiki:Q42' );
+
+		expect( subjectId.text ).toBe( 'enwiki:Q42' );
+		expect( subjectId.getSource() ).toBe( 'enwiki' );
+		expect( subjectId.getLocalId() ).toBe( 'Q42' );
+	} );
+
 } );

@@ -38,6 +38,25 @@ class SubjectIdTest extends TestCase {
 		);
 	}
 
+	public function testBareIdHasLocalSourceAndItselfAsLocalId(): void {
+		$subjectId = new SubjectId( 's11111111111111' );
+
+		$this->assertNull( $subjectId->getSource() );
+		$this->assertSame( 's11111111111111', $subjectId->getLocalId() );
+	}
+
+	public function testQualifiedIdExposesSourceAndLocalId(): void {
+		$subjectId = new SubjectId( 'enwiki:Q42' );
+
+		$this->assertSame( 'enwiki:Q42', $subjectId->text );
+		$this->assertSame( 'enwiki', $subjectId->getSource() );
+		$this->assertSame( 'Q42', $subjectId->getLocalId() );
+	}
+
+	public function testIsValidAcceptsQualifiedForm(): void {
+		$this->assertTrue( SubjectId::isValid( 'enwiki:Q42' ) );
+	}
+
 	/**
 	 * @dataProvider invalidGuidProvider
 	 */
