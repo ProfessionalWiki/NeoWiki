@@ -44,8 +44,8 @@ readonly class ReplaceSubjectAction {
 		}
 
 		// A null pageId (unresolvable Subject) makes the authorizer fall back to the global 'edit' right.
-		// This cannot bypass page protection: an unresolvable Subject has no content to replace, so the
-		// update below is a no-op rather than a write to a protected page.
+		// This cannot bypass page protection: an unresolvable Subject is not found below (getSubject
+		// returns null), so the request 404s before any write rather than touching a protected page.
 		$pageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
 
 		if ( !$this->subjectAuthorizer->canEditSubject( $pageId ) ) {
