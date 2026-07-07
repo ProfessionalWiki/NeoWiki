@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -29,9 +28,11 @@ class DeleteSubjectApi extends SimpleHandler {
 		$body = $this->getValidatedBody() ?? [];
 		$comment = $body['comment'] ?? null;
 
+		$extension = NeoWikiExtension::getInstance();
+
 		try {
-			NeoWikiExtension::getInstance()->newDeleteSubjectAction( $this->getAuthority() )->deleteSubject(
-				new SubjectId( $subjectId ),
+			$extension->newDeleteSubjectAction( $this->getAuthority() )->deleteSubject(
+				$extension->getSubjectIdParser()->parse( $subjectId ),
 				$comment
 			);
 		} catch ( \RuntimeException $e ) {

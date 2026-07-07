@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering\SetSubjects
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
@@ -190,6 +191,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			presenter: $this->newSpyPresenter(),
 			subjectRepository: new InMemorySubjectRepository(),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
+			subjectIdParser: TestData::newSubjectIdParser(),
 		);
 
 		$this->expectException( RuntimeException::class );
@@ -225,6 +227,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			presenter: $presenter,
 			subjectRepository: $repository,
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: true ),
+			subjectIdParser: TestData::newSubjectIdParser(),
 		);
 	}
 

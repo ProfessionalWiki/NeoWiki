@@ -31,6 +31,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
@@ -64,7 +65,8 @@ class ReplaceSubjectActionTest extends TestCase {
 		$registry = PropertyTypeRegistry::withCoreTypes();
 		$builder = new StatementListBuilder(
 			propertyTypeLookup: $registry,
-			idGenerator: new StubIdGenerator( '11111111111127' )
+			idGenerator: new StubIdGenerator( '11111111111127' ),
+			subjectIdParser: TestData::newSubjectIdParser()
 		);
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->subjectRepository,

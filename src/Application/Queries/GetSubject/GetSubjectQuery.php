@@ -8,7 +8,7 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 
 readonly class GetSubjectQuery {
 
@@ -16,6 +16,7 @@ readonly class GetSubjectQuery {
 		private GetSubjectPresenter $presenter,
 		private SubjectLookup $subjectLookup,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
+		private SubjectIdParser $subjectIdParser,
 	) {
 	}
 
@@ -24,7 +25,7 @@ readonly class GetSubjectQuery {
 		bool $includePageIdentifiers,
 		bool $includeReferencedSubjects
 	): void {
-		$subject = $this->subjectLookup->getSubject( new SubjectId( $subjectId ) ); // TODO: error handling on invalid ID
+		$subject = $this->subjectLookup->getSubject( $this->subjectIdParser->parse( $subjectId ) ); // TODO: error handling on invalid ID
 
 		if ( $subject === null ) {
 			$this->presenter->presentSubjectNotFound();

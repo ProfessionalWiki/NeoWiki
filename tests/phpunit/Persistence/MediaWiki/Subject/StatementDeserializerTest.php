@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer
@@ -45,7 +46,7 @@ class StatementDeserializerTest extends TestCase {
 	 * Core types only: no extension is loaded, so "color" is an unregistered type.
 	 */
 	private function newDeserializer(): StatementDeserializer {
-		return new StatementDeserializer( PropertyTypeRegistry::withCoreTypes() );
+		return new StatementDeserializer( PropertyTypeRegistry::withCoreTypes(), TestData::newSubjectIdParser() );
 	}
 
 	public function testDeserializesText(): void {

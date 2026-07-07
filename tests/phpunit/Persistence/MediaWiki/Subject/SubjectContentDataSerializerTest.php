@@ -225,7 +225,10 @@ class SubjectContentDataSerializerTest extends TestCase {
 	 * Core types only: no extension is loaded, so "color" is an unregistered type.
 	 */
 	private function roundTrip( string $contentJson ): string {
-		$deserializer = new SubjectContentDataDeserializer( new StatementDeserializer( PropertyTypeRegistry::withCoreTypes() ) );
+		$deserializer = new SubjectContentDataDeserializer(
+			new StatementDeserializer( PropertyTypeRegistry::withCoreTypes(), TestData::newSubjectIdParser() ),
+			TestData::newSubjectIdParser()
+		);
 
 		return ( new SubjectContentDataSerializer() )->serialize( $deserializer->deserialize( $contentJson ) );
 	}

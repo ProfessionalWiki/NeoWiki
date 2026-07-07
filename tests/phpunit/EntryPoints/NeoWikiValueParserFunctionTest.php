@@ -28,6 +28,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 
 /**
@@ -73,7 +74,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 
 	private function createPF( SubjectContentRepository $repo, ?SubjectLookup $lookup = null ): NeoWikiValueParserFunction {
 		return new NeoWikiValueParserFunction(
-			new SubjectResolver( $repo, $lookup ?? $this->createDummyLookup() )
+			new SubjectResolver( $repo, $lookup ?? $this->createDummyLookup(), TestData::newSubjectIdParser() )
 		);
 	}
 

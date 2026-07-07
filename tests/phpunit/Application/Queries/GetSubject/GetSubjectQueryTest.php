@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -56,6 +57,7 @@ class GetSubjectQueryTest extends TestCase {
 				),
 			),
 			new InMemoryPageIdentifiersLookup(),
+			TestData::newSubjectIdParser(),
 		);
 
 		$query->execute(
@@ -128,6 +130,7 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			new InMemorySubjectLookup(),
 			new InMemoryPageIdentifiersLookup(),
+			TestData::newSubjectIdParser(),
 		);
 
 		$query->execute(
@@ -150,6 +153,7 @@ class GetSubjectQueryTest extends TestCase {
 				[ new SubjectId( TestSubject::ZERO_GUID ), new PageIdentifiers( new PageId( 1 ), 'wrong title', 0 ) ],
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'right title', 12 ) ],
 			] ),
+			TestData::newSubjectIdParser(),
 		);
 
 		$query->execute(
@@ -198,6 +202,7 @@ class GetSubjectQueryTest extends TestCase {
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'subject title', 0 ) ],
 				[ $referencedSubject->id, new PageIdentifiers( new PageId( 1337 ), 'referenced title', 12 ) ],
 			] ),
+			TestData::newSubjectIdParser(),
 		);
 
 		$query->execute(

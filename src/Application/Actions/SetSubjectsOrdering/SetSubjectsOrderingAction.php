@@ -9,7 +9,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use RuntimeException;
 
 readonly class SetSubjectsOrderingAction {
@@ -18,6 +18,7 @@ readonly class SetSubjectsOrderingAction {
 		private SetSubjectsOrderingPresenter $presenter,
 		private SubjectRepository $subjectRepository,
 		private SubjectWriteAuthorizer $writeAuthorizer,
+		private SubjectIdParser $subjectIdParser,
 	) {
 	}
 
@@ -37,8 +38,8 @@ readonly class SetSubjectsOrderingAction {
 
 		try {
 			$pageSubjects->setOrdering(
-				$request->mainSubjectId === null ? null : new SubjectId( $request->mainSubjectId ),
-				array_map( fn ( string $id ) => new SubjectId( $id ), $request->childSubjectIds )
+				$request->mainSubjectId === null ? null : $this->subjectIdParser->parse( $request->mainSubjectId ),
+				array_map( fn ( string $id ) => $this->subjectIdParser->parse( $id ), $request->childSubjectIds )
 			);
 		} catch ( InvalidArgumentException $e ) {
 			$this->presenter->presentInvalidOrdering( $e->getMessage() );

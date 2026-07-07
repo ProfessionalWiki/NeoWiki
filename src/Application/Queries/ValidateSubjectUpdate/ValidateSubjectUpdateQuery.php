@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
@@ -22,6 +22,7 @@ readonly class ValidateSubjectUpdateQuery {
 		private SubjectValidator $subjectValidator,
 		private StatementListBuilder $statementListBuilder,
 		private SelectStatementResolver $selectStatementResolver,
+		private SubjectIdParser $subjectIdParser,
 	) {
 	}
 
@@ -34,7 +35,7 @@ readonly class ValidateSubjectUpdateQuery {
 	 * @throws SubjectNotFoundException when the subject does not exist.
 	 */
 	public function validate( string $subjectId, string $label, array $statements ): array {
-		$id = new SubjectId( $subjectId );
+		$id = $this->subjectIdParser->parse( $subjectId );
 		$subject = $this->subjectRepository->getSubject( $id );
 
 		if ( $subject === null ) {

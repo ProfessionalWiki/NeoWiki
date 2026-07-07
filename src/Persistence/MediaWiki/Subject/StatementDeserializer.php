@@ -9,7 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
@@ -28,7 +28,8 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 class StatementDeserializer {
 
 	public function __construct(
-		private readonly PropertyTypeLookup $propertyTypeLookup
+		private readonly PropertyTypeLookup $propertyTypeLookup,
+		private readonly SubjectIdParser $subjectIdParser,
 	) {
 	}
 
@@ -59,7 +60,7 @@ class StatementDeserializer {
 		foreach ( $json as $relation ) {
 			$relations[] = new Relation(
 				id: new RelationId( $relation['id'] ),
-				targetId: new SubjectId( $relation['target'] ),
+				targetId: $this->subjectIdParser->parse( $relation['target'] ),
 				properties: new RelationProperties( $relation['properties'] ?? [] )
 			);
 		}

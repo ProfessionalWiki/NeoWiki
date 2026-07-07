@@ -16,7 +16,6 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 
@@ -35,9 +34,7 @@ class SubjectContentDataDeserializerTest extends TestCase {
 	}
 
 	private function newDeserializer(): SubjectContentDataDeserializer {
-		return new SubjectContentDataDeserializer(
-			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup() )
-		);
+		return NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer();
 	}
 
 	public function testMinimalJson(): void {

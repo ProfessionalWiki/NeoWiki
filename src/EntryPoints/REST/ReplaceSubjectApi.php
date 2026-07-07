@@ -10,7 +10,6 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\RestReplaceSubjectPresenter;
@@ -33,9 +32,11 @@ class ReplaceSubjectApi extends SimpleHandler {
 
 		$presenter = new RestReplaceSubjectPresenter();
 
+		$extension = NeoWikiExtension::getInstance();
+
 		try {
-			NeoWikiExtension::getInstance()->newReplaceSubjectAction( $presenter, $this->getAuthority() )->replace(
-				new SubjectId( $subjectId ),
+			$extension->newReplaceSubjectAction( $presenter, $this->getAuthority() )->replace(
+				$extension->getSubjectIdParser()->parse( $subjectId ),
 				$body['label'],
 				$body['statements'],
 				$body['comment'] ?? null
