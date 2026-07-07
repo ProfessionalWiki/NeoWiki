@@ -13,11 +13,11 @@ interface Vector {
 }
 
 const vectors = JSON.parse(
-	readFileSync( new URL( '../../../../tests/subject-id-vectors.json', import.meta.url ), 'utf8' )
+	readFileSync( new URL( '../../../../tests/subject-id-vectors.json', import.meta.url ), 'utf8' ),
 ) as { localSourceKey: string; cases: Vector[] };
 
 const parser = new SubjectIdParser( vectors.localSourceKey );
-const validCases = vectors.cases.filter( ( vector ) => vector.valid ) as Array<Required<Vector>>;
+const validCases = vectors.cases.filter( ( vector ) => vector.valid ) as Required<Vector>[];
 const invalidCases = vectors.cases.filter( ( vector ) => !vector.valid );
 
 describe( 'SubjectIdParser', () => {
@@ -26,8 +26,8 @@ describe( 'SubjectIdParser', () => {
 		const id = parser.parse( input );
 
 		expect( id.text ).toBe( canonicalText );
-		expect( id.getSource() ).toBe( source );
-		expect( id.getLocalId() ).toBe( localId );
+		expect( id.source ).toBe( source );
+		expect( id.localId ).toBe( localId );
 	} );
 
 	it.each( validCases )( 'canonical text parses to itself: $name', ( { canonicalText } ) => {

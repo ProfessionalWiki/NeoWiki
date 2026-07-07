@@ -66,6 +66,25 @@ describe( 'RestSubjectRepository', () => {
 			}
 		} );
 
+		it( 'percent-encodes qualified subject ids in the request URL', async () => {
+			const qualifiedId = 'enwiki:Q42';
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/enwiki%3AQ42?expand=page|relations':
+					new Response( JSON.stringify( {
+						requestedId: qualifiedId,
+						subjects: {
+							[ qualifiedId ]: { ...subjectResponse, id: qualifiedId },
+						},
+					} ), { status: 200 } ),
+			} );
+
+			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
+
+			const subject = await repository.getSubject( new SubjectId( qualifiedId ) );
+
+			expect( subject?.getId().text ).toBe( qualifiedId );
+		} );
+
 		it( 'returns existing subject', async () => {
 			const inMemoryHttpClient = new InMemoryHttpClient( {
 				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111?expand=page|relations':

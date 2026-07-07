@@ -17,16 +17,16 @@ describe( 'Subject', () => {
 	it( 'has local source and itself as localId for a bare ID', () => {
 		const subjectId = new SubjectId( 's11111111111111' );
 
-		expect( subjectId.getSource() ).toBeNull();
-		expect( subjectId.getLocalId() ).toBe( 's11111111111111' );
+		expect( subjectId.source ).toBeNull();
+		expect( subjectId.localId ).toBe( 's11111111111111' );
 	} );
 
 	it( 'exposes source and localId for a qualified ID', () => {
 		const subjectId = new SubjectId( 'enwiki:Q42' );
 
 		expect( subjectId.text ).toBe( 'enwiki:Q42' );
-		expect( subjectId.getSource() ).toBe( 'enwiki' );
-		expect( subjectId.getLocalId() ).toBe( 'Q42' );
+		expect( subjectId.source ).toBe( 'enwiki' );
+		expect( subjectId.localId ).toBe( 'Q42' );
 	} );
 
 } );

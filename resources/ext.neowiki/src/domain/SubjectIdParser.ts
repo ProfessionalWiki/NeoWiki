@@ -13,8 +13,8 @@ export class SubjectIdParser {
 	public parse( text: string ): SubjectId {
 		const id = new SubjectId( text );
 
-		if ( id.getSource() === this.localSourceKey ) {
-			return this.newLocalId( id.getLocalId(), text );
+		if ( id.source === this.localSourceKey ) {
+			return this.newLocalId( id.localId, text );
 		}
 
 		return id;
@@ -23,7 +23,7 @@ export class SubjectIdParser {
 	private newLocalId( localId: string, originalText: string ): SubjectId {
 		const bareId = new SubjectId( localId );
 
-		if ( bareId.getSource() !== null ) {
+		if ( bareId.source !== null ) {
 			throw new Error( 'Local Subject IDs must be bare: ' + originalText );
 		}
 

@@ -158,7 +158,7 @@ export class RestSubjectRepository implements SubjectRepository {
 	}
 
 	private async fetchSubjectBundle( id: SubjectId ): Promise<SubjectBundleJson> {
-		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`;
+		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ encodeURIComponent( id.text ) }?expand=page|relations`;
 
 		if ( this.revisionId !== undefined ) {
 			url += `&revisionId=${ this.revisionId }`;
@@ -249,7 +249,7 @@ export class RestSubjectRepository implements SubjectRepository {
 
 	public async updateSubject( id: SubjectId, label: string, statements: StatementList, comment?: string ): Promise<object> {
 		const response = await this.httpClient.put(
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ encodeURIComponent( id.text ) }`,
 			{
 				label,
 				statements: statementsToJson( statements ),
@@ -273,7 +273,7 @@ export class RestSubjectRepository implements SubjectRepository {
 
 	public async deleteSubject( id: SubjectId, comment?: string ): Promise<boolean> {
 		const response = await this.httpClient.delete(
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ encodeURIComponent( id.text ) }`,
 			{
 				headers: {
 					'Content-Type': 'application/json',
@@ -306,7 +306,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		statements: StatementList,
 	): Promise<SubjectViolation[]> {
 		return this.runValidation(
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }/validate`,
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ encodeURIComponent( id.text ) }/validate`,
 			{ label, statements: statementsToJson( statements ) },
 		);
 	}
