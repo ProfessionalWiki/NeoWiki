@@ -8,6 +8,7 @@ use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
+use PermissionsError;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -29,6 +30,13 @@ class SpecialNeoJson extends SpecialPage {
 		if ( $title === null ) {
 			$this->getOutput()->addWikiMsg( 'neowiki-todo-page-does-not-exist' ); // TODO
 			return;
+		}
+
+		// This page edits the target page's Subject content, so gate it on per-title edit rights.
+		// Runs before the form is built, so it also blocks the POST that would otherwise write.
+		if ( !NeoWikiExtension::getInstance()->newSubjectAuthorizer( $this->getAuthority() )
+				->canEditSubject( new PageId( $title->getId() ) ) ) {
+			throw new PermissionsError( 'edit' );
 		}
 
 		$json = $this->getNeoJson( $title );
@@ -77,6 +85,8 @@ class SpecialNeoJson extends SpecialPage {
 	}
 
 	private function onSubmit( array $formData, Title $title ): bool {
+		// Precondition: execute() has already authorized per-title edit on $title before building this
+		// form, so this write is gated. Keep that check ahead of addHtmlForm() if this is ever refactored.
 		$content = SubjectContent::newFromData(
 			NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize( $formData['json'] )
 		);

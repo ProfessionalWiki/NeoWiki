@@ -80,7 +80,7 @@ class ReplaceSubjectActionTest extends TestCase {
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
 			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
-				[ new SubjectId( self::SUBJECT_ID ), new PageIdentifiers( new PageId( 1 ), 'Test page', 0 ) ]
+				[ new SubjectId( self::SUBJECT_ID ), new PageIdentifiers( new PageId( 7 ), 'Test page', 0 ) ]
 			] ),
 		);
 	}
@@ -180,7 +180,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$this->newAction( $spy )->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
 
-		$this->assertEquals( new PageId( 1 ), $spy->authorizedPageId );
+		$this->assertEquals( new PageId( 7 ), $spy->authorizedPageId );
 	}
 
 	public function testUnauthorizedThrows(): void {
