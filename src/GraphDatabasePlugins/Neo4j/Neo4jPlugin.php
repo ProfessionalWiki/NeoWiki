@@ -7,9 +7,8 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientReadQueryEngine;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jReadQueryEngine;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientReadQueryEngine;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jProjectionStore;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
@@ -46,7 +45,7 @@ readonly class Neo4jPlugin {
 			wikiId: $wikiId,
 		);
 		$this->readQueryEngine = new Neo4jClientReadQueryEngine( $readOnlyClient );
-		$this->writeQueryEngine = new Neo4jClientWriteQueryEngine( $client );
+		$this->writeQueryEngine = new Neo4jWriteQueryEngine( $client );
 	}
 
 	public function getGraphDatabasePlugin(): GraphDatabasePlugin {

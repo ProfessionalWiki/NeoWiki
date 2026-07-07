@@ -7,10 +7,10 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientWriteQueryEngine
+ * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine
  * @group Database
  */
-class Neo4jClientWriteQueryEngineTest extends NeoWikiIntegrationTestCase {
+class Neo4jWriteQueryEngineTest extends NeoWikiIntegrationTestCase {
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
