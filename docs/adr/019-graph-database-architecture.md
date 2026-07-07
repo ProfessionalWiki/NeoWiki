@@ -62,8 +62,8 @@ This is not a near-term priority. The goal is to avoid architectural decisions t
 * Extensions can register additional graph database plugins.
 * A new SPARQL plugin needs: an RDF mapping layer (Subject/Schema/Statement to RDF triples), a SPARQL Protocol
   HTTP client, a sync mechanism analogous to `Neo4jProjectionStore`, and a read-only query validator.
-* The current `Neo4jReadQueryEngine`/`Neo4jWriteQueryEngine` interfaces and `Neo4jProjectionStore` remain as the Neo4j plugin.
-  They do not need to be generalized into a shared abstraction for all backends.
+* The current `Neo4jReadQueryEngine` interface, `Neo4jWriteQueryEngine` class, and `Neo4jProjectionStore` remain as the
+  Neo4j plugin. They do not need to be generalized into a shared abstraction for all backends.
 * The RDF mapping layer requires design decisions on URI schemes, class/predicate naming, and relation
   representation. This is the bulk of the work for the SPARQL plugin and is independent of which triple store
   is used. It warrants its own design document.
