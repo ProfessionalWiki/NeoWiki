@@ -420,7 +420,8 @@ class NeoWikiExtension {
 	public function newDeleteSubjectAction( Authority $authority ): DeleteSubjectAction {
 		return new DeleteSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority )
+			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup()
 		);
 	}
 
@@ -442,7 +443,8 @@ class NeoWikiExtension {
 
 	public function newSubjectAuthorizer( Authority $authority ): SubjectAuthorizer {
 		return new AuthorityBasedSubjectAuthorizer(
-			authority: $authority
+			authority: $authority,
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory()
 		);
 	}
 
@@ -566,6 +568,7 @@ class NeoWikiExtension {
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 		);
 	}
 

@@ -22,11 +22,12 @@ readonly class SetSubjectsOrderingAction {
 	}
 
 	public function setOrdering( SetSubjectsOrderingRequest $request ): void {
-		if ( !$this->subjectAuthorizer->canEditSubject() ) {
+		$pageId = new PageId( $request->pageId );
+
+		if ( !$this->subjectAuthorizer->canEditSubject( $pageId ) ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to change the subject ordering' );
 		}
 
-		$pageId = new PageId( $request->pageId );
 		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageId );
 
 		if ( $this->matchesCurrent( $pageSubjects, $request ) ) {

@@ -4,14 +4,16 @@ declare( strict_types=1 );
 
 namespace ProfessionalWiki\NeoWiki\Application;
 
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+
 interface SubjectAuthorizer {
 
-	public function canCreateMainSubject(): bool;
+	public function canCreateMainSubject( ?PageId $pageId ): bool;
 
-	public function canCreateChildSubject(): bool;
+	public function canCreateChildSubject( ?PageId $pageId ): bool;
 
-	public function canEditSubject(): bool;
+	public function canEditSubject( ?PageId $pageId ): bool;
 
-	public function canDeleteSubject(): bool;
+	public function canDeleteSubject( ?PageId $pageId ): bool;
 
 }

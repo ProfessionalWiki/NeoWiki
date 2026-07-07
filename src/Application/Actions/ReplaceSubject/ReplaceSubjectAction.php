@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
@@ -30,6 +31,7 @@ readonly class ReplaceSubjectAction {
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private ReplaceSubjectPresenter $presenter,
 		private bool $validationEnforced,
+		private PageIdentifiersLookup $pageIdentifiersLookup,
 	) {
 	}
 
@@ -41,7 +43,12 @@ readonly class ReplaceSubjectAction {
 			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
 		}
 
-		if ( !$this->subjectAuthorizer->canEditSubject() ) {
+		// A null pageId (unresolvable Subject) makes the authorizer fall back to the global 'edit' right.
+		// This cannot bypass page protection: an unresolvable Subject has no content to replace, so the
+		// update below is a no-op rather than a write to a protected page.
+		$pageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
+
+		if ( !$this->subjectAuthorizer->canEditSubject( $pageId ) ) {
 			throw new SubjectEditNotAuthorizedException();
 		}
 

@@ -13,6 +13,8 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthori
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
@@ -31,8 +33,10 @@ use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 
@@ -75,6 +79,9 @@ class ReplaceSubjectActionTest extends TestCase {
 			),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
+				[ new SubjectId( self::SUBJECT_ID ), new PageIdentifiers( new PageId( 1 ), 'Test page', 0 ) ]
+			] ),
 		);
 	}
 
@@ -165,6 +172,15 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], 'Edit summary' );
 
 		$this->assertSame( 'Edit summary', $this->subjectRepository->comments[self::SUBJECT_ID] );
+	}
+
+	public function testAuthorizesAgainstTheSubjectsResolvedPage(): void {
+		$spy = new SpySubjectAuthorizer();
+		$this->subjectRepository->updateSubject( TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) ) );
+
+		$this->newAction( $spy )->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+
+		$this->assertEquals( new PageId( 1 ), $spy->authorizedPageId );
 	}
 
 	public function testUnauthorizedThrows(): void {
