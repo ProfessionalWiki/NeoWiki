@@ -145,7 +145,7 @@ Array of Relation objects, each pointing to another subject.
 | Field | Type | Required | Description |
 |-------|------|-------------|-------------|
 | `id` | string | Yes | Unique identifier for this relation |
-| `target` | string | Yes | Subject ID of the target subject |
+| `target` | string | Yes | Subject ID of the target subject, in either id form (bare means local) |
 | `properties` | object | No | Key-value pairs of relation properties. Only included when non-empty. |
 
 Relation properties example:
@@ -172,10 +172,21 @@ Relation properties example:
 
 ### Subject IDs
 
-Subject IDs are 15-character nanoid-style identifiers that are lexicographically sortable by creation time.
-They start with `s`.
+A Subject id has two textual forms ([ADR 23](../adr/023-subject-sources.md)):
 
-Example: `s1demo5sssssss1`
+- The **bare local form**: a 15-character nanoid-style identifier starting with `s`, lexicographically
+  sortable by creation time. Local Subjects are always stored in this form.
+
+  Example: `s1demo5sssssss1`
+
+- The **source-qualified form** `source:localId`, referencing a Subject from a specific Source. The part
+  before the first `:` is the source key (`[A-Za-z0-9+_-]+`; for wikis, the
+  [MediaWiki Wiki ID](https://www.mediawiki.org/wiki/Manual:Wiki_ID)); the rest is the localId, whose
+  grammar is owned by its Source. Until Sources can define their own grammars, localIds are restricted to
+  URL-path-safe characters (RFC 3986 pchar, excluding percent-encoding). An id that explicitly names the
+  local source is equivalent to its bare form and is normalized to it.
+
+  Example: `otherwiki:s1demo5sssssss1`
 
 ### Relation IDs
 
@@ -190,6 +201,8 @@ See [ADR 014](../adr/014-improved-id-format.md) for details on the ID format.
 ### Reading Subjects
 
 `GET /rest.php/neowiki/v0/subject/{subjectId}`
+
+`{subjectId}` accepts either id form; returned ids are canonical, so local Subjects always appear bare.
 
 Returns the same statement format as storage, with additional fields:
 - `requestedId`: The ID that was requested

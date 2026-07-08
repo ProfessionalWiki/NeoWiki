@@ -69,7 +69,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject. 15 characters, starting with "s".',
+				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject: a bare local id ("s" + 14 characters) or a source-qualified id ("source:localId").',
 			],
 		];
 	}
