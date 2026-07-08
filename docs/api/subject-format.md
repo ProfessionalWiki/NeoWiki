@@ -182,7 +182,8 @@ A Subject id has two textual forms ([ADR 23](../adr/023-subject-sources.md)):
 - The **source-qualified form** `source:localId`, referencing a Subject from a specific Source. The part
   before the first `:` is the source key (`[A-Za-z0-9+_-]+`; for wikis, the
   [MediaWiki Wiki ID](https://www.mediawiki.org/wiki/Manual:Wiki_ID)); the rest is the localId, whose
-  grammar is owned by its Source. Until Sources can define their own grammars, localIds are restricted to
+  grammar is owned by its Source. Source keys are case-sensitive: keys that differ only in case denote
+  different Sources. Until Sources can define their own grammars, localIds are restricted to
   URL-path-safe characters (RFC 3986 pchar, excluding percent-encoding). An id that explicitly names the
   local source is equivalent to its bare form and is normalized to it.
 
