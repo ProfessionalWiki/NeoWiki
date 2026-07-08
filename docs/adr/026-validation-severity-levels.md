@@ -2,7 +2,7 @@
 
 Date: 2026-07-07
 
-Status: Draft. Amends [ADR 21](021-add-backend-validation.md).
+Status: Draft
 
 ## Context
 
