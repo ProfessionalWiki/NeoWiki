@@ -45,8 +45,8 @@ Blocking semantics:
 
 The default severity is `warning`. The architecture treats invalid Subjects as a normal state (the ADR 21 requirement
 above), so surfacing a violation without blocking is the consistent default, and blocking is the exception a schema
-author opts into deliberately. Wikidata's constraint model is precedent from the same domain: constraints are
-advisory unless individually marked as mandatory.
+author opts into. Wikidata's constraint model is precedent from the same domain: constraints are advisory unless
+individually marked as mandatory.
 
 ### Schema JSON
 
@@ -63,9 +63,9 @@ that carries the severity:
 ```
 
 For boolean Constraints (`required`, `uniqueItems`) the object form implies `true`, so it has no `value` key. For
-`options` the `value` key carries the options array. Both forms normalize to the same Constraint at the JSON boundary.
-Canonical serialization emits the shorthand when the severity is the default, so existing Schemas round-trip
-unchanged. Custom Property Types defined by extensions follow the same pattern for their own Constraint fields.
+`options` the `value` key carries the options array. Canonical serialization emits the shorthand when the severity is
+the default, so existing Schemas round-trip unchanged. Custom Property Types follow the same pattern for their own
+Constraint fields.
 
 ### Authorable and fixed severities
 
@@ -98,16 +98,15 @@ because enforcement is off by default and an admin can lift it for the duration 
 ### Wire format and domain model
 
 Every serialized violation gains an always-present `"severity": "error" | "warning"` field, in the dry-run validate
-endpoints' 200 body and in the enforcement 422 body alike. Existing consumers keep working since the field is
-additive. In the domain model, every violation carries its severity, stamped at validation time from the
-configuration of the Constraint it violates.
+endpoints' 200 body and in the enforcement 422 body alike. In the domain model, every violation carries its severity,
+stamped at validation time from the configuration of the Constraint it violates.
 
 ## Consequences
 
 Pros:
 
-* Schema authors control which constraints are strict and which are advisory, per Constraint, matching their domain
-  needs. Messy imports can be persisted with warnings while essential fields still block.
+* Schema authors control which constraints are strict and which are advisory, per Constraint. Messy imports can be
+  persisted with warnings while essential fields still block.
 * API responses distinguish warnings from errors, and the frontend can style them accordingly (Codex `warning` vs
   `error` status).
 * The wire format change is additive, and existing Schema JSON stays valid via the scalar shorthand.
@@ -129,8 +128,7 @@ Cons:
 ### Error as the default severity
 
 An `error` default would preserve the current behavior where every violation blocks under enforcement. We rejected it
-because it contradicts the invalid-Subjects requirement carried into ADR 21 from ADR 12: the system tolerates and
-surfaces invalid data, so blocking is the explicit opt-in rather than the default.
+because it contradicts the invalid-Subjects requirement carried into ADR 21 from ADR 12.
 
 ### Removing the wiki-level enforcement switch
 
