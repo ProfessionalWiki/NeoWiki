@@ -37,8 +37,8 @@ Blocking semantics:
 
 * `$wgNeoWikiEnforceValidation` remains the master switch. Severity never blocks a write on its own.
 * With enforcement on, a write is rejected only when it introduces new violations of severity `error`. Warnings never
-  block. The newly-introduced check from ADR 21 is unchanged, and severity is not part of violation identity in that
-  check: changing a Constraint's severity does not make an existing violation count as new.
+  block. The newly-introduced-violations check from ADR 21 is unchanged, and severity is not part of violation
+  identity in that check: changing a Constraint's severity does not make an existing violation count as new.
 * With enforcement off, no violation blocks, as today.
 * Validate and write responses always include severity, so UIs and API consumers can distinguish the tiers regardless
   of the enforcement setting.
@@ -63,10 +63,9 @@ that carries the severity:
 ```
 
 For boolean Constraints (`required`, `uniqueItems`) the object form implies `true`, so it has no `value` key. For
-`options` the `value` key carries the options array. Parsing is normalized once at each JSON boundary (the PHP
-Property Definition deserialization and its TypeScript mirror). Canonical serialization emits the shorthand when the
-severity is the default, so existing Schemas round-trip unchanged. Custom Property Types defined by extensions follow
-the same pattern for their own Constraint fields.
+`options` the `value` key carries the options array. Both forms normalize to the same Constraint at the JSON boundary.
+Canonical serialization emits the shorthand when the severity is the default, so existing Schemas round-trip
+unchanged. Custom Property Types defined by extensions follow the same pattern for their own Constraint fields.
 
 ### Authorable and fixed severities
 
@@ -92,17 +91,16 @@ carve-out:
 | `single-value-only` | multiple values on a single-value property | `error` | `multiple` declares the value's shape, like `type` itself, so it is a shape condition rather than a Constraint |
 | `schema-not-found` | the Subject's Schema page is missing | `warning` | severity configuration lives in the Schema and there is none to read from; a warning keeps the Subject editable |
 
-The malformed-value row is the main point to challenge in review: the cultural-heritage import perspective could
-argue for `warning`, since messy imports contain exactly such values. The mitigation is that enforcement is off by
-default and an admin can lift it during an import.
+The fixed `error` for uninterpretable values (`invalid-url`, `invalid-date`, `invalid-datetime`) is the most
+debatable of these classifications: messy cultural-heritage imports contain exactly such values. It stays workable
+because enforcement is off by default and an admin can lift it for the duration of an import.
 
 ### Wire format and domain model
 
 Every serialized violation gains an always-present `"severity": "error" | "warning"` field, in the dry-run validate
 endpoints' 200 body and in the enforcement 422 body alike. Existing consumers keep working since the field is
-additive. In PHP, a backed `Severity` enum is added to the validation domain model, `Violation` gains a `severity`
-property, and `Violation::isBlocking()` reduces to a severity check. Property Type validators stamp each violation
-with the severity configured on the Constraint it violates.
+additive. In the domain model, every violation carries its severity, stamped at validation time from the
+configuration of the Constraint it violates.
 
 ## Consequences
 
@@ -161,9 +159,9 @@ all co-locate severity inside the constraint's own configuration.
 ### Grouping Constraints under a `constraints` object
 
 Restructuring the property JSON to separate Constraints from Display Attributes matches the conceptual split in the
-[glossary](../concepts/glossary.md) and would be the cleanest home for severity. We rejected it for now because it restructures every serializer,
-fixture, and editor surface for the same decision, and the core `required` field has no natural place in it. The
-object form chosen here does not preclude this restructuring later.
+[glossary](../concepts/glossary.md) and would be the cleanest home for severity. We rejected it for now because it
+restructures every serializer, fixture, and editor surface for the same decision, and the core `required` field has
+no natural place in it. The object form chosen here does not preclude this restructuring later.
 
 ### Additional tiers and SHACL vocabulary
 
