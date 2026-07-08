@@ -4,10 +4,13 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages;
 
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Request\FauxRequest;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use PermissionsError;
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialNeoJson;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use SpecialPageTestBase;
+use WikiPage;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialNeoJson
@@ -56,6 +59,44 @@ class SpecialNeoJsonTest extends SpecialPageTestBase {
 		);
 
 		$this->assertStringContainsString( 'wpjson', $output );
+	}
+
+	public function testPostByUserWhoCannotEditTargetPageWritesNothing(): void {
+		$page = $this->getExistingTestPage( 'NeoJsonProtectedTarget' );
+		$title = $page->getTitle();
+		$this->protectAgainstNonSysopEdits( $page );
+
+		$user = $this->getTestUser()->getUser();
+
+		$request = new FauxRequest(
+			[
+				'wpjson' => '[]',
+				'wpEditToken' => $user->getEditToken(),
+			],
+			wasPosted: true
+		);
+
+		try {
+			$this->executeSpecialPage( $title->getPrefixedText(), $request, null, $user );
+			$this->fail( 'Expected a PermissionsError for a user who cannot edit the protected page' );
+		} catch ( PermissionsError ) {
+		}
+
+		$this->assertNull(
+			NeoWikiExtension::getInstance()->newSubjectContentRepository()->getSubjectContentByPageTitle( $title ),
+			'The rejected POST must not have written any Subject content'
+		);
+	}
+
+	private function protectAgainstNonSysopEdits( WikiPage $page ): void {
+		$cascade = false;
+		$page->doUpdateRestrictions(
+			[ 'edit' => 'sysop' ],
+			[],
+			$cascade,
+			'Protect for permission test',
+			$this->getTestSysop()->getUser()
+		);
 	}
 
 	private function authorityWithGlobalEditButNoPageEdit(): Authority {
