@@ -2,7 +2,7 @@
 
 Date: March 2023
 
-Status: Accepted. Extended by [ADR 19](019-graph-database-architecture.md).
+Status: Accepted, direct database access superseded by [ADR 13](013-restrict-neo4j-access.md)
 
 ## Context
 
