@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use Laudis\Neo4j\Types\AbstractCypherObject;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -90,7 +92,7 @@ class Neo4jResultNormalizer {
 		}
 
 		if ( $value instanceof LocalDateTime ) {
-			return $value->toDateTime()->format( 'Y-m-d\TH:i:s' )
+			return gmdate( 'Y-m-d\TH:i:s', $value->getSeconds() )
 				. $this->fractionalSeconds( $value->getNanoseconds() );
 		}
 
@@ -113,9 +115,9 @@ class Neo4jResultNormalizer {
 	private function offsetDateTimeToIso( DateTime $value ): string {
 		$offsetSeconds = $value->getTimeZoneOffsetSeconds();
 
-		// toDateTime() yields the correct UTC instant for both legacy and non-legacy
-		// wire encodings; adding the offset gives the wall-clock time to render.
-		$wallClockTimestamp = $value->toDateTime()->getTimestamp() + $offsetSeconds;
+		// getSeconds() is the UTC epoch; add the offset to get the wall-clock time
+		// that the offset suffix labels.
+		$wallClockTimestamp = $value->getSeconds() + $offsetSeconds;
 
 		return gmdate( 'Y-m-d\TH:i:s', $wallClockTimestamp )
 			. $this->fractionalSeconds( $value->getNanoseconds() )
@@ -123,7 +125,8 @@ class Neo4jResultNormalizer {
 	}
 
 	private function zoneIdDateTimeToIso( DateTimeZoneId $value ): string {
-		$dateTime = $value->toDateTime();
+		$dateTime = ( new DateTimeImmutable( '@' . $value->getSeconds() ) )
+			->setTimezone( new DateTimeZone( $value->getTimezoneIdentifier() ) );
 
 		return $dateTime->format( 'Y-m-d\TH:i:s' )
 			. $this->fractionalSeconds( $value->getNanoseconds() )

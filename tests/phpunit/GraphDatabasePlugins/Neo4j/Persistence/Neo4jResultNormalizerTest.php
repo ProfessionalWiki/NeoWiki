@@ -199,14 +199,13 @@ class Neo4jResultNormalizerTest extends TestCase {
 		);
 	}
 
-	public function testLegacyBoltDatetimeIsNotDoubleOffset(): void {
-		// On a legacy (pre-Bolt-v5) connection getSeconds() is the local epoch, not UTC.
+	public function testZonedDatetimeWithNanosecondPrecisionKeepsInstant(): void {
 		$result = new CypherList( [ new CypherMap( [
-			'at' => new DateTime( 1623759572, 0, 1172, true ),
+			'at' => new DateTime( 1704067200, 999999999, 0, false ),
 		] ) ] );
 
 		$this->assertSame(
-			[ 1 => [ 'at' => '2021-06-15T12:19:32+00:19' ] ],
+			[ 1 => [ 'at' => '2024-01-01T00:00:00.999999999+00:00' ] ],
 			$this->newNormalizer()->convertRows( $result )
 		);
 	}
@@ -218,6 +217,28 @@ class Neo4jResultNormalizerTest extends TestCase {
 
 		$this->assertSame(
 			[ 1 => [ 'at' => '2023-09-13T14:22:23+00:00' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
+	public function testZoneIdDatetimeWithNanosecondPrecisionKeepsInstant(): void {
+		$result = new CypherList( [ new CypherMap( [
+			'at' => new DateTimeZoneId( 1704067200, 999999, 'UTC' ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'at' => '2024-01-01T00:00:00.000999999+00:00' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
+	public function testLocalDatetimeWithNanosecondPrecisionKeepsWallClock(): void {
+		$result = new CypherList( [ new CypherMap( [
+			'at' => new LocalDateTime( 1704067200, 555555555 ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'at' => '2024-01-01T00:00:00.555555555' ] ],
 			$this->newNormalizer()->convertRows( $result )
 		);
 	}
