@@ -88,11 +88,41 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	}
 
 	protected function readGraph( string $cypher, array $parameters = [] ): SummarizedResult {
-		return NeoWikiExtension::getInstance()->getNeo4jPlugin()->getReadQueryEngine()->runReadQuery( $cypher, $parameters );
+		return NeoWikiExtension::getInstance()->requireNeo4jPlugin()->getReadQueryEngine()->runReadQuery( $cypher, $parameters );
 	}
 
 	protected function writeGraph( string $cypher ): SummarizedResult {
-		return NeoWikiExtension::getInstance()->getNeo4jPlugin()->getWriteQueryEngine()->runWriteQuery( $cypher );
+		return NeoWikiExtension::getInstance()->requireNeo4jPlugin()->getWriteQueryEngine()->runWriteQuery( $cypher );
+	}
+
+	/**
+	 * Runs $fn with the Neo4j backend config unset, simulating a wiki with no graph backend.
+	 * Clears the CI env overrides (which otherwise win over config), nulls both URLs, and resets the
+	 * NeoWikiExtension singleton so it rebuilds from the unconfigured config. Restores everything after.
+	 *
+	 * @param callable(): mixed $fn
+	 */
+	protected function runWithoutGraphBackend( callable $fn ): mixed {
+		$writeOverride = getenv( 'NEO4J_URL_OVERRIDE' );
+		$readOverride = getenv( 'NEO4J_URL_READ_OVERRIDE' );
+		$config = $this->getServiceContainer()->getMainConfig();
+		$priorWriteUrl = $config->get( 'NeoWikiNeo4jInternalWriteUrl' );
+		$priorReadUrl = $config->get( 'NeoWikiNeo4jInternalReadUrl' );
+		putenv( 'NEO4J_URL_OVERRIDE' );
+		putenv( 'NEO4J_URL_READ_OVERRIDE' );
+		$this->overrideConfigValue( 'NeoWikiNeo4jInternalWriteUrl', null );
+		$this->overrideConfigValue( 'NeoWikiNeo4jInternalReadUrl', null );
+		NeoWikiExtension::resetInstance();
+
+		try {
+			return $fn();
+		} finally {
+			putenv( $writeOverride === false ? 'NEO4J_URL_OVERRIDE' : "NEO4J_URL_OVERRIDE=$writeOverride" );
+			putenv( $readOverride === false ? 'NEO4J_URL_READ_OVERRIDE' : "NEO4J_URL_READ_OVERRIDE=$readOverride" );
+			$this->overrideConfigValue( 'NeoWikiNeo4jInternalWriteUrl', $priorWriteUrl );
+			$this->overrideConfigValue( 'NeoWikiNeo4jInternalReadUrl', $priorReadUrl );
+			NeoWikiExtension::resetInstance();
+		}
 	}
 
 	protected function readPageNodeName( int $pageId ): ?string {

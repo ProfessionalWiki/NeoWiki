@@ -18,6 +18,8 @@
 		"MediaWiki": ">= 1.43.0"
 	},
 
+	"callback": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::onExtensionRegistration",
+
 	"MessagesDirs": {
 		"NeoWiki": [
 			"i18n"
@@ -258,11 +260,6 @@
 			"path": "/neowiki/v0/subject/{subjectId}/validate",
 			"method": [ "POST" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newValidateSubjectUpdateApi"
-		},
-		{
-			"path": "/neowiki/v0/query/cypher",
-			"method": [ "POST" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCypherQueryApi"
 		}
 	],
 
