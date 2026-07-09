@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject;
 
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use RuntimeException;
@@ -14,7 +14,7 @@ readonly class DeleteSubjectAction {
 
 	public function __construct(
 		private SubjectRepository $subjectRepository,
-		private SubjectAuthorizer $subjectAuthorizer,
+		private SubjectWriteAuthorizer $writeAuthorizer,
 		private PageIdentifiersLookup $pageIdentifiersLookup
 	) {
 	}
@@ -25,7 +25,7 @@ readonly class DeleteSubjectAction {
 		// unresolvable Subject results in a no-op delete rather than a write to a protected page.
 		$pageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
 
-		if ( !$this->subjectAuthorizer->authorizeEdit( $pageId ) ) {
+		if ( !$this->writeAuthorizer->authorize( $pageId ) ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to delete this subject' );
 		}
 

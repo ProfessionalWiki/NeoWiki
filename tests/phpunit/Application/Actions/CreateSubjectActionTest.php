@@ -28,13 +28,12 @@ use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use RuntimeException;
 
@@ -49,14 +48,14 @@ class CreateSubjectActionTest extends TestCase {
 	private InMemorySubjectRepository $subjectRepository;
 	private IdGenerator $idGenerator;
 	private CreateSubjectPresenterSpy $presenterSpy;
-	private SubjectAuthorizer $authorizer;
+	private SubjectWriteAuthorizer $authorizer;
 	private InMemorySchemaLookup $schemaLookup;
 
 	public function setUp(): void {
 		$this->subjectRepository = new InMemorySubjectRepository();
 		$this->idGenerator = new StubIdGenerator( self::STUB_ID );
 		$this->presenterSpy = new CreateSubjectPresenterSpy();
-		$this->authorizer = new SucceedingSubjectAuthorizer();
+		$this->authorizer = new SpySubjectWriteAuthorizer( allowed: true );
 		$this->schemaLookup = new InMemorySchemaLookup();
 	}
 
@@ -154,9 +153,7 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	public function testUserIsNotAllowedToCreateSubject(): void {
-		// The write authorizer denies even though the hint checks would allow: the action must
-		// gate the creation on authorizeEdit, not on a can* hint.
-		$this->authorizer = new SpySubjectAuthorizer( writeAllowed: false );
+		$this->authorizer = new SpySubjectWriteAuthorizer( allowed: false );
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'You do not have the necessary permissions to create this subject' );

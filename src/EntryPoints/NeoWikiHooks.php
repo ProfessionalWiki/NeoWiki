@@ -82,7 +82,7 @@ class NeoWikiHooks {
 	}
 
 	private static function shouldShowSubjectCreator( OutputPage $out ): bool {
-		return NeoWikiExtension::getInstance()->newSubjectAuthorizer( $out->getAuthority() )
+		return NeoWikiExtension::getInstance()->newSubjectPermissionHints( $out->getAuthority() )
 				->canCreateMainSubject( new PageId( $out->getTitle()->getArticleID() ) )
 			&& self::pageIsLatestRevision( $out );
 	}
@@ -225,7 +225,7 @@ class NeoWikiHooks {
 		}
 
 		$extension = NeoWikiExtension::getInstance();
-		$authorizer = $extension->newSubjectAuthorizer( $skin->getAuthority() );
+		$hints = $extension->newSubjectPermissionHints( $skin->getAuthority() );
 		$pageId = new PageId( $title->getArticleID() );
 
 		$neoWikiTools = ( new PageToolsBuilder() )->build(
@@ -233,8 +233,8 @@ class NeoWikiHooks {
 			isContentNamespace: MediaWikiServices::getInstance()
 				->getNamespaceInfo()
 				->isContent( $title->getNamespace() ),
-			canCreateMainSubject: $authorizer->canCreateMainSubject( $pageId ),
-			canEditSubject: $authorizer->canEditSubject( $pageId ),
+			canCreateMainSubject: $hints->canCreateMainSubject( $pageId ),
+			canEditSubject: $hints->canEditSubject( $pageId ),
 			isLatestRevision: self::pageIsLatestRevision( $skin->getOutput() ),
 			devUiEnabled: $extension->isDevelopmentUIEnabled(),
 			currentAction: MediaWikiServices::getInstance()

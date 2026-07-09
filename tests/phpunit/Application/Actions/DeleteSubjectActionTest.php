@@ -13,8 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction
@@ -40,7 +39,7 @@ class DeleteSubjectActionTest extends TestCase {
 	}
 
 	public function testAuthorizesAgainstTheSubjectsResolvedPage(): void {
-		$authorizer = new SpySubjectAuthorizer();
+		$authorizer = new SpySubjectWriteAuthorizer( allowed: true );
 		$action = new DeleteSubjectAction(
 			$this->newRepositoryWithSubject(),
 			$authorizer,
@@ -55,11 +54,9 @@ class DeleteSubjectActionTest extends TestCase {
 	}
 
 	public function testThrowsWhenUserMayNotDeleteSubject(): void {
-		// The write authorizer denies even though the hint checks would allow: the action must
-		// gate the delete on authorizeEdit, not on a can* hint.
 		$action = new DeleteSubjectAction(
 			new InMemorySubjectRepository(),
-			new SpySubjectAuthorizer( writeAllowed: false ),
+			new SpySubjectWriteAuthorizer( allowed: false ),
 			$this->pageIdentifiersLookupWithSubject()
 		);
 
@@ -78,7 +75,7 @@ class DeleteSubjectActionTest extends TestCase {
 	private function newAction( SubjectRepository $repository ): DeleteSubjectAction {
 		return new DeleteSubjectAction(
 			$repository,
-			new SucceedingSubjectAuthorizer(),
+			new SpySubjectWriteAuthorizer( allowed: true ),
 			$this->pageIdentifiersLookupWithSubject()
 		);
 	}

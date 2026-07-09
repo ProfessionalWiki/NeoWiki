@@ -13,8 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction
@@ -109,12 +108,10 @@ class SetMainSubjectActionTest extends TestCase {
 	}
 
 	public function testThrowsWhenUserMayNotEditSubject(): void {
-		// The write authorizer denies even though the hint checks would allow: the action must
-		// gate the change on authorizeEdit, not on a can* hint.
 		$action = new SetMainSubjectAction(
 			presenter: $this->newSpyPresenter(),
 			subjectRepository: new InMemorySubjectRepository(),
-			subjectAuthorizer: new SpySubjectAuthorizer( writeAllowed: false ),
+			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
 		);
 
 		$this->expectException( \RuntimeException::class );
@@ -139,7 +136,7 @@ class SetMainSubjectActionTest extends TestCase {
 		return new SetMainSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $repository,
-			subjectAuthorizer: new SucceedingSubjectAuthorizer(),
+			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: true ),
 		);
 	}
 

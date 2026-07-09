@@ -76,24 +76,33 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $authorizer->canEditSubject( null ) );
 	}
 
-	public function testAuthorizeEditIsDeniedWhenThePageCannotBeEdited(): void {
+	public function testAuthorizeIsDeniedWhenThePageCannotBeEdited(): void {
 		$authorizer = $this->newAuthorizer( $this->authorityWithGlobalEditButNoPageEdit() );
 
-		$this->assertFalse( $authorizer->authorizeEdit( new PageId( self::PAGE_ID ) ) );
+		$this->assertFalse( $authorizer->authorize( new PageId( self::PAGE_ID ) ) );
 	}
 
-	public function testAuthorizeEditFallsBackToGlobalEditRightWhenThePageCannotBeResolved(): void {
+	public function testAuthorizeFallsBackToGlobalEditRightWhenThePageCannotBeResolved(): void {
 		$authorizer = new AuthorityBasedSubjectAuthorizer(
 			$this->authorityThatCanEditEveryPage(),
 			$this->titleFactoryReturningNull()
 		);
 
-		$this->assertTrue( $authorizer->authorizeEdit( new PageId( self::PAGE_ID ) ) );
+		$this->assertTrue( $authorizer->authorize( new PageId( self::PAGE_ID ) ) );
 	}
 
-	public function testAuthorizeEditUsesAuthorizeWriteWhileHintChecksUseDefinitelyCan(): void {
+	public function testAuthorizeDeniesUnresolvablePageWhenUserLacksGlobalEditRight(): void {
+		$authorizer = new AuthorityBasedSubjectAuthorizer(
+			$this->authorityWithoutAnyPermissions(),
+			$this->titleFactoryReturningNull()
+		);
+
+		$this->assertFalse( $authorizer->authorize( new PageId( self::PAGE_ID ) ) );
+	}
+
+	public function testAuthorizeUsesAuthorizeWriteWhileHintsUseDefinitelyCan(): void {
 		// authorizeWrite (used for the real write) enforces RIGOR_SECURE + the edit rate limit;
-		// definitelyCan (used for UI hints) does neither. Assert each path delegates to the right one.
+		// definitelyCan (used for hints) does neither. Assert each path delegates to the right one.
 		$title = Title::makeTitle( NS_MAIN, 'Target page' );
 		$titleFactory = $this->createStub( TitleFactory::class );
 		$titleFactory->method( 'newFromID' )->willReturn( $title );
@@ -105,7 +114,7 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 		$authorizer = new AuthorityBasedSubjectAuthorizer( $authority, $titleFactory );
 		$pageId = new PageId( self::PAGE_ID );
 
-		$this->assertFalse( $authorizer->authorizeEdit( $pageId ) );
+		$this->assertFalse( $authorizer->authorize( $pageId ) );
 		$this->assertTrue( $authorizer->canEditSubject( $pageId ) );
 	}
 

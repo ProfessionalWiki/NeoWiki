@@ -54,7 +54,8 @@ use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
@@ -379,7 +380,7 @@ class NeoWikiExtension {
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
 			idGenerator: $this->getIdGenerator(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
@@ -427,7 +428,7 @@ class NeoWikiExtension {
 	public function newDeleteSubjectAction( Authority $authority ): DeleteSubjectAction {
 		return new DeleteSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup()
 		);
 	}
@@ -436,7 +437,7 @@ class NeoWikiExtension {
 		return new SetMainSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 		);
 	}
 
@@ -444,11 +445,19 @@ class NeoWikiExtension {
 		return new SetSubjectsOrderingAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 		);
 	}
 
-	public function newSubjectAuthorizer( Authority $authority ): SubjectAuthorizer {
+	public function newSubjectPermissionHints( Authority $authority ): SubjectPermissionHints {
+		return $this->newAuthorityBasedSubjectAuthorizer( $authority );
+	}
+
+	public function newSubjectWriteAuthorizer( Authority $authority ): SubjectWriteAuthorizer {
+		return $this->newAuthorityBasedSubjectAuthorizer( $authority );
+	}
+
+	private function newAuthorityBasedSubjectAuthorizer( Authority $authority ): AuthorityBasedSubjectAuthorizer {
 		return new AuthorityBasedSubjectAuthorizer(
 			authority: $authority,
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory()
@@ -568,7 +577,7 @@ class NeoWikiExtension {
 	public function newReplaceSubjectAction( ReplaceSubjectPresenter $presenter, Authority $authority ): ReplaceSubjectAction {
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
