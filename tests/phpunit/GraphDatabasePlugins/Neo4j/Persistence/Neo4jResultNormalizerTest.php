@@ -199,6 +199,17 @@ class Neo4jResultNormalizerTest extends TestCase {
 		);
 	}
 
+	public function testNegativeOffsetDatetimeRendersMinusSign(): void {
+		$result = new CypherList( [ new CypherMap( [
+			'at' => new DateTime( 1694614943, 0, -18000, false ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'at' => '2023-09-13T09:22:23-05:00' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
 	public function testZonedDatetimeWithNanosecondPrecisionKeepsInstant(): void {
 		$result = new CypherList( [ new CypherMap( [
 			'at' => new DateTime( 1704067200, 999999999, 0, false ),
@@ -217,6 +228,17 @@ class Neo4jResultNormalizerTest extends TestCase {
 
 		$this->assertSame(
 			[ 1 => [ 'at' => '2023-09-13T14:22:23+00:00' ] ],
+			$this->newNormalizer()->convertRows( $result )
+		);
+	}
+
+	public function testZoneIdDatetimeResolvesNonUtcZoneToOffset(): void {
+		$result = new CypherList( [ new CypherMap( [
+			'at' => new DateTimeZoneId( 1694614943, 0, 'Europe/Berlin' ),
+		] ) ] );
+
+		$this->assertSame(
+			[ 1 => [ 'at' => '2023-09-13T16:22:23+02:00' ] ],
 			$this->newNormalizer()->convertRows( $result )
 		);
 	}
