@@ -4,6 +4,7 @@ import {
 	newNumberValue,
 	newRelation,
 	newStringValue,
+	newUnregisteredTypeValue,
 	RelationValue,
 	Value,
 	ValueType,
@@ -18,8 +19,16 @@ export class ValueDeserializer {
 
 	/**
 	 * Mismatch between the property type and the value structure will cause errors.
+	 *
+	 * A value of a type that is not registered (e.g. owned by a disabled or failed
+	 * extension) is wrapped as an UnregisteredTypeValue that preserves the raw stored data,
+	 * rather than throwing and taking down the whole view.
 	 */
 	public deserialize( json: any, propertyTypeName: string ): Value {
+		if ( !this.registry.hasType( propertyTypeName ) ) {
+			return newUnregisteredTypeValue( propertyTypeName, json );
+		}
+
 		switch ( this.propertyTypeNameToValueType( propertyTypeName ) ) {
 			case ValueType.String:
 				return newStringValue( json );
@@ -33,6 +42,11 @@ export class ValueDeserializer {
 				}
 
 				return new RelationValue( json.map( ( relationJson: any ) => newRelation( relationJson.id, relationJson.target ) ) );
+			// Keeps the switch exhaustive over ValueType. Not a live path: the hasType
+			// guard above already handles unregistered types, and a registered type's
+			// getValueType() never returns UnregisteredType.
+			case ValueType.UnregisteredType:
+				return newUnregisteredTypeValue( propertyTypeName, json );
 		}
 	}
 

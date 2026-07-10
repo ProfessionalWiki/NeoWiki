@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer';
+import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 import { Schema } from '@/domain/Schema';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { PropertyName } from '@/domain/PropertyDefinition';
@@ -104,6 +105,27 @@ describe( 'SchemaSerializer', () => {
 					},
 				},
 			} );
+		} );
+	} );
+
+	describe( 'unregistered-type round-trip', () => {
+		it( 'serializes a property of an unregistered type back to its original JSON', () => {
+			const json = {
+				description: 'Schema with an unregistered type',
+				propertyDefinitions: {
+					Swatch: {
+						type: 'zzz-color',
+						description: 'Brand colour',
+						required: false,
+						default: { hex: '#ff5733' },
+						palette: 'warm',
+					},
+				},
+			};
+
+			const schema = new SchemaDeserializer().deserialize( 'Test', json );
+
+			expect( JSON.parse( serializer.serializeSchema( schema ) ) ).toEqual( json );
 		} );
 	} );
 

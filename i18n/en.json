@@ -25,6 +25,11 @@
 	"neowiki-property-type-datetime": "Date & Time",
 	"neowiki-property-type-date": "Date",
 	"neowiki-property-type-boolean": "Boolean",
+	"neowiki-property-type-unregistered": "Unavailable type",
+	"neowiki-property-type-unregistered-note": "The type \"$1\" is not available on this wiki.",
+	"neowiki-property-type-unregistered-input-note": "The type \"$1\" is not available on this wiki. The value cannot be edited and is preserved as-is.",
+	"neowiki-property-type-unregistered-attributes-note": "Settings for this type are preserved but cannot be edited.",
+	"neowiki-property-type-unregistered-notification": "Some data on this page uses the property type \"$1\" from an extension that is not available. The data is shown as stored but cannot be edited normally.",
 	"neowiki-boolean-true": "Yes",
 	"neowiki-boolean-false": "No",
 
