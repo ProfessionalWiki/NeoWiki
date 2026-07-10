@@ -4,12 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence\Formats;
 
-use Laudis\Neo4j\Types\LocalDateTime;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -20,15 +21,13 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class DateTimeFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 
 	public function setUp(): void {
-		self::markTestSkipped( 'Format not supported yet' );
-		//$this->setUpNeo4j();
+		$this->setUpNeo4j();
 	}
 
-	public function testStoresAsDateTimes(): void {
-		$store = $this->newProjectionStore();
+	private function savePageWithDateTimeStatement(): SubjectId {
 		$subjectId = TestSubject::uniqueId();
 
-		$store->savePage( TestPage::build(
+		$this->newProjectionStore()->savePage( TestPage::build(
 			mainSubject: TestSubject::build(
 				id: $subjectId,
 				statements: new StatementList( [
@@ -36,31 +35,63 @@ class DateTimeFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 						property: new PropertyName( 'MyProperty' ),
 						propertyType: DateTimeType::NAME,
 						value: new StringValue(
-							'2023-09-13T14:22:23.000Z',
+							'2023-09-13T14:22:23Z',
 							'Ignored bad value',
-							'2150-12-07T13:37:42.000Z',
-							'2150-12-07T13:37:42.123Z',
+							'2150-12-07T13:37:42.123+02:00',
 							'2150-12-07T13:37:61.000Z', // Seconds too high
-							'2150-12-07', // Still valid
+							'2150-12-07', // No time and timezone
 						)
 					),
 				] )
 			),
 		) );
 
-		$result = $this->readGraph(
-			"MATCH (n {id: '$subjectId'}) RETURN n.MyProperty"
-		)->toRecursiveArray()[0];
+		return $subjectId;
+	}
 
-		$this->assertEquals(
-			[
-				new LocalDateTime( 1694614943, 0 ),
-				new LocalDateTime( 5709706662, 0 ),
-				new LocalDateTime( 5709706662, 123000000 ),
-				new LocalDateTime( 5709657600, 0 ),
-			],
-			$result['n.MyProperty']
+	public function testStoresParseableValuesAsNativeDatetimes(): void {
+		$subjectId = $this->savePageWithDateTimeStatement();
+
+		$result = $this->readGraph(
+			"MATCH (n {id: '$subjectId'}) RETURN [ value IN n.MyProperty | value.epochMillis ] AS millis"
 		);
+
+		$this->assertSame(
+			[ 1694614943000, 5709699462123 ],
+			$result->first()->get( 'millis' )->toArray(),
+			'parseable values should be stored as Neo4j datetimes, malformed ones omitted'
+		);
+	}
+
+	public function testStoredDatetimesNormalizeToIsoStrings(): void {
+		$subjectId = $this->savePageWithDateTimeStatement();
+
+		$rows = ( new Neo4jResultNormalizer() )->convertRows(
+			$this->readGraph(
+				"MATCH (n {id: '$subjectId'}) RETURN n.MyProperty AS dateTimes"
+			)
+		);
+
+		$this->assertSame(
+			[ 1 => [ 'dateTimes' => [
+				1 => '2023-09-13T14:22:23+00:00',
+				2 => '2150-12-07T13:37:42.123+02:00',
+			] ] ],
+			$rows
+		);
+	}
+
+	public function testDatetimeOperationsWorkOnStoredValues(): void {
+		$subjectId = $this->savePageWithDateTimeStatement();
+
+		$result = $this->readGraph(
+			"MATCH (n {id: '$subjectId'})
+				WHERE n.MyProperty[0] < datetime('2024-01-01T00:00:00Z')
+					AND n.MyProperty[1] > datetime('2150-12-07T11:00:00Z')
+				RETURN n.id AS id"
+		);
+
+		$this->assertSame( $subjectId->text, $result->first()->get( 'id' ) );
 	}
 
 }

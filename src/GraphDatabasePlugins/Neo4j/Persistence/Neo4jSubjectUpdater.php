@@ -10,6 +10,7 @@ use Laudis\Neo4j\Types\CypherList;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
+use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -76,11 +77,37 @@ class Neo4jSubjectUpdater {
 			$neo4jValue = $this->valueBuilderRegistry->buildNeo4jValue( $propertyTypeName, $statement->getValue() );
 
 			if ( $neo4jValue !== null ) {
+				$this->warnOnDroppedValues( $statement, $neo4jValue );
 				$nodeProps[$statement->getPropertyName()->text] = $neo4jValue;
 			}
 		}
 
 		return $nodeProps;
+	}
+
+	/**
+	 * A value builder can drop values it cannot represent in the graph (e.g. an
+	 * unparseable dateTime), leaving the projection with fewer values than the
+	 * authoritative revision slot. That divergence is otherwise silent, so warn.
+	 */
+	private function warnOnDroppedValues( Statement $statement, mixed $neo4jValue ): void {
+		$inputValues = $statement->getValue()->toScalars();
+
+		if ( !is_array( $inputValues ) || !is_array( $neo4jValue ) ) {
+			return;
+		}
+
+		$droppedCount = count( $inputValues ) - count( $neo4jValue );
+
+		if ( $droppedCount < 1 ) {
+			return;
+		}
+
+		$this->logger->warning(
+			'Dropped ' . $droppedCount . ' unpersistable value(s) of property "'
+			. $statement->getPropertyName()->text . '" on page ' . $this->pageId->id
+			. ' when projecting to the graph'
+		);
 	}
 
 	private function updateHasSubjectRelation( Subject $subject, bool $isMainSubject ): void {

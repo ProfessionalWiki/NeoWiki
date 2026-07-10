@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use DateTimeImmutable;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
@@ -100,6 +101,58 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 			],
 			$this->newSubjectUpdater( $registry )->statementsToNodeProperties( $statements )
 		);
+	}
+
+	public function testConvertsDateTimeStatementValuesToDateTimeObjects(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$statements = new StatementList( [
+			TestStatement::build( property: 'P1', value: new StringValue( 'plain' ), propertyType: 'text' ),
+			TestStatement::build(
+				property: 'P2',
+				value: new StringValue( '2024-01-01T12:00:00Z' ),
+				propertyType: 'dateTime'
+			),
+		] );
+
+		$this->assertEquals(
+			[
+				'P1' => [ 'plain' ],
+				'P2' => [ new DateTimeImmutable( '2024-01-01T12:00:00Z' ) ],
+			],
+			$this->newSubjectUpdater( $registry )->statementsToNodeProperties( $statements )
+		);
+	}
+
+	public function testWarnsWhenDateTimeValuesAreDroppedFromTheProjection(): void {
+		$statements = new StatementList( [
+			TestStatement::build(
+				property: 'P1',
+				value: new StringValue( '2024-01-01T12:00:00Z', 'not a datetime', '2025-06-15T08:30:00+02:00' ),
+				propertyType: 'dateTime'
+			),
+		] );
+
+		$this->newSubjectUpdater()->statementsToNodeProperties( $statements );
+
+		$this->assertSame(
+			[ 'Dropped 1 unpersistable value(s) of property "P1" on page 1333333337 when projecting to the graph' ],
+			$this->logger->getLogCalls()->getMessages()
+		);
+	}
+
+	public function testDoesNotWarnWhenAllDateTimeValuesPersist(): void {
+		$statements = new StatementList( [
+			TestStatement::build(
+				property: 'P1',
+				value: new StringValue( '2024-01-01T12:00:00Z', '2025-06-15T08:30:00+02:00' ),
+				propertyType: 'dateTime'
+			),
+		] );
+
+		$this->newSubjectUpdater()->statementsToNodeProperties( $statements );
+
+		$this->assertSame( [], $this->logger->getLogCalls()->getMessages() );
 	}
 
 	public function testSkipsStatementsWithRelationType(): void {

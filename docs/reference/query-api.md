@@ -77,9 +77,14 @@ Scalar Cypher values (strings, integers, floats, booleans, `null`) pass through 
 | Relationship | `{ "id": ..., "type": "...", "startNodeId": ..., "endNodeId": ..., "properties": {...} }` |
 | UnboundRelationship | `{ "id": ..., "type": "...", "properties": {...} }` (no start/end node ids; appears in undirected pattern matches) |
 | Path | `{ "nodes": [...], "relationships": [...] }` |
+| `date` | ISO 8601 date string, e.g. `"2023-10-01"` |
+| `datetime` / zoned `time` | ISO 8601 string with offset, e.g. `"2023-09-13T14:22:23+00:00"` / `"14:22:23+02:00"` |
+| `localdatetime` / `localtime` | ISO 8601 string without offset, e.g. `"2023-09-13T14:22:23"` / `"09:30:00"` |
+| `duration` | `{ "months": ..., "days": ..., "seconds": ..., "nanoseconds": ... }` |
+| `point` | `{ "x": ..., "y": ..., "crs": "...", "srid": ... }` (plus `"z"` for 3D points) |
 
-Temporal and spatial values (e.g. `datetime()`, `point()`) are not supported. Cast to a scalar in the query:
-`toString(s.creationTime)`, `point.x(p)`.
+Temporal values render as ISO 8601 strings (timezone offsets to whole-minute precision). `duration` and
+spatial `point` values render as component objects.
 
 ### Error response
 
