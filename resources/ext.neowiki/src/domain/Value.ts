@@ -12,7 +12,7 @@ export enum ValueType {
 	 * by a disabled or failed extension). The raw stored data is preserved so it
 	 * remains visible and round-trips on save instead of being lost.
 	 */
-	UnregisteredType = 'unregistered-type',
+	UnregisteredType = 'unregisteredType',
 
 }
 
