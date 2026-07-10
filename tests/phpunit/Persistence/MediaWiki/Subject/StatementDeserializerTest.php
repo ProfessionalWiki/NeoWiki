@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
@@ -14,7 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 
 /**
@@ -40,8 +41,11 @@ class StatementDeserializerTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Core types only: no extension is loaded, so "color" is an unregistered type.
+	 */
 	private function newDeserializer(): StatementDeserializer {
-		return new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeToValueType() );
+		return new StatementDeserializer( PropertyTypeRegistry::withCoreTypes() );
 	}
 
 	public function testDeserializesText(): void {
@@ -99,6 +103,31 @@ class StatementDeserializerTest extends TestCase {
 				]
 			)
 		);
+	}
+
+	public function testDeserializesUnregisteredTypeWithoutThrowing(): void {
+		$this->assertEquals(
+			new Statement(
+				property: new PropertyName( 'Swatch' ),
+				propertyType: 'color',
+				value: new UnregisteredTypeValue( 'color', [ '#ff5733' ] )
+			),
+			$this->newDeserializer()->deserialize(
+				'Swatch',
+				[
+					'type' => 'color',
+					'value' => [ '#ff5733' ],
+				]
+			)
+		);
+	}
+
+	public function testUnregisteredTypeValueReserializesToTheOriginalJson(): void {
+		$value = [ 'nested' => [ 'a', 1, true ], 'other' => null ];
+
+		$statement = $this->newDeserializer()->deserialize( 'Swatch', [ 'type' => 'color', 'value' => $value ] );
+
+		$this->assertSame( $value, $statement->getValue()->toScalars() );
 	}
 
 }

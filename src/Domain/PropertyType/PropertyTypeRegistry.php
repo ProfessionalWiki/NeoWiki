@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\PropertyType;
 
-use OutOfBoundsException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\BooleanType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
@@ -40,19 +39,6 @@ class PropertyTypeRegistry implements PropertyTypeLookup {
 
 	public function getType( string $typeName ): ?PropertyType {
 		return $this->types[$typeName] ?? null;
-	}
-
-	/**
-	 * @throws OutOfBoundsException
-	 */
-	public function getTypeOrThrow( string $typeName ): PropertyType {
-		$type = $this->getType( $typeName );
-
-		if ( $type === null ) {
-			throw new OutOfBoundsException( "Unknown property type: $typeName" );
-		}
-
-		return $type;
 	}
 
 }

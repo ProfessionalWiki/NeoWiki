@@ -36,7 +36,7 @@ class SubjectContentDataDeserializerTest extends TestCase {
 
 	private function newDeserializer(): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
-			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeToValueType() )
+			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup() )
 		);
 	}
 

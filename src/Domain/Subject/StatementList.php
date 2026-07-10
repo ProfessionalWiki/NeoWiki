@@ -52,10 +52,14 @@ readonly class StatementList {
 				$value = $statement->getValue();
 
 				if ( $readerSchema->hasProperty( $statement->getPropertyName() ) ) {
-					/**
-					 * @var RelationProperty $propertyDefinition
-					 */
 					$propertyDefinition = $readerSchema->getProperty( $statement->getPropertyName() );
+
+					// Writer's-schema drift: the Schema property is no longer a relation,
+					// so there is no relation type to project. Skipping keeps the graph
+					// projection from failing on data it cannot express.
+					if ( !$propertyDefinition instanceof RelationProperty ) {
+						continue;
+					}
 
 					foreach ( $value->relations as $relation ) {
 						$relations[] = new TypedRelation(

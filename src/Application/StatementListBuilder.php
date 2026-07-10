@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application;
 
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
@@ -17,13 +17,14 @@ use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 
 readonly class StatementListBuilder {
 
 	public function __construct(
-		private PropertyTypeToValueType $propertyTypeToValueType,
+		private PropertyTypeLookup $propertyTypeLookup,
 		private IdGenerator $idGenerator,
 	) {
 	}
@@ -57,11 +58,15 @@ readonly class StatementListBuilder {
 	}
 
 	private function deserializeValue( string $propertyType, mixed $value ): NeoValue {
-		return match ( $this->propertyTypeToValueType->lookup( $propertyType ) ) {
+		$valueType = $this->propertyTypeLookup->getType( $propertyType )?->getValueType()
+			?? ValueType::UnregisteredType;
+
+		return match ( $valueType ) {
 			ValueType::String => new StringValue( ...(array)$value ),
 			ValueType::Number => new NumberValue( $value ),
 			ValueType::Relation => $this->deserializeRelationValue( $value ),
 			ValueType::Boolean => new BooleanValue( $value ),
+			ValueType::UnregisteredType => new UnregisteredTypeValue( $propertyType, $value ),
 		};
 	}
 
