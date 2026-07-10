@@ -46,7 +46,7 @@ const viewsData = ref<ViewData[]>( [] );
 
 const shouldShowSubjectCreator = ref( props.showSubjectCreator );
 const pageHasMainSubject = ref( props.pageHasMainSubject );
-const subjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
+const subjectPermissionHints = NeoWikiServices.getSubjectPermissionHints();
 const viewTypeRegistry = NeoWikiServices.getViewTypeRegistry();
 
 function resolveViewComponent( viewData: ViewData ): Component {
@@ -109,7 +109,7 @@ async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
 			id: subjectId.text,
 			element: element,
 			subjectId: subjectId,
-			canEditSubject: isLatestRevision() && await subjectAuthorizer.canEditSubject( subjectId ),
+			canEditSubject: isLatestRevision() && await subjectPermissionHints.canEditSubject( subjectId ),
 			viewType: element.dataset.mwNeowikiViewType,
 			layoutName: element.dataset.mwNeowikiLayoutName
 		};

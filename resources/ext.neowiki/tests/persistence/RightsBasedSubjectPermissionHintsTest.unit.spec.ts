@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { RightsBasedSubjectAuthorizer } from '@/persistence/RightsBasedSubjectAuthorizer';
+import { RightsBasedSubjectPermissionHints } from '@/persistence/RightsBasedSubjectPermissionHints';
 import { SubjectId } from '@/domain/SubjectId';
 import { TestUserObjectBasedRightsFetcher } from './UserObjectBasedRightsFetcher.unit.spec';
 
-describe( 'Rights Based Subject Authorizer', async () => {
+describe( 'Rights Based Subject Permission Hints', async () => {
 
 	const SUBJECT_ID = new SubjectId( 's11111111111117' );
 
-	function newAuthorizer( rights: string[] ): RightsBasedSubjectAuthorizer {
-		return new RightsBasedSubjectAuthorizer( new TestUserObjectBasedRightsFetcher( rights ) );
+	function newHints( rights: string[] ): RightsBasedSubjectPermissionHints {
+		return new RightsBasedSubjectPermissionHints( new TestUserObjectBasedRightsFetcher( rights ) );
 	}
 
-	function withEditRight(): RightsBasedSubjectAuthorizer {
-		return newAuthorizer( [ 'foo', 'edit', 'bar', 'baz' ] );
+	function withEditRight(): RightsBasedSubjectPermissionHints {
+		return newHints( [ 'foo', 'edit', 'bar', 'baz' ] );
 	}
 
-	function withoutEditRight(): RightsBasedSubjectAuthorizer {
-		return newAuthorizer( [ 'foo', 'bar', 'baz' ] );
+	function withoutEditRight(): RightsBasedSubjectPermissionHints {
+		return newHints( [ 'foo', 'bar', 'baz' ] );
 	}
 
 	it( 'can edit subject with edit right', async () => {
@@ -36,15 +36,15 @@ describe( 'Rights Based Subject Authorizer', async () => {
 	} );
 
 	it( 'does not need the delete right to delete a subject', async () => {
-		const authorizer = newAuthorizer( [ 'foo', 'edit', 'bar' ] );
+		const hints = newHints( [ 'foo', 'edit', 'bar' ] );
 
-		expect( await authorizer.canDeleteSubject( SUBJECT_ID ) ).toBe( true );
+		expect( await hints.canDeleteSubject( SUBJECT_ID ) ).toBe( true );
 	} );
 
 	it( 'cannot delete subject with only the delete right', async () => {
-		const authorizer = newAuthorizer( [ 'foo', 'delete', 'bar' ] );
+		const hints = newHints( [ 'foo', 'delete', 'bar' ] );
 
-		expect( await authorizer.canDeleteSubject( SUBJECT_ID ) ).toBe( false );
+		expect( await hints.canDeleteSubject( SUBJECT_ID ) ).toBe( false );
 	} );
 
 	it( 'can create child subject with edit right', async () => {
@@ -56,9 +56,9 @@ describe( 'Rights Based Subject Authorizer', async () => {
 	} );
 
 	it( 'does not need the createpage right to create a child subject', async () => {
-		const authorizer = newAuthorizer( [ 'foo', 'edit', 'bar' ] );
+		const hints = newHints( [ 'foo', 'edit', 'bar' ] );
 
-		expect( await authorizer.canCreateChildSubject( 42 ) ).toBe( true );
+		expect( await hints.canCreateChildSubject( 42 ) ).toBe( true );
 	} );
 
 	it( 'can create main subject with edit right', async () => {
@@ -70,9 +70,9 @@ describe( 'Rights Based Subject Authorizer', async () => {
 	} );
 
 	it( 'does not need the createpage right to create a main subject', async () => {
-		const authorizer = newAuthorizer( [ 'foo', 'edit', 'bar' ] );
+		const hints = newHints( [ 'foo', 'edit', 'bar' ] );
 
-		expect( await authorizer.canCreateMainSubject() ).toBe( true );
+		expect( await hints.canCreateMainSubject() ).toBe( true );
 	} );
 
 } );

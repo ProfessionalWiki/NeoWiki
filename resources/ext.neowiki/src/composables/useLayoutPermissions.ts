@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import type { LayoutAuthorizer } from '@/application/LayoutAuthorizer.ts';
+import type { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
 
 export interface LayoutPermissions {
 	canEditLayout: Ref<boolean>;
@@ -12,11 +12,11 @@ export interface LayoutPermissions {
 export function useLayoutPermissions(): LayoutPermissions {
 	const canEditLayout = ref( false );
 	const canCreateLayouts = ref( false );
-	const authorizer: LayoutAuthorizer = NeoWikiServices.getLayoutAuthorizer();
+	const hints: LayoutPermissionHints = NeoWikiServices.getLayoutPermissionHints();
 
 	async function checkEditPermission( layoutName: string ): Promise<void> {
 		try {
-			canEditLayout.value = await authorizer.canEditLayout( layoutName );
+			canEditLayout.value = await hints.canEditLayout( layoutName );
 		} catch ( error ) {
 			console.error( 'Failed to check layout permissions:', error );
 			canEditLayout.value = false;
@@ -25,7 +25,7 @@ export function useLayoutPermissions(): LayoutPermissions {
 
 	async function checkCreatePermission(): Promise<void> {
 		try {
-			canCreateLayouts.value = await authorizer.canCreateLayouts();
+			canCreateLayouts.value = await hints.canCreateLayouts();
 		} catch ( error ) {
 			console.error( 'Failed to check layout creation permissions:', error );
 			canCreateLayouts.value = false;
