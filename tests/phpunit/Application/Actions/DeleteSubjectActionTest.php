@@ -11,11 +11,9 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction
@@ -41,7 +39,7 @@ class DeleteSubjectActionTest extends TestCase {
 	}
 
 	public function testAuthorizesAgainstTheSubjectsResolvedPage(): void {
-		$authorizer = new SpySubjectAuthorizer();
+		$authorizer = new SpySubjectWriteAuthorizer( allowed: true );
 		$action = new DeleteSubjectAction(
 			$this->newRepositoryWithSubject(),
 			$authorizer,
@@ -58,7 +56,7 @@ class DeleteSubjectActionTest extends TestCase {
 	public function testThrowsWhenUserMayNotDeleteSubject(): void {
 		$action = new DeleteSubjectAction(
 			new InMemorySubjectRepository(),
-			new FailingSubjectAuthorizer(),
+			new SpySubjectWriteAuthorizer( allowed: false ),
 			$this->pageIdentifiersLookupWithSubject()
 		);
 
@@ -77,7 +75,7 @@ class DeleteSubjectActionTest extends TestCase {
 	private function newAction( SubjectRepository $repository ): DeleteSubjectAction {
 		return new DeleteSubjectAction(
 			$repository,
-			new SucceedingSubjectAuthorizer(),
+			new SpySubjectWriteAuthorizer( allowed: true ),
 			$this->pageIdentifiersLookupWithSubject()
 		);
 	}

@@ -2,10 +2,12 @@
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages;
 
+use MediaWiki\MainConfigNames;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\User\User;
 use PermissionsError;
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialNeoJson;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -68,16 +70,8 @@ class SpecialNeoJsonTest extends SpecialPageTestBase {
 
 		$user = $this->getTestUser()->getUser();
 
-		$request = new FauxRequest(
-			[
-				'wpjson' => '[]',
-				'wpEditToken' => $user->getEditToken(),
-			],
-			wasPosted: true
-		);
-
 		try {
-			$this->executeSpecialPage( $title->getPrefixedText(), $request, null, $user );
+			$this->executeSpecialPage( $title->getPrefixedText(), $this->newJsonPost( $user ), null, $user );
 			$this->fail( 'Expected a PermissionsError for a user who cannot edit the protected page' );
 		} catch ( PermissionsError ) {
 		}
@@ -85,6 +79,47 @@ class SpecialNeoJsonTest extends SpecialPageTestBase {
 		$this->assertNull(
 			NeoWikiExtension::getInstance()->newSubjectContentRepository()->getSubjectContentByPageTitle( $title ),
 			'The rejected POST must not have written any Subject content'
+		);
+	}
+
+	public function testPostConsumesTheEditRateLimit(): void {
+		$this->allowOneEditPerMinute();
+
+		$title = $this->getExistingTestPage( 'NeoJsonRateLimitedTarget' )->getTitle();
+		$user = $this->getTestUser()->getUser();
+
+		$this->assertTrue( $user->definitelyCan( 'edit', $title ), 'Precondition: the user has edit allowance left' );
+
+		$this->executeSpecialPage( $title->getPrefixedText(), $this->newJsonPost( $user ), null, $user );
+
+		$this->assertFalse(
+			$user->definitelyCan( 'edit', $title ),
+			'The Subject write must consume the edit rate limit allowance'
+		);
+	}
+
+	private function allowOneEditPerMinute(): void {
+		$oneEditPerMinute = [ 1, 60 ];
+
+		$this->overrideConfigValue(
+			MainConfigNames::RateLimits,
+			[
+				'edit' => [
+					'user' => $oneEditPerMinute,
+					'newbie' => $oneEditPerMinute,
+					'ip' => $oneEditPerMinute,
+				],
+			]
+		);
+	}
+
+	private function newJsonPost( User $user ): FauxRequest {
+		return new FauxRequest(
+			[
+				'wpjson' => '[]',
+				'wpEditToken' => $user->getEditToken(),
+			],
+			wasPosted: true
 		);
 	}
 

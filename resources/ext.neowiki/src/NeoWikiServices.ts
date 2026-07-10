@@ -1,24 +1,24 @@
 import { App, inject } from 'vue';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry.ts';
-import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
-import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
+import { SchemaPermissionHints } from '@/application/SchemaPermissionHints.ts';
+import { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
-import { LayoutAuthorizer } from '@/application/LayoutAuthorizer.ts';
+import { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
 import { LayoutRepository } from '@/application/LayoutRepository.ts';
 
 export enum Service { // TODO: make private
 	ComponentRegistry = 'ComponentRegistry',
-	SchemaAuthorizer = 'SchemaAuthorizer',
-	SubjectAuthorizer = 'SubjectAuthorizer',
+	SchemaPermissionHints = 'SchemaPermissionHints',
+	SubjectPermissionHints = 'SubjectPermissionHints',
 	PropertyTypeRegistry = 'PropertyTypeRegistry',
 	SchemaRepository = 'SchemaRepository',
 	SubjectLabelSearch = 'SubjectLabelSearch',
 	ViewTypeRegistry = 'ViewTypeRegistry',
-	LayoutAuthorizer = 'LayoutAuthorizer',
+	LayoutPermissionHints = 'LayoutPermissionHints',
 	LayoutRepository = 'LayoutRepository'
 }
 
@@ -35,13 +35,13 @@ export class NeoWikiServices {
 
 		return {
 			[ Service.ComponentRegistry ]: neoWiki.getTypeSpecificComponentRegistry(),
-			[ Service.SchemaAuthorizer ]: neoWiki.newSchemaAuthorizer(),
-			[ Service.SubjectAuthorizer ]: neoWiki.newSubjectAuthorizer(),
+			[ Service.SchemaPermissionHints ]: neoWiki.newSchemaPermissionHints(),
+			[ Service.SubjectPermissionHints ]: neoWiki.newSubjectPermissionHints(),
 			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry(),
 			[ Service.SchemaRepository ]: neoWiki.getSchemaRepository(),
 			[ Service.SubjectLabelSearch ]: neoWiki.getSubjectLabelSearch(),
 			[ Service.ViewTypeRegistry ]: neoWiki.getViewTypeRegistry(),
-			[ Service.LayoutAuthorizer ]: neoWiki.newLayoutAuthorizer(),
+			[ Service.LayoutPermissionHints ]: neoWiki.newLayoutPermissionHints(),
 			[ Service.LayoutRepository ]: neoWiki.getLayoutRepository(),
 		};
 	}
@@ -54,12 +54,12 @@ export class NeoWikiServices {
 		return inject( Service.PropertyTypeRegistry ) as PropertyTypeRegistry;
 	}
 
-	public static getSchemaAuthorizer(): SchemaAuthorizer {
-		return inject( Service.SchemaAuthorizer ) as SchemaAuthorizer;
+	public static getSchemaPermissionHints(): SchemaPermissionHints {
+		return inject( Service.SchemaPermissionHints ) as SchemaPermissionHints;
 	}
 
-	public static getSubjectAuthorizer(): SubjectAuthorizer {
-		return inject( Service.SubjectAuthorizer ) as SubjectAuthorizer;
+	public static getSubjectPermissionHints(): SubjectPermissionHints {
+		return inject( Service.SubjectPermissionHints ) as SubjectPermissionHints;
 	}
 
 	public static getSchemaRepository(): SchemaRepository {
@@ -74,8 +74,8 @@ export class NeoWikiServices {
 		return inject( Service.ViewTypeRegistry ) as ViewTypeRegistry;
 	}
 
-	public static getLayoutAuthorizer(): LayoutAuthorizer {
-		return inject( Service.LayoutAuthorizer ) as LayoutAuthorizer;
+	public static getLayoutPermissionHints(): LayoutPermissionHints {
+		return inject( Service.LayoutPermissionHints ) as LayoutPermissionHints;
 	}
 
 	public static getLayoutRepository(): LayoutRepository {

@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import type { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
+import type { SchemaPermissionHints } from '@/application/SchemaPermissionHints.ts';
 
 export interface SchemaPermissions {
 	canEditSchema: Ref<boolean>;
@@ -12,11 +12,11 @@ export interface SchemaPermissions {
 export function useSchemaPermissions(): SchemaPermissions {
 	const canEditSchema = ref( false );
 	const canCreateSchemas = ref( false );
-	const authorizer: SchemaAuthorizer = NeoWikiServices.getSchemaAuthorizer();
+	const hints: SchemaPermissionHints = NeoWikiServices.getSchemaPermissionHints();
 
 	async function checkEditPermission( schemaName: string ): Promise<void> {
 		try {
-			canEditSchema.value = await authorizer.canEditSchema( schemaName );
+			canEditSchema.value = await hints.canEditSchema( schemaName );
 		} catch ( error ) {
 			console.error( 'Failed to check schema permissions:', error );
 			canEditSchema.value = false;
@@ -25,7 +25,7 @@ export function useSchemaPermissions(): SchemaPermissions {
 
 	async function checkCreatePermission(): Promise<void> {
 		try {
-			canCreateSchemas.value = await authorizer.canCreateSchemas();
+			canCreateSchemas.value = await hints.canCreateSchemas();
 		} catch ( error ) {
 			console.error( 'Failed to check schema creation permissions:', error );
 			canCreateSchemas.value = false;

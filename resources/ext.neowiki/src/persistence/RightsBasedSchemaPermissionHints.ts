@@ -1,7 +1,7 @@
 import type { RightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher';
-import type { SchemaAuthorizer } from '@/application/SchemaAuthorizer';
+import type { SchemaPermissionHints } from '@/application/SchemaPermissionHints';
 
-export class RightsBasedSchemaAuthorizer implements SchemaAuthorizer {
+export class RightsBasedSchemaPermissionHints implements SchemaPermissionHints {
 
 	public constructor( private readonly rightsFetcher: RightsFetcher ) {
 	}

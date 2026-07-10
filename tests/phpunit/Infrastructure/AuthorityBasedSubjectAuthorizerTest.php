@@ -40,12 +40,6 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $authorizer->canEditSubject( new PageId( self::PAGE_ID ) ) );
 	}
 
-	public function testCanDeleteSubjectIsDeniedWhenThePageCannotBeEdited(): void {
-		$authorizer = $this->newAuthorizer( $this->authorityWithGlobalEditButNoPageEdit() );
-
-		$this->assertFalse( $authorizer->canDeleteSubject( new PageId( self::PAGE_ID ) ) );
-	}
-
 	public function testEditIsAllowedWhenThePageCanBeEdited(): void {
 		$authorizer = $this->newAuthorizer( $this->authorityThatCanEditEveryPage() );
 
@@ -73,13 +67,55 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 	public function testFallsBackToGlobalEditRightWhenNoPageIsGiven(): void {
 		$authorizer = $this->newAuthorizer( $this->authorityThatCanEditEveryPage() );
 
-		$this->assertTrue( $authorizer->canDeleteSubject( null ) );
+		$this->assertTrue( $authorizer->canEditSubject( null ) );
 	}
 
 	public function testDeniesWhenNoPageIsGivenAndUserLacksGlobalEditRight(): void {
 		$authorizer = $this->newAuthorizer( $this->authorityWithoutAnyPermissions() );
 
-		$this->assertFalse( $authorizer->canDeleteSubject( null ) );
+		$this->assertFalse( $authorizer->canEditSubject( null ) );
+	}
+
+	public function testAuthorizeIsDeniedWhenThePageCannotBeEdited(): void {
+		$authorizer = $this->newAuthorizer( $this->authorityWithGlobalEditButNoPageEdit() );
+
+		$this->assertFalse( $authorizer->authorize( new PageId( self::PAGE_ID ) ) );
+	}
+
+	public function testAuthorizeFallsBackToGlobalEditRightWhenThePageCannotBeResolved(): void {
+		$authorizer = new AuthorityBasedSubjectAuthorizer(
+			$this->authorityThatCanEditEveryPage(),
+			$this->titleFactoryReturningNull()
+		);
+
+		$this->assertTrue( $authorizer->authorize( new PageId( self::PAGE_ID ) ) );
+	}
+
+	public function testAuthorizeDeniesUnresolvablePageWhenUserLacksGlobalEditRight(): void {
+		$authorizer = new AuthorityBasedSubjectAuthorizer(
+			$this->authorityWithoutAnyPermissions(),
+			$this->titleFactoryReturningNull()
+		);
+
+		$this->assertFalse( $authorizer->authorize( new PageId( self::PAGE_ID ) ) );
+	}
+
+	public function testAuthorizeUsesAuthorizeWriteWhileHintsUseDefinitelyCan(): void {
+		// authorizeWrite (used for the real write) enforces RIGOR_SECURE + the edit rate limit;
+		// definitelyCan (used for hints) does neither. Assert each path delegates to the right one.
+		$title = Title::makeTitle( NS_MAIN, 'Target page' );
+		$titleFactory = $this->createStub( TitleFactory::class );
+		$titleFactory->method( 'newFromID' )->willReturn( $title );
+
+		$authority = $this->createMock( Authority::class );
+		$authority->method( 'authorizeWrite' )->willReturn( false );
+		$authority->method( 'definitelyCan' )->willReturn( true );
+
+		$authorizer = new AuthorityBasedSubjectAuthorizer( $authority, $titleFactory );
+		$pageId = new PageId( self::PAGE_ID );
+
+		$this->assertFalse( $authorizer->authorize( $pageId ) );
+		$this->assertTrue( $authorizer->canEditSubject( $pageId ) );
 	}
 
 	private function newAuthorizer( Authority $authority ): AuthorityBasedSubjectAuthorizer {

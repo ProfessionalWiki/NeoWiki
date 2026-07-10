@@ -28,14 +28,12 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use RuntimeException;
 
@@ -50,14 +48,14 @@ class CreateSubjectActionTest extends TestCase {
 	private InMemorySubjectRepository $subjectRepository;
 	private IdGenerator $idGenerator;
 	private CreateSubjectPresenterSpy $presenterSpy;
-	private SubjectAuthorizer $authorizer;
+	private SubjectWriteAuthorizer $authorizer;
 	private InMemorySchemaLookup $schemaLookup;
 
 	public function setUp(): void {
 		$this->subjectRepository = new InMemorySubjectRepository();
 		$this->idGenerator = new StubIdGenerator( self::STUB_ID );
 		$this->presenterSpy = new CreateSubjectPresenterSpy();
-		$this->authorizer = new SucceedingSubjectAuthorizer();
+		$this->authorizer = new SpySubjectWriteAuthorizer( allowed: true );
 		$this->schemaLookup = new InMemorySchemaLookup();
 	}
 
@@ -155,7 +153,7 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	public function testUserIsNotAllowedToCreateSubject(): void {
-		$this->authorizer = new FailingSubjectAuthorizer();
+		$this->authorizer = new SpySubjectWriteAuthorizer( allowed: false );
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'You do not have the necessary permissions to create this subject' );
@@ -169,23 +167,6 @@ class CreateSubjectActionTest extends TestCase {
 				statements: []
 			)
 		);
-	}
-
-	public function testMainSubjectCreationDoesNotRequireChildPermission(): void {
-		$this->authorizer = new SpySubjectAuthorizer( mainAllowed: true, childAllowed: false );
-		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
-
-		$this->newCreateSubjectAction()->createSubject(
-			new CreateSubjectRequest(
-				pageId: 1,
-				isMainSubject: true,
-				label: 'Some Label',
-				schemaName: 'some-schema-id',
-				statements: []
-			)
-		);
-
-		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
 	}
 
 	public function testCommentIsPassedToRepository(): void {

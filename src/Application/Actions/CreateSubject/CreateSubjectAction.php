@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -25,7 +25,7 @@ readonly class CreateSubjectAction {
 		private CreateSubjectPresenter $presenter,
 		private SubjectRepository $subjectRepository,
 		private IdGenerator $idGenerator,
-		private SubjectAuthorizer $subjectAuthorizer,
+		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
 		private SelectStatementResolver $selectStatementResolver,
@@ -41,11 +41,7 @@ readonly class CreateSubjectAction {
 
 		$pageId = new PageId( $request->pageId );
 
-		$authorized = $request->isMainSubject
-			? $this->subjectAuthorizer->canCreateMainSubject( $pageId )
-			: $this->subjectAuthorizer->canCreateChildSubject( $pageId );
-
-		if ( !$authorized ) {
+		if ( !$this->writeAuthorizer->authorize( $pageId ) ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to create this subject' );
 		}
 

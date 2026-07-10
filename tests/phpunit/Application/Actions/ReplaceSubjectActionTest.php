@@ -29,17 +29,15 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction
@@ -60,7 +58,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function newAction(
-		?SubjectAuthorizer $authorizer = null,
+		?SubjectWriteAuthorizer $authorizer = null,
 		bool $validationEnforced = false,
 	): ReplaceSubjectAction {
 		$registry = PropertyTypeRegistry::withCoreTypes();
@@ -70,7 +68,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->subjectRepository,
-			subjectAuthorizer: $authorizer ?? new SucceedingSubjectAuthorizer(),
+			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: $builder,
 			schemaLookup: $this->schemaLookup,
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
@@ -176,7 +174,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	public function testAuthorizesAgainstTheSubjectsResolvedPage(): void {
-		$spy = new SpySubjectAuthorizer();
+		$spy = new SpySubjectWriteAuthorizer( allowed: true );
 		$this->subjectRepository->updateSubject( TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) ) );
 
 		$this->newAction( $spy )->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
@@ -188,7 +186,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$subject = TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) );
 		$this->subjectRepository->updateSubject( $subject );
 
-		$action = $this->newAction( new FailingSubjectAuthorizer() );
+		$action = $this->newAction( new SpySubjectWriteAuthorizer( allowed: false ) );
 
 		$this->expectException( SubjectEditNotAuthorizedException::class );
 

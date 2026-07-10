@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -24,7 +24,7 @@ readonly class ReplaceSubjectAction {
 
 	public function __construct(
 		private SubjectRepository $subjectRepository,
-		private SubjectAuthorizer $subjectAuthorizer,
+		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
 		private SelectStatementResolver $selectStatementResolver,
@@ -48,7 +48,7 @@ readonly class ReplaceSubjectAction {
 		// returns null), so the request 404s before any write rather than touching a protected page.
 		$pageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
 
-		if ( !$this->subjectAuthorizer->canEditSubject( $pageId ) ) {
+		if ( !$this->writeAuthorizer->authorize( $pageId ) ) {
 			throw new SubjectEditNotAuthorizedException();
 		}
 

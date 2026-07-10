@@ -116,7 +116,8 @@ Genuine failures (such as the graph store being unreachable) throw rather than r
 `NeoWikiExtension::getInstance()` exposes read-side services usable from any MediaWiki extension point
 (hooks, special pages):
 
-- `newSubjectAuthorizer( Authority )` — subject permission checks.
+- `newSubjectPermissionHints( Authority )` — side-effect-free subject permission checks, for showing or
+  hiding affordances. A positive answer is a hint, not authorization to write.
 - `newPageSubjectsLookup()` — look up the subjects on a page.
 - `newSubjectContentRepository()` — read Subject data by id.
 - `newFrontendModuleLoader()` — mount NeoWiki's UI on any page.

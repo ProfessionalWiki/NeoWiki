@@ -77,7 +77,7 @@ describe( 'Infobox', () => {
 			},
 			provide: {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
-				[ Service.SchemaAuthorizer ]: NeoWikiExtension.getInstance().newSchemaAuthorizer(),
+				[ Service.SchemaPermissionHints ]: NeoWikiExtension.getInstance().newSchemaPermissionHints(),
 				[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
 			},
 		},
