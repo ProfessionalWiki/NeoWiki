@@ -1,4 +1,4 @@
-import type { SubjectAuthorizer } from '@/application/SubjectAuthorizer';
+import type { SubjectPermissionHints } from '@/application/SubjectPermissionHints';
 import type { SubjectId } from '@/domain/SubjectId';
 import type { RightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher';
 
@@ -10,7 +10,7 @@ import type { RightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher';
  * right. A user who may edit globally but not the page at hand is offered affordances that the
  * server then rejects.
  */
-export class RightsBasedSubjectAuthorizer implements SubjectAuthorizer {
+export class RightsBasedSubjectPermissionHints implements SubjectPermissionHints {
 
 	public constructor( private readonly rightsFetcher: RightsFetcher ) {
 	}

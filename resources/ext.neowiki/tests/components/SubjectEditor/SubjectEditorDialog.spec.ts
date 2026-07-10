@@ -56,7 +56,7 @@ describe( 'SubjectEditorDialog', () => {
 
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore;
-	let schemaAuthorizer: any;
+	let schemaPermissionHints: any;
 
 	const mockSchema = new Schema(
 		'TestSchema',
@@ -76,7 +76,7 @@ describe( 'SubjectEditorDialog', () => {
 		stubs: Record<string, any>,
 		onSave?: ( subject: any, comment: string ) => Promise<void>,
 	): VueWrapper => {
-		schemaAuthorizer = {
+		schemaPermissionHints = {
 			canEditSchema: vi.fn().mockResolvedValue( canEditSchema ),
 		};
 
@@ -94,7 +94,7 @@ describe( 'SubjectEditorDialog', () => {
 				plugins: [ pinia ],
 				provide: {
 					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
-					[ Service.SchemaAuthorizer ]: schemaAuthorizer,
+					[ Service.SchemaPermissionHints ]: schemaPermissionHints,
 					[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
 				},
 				stubs: {

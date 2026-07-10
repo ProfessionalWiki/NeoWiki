@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import type { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
+import type { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts';
 
 export interface SubjectPermissions {
 	canCreateMainSubject: Ref<boolean>;
@@ -15,15 +15,15 @@ export function useSubjectPermissions(): SubjectPermissions {
 	const canCreateChildSubject = ref( false );
 	const canEditSubject = ref( false );
 	const canDeleteSubject = ref( false );
-	const authorizer: SubjectAuthorizer = NeoWikiServices.getSubjectAuthorizer();
+	const hints: SubjectPermissionHints = NeoWikiServices.getSubjectPermissionHints();
 
 	async function checkPermissions( pageId: number ): Promise<void> {
 		try {
 			const [ createMain, createChild, edit, del ] = await Promise.all( [
-				authorizer.canCreateMainSubject(),
-				authorizer.canCreateChildSubject( pageId ),
-				authorizer.canEditSubject( { text: '' } as never ),
-				authorizer.canDeleteSubject( { text: '' } as never ),
+				hints.canCreateMainSubject(),
+				hints.canCreateChildSubject( pageId ),
+				hints.canEditSubject( { text: '' } as never ),
+				hints.canDeleteSubject( { text: '' } as never ),
 			] );
 			canCreateMainSubject.value = createMain;
 			canCreateChildSubject.value = createChild;

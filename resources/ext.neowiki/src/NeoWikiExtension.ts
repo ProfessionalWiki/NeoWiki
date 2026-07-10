@@ -1,5 +1,5 @@
-import { RightsBasedSubjectAuthorizer } from '@/persistence/RightsBasedSubjectAuthorizer.ts';
-import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
+import { RightsBasedSubjectPermissionHints } from '@/persistence/RightsBasedSubjectPermissionHints.ts';
+import { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts';
 import { RightsFetcher, UserObjectBasedRightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import TextDisplay from '@/components/Value/TextDisplay.vue';
@@ -31,13 +31,13 @@ import { LayoutRepository } from '@/application/LayoutRepository.ts';
 import { RestLayoutRepository } from '@/persistence/RestLayoutRepository.ts';
 import { LayoutSerializer } from '@/persistence/LayoutSerializer.ts';
 import { LayoutDeserializer } from '@/persistence/LayoutDeserializer.ts';
-import { LayoutAuthorizer } from '@/application/LayoutAuthorizer.ts';
-import { RightsBasedLayoutAuthorizer } from '@/persistence/RightsBasedLayoutAuthorizer.ts';
+import { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
+import { RightsBasedLayoutPermissionHints } from '@/persistence/RightsBasedLayoutPermissionHints.ts';
 import { CsrfSendingHttpClient } from '@/infrastructure/HttpClient/CsrfSendingHttpClient.ts';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
-import { RightsBasedSchemaAuthorizer } from '@/persistence/RightsBasedSchemaAuthorizer.ts';
-import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
+import { RightsBasedSchemaPermissionHints } from '@/persistence/RightsBasedSchemaPermissionHints.ts';
+import { SchemaPermissionHints } from '@/application/SchemaPermissionHints.ts';
 import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
@@ -176,8 +176,8 @@ export class NeoWikiExtension {
 		return window.mw;
 	}
 
-	public newSubjectAuthorizer(): SubjectAuthorizer {
-		return new RightsBasedSubjectAuthorizer(
+	public newSubjectPermissionHints(): SubjectPermissionHints {
+		return new RightsBasedSubjectPermissionHints(
 			this.getUserObjectBasedRightsFetcher(),
 		);
 	}
@@ -209,8 +209,8 @@ export class NeoWikiExtension {
 		);
 	}
 
-	public newLayoutAuthorizer(): LayoutAuthorizer {
-		return new RightsBasedLayoutAuthorizer(
+	public newLayoutPermissionHints(): LayoutPermissionHints {
+		return new RightsBasedLayoutPermissionHints(
 			this.getUserObjectBasedRightsFetcher(),
 		);
 	}
@@ -221,8 +221,8 @@ export class NeoWikiExtension {
 		);
 	}
 
-	public newSchemaAuthorizer(): SchemaAuthorizer {
-		return new RightsBasedSchemaAuthorizer(
+	public newSchemaPermissionHints(): SchemaPermissionHints {
+		return new RightsBasedSchemaPermissionHints(
 			this.getUserObjectBasedRightsFetcher(),
 		);
 	}

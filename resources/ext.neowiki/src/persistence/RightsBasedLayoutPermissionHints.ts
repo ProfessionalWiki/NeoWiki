@@ -1,7 +1,7 @@
 import type { RightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher';
-import type { LayoutAuthorizer } from '@/application/LayoutAuthorizer';
+import type { LayoutPermissionHints } from '@/application/LayoutPermissionHints';
 
-export class RightsBasedLayoutAuthorizer implements LayoutAuthorizer {
+export class RightsBasedLayoutPermissionHints implements LayoutPermissionHints {
 
 	public constructor( private readonly rightsFetcher: RightsFetcher ) {
 	}
