@@ -15,8 +15,9 @@ use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 
 /**
  * Deserializes statements from persistence-type JSON.
@@ -27,7 +28,7 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 class StatementDeserializer {
 
 	public function __construct(
-		private readonly PropertyTypeToValueType $propertyTypeToValueType
+		private readonly PropertyTypeLookup $propertyTypeLookup
 	) {
 	}
 
@@ -40,11 +41,15 @@ class StatementDeserializer {
 	}
 
 	private function deserializeValue( string $propertyType, mixed $value ): NeoValue {
-		return match ( $this->propertyTypeToValueType->lookup( $propertyType ) ) {
+		$valueType = $this->propertyTypeLookup->getType( $propertyType )?->getValueType()
+			?? ValueType::UnregisteredType;
+
+		return match ( $valueType ) {
 			ValueType::String => new StringValue( ...(array)$value ),
 			ValueType::Number => new NumberValue( $value ),
 			ValueType::Relation => $this->deserializeRelationValue( $value ),
 			ValueType::Boolean => new BooleanValue( $value ),
+			ValueType::UnregisteredType => new UnregisteredTypeValue( $propertyType, $value ),
 		};
 	}
 

@@ -18,6 +18,8 @@ use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator
@@ -329,6 +331,65 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertEquals( new PropertyName( 'Missing' ), $violations[1]->propertyName );
 	}
 
+	public function testUnregisteredPropertyTypeReturnsNonBlockingViolation(): void {
+		$schema = $this->newSchema( [ 'Swatch' => $this->newUnregisteredTypeProperty() ] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				new Statement(
+					new PropertyName( 'Swatch' ),
+					'color',
+					new UnregisteredTypeValue( 'color', [ '#ff5733' ] )
+				),
+			] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'unregistered-type', $violations[0]->code );
+		$this->assertEquals( new PropertyName( 'Swatch' ), $violations[0]->propertyName );
+		$this->assertSame( [ 'color' ], $violations[0]->args );
+		$this->assertFalse( $violations[0]->isBlocking() );
+	}
+
+	/**
+	 * A required property whose type is unregistered cannot be satisfied: there is no
+	 * editor to enter a value with. Blocking on it would make the Subject uncreatable.
+	 */
+	public function testRequiredPropertyOfUnregisteredTypeReportsTheTypeInsteadOfRequired(): void {
+		$schema = $this->newSchema( [ 'Swatch' => $this->newUnregisteredTypeProperty( required: true ) ] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'unregistered-type', $violations[0]->code );
+		$this->assertEquals( new PropertyName( 'Swatch' ), $violations[0]->propertyName );
+		$this->assertFalse( $violations[0]->isBlocking() );
+	}
+
+	public function testRequiredPropertyOfRegisteredTypeStillReportsRequired(): void {
+		$schema = $this->newSchema( [
+			'Age' => $this->newNumberProperty( required: true ),
+			'Swatch' => $this->newUnregisteredTypeProperty( required: true ),
+		] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [] ),
+			$schema,
+		);
+
+		$this->assertCount( 2, $violations );
+		$this->assertSame( 'required', $violations[0]->code );
+		$this->assertTrue( $violations[0]->isBlocking() );
+		$this->assertSame( 'unregistered-type', $violations[1]->code );
+	}
+
 	// --- Helpers ---
 
 	private function newSchema( array $properties ): Schema {
@@ -344,6 +405,13 @@ class SubjectValidatorTest extends TestCase {
 	 */
 	private function newPropertyDefinitions( array $properties ): PropertyDefinitions {
 		return new PropertyDefinitions( $properties );
+	}
+
+	private function newUnregisteredTypeProperty( bool $required = false ): UnregisteredTypeProperty {
+		return UnregisteredTypeProperty::fromPartialJson(
+			new PropertyCore( description: '', required: $required, default: null ),
+			[ 'type' => 'color', 'allowedColors' => [ '#ff5733' ] ],
+		);
 	}
 
 	private function newNumberProperty(

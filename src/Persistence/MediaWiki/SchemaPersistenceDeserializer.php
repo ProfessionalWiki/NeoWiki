@@ -41,6 +41,10 @@ class SchemaPersistenceDeserializer {
 		);
 	}
 
+	/**
+	 * Properties of an unregistered type are not dropped here: PropertyDefinition::fromJson
+	 * preserves them. Only structurally invalid definitions are skipped.
+	 */
 	private function propertiesFromJson( array $json ): PropertyDefinitions {
 		$properties = [];
 

@@ -170,6 +170,7 @@
 	"neowiki-field-single-value-only": "Validation error shown when multiple values are selected for a single-select property.",
 	"neowiki-field-type-mismatch": "Validation error shown when a Statement's stored type no longer matches the property's current type (e.g. the Schema changed after the value was saved). $1 is the type the value was written as; $2 is the type the property now expects.",
 	"neowiki-field-schema-not-found": "Form-level error shown when the backend reports the Subject's Schema page is missing. $1 is the schema name.",
+	"neowiki-field-unregistered-type": "Validation warning shown when a Statement's Property Type is not registered, because the extension providing it is disabled or failed to load. The value is preserved but cannot be displayed or edited. $1 is the property type name.",
 	"neowiki-field-min-length": "Validation error shown when a text value is shorter than the property's minimum length. $1 is the minimum number of characters.",
 	"neowiki-field-max-length": "Validation error shown when a text value is longer than the property's maximum length. $1 is the maximum number of characters.",
 	"neowiki-field-label-required": "Form-level error shown when the backend reports the Subject is missing its required display label.",

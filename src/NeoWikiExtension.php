@@ -58,7 +58,6 @@ use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
@@ -182,12 +181,8 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function getPropertyTypeToValueType(): PropertyTypeToValueType {
-		return new PropertyTypeToValueType( $this->getPropertyTypeRegistry() );
-	}
-
 	public function newSubjectContentDataDeserializer(): SubjectContentDataDeserializer {
-		return new SubjectContentDataDeserializer( new StatementDeserializer( $this->getPropertyTypeToValueType() ) );
+		return new SubjectContentDataDeserializer( new StatementDeserializer( $this->getPropertyTypeLookup() ) );
 	}
 
 	public function getPagePropertyProviderRegistry(): PagePropertyProviderRegistry {
@@ -415,7 +410,7 @@ class NeoWikiExtension {
 
 	public function getStatementListBuilder(): StatementListBuilder {
 		return new StatementListBuilder(
-			propertyTypeToValueType: $this->getPropertyTypeToValueType(),
+			propertyTypeLookup: $this->getPropertyTypeLookup(),
 			idGenerator: $this->getIdGenerator()
 		);
 	}

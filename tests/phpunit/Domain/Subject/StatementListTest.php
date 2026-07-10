@@ -5,6 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
@@ -39,7 +41,45 @@ class StatementListTest extends TestCase {
 		);
 	}
 
-	// TODO: more getTypedRelations tests
+	public function testGetTypedRelationsBuildsRelationsFromMatchingSchemaProperties(): void {
+		$statements = new StatementList( [
+			TestStatement::build(
+				property: 'relation1',
+				value: new RelationValue( TestRelation::build( targetId: 's11111111111111' ) ),
+				propertyType: RelationType::NAME
+			),
+		] );
+
+		$relations = $statements->getTypedRelations( $this->newSchemaWithSomeRelations() )->relations;
+
+		$this->assertCount( 1, $relations );
+		$this->assertSame( 'Type1', $relations[0]->type->text );
+	}
+
+	/**
+	 * Writer's-schema drift: the Statement is still a relation but the Schema property is
+	 * no longer one. The graph projection must skip it rather than fail.
+	 */
+	public function testGetTypedRelationsSkipsRelationWhoseSchemaPropertyIsNotARelation(): void {
+		$statements = new StatementList( [
+			TestStatement::build(
+				property: 'Swatch',
+				value: new RelationValue( TestRelation::build( targetId: 's11111111111111' ) ),
+				propertyType: RelationType::NAME
+			),
+		] );
+
+		$schema = TestSchema::build(
+			properties: new PropertyDefinitions( [
+				'Swatch' => UnregisteredTypeProperty::fromPartialJson(
+					new PropertyCore( description: '', required: false, default: null ),
+					[ 'type' => 'color' ],
+				),
+			] )
+		);
+
+		$this->assertSame( [], $statements->getTypedRelations( $schema )->relations );
+	}
 
 	public function testGetReferencedSubjectsReturnsEmptyArrayForEmptyList(): void {
 		$statements = new StatementList( [] );

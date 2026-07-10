@@ -11,4 +11,11 @@ enum ValueType: string {
 	case Boolean = 'boolean';
 	case Relation = 'relation';
 
+	/**
+	 * The Value's Property Type is not registered, so its structure is unknown.
+	 *
+	 * @see UnregisteredTypeValue
+	 */
+	case UnregisteredType = 'unregisteredType';
+
 }
