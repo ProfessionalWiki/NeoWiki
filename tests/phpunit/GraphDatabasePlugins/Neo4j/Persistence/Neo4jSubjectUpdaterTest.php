@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Types\Date;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -153,6 +154,44 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 		$this->newSubjectUpdater()->statementsToNodeProperties( $statements );
 
 		$this->assertSame( [], $this->logger->getLogCalls()->getMessages() );
+	}
+
+	public function testConvertsDateStatementValuesToDateObjects(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$statements = new StatementList( [
+			TestStatement::build( property: 'P1', value: new StringValue( 'plain' ), propertyType: 'text' ),
+			TestStatement::build(
+				property: 'P2',
+				value: new StringValue( '2024-01-01' ),
+				propertyType: 'date'
+			),
+		] );
+
+		$this->assertEquals(
+			[
+				'P1' => [ 'plain' ],
+				'P2' => [ new Date( 19723 ) ],
+			],
+			$this->newSubjectUpdater( $registry )->statementsToNodeProperties( $statements )
+		);
+	}
+
+	public function testWarnsWhenDateValuesAreDroppedFromTheProjection(): void {
+		$statements = new StatementList( [
+			TestStatement::build(
+				property: 'P1',
+				value: new StringValue( '2024-01-01', 'not a date', '2025-06-15' ),
+				propertyType: 'date'
+			),
+		] );
+
+		$this->newSubjectUpdater()->statementsToNodeProperties( $statements );
+
+		$this->assertSame(
+			[ 'Dropped 1 unpersistable value(s) of property "P1" on page 1333333337 when projecting to the graph' ],
+			$this->logger->getLogCalls()->getMessages()
+		);
 	}
 
 	public function testSkipsStatementsWithRelationType(): void {
