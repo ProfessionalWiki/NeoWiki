@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
@@ -25,7 +26,6 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
@@ -67,7 +67,7 @@ class CreateSubjectActionTest extends TestCase {
 			$this->idGenerator,
 			$this->authorizer,
 			new StatementListBuilder(
-				new PropertyTypeToValueType( $registry ),
+				$registry,
 				$this->idGenerator
 			),
 			$this->schemaLookup,
@@ -478,6 +478,43 @@ class CreateSubjectActionTest extends TestCase {
 				),
 			] )
 		) );
+	}
+
+	private function registerPersonSchemaWithRequiredUnregisteredProperty(): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( 'PersonSchema' ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Swatch' => UnregisteredTypeProperty::fromPartialJson(
+					new PropertyCore( description: '', required: true, default: null ),
+					[ 'type' => 'color' ],
+				),
+			] )
+		) );
+	}
+
+	/**
+	 * The extension owning the type is gone, so no value can be supplied for the required
+	 * property. Blocking the create would make the Schema unusable until it returns.
+	 */
+	public function testEnforcementOnAllowsCreateWhenARequiredPropertyHasAnUnregisteredType(): void {
+		$this->registerPersonSchemaWithRequiredUnregisteredProperty();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: true )->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Bob',
+				schemaName: 'PersonSchema',
+				statements: [],
+			)
+		);
+
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
+		$this->assertCount( 1, $this->presenterSpy->violations );
+		$this->assertSame( 'unregistered-type', $this->presenterSpy->violations[0]->code );
 	}
 
 	public function testEnforcementOffPersistsCreateWithViolations(): void {

@@ -16,9 +16,9 @@ use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UrlProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
@@ -30,6 +30,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
@@ -62,7 +63,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	): ReplaceSubjectAction {
 		$registry = PropertyTypeRegistry::withCoreTypes();
 		$builder = new StatementListBuilder(
-			propertyTypeToValueType: new PropertyTypeToValueType( $registry ),
+			propertyTypeLookup: $registry,
 			idGenerator: new StubIdGenerator( '11111111111127' )
 		);
 		return new ReplaceSubjectAction(
@@ -348,6 +349,71 @@ class ReplaceSubjectActionTest extends TestCase {
 				),
 			] )
 		) );
+	}
+
+	private function registerSchemaWithNameAndUnregisteredSwatch(): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( self::SCHEMA_NAME ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Name' => new UrlProperty(
+					core: new PropertyCore( description: '', required: false, default: null ),
+					multiple: false,
+					uniqueItems: false,
+				),
+				'Swatch' => UnregisteredTypeProperty::fromPartialJson(
+					new PropertyCore( description: '', required: false, default: null ),
+					[ 'type' => 'color', 'allowedColors' => [ '#ff5733' ] ],
+				),
+			] )
+		) );
+	}
+
+	public function testEnforcementOnPersistsStatementOfUnregisteredType(): void {
+		$this->registerSchemaWithNameAndUnregisteredSwatch();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		) );
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'After',
+			[
+				'Name' => [ 'propertyType' => 'url', 'value' => 'https://pro.wiki' ],
+				'Swatch' => [ 'propertyType' => 'color', 'value' => [ '#ff5733' ] ],
+			],
+			null
+		);
+
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertEquals(
+			new UnregisteredTypeValue( 'color', [ '#ff5733' ] ),
+			$this->subjectRepository
+				->getSubject( new SubjectId( self::SUBJECT_ID ) )
+				->getStatements()
+				->getStatement( new PropertyName( 'Swatch' ) )
+				->getValue()
+		);
+	}
+
+	public function testStatementOfUnregisteredTypeIsReportedAsANonBlockingViolation(): void {
+		$this->registerSchemaWithNameAndUnregisteredSwatch();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		) );
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'After',
+			[ 'Swatch' => [ 'propertyType' => 'color', 'value' => [ '#ff5733' ] ] ],
+			null
+		);
+
+		$this->assertCount( 1, $this->presenterSpy->violations );
+		$this->assertSame( 'unregistered-type', $this->presenterSpy->violations[0]->code );
+		$this->assertFalse( $this->presenterSpy->violations[0]->isBlocking() );
 	}
 
 	public function testEnforcementOffPersistsEditWithNewViolations(): void {

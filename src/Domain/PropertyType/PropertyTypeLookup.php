@@ -4,15 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\PropertyType;
 
-use OutOfBoundsException;
-
 interface PropertyTypeLookup {
 
-	public function getType( string $typeName ): ?PropertyType;
-
 	/**
-	 * @throws OutOfBoundsException
+	 * Null when no extension registered the type. Callers must degrade rather than fail:
+	 * stored data of an unregistered type is preserved and surfaced, not rejected.
 	 */
-	public function getTypeOrThrow( string $typeName ): PropertyType;
+	public function getType( string $typeName ): ?PropertyType;
 
 }

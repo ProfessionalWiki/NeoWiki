@@ -7,8 +7,8 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 
 /**
@@ -18,7 +18,7 @@ class StatementListBuilderTest extends TestCase {
 
 	private function newBuilder(): StatementListBuilder {
 		return new StatementListBuilder(
-			propertyTypeToValueType: new PropertyTypeToValueType( PropertyTypeRegistry::withCoreTypes() ),
+			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes(),
 			idGenerator: new StubIdGenerator( '11111111111111' )
 		);
 	}
@@ -48,6 +48,26 @@ class StatementListBuilderTest extends TestCase {
 
 		$this->assertNotNull( $list->getStatement( new PropertyName( 'A' ) ) );
 		$this->assertNotNull( $list->getStatement( new PropertyName( 'B' ) ) );
+	}
+
+	public function testUnregisteredTypePreservesRawValue(): void {
+		$list = $this->newBuilder()->build( [
+			'Swatch' => [ 'propertyType' => 'color', 'value' => [ '#ff5733' ] ],
+		] );
+
+		$statement = $list->getStatement( new PropertyName( 'Swatch' ) );
+
+		$this->assertNotNull( $statement );
+		$this->assertSame( 'color', $statement->getPropertyType() );
+		$this->assertEquals( new UnregisteredTypeValue( 'color', [ '#ff5733' ] ), $statement->getValue() );
+	}
+
+	public function testUnregisteredTypeStatementIsNotDroppedAsEmpty(): void {
+		$list = $this->newBuilder()->build( [
+			'Swatch' => [ 'propertyType' => 'color', 'value' => [] ],
+		] );
+
+		$this->assertNotNull( $list->getStatement( new PropertyName( 'Swatch' ) ) );
 	}
 
 	public function testNullValueIsDropped(): void {

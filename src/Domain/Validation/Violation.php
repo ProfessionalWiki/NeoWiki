@@ -8,6 +8,13 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 
 readonly class Violation {
 
+	/**
+	 * System conditions rather than user-correctable Constraints: the wiki, not the edit,
+	 * is in a degraded state. They are reported but never reject a write. These are the
+	 * `warning` tier that ADR 26 will make configurable per Constraint.
+	 */
+	private const NON_BLOCKING_CODES = [ 'schema-not-found', 'unregistered-type' ];
+
 	public function __construct(
 		public ?PropertyName $propertyName,
 		public string $code,
@@ -27,12 +34,9 @@ readonly class Violation {
 
 	/**
 	 * Whether this Violation should block writes under enforcement.
-	 * schema-not-found is a system condition (the Schema page is missing
-	 * or has been deleted), not a user-correctable constraint, so it does
-	 * not block.
 	 */
 	public function isBlocking(): bool {
-		return $this->code !== 'schema-not-found';
+		return !in_array( $this->code, self::NON_BLOCKING_CODES, true );
 	}
 
 }

@@ -188,9 +188,14 @@ Scalar values come back as strings, numbers, booleans, or `nil`. Nested Cypher l
 | Node | `{ id, labels, properties }` |
 | Relationship | `{ id, type, startNodeId, endNodeId, properties }` |
 | Path | `{ nodes, relationships }` |
+| `date` | ISO 8601 date string, e.g. `"2023-10-01"` |
+| `datetime` / zoned `time` | ISO 8601 string with offset, e.g. `"2023-09-13T14:22:23+00:00"` / `"14:22:23+02:00"` |
+| `localdatetime` / `localtime` | ISO 8601 string without offset, e.g. `"2023-09-13T14:22:23"` / `"09:30:00"` |
+| `duration` | `{ months, days, seconds, nanoseconds }` |
+| `point` | `{ x, y, crs, srid }` (plus `z` for 3D points) |
 
-Temporal and spatial values (from Cypher functions like `datetime()` or `point()`) are not
-supported. Cast to a scalar in the query — e.g. `toString(datetime())` or `point.x(p)`.
+Temporal values come back as ISO 8601 strings (timezone offsets to whole-minute precision). `duration`
+and spatial `point` values come back as component tables.
 
 #### Errors
 

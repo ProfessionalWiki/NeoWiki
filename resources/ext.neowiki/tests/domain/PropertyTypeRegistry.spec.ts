@@ -40,4 +40,16 @@ describe( 'PropertyTypeRegistry', () => {
 
 	} );
 
+	describe( 'hasType', () => {
+
+		it( 'returns true for a registered type', () => {
+			expect( newRegistryWithTypes().hasType( TextType.typeName ) ).toBe( true );
+		} );
+
+		it( 'returns false for an unregistered type', () => {
+			expect( newRegistryWithTypes().hasType( 'color' ) ).toBe( false );
+		} );
+
+	} );
+
 } );

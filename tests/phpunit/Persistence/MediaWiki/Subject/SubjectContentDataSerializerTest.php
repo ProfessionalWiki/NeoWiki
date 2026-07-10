@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
@@ -18,7 +19,6 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer;
@@ -191,16 +191,50 @@ class SubjectContentDataSerializerTest extends TestCase {
 		);
 	}
 
+	public function testStatementOfUnregisteredTypeRoundTripsByteIdentically(): void {
+		$contentJson = <<<'JSON'
+			{
+			    "mainSubject": "sTestSCDS111111",
+			    "subjects": {
+			        "sTestSCDS111111": {
+			            "label": "Test Subject",
+			            "schema": "TestSchema",
+			            "statements": {
+			                "Swatch": {
+			                    "type": "color",
+			                    "value": [
+			                        "#ff5733"
+			                    ]
+			                },
+			                "Name": {
+			                    "type": "text",
+			                    "value": [
+			                        "John Doe"
+			                    ]
+			                }
+			            }
+			        }
+			    }
+			}
+			JSON;
+
+		$this->assertJsonStringEqualsJsonString( $contentJson, $this->roundTrip( $contentJson ) );
+	}
+
+	/**
+	 * Core types only: no extension is loaded, so "color" is an unregistered type.
+	 */
+	private function roundTrip( string $contentJson ): string {
+		$deserializer = new SubjectContentDataDeserializer( new StatementDeserializer( PropertyTypeRegistry::withCoreTypes() ) );
+
+		return ( new SubjectContentDataSerializer() )->serialize( $deserializer->deserialize( $contentJson ) );
+	}
+
 	/**
 	 * @dataProvider exampleSubjectProvider
 	 */
 	public function testSerializationRoundTrip( string $contentJson ): void {
-		$deserializer = new SubjectContentDataDeserializer( new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeToValueType() ) );
-		$serializer = new SubjectContentDataSerializer();
-
-		$newJson = $serializer->serialize( $deserializer->deserialize( $contentJson ) );
-
-		$this->assertJsonStringEqualsJsonString( $contentJson, $newJson );
+		$this->assertJsonStringEqualsJsonString( $contentJson, $this->roundTrip( $contentJson ) );
 	}
 
 	public function exampleSubjectProvider(): iterable {
