@@ -1,6 +1,6 @@
 import { mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import UnknownAttributesEditor from '@/components/SchemaEditor/Property/UnknownAttributesEditor.vue';
+import UnregisteredTypeAttributesEditor from '@/components/SchemaEditor/Property/UnregisteredTypeAttributesEditor.vue';
 import { PropertyName, type PropertyDefinition } from '@/domain/PropertyDefinition';
 
 function createWrapper( type = 'color' ): VueWrapper {
@@ -10,10 +10,10 @@ function createWrapper( type = 'color' ): VueWrapper {
 		description: '',
 		required: false,
 	};
-	return mount( UnknownAttributesEditor, { props: { property } } );
+	return mount( UnregisteredTypeAttributesEditor, { props: { property } } );
 }
 
-describe( 'UnknownAttributesEditor', () => {
+describe( 'UnregisteredTypeAttributesEditor', () => {
 
 	beforeEach( () => {
 		vi.stubGlobal( 'mw', {
@@ -21,10 +21,10 @@ describe( 'UnknownAttributesEditor', () => {
 		} );
 	} );
 
-	it( 'shows a note naming the unknown type', () => {
+	it( 'shows a note that the stored settings are preserved', () => {
 		const wrapper = createWrapper( 'color' );
 
-		expect( wrapper.text() ).toContain( 'neowiki-property-type-unknown-note:color' );
+		expect( wrapper.text() ).toContain( 'neowiki-property-type-unregistered-attributes-note' );
 	} );
 
 	it( 'does not emit attribute updates', () => {

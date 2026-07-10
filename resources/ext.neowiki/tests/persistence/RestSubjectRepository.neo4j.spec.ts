@@ -195,7 +195,7 @@ describe( 'RestSubjectRepository', () => {
 				.rejects.toThrow( 'Subject not found' );
 		} );
 
-		function subjectWithUnknownPropertyType( id: string ): object {
+		function subjectWithUnregisteredPropertyType( id: string ): object {
 			return {
 				id: id,
 				label: 'Broken',
@@ -231,7 +231,7 @@ describe( 'RestSubjectRepository', () => {
 			const repository = repositoryReturning( {
 				requestedId: requestedId,
 				subjects: {
-					[ referencedId1 ]: subjectWithUnknownPropertyType( referencedId1 ),
+					[ referencedId1 ]: subjectWithUnregisteredPropertyType( referencedId1 ),
 					[ requestedId ]: bundleResponse.subjects[ requestedId ],
 					[ referencedId2 ]: bundleResponse.subjects[ referencedId2 ],
 				},

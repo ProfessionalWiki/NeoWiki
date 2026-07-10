@@ -13,7 +13,7 @@ export class TypeSpecificComponentRegistry {
 
 	private typeMap: Map<string, TypeSpecificStuff> = new Map();
 
-	private unknownFallback: TypeSpecificStuff | undefined;
+	private unregisteredTypeFallback: TypeSpecificStuff | undefined;
 
 	public registerType(
 		propertyType: string,
@@ -25,11 +25,11 @@ export class TypeSpecificComponentRegistry {
 	/**
 	 * Components used to render a property type that is not registered (e.g. owned
 	 * by a disabled or failed extension). When set, the per-type getters degrade to
-	 * these instead of throwing, so a single unknown type does not take down the
+	 * these instead of throwing, so a single unregistered type does not take down the
 	 * whole view. The fallback is never offered as a selectable type.
 	 */
-	public setUnknownFallback( stuff: TypeSpecificStuff ): void {
-		this.unknownFallback = stuff;
+	public setUnregisteredTypeFallback( stuff: TypeSpecificStuff ): void {
+		this.unregisteredTypeFallback = stuff;
 	}
 
 	/**
@@ -46,8 +46,8 @@ export class TypeSpecificComponentRegistry {
 			return stuff;
 		}
 
-		if ( this.unknownFallback !== undefined ) {
-			return this.unknownFallback;
+		if ( this.unregisteredTypeFallback !== undefined ) {
+			return this.unregisteredTypeFallback;
 		}
 
 		throw new Error( `Unknown property type: ${ propertyType }` );

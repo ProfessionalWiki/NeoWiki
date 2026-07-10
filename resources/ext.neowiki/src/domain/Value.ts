@@ -12,7 +12,7 @@ export enum ValueType {
 	 * by a disabled or failed extension). The raw stored data is preserved so it
 	 * remains visible and round-trips on save instead of being lost.
 	 */
-	Unknown = 'unknown',
+	UnregisteredType = 'unregistered-type',
 
 }
 
@@ -59,13 +59,13 @@ export class Relation {
 
 }
 
-export interface UnknownValue extends BaseValueRepresentation {
-	readonly type: ValueType.Unknown;
+export interface UnregisteredTypeValue extends BaseValueRepresentation {
+	readonly type: ValueType.UnregisteredType;
 	readonly typeName: string;
 	readonly raw: unknown;
 }
 
-export type Value = StringValue | NumberValue | BooleanValue | RelationValue | UnknownValue;
+export type Value = StringValue | NumberValue | BooleanValue | RelationValue | UnregisteredTypeValue;
 
 export function newStringValue( ...parts: string[] | [ string[] ] ): StringValue {
 	const resolved = Array.isArray( parts[ 0 ] ) ? parts[ 0 ] : parts as string[];
@@ -99,9 +99,9 @@ export function newRelation( id: string | undefined, target: SubjectId | string 
 	);
 }
 
-export function newUnknownValue( typeName: string, raw: unknown ): UnknownValue {
+export function newUnregisteredTypeValue( typeName: string, raw: unknown ): UnregisteredTypeValue {
 	return {
-		type: ValueType.Unknown,
+		type: ValueType.UnregisteredType,
 		typeName: typeName,
 		raw: raw,
 	};
@@ -140,8 +140,8 @@ export function valueToJson( value: Value ): unknown {
 			return ( value as RelationValue ).relations.map(
 				( relation ) => ( { id: relation.id, target: relation.target.text } ),
 			);
-		case ValueType.Unknown:
-			return ( value as UnknownValue ).raw;
+		case ValueType.UnregisteredType:
+			return ( value as UnregisteredTypeValue ).raw;
 		default:
 			throw new Error( `Unsupported value type: ${ ( value as Value ).type }` );
 	}
@@ -168,7 +168,7 @@ export function isValueEmpty( value: Value | undefined ): boolean {
 			return false;
 		case ValueType.Relation:
 			return value.relations.length === 0;
-		case ValueType.Unknown:
+		case ValueType.UnregisteredType:
 			return false;
 		default:
 			return true;

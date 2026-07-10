@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { PropertyDefinitionDeserializer } from '@/domain/PropertyDefinition';
-import { newBooleanValue, newNumberValue, newStringValue, newUnknownValue } from '@/domain/Value';
+import { newBooleanValue, newNumberValue, newStringValue, newUnregisteredTypeValue } from '@/domain/Value';
 import { TextProperty, TextType } from '@/domain/propertyTypes/Text';
 import { NumberProperty, NumberType } from '@/domain/propertyTypes/Number';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
@@ -133,7 +133,7 @@ it( 'preserves the raw default value of an unregistered type', () => {
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json );
 
-	expect( property.default ).toEqual( newUnknownValue( 'color', { hex: '#ff0000' } ) );
+	expect( property.default ).toEqual( newUnregisteredTypeValue( 'color', { hex: '#ff0000' } ) );
 } );
 
 it( 'preserves the type-specific keys of an unregistered type so they survive a re-save', () => {

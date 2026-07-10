@@ -1,25 +1,25 @@
 import { mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import UnknownValueInput from '@/components/Value/UnknownValueInput.vue';
-import { newUnknownValue, type Value } from '@/domain/Value';
+import UnregisteredTypeValueInput from '@/components/Value/UnregisteredTypeValueInput.vue';
+import { newUnregisteredTypeValue, type Value } from '@/domain/Value';
 import { PropertyName, type PropertyDefinition } from '@/domain/PropertyDefinition';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
 
-function unknownProperty( type: string ): PropertyDefinition {
+function unregisteredTypeProperty( type: string ): PropertyDefinition {
 	return { name: new PropertyName( 'brandColour' ), type, description: '', required: false };
 }
 
 function createWrapper( modelValue: Value | undefined, typeName = 'color' ): VueWrapper {
-	return mount( UnknownValueInput, {
+	return mount( UnregisteredTypeValueInput, {
 		props: {
 			modelValue: modelValue,
 			label: 'Brand colour',
-			property: unknownProperty( typeName ),
+			property: unregisteredTypeProperty( typeName ),
 		},
 	} );
 }
 
-describe( 'UnknownValueInput', () => {
+describe( 'UnregisteredTypeValueInput', () => {
 
 	beforeEach( () => {
 		vi.stubGlobal( 'mw', {
@@ -28,32 +28,32 @@ describe( 'UnknownValueInput', () => {
 	} );
 
 	it( 'renders the field label', () => {
-		const wrapper = createWrapper( newUnknownValue( 'color', '#ff0000' ) );
+		const wrapper = createWrapper( newUnregisteredTypeValue( 'color', '#ff0000' ) );
 
 		expect( wrapper.text() ).toContain( 'Brand colour' );
 	} );
 
 	it( 'renders the raw stored value', () => {
-		const wrapper = createWrapper( newUnknownValue( 'color', '#ff0000' ) );
+		const wrapper = createWrapper( newUnregisteredTypeValue( 'color', '#ff0000' ) );
 
 		expect( wrapper.text() ).toContain( '#ff0000' );
 	} );
 
-	it( 'shows a note that the unknown type cannot be edited', () => {
-		const wrapper = createWrapper( newUnknownValue( 'color', '#ff0000' ), 'color' );
+	it( 'shows a note that the unregistered type cannot be edited', () => {
+		const wrapper = createWrapper( newUnregisteredTypeValue( 'color', '#ff0000' ), 'color' );
 
-		expect( wrapper.text() ).toContain( 'neowiki-property-type-unknown-input-note:color' );
+		expect( wrapper.text() ).toContain( 'neowiki-property-type-unregistered-input-note:color' );
 	} );
 
 	it( 'preserves the original value via getCurrentValue so it round-trips on save', () => {
-		const modelValue = newUnknownValue( 'color', { hex: '#ff0000' } );
+		const modelValue = newUnregisteredTypeValue( 'color', { hex: '#ff0000' } );
 		const wrapper = createWrapper( modelValue );
 
 		expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toStrictEqual( modelValue );
 	} );
 
 	it( 'does not emit value updates because it is read-only', () => {
-		const wrapper = createWrapper( newUnknownValue( 'color', '#ff0000' ) );
+		const wrapper = createWrapper( newUnregisteredTypeValue( 'color', '#ff0000' ) );
 
 		expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
 	} );

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-	notifyUnknownPropertyType,
-	resetUnknownPropertyTypeNotifications,
-} from '@/presentation/notifyUnknownPropertyType';
+	notifyUnregisteredPropertyType,
+	resetUnregisteredPropertyTypeNotifications,
+} from '@/presentation/notifyUnregisteredPropertyType';
 
 function stubMw( editable: boolean ): void {
 	vi.stubGlobal( 'mw', {
@@ -12,34 +12,34 @@ function stubMw( editable: boolean ): void {
 	} );
 }
 
-describe( 'notifyUnknownPropertyType', () => {
+describe( 'notifyUnregisteredPropertyType', () => {
 
 	beforeEach( () => {
-		resetUnknownPropertyTypeNotifications();
+		resetUnregisteredPropertyTypeNotifications();
 		stubMw( true );
 	} );
 
 	it( 'shows a single warning notification carrying the type name', () => {
-		notifyUnknownPropertyType( 'color' );
+		notifyUnregisteredPropertyType( 'color' );
 
 		expect( mw.notify ).toHaveBeenCalledTimes( 1 );
 		expect( mw.notify ).toHaveBeenCalledWith(
-			'neowiki-property-type-unknown-notification:color',
+			'neowiki-property-type-unregistered-notification:color',
 			{ type: 'warn' },
 		);
 	} );
 
 	it( 'notifies only once for repeated encounters of the same type', () => {
-		notifyUnknownPropertyType( 'color' );
-		notifyUnknownPropertyType( 'color' );
-		notifyUnknownPropertyType( 'color' );
+		notifyUnregisteredPropertyType( 'color' );
+		notifyUnregisteredPropertyType( 'color' );
+		notifyUnregisteredPropertyType( 'color' );
 
 		expect( mw.notify ).toHaveBeenCalledTimes( 1 );
 	} );
 
-	it( 'notifies separately for each distinct unknown type', () => {
-		notifyUnknownPropertyType( 'color' );
-		notifyUnknownPropertyType( 'rating' );
+	it( 'notifies separately for each distinct unregistered type', () => {
+		notifyUnregisteredPropertyType( 'color' );
+		notifyUnregisteredPropertyType( 'rating' );
 
 		expect( mw.notify ).toHaveBeenCalledTimes( 2 );
 	} );
@@ -47,7 +47,7 @@ describe( 'notifyUnknownPropertyType', () => {
 	it( 'does not notify readers who cannot edit the page', () => {
 		stubMw( false );
 
-		notifyUnknownPropertyType( 'color' );
+		notifyUnregisteredPropertyType( 'color' );
 
 		expect( mw.notify ).not.toHaveBeenCalled();
 	} );

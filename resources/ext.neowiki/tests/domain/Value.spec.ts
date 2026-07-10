@@ -5,7 +5,7 @@ import {
 	newNumberValue,
 	newRelation,
 	newStringValue,
-	newUnknownValue,
+	newUnregisteredTypeValue,
 	relationValuesHaveSameTargets,
 	RelationValue,
 	type Value,
@@ -81,22 +81,22 @@ describe( 'valueToJson', () => {
 		expect( () => valueToJson( value ) ).toThrow( 'Unsupported value type: test' );
 	} );
 
-	it( 'round-trips an UnknownValue back to its raw stored value', () => {
+	it( 'round-trips an UnregisteredTypeValue back to its raw stored value', () => {
 		const raw = { custom: [ 'red', 'green' ], shade: 3 };
 
-		const json = valueToJson( newUnknownValue( 'color', raw ) );
+		const json = valueToJson( newUnregisteredTypeValue( 'color', raw ) );
 
 		expect( json ).toBe( raw );
 	} );
 
 } );
 
-describe( 'newUnknownValue', () => {
+describe( 'newUnregisteredTypeValue', () => {
 
 	it( 'captures the original type name and the raw value', () => {
-		const value = newUnknownValue( 'color', [ '#fff' ] );
+		const value = newUnregisteredTypeValue( 'color', [ '#fff' ] );
 
-		expect( value.type ).toBe( ValueType.Unknown );
+		expect( value.type ).toBe( ValueType.UnregisteredType );
 		expect( value.typeName ).toBe( 'color' );
 		expect( value.raw ).toEqual( [ '#fff' ] );
 	} );
@@ -211,8 +211,8 @@ describe( 'isValueEmpty', () => {
 		expect( isValueEmpty( new RelationValue( [ relation ] ) ) ).toBe( false );
 	} );
 
-	it( 'returns false for an UnknownValue (it still carries stored data)', () => {
-		expect( isValueEmpty( newUnknownValue( 'color', [ '#fff' ] ) ) ).toBe( false );
+	it( 'returns false for an UnregisteredTypeValue (it still carries stored data)', () => {
+		expect( isValueEmpty( newUnregisteredTypeValue( 'color', [ '#fff' ] ) ) ).toBe( false );
 	} );
 
 } );

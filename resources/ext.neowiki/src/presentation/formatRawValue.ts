@@ -1,5 +1,5 @@
 /**
- * Renders the raw stored data of an unknown-type Value as text, so it stays
+ * Renders the raw stored data of an unregistered-type Value as text, so it stays
  * visible to readers even though its property type cannot be interpreted.
  */
 export function formatRawValue( raw: unknown ): string {

@@ -139,7 +139,7 @@ describe( 'TypeSpecificComponentRegistry', () => {
 		} );
 	} );
 
-	describe( 'unknown fallback', () => {
+	describe( 'unregistered-type fallback', () => {
 
 		const fallback: TypeSpecificStuff = {
 			valueDisplayComponent: { name: 'UnknownDisplay' } as any,
@@ -152,7 +152,7 @@ describe( 'TypeSpecificComponentRegistry', () => {
 		function newRegistryWithFallback(): TypeSpecificComponentRegistry {
 			const registry = new TypeSpecificComponentRegistry();
 			registerComponent( registry, 'string', { valueDisplayComponent: { name: 'StringDisplay' } as any } );
-			registry.setUnknownFallback( fallback );
+			registry.setUnregisteredTypeFallback( fallback );
 			return registry;
 		}
 
