@@ -216,6 +216,7 @@ class NeoWikiExtension {
 			// construction transitively fires the NeoWikiRegistration hook and re-enters that accessor.
 			// Composing core here keeps the registry extension-only and the plugin order deterministic.
 			$this->graphDatabasePlugin = new CompositeGraphDatabasePlugin(
+				LoggerFactory::getInstance( 'NeoWiki' ),
 				$this->getNeo4jPlugin()->getGraphDatabasePlugin(),
 				...$this->getGraphDatabasePluginRegistry()->getPlugins()
 			);
