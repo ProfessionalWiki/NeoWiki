@@ -26,6 +26,7 @@ class Neo4jRouteRegistrationTest extends TestCase {
 
 	public function testReturnsNothingWhenOnlyOneUrlSet(): void {
 		$this->assertSame( [], Neo4jRouteRegistration::routeFiles( 'bolt://read', null ) );
+		$this->assertSame( [], Neo4jRouteRegistration::routeFiles( null, 'bolt://write' ) );
 	}
 
 	public function testRouteFileDeclaresCypherRoute(): void {

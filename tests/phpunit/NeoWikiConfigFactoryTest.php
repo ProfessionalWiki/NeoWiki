@@ -13,25 +13,16 @@ use ProfessionalWiki\NeoWiki\NeoWikiConfigFactory;
  */
 class NeoWikiConfigFactoryTest extends TestCase {
 
-	private string|false $originalWriteOverride;
-	private string|false $originalReadOverride;
+	use HandlesNeo4jEnvOverrides;
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->originalWriteOverride = getenv( 'NEO4J_URL_OVERRIDE' );
-		$this->originalReadOverride = getenv( 'NEO4J_URL_READ_OVERRIDE' );
-		putenv( 'NEO4J_URL_OVERRIDE' );
-		putenv( 'NEO4J_URL_READ_OVERRIDE' );
+		$this->snapshotAndClearNeo4jEnvOverrides();
 	}
 
 	protected function tearDown(): void {
-		$this->restoreEnv( 'NEO4J_URL_OVERRIDE', $this->originalWriteOverride );
-		$this->restoreEnv( 'NEO4J_URL_READ_OVERRIDE', $this->originalReadOverride );
+		$this->restoreNeo4jEnvOverrides();
 		parent::tearDown();
-	}
-
-	private function restoreEnv( string $name, string|false $value ): void {
-		putenv( $value === false ? $name : "$name=$value" );
 	}
 
 	public function testUnsetUrlsProduceNullInsteadOfThrowing(): void {

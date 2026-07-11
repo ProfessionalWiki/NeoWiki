@@ -25,6 +25,8 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
 class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 
+	use HandlesNeo4jEnvOverrides;
+
 	protected function setUpNeo4j(): void {
 		try {
 			$client = NeoWikiExtension::getInstance()->getNeo4jClient();
@@ -103,13 +105,10 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	 * @param callable(): mixed $fn
 	 */
 	protected function runWithoutGraphBackend( callable $fn ): mixed {
-		$writeOverride = getenv( 'NEO4J_URL_OVERRIDE' );
-		$readOverride = getenv( 'NEO4J_URL_READ_OVERRIDE' );
 		$config = $this->getServiceContainer()->getMainConfig();
 		$priorWriteUrl = $config->get( 'NeoWikiNeo4jInternalWriteUrl' );
 		$priorReadUrl = $config->get( 'NeoWikiNeo4jInternalReadUrl' );
-		putenv( 'NEO4J_URL_OVERRIDE' );
-		putenv( 'NEO4J_URL_READ_OVERRIDE' );
+		$this->snapshotAndClearNeo4jEnvOverrides();
 		$this->overrideConfigValue( 'NeoWikiNeo4jInternalWriteUrl', null );
 		$this->overrideConfigValue( 'NeoWikiNeo4jInternalReadUrl', null );
 		NeoWikiExtension::resetInstance();
@@ -117,8 +116,7 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		try {
 			return $fn();
 		} finally {
-			putenv( $writeOverride === false ? 'NEO4J_URL_OVERRIDE' : "NEO4J_URL_OVERRIDE=$writeOverride" );
-			putenv( $readOverride === false ? 'NEO4J_URL_READ_OVERRIDE' : "NEO4J_URL_READ_OVERRIDE=$readOverride" );
+			$this->restoreNeo4jEnvOverrides();
 			$this->overrideConfigValue( 'NeoWikiNeo4jInternalWriteUrl', $priorWriteUrl );
 			$this->overrideConfigValue( 'NeoWikiNeo4jInternalReadUrl', $priorReadUrl );
 			NeoWikiExtension::resetInstance();

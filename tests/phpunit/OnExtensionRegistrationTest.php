@@ -12,29 +12,25 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
  */
 class OnExtensionRegistrationTest extends TestCase {
 
-	private string|false $writeOverride;
-	private string|false $readOverride;
+	use HandlesNeo4jEnvOverrides;
+
 	private mixed $routeFiles;
 	private mixed $writeUrl;
 	private mixed $readUrl;
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->writeOverride = getenv( 'NEO4J_URL_OVERRIDE' );
-		$this->readOverride = getenv( 'NEO4J_URL_READ_OVERRIDE' );
 		$this->routeFiles = $GLOBALS['wgRestAPIAdditionalRouteFiles'] ?? null;
 		$this->writeUrl = $GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] ?? null;
 		$this->readUrl = $GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] ?? null;
 
 		// Clear the CI env overrides so the config-value path is exercised deterministically.
-		putenv( 'NEO4J_URL_OVERRIDE' );
-		putenv( 'NEO4J_URL_READ_OVERRIDE' );
+		$this->snapshotAndClearNeo4jEnvOverrides();
 		$GLOBALS['wgRestAPIAdditionalRouteFiles'] = [];
 	}
 
 	protected function tearDown(): void {
-		putenv( $this->writeOverride === false ? 'NEO4J_URL_OVERRIDE' : "NEO4J_URL_OVERRIDE=$this->writeOverride" );
-		putenv( $this->readOverride === false ? 'NEO4J_URL_READ_OVERRIDE' : "NEO4J_URL_READ_OVERRIDE=$this->readOverride" );
+		$this->restoreNeo4jEnvOverrides();
 		$GLOBALS['wgRestAPIAdditionalRouteFiles'] = $this->routeFiles;
 		$GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] = $this->writeUrl;
 		$GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] = $this->readUrl;
