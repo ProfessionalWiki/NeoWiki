@@ -86,15 +86,43 @@ readonly class RdfNamespaces {
 	}
 
 	/**
-	 * Turns a Property or Schema name into the local part of its IRI by substituting spaces with
-	 * underscores (NativeRdfProjection.md Q7).
+	 * Turns a user-authored name (a Property, Schema or Relation-Type name, or a Relation-property
+	 * key) into the local part of its IRI. Every string that enters an IRI here is untrusted, so the
+	 * encoding is a security boundary, not just cosmetics: without it a name like `Rev>2020` would
+	 * close the IRIREF early and a crafted name could forge extra triples.
 	 *
-	 * CAVEAT: this collides when a name already contains an underscore. "Has author" and "Has_author"
+	 * The rule (NativeRdfProjection.md Q7):
+	 * 1. Spaces become underscores, keeping the spec's readable `neo-prop:Has_author` convention.
+	 * 2. `%` and the IRIREF-illegal ASCII characters (`< > " { } | ^ \` and backtick) plus control
+	 *    characters (0x00–0x1F, 0x7F) are percent-encoded, so a name can never break out of the IRI.
+	 * 3. Everything else, including non-ASCII Unicode, is kept raw so multilingual names stay readable.
+	 *
+	 * The base URI is trusted admin config and is not encoded here.
+	 *
+	 * CAVEAT: step 1 collides when a name already contains an underscore. "Has author" and "Has_author"
 	 * both map to the local name `Has_author` and therefore share a predicate IRI. The native
-	 * projection accepts this; disambiguation would require percent-encoding or another scheme.
+	 * projection accepts this; disambiguation would require another scheme.
 	 */
 	public static function localName( string $name ): string {
-		return str_replace( ' ', '_', $name );
+		$encoded = '';
+
+		foreach ( str_split( str_replace( ' ', '_', $name ) ) as $byte ) {
+			$encoded .= self::isIriLocalByte( $byte ) ? $byte : sprintf( '%%%02X', ord( $byte ) );
+		}
+
+		return $encoded;
+	}
+
+	private static function isIriLocalByte( string $byte ): bool {
+		$code = ord( $byte );
+
+		// Control characters (0x00–0x1F and DEL) are never allowed in an IRIREF. Bytes >= 0x80 are
+		// part of a raw UTF-8 sequence and pass through, keeping Unicode readable.
+		if ( $code <= 0x1F || $code === 0x7F ) {
+			return false;
+		}
+
+		return !in_array( $byte, [ '%', '<', '>', '"', '{', '}', '|', '^', '\\', '`' ], true );
 	}
 
 	/**

@@ -34,6 +34,34 @@ class RdfNamespacesTest extends TestCase {
 		);
 	}
 
+	public function testPropertyIriPercentEncodesIriIllegalCharacters(): void {
+		$this->assertSame(
+			'https://wiki.example/prop/Rev%3E2020',
+			$this->namespaces()->property( 'Rev>2020' )->value
+		);
+	}
+
+	public function testPropertyIriPercentEncodesThePercentSignItself(): void {
+		$this->assertSame(
+			'https://wiki.example/prop/100%25_growth',
+			$this->namespaces()->property( '100% growth' )->value
+		);
+	}
+
+	public function testPropertyIriKeepsUnicodeRawAndOnlySubstitutesSpaces(): void {
+		$this->assertSame(
+			'https://wiki.example/prop/Naïve_日本語',
+			$this->namespaces()->property( 'Naïve 日本語' )->value
+		);
+	}
+
+	public function testSchemaClassIriPercentEncodesIriIllegalCharacters(): void {
+		$this->assertSame(
+			'https://wiki.example/schema/Da%7Cngerous',
+			$this->namespaces()->schemaClass( new SchemaName( 'Da|ngerous' ) )->value
+		);
+	}
+
 	public function testSchemaClassIriUsesSchemaPath(): void {
 		$this->assertSame(
 			'https://wiki.example/schema/Person',
