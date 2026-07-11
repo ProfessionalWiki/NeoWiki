@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use RuntimeException;
 
@@ -29,18 +30,23 @@ readonly class SetSubjectsOrderingAction {
 			throw new RuntimeException( 'You do not have the necessary permissions to change the subject ordering' );
 		}
 
+		try {
+			$mainSubjectId = $request->mainSubjectId === null ? null : $this->subjectIdParser->parse( $request->mainSubjectId );
+			$childSubjectIds = array_map( fn ( string $id ) => $this->subjectIdParser->parse( $id ), $request->childSubjectIds );
+		} catch ( InvalidArgumentException $e ) {
+			$this->presenter->presentInvalidOrdering( $e->getMessage() );
+			return;
+		}
+
 		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageId );
 
-		if ( $this->matchesCurrent( $pageSubjects, $request ) ) {
+		if ( $this->matchesCurrent( $pageSubjects, $mainSubjectId, $childSubjectIds ) ) {
 			$this->presenter->presentNoChange();
 			return;
 		}
 
 		try {
-			$pageSubjects->setOrdering(
-				$request->mainSubjectId === null ? null : $this->subjectIdParser->parse( $request->mainSubjectId ),
-				array_map( fn ( string $id ) => $this->subjectIdParser->parse( $id ), $request->childSubjectIds )
-			);
+			$pageSubjects->setOrdering( $mainSubjectId, $childSubjectIds );
 		} catch ( InvalidArgumentException $e ) {
 			$this->presenter->presentInvalidOrdering( $e->getMessage() );
 			return;
@@ -50,12 +56,16 @@ readonly class SetSubjectsOrderingAction {
 		$this->presenter->presentOrderingChanged();
 	}
 
-	private function matchesCurrent( PageSubjects $pageSubjects, SetSubjectsOrderingRequest $request ): bool {
+	/**
+	 * @param SubjectId[] $childSubjectIds
+	 */
+	private function matchesCurrent( PageSubjects $pageSubjects, ?SubjectId $mainSubjectId, array $childSubjectIds ): bool {
 		$currentMainId = $pageSubjects->getMainSubject()?->id->text;
-		if ( $currentMainId !== $request->mainSubjectId ) {
+		if ( $currentMainId !== $mainSubjectId?->text ) {
 			return false;
 		}
-		return $pageSubjects->getChildSubjects()->getIdsAsTextArray() === $request->childSubjectIds;
+		return $pageSubjects->getChildSubjects()->getIdsAsTextArray()
+			=== array_map( fn ( SubjectId $id ) => $id->text, $childSubjectIds );
 	}
 
 }

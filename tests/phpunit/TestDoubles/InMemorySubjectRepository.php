@@ -29,6 +29,8 @@ class InMemorySubjectRepository implements SubjectRepository {
 
 	public int $updateSubjectCallCount = 0;
 
+	public int $savePageSubjectsCallCount = 0;
+
 	public function getSubject( SubjectId $subjectId ): ?Subject {
 		return $this->subjects[$subjectId->text] ?? null;
 	}
@@ -53,6 +55,7 @@ class InMemorySubjectRepository implements SubjectRepository {
 	}
 
 	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): void {
+		$this->savePageSubjectsCallCount++;
 		$this->subjectsByPage[$pageId->id] = $pageSubjects;
 		$this->comments[$pageId->id] = $comment;
 

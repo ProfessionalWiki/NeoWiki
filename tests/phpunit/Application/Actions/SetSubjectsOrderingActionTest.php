@@ -110,6 +110,31 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		$this->assertEquals( $before, $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) ) );
 	}
 
+	public function testReportsNoChangeWhenQualifiedLocalIdsMatchCurrentOrdering(): void {
+		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$presenter = $this->newSpyPresenter();
+
+		$this->newAction( $presenter, $repository )->setOrdering(
+			new SetSubjectsOrderingRequest(
+				pageId: self::PAGE_ID,
+				mainSubjectId: $this->qualifiedLocalIdFor( self::MAIN_ID ),
+				childSubjectIds: [
+					$this->qualifiedLocalIdFor( self::FIRST_ID ),
+					$this->qualifiedLocalIdFor( self::SECOND_ID ),
+					$this->qualifiedLocalIdFor( self::THIRD_ID ),
+				],
+			)
+		);
+
+		$this->assertTrue( $presenter->noChange );
+		$this->assertFalse( $presenter->changed );
+		$this->assertSame( 1, $repository->savePageSubjectsCallCount );
+	}
+
+	private function qualifiedLocalIdFor( string $bareId ): string {
+		return TestData::LOCAL_SOURCE_KEY . ':' . $bareId;
+	}
+
 	public function testReportsInvalidOrderingOnUnknownId(): void {
 		$repository = $this->newRepositoryWithMainAndThreeChildren();
 		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
