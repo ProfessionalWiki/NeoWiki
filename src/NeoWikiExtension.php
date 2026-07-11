@@ -45,7 +45,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfigured;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
@@ -303,7 +303,7 @@ class NeoWikiExtension {
 		if ( !isset( $this->neo4jClient ) ) {
 			$writeUrl = $this->config->neo4jInternalWriteUrl;
 			if ( $writeUrl === null ) {
-				throw new GraphBackendNotConfigured();
+				throw new GraphBackendNotConfiguredException();
 			}
 			$this->neo4jClient = ClientBuilder::create()
 				->withDriver( 'default', $writeUrl )
@@ -318,7 +318,7 @@ class NeoWikiExtension {
 		if ( !isset( $this->readOnlyNeo4jClient ) ) {
 			$readUrl = $this->config->neo4jInternalReadUrl;
 			if ( $readUrl === null ) {
-				throw new GraphBackendNotConfigured();
+				throw new GraphBackendNotConfiguredException();
 			}
 			$this->readOnlyNeo4jClient = ClientBuilder::create()
 				->withDriver( 'default', $readUrl )
@@ -456,7 +456,7 @@ class NeoWikiExtension {
 	// NeoWiki requires a configured graph backend: the subject -> page reverse index lives only in Neo4j,
 	// so this lookup (and Subject CRUD, {{#view}}, {{#neowiki_value}}, the mw.neowiki.* getters) needs one.
 	// A no-backend wiki is a misconfiguration, surfaced loudly rather than silently degraded:
-	// getReadOnlyNeo4jClient() throws GraphBackendNotConfigured, and the content-page render path
+	// getReadOnlyNeo4jClient() throws GraphBackendNotConfiguredException, and the content-page render path
 	// (NeoWikiHooks::handleContentPage) short-circuits with a warning instead of failing the page. Making
 	// these work without a graph backend needs a MediaWiki-native reverse index; that is future work
 	// (#586 / #877), only worthwhile if a deliberate storage-only product is chosen (ADR 019 defers it).

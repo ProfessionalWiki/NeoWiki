@@ -10,7 +10,7 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
-use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfigured;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -75,8 +75,8 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $names );
 	}
 
-	public function testReadOnlyClientThrowsGraphBackendNotConfiguredWithoutBackend(): void {
-		$this->expectException( GraphBackendNotConfigured::class );
+	public function testReadOnlyClientThrowsGraphBackendNotConfiguredExceptionWithoutBackend(): void {
+		$this->expectException( GraphBackendNotConfiguredException::class );
 
 		$this->runWithoutGraphBackend(
 			static fn() => NeoWikiExtension::getInstance()->getReadOnlyNeo4jClient()

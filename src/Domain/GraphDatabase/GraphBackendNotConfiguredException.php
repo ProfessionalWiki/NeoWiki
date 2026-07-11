@@ -14,7 +14,7 @@ use RuntimeException;
  * no-backend operation). This is a catchable, expected-runtime-state signal (unlike the LogicException
  * guards on genuinely gated surfaces), so degradation boundaries can turn it into a clear notice.
  */
-class GraphBackendNotConfigured extends RuntimeException {
+class GraphBackendNotConfiguredException extends RuntimeException {
 
 	public function __construct(
 		string $message = 'NeoWiki requires a configured graph database backend. Configure the Neo4j read and write Bolt URLs.'
