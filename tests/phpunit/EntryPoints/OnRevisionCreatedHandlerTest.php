@@ -8,12 +8,16 @@ use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionSlots;
 use MediaWiki\User\UserIdentityValue;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
+use Psr\Log\NullLogger;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler
@@ -73,11 +77,29 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->assertCount( 1, $this->graphStore->savedPages );
 	}
 
+	public function testUnreachableBackendDoesNotHardFailRevisionHandling(): void {
+		$revision = $this->createPageWithSubjects( 'Page with a failing backend', TestSubject::build() );
+
+		// The isolating decorator is what production wires around each backend on the hook path; here it
+		// wraps a backend that is down.
+		$handler = $this->newHandlerWith(
+			new FailureIsolatingGraphDatabasePlugin( new ThrowingGraphDatabasePlugin(), new NullLogger() )
+		);
+
+		$wrote = $handler->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+
+		$this->assertTrue( $wrote, 'a projection write to an unreachable backend must not propagate out of the handler' );
+	}
+
 	private function newHandler(): OnRevisionCreatedHandler {
+		return $this->newHandlerWith( $this->graphStore );
+	}
+
+	private function newHandlerWith( GraphDatabasePlugin $graphStore ): OnRevisionCreatedHandler {
 		$services = $this->getServiceContainer();
 
 		return new OnRevisionCreatedHandler(
-			$this->graphStore,
+			$graphStore,
 			new PagePropertiesBuilder(
 				revisionStore: $services->getRevisionStore(),
 				contentHandlerFactory: $services->getContentHandlerFactory(),
