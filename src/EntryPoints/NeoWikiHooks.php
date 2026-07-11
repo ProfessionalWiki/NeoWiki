@@ -48,9 +48,10 @@ class NeoWikiHooks {
 	}
 
 	private static function handleContentPage( OutputPage $out, Skin $skin ): void {
-		// NeoWiki requires a graph backend. Rather than 500 on every content page of a misconfigured
-		// wiki (subject reads/rendering below reach the Neo4j-only reverse index), skip injection and
-		// warn loudly. This keeps the wiki usable so an admin can fix the config.
+		// Skip injection and warn loudly instead of 500ing every content page, so plain content pages
+		// still render on a wiki with no graph backend. Pages whose wikitext uses the graph-backed
+		// surfaces ({{#neowiki_value}}, the mw.neowiki getters) still fail their parse until the
+		// no-backend degradation work (#895); {{#view}} degrades to its client-side placeholder per component.
 		if ( NeoWikiExtension::getInstance()->getNeo4jPlugin() === null ) {
 			self::logMissingGraphBackend();
 			return;

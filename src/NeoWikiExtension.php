@@ -141,6 +141,8 @@ class NeoWikiExtension {
 	}
 
 	public static function onExtensionRegistration(): void {
+		// This registration-time gate must agree with NeoWikiConfig::hasNeo4jBackend() at request time,
+		// so both resolve the URLs through the shared NeoWikiConfigFactory::resolveReadUrl/resolveWriteUrl helpers.
 		$readUrl = NeoWikiConfigFactory::resolveReadUrl(
 			is_string( $GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] ?? null ) ? $GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] : null
 		);
@@ -271,8 +273,8 @@ class NeoWikiExtension {
 		return $this->neo4jPlugin;
 	}
 
-	// Shared guard for the surfaces that only run when a backend is configured (they are reached only
-	// through registration paths that this plan gates), so callers stay non-null for the type checker.
+	// Guard for surfaces whose registration is already gated on a configured backend, so callers get a
+	// non-null plugin without repeating the null handling.
 	public function requireNeo4jPlugin(): Neo4jPlugin {
 		$plugin = $this->getNeo4jPlugin();
 		if ( $plugin === null ) {
@@ -459,7 +461,7 @@ class NeoWikiExtension {
 	// getReadOnlyNeo4jClient() throws GraphBackendNotConfiguredException, and the content-page render path
 	// (NeoWikiHooks::handleContentPage) short-circuits with a warning instead of failing the page. Making
 	// these work without a graph backend needs a MediaWiki-native reverse index; that is future work
-	// (#586 / #877), only worthwhile if a deliberate storage-only product is chosen (ADR 019 defers it).
+	// (#586 / #895), only worthwhile if a deliberate storage-only product is chosen (ADR 019 defers it).
 	private function getPageIdentifiersLookup(): PageIdentifiersLookup {
 		return new Neo4jPageIdentifiersLookup( $this->getReadOnlyNeo4jClient() );
 	}
@@ -555,8 +557,7 @@ class NeoWikiExtension {
 	}
 
 	public function getSubjectLabelLookup(): SubjectLabelLookup {
-		$neo4jPlugin = $this->getNeo4jPlugin();
-		if ( $neo4jPlugin === null ) {
+		if ( $this->getNeo4jPlugin() === null ) {
 			return new NullSubjectLabelLookup();
 		}
 

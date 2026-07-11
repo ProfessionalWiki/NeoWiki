@@ -90,8 +90,6 @@ readonly class Neo4jPlugin {
 		);
 	}
 
-	// Public: NeoWikiExtension::newCypherQueryService() calls this cross-class. A `private` here is a
-	// fatal "Call to private method" on every configured query path (REST, Lua). Keep it public.
 	public function newQueryService(): Neo4jQueryService {
 		return new Neo4jQueryService(
 			$this->readQueryEngine,
