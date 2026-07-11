@@ -108,8 +108,8 @@ Add the following to your `LocalSettings.php`:
 ```php
 wfLoadExtension( 'NeoWiki' );
 
-// Required. NeoWiki has no working state without a Neo4j connection.
-// For a simple setup, point both URLs at the same Neo4j user.
+// Required for NeoWiki's features. Without them the wiki still loads and ordinary pages work,
+// but NeoWiki's features are disabled. For a simple setup, point both URLs at the same Neo4j user.
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:SECRET@neo4j-host:7687';
 $wgNeoWikiNeo4jInternalReadUrl  = 'bolt://neo4j:SECRET@neo4j-host:7687';
 
@@ -119,8 +119,9 @@ wfLoadExtension( 'CodeEditor' );
 wfLoadExtension( 'ParserFunctions' );
 ```
 
-Both URLs are required. Until both are set, the wiki throws a `RuntimeException` on every request. The format is
-`bolt://user:password@host:7687`.
+Both URLs are required for NeoWiki's structured-data features. Without them the wiki still loads and ordinary
+pages render, but NeoWiki's features are disabled and the query surfaces (`{{#cypher_raw}}`, `nw.query`,
+`POST /neowiki/v0/query/cypher`) are absent. The format is `bolt://user:password@host:7687`.
 
 ### 4. Run the updater
 
@@ -162,11 +163,14 @@ These are the settings you are most likely to change. For the full list with des
 
 | Setting | Purpose | Default | Required |
 |---|---|---|---|
-| `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | Yes |
-| `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | Yes |
+| `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | For features¹ |
+| `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | For features¹ |
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new constraint violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
+
+¹ Required for NeoWiki's structured-data features. The wiki still loads without them; NeoWiki's features are
+simply disabled until both are set.
 
 ## Production hardening
 

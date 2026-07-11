@@ -6,41 +6,31 @@ namespace ProfessionalWiki\NeoWiki;
 
 use MediaWiki\Config\Config;
 use MediaWiki\WikiMap\WikiMap;
-use RuntimeException;
 
 class NeoWikiConfigFactory {
 
 	public function buildFromMediaWikiConfig( Config $config ): NeoWikiConfig {
 		return new NeoWikiConfig(
 			enableDevelopmentUIs: $config->get( 'NeoWikiEnableDevelopmentUI' ) === true,
-			neo4jInternalWriteUrl: $this->buildInternalWriteUrl( $config ),
-			neo4jInternalReadUrl: $this->builtInternalReadUrl( $config ),
+			neo4jInternalWriteUrl: self::resolveWriteUrl( $this->configString( $config, 'NeoWikiNeo4jInternalWriteUrl' ) ),
+			neo4jInternalReadUrl: self::resolveReadUrl( $this->configString( $config, 'NeoWikiNeo4jInternalReadUrl' ) ),
 			wikiId: WikiMap::getCurrentWikiId(),
 		);
 	}
 
-	private function buildInternalWriteUrl( Config $config ): string {
-		if ( is_string( getenv( 'NEO4J_URL_OVERRIDE' ) ) ) { // Used by the CI to change its test config
-			return getenv( 'NEO4J_URL_OVERRIDE' );
-		}
-
-		if ( is_string( $config->get( 'NeoWikiNeo4jInternalWriteUrl' ) ) ) {
-			return $config->get( 'NeoWikiNeo4jInternalWriteUrl' );
-		}
-
-		throw new RuntimeException( 'Missing required config: NeoWikiNeo4jInternalWriteUrl' );
+	private function configString( Config $config, string $key ): ?string {
+		$value = $config->get( $key );
+		return is_string( $value ) ? $value : null;
 	}
 
-	private function builtInternalReadUrl( Config $config ): string {
-		if ( is_string( getenv( 'NEO4J_URL_READ_OVERRIDE' ) ) ) { // Used by the CI to change its test config
-			return getenv( 'NEO4J_URL_READ_OVERRIDE' );
-		}
+	public static function resolveWriteUrl( ?string $configValue ): ?string {
+		$override = getenv( 'NEO4J_URL_OVERRIDE' ); // Used by the CI to change its test config
+		return is_string( $override ) ? $override : $configValue;
+	}
 
-		if ( is_string( $config->get( 'NeoWikiNeo4jInternalReadUrl' ) ) ) {
-			return $config->get( 'NeoWikiNeo4jInternalReadUrl' );
-		}
-
-		throw new RuntimeException( 'Missing required config: NeoWikiNeo4jInternalReadUrl' );
+	public static function resolveReadUrl( ?string $configValue ): ?string {
+		$override = getenv( 'NEO4J_URL_READ_OVERRIDE' ); // Used by the CI to change its test config
+		return is_string( $override ) ? $override : $configValue;
 	}
 
 }

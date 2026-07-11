@@ -6,12 +6,16 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Integration;
 
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\WriteQueryRejectedException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLimits;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryRequest;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService
+ * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin
  * @group Database
  */
 class QueryCypherEndToEndTest extends NeoWikiIntegrationTestCase {
@@ -57,6 +61,17 @@ class QueryCypherEndToEndTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 422, $response->getStatusCode() );
 		$this->assertSame( 'writeQueryRejected', $body['errorType'] );
+	}
+
+	public function testAdminQueryRejectedByProductionQueryService(): void {
+		// STOP DATABASE passes the keyword validator but the Explain layer rejects it, so this fails
+		// unless the production service composes the Explain validator, not just the keyword one.
+		$service = NeoWikiExtension::getInstance()->newCypherQueryService();
+		$request = new Neo4jQueryRequest( 'STOP DATABASE neo4j', [], new Neo4jQueryLimits( 30, 5000 ) );
+
+		$this->expectException( WriteQueryRejectedException::class );
+
+		$service->execute( $request );
 	}
 
 }
