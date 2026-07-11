@@ -45,6 +45,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
@@ -120,6 +121,7 @@ class NeoWikiExtension {
 	private bool $extensionsRegistered = false;
 	private SubjectRepository $subjectRepository;
 	private CompositeGraphDatabasePlugin $graphDatabasePlugin;
+	private CompositeGraphDatabasePlugin $isolatingGraphDatabasePlugin;
 	private GraphDatabasePluginRegistry $graphDatabasePluginRegistry;
 	private ?Neo4jPlugin $neo4jPlugin = null;
 	private ClientInterface $neo4jClient;
@@ -216,9 +218,26 @@ class NeoWikiExtension {
 		return $this->pagePropertyProviderRegistry;
 	}
 
+	/**
+	 * Hook-facing write path (edit/delete/undelete). Each backend is isolated and logged, so a
+	 * projection failure never aborts the triggering user operation and one failing backend does not
+	 * starve the others. See FailureIsolatingGraphDatabasePlugin.
+	 */
 	public function getStoreContentUC(): OnRevisionCreatedHandler {
+		return $this->newStoreContentHandler( $this->getIsolatingGraphDatabasePlugin() );
+	}
+
+	/**
+	 * Maintenance rebuild path (RebuildGraphDatabases). Failures propagate so the script reports which
+	 * pages failed to reconcile, rather than the hook path's per-plugin isolation swallowing them.
+	 */
+	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
+		return $this->newStoreContentHandler( $this->getGraphDatabasePlugin() );
+	}
+
+	private function newStoreContentHandler( GraphDatabasePlugin $graphDatabasePlugin ): OnRevisionCreatedHandler {
 		return new OnRevisionCreatedHandler(
-			$this->getGraphDatabasePlugin(),
+			$graphDatabasePlugin,
 			new PagePropertiesBuilder(
 				revisionStore: MediaWikiServices::getInstance()->getRevisionStore(),
 				contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory(),
@@ -228,23 +247,55 @@ class NeoWikiExtension {
 		);
 	}
 
+	/**
+	 * Propagating fan-out over every backend, used by the maintenance rebuild path so failures surface.
+	 */
 	public function getGraphDatabasePlugin(): GraphDatabasePlugin {
 		if ( !isset( $this->graphDatabasePlugin ) ) {
-			// Seed core's Neo4j plugin directly into the composite, not the registry. Registering it via
-			// the registry would make getGraphDatabasePluginRegistry() build the Neo4j plugin, whose
-			// construction transitively fires the NeoWikiRegistration hook and re-enters that accessor.
-			// Composing core here keeps the registry extension-only and the plugin order deterministic.
-			$plugins = $this->getGraphDatabasePluginRegistry()->getPlugins();
-
-			$neo4jPlugin = $this->getNeo4jPlugin();
-			if ( $neo4jPlugin !== null ) {
-				array_unshift( $plugins, $neo4jPlugin->getGraphDatabasePlugin() );
-			}
-
-			$this->graphDatabasePlugin = new CompositeGraphDatabasePlugin( ...$plugins );
+			$this->graphDatabasePlugin = new CompositeGraphDatabasePlugin( ...$this->getGraphDatabasePlugins() );
 		}
 
 		return $this->graphDatabasePlugin;
+	}
+
+	/**
+	 * Hook-path fan-out: each backend individually wrapped so a projection failure is isolated and
+	 * logged rather than aborting the triggering user operation.
+	 */
+	private function getIsolatingGraphDatabasePlugin(): GraphDatabasePlugin {
+		if ( !isset( $this->isolatingGraphDatabasePlugin ) ) {
+			$logger = LoggerFactory::getInstance( 'NeoWiki' );
+
+			$this->isolatingGraphDatabasePlugin = new CompositeGraphDatabasePlugin(
+				...array_map(
+					static fn ( GraphDatabasePlugin $plugin ) => new FailureIsolatingGraphDatabasePlugin( $plugin, $logger ),
+					$this->getGraphDatabasePlugins()
+				)
+			);
+		}
+
+		return $this->isolatingGraphDatabasePlugin;
+	}
+
+	/**
+	 * The graph database plugins to fan out to, Neo4j first when a backend is configured.
+	 *
+	 * Core's Neo4j plugin is seeded directly here, not via the registry. Registering it via the
+	 * registry would make getGraphDatabasePluginRegistry() build the Neo4j plugin, whose construction
+	 * transitively fires the NeoWikiRegistration hook and re-enters that accessor. Composing core here
+	 * keeps the registry extension-only and the plugin order deterministic.
+	 *
+	 * @return GraphDatabasePlugin[]
+	 */
+	private function getGraphDatabasePlugins(): array {
+		$plugins = $this->getGraphDatabasePluginRegistry()->getPlugins();
+
+		$neo4jPlugin = $this->getNeo4jPlugin();
+		if ( $neo4jPlugin !== null ) {
+			array_unshift( $plugins, $neo4jPlugin->getGraphDatabasePlugin() );
+		}
+
+		return $plugins;
 	}
 
 	public function getGraphDatabasePluginRegistry(): GraphDatabasePluginRegistry {
@@ -400,7 +451,7 @@ class NeoWikiExtension {
 
 	public function newSubjectPageRebuilder(): SubjectPageRebuilder {
 		return new SubjectPageRebuilder(
-			$this->getStoreContentUC(),
+			$this->newRebuildStoreContentHandler(),
 			MediaWikiServices::getInstance()->getWikiPageFactory()
 		);
 	}

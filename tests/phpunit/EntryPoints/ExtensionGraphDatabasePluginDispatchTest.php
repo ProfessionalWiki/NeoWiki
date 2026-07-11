@@ -20,9 +20,11 @@ use ProfessionalWiki\RedHerb\RedHerbGraphDatabasePlugin;
  * extension-registered plugins, not just that they get added to the registry. RedHerb
  * registers a real GraphDatabasePlugin via the NeoWikiRegistration hook; this test reads
  * the live registered instance back out of the registry and confirms it recorded the
- * save/delete events that NeoWikiExtension::getGraphDatabasePlugin() fanned out to it.
+ * save/delete events that the hook-facing wiring fanned out to it, passing cleanly through
+ * the per-plugin failure isolation.
  *
  * @covers \ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin
+ * @covers \ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin
  * @covers \ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry
  * @group Database
  */
