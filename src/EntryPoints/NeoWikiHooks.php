@@ -19,6 +19,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
@@ -184,7 +185,7 @@ class NeoWikiHooks {
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
-		if ( in_array( $model, [ SubjectContent::CONTENT_MODEL_ID, SchemaContent::CONTENT_MODEL_ID, LayoutContent::CONTENT_MODEL_ID ] ) ) {
+		if ( in_array( $model, [ SubjectContent::CONTENT_MODEL_ID, SchemaContent::CONTENT_MODEL_ID, LayoutContent::CONTENT_MODEL_ID, MappingContent::CONTENT_MODEL_ID ] ) ) {
 			$lang = 'json';
 		}
 	}
@@ -210,6 +211,10 @@ class NeoWikiHooks {
 
 		if ( $title->getNamespace() === NeoWikiExtension::NS_LAYOUT ) {
 			$ok = $modelId === LayoutContent::CONTENT_MODEL_ID;
+		}
+
+		if ( $title->getNamespace() === NeoWikiExtension::NS_MAPPING ) {
+			$ok = $modelId === MappingContent::CONTENT_MODEL_ID;
 		}
 	}
 

@@ -29,10 +29,14 @@ use Psr\Log\LoggerInterface;
  * and the two-layer relation reification. Every quad is placed in the page's named graph.
  *
  * Schema resolution mirrors Neo4jSubjectUpdater: a Subject whose Schema is unavailable is skipped
- * entirely (and logged), so the native projection and its sibling projections hold the same set of
- * entities and page metadata never references a Subject that has no projected type or label.
+ * entirely (and logged), so page metadata never references a Subject that has no projected type or
+ * label. That keeps the native projection internally consistent. It does not perfectly align the
+ * entity sets of sibling projections, though: the ontology projection keys off the Mapping (by Schema
+ * name), not the Schema definition, so a Subject whose Schema page is missing is dropped here yet still
+ * projected there. That is a pathological state — a Subject referencing a deleted Schema — accepted for
+ * v1.
  */
-class RdfPageProjector {
+class RdfPageProjector implements PageProjector {
 
 	private const string PROPERTY_NAME = 'name';
 	private const string PROPERTY_CREATION_TIME = 'creationTime';
@@ -64,8 +68,10 @@ class RdfPageProjector {
 
 	/**
 	 * Resolves each Subject's Schema up front. A Subject whose Schema is unavailable is dropped from
-	 * the projection entirely — matching Neo4jSubjectUpdater, which skips the whole Subject — so
-	 * sibling projections hold the same entity set (the invariant the SPARQL store, #586, relies on).
+	 * the projection entirely — matching Neo4jSubjectUpdater, which skips the whole Subject — so page
+	 * metadata never references an unprojected Subject. This does not guarantee sibling projections hold
+	 * the identical entity set: the ontology projection is name-keyed on its Mapping and would still
+	 * project a Subject whose Schema page is missing. Pathological, and accepted for v1.
 	 *
 	 * @param Subject[] $subjects
 	 * @return list<array{Subject, Schema}>

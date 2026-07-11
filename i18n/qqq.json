@@ -11,6 +11,7 @@
 	"neowiki-description": "{{Desc|name=NeoWiki|url=https://github.com/ProfessionalWiki/NeoWiki}}",
 	"right-neowiki-schema-edit": "{{doc-right|neowiki-schema-edit}}\nName of the user right required to create and edit pages in the NeoWiki Schema namespace.",
 	"right-neowiki-layout-edit": "{{doc-right|neowiki-layout-edit}}\nName of the user right required to create and edit pages in the NeoWiki Layout namespace.",
+	"right-neowiki-mapping-edit": "{{doc-right|neowiki-mapping-edit}}\nName of the user right required to create and edit pages in the NeoWiki Mapping namespace.",
 	"right-neowiki-query": "{{doc-right|neowiki-query}}\nName of the user right required to run NeoWiki queries, such as via the Cypher query API.",
 	"specialpages-group-neowiki": "Group heading for NeoWiki special pages on [[Special:SpecialPages]].",
 	"neowiki-special-schemas": "Title and description of the [[Special:Schemas]] page.",
@@ -101,6 +102,10 @@
 	"neowiki-layout-invalid": "Error message shown when saving an invalid Layout. Parameters:\n* $1 - number of validation errors",
 	"neowiki-layout-invalid-detail": "One line of detail for a single Layout validation error. Parameters:\n* $1 - JSON pointer to the location of the error\n* $2 - the validation error message",
 	"neowiki-layout-name-invalid": "Error message shown when a Layout page title is not a valid layout name (empty). Parameters:\n* $1 - the reason the name is invalid",
+	"neowiki-mapping-invalid": "Error message shown when saving a structurally or semantically invalid ontology Mapping. Parameters:\n* $1 - number of validation errors",
+	"neowiki-mapping-invalid-detail": "One line of detail for a single Mapping validation error. Parameters:\n* $1 - JSON pointer to the location of the error\n* $2 - the validation error message",
+	"neowiki-mapping-name-invalid": "Error message shown when a Mapping page title is not a valid mapping name (empty). Parameters:\n* $1 - the reason the name is invalid",
+	"neowiki-mapping-duplicate-target": "Error message shown when saving a Mapping whose (schema, target) pair is already claimed by another Mapping page. Parameters:\n* $1 - the schema name\n* $2 - the target ontology name\n* $3 - the name of the existing Mapping page that already claims the pair",
 
 	"neowiki-edit-layout": "Aria label for the edit button on a Layout page.",
 	"neowiki-layout-display-schema": "Label for the schema field in the layout display.",

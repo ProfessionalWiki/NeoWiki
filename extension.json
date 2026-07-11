@@ -60,7 +60,8 @@
 	"ContentHandlers": {
 		"NeoWikiSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SubjectContentHandler",
 		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SchemaContentHandler",
-		"NeoWikiLayout": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\LayoutContentHandler"
+		"NeoWikiLayout": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\LayoutContentHandler",
+		"NeoWikiMapping": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\MappingContentHandler"
 	},
 
 	"namespaces": [
@@ -93,12 +94,28 @@
 			"id": 7477,
 			"constant": "NS_NEOWIKI_LAYOUT_TALK",
 			"name": "Layout_talk"
+		},
+		{
+			"id": 7478,
+			"constant": "NS_NEOWIKI_MAPPING",
+			"name": "Mapping",
+			"defaultcontentmodel": "NeoWikiMapping",
+			"subpages": false,
+			"content": false,
+			"movable": false,
+			"protection": "neowiki-mapping-edit"
+		},
+		{
+			"id": 7479,
+			"constant": "NS_NEOWIKI_MAPPING_TALK",
+			"name": "Mapping_talk"
 		}
 	],
 
 	"AvailableRights": [
 		"neowiki-schema-edit",
 		"neowiki-layout-edit",
+		"neowiki-mapping-edit",
 		"neowiki-query"
 	],
 
@@ -108,7 +125,8 @@
 		},
 		"user": {
 			"neowiki-schema-edit": true,
-			"neowiki-layout-edit": true
+			"neowiki-layout-edit": true,
+			"neowiki-mapping-edit": true
 		}
 	},
 
@@ -118,7 +136,8 @@
 		},
 		"editpage": {
 			"neowiki-schema-edit": true,
-			"neowiki-layout-edit": true
+			"neowiki-layout-edit": true,
+			"neowiki-mapping-edit": true
 		}
 	},
 

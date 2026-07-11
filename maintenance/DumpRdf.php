@@ -7,8 +7,8 @@ namespace ProfessionalWiki\NeoWiki\Maintenance;
 use Maintenance;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Storage\NameTableAccessException;
+use ProfessionalWiki\NeoWiki\Application\Rdf\PageProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
-use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfStreamWriter;
@@ -26,16 +26,34 @@ class DumpRdf extends Maintenance {
 
 		$this->requireExtension( 'NeoWiki' );
 		$this->addDescription(
-			'Streams the native RDF projection of every subject page to stdout as TriG, one named '
-			. 'graph per page. Progress is written to stderr so stdout stays a clean RDF document.'
+			'Streams an RDF projection of every subject page to stdout as TriG, one named graph per '
+			. 'page. Progress is written to stderr so stdout stays a clean RDF document.'
+		);
+		$this->addOption(
+			'projection',
+			'RDF projection to produce: "native" (default) or an ontology target declared by a Mapping '
+			. 'page (e.g. "edm").',
+			false,
+			true
 		);
 	}
 
 	public function execute(): void {
 		$extension = NeoWikiExtension::getInstance();
+
+		$projectionName = $this->getOption( 'projection', NeoWikiExtension::PROJECTION_NATIVE );
+		$projection = $extension->newRdfProjection( $projectionName );
+
+		if ( $projection === null ) {
+			$this->fatalError(
+				'Unknown RDF projection: "' . $projectionName . '". Known projections: '
+				. implode( ', ', $extension->getRdfProjectionNames() ) . '.'
+			);
+		}
+
 		$loader = $extension->newRdfPageLoader();
-		$projector = $extension->newRdfPageProjector();
-		$writer = $extension->getRdfSerializer()->newWriter( RdfFormat::TriG );
+		$projector = $projection->projector;
+		$writer = $projection->serializer->newWriter( RdfFormat::TriG );
 
 		$pageIds = $this->getSubjectPageIds();
 		$this->error( 'Dumping RDF for ' . count( $pageIds ) . ' subject pages...' );
@@ -55,7 +73,7 @@ class DumpRdf extends Maintenance {
 	private function dumpPage(
 		int $pageId,
 		RdfPageLoader $loader,
-		RdfPageProjector $projector,
+		PageProjector $projector,
 		RdfStreamWriter $writer
 	): bool {
 		$page = $loader->loadByPageId( new PageId( $pageId ) );

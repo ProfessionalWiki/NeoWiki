@@ -21,6 +21,16 @@ class DumpRdfTest extends MaintenanceBaseTestCase {
 		return DumpRdf::class;
 	}
 
+	public function testFatalErrorOnAnUnknownProjection(): void {
+		// No Mapping page declares "bogus", so it is not a known projection and the run aborts before
+		// touching any page.
+		$this->maintenance->setOption( 'projection', 'bogus' );
+
+		$this->expectCallToFatalError();
+
+		$this->maintenance->execute();
+	}
+
 	public function testEmitsAnEmptyDocumentWhenNoSubjectSlotRoleExists(): void {
 		// A wiki that has never stored a Subject has no 'neowiki-subjects' slot role, so the role-id
 		// lookup throws NameTableAccessException. Forcing that state (empty table + a store without a

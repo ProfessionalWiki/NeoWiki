@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -71,6 +72,18 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 				$json ?? '{"title":"' . $name . '","propertyDefinitions":{}}',
 			)
 		);
+
+		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
+	}
+
+	protected function createMapping( string $name, string $json ): ?RevisionRecord {
+		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
+			Title::newFromText( $name, NeoWikiExtension::NS_MAPPING )
+		);
+
+		$updater = $wikiPage->newPageUpdater( $this->getTestSysop()->getUser() );
+
+		$updater->setContent( 'main', new MappingContent( $json ) );
 
 		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
 	}

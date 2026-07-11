@@ -57,8 +57,12 @@ describe the same set of entities. A warning is logged for each omitted Subject.
 
 `GET /rest.php/neowiki/v0/page/{pageId}/rdf`
 
-Returns the page's native projection. The format is chosen by the `format` query parameter, falling
-back to the `Accept` header, then to TriG:
+Returns the page's projection. The `projection` query parameter selects the vocabulary: `native` (the
+default, described here) or an ontology target declared by a Mapping page — see
+[Ontology Mapping](ontology-mapping.md). An unknown target returns `400`.
+
+The format is chosen by the `format` query parameter, falling back to the `Accept` header, then to
+TriG:
 
 | `format` | `Accept` | Content-Type | Named graph |
 |---|---|---|---|
@@ -73,16 +77,18 @@ curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf?format=turtle'
 
 ## Bulk dump
 
-`maintenance/DumpRdf.php` streams the native projection of **every** subject page to stdout as TriG,
-one named graph per page. Progress goes to stderr so stdout stays a clean RDF document.
+`maintenance/DumpRdf.php` streams the projection of **every** subject page to stdout as TriG, one named
+graph per page. Progress goes to stderr so stdout stays a clean RDF document. It defaults to the native
+projection; `--projection=<target>` selects an ontology projection (see
+[Ontology Mapping](ontology-mapping.md)).
 
 ```sh
 php maintenance/run.php NeoWiki:DumpRdf > dump.trig
+php maintenance/run.php NeoWiki:DumpRdf --projection=edm > dump-edm.trig
 ```
 
 ## Not covered here
 
 - SPARQL store and live sync (the projection feeds them, but they are a separate concern).
-- Ontology mappings (CIDOC-CRM, EDM, …), which project into standard-ontology terms instead.
 - RDF import.
 - RDFS/OWL self-description of Schemas.
