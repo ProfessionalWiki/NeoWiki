@@ -49,6 +49,7 @@ Subjects and arrange them.
 | Endpoint | Description |
 |---|---|
 | `GET /neowiki/v0/page/{pageId}/subjects` | List a page's main and child Subjects. `expand` with `schemas` or `relations`. |
+| `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. `format` is `trig` (default) or `turtle`. See [RDF export](rdf-export.md). |
 | `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. |
 | `PUT /neowiki/v0/page/{pageId}/mainSubject` | Promote a child Subject to main, or clear it. |
 | `POST /neowiki/v0/page/{pageId}/childSubjects` | Create a child Subject on the page. |

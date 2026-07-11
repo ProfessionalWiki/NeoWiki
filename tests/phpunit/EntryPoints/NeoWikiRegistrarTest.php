@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
@@ -57,17 +58,28 @@ class NeoWikiRegistrarTest extends TestCase {
 		$this->assertSame( [ $plugin ], $pluginRegistry->getPlugins() );
 	}
 
+	public function testAddRdfValueMapperRegistersInRegistry(): void {
+		$rdfValueMapperRegistry = new RdfValueMapperRegistry();
+		$registrar = $this->newRegistrar( rdfValueMapperRegistry: $rdfValueMapperRegistry );
+
+		$registrar->addRdfValueMapper( 'custom', static fn() => [] );
+
+		$this->assertTrue( $rdfValueMapperRegistry->hasMapper( 'custom' ) );
+	}
+
 	private function newRegistrar(
 		?PropertyTypeRegistry $propertyTypeRegistry = null,
 		?Neo4jValueBuilderRegistry $valueBuilderRegistry = null,
 		?PagePropertyProviderRegistry $pagePropertyProviderRegistry = null,
 		?GraphDatabasePluginRegistry $graphDatabasePluginRegistry = null,
+		?RdfValueMapperRegistry $rdfValueMapperRegistry = null,
 	): NeoWikiRegistrar {
 		return new NeoWikiRegistrar(
 			propertyTypeRegistry: $propertyTypeRegistry ?? new PropertyTypeRegistry(),
 			valueBuilderRegistry: $valueBuilderRegistry ?? new Neo4jValueBuilderRegistry(),
 			pagePropertyProviderRegistry: $pagePropertyProviderRegistry ?? new PagePropertyProviderRegistry(),
 			graphDatabasePluginRegistry: $graphDatabasePluginRegistry ?? new GraphDatabasePluginRegistry(),
+			rdfValueMapperRegistry: $rdfValueMapperRegistry ?? new RdfValueMapperRegistry(),
 		);
 	}
 

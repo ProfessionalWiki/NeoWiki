@@ -42,6 +42,7 @@ class NeoWikiConfigTest extends TestCase {
 			neo4jInternalWriteUrl: $writeUrl,
 			neo4jInternalReadUrl: $readUrl,
 			wikiId: 'testwiki',
+			rdfBaseUri: 'https://wiki.example',
 		);
 	}
 

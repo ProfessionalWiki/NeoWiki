@@ -71,6 +71,38 @@ keyed by the Property Type name:
 $registrar->addNeo4jValueBuilder( ColorType::NAME, static fn ( $value ) => $value->toScalars() );
 ```
 
+#### Contributing RDF value mappers
+
+For the [RDF export](rdf-export.md), register a mapper that turns your Property Type's value into RDF
+literals, keyed by the Property Type name. It returns a list of `Literal`s (one per value part):
+
+```php
+$registrar->addRdfValueMapper(
+	ColorType::NAME,
+	static function ( NeoValue $value ): array {
+		// Your mapper is called for whatever a Statement holds, so guard the value shape.
+		$scalars = $value->toScalars();
+
+		if ( !is_array( $scalars ) ) {
+			return [];
+		}
+
+		$literals = [];
+
+		foreach ( $scalars as $part ) {
+			if ( is_scalar( $part ) ) {
+				$literals[] = RdfLiteralFactory::typed( (string)$part, 'string' );
+			}
+		}
+
+		return $literals;
+	}
+);
+```
+
+Without a mapper, a Property Type's Statements are omitted from the RDF export, just as they are from the
+Neo4j projection.
+
 ### Page Property Providers
 
 Page Property Providers contribute key/value metadata to the Page node in the graph (queryable via Cypher;
