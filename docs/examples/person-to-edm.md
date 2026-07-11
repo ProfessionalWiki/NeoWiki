@@ -12,7 +12,8 @@ native projection.
 It implements the EDM column of the shared "Neutral Person to Many Standards" toy model (takin, ECHOLOT
 WP2/WP3) — the first end-to-end proof of the mapping mechanism proposed in
 [planning/OntologyMapping.md](../planning/OntologyMapping.md). Everything here ships as
-[demo data](../../DemoData/), so a fresh wiki with the demo data imported reproduces it exactly.
+[demo data](../../DemoData/), so a fresh wiki with the demo data imported reproduces it — up to
+instance-specific page IDs and base URI (and, in the page metadata, timestamps and last editor).
 
 > **Scope: the near-1:1 tier only.** EDM is flat and property-centric, so the mapping is term
 > substitution. The toy model's CIDOC-CRM column is event-based (birth becomes an `E67_Birth` node
@@ -130,6 +131,9 @@ Real output from the demo wiki (Turtle; shared prefix header trimmed). **Native*
 ```turtle
 <.../page/115> a neo:Page;
     neo:pageName "Pablo Picasso";
+    dcterms:created "2026-07-11T23:22:20Z"^^xsd:dateTime;
+    dcterms:modified "2026-07-11T23:22:20Z"^^xsd:dateTime;
+    neo:lastEditor "NeoWiki";
     neo:mainSubject neo-subj:s2picasso2aaaa2;
     neo:hasSubject neo-subj:s2picasso2aaaa2.
 neo-subj:s2picasso2aaaa2 a neo-schema:Person;

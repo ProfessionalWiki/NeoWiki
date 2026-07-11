@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingContentValidator;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingContentValidator
@@ -247,6 +248,23 @@ class MappingContentValidatorTest extends TestCase {
 				}
 			}
 			JSON;
+	}
+
+	/**
+	 * @dataProvider demoMappingProvider
+	 */
+	public function testDemoDataMappingIsValid( string $json ): void {
+		$this->assertValid( $json );
+	}
+
+	public function demoMappingProvider(): iterable {
+		$dir = new \DirectoryIterator( __DIR__ . '/../../../../DemoData/Mapping' );
+
+		foreach ( $dir as $fileinfo ) {
+			if ( !$fileinfo->isDot() && $fileinfo->getExtension() === 'json' ) {
+				yield $fileinfo->getFilename() => [ TestData::getFileContents( 'Mapping/' . $fileinfo->getFilename() ) ];
+			}
+		}
 	}
 
 }
