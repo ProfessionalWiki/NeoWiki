@@ -167,7 +167,8 @@ end
 
 Runs a read-only Cypher query against the graph database and returns each row as a Lua table. Use
 this when a single property lookup is not enough — for example, to join multiple Subjects, filter
-or sort in the query, or build a custom table.
+or sort in the query, or build a custom table. It is available only when a Neo4j graph backend is
+configured; on a wiki without one, `mw.neowiki.query` is nil.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

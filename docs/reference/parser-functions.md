@@ -128,7 +128,8 @@ Passing a value to another extension's parser function:
 ## `{{#cypher_raw}}`
 
 Executes a read-only Cypher query and returns the raw results as JSON in a code block. Mainly
-useful for development and debugging.
+useful for development and debugging. It is available only when a Neo4j graph backend is configured;
+on a wiki without one, `{{#cypher_raw: …}}` is not registered and renders as ordinary wikitext.
 
 For end-user dashboards, formatted query result rendering is planned (see
 [#809](https://github.com/ProfessionalWiki/NeoWiki/issues/809)). A Lua
