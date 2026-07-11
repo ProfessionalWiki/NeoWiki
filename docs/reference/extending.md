@@ -79,10 +79,24 @@ literals, keyed by the Property Type name. It returns a list of `Literal`s (one 
 ```php
 $registrar->addRdfValueMapper(
 	ColorType::NAME,
-	static fn ( $value ) => array_map(
-		static fn ( string $hex ) => RdfLiteralFactory::typed( $hex, 'string' ),
-		$value->toScalars()
-	)
+	static function ( NeoValue $value ): array {
+		// Your mapper is called for whatever a Statement holds, so guard the value shape.
+		$scalars = $value->toScalars();
+
+		if ( !is_array( $scalars ) ) {
+			return [];
+		}
+
+		$literals = [];
+
+		foreach ( $scalars as $part ) {
+			if ( is_scalar( $part ) ) {
+				$literals[] = RdfLiteralFactory::typed( (string)$part, 'string' );
+			}
+		}
+
+		return $literals;
+	}
 );
 ```
 
