@@ -60,9 +60,13 @@ class ScribuntoLuaLibrary extends LibraryBase {
 			'getMainSubject' => [ $this, 'getMainSubject' ],
 			'getSubject' => [ $this, 'getSubject' ],
 			'getChildSubjects' => [ $this, 'getChildSubjects' ],
-			'query' => [ $this, 'query' ],
 			'getSchema' => [ $this, 'getSchema' ],
 		];
+
+		$neo4jFunctions = NeoWikiExtension::getInstance()->getNeo4jPlugin()?->getLuaLibraryFunctionNames() ?? [];
+		foreach ( $neo4jFunctions as $name ) {
+			$lib[$name] = [ $this, $name ];
+		}
 
 		return $this->getEngine()->registerInterface(
 			__DIR__ . '/mw.neowiki.lua', $lib, []

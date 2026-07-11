@@ -63,15 +63,18 @@ class RestApiDocsCoverageTest extends TestCase {
 	 * @return list<string> e.g. "GET /neowiki/v0/subject/{subjectId}", sorted and unique.
 	 */
 	private function registeredEndpoints(): array {
-		$contents = file_get_contents( __DIR__ . '/../../../../extension.json' );
-		$this->assertNotFalse( $contents, 'Could not read extension.json' );
-
-		$extensionJson = json_decode( $contents, true );
-		$this->assertIsArray( $extensionJson );
+		$extensionJson = $this->readJsonArray( __DIR__ . '/../../../../extension.json' );
 		$this->assertArrayHasKey( 'RestRoutes', $extensionJson );
 
+		// The Cypher route is registered per-plugin via a route file added to
+		// $wgRestAPIAdditionalRouteFiles only when Neo4j is configured, not via extension.json.
+		// It is still a real, documented endpoint, so count it as registered here too.
+		$pluginRouteFile = __DIR__
+			. '/../../../../src/GraphDatabasePlugins/Neo4j/EntryPoints/REST/neo4jRoutes.json';
+		$routes = array_merge( $extensionJson['RestRoutes'], $this->readJsonArray( $pluginRouteFile ) );
+
 		$endpoints = [];
-		foreach ( $extensionJson['RestRoutes'] as $route ) {
+		foreach ( $routes as $route ) {
 			$methods = is_array( $route['method'] ) ? $route['method'] : [ $route['method'] ];
 			foreach ( $methods as $method ) {
 				$endpoints[] = strtoupper( $method ) . ' ' . $route['path'];
@@ -79,6 +82,19 @@ class RestApiDocsCoverageTest extends TestCase {
 		}
 
 		return $this->normalise( $endpoints );
+	}
+
+	/**
+	 * @return array<mixed>
+	 */
+	private function readJsonArray( string $path ): array {
+		$contents = file_get_contents( $path );
+		$this->assertNotFalse( $contents, "Could not read $path" );
+
+		$decoded = json_decode( $contents, true );
+		$this->assertIsArray( $decoded );
+
+		return $decoded;
 	}
 
 	/**

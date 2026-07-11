@@ -6,6 +6,13 @@ function neowiki.setupInterface()
 	php = mw_interface
 	mw_interface = nil
 
+	-- query is only registered on the PHP side when a Neo4j backend is configured.
+	-- Drop the Lua wrapper too, so mw.neowiki.query is genuinely absent otherwise
+	-- (rather than a function that fails one call deeper on a nil php.query).
+	if not php.query then
+		neowiki.query = nil
+	end
+
 	mw = mw or {}
 	mw.neowiki = neowiki
 
