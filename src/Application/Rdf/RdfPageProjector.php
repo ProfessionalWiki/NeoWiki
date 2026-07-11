@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  * entirely (and logged), so the native projection and its sibling projections hold the same set of
  * entities and page metadata never references a Subject that has no projected type or label.
  */
-class RdfPageProjector {
+class RdfPageProjector implements PageProjector {
 
 	private const string PROPERTY_NAME = 'name';
 	private const string PROPERTY_CREATION_TIME = 'creationTime';

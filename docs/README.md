@@ -12,6 +12,7 @@ Key docs:
 * [Query API](reference/query-api.md) - REST endpoint for read-only Cypher queries against the graph backend
 * [REST API](reference/rest-api.md) - The complete `/neowiki/v0/*` endpoint reference, plus the generated OpenAPI spec served at `/rest.php/specs/v0/module/-`
 * [RDF Export](reference/rdf-export.md) - Native RDF projection: config, IRI scheme, the per-page export endpoint, and the bulk dump script
+* [Ontology Mapping](reference/ontology-mapping.md) - Projecting Subjects into standard ontologies (EDM, Dublin Core, …) via Mapping pages
 * [Extending NeoWiki](reference/extending.md) - How other extensions add property types, contribute graph data, and reuse NeoWiki's UI
 * [Installation & Maintenance](operations/installation.md) - Sysadmin guide to installing and maintaining NeoWiki
 * [Architecture Decision Records](adr/001-domain-centric-architecture.md) - Numbered, dated architectural decisions

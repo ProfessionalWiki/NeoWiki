@@ -128,6 +128,54 @@ JSON
 		$this->assertSame( 404, $response->getStatusCode() );
 	}
 
+	public function testProjectionNativeIsTheDefaultAndUnchanged(): void {
+		$default = $this->export();
+		$explicit = $this->export( query: [ 'projection' => 'native' ] );
+
+		$this->assertSame( 200, $explicit->getStatusCode() );
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( $default->getBody()->getContents() ),
+			ParsedRdf::canonicalQuads( $explicit->getBody()->getContents() )
+		);
+	}
+
+	public function testUnknownProjectionReturns400(): void {
+		// No Mapping page declares "edm", so it is not a known projection.
+		$response = $this->export( query: [ 'projection' => 'edm' ] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	public function testValidTargetProjectsTheMappedVocabularyWithNativeSubjectIris(): void {
+		$this->createMapping( 'BerlinToEdm', <<<JSON
+			{
+				"version": 1,
+				"schema": "{$this->schemaName()}",
+				"target": "edm",
+				"prefixes": {
+					"edm": "http://www.europeana.eu/schemas/edm/",
+					"dc": "http://purl.org/dc/elements/1.1/"
+				},
+				"subject": { "class": "edm:Place" },
+				"properties": {
+					"population": { "predicate": "dc:description" }
+				}
+			}
+			JSON );
+
+		$response = $this->export( query: [ 'projection' => 'edm', 'format' => 'turtle' ] );
+		$body = $response->getBody()->getContents();
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertStringContainsString( 'europeana.eu/schemas/edm', $body, 'The mapped ontology vocabulary is used.' );
+		$this->assertStringContainsString( self::SUBJECT_ID, $body, 'The Subject IRI stays native.' );
+		$this->assertStringNotContainsString( self::SCHEMA, $body, 'No native schema class is emitted.' );
+	}
+
+	private function schemaName(): string {
+		return self::SCHEMA;
+	}
+
 	/**
 	 * The graph value (the fourth field of each canonical quad) of every quad in the parsed document.
 	 * Distinguishes TriG (a non-empty page graph on every quad) from Turtle (the empty default graph).

@@ -16,7 +16,7 @@ readonly class RdfPageExporter {
 
 	public function __construct(
 		private RdfPageLoader $loader,
-		private RdfPageProjector $projector,
+		private PageProjector $projector,
 		private RdfSerializer $serializer,
 	) {
 	}

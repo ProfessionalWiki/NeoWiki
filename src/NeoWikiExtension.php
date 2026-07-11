@@ -59,9 +59,14 @@ use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\MappingLookup;
+use ProfessionalWiki\NeoWiki\Application\Mappings;
+use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageExporter;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjection;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfSerializer;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
@@ -99,10 +104,15 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepos
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseMappingNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
@@ -122,6 +132,9 @@ class NeoWikiExtension {
 
 	public const int NS_SCHEMA = 7474;
 	public const int NS_LAYOUT = 7476;
+	public const int NS_MAPPING = 7478;
+
+	public const string PROJECTION_NATIVE = 'native';
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
@@ -295,12 +308,101 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newRdfPageExporter(): RdfPageExporter {
+	public function newRdfPageExporterForProjection( RdfProjection $projection ): RdfPageExporter {
 		return new RdfPageExporter(
 			$this->newRdfPageLoader(),
-			$this->newRdfPageProjector(),
-			$this->getRdfSerializer(),
+			$projection->projector,
+			$projection->serializer,
 		);
+	}
+
+	/**
+	 * Resolves a projection name to its projector and serializer, or null when the name is neither
+	 * "native" nor a target that any Mapping page declares. This is the seam the RDF export surfaces
+	 * use to select a projection, and that the SPARQL store plugin (#586) consumes for its own store
+	 * (it needs only {@see RdfProjection::$projector}). Ontology mappings hold only the target
+	 * vocabulary; Subject IRIs stay native, so the native prefixes always seed the serializer.
+	 */
+	public function newRdfProjection( string $projectionName ): ?RdfProjection {
+		if ( $projectionName === self::PROJECTION_NATIVE ) {
+			return new RdfProjection( $this->newRdfPageProjector(), $this->getRdfSerializer() );
+		}
+
+		$mappings = ( new Mappings( $this->getMappingLookup()->getAllMappings() ) )->forTarget( $projectionName );
+
+		if ( $mappings === [] ) {
+			return null;
+		}
+
+		return new RdfProjection(
+			new OntologyMappingProjector(
+				$projectionName,
+				$mappings,
+				$this->getRdfNamespaces(),
+				$this->getRdfValueMapperRegistry(),
+				LoggerFactory::getInstance( 'NeoWiki' ),
+			),
+			new HardfRdfSerializer( $this->ontologyPrefixMap( $mappings ) ),
+		);
+	}
+
+	/**
+	 * The known projection names: "native" plus every target any Mapping page declares. Used to reject
+	 * an unknown projection with a helpful list of the valid ones.
+	 *
+	 * @return string[]
+	 */
+	public function getRdfProjectionNames(): array {
+		return array_merge(
+			[ self::PROJECTION_NATIVE ],
+			( new Mappings( $this->getMappingLookup()->getAllMappings() ) )->targets()
+		);
+	}
+
+	/**
+	 * The native prefixes (Subject IRIs stay native) plus the Mappings' declared ontology prefixes, for
+	 * readable output. Unsafe prefix namespaces are dropped defensively so a Mapping can never inject a
+	 * `@prefix` declaration into the document, even though save-time validation already rejects them.
+	 *
+	 * @param \ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping[] $mappings
+	 * @return array<string, string>
+	 */
+	private function ontologyPrefixMap( array $mappings ): array {
+		$prefixes = $this->getRdfNamespaces()->prefixMap();
+
+		foreach ( $mappings as $mapping ) {
+			foreach ( $mapping->prefixes as $label => $namespace ) {
+				if ( CurieExpander::isSafeAbsoluteIri( $namespace ) ) {
+					$prefixes[$label] = $namespace;
+				}
+			}
+		}
+
+		return $prefixes;
+	}
+
+	public function getMappingLookup(): MappingLookup {
+		return new CachingMappingLookup(
+			mappingLookup: new WikiPageMappingLookup(
+				pageContentFetcher: $this->getPageContentFetcher(),
+				authority: $this->getRequestAuthority(),
+				mappingDeserializer: $this->getMappingPersistenceDeserializer(),
+				mappingNameLookup: $this->getMappingNameLookup(),
+			),
+			mappingNameLookup: $this->getMappingNameLookup(),
+			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			authority: $this->getRequestAuthority(),
+			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
+		);
+	}
+
+	public function getMappingNameLookup(): MappingNameLookup {
+		return new DatabaseMappingNameLookup( db: $this->getDbConnection() );
+	}
+
+	public function getMappingPersistenceDeserializer(): MappingPersistenceDeserializer {
+		return new MappingPersistenceDeserializer();
 	}
 
 	public static function newExportPageRdfApi(): ExportPageRdfApi {
