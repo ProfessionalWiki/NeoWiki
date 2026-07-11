@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Maintenance;
 
 use Maintenance;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Storage\NameTableAccessException;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -73,7 +74,14 @@ class DumpRdf extends Maintenance {
 	 */
 	private function getSubjectPageIds(): array {
 		$services = MediaWikiServices::getInstance();
-		$roleId = $services->getSlotRoleStore()->getId( MediaWikiSubjectRepository::SLOT_NAME );
+
+		try {
+			$roleId = $services->getSlotRoleStore()->getId( MediaWikiSubjectRepository::SLOT_NAME );
+		} catch ( NameTableAccessException ) {
+			// No page has ever stored a Subject, so the slot role was never registered. There is
+			// nothing to dump; emit an empty document instead of crashing.
+			return [];
+		}
 
 		$rows = $this->getReplicaDB()->newSelectQueryBuilder()
 			->select( 'page_id' )
