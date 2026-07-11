@@ -8,7 +8,7 @@ use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionSlots;
 use MediaWiki\User\UserIdentityValue;
-use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
@@ -80,9 +80,10 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 	public function testUnreachableBackendDoesNotHardFailRevisionHandling(): void {
 		$revision = $this->createPageWithSubjects( 'Page with a failing backend', TestSubject::build() );
 
-		// The isolating composite is what production wires into the handler, wrapping a backend that is down.
+		// The isolating decorator is what production wires around each backend on the hook path; here it
+		// wraps a backend that is down.
 		$handler = $this->newHandlerWith(
-			new CompositeGraphDatabasePlugin( new NullLogger(), new ThrowingGraphDatabasePlugin() )
+			new FailureIsolatingGraphDatabasePlugin( new ThrowingGraphDatabasePlugin(), new NullLogger() )
 		);
 
 		$wrote = $handler->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );

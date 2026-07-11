@@ -6,31 +6,21 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\GraphDatabase;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
-use Psr\Log\Test\TestLogger;
+use Psr\Log\NullLogger;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin
  */
 class CompositeGraphDatabasePluginTest extends TestCase {
 
-	private TestLogger $logger;
-
-	protected function setUp(): void {
-		parent::setUp();
-		$this->logger = new TestLogger();
-	}
-
-	private function newComposite( GraphDatabasePlugin ...$plugins ): CompositeGraphDatabasePlugin {
-		return new CompositeGraphDatabasePlugin( $this->logger, ...$plugins );
-	}
-
 	public function testEmptyCompositeDoesNotThrow(): void {
-		$composite = $this->newComposite();
+		$composite = new CompositeGraphDatabasePlugin();
 
 		$composite->savePage( TestPage::build() );
 		$composite->deletePage( new PageId( 1 ) );
@@ -41,7 +31,7 @@ class CompositeGraphDatabasePluginTest extends TestCase {
 	public function testSavePageDispatchesToAllPlugins(): void {
 		$spy1 = new SpyGraphDatabasePlugin();
 		$spy2 = new SpyGraphDatabasePlugin();
-		$composite = $this->newComposite( $spy1, $spy2 );
+		$composite = new CompositeGraphDatabasePlugin( $spy1, $spy2 );
 
 		$page = TestPage::build( id: 42 );
 		$composite->savePage( $page );
@@ -53,7 +43,7 @@ class CompositeGraphDatabasePluginTest extends TestCase {
 	public function testDeletePageDispatchesToAllPlugins(): void {
 		$spy1 = new SpyGraphDatabasePlugin();
 		$spy2 = new SpyGraphDatabasePlugin();
-		$composite = $this->newComposite( $spy1, $spy2 );
+		$composite = new CompositeGraphDatabasePlugin( $spy1, $spy2 );
 
 		$pageId = new PageId( 42 );
 		$composite->deletePage( $pageId );
@@ -64,7 +54,7 @@ class CompositeGraphDatabasePluginTest extends TestCase {
 
 	public function testSinglePluginReceivesAllCalls(): void {
 		$spy = new SpyGraphDatabasePlugin();
-		$composite = $this->newComposite( $spy );
+		$composite = new CompositeGraphDatabasePlugin( $spy );
 
 		$page1 = TestPage::build( id: 1 );
 		$page2 = TestPage::build( id: 2 );
@@ -76,62 +66,51 @@ class CompositeGraphDatabasePluginTest extends TestCase {
 		$this->assertCount( 1, $spy->deletedPageIds );
 	}
 
-	public function testSavePageReachesPluginsAfterAThrowingOne(): void {
+	public function testSavePagePropagatesAPluginFailure(): void {
+		$composite = new CompositeGraphDatabasePlugin( new ThrowingGraphDatabasePlugin() );
+
+		$this->expectExceptionMessage( ThrowingGraphDatabasePlugin::FAILURE_MESSAGE );
+
+		$composite->savePage( TestPage::build() );
+	}
+
+	public function testDeletePagePropagatesAPluginFailure(): void {
+		$composite = new CompositeGraphDatabasePlugin( new ThrowingGraphDatabasePlugin() );
+
+		$this->expectExceptionMessage( ThrowingGraphDatabasePlugin::FAILURE_MESSAGE );
+
+		$composite->deletePage( new PageId( 1 ) );
+	}
+
+	/**
+	 * The production hook-path wiring wraps each plugin in a FailureIsolatingGraphDatabasePlugin. This
+	 * proves that arrangement isolates per plugin: a failing backend in the middle neither aborts the
+	 * fan-out nor starves the plugins before or after it.
+	 *
+	 * @covers \ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin
+	 */
+	public function testComposingIsolatedPluginsLetsOneFailWithoutStarvingTheOthers(): void {
 		$spyBefore = new SpyGraphDatabasePlugin();
 		$spyAfter = new SpyGraphDatabasePlugin();
-		$composite = $this->newComposite(
-			$spyBefore,
-			new ThrowingGraphDatabasePlugin(),
-			$spyAfter
+		$composite = new CompositeGraphDatabasePlugin(
+			$this->isolated( $spyBefore ),
+			$this->isolated( new ThrowingGraphDatabasePlugin() ),
+			$this->isolated( $spyAfter )
 		);
 
 		$page = TestPage::build( id: 42 );
-		$composite->savePage( $page );
-
-		$this->assertSame( [ $page ], $spyBefore->savedPages );
-		$this->assertSame( [ $page ], $spyAfter->savedPages, 'a plugin failure must not starve later plugins' );
-	}
-
-	public function testDeletePageReachesPluginsAfterAThrowingOne(): void {
-		$spyBefore = new SpyGraphDatabasePlugin();
-		$spyAfter = new SpyGraphDatabasePlugin();
-		$composite = $this->newComposite(
-			$spyBefore,
-			new ThrowingGraphDatabasePlugin(),
-			$spyAfter
-		);
-
 		$pageId = new PageId( 42 );
+		$composite->savePage( $page );
 		$composite->deletePage( $pageId );
 
+		$this->assertSame( [ $page ], $spyBefore->savedPages, 'a plugin before the failing one still runs' );
+		$this->assertSame( [ $page ], $spyAfter->savedPages, 'a plugin after the failing one is not starved' );
 		$this->assertSame( [ $pageId ], $spyBefore->deletedPageIds );
-		$this->assertSame( [ $pageId ], $spyAfter->deletedPageIds, 'a plugin failure must not starve later plugins' );
+		$this->assertSame( [ $pageId ], $spyAfter->deletedPageIds );
 	}
 
-	public function testFailingSavePageIsLoggedAsErrorWithReconciliationHint(): void {
-		$composite = $this->newComposite( new ThrowingGraphDatabasePlugin() );
-
-		$composite->savePage( TestPage::build( id: 42 ) );
-
-		$this->assertTrue( $this->logger->hasErrorThatContains( 'RebuildGraphDatabases' ) );
-		$this->assertTrue( $this->logger->hasErrorThatContains( '42' ) );
-	}
-
-	public function testFailingDeletePageIsLoggedAsErrorWithReconciliationHint(): void {
-		$composite = $this->newComposite( new ThrowingGraphDatabasePlugin() );
-
-		$composite->deletePage( new PageId( 42 ) );
-
-		$this->assertTrue( $this->logger->hasErrorThatContains( 'RebuildGraphDatabases' ) );
-		$this->assertTrue( $this->logger->hasErrorThatContains( '42' ) );
-	}
-
-	public function testSucceedingProjectionIsNotLogged(): void {
-		$composite = $this->newComposite( new SpyGraphDatabasePlugin() );
-
-		$composite->savePage( TestPage::build( id: 42 ) );
-
-		$this->assertFalse( $this->logger->hasErrorRecords() );
+	private function isolated( GraphDatabasePlugin $plugin ): FailureIsolatingGraphDatabasePlugin {
+		return new FailureIsolatingGraphDatabasePlugin( $plugin, new NullLogger() );
 	}
 
 }

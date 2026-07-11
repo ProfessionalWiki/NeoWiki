@@ -15,7 +15,7 @@ use RuntimeException;
  */
 class ThrowingGraphDatabasePlugin implements GraphDatabasePlugin {
 
-	public const FAILURE_MESSAGE = 'projection backend unreachable';
+	public const string FAILURE_MESSAGE = 'projection backend unreachable';
 
 	public function savePage( Page $page ): void {
 		throw new RuntimeException( self::FAILURE_MESSAGE );
