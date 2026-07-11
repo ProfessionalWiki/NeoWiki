@@ -66,6 +66,7 @@ use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageExporter;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjection;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjectionResolution;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfSerializer;
@@ -317,32 +318,49 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Resolves a projection name to its projector and serializer, or null when the name is neither
-	 * "native" nor a target that any Mapping page declares. This is the seam the RDF export surfaces
-	 * use to select a projection, and that the SPARQL store plugin (#586) consumes for its own store
-	 * (it needs only {@see RdfProjection::$projector}). Ontology mappings hold only the target
-	 * vocabulary; Subject IRIs stay native, so the native prefixes always seed the serializer.
+	 * The projection for a name, or null when the name is neither "native" nor a target any Mapping page
+	 * declares. The seam the SPARQL store plugin (#586) consumes for its own store (it needs only
+	 * {@see RdfProjection::$projector}); the RDF export surfaces use {@see self::resolveRdfProjection()}
+	 * instead, which also reports the known names on the unknown-target path. Ontology mappings hold only
+	 * the target vocabulary; Subject IRIs stay native, so the native prefixes always seed the serializer.
 	 */
 	public function newRdfProjection( string $projectionName ): ?RdfProjection {
+		return $this->resolveRdfProjection( $projectionName )->projection;
+	}
+
+	/**
+	 * Resolves a projection name to its projector and serializer, or — when the name is neither "native"
+	 * nor a declared target — to the known projection names for a 400/usage message. Mapping pages are
+	 * enumerated at most once (the "native" default enumerates nothing), so a caller that needs both the
+	 * resolution and the known-names list on the unknown-target path pays for a single enumeration.
+	 */
+	public function resolveRdfProjection( string $projectionName ): RdfProjectionResolution {
 		if ( $projectionName === self::PROJECTION_NATIVE ) {
-			return new RdfProjection( $this->newRdfPageProjector(), $this->getRdfSerializer() );
+			return RdfProjectionResolution::projection(
+				new RdfProjection( $this->newRdfPageProjector(), $this->getRdfSerializer() )
+			);
 		}
 
-		$mappings = ( new Mappings( $this->getMappingLookup()->getAllMappings() ) )->forTarget( $projectionName );
+		$mappings = new Mappings( $this->getMappingLookup()->getAllMappings() );
+		$forTarget = $mappings->forTarget( $projectionName );
 
-		if ( $mappings === [] ) {
-			return null;
+		if ( $forTarget === [] ) {
+			return RdfProjectionResolution::unknownTarget(
+				array_merge( [ self::PROJECTION_NATIVE ], $mappings->targets() )
+			);
 		}
 
-		return new RdfProjection(
-			new OntologyMappingProjector(
-				$projectionName,
-				$mappings,
-				$this->getRdfNamespaces(),
-				$this->getRdfValueMapperRegistry(),
-				LoggerFactory::getInstance( 'NeoWiki' ),
-			),
-			new HardfRdfSerializer( $this->ontologyPrefixMap( $mappings ) ),
+		return RdfProjectionResolution::projection(
+			new RdfProjection(
+				new OntologyMappingProjector(
+					$projectionName,
+					$forTarget,
+					$this->getRdfNamespaces(),
+					$this->getRdfValueMapperRegistry(),
+					LoggerFactory::getInstance( 'NeoWiki' ),
+				),
+				new HardfRdfSerializer( $this->ontologyPrefixMap( $forTarget ) ),
+			)
 		);
 	}
 

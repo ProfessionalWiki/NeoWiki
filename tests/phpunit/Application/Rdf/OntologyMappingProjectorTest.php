@@ -21,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
@@ -226,6 +227,216 @@ class OntologyMappingProjectorTest extends TestCase {
 		);
 	}
 
+	public function testInvalidStoredLanguageTagIsDroppedAndTheLiteralStaysPlain(): void {
+		// A Mapping constructed directly, simulating one stored before validation (importDump / a
+		// pre-validation page): its "en_US" tag is not BCP-47-shaped.
+		$quads = $this->newProjector( [ $this->personMappingWithNameLang( 'en_US' ) ] )
+			->projectPage( TestPage::build( id: 42, mainSubject: $this->examplePersonWithoutRelations() ) );
+
+		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
+
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( $this->expectedPlainNameTriG() ),
+			ParsedRdf::canonicalQuads( $output ),
+			'The value projects as a plain string literal when the stored language tag is invalid.'
+		);
+		$this->assertCount( 1, $this->logger->getLogCalls()->getMessages() );
+	}
+
+	public function testMaliciousLanguageTagCannotInjectADatatypeIntoTheDocument(): void {
+		$quads = $this->newProjector( [ $this->personMappingWithNameLang( 'en"^^xsd:evil' ) ] )
+			->projectPage( TestPage::build( id: 42, mainSubject: $this->examplePersonWithoutRelations() ) );
+
+		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
+
+		$this->assertStringNotContainsString( 'xsd:evil', $output, 'The attacker-chosen datatype must not reach the document.' );
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( $this->expectedPlainNameTriG() ),
+			ParsedRdf::canonicalQuads( $output ),
+			'The document still parses to only the safe, plain-literal triples.'
+		);
+		$this->assertCount( 1, $this->logger->getLogCalls()->getMessages() );
+	}
+
+	private function personMappingWithNameLang( string $lang ): Mapping {
+		return new Mapping(
+			name: new MappingName( 'Person to EDM' ),
+			schema: new SchemaName( 'Person' ),
+			target: 'edm',
+			prefixes: [ 'dc' => self::DC ],
+			subjectClass: 'http://example.org/CHO',
+			properties: new PropertyMappings( [
+				'Name' => new PropertyMapping( 'dc:title', $lang, null ),
+			] )
+		);
+	}
+
+	private function expectedPlainNameTriG(): string {
+		return <<<TRIG
+			@prefix neo-subj: <https://wiki.example/entity/> .
+			@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+			@prefix dc: <http://purl.org/dc/elements/1.1/> .
+
+			<https://wiki.example/page/42> {
+				neo-subj:s1janeaaaaaaaa2 a <http://example.org/CHO> ;
+					rdfs:label "Jane" ;
+					dc:title "Jane" .
+			}
+			TRIG;
+	}
+
+	/**
+	 * The projection-time re-expansion defence: even when save-time validation was bypassed, a class,
+	 * predicate, datatype, or prefix that does not re-expand safely is dropped, so no injection term
+	 * reaches the serialized document and it still parses.
+	 */
+	public function testUnsafeTermsAreDroppedAtProjectionTimeWhenSaveValidationWasBypassed(): void {
+		$quads = $this->newProjector( [ $this->adversarialMapping() ] )
+			->projectPage( TestPage::build( id: 42, mainSubject: $this->adversarialSubject() ) );
+
+		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
+
+		$this->assertStringNotContainsString( 'evil', $output, 'No injection term survives to the document.' );
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( $this->expectedSafeAdversarialTriG() ),
+			ParsedRdf::canonicalQuads( $output ),
+			'Only the safe triples remain: the always-emitted label, the safely mapped property, and the '
+				. 'value whose unsafe datatype override was dropped (kept with its native datatype). The '
+				. 'injection class, predicate, and unsafe-prefix CURIE are gone, and there is no rdf:type.'
+		);
+	}
+
+	private function adversarialMapping(): Mapping {
+		return new Mapping(
+			name: new MappingName( 'Adversarial' ),
+			schema: new SchemaName( 'Person' ),
+			target: 'edm',
+			prefixes: [
+				'dc' => self::DC,
+				// A prefix whose namespace breaks out of the prefix table; a CURIE using it must be dropped.
+				'evil' => 'http://evil.example/"> .# ',
+			],
+			// A subject class that would break out of its IRI: it must not produce an rdf:type triple.
+			subjectClass: 'http://x/> <http://evil.example/s> <http://evil.example/p> <http://evil.example/o',
+			properties: new PropertyMappings( [
+				'Name' => new PropertyMapping( 'dc:title' ),
+				// A safe predicate with an injection datatype override: the value keeps its native datatype.
+				'BirthYear' => new PropertyMapping( 'dc:date', null, 'http://x/> <http://evil.example/dt' ),
+				// An injection predicate: the whole statement is dropped.
+				'Bio' => new PropertyMapping( 'http://x/> <http://evil.example/p2> <http://evil.example/o2' ),
+				// A CURIE against the unsafe prefix: dropped.
+				'Homepage' => new PropertyMapping( 'evil:foo' ),
+			] )
+		);
+	}
+
+	private function adversarialSubject(): Subject {
+		return TestSubject::build(
+			id: self::PERSON_ID,
+			label: 'Jane',
+			schemaName: new SchemaName( 'Person' ),
+			statements: new StatementList( [
+				TestStatement::build( 'Name', new StringValue( 'Jane' ), 'text' ),
+				TestStatement::build( 'BirthYear', new NumberValue( 1990 ), 'number' ),
+				TestStatement::build( 'Bio', new StringValue( 'Hi' ), 'text' ),
+				TestStatement::build( 'Homepage', new StringValue( 'http://jane.example' ), 'text' ),
+			] )
+		);
+	}
+
+	private function expectedSafeAdversarialTriG(): string {
+		return <<<TRIG
+			@prefix neo-subj: <https://wiki.example/entity/> .
+			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+			@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+			@prefix dc: <http://purl.org/dc/elements/1.1/> .
+
+			<https://wiki.example/page/42> {
+				neo-subj:s1janeaaaaaaaa2 rdfs:label "Jane" ;
+					dc:title "Jane" ;
+					dc:date "1990"^^xsd:integer .
+			}
+			TRIG;
+	}
+
+	public function testLanguageTagIsIgnoredForATypedLiteral(): void {
+		$page = TestPage::build( id: 42, mainSubject: $this->personWithBirthYear() );
+
+		$quads = $this->newProjector( [ $this->personBirthYearMappingWithLang( 'en' ) ] )->projectPage( $page );
+
+		$this->assertTrue(
+			$quads->contains( new Quad(
+				$this->ns->subject( new SubjectId( self::PERSON_ID ) ),
+				new Iri( self::DC . 'date' ),
+				RdfLiteralFactory::typed( '1990', 'integer' ),
+				$this->ns->page( new PageId( 42 ) )
+			) ),
+			'A typed literal keeps its datatype; a language tag does not apply to it.'
+		);
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testDatatypeAndLanguageOnARelationPropertyAreIgnored(): void {
+		// Constructed directly, bypassing the save-time lang/datatype mutual-exclusion check, to prove
+		// the projector ignores literal overrides on a relation (its object is an IRI, not a literal).
+		$mapping = new Mapping(
+			name: new MappingName( 'Person to EDM' ),
+			schema: new SchemaName( 'Person' ),
+			target: 'edm',
+			prefixes: [ 'dc' => self::DC, 'edm' => self::EDM ],
+			subjectClass: 'http://example.org/CHO',
+			properties: new PropertyMappings( [
+				'BornIn' => new PropertyMapping( 'dc:spatial', 'en', 'edm:year' ),
+			] )
+		);
+		$page = TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build(
+				id: self::PERSON_ID,
+				label: 'Jane',
+				schemaName: new SchemaName( 'Person' ),
+				statements: new StatementList( [
+					TestStatement::buildRelation( 'BornIn', [ TestRelation::build( targetId: self::CITY_ID ) ] ),
+				] )
+			),
+		);
+
+		$quads = $this->newProjector( [ $mapping ] )->projectPage( $page );
+
+		$this->assertTrue(
+			$quads->contains( new Quad(
+				$this->ns->subject( new SubjectId( self::PERSON_ID ) ),
+				new Iri( self::DC . 'spatial' ),
+				$this->ns->subject( new SubjectId( self::CITY_ID ) ),
+				$this->ns->page( new PageId( 42 ) )
+			) ),
+			'The relation is a plain IRI-to-IRI triple; datatype and language overrides do not apply.'
+		);
+	}
+
+	private function personWithBirthYear(): Subject {
+		return TestSubject::build(
+			id: self::PERSON_ID,
+			label: 'Jane',
+			schemaName: new SchemaName( 'Person' ),
+			statements: new StatementList( [ TestStatement::build( 'BirthYear', new NumberValue( 1990 ), 'number' ) ] )
+		);
+	}
+
+	private function personBirthYearMappingWithLang( string $lang ): Mapping {
+		return new Mapping(
+			name: new MappingName( 'Person to EDM' ),
+			schema: new SchemaName( 'Person' ),
+			target: 'edm',
+			prefixes: [ 'dc' => self::DC ],
+			subjectClass: 'http://example.org/CHO',
+			properties: new PropertyMappings( [
+				'BirthYear' => new PropertyMapping( 'dc:date', $lang, null ),
+			] )
+		);
+	}
+
 	public function testDuplicateMappingsForASchemaAreTieBrokenAlphabeticallyAndLogged(): void {
 		// Two Mappings claim (Person, edm) with different classes. Passed in reverse alphabetical order,
 		// the projector must still pick "A ..." — proving it sorts rather than takes the first given.
@@ -259,7 +470,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		);
 	}
 
-	private function examplePersonWithoutRelations(): \ProfessionalWiki\NeoWiki\Domain\Subject\Subject {
+	private function examplePersonWithoutRelations(): Subject {
 		return TestSubject::build(
 			id: self::PERSON_ID,
 			label: 'Jane',

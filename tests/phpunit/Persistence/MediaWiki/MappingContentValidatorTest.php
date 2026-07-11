@@ -153,6 +153,63 @@ class MappingContentValidatorTest extends TestCase {
 		);
 	}
 
+	/**
+	 * @dataProvider validLanguageTagProvider
+	 */
+	public function testAcceptsABcp47LanguageTag( string $lang ): void {
+		$this->assertValid( $this->mappingWithLang( $lang ) );
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function validLanguageTagProvider(): array {
+		return [
+			'primary subtag only' => [ 'en' ],
+			'region subtag' => [ 'en-US' ],
+			'lowercase region' => [ 'pt-BR' ],
+		];
+	}
+
+	/**
+	 * A language tag outside the BCP-47 shape is rejected at save time, so it can never reach the
+	 * serializer and smuggle a datatype or a `"` into the `"lexical"@tag` literal.
+	 *
+	 * @dataProvider invalidLanguageTagProvider
+	 */
+	public function testRejectsANonBcp47LanguageTag( string $lang ): void {
+		$this->assertInvalidAt( $this->mappingWithLang( $lang ), '/properties/Name/lang' );
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function invalidLanguageTagProvider(): array {
+		return [
+			'underscore separator' => [ 'en_US' ],
+			'trailing space' => [ 'en ' ],
+			'empty trailing subtag' => [ 'en-' ],
+			'datatype injection' => [ 'en"^^xsd:evil' ],
+		];
+	}
+
+	private function mappingWithLang( string $lang ): string {
+		$encodedLang = json_encode( $lang );
+
+		return <<<JSON
+			{
+				"version": 1,
+				"schema": "Person",
+				"target": "edm",
+				"prefixes": { "dc": "http://purl.org/dc/elements/1.1/" },
+				"subject": { "class": "http://example.org/CHO" },
+				"properties": {
+					"Name": { "predicate": "dc:title", "lang": {$encodedLang} }
+				}
+			}
+			JSON;
+	}
+
 	public function testRejectsAPropertyThatSetsBothLanguageAndDatatype(): void {
 		// An RDF literal cannot carry both a language tag and a datatype.
 		$this->assertInvalidAt(

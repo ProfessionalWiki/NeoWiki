@@ -30,19 +30,19 @@ class ExportPageRdfApi extends SimpleHandler {
 	public function run( int $pageId ): Response {
 		$extension = NeoWikiExtension::getInstance();
 		$projectionName = $this->getValidatedParams()['projection'] ?? NeoWikiExtension::PROJECTION_NATIVE;
-		$projection = $extension->newRdfProjection( $projectionName );
+		$resolution = $extension->resolveRdfProjection( $projectionName );
 
-		if ( $projection === null ) {
+		if ( $resolution->projection === null ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'message' => 'Unknown RDF projection: "' . $projectionName . '". Known projections: '
-					. implode( ', ', $extension->getRdfProjectionNames() ) . '.',
+					. implode( ', ', $resolution->knownProjectionNames ) . '.',
 			] );
 		}
 
 		$format = $this->resolveFormat();
 
 		$document = $extension
-			->newRdfPageExporterForProjection( $projection )
+			->newRdfPageExporterForProjection( $resolution->projection )
 			->exportByPageId( new PageId( $pageId ), $format );
 
 		if ( $document === null ) {

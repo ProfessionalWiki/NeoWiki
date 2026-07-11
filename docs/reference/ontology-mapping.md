@@ -67,7 +67,7 @@ Each **property** entry:
 | Key | Required | Meaning |
 |---|---|---|
 | `predicate` | yes | Target predicate for the property's values. A CURIE or an absolute IRI. |
-| `lang` | no | Language tag applied to the produced literal **when it is a plain string** (text/select values). Ignored for typed literals (numbers, dates, …). Mutually exclusive with `datatype`. |
+| `lang` | no | BCP-47-shaped language tag (`^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$`, e.g. `en`, `pt-BR`) applied to the produced literal **when it is a plain string** (text/select values). Ignored for typed literals (numbers, dates, …). Mutually exclusive with `datatype`. |
 | `datatype` | no | Absolute IRI or CURIE that overrides the literal's datatype. Mutually exclusive with `lang`. |
 
 ### CURIEs, IRIs, and safety
@@ -79,7 +79,13 @@ is a typo, not a bare IRI). Non-authority IRI schemes (`urn:`, `mailto:`, …) a
 Terms are expanded to exact ontology IRIs and are **never percent-encoded** — a Mapping must reproduce
 the ontology's terms verbatim. A term (or a declared prefix namespace) that would expand to an IRI
 containing an IRIREF-illegal character (`< > " { } | ^ \` backtick, space, control characters) is
-**rejected at save time**, so a Mapping can never corrupt the projected document.
+**rejected at save time**. The `lang` tag is constrained the same way — it must be BCP-47-shaped, so it
+cannot smuggle a datatype or a stray `"` into the serialized literal.
+
+Both checks are re-applied at **projection time**, so a Mapping stored before validation existed (or
+loaded via `importDump`) still cannot corrupt the output: a class, predicate, datatype, or prefix that
+does not re-expand safely is dropped, and an invalid language tag falls back to a plain literal — each
+with a logged warning. A bad stored Mapping degrades the projection rather than aborting the export.
 
 ## What gets emitted
 

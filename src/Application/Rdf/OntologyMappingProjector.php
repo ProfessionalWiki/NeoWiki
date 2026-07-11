@@ -173,7 +173,7 @@ class OntologyMappingProjector implements PageProjector {
 			return $this->projectRelationStatement( $statement, $predicate, $subjectIri, $graph );
 		}
 
-		return $this->projectLiteralStatement( $statement, $propertyMapping, $predicate, $expander, $subjectIri, $graph );
+		return $this->projectLiteralStatement( $statement, $propertyMapping, $predicate, $expander, $subjectIri, $graph, $mapping );
 	}
 
 	/**
@@ -208,7 +208,8 @@ class OntologyMappingProjector implements PageProjector {
 		Iri $predicate,
 		CurieExpander $expander,
 		Iri $subjectIri,
-		Iri $graph
+		Iri $graph,
+		Mapping $mapping
 	): array {
 		$literals = $this->valueMappers->mapValue( $statement->getPropertyType(), $statement->getValue() );
 
@@ -219,7 +220,8 @@ class OntologyMappingProjector implements PageProjector {
 		$quads = [];
 
 		foreach ( $literals as $literal ) {
-			$quads[] = new Quad( $subjectIri, $predicate, $this->applyOverrides( $literal, $propertyMapping, $expander ), $graph );
+			$object = $this->applyOverrides( $literal, $propertyMapping, $expander, $mapping, $statement->getPropertyName()->text );
+			$quads[] = new Quad( $subjectIri, $predicate, $object, $graph );
 		}
 
 		return $quads;
@@ -230,8 +232,20 @@ class OntologyMappingProjector implements PageProjector {
 	 * tag (an RDF literal cannot carry both); the validator rejects a Mapping that sets both. A language
 	 * tag applies only to a plain string literal — for a typed literal (number, date, …) it is ignored,
 	 * since the writer's schema already fixed the datatype.
+	 *
+	 * The language tag is re-validated here as well as at save time: a Mapping created outside the
+	 * save-time validator (importDump, a page authored before validation existed) could carry a
+	 * malformed tag, which would corrupt the serialized literal. An invalid tag is therefore dropped —
+	 * the plain string literal is emitted and a warning logged — so a bad stored Mapping degrades the
+	 * output instead of aborting the whole export.
 	 */
-	private function applyOverrides( Literal $literal, PropertyMapping $propertyMapping, CurieExpander $expander ): Literal {
+	private function applyOverrides(
+		Literal $literal,
+		PropertyMapping $propertyMapping,
+		CurieExpander $expander,
+		Mapping $mapping,
+		string $propertyName
+	): Literal {
 		if ( $propertyMapping->datatype !== null ) {
 			$datatype = $expander->expand( $propertyMapping->datatype );
 
@@ -239,10 +253,22 @@ class OntologyMappingProjector implements PageProjector {
 		}
 
 		if ( $propertyMapping->language !== null && $this->isPlainString( $literal ) ) {
-			return new Literal( $literal->lexicalForm, $literal->datatype, $propertyMapping->language );
+			return $this->withLanguageTag( $literal, $propertyMapping->language, $mapping, $propertyName );
 		}
 
 		return $literal;
+	}
+
+	private function withLanguageTag( Literal $literal, string $language, Mapping $mapping, string $propertyName ): Literal {
+		if ( !Literal::isValidLanguageTag( $language ) ) {
+			$this->logger->warning(
+				'Mapping "' . $mapping->name->getText() . '" has an invalid language tag "' . $language
+				. '" for property "' . $propertyName . '"; emitting the literal without a language tag.'
+			);
+			return $literal;
+		}
+
+		return new Literal( $literal->lexicalForm, $literal->datatype, $language );
 	}
 
 	private function isPlainString( Literal $literal ): bool {
