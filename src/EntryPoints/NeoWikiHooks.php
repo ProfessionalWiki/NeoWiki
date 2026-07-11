@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use MediaWiki\Html\Html;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Page\ProperPageIdentity;
@@ -18,7 +19,6 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\ParserFunction\CypherRawParserFunction;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
@@ -48,6 +48,15 @@ class NeoWikiHooks {
 	}
 
 	private static function handleContentPage( OutputPage $out, Skin $skin ): void {
+		// Skip injection and warn loudly instead of 500ing every content page, so plain content pages
+		// still render on a wiki with no graph backend. Pages whose wikitext uses the graph-backed
+		// surfaces ({{#neowiki_value}}, the mw.neowiki getters) still fail their parse until the
+		// no-backend degradation work (#895); {{#view}} degrades to its client-side placeholder per component.
+		if ( NeoWikiExtension::getInstance()->getNeo4jPlugin() === null ) {
+			self::logMissingGraphBackend();
+			return;
+		}
+
 		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $skin );
 		$out->addHtml( self::getNeoWikiAppHtml( $out ) );
 
@@ -62,6 +71,17 @@ class NeoWikiHooks {
 		$out->clearHTML();
 		$out->addHTML( $builder->mainSubjectHtml( $out->getTitle(), $revisionId ) );
 		$out->addHTML( $html );
+	}
+
+	private static function logMissingGraphBackend(): void {
+		$config = NeoWikiExtension::getInstance()->config;
+		$onlyOneUrlSet = ( $config->neo4jInternalReadUrl !== null ) !== ( $config->neo4jInternalWriteUrl !== null );
+
+		$message = $onlyOneUrlSet
+			? 'NeoWiki: only one of the Neo4j read/write Bolt URLs is configured; both are required. NeoWiki features are disabled.'
+			: 'NeoWiki: no graph database backend configured; NeoWiki features are disabled. Configure the Neo4j read and write Bolt URLs.';
+
+		LoggerFactory::getInstance( 'NeoWiki' )->warning( $message );
 	}
 
 	private static function getNeoWikiAppHtml( OutputPage $out ): string {
@@ -122,15 +142,7 @@ class NeoWikiHooks {
 	}
 
 	public static function onParserFirstCallInit( Parser $parser ): void {
-		$parser->setFunctionHook(
-			'cypher_raw',
-			static function ( Parser $parser, string $cypherQuery ): string {
-				$parserFunction = new CypherRawParserFunction(
-					NeoWikiExtension::getInstance()->newCypherQueryService()
-				);
-				return $parserFunction->handle( $parser, $cypherQuery );
-			}
-		);
+		NeoWikiExtension::getInstance()->getNeo4jPlugin()?->registerParserFunctions( $parser );
 
 		$parser->setFunctionHook(
 			'view',

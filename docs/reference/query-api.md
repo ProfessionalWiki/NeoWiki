@@ -1,7 +1,8 @@
 # Query API
 
 `POST /neowiki/v0/query/cypher` runs a read-only Cypher query against the configured Neo4j backend and returns
-results as a structured JSON envelope.
+results as a structured JSON envelope. The endpoint exists only when a Neo4j graph backend is configured; on a
+wiki without one the route is absent and does not appear in the OpenAPI spec.
 
 ## Stability
 

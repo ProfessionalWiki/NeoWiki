@@ -11,7 +11,6 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\KeywordCyphe
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::getCypherQueryValidator
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CompositeCypherQueryValidator
  * @group Database
  */
@@ -22,19 +21,19 @@ class CompositeCypherQueryValidatorIntegrationTest extends NeoWikiIntegrationTes
 	}
 
 	public function testReadOnlyQueryIsAllowed(): void {
-		$validator = NeoWikiExtension::getInstance()->getCypherQueryValidator();
+		$validator = $this->newValidator();
 
 		$this->assertTrue( $validator->queryIsAllowed( 'MATCH (n) RETURN n LIMIT 5' ) );
 	}
 
 	public function testWriteQueryIsRejected(): void {
-		$validator = NeoWikiExtension::getInstance()->getCypherQueryValidator();
+		$validator = $this->newValidator();
 
 		$this->assertFalse( $validator->queryIsAllowed( 'CREATE (n:Test {name: "test"}) RETURN n' ) );
 	}
 
 	public function testAdminQueryIsRejected(): void {
-		$validator = NeoWikiExtension::getInstance()->getCypherQueryValidator();
+		$validator = $this->newValidator();
 
 		$this->assertFalse( $validator->queryIsAllowed( 'STOP DATABASE neo4j' ) );
 	}
@@ -52,6 +51,15 @@ class CompositeCypherQueryValidatorIntegrationTest extends NeoWikiIntegrationTes
 
 		$compositeValidator = new CompositeCypherQueryValidator( [ $keywordValidator, $explainValidator ] );
 		$this->assertFalse( $compositeValidator->queryIsAllowed( $query ) );
+	}
+
+	private function newValidator(): CompositeCypherQueryValidator {
+		return new CompositeCypherQueryValidator( [
+			new KeywordCypherQueryValidator(),
+			new ExplainCypherQueryValidator(
+				NeoWikiExtension::getInstance()->getReadOnlyNeo4jClient()
+			),
+		] );
 	}
 
 }

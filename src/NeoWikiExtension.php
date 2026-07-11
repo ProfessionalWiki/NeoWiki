@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki;
 
 use Exception;
+use LogicException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use MediaWiki\Context\RequestContext;
@@ -16,9 +17,6 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Session\CsrfTokenSet;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CompositeCypherQueryValidator;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CypherQueryValidator;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction;
@@ -47,12 +45,14 @@ use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
+use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
@@ -82,6 +82,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRouteRegistration;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetSubjectsOrderingApi;
@@ -102,8 +103,6 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jPageIdentifiersLookup;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\ExplainCypherQueryValidator;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\KeywordCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
@@ -134,16 +133,36 @@ class NeoWikiExtension {
 	private ?Neo4jPlugin $neo4jPlugin = null;
 	private ClientInterface $neo4jClient;
 	private ClientInterface $readOnlyNeo4jClient;
+	private static ?self $instance = null;
 
 	public static function getInstance(): self {
-		/** @var ?self $instance */
-		static $instance = null;
-
-		$instance ??= new self(
+		self::$instance ??= new self(
 			( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( MediaWikiServices::getInstance()->getMainConfig() )
 		);
 
-		return $instance;
+		return self::$instance;
+	}
+
+	// Test seam: NeoWikiExtension caches config-derived state in a singleton with no other reset.
+	// Tests that vary graph-backend config must rebuild it. See NeoWikiIntegrationTestCase::runWithoutGraphBackend().
+	public static function resetInstance(): void {
+		self::$instance = null;
+	}
+
+	public static function onExtensionRegistration(): void {
+		// This registration-time gate must agree with NeoWikiConfig::hasNeo4jBackend() at request time,
+		// so both resolve the URLs through the shared NeoWikiConfigFactory::resolveReadUrl/resolveWriteUrl helpers.
+		$readUrl = NeoWikiConfigFactory::resolveReadUrl(
+			is_string( $GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] ?? null ) ? $GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] : null
+		);
+		$writeUrl = NeoWikiConfigFactory::resolveWriteUrl(
+			is_string( $GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] ?? null ) ? $GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] : null
+		);
+
+		$GLOBALS['wgRestAPIAdditionalRouteFiles'] = array_merge(
+			$GLOBALS['wgRestAPIAdditionalRouteFiles'] ?? [],
+			Neo4jRouteRegistration::routeFiles( $readUrl, $writeUrl )
+		);
 	}
 
 	private function __construct(
@@ -275,10 +294,14 @@ class NeoWikiExtension {
 			// the registry would make getGraphDatabasePluginRegistry() build the Neo4j plugin, whose
 			// construction transitively fires the NeoWikiRegistration hook and re-enters that accessor.
 			// Composing core here keeps the registry extension-only and the plugin order deterministic.
-			$this->graphDatabasePlugin = new CompositeGraphDatabasePlugin(
-				$this->getNeo4jPlugin()->getGraphDatabasePlugin(),
-				...$this->getGraphDatabasePluginRegistry()->getPlugins()
-			);
+			$plugins = $this->getGraphDatabasePluginRegistry()->getPlugins();
+
+			$neo4jPlugin = $this->getNeo4jPlugin();
+			if ( $neo4jPlugin !== null ) {
+				array_unshift( $plugins, $neo4jPlugin->getGraphDatabasePlugin() );
+			}
+
+			$this->graphDatabasePlugin = new CompositeGraphDatabasePlugin( ...$plugins );
 		}
 
 		return $this->graphDatabasePlugin;
@@ -294,12 +317,27 @@ class NeoWikiExtension {
 		return $this->graphDatabasePluginRegistry;
 	}
 
-	public function getNeo4jPlugin(): Neo4jPlugin {
+	public function getNeo4jPlugin(): ?Neo4jPlugin {
+		if ( !$this->config->hasNeo4jBackend() ) {
+			return null;
+		}
+
 		if ( $this->neo4jPlugin === null ) {
 			$this->neo4jPlugin = $this->buildNeo4jPlugin( $this->getSchemaLookup() );
 		}
 
 		return $this->neo4jPlugin;
+	}
+
+	// Guard for surfaces whose registration is already gated on a configured backend, so callers get a
+	// non-null plugin without repeating the null handling.
+	public function requireNeo4jPlugin(): Neo4jPlugin {
+		$plugin = $this->getNeo4jPlugin();
+		if ( $plugin === null ) {
+			throw new LogicException( 'A configured Neo4j backend is required here.' );
+		}
+
+		return $plugin;
 	}
 
 	// Test seam: lets tests build a projection store with a custom SchemaLookup.
@@ -321,8 +359,12 @@ class NeoWikiExtension {
 
 	public function getNeo4jClient(): ClientInterface {
 		if ( !isset( $this->neo4jClient ) ) {
+			$writeUrl = $this->config->neo4jInternalWriteUrl;
+			if ( $writeUrl === null ) {
+				throw new GraphBackendNotConfiguredException();
+			}
 			$this->neo4jClient = ClientBuilder::create()
-				->withDriver( 'default', $this->config->neo4jInternalWriteUrl )
+				->withDriver( 'default', $writeUrl )
 				->withDefaultDriver( 'default' )
 				->build();
 		}
@@ -332,8 +374,12 @@ class NeoWikiExtension {
 
 	public function getReadOnlyNeo4jClient(): ClientInterface {
 		if ( !isset( $this->readOnlyNeo4jClient ) ) {
+			$readUrl = $this->config->neo4jInternalReadUrl;
+			if ( $readUrl === null ) {
+				throw new GraphBackendNotConfiguredException();
+			}
 			$this->readOnlyNeo4jClient = ClientBuilder::create()
-				->withDriver( 'default', $this->config->neo4jInternalReadUrl )
+				->withDriver( 'default', $readUrl )
 				->withDefaultDriver( 'default' )
 				->build();
 		}
@@ -341,19 +387,8 @@ class NeoWikiExtension {
 		return $this->readOnlyNeo4jClient;
 	}
 
-	public function getCypherQueryValidator(): CypherQueryValidator {
-		return new CompositeCypherQueryValidator( [
-			new KeywordCypherQueryValidator(),
-			new ExplainCypherQueryValidator( $this->getReadOnlyNeo4jClient() ),
-		] );
-	}
-
 	public function newCypherQueryService(): Neo4jQueryService {
-		return new Neo4jQueryService(
-			$this->getNeo4jPlugin()->getReadQueryEngine(),
-			$this->getCypherQueryValidator(),
-			new Neo4jResultNormalizer(),
-		);
+		return $this->requireNeo4jPlugin()->newQueryService();
 	}
 
 	public static function newCypherQueryApi(): CypherQueryApi {
@@ -363,7 +398,7 @@ class NeoWikiExtension {
 	}
 
 	public function getWriteQueryEngine(): Neo4jWriteQueryEngine {
-		return $this->getNeo4jPlugin()->getWriteQueryEngine();
+		return $this->requireNeo4jPlugin()->getWriteQueryEngine();
 	}
 
 	public function isDevelopmentUIEnabled(): bool {
@@ -476,6 +511,13 @@ class NeoWikiExtension {
 		);
 	}
 
+	// NeoWiki requires a configured graph backend: the subject -> page reverse index lives only in Neo4j,
+	// so this lookup (and Subject CRUD, {{#view}}, {{#neowiki_value}}, the mw.neowiki.* getters) needs one.
+	// A no-backend wiki is a misconfiguration, surfaced loudly rather than silently degraded:
+	// getReadOnlyNeo4jClient() throws GraphBackendNotConfiguredException, and the content-page render path
+	// (NeoWikiHooks::handleContentPage) short-circuits with a warning instead of failing the page. Making
+	// these work without a graph backend needs a MediaWiki-native reverse index; that is future work
+	// (#586 / #895), only worthwhile if a deliberate storage-only product is chosen (ADR 019 defers it).
 	private function getPageIdentifiersLookup(): PageIdentifiersLookup {
 		return new Neo4jPageIdentifiersLookup( $this->getReadOnlyNeo4jClient() );
 	}
@@ -579,6 +621,10 @@ class NeoWikiExtension {
 	}
 
 	public function getSubjectLabelLookup(): SubjectLabelLookup {
+		if ( $this->getNeo4jPlugin() === null ) {
+			return new NullSubjectLabelLookup();
+		}
+
 		return new Neo4jSubjectLabelLookup(
 			client: $this->getReadOnlyNeo4jClient()
 		);
