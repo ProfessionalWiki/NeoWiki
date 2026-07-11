@@ -28,6 +28,8 @@ class NeoWikiConfigFactoryTest extends TestCase {
 	public function testUnsetUrlsProduceNullInsteadOfThrowing(): void {
 		$config = ( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( new HashConfig( [
 			'NeoWikiEnableDevelopmentUI' => false,
+			'NeoWikiRdfBaseUri' => null,
+			'CanonicalServer' => 'https://wiki.example',
 			'NeoWikiNeo4jInternalWriteUrl' => null,
 			'NeoWikiNeo4jInternalReadUrl' => null,
 		] ) );
@@ -40,6 +42,8 @@ class NeoWikiConfigFactoryTest extends TestCase {
 	public function testConfiguredUrlsArePassedThrough(): void {
 		$config = ( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( new HashConfig( [
 			'NeoWikiEnableDevelopmentUI' => false,
+			'NeoWikiRdfBaseUri' => null,
+			'CanonicalServer' => 'https://wiki.example',
 			'NeoWikiNeo4jInternalWriteUrl' => 'bolt://write:7687',
 			'NeoWikiNeo4jInternalReadUrl' => 'bolt://read:7687',
 		] ) );
@@ -55,12 +59,38 @@ class NeoWikiConfigFactoryTest extends TestCase {
 
 		$config = ( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( new HashConfig( [
 			'NeoWikiEnableDevelopmentUI' => false,
+			'NeoWikiRdfBaseUri' => null,
+			'CanonicalServer' => 'https://wiki.example',
 			'NeoWikiNeo4jInternalWriteUrl' => 'bolt://config-write',
 			'NeoWikiNeo4jInternalReadUrl' => 'bolt://config-read',
 		] ) );
 
 		$this->assertSame( 'bolt://env-write', $config->neo4jInternalWriteUrl );
 		$this->assertSame( 'bolt://env-read', $config->neo4jInternalReadUrl );
+	}
+
+	public function testRdfBaseUriDefaultsToTheCanonicalServer(): void {
+		$config = ( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( new HashConfig( [
+			'NeoWikiEnableDevelopmentUI' => false,
+			'NeoWikiNeo4jInternalWriteUrl' => null,
+			'NeoWikiNeo4jInternalReadUrl' => null,
+			'NeoWikiRdfBaseUri' => null,
+			'CanonicalServer' => 'https://wiki.example',
+		] ) );
+
+		$this->assertSame( 'https://wiki.example', $config->rdfBaseUri );
+	}
+
+	public function testConfiguredRdfBaseUriOverridesTheCanonicalServer(): void {
+		$config = ( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( new HashConfig( [
+			'NeoWikiEnableDevelopmentUI' => false,
+			'NeoWikiNeo4jInternalWriteUrl' => null,
+			'NeoWikiNeo4jInternalReadUrl' => null,
+			'NeoWikiRdfBaseUri' => 'https://id.example.org/ns',
+			'CanonicalServer' => 'https://wiki.example',
+		] ) );
+
+		$this->assertSame( 'https://id.example.org/ns', $config->rdfBaseUri );
 	}
 
 }
