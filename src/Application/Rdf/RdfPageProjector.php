@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfLiteralFactory;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelation;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use Psr\Log\LoggerInterface;
@@ -27,9 +28,9 @@ use Psr\Log\LoggerInterface;
  * one resource per Subject (rdf:type from the Schema, rdfs:label, one predicate per Statement value),
  * and the two-layer relation reification. Every quad is placed in the page's named graph.
  *
- * Schema resolution mirrors Neo4jSubjectUpdater: relations need the Subject's Schema to determine the
- * Relation Type (the predicate). When the Schema is missing, only relations are skipped; the Subject's
- * type, label and non-relation Statements still project, since those do not depend on the Schema.
+ * Schema resolution mirrors Neo4jSubjectUpdater: a Subject whose Schema is unavailable is skipped
+ * entirely (and logged), so the native projection and its sibling projections hold the same set of
+ * entities and page metadata never references a Subject that has no projected type or label.
  */
 class RdfPageProjector {
 
@@ -50,19 +51,47 @@ class RdfPageProjector {
 	public function projectPage( Page $page ): QuadList {
 		$graph = $this->namespaces->page( $page->getId() );
 
-		$quads = $this->projectPageMetadata( $page, $graph );
+		$subjects = $this->resolveSchemas( $page->getSubjects()->getAllSubjects()->asArray() );
 
-		foreach ( $page->getSubjects()->getAllSubjects()->asArray() as $subject ) {
-			$quads = array_merge( $quads, $this->projectSubject( $subject, $graph, $page->getId() ) );
+		$quads = $this->projectPageMetadata( $page, $subjects, $graph );
+
+		foreach ( $subjects as [ $subject, $schema ] ) {
+			$quads = array_merge( $quads, $this->projectSubject( $subject, $schema, $graph, $page->getId() ) );
 		}
 
 		return QuadList::fromArray( $quads );
 	}
 
 	/**
+	 * Resolves each Subject's Schema up front. A Subject whose Schema is unavailable is dropped from
+	 * the projection entirely — matching Neo4jSubjectUpdater, which skips the whole Subject — so
+	 * sibling projections hold the same entity set (the invariant the SPARQL store, #586, relies on).
+	 *
+	 * @param Subject[] $subjects
+	 * @return list<array{Subject, Schema}>
+	 */
+	private function resolveSchemas( array $subjects ): array {
+		$resolved = [];
+
+		foreach ( $subjects as $subject ) {
+			$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+
+			if ( $schema === null ) {
+				$this->logger->warning( 'Schema not found: ' . $subject->getSchemaName()->getText() );
+				continue;
+			}
+
+			$resolved[] = [ $subject, $schema ];
+		}
+
+		return $resolved;
+	}
+
+	/**
+	 * @param list<array{Subject, Schema}> $subjects
 	 * @return Quad[]
 	 */
-	private function projectPageMetadata( Page $page, Iri $graph ): array {
+	private function projectPageMetadata( Page $page, array $subjects, Iri $graph ): array {
 		$pageIri = $this->namespaces->page( $page->getId() );
 		$properties = $page->getProperties();
 
@@ -98,11 +127,11 @@ class RdfPageProjector {
 		}
 
 		$mainSubject = $page->getSubjects()->getMainSubject();
-		if ( $mainSubject !== null ) {
+		if ( $mainSubject !== null && $this->isProjected( $mainSubject, $subjects ) ) {
 			$quads[] = new Quad( $pageIri, $this->namespaces->term( RdfNamespaces::TERM_MAIN_SUBJECT ), $this->namespaces->subject( $mainSubject->id ), $graph );
 		}
 
-		foreach ( $page->getSubjects()->getAllSubjects()->asArray() as $subject ) {
+		foreach ( $subjects as [ $subject ] ) {
 			$quads[] = new Quad( $pageIri, $this->namespaces->term( RdfNamespaces::TERM_HAS_SUBJECT ), $this->namespaces->subject( $subject->id ), $graph );
 		}
 
@@ -110,9 +139,22 @@ class RdfPageProjector {
 	}
 
 	/**
+	 * @param list<array{Subject, Schema}> $subjects
+	 */
+	private function isProjected( Subject $mainSubject, array $subjects ): bool {
+		foreach ( $subjects as [ $subject ] ) {
+			if ( $subject->id->text === $mainSubject->id->text ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * @return Quad[]
 	 */
-	private function projectSubject( Subject $subject, Iri $graph, PageId $pageId ): array {
+	private function projectSubject( Subject $subject, Schema $schema, Iri $graph, PageId $pageId ): array {
 		$subjectIri = $this->namespaces->subject( $subject->id );
 
 		$quads = [
@@ -122,7 +164,7 @@ class RdfPageProjector {
 
 		$quads = array_merge( $quads, $this->projectStatements( $subject, $subjectIri, $graph, $pageId ) );
 
-		return array_merge( $quads, $this->projectRelations( $subject, $subjectIri, $graph ) );
+		return array_merge( $quads, $this->projectRelations( $subject, $schema, $subjectIri, $graph ) );
 	}
 
 	/**
@@ -155,16 +197,7 @@ class RdfPageProjector {
 	/**
 	 * @return Quad[]
 	 */
-	private function projectRelations( Subject $subject, Iri $subjectIri, Iri $graph ): array {
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
-
-		if ( $schema === null ) {
-			$this->logger->warning(
-				'Schema not found when projecting relations to RDF: ' . $subject->getSchemaName()->getText()
-			);
-			return [];
-		}
-
+	private function projectRelations( Subject $subject, Schema $schema, Iri $subjectIri, Iri $graph ): array {
 		$quads = [];
 
 		foreach ( $subject->getTypedRelations( $schema )->relations as $relation ) {

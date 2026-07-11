@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Literal;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Quad;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\QuadList;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfLiteralFactory;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
@@ -189,8 +190,8 @@ class RdfPageProjectorTest extends TestCase {
 		) ) );
 	}
 
-	public function testMissingSchemaSkipsRelationsButKeepsTypeLabelAndStatements(): void {
-		$subject = TestSubject::build(
+	public function testSubjectWithMissingSchemaIsSkippedEntirelyWhileOtherSubjectsProject(): void {
+		$acme = TestSubject::build(
 			id: self::ACME_ID,
 			label: 'ACME Corp',
 			schemaName: new SchemaName( 'Company' ),
@@ -201,22 +202,43 @@ class RdfPageProjectorTest extends TestCase {
 				] ),
 			] )
 		);
-		$page = TestPage::build( id: 42, mainSubject: $subject );
+		$jane = TestSubject::build(
+			id: self::JANE_ID,
+			label: 'Jane Smith',
+			schemaName: new SchemaName( 'Person' ),
+		);
+		$page = TestPage::build( id: 42, mainSubject: $acme, childSubjects: new SubjectMap( $jane ) );
 
-		// No Company schema registered, so relations cannot be typed.
-		$quads = $this->newProjector( new InMemorySchemaLookup() )->projectPage( $page );
+		// Only Person is registered. The Company Schema is unavailable, so ACME is skipped entirely,
+		// mirroring Neo4jSubjectUpdater — the projection must still hold the same entity set as Neo4j.
+		$quads = $this->newProjector( new InMemorySchemaLookup(
+			TestSchema::build( name: 'Person', properties: new PropertyDefinitions( [] ) )
+		) )->projectPage( $page );
 
 		$acmeIri = $this->ns->subject( new SubjectId( self::ACME_ID ) );
-		$this->assertTrue( $quads->contains( $this->quad( $acmeIri, $this->ns->rdfType(), $this->ns->schemaClass( new SchemaName( 'Company' ) ) ) ) );
-		$this->assertTrue( $quads->contains( $this->quad( $acmeIri, $this->ns->rdfsLabel(), RdfLiteralFactory::typed( 'ACME Corp', 'string' ) ) ) );
-		$this->assertTrue( $quads->contains( $this->quad( $acmeIri, $this->ns->property( 'Founded' ), RdfLiteralFactory::typed( '2019', 'integer' ) ) ) );
+		$janeIri = $this->ns->subject( new SubjectId( self::JANE_ID ) );
+		$pageIri = $this->ns->page( new PageId( 42 ) );
 
+		// The schema-less Subject leaves no trace: no type, label, statements, or page reference.
+		$this->assertFalse( $quads->contains( $this->quad( $acmeIri, $this->ns->rdfType(), $this->ns->schemaClass( new SchemaName( 'Company' ) ) ) ) );
+		$this->assertFalse( $quads->contains( $this->quad( $acmeIri, $this->ns->rdfsLabel(), RdfLiteralFactory::typed( 'ACME Corp', 'string' ) ) ) );
+		$this->assertFalse( $quads->contains( $this->quad( $acmeIri, $this->ns->property( 'Founded' ), RdfLiteralFactory::typed( '2019', 'integer' ) ) ) );
 		$this->assertFalse(
-			$quads->contains( $this->quad( $acmeIri, $this->ns->property( 'CEO' ), $this->ns->subject( new SubjectId( self::JANE_ID ) ) ) ),
-			'The direct relation triple must be absent when the Schema is unavailable.'
+			$quads->contains( $this->quad( $pageIri, $this->ns->term( RdfNamespaces::TERM_MAIN_SUBJECT ), $acmeIri ) ),
+			'A skipped Subject must not remain the page main subject.'
 		);
+		$this->assertFalse(
+			$quads->contains( $this->quad( $pageIri, $this->ns->term( RdfNamespaces::TERM_HAS_SUBJECT ), $acmeIri ) ),
+			'A skipped Subject must not be referenced by the page.'
+		);
+
+		// The Subject whose Schema is available still projects in full.
+		$this->assertTrue( $quads->contains( $this->quad( $janeIri, $this->ns->rdfType(), $this->ns->schemaClass( new SchemaName( 'Person' ) ) ) ) );
+		$this->assertTrue( $quads->contains( $this->quad( $janeIri, $this->ns->rdfsLabel(), RdfLiteralFactory::typed( 'Jane Smith', 'string' ) ) ) );
+		$this->assertTrue( $quads->contains( $this->quad( $pageIri, $this->ns->term( RdfNamespaces::TERM_HAS_SUBJECT ), $janeIri ) ) );
+
 		$this->assertSame(
-			[ 'Schema not found when projecting relations to RDF: Company' ],
+			[ 'Schema not found: Company' ],
 			$this->logger->getLogCalls()->getMessages()
 		);
 	}
@@ -263,6 +285,97 @@ class RdfPageProjectorTest extends TestCase {
 			[ 'Dropped 1 unrepresentable value(s) of property "Established" on page 42 when projecting to RDF' ],
 			$this->logger->getLogCalls()->getMessages()
 		);
+	}
+
+	/**
+	 * A user-authored Property or Schema name must never break out of its IRI: illegal characters
+	 * are escaped so the document still parses to exactly the intended quads. The confirmed repro
+	 * strings (a name closing the IRIREF with `>`, and one forging extra `<s> <p> <o> .` triples)
+	 * must each yield a single statement quad, not injected triples.
+	 *
+	 * @dataProvider provideNamesThatMustBeEscaped
+	 */
+	public function testUserAuthoredNamesCannotBreakOutOfTheirIri( string $propertyName, string $expectedLocalName ): void {
+		$output = $this->serialize(
+			$this->newProjector( new InMemorySchemaLookup( $this->companySchema() ) )
+				->projectPage( $this->pageWithTextProperty( $propertyName ) )
+		);
+
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( $this->expectedTriGForTextProperty( 'https://wiki.example/prop/' . $expectedLocalName ) ),
+			ParsedRdf::canonicalQuads( $output )
+		);
+	}
+
+	/**
+	 * @return iterable<string, array{string, string}>
+	 */
+	public static function provideNamesThatMustBeEscaped(): iterable {
+		yield 'less-than' => [ 'a<b', 'a%3Cb' ];
+		yield 'greater-than closes the IRIREF (confirmed repro)' => [ 'Rev>2020', 'Rev%3E2020' ];
+		yield 'double quote' => [ 'a"b', 'a%22b' ];
+		yield 'opening brace' => [ 'a{b', 'a%7Bb' ];
+		yield 'closing brace' => [ 'a}b', 'a%7Db' ];
+		yield 'pipe' => [ 'a|b', 'a%7Cb' ];
+		yield 'caret' => [ 'a^b', 'a%5Eb' ];
+		yield 'backslash' => [ 'a\\b', 'a%5Cb' ];
+		yield 'backtick' => [ 'a`b', 'a%60b' ];
+		yield 'percent sign' => [ 'a%b', 'a%25b' ];
+		yield 'control character' => [ "a\x01b", 'a%01b' ];
+		yield 'unicode passes through raw' => [ 'Naïve 日本語', 'Naïve_日本語' ];
+		yield 'triple injection breakout (confirmed repro)' => [
+			'p><evil-s>.<evil-s2><evil-p2><evil-o2>.<evil-s3><evil-p3',
+			'p%3E%3Cevil-s%3E.%3Cevil-s2%3E%3Cevil-p2%3E%3Cevil-o2%3E.%3Cevil-s3%3E%3Cevil-p3',
+		];
+	}
+
+	private function pageWithTextProperty( string $propertyName ): Page {
+		return TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build(
+				title: 'ACME Corp',
+				creationTime: '20240301090000',
+				modificationTime: '20240301090000',
+				lastEditor: 'Admin',
+			),
+			mainSubject: TestSubject::build(
+				id: self::ACME_ID,
+				label: 'ACME Corp',
+				schemaName: new SchemaName( 'Company' ),
+				statements: new StatementList( [
+					TestStatement::build( $propertyName, new StringValue( 'v' ), 'text' ),
+				] )
+			),
+		);
+	}
+
+	private function expectedTriGForTextProperty( string $predicateIri ): string {
+		return <<<TRIG
+			@prefix neo: <https://wiki.example/ontology/> .
+			@prefix neo-subj: <https://wiki.example/entity/> .
+			@prefix neo-schema: <https://wiki.example/schema/> .
+			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+			@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+			@prefix dcterms: <http://purl.org/dc/terms/> .
+
+			<https://wiki.example/page/42> {
+				<https://wiki.example/page/42> a neo:Page ;
+					neo:pageName "ACME Corp" ;
+					dcterms:created "2024-03-01T09:00:00Z"^^xsd:dateTime ;
+					dcterms:modified "2024-03-01T09:00:00Z"^^xsd:dateTime ;
+					neo:lastEditor "Admin" ;
+					neo:mainSubject neo-subj:s1acmeaaaaaaaa1 ;
+					neo:hasSubject neo-subj:s1acmeaaaaaaaa1 .
+
+				neo-subj:s1acmeaaaaaaaa1 a neo-schema:Company ;
+					rdfs:label "ACME Corp" ;
+					<$predicateIri> "v" .
+			}
+			TRIG;
+	}
+
+	private function serialize( QuadList $quads ): string {
+		return ( new HardfRdfSerializer( $this->ns->prefixMap() ) )->serialize( $quads, RdfFormat::TriG );
 	}
 
 	private function companySchema(): Schema {
