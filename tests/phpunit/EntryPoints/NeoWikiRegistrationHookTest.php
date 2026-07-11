@@ -42,6 +42,12 @@ class NeoWikiRegistrationHookTest extends MediaWikiIntegrationTestCase {
 		$this->assertTrue( $registry->hasBuilder( 'color' ) );
 	}
 
+	public function testRedHerbRegistersRdfValueMapper(): void {
+		$registry = NeoWikiExtension::getInstance()->getRdfValueMapperRegistry();
+
+		$this->assertTrue( $registry->hasMapper( 'color' ) );
+	}
+
 	public function testRedHerbRegistersGraphDatabasePlugin(): void {
 		$plugins = NeoWikiExtension::getInstance()->getGraphDatabasePluginRegistry()->getPlugins();
 

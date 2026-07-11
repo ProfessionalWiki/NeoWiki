@@ -169,6 +169,10 @@
 		"NeoWikiNeo4jInternalReadUrl": {
 			"description": "Bolt URL NeoWiki uses for read and query traffic against Neo4j; should use a least-privilege Neo4j user.",
 			"value": null
+		},
+		"NeoWikiRdfBaseUri": {
+			"description": "Base URI under which the RDF export mints all NeoWiki IRIs (entity, property, schema, page, etc.). When null, defaults to the wiki's canonical URL ($wgCanonicalServer). Wiki-level on purpose, so sibling projections describe the same entities with identical IRIs.",
+			"value": null
 		}
 	},
 
@@ -193,6 +197,11 @@
 			"path": "/neowiki/v0/page/{pageId}/subjects",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetPageSubjectsApi"
+		},
+		{
+			"path": "/neowiki/v0/page/{pageId}/rdf",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newExportPageRdfApi"
 		},
 		{
 			"path": "/neowiki/v0/page/{pageId}/mainSubject",

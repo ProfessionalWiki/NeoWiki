@@ -11,6 +11,7 @@ readonly class NeoWikiConfig {
 		public string $neo4jInternalWriteUrl,
 		public string $neo4jInternalReadUrl,
 		public string $wikiId,
+		public string $rdfBaseUri,
 	) {
 	}
 

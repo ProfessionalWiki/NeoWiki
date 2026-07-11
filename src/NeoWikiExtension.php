@@ -58,6 +58,14 @@ use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageExporter;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfSerializer;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
+use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportPageRdfApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -118,6 +126,7 @@ class NeoWikiExtension {
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
 	private Neo4jValueBuilderRegistry $valueBuilderRegistry;
+	private RdfValueMapperRegistry $rdfValueMapperRegistry;
 	private bool $extensionsRegistered = false;
 	private SubjectRepository $subjectRepository;
 	private CompositeGraphDatabasePlugin $graphDatabasePlugin;
@@ -164,6 +173,16 @@ class NeoWikiExtension {
 		return $this->valueBuilderRegistry;
 	}
 
+	public function getRdfValueMapperRegistry(): RdfValueMapperRegistry {
+		if ( !isset( $this->rdfValueMapperRegistry ) ) {
+			$this->rdfValueMapperRegistry = RdfValueMapperRegistry::withCoreMappers();
+		}
+
+		$this->ensureExtensionsRegistered();
+
+		return $this->rdfValueMapperRegistry;
+	}
+
 	private function ensureExtensionsRegistered(): void {
 		if ( $this->extensionsRegistered ) {
 			return;
@@ -178,6 +197,7 @@ class NeoWikiExtension {
 				$this->getValueBuilderRegistry(),
 				$this->getPagePropertyProviderRegistry(),
 				$this->getGraphDatabasePluginRegistry(),
+				$this->getRdfValueMapperRegistry(),
 			) ]
 		);
 	}
@@ -200,13 +220,53 @@ class NeoWikiExtension {
 	public function getStoreContentUC(): OnRevisionCreatedHandler {
 		return new OnRevisionCreatedHandler(
 			$this->getGraphDatabasePlugin(),
-			new PagePropertiesBuilder(
-				revisionStore: MediaWikiServices::getInstance()->getRevisionStore(),
-				contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory(),
-				titleFormatter: MediaWikiServices::getInstance()->getTitleFormatter(),
-				providerRegistry: $this->getPagePropertyProviderRegistry(),
-			)
+			$this->getPagePropertiesBuilder(),
 		);
+	}
+
+	public function getPagePropertiesBuilder(): PagePropertiesBuilder {
+		return new PagePropertiesBuilder(
+			revisionStore: MediaWikiServices::getInstance()->getRevisionStore(),
+			contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory(),
+			titleFormatter: MediaWikiServices::getInstance()->getTitleFormatter(),
+			providerRegistry: $this->getPagePropertyProviderRegistry(),
+		);
+	}
+
+	public function getRdfNamespaces(): RdfNamespaces {
+		return new RdfNamespaces( $this->config->rdfBaseUri );
+	}
+
+	public function getRdfSerializer(): RdfSerializer {
+		return new HardfRdfSerializer( $this->getRdfNamespaces()->prefixMap() );
+	}
+
+	public function newRdfPageProjector(): RdfPageProjector {
+		return new RdfPageProjector(
+			$this->getRdfValueMapperRegistry(),
+			$this->getRdfNamespaces(),
+			$this->getSchemaLookup(),
+			LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
+	public function newRdfPageLoader(): RdfPageLoader {
+		return new RdfPageLoader(
+			MediaWikiServices::getInstance()->getWikiPageFactory(),
+			$this->getPagePropertiesBuilder(),
+		);
+	}
+
+	public function newRdfPageExporter(): RdfPageExporter {
+		return new RdfPageExporter(
+			$this->newRdfPageLoader(),
+			$this->newRdfPageProjector(),
+			$this->getRdfSerializer(),
+		);
+	}
+
+	public static function newExportPageRdfApi(): ExportPageRdfApi {
+		return new ExportPageRdfApi();
 	}
 
 	public function getGraphDatabasePlugin(): GraphDatabasePlugin {
