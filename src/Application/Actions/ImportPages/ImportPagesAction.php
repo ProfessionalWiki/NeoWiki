@@ -25,6 +25,7 @@ class ImportPagesAction {
 		private readonly PageContentSource $pageContentSource,
 		private readonly PageContentSource $moduleContentSource,
 		private readonly LayoutContentSource $layoutContentSource,
+		private readonly MappingContentSource $mappingContentSource,
 	) {
 	}
 
@@ -43,6 +44,15 @@ class ImportPagesAction {
 				"Layout:$layoutName",
 				[
 					'main' => $layoutContent,
+				]
+			);
+		}
+
+		foreach ( $this->mappingContentSource->getMappings() as $mappingName => $mappingContent ) {
+			$this->createPage(
+				"Mapping:$mappingName",
+				[
+					'main' => $mappingContent,
 				]
 			);
 		}

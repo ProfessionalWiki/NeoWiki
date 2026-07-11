@@ -1,0 +1,16 @@
+{
+	"mainSubject": "s2picasso2aaaa2",
+	"subjects": {
+		"s2picasso2aaaa2": {
+			"label": "Pablo Picasso",
+			"schema": "Person",
+			"statements": {
+				"Description": { "type": "text", "value": [ "Spanish painter, sculptor, and printmaker who co-founded the Cubist movement and is regarded as one of the most influential artists of the 20th century." ] },
+				"Gender": { "type": "text", "value": [ "Male" ] },
+				"Birth date": { "type": "date", "value": [ "1881-10-25" ] },
+				"Birth place": { "type": "relation", "value": [ { "id": "r2picasso2city2", "target": "s2birthcity2aa2" } ] },
+				"Source": { "type": "text", "value": [ "A Life of Picasso I: The Prodigy: 1881-1906 by John Richardson (ISBN 978-0375711497)" ] }
+			}
+		}
+	}
+}

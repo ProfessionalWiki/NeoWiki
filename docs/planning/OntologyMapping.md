@@ -9,6 +9,14 @@ Status: Draft strawman, for discussion with ECHOLOT partners (T2.3 and T3.x).
 
 Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 
+> **As-built (v1, 2026-07).** The near-1:1 term-substitution tier of this design has shipped: Mappings as
+> pages in a `Mapping:` namespace, and an ontology projection selectable alongside the native one on the
+> RDF export endpoint and `DumpRdf`. See the [Ontology Mapping reference](../reference/ontology-mapping.md)
+> and the worked [Person → EDM example](../examples/person-to-edm.md). The structural / node-synthesis
+> tier and the mapping-formalism question (Q1, [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995))
+> remain open; the stored `"version": 1` format is provisional. Provisional answers v1 gives to some open
+> questions below are noted inline.
+
 ## Summary
 
 NeoWiki defines its own native Schemas ([ADR 6](../adr/006-schemas.md)). For RDF and SPARQL it projects that data into
@@ -314,9 +322,16 @@ above, since the store has no sync-back to the wiki.
 mapping per Schema? Per-target is more modular and independently installable; combined may reduce duplication for shared
 sub-patterns.
 
+*v1: a separate Mapping per (Schema, target), enforced at save time — a second page claiming the same pair is rejected.
+Combined multi-target mappings stay open for a later format version.*
+
 **Q7: Authoring and distribution.** Where do Mappings live (a dedicated namespace? API-only?), who authors them (data
 modellers) vs installs them (wiki admins), and how are bundles (e.g. "CIDOC-CRM for Person / Place / Object") packaged
 and shared across wikis and a farm?
+
+*v1: Mappings live as pages in a dedicated `Mapping:` namespace, authored like Schemas/Layouts and gated by the
+`neowiki-mapping-edit` right, and seedable as demo/bundle data (the Person→EDM example ships this way). Packaging and
+farm-wide sharing of bundles is not yet addressed.*
 
 **Q8: Multilinguality.** Mapped labels should carry language tags (`@lang`); canonical values used in queries stay
 language-neutral. CH data is heavily multilingual (Basque, the ELB languages, etc.). How much belongs in the mapping vs
@@ -325,6 +340,10 @@ the native projection vs Views?
 **Q9: Multiple projections per wiki.** Should a wiki be able to serve several projections at once (several stores:
 native + one or more ontologies), and is a native projection always available as a baseline? This makes "which
 vocabulary is in the store" a per-store configuration rather than a single global choice.
+
+*v1: yes for export — a wiki serves several projections at once, selected per request via the `projection` parameter,
+with `native` always the baseline and each Mapping page adding its target to the known set. Per-store selection (a store
+configured to hold one projection) is the seam #586 consumes via `newRdfProjection(name)`.*
 
 **Q10: Flat vs nested native modelling.** The [fork above](#flat-vs-nested-native-modelling-open-fork): should
 case-study data live in flat Schemas with the mapping synthesizing intermediate nodes, or in nested Schemas with the

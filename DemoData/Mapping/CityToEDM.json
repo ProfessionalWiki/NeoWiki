@@ -1,0 +1,12 @@
+{
+	"version": 1,
+	"schema": "City",
+	"target": "edm",
+	"prefixes": {
+		"edm": "http://www.europeana.eu/schemas/edm/"
+	},
+	"subject": {
+		"class": "edm:Place"
+	},
+	"properties": {}
+}

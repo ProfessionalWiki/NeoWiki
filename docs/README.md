@@ -13,6 +13,7 @@ Key docs:
 * [REST API](reference/rest-api.md) - The complete `/neowiki/v0/*` endpoint reference, plus the generated OpenAPI spec served at `/rest.php/specs/v0/module/-`
 * [RDF Export](reference/rdf-export.md) - Native RDF projection: config, IRI scheme, the per-page export endpoint, and the bulk dump script
 * [Ontology Mapping](reference/ontology-mapping.md) - Projecting Subjects into standard ontologies (EDM, Dublin Core, …) via Mapping pages
+* [Example: Person to EDM](examples/person-to-edm.md) - End-to-end walkthrough of the ontology-mapping projection, native vs EDM output, and its findings
 * [Extending NeoWiki](reference/extending.md) - How other extensions add property types, contribute graph data, and reuse NeoWiki's UI
 * [Installation & Maintenance](operations/installation.md) - Sysadmin guide to installing and maintaining NeoWiki
 * [Architecture Decision Records](adr/001-domain-centric-architecture.md) - Numbered, dated architectural decisions
@@ -22,6 +23,7 @@ Key docs:
 
 * Explains a domain idea or model → `concepts/`
 * A precise contract (an API or a data format) → `reference/`
+* A worked, end-to-end example → `examples/`
 * A numbered, dated decision → `adr/`
 * Work-in-progress exploration → `planning/` (not published to the website)
 * Sysadmin install, maintenance, or deployment guide → `operations/`

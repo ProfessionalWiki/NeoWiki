@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s2birthcity2aa2",
+	"subjects": {
+		"s2birthcity2aa2": {
+			"label": "Málaga",
+			"schema": "City",
+			"statements": {
+				"Country": { "type": "text", "value": [ "Spain" ] },
+				"Population": { "type": "number", "value": 578460 },
+				"Website": { "type": "url", "value": [ "https://www.malaga.eu" ] }
+			}
+		}
+	}
+}

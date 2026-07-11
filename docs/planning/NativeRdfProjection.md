@@ -6,6 +6,12 @@ Status: Draft, incorporating feedback from ECHOLOT partners (Bilbao meeting Marc
 
 Discussion: [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
 
+> **As-built (2026-07).** The native projection specified here has shipped, together with the shared
+> per-store IRI/namespace regime and per-page named graphs it defines. See the
+> [RDF Export reference](../reference/rdf-export.md). Ontology (sibling) projections build on this shared
+> infrastructure — see [OntologyMapping.md](OntologyMapping.md) and the worked
+> [Person → EDM example](../examples/person-to-edm.md).
+
 ## Purpose
 
 This document specifies how NeoWiki's data model projects to RDF triples for the SPARQL plugin described in
