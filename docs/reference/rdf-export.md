@@ -70,7 +70,7 @@ curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf?format=turtle'
 one named graph per page. Progress goes to stderr so stdout stays a clean RDF document.
 
 ```sh
-php maintenance/run.php extensions/NeoWiki/maintenance/DumpRdf.php > dump.trig
+php maintenance/run.php NeoWiki:DumpRdf > dump.trig
 ```
 
 ## Not covered here
