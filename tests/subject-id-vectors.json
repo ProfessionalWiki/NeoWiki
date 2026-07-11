@@ -27,6 +27,8 @@
 		{ "name": "uppercase subject prefix", "input": "S11111111111111", "valid": false },
 		{ "name": "leading whitespace", "input": " s11111111111111", "valid": false },
 		{ "name": "trailing whitespace", "input": "s11111111111111 ", "valid": false },
+		{ "name": "bare id with trailing newline", "input": "s11111111111111\n", "valid": false },
+		{ "name": "qualified id with trailing newline", "input": "enwiki:Q42\n", "valid": false },
 		{ "name": "explicitly-local-qualified localId must be a bare nanoid", "input": "testwiki:notananoid", "valid": false },
 		{ "name": "explicitly-local-qualified localId must not itself be qualified", "input": "testwiki:a:b", "valid": false },
 		{ "name": "empty source key", "input": ":s11111111111111", "valid": false },

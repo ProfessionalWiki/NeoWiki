@@ -9,8 +9,8 @@ use Stringable;
 
 readonly class SubjectId implements Stringable {
 
-	private const string BARE_PATTERN = '/^s[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{14}$/';
-	private const string QUALIFIED_PATTERN = '/^([A-Za-z0-9+_-]+):([A-Za-z0-9._~!$&\'()*+,;=:@-]+)$/';
+	private const string BARE_PATTERN = '/^s[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{14}\z/';
+	private const string QUALIFIED_PATTERN = '/^([A-Za-z0-9+_-]+):([A-Za-z0-9._~!$&\'()*+,;=:@-]+)\z/';
 
 	public string $text;
 	private ?string $source;
