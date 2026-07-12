@@ -6,7 +6,7 @@ order: 9
 
 NeoWiki stores data in its own native Schemas and projects it to RDF. The **native projection**
 ([RDF export](rdf-export.md)) uses NeoWiki-native vocabulary. An **ontology mapping** projects the
-same data into an established cultural-heritage ontology instead (EDM, Dublin Core, …), so the RDF is
+same data into an established ontology instead (EDM, Dublin Core, …), so the RDF is
 directly interoperable. The native projection and each ontology mapping are **sibling projections** of
 the same source data, selected per request (or, later, per SPARQL store).
 
