@@ -1,0 +1,3 @@
+'''Málaga''' (Getty TGN 7007942) is a city in Andalusia, southern Spain, on the Costa del Sol. It is the birthplace of [[Pablo Picasso]].
+
+Its City Subject projects into EDM as an <code>edm:Place</code> via the [[Mapping:CityToEDM]] ontology mapping, so a person's <code>rdaGr2:placeOfBirth</code> can point at a typed place.

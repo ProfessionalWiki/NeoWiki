@@ -30,8 +30,8 @@ a clean-slate import after renames or deletions.
 Subject, relation, and option IDs:
 
 - 15 characters total, starting with `s` / `r` / `o` respectively.
-- Remaining 14 characters use a base32-ish alphabet that excludes look-alikes: no `0`, `o`, `O`,
-  `l`, `I`.
+- Remaining 14 characters use a base32-ish alphabet that excludes look-alikes: no `0`, `O`, `l`, `I`
+  (lowercase `o` and `i` are allowed; see `SubjectId`/`RelationId`).
 - Existing conventions:
   - Museum corpus uses random base62 (e.g. `sEpfwJLnxyQy6vR`).
   - Older corpora group by prefix (`s1demo1...` ACME, `s1demo7...` ACME structural,

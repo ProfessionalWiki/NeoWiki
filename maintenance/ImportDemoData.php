@@ -9,6 +9,7 @@ use Maintenance;
 use MediaWiki\MediaWikiServices;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPagesAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPresenter;
+use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\MappingContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\PageContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
@@ -65,6 +66,10 @@ class ImportDemoData extends Maintenance {
 			),
 			layoutContentSource: new LayoutContentSource(
 				NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Layout',
+				new SimpleFileFetcher()
+			),
+			mappingContentSource: new MappingContentSource(
+				NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Mapping',
 				new SimpleFileFetcher()
 			)
 		);
