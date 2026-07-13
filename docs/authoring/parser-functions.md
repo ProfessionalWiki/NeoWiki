@@ -14,12 +14,12 @@ NeoWiki provides three parser functions for use in wikitext.
 
 For programmatic access from Lua modules, see the [Lua API](lua-api.md).
 
-For definitions of terms like Subject, Schema, and Layout, see the [Glossary](../concepts/glossary.md).
+For definitions of terms like Subject, Schema, and Layout, see the [Glossary](../glossary.md).
 
 ## `{{#view}}`
 
-Renders a Subject as HTML on the page using a [View Type](../concepts/glossary.md#view-type) (currently
-`infobox`). Optionally uses a [Layout](../concepts/glossary.md#layout) to control which properties are shown
+Renders a Subject as HTML on the page using a [View Type](../glossary.md#view-type) (currently
+`infobox`). Optionally uses a [Layout](../glossary.md#layout) to control which properties are shown
 and how.
 
 ### Syntax
@@ -163,8 +163,8 @@ custom result formatting in templates.
 ## Related Documentation
 
 - [Lua API](lua-api.md) — Programmatic access to the same data via `mw.neowiki`
-- [Glossary](../concepts/glossary.md) — Definitions of Subject, Schema, Layout, View, etc.
-- [Schema Format](schema-format.md) — How Schemas and properties are defined
-- [Subject Format](subject-format.md) — How Subject data is stored
-- [Graph Model](graph-model.md) — Neo4j node and relationship structure (relevant for
+- [Glossary](../glossary.md) — Definitions of Subject, Schema, Layout, View, etc.
+- [Schema Format](../api/schema-format.md) — How Schemas and properties are defined
+- [Subject Format](../api/subject-format.md) — How Subject data is stored
+- [Graph Model](../api/graph-model.md) — Neo4j node and relationship structure (relevant for
   `{{#cypher_raw}}` queries)

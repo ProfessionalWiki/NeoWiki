@@ -1,6 +1,6 @@
 ---
 title: Extending NeoWiki
-order: 7
+order: 1
 ---
 # Extending NeoWiki
 
@@ -9,7 +9,7 @@ page metadata to the graph, and reuse NeoWiki's UI. This page is the reference f
 the APIs extensions build on.
 
 NeoWiki concepts referenced here — Subject, Schema, Property Type, Page Property — are defined in the
-[Glossary](../concepts/glossary.md).
+[Glossary](../glossary.md).
 
 [RedHerb](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb) is a minimal, test-backed
 example extension shipped in the NeoWiki repository. NeoWiki's own tests exercise it, so its examples stay
@@ -73,7 +73,7 @@ $registrar->addNeo4jValueBuilder( ColorType::NAME, static fn ( $value ) => $valu
 
 #### Contributing RDF value mappers
 
-For the [RDF export](rdf-export.md), register a mapper that turns your Property Type's value into RDF
+For the [RDF export](../rdf/rdf-export.md), register a mapper that turns your Property Type's value into RDF
 literals, keyed by the Property Type name. It returns a list of `Literal`s (one per value part):
 
 ```php

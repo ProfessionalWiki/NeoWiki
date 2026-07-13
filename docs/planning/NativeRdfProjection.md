@@ -9,7 +9,7 @@ Discussion: [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
 > **As-built (2026-07).** The native projection specified here has shipped, together with the shared
 > IRI/namespace regime — wiki-level, so subject IRIs are identical across stores — reused by every
 > sibling projection, and the per-page named graphs it defines. See the
-> [RDF Export reference](../reference/rdf-export.md). Ontology (sibling) projections build on this shared
+> [RDF Export reference](../rdf/rdf-export.md). Ontology (sibling) projections build on this shared
 > infrastructure — see [OntologyMapping.md](OntologyMapping.md) and the worked
 > [Person → EDM example](../examples/person-to-edm.md).
 
@@ -40,7 +40,7 @@ collected at the end.
 
 1. **Simple queries should be simple.** The most common operation — looking up a Subject's properties or finding
    Subjects by property values — should require only basic triple patterns, not navigating reification structures.
-2. **No information loss.** Everything in the [Subject format](../reference/subject-format.md) must be representable in RDF,
+2. **No information loss.** Everything in the [Subject format](../api/subject-format.md) must be representable in RDF,
    including Relation IDs and Relation properties.
 3. **Standard RDF 1.1.** No dependency on RDF-star/RDF 1.2, which is still a Working Draft and not supported by
    QLever. Can be adopted later as an optimization.

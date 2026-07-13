@@ -11,7 +11,7 @@ Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 
 > **As-built (v1, 2026-07).** The near-1:1 term-substitution tier of this design has shipped: Mappings as
 > pages in a `Mapping:` namespace, and an ontology projection selectable alongside the native one on the
-> RDF export endpoint and `DumpRdf`. See the [Ontology Mapping reference](../reference/ontology-mapping.md)
+> RDF export endpoint and `DumpRdf`. See the [Ontology Mapping reference](../rdf/ontology-mapping.md)
 > and the worked [Person → EDM example](../examples/person-to-edm.md). The structural / node-synthesis
 > tier and the mapping-formalism question (Q1, [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995))
 > remain open; the stored `"version": 1` format is provisional. Provisional answers v1 gives to some open

@@ -157,7 +157,7 @@ all co-locate severity inside the constraint's own configuration.
 ### Grouping Constraints under a `constraints` object
 
 Restructuring the property JSON to separate Constraints from Display Attributes matches the conceptual split in the
-[glossary](../concepts/glossary.md) and would be the cleanest home for severity. We rejected it for now because it
+[glossary](../glossary.md) and would be the cleanest home for severity. We rejected it for now because it
 restructures every serializer, fixture, and editor surface for the same decision, and the core `required` field has
 no natural place in it. The object form chosen here does not preclude this restructuring later.
 

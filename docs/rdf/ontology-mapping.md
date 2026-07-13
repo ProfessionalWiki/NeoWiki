@@ -1,6 +1,6 @@
 ---
 title: Ontology Mapping
-order: 9
+order: 2
 ---
 # Ontology Mapping
 
@@ -12,7 +12,9 @@ the same source data, selected per request (or, later, per SPARQL store).
 
 The design and its open questions are in
 [planning/OntologyMapping.md](../planning/OntologyMapping.md); this page is the as-built reference for
-the shipped v1.
+the shipped v1. For a complete, reproducible walkthrough — a Person Schema projected to EDM, the native
+and mapped output side by side, and the current gaps — see the
+[Person-to-EDM worked example](../examples/person-to-edm.md).
 
 > **v1 is deliberately minimal and the stored format is provisional.** v1 covers only the *near-1:1
 > tier* — term substitution: a target class for the Subject and one target predicate per mapped

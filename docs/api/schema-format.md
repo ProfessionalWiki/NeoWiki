@@ -1,13 +1,13 @@
 ---
 title: Schema Format
-order: 4
+order: 2
 ---
 # Schema JSON Format
 
 This document describes the JSON format used to store Schema data on pages in the Schema namespace (7474) and
 returned by the REST API.
 
-For definitions of terms like Schema and Property Definition, see the [Glossary](../concepts/glossary.md).
+For definitions of terms like Schema and Property Definition, see the [Glossary](../glossary.md).
 
 A JSON Schema for validation is available at
 [`src/Persistence/MediaWiki/schemaContentSchema.json`](../../src/Persistence/MediaWiki/schemaContentSchema.json).
