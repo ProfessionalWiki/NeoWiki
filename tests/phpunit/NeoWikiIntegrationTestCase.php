@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
@@ -92,6 +93,27 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		if ( !in_array( 'page', $this->tablesUsed ) ) {
 			$this->tablesUsed[] = 'page';
 		}
+	}
+
+	/**
+	 * Registers extra graph database plugins through the NeoWikiRegistration hook and rebuilds the singleton
+	 * so they are composed into the write paths, letting a test drive the real hook wiring with a backend of
+	 * its choosing (a spy, or one that always throws).
+	 *
+	 * Callers must reset the singleton again in tearDown, so later tests get an instance built without the
+	 * temporary hook.
+	 */
+	protected function registerGraphDatabasePlugins( GraphDatabasePlugin ...$plugins ): void {
+		$this->setTemporaryHook(
+			'NeoWikiRegistration',
+			static function ( NeoWikiRegistrar $registrar ) use ( $plugins ): void {
+				foreach ( $plugins as $plugin ) {
+					$registrar->addGraphDatabasePlugin( $plugin );
+				}
+			}
+		);
+
+		NeoWikiExtension::resetInstance();
 	}
 
 	protected function newProjectionStore(): GraphDatabasePlugin {
