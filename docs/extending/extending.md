@@ -143,6 +143,39 @@ the Page node. No new revision is created. `rebuild()` returns a `PageRefreshOut
 
 Genuine failures (such as the graph store being unreachable) throw rather than returning an outcome.
 
+### Graph Database Backends
+
+NeoWiki currently supports Neo4j only, but the graph projection is an extension point: implement
+`GraphDatabasePlugin` and NeoWiki keeps your store in sync alongside Neo4j.
+
+```php
+class MyGraphDatabasePlugin implements GraphDatabasePlugin {
+
+	public function savePage( Page $page ): void {
+		// Project the page and its subjects into your store.
+	}
+
+	public function deletePage( PageId $pageId ): void {
+		// Remove the page from your store.
+	}
+
+}
+```
+
+Register with `NeoWikiRegistrar::addGraphDatabasePlugin()`. Example:
+[`src/RedHerbGraphDatabasePlugin.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbGraphDatabasePlugin.php).
+
+`savePage` hands you the page with all of its Subjects and runs for every revision, so subject edits, undeletions
+and page moves all reach you as a save. `deletePage` gets only the page id.
+
+**Signal failure by throwing.** On an edit, delete or undelete, NeoWiki logs the failure and lets the user's
+operation commit, so a backend being down never blocks the wiki or starves the other backends — your projection is
+simply out of sync until someone runs `RebuildGraphDatabases`. During that rebuild, failures propagate instead, so
+the script can report which pages did not reconcile.
+
+Make `deletePage` idempotent: the rebuild re-issues a delete for every page MediaWiki no longer has, so it will ask
+you to remove pages that are already gone from your store.
+
 ### Reading NeoWiki data and authorization
 
 `NeoWikiExtension::getInstance()` exposes read-side services usable from any MediaWiki extension point
@@ -338,8 +371,9 @@ Custom SVG icons are also supported — pass an SVG string as the `icon`.
 
 These extension points are designed or partially present but not yet open to extensions:
 
-- **Graph database backends.** A `GraphDatabasePlugin` interface exists, but Neo4j is the only backend and
-  is currently hardcoded.
+- **Query surfaces for a graph database backend.** The projection side is extensible (see
+  "Graph Database Backends"), but a backend cannot yet contribute its own parser function, REST route, or
+  `mw.neowiki` Lua function; Neo4j's are wired in core.
 - **A published TypeScript types package.** TypeScript authors get types today by pointing their `tsconfig` at
   NeoWiki's source (see "Authoring in TypeScript" and [ADR 24](../adr/024-frontend-extension-mechanism.md)). A
   published, versioned package is deferred until a consumer needs types without a NeoWiki checkout.
