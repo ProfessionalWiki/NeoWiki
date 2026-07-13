@@ -30,7 +30,7 @@ every Schema that uses them.
 
 ## Cons of Global Properties
 
-**Thin abstraction.** Currently a [Property Definition](../concepts/glossary.md#property-definition) carries its type,
+**Thin abstraction.** Currently a [Property Definition](../glossary.md#property-definition) carries its type,
 constraints (like `minimum`/`maximum`), `required`, `default`, `multiple`, and display hints (like `precision`).
 Whether a property is required, what its default is, and what constraints apply are per-Schema decisions. Display
 settings are per-[Layout](../adr/018-views.md). Once you move all of that out, a global property is just a name

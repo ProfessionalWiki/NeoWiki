@@ -8,7 +8,7 @@ This document describes the JSON format used to store Subject data in MediaWiki 
 the REST API (GET endpoints). The same format is used for write operations (POST/PUT) with minor differences
 noted below.
 
-For definitions of terms like Subject, Statement, and Value, see the [Glossary](../concepts/glossary.md).
+For definitions of terms like Subject, Statement, and Value, see the [Glossary](../glossary.md).
 
 ## Overview
 

@@ -30,7 +30,7 @@ small subset of what shape languages express. The reverse direction is lossy, wh
 
 ## Background
 
-For NeoWiki terminology, see the [glossary](../concepts/glossary.md). The short version: Subjects hold Statements
+For NeoWiki terminology, see the [glossary](../glossary.md). The short version: Subjects hold Statements
 whose Values can have multiple ordered parts; Relations between Subjects carry persistent IDs and their own
 properties. Schemas define Subject types via Property Definitions. Subject validation is backend-only: a single PHP
 validator behind REST endpoints returns structured violations

@@ -16,7 +16,7 @@ Pages have
 * A **title**: shown in the URL and H1, can be changed by "moving" the page.
 * An **id**: persistent numeric auto-increment ID, sometimes useful for programmatic interaction, like via the API.
 * **Content**: wikitext, editable both via source and visual editors
-* **Subjects**: list of Subjects, can be empty ([ADR 7](../adr/007-multiple-subjects-per-page.md))
+* **Subjects**: list of Subjects, can be empty ([ADR 7](adr/007-multiple-subjects-per-page.md))
 * **Main Subject**: optional identifier of a Subject in the page's Subjects list. Indicates which Subject represents the same entity as the page itself. All other Subjects stored on a page are called **Child Subjects**.
 
 ## Subject
@@ -25,7 +25,7 @@ Data about one thing. Similar to an Item in Wikibase or a Page/SubObject in SMW.
 
 Subjects have
 
-- An `id`: persistent identifier. Subject IDs start with `s` and are always 15 characters long ([ADR 14](../adr/014-improved-id-format.md))
+- An `id`: persistent identifier. Subject IDs start with `s` and are always 15 characters long ([ADR 14](adr/014-improved-id-format.md))
 - A `type`: reference to a Schema. Example: Person, Company, Product, etc.
 - A `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
 - `statements`: a list of Statements
@@ -67,7 +67,7 @@ Each Relation has
 
 ## Schema
 
-A Schema ([ADR 6](../adr/006-schemas.md)) defines a type of Subject. Examples: Person, Company, Product, etc.
+A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Person, Company, Product, etc.
 
 Schemas have a name, description, and a list of Property Definitions
 
@@ -105,7 +105,7 @@ The visual format used to render a View. Examples: "infobox", "card", "table". V
 
 ## Layout
 
-A Layout ([ADR 18](../adr/018-views.md)) references a Schema and allows customized display of Subjects that use that
+A Layout ([ADR 18](adr/018-views.md)) references a Schema and allows customized display of Subjects that use that
 Schema. The link is one-directional: Layouts reference Schemas, Schemas do not reference their Layouts.
 
 Example: A company Schema has many properties. You want to display only some of them in your "Finances" page section.
@@ -145,7 +145,7 @@ Extensions can contribute additional Page Properties.
 
 Page Properties are written when the page is edited and during a full graph rebuild. When extension-contributed
 data changes outside an edit, an extension can refresh them on demand without creating a revision (see
-[Extending NeoWiki](../extending/extending.md)).
+[Extending NeoWiki](extending/extending.md)).
 
 When using Neo4j, Page Properties are available on every Page node and are queryable via Cypher
 (e.g., `MATCH (page:Page) WHERE page.lastUpdated > datetime("2024-01-01")`).

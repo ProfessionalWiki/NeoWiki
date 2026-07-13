@@ -5,7 +5,7 @@ live sandbox at [neowiki.dev](https://neowiki.dev), or [install it locally](oper
 
 ## Learn the model
 
-* [Glossary](concepts/glossary.md) — the concepts (Subject, Schema, Statement, View, Layout, Page Property) used
+* [Glossary](glossary.md) — the concepts (Subject, Schema, Statement, View, Layout, Page Property) used
   across the UI, the code, and these docs. Start here.
 
 ## Build on your wiki
@@ -56,7 +56,7 @@ Project Subjects to RDF, natively or mapped onto standard ontologies.
 
 For contributors adding to these docs:
 
-* Explains a domain idea or model → `concepts/`
+* Cross-cutting, and every audience needs it (the Glossary) → the docs root
 * Wikitext or Lua authoring on the wiki → `authoring/`
 * An HTTP API or a JSON data format → `api/`
 * RDF projection or ontology mapping → `rdf/`

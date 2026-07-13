@@ -9,7 +9,7 @@ page metadata to the graph, and reuse NeoWiki's UI. This page is the reference f
 the APIs extensions build on.
 
 NeoWiki concepts referenced here — Subject, Schema, Property Type, Page Property — are defined in the
-[Glossary](../concepts/glossary.md).
+[Glossary](../glossary.md).
 
 [RedHerb](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb) is a minimal, test-backed
 example extension shipped in the NeoWiki repository. NeoWiki's own tests exercise it, so its examples stay

@@ -1,6 +1,6 @@
 # ECHOLOT
 
-If you are not familiar with the NeoWiki terminology yet, see [the glossary](../concepts/glossary.md).
+If you are not familiar with the NeoWiki terminology yet, see [the glossary](../glossary.md).
 
 ## Open Questions
 
@@ -9,7 +9,7 @@ If you are not familiar with the NeoWiki terminology yet, see [the glossary](../
 * What will the interaction of the wiki and WP4 look like? WP4 is about import, export, reconciliation,
   image recognition and annotation, enrichment, and quality checks. Which UIs will live in the wiki?
   Which services will live in the wiki backend vs which ones will be microservices?
-* What other things do Schemas need to support? Things like Subclasses. See [Glossary](../concepts/glossary.md) and
+* What other things do Schemas need to support? Things like Subclasses. See [Glossary](../glossary.md) and
   [SchemaFormat](../api/schema-format.md) for what is already supported. (80% likely)
 
 ### Medium Priority
