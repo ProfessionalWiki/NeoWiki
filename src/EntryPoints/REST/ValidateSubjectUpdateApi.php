@@ -68,7 +68,7 @@ class ValidateSubjectUpdateApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Proposed Statements (property/value pairs) for the proposed update. Shape matches docs/SubjectFormat.md.',
+				self::PARAM_DESCRIPTION => 'Proposed Statements (property/value pairs) for the proposed update. Shape matches docs/api/subject-format.md.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',
