@@ -17,15 +17,15 @@ can wipe and rebuild the Neo4j copy from the canonical slots at any time. From t
 php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
 
-It re-saves every Subject from each page's latest revision. Run it to:
+It re-saves every Subject from each page's latest revision, and removes the pages MediaWiki no longer has. Run it to:
 
 - Recover after a Neo4j wipe or restore.
 - Fix any drift between the Neo4j copy and the canonical revision slots.
 
 Two things to plan around:
 
-- It does not clear the graph first, so orphan nodes from a drifted projection can survive a rebuild. For a
-  guaranteed-clean result, wipe the Neo4j data volume before rebuilding.
+- It reconciles pages, not stray data. A node the projection never knew about — one written directly to Neo4j, say —
+  is not something the rebuild can find. For a guaranteed-clean result, wipe the Neo4j data volume before rebuilding.
 - It runs as a single sequential process with no batching or resume, so the time scales with the number of pages. Plan
   downtime on large wikis.
 
@@ -44,9 +44,27 @@ so it matches.
 NeoWiki is pre-release, so a new version can change the schema or data format with no migration path. Your evaluation
 data may not survive an upgrade, so be ready to rebuild it from scratch.
 
+## What happens during a Neo4j outage
+
+The graph is a regenerable copy, so NeoWiki never fails an edit because it could not write to it. Ordinary wiki
+editing survives an outage; structured data does not.
+
+- **Editing pages works.** Edits, deletions and undeletions all commit. NeoWiki logs the projection failure on the
+  `NeoWiki` channel and stays out of the way.
+- **Editing and displaying Subjects fails**, along with queries and anything else that reads the graph. Subjects are
+  resolved to their page through an index that lives only in Neo4j.
+
+Once Neo4j is back, [rebuild the graph](#rebuilding-the-graph). It re-saves the pages that still exist and removes the
+ones MediaWiki no longer has, repairing both a failed save and a failed delete, and it names any page it could not
+reconcile.
+
+Route the `NeoWiki` log channel somewhere you read. On a default MediaWiki install it goes nowhere, which leaves the
+rebuild's output as your only sign that anything went wrong.
+
 ## Current limitations
 
 One known limitation while NeoWiki is pre-release:
 
-- **A Neo4j outage blocks writes.** Edits, deletes, and undeletes fail while Neo4j is unreachable; only reads and
-  queries keep working. Tracked in #877.
+- **NeoWiki requires a configured graph backend.** The subject-to-page index lives only in Neo4j, so a wiki with no
+  backend configured cannot create, edit or display Subjects. Tracked in
+  [#895](https://github.com/ProfessionalWiki/NeoWiki/issues/895).
