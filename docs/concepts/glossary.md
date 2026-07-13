@@ -145,7 +145,7 @@ Extensions can contribute additional Page Properties.
 
 Page Properties are written when the page is edited and during a full graph rebuild. When extension-contributed
 data changes outside an edit, an extension can refresh them on demand without creating a revision (see
-[Extending NeoWiki](../reference/extending.md)).
+[Extending NeoWiki](../extending/extending.md)).
 
 When using Neo4j, Page Properties are available on every Page node and are queryable via Cypher
 (e.g., `MATCH (page:Page) WHERE page.lastUpdated > datetime("2024-01-01")`).

@@ -1,3 +1,7 @@
+---
+title: Query API
+order: 5
+---
 # Query API
 
 `POST /neowiki/v0/query/cypher` runs a read-only Cypher query against the configured Neo4j backend and returns
@@ -293,8 +297,8 @@ deployment's needs.
 ## Related
 
 - [REST API](rest-api.md) — OpenAPI spec and how it is generated; how to browse it with Swagger UI.
-- [Lua API](lua-api.md) — `nw.query()` for the same Cypher surface from wikitext templates.
-- [Parser Functions](parser-functions.md) — `{{#cypher_raw}}` for inline Cypher output in wikitext.
+- [Lua API](../authoring/lua-api.md) — `nw.query()` for the same Cypher surface from wikitext templates.
+- [Parser Functions](../authoring/parser-functions.md) — `{{#cypher_raw}}` for inline Cypher output in wikitext.
 - [Graph Model](graph-model.md) — Neo4j node labels, relationships, and properties; essential reading before
   writing Cypher.
 - [ADR 13: Restrict Neo4j Access](../adr/013-restrict-neo4j-access.md) — Why Neo4j is not exposed directly.

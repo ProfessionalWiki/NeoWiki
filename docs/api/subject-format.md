@@ -1,6 +1,6 @@
 ---
 title: Subject Format
-order: 5
+order: 3
 ---
 # Subject JSON Format
 

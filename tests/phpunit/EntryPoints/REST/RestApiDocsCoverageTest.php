@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Guards the hand-written endpoint table in docs/reference/rest-api.md against the routes actually
+ * Guards the hand-written endpoint table in docs/api/rest-api.md against the routes actually
  * registered in extension.json. That table is the install-free, linkable REST reference, so it must
  * list every registered route and no stale ones.
  *
@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
  * handlers. This test only compares the documented route list with extension.json: pure file I/O,
  * no database or framework bootstrap needed.
  *
- * When this fails, edit the Endpoints tables in docs/reference/rest-api.md (between the
+ * When this fails, edit the Endpoints tables in docs/api/rest-api.md (between the
  * REST-ENDPOINTS markers) so they match the routes in extension.json.
  *
  * @coversNothing
@@ -34,7 +34,7 @@ class RestApiDocsCoverageTest extends TestCase {
 			[],
 			$undocumented,
 			'These routes are registered in extension.json but are missing from the endpoint table in '
-				. 'docs/reference/rest-api.md. Add a row for each.'
+				. 'docs/api/rest-api.md. Add a row for each.'
 		);
 	}
 
@@ -46,7 +46,7 @@ class RestApiDocsCoverageTest extends TestCase {
 		$this->assertSame(
 			[],
 			$stale,
-			'These endpoints are listed in the docs/reference/rest-api.md table but are not registered '
+			'These endpoints are listed in the docs/api/rest-api.md table but are not registered '
 				. 'in extension.json. Remove the stale rows.'
 		);
 	}
@@ -54,7 +54,7 @@ class RestApiDocsCoverageTest extends TestCase {
 	public function testEndpointTableIsNotEmpty(): void {
 		$this->assertNotEmpty(
 			$this->documentedEndpoints(),
-			'No endpoints were parsed from the REST-ENDPOINTS region of docs/reference/rest-api.md. '
+			'No endpoints were parsed from the REST-ENDPOINTS region of docs/api/rest-api.md. '
 				. 'The table or its markers may be malformed.'
 		);
 	}
@@ -101,8 +101,8 @@ class RestApiDocsCoverageTest extends TestCase {
 	 * @return list<string> the "METHOD /neowiki/v0/..." spans inside the marked table region.
 	 */
 	private function documentedEndpoints(): array {
-		$contents = file_get_contents( __DIR__ . '/../../../../docs/reference/rest-api.md' );
-		$this->assertNotFalse( $contents, 'Could not read docs/reference/rest-api.md' );
+		$contents = file_get_contents( __DIR__ . '/../../../../docs/api/rest-api.md' );
+		$this->assertNotFalse( $contents, 'Could not read docs/api/rest-api.md' );
 
 		$start = strpos( $contents, self::REGION_START );
 		$end = strpos( $contents, self::REGION_END );

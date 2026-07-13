@@ -10,7 +10,7 @@ If you are not familiar with the NeoWiki terminology yet, see [the glossary](../
   image recognition and annotation, enrichment, and quality checks. Which UIs will live in the wiki?
   Which services will live in the wiki backend vs which ones will be microservices?
 * What other things do Schemas need to support? Things like Subclasses. See [Glossary](../concepts/glossary.md) and
-  [SchemaFormat](../reference/schema-format.md) for what is already supported. (80% likely)
+  [SchemaFormat](../api/schema-format.md) for what is already supported. (80% likely)
 
 ### Medium Priority
 
@@ -23,7 +23,7 @@ If you are not familiar with the NeoWiki terminology yet, see [the glossary](../
   [NativeRdfProjection.md](NativeRdfProjection.md) Q5).
 * Does the [native RDF projection strawman proposal](NativeRdfProjection.md) go in the right direction? What needs to
   be adjusted? Same question for the [ontology mapping strawman](OntologyMapping.md).
-* Is our [Graph Model](../reference/graph-model.md) OK? In particular, is it OK to have non-Subject data in there, like the connected
+* Is our [Graph Model](../api/graph-model.md) OK? In particular, is it OK to have non-Subject data in there, like the connected
   MediaWiki pages? (80% likely, briefly covered in Vienna: can filter out these values when querying)
 * How important is multilinguality for ECHOLOT? Do we need to provide anything beyond our current data model to support that?
 

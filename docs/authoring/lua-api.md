@@ -361,6 +361,6 @@ Calls that look up another page or a specific Subject ID count as expensive pars
 
 - [Parser Functions](parser-functions.md) — Wikitext interface to the same data
 - [Glossary](../concepts/glossary.md) — Definitions of Subject, Schema, Statement, etc.
-- [Schema Format](schema-format.md) — How Schemas and properties are defined
-- [Subject Format](subject-format.md) — How Subject data is stored
-- [Graph Model](graph-model.md) — Neo4j node and relationship structure
+- [Schema Format](../api/schema-format.md) — How Schemas and properties are defined
+- [Subject Format](../api/subject-format.md) — How Subject data is stored
+- [Graph Model](../api/graph-model.md) — Neo4j node and relationship structure

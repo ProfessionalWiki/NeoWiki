@@ -20,7 +20,7 @@ the same ontology term (e.g., `foaf:name`) must be mapped separately for every S
 
 **Enforced consistency.** Same-named properties cannot accidentally have different types across Schemas.
 
-**Cross-schema query semantics.** A property name on a Subject node in the [graph](../reference/graph-model.md) is
+**Cross-schema query semantics.** A property name on a Subject node in the [graph](../api/graph-model.md) is
 guaranteed to mean the same thing regardless of the Subject's Schema.
 
 **Reduced redundancy.** Properties like "Name" or "Website" are defined once instead of duplicated across

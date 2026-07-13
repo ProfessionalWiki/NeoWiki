@@ -1,6 +1,6 @@
 ---
 title: Schema Format
-order: 4
+order: 2
 ---
 # Schema JSON Format
 

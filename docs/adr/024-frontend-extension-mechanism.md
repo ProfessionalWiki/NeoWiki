@@ -159,7 +159,7 @@ expectations, and we will curate before production.
 * [ADR 16: Frontend State Management](016-frontend-state-management.md). The frontend stores reused across apps through
   the barrel.
 * [ADR 18: Views](018-views.md). View Types, whose registration will ride the same mechanism.
-* [extending.md](../reference/extending.md). The user-facing reference for these extension points.
+* [extending.md](../extending/extending.md). The user-facing reference for these extension points.
 * Issue [#686](https://github.com/ProfessionalWiki/NeoWiki/issues/686) weighed the options. PR
   [#754](https://github.com/ProfessionalWiki/NeoWiki/pull/754) implemented the mechanism.
 * Follow-ups: a public PHP API surface for extensions consuming NeoWiki services in issue

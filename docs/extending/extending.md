@@ -1,6 +1,6 @@
 ---
 title: Extending NeoWiki
-order: 7
+order: 1
 ---
 # Extending NeoWiki
 
@@ -73,7 +73,7 @@ $registrar->addNeo4jValueBuilder( ColorType::NAME, static fn ( $value ) => $valu
 
 #### Contributing RDF value mappers
 
-For the [RDF export](rdf-export.md), register a mapper that turns your Property Type's value into RDF
+For the [RDF export](../rdf/rdf-export.md), register a mapper that turns your Property Type's value into RDF
 literals, keyed by the Property Type name. It returns a list of `Literal`s (one per value part):
 
 ```php
