@@ -11,6 +11,8 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 
@@ -46,6 +48,48 @@ class RebuildGraphDatabases extends Maintenance {
 		}
 
 		$this->outputChanneled( "Rebuild finished. Rebuilt $rebuilt of " . count( $pageIds ) . ' pages.' );
+
+		$this->removeDeletedPages();
+	}
+
+	/**
+	 * Re-saving the pages that still exist cannot undo a projection delete that failed, so a page deleted
+	 * while a backend was unreachable would otherwise stay in the graph for good, its Subjects still
+	 * queryable. Re-issue the delete for every page MediaWiki no longer has. Deleting a page that is
+	 * already absent is a no-op, so this is safe to repeat.
+	 */
+	private function removeDeletedPages(): void {
+		$pageIds = NeoWikiExtension::getInstance()->newDeletedSubjectPageIdsLookup()->getDeletedSubjectPageIds();
+
+		if ( $pageIds === [] ) {
+			return;
+		}
+
+		$this->outputChanneled( 'Removing ' . count( $pageIds ) . ' deleted pages from the graph databases...' );
+
+		$graphDatabasePlugin = NeoWikiExtension::getInstance()->getGraphDatabasePlugin();
+
+		$removed = 0;
+
+		foreach ( $pageIds as $pageId ) {
+			if ( $this->removePage( $pageId, $graphDatabasePlugin ) ) {
+				$removed++;
+			}
+		}
+
+		$this->outputChanneled( "Removed $removed of " . count( $pageIds ) . ' deleted pages.' );
+	}
+
+	private function removePage( int $pageId, GraphDatabasePlugin $graphDatabasePlugin ): bool {
+		try {
+			$graphDatabasePlugin->deletePage( new PageId( $pageId ) );
+		}
+		catch ( Exception $e ) {
+			$this->outputChanneled( "Failed to remove deleted page $pageId: " . $e->getMessage() );
+			return false;
+		}
+
+		return true;
 	}
 
 	private function rebuildPage( int $pageId, SubjectPageRebuilder $rebuilder ): bool {
