@@ -25,6 +25,7 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
+		$this->setUpNeo4j();
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
 		$this->markPageTableAsUsed();
 	}
