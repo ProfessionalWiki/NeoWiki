@@ -1,0 +1,5 @@
+# The ddev dev environment writes a LocalSettings.php into the core checkout on
+# the host; it must never reach an image build (final-mw bakes SettingsTemplate.php
+# as LocalSettings.php instead). CI clones a fresh core, so this only matters for
+# local `make wiki-production-image` runs.
+mediawiki/LocalSettings.php

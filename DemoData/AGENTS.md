@@ -16,8 +16,8 @@ partners, knowledge managers, MediaWiki ecosystem evaluators, and live-demo audi
 | `Module/<Name>.lua` | Scribunto modules | `Module:<Name>` |
 
 `ImportDemoData.php` is additive: it creates and updates pages but does NOT delete pages whose
-source files were removed. Use `make reinstall-db && make load-test-data` from the repo root for
-a clean-slate import after renames or deletions.
+source files were removed. Use `make reset` from the repo root for a clean-slate import after
+renames or deletions.
 
 ## Filename and ID conventions
 
@@ -140,14 +140,14 @@ From the repo root:
 
 ```sh
 # Incremental import (does not delete removed pages).
-make load-test-data
+make import-demo-data
 
-# Clean-slate import (drops the wiki database first). Use after renames or deletions.
-make reinstall-db && make load-test-data
+# Clean-slate import (wipes the wiki database first). Use after renames or deletions.
+make reset
 
 # Reproject the Neo4j graph if Cypher results look stale.
 make rebuild-graph-databases
 ```
 
 A successful import ends with `Import finished` and zero `FAILED` lines. The wiki runs at
-`http://localhost:8484/`.
+`https://<project>.ddev.site` (main checkout: `https://neowiki.ddev.site`).

@@ -21,29 +21,27 @@ See [docs/](./docs/), especially [docs/glossary.md](./docs/glossary.md).
 
 Prerequisites:
 
-- Docker (or a compatible runtime such as Podman)
-- Docker Compose v2+ (with the `docker compose` subcommand, not the legacy standalone `docker-compose` v1. Verify with `docker compose version`)
+- Docker
+- [ddev](https://docs.ddev.com/en/stable/users/install/ddev-installation/)
 - GNU Make
 
-To work on NeoWiki (edit code, run tests, see changes live), bring up the bundled dev stack:
+To work on NeoWiki (edit code, run tests, see changes live), bring up the dev environment:
 
 ```bash
-make dev
+ddev start
 ```
 
-This builds a dev-mode image, brings up the stack (mediawiki, db, neo, test_neo, node
-watcher, mailcatcher), runs first-time install and seed, and waits until the wiki is
-reachable. It prints the URL when ready (the default is `http://localhost:8484` but
-the actual port is auto-allocated; see [Reserved ports](Docker/README.md#reserved-host-ports)).
+The first start on a fresh clone does everything: it clones MediaWiki core, installs the
+composer dependencies, installs the wiki, and seeds the demo data (expect a few minutes;
+later starts are fast). The wiki serves at `https://neowiki.ddev.site` — no port to pick,
+no image to build. Log in as `AdminName` with the password `AdminPassword`.
 
-Mailcatcher web UI is at the port `make dev` printed (default `8025`,
-configurable via `MAILCATCHER_PORT` in `Docker/.env`).
+Mail is caught by ddev's built-in Mailpit (`ddev launch -m` opens its UI). The `node`
+service runs `npm run build:watch`, so TypeScript changes under `resources/ext.neowiki/`
+rebuild automatically. Neo4j Browser is at `https://neo4j-neowiki.ddev.site`.
 
-The `node` sidecar runs `npm run build:watch`, so TypeScript changes under
-`resources/ext.neowiki/` rebuild automatically.
-
-To also expose Neo4j Browser and the Bolt endpoint to the host (single-worktree use),
-use `make dev-tools` instead. URLs print when the stack comes up.
+See [.ddev/README.md](.ddev/README.md) for the service URLs, credentials, and how the
+pieces fit together.
 
 ### Running tests and tools
 
@@ -52,7 +50,7 @@ make phpunit              # full PHPUnit suite
 make phpunit filter=Foo   # single test class
 make cs                   # phpcs + phpstan
 make tsci                 # vitest + build + lint
-make bash                 # shell into the mediawiki container
+make bash                 # shell into the web container
 make logs                 # tail logs
 make reset                # wipe DB + Neo and reseed demo data
 make import-demo-data     # load the latest demo data, overriding your changes
@@ -62,19 +60,18 @@ For all targets, run `make help`.
 
 ### Per-worktree dev environments
 
-Each clone or worktree is a self-contained stack. Run `make dev` from any NeoWiki
-checkout and it will allocate its own port and project namespace, so multiple worktrees
-can run side by side without collision. See [Reserved host ports](Docker/README.md#reserved-host-ports)
-for the auto-allocation ranges.
-
-To override the MediaWiki port: `make dev port=8488` or `MW_SERVER_PORT=8488 make dev`.
+Each clone or worktree is a self-contained environment with its own hostname, derived
+from the directory name: a worktree `NeoWiki-feature-x` serves at
+`https://neowiki-feature-x.ddev.site`. Run `ddev start` from any checkout; there is no
+port coordination between parallel environments.
 
 ### Customizing dev config
 
-Create `Docker/LocalSettings.local.php` (gitignored) for per-worktree overrides. Common
+Create `.ddev/mw/LocalSettings.local.php` (gitignored) for per-checkout overrides. Common
 uses:
 
-- Loading additional MediaWiki extensions for an integration test
+- Loading additional MediaWiki extensions for an integration test (clone them into
+  `Docker/mediawiki/extensions/`)
 - Custom debug toggles
 - Hook overrides for a specific feature branch
 
@@ -88,5 +85,5 @@ $wgDebugLogGroups['neowiki'] = '/tmp/neowiki-debug.log';
 
 ### Try-it-out and server deployment
 
-For the prebuilt try-it-out stack or server deployment with Caddy, see
-[Installation](docs/operations/installation.md).
+For the prebuilt try-it-out stack or server deployment with Caddy (docker compose, no
+ddev), see [Installation](docs/operations/installation.md).

@@ -1,0 +1,60 @@
+# NeoWiki's Neo4j services as ddev custom services: `neo` backs the wiki
+# (mirroring the demo stack's service in Docker/docker-compose.yml), `test_neo`
+# is the isolated instance the PHPUnit suite writes to (mirroring CI).
+services:
+  neo:
+    image: neo4j:enterprise
+    container_name: ddev-${DDEV_SITENAME}-neo
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}
+      com.ddev.approot: ${DDEV_APPROOT}
+    restart: "no"
+    environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=eval
+      - NEO4J_AUTH=neo4j/password
+      # Neo4j Browser through the ddev router on its own hostname (no port
+      # suffix): https://neo4j-<project>.ddev.site. Prefixing DDEV_HOSTNAME
+      # (the lowercased primary hostname) keeps the name flat — inside the
+      # *.ddev.site wildcard DNS and TLS cert — and unique per worktree.
+      - VIRTUAL_HOST=neo4j-${DDEV_HOSTNAME}
+      # 443 -> Browser UI; 17687 -> bolt-over-WebSocket so the Browser can
+      # connect from the host (connect URL: bolt+s://neo4j-<project>.ddev.site:17687).
+      # The router binds 17687 once machine-wide; hostnames keep worktrees apart.
+      - HTTP_EXPOSE=80:7474
+      - HTTPS_EXPOSE=443:7474,17687:7687
+    volumes:
+      - neo4j-data:/data
+    healthcheck:
+      test: "wget http://localhost:7474/browser -O - | grep 'Neo4j Browser'"
+      interval: 5s
+      timeout: 2s
+      retries: 20
+
+  test_neo:
+    image: neo4j:enterprise
+    # Keep the ddev-<project>-<service> convention exactly (including the
+    # underscore): ddev resolves `ddev exec -s test_neo` and the config.yaml
+    # hooks' `service: test_neo` through this name.
+    container_name: ddev-${DDEV_SITENAME}-test_neo
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}
+      com.ddev.approot: ${DDEV_APPROOT}
+    restart: "no"
+    environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=eval
+      # Fixed credential used by the PHPUnit suite; keep in sync with the
+      # test configuration and CI.
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_server_bolt_listen__address=:7689
+      - NEO4J_server_http_listen__address=:7475
+    volumes:
+      - test-neo4j-data:/data
+    healthcheck:
+      test: "wget http://localhost:7475/browser -O - | grep 'Neo4j Browser'"
+      interval: 5s
+      timeout: 2s
+      retries: 20
+
+volumes:
+  neo4j-data:
+  test-neo4j-data:

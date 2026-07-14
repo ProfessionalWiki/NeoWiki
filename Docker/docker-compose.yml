@@ -61,10 +61,6 @@ services:
       timeout: 1s
       retries: 10
 
-  # The dev-only sidecars (test_neo, node, mailcatcher) live in
-  # docker-compose.dev.yml, not here, so `make up` stays minimal and `make down`
-  # can clean them up as orphans on every compose backend (see that file).
-
   caddy:
     image: caddy:2.10-alpine
     restart: unless-stopped

@@ -1,0 +1,22 @@
+# TypeScript build watcher: keeps the frontend bundle in sync with the sources
+# under resources/ext.neowiki/ while the environment runs.
+services:
+  node:
+    image: node:24
+    container_name: ddev-${DDEV_SITENAME}-node
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}
+      com.ddev.approot: ${DDEV_APPROOT}
+    restart: "no"
+    # Run as the host user so node_modules/ and dist/ written into the bind
+    # mount are host-owned.
+    user: "${DDEV_UID}:${DDEV_GID}"
+    working_dir: /var/www/html/resources/ext.neowiki
+    volumes:
+      - ../:/var/www/html:z
+    command: sh -c "npm install && npm run build:watch"
+    environment:
+      - npm_config_cache=/tmp/.npm
+      # The host uid may have no /etc/passwd entry in node:24; give npm a
+      # writable HOME for its logs/config.
+      - HOME=/tmp

@@ -1,6 +1,6 @@
 Docker/mediawiki/
 Docker/.env
-Docker/LocalSettings.local.php
+.ddev/mw/LocalSettings.local.php
 node_modules/
 vendor/
 

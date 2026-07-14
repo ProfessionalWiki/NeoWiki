@@ -1,0 +1,9 @@
+# Mount this checkout into the MediaWiki core tree at the canonical extension
+# path. A real bind mount, not a symlink: relative paths that tools resolve
+# against the physical working directory (phpunit's ../../, phpstan's and
+# psalm's ../../includes) behave exactly as they do in CI's nested layout, and
+# no link into the core checkout can leak into image builds.
+services:
+  web:
+    volumes:
+      - ../:/var/www/html/Docker/mediawiki/extensions/NeoWiki:z

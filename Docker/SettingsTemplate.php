@@ -15,20 +15,9 @@ if ( !defined( 'MEDIAWIKI' ) ) {
 	exit;
 }
 
-$mwMode = getenv( 'MW_MODE' ) ?: 'production';
-$mwIsDev = $mwMode === 'dev';
-
-if ( $mwIsDev ) {
-	error_reporting( -1 );
-	ini_set( 'display_errors', 1 );
-	$wgShowExceptionDetails = true;
-	$wgDebugDumpSql = true;
-	$wgDebugComments = true;
-} else {
-	$wgShowExceptionDetails = false;
-	$wgDebugDumpSql = false;
-	$wgDebugComments = false;
-}
+$wgShowExceptionDetails = false;
+$wgDebugDumpSql = false;
+$wgDebugComments = false;
 
 ## Uncomment this to disable output compression
 # $wgDisableOutputCompression = true;
@@ -100,19 +89,11 @@ $wgSharedTables[] = "actor";
 //    'daemonized' => true
 //];
 
-if ( $mwIsDev ) {
-	$wgMainCacheType = CACHE_NONE;
-	$wgMessageCacheType = CACHE_NONE;
-	$wgLanguageConverterCacheType = CACHE_NONE;
-	$wgSessionCacheType = CACHE_DB;
-	$wgParserCacheType = CACHE_NONE;
-} else {
-	$wgMainCacheType = CACHE_ACCEL;
-	$wgMessageCacheType = CACHE_ACCEL;
-	$wgLanguageConverterCacheType = CACHE_ACCEL;
-	$wgSessionCacheType = CACHE_DB;
-	$wgParserCacheType = CACHE_ACCEL;
-}
+$wgMainCacheType = CACHE_ACCEL;
+$wgMessageCacheType = CACHE_ACCEL;
+$wgLanguageConverterCacheType = CACHE_ACCEL;
+$wgSessionCacheType = CACHE_DB;
+$wgParserCacheType = CACHE_ACCEL;
 $wgRevisionCacheExpiry = 0;
 $wgUseLocalMessageCache = true;
 
@@ -193,10 +174,7 @@ wfLoadExtension( 'Scribunto' );
 wfLoadExtension( 'ParserFunctions' );
 
 $wgSMTP = [];
-if ( $mwIsDev && getenv( 'MW_SMTP_HOST' ) === false ) {
-	// Default to the mailcatcher sidecar in dev mode.
-	$wgSMTP = [ 'host' => 'mailcatcher', 'port' => 1025 ];
-} elseif ( getenv( 'MW_SMTP_HOST' ) !== false ) {
+if ( getenv( 'MW_SMTP_HOST' ) !== false ) {
 	$wgSMTP = [
 		'host' => getenv( 'MW_SMTP_HOST' ),
 		'IDHost' => getenv( 'MW_SMTP_ID_HOST' ),
@@ -222,21 +200,6 @@ $wgNeoWikiEnableDevelopmentUI = true;
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://' . getenv( 'NEO4J_USERNAME' ) . ':' . getenv( 'NEO4J_PASSWORD' ) . '@neo:7687';
 $wgNeoWikiNeo4jInternalReadUrl = 'bolt://' . getenv( 'NEO4J_USERNAME_READ' ) . ':' . getenv( 'NEO4J_PASSWORD_READ' ) . '@neo:7687';
 
-// SPARQL graph store (QLever) for the SPARQL projection plugin (#586). Configured only in the dev
-// stack: the qlever service lives in docker-compose.dev.yml, so the production/demo image (which runs
-// this same file in production mode) never references a non-existent service. Skipped under PHPUnit so
-// integration tests never post updates to the dev QLever — they configure their own store with mocked
-// HTTP via overrideConfigValue(), so the default here must stay empty during tests.
-if ( $mwIsDev && !defined( 'MW_PHPUNIT_TEST' ) ) {
-	$wgNeoWikiSparqlStores = [
-		[
-			'updateUrl' => 'http://qlever:7019/',
-			'accessToken' => getenv( 'QLEVER_ACCESS_TOKEN' ) ?: null,
-			'projection' => 'native',
-		],
-	];
-}
-
 // Allow anonymous REST API calls on the wiki.
 $wgCrossSiteAJAXdomains = [
 	'*'
@@ -253,10 +216,3 @@ $wgGroupPermissions['*']['edit'] = false;
 
 $wgUseRCPatrol = false;
 $wgUseNPPatrol = false;
-
-# Per-worktree opt-in overrides (gitignored). Use to load sister extensions for integration
-# work, set custom debug toggles, or override hooks.
-$mwLocal = __DIR__ . '/LocalSettings.local.php';
-if ( file_exists( $mwLocal ) ) {
-	require_once $mwLocal;
-}

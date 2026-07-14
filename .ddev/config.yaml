@@ -1,0 +1,44 @@
+# NeoWiki dev environment (see .ddev/README.md).
+#
+# No `name:` on purpose: the project name derives from the checkout directory,
+# so every git worktree gets its own name and URL (NeoWiki-feature-x ->
+# https://neowiki-feature-x.ddev.site) without per-worktree configuration.
+type: php
+docroot: Docker/mediawiki
+php_version: "8.3"
+# apache-fpm, not nginx-fpm: MediaWiki's rest.php/api.php rely on PATH_INFO
+# (/rest.php/neowiki/v0/...), which ddev's default nginx config does not route
+# (non-.php-suffixed URIs fall through to index.php). Apache handles it
+# natively, and matches the production image (php:8.3-apache).
+webserver_type: apache-fpm
+database:
+  type: mariadb
+  version: "11.8"
+hooks:
+  pre-start:
+    # Clone MediaWiki core into the docroot before the containers come up: the
+    # web container bind-mounts this checkout into the core tree (see
+    # docker-compose.extension-mount.yaml), and docker would otherwise create
+    # the mount target inside an empty docroot, blocking the clone.
+    - exec-host: bash .ddev/setup/clone-mediawiki.sh
+  post-start:
+    # Least-privilege Neo4j read users, matching what CI provisions. Both
+    # commands retry until their Neo4j instance accepts connections, so they
+    # double as the "wait for Neo4j" gate for the install step below.
+    - exec: >-
+        for i in $(seq 1 90); do
+        cypher-shell -u neo4j -p password
+        "CREATE USER mediawiki_read IF NOT EXISTS SET PASSWORD 'mediawiki_read' CHANGE NOT REQUIRED;
+        GRANT ROLE reader TO mediawiki_read;"
+        && exit 0; sleep 2;
+        done; echo "Timed out waiting for neo" >&2; exit 1
+      service: neo
+    - exec: >-
+        for i in $(seq 1 90); do
+        cypher-shell -u neo4j -p password -a bolt://localhost:7689
+        "CREATE USER mediawiki_read IF NOT EXISTS SET PASSWORD 'mediawiki_read' CHANGE NOT REQUIRED;
+        GRANT ROLE reader TO mediawiki_read;"
+        && exit 0; sleep 2;
+        done; echo "Timed out waiting for test_neo" >&2; exit 1
+      service: test_neo
+    - exec: bash /var/www/html/.ddev/setup/install-wiki.sh
