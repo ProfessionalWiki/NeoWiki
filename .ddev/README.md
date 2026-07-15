@@ -21,8 +21,13 @@ The prebuilt demo image and its compose stack are a separate concern and do not 
 ddev start        # brings up web, db, neo, test_neo, node watcher; installs + seeds on first run
 ddev describe     # URLs (wiki, Mailpit), service status; -j for JSON
 ddev exec <cmd>   # run a command in the web container
-ddev stop         # stop this project's containers
+ddev stop         # stop this project's containers; ddev's shared router and ssh-agent keep running
+ddev poweroff     # stop those too, along with every other running ddev project
 ```
+
+`ddev start` also brings up two containers shared by all ddev projects on the machine: the router
+(which serves the `*.ddev.site` hostnames) and the ssh-agent. `ddev stop` deliberately leaves them
+running — other checkouts may be using them; `ddev poweroff` is the full shutdown.
 
 The first `ddev start` on a fresh clone does everything: it clones MediaWiki core into
 `Docker/mediawiki/`, installs the composer dependencies, installs the wiki, provisions the Neo4j
