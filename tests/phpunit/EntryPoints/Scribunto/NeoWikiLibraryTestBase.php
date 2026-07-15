@@ -13,6 +13,7 @@ use MediaWiki\Content\TextContent;
 use MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon\LuaEngineTestBase;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use PHPUnit\Framework\TestSuite;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -40,6 +41,22 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 
 	// phpcs:ignore SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingAnyTypeHint -- parent class has no type hint
 	protected static $moduleName = 'NeoWikiLibraryTests';
+
+	/**
+	 * Scribunto ships LuaStandalone interpreters for x86 only (T377046), and picks
+	 * one from PHP_OS and PHP_INT_SIZE without consulting the architecture, so on
+	 * arm64 it selects a binary that cannot exec. Engines are constructed while the
+	 * suite is being built, before any test runs, so an unusable one aborts the
+	 * whole PHPUnit run rather than failing a single test. LuaSandbox is the engine
+	 * production runs; CI is x86 and still covers both.
+	 *
+	 * @param string $className
+	 */
+	public static function suite( $className ): TestSuite {
+		$bundledInterpreterRuns = in_array( php_uname( 'm' ), [ 'x86_64', 'amd64', 'i386', 'i686' ], true );
+
+		return self::makeSuite( $className, $bundledInterpreterRuns ? null : 'LuaSandbox' );
+	}
 
 	protected function setUp(): void {
 		parent::setUp();

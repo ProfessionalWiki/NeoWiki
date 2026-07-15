@@ -11,8 +11,8 @@ if ( !class_exists( \MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon\LuaEn
 /**
  * Lua integration tests for the mw.neowiki Scribunto library.
  *
- * Tests run against all available Lua engines (LuaSandbox and LuaStandalone)
- * via the suite() method inherited from LuaEngineTestBase.
+ * Tests run against every Lua engine the platform can run — both LuaSandbox and
+ * LuaStandalone on x86 — via NeoWikiLibraryTestBase::suite().
  *
  * @group Lua
  * @group Database
