@@ -937,6 +937,7 @@ class NeoWikiExtension {
 	public function getSubjectValidator(): SubjectValidator {
 		return new SubjectValidator(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
+			sourceRegistry: $this->getSourceRegistry(),
 		);
 	}
 

@@ -169,6 +169,35 @@ describe( 'RelationInput', () => {
 			expect( field.props( 'status' ) ).toBe( 'error' );
 		} );
 
+		it( 'surfaces the unresolvable-source violation with the offending source key', () => {
+			// The server owns the Source registry, so the client never hard-rejects a foreign
+			// target; it only renders the backend's violation. The message must carry the source
+			// key ($1) so the user learns which Source is unresolvable.
+			setupMwMock( {
+				functions: [ 'message' ],
+				messages: {
+					'neowiki-field-relation-target-source-unresolvable':
+						( source: string ): string => `Unregistered source: ${ source }`,
+				},
+			} );
+
+			const wrapper = newWrapper( {
+				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				serverViolations: [
+					{
+						propertyName: 'Owner',
+						code: 'relation-target-source-unresolvable',
+						args: [ 'otherwiki' ],
+						valuePartIndex: null,
+					},
+				],
+			} );
+
+			const field = wrapper.findComponent( CdxField );
+			expect( field.props( 'messages' ) ).toEqual( { error: 'Unregistered source: otherwiki' } );
+			expect( field.props( 'status' ) ).toBe( 'error' );
+		} );
+
 		it( 'keeps a server violation suppressed while the lookup reports unmatched text', async () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),

@@ -7,31 +7,50 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Validation;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
+use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubSource;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator
  */
 class SubjectValidatorTest extends TestCase {
 
+	private const string REGISTERED_SOURCE = 'registeredwiki';
+
 	private SubjectValidator $validator;
 
 	protected function setUp(): void {
 		$this->validator = new SubjectValidator(
 			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes(),
+			sourceRegistry: $this->newSourceRegistry(),
 		);
+	}
+
+	private function newSourceRegistry(): SourceRegistry {
+		$registry = new SourceRegistry( 'localwiki' );
+		$registry->register( 'decoy-before', new StubSource() );
+		$registry->register( self::REGISTERED_SOURCE, new StubSource() );
+		$registry->register( 'decoy-after', new StubSource() );
+		return $registry;
 	}
 
 	public function testValidSubjectReturnsNoViolations(): void {
@@ -390,7 +409,113 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertSame( 'unregistered-type', $violations[1]->code );
 	}
 
+	public function testRelationTargetWithUnregisteredSourceReturnsViolation(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [ $this->newRelationStatement( 'ghostwiki:s11111111111111' ) ] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'relation-target-source-unresolvable', $violations[0]->code );
+		$this->assertEquals( new PropertyName( 'Links' ), $violations[0]->propertyName );
+		$this->assertSame( [ 'ghostwiki' ], $violations[0]->args );
+	}
+
+	public function testRelationTargetWithRegisteredSourceReturnsNoViolation(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
+
+		$this->assertSame( [], $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [ $this->newRelationStatement( self::REGISTERED_SOURCE . ':s11111111111111' ) ] ),
+			$schema,
+		) );
+	}
+
+	public function testBareRelationTargetReturnsNoViolation(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
+
+		$this->assertSame( [], $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [ $this->newRelationStatement( 's11111111111111' ) ] ),
+			$schema,
+		) );
+	}
+
+	public function testOutOfSchemaRelationStatementWithUnresolvableSourceReturnsViolation(): void {
+		// Schema membership must not exempt a target from the guard: an out-of-schema
+		// relation statement would otherwise smuggle an unresolvable target past enforcement.
+		$schema = $this->newSchema( [ 'Known' => $this->newNumberProperty() ] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [ $this->newRelationStatement( 'ghostwiki:s11111111111111' ) ] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'relation-target-source-unresolvable', $violations[0]->code );
+		$this->assertEquals( new PropertyName( 'Links' ), $violations[0]->propertyName );
+		$this->assertSame( [ 'ghostwiki' ], $violations[0]->args );
+	}
+
+	public function testTypeMismatchedRelationStatementStillChecksTargetSources(): void {
+		// type-mismatch skips per-type validation, but must not skip the source guard.
+		$schema = $this->newSchema( [ 'Links' => $this->newNumberProperty() ] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [ $this->newRelationStatement( 'ghostwiki:s11111111111111' ) ] ),
+			$schema,
+		);
+
+		$codes = array_map( static fn( $v ) => $v->code, $violations );
+		$this->assertContains( 'type-mismatch', $codes );
+		$this->assertContains( 'relation-target-source-unresolvable', $codes );
+	}
+
+	public function testOnlyTheRelationTargetWithAnUnresolvableSourceIsRejected(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [ $this->newRelationStatement(
+				's11111111111111',
+				self::REGISTERED_SOURCE . ':s22222222222222',
+				'ghostwiki:s33333333333333',
+				'decoy-after:s44444444444444',
+			) ] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'relation-target-source-unresolvable', $violations[0]->code );
+		$this->assertSame( [ 'ghostwiki' ], $violations[0]->args );
+	}
+
 	// --- Helpers ---
+
+	private function newRelationProperty(): RelationProperty {
+		return RelationProperty::fromPartialJson(
+			new PropertyCore( description: '', required: false, default: null ),
+			[ 'relation' => 'has', 'targetSchema' => 'Person', 'multiple' => true ],
+		);
+	}
+
+	private function newRelationStatement( string ...$targets ): Statement {
+		$relations = array_map(
+			static fn ( string $target ): Relation => new Relation(
+				id: new RelationId( 'r1111111111111a' ),
+				targetId: new SubjectId( $target ),
+				properties: new RelationProperties( [] ),
+			),
+			$targets
+		);
+
+		return new Statement( new PropertyName( 'Links' ), 'relation', new RelationValue( ...$relations ) );
+	}
 
 	private function newSchema( array $properties ): Schema {
 		return new Schema(

@@ -279,4 +279,71 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
 	}
 
+	public function testRelationTargetWithUnresolvableSourceIsRejectedUnderEnforcement(): void {
+		$this->setMwGlobals( 'wgNeoWikiEnforceValidation', true );
+
+		$this->createSchema(
+			'RelationEnforcementSchema',
+			'{"title":"RelationEnforcementSchema","propertyDefinitions":' .
+				'{"Owner":{"type":"relation","relation":"has","targetSchema":"Company","multiple":false}}}'
+		);
+
+		$body = $this->validBody();
+		$body['schema'] = 'RelationEnforcementSchema';
+		$body['statements'] = [
+			'Owner' => [
+				'propertyType' => 'relation',
+				'value' => [
+					[ 'id' => 'r1demo5rrrrrrr1', 'target' => 'ghostwiki:s1demo4sssssss1' ],
+				],
+			],
+		];
+
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 422, $response->getStatusCode() );
+		$this->assertSame( 'Validation failed', $responseData['message'] );
+		$this->assertSame( 'relation-target-source-unresolvable', $responseData['violations'][0]['code'] );
+		$this->assertSame( 'Owner', $responseData['violations'][0]['propertyName'] );
+		$this->assertSame( [ 'ghostwiki' ], $responseData['violations'][0]['args'] );
+	}
+
+	public function testOutOfSchemaRelationTargetWithUnresolvableSourceIsRejectedUnderEnforcement(): void {
+		$this->setMwGlobals( 'wgNeoWikiEnforceValidation', true );
+
+		$this->createSchema(
+			'NoRelationSchema',
+			'{"title":"NoRelationSchema","propertyDefinitions":{"Note":{"type":"text"}}}'
+		);
+
+		$body = $this->validBody();
+		$body['schema'] = 'NoRelationSchema';
+		$body['statements'] = [
+			'Owner' => [
+				'propertyType' => 'relation',
+				'value' => [
+					[ 'id' => 'r1demo5rrrrrrr1', 'target' => 'ghostwiki:s1demo4sssssss1' ],
+				],
+			],
+		];
+
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 422, $response->getStatusCode() );
+		$this->assertSame( 'Validation failed', $responseData['message'] );
+		$this->assertSame( 'relation-target-source-unresolvable', $responseData['violations'][0]['code'] );
+		$this->assertSame( 'Owner', $responseData['violations'][0]['propertyName'] );
+		$this->assertSame( [ 'ghostwiki' ], $responseData['violations'][0]['args'] );
+	}
+
 }
