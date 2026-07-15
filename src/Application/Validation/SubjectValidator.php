@@ -8,15 +8,18 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 
 readonly class SubjectValidator {
 
 	public function __construct(
 		private PropertyTypeLookup $propertyTypeLookup,
+		private SourceRegistry $sourceRegistry,
 	) {
 	}
 
@@ -37,6 +40,8 @@ readonly class SubjectValidator {
 					$this->validateStatement( $statement, $schema->getProperty( $statement->getPropertyName() ) )
 				);
 			}
+
+			$violations = array_merge( $violations, $this->validateRelationTargetSources( $statement ) );
 		}
 
 		return array_merge( $violations, $this->validateRequiredProperties( $statements, $schema ) );
@@ -73,6 +78,43 @@ readonly class SubjectValidator {
 
 		foreach ( $propertyType->validate( $statement->getValue(), $definition ) as $rawViolation ) {
 			$violations[] = $rawViolation->withPropertyName( $propertyName );
+		}
+
+		return $violations;
+	}
+
+	/**
+	 * The v1 guard of ADR 23 ("Relations across Sources"): a Relation may only target a Subject whose
+	 * Source resolves through the registry. Runs against every statement in the payload, not only
+	 * schema-declared ones: schema membership says nothing about whether a target's Source resolves,
+	 * and scoping the check to the schema would let an out-of-schema or type-mismatched relation
+	 * statement carry an unresolvable target past enforcement. Bare and local-qualified targets carry
+	 * no source key (SubjectIdParser canonicalizes the local-qualified form to bare) and pass
+	 * untouched. This runs only on the validate and write paths; persisted Subjects are never
+	 * revalidated on read, so an already-stored foreign target is never rejected and cross-source
+	 * relations can open up later.
+	 *
+	 * @return Violation[]
+	 */
+	private function validateRelationTargetSources( Statement $statement ): array {
+		$value = $statement->getValue();
+
+		if ( !$value instanceof RelationValue ) {
+			return [];
+		}
+
+		$violations = [];
+
+		foreach ( $value->relations as $relation ) {
+			$sourceKey = $relation->targetId->getSource();
+
+			if ( $sourceKey !== null && $this->sourceRegistry->getSource( $sourceKey ) === null ) {
+				$violations[] = new Violation(
+					propertyName: $statement->getPropertyName(),
+					code: 'relation-target-source-unresolvable',
+					args: [ $sourceKey ],
+				);
+			}
 		}
 
 		return $violations;

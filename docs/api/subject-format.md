@@ -145,7 +145,7 @@ Array of Relation objects, each pointing to another subject.
 | Field | Type | Required | Description |
 |-------|------|-------------|-------------|
 | `id` | string | Yes | Unique identifier for this relation |
-| `target` | string | Yes | Subject ID of the target subject, in either id form (bare means local) |
+| `target` | string | Yes | Subject ID of the target subject, in either id form (bare means local). Must reference a resolvable Source: a target whose Source is not registered on this wiki is reported at write and validation time, and rejected when `$wgNeoWikiEnforceValidation` is enabled (v1 guard, [ADR 23](../adr/023-subject-sources.md)). |
 | `properties` | object | No | Key-value pairs of relation properties. Only included when non-empty. |
 
 Relation properties example:

@@ -141,8 +141,77 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $responseBody['violations'] );
 	}
 
+	public function testRelationTargetWithUnresolvableSourceProducesViolation(): void {
+		$this->createSchemaWithRelationProperty();
+
+		$body = $this->validBody();
+		$body['statements'] = [
+			'Owner' => [
+				'propertyType' => 'relation',
+				'value' => [
+					[ 'id' => 'r1demo5rrrrrrr1', 'target' => 'ghostwiki:s1demo4sssssss1' ],
+				],
+			],
+		];
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+		$this->assertCount( 1, $responseBody['violations'] );
+		$this->assertSame( 'relation-target-source-unresolvable', $responseBody['violations'][0]['code'] );
+		$this->assertSame( 'Owner', $responseBody['violations'][0]['propertyName'] );
+		$this->assertSame( [ 'ghostwiki' ], $responseBody['violations'][0]['args'] );
+	}
+
+	public function testLocalQualifiedRelationTargetCanonicalizesAndProducesNoViolation(): void {
+		$this->createSchemaWithRelationProperty();
+
+		$localKey = NeoWikiExtension::getInstance()->config->wikiId;
+		$body = $this->validBody();
+		$body['statements'] = [
+			'Owner' => [
+				'propertyType' => 'relation',
+				'value' => [
+					[ 'id' => 'r1demo5rrrrrrr1', 'target' => $localKey . ':s1demo4sssssss1' ],
+				],
+			],
+		];
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+		$this->assertSame( [], $responseBody['violations'] );
+	}
+
 	private function createPages(): void {
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+	}
+
+	private function createSchemaWithRelationProperty(): void {
+		$json = json_encode( [
+			'title' => TestSubject::DEFAULT_SCHEMA_ID,
+			'propertyDefinitions' => [
+				'Owner' => [
+					'type' => 'relation',
+					'description' => '',
+					'required' => false,
+					'default' => null,
+					'relation' => 'has',
+					'targetSchema' => 'Company',
+					'multiple' => false,
+				],
+			],
+		] );
+
+		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID, $json );
 	}
 
 	private function createSchemaWithSelectProperty(): void {

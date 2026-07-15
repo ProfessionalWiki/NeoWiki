@@ -106,6 +106,36 @@ class StatementDeserializerTest extends TestCase {
 		);
 	}
 
+	/**
+	 * The relation-target Source guard (ADR 23) lives on the write/validate paths only. Persisted
+	 * data is never revalidated on read, so a stored foreign-qualified target must deserialize and
+	 * round-trip verbatim, whether or not its Source is currently registered.
+	 */
+	public function testDeserializesForeignSourceRelationTargetWithoutRejection(): void {
+		$statement = $this->newDeserializer()->deserialize(
+			'MyRelation',
+			[
+				'type' => 'relation',
+				'value' => [
+					[
+						'id' => 'rTestSDT1111rr1',
+						'target' => 'foreignwiki:sTestSDT1111111',
+					],
+				],
+			]
+		);
+
+		$this->assertSame(
+			[
+				[
+					'id' => 'rTestSDT1111rr1',
+					'target' => 'foreignwiki:sTestSDT1111111',
+				],
+			],
+			$statement->getValue()->toScalars()
+		);
+	}
+
 	public function testDeserializesUnregisteredTypeWithoutThrowing(): void {
 		$this->assertEquals(
 			new Statement(

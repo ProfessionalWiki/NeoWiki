@@ -13,7 +13,9 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
@@ -33,7 +35,10 @@ class ProposedSubjectValidatorTest extends TestCase {
 	private function newValidator(): ProposedSubjectValidator {
 		return new ProposedSubjectValidator(
 			schemaLookup: $this->schemaLookup,
-			subjectValidator: new SubjectValidator( propertyTypeLookup: PropertyTypeRegistry::withCoreTypes() ),
+			subjectValidator: new SubjectValidator(
+				propertyTypeLookup: PropertyTypeRegistry::withCoreTypes(),
+				sourceRegistry: new SourceRegistry( TestData::LOCAL_SOURCE_KEY ),
+			),
 		);
 	}
 

@@ -198,6 +198,26 @@ Note the create dry-run endpoint (`POST /subject/validate`) instead returns `404
 the update dry-run (`POST /subject/{id}/validate`) and both write endpoints surface the violation.
 Reconciling that asymmetry is left to the enforcement tier (ADR 21).
 
+### `relation-target-source-unresolvable`
+
+Emitted by `SubjectValidator`, for every relation-typed statement in the payload — including
+statements whose property is not declared on the current Schema or whose recorded type mismatches it.
+`args`: `[sourceKey]` — the unresolvable Source key taken from the offending target's id.
+`valuePartIndex`: never set.
+`propertyName`: the property whose statement carries the offending target (which need not be declared
+on the Schema).
+
+A Relation targets a Subject whose id names a Source that is not registered on this wiki. The v1 guard
+of [ADR 23](../adr/023-subject-sources.md) ("Relations across Sources") requires a relation target to
+reference a resolvable Source, so a target with an unregistered Source key is rejected at write and
+validation time (blocking under `$wgNeoWikiEnforceValidation`). Schema membership says nothing about
+whether a target's Source resolves, so the out-of-schema tolerance described under Known limitations
+does not exempt relation targets from this check. Bare targets, and ids explicitly qualified with the
+local Source (which canonicalize to bare), carry no Source key and always pass; targets whose Source
+is registered pass too. This is a write/validate-time guard only: persisted Subjects are never
+revalidated on read, so an already-stored foreign target is never rejected and cross-source relations
+can be opened up later.
+
 ## Known limitations (Foundation round)
 
 The PHP `SubjectValidator` performs two Subject-level checks:
@@ -213,7 +233,9 @@ The PHP `SubjectValidator` performs two Subject-level checks:
   may have been removed from the Schema while Subjects still carry old Statements. ADR 8 says
   one Schema per Subject, not that every Statement on that Subject must reference an extant
   Property. If surfacing these as violations becomes useful (e.g. for migration UIs), it can be
-  added as a separate code without changing the current behavior.
+  added as a separate code without changing the current behavior. The one exception is
+  [`relation-target-source-unresolvable`](#relation-target-source-unresolvable), which fires for
+  relation-typed statements regardless of schema membership.
 
 ## Adding a new validation code
 

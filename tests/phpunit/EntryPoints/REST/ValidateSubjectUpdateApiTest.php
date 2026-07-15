@@ -87,6 +87,44 @@ class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'max-value', $responseBody['violations'][0]['code'] );
 	}
 
+	public function testRelationTargetWithUnresolvableSourceProducesViolation(): void {
+		$this->createSchema(
+			TestSubject::DEFAULT_SCHEMA_ID,
+			'{"title":"' . TestSubject::DEFAULT_SCHEMA_ID . '","propertyDefinitions":'
+				. '{"Owner":{"type":"relation","relation":"has","targetSchema":"Company","multiple":false}}}'
+		);
+		$this->createPageWithSubjects(
+			'ValidateSubjectUpdateApiUnresolvableSourceTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSU11111111',
+				label: new SubjectLabel( 'Test subject sTestSU11111111' ),
+			)
+		);
+
+		$body = $this->validBody();
+		$body['statements'] = [
+			'Owner' => [
+				'propertyType' => 'relation',
+				'value' => [
+					[ 'id' => 'r1demo5rrrrrrr1', 'target' => 'ghostwiki:s1demo4sssssss1' ],
+				],
+			],
+		];
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $body )
+		);
+
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertCount( 1, $responseBody['violations'] );
+		$this->assertSame( 'relation-target-source-unresolvable', $responseBody['violations'][0]['code'] );
+		$this->assertSame( 'Owner', $responseBody['violations'][0]['propertyName'] );
+		$this->assertSame( [ 'ghostwiki' ], $responseBody['violations'][0]['args'] );
+	}
+
 	public function testNonExistentSubjectReturns404(): void {
 		$response = $this->executeHandler(
 			$this->newValidateSubjectUpdateApi(),

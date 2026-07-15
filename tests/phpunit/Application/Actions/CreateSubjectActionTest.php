@@ -22,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
@@ -76,7 +77,10 @@ class CreateSubjectActionTest extends TestCase {
 			new SelectStatementResolver( new SelectValueResolver() ),
 			new ProposedSubjectValidator(
 				schemaLookup: $this->schemaLookup,
-				subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
+				subjectValidator: new SubjectValidator(
+					propertyTypeLookup: $registry,
+					sourceRegistry: new SourceRegistry( TestData::LOCAL_SOURCE_KEY ),
+				),
 			),
 			$validationEnforced,
 		);
