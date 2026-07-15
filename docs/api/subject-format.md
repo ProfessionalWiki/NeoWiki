@@ -220,6 +220,12 @@ that names the local Source is equivalent to its bare form and is normalized to 
 is never referenced under two identities; a relation property's `targetSchema` currently accepts
 only the bare string form at schema save time. Source keys are compared byte-for-byte.
 
+Graceful degradation of an unresolvable reference (a foreign, offline, or removed Schema) currently
+applies to the resolution, validation, and projection paths: resolution yields null with one logged
+warning and the Subject is skipped. Presenting a Subject whose schema reference is unresolvable is
+not supported on the read/View path yet: the surrounding page still renders, but that Subject's own
+View does not. This is part of the deferred sourced-Schema rendering work.
+
 ## REST API
 
 ### Reading Subjects

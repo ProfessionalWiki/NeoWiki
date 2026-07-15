@@ -189,9 +189,10 @@ References to other Subjects.
 
 `targetSchema` uses the same reference form as a Subject's `schema`: a bare name string for a local
 Schema, or an object `{ "source", "name" }` for a Schema from another Source. Schema save validation
-currently accepts only the bare string form; the object form becomes saveable when sourced schemas
-arrive. Normalization of references naming the local Source happens on the subject `schema` field
-only, so a `targetSchema` is stored as given.
+currently accepts only the bare string form; saving the object form, and presenting a Subject that
+references a Schema from another Source, are part of the deferred sourced-Schema work (see
+[Schema References](subject-format.md#schema-references)). Normalization of references naming the
+local Source happens on the subject `schema` field only, so a `targetSchema` is stored as given.
 
 Example:
 
