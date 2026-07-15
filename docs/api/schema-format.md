@@ -184,8 +184,15 @@ References to other Subjects.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `relation` | string | Yes | - | The relation type name (used in Neo4j as relationship type) |
-| `targetSchema` | string | Yes | - | Name of the schema that target subjects must follow |
+| `targetSchema` | string or object | Yes | - | Reference to the schema that target subjects must follow. See [Schema References](subject-format.md#schema-references). |
 | `multiple` | boolean | No | `false` | Allow multiple relations |
+
+`targetSchema` uses the same reference form as a Subject's `schema`: a bare name string for a local
+Schema, or an object `{ "source", "name" }` for a Schema from another Source. Schema save validation
+currently accepts only the bare string form; saving the object form, and presenting a Subject that
+references a Schema from another Source, are part of the deferred sourced-Schema work (see
+[Schema References](subject-format.md#schema-references)). Normalization of references naming the
+local Source happens on the subject `schema` field only, so a `targetSchema` is stored as given.
 
 Example:
 

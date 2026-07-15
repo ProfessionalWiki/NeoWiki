@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Relation\RelationType
@@ -27,7 +28,7 @@ class RelationPropertyTest extends PropertyTestCase {
 				default: null
 			),
 			relationType: new RelationType( 'Type' ),
-			targetSchema: new SchemaName( 'Schema' ),
+			targetSchema: SchemaReference::local( new SchemaName( 'Schema' ) ),
 			multiple: true
 		);
 
@@ -94,6 +95,41 @@ JSON
 }
 JSON
 		);
+	}
+
+	public function testForeignTargetSchemaRoundTripsAsObject(): void {
+		$this->assertSerializationDoesNotChange(
+			<<<JSON
+{
+	"type": "relation",
+	"description": "",
+	"required": false,
+	"default": null,
+	"relation": "type",
+	"targetSchema": {
+		"source": "otherwiki",
+		"name": "Person"
+	},
+	"multiple": false
+}
+JSON
+		);
+	}
+
+	public function testGetTargetSchemaReferenceExposesTheForeignSource(): void {
+		$property = new RelationProperty(
+			core: new PropertyCore(
+				description: '',
+				required: false,
+				default: null
+			),
+			relationType: new RelationType( 'Type' ),
+			targetSchema: new SchemaReference( 'otherwiki', new SchemaName( 'Person' ) ),
+			multiple: false
+		);
+
+		$this->assertSame( 'otherwiki', $property->getTargetSchemaReference()->getSource() );
+		$this->assertSame( 'Person', $property->getTargetSchema()->getText() );
 	}
 
 	public function testExceptionOnMissingRelationType(): void {

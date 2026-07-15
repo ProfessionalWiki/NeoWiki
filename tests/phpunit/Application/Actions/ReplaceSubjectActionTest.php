@@ -72,10 +72,10 @@ class ReplaceSubjectActionTest extends TestCase {
 			subjectRepository: $this->subjectRepository,
 			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: $builder,
-			schemaLookup: $this->schemaLookup,
+			schemaReferenceResolver: $this->schemaLookup,
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 			proposedSubjectValidator: new ProposedSubjectValidator(
-				schemaLookup: $this->schemaLookup,
+				schemaReferenceResolver: $this->schemaLookup,
 				subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
 			),
 			presenter: $this->presenterSpy,

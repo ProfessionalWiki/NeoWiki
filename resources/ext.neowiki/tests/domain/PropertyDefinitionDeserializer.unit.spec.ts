@@ -110,6 +110,18 @@ it( 'creates a relation property definition with all fields', () => {
 	expect( property.multiple ).toBe( true );
 } );
 
+it( 'reduces a foreign target schema reference to its name', () => {
+	const json = {
+		type: 'relation',
+		relation: 'Employer',
+		targetSchema: { source: 'otherwiki', name: 'Company' },
+	};
+
+	const property = serializer.propertyDefinitionFromJson( 'test', json ) as RelationProperty;
+
+	expect( property.targetSchema ).toBe( 'Company' );
+} );
+
 it( 'degrades gracefully to a placeholder definition for an unregistered type', () => {
 	const json = {
 		type: 'color',

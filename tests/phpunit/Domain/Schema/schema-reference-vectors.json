@@ -1,0 +1,91 @@
+{
+	"localSourceKey": "mywiki",
+	"cases": [
+		{
+			"name": "bare name is local",
+			"input": "Person",
+			"valid": true,
+			"serialized": "Person",
+			"source": null,
+			"schemaName": "Person"
+		},
+		{
+			"name": "local name may contain a colon",
+			"input": "Namespace:Person",
+			"valid": true,
+			"serialized": "Namespace:Person",
+			"source": null,
+			"schemaName": "Namespace:Person"
+		},
+		{
+			"name": "foreign object keeps its source",
+			"input": { "source": "otherwiki", "name": "Person" },
+			"valid": true,
+			"serialized": { "source": "otherwiki", "name": "Person" },
+			"source": "otherwiki",
+			"schemaName": "Person"
+		},
+		{
+			"name": "foreign name may contain a colon",
+			"input": { "source": "otherwiki", "name": "Namespace:Person" },
+			"valid": true,
+			"serialized": { "source": "otherwiki", "name": "Namespace:Person" },
+			"source": "otherwiki",
+			"schemaName": "Namespace:Person"
+		},
+		{
+			"name": "object naming the local source canonicalizes to bare",
+			"input": { "source": "mywiki", "name": "Person" },
+			"valid": true,
+			"serialized": "Person",
+			"source": null,
+			"schemaName": "Person"
+		},
+		{
+			"name": "source key comparison is byte exact, so a different case stays foreign",
+			"input": { "source": "MyWiki", "name": "Person" },
+			"valid": true,
+			"serialized": { "source": "MyWiki", "name": "Person" },
+			"source": "MyWiki",
+			"schemaName": "Person"
+		},
+		{
+			"name": "underscore, hyphen and plus are legal source-key characters",
+			"input": { "source": "wiki_en-farm+1", "name": "Person" },
+			"valid": true,
+			"serialized": { "source": "wiki_en-farm+1", "name": "Person" },
+			"source": "wiki_en-farm+1",
+			"schemaName": "Person"
+		},
+		{
+			"name": "empty source key",
+			"input": { "source": "", "name": "Person" },
+			"valid": false
+		},
+		{
+			"name": "whitespace source key",
+			"input": { "source": "   ", "name": "Person" },
+			"valid": false
+		},
+		{
+			"name": "space in source key",
+			"input": { "source": "my wiki", "name": "Person" },
+			"valid": false
+		},
+		{
+			"name": "slash in source key",
+			"input": { "source": "en/wiki", "name": "Person" },
+			"valid": false
+		},
+		{
+			"name": "tilde in source key",
+			"input": { "source": "weird~key", "name": "Person" },
+			"valid": false
+		},
+		{
+			"name": "non-ASCII source key",
+			"input": { "source": "wikiä", "name": "Person" },
+			"valid": false
+		}
+	]
+}

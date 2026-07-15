@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
@@ -17,6 +17,7 @@ class SubjectContentDataDeserializer {
 	public function __construct(
 		private readonly StatementDeserializer $statementDeserializer,
 		private readonly SubjectIdParser $subjectIdParser,
+		private readonly SchemaReferenceParser $schemaReferenceParser,
 	) {
 	}
 
@@ -58,7 +59,7 @@ class SubjectContentDataDeserializer {
 		return new Subject(
 			id: $this->subjectIdParser->parse( $id ),
 			label: new SubjectLabel( $jsonArray['label'] ),
-			schemaName: new SchemaName( $jsonArray['schema'] ),
+			schemaReference: $this->schemaReferenceParser->parse( $jsonArray['schema'] ),
 			statements: $this->buildStatementList( $jsonArray ),
 		);
 	}

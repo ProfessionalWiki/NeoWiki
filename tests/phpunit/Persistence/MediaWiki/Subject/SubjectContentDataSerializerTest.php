@@ -12,8 +12,10 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -133,6 +135,74 @@ class SubjectContentDataSerializerTest extends TestCase {
 		);
 	}
 
+	private const string FOREIGN_SCHEMA_PAGE_JSON = '{
+    "mainSubject": null,
+    "subjects": {
+        "sTestSCDST11116": {
+            "label": "Foreign schema subject",
+            "schema": {
+                "source": "otherwiki",
+                "name": "Person"
+            },
+            "statements": {}
+        }
+    }
+}';
+
+	public function testForeignSchemaReferenceSerializesAsObject(): void {
+		$serializer = new SubjectContentDataSerializer();
+
+		$this->assertSame(
+			self::FOREIGN_SCHEMA_PAGE_JSON,
+			$serializer->serialize( new PageSubjects(
+				null,
+				new SubjectMap(
+					new Subject(
+						id: new SubjectId( 'sTestSCDST11116' ),
+						label: new SubjectLabel( 'Foreign schema subject' ),
+						schemaReference: new SchemaReference( 'otherwiki', new SchemaName( 'Person' ) ),
+						statements: new StatementList( [] ),
+					)
+				)
+			) )
+		);
+	}
+
+	public function testForeignSchemaReferenceRoundTripsByteIdentically(): void {
+		$this->assertSame(
+			self::FOREIGN_SCHEMA_PAGE_JSON,
+			$this->roundTrip( self::FOREIGN_SCHEMA_PAGE_JSON )
+		);
+	}
+
+	public function testSchemaObjectNamingTheLocalSourceCanonicalizesToBareName(): void {
+		$objectForm = '{
+    "mainSubject": null,
+    "subjects": {
+        "sTestSCDST11117": {
+            "label": "Local schema subject",
+            "schema": {
+                "source": "testwiki",
+                "name": "Person"
+            },
+            "statements": {}
+        }
+    }
+}';
+		$bareForm = '{
+    "mainSubject": null,
+    "subjects": {
+        "sTestSCDST11117": {
+            "label": "Local schema subject",
+            "schema": "Person",
+            "statements": {}
+        }
+    }
+}';
+
+		$this->assertSame( $bareForm, $this->roundTrip( $objectForm ) );
+	}
+
 	public function testLocalOnlyPageSlotJsonRoundTripsByteIdentically(): void {
 		$deserializer = NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer();
 		$serializer = new SubjectContentDataSerializer();
@@ -240,7 +310,8 @@ class SubjectContentDataSerializerTest extends TestCase {
 	private function roundTrip( string $contentJson ): string {
 		$deserializer = new SubjectContentDataDeserializer(
 			new StatementDeserializer( PropertyTypeRegistry::withCoreTypes(), TestData::newSubjectIdParser() ),
-			TestData::newSubjectIdParser()
+			TestData::newSubjectIdParser(),
+			TestData::newSchemaReferenceParser()
 		);
 
 		return ( new SubjectContentDataSerializer() )->serialize( $deserializer->deserialize( $contentJson ) );

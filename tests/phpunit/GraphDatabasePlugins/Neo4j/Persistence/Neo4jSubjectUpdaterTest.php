@@ -8,6 +8,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -47,7 +48,7 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 		$this->subject = new Subject(
 			$subjectId,
 			new SubjectLabel( 'Test Label' ),
-			new SchemaName( self::SCHEMA_NAME ),
+			SchemaReference::local( new SchemaName( self::SCHEMA_NAME ) ),
 			new StatementList( [] )
 		);
 	}

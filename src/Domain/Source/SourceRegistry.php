@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Source;
 
 use LogicException;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 class SourceRegistry {
@@ -39,6 +40,14 @@ class SourceRegistry {
 	 */
 	public function getSourceForId( SubjectId $id ): ?Source {
 		return $this->getSource( $id->getSource() ?? $this->localSourceKey );
+	}
+
+	/**
+	 * Maps a local reference (source null) to the local Source; null for unknown keys. A schema's
+	 * source is independent of any subject's source (ADR 23).
+	 */
+	public function getSourceForSchemaReference( SchemaReference $reference ): ?Source {
+		return $this->getSource( $reference->getSource() ?? $this->localSourceKey );
 	}
 
 }

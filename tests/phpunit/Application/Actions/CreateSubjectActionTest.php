@@ -75,7 +75,7 @@ class CreateSubjectActionTest extends TestCase {
 			$this->schemaLookup,
 			new SelectStatementResolver( new SelectValueResolver() ),
 			new ProposedSubjectValidator(
-				schemaLookup: $this->schemaLookup,
+				schemaReferenceResolver: $this->schemaLookup,
 				subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
 			),
 			$validationEnforced,

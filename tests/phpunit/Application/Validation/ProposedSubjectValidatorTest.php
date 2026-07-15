@@ -32,7 +32,7 @@ class ProposedSubjectValidatorTest extends TestCase {
 
 	private function newValidator(): ProposedSubjectValidator {
 		return new ProposedSubjectValidator(
-			schemaLookup: $this->schemaLookup,
+			schemaReferenceResolver: $this->schemaLookup,
 			subjectValidator: new SubjectValidator( propertyTypeLookup: PropertyTypeRegistry::withCoreTypes() ),
 		);
 	}

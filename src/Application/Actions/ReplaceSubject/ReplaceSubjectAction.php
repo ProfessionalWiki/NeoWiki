@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
@@ -26,7 +26,7 @@ readonly class ReplaceSubjectAction {
 		private SubjectRepository $subjectRepository,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
-		private SchemaLookup $schemaLookup,
+		private SchemaReferenceResolver $schemaReferenceResolver,
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private ReplaceSubjectPresenter $presenter,
@@ -88,7 +88,7 @@ readonly class ReplaceSubjectAction {
 	 * @return array<string, mixed>
 	 */
 	private function resolveStatements( Subject $subject, array $statements ): array {
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+		$schema = $this->schemaReferenceResolver->resolve( $subject->getSchemaReference() );
 
 		if ( $schema === null ) {
 			return $statements;

@@ -5,14 +5,14 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use Psr\Log\LoggerInterface;
 
 class Neo4jSubjectUpdaterFactory {
 
 	public function __construct(
-		private readonly SchemaLookup $schemaLookup,
+		private readonly SchemaReferenceResolver $schemaReferenceResolver,
 		private readonly Neo4jValueBuilderRegistry $valueBuilderRegistry,
 		private readonly LoggerInterface $logger,
 		private readonly string $wikiId,
@@ -23,7 +23,7 @@ class Neo4jSubjectUpdaterFactory {
 		return new Neo4jSubjectUpdater(
 			$transaction,
 			$pageId,
-			$this->schemaLookup,
+			$this->schemaReferenceResolver,
 			$this->valueBuilderRegistry,
 			$this->logger,
 			$this->wikiId,

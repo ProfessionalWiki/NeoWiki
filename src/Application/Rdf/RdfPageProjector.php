@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Rdf;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageValue;
@@ -47,7 +47,7 @@ class RdfPageProjector implements PageProjector {
 	public function __construct(
 		private readonly RdfValueMapperRegistry $valueMappers,
 		private readonly RdfNamespaces $namespaces,
-		private readonly SchemaLookup $schemaLookup,
+		private readonly SchemaReferenceResolver $schemaReferenceResolver,
 		private readonly LoggerInterface $logger,
 	) {
 	}
@@ -80,7 +80,7 @@ class RdfPageProjector implements PageProjector {
 		$resolved = [];
 
 		foreach ( $subjects as $subject ) {
-			$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+			$schema = $this->schemaReferenceResolver->resolve( $subject->getSchemaReference() );
 
 			if ( $schema === null ) {
 				$this->logger->warning( 'Schema not found: ' . $subject->getSchemaName()->getText() );

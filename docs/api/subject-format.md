@@ -50,7 +50,7 @@ Each subject in the `subjects` map has the following structure:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `label` | string | Yes | Human-readable label for the subject |
-| `schema` | string | Yes | Name of the Schema this subject follows (page name in the Schema namespace) |
+| `schema` | string or object | Yes | Reference to the Schema this subject follows. See [Schema References](#schema-references). |
 | `statements` | object | No | Map of property names to statement objects. If omitted, the subject has no statements. |
 
 ## Statement Object
@@ -196,6 +196,35 @@ Relation IDs follow the same format as subject IDs but start with `r`.
 Example: `r1demo5rrrrrrr1`
 
 See [ADR 014](../adr/014-improved-id-format.md) for details on the ID format.
+
+## Schema References
+
+A Subject's `schema` field (and a relation property's `targetSchema` in the
+[Schema Format](schema-format.md)) is a reference to a Schema, resolved through the Schema's own
+Source ([ADR 23](../adr/023-subject-sources.md)). A Schema's Source is independent of the Subject's
+Source.
+
+- **Local form**: a bare name string, the Schema's page name in the local Schema namespace
+  ([ADR 17](../adr/017-names-as-identifiers.md)). Local references are always stored in this form.
+
+  Example: `"schema": "Company"`
+
+- **Foreign form**: an object `{ "source": "...", "name": "..." }` referencing a Schema from another
+  Source.
+
+  Example: `"schema": { "source": "otherwiki", "name": "Company" }`
+
+Schema names are page titles and may contain colons, so the source and name are kept as separate
+object fields rather than concatenated into one string. On the subject `schema` field, an object
+that names the local Source is equivalent to its bare form and is normalized to it, so one Schema
+is never referenced under two identities; a relation property's `targetSchema` currently accepts
+only the bare string form at schema save time. Source keys are compared byte-for-byte.
+
+Graceful degradation of an unresolvable reference (a foreign, offline, or removed Schema) currently
+applies to the resolution, validation, and projection paths: resolution yields null with one logged
+warning and the Subject is skipped. Presenting a Subject whose schema reference is unresolvable is
+not supported on the read/View path yet: the surrounding page still renders, but that Subject's own
+View does not. This is part of the deferred sourced-Schema rendering work.
 
 ## REST API
 

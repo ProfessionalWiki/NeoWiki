@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubjectUpdate;
 
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
@@ -18,7 +18,7 @@ readonly class ValidateSubjectUpdateQuery {
 
 	public function __construct(
 		private SubjectRepository $subjectRepository,
-		private SchemaLookup $schemaLookup,
+		private SchemaReferenceResolver $schemaReferenceResolver,
 		private SubjectValidator $subjectValidator,
 		private StatementListBuilder $statementListBuilder,
 		private SelectStatementResolver $selectStatementResolver,
@@ -42,7 +42,7 @@ readonly class ValidateSubjectUpdateQuery {
 			throw SubjectNotFoundException::forId( $id );
 		}
 
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+		$schema = $this->schemaReferenceResolver->resolve( $subject->getSchemaReference() );
 
 		if ( $schema === null ) {
 			return [

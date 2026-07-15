@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 
 class Subject {
@@ -14,7 +15,7 @@ class Subject {
 	public function __construct(
 		public readonly SubjectId $id,
 		public SubjectLabel $label,
-		private readonly SchemaName $schemaName,
+		private readonly SchemaReference $schemaReference,
 		private StatementList $statements,
 	) {
 	}
@@ -28,7 +29,7 @@ class Subject {
 		return new self(
 			id: SubjectId::createNew( $idGenerator ),
 			label: $label,
-			schemaName: $schemaName,
+			schemaReference: SchemaReference::local( $schemaName ),
 			statements: $statements ?? new StatementList( [] ),
 		);
 	}
@@ -37,7 +38,7 @@ class Subject {
 		return new self(
 			id: $id,
 			label: $label,
-			schemaName: $schemaName,
+			schemaReference: SchemaReference::local( $schemaName ),
 			statements: new StatementList( [] ),
 		);
 	}
@@ -55,7 +56,11 @@ class Subject {
 	}
 
 	public function getSchemaName(): SchemaName {
-		return $this->schemaName;
+		return $this->schemaReference->getName();
+	}
+
+	public function getSchemaReference(): SchemaReference {
+		return $this->schemaReference;
 	}
 
 	public function getStatements(): StatementList {

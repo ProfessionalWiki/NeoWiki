@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -34,7 +35,7 @@ class SubjectResolverTest extends TestCase {
 		return new Subject(
 			id: new SubjectId( $id ),
 			label: new SubjectLabel( $label ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schemaReference: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList(),
 		);
 	}

@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UrlProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 class TestProperty {
 
@@ -50,7 +51,7 @@ class TestProperty {
 				default: $default
 			),
 			relationType: $relationType instanceof RelationType ? $relationType : new RelationType( $relationType ),
-			targetSchema: $targetSchema instanceof SchemaName ? $targetSchema : new SchemaName( $targetSchema ),
+			targetSchema: SchemaReference::local( $targetSchema instanceof SchemaName ? $targetSchema : new SchemaName( $targetSchema ) ),
 			multiple: $multiple
 		);
 	}
