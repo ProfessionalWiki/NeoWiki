@@ -64,6 +64,8 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\LazySchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\LazySubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaReferenceResolver;
+use ProfessionalWiki\NeoWiki\Application\SourceRoutingSchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Application\SourceRoutingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
 use ProfessionalWiki\NeoWiki\Application\Mappings;
@@ -263,6 +265,18 @@ class NeoWikiExtension {
 		return new SchemaReferenceParser( $this->config->wikiId );
 	}
 
+	/**
+	 * Resolves a Subject's schema reference through the reference's own Source (ADR 27). A local
+	 * reference routes through the local Source's schema lookup and behaves exactly as before; an
+	 * unresolvable reference degrades to null (schema-not-found), never fatally.
+	 */
+	public function getSchemaReferenceResolver(): SchemaReferenceResolver {
+		return new SourceRoutingSchemaReferenceResolver(
+			sourceRegistry: $this->getSourceRegistry(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
 	public function getPagePropertyProviderRegistry(): PagePropertyProviderRegistry {
 		if ( !isset( $this->pagePropertyProviderRegistry ) ) {
 			$this->pagePropertyProviderRegistry = new PagePropertyProviderRegistry();
@@ -319,7 +333,7 @@ class NeoWikiExtension {
 		return new RdfPageProjector(
 			$this->getRdfValueMapperRegistry(),
 			$this->getRdfNamespaces(),
-			$this->getSchemaLookup(),
+			$this->getSchemaReferenceResolver(),
 			LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
@@ -516,7 +530,7 @@ class NeoWikiExtension {
 		}
 
 		if ( $this->neo4jPlugin === null ) {
-			$this->neo4jPlugin = $this->buildNeo4jPlugin( $this->getSchemaLookup() );
+			$this->neo4jPlugin = $this->buildNeo4jPlugin( $this->getSchemaReferenceResolver() );
 		}
 
 		return $this->neo4jPlugin;
@@ -533,17 +547,17 @@ class NeoWikiExtension {
 		return $plugin;
 	}
 
-	// Test seam: lets tests build a projection store with a custom SchemaLookup.
+	// Test seam: lets tests build a projection store with a custom schema resolver.
 	// This is a hack; we should have a proper test environment.
-	public function newNeo4jProjectionStore( SchemaLookup $schemaLookup ): GraphDatabasePlugin {
-		return $this->buildNeo4jPlugin( $schemaLookup )->getGraphDatabasePlugin();
+	public function newNeo4jProjectionStore( SchemaReferenceResolver $schemaReferenceResolver ): GraphDatabasePlugin {
+		return $this->buildNeo4jPlugin( $schemaReferenceResolver )->getGraphDatabasePlugin();
 	}
 
-	private function buildNeo4jPlugin( SchemaLookup $schemaLookup ): Neo4jPlugin {
+	private function buildNeo4jPlugin( SchemaReferenceResolver $schemaReferenceResolver ): Neo4jPlugin {
 		return new Neo4jPlugin(
 			client: $this->getNeo4jClient(),
 			readOnlyClient: $this->getReadOnlyNeo4jClient(),
-			schemaLookup: $schemaLookup,
+			schemaReferenceResolver: $schemaReferenceResolver,
 			valueBuilderRegistry: $this->getValueBuilderRegistry(),
 			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 			wikiId: $this->config->wikiId,
@@ -924,7 +938,7 @@ class NeoWikiExtension {
 			subjectRepository: $this->getSubjectRepository(),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
-			schemaLookup: $this->getSchemaLookup(),
+			schemaReferenceResolver: $this->getSchemaReferenceResolver(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 			presenter: $presenter,
@@ -948,7 +962,7 @@ class NeoWikiExtension {
 
 	public function getProposedSubjectValidator(): ProposedSubjectValidator {
 		return new ProposedSubjectValidator(
-			schemaLookup: $this->getSchemaLookup(),
+			schemaReferenceResolver: $this->getSchemaReferenceResolver(),
 			subjectValidator: $this->getSubjectValidator(),
 		);
 	}
@@ -965,7 +979,7 @@ class NeoWikiExtension {
 	public function newValidateSubjectUpdateQuery(): ValidateSubjectUpdateQuery {
 		return new ValidateSubjectUpdateQuery(
 			subjectRepository: $this->getSubjectRepository(),
-			schemaLookup: $this->getSchemaLookup(),
+			schemaReferenceResolver: $this->getSchemaReferenceResolver(),
 			subjectValidator: $this->getSubjectValidator(),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),

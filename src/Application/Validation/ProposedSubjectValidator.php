@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Validation;
 
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
@@ -24,7 +24,7 @@ use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 readonly class ProposedSubjectValidator {
 
 	public function __construct(
-		private SchemaLookup $schemaLookup,
+		private SchemaReferenceResolver $schemaReferenceResolver,
 		private SubjectValidator $subjectValidator,
 	) {
 	}
@@ -33,7 +33,7 @@ readonly class ProposedSubjectValidator {
 	 * @return Violation[]
 	 */
 	public function validate( Subject $subject ): array {
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+		$schema = $this->schemaReferenceResolver->resolve( $subject->getSchemaReference() );
 
 		if ( $schema === null ) {
 			return [

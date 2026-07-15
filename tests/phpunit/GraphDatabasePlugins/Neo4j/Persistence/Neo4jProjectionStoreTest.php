@@ -67,7 +67,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		return new Neo4jProjectionStore(
 			client: $extension->getNeo4jClient(),
 			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
-				schemaLookup: new InMemorySchemaLookup(
+				schemaReferenceResolver: new InMemorySchemaLookup(
 					TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
 				),
 				valueBuilderRegistry: $extension->getValueBuilderRegistry(),

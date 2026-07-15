@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j;
 
 use Laudis\Neo4j\Contracts\ClientInterface;
 use MediaWiki\Parser\Parser;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CompositeCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\ExplainCypherQueryValidator;
@@ -37,7 +37,7 @@ readonly class Neo4jPlugin {
 	public function __construct(
 		ClientInterface $client,
 		ClientInterface $readOnlyClient,
-		SchemaLookup $schemaLookup,
+		SchemaReferenceResolver $schemaReferenceResolver,
 		Neo4jValueBuilderRegistry $valueBuilderRegistry,
 		LoggerInterface $logger,
 		string $wikiId,
@@ -45,7 +45,7 @@ readonly class Neo4jPlugin {
 		$this->projectionStore = new Neo4jProjectionStore(
 			client: $client,
 			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
-				schemaLookup: $schemaLookup,
+				schemaReferenceResolver: $schemaReferenceResolver,
 				valueBuilderRegistry: $valueBuilderRegistry,
 				logger: $logger,
 				wikiId: $wikiId,

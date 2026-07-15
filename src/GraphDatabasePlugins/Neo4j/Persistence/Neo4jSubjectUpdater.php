@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherList;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
@@ -21,7 +21,7 @@ class Neo4jSubjectUpdater {
 	public function __construct(
 		private readonly TransactionInterface $transaction,
 		private readonly PageId $pageId,
-		private readonly SchemaLookup $schemaRepository,
+		private readonly SchemaReferenceResolver $schemaReferenceResolver,
 		private readonly Neo4jValueBuilderRegistry $valueBuilderRegistry,
 		private readonly LoggerInterface $logger,
 		private readonly string $wikiId,
@@ -30,7 +30,7 @@ class Neo4jSubjectUpdater {
 
 	public function updateSubject( Subject $subject, bool $isMainSubject ): void {
 		// TODO: we should make sure this schema retrieval is cached
-		$schema = $this->schemaRepository->getSchema( $subject->getSchemaName() );
+		$schema = $this->schemaReferenceResolver->resolve( $subject->getSchemaReference() );
 
 		if ( $schema === null ) {
 			$this->logger->warning( 'Schema not found: ' . $subject->getSchemaName()->getText() );
