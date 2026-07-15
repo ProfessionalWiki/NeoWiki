@@ -18,10 +18,15 @@ use InvalidArgumentException;
  */
 readonly class SchemaReference {
 
+	private const string SOURCE_KEY_PATTERN = '/^[A-Za-z0-9+_-]+\z/';
+
 	public function __construct(
 		private ?string $source,
 		private SchemaName $name,
 	) {
+		if ( $source !== null && preg_match( self::SOURCE_KEY_PATTERN, $source ) !== 1 ) {
+			throw new InvalidArgumentException( "Schema reference source key has the wrong format: '$source'" );
+		}
 	}
 
 	public static function local( SchemaName $name ): self {

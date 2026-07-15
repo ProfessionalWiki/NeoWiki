@@ -14,12 +14,12 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 class SchemaReferenceParserTest extends TestCase {
 
 	/**
-	 * @dataProvider vectorProvider
+	 * @dataProvider validVectorProvider
 	 *
 	 * @param string|array<string, string> $input
 	 * @param string|array<string, string> $serialized
 	 */
-	public function testParsesVector( string|array $input, string|array $serialized, ?string $source, string $schemaName ): void {
+	public function testParsesValidVector( string|array $input, string|array $serialized, ?string $source, string $schemaName ): void {
 		$reference = $this->newParser()->parse( $input );
 
 		$this->assertSame( $source, $reference->getSource() );
@@ -28,7 +28,7 @@ class SchemaReferenceParserTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider vectorProvider
+	 * @dataProvider validVectorProvider
 	 *
 	 * @param string|array<string, string> $input
 	 * @param string|array<string, string> $serialized
@@ -37,22 +37,39 @@ class SchemaReferenceParserTest extends TestCase {
 		$this->assertSame( $serialized, $this->newParser()->parse( $serialized )->toSerializedValue() );
 	}
 
-	public function testAcceptsLocalSourceKeyOutsideTheSchemaNameGrammar(): void {
+	/**
+	 * @dataProvider invalidVectorProvider
+	 *
+	 * @param string|array<string, string> $input
+	 */
+	public function testRejectsInvalidVector( string|array $input ): void {
+		$this->expectException( \InvalidArgumentException::class );
+		$this->newParser()->parse( $input );
+	}
+
+	public function testAcceptsLocalSourceKeyOutsideTheKeyGrammar(): void {
 		$parser = new SchemaReferenceParser( 'weird~key' );
 
-		$reference = $parser->parse( [ 'source' => 'weird~key', 'name' => 'Person' ] );
-
-		$this->assertNull( $reference->getSource() );
-		$this->assertSame( 'Person', $reference->getName()->getText() );
+		$this->assertSame( 'Person', $parser->parse( 'Person' )->toSerializedValue() );
 	}
 
 	private function newParser(): SchemaReferenceParser {
 		return new SchemaReferenceParser( self::vectors()['localSourceKey'] );
 	}
 
-	public static function vectorProvider(): iterable {
+	public static function validVectorProvider(): iterable {
 		foreach ( self::vectors()['cases'] as $case ) {
-			yield $case['name'] => [ $case['input'], $case['serialized'], $case['source'], $case['schemaName'] ];
+			if ( $case['valid'] ) {
+				yield $case['name'] => [ $case['input'], $case['serialized'], $case['source'], $case['schemaName'] ];
+			}
+		}
+	}
+
+	public static function invalidVectorProvider(): iterable {
+		foreach ( self::vectors()['cases'] as $case ) {
+			if ( !$case['valid'] ) {
+				yield $case['name'] => [ $case['input'] ];
+			}
 		}
 	}
 

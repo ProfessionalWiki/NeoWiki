@@ -28,6 +28,23 @@ class SchemaReferenceTest extends TestCase {
 		$this->assertSame( 'Person', $reference->getName()->getText() );
 	}
 
+	/**
+	 * @dataProvider invalidSourceKeyProvider
+	 */
+	public function testForeignReferenceWithInvalidSourceKeyIsRejected( string $sourceKey ): void {
+		$this->expectException( InvalidArgumentException::class );
+		new SchemaReference( $sourceKey, new SchemaName( 'Person' ) );
+	}
+
+	public static function invalidSourceKeyProvider(): iterable {
+		yield 'empty' => [ '' ];
+		yield 'whitespace only' => [ '   ' ];
+		yield 'space' => [ 'other wiki' ];
+		yield 'slash' => [ 'other/wiki' ];
+		yield 'tilde' => [ 'weird~key' ];
+		yield 'non-ASCII' => [ 'wikiä' ];
+	}
+
 	public function testLocalReferenceSerializesToBareName(): void {
 		$this->assertSame(
 			'Person',
@@ -64,6 +81,11 @@ class SchemaReferenceTest extends TestCase {
 	public function testDeserializingObjectWithNonStringNameIsRejected(): void {
 		$this->expectException( InvalidArgumentException::class );
 		SchemaReference::fromSerializedValue( [ 'source' => 'otherwiki', 'name' => 42 ] );
+	}
+
+	public function testDeserializingObjectWithInvalidSourceKeyIsRejected(): void {
+		$this->expectException( InvalidArgumentException::class );
+		SchemaReference::fromSerializedValue( [ 'source' => 'other wiki', 'name' => 'Person' ] );
 	}
 
 	public function testLocalReferencesWithTheSameNameAreEqual(): void {
