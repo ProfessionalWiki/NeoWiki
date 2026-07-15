@@ -1,0 +1,47 @@
+{
+	"localSourceKey": "mywiki",
+	"cases": [
+		{
+			"name": "bare name is local",
+			"input": "Person",
+			"serialized": "Person",
+			"source": null,
+			"schemaName": "Person"
+		},
+		{
+			"name": "local name may contain a colon",
+			"input": "Namespace:Person",
+			"serialized": "Namespace:Person",
+			"source": null,
+			"schemaName": "Namespace:Person"
+		},
+		{
+			"name": "foreign object keeps its source",
+			"input": { "source": "otherwiki", "name": "Person" },
+			"serialized": { "source": "otherwiki", "name": "Person" },
+			"source": "otherwiki",
+			"schemaName": "Person"
+		},
+		{
+			"name": "foreign name may contain a colon",
+			"input": { "source": "otherwiki", "name": "Namespace:Person" },
+			"serialized": { "source": "otherwiki", "name": "Namespace:Person" },
+			"source": "otherwiki",
+			"schemaName": "Namespace:Person"
+		},
+		{
+			"name": "object naming the local source canonicalizes to bare",
+			"input": { "source": "mywiki", "name": "Person" },
+			"serialized": "Person",
+			"source": null,
+			"schemaName": "Person"
+		},
+		{
+			"name": "source key comparison is byte exact, so a different case stays foreign",
+			"input": { "source": "MyWiki", "name": "Person" },
+			"serialized": { "source": "MyWiki", "name": "Person" },
+			"source": "MyWiki",
+			"schemaName": "Person"
+		}
+	]
+}
