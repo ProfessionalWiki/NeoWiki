@@ -10,10 +10,12 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPagePropertyProvider;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubSource;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar
@@ -67,12 +69,23 @@ class NeoWikiRegistrarTest extends TestCase {
 		$this->assertTrue( $rdfValueMapperRegistry->hasMapper( 'custom' ) );
 	}
 
+	public function testAddSourceRegistersInRegistry(): void {
+		$sourceRegistry = new SourceRegistry( 'localwiki' );
+		$registrar = $this->newRegistrar( sourceRegistry: $sourceRegistry );
+
+		$source = new StubSource();
+		$registrar->addSource( 'somewiki', $source );
+
+		$this->assertSame( $source, $sourceRegistry->getSource( 'somewiki' ) );
+	}
+
 	private function newRegistrar(
 		?PropertyTypeRegistry $propertyTypeRegistry = null,
 		?Neo4jValueBuilderRegistry $valueBuilderRegistry = null,
 		?PagePropertyProviderRegistry $pagePropertyProviderRegistry = null,
 		?GraphDatabasePluginRegistry $graphDatabasePluginRegistry = null,
 		?RdfValueMapperRegistry $rdfValueMapperRegistry = null,
+		?SourceRegistry $sourceRegistry = null,
 	): NeoWikiRegistrar {
 		return new NeoWikiRegistrar(
 			propertyTypeRegistry: $propertyTypeRegistry ?? new PropertyTypeRegistry(),
@@ -80,6 +93,7 @@ class NeoWikiRegistrarTest extends TestCase {
 			pagePropertyProviderRegistry: $pagePropertyProviderRegistry ?? new PagePropertyProviderRegistry(),
 			graphDatabasePluginRegistry: $graphDatabasePluginRegistry ?? new GraphDatabasePluginRegistry(),
 			rdfValueMapperRegistry: $rdfValueMapperRegistry ?? new RdfValueMapperRegistry(),
+			sourceRegistry: $sourceRegistry ?? new SourceRegistry( 'localwiki' ),
 		);
 	}
 

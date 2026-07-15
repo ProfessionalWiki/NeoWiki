@@ -12,6 +12,8 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Literal;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Source\Source;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 
@@ -23,6 +25,7 @@ readonly class NeoWikiRegistrar {
 		private PagePropertyProviderRegistry $pagePropertyProviderRegistry,
 		private GraphDatabasePluginRegistry $graphDatabasePluginRegistry,
 		private RdfValueMapperRegistry $rdfValueMapperRegistry,
+		private SourceRegistry $sourceRegistry,
 	) {
 	}
 
@@ -52,6 +55,14 @@ readonly class NeoWikiRegistrar {
 
 	public function addGraphDatabasePlugin( GraphDatabasePlugin $plugin ): void {
 		$this->graphDatabasePluginRegistry->addPlugin( $plugin );
+	}
+
+	/**
+	 * Registers a Source under its source key. Throws when the key is already taken (including the
+	 * local wiki id, which core registers before this hook runs).
+	 */
+	public function addSource( string $sourceKey, Source $source ): void {
+		$this->sourceRegistry->register( $sourceKey, $source );
 	}
 
 }

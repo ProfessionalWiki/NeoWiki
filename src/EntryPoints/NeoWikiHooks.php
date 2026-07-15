@@ -162,7 +162,7 @@ class NeoWikiHooks {
 				$parserFunction = new NeoWikiValueParserFunction(
 					new SubjectResolver(
 						$extension->newSubjectContentRepository(),
-						$extension->getSubjectRepository(),
+						$extension->getSubjectLookup(),
 						$extension->getSubjectIdParser(),
 					)
 				);

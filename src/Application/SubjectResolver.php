@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application;
 
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -22,6 +23,8 @@ class SubjectResolver {
 	public function resolveById( string $subjectIdText ): ?Subject {
 		try {
 			return $this->subjectLookup->getSubject( $this->subjectIdParser->parse( $subjectIdText ) );
+		} catch ( GraphBackendNotConfiguredException $e ) {
+			throw $e;
 		} catch ( \Exception ) {
 			return null;
 		}
@@ -54,6 +57,8 @@ class SubjectResolver {
 			if ( $subject !== null ) {
 				return $subject->getLabel()->text;
 			}
+		} catch ( GraphBackendNotConfiguredException $e ) {
+			throw $e;
 		} catch ( \Exception ) {
 			// Fall through to ID
 		}
