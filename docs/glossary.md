@@ -67,6 +67,22 @@ Each Relation has
 
 
 
+## Source
+
+The origin a Subject (and its Schema) comes from ([ADR 23](adr/023-subject-sources.md)). The local
+revision slot is the default Source; others can supply Subjects too, such as an on-wiki SMW or Wikibase
+store, another NeoWiki, or an external system. A wiki farm is simply more registered Sources.
+
+Each Subject id is a `(source, localId)` pair; a bare id means the local Source. A **Source registry**
+maps a source key to its Source, and the Source is the authority for its Subjects' editability, localId
+grammar, schema resolution, and IRI base URI. Local Subjects are editable and versioned; sourced
+Subjects are read-only. A Subject is queryable via Cypher only once materialised in the graph,
+independent of its Source.
+
+Extensions register Sources through the `NeoWikiRegistration` hook (see
+[Extending NeoWiki](extending/extending.md)). The interface contract is frozen in
+[ADR 27](adr/027-source-interface-contract.md).
+
 ## Schema
 
 A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Person, Company, Product, etc.

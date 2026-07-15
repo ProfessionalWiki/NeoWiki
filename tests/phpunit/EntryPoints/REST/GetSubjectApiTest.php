@@ -101,6 +101,24 @@ JSON,
 		$this->assertSame( 200, $response->getStatusCode() );
 	}
 
+	public function testSubjectWithUnregisteredSourceDegradesToNotFound(): void {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [
+					'subjectId' => 'nonexistentsource:s11111111111111'
+				]
+			] )
+		);
+
+		$this->assertSame(
+			'{"subject":null}',
+			$response->getBody()->getContents()
+		);
+		$this->assertSame( 200, $response->getStatusCode() );
+	}
+
 	public function testReturnsSubjectDataFromSpecificRevision(): void {
 		$originalSubject = TestSubject::build(
 			id: 'sTestGSA1111116',

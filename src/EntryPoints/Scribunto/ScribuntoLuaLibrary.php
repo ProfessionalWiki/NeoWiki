@@ -28,7 +28,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 			$this->subjectDataLookup = new SubjectDataLookup(
 				new SubjectResolver(
 					$extension->newSubjectContentRepository(),
-					$extension->getSubjectRepository(),
+					$extension->getSubjectLookup(),
 					$extension->getSubjectIdParser(),
 				),
 			);

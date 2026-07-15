@@ -8,6 +8,7 @@ use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
@@ -79,6 +80,24 @@ class SubjectResolverTest extends TestCase {
 		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup, TestData::newSubjectIdParser() );
 
 		$this->assertNull( $resolver->resolveById( self::SUBJECT_ID ) );
+	}
+
+	public function testResolveByIdPropagatesMissingGraphBackend(): void {
+		$resolver = new SubjectResolver(
+			new InMemorySubjectContentRepository(),
+			$this->newLookupWithoutGraphBackend(),
+			TestData::newSubjectIdParser()
+		);
+
+		$this->expectException( GraphBackendNotConfiguredException::class );
+		$resolver->resolveById( self::SUBJECT_ID );
+	}
+
+	private function newLookupWithoutGraphBackend(): SubjectLookup {
+		$lookup = $this->createStub( SubjectLookup::class );
+		$lookup->method( 'getSubject' )->willThrowException( new GraphBackendNotConfiguredException() );
+
+		return $lookup;
 	}
 
 	public function testResolveMainByTitleReturnsMainSubject(): void {
@@ -173,6 +192,23 @@ class SubjectResolverTest extends TestCase {
 		);
 
 		$this->assertSame( self::TARGET_SUBJECT_ID, $resolver->resolveRelationLabel( $relation ) );
+	}
+
+	public function testResolveRelationLabelPropagatesMissingGraphBackend(): void {
+		$resolver = new SubjectResolver(
+			new InMemorySubjectContentRepository(),
+			$this->newLookupWithoutGraphBackend(),
+			TestData::newSubjectIdParser()
+		);
+
+		$relation = new Relation(
+			id: new RelationId( 'r1test5cccccccc' ),
+			targetId: new SubjectId( self::TARGET_SUBJECT_ID ),
+			properties: new RelationProperties( [] ),
+		);
+
+		$this->expectException( GraphBackendNotConfiguredException::class );
+		$resolver->resolveRelationLabel( $relation );
 	}
 
 }

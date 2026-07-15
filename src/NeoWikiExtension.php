@@ -43,7 +43,9 @@ use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubjectUpdate\ValidateS
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
+use ProfessionalWiki\NeoWiki\Persistence\LocalSource;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
@@ -58,7 +60,11 @@ use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\LazySchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\LazySubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\SourceRoutingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
 use ProfessionalWiki\NeoWiki\Application\Mappings;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
@@ -142,6 +148,7 @@ class NeoWikiExtension {
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
 	private Neo4jValueBuilderRegistry $valueBuilderRegistry;
 	private RdfValueMapperRegistry $rdfValueMapperRegistry;
+	private SourceRegistry $sourceRegistry;
 	private bool $extensionsRegistered = false;
 	private SubjectRepository $subjectRepository;
 	private CompositeGraphDatabasePlugin $graphDatabasePlugin;
@@ -234,6 +241,7 @@ class NeoWikiExtension {
 				$this->getPagePropertyProviderRegistry(),
 				$this->getGraphDatabasePluginRegistry(),
 				$this->getRdfValueMapperRegistry(),
+				$this->getSourceRegistry(),
 			) ]
 		);
 	}
@@ -679,6 +687,52 @@ class NeoWikiExtension {
 		);
 	}
 
+	/**
+	 * The read-side Subject lookup: resolves each id through its Source (ADR 27). Local ids stay on
+	 * the local repository; an unregistered source key degrades to not-found plus a logged warning.
+	 * Write paths keep using getSubjectRepository() directly, since sourced Subjects are read-only.
+	 */
+	public function getSubjectLookup(): SubjectLookup {
+		return new SourceRoutingSubjectLookup(
+			sourceRegistry: $this->getSourceRegistry(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
+	/**
+	 * The Source registry, seeded with core's LocalSource under the local wiki id before the
+	 * NeoWikiRegistration hook runs, so an extension colliding with the local key fails fast at
+	 * registration (same core-first ordering as the Neo4j composite plugin). The field is populated
+	 * before ensureExtensionsRegistered() fires: that call builds a NeoWikiRegistrar which re-enters
+	 * this accessor, and the already-set field short-circuits the re-entry instead of looping.
+	 */
+	public function getSourceRegistry(): SourceRegistry {
+		if ( !isset( $this->sourceRegistry ) ) {
+			$this->sourceRegistry = new SourceRegistry( $this->config->wikiId );
+			$this->sourceRegistry->register( $this->config->wikiId, $this->newLocalSource() );
+		}
+
+		$this->ensureExtensionsRegistered();
+
+		return $this->sourceRegistry;
+	}
+
+	/**
+	 * Runs while getSourceRegistry() assembles the registry, before the NeoWikiRegistration hook
+	 * fires, so nothing here may fire that hook: a dependency doing so (getSchemaLookup() does, via
+	 * the property-type registry) would hand handlers the still-empty registry and let an extension
+	 * claim the local key before core registers LocalSource. The subject lookup is deferred for
+	 * another reason too: its construction requires a graph backend, while the registry also
+	 * assembles on backend-less paths.
+	 */
+	private function newLocalSource(): LocalSource {
+		return new LocalSource(
+			subjectLookup: new LazySubjectLookup( fn (): SubjectLookup => $this->getSubjectRepository() ),
+			schemaLookup: new LazySchemaLookup( fn (): SchemaLookup => $this->getSchemaLookup() ),
+			baseUri: $this->config->rdfBaseUri,
+		);
+	}
+
 	private function getIdGenerator(): IdGenerator {
 		return new ProductionIdGenerator();
 	}
@@ -829,7 +883,7 @@ class NeoWikiExtension {
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: $this->getSubjectLookup(),
 			schemaLookup: $this->getSchemaLookup(),
 			schemaSerializer: $this->getSchemaPresentationSerializer(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
@@ -839,7 +893,7 @@ class NeoWikiExtension {
 	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: $this->getSubjectLookup(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			subjectIdParser: $this->getSubjectIdParser(),
 		);
