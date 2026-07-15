@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -379,7 +380,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 						$relationPropertyName => new RelationProperty(
 							core: new PropertyCore( description: '', required: false, default: null ),
 							relationType: new RelationType( $relationType ),
-							targetSchema: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ),
+							targetSchema: SchemaReference::local( new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
 							multiple: false,
 						),
 					] ),
