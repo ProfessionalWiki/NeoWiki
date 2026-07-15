@@ -215,9 +215,10 @@ Source.
   Example: `"schema": { "source": "otherwiki", "name": "Company" }`
 
 Schema names are page titles and may contain colons, so the source and name are kept as separate
-object fields rather than concatenated into one string. An object that names the local Source is
-equivalent to its bare form and is normalized to it, so one Schema is never referenced under two
-identities. Source keys are compared byte-for-byte.
+object fields rather than concatenated into one string. On the subject `schema` field, an object
+that names the local Source is equivalent to its bare form and is normalized to it, so one Schema
+is never referenced under two identities; a relation property's `targetSchema` currently accepts
+only the bare string form at schema save time. Source keys are compared byte-for-byte.
 
 ## REST API
 

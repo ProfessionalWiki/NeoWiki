@@ -188,8 +188,10 @@ References to other Subjects.
 | `multiple` | boolean | No | `false` | Allow multiple relations |
 
 `targetSchema` uses the same reference form as a Subject's `schema`: a bare name string for a local
-Schema, or an object `{ "source", "name" }` for a Schema from another Source. A reference naming the
-local Source normalizes to the bare form.
+Schema, or an object `{ "source", "name" }` for a Schema from another Source. Schema save validation
+currently accepts only the bare string form; the object form becomes saveable when sourced schemas
+arrive. Normalization of references naming the local Source happens on the subject `schema` field
+only, so a `targetSchema` is stored as given.
 
 Example:
 
