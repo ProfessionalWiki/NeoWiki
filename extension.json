@@ -400,6 +400,7 @@
 				"neowiki-field-schema-not-found",
 				"neowiki-field-unregistered-type",
 				"neowiki-field-label-required",
+				"neowiki-field-relation-target-source-unresolvable",
 				"neowiki-select-placeholder",
 				"neowiki-select-no-results",
 				"neowiki-select-unknown-option",
