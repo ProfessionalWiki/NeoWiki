@@ -28,7 +28,7 @@ interface Source {
 	/**
 	 * The schema with the given name from this Source, or null when it has
 	 * none ("Schemas come from Sources", ADR 23). A schema's source is
-	 * independent of a subject's source; T3 builds the reference plumbing.
+	 * independent of a subject's source.
 	 */
 	public function getSchema( SchemaName $schemaName ): ?Schema;
 

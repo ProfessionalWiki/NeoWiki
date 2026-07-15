@@ -45,8 +45,9 @@ degrades to not-found (null) plus one logged warning, never fatally.
 
 ## Consequences
 
-- T3 resolves schema references through the schema's own Source with no contract change; T4 gets
-  per-source target validation via `isValidLocalId`.
+- T3 resolves schema references through the schema's own Source with no contract change. T4 rejects
+  relation targets whose source is not registered, checking Source registration through the
+  registry; `isValidLocalId` is available for per-source localId validation but has no consumer yet.
 - Write-back, when designed, arrives as a separate `WritableSource` interface extending `Source`
   (non-breaking for existing implementers), under its own ADR.
 - The local persistence path gains read-side indirection (the routing lookup, the registry,
