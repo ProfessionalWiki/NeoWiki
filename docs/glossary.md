@@ -89,6 +89,11 @@ A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Pers
 
 Schemas have a name, description, and a list of Property Definitions
 
+A Schema is referenced as a `(source, name)` pair resolved through its [Source](#source)
+([ADR 23](adr/023-subject-sources.md)), independent of the referring Subject's Source; a bare name
+means the local Source, where the name is the Schema's page title in the Schema namespace
+([ADR 17](adr/017-names-as-identifiers.md)).
+
 ### Property Definition
 
 They always have a Property Name and a Property Type. Depending on the Type, they might have additional information.
