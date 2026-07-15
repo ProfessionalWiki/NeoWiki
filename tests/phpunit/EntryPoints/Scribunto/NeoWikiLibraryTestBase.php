@@ -16,6 +16,7 @@ use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -90,7 +91,7 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 			mainSubject: new Subject(
 				id: new SubjectId( 's1test5aaaaaaaa' ),
 				label: new SubjectLabel( 'Test Company' ),
-				schemaName: new SchemaName( 'Company' ),
+				schemaReference: SchemaReference::local( new SchemaName( 'Company' ) ),
 				statements: new StatementList( [
 					new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) ),
 					new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'alpha', 'beta', 'gamma' ) ),
@@ -104,14 +105,14 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 			mainSubject: new Subject(
 				id: new SubjectId( 's1test5cccccccc' ),
 				label: new SubjectLabel( 'Parent' ),
-				schemaName: new SchemaName( 'Company' ),
+				schemaReference: SchemaReference::local( new SchemaName( 'Company' ) ),
 				statements: new StatementList(),
 			),
 			childSubjects: new SubjectMap(
 				new Subject(
 					id: new SubjectId( 's1test5dddddddd' ),
 					label: new SubjectLabel( 'Child Entry' ),
-					schemaName: new SchemaName( 'Entry' ),
+					schemaReference: SchemaReference::local( new SchemaName( 'Entry' ) ),
 					statements: new StatementList( [
 						new Statement( new PropertyName( 'Note' ), 'text', new StringValue( 'A child subject' ) ),
 					] ),

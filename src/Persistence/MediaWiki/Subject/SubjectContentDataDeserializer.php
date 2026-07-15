@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
@@ -58,7 +59,7 @@ class SubjectContentDataDeserializer {
 		return new Subject(
 			id: $this->subjectIdParser->parse( $id ),
 			label: new SubjectLabel( $jsonArray['label'] ),
-			schemaName: new SchemaName( $jsonArray['schema'] ),
+			schemaReference: SchemaReference::local( new SchemaName( $jsonArray['schema'] ) ),
 			statements: $this->buildStatementList( $jsonArray ),
 		);
 	}

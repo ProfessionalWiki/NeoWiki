@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -26,7 +27,7 @@ class TestSubject {
 		return new Subject(
 			id: $id instanceof SubjectId ? $id : new SubjectId( $id ),
 			label: $label instanceof SubjectLabel ? $label : new SubjectLabel( $label ),
-			schemaName: $schemaName ?? new SchemaName( self::DEFAULT_SCHEMA_ID ),
+			schemaReference: SchemaReference::local( $schemaName ?? new SchemaName( self::DEFAULT_SCHEMA_ID ) ),
 			statements: $statements ?? new StatementList( [] ),
 		);
 	}

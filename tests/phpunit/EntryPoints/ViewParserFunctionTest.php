@@ -10,6 +10,7 @@ use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -138,7 +139,7 @@ class ViewParserFunctionTest extends TestCase {
 		$mainSubject = new Subject(
 			id: new SubjectId( self::MAIN_SUBJECT_ID ),
 			label: new SubjectLabel( 'Main' ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schemaReference: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList(),
 		);
 
