@@ -3,6 +3,7 @@ import { PageIdentifiers } from '@/domain/PageIdentifiers';
 import { StatementList } from '@/domain/StatementList';
 import { StatementDeserializer } from '@/persistence/StatementDeserializer';
 import { SubjectWithContext } from '@/domain/SubjectWithContext';
+import { schemaReferenceName } from '@/domain/SchemaReference';
 
 export class SubjectDeserializer {
 
@@ -14,7 +15,7 @@ export class SubjectDeserializer {
 	public deserialize( json: any ): SubjectWithContext {
 		const id = new SubjectId( json.id );
 		const label = json.label;
-		const schema = json.schema;
+		const schema = schemaReferenceName( json.schema );
 
 		const pageIdentifiers = new PageIdentifiers( json.pageId, json.pageTitle );
 		const statementList = this.deserializeStatements( json.statements );

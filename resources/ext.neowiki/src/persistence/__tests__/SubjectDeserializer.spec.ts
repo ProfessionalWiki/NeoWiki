@@ -35,6 +35,27 @@ describe( 'SubjectDeserializer', () => {
 		) );
 	} );
 
+	it( 'reduces a foreign schema reference to its name', () => {
+		const json = {
+			id: 's13333333333337',
+			label: 'SubjectDeserializer',
+			schema: { source: 'otherwiki', name: 'SDSchema' },
+			statements: {},
+			pageId: 42,
+			pageTitle: 'SDPageTitle',
+		};
+
+		const subject = deserializer.deserialize( json );
+
+		expect( subject ).toEqual( new SubjectWithContext(
+			new SubjectId( 's13333333333337' ),
+			'SubjectDeserializer',
+			'SDSchema',
+			new StatementList( [] ),
+			new PageIdentifiers( 42, 'SDPageTitle' ),
+		) );
+	} );
+
 	it( 'deserializes Subject with Statements', () => {
 		const json = {
 			id: 's13333333333337',

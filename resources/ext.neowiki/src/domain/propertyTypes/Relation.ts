@@ -2,6 +2,7 @@ import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newRelation, RelationValue, ValueType } from '@/domain/Value';
 import { BasePropertyType } from '@/domain/PropertyType';
+import { schemaReferenceName } from '@/domain/SchemaReference';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -34,7 +35,7 @@ export class RelationType extends BasePropertyType<RelationProperty, RelationVal
 		return {
 			...base,
 			relation: json.relation,
-			targetSchema: json.targetSchema,
+			targetSchema: schemaReferenceName( json.targetSchema ),
 			multiple: json.multiple ?? false,
 		} as RelationProperty;
 	}
