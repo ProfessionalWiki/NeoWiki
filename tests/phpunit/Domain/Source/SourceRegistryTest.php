@@ -6,6 +6,8 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Source;
 
 use LogicException;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubSource;
@@ -77,6 +79,39 @@ class SourceRegistryTest extends TestCase {
 		$registry->register( self::LOCAL_KEY, new StubSource() );
 
 		$this->assertNull( $registry->getSourceForId( new SubjectId( 'LOCALWIKI:s11111111111111' ) ) );
+	}
+
+	public function testLocalSchemaReferenceMapsToTheLocalSource(): void {
+		$localSource = new StubSource();
+		$registry = new SourceRegistry( self::LOCAL_KEY );
+		$registry->register( 'otherwiki', new StubSource() );
+		$registry->register( self::LOCAL_KEY, $localSource );
+
+		$this->assertSame(
+			$localSource,
+			$registry->getSourceForSchemaReference( SchemaReference::local( new SchemaName( 'Person' ) ) )
+		);
+	}
+
+	public function testForeignSchemaReferenceMapsToItsSource(): void {
+		$otherSource = new StubSource();
+		$registry = new SourceRegistry( self::LOCAL_KEY );
+		$registry->register( self::LOCAL_KEY, new StubSource() );
+		$registry->register( 'otherwiki', $otherSource );
+
+		$this->assertSame(
+			$otherSource,
+			$registry->getSourceForSchemaReference( new SchemaReference( 'otherwiki', new SchemaName( 'Person' ) ) )
+		);
+	}
+
+	public function testSchemaReferenceWithUnregisteredSourceMapsToNull(): void {
+		$registry = new SourceRegistry( self::LOCAL_KEY );
+		$registry->register( self::LOCAL_KEY, new StubSource() );
+
+		$this->assertNull(
+			$registry->getSourceForSchemaReference( new SchemaReference( 'unknownwiki', new SchemaName( 'Person' ) ) )
+		);
 	}
 
 	public function testRegisteringAnAlreadyTakenKeyThrows(): void {

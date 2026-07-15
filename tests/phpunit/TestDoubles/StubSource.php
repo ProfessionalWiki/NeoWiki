@@ -14,6 +14,7 @@ class StubSource implements Source {
 
 	public function __construct(
 		private readonly ?Subject $subject = null,
+		private readonly ?Schema $schema = null,
 	) {
 	}
 
@@ -22,7 +23,7 @@ class StubSource implements Source {
 	}
 
 	public function getSchema( SchemaName $schemaName ): ?Schema {
-		return null;
+		return $this->schema;
 	}
 
 	public function isEditable(): bool {
