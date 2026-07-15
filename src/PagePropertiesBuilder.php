@@ -61,7 +61,7 @@ readonly class PagePropertiesBuilder {
 
 	private function parse( Content $content, RevisionRecord $revision ): ParserOutput {
 		return $this->contentHandlerFactory->getContentHandler( $content->getModel() )
-			->getParserOutput( $content, new ContentParseParams( $revision->getPage() ) );
+			->getParserOutput( $content, new ContentParseParams( $revision->getPage(), $revision->getId() ) );
 	}
 
 	private function getCreationTime( RevisionRecord $revision ): string {

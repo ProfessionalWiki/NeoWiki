@@ -74,7 +74,10 @@ $registrar->addNeo4jValueBuilder( ColorType::NAME, static fn ( $value ) => $valu
 ### Page Property Providers
 
 Page Property Providers contribute key/value metadata to the Page node in the graph (queryable via Cypher;
-Neo4j is currently the only graph backend). Implement `PagePropertyProvider`:
+Neo4j is currently the only graph backend). They run when a revision is stored for a page carrying Subject
+data (including undeletions), and again for such pages when the graph is rebuilt with the
+`RebuildGraphDatabases` maintenance script. Pages without Subject data are not stored in the graph, so
+providers are never invoked for them. Implement `PagePropertyProvider`:
 
 ```php
 class StaticPagePropertyProvider implements PagePropertyProvider {
@@ -87,14 +90,14 @@ class StaticPagePropertyProvider implements PagePropertyProvider {
 ```
 
 Register with `NeoWikiRegistrar::addPagePropertyProvider()`. The context exposes the page id, title,
-creation and modification times, categories, and last editor, so providers can derive Page Properties
-from the page content without re-fetching or re-parsing it.
+creation and modification times, categories, and last editor, as well as the page content and its parse
+products, so providers can derive Page Properties from the page content without re-fetching or re-parsing it.
 
-To derive Page Properties from the content, prefer the parse products: `categories`, and
+To derive Page Properties from the content, prefer the parse products: `categories` and
 `parserProperties` — the MediaWiki page properties recorded during parsing (e.g. those a parser hook
 sets via `ParserOutput::setPageProperty`). These are template-expansion-safe and robust. (Note that
 `parserProperties` are an input from MediaWiki's parse; they are not the NeoWiki Page Properties this
-provider returns.) The raw main slot `content` and its `contentModel` are also exposed, but scraping
+provider returns.) The raw main slot `content` and its `contentModel` are the fallback: scraping
 raw wikitext is fragile — reach for them mainly when handling a custom, non-wikitext content model that
 the parse products do not cover. Example:
 [`src/StaticPagePropertyProvider.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/StaticPagePropertyProvider.php).
