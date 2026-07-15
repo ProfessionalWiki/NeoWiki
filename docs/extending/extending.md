@@ -13,8 +13,8 @@ NeoWiki concepts referenced here — Subject, Schema, Property Type, Page Proper
 
 [RedHerb](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb) is a minimal, test-backed
 example extension shipped in the NeoWiki repository. NeoWiki's own tests exercise it, so its examples stay
-working. Each extension point below links to the RedHerb file that demonstrates it, so the fastest start is to
-copy the relevant RedHerb file and adapt it.
+working. Most extension points below link to the RedHerb file that demonstrates them, so the fastest start is
+to copy the relevant RedHerb file and adapt it.
 
 ## Stability
 
@@ -142,6 +142,29 @@ the Page node. No new revision is created. `rebuild()` returns a `PageRefreshOut
 - `SkippedMissingSubjectSlot` — the page carries no NeoWiki subject slot, so there was nothing to write.
 
 Genuine failures (such as the graph store being unreachable) throw rather than returning an outcome.
+
+### Sources
+
+A Source supplies Subjects and Schemas from one origin: the local revision slot (the default
+Source), an on-wiki SMW or Wikibase store, another NeoWiki, or an external system
+([ADR 23](../adr/023-subject-sources.md)). Implement the `Source` interface and register it under a
+unique source key:
+
+```php
+$registrar->addSource( 'my-source-key', new MySource() );
+```
+
+The source key namespaces the Subject ids the Source owns: a Subject id is a `source:localId` pair,
+and a bare id means the local Source. Core registers `LocalSource` under the local wiki id before this
+hook runs, so registering a duplicate key (including the local wiki id) throws. A Source is the
+authority for its Subjects' editability, localId grammar, schema resolution, and IRI base URI; the
+frozen contract is in [ADR 27](../adr/027-source-interface-contract.md).
+
+Sources are consulted on by-id resolution: an id whose source key is not registered degrades to
+not-found rather than failing. Rendering sourced Subjects in Views is deferred (ADR 23), so a
+registered Source is reachable by id but not yet shown through the View system.
+
+No example extension registers a Source yet; RedHerb does not demonstrate this extension point.
 
 ### Reading NeoWiki data and authorization
 
