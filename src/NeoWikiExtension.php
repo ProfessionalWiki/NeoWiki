@@ -81,6 +81,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportPageRdfApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
@@ -249,12 +250,17 @@ class NeoWikiExtension {
 	public function newSubjectContentDataDeserializer(): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
 			new StatementDeserializer( $this->getPropertyTypeLookup(), $this->getSubjectIdParser() ),
-			$this->getSubjectIdParser()
+			$this->getSubjectIdParser(),
+			$this->getSchemaReferenceParser()
 		);
 	}
 
 	public function getSubjectIdParser(): SubjectIdParser {
 		return new SubjectIdParser( $this->config->wikiId );
+	}
+
+	public function getSchemaReferenceParser(): SchemaReferenceParser {
+		return new SchemaReferenceParser( $this->config->wikiId );
 	}
 
 	public function getPagePropertyProviderRegistry(): PagePropertyProviderRegistry {

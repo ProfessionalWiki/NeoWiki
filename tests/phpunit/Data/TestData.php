@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 
 class TestData {
@@ -16,6 +17,10 @@ class TestData {
 
 	public static function newSubjectIdParser(): SubjectIdParser {
 		return new SubjectIdParser( self::LOCAL_SOURCE_KEY );
+	}
+
+	public static function newSchemaReferenceParser(): SchemaReferenceParser {
+		return new SchemaReferenceParser( self::LOCAL_SOURCE_KEY );
 	}
 
 }
