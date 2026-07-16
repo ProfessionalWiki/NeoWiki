@@ -841,15 +841,16 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter ): GetSubjectQuery {
+	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
 			subjectLookup: $this->getSubjectRepository(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			readAuthorizer: $this->newSubjectReadAuthorizer( $authority ),
 		);
 	}
 
-	public function newGetSubjectQueryForRevision( RestGetSubjectPresenter $presenter, RevisionRecord $revision ): GetSubjectQuery {
+	public function newGetSubjectQueryForRevision( RestGetSubjectPresenter $presenter, RevisionRecord $revision, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
 			subjectLookup: new PointInTimeSubjectLookup(
@@ -859,6 +860,7 @@ class NeoWikiExtension {
 				primaryRevision: $revision,
 			),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			readAuthorizer: $this->newSubjectReadAuthorizer( $authority ),
 		);
 	}
 
