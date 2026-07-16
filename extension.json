@@ -194,6 +194,10 @@
 		"NeoWikiRdfBaseUri": {
 			"description": "Base URI under which the RDF export mints all NeoWiki IRIs (entity, property, schema, page, etc.). When null, defaults to the wiki's canonical URL ($wgCanonicalServer). Wiki-level on purpose, so sibling projections describe the same entities with identical IRIs.",
 			"value": null
+		},
+		"NeoWikiSparqlStores": {
+			"description": "SPARQL 1.1 graph stores to keep in sync with page changes, in addition to any Neo4j backend. A list of objects, each with: 'updateUrl' (required, the store's SPARQL 1.1 Update endpoint, e.g. a QLever instance); 'accessToken' (optional, sent as an HTTP Bearer token, e.g. for a QLever access token); and 'projection' (optional, the RDF vocabulary written to the store: 'native' by default, or any configured Mapping target). Works with QLever and any SPARQL 1.1 store. Empty by default.",
+			"value": []
 		}
 	},
 

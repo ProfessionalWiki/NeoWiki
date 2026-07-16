@@ -6,12 +6,16 @@ namespace ProfessionalWiki\NeoWiki;
 
 readonly class NeoWikiConfig {
 
+	/**
+	 * @param SparqlStoreConfig[] $sparqlStores The configured SPARQL graph stores (#586), possibly empty.
+	 */
 	public function __construct(
 		public bool $enableDevelopmentUIs,
 		public ?string $neo4jInternalWriteUrl,
 		public ?string $neo4jInternalReadUrl,
 		public string $wikiId,
 		public string $rdfBaseUri,
+		public array $sparqlStores,
 	) {
 	}
 

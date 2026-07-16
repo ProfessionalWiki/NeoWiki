@@ -168,9 +168,38 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new constraint violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
+| `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync, e.g. QLever | `[]` | No |
 
 ¹ Required for NeoWiki's structured-data features. The wiki still loads without them; NeoWiki's features are
 simply disabled until both are set.
+
+## Optional: SPARQL graph stores
+
+Alongside (or instead of) Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This
+works with QLever and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF: every page
+becomes a named graph, replaced on each edit and dropped on deletion.
+
+Configure the stores with `$wgNeoWikiSparqlStores`, a list of objects:
+
+```php
+$wgNeoWikiSparqlStores = [
+	[
+		// Required: the store's SPARQL 1.1 Update endpoint.
+		'updateUrl' => 'https://qlever.example/api/neowiki',
+		// Optional: sent as an HTTP Bearer token (e.g. a QLever access token) to authorize writes.
+		'accessToken' => 'SECRET',
+		// Optional: the RDF vocabulary written to this store. Defaults to 'native'; may be any
+		// configured Mapping target, such as 'edm'.
+		'projection' => 'native',
+	],
+];
+```
+
+A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki. Leaving
+`$wgNeoWikiSparqlStores` empty (the default) configures no SPARQL stores.
+
+This is a write path only: it projects NeoWiki data into the store. Querying a SPARQL store from wiki pages is a
+later addition.
 
 ## Production hardening
 

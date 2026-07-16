@@ -118,6 +118,8 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jPageIde
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\CallbackProjectionResolver;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
@@ -147,13 +149,16 @@ class NeoWikiExtension {
 	private CompositeGraphDatabasePlugin $isolatingGraphDatabasePlugin;
 	private GraphDatabasePluginRegistry $graphDatabasePluginRegistry;
 	private ?Neo4jPlugin $neo4jPlugin = null;
+	/** @var SparqlPlugin[]|null */
+	private ?array $sparqlPlugins = null;
 	private ClientInterface $neo4jClient;
 	private ClientInterface $readOnlyNeo4jClient;
 	private static ?self $instance = null;
 
 	public static function getInstance(): self {
 		self::$instance ??= new self(
-			( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( MediaWikiServices::getInstance()->getMainConfig() )
+			( new NeoWikiConfigFactory( LoggerFactory::getInstance( 'NeoWiki' ) ) )
+				->buildFromMediaWikiConfig( MediaWikiServices::getInstance()->getMainConfig() )
 		);
 
 		return self::$instance;
@@ -458,24 +463,73 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * The graph database plugins to fan out to, Neo4j first when a backend is configured.
+	 * The graph database plugins to fan out to: core (bundled) plugins first, then extension plugins.
 	 *
-	 * Core's Neo4j plugin is seeded directly here, not via the registry. Registering it via the
-	 * registry would make getGraphDatabasePluginRegistry() build the Neo4j plugin, whose construction
-	 * transitively fires the NeoWikiRegistration hook and re-enters that accessor. Composing core here
-	 * keeps the registry extension-only and the plugin order deterministic.
+	 * Core's plugins are seeded directly here, not via the registry. Registering the Neo4j plugin via
+	 * the registry would make getGraphDatabasePluginRegistry() build it, whose construction transitively
+	 * fires the NeoWikiRegistration hook and re-enters that accessor. Composing core here keeps the
+	 * registry extension-only and the plugin order deterministic.
 	 *
 	 * @return GraphDatabasePlugin[]
 	 */
 	private function getGraphDatabasePlugins(): array {
-		$plugins = $this->getGraphDatabasePluginRegistry()->getPlugins();
+		return array_merge(
+			$this->getCoreGraphDatabasePlugins(),
+			$this->getGraphDatabasePluginRegistry()->getPlugins()
+		);
+	}
+
+	/**
+	 * The bundled backends, in deterministic order: Neo4j first when configured, then one SPARQL plugin
+	 * per configured store (#586). Empty when neither is configured.
+	 *
+	 * @return GraphDatabasePlugin[]
+	 */
+	private function getCoreGraphDatabasePlugins(): array {
+		$plugins = [];
 
 		$neo4jPlugin = $this->getNeo4jPlugin();
 		if ( $neo4jPlugin !== null ) {
-			array_unshift( $plugins, $neo4jPlugin->getGraphDatabasePlugin() );
+			$plugins[] = $neo4jPlugin->getGraphDatabasePlugin();
+		}
+
+		foreach ( $this->getSparqlPlugins() as $sparqlPlugin ) {
+			$plugins[] = $sparqlPlugin->getGraphDatabasePlugin();
 		}
 
 		return $plugins;
+	}
+
+	/**
+	 * One SPARQL plugin per configured store, cached like the Neo4j plugin. Construction is I/O-free
+	 * (no HTTP, no projection resolution), so building these outside the failure isolation is safe.
+	 *
+	 * @return SparqlPlugin[]
+	 */
+	private function getSparqlPlugins(): array {
+		if ( $this->sparqlPlugins === null ) {
+			$this->sparqlPlugins = array_map(
+				fn ( SparqlStoreConfig $store ): SparqlPlugin => $this->buildSparqlPlugin( $store ),
+				$this->config->sparqlStores
+			);
+		}
+
+		return $this->sparqlPlugins;
+	}
+
+	private function buildSparqlPlugin( SparqlStoreConfig $store ): SparqlPlugin {
+		return new SparqlPlugin(
+			store: $store,
+			// The projection is resolved lazily per save through this seam (never at construction), so
+			// the store tracks the current Mapping definitions. Closures, not $this, keep the store
+			// depending on the narrow resolver rather than the whole extension.
+			projectionResolver: new CallbackProjectionResolver(
+				fn ( string $projectionName ): ?RdfProjection => $this->newRdfProjection( $projectionName ),
+				fn (): array => $this->getRdfProjectionNames(),
+			),
+			namespaces: $this->getRdfNamespaces(),
+			httpRequestFactory: MediaWikiServices::getInstance()->getHttpRequestFactory(),
+		);
 	}
 
 	public function getGraphDatabasePluginRegistry(): GraphDatabasePluginRegistry {
