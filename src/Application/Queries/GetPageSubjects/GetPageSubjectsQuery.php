@@ -8,8 +8,11 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -24,21 +27,34 @@ readonly class GetPageSubjectsQuery {
 		private SchemaLookup $schemaLookup,
 		private SchemaPresentationSerializer $schemaSerializer,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
+		private SubjectReadAuthorizer $readAuthorizer,
 	) {
 	}
 
 	public function execute( int $pageId, bool $includeSchemas = false, bool $includeReferencedSubjects = false ): void {
-		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( new PageId( $pageId ) );
+		$id = new PageId( $pageId );
+
+		// A denied page takes exactly the path a page without Subjects takes, so the response
+		// is byte-identical to absence and cannot be used to probe page readability (#1046).
+		$pageSubjects = $this->readAuthorizer->authorizeRead( $id )
+			? $this->subjectRepository->getSubjectsByPageId( $id )
+			: PageSubjects::newEmpty();
 
 		$mainSubject = $pageSubjects->getMainSubject();
 		$subjectItems = [];
 
 		if ( $mainSubject !== null ) {
-			$subjectItems[$mainSubject->id->text] = $this->buildResponseItem( $mainSubject );
+			$subjectItems[$mainSubject->id->text] = $this->buildResponseItem(
+				$mainSubject,
+				$this->pageIdentifiersLookup->getPageIdOfSubject( $mainSubject->id )
+			);
 		}
 
 		foreach ( $pageSubjects->getChildSubjects()->asArray() as $childSubject ) {
-			$subjectItems[$childSubject->id->text] = $this->buildResponseItem( $childSubject );
+			$subjectItems[$childSubject->id->text] = $this->buildResponseItem(
+				$childSubject,
+				$this->pageIdentifiersLookup->getPageIdOfSubject( $childSubject->id )
+			);
 		}
 
 		$referencedSubjectItems = null;
@@ -62,9 +78,7 @@ readonly class GetPageSubjectsQuery {
 		);
 	}
 
-	private function buildResponseItem( Subject $subject ): GetSubjectResponseItem {
-		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $subject->id );
-
+	private function buildResponseItem( Subject $subject, ?PageIdentifiers $pageIdentifiers ): GetSubjectResponseItem {
 		return new GetSubjectResponseItem(
 			id: $subject->id->text,
 			label: $subject->label->text,
@@ -92,13 +106,31 @@ readonly class GetPageSubjectsQuery {
 
 				$referencedSubject = $this->subjectLookup->getSubject( $referencedId );
 
-				if ( $referencedSubject !== null ) {
-					$referenced[$referencedId->text] = $this->buildResponseItem( $referencedSubject );
+				if ( $referencedSubject === null ) {
+					continue;
 				}
+
+				$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $referencedSubject->id );
+
+				if ( !$this->pageIsReadable( $pageIdentifiers ) ) {
+					continue;
+				}
+
+				$referenced[$referencedId->text] = $this->buildResponseItem( $referencedSubject, $pageIdentifiers );
 			}
 		}
 
 		return $referenced;
+	}
+
+	/**
+	 * A Subject whose page does not resolve in the graph cannot be reached through the
+	 * graph-backed repository at all (the repository returns null before this runs), so null
+	 * only occurs for Subjects whose page was already authorized by the caller. Denying on
+	 * null would instead hide Subjects from readable old revisions after later deletion.
+	 */
+	private function pageIsReadable( ?PageIdentifiers $pageIdentifiers ): bool {
+		return $pageIdentifiers === null || $this->readAuthorizer->authorizeRead( $pageIdentifiers->getId() );
 	}
 
 	/**

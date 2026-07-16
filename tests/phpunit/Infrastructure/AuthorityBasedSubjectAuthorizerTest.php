@@ -6,13 +6,13 @@ namespace ProfessionalWiki\NeoWiki\Tests\Infrastructure;
 
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
-use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use Psr\Log\NullLogger;
 use TestLogger;
 
@@ -21,7 +21,7 @@ use TestLogger;
  */
 class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 
-	use MockAuthorityTrait;
+	use NeoWikiMockAuthorityTrait;
 
 	private const int PAGE_ID = 42;
 
@@ -223,17 +223,6 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 			$permission === 'edit' && $page === null;
 
 		return $this->mockRegisteredAuthority( $canEditGloballyButNotPerPage );
-	}
-
-	/**
-	 * Holds the wiki-global 'read' right, but cannot read any specific page
-	 * (as under a restricted namespace, $wgWhitelistRead, or an ACL extension).
-	 */
-	private function authorityWithGlobalReadButNoPageRead(): Authority {
-		$canReadGloballyButNotPerPage = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
-			$permission === 'read' && $page === null;
-
-		return $this->mockRegisteredAuthority( $canReadGloballyButNotPerPage );
 	}
 
 	private function authorityThatCanEditEveryPage(): Authority {

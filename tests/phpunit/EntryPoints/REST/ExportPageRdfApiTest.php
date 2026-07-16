@@ -4,12 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
-use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -18,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Domain\Rdf\ParsedRdf;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportPageRdfApi
@@ -25,7 +24,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  */
 class ExportPageRdfApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
-	use MockAuthorityTrait;
+	use NeoWikiMockAuthorityTrait;
 
 	private const string SCHEMA = 'ExportPageRdfApiTestSchema';
 	private const string SUBJECT_ID = 'sTestERA1111111';
@@ -182,13 +181,6 @@ JSON
 		);
 
 		$this->assertSame( 400, $response->getStatusCode() );
-	}
-
-	private function authorityWithGlobalReadButNoPageRead(): Authority {
-		$canReadGloballyButNotPerPage = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
-			$permission === 'read' && $page === null;
-
-		return $this->mockRegisteredAuthority( $canReadGloballyButNotPerPage );
 	}
 
 	public function testProjectionNativeIsTheDefaultAndUnchanged(): void {
