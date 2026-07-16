@@ -49,7 +49,10 @@ class WikiPageLayoutLookupTest extends MediaWikiIntegrationTestCase {
 		// use the binding authorizeRead. Reverting fails this test.
 		$authority = $this->createMock( Authority::class );
 		$authority->method( 'probablyCan' )->willReturn( true );
-		$authority->method( 'authorizeRead' )->willReturn( false );
+		$authority->method( 'authorizeRead' )->willReturnCallback( function ( string $action ) {
+			$this->assertSame( 'read', $action );
+			return false;
+		} );
 		$authority->method( 'getUser' )->willReturn( new UserIdentityValue( 9999, 'Petr' ) );
 
 		$fetcher = $this->createMock( PageContentFetcher::class );

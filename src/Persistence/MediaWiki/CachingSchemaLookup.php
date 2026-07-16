@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use Psr\Log\LoggerInterface;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\Database;
 use Wikimedia\Rdbms\IConnectionProvider;
@@ -31,6 +32,7 @@ class CachingSchemaLookup implements SchemaLookup {
 		private readonly TitleFactory $titleFactory,
 		private readonly Authority $authority,
 		private readonly IConnectionProvider $connectionProvider,
+		private readonly LoggerInterface $logger,
 	) {
 	}
 
@@ -41,11 +43,15 @@ class CachingSchemaLookup implements SchemaLookup {
 			return null;
 		}
 
-		// The cached value is user-independent schema content; the inner lookup
-		// also applies a per-user read check while loading. Repeat it here,
-		// before the cache, so a cache hit cannot serve a Schema to a user who
-		// may not read its page.
-		if ( !$this->authority->probablyCan( 'read', $title ) ) {
+		// The inner lookup applies no per-title read check (its revision audience check filters
+		// revision deletion only), so this is the sole read gate on the Schema read path. It
+		// must also run before the cache: the cached value is user-independent schema content,
+		// and a cache hit must not serve a Schema whose page the user may not read (#1046).
+		if ( !$this->authority->authorizeRead( 'read', $title ) ) {
+			$this->logger->info( 'NeoWiki: denied read of page {page} to {user}', [
+				'page' => $title->getPrefixedDBkey(),
+				'user' => $this->authority->getUser()->getName(),
+			] );
 			return null;
 		}
 

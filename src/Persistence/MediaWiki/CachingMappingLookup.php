@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
+use Psr\Log\LoggerInterface;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\Database;
 use Wikimedia\Rdbms\IConnectionProvider;
@@ -33,6 +34,7 @@ class CachingMappingLookup implements MappingLookup {
 		private readonly TitleFactory $titleFactory,
 		private readonly Authority $authority,
 		private readonly IConnectionProvider $connectionProvider,
+		private readonly LoggerInterface $logger,
 	) {
 	}
 
@@ -43,9 +45,15 @@ class CachingMappingLookup implements MappingLookup {
 			return null;
 		}
 
-		// Repeat the inner lookup's per-user read check before the cache, so a cache hit cannot serve a
-		// Mapping to a user who may not read its page.
-		if ( !$this->authority->probablyCan( 'read', $title ) ) {
+		// The inner lookup applies no per-title read check (its revision audience check filters
+		// revision deletion only), so this is the sole read gate on the Mapping read path. It
+		// must also run before the cache: the cached value is user-independent mapping content,
+		// and a cache hit must not serve a Mapping whose page the user may not read (#1046).
+		if ( !$this->authority->authorizeRead( 'read', $title ) ) {
+			$this->logger->info( 'NeoWiki: denied read of page {page} to {user}', [
+				'page' => $title->getPrefixedDBkey(),
+				'user' => $this->authority->getUser()->getName(),
+			] );
 			return null;
 		}
 
