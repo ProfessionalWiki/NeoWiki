@@ -20,6 +20,8 @@ Result:
 
 {{#cypher_raw:MATCH (m:Museum) RETURN m.name AS name, m.`Annual visitors` AS visitors ORDER BY visitors DESC LIMIT 5}}
 
+On wikis with a configured [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/operations/installation.md#optional-sparql-graph-stores SPARQL store], the same structured data is also queryable as RDF: see [[SPARQL queries]] (a page imported only when such a store is configured).
+
 == Read values in wikitext ==
 
 The <code><nowiki>{{#neowiki_value}}</nowiki></code> parser function reads a single property from a subject on a page.

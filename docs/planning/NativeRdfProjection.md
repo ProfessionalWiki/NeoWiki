@@ -12,7 +12,9 @@ Discussion: [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
 > ([#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)) so sibling projections can share one store. See
 > the [RDF Export reference](../rdf/rdf-export.md). Ontology (sibling) projections build on this shared
 > infrastructure — see [OntologyMapping.md](OntologyMapping.md) and the worked
-> [Person → EDM example](../examples/person-to-edm.md).
+> [Person → EDM example](../examples/person-to-edm.md). The [Sync Mechanism](#sync-mechanism) has shipped too: the
+> SPARQL graph-store plugin (#586) projects each save and delete into a configured SPARQL 1.1 store (e.g. QLever) as
+> the per-page DROP/INSERT it defines.
 
 ## Purpose
 
