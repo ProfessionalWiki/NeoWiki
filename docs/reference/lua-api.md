@@ -241,7 +241,7 @@ without one, `mw.neowiki.sparqlQuery` is nil.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `sparql` | string | Required. A SPARQL query (`SELECT` / `ASK` / `CONSTRUCT` / `DESCRIBE`). Read-only by protocol. |
+| `sparql` | string | Required. A SPARQL `SELECT` or `ASK` query. Read-only by protocol. `CONSTRUCT` / `DESCRIBE` are not supported yet (they return an RDF graph, not a results document). |
 
 #### Returns
 

@@ -313,7 +313,10 @@ Content-Type: application/json
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `query` | string | Yes | A read-only SPARQL 1.1 query (`SELECT`, `ASK`, `CONSTRUCT`, or `DESCRIBE`). |
+| `query` | string | Yes | A read-only SPARQL 1.1 `SELECT` or `ASK` query. |
+
+`CONSTRUCT` and `DESCRIBE` are not supported yet: they return an RDF graph rather than the
+`application/sparql-results+json` document this endpoint negotiates.
 
 ### Successful response (200)
 
