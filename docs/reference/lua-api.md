@@ -16,6 +16,7 @@ enough.
 | Get a page's Main Subject (label, schema, all properties) | [`nw.getMainSubject`](#nwgetmainsubjectpagename) |
 | Get a Subject by its ID, regardless of which page it's on | [`nw.getSubject`](#nwgetsubjectsubjectid) |
 | Run a read-only Cypher query | [`nw.query`](#nwquerycypher-params) |
+| Run a read-only SPARQL query | [`nw.sparqlQuery`](#nwsparqlquerysparql) |
 | List all Child Subjects on a page | [`nw.getChildSubjects`](#nwgetchildsubjectspagename) |
 | Inspect a Schema | [`nw.getSchema`](#nwgetschemaname) |
 
@@ -230,6 +231,48 @@ local rows = nw.query(
 ```
 
 Integer comparisons need an explicit cast in the query — e.g. `WHERE s.year = toInteger($year)`.
+
+### `nw.sparqlQuery(sparql)`
+
+Runs a read-only SPARQL query against the first configured
+[SPARQL store](../operations/installation.md#optional-sparql-graph-stores) and returns the results as a Lua table.
+The SPARQL counterpart of `nw.query`. It is available only when a SPARQL store is configured; on a wiki
+without one, `mw.neowiki.sparqlQuery` is nil.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sparql` | string | Required. A SPARQL query (`SELECT` / `ASK` / `CONSTRUCT` / `DESCRIBE`). Read-only by protocol. |
+
+#### Returns
+
+The W3C [`application/sparql-results+json`](https://www.w3.org/TR/sparql11-results-json/) document as a
+Lua table, preserving its standard structure: `head.vars` and `results.bindings` for a `SELECT`, or
+`boolean` for an `ASK`. Every JSON array (`head.vars`, `results.bindings`) is a 1-indexed Lua sequence;
+each binding is a string-keyed table of RDF terms (`{ type, value, datatype?, ['xml:lang']? }`).
+
+#### Errors
+
+Always throws on failure; wrap in `pcall` if you need graceful degradation.
+
+- Empty or whitespace-only `sparql`.
+- A query the store rejects (e.g. a SPARQL syntax error), or the store being unavailable.
+
+#### Expensive
+
+Every call counts as an expensive parser function. Keep an eye on your page's expensive function
+limit if a template calls `nw.sparqlQuery` in a loop.
+
+#### Examples
+
+```lua
+local results = nw.sparqlQuery(
+    'SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 5'
+)
+
+for _, binding in ipairs( results.results.bindings ) do
+    mw.log( binding.label.value )
+end
+```
 
 ### `nw.getSchema(name)`
 

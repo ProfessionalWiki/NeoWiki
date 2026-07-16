@@ -17,16 +17,19 @@ class OnExtensionRegistrationTest extends TestCase {
 	private mixed $routeFiles;
 	private mixed $writeUrl;
 	private mixed $readUrl;
+	private mixed $sparqlStores;
 
 	protected function setUp(): void {
 		parent::setUp();
 		$this->routeFiles = $GLOBALS['wgRestAPIAdditionalRouteFiles'] ?? null;
 		$this->writeUrl = $GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] ?? null;
 		$this->readUrl = $GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] ?? null;
+		$this->sparqlStores = $GLOBALS['wgNeoWikiSparqlStores'] ?? null;
 
 		// Clear the CI env overrides so the config-value path is exercised deterministically.
 		$this->snapshotAndClearNeo4jEnvOverrides();
 		$GLOBALS['wgRestAPIAdditionalRouteFiles'] = [];
+		$GLOBALS['wgNeoWikiSparqlStores'] = null;
 	}
 
 	protected function tearDown(): void {
@@ -34,6 +37,7 @@ class OnExtensionRegistrationTest extends TestCase {
 		$GLOBALS['wgRestAPIAdditionalRouteFiles'] = $this->routeFiles;
 		$GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] = $this->writeUrl;
 		$GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] = $this->readUrl;
+		$GLOBALS['wgNeoWikiSparqlStores'] = $this->sparqlStores;
 		parent::tearDown();
 	}
 
@@ -64,6 +68,37 @@ class OnExtensionRegistrationTest extends TestCase {
 		NeoWikiExtension::onExtensionRegistration();
 
 		$this->assertContains( '/existing/routes.json', $GLOBALS['wgRestAPIAdditionalRouteFiles'] );
+		$this->assertCount( 2, $GLOBALS['wgRestAPIAdditionalRouteFiles'] );
+	}
+
+	public function testAddsSparqlRouteFileWhenStoreConfigured(): void {
+		$GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] = null;
+		$GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] = null;
+		$GLOBALS['wgNeoWikiSparqlStores'] = [ [ 'updateUrl' => 'https://qlever.example/api' ] ];
+
+		NeoWikiExtension::onExtensionRegistration();
+
+		$this->assertCount( 1, $GLOBALS['wgRestAPIAdditionalRouteFiles'] );
+		$this->assertStringEndsWith( 'sparqlRoutes.json', $GLOBALS['wgRestAPIAdditionalRouteFiles'][0] );
+	}
+
+	public function testAddsNoSparqlRouteFileWithoutStore(): void {
+		$GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] = null;
+		$GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] = null;
+		$GLOBALS['wgNeoWikiSparqlStores'] = [];
+
+		NeoWikiExtension::onExtensionRegistration();
+
+		$this->assertSame( [], $GLOBALS['wgRestAPIAdditionalRouteFiles'] );
+	}
+
+	public function testAddsBothRouteFilesWhenNeo4jAndSparqlConfigured(): void {
+		$GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] = 'bolt://write:7687';
+		$GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] = 'bolt://read:7687';
+		$GLOBALS['wgNeoWikiSparqlStores'] = [ [ 'updateUrl' => 'https://qlever.example/api' ] ];
+
+		NeoWikiExtension::onExtensionRegistration();
+
 		$this->assertCount( 2, $GLOBALS['wgRestAPIAdditionalRouteFiles'] );
 	}
 

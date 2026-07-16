@@ -99,6 +99,7 @@ class NeoWikiConfigFactoryTest extends TestCase {
 	public function testFullSparqlStoreEntryIsParsed(): void {
 		$config = $this->buildSparqlConfig( [ [
 			'updateUrl' => 'https://qlever.example/api',
+			'queryUrl' => 'https://qlever.example/query',
 			'accessToken' => 'secret-token',
 			'projection' => 'edm',
 		] ] );
@@ -106,6 +107,7 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		$this->assertCount( 1, $config->sparqlStores );
 		$store = $config->sparqlStores[0];
 		$this->assertSame( 'https://qlever.example/api', $store->updateUrl );
+		$this->assertSame( 'https://qlever.example/query', $store->queryUrl );
 		$this->assertSame( 'secret-token', $store->accessToken );
 		$this->assertSame( 'edm', $store->projection );
 	}
@@ -115,8 +117,18 @@ class NeoWikiConfigFactoryTest extends TestCase {
 
 		$store = $config->sparqlStores[0];
 		$this->assertSame( 'https://qlever.example/api', $store->updateUrl );
+		$this->assertSame( 'https://qlever.example/api', $store->queryUrl );
 		$this->assertNull( $store->accessToken );
 		$this->assertSame( 'native', $store->projection );
+	}
+
+	public function testBlankQueryUrlFallsBackToUpdateUrl(): void {
+		$config = $this->buildSparqlConfig( [ [
+			'updateUrl' => 'https://qlever.example/api',
+			'queryUrl' => '   ',
+		] ] );
+
+		$this->assertSame( 'https://qlever.example/api', $config->sparqlStores[0]->queryUrl );
 	}
 
 	public function testSparqlStoreEntryMissingUpdateUrlIsSkippedWithWarning(): void {
