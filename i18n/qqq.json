@@ -26,6 +26,13 @@
 	"neowiki-cypher-error-backend-unavailable": "Error shown when the graph database backend cannot be reached for a Cypher query run from wikitext. The underlying connection detail is intentionally omitted.",
 	"neowiki-cypher-error-internal": "Generic fallback error shown for a Cypher query run from wikitext that fails for a reason not covered by the more specific cases. $1 is the verbatim underlying detail and is not translatable.",
 
+	"neowiki-sparql-raw-error-json-encode": "Error message shown when JSON encoding of SPARQL query results fails.",
+
+	"neowiki-sparql-error-empty-query": "Error shown on the <code>{{#sparql_raw}}</code> parser function and the <code>nw.sparqlQuery()</code> Lua function when the supplied SPARQL query is empty or only whitespace.",
+	"neowiki-sparql-error-syntax": "Error shown when the SPARQL store rejects a query run from wikitext (a 4xx response, most commonly a syntax error). $1 is the verbatim store-supplied detail and is not translatable.",
+	"neowiki-sparql-error-store-unavailable": "Error shown when the SPARQL store cannot be reached for a query run from wikitext (a 5xx response or a transport error). The underlying connection detail is intentionally omitted.",
+	"neowiki-sparql-error-internal": "Generic fallback error shown for a SPARQL query run from wikitext that fails for a reason not covered by the more specific cases. $1 is the verbatim underlying detail and is not translatable.",
+
 	"neowiki-view-error-extra-positional": "Error shown when {{#view}} is called with more than one positional argument. $1 is the offending extra argument value.",
 	"neowiki-view-error-conflicting-subject": "Error shown when {{#view}} receives a Subject ID as both a positional argument and a named <code>subject=</code> argument.",
 	"neowiki-view-error-unknown-arg": "Error shown when {{#view}} receives an unrecognized named argument. $1 is the offending argument name.",

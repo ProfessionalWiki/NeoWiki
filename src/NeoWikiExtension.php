@@ -119,6 +119,9 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\CallbackProjectionResolver;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlQueryApi;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlRouteRegistration;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
@@ -182,7 +185,8 @@ class NeoWikiExtension {
 
 		$GLOBALS['wgRestAPIAdditionalRouteFiles'] = array_merge(
 			$GLOBALS['wgRestAPIAdditionalRouteFiles'] ?? [],
-			Neo4jRouteRegistration::routeFiles( $readUrl, $writeUrl )
+			Neo4jRouteRegistration::routeFiles( $readUrl, $writeUrl ),
+			SparqlRouteRegistration::routeFiles( $GLOBALS['wgNeoWikiSparqlStores'] ?? null )
 		);
 	}
 
@@ -515,6 +519,35 @@ class NeoWikiExtension {
 		}
 
 		return $this->sparqlPlugins;
+	}
+
+	/**
+	 * The first configured SPARQL store's plugin, or null when none is configured. The read surfaces
+	 * (parser function, Lua, REST) target this one store; multi-store query addressing is a follow-up.
+	 */
+	public function getFirstSparqlPlugin(): ?SparqlPlugin {
+		return $this->getSparqlPlugins()[0] ?? null;
+	}
+
+	// Guard for surfaces whose registration is already gated on a configured store, so callers get a
+	// non-null plugin without repeating the null handling.
+	public function requireFirstSparqlPlugin(): SparqlPlugin {
+		$plugin = $this->getFirstSparqlPlugin();
+		if ( $plugin === null ) {
+			throw new LogicException( 'A configured SPARQL store is required here.' );
+		}
+
+		return $plugin;
+	}
+
+	public function newSparqlQueryService(): SparqlQueryService {
+		return $this->requireFirstSparqlPlugin()->newQueryService();
+	}
+
+	public static function newSparqlQueryApi(): SparqlQueryApi {
+		return new SparqlQueryApi(
+			self::getInstance()->newSparqlQueryService()
+		);
 	}
 
 	private function buildSparqlPlugin( SparqlStoreConfig $store ): SparqlPlugin {

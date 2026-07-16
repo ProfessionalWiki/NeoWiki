@@ -44,11 +44,23 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 	protected function setUp(): void {
 		parent::setUp();
 
+		// Configure a SPARQL store so nw.sparqlQuery is registered in the Lua environment. The URL is
+		// never contacted: the only Lua test that calls it (empty query) fails before any HTTP. Resetting
+		// the singleton makes the extension rebuild with the store before the engine loads the library.
+		$this->overrideConfigValue( 'NeoWikiSparqlStores', [ [ 'updateUrl' => 'https://sparql.invalid/store' ] ] );
+		NeoWikiExtension::resetInstance();
+
 		// Suppress NeoWiki's revision handler during test data creation
 		// to avoid graph DB and property type registration dependencies
 		$this->setTemporaryHook( 'RevisionFromEditComplete', static function (): void {
 		} );
 		$this->createTestData();
+	}
+
+	protected function tearDown(): void {
+		// The singleton bakes the store config; reset it so later tests rebuild from restored config.
+		NeoWikiExtension::resetInstance();
+		parent::tearDown();
 	}
 
 	protected function getTestModules(): array {

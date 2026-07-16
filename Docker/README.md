@@ -67,6 +67,18 @@ Without the tools overlay, run the same query from inside the stack, e.g.
 `docker compose exec qlever curl ...` or from the `mediawiki` container against
 `http://qlever:7019/`. Writes require the `QLEVER_ACCESS_TOKEN` Bearer token; reads do not.
 
+### `test_qlever` (SPARQL query system test)
+
+A second, dedicated QLever store — `test_qlever` — backs the SPARQL query system test
+(`QuerySparqlEndToEndTest`), isolated from the demo `qlever` store the way `test_neo` is
+isolated from `neo`: the test writes and deletes Subjects, so it must not touch the demo
+data. `phpunit.xml.dist` points the test at it via `QLEVER_TEST_URL=http://test_qlever:7019/`
+(fixed token `neowiki_test_token`); it is reached in-network only, with no host port. Unlike
+the demo store it runs **without** `--persist-updates`: it is ephemeral test scaffolding that
+each run clears (`DROP ALL`), so keeping updates in memory is enough. `make phpunit` brings it
+up as part of the dev stack; in CI it is started explicitly (see `.github/workflows/ci-php.yml`),
+because its multi-step bring-up cannot be expressed as a GitHub Actions service container.
+
 ## Files
 
 - `Dockerfile` — multi-stage build: `production-mw` (MediaWiki + NeoWiki on the
