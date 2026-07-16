@@ -84,7 +84,7 @@ readonly class Neo4jPlugin {
 
 		$parser->setFunctionHook(
 			'cypher_raw',
-			static function ( Parser $parser, string $cypherQuery ) use ( $queryService ): string {
+			static function ( Parser $parser, string $cypherQuery ) use ( $queryService ): array {
 				return ( new CypherRawParserFunction( $queryService ) )->handle( $parser, $cypherQuery );
 			}
 		);

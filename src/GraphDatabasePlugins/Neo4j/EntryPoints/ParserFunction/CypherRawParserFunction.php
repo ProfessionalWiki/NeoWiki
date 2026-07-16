@@ -19,7 +19,10 @@ class CypherRawParserFunction {
 	) {
 	}
 
-	public function handle( Parser $parser, string $cypherQuery ): string {
+	/**
+	 * @return array{0: string, noparse: true, isHTML: true}
+	 */
+	public function handle( Parser $parser, string $cypherQuery ): array {
 		try {
 			$result = $this->queryService->execute(
 				new Neo4jQueryRequest(
@@ -42,12 +45,30 @@ class CypherRawParserFunction {
 		return $this->formatResult( $json );
 	}
 
-	private function formatResult( string $json ): string {
-		return '<div class="mw-neowiki-cypher-result"><pre>' . htmlspecialchars( $json ) . '</pre></div>';
+	/**
+	 * @return array{0: string, noparse: true, isHTML: true}
+	 */
+	private function formatResult( string $json ): array {
+		return $this->asHtml( '<div class="mw-neowiki-cypher-result"><pre>' . htmlspecialchars( $json ) . '</pre></div>' );
 	}
 
-	private function formatError( string $message ): string {
-		return '<div class="error">' . htmlspecialchars( $message ) . '</div>';
+	/**
+	 * @return array{0: string, noparse: true, isHTML: true}
+	 */
+	private function formatError( string $message ): array {
+		return $this->asHtml( '<div class="error">' . htmlspecialchars( $message ) . '</div>' );
+	}
+
+	/**
+	 * Hands the HTML to the parser as HTML rather than wikitext. Without this the text is parsed as
+	 * wikitext, which autolinks any URL a returned value happens to hold: the trailing quote of the
+	 * URL is swallowed into the link and percent-encoded, leaving invalid JSON with anchors in it.
+	 * Error detail needs the same treatment, as the store's message can itself carry a URL.
+	 *
+	 * @return array{0: string, noparse: true, isHTML: true}
+	 */
+	private function asHtml( string $html ): array {
+		return [ $html, 'noparse' => true, 'isHTML' => true ];
 	}
 
 }
