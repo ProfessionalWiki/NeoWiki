@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Rest\StringStream;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -29,7 +30,7 @@ class ExportPageRdfApi extends SimpleHandler {
 
 	public function run( int $pageId ): Response {
 		$extension = NeoWikiExtension::getInstance();
-		$projectionName = $this->getValidatedParams()['projection'] ?? NeoWikiExtension::PROJECTION_NATIVE;
+		$projectionName = $this->getValidatedParams()['projection'] ?? RdfPageProjector::PROJECTION;
 		$resolution = $extension->resolveRdfProjection( $projectionName );
 
 		if ( $resolution->projection === null ) {

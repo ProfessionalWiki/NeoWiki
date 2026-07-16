@@ -137,8 +137,6 @@ class NeoWikiExtension {
 	public const int NS_LAYOUT = 7476;
 	public const int NS_MAPPING = 7478;
 
-	public const string PROJECTION_NATIVE = RdfPageProjector::PROJECTION;
-
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
 	private Neo4jValueBuilderRegistry $valueBuilderRegistry;
@@ -337,7 +335,7 @@ class NeoWikiExtension {
 	 * resolution and the known-names list on the unknown-target path pays for a single enumeration.
 	 */
 	public function resolveRdfProjection( string $projectionName ): RdfProjectionResolution {
-		if ( $projectionName === self::PROJECTION_NATIVE ) {
+		if ( $projectionName === RdfPageProjector::PROJECTION ) {
 			return RdfProjectionResolution::projection(
 				new RdfProjection( $this->newRdfPageProjector(), $this->getRdfSerializer() )
 			);
@@ -348,7 +346,7 @@ class NeoWikiExtension {
 
 		if ( $forTarget === [] ) {
 			return RdfProjectionResolution::unknownTarget(
-				array_merge( [ self::PROJECTION_NATIVE ], $mappings->targets() )
+				array_merge( [ RdfPageProjector::PROJECTION ], $mappings->targets() )
 			);
 		}
 
@@ -374,7 +372,7 @@ class NeoWikiExtension {
 	 */
 	public function getRdfProjectionNames(): array {
 		return array_merge(
-			[ self::PROJECTION_NATIVE ],
+			[ RdfPageProjector::PROJECTION ],
 			( new Mappings( $this->getMappingLookup()->getAllMappings() ) )->targets()
 		);
 	}
