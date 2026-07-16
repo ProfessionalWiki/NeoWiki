@@ -95,7 +95,7 @@ class SparqlQueryApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'A read-only SPARQL 1.1 query (SELECT, ASK, CONSTRUCT, or DESCRIBE).',
+				self::PARAM_DESCRIPTION => 'A read-only SPARQL 1.1 SELECT or ASK query.',
 			],
 		];
 	}
