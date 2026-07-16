@@ -23,24 +23,15 @@ Demo wiki example: [neowiki.dev/w/rest.php/specs/v0/module/-](https://neowiki.de
 
 ## Permissions
 
-Read endpoints enforce the caller's per-page `read` permission (page protection, restricted namespaces, read
-whitelists, and permission extensions), not just the wiki-global `read` right. Two exceptions remain:
-`GET /subject-labels` does not yet apply a per-page filter and can expose the labels of Subjects on restricted
-pages, and the Cypher query endpoint reads the graph with only the `neowiki-query` right (see
+Read endpoints enforce the caller's per-page `read` permission: page protection, restricted namespaces, read
+whitelists, and permission extensions all apply. When you may not read a page, its read endpoints respond as if
+the data were absent — a `null` value, an empty list, or a `404` — rather than with a `403`. Treat a not-found
+response as "not available": it may mean the data does not exist, or that you may not read it.
+
+Subject write endpoints require per-page `edit` permission and answer `403` on denial.
+
+The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
 [Query API](query-api.md)).
-
-A denied read is deliberately indistinguishable from absent data: `GET /subject/{subjectId}`,
-`GET /schema/{schemaName}`, and `GET /layout/{layoutName}` answer `200` with a null value (`{"subject": null}`
-and so on), `GET /page/{pageId}/subjects` answers `200` with an empty subject map (plus the echoed `pageId`
-and a null `mainSubjectId`), `GET /page/{pageId}/rdf` and `POST /subject/{subjectId}/validate` answer `404`,
-and list endpoints omit the affected entries (their `totalRows` counts are currently unfiltered). For a
-per-page denial there is no `403`: page and revision IDs are sequential, so any distinguishable denial would
-let a caller enumerate which pages are restricted. A caller who lacks the wiki-global `read` right entirely
-still receives MediaWiki's standard `403` before any of this applies. Denials are logged server-side to the
-`NeoWiki` logging channel.
-
-Subject write endpoints enforce per-page `edit` permission and answer `403` on denial. Their page-id-keyed routes
-are not yet enumeration-hardened the way the read endpoints are.
 
 ## Endpoints
 
