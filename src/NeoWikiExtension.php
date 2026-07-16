@@ -907,13 +907,15 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newValidateSubjectUpdateQuery(): ValidateSubjectUpdateQuery {
+	public function newValidateSubjectUpdateQuery( Authority $authority ): ValidateSubjectUpdateQuery {
 		return new ValidateSubjectUpdateQuery(
 			subjectRepository: $this->getSubjectRepository(),
 			schemaLookup: $this->getSchemaLookup(),
 			subjectValidator: $this->getSubjectValidator(),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			readAuthorizer: $this->newSubjectReadAuthorizer( $authority ),
 		);
 	}
 
@@ -924,9 +926,7 @@ class NeoWikiExtension {
 	}
 
 	public static function newValidateSubjectUpdateApi(): ValidateSubjectUpdateApi {
-		return new ValidateSubjectUpdateApi(
-			query: self::getInstance()->newValidateSubjectUpdateQuery(),
-		);
+		return new ValidateSubjectUpdateApi();
 	}
 
 	public static function newCreateMainSubjectApi(): CreateSubjectApi {
