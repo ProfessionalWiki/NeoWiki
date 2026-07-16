@@ -40,6 +40,13 @@ class SparqlQueryRunnerTest extends TestCase {
 		$this->assertTrue( $table['boolean'] );
 	}
 
+	public function testPreservesEmptyBindingsWhileReindexingVars(): void {
+		$table = $this->runViaRunner( '{"head":{"vars":["s"]},"results":{"bindings":[]}}' );
+
+		$this->assertSame( [ 1 => 's' ], $table['head']['vars'] );
+		$this->assertSame( [], $table['results']['bindings'] );
+	}
+
 	public function testEmptyQueryPropagatesEmptySparqlQueryException(): void {
 		$this->expectException( EmptySparqlQueryException::class );
 
