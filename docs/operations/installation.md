@@ -225,14 +225,12 @@ requirement, and how to query it.
 
 ### Restricting federation
 
-Read-only does not mean inert. `SERVICE` is part of the SPARQL query grammar, so a query may ask the store to fetch
-results from another endpoint. The store makes those requests itself, from its own network position — which usually
-reaches more than the wiki's users do, such as services on an internal network. This follows from offering a SPARQL
-query surface at all and is not specific to NeoWiki; the customary mitigation is to restrict federation at the store,
-which is where the outbound request originates.
+The query surfaces are read-only, but SPARQL's `SERVICE` clause lets a query direct the store to fetch results
+from another endpoint. The store makes those requests itself, from its own network position — often one that
+reaches internal services the wiki's visitors cannot. Restrict federation at the store unless you mean to offer it.
 
-QLever allows every `SERVICE` IRI when the option is omitted. Pass `--service-allowed-iri-prefixes` to limit federation
-to the endpoints you intend, or to the deny-all value `-` — an invalid prefix that no IRI matches — to disable it:
+QLever allows every `SERVICE` IRI unless `--service-allowed-iri-prefixes` is given. Pass the IRI prefixes you want
+to allow, or the deny-all value `-` (an invalid prefix that no IRI matches):
 
 ```sh
 # No federation:
@@ -242,9 +240,9 @@ qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes -
 qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes https://sparql.example.org/
 ```
 
-The bundled development stack sets the deny-all value, so federation is off unless you change it. This is also a QLever
-runtime parameter, but changing it over the endpoint requires the store's access token, so keep that token secret.
-Other SPARQL stores have their own equivalents — consult their documentation.
+The bundled development stack sets the deny-all value, so federation is off unless you change it. The setting can
+also be changed at runtime through the store's endpoint by anyone holding its access token, so keep that token
+secret. Other SPARQL stores have equivalent settings — consult their documentation.
 
 Restricting the store is worth combining with restricting who may query it. The query surfaces are gated by the
 `neowiki-query` right, which by default is granted to everyone including anonymous visitors; see
