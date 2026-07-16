@@ -27,9 +27,10 @@ cultural-heritage ontologies such as CIDOC-CRM, EDM, HDTO, and BIBFRAME.
 An **ontology mapping** projects native NeoWiki data **directly into a target ontology**. That ontology RDF is what a
 configured triple store holds and what SPARQL queries run against. The NeoWiki-native projection
 ([NativeRdfProjection.md](NativeRdfProjection.md)) and each target ontology are **sibling projections** of the same
-source data, selected per store rather than stacked: a store is configured with one projection, and different stores
-can hold different projections of the same wiki. The native projection is the default (used when no ontology mapping
-is configured) and the lossless-export target; ontology mappings define the other targets.
+source data, selected per store rather than stacked: a store is configured with one or more projections, each in its
+own family of named graphs, and different stores can hold different projection sets of the same wiki. The native
+projection is the default (used when no ontology mapping is configured) and the lossless-export target; ontology
+mappings define the other targets.
 
 Mappings are first-class, authorable, installable objects, kept separate from Schemas so the native data model is not
 deformed to fit an ontology. A mapping defines the **correspondence** between NeoWiki's model and an ontology, and is

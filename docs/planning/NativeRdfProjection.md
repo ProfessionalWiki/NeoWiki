@@ -26,12 +26,13 @@ It has two jobs:
    when no ontology mapping is configured.
 2. **Specify the projection infrastructure shared by all projections** — the IRI and namespace regime, per-page
    named graphs, and the sync mechanism. An ontology store reuses all of this; only the triples inside each page's
-   graph differ.
+   graph and the projection segment of that graph's IRI differ.
 
 Everything specific to non-native targets — projecting into CIDOC-CRM, EDM, and other standard ontologies — lives in
 [OntologyMapping.md](OntologyMapping.md), which builds on this document. Native and ontology projections are
-siblings: a configured store holds exactly one projection and is queried in that projection's vocabulary, so the
-SPARQL plugin is parameterized by projection rather than hardwired to the native one. Read this document first.
+siblings: a store holds one or more projections, each in its own family of per-page named graphs, and is queried in
+the vocabulary of whichever projection a query targets, so the SPARQL plugin is parameterized by projection rather
+than hardwired to the native one. Read this document first.
 
 This is a strawman proposal. Many decisions here need input from partners with RDF and Linked Open Data expertise,
 particularly regarding ontology alignment and cultural heritage conventions. [Open questions](#open-questions) are
