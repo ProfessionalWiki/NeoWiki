@@ -40,7 +40,9 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	/**
 	 * The search engine applies its own visibility rules inconsistently across engines, and the
 	 * raw DB branch applies none, so both branches share this binding per-title read filter.
-	 * Filtered names are simply absent, like Schemas that do not exist (#1046).
+	 * Filtered names are simply absent, like Schemas that do not exist (#1046). Filtering here
+	 * deliberately does not log per-name denials: enumeration filtering would log proportionally
+	 * to list size, unlike the single-page content gates.
 	 *
 	 * @param TitleValue[] $titles
 	 * @return TitleValue[]

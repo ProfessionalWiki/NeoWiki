@@ -24,9 +24,10 @@ Demo wiki example: [neowiki.dev/w/rest.php/specs/v0/module/-](https://neowiki.de
 ## Permissions
 
 Read endpoints enforce the caller's per-page `read` permission (page protection, restricted namespaces, read
-whitelists, and permission extensions), not just the wiki-global `read` right. The one exception is
-`GET /subject-labels`, which does not yet apply a per-page filter and can expose the labels of Subjects on
-restricted pages.
+whitelists, and permission extensions), not just the wiki-global `read` right. Two exceptions remain:
+`GET /subject-labels` does not yet apply a per-page filter and can expose the labels of Subjects on restricted
+pages, and the Cypher query endpoint reads the graph with only the `neowiki-query` right (see
+[Query API](query-api.md)).
 
 A denied read is deliberately indistinguishable from absent data: `GET /subject/{subjectId}`,
 `GET /schema/{schemaName}`, and `GET /layout/{layoutName}` answer `200` with a null value (`{"subject": null}`
@@ -38,8 +39,8 @@ let a caller enumerate which pages are restricted. A caller who lacks the wiki-g
 still receives MediaWiki's standard `403` before any of this applies. Denials are logged server-side to the
 `NeoWiki` logging channel.
 
-Subject write endpoints enforce per-page `edit` permission and answer `403` on denial; a write denial reveals
-nothing, because the caller already knows the page exists.
+Subject write endpoints enforce per-page `edit` permission and answer `403` on denial. Their page-id-keyed routes
+are not yet enumeration-hardened the way the read endpoints are.
 
 ## Endpoints
 

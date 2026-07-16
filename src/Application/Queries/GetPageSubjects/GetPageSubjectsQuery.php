@@ -125,9 +125,10 @@ readonly class GetPageSubjectsQuery {
 
 	/**
 	 * A Subject whose page does not resolve in the graph cannot be reached through the
-	 * graph-backed repository at all (the repository returns null before this runs), so null
-	 * only occurs for Subjects whose page was already authorized by the caller. Denying on
-	 * null would instead hide Subjects from readable old revisions after later deletion.
+	 * graph-backed repository at all (the repository returns null before this runs), so the
+	 * null case is unreachable here; treating it as readable keeps the helper uniform with
+	 * the sibling query gates. Denying on null would risk hiding Subjects from readable old
+	 * revisions if a revision-backed lookup is ever wired in.
 	 */
 	private function pageIsReadable( ?PageIdentifiers $pageIdentifiers ): bool {
 		return $pageIdentifiers === null || $this->readAuthorizer->authorizeRead( $pageIdentifiers->getId() );
