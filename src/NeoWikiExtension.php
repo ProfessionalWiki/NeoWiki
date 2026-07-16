@@ -56,6 +56,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
+use ProfessionalWiki\NeoWiki\Application\SubjectReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
@@ -734,10 +735,15 @@ class NeoWikiExtension {
 		return $this->newAuthorityBasedSubjectAuthorizer( $authority );
 	}
 
+	public function newSubjectReadAuthorizer( Authority $authority ): SubjectReadAuthorizer {
+		return $this->newAuthorityBasedSubjectAuthorizer( $authority );
+	}
+
 	private function newAuthorityBasedSubjectAuthorizer( Authority $authority ): AuthorityBasedSubjectAuthorizer {
 		return new AuthorityBasedSubjectAuthorizer(
 			authority: $authority,
-			titleFactory: MediaWikiServices::getInstance()->getTitleFactory()
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
 
