@@ -5,27 +5,34 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\UserIdentityValue;
+use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
-use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
-use Psr\Log\NullLogger;
+use TestLogger;
 use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup
- * @group Database
  */
-class CachingMappingLookupTest extends NeoWikiIntegrationTestCase {
+class CachingMappingLookupTest extends TestCase {
 
 	public function testGateUsesBindingAuthorizeRead(): void {
-		// The mapping page must exist so the gate (which runs after the existence check) is
-		// reached. probablyCan=true + authorizeRead=false must deny: probablyCan is a UI-hint
-		// check that skips the expensive ACL hook extensions use for read restrictions.
-		$this->createMapping( 'CachingGateMapping', $this->personToEdm() );
+		// probablyCan is a UI-hint check that skips the expensive ACL hook that extensions use
+		// for read restrictions; the gate must use the binding authorizeRead with the 'read'
+		// action. Reverting to a hint verb, or a different action, fails this test.
+		$title = $this->createMock( Title::class );
+		$title->method( 'exists' )->willReturn( true );
+		$title->method( 'getPrefixedDBkey' )->willReturn( 'Mapping:CachingGateMapping' );
+
+		$factory = $this->createMock( TitleFactory::class );
+		$factory->method( 'newFromText' )->willReturn( $title );
 
 		$inner = $this->createMock( MappingLookup::class );
 		$inner->expects( $this->never() )->method( 'getMapping' );
@@ -38,35 +45,26 @@ class CachingMappingLookupTest extends NeoWikiIntegrationTestCase {
 		} );
 		$authority->method( 'getUser' )->willReturn( new UserIdentityValue( 9999, 'Petr' ) );
 
+		$logger = new TestLogger( true, null, true );
+
 		$lookup = new CachingMappingLookup(
 			$inner,
 			$this->createMock( MappingNameLookup::class ),
 			new WANObjectCache( [ 'cache' => new HashBagOStuff() ] ),
-			$this->getServiceContainer()->getTitleFactory(),
+			$factory,
 			$authority,
-			$this->getServiceContainer()->getConnectionProvider(),
-			new NullLogger(),
+			$this->createMock( IConnectionProvider::class ),
+			$logger,
 		);
 
 		$this->assertNull( $lookup->getMapping( new MappingName( 'CachingGateMapping' ) ) );
-	}
 
-	private function personToEdm(): string {
-		return <<<JSON
-			{
-				"version": 1,
-				"schema": "Person",
-				"target": "edm",
-				"prefixes": {
-					"edm": "http://www.europeana.eu/schemas/edm/",
-					"dc": "http://purl.org/dc/elements/1.1/"
-				},
-				"subject": { "class": "edm:ProvidedCHO" },
-				"properties": {
-					"Name": { "predicate": "dc:title", "lang": "en" }
-				}
-			}
-			JSON;
+		// Mirrors AuthorityBasedSubjectAuthorizerTest::testDeniedReadIsLogged.
+		$this->assertSame(
+			[ [ 'info', 'Denied read of page {page} to {user}',
+				[ 'page' => 'Mapping:CachingGateMapping', 'user' => 'Petr' ] ] ],
+			$logger->getBuffer()
+		);
 	}
 
 }
