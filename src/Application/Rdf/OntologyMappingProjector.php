@@ -31,8 +31,10 @@ use Psr\Log\LoggerInterface;
  * values become a direct triple to the target Subject's native IRI, which may be untyped when that
  * Subject has no Mapping of its own.
  *
- * Every quad is placed in the page's named graph, so the per-page sync used by the native projection
- * (NativeRdfProjection.md) works for an ontology store too. No page-metadata triples are emitted.
+ * Every quad is placed in the page's named graph for this projection's target (`{$base}/graph/{target}/page/{id}`,
+ * #1053), so the per-page sync used by the native projection (NativeRdfProjection.md) works for an ontology
+ * store too, and the native and ontology projections of a page can share one store without colliding. No
+ * page-metadata triples are emitted.
  */
 class OntologyMappingProjector implements PageProjector {
 
@@ -100,7 +102,7 @@ class OntologyMappingProjector implements PageProjector {
 	}
 
 	public function projectPage( Page $page ): QuadList {
-		$graph = $this->namespaces->page( $page->getId() );
+		$graph = $this->namespaces->graph( $this->target, $page->getId() );
 		$quads = [];
 
 		foreach ( $page->getSubjects()->getAllSubjects()->asArray() as $subject ) {

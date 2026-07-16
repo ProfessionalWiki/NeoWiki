@@ -83,6 +83,27 @@ class RdfNamespacesTest extends TestCase {
 		);
 	}
 
+	public function testGraphIriIsQualifiedByTheNativeProjection(): void {
+		$this->assertSame(
+			'https://wiki.example/graph/native/page/42',
+			$this->namespaces()->graph( 'native', new PageId( 42 ) )->value
+		);
+	}
+
+	public function testGraphIriIsQualifiedByAnOntologyTarget(): void {
+		$this->assertSame(
+			'https://wiki.example/graph/edm/page/42',
+			$this->namespaces()->graph( 'edm', new PageId( 42 ) )->value
+		);
+	}
+
+	public function testGraphIriEncodesTheProjectionNameSoAnAuthoredTargetCannotBreakOut(): void {
+		$this->assertSame(
+			'https://wiki.example/graph/a%3Eb/page/42',
+			$this->namespaces()->graph( 'a>b', new PageId( 42 ) )->value
+		);
+	}
+
 	public function testVocabularyTermUsesOntologyPath(): void {
 		$this->assertSame(
 			'https://wiki.example/ontology/hasSubject',
@@ -108,7 +129,7 @@ class RdfNamespacesTest extends TestCase {
 		$this->assertSame( 'http://www.w3.org/2001/XMLSchema#dateTime', $namespaces->xsd( 'dateTime' )->value );
 	}
 
-	public function testPrefixMapCoversEveryNeoAndStandardNamespace(): void {
+	public function testPrefixMapCoversEveryNeoAndStandardNamespaceIncludingTheProjectionGraph(): void {
 		$this->assertSame(
 			[
 				'neo' => 'https://wiki.example/ontology/',
@@ -117,12 +138,20 @@ class RdfNamespacesTest extends TestCase {
 				'neo-schema' => 'https://wiki.example/schema/',
 				'neo-rel' => 'https://wiki.example/relation/',
 				'neo-page' => 'https://wiki.example/page/',
+				'neo-graph' => 'https://wiki.example/graph/native/page/',
 				'rdf' => 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
 				'rdfs' => 'http://www.w3.org/2000/01/rdf-schema#',
 				'xsd' => 'http://www.w3.org/2001/XMLSchema#',
 				'dcterms' => 'http://purl.org/dc/terms/',
 			],
-			$this->namespaces()->prefixMap()
+			$this->namespaces()->prefixMap( 'native' )
+		);
+	}
+
+	public function testPrefixMapGraphNamespaceIsQualifiedByTheProjection(): void {
+		$this->assertSame(
+			'https://wiki.example/graph/edm/page/',
+			$this->namespaces()->prefixMap( 'edm' )['neo-graph']
 		);
 	}
 

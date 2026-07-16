@@ -192,9 +192,14 @@ page graph. The **bulk** `DumpRdf --projection=edm` contains both named graphs, 
 Málaga is a typed `edm:Place`:
 
 ```trig
-<.../page/115> { neo-subj:s2picasso2aaaa2 a edm:Agent; … rdaGr2:placeOfBirth neo-subj:s2birthcity2aa2 }
-<.../page/116> { neo-subj:s2birthcity2aa2 a edm:Place; rdfs:label "Málaga" }
+<.../graph/edm/page/115> { neo-subj:s2picasso2aaaa2 a edm:Agent; … rdaGr2:placeOfBirth neo-subj:s2birthcity2aa2 }
+<.../graph/edm/page/116> { neo-subj:s2birthcity2aa2 a edm:Place; rdfs:label "Málaga" }
 ```
+
+The named graph is qualified by projection (`.../graph/edm/page/{id}`,
+[#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)); the native projection of these pages lands in the
+sibling `.../graph/native/page/{id}` graphs, so both can share one triple store. The Subject *resource* IRIs
+(`neo-subj:…`) are identical across projections — that is what lets an EDM query and a native query join.
 
 (The dump also projects the other demo `Person`/`City` Subjects — Bach persons as `edm:Agent`, the
 other cities as `edm:Place` — since the Mapping applies to every Subject of its Schema.)

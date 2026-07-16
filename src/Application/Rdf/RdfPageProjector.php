@@ -26,7 +26,9 @@ use Psr\Log\LoggerInterface;
 /**
  * Projects a {@see Page} to the native RDF quads specified in NativeRdfProjection.md: page metadata,
  * one resource per Subject (rdf:type from the Schema, rdfs:label, one predicate per Statement value),
- * and the two-layer relation reification. Every quad is placed in the page's named graph.
+ * and the two-layer relation reification. Every quad is placed in the page's native named graph
+ * (`{$base}/graph/native/page/{id}`, #1053); the page *resource* IRI (`neo-page:`) that appears inside the
+ * triples stays projection-independent.
  *
  * Schema resolution mirrors Neo4jSubjectUpdater: a Subject whose Schema is unavailable is skipped
  * entirely (and logged), so page metadata never references a Subject that has no projected type or
@@ -37,6 +39,12 @@ use Psr\Log\LoggerInterface;
  * v1.
  */
 class RdfPageProjector implements PageProjector {
+
+	/**
+	 * The name of the native projection, used to qualify its named-graph IRIs (#1053) and as the
+	 * default `projection` selector on the RDF export surfaces.
+	 */
+	public const string PROJECTION = 'native';
 
 	private const string PROPERTY_NAME = 'name';
 	private const string PROPERTY_CREATION_TIME = 'creationTime';
@@ -53,7 +61,7 @@ class RdfPageProjector implements PageProjector {
 	}
 
 	public function projectPage( Page $page ): QuadList {
-		$graph = $this->namespaces->page( $page->getId() );
+		$graph = $this->namespaces->graph( self::PROJECTION, $page->getId() );
 
 		$subjects = $this->resolveSchemas( $page->getSubjects()->getAllSubjects()->asArray() );
 

@@ -47,19 +47,27 @@ what the projections produce.
 
 ## Projections, not layers
 
-A triple store holds **one projection** of the wiki's data, in one target vocabulary, and SPARQL queries against it are
-written in that vocabulary.
+A triple store holds **one or more projections** of the wiki's data, and SPARQL against it is written in the vocabulary
+of whichever projection a query targets. Each projection lives in its own family of **projection-qualified named graphs**
+(`$base/graph/{projection}/page/{id}`, [#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053),
+[discussion #996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996)), so several projections of the same page
+can share one store without their per-page replace syncs overwriting one another.
 
 - The **native projection** ([NativeRdfProjection.md](NativeRdfProjection.md)) is the default target. A wiki with no
   ontology mapping configured still gets RDF and SPARQL, in NeoWiki-native terms.
-- An **ontology mapping** defines an alternative target (CIDOC-CRM, EDM, …). Configure a store with that mapping and it
-  holds ontology RDF; SPARQL against it is written in that ontology.
+- An **ontology mapping** defines an alternative target (CIDOC-CRM, EDM, …). A store can hold that projection — on its
+  own or alongside the native one and other ontology targets — and SPARQL against those graphs is written in that
+  ontology.
 - Projections are **pluggable per store**, consistent with [ADR 19](../adr/019-graph-database-architecture.md) (each
-  backend owns its mapping). A wiki may run several stores with different projections — e.g. a CIDOC-CRM store for CH
-  interoperability alongside a native store for completeness.
+  backend owns its mapping). A store is configured with an endpoint and the **list of projections** to load into it (the
+  [#586](https://github.com/ProfessionalWiki/NeoWiki/issues/586) store config); running several stores with different
+  projection sets stays a **deployment choice** — hard isolation, independent scaling — not a requirement.
 
-This has a deliberate consequence: **a store's query vocabulary is its projection.** Querying CIDOC-CRM means writing
-CIDOC-CRM SPARQL. Wanting the same data in two vocabularies means configuring two stores.
+The earlier "one projection per store, so two vocabularies means two stores" constraint is therefore lifted. Because the
+Subject IRIs are identical across projections (only the vocabulary and the graph family differ), a single store holding
+both the native and an ontology projection can join across them with no `owl:sameAs` machinery; on QLever, unscoped
+queries run against the union of all graphs, so existing queries keep working. Multiple stores remain available for
+isolation, but co-querying no longer forces them.
 
 Why the native projection stays a first-class target rather than always mapping to an ontology: standard ontologies are
 lossy and opinionated, so mapping into one can drop detail that has no place in that ontology. The triple store is a
@@ -342,8 +350,11 @@ native + one or more ontologies), and is a native projection always available as
 vocabulary is in the store" a per-store configuration rather than a single global choice.
 
 *v1: yes for export — a wiki serves several projections at once, selected per request via the `projection` parameter,
-with `native` always the baseline and each Mapping page adding its target to the known set. Per-store selection (a store
-configured to hold one projection) is the seam #586 consumes via `newRdfProjection(name)`.*
+with `native` always the baseline and each Mapping page adding its target to the known set. Since named graphs are now
+qualified by projection ([#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)), a store can hold **one or
+more** projections, each in its own graph family, rather than being limited to one; the #586 store config is therefore
+an endpoint plus a **list of projections**, and multiple stores become a deployment choice (isolation, scaling), not a
+requirement for co-querying two vocabularies. The projector/serializer seam #586 consumes is `newRdfProjection(name)`.*
 
 **Q10: Flat vs nested native modelling.** The [fork above](#flat-vs-nested-native-modelling-open-fork): should
 case-study data live in flat Schemas with the mapping synthesizing intermediate nodes, or in nested Schemas with the

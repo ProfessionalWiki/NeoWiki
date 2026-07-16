@@ -37,7 +37,16 @@ All NeoWiki IRIs live under `$base` (`$wgNeoWikiRdfBaseUri`). Standard vocabular
 | `neo-prop:` | `$base/prop/` | Property and Relation-type predicates (`neo-prop:Has_author`) |
 | `neo-schema:` | `$base/schema/` | Schema classes (`neo-schema:Person`) |
 | `neo-rel:` | `$base/relation/` | Relation node IRIs (`neo-rel:r1demo8aaaaaaD6`) |
-| `neo-page:` | `$base/page/` | Page IRIs, which are also the named-graph IRIs (`neo-page:42`) |
+| `neo-page:` | `$base/page/` | Page resource IRIs (`neo-page:42`) — the subject of the page-metadata triples |
+| `neo-graph:` | `$base/graph/{projection}/page/` | Named-graph IRIs, qualified by projection (`$base/graph/native/page/42`) |
+
+The **named graph** an export puts its quads in is qualified by projection
+([#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)): `$base/graph/{projection}/page/{pageId}`, where
+`{projection}` is `native` or a Mapping target (e.g. `edm`). This is distinct from the page *resource* IRI
+`neo-page:42`, which stays projection-independent and keeps appearing inside the triples. Qualifying the graph lets the
+native and an ontology projection of the same page coexist in one store without one's per-page sync wiping the other's
+triples — see [Ontology Mapping](ontology-mapping.md). The `{projection}` segment is encoded with the same name-encoding
+regime as Property and Schema names below.
 
 Property and Schema names form the local part of their IRI: spaces become underscores
 (e.g. `Has author` → `neo-prop:Has_author`), and any character that is illegal in an IRI (`%`, the

@@ -137,7 +137,7 @@ class NeoWikiExtension {
 	public const int NS_LAYOUT = 7476;
 	public const int NS_MAPPING = 7478;
 
-	public const string PROJECTION_NATIVE = 'native';
+	public const string PROJECTION_NATIVE = RdfPageProjector::PROJECTION;
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
@@ -292,7 +292,7 @@ class NeoWikiExtension {
 	}
 
 	public function getRdfSerializer(): RdfSerializer {
-		return new HardfRdfSerializer( $this->getRdfNamespaces()->prefixMap() );
+		return new HardfRdfSerializer( $this->getRdfNamespaces()->prefixMap( self::PROJECTION_NATIVE ) );
 	}
 
 	public function newRdfPageProjector(): RdfPageProjector {
@@ -361,7 +361,7 @@ class NeoWikiExtension {
 					$this->getRdfValueMapperRegistry(),
 					LoggerFactory::getInstance( 'NeoWiki' ),
 				),
-				new HardfRdfSerializer( $this->ontologyPrefixMap( $forTarget ) ),
+				new HardfRdfSerializer( $this->ontologyPrefixMap( $projectionName, $forTarget ) ),
 			)
 		);
 	}
@@ -380,15 +380,16 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * The native prefixes (Subject IRIs stay native) plus the Mappings' declared ontology prefixes, for
-	 * readable output. Unsafe prefix namespaces are dropped defensively so a Mapping can never inject a
-	 * `@prefix` declaration into the document, even though save-time validation already rejects them.
+	 * The native prefixes (Subject IRIs stay native, and the graph prefix names this target's graph
+	 * family) plus the Mappings' declared ontology prefixes, for readable output. Unsafe prefix
+	 * namespaces are dropped defensively so a Mapping can never inject a `@prefix` declaration into the
+	 * document, even though save-time validation already rejects them.
 	 *
 	 * @param \ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping[] $mappings
 	 * @return array<string, string>
 	 */
-	private function ontologyPrefixMap( array $mappings ): array {
-		$prefixes = $this->getRdfNamespaces()->prefixMap();
+	private function ontologyPrefixMap( string $projection, array $mappings ): array {
+		$prefixes = $this->getRdfNamespaces()->prefixMap( $projection );
 
 		foreach ( $mappings as $mapping ) {
 			foreach ( $mapping->prefixes as $label => $namespace ) {
