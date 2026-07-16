@@ -30,7 +30,7 @@ class HardfRdfSerializerTest extends TestCase {
 	}
 
 	private function serializer(): HardfRdfSerializer {
-		return new HardfRdfSerializer( $this->ns->prefixMap( 'native' ) );
+		return new HardfRdfSerializer( $this->ns->prefixMap() );
 	}
 
 	private function personQuads( int $pageId, string $subjectId ): QuadList {

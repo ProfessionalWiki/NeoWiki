@@ -129,7 +129,7 @@ class RdfNamespacesTest extends TestCase {
 		$this->assertSame( 'http://www.w3.org/2001/XMLSchema#dateTime', $namespaces->xsd( 'dateTime' )->value );
 	}
 
-	public function testPrefixMapCoversEveryNeoAndStandardNamespaceIncludingTheProjectionGraph(): void {
+	public function testPrefixMapCoversEveryNeoAndStandardNamespace(): void {
 		$this->assertSame(
 			[
 				'neo' => 'https://wiki.example/ontology/',
@@ -138,20 +138,12 @@ class RdfNamespacesTest extends TestCase {
 				'neo-schema' => 'https://wiki.example/schema/',
 				'neo-rel' => 'https://wiki.example/relation/',
 				'neo-page' => 'https://wiki.example/page/',
-				'neo-graph' => 'https://wiki.example/graph/native/page/',
 				'rdf' => 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
 				'rdfs' => 'http://www.w3.org/2000/01/rdf-schema#',
 				'xsd' => 'http://www.w3.org/2001/XMLSchema#',
 				'dcterms' => 'http://purl.org/dc/terms/',
 			],
-			$this->namespaces()->prefixMap( 'native' )
-		);
-	}
-
-	public function testPrefixMapGraphNamespaceIsQualifiedByTheProjection(): void {
-		$this->assertSame(
-			'https://wiki.example/graph/edm/page/',
-			$this->namespaces()->prefixMap( 'edm' )['neo-graph']
+			$this->namespaces()->prefixMap()
 		);
 	}
 

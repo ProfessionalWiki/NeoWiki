@@ -72,11 +72,7 @@ readonly class RdfNamespaces {
 	 * it runs through the same {@see localName()} encoding as Property and Schema names.
 	 */
 	public function graph( string $projection, PageId $id ): Iri {
-		return new Iri( $this->graphNamespace( $projection ) . $id->id );
-	}
-
-	private function graphNamespace( string $projection ): string {
-		return $this->baseUri . '/graph/' . self::localName( $projection ) . '/page/';
+		return new Iri( $this->baseUri . '/graph/' . self::localName( $projection ) . '/page/' . $id->id );
 	}
 
 	public function term( string $localName ): Iri {
@@ -144,13 +140,13 @@ readonly class RdfNamespaces {
 	}
 
 	/**
-	 * The prefix table for abbreviating a projection's serialized output. A serialization holds exactly
-	 * one projection, so a single `neo-graph` prefix names that projection's graph namespace; `neo-page`
-	 * stays for the page resource IRI, which still appears in the triples.
+	 * The namespaces a serializer may abbreviate. Projection-independent: the graph namespace is left out
+	 * because a graph's local name is a page id, and a prefixed name cannot start with a digit, so no
+	 * graph IRI this mints is abbreviable anyway.
 	 *
 	 * @return array<string, string> Prefix label to namespace IRI, for serializer abbreviation.
 	 */
-	public function prefixMap( string $projection ): array {
+	public function prefixMap(): array {
 		return [
 			'neo' => $this->baseUri . '/ontology/',
 			'neo-subj' => $this->baseUri . '/entity/',
@@ -158,7 +154,6 @@ readonly class RdfNamespaces {
 			'neo-schema' => $this->baseUri . '/schema/',
 			'neo-rel' => $this->baseUri . '/relation/',
 			'neo-page' => $this->baseUri . '/page/',
-			'neo-graph' => $this->graphNamespace( $projection ),
 			'rdf' => self::RDF,
 			'rdfs' => self::RDFS,
 			'xsd' => self::XSD,

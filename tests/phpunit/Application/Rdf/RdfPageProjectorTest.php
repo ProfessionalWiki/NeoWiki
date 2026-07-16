@@ -74,7 +74,7 @@ class RdfPageProjectorTest extends TestCase {
 		);
 
 		$quads = $this->newProjector( $schemaLookup )->projectPage( $this->completeExamplePage() );
-		$output = ( new HardfRdfSerializer( $this->ns->prefixMap( RdfPageProjector::PROJECTION ) ) )->serialize( $quads, RdfFormat::TriG );
+		$output = ( new HardfRdfSerializer( $this->ns->prefixMap() ) )->serialize( $quads, RdfFormat::TriG );
 
 		$this->assertSame(
 			ParsedRdf::canonicalQuads( $this->completeExampleTriG() ),
@@ -376,7 +376,7 @@ class RdfPageProjectorTest extends TestCase {
 	}
 
 	private function serialize( QuadList $quads ): string {
-		return ( new HardfRdfSerializer( $this->ns->prefixMap( RdfPageProjector::PROJECTION ) ) )->serialize( $quads, RdfFormat::TriG );
+		return ( new HardfRdfSerializer( $this->ns->prefixMap() ) )->serialize( $quads, RdfFormat::TriG );
 	}
 
 	private function companySchema(): Schema {

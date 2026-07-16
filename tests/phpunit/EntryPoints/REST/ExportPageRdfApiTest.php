@@ -163,9 +163,9 @@ JSON
 	}
 
 	/**
-	 * The export surface is where the projection name selected by the request reaches both the projector
-	 * that mints the graph and the serializer's prefix table (#1053). Asserting the graph IRI here, rather
-	 * than only on the projector, is what catches the two halves drifting apart.
+	 * The export surface is where the projection name selected by the request reaches the projector that
+	 * mints the graph (#1053). Asserting the graph IRI here, rather than only on the projector, is what
+	 * catches that resolution handing the projector the wrong name.
 	 */
 	public function testOntologyProjectionPlacesItsQuadsInTheTargetsOwnPageNamedGraph(): void {
 		$this->createBerlinToEdmMapping();

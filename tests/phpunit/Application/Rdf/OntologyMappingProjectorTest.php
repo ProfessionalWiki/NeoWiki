@@ -493,7 +493,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	 * @return array<string, string>
 	 */
 	private function serializerPrefixes(): array {
-		return array_merge( $this->ns->prefixMap( 'edm' ), [ 'edm' => self::EDM, 'dc' => self::DC ] );
+		return array_merge( $this->ns->prefixMap(), [ 'edm' => self::EDM, 'dc' => self::DC ] );
 	}
 
 }
