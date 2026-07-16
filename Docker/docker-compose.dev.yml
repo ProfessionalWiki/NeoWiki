@@ -83,7 +83,15 @@ services:
         # --persist-updates is mandatory: without it every SPARQL update is lost on
         # restart. With it, updates persist to neowiki.update-triples on the named volume
         # and are reloaded on startup.
-        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --persist-updates
+        # --service-allowed-iri-prefixes disables SPARQL federation. NeoWiki's query surfaces
+        # let wiki users send arbitrary SPARQL, and SERVICE makes the store issue outbound
+        # requests from its own network position — here, inside the compose network. QLever
+        # allows every IRI when the option is omitted, so this sets the documented deny-all
+        # value: an invalid prefix ("-") that no IRI can match. Drop or narrow it only if you
+        # actually want federation, and then list real prefixes rather than removing the flag.
+        # Keep it last: it takes an arbitrary number of prefixes, so a bare value placed
+        # after it would be read as another prefix.
+        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --persist-updates --service-allowed-iri-prefixes -
     environment:
       - QLEVER_ACCESS_TOKEN
     volumes:
@@ -129,7 +137,10 @@ services:
           qlever-index -i neowiki -F nt -f data.nt
           touch .neowiki-indexed
         fi
-        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G
+        # --service-allowed-iri-prefixes disables SPARQL federation, as on the demo `qlever`
+        # service above; see the comment there. No test federates, so deny-all is also what
+        # the system test should run against.
+        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --service-allowed-iri-prefixes -
     volumes:
       - test-qlever-index-data:/index
     stop_grace_period: 2s

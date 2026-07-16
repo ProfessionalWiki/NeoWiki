@@ -223,6 +223,33 @@ The bundled development stack ships a working QLever example wired up this way �
 [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`
 requirement, and how to query it.
 
+### Restricting federation
+
+Read-only does not mean inert. `SERVICE` is part of the SPARQL query grammar, so a query may ask the store to fetch
+results from another endpoint. The store makes those requests itself, from its own network position — which usually
+reaches more than the wiki's users do, such as services on an internal network. This follows from offering a SPARQL
+query surface at all and is not specific to NeoWiki; the customary mitigation is to restrict federation at the store,
+which is where the outbound request originates.
+
+QLever allows every `SERVICE` IRI when the option is omitted. Pass `--service-allowed-iri-prefixes` to limit federation
+to the endpoints you intend, or to the deny-all value `-` — an invalid prefix that no IRI matches — to disable it:
+
+```sh
+# No federation:
+qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes -
+
+# Or allow only specific endpoints:
+qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes https://sparql.example.org/
+```
+
+The bundled development stack sets the deny-all value, so federation is off unless you change it. This is also a QLever
+runtime parameter, but changing it over the endpoint requires the store's access token, so keep that token secret.
+Other SPARQL stores have their own equivalents — consult their documentation.
+
+Restricting the store is worth combining with restricting who may query it. The query surfaces are gated by the
+`neowiki-query` right, which by default is granted to everyone including anonymous visitors; see
+[Permissions](../api/query-api.md#permissions) for how to narrow it.
+
 ## Production hardening
 
 NeoWiki is pre-release, so this is not needed for an evaluation. It applies later, when NeoWiki is production-ready.
