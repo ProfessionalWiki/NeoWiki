@@ -61,6 +61,20 @@ readonly class RdfNamespaces {
 		return new Iri( $this->baseUri . '/page/' . $id->id );
 	}
 
+	/**
+	 * The named-graph IRI for a page under a given projection (#1053). Qualifying the graph by
+	 * projection lets several projections of the same page (native, an ontology target, …) live in one
+	 * triple store without the per-page replace sync of one wiping another's triples. The page id stays
+	 * in the IRI so per-page provenance and that sync are unchanged. This is distinct from {@see page()},
+	 * the projection-independent page *resource* IRI that keeps appearing inside the triples.
+	 *
+	 * The projection name is an author-controlled string (a Mapping target, or the native `native`), so
+	 * it runs through the same {@see localName()} encoding as Property and Schema names.
+	 */
+	public function graph( string $projection, PageId $id ): Iri {
+		return new Iri( $this->baseUri . '/graph/' . self::localName( $projection ) . '/page/' . $id->id );
+	}
+
 	public function term( string $localName ): Iri {
 		return new Iri( $this->baseUri . '/ontology/' . $localName );
 	}
@@ -126,6 +140,10 @@ readonly class RdfNamespaces {
 	}
 
 	/**
+	 * The namespaces a serializer may abbreviate. Projection-independent: the graph namespace is left out
+	 * because a graph's local name is a page id, and a prefixed name cannot start with a digit, so no
+	 * graph IRI this mints is abbreviable anyway.
+	 *
 	 * @return array<string, string> Prefix label to namespace IRI, for serializer abbreviation.
 	 */
 	public function prefixMap(): array {

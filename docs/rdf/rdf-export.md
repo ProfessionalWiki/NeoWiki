@@ -37,7 +37,13 @@ All NeoWiki IRIs live under `$base` (`$wgNeoWikiRdfBaseUri`). Standard vocabular
 | `neo-prop:` | `$base/prop/` | Property and Relation-type predicates (`neo-prop:Has_author`) |
 | `neo-schema:` | `$base/schema/` | Schema classes (`neo-schema:Person`) |
 | `neo-rel:` | `$base/relation/` | Relation node IRIs (`neo-rel:r1demo8aaaaaaD6`) |
-| `neo-page:` | `$base/page/` | Page IRIs, which are also the named-graph IRIs (`neo-page:42`) |
+| `neo-page:` | `$base/page/` | Page resource IRIs (`neo-page:42`) — the subject of the page-metadata triples |
+| `neo-graph:` | `$base/graph/{projection}/page/` | Named-graph IRIs, qualified by projection (`$base/graph/native/page/42`) |
+
+The `{projection}` segment of the named-graph IRI is `native` or a Mapping target (e.g. `edm`), encoded like the
+Property and Schema names below, so sibling projections of a page write disjoint graphs and can share one triple
+store — see [Ontology Mapping](ontology-mapping.md). The page *resource* IRI (`neo-page:42`) stays
+projection-independent and keeps appearing inside the triples.
 
 Property and Schema names form the local part of their IRI: spaces become underscores
 (e.g. `Has author` → `neo-prop:Has_author`), and any character that is illegal in an IRI (`%`, the

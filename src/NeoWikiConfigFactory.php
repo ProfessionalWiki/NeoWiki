@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki;
 
 use MediaWiki\Config\Config;
 use MediaWiki\WikiMap\WikiMap;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -82,7 +83,7 @@ class NeoWikiConfigFactory {
 			updateUrl: $updateUrl,
 			queryUrl: is_string( $queryUrl ) && trim( $queryUrl ) !== '' ? $queryUrl : $updateUrl,
 			accessToken: is_string( $accessToken ) && $accessToken !== '' ? $accessToken : null,
-			projection: is_string( $projection ) && $projection !== '' ? $projection : NeoWikiExtension::PROJECTION_NATIVE,
+			projection: is_string( $projection ) && $projection !== '' ? $projection : RdfPageProjector::PROJECTION,
 		);
 	}
 

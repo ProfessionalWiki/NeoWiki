@@ -54,7 +54,7 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$update = $this->lastUpdateFor( self::ENDPOINT );
 		$this->assertStringContainsString( 'INSERT DATA', $update );
-		$this->assertStringContainsString( '/page/' . $pageId, $update );
+		$this->assertStringContainsString( '/graph/native/page/' . $pageId, $update );
 		$this->assertStringContainsString( '/entity/' . TestSubject::ZERO_GUID, $update );
 	}
 
@@ -86,7 +86,7 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$update = $this->lastUpdateFor( self::ENDPOINT );
 		$this->assertStringContainsString( 'DROP SILENT GRAPH', $update );
-		$this->assertStringContainsString( '/page/' . $pageId, $update );
+		$this->assertStringContainsString( '/graph/native/page/' . $pageId, $update );
 		$this->assertStringNotContainsString( 'INSERT DATA', $update );
 	}
 
@@ -126,7 +126,7 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 	private function assertReceivedInsertForPage( string $endpoint, int $pageId ): void {
 		$update = $this->lastUpdateFor( $endpoint );
 		$this->assertStringContainsString( 'INSERT DATA', $update );
-		$this->assertStringContainsString( '/page/' . $pageId, $update );
+		$this->assertStringContainsString( '/graph/native/page/' . $pageId, $update );
 	}
 
 	private function deletePageByName( string $pageName ): void {

@@ -131,12 +131,13 @@ class RdfPageProjectorTest extends TestCase {
 			@prefix neo-schema: <https://wiki.example/schema/> .
 			@prefix neo-rel: <https://wiki.example/relation/> .
 			@prefix neo-page: <https://wiki.example/page/> .
+			@prefix neo-graph: <https://wiki.example/graph/native/page/> .
 			@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 			@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 			@prefix dcterms: <http://purl.org/dc/terms/> .
 
-			neo-page:42 {
+			neo-graph:42 {
 				neo-page:42 a neo:Page ;
 					neo:pageName "ACME Corp" ;
 					dcterms:created "2024-03-01T09:00:00Z"^^xsd:dateTime ;
@@ -358,7 +359,7 @@ class RdfPageProjectorTest extends TestCase {
 			@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 			@prefix dcterms: <http://purl.org/dc/terms/> .
 
-			<https://wiki.example/page/42> {
+			<https://wiki.example/graph/native/page/42> {
 				<https://wiki.example/page/42> a neo:Page ;
 					neo:pageName "ACME Corp" ;
 					dcterms:created "2024-03-01T09:00:00Z"^^xsd:dateTime ;
@@ -388,7 +389,7 @@ class RdfPageProjectorTest extends TestCase {
 	}
 
 	private function quad( Iri $subject, Iri $predicate, Literal|Iri $object ): Quad {
-		return new Quad( $subject, $predicate, $object, $this->ns->page( new PageId( 42 ) ) );
+		return new Quad( $subject, $predicate, $object, $this->ns->graph( RdfPageProjector::PROJECTION, new PageId( 42 ) ) );
 	}
 
 }

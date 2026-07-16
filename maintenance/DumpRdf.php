@@ -9,6 +9,7 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Storage\NameTableAccessException;
 use ProfessionalWiki\NeoWiki\Application\Rdf\PageProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfStreamWriter;
@@ -41,7 +42,7 @@ class DumpRdf extends Maintenance {
 	public function execute(): void {
 		$extension = NeoWikiExtension::getInstance();
 
-		$projectionName = $this->getOption( 'projection', NeoWikiExtension::PROJECTION_NATIVE );
+		$projectionName = $this->getOption( 'projection', RdfPageProjector::PROJECTION );
 		$projection = $extension->newRdfProjection( $projectionName );
 
 		if ( $projection === null ) {

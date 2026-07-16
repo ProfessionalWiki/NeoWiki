@@ -83,6 +83,27 @@ class RdfNamespacesTest extends TestCase {
 		);
 	}
 
+	public function testGraphIriIsQualifiedByTheNativeProjection(): void {
+		$this->assertSame(
+			'https://wiki.example/graph/native/page/42',
+			$this->namespaces()->graph( 'native', new PageId( 42 ) )->value
+		);
+	}
+
+	public function testGraphIriIsQualifiedByAnOntologyTarget(): void {
+		$this->assertSame(
+			'https://wiki.example/graph/edm/page/42',
+			$this->namespaces()->graph( 'edm', new PageId( 42 ) )->value
+		);
+	}
+
+	public function testGraphIriEncodesTheProjectionNameSoAnAuthoredTargetCannotBreakOut(): void {
+		$this->assertSame(
+			'https://wiki.example/graph/a%3Eb/page/42',
+			$this->namespaces()->graph( 'a>b', new PageId( 42 ) )->value
+		);
+	}
+
 	public function testVocabularyTermUsesOntologyPath(): void {
 		$this->assertSame(
 			'https://wiki.example/ontology/hasSubject',

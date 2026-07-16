@@ -27,9 +27,10 @@ cultural-heritage ontologies such as CIDOC-CRM, EDM, HDTO, and BIBFRAME.
 An **ontology mapping** projects native NeoWiki data **directly into a target ontology**. That ontology RDF is what a
 configured triple store holds and what SPARQL queries run against. The NeoWiki-native projection
 ([NativeRdfProjection.md](NativeRdfProjection.md)) and each target ontology are **sibling projections** of the same
-source data, selected per store rather than stacked: a store is configured with one projection, and different stores
-can hold different projections of the same wiki. The native projection is the default (used when no ontology mapping
-is configured) and the lossless-export target; ontology mappings define the other targets.
+source data, selected per store rather than stacked: a store is configured with one or more projections, each in its
+own family of named graphs, and different stores can hold different projection sets of the same wiki. The native
+projection is the default (used when no ontology mapping is configured) and the lossless-export target; ontology
+mappings define the other targets.
 
 Mappings are first-class, authorable, installable objects, kept separate from Schemas so the native data model is not
 deformed to fit an ontology. A mapping defines the **correspondence** between NeoWiki's model and an ontology, and is
@@ -47,19 +48,26 @@ what the projections produce.
 
 ## Projections, not layers
 
-A triple store holds **one projection** of the wiki's data, in one target vocabulary, and SPARQL queries against it are
-written in that vocabulary.
+A triple store holds **one or more projections** of the wiki's data, and SPARQL against it is written in the vocabulary
+of whichever projection a query targets. Each projection writes its own family of named graphs
+(`$base/graph/{projection}/page/{id}`, [#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053),
+[discussion #996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996)), so projections in a shared store never
+overwrite one another.
 
 - The **native projection** ([NativeRdfProjection.md](NativeRdfProjection.md)) is the default target. A wiki with no
   ontology mapping configured still gets RDF and SPARQL, in NeoWiki-native terms.
-- An **ontology mapping** defines an alternative target (CIDOC-CRM, EDM, …). Configure a store with that mapping and it
-  holds ontology RDF; SPARQL against it is written in that ontology.
+- An **ontology mapping** defines an alternative target (CIDOC-CRM, EDM, …). A store can hold that projection — on its
+  own or alongside others — and SPARQL against it is written in that ontology.
 - Projections are **pluggable per store**, consistent with [ADR 19](../adr/019-graph-database-architecture.md) (each
-  backend owns its mapping). A wiki may run several stores with different projections — e.g. a CIDOC-CRM store for CH
-  interoperability alongside a native store for completeness.
+  backend owns its mapping). A store is configured with an endpoint and the **list of projections** to load into it (the
+  [#586](https://github.com/ProfessionalWiki/NeoWiki/issues/586) store config); running several stores with different
+  projection sets stays a **deployment choice** — hard isolation, independent scaling — not a requirement.
 
-This has a deliberate consequence: **a store's query vocabulary is its projection.** Querying CIDOC-CRM means writing
-CIDOC-CRM SPARQL. Wanting the same data in two vocabularies means configuring two stores.
+Subject IRIs are identical across projections (only the vocabulary and the graph differ), so queries in a shared store
+join across sibling projections with no `owl:sameAs` machinery. Whether such a query must name the graphs depends on
+the store's default-dataset semantics: QLever always queries the union of all graphs, most other stores offer a
+union-default-graph option, and a spec-strict endpoint needs `FROM`/`GRAPH`. That trait belongs to the per-page
+named-graph design as a whole, not to holding several projections in one store.
 
 Why the native projection stays a first-class target rather than always mapping to an ontology: standard ontologies are
 lossy and opinionated, so mapping into one can drop detail that has no place in that ontology. The triple store is a
@@ -342,8 +350,10 @@ native + one or more ontologies), and is a native projection always available as
 vocabulary is in the store" a per-store configuration rather than a single global choice.
 
 *v1: yes for export — a wiki serves several projections at once, selected per request via the `projection` parameter,
-with `native` always the baseline and each Mapping page adding its target to the known set. Per-store selection (a store
-configured to hold one projection) is the seam #586 consumes via `newRdfProjection(name)`.*
+with `native` always the baseline and each Mapping page adding its target to the known set. Named graphs are qualified
+by projection ([#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)), so a single store can likewise hold
+several projections at once — see [Projections, not layers](#projections-not-layers). The projector/serializer seam
+#586 consumes is `newRdfProjection(name)`.*
 
 **Q10: Flat vs nested native modelling.** The [fork above](#flat-vs-nested-native-modelling-open-fork): should
 case-study data live in flat Schemas with the mapping synthesizing intermediate nodes, or in nested Schemas with the

@@ -88,14 +88,14 @@ class OntologyMappingProjectorTest extends TestCase {
 	private function expectedTriG(): string {
 		return <<<TRIG
 			@prefix neo-subj: <https://wiki.example/entity/> .
-			@prefix neo-page: <https://wiki.example/page/> .
+			@prefix neo-graph: <https://wiki.example/graph/edm/page/> .
 			@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 			@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 			@prefix edm: <http://www.europeana.eu/schemas/edm/> .
 			@prefix dc: <http://purl.org/dc/elements/1.1/> .
 
-			neo-page:42 {
+			neo-graph:42 {
 				neo-subj:s1janeaaaaaaaa2 a edm:ProvidedCHO ;
 					rdfs:label "Jane" ;
 					dc:title "Jane"@en ;
@@ -217,7 +217,7 @@ class OntologyMappingProjectorTest extends TestCase {
 				$this->ns->subject( new SubjectId( self::PERSON_ID ) ),
 				new Iri( self::DC . 'spatial' ),
 				$cityIri,
-				$this->ns->page( new PageId( 42 ) )
+				$this->ns->graph( 'edm', new PageId( 42 ) )
 			) ),
 			'The relation is a direct triple to the target Subject native IRI.'
 		);
@@ -278,7 +278,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 			@prefix dc: <http://purl.org/dc/elements/1.1/> .
 
-			<https://wiki.example/page/42> {
+			<https://wiki.example/graph/edm/page/42> {
 				neo-subj:s1janeaaaaaaaa2 a <http://example.org/CHO> ;
 					rdfs:label "Jane" ;
 					dc:title "Jane" .
@@ -352,7 +352,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 			@prefix dc: <http://purl.org/dc/elements/1.1/> .
 
-			<https://wiki.example/page/42> {
+			<https://wiki.example/graph/edm/page/42> {
 				neo-subj:s1janeaaaaaaaa2 rdfs:label "Jane" ;
 					dc:title "Jane" ;
 					dc:date "1990"^^xsd:integer .
@@ -370,7 +370,7 @@ class OntologyMappingProjectorTest extends TestCase {
 				$this->ns->subject( new SubjectId( self::PERSON_ID ) ),
 				new Iri( self::DC . 'date' ),
 				RdfLiteralFactory::typed( '1990', 'integer' ),
-				$this->ns->page( new PageId( 42 ) )
+				$this->ns->graph( 'edm', new PageId( 42 ) )
 			) ),
 			'A typed literal keeps its datatype; a language tag does not apply to it.'
 		);
@@ -409,7 +409,7 @@ class OntologyMappingProjectorTest extends TestCase {
 				$this->ns->subject( new SubjectId( self::PERSON_ID ) ),
 				new Iri( self::DC . 'spatial' ),
 				$this->ns->subject( new SubjectId( self::CITY_ID ) ),
-				$this->ns->page( new PageId( 42 ) )
+				$this->ns->graph( 'edm', new PageId( 42 ) )
 			) ),
 			'The relation is a plain IRI-to-IRI triple; datatype and language overrides do not apply.'
 		);
@@ -452,7 +452,7 @@ class OntologyMappingProjectorTest extends TestCase {
 				$this->ns->subject( new SubjectId( self::PERSON_ID ) ),
 				$this->ns->rdfType(),
 				new Iri( self::EDM . 'Place' ),
-				$this->ns->page( new PageId( 42 ) )
+				$this->ns->graph( 'edm', new PageId( 42 ) )
 			) ),
 			'The alphabetically first Mapping wins the tie-break.'
 		);

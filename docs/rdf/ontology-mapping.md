@@ -115,8 +115,9 @@ Deliberate v1 boundaries:
   as the target of a relation from a mapped Subject — untyped — exactly as a missing Schema behaves in
   the native projection.
 - **No page-metadata triples** are emitted (no page node, `neo:hasSubject`, etc.).
-- Quads are placed in the **per-page named graph**, like the native projection, so the same per-page
-  sync infrastructure works for an ontology store.
+- Quads are placed in the **per-page named graph for this target** (`$base/graph/{target}/page/{id}`), like the
+  native projection, so the same per-page sync infrastructure works for an ontology store — and because the graph
+  is qualified by the target, sibling projections of a page can share one store.
 
 ## Selecting a projection
 
