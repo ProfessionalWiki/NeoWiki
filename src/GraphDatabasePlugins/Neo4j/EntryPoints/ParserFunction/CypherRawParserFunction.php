@@ -63,7 +63,8 @@ class CypherRawParserFunction {
 	 * Hands the HTML to the parser as HTML rather than wikitext. Without this the text is parsed as
 	 * wikitext, which autolinks any URL a returned value happens to hold: the trailing quote of the
 	 * URL is swallowed into the link and percent-encoded, leaving invalid JSON with anchors in it.
-	 * Error detail needs the same treatment, as the store's message can itself carry a URL.
+	 * Error detail needs the same treatment, as the store's message echoes the offending query,
+	 * which can itself contain a URL.
 	 *
 	 * @return array{0: string, noparse: true, isHTML: true}
 	 */

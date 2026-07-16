@@ -188,4 +188,38 @@ class CypherRawParserFunctionTest extends TestCase {
 		$this->assertStringContainsString( '&lt;script&gt;', $this->html( $result ) );
 	}
 
+	public function testResultIsArmouredAgainstWikitextTransformation(): void {
+		$parserFunction = $this->createParserFunction(
+			$this->createQueryEngineWithData( [ [ 'site' => 'https://example.com' ] ] )
+		);
+
+		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n) RETURN n.site AS site' );
+
+		$this->assertIsArray( $result, 'Expected an isHTML array so the parser leaves the JSON alone.' );
+		$this->assertTrue( $result['isHTML'] );
+		$this->assertTrue( $result['noparse'] );
+	}
+
+	public function testErrorIsArmouredAgainstWikitextTransformation(): void {
+		$neo4jException = new Neo4jException( [
+			Neo4jError::fromMessageAndCode(
+				'Neo.ClientError.Statement.SyntaxError',
+				"Invalid input near 'https://example.com'"
+			),
+		] );
+
+		$parserFunction = $this->createParserFunction(
+			$this->createQueryEngineWithException( $neo4jException )
+		);
+
+		$result = $parserFunction->handle(
+			$this->createParser(),
+			"MATCH (n) WHERE n.site = 'https://example.com' RETURN n"
+		);
+
+		$this->assertIsArray( $result, 'Error detail echoes the query, which can carry a URL, so it needs the same armour.' );
+		$this->assertTrue( $result['isHTML'] );
+		$this->assertTrue( $result['noparse'] );
+	}
+
 }
