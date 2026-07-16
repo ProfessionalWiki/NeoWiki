@@ -204,7 +204,7 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 		$authorizer->authorizeRead( new PageId( self::PAGE_ID ) );
 
 		$this->assertSame(
-			[ [ 'info', 'NeoWiki: denied read of page {page} to {user}',
+			[ [ 'info', 'Denied read of page {page} to {user}',
 				[ 'page' => 'Protected_page', 'user' => 'Petr' ] ] ],
 			$logger->getBuffer()
 		);

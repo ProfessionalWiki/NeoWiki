@@ -48,7 +48,7 @@ class CachingSchemaLookup implements SchemaLookup {
 		// must also run before the cache: the cached value is user-independent schema content,
 		// and a cache hit must not serve a Schema whose page the user may not read (#1046).
 		if ( !$this->authority->authorizeRead( 'read', $title ) ) {
-			$this->logger->info( 'NeoWiki: denied read of page {page} to {user}', [
+			$this->logger->info( 'Denied read of page {page} to {user}', [
 				'page' => $title->getPrefixedDBkey(),
 				'user' => $this->authority->getUser()->getName(),
 			] );

@@ -66,7 +66,7 @@ class WikiPageLayoutLookupTest extends MediaWikiIntegrationTestCase {
 
 		// Mirrors AuthorityBasedSubjectAuthorizerTest::testDeniedReadIsLogged.
 		$this->assertSame(
-			[ [ 'info', 'NeoWiki: denied read of page {page} to {user}',
+			[ [ 'info', 'Denied read of page {page} to {user}',
 				[ 'page' => 'Layout:Person_card', 'user' => 'Petr' ] ] ],
 			$logger->getBuffer()
 		);

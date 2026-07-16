@@ -69,7 +69,7 @@ class AuthorityBasedSubjectAuthorizer implements SubjectPermissionHints, Subject
 		// authorizeRead runs the full per-title check (RIGOR_FULL), including the expensive
 		// permission hook that extension ACLs use and that the quick checks skip.
 		if ( !$this->authority->authorizeRead( 'read', $title ) ) {
-			$this->logger->info( 'NeoWiki: denied read of page {page} to {user}', [
+			$this->logger->info( 'Denied read of page {page} to {user}', [
 				'page' => $title->getPrefixedDBkey(),
 				'user' => $this->authority->getUser()->getName(),
 			] );

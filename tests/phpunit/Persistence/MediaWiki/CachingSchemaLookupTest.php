@@ -108,7 +108,7 @@ class CachingSchemaLookupTest extends TestCase {
 
 		// Mirrors AuthorityBasedSubjectAuthorizerTest::testDeniedReadIsLogged.
 		$this->assertSame(
-			[ [ 'info', 'NeoWiki: denied read of page {page} to {user}',
+			[ [ 'info', 'Denied read of page {page} to {user}',
 				[ 'page' => 'Schema:CachingGateSchema', 'user' => 'Petr' ] ] ],
 			$logger->getBuffer()
 		);

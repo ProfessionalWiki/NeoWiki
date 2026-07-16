@@ -37,7 +37,7 @@ class WikiPageLayoutLookup implements LayoutLookup {
 		// is the sole per-title read gate on the Layout read path. Denial is null, the same
 		// as an absent Layout (#1046).
 		if ( !$this->authority->authorizeRead( 'read', $title ) ) {
-			$this->logger->info( 'NeoWiki: denied read of page {page} to {user}', [
+			$this->logger->info( 'Denied read of page {page} to {user}', [
 				'page' => $title->getPrefixedDBkey(),
 				'user' => $this->authority->getUser()->getName(),
 			] );

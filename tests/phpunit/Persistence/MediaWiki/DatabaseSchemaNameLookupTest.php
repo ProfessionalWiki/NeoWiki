@@ -141,4 +141,27 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testGateUsesBindingAuthorizeRead(): void {
+		// probablyCan is a UI-hint check that skips the expensive ACL hook; the filter must
+		// use the binding authorizeRead with the 'read' action. Reverting fails this test.
+		$this->createSchema( 'GatePinSchema' );
+
+		$authority = $this->createMock( Authority::class );
+		$authority->method( 'probablyCan' )->willReturn( true );
+		$authority->method( 'authorizeRead' )->willReturnCallback(
+			function ( string $action ): bool {
+				$this->assertSame( 'read', $action );
+				return false;
+			}
+		);
+
+		$names = array_map(
+			static fn ( TitleValue $title ): string => $title->getText(),
+			$this->getLookup( $authority )->getSchemaNamesMatching( '', 50 )
+		);
+
+		$this->assertNotContains( 'GatePinSchema', $names );
+		$this->assertSame( [], $names );
+	}
+
 }

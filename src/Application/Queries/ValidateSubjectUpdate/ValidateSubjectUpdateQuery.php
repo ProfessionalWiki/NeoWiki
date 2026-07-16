@@ -12,7 +12,6 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundExcept
 use ProfessionalWiki\NeoWiki\Application\SubjectReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -40,15 +39,22 @@ readonly class ValidateSubjectUpdateQuery {
 	 */
 	public function validate( string $subjectId, string $label, array $statements ): array {
 		$id = new SubjectId( $subjectId );
-		$subject = $this->subjectRepository->getSubject( $id );
+		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $id );
 
-		if ( $subject === null ) {
+		if ( $pageIdentifiers === null ) {
+			// No owning page in the graph means the repository cannot load the Subject either.
 			throw SubjectNotFoundException::forId( $id );
 		}
 
-		if ( !$this->pageIsReadable( $this->pageIdentifiersLookup->getPageIdOfSubject( $id ) ) ) {
+		if ( !$this->readAuthorizer->authorizeRead( $pageIdentifiers->getId() ) ) {
 			// Denial is shaped exactly like absence: this endpoint previously oracled Subject
 			// existence via its 404, so denied and absent must stay indistinguishable (#1046).
+			throw SubjectNotFoundException::forId( $id );
+		}
+
+		$subject = $this->subjectRepository->getSubject( $id );
+
+		if ( $subject === null ) {
 			throw SubjectNotFoundException::forId( $id );
 		}
 
@@ -71,16 +77,6 @@ readonly class ValidateSubjectUpdateQuery {
 			),
 			$schema,
 		);
-	}
-
-	/**
-	 * MediaWikiSubjectRepository::getSubject() resolves the page through the same
-	 * PageIdentifiersLookup before returning non-null, so null cannot occur here once the
-	 * absence check above has passed. Treat null as readable for uniformity with the sibling
-	 * gates (GetSubjectQuery, GetPageSubjectsQuery), which do encounter it.
-	 */
-	private function pageIsReadable( ?PageIdentifiers $pageIdentifiers ): bool {
-		return $pageIdentifiers === null || $this->readAuthorizer->authorizeRead( $pageIdentifiers->getId() );
 	}
 
 }
