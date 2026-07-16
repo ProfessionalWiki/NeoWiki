@@ -126,12 +126,14 @@ readonly class GetPageSubjectsQuery {
 	/**
 	 * A Subject whose page does not resolve in the graph cannot be reached through the
 	 * graph-backed repository at all (the repository returns null before this runs), so the
-	 * null case is unreachable here; treating it as readable keeps the helper uniform with
-	 * the sibling query gates. Denying on null would risk hiding Subjects from readable old
-	 * revisions if a revision-backed lookup is ever wired in.
+	 * null case is unreachable today. It fails closed regardless: if a SubjectLookup that
+	 * bypasses the graph is ever wired into this query, unresolvable pages are omitted (this
+	 * endpoint's normal absence shape) instead of served ungated. GetSubjectQuery's helper
+	 * deliberately differs — its revision branch reaches null for Subjects from a revision
+	 * the handler already authorized, which must stay readable.
 	 */
 	private function pageIsReadable( ?PageIdentifiers $pageIdentifiers ): bool {
-		return $pageIdentifiers === null || $this->readAuthorizer->authorizeRead( $pageIdentifiers->getId() );
+		return $pageIdentifiers !== null && $this->readAuthorizer->authorizeRead( $pageIdentifiers->getId() );
 	}
 
 	/**
