@@ -115,12 +115,9 @@ Deliberate v1 boundaries:
   as the target of a relation from a mapped Subject — untyped — exactly as a missing Schema behaves in
   the native projection.
 - **No page-metadata triples** are emitted (no page node, `neo:hasSubject`, etc.).
-- Quads are placed in the **per-page named graph for this target** (`$base/graph/{target}/page/{id}`,
-  [#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)), like the native projection, so the same per-page
-  sync infrastructure works for an ontology store. Because the graph is qualified by projection, the native and the
-  ontology projection of a page land in **different** named graphs and can share one triple store without one's
-  per-page replace sync wiping the other's triples. The Subject IRIs inside stay native and identical across
-  projections, which is what makes co-querying work.
+- Quads are placed in the **per-page named graph for this target** (`$base/graph/{target}/page/{id}`), like the
+  native projection, so the same per-page sync infrastructure works for an ontology store — and because the graph
+  is qualified by the target, sibling projections of a page can share one store.
 
 ## Selecting a projection
 

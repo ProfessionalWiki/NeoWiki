@@ -8,12 +8,11 @@ Discussion: [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
 
 > **As-built (2026-07).** The native projection specified here has shipped, together with the shared
 > IRI/namespace regime — wiki-level, so subject IRIs are identical across stores — reused by every
-> sibling projection, and the per-page named graphs it defines. The named-graph IRIs are **qualified by
-> projection** (`$base/graph/{projection}/page/{id}`, [#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053),
-> [discussion #996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996)) so several projections of the same
-> page can share one store; the page *resource* IRI (`neo-page:`) is unchanged. The sections below reflect this. See
-> the [RDF Export reference](../rdf/rdf-export.md). Ontology (sibling) projections build on this shared infrastructure —
-> see [OntologyMapping.md](OntologyMapping.md) and the worked [Person → EDM example](../examples/person-to-edm.md).
+> sibling projection, and the per-page named graphs it defines, qualified by projection
+> ([#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)) so sibling projections can share one store. See
+> the [RDF Export reference](../rdf/rdf-export.md). Ontology (sibling) projections build on this shared
+> infrastructure — see [OntologyMapping.md](OntologyMapping.md) and the worked
+> [Person → EDM example](../examples/person-to-edm.md).
 
 ## Purpose
 
@@ -140,8 +139,7 @@ round-tripping. Queries that need Relation properties join through the Relation 
 ### Pages
 
 Page metadata is emitted as triples about the page resource (`neo-page:`). The page's named graph is a separate,
-projection-qualified IRI (`neo-graph:`, see [Named Graphs](#named-graphs) below); the page resource IRI itself stays
-projection-independent and is the subject of these metadata triples.
+projection-qualified IRI — see [Named Graphs](#named-graphs) below.
 
 ```turtle
 neo-page:12345  a                 neo:Page ;
@@ -158,12 +156,10 @@ neo-page:12345  a                 neo:Page ;
 
 ### Named Graphs
 
-All triples from a single wiki page, under a single projection, are placed in a named graph whose IRI is **qualified by
-projection** ([#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)): `$base/graph/{projection}/page/{pageId}`
-— for the native projection `$base/graph/native/page/12345`, abbreviated `neo-graph:12345` below. The page *resource* IRI
-`neo-page:12345` is unchanged and remains the subject of the page-metadata triples. Qualifying the graph lets the native
-projection and an ontology (sibling) projection of the same page coexist in one store, each in its own graph family,
-without one's per-page replace overwriting the other. This enables:
+All triples a projection emits for a single wiki page are placed in a named graph qualified by projection:
+`$base/graph/{projection}/page/{pageId}` — for the native projection `$base/graph/native/page/12345`, abbreviated
+`neo-graph:12345` below. Sibling projections of a page thus write disjoint graphs and can share one triple store.
+This enables:
 
 - **Efficient sync:** On page save, `DROP GRAPH <neo-graph:12345>` then `INSERT DATA { GRAPH <neo-graph:12345> { ... } }`
   replaces all triples for that page's projection atomically.
@@ -179,7 +175,7 @@ where Jane is the CEO of ACME:
 
 ```trig
 GRAPH neo-graph:42 {
-    # Page metadata (neo-graph:42 is the native graph $base/graph/native/page/42; neo-page:42 the page resource)
+    # Page metadata
     neo-page:42  a                 neo:Page ;
                  neo:pageName      "ACME Corp" ;
                  dcterms:created   "2024-03-01T09:00:00Z"^^xsd:dateTime ;
@@ -215,10 +211,7 @@ GRAPH neo-graph:42 {
 On each page save, the SPARQL plugin:
 
 1. Maps the `Page` domain object to RDF triples (using the projection above).
-2. Issues a SPARQL Update to the configured endpoint, targeting that store's projection-qualified graph
-   ([#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)) — `neo-graph:42` is the native graph
-   `$base/graph/native/page/42`; an ontology store instead targets `$base/graph/edm/page/42`, so the two never
-   overwrite each other:
+2. Issues a SPARQL Update to the configured endpoint, targeting the projection's graph for that page:
    ```sparql
    DROP SILENT GRAPH <neo-graph:42> ;
    INSERT DATA {

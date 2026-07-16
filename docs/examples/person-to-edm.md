@@ -196,10 +196,8 @@ Málaga is a typed `edm:Place`:
 <.../graph/edm/page/116> { neo-subj:s2birthcity2aa2 a edm:Place; rdfs:label "Málaga" }
 ```
 
-The named graph is qualified by projection (`.../graph/edm/page/{id}`,
-[#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)); the native projection of these pages lands in the
-sibling `.../graph/native/page/{id}` graphs, so both can share one triple store. The Subject *resource* IRIs
-(`neo-subj:…`) are identical across projections — that is what lets an EDM query and a native query join.
+The native projection of the same pages lands in sibling `.../graph/native/page/{id}` graphs, so both projections can
+share one triple store.
 
 (The dump also projects the other demo `Person`/`City` Subjects — Bach persons as `edm:Agent`, the
 other cities as `edm:Place` — since the Mapping applies to every Subject of its Schema.)
