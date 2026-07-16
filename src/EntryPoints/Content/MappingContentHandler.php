@@ -7,9 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
 use InvalidArgumentException;
 use MediaWiki\Content\Content;
 use MediaWiki\Content\JsonContentHandler;
-use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Content\ValidationParams;
-use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\Mappings;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
@@ -82,14 +80,6 @@ class MappingContentHandler extends JsonContentHandler {
 				$conflict->name->getText()
 			);
 		}
-	}
-
-	protected function fillParserOutput(
-		Content $content,
-		ContentParseParams $cpoParams,
-		ParserOutput &$parserOutput
-	): void {
-		$parserOutput->setRawText( '' );
 	}
 
 	public function makeEmptyContent(): MappingContent {
