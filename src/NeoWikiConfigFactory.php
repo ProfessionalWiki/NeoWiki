@@ -73,8 +73,14 @@ class NeoWikiConfigFactory {
 		$accessToken = $entry['accessToken'] ?? null;
 		$projection = $entry['projection'] ?? null;
 
+		// The read surfaces query `queryUrl`; it defaults to `updateUrl` because for QLever the query and
+		// update endpoints are the same value. A store that separates them (e.g. a read replica or a
+		// read-protected endpoint) sets `queryUrl` explicitly.
+		$queryUrl = $entry['queryUrl'] ?? null;
+
 		return new SparqlStoreConfig(
 			updateUrl: $updateUrl,
+			queryUrl: is_string( $queryUrl ) && trim( $queryUrl ) !== '' ? $queryUrl : $updateUrl,
 			accessToken: is_string( $accessToken ) && $accessToken !== '' ? $accessToken : null,
 			projection: is_string( $projection ) && $projection !== '' ? $projection : NeoWikiExtension::PROJECTION_NATIVE,
 		);

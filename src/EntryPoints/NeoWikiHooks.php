@@ -144,6 +144,7 @@ class NeoWikiHooks {
 
 	public static function onParserFirstCallInit( Parser $parser ): void {
 		NeoWikiExtension::getInstance()->getNeo4jPlugin()?->registerParserFunctions( $parser );
+		NeoWikiExtension::getInstance()->getFirstSparqlPlugin()?->registerParserFunctions( $parser );
 
 		$parser->setFunctionHook(
 			'view',

@@ -143,6 +143,13 @@
 	"neowiki-cypher-error-backend-unavailable": "The graph database is currently unavailable.",
 	"neowiki-cypher-error-internal": "The Cypher query could not be completed: $1",
 
+	"neowiki-sparql-raw-error-json-encode": "Failed to encode query result as JSON",
+
+	"neowiki-sparql-error-empty-query": "The SPARQL query must not be empty.",
+	"neowiki-sparql-error-syntax": "The SPARQL query was rejected by the store: $1",
+	"neowiki-sparql-error-store-unavailable": "The SPARQL store is currently unavailable.",
+	"neowiki-sparql-error-internal": "The SPARQL query could not be completed: $1",
+
 	"neowiki-view-error-extra-positional": "Unexpected extra positional argument: $1",
 	"neowiki-view-error-conflicting-subject": "Subject specified both positionally and as a named subject argument.",
 	"neowiki-view-error-unknown-arg": "Unknown argument: $1",
