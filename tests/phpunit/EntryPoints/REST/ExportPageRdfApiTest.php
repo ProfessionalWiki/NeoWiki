@@ -4,9 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Page\PageIdentity;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -22,6 +25,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  */
 class ExportPageRdfApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
+	use MockAuthorityTrait;
 
 	private const string SCHEMA = 'ExportPageRdfApiTestSchema';
 	private const string SUBJECT_ID = 'sTestERA1111111';
@@ -60,7 +64,7 @@ JSON
 	 * @param array<string, string> $query
 	 * @param array<string, string> $headers
 	 */
-	private function export( array $query = [], array $headers = [], ?int $pageId = null ): Response {
+	private function export( array $query = [], array $headers = [], ?int $pageId = null, ?Authority $authority = null ): Response {
 		return $this->executeHandler(
 			new ExportPageRdfApi(),
 			new RequestData( [
@@ -68,7 +72,8 @@ JSON
 				'pathParams' => [ 'pageId' => (string)( $pageId ?? $this->pageId ) ],
 				'queryParams' => $query,
 				'headers' => $headers,
-			] )
+			] ),
+			authority: $authority
 		);
 	}
 
@@ -126,6 +131,64 @@ JSON
 		$response = $this->export( pageId: $plainPage['id'] );
 
 		$this->assertSame( 404, $response->getStatusCode() );
+	}
+
+	public function testAbsentAndDeniedPagesProduceByteIdenticalResponses(): void {
+		$plainPage = $this->insertPage( 'ExportPageRdfApiTest_PlainForByteIdentity', 'Just wikitext, no NeoWiki subjects.' );
+
+		$absentResponse = $this->export( pageId: $plainPage['id'] );
+		$deniedResponse = $this->export(
+			pageId: $plainPage['id'],
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		);
+
+		$this->assertSame( $absentResponse->getStatusCode(), $deniedResponse->getStatusCode() );
+		$this->assertSame(
+			$absentResponse->getBody()->getContents(),
+			$deniedResponse->getBody()->getContents()
+		);
+		$this->assertSame(
+			$absentResponse->getHeaderLine( 'Content-Type' ),
+			$deniedResponse->getHeaderLine( 'Content-Type' )
+		);
+	}
+
+	public function testUnreadablePageIsIndistinguishableFromAPageWithoutData(): void {
+		$response = $this->export( authority: $this->authorityWithGlobalReadButNoPageRead() );
+
+		$this->assertSame( 404, $response->getStatusCode() );
+		$this->assertStringContainsString(
+			'No NeoWiki data found for page: ' . $this->pageId,
+			$response->getBody()->getContents()
+		);
+	}
+
+	public function testPageReadableByANonUltimateAuthorityIsExported(): void {
+		$response = $this->export(
+			authority: $this->mockRegisteredAuthority(
+				static fn ( string $permission ): bool => $permission === 'read'
+			)
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
+	}
+
+	public function testUnknownProjectionStillReturns400ForAnUnreadablePage(): void {
+		// The projection check runs before the read gate, so a denied caller sees the same
+		// 400 as anyone else and cannot use it to probe page readability.
+		$response = $this->export(
+			query: [ 'projection' => 'no-such-projection' ],
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	private function authorityWithGlobalReadButNoPageRead(): Authority {
+		$canReadGloballyButNotPerPage = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
+			$permission === 'read' && $page === null;
+
+		return $this->mockRegisteredAuthority( $canReadGloballyButNotPerPage );
 	}
 
 	public function testProjectionNativeIsTheDefaultAndUnchanged(): void {

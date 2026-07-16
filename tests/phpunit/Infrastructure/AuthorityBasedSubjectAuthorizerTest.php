@@ -175,6 +175,24 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $authorizer->authorizeRead( new PageId( self::PAGE_ID ) ) );
 	}
 
+	public function testAuthorizeReadChecksTheReadAction(): void {
+		// An authority that permits only the 'read' action: a gate asking for any other
+		// action (e.g. 'edit') is denied, pinning the permission string end-to-end.
+		$title = Title::makeTitle( NS_MAIN, 'Target page' );
+		$titleFactory = $this->createStub( TitleFactory::class );
+		$titleFactory->method( 'newFromID' )->willReturn( $title );
+
+		$authority = $this->createMock( Authority::class );
+		$authority->method( 'authorizeRead' )->willReturnCallback(
+			static fn ( string $action ): bool => $action === 'read'
+		);
+		$authority->method( 'getUser' )->willReturn( new UserIdentityValue( 9999, 'Petr' ) );
+
+		$authorizer = new AuthorityBasedSubjectAuthorizer( $authority, $titleFactory, new NullLogger() );
+
+		$this->assertTrue( $authorizer->authorizeRead( new PageId( self::PAGE_ID ) ) );
+	}
+
 	public function testDeniedReadIsLogged(): void {
 		$logger = new TestLogger( true, null, true );
 		$authorizer = new AuthorityBasedSubjectAuthorizer(
