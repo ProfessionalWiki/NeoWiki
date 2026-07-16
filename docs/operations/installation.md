@@ -205,6 +205,10 @@ A store entry whose `updateUrl` is missing or empty is skipped with a warning ra
 This is a write path only: it projects NeoWiki data into the store. Querying a SPARQL store from wiki pages is a
 later addition.
 
+The bundled development stack ships a working QLever example wired up this way — see
+[`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`
+requirement, and how to query it.
+
 ## Production hardening
 
 NeoWiki is pre-release, so this is not needed for an evaluation. It applies later, when NeoWiki is production-ready.
