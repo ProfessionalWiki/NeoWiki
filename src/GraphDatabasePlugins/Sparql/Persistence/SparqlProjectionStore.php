@@ -19,8 +19,11 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlUpdat
 
 /**
  * Keeps a SPARQL 1.1 graph store in sync with wiki page changes, one instance per configured store
- * (NativeRdfProjection.md § Sync Mechanism). Each page is a named graph identified by the page IRI: a
- * save replaces that graph atomically (DROP + INSERT DATA), a delete drops it.
+ * (NativeRdfProjection.md § Sync Mechanism). Each page is a named graph identified by this store's
+ * projection and the page (`{$base}/graph/{projection}/page/{id}`, #1053): a save replaces that graph
+ * atomically (DROP + INSERT DATA), a delete drops it. Qualifying the graph by projection is what lets
+ * two stores with different projections point at one endpoint without each save wiping the other's
+ * triples for that page.
  *
  * The configured projection is resolved lazily on each save through the {@see ProjectionResolver}
  * seam — never at construction — so the store always uses the current Mapping definitions and its
@@ -44,7 +47,7 @@ readonly class SparqlProjectionStore implements GraphDatabasePlugin {
 
 	public function savePage( Page $page ): void {
 		$projector = $this->resolveProjector();
-		$graph = $this->namespaces->page( $page->getId() );
+		$graph = $this->namespaces->graph( $this->projectionName, $page->getId() );
 
 		$this->endpoint->postUpdate(
 			$this->buildSaveUpdate( $graph, $projector->projectPage( $page ) )
@@ -82,15 +85,19 @@ readonly class SparqlProjectionStore implements GraphDatabasePlugin {
 	}
 
 	public function deletePage( PageId $pageId ): void {
-		// No projection resolution here on purpose: a delete only needs the graph IRI, so it keeps
-		// working even when this store's Mapping is broken or missing.
-		$this->endpoint->postUpdate( $this->dropGraph( $this->namespaces->page( $pageId ) ) );
+		// No projection resolution here on purpose: a delete only needs the graph IRI, which this store
+		// can name from its own projection, so it keeps working even when the Mapping is broken or
+		// missing.
+		$this->endpoint->postUpdate(
+			$this->dropGraph( $this->namespaces->graph( $this->projectionName, $pageId ) )
+		);
 	}
 
 	private function dropGraph( Iri $graph ): string {
 		// DROP SILENT so the first save of a new page does not error on a not-yet-existing graph. The
-		// graph IRI is minted from trusted config (the base URI) and an integer page id, so it needs no
-		// escaping to sit inside <...>.
+		// graph IRI is built from trusted config (the base URI), an integer page id, and the projection
+		// name — the one untrusted part, since a Mapping target is author-controlled. RdfNamespaces::graph()
+		// percent-encodes it, `>` included, so it cannot close the <...> early and forge an update clause.
 		return 'DROP SILENT GRAPH <' . $graph->value . '>';
 	}
 

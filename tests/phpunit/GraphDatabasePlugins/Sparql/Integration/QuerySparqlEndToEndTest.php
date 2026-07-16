@@ -10,6 +10,7 @@ use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
@@ -56,7 +57,7 @@ class QuerySparqlEndToEndTest extends NeoWikiIntegrationTestCase {
 		$this->overrideConfigValue( 'NeoWikiSparqlStores', [ [
 			'updateUrl' => $this->storeUrl,
 			'accessToken' => $this->accessToken,
-			'projection' => NeoWikiExtension::PROJECTION_NATIVE,
+			'projection' => RdfPageProjector::PROJECTION,
 		] ] );
 		NeoWikiExtension::resetInstance();
 

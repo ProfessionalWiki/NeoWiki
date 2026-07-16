@@ -45,8 +45,8 @@ class SparqlProjectionStoreTest extends TestCase {
 	public function testSavePersistsDropThenInsertDataForThePageGraph(): void {
 		$this->newStore( $this->resolverReturning( $this->personQuads() ), 'native' )->savePage( $this->page( 42 ) );
 
-		$expected = "DROP SILENT GRAPH <https://wiki.example/page/42> ;\n"
-			. "INSERT DATA { GRAPH <https://wiki.example/page/42> {\n"
+		$expected = "DROP SILENT GRAPH <https://wiki.example/graph/native/page/42> ;\n"
+			. "INSERT DATA { GRAPH <https://wiki.example/graph/native/page/42> {\n"
 			. "<https://wiki.example/entity/s1demo8aaaaaab5> a <https://wiki.example/schema/Person>;\n"
 			. "    <http://www.w3.org/2000/01/rdf-schema#label> \"John Doe\".\n"
 			. "} }";
@@ -57,13 +57,13 @@ class SparqlProjectionStoreTest extends TestCase {
 	public function testSaveOfEmptyProjectionSendsDropOnly(): void {
 		$this->newStore( $this->resolverReturning( new QuadList() ), 'native' )->savePage( $this->page( 42 ) );
 
-		$this->assertSame( 'DROP SILENT GRAPH <https://wiki.example/page/42>', $this->endpoint->lastUpdate() );
+		$this->assertSame( 'DROP SILENT GRAPH <https://wiki.example/graph/native/page/42>', $this->endpoint->lastUpdate() );
 	}
 
 	public function testDeleteSendsDropOnly(): void {
 		$this->newStore( $this->resolverReturning( $this->personQuads() ), 'native' )->deletePage( new PageId( 42 ) );
 
-		$this->assertSame( 'DROP SILENT GRAPH <https://wiki.example/page/42>', $this->endpoint->lastUpdate() );
+		$this->assertSame( 'DROP SILENT GRAPH <https://wiki.example/graph/native/page/42>', $this->endpoint->lastUpdate() );
 	}
 
 	public function testMaliciousLiteralIsEscapedAndStaysInsideOneInsertDataBlock(): void {
@@ -115,7 +115,11 @@ class SparqlProjectionStoreTest extends TestCase {
 	public function testDeleteWorksEvenWhenProjectionIsUnknown(): void {
 		$this->newStore( $this->unknownProjectionResolver( [ 'native' ] ), 'bogus' )->deletePage( new PageId( 42 ) );
 
-		$this->assertSame( 'DROP SILENT GRAPH <https://wiki.example/page/42>', $this->endpoint->lastUpdate() );
+		$this->assertSame(
+			'DROP SILENT GRAPH <https://wiki.example/graph/bogus/page/42>',
+			$this->endpoint->lastUpdate(),
+			'The store names its own graph, so a delete needs no projection resolution.'
+		);
 	}
 
 	private function newStore( ProjectionResolver $resolver, string $projectionName ): SparqlProjectionStore {
