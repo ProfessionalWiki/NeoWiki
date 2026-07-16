@@ -88,12 +88,21 @@ class CypherRawParserFunctionTest extends TestCase {
 		);
 	}
 
+	/**
+	 * The HTML the parser function hands back, from either its result or its error shape.
+	 *
+	 * @param array{0: string, noparse: true, isHTML: true} $result
+	 */
+	private function html( array $result ): string {
+		return $result[0];
+	}
+
 	public function testEmptyQueryShowsLocalizedError(): void {
 		$parserFunction = $this->createParserFunction( $this->createDummyQueryEngine() );
 
 		$result = $parserFunction->handle( $this->createParser(), '' );
 
-		$this->assertStringContainsString( '[neowiki-cypher-error-empty-query]', $result );
+		$this->assertStringContainsString( '[neowiki-cypher-error-empty-query]', $this->html( $result ) );
 	}
 
 	public function testWriteQueryShowsLocalizedError(): void {
@@ -101,7 +110,7 @@ class CypherRawParserFunctionTest extends TestCase {
 
 		$result = $parserFunction->handle( $this->createParser(), "CREATE (n:Person {name: 'Alice'})" );
 
-		$this->assertStringContainsString( '[neowiki-cypher-error-write-query]', $result );
+		$this->assertStringContainsString( '[neowiki-cypher-error-write-query]', $this->html( $result ) );
 	}
 
 	public function testEngineFailureShowsLocalizedBackendError(): void {
@@ -111,7 +120,7 @@ class CypherRawParserFunctionTest extends TestCase {
 
 		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n) RETURN n' );
 
-		$this->assertStringContainsString( '[neowiki-cypher-error-backend-unavailable]', $result );
+		$this->assertStringContainsString( '[neowiki-cypher-error-backend-unavailable]', $this->html( $result ) );
 	}
 
 	public function testSyntaxErrorForwardsNeo4jDetailToLocalizedMessage(): void {
@@ -125,8 +134,8 @@ class CypherRawParserFunctionTest extends TestCase {
 
 		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n) RETURN x' );
 
-		$this->assertStringContainsString( '[neowiki-cypher-error-syntax|', $result );
-		$this->assertStringContainsString( 'Invalid input near RETURN', $result );
+		$this->assertStringContainsString( '[neowiki-cypher-error-syntax|', $this->html( $result ) );
+		$this->assertStringContainsString( 'Invalid input near RETURN', $this->html( $result ) );
 	}
 
 	public function testValidatorFailureShowsLocalizedBackendError(): void {
@@ -140,7 +149,7 @@ class CypherRawParserFunctionTest extends TestCase {
 
 		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n) RETURN n' );
 
-		$this->assertStringContainsString( '[neowiki-cypher-error-backend-unavailable]', $result );
+		$this->assertStringContainsString( '[neowiki-cypher-error-backend-unavailable]', $this->html( $result ) );
 	}
 
 	public function testValidReadQueryReturnsFormattedResult(): void {
@@ -153,9 +162,9 @@ class CypherRawParserFunctionTest extends TestCase {
 
 		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n:Person) RETURN n' );
 
-		$this->assertStringContainsString( '<div class="mw-neowiki-cypher-result"><pre>', $result );
-		$this->assertStringContainsString( 'Alice', $result );
-		$this->assertStringContainsString( 'Bob', $result );
+		$this->assertStringContainsString( '<div class="mw-neowiki-cypher-result"><pre>', $this->html( $result ) );
+		$this->assertStringContainsString( 'Alice', $this->html( $result ) );
+		$this->assertStringContainsString( 'Bob', $this->html( $result ) );
 	}
 
 	public function testTrimWhitespaceFromQuery(): void {
@@ -163,7 +172,7 @@ class CypherRawParserFunctionTest extends TestCase {
 
 		$result = $parserFunction->handle( $this->createParser(), '  MATCH (n) RETURN n  ' );
 
-		$this->assertStringContainsString( '<div class="mw-neowiki-cypher-result"><pre>', $result );
+		$this->assertStringContainsString( '<div class="mw-neowiki-cypher-result"><pre>', $this->html( $result ) );
 	}
 
 	public function testOutputIsHTMLEscaped(): void {
@@ -175,8 +184,8 @@ class CypherRawParserFunctionTest extends TestCase {
 
 		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n) RETURN n' );
 
-		$this->assertStringNotContainsString( '<script>alert', $result );
-		$this->assertStringContainsString( '&lt;script&gt;', $result );
+		$this->assertStringNotContainsString( '<script>alert', $this->html( $result ) );
+		$this->assertStringContainsString( '&lt;script&gt;', $this->html( $result ) );
 	}
 
 }
