@@ -16,9 +16,11 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
 use StatusValue;
 
 /**
- * Guards the hook-facing write path at the wiring level: an edit and a delete must survive a backend
- * that is down, and a failing backend must not starve the backends composed after it. Undeletes run
- * through the same getStoreContentUC() wiring, so they are covered by the same guard.
+ * Guards the hook-facing write path at the wiring level: an edit, a delete and an import must survive a
+ * backend that is down, and a failing backend must not starve the backends composed after it. Undeletes
+ * run through the same getStoreContentUC() wiring, so they are covered by the same guard. Imports get
+ * their own case: they reach that wiring through a second factory method, which could be rewired to the
+ * propagating rebuild handler on its own.
  *
  * The counterpart of RebuildPathPropagatesProjectionFailureTest, which guards the opposite need on
  * the maintenance path. Both are wiring tests on purpose: the decorator has its own unit tests, but
@@ -60,6 +62,19 @@ class HookPathIsolatesProjectionFailureTest extends NeoWikiIntegrationTestCase {
 		$status = $this->deletePageByName( 'Delete during outage' );
 
 		$this->assertStatusGood( $status, 'the deletion should still commit while a backend is unreachable' );
+	}
+
+	public function testImportCommitsWhenABackendIsDown(): void {
+		$this->createPageWithSubjects( 'Import during outage', TestSubject::build() );
+		$xml = $this->exportPageToXml( 'Import during outage' );
+		$this->registerGraphDatabasePlugins( new ThrowingGraphDatabasePlugin() );
+
+		$this->importXml( str_replace( 'Import during outage', 'Imported during outage', $xml ) );
+
+		$this->assertTrue(
+			Title::newFromText( 'Imported during outage' )->exists(),
+			'the import should still commit while a backend is unreachable'
+		);
 	}
 
 	public function testFailingBackendDoesNotStarveTheBackendsAfterIt(): void {

@@ -632,8 +632,20 @@ class NeoWikiExtension {
 	}
 
 	public function newSubjectPageRebuilder(): SubjectPageRebuilder {
+		return $this->newSubjectPageRebuilderWith( $this->newRebuildStoreContentHandler() );
+	}
+
+	/**
+	 * Import path: projects the current revision of a page like the rebuild path, but with the hook
+	 * path's failure isolation, since a projection failure must not abort the user's import.
+	 */
+	public function newImportSubjectPageRebuilder(): SubjectPageRebuilder {
+		return $this->newSubjectPageRebuilderWith( $this->getStoreContentUC() );
+	}
+
+	private function newSubjectPageRebuilderWith( OnRevisionCreatedHandler $handler ): SubjectPageRebuilder {
 		return new SubjectPageRebuilder(
-			$this->newRebuildStoreContentHandler(),
+			$handler,
 			MediaWikiServices::getInstance()->getWikiPageFactory()
 		);
 	}
