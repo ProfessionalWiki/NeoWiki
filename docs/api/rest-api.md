@@ -21,6 +21,26 @@ permissions might be required depending on the wiki configuration.
 You can find all endpoints in [the OpenAPI 3.0 description](#full-specification) exposed via the REST API itself.
 Demo wiki example: [neowiki.dev/w/rest.php/specs/v0/module/-](https://neowiki.dev/w/rest.php/specs/v0/module/-)
 
+## Permissions
+
+Read endpoints enforce the caller's per-page `read` permission (page protection, restricted namespaces, read
+whitelists, and permission extensions), not just the wiki-global `read` right. The one exception is
+`GET /subject-labels`, which does not yet apply a per-page filter and can expose the labels of Subjects on
+restricted pages.
+
+A denied read is deliberately indistinguishable from absent data: `GET /subject/{subjectId}`,
+`GET /schema/{schemaName}`, and `GET /layout/{layoutName}` answer `200` with a null value (`{"subject": null}`
+and so on), `GET /page/{pageId}/subjects` answers `200` with an empty subject map (plus the echoed `pageId`
+and a null `mainSubjectId`), `GET /page/{pageId}/rdf` and `POST /subject/{subjectId}/validate` answer `404`,
+and list endpoints omit the affected entries (their `totalRows` counts are currently unfiltered). For a
+per-page denial there is no `403`: page and revision IDs are sequential, so any distinguishable denial would
+let a caller enumerate which pages are restricted. A caller who lacks the wiki-global `read` right entirely
+still receives MediaWiki's standard `403` before any of this applies. Denials are logged server-side to the
+`NeoWiki` logging channel.
+
+Subject write endpoints enforce per-page `edit` permission and answer `403` on denial; a write denial reveals
+nothing, because the caller already knows the page exists.
+
 ## Endpoints
 
 <!-- REST-ENDPOINTS:START — drift-checked against extension.json by
