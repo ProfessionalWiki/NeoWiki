@@ -72,14 +72,18 @@ JSON
 		);
 	}
 
-	public function testDefaultsToTriGWithThePageNamedGraph(): void {
+	public function testDefaultsToTriGWithTheNativeProjectionsPageNamedGraph(): void {
 		$response = $this->export();
 		$body = $response->getBody()->getContents();
 
 		$this->assertSame( 200, $response->getStatusCode() );
 		$this->assertSame( 'application/trig; charset=utf-8', $response->getHeaderLine( 'Content-Type' ) );
 		$this->assertStringContainsString( 'Berlin', $body );
-		$this->assertNotContains( '', $this->graphsIn( $body ), 'Every TriG quad belongs to the page named graph.' );
+		$this->assertStringEndsWith(
+			'/graph/native/page/' . $this->pageId,
+			$this->soleGraphIn( $body ),
+			'Every TriG quad belongs to the page named graph of the native projection.'
+		);
 	}
 
 	public function testFormatParameterSelectsTurtleWithoutANamedGraph(): void {
@@ -147,6 +151,36 @@ JSON
 	}
 
 	public function testValidTargetProjectsTheMappedVocabularyWithNativeSubjectIris(): void {
+		$this->createBerlinToEdmMapping();
+
+		$response = $this->export( query: [ 'projection' => 'edm', 'format' => 'turtle' ] );
+		$body = $response->getBody()->getContents();
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertStringContainsString( 'europeana.eu/schemas/edm', $body, 'The mapped ontology vocabulary is used.' );
+		$this->assertStringContainsString( self::SUBJECT_ID, $body, 'The Subject IRI stays native.' );
+		$this->assertStringNotContainsString( self::SCHEMA, $body, 'No native schema class is emitted.' );
+	}
+
+	/**
+	 * The export surface is where the projection name selected by the request reaches both the projector
+	 * that mints the graph and the serializer's prefix table (#1053). Asserting the graph IRI here, rather
+	 * than only on the projector, is what catches the two halves drifting apart.
+	 */
+	public function testOntologyProjectionPlacesItsQuadsInTheTargetsOwnPageNamedGraph(): void {
+		$this->createBerlinToEdmMapping();
+
+		$response = $this->export( query: [ 'projection' => 'edm' ] );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertStringEndsWith(
+			'/graph/edm/page/' . $this->pageId,
+			$this->soleGraphIn( $response->getBody()->getContents() ),
+			'The ontology projection writes the target\'s own named graph, not the native one, so a store can hold both.'
+		);
+	}
+
+	private function createBerlinToEdmMapping(): void {
 		$this->createMapping( 'BerlinToEdm', <<<JSON
 			{
 				"version": 1,
@@ -162,18 +196,21 @@ JSON
 				}
 			}
 			JSON );
-
-		$response = $this->export( query: [ 'projection' => 'edm', 'format' => 'turtle' ] );
-		$body = $response->getBody()->getContents();
-
-		$this->assertSame( 200, $response->getStatusCode() );
-		$this->assertStringContainsString( 'europeana.eu/schemas/edm', $body, 'The mapped ontology vocabulary is used.' );
-		$this->assertStringContainsString( self::SUBJECT_ID, $body, 'The Subject IRI stays native.' );
-		$this->assertStringNotContainsString( self::SCHEMA, $body, 'No native schema class is emitted.' );
 	}
 
 	private function schemaName(): string {
 		return self::SCHEMA;
+	}
+
+	/**
+	 * The single named graph every quad in the document belongs to.
+	 */
+	private function soleGraphIn( string $rdf ): string {
+		$graphs = $this->graphsIn( $rdf );
+
+		$this->assertCount( 1, $graphs, 'A projection places every quad in exactly one named graph.' );
+
+		return $graphs[0];
 	}
 
 	/**
