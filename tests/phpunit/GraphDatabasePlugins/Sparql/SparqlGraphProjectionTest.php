@@ -30,6 +30,7 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 	use MockHttpTrait;
 
 	private const string ENDPOINT = 'https://qlever.example/api/neowiki';
+	private const string SECOND_ENDPOINT = 'https://qlever.example/api/mirror';
 
 	/**
 	 * @var array<int, array{url: string, body: string}>
@@ -55,6 +56,21 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'INSERT DATA', $update );
 		$this->assertStringContainsString( '/page/' . $pageId, $update );
 		$this->assertStringContainsString( '/entity/' . TestSubject::ZERO_GUID, $update );
+	}
+
+	public function testEveryConfiguredSparqlStoreReceivesThePageEdit(): void {
+		$this->installMockHttp( $this->capturingHttp() );
+		$this->overrideConfigValue( 'NeoWikiSparqlStores', [
+			[ 'updateUrl' => self::ENDPOINT ],
+			[ 'updateUrl' => self::SECOND_ENDPOINT ],
+		] );
+
+		$pageId = $this->runWithoutGraphBackend(
+			fn (): int => $this->createPageWithSubjects( 'Sparql fan out page', TestSubject::build() )->getPageId()
+		);
+
+		$this->assertReceivedInsertForPage( self::ENDPOINT, $pageId );
+		$this->assertReceivedInsertForPage( self::SECOND_ENDPOINT, $pageId );
 	}
 
 	public function testDeletingPageSendsDropToSparqlStore(): void {
@@ -105,6 +121,12 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->assertNotEmpty( $bodies, 'expected a SPARQL update to be posted to ' . $url );
 
 		return (string)end( $bodies );
+	}
+
+	private function assertReceivedInsertForPage( string $endpoint, int $pageId ): void {
+		$update = $this->lastUpdateFor( $endpoint );
+		$this->assertStringContainsString( 'INSERT DATA', $update );
+		$this->assertStringContainsString( '/page/' . $pageId, $update );
 	}
 
 	private function deletePageByName( string $pageName ): void {
