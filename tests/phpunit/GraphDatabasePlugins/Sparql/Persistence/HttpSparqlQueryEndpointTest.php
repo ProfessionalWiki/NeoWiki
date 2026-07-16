@@ -78,6 +78,17 @@ class HttpSparqlQueryEndpointTest extends TestCase {
 		}
 	}
 
+	public function testRedirectResponseIsTreatedAsFailureNotSuccess(): void {
+		$factory = $this->httpRequestFactoryReturning( $this->fakeRequest( 302, 'Found' ) );
+
+		try {
+			( new HttpSparqlQueryEndpoint( $factory, self::URL, null ) )->runQuery( 'SELECT * WHERE { ?s ?p ?o }', 30 );
+			$this->fail( 'Expected SparqlQueryFailedException' );
+		} catch ( SparqlQueryFailedException $exception ) {
+			$this->assertSame( 302, $exception->httpStatus );
+		}
+	}
+
 	private function httpRequestFactoryReturning( MWHttpRequest $request ): HttpRequestFactory {
 		$factory = $this->createMock( HttpRequestFactory::class );
 		$factory->method( 'create' )->willReturnCallback(
