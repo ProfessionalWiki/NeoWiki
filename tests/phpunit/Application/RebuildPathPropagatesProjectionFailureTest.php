@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
 use MediaWiki\Title\Title;
-use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -42,23 +41,13 @@ class RebuildPathPropagatesProjectionFailureTest extends NeoWikiIntegrationTestC
 	public function testRebuildPropagatesBackendFailureSoTheScriptCanReportIt(): void {
 		$this->createPageWithSubjects( 'Rebuild failure page', TestSubject::build() );
 
-		$this->registerThrowingGraphDatabasePlugin();
+		$this->registerGraphDatabasePlugins( new ThrowingGraphDatabasePlugin() );
 		$rebuilder = NeoWikiExtension::getInstance()->newSubjectPageRebuilder();
 
 		$this->expectException( RuntimeException::class );
 		$this->expectExceptionMessage( ThrowingGraphDatabasePlugin::FAILURE_MESSAGE );
 
 		$rebuilder->rebuild( Title::newFromText( 'Rebuild failure page' ) );
-	}
-
-	private function registerThrowingGraphDatabasePlugin(): void {
-		$this->setTemporaryHook(
-			'NeoWikiRegistration',
-			static function ( NeoWikiRegistrar $registrar ): void {
-				$registrar->addGraphDatabasePlugin( new ThrowingGraphDatabasePlugin() );
-			}
-		);
-		NeoWikiExtension::resetInstance();
 	}
 
 }

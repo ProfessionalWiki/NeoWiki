@@ -20,8 +20,10 @@ Data ecosystems. At the same time, the existing Neo4j/Cypher stack remains valua
 
 NeoWiki supports multiple graph database backends simultaneously. Each backend is a plugin that:
 
-1. **Receives domain events** (Subject created, updated, deleted; page deleted, moved) and maintains its own
-   projection of the data.
+1. **Receives domain events** (page saved, page deleted) and maintains its own projection of the data. A page
+   save carries the page's subjects, so subject creations, updates and deletions arrive as a save of their page.
+   There is no separate move event: MediaWiki records a move as a null revision, so a move arrives as a save, and
+   the page ID is stable across it.
 2. **Executes user queries** in its native query language and returns tabular results.
 3. **Validates user queries** if needed to ensure they are read-only, using backend-appropriate validation
    (extending [ADR 13](013-restrict-neo4j-access.md)'s approach).
@@ -36,14 +38,14 @@ limited to deployment configuration and optional bulk-load optimizations.
 
 ### Each plugin owns its data model mapping
 
-The Neo4j plugin maps NeoWiki data to a property graph (as documented in [Graph Model](../reference/graph-model.md)).
+The Neo4j plugin maps NeoWiki data to a property graph (as documented in [Graph Model](../api/graph-model.md)).
 The SPARQL plugin maps the same data to RDF triples. These mappings are deliberately separate: attempting to
 force one abstraction over both property graphs and RDF would be artificial and constraining. The shared
 contract is at the domain event level, not the graph model level.
 
 ### User-facing query language is per-backend
 
-Users write queries in whatever language their wiki's configured backends support. `{{#cypher:...}}` for Neo4j,
+Users write queries in whatever language their wiki's configured backends support. `{{#cypher_raw:...}}` for Neo4j,
 `{{#sparql:...}}` for a triple store. NeoWiki does not provide a query abstraction language. This keeps things
 simple, avoids reinventing SMW's `#ask`, and lets users leverage the full power of each query language.
 
@@ -69,7 +71,7 @@ This is not a near-term priority. The goal is to avoid architectural decisions t
   is used. It warrants its own design document.
 * The RDF mapping also enables RDF export (bulk dumps) at near-zero marginal cost, since the same mapping can
   serialize to a file instead of sending SPARQL Update requests.
-* User-facing query parser functions (`#cypher`, `#sparql`) go through the MediaWiki backend, which validates
+* User-facing query parser functions (`#cypher_raw`, `#sparql`) go through the MediaWiki backend, which validates
   queries and proxies them to the appropriate backend.
 * SPARQL endpoints can optionally be exposed directly to external consumers, which is standard practice in the
   LOD world (public SPARQL endpoints). Whether this is safe depends on the store: QLever supports access tokens

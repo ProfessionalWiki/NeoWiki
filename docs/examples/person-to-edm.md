@@ -4,7 +4,7 @@ order: 1
 ---
 # Worked example: projecting a Person to EDM
 
-This is an end-to-end walkthrough of the [Ontology Mapping](../reference/ontology-mapping.md) v1
+This is an end-to-end walkthrough of the [Ontology Mapping](../rdf/ontology-mapping.md) v1
 projection: a NeoWiki-native `Person` Schema, an EDM Mapping, and a demo page, projected into
 [Europeana Data Model](https://pro.europeana.eu/page/edm-documentation) (EDM) RDF and compared with the
 native projection.
@@ -107,7 +107,7 @@ toy-model value, its `Birth place` relation pointing at [`Málaga`](../../DemoDa
 
 ## 4. Running the projection
 
-Per page, via the [RDF export endpoint](../reference/rdf-export.md#endpoint) (the `projection` query
+Per page, via the [RDF export endpoint](../rdf/rdf-export.md#endpoint) (the `projection` query
 parameter selects the vocabulary):
 
 ```sh

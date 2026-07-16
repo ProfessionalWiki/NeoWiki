@@ -1,3 +1,7 @@
+---
+title: Validation Codes
+order: 4
+---
 # Validation Codes
 
 Constraint violations returned by NeoWiki's backend validation API use stable `code` strings.

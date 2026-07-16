@@ -20,7 +20,7 @@ the same ontology term (e.g., `foaf:name`) must be mapped separately for every S
 
 **Enforced consistency.** Same-named properties cannot accidentally have different types across Schemas.
 
-**Cross-schema query semantics.** A property name on a Subject node in the [graph](../reference/graph-model.md) is
+**Cross-schema query semantics.** A property name on a Subject node in the [graph](../api/graph-model.md) is
 guaranteed to mean the same thing regardless of the Subject's Schema.
 
 **Reduced redundancy.** Properties like "Name" or "Website" are defined once instead of duplicated across
@@ -30,7 +30,7 @@ every Schema that uses them.
 
 ## Cons of Global Properties
 
-**Thin abstraction.** Currently a [Property Definition](../concepts/glossary.md#property-definition) carries its type,
+**Thin abstraction.** Currently a [Property Definition](../glossary.md#property-definition) carries its type,
 constraints (like `minimum`/`maximum`), `required`, `default`, `multiple`, and display hints (like `precision`).
 Whether a property is required, what its default is, and what constraints apply are per-Schema decisions. Display
 settings are per-[Layout](../adr/018-views.md). Once you move all of that out, a global property is just a name

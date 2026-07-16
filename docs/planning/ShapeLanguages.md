@@ -16,7 +16,7 @@ NeoWiki — up to and including replacing NeoWiki's own Schema format.
 In one line: **native Schemas stay the source of truth; shape languages are adopted at the RDF boundaries.**
 
 1. NeoWiki keeps its own Schema format ([ADR 6](../adr/006-schemas.md), [ADR 9](../adr/009-move-away-from-json-schema.md),
-   [format reference](../reference/schema-format.md)) and its own validator. We do not adopt ShEx or SHACL as the
+   [format reference](../api/schema-format.md)) and its own validator. We do not adopt ShEx or SHACL as the
    internal schema format, nor as the engine behind Subject validation.
 2. NeoWiki embraces shape languages where RDF crosses its boundary:
    - **Emitting shapes** generated from native Schemas, as machine-readable contracts for consumers of our RDF.
@@ -30,12 +30,12 @@ small subset of what shape languages express. The reverse direction is lossy, wh
 
 ## Background
 
-For NeoWiki terminology, see the [glossary](../concepts/glossary.md). The short version: Subjects hold Statements
+For NeoWiki terminology, see the [glossary](../glossary.md). The short version: Subjects hold Statements
 whose Values can have multiple ordered parts; Relations between Subjects carry persistent IDs and their own
 properties. Schemas define Subject types via Property Definitions. Subject validation is backend-only: a single PHP
 validator behind REST endpoints returns structured violations
 ([ADR 21](../adr/021-add-backend-validation.md), amended by ADR 25 in
-[#973](https://github.com/ProfessionalWiki/NeoWiki/pull/973); [codes reference](../reference/validation-codes.md)),
+[#973](https://github.com/ProfessionalWiki/NeoWiki/pull/973); [codes reference](../api/validation-codes.md)),
 and the editing UI renders what the server returns. For RDF, the wiki's data is *projected*: a native projection
 ([NativeRdfProjection](NativeRdfProjection.md)) and per-store ontology projections
 ([OntologyMapping](OntologyMapping.md), in review in [#920](https://github.com/ProfessionalWiki/NeoWiki/pull/920)).
@@ -144,6 +144,6 @@ something the boundary approach above cannot serve?
   (records ShEx/SHACL as considered alternatives), [011 writer's schema](../adr/011-include-writers-schema.md),
   [021 backend validation](../adr/021-add-backend-validation.md) and its amendment in
   [#973](https://github.com/ProfessionalWiki/NeoWiki/pull/973).
-- Reference: [schema format](../reference/schema-format.md), [validation codes](../reference/validation-codes.md).
+- Reference: [schema format](../api/schema-format.md), [validation codes](../api/validation-codes.md).
 - ECHOLOT tasks: T3.1 (structured data, constraints and validation), T3.2 (RDF import/export), T2.3 (semantic
   interoperability / ontology patterns), T4.1 (import pipelines), T4.5 (quality checks, names SHACL).

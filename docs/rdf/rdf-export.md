@@ -1,6 +1,6 @@
 ---
 title: RDF Export
-order: 8
+order: 1
 ---
 # RDF Export
 
@@ -11,6 +11,9 @@ Statements, and their Relations. The projection is lossless and self-sufficient.
 The model is specified in [NativeRdfProjection.md](../planning/NativeRdfProjection.md); this page is
 the as-built reference for the export surface (config, IRI scheme, endpoint, script). The SPARQL
 store and live sync, ontology mappings, and RDF import are separate, later concerns.
+
+For an end-to-end example that exports a page as RDF and compares the native and ontology-mapped
+output, see the [Person-to-EDM worked example](../examples/person-to-edm.md).
 
 ## Configuration
 
@@ -47,7 +50,7 @@ projection accepts this. (The base URI is trusted admin config and is not encode
 Value types map to `xsd` datatypes: `text`/`select` → `xsd:string`, `url` → `xsd:anyURI`, `number` →
 `xsd:decimal` (or `xsd:integer` when fractionless), `boolean` → `xsd:boolean`, `date` → `xsd:date`,
 `date-time` → `xsd:dateTime`. Extensions map their own property types via
-[`addRdfValueMapper`](extending.md#contributing-rdf-value-mappers).
+[`addRdfValueMapper`](../extending/extending.md#contributing-rdf-value-mappers).
 
 A Subject whose Schema is unavailable (for example, its Schema page was deleted) is omitted from the
 projection entirely — the same graceful degradation as the Neo4j projection — so the two stores always

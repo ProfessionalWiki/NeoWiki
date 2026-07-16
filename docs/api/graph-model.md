@@ -8,7 +8,7 @@ NeoWiki stores a query-optimized projection of its data in a Neo4j graph databas
 The source of truth for all data remains in MediaWiki revision slots ([ADR 4](../adr/004-use-dedicated-slot.md));
 the graph is a secondary store that enables efficient querying and relationship traversal.
 
-For definitions of domain terms like Subject, Statement, and Schema, see the [Glossary](../concepts/glossary.md).
+For definitions of domain terms like Subject, Statement, and Schema, see the [Glossary](../glossary.md).
 
 ## Overview
 

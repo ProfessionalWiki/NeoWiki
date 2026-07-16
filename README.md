@@ -15,7 +15,7 @@ NeoWiki is not production ready yet. We support two installation use cases:
 
 ## Technical Documentation
 
-See [docs/](./docs/), especially [docs/concepts/glossary.md](./docs/concepts/glossary.md).
+See [docs/](./docs/), especially [docs/glossary.md](./docs/glossary.md).
 
 ## Development
 

@@ -211,9 +211,9 @@ A store entry whose `updateUrl` is missing or empty is skipped with a warning ra
 When at least one store is configured, three read-only query surfaces become available and target the **first**
 configured store (multi-store query addressing is a later addition):
 
-- The [`{{#sparql_raw}}`](../reference/parser-functions.md#sparql_raw) parser function.
-- The [`nw.sparqlQuery()`](../reference/lua-api.md#nwsparqlquerysparql) Lua function.
-- The [`POST /neowiki/v0/query/sparql`](../reference/query-api.md#sparql-query-endpoint) REST endpoint.
+- The [`{{#sparql_raw}}`](../authoring/parser-functions.md#sparql_raw) parser function.
+- The [`nw.sparqlQuery()`](../authoring/lua-api.md#nwsparqlquerysparql) Lua function.
+- The [`POST /neowiki/v0/query/sparql`](../api/query-api.md#sparql-query-endpoint) REST endpoint.
 
 Each is read-only *by protocol*: the query is sent as a SPARQL 1.1 *query* operation, whose grammar has no update
 forms, so no read-only validator is needed (unlike the Cypher surfaces). They never post to `updateUrl` — only to

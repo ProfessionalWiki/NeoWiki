@@ -43,7 +43,7 @@ closed decision.
 ### Page Properties are not exposed via Subjects
 
 Approval state and system page metadata (`name`, `creationTime`, `lastEditor`, `categories`) are
-[Page Properties](../concepts/glossary.md#page-property) — facts stored on the page node, the built-in ones plus any an
+[Page Properties](../glossary.md#page-property) — facts stored on the page node, the built-in ones plus any an
 extension contributes through the `PagePropertyProvider` plugin. They are surfaced via query (Cypher), not through the
 View or editor. The Source model could expose them as read-only Subjects; for this use case it deliberately does not —
 they stay Page Properties.

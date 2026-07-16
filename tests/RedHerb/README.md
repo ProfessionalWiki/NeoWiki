@@ -5,7 +5,7 @@ reference for how to extend NeoWiki. NeoWiki's own tests exercise it, so the exa
 RedHerb does not cover every extension point and grows over time as new examples are added.
 
 The narrative reference for NeoWiki's extension points lives in the published docs:
-**[Extending NeoWiki](../../docs/reference/extending.md)**. This README is just an index mapping each
+**[Extending NeoWiki](../../docs/extending/extending.md)**. This README is just an index mapping each
 extension point to the file that demonstrates it.
 
 > **Stability:** NeoWiki is pre-1.0. Every extension point is alpha and may change without notice.
