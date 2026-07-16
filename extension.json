@@ -43,6 +43,7 @@
 		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
 		"PageDeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageDeleteComplete",
 		"RevisionUndeleted": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionUndeleted",
+		"AfterImportPage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onAfterImportPage",
 
 		"CodeEditorGetPageLanguage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onCodeEditorGetPageLanguage",
 

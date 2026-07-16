@@ -13,6 +13,7 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyOnRevisionCreatedHandler;
+use Wikimedia\Rdbms\IDBAccessObject;
 use WikiPage;
 
 /**
@@ -22,8 +23,14 @@ class SubjectPageRebuilderTest extends TestCase {
 
 	private SpyOnRevisionCreatedHandler $handler;
 
+	/**
+	 * @var int[]
+	 */
+	private array $pageDataReads;
+
 	protected function setUp(): void {
 		$this->handler = new SpyOnRevisionCreatedHandler();
+		$this->pageDataReads = [];
 	}
 
 	public function testReturnsRefreshedWhenHandlerWritesPage(): void {
@@ -68,9 +75,32 @@ class SubjectPageRebuilderTest extends TestCase {
 		$this->assertSame( $author, $this->handler->calls[0]['user'] );
 	}
 
+	public function testRebuildReadsPageStateFromReplica(): void {
+		$this->newRebuilder( $this->newRevisionByUser( new UserIdentityValue( 42, 'RevisionAuthor' ) ) )
+			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
+
+		$this->assertSame( [ IDBAccessObject::READ_NORMAL ], $this->pageDataReads );
+	}
+
+	public function testRebuildFromPrimaryReadsPageStateFromPrimary(): void {
+		$this->newRebuilder( $this->newRevisionByUser( new UserIdentityValue( 42, 'RevisionAuthor' ) ) )
+			->rebuildFromPrimary( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
+
+		$this->assertSame(
+			[ IDBAccessObject::READ_LATEST ],
+			$this->pageDataReads,
+			'a rebuild right after a write must not be served the revision the write replaced'
+		);
+	}
+
 	private function newRebuilder( ?RevisionRecord $revision ): SubjectPageRebuilder {
 		$page = $this->createStub( WikiPage::class );
 		$page->method( 'getRevisionRecord' )->willReturn( $revision );
+		$page->method( 'loadPageData' )->willReturnCallback(
+			function ( int $from ): void {
+				$this->pageDataReads[] = $from;
+			}
+		);
 
 		$factory = $this->createStub( WikiPageFactory::class );
 		$factory->method( 'newFromTitle' )->willReturn( $page );

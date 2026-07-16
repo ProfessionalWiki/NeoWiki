@@ -13,6 +13,7 @@ use MediaWiki\Parser\Parser;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
+use MediaWiki\Title\ForeignTitle;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -183,6 +184,28 @@ class NeoWikiHooks {
 	): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision, $user );
 		$wikiPage->doPurge(); // clear cache
+	}
+
+	/**
+	 * Projects imported pages, which RevisionFromEditComplete does not cover, as imported revisions do
+	 * not go through the edit path. WikiImporter fires this hook for every import path, once per page and
+	 * only once all of the page's revisions are in, so one handler replaces what would otherwise be a
+	 * special case per import path. Special:Import and the import API additionally project through
+	 * RevisionFromEditComplete, because ImportReporter creates a null revision on top of the import; that
+	 * reprojects the same content, making it redundant rather than harmful.
+	 *
+	 * @see AfterImportPageHook
+	 *
+	 * @param array<string, mixed> $pageInfo
+	 */
+	public static function onAfterImportPage(
+		Title $title,
+		ForeignTitle $foreignTitle,
+		int $revCount,
+		int $sRevCount,
+		array $pageInfo
+	): void {
+		NeoWikiExtension::getInstance()->newImportSubjectPageRebuilder()->rebuildFromPrimary( $title );
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {

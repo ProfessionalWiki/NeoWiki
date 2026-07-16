@@ -4,9 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
+use DumpStringOutput;
+use ImportStringSource;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\TextContent;
+use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
@@ -24,6 +27,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepos
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use WikiExporter;
 
 class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 
@@ -87,6 +91,37 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		$updater->setContent( 'main', new MappingContent( $json ) );
 
 		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
+	}
+
+	protected function exportPageToXml( string $pageName ): string {
+		$exporter = $this->getServiceContainer()->getWikiExporterFactory()->getWikiExporter(
+			$this->getDb(),
+			WikiExporter::FULL
+		);
+
+		$sink = new DumpStringOutput();
+		$exporter->setOutputSink( $sink );
+		$exporter->openStream();
+		$exporter->pageByName( $pageName );
+		$exporter->closeStream();
+
+		return (string)$sink;
+	}
+
+	/**
+	 * Imports without a reporter, as importDump.php does. Special:Import and the import API wrap the
+	 * importer in an ImportReporter, which creates a null revision on top of the import and so happens
+	 * to fire RevisionFromEditComplete as well. Importing bare keeps tests on the import path only.
+	 */
+	protected function importXml( string $xml ): void {
+		$importer = $this->getServiceContainer()->getWikiImporterFactory()->getWikiImporter(
+			new ImportStringSource( $xml ),
+			$this->getTestSysop()->getAuthority()
+		);
+
+		$importer->doImport();
+
+		DeferredUpdates::doUpdates();
 	}
 
 	protected function markPageTableAsUsed(): void {
