@@ -194,8 +194,7 @@ and [`src/Specials/SpecialRedHerbSubjectFinder.php`](https://github.com/Professi
 
 To run a read-only Cypher query from PHP, use `NeoWikiExtension::getInstance()->newCypherQueryService()`.
 It rejects write queries and enforces the timeout and row cap you pass as limits; resolve the values
-configured in [`$wgNeoWikiQueryLimits`](../api/query-api.md) with `Neo4jQueryLimits::forUser()` (users
-with `apihighlimits` get the higher tier):
+configured in [`$wgNeoWikiQueryLimits`](../api/query-api.md) with `Neo4jQueryLimits::forUser()`:
 
 ```php
 $result = NeoWikiExtension::getInstance()->newCypherQueryService()->execute( new Neo4jQueryRequest(
