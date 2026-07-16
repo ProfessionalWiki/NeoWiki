@@ -6,6 +6,9 @@ namespace ProfessionalWiki\NeoWiki\Tests;
 
 use MediaWiki\Config\HashConfig;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\Test\TestLogger;
+use ProfessionalWiki\NeoWiki\NeoWikiConfig;
 use ProfessionalWiki\NeoWiki\NeoWikiConfigFactory;
 
 /**
@@ -91,6 +94,84 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		] ) );
 
 		$this->assertSame( 'https://id.example.org/ns', $config->rdfBaseUri );
+	}
+
+	public function testFullSparqlStoreEntryIsParsed(): void {
+		$config = $this->buildSparqlConfig( [ [
+			'updateUrl' => 'https://qlever.example/api',
+			'queryUrl' => 'https://qlever.example/query',
+			'accessToken' => 'secret-token',
+			'projection' => 'edm',
+		] ] );
+
+		$this->assertCount( 1, $config->sparqlStores );
+		$store = $config->sparqlStores[0];
+		$this->assertSame( 'https://qlever.example/api', $store->updateUrl );
+		$this->assertSame( 'https://qlever.example/query', $store->queryUrl );
+		$this->assertSame( 'secret-token', $store->accessToken );
+		$this->assertSame( 'edm', $store->projection );
+	}
+
+	public function testMinimalSparqlStoreEntryAppliesDefaults(): void {
+		$config = $this->buildSparqlConfig( [ [ 'updateUrl' => 'https://qlever.example/api' ] ] );
+
+		$store = $config->sparqlStores[0];
+		$this->assertSame( 'https://qlever.example/api', $store->updateUrl );
+		$this->assertSame( 'https://qlever.example/api', $store->queryUrl );
+		$this->assertNull( $store->accessToken );
+		$this->assertSame( 'native', $store->projection );
+	}
+
+	public function testBlankQueryUrlFallsBackToUpdateUrl(): void {
+		$config = $this->buildSparqlConfig( [ [
+			'updateUrl' => 'https://qlever.example/api',
+			'queryUrl' => '   ',
+		] ] );
+
+		$this->assertSame( 'https://qlever.example/api', $config->sparqlStores[0]->queryUrl );
+	}
+
+	public function testSparqlStoreEntryMissingUpdateUrlIsSkippedWithWarning(): void {
+		$logger = new TestLogger();
+
+		$config = $this->buildSparqlConfig(
+			[ [ 'accessToken' => 'secret-token' ], [ 'updateUrl' => 'https://ok.example/api' ] ],
+			$logger
+		);
+
+		$this->assertCount( 1, $config->sparqlStores );
+		$this->assertSame( 'https://ok.example/api', $config->sparqlStores[0]->updateUrl );
+		$this->assertTrue( $logger->hasWarningRecords() );
+	}
+
+	public function testNonArraySparqlStoreEntryIsSkippedWithWarning(): void {
+		$logger = new TestLogger();
+
+		$config = $this->buildSparqlConfig( [ 'not-an-array', [ 'updateUrl' => 'https://ok.example/api' ] ], $logger );
+
+		$this->assertCount( 1, $config->sparqlStores );
+		$this->assertSame( 'https://ok.example/api', $config->sparqlStores[0]->updateUrl );
+		$this->assertTrue( $logger->hasWarningRecords() );
+	}
+
+	public function testEmptySparqlStoresConfigProducesEmptyList(): void {
+		$this->assertSame( [], $this->buildSparqlConfig( [] )->sparqlStores );
+	}
+
+	/**
+	 * @param array<int, mixed> $sparqlStores
+	 */
+	private function buildSparqlConfig( array $sparqlStores, ?LoggerInterface $logger = null ): NeoWikiConfig {
+		$factory = $logger === null ? new NeoWikiConfigFactory() : new NeoWikiConfigFactory( $logger );
+
+		return $factory->buildFromMediaWikiConfig( new HashConfig( [
+			'NeoWikiEnableDevelopmentUI' => false,
+			'NeoWikiRdfBaseUri' => null,
+			'CanonicalServer' => 'https://wiki.example',
+			'NeoWikiNeo4jInternalWriteUrl' => null,
+			'NeoWikiNeo4jInternalReadUrl' => null,
+			'NeoWikiSparqlStores' => $sparqlStores,
+		] ) );
 	}
 
 }

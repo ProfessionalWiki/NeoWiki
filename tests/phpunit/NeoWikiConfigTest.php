@@ -43,6 +43,7 @@ class NeoWikiConfigTest extends TestCase {
 			neo4jInternalReadUrl: $readUrl,
 			wikiId: 'testwiki',
 			rdfBaseUri: 'https://wiki.example',
+			sparqlStores: [],
 		);
 	}
 

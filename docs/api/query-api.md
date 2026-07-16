@@ -294,11 +294,79 @@ that bypass the application layer are still bounded. A value such as `360s` give
 These settings apply to all connections to the Neo4j instance, not only NeoWiki traffic. Adjust to your
 deployment's needs.
 
+## SPARQL query endpoint
+
+`POST /neowiki/v0/query/sparql` runs a read-only SPARQL query against the first configured
+[SPARQL store](../operations/installation.md#optional-sparql-graph-stores) and returns the results. Like the Cypher
+endpoint, it exists only when a store is configured; on a wiki without one the route is absent and does not appear in
+the OpenAPI spec. Multi-store query addressing is a later addition — for now the endpoint always targets the first
+configured store.
+
+### Request
+
+```
+POST /rest.php/neowiki/v0/query/sparql
+Content-Type: application/json
+```
+
+```json
+{
+    "query": "SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 10"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `query` | string | Yes | A read-only SPARQL 1.1 `SELECT` or `ASK` query. |
+
+`CONSTRUCT` and `DESCRIBE` are not supported yet: they return an RDF graph rather than the
+`application/sparql-results+json` document this endpoint negotiates.
+
+### Successful response (200)
+
+The body is the W3C [`application/sparql-results+json`](https://www.w3.org/TR/sparql11-results-json/) document from the
+store, **unmodified** — the standard `head` / `results` structure (or `boolean` for an `ASK`), plus any store-specific
+extras (e.g. QLever's `meta`). NeoWiki wraps no envelope of its own around it.
+
+```json
+{
+    "head": { "vars": ["label"] },
+    "results": { "bindings": [ { "label": { "type": "literal", "value": "Johann Sebastian Bach" } } ] }
+}
+```
+
+### Error response
+
+Same shape as the Cypher endpoint (`{ "errorType", "message" }`); branch on `errorType`, not `message`.
+
+| `errorType` | HTTP | When |
+|---|---|---|
+| `emptyQuery` | 400 | `query` is empty or contains only whitespace. |
+| `sparqlSyntaxError` | 400 | The store rejected the query (a 4xx response, most commonly a SPARQL syntax error). The store's own detail is relayed in `message`. |
+| `sparqlStoreUnavailable` | 503 | The store could not be reached or failed to serve the query (a 5xx response or a transport error). |
+| `internalError` | 500 | The store returned a 2xx response whose body is not a JSON results document, or any other unexpected failure. |
+| `rateLimitExceeded` | 429 | Request frequency exceeded the `neowiki-query` rate limit. |
+| `permissionDenied` | 403 | Caller lacks the `neowiki-query` right. |
+
+### Differences from the Cypher endpoint
+
+- **Read-only by protocol, not by a validator.** The query is sent as a SPARQL 1.1 *query* operation
+  (`Content-Type: application/sparql-query`), and the SPARQL query grammar contains no update forms, so no read-only
+  validator is needed. The endpoint only ever posts to the store's `queryUrl`, never to `updateUrl`.
+- **The result document is returned unmodified, with no envelope**, so there is no `columns` / `rows` / `resultCount`
+  reshaping and no cell normalization — the store's JSON already carries typed RDF terms.
+- **Limits: the per-tier timeout is applied** (as the HTTP client timeout), reusing the same `$wgNeoWikiQueryLimits`
+  tiers and `neowiki-query` right and rate limits as the Cypher endpoint. The `maxRows` cap is **not** applied:
+  truncating `results.bindings` would alter the W3C document, and signaling the truncation would require inventing a
+  field, so neither is done. Bound result size with `LIMIT` in the query.
+
 ## Related
 
 - [REST API](rest-api.md) — OpenAPI spec and how it is generated; how to browse it with Swagger UI.
-- [Lua API](../authoring/lua-api.md) — `nw.query()` for the same Cypher surface from wikitext templates.
-- [Parser Functions](../authoring/parser-functions.md) — `{{#cypher_raw}}` for inline Cypher output in wikitext.
+- [Lua API](../authoring/lua-api.md) — `nw.query()` for the same Cypher surface from wikitext templates, and
+  `nw.sparqlQuery()` for the SPARQL surface.
+- [Parser Functions](../authoring/parser-functions.md) — `{{#cypher_raw}}` and `{{#sparql_raw}}` for inline query
+  output in wikitext.
 - [Graph Model](graph-model.md) — Neo4j node labels, relationships, and properties; essential reading before
   writing Cypher.
 - [ADR 13: Restrict Neo4j Access](../adr/013-restrict-neo4j-access.md) — Why Neo4j is not exposed directly.

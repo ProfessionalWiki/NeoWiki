@@ -168,9 +168,60 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new constraint violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
+| `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
 
 ¹ Required for NeoWiki's structured-data features. The wiki still loads without them; NeoWiki's features are
 simply disabled until both are set.
+
+## Optional: SPARQL graph stores
+
+Alongside Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This
+works with QLever and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF: every page
+becomes a named graph, replaced on each edit and dropped on deletion.
+
+A SPARQL store does not yet replace Neo4j: NeoWiki's interactive features (the Subject editing UIs, views, and value
+accessors) still require a configured Neo4j backend. Running NeoWiki without Neo4j is tracked in
+[#1040](https://github.com/ProfessionalWiki/NeoWiki/issues/1040).
+
+Configure the stores with `$wgNeoWikiSparqlStores`, a list of objects:
+
+```php
+$wgNeoWikiSparqlStores = [
+	[
+		// Required: the store's SPARQL 1.1 Update endpoint (the write path posts here).
+		'updateUrl' => 'https://qlever.example/api/neowiki',
+		// Optional: the store's SPARQL 1.1 Query endpoint (the read path posts here).
+		// Defaults to updateUrl, which is correct for QLever, where the two are the same.
+		'queryUrl' => 'https://qlever.example/api/neowiki',
+		// Optional: sent as an HTTP Bearer token (e.g. a QLever access token) on both update and
+		// query requests — QLever only requires it for updates, but a read-protected store needs it too.
+		'accessToken' => 'SECRET',
+		// Optional: the RDF vocabulary written to this store. Defaults to 'native'; may be any
+		// configured Mapping target, such as 'edm'.
+		'projection' => 'native',
+	],
+];
+```
+
+A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki. Leaving
+`$wgNeoWikiSparqlStores` empty (the default) configures no SPARQL stores.
+
+### Querying a SPARQL store
+
+When at least one store is configured, three read-only query surfaces become available and target the **first**
+configured store (multi-store query addressing is a later addition):
+
+- The [`{{#sparql_raw}}`](../authoring/parser-functions.md#sparql_raw) parser function.
+- The [`nw.sparqlQuery()`](../authoring/lua-api.md#nwsparqlquerysparql) Lua function.
+- The [`POST /neowiki/v0/query/sparql`](../api/query-api.md#sparql-query-endpoint) REST endpoint.
+
+Each is read-only *by protocol*: the query is sent as a SPARQL 1.1 *query* operation, whose grammar has no update
+forms, so no read-only validator is needed (unlike the Cypher surfaces). They never post to `updateUrl` — only to
+`queryUrl` — and return the W3C `application/sparql-results+json` document unmodified.
+
+The bundled development stack ships a working QLever example wired up this way — see
+[`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`
+requirement, and how to query it.
 
 ## Production hardening
 

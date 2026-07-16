@@ -222,6 +222,21 @@ $wgNeoWikiEnableDevelopmentUI = true;
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://' . getenv( 'NEO4J_USERNAME' ) . ':' . getenv( 'NEO4J_PASSWORD' ) . '@neo:7687';
 $wgNeoWikiNeo4jInternalReadUrl = 'bolt://' . getenv( 'NEO4J_USERNAME_READ' ) . ':' . getenv( 'NEO4J_PASSWORD_READ' ) . '@neo:7687';
 
+// SPARQL graph store (QLever) for the SPARQL projection plugin (#586). Configured only in the dev
+// stack: the qlever service lives in docker-compose.dev.yml, so the production/demo image (which runs
+// this same file in production mode) never references a non-existent service. Skipped under PHPUnit so
+// integration tests never post updates to the dev QLever — they configure their own store with mocked
+// HTTP via overrideConfigValue(), so the default here must stay empty during tests.
+if ( $mwIsDev && !defined( 'MW_PHPUNIT_TEST' ) ) {
+	$wgNeoWikiSparqlStores = [
+		[
+			'updateUrl' => 'http://qlever:7019/',
+			'accessToken' => getenv( 'QLEVER_ACCESS_TOKEN' ) ?: null,
+			'projection' => 'native',
+		],
+	];
+}
+
 // Allow anonymous REST API calls on the wiki.
 $wgCrossSiteAJAXdomains = [
 	'*'

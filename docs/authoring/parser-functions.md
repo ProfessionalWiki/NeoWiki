@@ -11,6 +11,7 @@ NeoWiki provides three parser functions for use in wikitext.
 | Render a Subject visually on the page | [`{{#view}}`](#view) |
 | Insert one property's value inline as text | [`{{#neowiki_value}}`](#neowiki_value) |
 | Run a custom Cypher query and see the raw results | [`{{#cypher_raw}}`](#cypher_raw) |
+| Run a custom SPARQL query and see the raw results | [`{{#sparql_raw}}`](#sparql_raw) |
 
 For programmatic access from Lua modules, see the [Lua API](lua-api.md).
 
@@ -158,6 +159,39 @@ custom result formatting in templates.
 {{#cypher_raw: MATCH (s:Subject) RETURN s.name LIMIT 10}}
 
 {{#cypher_raw: MATCH (s:Subject) WHERE 'Company' IN labels(s) RETURN s.name, s.`Founded at`}}
+```
+
+## `{{#sparql_raw}}`
+
+Executes a read-only SPARQL query against the first configured [SPARQL store](../operations/installation.md#optional-sparql-graph-stores)
+and returns the raw results as JSON in a code block. The SPARQL counterpart of `{{#cypher_raw}}`, mainly
+useful for development and debugging. It is available only when a SPARQL store is configured; on a wiki
+without one, `{{#sparql_raw: …}}` is not registered and renders as ordinary wikitext.
+
+The output is the W3C [`application/sparql-results+json`](https://www.w3.org/TR/sparql11-results-json/)
+document, unmodified — the standard `head` / `results` structure (or `boolean` for an `ASK` query).
+
+### Syntax
+
+```
+{{#sparql_raw: <sparqlQuery>}}
+```
+
+### Notes
+
+- Read-only by protocol, not by a keyword filter: the query is sent as a SPARQL 1.1 *query* operation
+  (`SELECT` / `ASK` / `CONSTRUCT` / `DESCRIBE`), and the SPARQL query grammar contains no update forms, so
+  no read-only validator is needed (unlike Cypher, where one language expresses both reads and writes).
+- Errors (a query the store rejects, the store being unavailable, etc.) render as a styled error message
+  in place of the result.
+- Output is HTML-escaped, so results containing `<`, `>`, `&`, etc. display safely.
+- The output is wrapped in `<div class="mw-neowiki-sparql-result"><pre>` and the error message in
+  `<div class="error">`, so you can target either with CSS.
+
+### Examples
+
+```
+{{#sparql_raw: SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 10}}
 ```
 
 ## Related Documentation

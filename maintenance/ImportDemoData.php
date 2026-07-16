@@ -53,9 +53,7 @@ class ImportDemoData extends Maintenance {
 				new SimpleFileFetcher()
 			),
 			pageContentSource: new PageContentSource(
-				[
-					NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Page',
-				],
+				$this->getPageDirectories(),
 				new SimpleFileFetcher()
 			),
 			moduleContentSource: new PageContentSource(
@@ -73,6 +71,25 @@ class ImportDemoData extends Maintenance {
 				new SimpleFileFetcher()
 			)
 		);
+	}
+
+	/**
+	 * The SPARQL demo page invokes {{#sparql_raw}}, which only exists on wikis with a configured
+	 * SPARQL store — anywhere else it would render as literal wikitext. So that page is only
+	 * imported when a store is configured (as in the development stack).
+	 *
+	 * @return string[]
+	 */
+	private function getPageDirectories(): array {
+		$directories = [
+			NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Page',
+		];
+
+		if ( $this->getConfig()->get( 'NeoWikiSparqlStores' ) !== [] ) {
+			$directories[] = NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/SparqlPage';
+		}
+
+		return $directories;
 	}
 
 	private function getUser(): User {
