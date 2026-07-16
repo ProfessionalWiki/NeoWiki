@@ -2,6 +2,8 @@
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
+use MediaWiki\Permissions\Authority;
+use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use RuntimeException;
@@ -16,7 +18,9 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 
 	public function __construct(
 		private readonly IDatabase $db,
-		private readonly SearchEngine $searchEngine
+		private readonly SearchEngine $searchEngine,
+		private readonly Authority $authority,
+		private readonly TitleFactory $titleFactory,
 	) {
 	}
 
@@ -25,10 +29,28 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	 */
 	public function getSchemaNamesMatching( string $search, int $limit, int $offset = 0 ): array {
 		if ( trim( $search ) === '' ) {
-			return $this->getFirstSchemaNames( $limit, $offset );
+			return $this->filterReadable( $this->getFirstSchemaNames( $limit, $offset ) );
 		}
 
-		return $this->searchSuggestionsToTitleArray( $this->getSearchSuggestions( $search, $limit, $offset ) );
+		return $this->filterReadable(
+			$this->searchSuggestionsToTitleArray( $this->getSearchSuggestions( $search, $limit, $offset ) )
+		);
+	}
+
+	/**
+	 * The search engine applies its own visibility rules inconsistently across engines, and the
+	 * raw DB branch applies none, so both branches share this binding per-title read filter.
+	 * Filtered names are simply absent, like Schemas that do not exist (#1046).
+	 *
+	 * @param TitleValue[] $titles
+	 * @return TitleValue[]
+	 */
+	private function filterReadable( array $titles ): array {
+		return array_values( array_filter(
+			$titles,
+			fn ( TitleValue $titleValue ): bool =>
+				$this->authority->authorizeRead( 'read', $this->titleFactory->newFromLinkTarget( $titleValue ) )
+		) );
 	}
 
 	public function getSchemaCount(): int {

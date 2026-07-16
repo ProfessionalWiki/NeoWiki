@@ -4,9 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
+use MediaWiki\Page\PageIdentity;
+use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use MediaWiki\Title\TitleValue;
 
 /**
@@ -14,6 +17,8 @@ use MediaWiki\Title\TitleValue;
  * @group Database
  */
 class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
+
+	use NeoWikiMockAuthorityTrait;
 
 	public function setUp(): void {
 		$this->tablesUsed[] = 'page';
@@ -40,8 +45,13 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function getLookup(): DatabaseSchemaNameLookup {
-		return NeoWikiExtension::getInstance()->getSchemaNameLookup();
+	private function getLookup( ?Authority $authority = null ): DatabaseSchemaNameLookup {
+		return new DatabaseSchemaNameLookup(
+			db: $this->getDb(),
+			searchEngine: $this->getServiceContainer()->newSearchEngine(),
+			authority: $authority ?? $this->mockRegisteredUltimateAuthority(),
+			titleFactory: $this->getServiceContainer()->getTitleFactory(),
+		);
 	}
 
 	public static function emptyInputProvider(): array {
@@ -100,6 +110,35 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 
 	public function testGetSchemaCount(): void {
 		$this->assertSame( 4, $this->getLookup()->getSchemaCount() );
+	}
+
+	public function testUnreadableSchemaNamesAreOmitted(): void {
+		// GateHiddenSchema is created before GateVisibleSchema so the denied row sits mid-list
+		// (not last), which is what makes the assertion below sensitive to a missing
+		// array_values() reindex: dropping the array_values would leave a gap in the array
+		// keys, and json_encode() (used by GetSchemaNamesApi) would serialize the result as a
+		// JSON object instead of an array.
+		$this->createSchema( 'GateHiddenSchema' );
+		$this->createSchema( 'GateVisibleSchema' );
+
+		$denyHidden = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
+			$page === null || $page->getDBkey() !== 'GateHiddenSchema';
+
+		$names = array_map(
+			static fn ( TitleValue $title ): string => $title->getText(),
+			$this->getLookup( $this->mockRegisteredAuthority( $denyHidden ) )->getSchemaNamesMatching( '', 10 )
+		);
+
+		$this->assertSame(
+			[
+				'SchemaNameLookupTest1',
+				'SchemaNameLookupTest21',
+				'SchemaNameLookupTest22',
+				'SchemaNameLookupTest3',
+				'GateVisibleSchema',
+			],
+			$names
+		);
 	}
 
 }

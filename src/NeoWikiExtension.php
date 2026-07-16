@@ -804,7 +804,9 @@ class NeoWikiExtension {
 	public function getSchemaNameLookup(): SchemaNameLookup {
 		return new DatabaseSchemaNameLookup(
 			db: $this->getDbConnection(),
-			searchEngine: MediaWikiServices::getInstance()->newSearchEngine()
+			searchEngine: MediaWikiServices::getInstance()->newSearchEngine(),
+			authority: $this->getRequestAuthority(),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 		);
 	}
 
