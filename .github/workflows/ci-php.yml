@@ -110,15 +110,17 @@ jobs:
 
       # QLever for the SPARQL query system test. It cannot be a `services:` container: its bring-up needs
       # a multi-step entrypoint (build an empty index, then serve) that a service container cannot express
-      # (no command/args, only an image + options). So it is started explicitly, mirroring the dev stack's
-      # test_qlever and the "Create neo4j user" docker step below. --persist-updates is omitted: the store
-      # is fresh per CI run and the test clears it, so keeping updates in memory is enough.
+      # (no command/args, only an image + options). So it is started explicitly, like the "Create neo4j
+      # user" docker step below. --persist-updates is omitted: the store is fresh per CI run and the test
+      # clears it, so keeping updates in memory is enough. The index is built in /tmp rather than the dev
+      # stack's /index: the image runs as a non-root user with no /index (the dev stack provides it via a
+      # volume), so a bare `docker run` must use an already-writable in-image path.
       - name: Start QLever
         run: |
           docker run -d --name test_qlever -p 7019:7019 -e QLEVER_ACCESS_TOKEN=neowiki_test_token \
             --entrypoint /bin/bash docker.io/adfreiburg/qlever:latest -lc '
               set -e
-              cd /index
+              cd /tmp
               : > data.nt
               qlever-index -i neowiki -F nt -f data.nt
               exec qlever-server -i neowiki -p 7019 -a "$QLEVER_ACCESS_TOKEN" -m 1G'
