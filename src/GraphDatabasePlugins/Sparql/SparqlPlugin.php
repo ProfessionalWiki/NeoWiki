@@ -83,7 +83,7 @@ readonly class SparqlPlugin {
 
 		$parser->setFunctionHook(
 			'sparql_raw',
-			static function ( Parser $parser, string $query ) use ( $queryService ): string {
+			static function ( Parser $parser, string $query ) use ( $queryService ): array {
 				return ( new SparqlRawParserFunction( $queryService ) )->handle( $parser, $query );
 			}
 		);

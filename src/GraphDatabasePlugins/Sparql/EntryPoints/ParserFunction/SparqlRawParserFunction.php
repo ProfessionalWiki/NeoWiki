@@ -24,7 +24,10 @@ class SparqlRawParserFunction {
 	) {
 	}
 
-	public function handle( Parser $parser, string $query ): string {
+	/**
+	 * @return array{0: string, noparse: true, isHTML: true}
+	 */
+	public function handle( Parser $parser, string $query ): array {
 		try {
 			$result = $this->queryService->execute(
 				new SparqlQueryRequest(
@@ -46,12 +49,30 @@ class SparqlRawParserFunction {
 		return $this->formatResult( $json );
 	}
 
-	private function formatResult( string $json ): string {
-		return '<div class="mw-neowiki-sparql-result"><pre>' . htmlspecialchars( $json ) . '</pre></div>';
+	/**
+	 * @return array{0: string, noparse: true, isHTML: true}
+	 */
+	private function formatResult( string $json ): array {
+		return $this->asHtml( '<div class="mw-neowiki-sparql-result"><pre>' . htmlspecialchars( $json ) . '</pre></div>' );
 	}
 
-	private function formatError( string $message ): string {
-		return '<div class="error">' . htmlspecialchars( $message ) . '</div>';
+	/**
+	 * @return array{0: string, noparse: true, isHTML: true}
+	 */
+	private function formatError( string $message ): array {
+		return $this->asHtml( '<div class="error">' . htmlspecialchars( $message ) . '</div>' );
+	}
+
+	/**
+	 * Hands the HTML to the parser as HTML rather than wikitext. Without this the text is parsed as
+	 * wikitext, which autolinks the IRIs a results document is full of: the trailing quote of each
+	 * IRI is swallowed into the link and percent-encoded, leaving invalid JSON with anchors in it.
+	 * Error detail needs the same treatment, as it carries the store's endpoint URL.
+	 *
+	 * @return array{0: string, noparse: true, isHTML: true}
+	 */
+	private function asHtml( string $html ): array {
+		return [ $html, 'noparse' => true, 'isHTML' => true ];
 	}
 
 }
