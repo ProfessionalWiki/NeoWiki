@@ -175,9 +175,13 @@ simply disabled until both are set.
 
 ## Optional: SPARQL graph stores
 
-Alongside (or instead of) Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This
+Alongside Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This
 works with QLever and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF: every page
 becomes a named graph, replaced on each edit and dropped on deletion.
+
+A SPARQL store does not yet replace Neo4j: NeoWiki's interactive features (the Subject editing UIs, views, and value
+accessors) still require a configured Neo4j backend. Running NeoWiki without Neo4j is tracked in
+[#1040](https://github.com/ProfessionalWiki/NeoWiki/issues/1040).
 
 Configure the stores with `$wgNeoWikiSparqlStores`, a list of objects:
 
