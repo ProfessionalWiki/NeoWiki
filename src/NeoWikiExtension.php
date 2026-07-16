@@ -791,7 +791,9 @@ class NeoWikiExtension {
 		return new WikiPageLayoutLookup(
 			pageContentFetcher: $this->getPageContentFetcher(),
 			authority: $this->getRequestAuthority(),
-			layoutDeserializer: $this->getLayoutPersistenceDeserializer()
+			layoutDeserializer: $this->getLayoutPersistenceDeserializer(),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' )
 		);
 	}
 

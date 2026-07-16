@@ -6,11 +6,14 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use InvalidArgumentException;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Domain\Layout\Layout;
 use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use Psr\Log\LoggerInterface;
 
 class WikiPageLayoutLookup implements LayoutLookup {
 
@@ -18,11 +21,30 @@ class WikiPageLayoutLookup implements LayoutLookup {
 		private readonly PageContentFetcher $pageContentFetcher,
 		private readonly Authority $authority,
 		private readonly LayoutPersistenceDeserializer $layoutDeserializer,
+		private readonly TitleFactory $titleFactory,
+		private readonly LoggerInterface $logger,
 	) {
 	}
 
 	public function getLayout( LayoutName $layoutName ): ?Layout {
-		$content = $this->getContent( $layoutName );
+		$title = $this->titleFactory->newFromText( $layoutName->getText(), NeoWikiExtension::NS_LAYOUT );
+
+		if ( $title === null || !$title->exists() ) {
+			return null;
+		}
+
+		// The audience check inside the content fetcher filters revision deletion only; this
+		// is the sole per-title read gate on the Layout read path. Denial is null, the same
+		// as an absent Layout (#1046).
+		if ( !$this->authority->authorizeRead( 'read', $title ) ) {
+			$this->logger->info( 'NeoWiki: denied read of page {page} to {user}', [
+				'page' => $title->getPrefixedDBkey(),
+				'user' => $this->authority->getUser()->getName(),
+			] );
+			return null;
+		}
+
+		$content = $this->getContent( $title );
 
 		if ( $content === null ) {
 			return null;
@@ -36,9 +58,9 @@ class WikiPageLayoutLookup implements LayoutLookup {
 		}
 	}
 
-	private function getContent( LayoutName $layoutName ): ?LayoutContent {
+	private function getContent( Title $title ): ?LayoutContent {
 		$content = $this->pageContentFetcher->getPageContent(
-			$layoutName->getText(),
+			$title,
 			$this->authority,
 			NeoWikiExtension::NS_LAYOUT
 		);
