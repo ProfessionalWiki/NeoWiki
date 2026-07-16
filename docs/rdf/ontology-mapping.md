@@ -4,26 +4,31 @@ order: 2
 ---
 # Ontology Mapping
 
-NeoWiki stores data in its own native Schemas and projects it to RDF. The **native projection**
-([RDF export](rdf-export.md)) uses NeoWiki-native vocabulary. An **ontology mapping** projects the
-same data into an established ontology instead (EDM, Dublin Core, …), so the RDF is
-directly interoperable. The native projection and each ontology mapping are **sibling projections** of
-the same source data, selected per request (or, later, per SPARQL store).
+NeoWiki stores data in its own native Schemas and projects it to RDF.
+
+Users can project to established ontologies like EDM and Dublin Core by defining **ontology mappings**.
+
+NeoWiki also comes with a [**native projection**](rdf-export.md), based on the native Schemas, available
+without having to define an ontology mapping first.
+
+The native projection and each ontology mapping are sibling projections of the same source data. Multiple
+can be supported at the same time, letting API users choose their RDF format, and giving wiki admins the
+option to realize multiple projections in separate SPARQL stores.
 
 The design and its open questions are in
 [planning/OntologyMapping.md](../planning/OntologyMapping.md); this page is the as-built reference for
-the shipped v1. For a complete, reproducible walkthrough — a Person Schema projected to EDM, the native
-and mapped output side by side, and the current gaps — see the
-[Person-to-EDM worked example](../examples/person-to-edm.md).
+the shipped v1. See the
+[Person-to-EDM worked example](../examples/person-to-edm.md) for a complete walkthrough: a Person Schema projected to EDM, the native
+and mapped output side by side, and the current gaps.
 
 > **v1 is deliberately minimal and the stored format is provisional.** v1 covers only the *near-1:1
 > tier* — term substitution: a target class for the Subject and one target predicate per mapped
 > property. It does **not** synthesize the intermediate event nodes that CIDOC-CRM-style ontologies
 > need. The mapping-formalism question is still open
 > ([OntologyMapping.md Q1](../planning/OntologyMapping.md#open-questions), [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995)),
-> so the `"version": 1` format may change. It is versioned precisely so a later tier can supersede it.
+> so the `"version": 1` format may change. It is versioned so a later tier can supersede it.
 
-## Mappings are wiki pages
+## Ontology Mappings are wiki pages
 
 A Mapping is a page in the **`Mapping:` namespace** with content model `NeoWikiMapping` (JSON), edited
 like a Schema or Layout page and gated by the `neowiki-mapping-edit` right. Each Mapping binds **one
