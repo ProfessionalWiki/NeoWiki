@@ -21,6 +21,12 @@ If you are not familiar with the NeoWiki terminology yet, see [the glossary](../
   capture on top, rather than it being built into the core data model. Open: verify the data model and named-graph
   design can carry what the plug-in needs, as distinct from operational per-page named graphs (see
   [NativeRdfProjection.md](NativeRdfProjection.md) Q5).
+* Rights Statement Selector: what does a rights-entry UI need from NeoWiki? ECHOLOT calls for an easy way to pick the
+  correct rights statement for an item or dataset using existing copyright frameworks (Europeana Licensing Framework,
+  Creative Commons, RightsStatements.org), ideally also usable as a plug-in by other systems. This likely means a new
+  Property Definition type, or a specialized UI component for a property, offering a curated selection interface for
+  rights/license values and storing them as structured data with URIs pointing at the canonical definitions. Relates
+  to the provenance/rights boundary above (T3.4).
 * Does the [native RDF projection strawman proposal](NativeRdfProjection.md) go in the right direction? What needs to
   be adjusted? Same question for the [ontology mapping strawman](OntologyMapping.md).
 * Is our [Graph Model](../api/graph-model.md) OK? In particular, is it OK to have non-Subject data in there, like the connected
