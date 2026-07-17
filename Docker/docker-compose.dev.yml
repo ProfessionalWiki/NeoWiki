@@ -4,6 +4,9 @@ services:
     build:
       context: .
       target: dev-mw
+    # Bound the container so a single dev stack cannot exhaust host RAM. Generous
+    # enough for MediaWiki + Apache + PHP and the occasional maintenance spike.
+    mem_limit: 2g
     environment:
       - MW_MODE=dev
       # Bearer token the wiki sends to authorize writes to the dev QLever SPARQL store
@@ -33,6 +36,28 @@ services:
       # an empty directory.
       - ./mediawiki/vendor:/var/www/html/w/vendor:z
 
+  # Memory sizing for the primary Neo4j, defined in the base compose file. Neo4j
+  # auto-sizes its heap and page cache from total HOST RAM when these are unset;
+  # on a 60G workstation that reserves gigabytes per instance and is the root
+  # cause of the OOM cascade when several worktree stacks run at once. Pinning
+  # small explicit dev values is the core fix. This override lives in the dev
+  # overlay only, so the base "try-it-out" stack (`make up`) and CI (which renames
+  # docker-compose.ci.yml over the base) never load these caps.
+  neo:
+    environment:
+      - NEO4J_server_memory_heap_initial__size=512m
+      - NEO4J_server_memory_heap_max__size=512m
+      - NEO4J_server_memory_pagecache_size=256m
+    mem_limit: 1536m
+
+  # Dev tuning + memory bound for the base MariaDB. innodb_buffer_pool_size does
+  # not auto-size from host RAM, but pin it explicitly for a small, predictable
+  # dev footprint. The leading-dash command is passed through the image entrypoint
+  # to mariadbd.
+  db:
+    command: --innodb-buffer-pool-size=128M
+    mem_limit: 512m
+
   # Dev-only sidecars. They live in this overlay (not the base file) so the base
   # "try-it-out" stack stays minimal and so `make down` removes them as orphans
   # regardless of the compose backend. See the Makefile `down` target.
@@ -49,6 +74,12 @@ services:
       - NEO4J_AUTH=neo4j/password
       - NEO4J_server_bolt_listen__address=:7689
       - NEO4J_server_http_listen__address=:7475
+      # The test instance only holds the PHPUnit graph fixtures, so it gets an
+      # even smaller footprint than the primary neo.
+      - NEO4J_server_memory_heap_initial__size=384m
+      - NEO4J_server_memory_heap_max__size=384m
+      - NEO4J_server_memory_pagecache_size=128m
+    mem_limit: 1g
     healthcheck:
       test: "wget http://localhost:7475/browser -O - | grep 'Neo4j Browser'"
       interval: 5s
@@ -63,6 +94,9 @@ services:
   qlever:
     image: docker.io/adfreiburg/qlever:latest
     restart: unless-stopped
+    # Ceiling above QLever's own -m 1G query-memory budget (see the server command
+    # below) plus index and server overhead.
+    mem_limit: 1536m
     # The image's default entrypoint is an interactive CLI wrapper; bypass it and drive
     # the engine binaries (qlever-index / qlever-server) directly.
     entrypoint:
@@ -117,6 +151,8 @@ services:
   test_qlever:
     image: docker.io/adfreiburg/qlever:latest
     restart: unless-stopped
+    # Ceiling above QLever's own -m 1G query-memory budget plus overhead.
+    mem_limit: 1536m
     # Fixed access token (intentional, like test_neo's fixed password): the test suite uses this exact
     # value to authorize its updates. Do not parameterize without updating phpunit.xml.dist.
     environment:
@@ -153,6 +189,8 @@ services:
   node:
     image: node:24
     restart: on-failure:3
+    # Bounds npm install, the vite build:watch, and vitest runs.
+    mem_limit: 1536m
     # Run as the host user so node_modules/ and dist/ written into the bind mount
     # are host-owned, matching the Makefile's EXEC_USER. The Makefile exports
     # NODE_USER (host uid:gid under rootful Docker, 0:0 under rootless Podman, which
@@ -176,6 +214,7 @@ services:
     restart: unless-stopped
     ports:
       - "${MAILCATCHER_PORT:-1080}:1080"
+    mem_limit: 256m
 
 volumes:
   test-neo4j-data:
