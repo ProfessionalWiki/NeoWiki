@@ -25,7 +25,9 @@ Data about one thing. Similar to an Item in Wikibase or a Page/SubObject in SMW.
 
 Subjects have
 
-- An `id`: persistent identifier. Subject IDs start with `s` and are always 15 characters long ([ADR 14](adr/014-improved-id-format.md))
+- An `id`: persistent identifier. Local Subject IDs are bare nanoids starting with `s`, always 15 characters
+  long ([ADR 14](adr/014-improved-id-format.md)). A Subject id may also be source-qualified as
+  `source:localId`, where the bare form means the local source ([ADR 23](adr/023-subject-sources.md))
 - A `type`: reference to a Schema. Example: Person, Company, Product, etc.
 - A `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
 - `statements`: a list of Statements

@@ -19,6 +19,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer;
@@ -66,11 +67,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 		);
 	}
 
-	public function testSerializeFullSubject(): void {
-		$serializer = new SubjectContentDataSerializer();
-
-		$this->assertSame(
-			'{
+	private const string FULL_PAGE_JSON = '{
     "mainSubject": "sTestSCDST11112",
     "subjects": {
         "sTestSCDST11112": {
@@ -84,7 +81,7 @@ class SubjectContentDataSerializerTest extends TestCase {
                     ]
                 },
                 "founder": {
-                    "type": "string",
+                    "type": "text",
                     "value": [
                         "John Doe"
                     ]
@@ -125,8 +122,24 @@ class SubjectContentDataSerializerTest extends TestCase {
             }
         }
     }
-}',
+}';
+
+	public function testSerializeFullSubject(): void {
+		$serializer = new SubjectContentDataSerializer();
+
+		$this->assertSame(
+			self::FULL_PAGE_JSON,
 			$serializer->serialize( $this->newFullSubjectMap() )
+		);
+	}
+
+	public function testLocalOnlyPageSlotJsonRoundTripsByteIdentically(): void {
+		$deserializer = NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer();
+		$serializer = new SubjectContentDataSerializer();
+
+		$this->assertSame(
+			self::FULL_PAGE_JSON,
+			$serializer->serialize( $deserializer->deserialize( self::FULL_PAGE_JSON ) )
 		);
 	}
 
@@ -182,7 +195,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 					),
 					new Statement(
 						property: new PropertyName( 'founder' ),
-						propertyType: 'string',
+						propertyType: 'text',
 						value: new StringValue( 'John Doe' )
 					),
 				] )
@@ -225,7 +238,10 @@ class SubjectContentDataSerializerTest extends TestCase {
 	 * Core types only: no extension is loaded, so "color" is an unregistered type.
 	 */
 	private function roundTrip( string $contentJson ): string {
-		$deserializer = new SubjectContentDataDeserializer( new StatementDeserializer( PropertyTypeRegistry::withCoreTypes() ) );
+		$deserializer = new SubjectContentDataDeserializer(
+			new StatementDeserializer( PropertyTypeRegistry::withCoreTypes(), TestData::newSubjectIdParser() ),
+			TestData::newSubjectIdParser()
+		);
 
 		return ( new SubjectContentDataSerializer() )->serialize( $deserializer->deserialize( $contentJson ) );
 	}

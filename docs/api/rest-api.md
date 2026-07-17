@@ -41,6 +41,10 @@ Read, change, and validate Subjects. New Subjects are created on a page — see
 | `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. |
 | `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. |
 
+`{subjectId}` accepts a Subject id in either form described in
+[Subject format](subject-format.md#id-formats): the bare local form or the source-qualified
+`source:localId` form. An id that explicitly names the local wiki's source is treated as its bare form.
+
 ### Pages and Subjects
 
 A page holds one optional main Subject and an ordered list of child Subjects. These endpoints create

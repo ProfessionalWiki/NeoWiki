@@ -61,13 +61,15 @@ their Schema (e.g., `:Subject:Person`, `:Subject:Company`). The Schema label cha
 
 | Property | Neo4j Type | Description |
 |----------|------------|-------------|
-| `id` | string | Subject ID, 15 characters starting with `s` (unique) |
+| `id` | string | Subject ID as stored: the bare local id, 15 characters starting with `s` (unique) |
 | `name` | string | Subject label |
 | `wiki_id` | string | [MediaWiki Wiki ID](https://www.mediawiki.org/wiki/Manual:Wiki_ID) of the wiki that owns the Subject |
 
 Unlike page ids, Subject ids are globally unique nanoids ([ADR 14](../adr/014-improved-id-format.md)), so a Subject's
 identity is its `id` alone. The `wiki_id` is carried only for per-wiki query filtering in a shared graph; Subject-id
-namespacing is deferred ([ADR 22](../adr/022-multi-wiki-node-identity.md)).
+namespacing is deferred ([ADR 22](../adr/022-multi-wiki-node-identity.md)). The source-qualified `(source, localId)`
+reference form ([ADR 23](../adr/023-subject-sources.md)) is derived at the system boundaries; Subject nodes keep
+storing the bare id.
 
 ### Dynamic properties
 

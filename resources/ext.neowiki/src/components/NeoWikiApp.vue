@@ -21,21 +21,14 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
 import { onMounted, ref } from 'vue';
-import { SubjectId } from '@/domain/SubjectId';
+import { SubjectIdParser } from '@/domain/SubjectIdParser';
 import Infobox from '@/components/Views/Infobox.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
-
-interface ViewData {
-	id: string;
-	element: HTMLElement;
-	subjectId: SubjectId;
-	canEditSubject: boolean;
-	viewType?: string;
-	layoutName?: string;
-}
+import { getViewsData } from '@/components/viewData';
+import type { ViewData } from '@/components/viewData';
 
 const props = defineProps<{
 	showSubjectCreator: boolean;
@@ -70,7 +63,12 @@ function isLatestRevision(): boolean {
 }
 
 onMounted( async (): Promise<void> => {
-	const localViewsData = await getViewsData( document.querySelectorAll( '.ext-neowiki-view' ) );
+	const subjectIdParser = new SubjectIdParser( String( mw.config.get( 'wgWikiID' ) ) );
+	const localViewsData = await getViewsData(
+		document.querySelectorAll( '.ext-neowiki-view' ),
+		subjectIdParser,
+		async ( subjectId ) => isLatestRevision() && await subjectPermissionHints.canEditSubject( subjectId )
+	);
 	const storeStateLoader = NeoWikiExtension.getInstance().getStoreStateLoader();
 
 	await Promise.all( [
@@ -84,39 +82,5 @@ onMounted( async (): Promise<void> => {
 
 	viewsData.value = localViewsData;
 } );
-
-// eslint-disable-next-line no-undef
-async function getViewsData( elements: NodeListOf<HTMLElement> ): Promise<ViewData[]> {
-	const viewsData: ViewData[] = [];
-
-	for ( const element of elements ) {
-		const viewData = await getViewData( element );
-		if ( viewData ) {
-			viewsData.push( viewData );
-		}
-	}
-	return viewsData;
-}
-
-async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
-	if ( !element.dataset.mwNeowikiSubjectId ) {
-		return null;
-	}
-
-	try {
-		const subjectId = new SubjectId( element.dataset.mwNeowikiSubjectId );
-		return {
-			id: subjectId.text,
-			element: element,
-			subjectId: subjectId,
-			canEditSubject: isLatestRevision() && await subjectPermissionHints.canEditSubject( subjectId ),
-			viewType: element.dataset.mwNeowikiViewType,
-			layoutName: element.dataset.mwNeowikiLayoutName
-		};
-	} catch ( error ) {
-		console.error( error );
-		return null;
-	}
-}
 
 </script>

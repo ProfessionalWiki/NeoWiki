@@ -8,7 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 
@@ -16,6 +16,7 @@ class SubjectContentDataDeserializer {
 
 	public function __construct(
 		private readonly StatementDeserializer $statementDeserializer,
+		private readonly SubjectIdParser $subjectIdParser,
 	) {
 	}
 
@@ -33,7 +34,7 @@ class SubjectContentDataDeserializer {
 			);
 		}
 
-		$mainSubjectId = new SubjectId( $jsonArray['mainSubject'] );
+		$mainSubjectId = $this->subjectIdParser->parse( $jsonArray['mainSubject'] );
 
 		return new PageSubjects(
 			$subjects->getSubject( $mainSubjectId ),
@@ -55,7 +56,7 @@ class SubjectContentDataDeserializer {
 
 	private function deserializeSubject( string $id, array $jsonArray ): Subject {
 		return new Subject(
-			id: new SubjectId( $id ),
+			id: $this->subjectIdParser->parse( $id ),
 			label: new SubjectLabel( $jsonArray['label'] ),
 			schemaName: new SchemaName( $jsonArray['schema'] ),
 			statements: $this->buildStatementList( $jsonArray ),

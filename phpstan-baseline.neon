@@ -166,7 +166,7 @@ parameters:
 			path: src/Persistence/MediaWiki/Subject/SubjectContentDataDeserializer.php
 
 		-
-			message: "#^Parameter \\#1 \\$text of class ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Subject\\\\SubjectId constructor expects string, mixed given\\.$#"
+			message: "#^Parameter \\#1 \\$text of method ProfessionalWiki\\\\NeoWiki\\\\Domain\\\\Subject\\\\SubjectIdParser\\:\\:parse\\(\\) expects string, mixed given\\.$#"
 			count: 1
 			path: src/Persistence/MediaWiki/Subject/SubjectContentDataDeserializer.php
 

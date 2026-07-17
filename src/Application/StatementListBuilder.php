@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
@@ -26,6 +26,7 @@ readonly class StatementListBuilder {
 	public function __construct(
 		private PropertyTypeLookup $propertyTypeLookup,
 		private IdGenerator $idGenerator,
+		private SubjectIdParser $subjectIdParser,
 	) {
 	}
 
@@ -77,7 +78,7 @@ readonly class StatementListBuilder {
 			if ( is_array( $relation ) ) {
 				$relations[] = new Relation(
 					id: $this->buildRelationId( $relation ),
-					targetId: new SubjectId( $relation['target'] ),
+					targetId: $this->subjectIdParser->parse( $relation['target'] ),
 					properties: new RelationProperties( $relation['properties'] ?? [] )
 				);
 			}

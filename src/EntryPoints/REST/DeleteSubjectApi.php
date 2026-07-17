@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -29,9 +28,11 @@ class DeleteSubjectApi extends SimpleHandler {
 		$body = $this->getValidatedBody() ?? [];
 		$comment = $body['comment'] ?? null;
 
+		$extension = NeoWikiExtension::getInstance();
+
 		try {
-			NeoWikiExtension::getInstance()->newDeleteSubjectAction( $this->getAuthority() )->deleteSubject(
-				new SubjectId( $subjectId ),
+			$extension->newDeleteSubjectAction( $this->getAuthority() )->deleteSubject(
+				$extension->getSubjectIdParser()->parse( $subjectId ),
 				$comment
 			);
 		} catch ( \RuntimeException $e ) {
@@ -50,7 +51,7 @@ class DeleteSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject. 15 characters, starting with "s".',
+				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject: a bare local id ("s" + 14 characters) or a source-qualified id ("source:localId").',
 			],
 		];
 	}

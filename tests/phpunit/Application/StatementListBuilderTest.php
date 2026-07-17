@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 
 /**
@@ -19,7 +20,8 @@ class StatementListBuilderTest extends TestCase {
 	private function newBuilder(): StatementListBuilder {
 		return new StatementListBuilder(
 			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes(),
-			idGenerator: new StubIdGenerator( '11111111111111' )
+			idGenerator: new StubIdGenerator( '11111111111111' ),
+			subjectIdParser: TestData::newSubjectIdParser()
 		);
 	}
 

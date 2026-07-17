@@ -29,6 +29,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
@@ -68,7 +69,8 @@ class CreateSubjectActionTest extends TestCase {
 			$this->authorizer,
 			new StatementListBuilder(
 				$registry,
-				$this->idGenerator
+				$this->idGenerator,
+				TestData::newSubjectIdParser()
 			),
 			$this->schemaLookup,
 			new SelectStatementResolver( new SelectValueResolver() ),
