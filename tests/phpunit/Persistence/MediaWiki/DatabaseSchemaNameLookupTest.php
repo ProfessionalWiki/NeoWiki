@@ -141,6 +141,19 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testUnreadableSchemaNamesAreOmittedFromSearchResults(): void {
+		$denyFirstMatch = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
+			$page === null || $page->getDBkey() !== 'SchemaNameLookupTest21';
+
+		$names = array_map(
+			static fn ( TitleValue $title ): string => $title->getText(),
+			$this->getLookup( $this->mockRegisteredAuthority( $denyFirstMatch ) )
+				->getSchemaNamesMatching( 'SchemaNameLookupTest2', 10 )
+		);
+
+		$this->assertSame( [ 'SchemaNameLookupTest22' ], $names );
+	}
+
 	public function testGateUsesBindingAuthorizeRead(): void {
 		// probablyCan is a UI-hint check that skips the expensive ACL hook; the filter must
 		// use the binding authorizeRead with the 'read' action. Reverting fails this test.
