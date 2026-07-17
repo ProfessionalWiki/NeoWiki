@@ -115,6 +115,9 @@ jobs:
       # clears it, so keeping updates in memory is enough. The index is built in /tmp rather than the dev
       # stack's /index: the image runs as a non-root user with no /index (the dev stack provides it via a
       # volume), so a bare `docker run` must use an already-writable in-image path.
+      # --service-allowed-iri-prefixes disables SPARQL federation, matching the dev stack (see
+      # Docker/docker-compose.dev.yml): QLever allows every SERVICE IRI unless the option is given, and "-"
+      # is the documented deny-all value (an invalid prefix no IRI matches). No test federates.
       - name: Start QLever
         run: |
           docker run -d --name test_qlever -p 7019:7019 -e QLEVER_ACCESS_TOKEN=neowiki_test_token \
@@ -123,7 +126,7 @@ jobs:
               cd /tmp
               : > data.nt
               qlever-index -i neowiki -F nt -f data.nt
-              exec qlever-server -i neowiki -p 7019 -a "$QLEVER_ACCESS_TOKEN" -m 1G'
+              exec qlever-server -i neowiki -p 7019 -a "$QLEVER_ACCESS_TOKEN" -m 1G --service-allowed-iri-prefixes -'
 
       - name: Run update.php
         run: php maintenance/update.php --quick
