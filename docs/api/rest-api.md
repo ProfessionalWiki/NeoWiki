@@ -23,8 +23,9 @@ Demo wiki example: [neowiki.dev/w/rest.php/specs/v0/module/-](https://neowiki.de
 
 ## Permissions
 
-Read endpoints enforce the caller's per-page `read` permission: page protection, restricted namespaces, read
-whitelists, and permission extensions all apply. When you may not read a page, its read endpoints respond as if
+The Subject, Schema, Layout, Mapping and RDF read endpoints enforce the caller's per-page `read` permission: read
+whitelists and permission extensions apply. (MediaWiki's `read` action ignores page protection and
+`$wgNamespaceProtection`, so neither restricts these endpoints.) When you may not read a page, they respond as if
 the data were absent — a `null` value, an empty list, or a `404` — rather than with a `403`. Treat a not-found
 response as "not available": it may mean the data does not exist, or that you may not read it.
 
