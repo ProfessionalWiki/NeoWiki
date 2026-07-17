@@ -4,14 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
-use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use Psr\Log\LoggerInterface;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\Database;
 use Wikimedia\Rdbms\IConnectionProvider;
@@ -30,9 +29,8 @@ class CachingSchemaLookup implements SchemaLookup {
 		private readonly SchemaLookup $schemaLookup,
 		private readonly WANObjectCache $cache,
 		private readonly TitleFactory $titleFactory,
-		private readonly Authority $authority,
+		private readonly PageReadAuthorizer $readAuthorizer,
 		private readonly IConnectionProvider $connectionProvider,
-		private readonly LoggerInterface $logger,
 	) {
 	}
 
@@ -47,11 +45,7 @@ class CachingSchemaLookup implements SchemaLookup {
 		// revision deletion only), so this is the sole read gate on the Schema read path. It
 		// must also run before the cache: the cached value is user-independent schema content,
 		// and a cache hit must not serve a Schema whose page the user may not read (#1046).
-		if ( !$this->authority->authorizeRead( 'read', $title ) ) {
-			$this->logger->info( 'Denied read of page {page} to {user}', [
-				'page' => $title->getPrefixedDBkey(),
-				'user' => $this->authority->getUser()->getName(),
-			] );
+		if ( !$this->readAuthorizer->authorizeReadByPageTitle( $title ) ) {
 			return null;
 		}
 

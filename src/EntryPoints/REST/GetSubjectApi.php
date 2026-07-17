@@ -61,8 +61,8 @@ class GetSubjectApi extends SimpleHandler {
 
 	private function revisionPageIsReadable( int $pageId ): bool {
 		return NeoWikiExtension::getInstance()
-			->newSubjectReadAuthorizer( $this->getAuthority() )
-			->authorizeRead( new PageId( $pageId ) );
+			->newPageReadAuthorizer( $this->getAuthority() )
+			->authorizeReadByPageId( new PageId( $pageId ) );
 	}
 
 	public function getParamSettings(): array {

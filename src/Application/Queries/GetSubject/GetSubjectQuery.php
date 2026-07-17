@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSubject;
 
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
-use ProfessionalWiki\NeoWiki\Application\SubjectReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -18,7 +18,7 @@ readonly class GetSubjectQuery {
 		private GetSubjectPresenter $presenter,
 		private SubjectLookup $subjectLookup,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
-		private SubjectReadAuthorizer $readAuthorizer,
+		private PageReadAuthorizer $readAuthorizer,
 	) {
 	}
 
@@ -83,7 +83,7 @@ readonly class GetSubjectQuery {
 	 * the Subject was later deleted.
 	 */
 	private function pageIsReadable( ?PageIdentifiers $pageIdentifiers ): bool {
-		return $pageIdentifiers === null || $this->readAuthorizer->authorizeRead( $pageIdentifiers->getId() );
+		return $pageIdentifiers === null || $this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() );
 	}
 
 	private function createResponse(

@@ -56,7 +56,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
-use ProfessionalWiki\NeoWiki\Application\SubjectReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
@@ -96,6 +96,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetSubjectsOrderingApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
@@ -413,9 +414,8 @@ class NeoWikiExtension {
 			mappingNameLookup: $this->getMappingNameLookup(),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
-			authority: $this->getRequestAuthority(),
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
 			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
-			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
 
@@ -736,15 +736,18 @@ class NeoWikiExtension {
 		return $this->newAuthorityBasedSubjectAuthorizer( $authority );
 	}
 
-	public function newSubjectReadAuthorizer( Authority $authority ): SubjectReadAuthorizer {
-		return $this->newAuthorityBasedSubjectAuthorizer( $authority );
+	public function newPageReadAuthorizer( Authority $authority ): PageReadAuthorizer {
+		return new AuthorityBasedPageReadAuthorizer(
+			authority: $authority,
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
+		);
 	}
 
 	private function newAuthorityBasedSubjectAuthorizer( Authority $authority ): AuthorityBasedSubjectAuthorizer {
 		return new AuthorityBasedSubjectAuthorizer(
 			authority: $authority,
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
-			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
 
@@ -773,9 +776,8 @@ class NeoWikiExtension {
 			),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
-			authority: $this->getRequestAuthority(),
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
 			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
-			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
 
@@ -795,7 +797,7 @@ class NeoWikiExtension {
 			authority: $this->getRequestAuthority(),
 			layoutDeserializer: $this->getLayoutPersistenceDeserializer(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
-			logger: LoggerFactory::getInstance( 'NeoWiki' )
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
 		);
 	}
 
@@ -807,7 +809,7 @@ class NeoWikiExtension {
 		return new DatabaseSchemaNameLookup(
 			db: $this->getDbConnection(),
 			searchEngine: MediaWikiServices::getInstance()->newSearchEngine(),
-			authority: $this->getRequestAuthority(),
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 		);
 	}
@@ -843,7 +845,7 @@ class NeoWikiExtension {
 			schemaLookup: $this->getSchemaLookup(),
 			schemaSerializer: $this->getSchemaPresentationSerializer(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-			readAuthorizer: $this->newSubjectReadAuthorizer( $authority ),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
@@ -852,7 +854,7 @@ class NeoWikiExtension {
 			presenter: $presenter,
 			subjectLookup: $this->getSubjectRepository(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-			readAuthorizer: $this->newSubjectReadAuthorizer( $authority ),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
@@ -866,7 +868,7 @@ class NeoWikiExtension {
 				primaryRevision: $revision,
 			),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-			readAuthorizer: $this->newSubjectReadAuthorizer( $authority ),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
@@ -921,7 +923,7 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-			readAuthorizer: $this->newSubjectReadAuthorizer( $authority ),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 

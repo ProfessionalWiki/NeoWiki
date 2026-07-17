@@ -9,7 +9,6 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponse;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
-use ProfessionalWiki\NeoWiki\Application\SubjectReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -22,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 
@@ -57,7 +57,7 @@ class GetSubjectQueryTest extends TestCase {
 				),
 			),
 			new InMemoryPageIdentifiersLookup(),
-			$this->newAllowAllReadAuthorizer(),
+			new StubPageReadAuthorizer( allowed: true ),
 		);
 
 		$query->execute(
@@ -130,7 +130,7 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			new InMemorySubjectLookup(),
 			new InMemoryPageIdentifiersLookup(),
-			$this->newAllowAllReadAuthorizer(),
+			new StubPageReadAuthorizer( allowed: true ),
 		);
 
 		$query->execute(
@@ -153,7 +153,7 @@ class GetSubjectQueryTest extends TestCase {
 				[ new SubjectId( TestSubject::ZERO_GUID ), new PageIdentifiers( new PageId( 1 ), 'wrong title', 0 ) ],
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'right title', 12 ) ],
 			] ),
-			$this->newAllowAllReadAuthorizer(),
+			new StubPageReadAuthorizer( allowed: true ),
 		);
 
 		$query->execute(
@@ -202,7 +202,7 @@ class GetSubjectQueryTest extends TestCase {
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'subject title', 0 ) ],
 				[ $referencedSubject->id, new PageIdentifiers( new PageId( 1337 ), 'referenced title', 12 ) ],
 			] ),
-			$this->newAllowAllReadAuthorizer(),
+			new StubPageReadAuthorizer( allowed: true ),
 		);
 
 		$query->execute(
@@ -219,14 +219,6 @@ class GetSubjectQueryTest extends TestCase {
 		$this->assertSame( 1337, $response->subjects[$referencedSubject->id->text]->pageId );
 		$this->assertSame( 'referenced title', $response->subjects[$referencedSubject->id->text]->pageTitle );
 		$this->assertSame( 12, $response->subjects[$referencedSubject->id->text]->pageNamespaceId );
-	}
-
-	private function newAllowAllReadAuthorizer(): SubjectReadAuthorizer {
-		return new class implements SubjectReadAuthorizer {
-			public function authorizeRead( PageId $pageId ): bool {
-				return true;
-			}
-		};
 	}
 
 }

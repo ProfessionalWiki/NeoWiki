@@ -4,10 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
-use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
-use MediaWiki\User\UserIdentityValue;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -15,9 +13,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
-use TestLogger;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup
@@ -30,7 +26,7 @@ class WikiPageLayoutLookupTest extends MediaWikiIntegrationTestCase {
 		$fetcher = $this->createMock( PageContentFetcher::class );
 		$fetcher->expects( $this->never() )->method( 'getPageContent' );
 
-		$lookup = $this->newLookup( $this->mockRegisteredAuthority( static fn () => false ), $fetcher );
+		$lookup = $this->newLookup( canRead: false, fetcher: $fetcher );
 
 		$this->assertNull( $lookup->getLayout( new LayoutName( 'Person card' ) ) );
 	}
@@ -39,44 +35,12 @@ class WikiPageLayoutLookupTest extends MediaWikiIntegrationTestCase {
 		$fetcher = $this->createMock( PageContentFetcher::class );
 		$fetcher->expects( $this->once() )->method( 'getPageContent' )->willReturn( null );
 
-		$lookup = $this->newLookup( $this->mockRegisteredAuthority( static fn () => true ), $fetcher );
+		$lookup = $this->newLookup( canRead: true, fetcher: $fetcher );
 
 		$this->assertNull( $lookup->getLayout( new LayoutName( 'Person card' ) ) );
 	}
 
-	public function testGateUsesBindingAuthorizeRead(): void {
-		// probablyCan is a UI-hint check that skips the expensive ACL hook; the gate must
-		// use the binding authorizeRead. Reverting fails this test.
-		$authority = $this->createMock( Authority::class );
-		$authority->method( 'probablyCan' )->willReturn( true );
-		$authority->method( 'authorizeRead' )->willReturnCallback( function ( string $action ) {
-			$this->assertSame( 'read', $action );
-			return false;
-		} );
-		$authority->method( 'getUser' )->willReturn( new UserIdentityValue( 9999, 'Petr' ) );
-
-		$fetcher = $this->createMock( PageContentFetcher::class );
-		$fetcher->expects( $this->never() )->method( 'getPageContent' );
-
-		$logger = new TestLogger( true, null, true );
-
-		$this->assertNull(
-			$this->newLookup( $authority, $fetcher, $logger )->getLayout( new LayoutName( 'Person card' ) )
-		);
-
-		// Mirrors AuthorityBasedSubjectAuthorizerTest::testDeniedReadIsLogged.
-		$this->assertSame(
-			[ [ 'info', 'Denied read of page {page} to {user}',
-				[ 'page' => 'Layout:Person_card', 'user' => 'Petr' ] ] ],
-			$logger->getBuffer()
-		);
-	}
-
-	private function newLookup(
-		Authority $authority,
-		PageContentFetcher $fetcher,
-		LoggerInterface $logger = new NullLogger()
-	): WikiPageLayoutLookup {
+	private function newLookup( bool $canRead, PageContentFetcher $fetcher ): WikiPageLayoutLookup {
 		$title = $this->createMock( Title::class );
 		$title->method( 'exists' )->willReturn( true );
 		$title->method( 'getPrefixedDBkey' )->willReturn( 'Layout:Person_card' );
@@ -86,10 +50,10 @@ class WikiPageLayoutLookupTest extends MediaWikiIntegrationTestCase {
 
 		return new WikiPageLayoutLookup(
 			pageContentFetcher: $fetcher,
-			authority: $authority,
+			authority: $this->mockRegisteredUltimateAuthority(),
 			layoutDeserializer: new LayoutPersistenceDeserializer(),
 			titleFactory: $titleFactory,
-			logger: $logger,
+			readAuthorizer: new StubPageReadAuthorizer( allowed: $canRead ),
 		);
 	}
 
