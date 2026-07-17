@@ -32,6 +32,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
@@ -74,7 +75,10 @@ class CreateSubjectActionTest extends TestCase {
 			new SelectStatementResolver( new SelectValueResolver() ),
 			new ProposedSubjectValidator(
 				schemaLookup: $this->schemaLookup,
-				subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
+				subjectValidator: new SubjectValidator(
+					propertyTypeLookup: $registry,
+					subjectLookup: new InMemorySubjectLookup(),
+				),
 			),
 			$validationEnforced,
 		);

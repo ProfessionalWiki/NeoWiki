@@ -186,6 +186,8 @@
 	"neowiki-field-min-length": "Validation error shown when a text value is shorter than the property's minimum length. $1 is the minimum number of characters.",
 	"neowiki-field-max-length": "Validation error shown when a text value is longer than the property's maximum length. $1 is the maximum number of characters.",
 	"neowiki-field-label-required": "Form-level error shown when the backend reports the Subject is missing its required display label.",
+	"neowiki-field-relation-target-schema-mismatch": "Validation error shown when a relation points to a subject whose schema is not the relation's declared target schema. $1 is the required target schema; $2 is the schema the target subject actually uses.",
+	"neowiki-field-relation-target-not-found": "Validation warning shown when a relation points to a subject ID that does not resolve to an existing subject. $1 is the target subject ID. Non-blocking: the target may be created later (for example during import), mirroring wiki red links.",
 	"neowiki-select-placeholder": "Placeholder text shown in the select dropdown before any option is chosen.",
 	"neowiki-select-no-results": "Message shown in the multi-select dropdown when the typed text does not match any available option.",
 	"neowiki-field-invalid-datetime": "Validation error shown when the entered date and time value cannot be parsed. DateTime values must be strict ISO 8601 / xsd:dateTime strings with an explicit timezone offset or 'Z' (for example, '2025-06-15T12:00:00Z' or '2025-06-15T12:00:00+02:00'). Partial values such as year-only or date-only are rejected, and min/max bounds are inclusive.",

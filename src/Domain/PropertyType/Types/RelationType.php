@@ -41,13 +41,19 @@ class RelationType implements PropertyType {
 			return [];
 		}
 
-		$isEmpty = !( $value instanceof RelationValue ) || $value->isEmpty();
+		$relations = $value instanceof RelationValue ? $value->relations : [];
 
-		if ( $definition->isRequired() && $isEmpty ) {
+		if ( $definition->isRequired() && $relations === [] ) {
 			return [ new Violation( propertyName: null, code: 'required' ) ];
 		}
 
-		return [];
+		$violations = [];
+
+		if ( !$definition->allowsMultipleValues() && count( $relations ) > 1 ) {
+			$violations[] = new Violation( propertyName: null, code: 'single-value-only' );
+		}
+
+		return $violations;
 	}
 
 }

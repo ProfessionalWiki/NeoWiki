@@ -35,6 +35,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
@@ -74,7 +75,10 @@ class ReplaceSubjectActionTest extends TestCase {
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 			proposedSubjectValidator: new ProposedSubjectValidator(
 				schemaLookup: $this->schemaLookup,
-				subjectValidator: new SubjectValidator( propertyTypeLookup: $registry ),
+				subjectValidator: new SubjectValidator(
+					propertyTypeLookup: $registry,
+					subjectLookup: new InMemorySubjectLookup(),
+				),
 			),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
