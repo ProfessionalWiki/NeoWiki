@@ -129,6 +129,14 @@ class ViewParserFunctionTest extends TestCase {
 		$this->assertRendersError( $result, 'neowiki-view-error-unknown-arg', '=Finances' );
 	}
 
+	public function testErrorIsArmouredAgainstWikitextTransformation(): void {
+		$result = $this->callView( self::EXPLICIT_SUBJECT_ID, 'https://example.com' );
+
+		$this->assertIsArray( $result, 'Error detail echoes the offending argument, which can carry a URL, so it needs the same armour.' );
+		$this->assertTrue( $result['isHTML'] );
+		$this->assertTrue( $result['noparse'] );
+	}
+
 	private function callView( string ...$args ): string|array {
 		return ( new ViewParserFunction( $this->repositoryWithMainSubject() ) )
 			->handle( $this->createMockParser(), ...$args );
@@ -165,7 +173,7 @@ class ViewParserFunctionTest extends TestCase {
 		$this->assertTrue( $result['isHTML'] );
 		$this->assertTrue( $result['noparse'] );
 
-		$html = $result[0];
+		$html = $this->html( $result );
 		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="' . $subjectId . '"', $html );
 
 		if ( $layoutName === null ) {
@@ -179,13 +187,24 @@ class ViewParserFunctionTest extends TestCase {
 	 * @param string|array{0: string, noparse: true, isHTML: true} $result
 	 */
 	private function assertRendersError( string|array $result, string $messageKey, ?string $insertion = null ): void {
-		$this->assertIsString( $result, 'Expected an error HTML string; got a placeholder array.' );
-		$this->assertStringContainsString( 'class="error"', $result );
-		$this->assertStringContainsString( $messageKey, $result );
+		$this->assertIsArray( $result, 'Expected an armoured error array; got an error string or empty string.' );
+		$html = $this->html( $result );
+
+		$this->assertStringContainsString( 'class="error"', $html );
+		$this->assertStringContainsString( $messageKey, $html );
 
 		if ( $insertion !== null ) {
-			$this->assertStringContainsString( $insertion, $result );
+			$this->assertStringContainsString( $insertion, $html );
 		}
+	}
+
+	/**
+	 * The HTML the parser function hands back, from either its result or its error shape.
+	 *
+	 * @param array{0: string, noparse: true, isHTML: true} $result
+	 */
+	private function html( array $result ): string {
+		return $result[0];
 	}
 
 }

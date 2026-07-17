@@ -25,7 +25,7 @@ class ViewParserFunction {
 		$parsed = $this->parseArgs( $parser, $args );
 
 		if ( is_string( $parsed ) ) {
-			return $parsed;
+			return $this->asHtml( $parsed );
 		}
 
 		[ $explicitSubjectId, $layoutName ] = $parsed;
@@ -36,11 +36,7 @@ class ViewParserFunction {
 			return '';
 		}
 
-		return [
-			ViewHtmlBuilder::viewPlaceholderHtml( $resolvedSubjectId, $layoutName ),
-			'noparse' => true,
-			'isHTML' => true,
-		];
+		return $this->asHtml( ViewHtmlBuilder::viewPlaceholderHtml( $resolvedSubjectId, $layoutName ) );
 	}
 
 	/**
@@ -144,6 +140,19 @@ class ViewParserFunction {
 			->getMainSubject();
 
 		return $subject?->getId()->text;
+	}
+
+	/**
+	 * Hands the HTML to the parser as HTML rather than wikitext. Without this the text is parsed as
+	 * wikitext, which autolinks any URL it happens to hold: the URL is swallowed into a link and its
+	 * trailing quote percent-encoded, corrupting the error box. The error messages echo the offending
+	 * user-supplied argument, which can itself carry a URL, so they need this treatment. The
+	 * subject placeholder is armoured the same way.
+	 *
+	 * @return array{0: string, noparse: true, isHTML: true}
+	 */
+	private function asHtml( string $html ): array {
+		return [ $html, 'noparse' => true, 'isHTML' => true ];
 	}
 
 }
