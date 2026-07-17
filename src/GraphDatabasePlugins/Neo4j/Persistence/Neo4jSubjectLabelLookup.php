@@ -13,7 +13,8 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookupResult;
 class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 
 	public function __construct(
-		private readonly ClientInterface $client
+		private readonly ClientInterface $client,
+		private readonly string $wikiId,
 	) {
 	}
 
@@ -34,13 +35,15 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 					"MATCH (n:Subject)
 					 WHERE toLower(n.name) STARTS WITH toLower(\$search)
 					 AND \$schemaName IN labels(n)
+					 AND n.wiki_id = \$wikiId
 					 RETURN n.id AS id, n.name AS name
 					 ORDER BY n.name
 					 LIMIT \$limit",
 					[
 						'search' => $search,
 						'limit' => (int)$limit,
-						'schemaName' => $schemaName
+						'schemaName' => $schemaName,
+						'wikiId' => $this->wikiId,
 					]
 				);
 

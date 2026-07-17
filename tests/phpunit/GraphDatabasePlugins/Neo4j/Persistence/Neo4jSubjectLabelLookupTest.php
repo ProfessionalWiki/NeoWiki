@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Cypher;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
@@ -111,6 +112,36 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, 'Recipe' ) );
 	}
 
+	public function testExcludesSubjectsFromOtherWikis(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: self::SUBJECT_ID_1, label: new SubjectLabel( 'Apple Pie' ) ),
+		) );
+
+		$otherWikiId = $this->currentWikiId() . '-other';
+		$this->createSubjectNode( id: 'sTestSLL2222221', name: 'Apple Crumble', wikiId: $otherWikiId );
+		$this->createSubjectNode( id: 'sTestSLL2222222', name: 'Apple Pie', wikiId: $otherWikiId );
+		$this->createSubjectNode( id: 'sTestSLL2222223', name: 'Apple Tart', wikiId: $otherWikiId );
+
+		$this->assertEquals(
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie' ) ],
+			$this->getSubjectLabelsMatching( 'Apple' )
+		);
+	}
+
+	public function testExcludesSubjectsWithoutWikiId(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: self::SUBJECT_ID_1, label: new SubjectLabel( 'Apple Pie' ) ),
+		) );
+
+		$this->createSubjectNode( id: 'sTestSLL3333331', name: 'Apple Crumble', wikiId: null );
+		$this->createSubjectNode( id: 'sTestSLL3333332', name: 'Apple Tart', wikiId: null );
+
+		$this->assertEquals(
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie' ) ],
+			$this->getSubjectLabelsMatching( 'Apple' )
+		);
+	}
+
 	private function saveSubjects( SubjectMap $subjects ): void {
 		$this->newProjectionStore()->savePage( TestPage::build(
 			id: 1,
@@ -136,7 +167,29 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 
 	private function newLookup( ClientInterface $client = null ): Neo4jSubjectLabelLookup {
 		return new Neo4jSubjectLabelLookup(
-			client: $client ?? $this->getClient()
+			client: $client ?? $this->getClient(),
+			wikiId: $this->currentWikiId(),
+		);
+	}
+
+	private function currentWikiId(): string {
+		return NeoWikiExtension::getInstance()->config->wikiId;
+	}
+
+	/**
+	 * Creates a Subject node directly in the graph, bypassing the projection store, so a test can
+	 * plant a node with a chosen wiki_id (or none at all, as written before wiki_id stamping existed).
+	 */
+	private function createSubjectNode( string $id, string $name, ?string $wikiId ): void {
+		$properties = [ 'id' => $id, 'name' => $name ];
+
+		if ( $wikiId !== null ) {
+			$properties['wiki_id'] = $wikiId;
+		}
+
+		$this->getClient()->run(
+			'CREATE (n:Subject:' . Cypher::escape( TestSubject::DEFAULT_SCHEMA_ID ) . ' $properties)',
+			[ 'properties' => $properties ]
 		);
 	}
 
