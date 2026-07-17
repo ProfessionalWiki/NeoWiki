@@ -27,6 +27,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
@@ -211,10 +212,16 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$referenced = TestSubject::build( id: 's11111111111tar', label: new SubjectLabel( 'target subject' ) );
 		$subjectLookup = new InMemorySubjectLookup( $referenced );
+		// The gate omits referenced Subjects whose page does not resolve, so the lookup must
+		// honor the production invariant: a returned Subject always has a resolvable page.
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup( [
+			[ $referenced->id, new PageIdentifiers( new PageId( 137 ), 'Target Page', 0 ) ],
+		] );
 
 		$presenter = $this->newSpyPresenter();
 
-		$this->newQuery( $presenter, $repository, subjectLookup: $subjectLookup )->execute( 42, includeReferencedSubjects: true );
+		$this->newQuery( $presenter, $repository, subjectLookup: $subjectLookup, pageIdentifiersLookup: $pageIdentifiersLookup )
+			->execute( 42, includeReferencedSubjects: true );
 
 		$this->assertNotNull( $presenter->response->referencedSubjects );
 		$this->assertArrayHasKey( 's11111111111tar', $presenter->response->referencedSubjects );
@@ -283,13 +290,16 @@ class GetPageSubjectsQueryTest extends TestCase {
 			new PageId( 42 )
 		);
 
-		$subjectLookup = new InMemorySubjectLookup(
-			TestSubject::build( id: 's11111111111tar', label: new SubjectLabel( 'shared target' ) )
-		);
+		$referenced = TestSubject::build( id: 's11111111111tar', label: new SubjectLabel( 'shared target' ) );
+		$subjectLookup = new InMemorySubjectLookup( $referenced );
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup( [
+			[ $referenced->id, new PageIdentifiers( new PageId( 137 ), 'Target Page', 0 ) ],
+		] );
 
 		$presenter = $this->newSpyPresenter();
 
-		$this->newQuery( $presenter, $repository, subjectLookup: $subjectLookup )->execute( 42, includeReferencedSubjects: true );
+		$this->newQuery( $presenter, $repository, subjectLookup: $subjectLookup, pageIdentifiersLookup: $pageIdentifiersLookup )
+			->execute( 42, includeReferencedSubjects: true );
 
 		$this->assertSame(
 			[ 's11111111111tar' ],
@@ -355,6 +365,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 			schemaLookup: $schemaLookup ?? new InMemorySchemaLookup(),
 			schemaSerializer: new SchemaPresentationSerializer(),
 			pageIdentifiersLookup: $pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
+			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 		);
 	}
 

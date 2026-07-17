@@ -9,6 +9,7 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -41,18 +42,27 @@ class GetSubjectApi extends SimpleHandler {
 
 	private function newGetSubjectQuery( RestGetSubjectPresenter $presenter, ?int $revisionId ): GetSubjectQuery|Response {
 		if ( $revisionId === null ) {
-			return NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter );
+			return NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter, $this->getAuthority() );
 		}
 
 		$revision = MediaWikiServices::getInstance()->getRevisionLookup()->getRevisionById( $revisionId );
 
-		if ( $revision === null ) {
+		// A revision on an unreadable page answers exactly like a nonexistent revision:
+		// revision ids are sequential, so any distinguishable answer is a sweepable
+		// existence oracle over restricted pages (#1046).
+		if ( $revision === null || !$this->revisionPageIsReadable( $revision->getPageId() ) ) {
 			return $this->getResponseFactory()->createHttpError( 404, [
 				'message' => 'Revision not found: ' . $revisionId,
 			] );
 		}
 
-		return NeoWikiExtension::getInstance()->newGetSubjectQueryForRevision( $presenter, $revision );
+		return NeoWikiExtension::getInstance()->newGetSubjectQueryForRevision( $presenter, $revision, $this->getAuthority() );
+	}
+
+	private function revisionPageIsReadable( int $pageId ): bool {
+		return NeoWikiExtension::getInstance()
+			->newPageReadAuthorizer( $this->getAuthority() )
+			->authorizeReadByPageId( new PageId( $pageId ) );
 	}
 
 	public function getParamSettings(): array {

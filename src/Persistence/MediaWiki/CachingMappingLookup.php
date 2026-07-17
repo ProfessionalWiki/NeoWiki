@@ -4,10 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
-use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -31,7 +31,7 @@ class CachingMappingLookup implements MappingLookup {
 		private readonly MappingNameLookup $mappingNameLookup,
 		private readonly WANObjectCache $cache,
 		private readonly TitleFactory $titleFactory,
-		private readonly Authority $authority,
+		private readonly PageReadAuthorizer $readAuthorizer,
 		private readonly IConnectionProvider $connectionProvider,
 	) {
 	}
@@ -43,9 +43,11 @@ class CachingMappingLookup implements MappingLookup {
 			return null;
 		}
 
-		// Repeat the inner lookup's per-user read check before the cache, so a cache hit cannot serve a
-		// Mapping to a user who may not read its page.
-		if ( !$this->authority->probablyCan( 'read', $title ) ) {
+		// The inner lookup applies no per-title read check (its revision audience check filters
+		// revision deletion only), so this is the sole read gate on the Mapping read path. It
+		// must also run before the cache: the cached value is user-independent mapping content,
+		// and a cache hit must not serve a Mapping whose page the user may not read (#1046).
+		if ( !$this->readAuthorizer->authorizeReadByPageTitle( $title ) ) {
 			return null;
 		}
 

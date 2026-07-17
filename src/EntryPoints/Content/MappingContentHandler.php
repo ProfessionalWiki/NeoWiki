@@ -69,6 +69,9 @@ class MappingContentHandler extends JsonContentHandler {
 			return;
 		}
 
+		// getAllMappings() runs through the per-page read gate, so a conflicting Mapping on a
+		// page the saving editor cannot read escapes this uniqueness check. Accepted: shadowed
+		// conflicts surface at projection time, and read-restricted Mapping pages are rare.
 		$conflict = ( new Mappings( $extension->getMappingLookup()->getAllMappings() ) )
 			->conflictFor( $mapping->schema, $mapping->target, $mapping->name );
 

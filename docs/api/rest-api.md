@@ -21,6 +21,19 @@ permissions might be required depending on the wiki configuration.
 You can find all endpoints in [the OpenAPI 3.0 description](#full-specification) exposed via the REST API itself.
 Demo wiki example: [neowiki.dev/w/rest.php/specs/v0/module/-](https://neowiki.dev/w/rest.php/specs/v0/module/-)
 
+## Permissions
+
+The Subject, Schema, Layout, Mapping and RDF read endpoints enforce the caller's per-page `read` permission: read
+whitelists and permission extensions apply. (MediaWiki's `read` action ignores page protection and
+`$wgNamespaceProtection`, so neither restricts these endpoints.) When you may not read a page, they respond as if
+the data were absent — a `null` value, an empty list, or a `404` — rather than with a `403`. Treat a not-found
+response as "not available": it may mean the data does not exist, or that you may not read it.
+
+Subject write endpoints require per-page `edit` permission and answer `403` on denial.
+
+The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
+[Query API](query-api.md)).
+
 ## Endpoints
 
 <!-- REST-ENDPOINTS:START — drift-checked against extension.json by

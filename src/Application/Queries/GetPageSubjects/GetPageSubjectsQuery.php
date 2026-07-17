@@ -8,8 +8,11 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -24,21 +27,34 @@ readonly class GetPageSubjectsQuery {
 		private SchemaLookup $schemaLookup,
 		private SchemaPresentationSerializer $schemaSerializer,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
+		private PageReadAuthorizer $readAuthorizer,
 	) {
 	}
 
 	public function execute( int $pageId, bool $includeSchemas = false, bool $includeReferencedSubjects = false ): void {
-		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( new PageId( $pageId ) );
+		$id = new PageId( $pageId );
+
+		// A denied page takes exactly the path a page without Subjects takes, so the response
+		// is byte-identical to absence and cannot be used to probe page readability (#1046).
+		$pageSubjects = $this->readAuthorizer->authorizeReadByPageId( $id )
+			? $this->subjectRepository->getSubjectsByPageId( $id )
+			: PageSubjects::newEmpty();
 
 		$mainSubject = $pageSubjects->getMainSubject();
 		$subjectItems = [];
 
 		if ( $mainSubject !== null ) {
-			$subjectItems[$mainSubject->id->text] = $this->buildResponseItem( $mainSubject );
+			$subjectItems[$mainSubject->id->text] = $this->buildResponseItem(
+				$mainSubject,
+				$this->pageIdentifiersLookup->getPageIdOfSubject( $mainSubject->id )
+			);
 		}
 
 		foreach ( $pageSubjects->getChildSubjects()->asArray() as $childSubject ) {
-			$subjectItems[$childSubject->id->text] = $this->buildResponseItem( $childSubject );
+			$subjectItems[$childSubject->id->text] = $this->buildResponseItem(
+				$childSubject,
+				$this->pageIdentifiersLookup->getPageIdOfSubject( $childSubject->id )
+			);
 		}
 
 		$referencedSubjectItems = null;
@@ -62,9 +78,7 @@ readonly class GetPageSubjectsQuery {
 		);
 	}
 
-	private function buildResponseItem( Subject $subject ): GetSubjectResponseItem {
-		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $subject->id );
-
+	private function buildResponseItem( Subject $subject, ?PageIdentifiers $pageIdentifiers ): GetSubjectResponseItem {
 		return new GetSubjectResponseItem(
 			id: $subject->id->text,
 			label: $subject->label->text,
@@ -92,9 +106,21 @@ readonly class GetPageSubjectsQuery {
 
 				$referencedSubject = $this->subjectLookup->getSubject( $referencedId );
 
-				if ( $referencedSubject !== null ) {
-					$referenced[$referencedId->text] = $this->buildResponseItem( $referencedSubject );
+				if ( $referencedSubject === null ) {
+					continue;
 				}
+
+				$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $referencedSubject->id );
+
+				// An unresolvable page is omitted rather than served ungated. The graph-backed
+				// repository cannot reach one (it returns null first), so this only guards a
+				// future SubjectLookup that bypasses the graph.
+				if ( $pageIdentifiers === null
+					|| !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
+					continue;
+				}
+
+				$referenced[$referencedId->text] = $this->buildResponseItem( $referencedSubject, $pageIdentifiers );
 			}
 		}
 

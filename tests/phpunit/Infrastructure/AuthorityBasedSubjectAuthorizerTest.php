@@ -6,19 +6,19 @@ namespace ProfessionalWiki\NeoWiki\Tests\Infrastructure;
 
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
-use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer
  */
 class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 
-	use MockAuthorityTrait;
+	use NeoWikiMockAuthorityTrait;
 
 	private const int PAGE_ID = 42;
 

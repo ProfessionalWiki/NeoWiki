@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
-use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use PHPUnit\Framework\TestCase;
@@ -13,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\IConnectionProvider;
@@ -26,7 +26,7 @@ class CachingSchemaLookupTest extends TestCase {
 	public function testCachesSchemaSoTheInnerLookupRunsOnce(): void {
 		$inner = $this->newSpyLookup();
 
-		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 100 ), $this->newAuthority(), $this->newConnectionProvider() );
+		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 100 ), new StubPageReadAuthorizer( allowed: true ), $this->newConnectionProvider() );
 		$first = $lookup->getSchema( new SchemaName( 'Person' ) );
 		$second = $lookup->getSchema( new SchemaName( 'Person' ) );
 
@@ -38,7 +38,7 @@ class CachingSchemaLookupTest extends TestCase {
 	public function testReloadsWhenTheSchemaRevisionChanges(): void {
 		$inner = $this->newSpyLookup();
 
-		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 101 ), $this->newAuthority(), $this->newConnectionProvider() );
+		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 101 ), new StubPageReadAuthorizer( allowed: true ), $this->newConnectionProvider() );
 		$lookup->getSchema( new SchemaName( 'Person' ) );
 		$lookup->getSchema( new SchemaName( 'Person' ) );
 
@@ -53,7 +53,7 @@ class CachingSchemaLookupTest extends TestCase {
 		$factory = $this->createMock( TitleFactory::class );
 		$factory->method( 'newFromText' )->willReturn( $title );
 
-		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $factory, $this->newAuthority(), $this->newConnectionProvider() );
+		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $factory, new StubPageReadAuthorizer( allowed: true ), $this->newConnectionProvider() );
 
 		$this->assertNull( $lookup->getSchema( new SchemaName( 'Missing' ) ) );
 		$this->assertSame( 0, $inner->calls );
@@ -66,7 +66,7 @@ class CachingSchemaLookupTest extends TestCase {
 			$inner,
 			$this->newCache(),
 			$this->newTitleFactory( 1, 100, 100 ),
-			$this->newAuthority( canRead: false ),
+			new StubPageReadAuthorizer( allowed: false ),
 			$this->newConnectionProvider()
 		);
 
@@ -86,7 +86,7 @@ class CachingSchemaLookupTest extends TestCase {
 			}
 		};
 
-		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 100 ), $this->newAuthority(), $this->newConnectionProvider() );
+		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 100 ), new StubPageReadAuthorizer( allowed: true ), $this->newConnectionProvider() );
 		$this->assertNull( $lookup->getSchema( new SchemaName( 'Broken' ) ) );
 		$this->assertNull( $lookup->getSchema( new SchemaName( 'Broken' ) ) );
 
@@ -125,12 +125,6 @@ class CachingSchemaLookupTest extends TestCase {
 
 	private function newCache(): WANObjectCache {
 		return new WANObjectCache( [ 'cache' => new HashBagOStuff() ] );
-	}
-
-	private function newAuthority( bool $canRead = true ): Authority {
-		$authority = $this->createMock( Authority::class );
-		$authority->method( 'probablyCan' )->willReturn( $canRead );
-		return $authority;
 	}
 
 	private function newConnectionProvider(): IConnectionProvider {
