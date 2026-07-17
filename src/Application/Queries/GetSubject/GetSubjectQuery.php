@@ -36,7 +36,7 @@ readonly class GetSubjectQuery {
 
 		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $subject->id );
 
-		if ( !$this->pageIsReadable( $pageIdentifiers ) ) {
+		if ( !$this->pageIsReadableOrUnresolved( $pageIdentifiers ) ) {
 			// Denial takes exactly the absent-Subject path, so harvested Subject ids cannot
 			// be confirmed to exist on restricted pages (#1046).
 			$this->presenter->presentSubjectNotFound();
@@ -57,7 +57,7 @@ readonly class GetSubjectQuery {
 
 				$referencedPageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $referencedSubject->id );
 
-				if ( !$this->pageIsReadable( $referencedPageIdentifiers ) ) {
+				if ( !$this->pageIsReadableOrUnresolved( $referencedPageIdentifiers ) ) {
 					continue;
 				}
 
@@ -75,14 +75,12 @@ readonly class GetSubjectQuery {
 	}
 
 	/**
-	 * A Subject whose page does not resolve in the graph can only have come from a revision
-	 * the caller supplied, and GetSubjectApi authorizes read on that revision's page before
-	 * constructing this query. Reads through the graph-backed repository always resolve the
-	 * owning page (the repository returns null otherwise), so null never bypasses the gate
-	 * there. Denying on null would instead hide Subjects from readable old revisions after
-	 * the Subject was later deleted.
+	 * Unresolved is allowed because it means the Subject came from the revision the caller
+	 * supplied, whose page GetSubjectApi already authorized: reads through the graph-backed
+	 * repository always resolve the owning page. Denying would hide Subjects from readable old
+	 * revisions after the Subject was later deleted.
 	 */
-	private function pageIsReadable( ?PageIdentifiers $pageIdentifiers ): bool {
+	private function pageIsReadableOrUnresolved( ?PageIdentifiers $pageIdentifiers ): bool {
 		return $pageIdentifiers === null || $this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() );
 	}
 
