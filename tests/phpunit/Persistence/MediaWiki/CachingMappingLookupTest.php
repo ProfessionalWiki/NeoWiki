@@ -10,13 +10,18 @@ use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\UserIdentityValue;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMappings;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
+use Psr\Log\NullLogger;
 use TestLogger;
 use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup
@@ -65,6 +70,89 @@ class CachingMappingLookupTest extends TestCase {
 				[ 'page' => 'Mapping:CachingGateMapping', 'user' => 'Petr' ] ] ],
 			$logger->getBuffer()
 		);
+	}
+
+	public function testDeniedUserGetsNullEvenWhenTheMappingIsAlreadyCached(): void {
+		$cache = $this->newCache();
+
+		$allowed = new CachingMappingLookup(
+			$this->newSpyLookup(),
+			$this->createMock( MappingNameLookup::class ),
+			$cache,
+			$this->newTitleFactory( 1, 100 ),
+			$this->newAuthority(),
+			$this->newConnectionProvider(),
+			new NullLogger(),
+		);
+		$allowed->getMapping( new MappingName( 'Person' ) );
+
+		$denied = new CachingMappingLookup(
+			$this->newSpyLookup(),
+			$this->createMock( MappingNameLookup::class ),
+			$cache,
+			$this->newTitleFactory( 1, 100 ),
+			$this->newAuthority( canRead: false ),
+			$this->newConnectionProvider(),
+			new NullLogger(),
+		);
+
+		$this->assertNull( $denied->getMapping( new MappingName( 'Person' ) ) );
+	}
+
+	private function newSpyLookup(): MappingLookup {
+		return new class() implements MappingLookup {
+			public Mapping $mapping;
+
+			public function __construct() {
+				$this->mapping = new Mapping(
+					name: new MappingName( 'Person' ),
+					schema: new SchemaName( 'Person' ),
+					target: 'http://example.org/target',
+					prefixes: [],
+					subjectClass: 'http://example.org/Class',
+					properties: new PropertyMappings( [] ),
+				);
+			}
+
+			public function getMapping( MappingName $name ): ?Mapping {
+				return $this->mapping;
+			}
+
+			public function getAllMappings(): array {
+				return [ $this->mapping ];
+			}
+		};
+	}
+
+	private function newTitleFactory( int $articleId, int ...$revIds ): TitleFactory {
+		$title = $this->createMock( Title::class );
+		$title->method( 'exists' )->willReturn( true );
+		$title->method( 'getArticleID' )->willReturn( $articleId );
+		$title->method( 'getLatestRevID' )->willReturnOnConsecutiveCalls( ...$revIds );
+
+		$factory = $this->createMock( TitleFactory::class );
+		$factory->method( 'newFromText' )->willReturn( $title );
+		return $factory;
+	}
+
+	private function newCache(): WANObjectCache {
+		return new WANObjectCache( [ 'cache' => new HashBagOStuff() ] );
+	}
+
+	private function newAuthority( bool $canRead = true ): Authority {
+		$authority = $this->createMock( Authority::class );
+		$authority->method( 'authorizeRead' )->willReturn( $canRead );
+		$authority->method( 'getUser' )->willReturn( new UserIdentityValue( 1, 'TestUser' ) );
+		return $authority;
+	}
+
+	private function newConnectionProvider(): IConnectionProvider {
+		$replica = $this->createMock( IReadableDatabase::class );
+		$replica->method( 'getSessionLagStatus' )->willReturn( [ 'lag' => 0, 'since' => INF ] );
+
+		$provider = $this->createMock( IConnectionProvider::class );
+		$provider->method( 'getReplicaDatabase' )->willReturn( $replica );
+		return $provider;
 	}
 
 }

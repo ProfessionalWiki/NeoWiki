@@ -78,6 +78,31 @@ class CachingSchemaLookupTest extends TestCase {
 		$this->assertSame( 0, $inner->calls );
 	}
 
+	public function testDeniedUserGetsNullEvenWhenTheSchemaIsAlreadyCached(): void {
+		$cache = $this->newCache();
+
+		$allowed = new CachingSchemaLookup(
+			$this->newSpyLookup(),
+			$cache,
+			$this->newTitleFactory( 1, 100 ),
+			$this->newAuthority(),
+			$this->newConnectionProvider(),
+			new NullLogger()
+		);
+		$allowed->getSchema( new SchemaName( 'Person' ) );
+
+		$denied = new CachingSchemaLookup(
+			$this->newSpyLookup(),
+			$cache,
+			$this->newTitleFactory( 1, 100 ),
+			$this->newAuthority( canRead: false ),
+			$this->newConnectionProvider(),
+			new NullLogger()
+		);
+
+		$this->assertNull( $denied->getSchema( new SchemaName( 'Person' ) ) );
+	}
+
 	public function testGateUsesBindingAuthorizeRead(): void {
 		// probablyCan is a UI-hint check that skips the expensive ACL hook that extensions use
 		// for read restrictions; the gate must use the binding authorizeRead. Reverting to a hint
