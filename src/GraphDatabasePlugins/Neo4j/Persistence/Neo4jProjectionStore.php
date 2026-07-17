@@ -32,50 +32,63 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 
 	public function savePage( Page $page ): void {
 		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $page ): void {
-			$properties = $page->getProperties()->asArray();
-			[ $typedSetClauses, $typedParams, $properties ] = $this->extractTypedValues( $properties );
-
-			$cypher = '
-				// Create or update the page. Page identity is scoped per wiki so that
-				// pages from different wikis sharing the same id do not collide in a shared graph.
-				// The wiki_id is persisted by the MERGE pattern itself.
-				MERGE (page:Page {id: $pageId, wiki_id: $wikiId})
-				SET page += $properties
-				SET page.id = $pageId';
-
-			if ( $typedSetClauses !== '' ) {
-				$cypher .= ',' . $typedSetClauses;
-			}
-
-			$cypher .= '
-
-				// Delete subjects that are no longer present on the page
-				WITH page
-				MATCH (page)-[r:HasSubject]->(subject)
-				WHERE NOT subject.id IN $subjectIds
-				DETACH DELETE subject
-
-				// Remove all existing HasSubject relations
-				WITH page
-				MATCH (page)-[r:HasSubject]->()
-				DELETE r
-				';
-
-			$transaction->run(
-				$cypher,
-				array_merge(
-					[
-						'pageId' => $page->getId()->id,
-						'wikiId' => $this->wikiId,
-						'subjectIds' => $page->getSubjects()->getAllSubjects()->getIdsAsTextArray(),
-						'properties' => new CypherMap( $properties ),
-					],
-					$typedParams,
-				)
-			);
-
+			$this->upsertPageNode( $transaction, $page );
+			$this->removeAbsentSubjects( $transaction, $page );
+			$this->detachSubjectsFromPage( $transaction, $page->getId() );
 			$this->updateSubjects( $transaction, $page );
 		} );
+	}
+
+	private function upsertPageNode( TransactionInterface $transaction, Page $page ): void {
+		$properties = $page->getProperties()->asArray();
+		[ $typedSetClauses, $typedParams, $properties ] = $this->extractTypedValues( $properties );
+
+		// Create or update the page. Page identity is scoped per wiki so that pages from different
+		// wikis sharing the same id do not collide in a shared graph. The wiki_id is persisted by
+		// the MERGE pattern itself.
+		$cypher = '
+			MERGE (page:Page {id: $pageId, wiki_id: $wikiId})
+			SET page += $properties
+			SET page.id = $pageId';
+
+		if ( $typedSetClauses !== '' ) {
+			$cypher .= ',' . $typedSetClauses;
+		}
+
+		$transaction->run(
+			$cypher,
+			array_merge(
+				[
+					'pageId' => $page->getId()->id,
+					'wikiId' => $this->wikiId,
+					'properties' => new CypherMap( $properties ),
+				],
+				$typedParams,
+			)
+		);
+	}
+
+	/**
+	 * Removes the subjects that are attached to the page in the graph but are no longer present on the
+	 * page. This reuses deleteSubject so that a removed subject still referenced by other subjects is
+	 * kept as a stub instead of being deleted, keeping the incoming relations valid.
+	 */
+	private function removeAbsentSubjects( TransactionInterface $transaction, Page $page ): void {
+		$presentSubjectIds = $page->getSubjects()->getAllSubjects()->getIdsAsTextArray();
+
+		foreach ( $this->getSubjectIdsByPageId( $transaction, $page->getId() ) as $attachedSubjectId ) {
+			if ( !in_array( $attachedSubjectId, $presentSubjectIds, true ) ) {
+				$this->deleteSubject( $transaction, new SubjectId( $attachedSubjectId ) );
+			}
+		}
+	}
+
+	private function detachSubjectsFromPage( TransactionInterface $transaction, PageId $pageId ): void {
+		$transaction->run(
+			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId})-[hasSubject:HasSubject]->()
+				DELETE hasSubject',
+			[ 'pageId' => $pageId->id, 'wikiId' => $this->wikiId ]
+		);
 	}
 
 	/**
@@ -157,7 +170,6 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	}
 
 	/**
-	 * FIXME: tests still pass if this function returns an empty array
 	 * @return string[]
 	 */
 	private function getSubjectIdsByPageId( TransactionInterface $transaction, PageId $pageId ): array {
@@ -178,18 +190,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 
 	private function deleteSubject( TransactionInterface $transaction, SubjectId $subjectId ): void {
 		if ( $this->subjectHasIncomingRelations( $transaction, $subjectId ) ) {
-			// Only remove HasSubject relations and outgoing relations.
-			// Keep the subject node itself because other subjects still reference it.
-			$transaction->run(
-				'
-					MATCH ()-[hsRelation:HasSubject]->(subject {id: $subjectId})
-					OPTIONAL MATCH (subject)-[outgoingSubjectRelation]->(o)
-					DELETE hsRelation, outgoingSubjectRelation
-					',
-				[ 'subjectId' => $subjectId->text ]
-			);
-			// TODO: clear properties?
-			// TODO: clear labels?
+			$this->reduceSubjectToStub( $transaction, $subjectId );
 		}
 		else {
 			$transaction->run(
@@ -198,6 +199,61 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 				[ 'subjectId' => $subjectId->text ]
 			);
 		}
+	}
+
+	/**
+	 * Reduces a subject node to a stub: it is detached from its page and its outgoing relations, and
+	 * stripped down to only the id and wiki_id properties and the Subject label. The incoming relations
+	 * from other subjects are kept, so the stub keeps those references valid. The stub is upgraded back
+	 * to a full subject in place if the subject is saved again.
+	 */
+	private function reduceSubjectToStub( TransactionInterface $transaction, SubjectId $subjectId ): void {
+		$transaction->run(
+			'MATCH (subject {id: $subjectId})
+				OPTIONAL MATCH ()-[hasSubject:HasSubject]->(subject)
+				OPTIONAL MATCH (subject)-[outgoingRelation]->()
+				DELETE hasSubject, outgoingRelation
+				SET subject = {id: $subjectId, wiki_id: $wikiId}
+				SET subject:Subject',
+			[ 'subjectId' => $subjectId->text, 'wikiId' => $this->wikiId ]
+		);
+
+		$this->removeNonStubLabels( $transaction, $subjectId );
+	}
+
+	private function removeNonStubLabels( TransactionInterface $transaction, SubjectId $subjectId ): void {
+		$labelsToRemove = array_diff(
+			$this->getSubjectLabels( $transaction, $subjectId ),
+			[ 'Subject' ]
+		);
+
+		if ( $labelsToRemove === [] ) {
+			return;
+		}
+
+		$transaction->run(
+			'MATCH (subject {id: $subjectId}) REMOVE subject:' . Cypher::buildLabelList( $labelsToRemove ),
+			[ 'subjectId' => $subjectId->text ]
+		);
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private function getSubjectLabels( TransactionInterface $transaction, SubjectId $subjectId ): array {
+		/**
+		 * @var SummarizedResult $result
+		 */
+		$result = $transaction->run(
+			'MATCH (subject {id: $subjectId}) RETURN labels(subject) AS labels',
+			[ 'subjectId' => $subjectId->text ]
+		);
+
+		if ( $result->isEmpty() ) {
+			return [];
+		}
+
+		return $result->first()->get( 'labels' )->toArray();
 	}
 
 	private function subjectHasIncomingRelations( TransactionInterface $transaction, SubjectId $subjectId ): bool {

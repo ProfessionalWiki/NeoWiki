@@ -174,7 +174,8 @@ class Neo4jSubjectUpdater {
 		$updater = new Neo4jSubjectRelationUpdater(
 			$subject->getId(),
 			$subject->getTypedRelations( $schema ),
-			$this->transaction
+			$this->transaction,
+			$this->wikiId
 		);
 		$updater->updateRelations();
 	}

@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jConstraintUpdater;
@@ -44,6 +45,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	private const GUID_4 = 'sTestNQS1111114';
 	private const SCHEMA_ID_A = 'sTestNQS111111A';
 	private const SCHEMA_ID_Z = 'sTestNQS111111Z';
+	private const WIKI_ID = 'my_wiki';
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
@@ -284,6 +286,185 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			],
 			42
 		);
+	}
+
+	public function testSavingPageWithoutAReferencedSubjectPreservesIncomingRelations(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+		) );
+
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1 );
+	}
+
+	public function testSavingPageWithoutAReferencedSubjectReducesItToAStub(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+		) );
+
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectIsStub( self::GUID_1 );
+	}
+
+	public function testSavingPageWithoutAnUnreferencedSubjectDeletesIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::GUID_2 ),
+			)
+		) );
+
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+		) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+	}
+
+	public function testDeletingPageReducesAReferencedSubjectToAStub(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+		) );
+
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		$store->deletePage( new PageId( 1 ) );
+
+		$this->assertSubjectIsStub( self::GUID_1 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1 );
+	}
+
+	public function testSavingASubjectUpgradesItsStubInPlace(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1, label: 'Real subject' ),
+		) );
+
+		$result = $this->readGraph(
+			'MATCH (subject {id: $id}) RETURN subject.name AS name, labels(subject) AS labels',
+			[ 'id' => self::GUID_1 ]
+		);
+
+		$this->assertCount( 1, $result->toArray(), 'Saving the real subject should not create a duplicate node' );
+
+		$row = $result->first()->toRecursiveArray();
+		$labels = $row['labels'];
+		sort( $labels );
+
+		$this->assertSame( [ 'Subject', TestSubject::DEFAULT_SCHEMA_ID ], $labels );
+		$this->assertSame( 'Real subject', $row['name'] );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1 );
+	}
+
+	private function newProjectionStoreWithLocationRelation( string $wikiId = self::WIKI_ID ): GraphDatabasePlugin {
+		$extension = NeoWikiExtension::getInstance();
+
+		return new Neo4jProjectionStore(
+			client: $extension->getNeo4jClient(),
+			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
+				schemaLookup: new InMemorySchemaLookup(
+					TestSchema::build(
+						name: TestSubject::DEFAULT_SCHEMA_ID,
+						properties: new PropertyDefinitions( [
+							'locatedIn' => new RelationProperty(
+								core: new PropertyCore( description: '', required: false, default: null ),
+								relationType: new RelationType( 'LocatedIn' ),
+								targetSchema: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ),
+								multiple: false,
+							),
+						] ),
+					),
+				),
+				valueBuilderRegistry: $extension->getValueBuilderRegistry(),
+				logger: new NullLogger(),
+				wikiId: $wikiId,
+			),
+			wikiId: $wikiId,
+		);
+	}
+
+	private function buildSubjectWithLocationRelation( string $id, string $targetId, string $relationId ): Subject {
+		return TestSubject::build(
+			id: $id,
+			statements: new StatementList( [
+				TestStatement::buildRelation(
+					property: 'locatedIn',
+					relations: [
+						TestRelation::build( id: $relationId, targetId: $targetId ),
+					],
+				),
+			] ),
+		);
+	}
+
+	private function assertRelationExists( string $fromSubjectId, string $relationType, string $toSubjectId ): void {
+		$result = $this->readGraph(
+			'MATCH ({id: $from})-[relation:' . $relationType . ']->({id: $to}) RETURN relation',
+			[ 'from' => $fromSubjectId, 'to' => $toSubjectId ]
+		);
+
+		$this->assertFalse(
+			$result->isEmpty(),
+			"Relation {$fromSubjectId}-[{$relationType}]->{$toSubjectId} should exist"
+		);
+	}
+
+	private function assertSubjectIsStub( string $subjectId ): void {
+		$result = $this->readGraph(
+			'MATCH (subject {id: $id})
+				RETURN labels(subject) AS labels, subject.id AS id, subject.wiki_id AS wikiId, size(keys(subject)) AS propertyCount',
+			[ 'id' => $subjectId ]
+		);
+
+		$this->assertFalse( $result->isEmpty(), "Stub subject {$subjectId} should exist" );
+
+		$row = $result->first()->toRecursiveArray();
+
+		$this->assertSame( [ 'Subject' ], $row['labels'], "Stub {$subjectId} should keep only the Subject label" );
+		$this->assertSame( $subjectId, $row['id'] );
+		$this->assertSame( self::WIKI_ID, $row['wikiId'], "Stub {$subjectId} should keep its wiki_id" );
+		$this->assertSame( 2, $row['propertyCount'], "Stub {$subjectId} should keep only the id and wiki_id properties" );
+	}
+
+	private function assertSubjectDoesNotExist( string $subjectId ): void {
+		$result = $this->readGraph( 'MATCH (subject {id: $id}) RETURN subject', [ 'id' => $subjectId ] );
+
+		$this->assertTrue( $result->isEmpty(), "Subject {$subjectId} should not exist" );
 	}
 
 	public function testSavingPageAndThenDeletingItLeavesNoTrace(): void {
