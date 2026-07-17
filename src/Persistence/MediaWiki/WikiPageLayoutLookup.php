@@ -9,11 +9,11 @@ use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Layout\Layout;
 use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use Psr\Log\LoggerInterface;
 
 class WikiPageLayoutLookup implements LayoutLookup {
 
@@ -22,7 +22,7 @@ class WikiPageLayoutLookup implements LayoutLookup {
 		private readonly Authority $authority,
 		private readonly LayoutPersistenceDeserializer $layoutDeserializer,
 		private readonly TitleFactory $titleFactory,
-		private readonly LoggerInterface $logger,
+		private readonly PageReadAuthorizer $readAuthorizer,
 	) {
 	}
 
@@ -36,11 +36,7 @@ class WikiPageLayoutLookup implements LayoutLookup {
 		// The audience check inside the content fetcher filters revision deletion only; this
 		// is the sole per-title read gate on the Layout read path. Denial is null, the same
 		// as an absent Layout (#1046).
-		if ( !$this->authority->authorizeRead( 'read', $title ) ) {
-			$this->logger->info( 'Denied read of page {page} to {user}', [
-				'page' => $title->getPrefixedDBkey(),
-				'user' => $this->authority->getUser()->getName(),
-			] );
+		if ( !$this->readAuthorizer->authorizeReadByPageTitle( $title ) ) {
 			return null;
 		}
 

@@ -8,13 +8,10 @@ use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
-use MediaWiki\User\UserIdentityValue;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
-use Psr\Log\NullLogger;
-use TestLogger;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer
@@ -52,8 +49,7 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 	public function testFallsBackToGlobalEditRightWhenThePageCannotBeResolved(): void {
 		$authorizer = new AuthorityBasedSubjectAuthorizer(
 			$this->authorityThatCanEditEveryPage(),
-			$this->titleFactoryReturningNull(),
-			new NullLogger()
+			$this->titleFactoryReturningNull()
 		);
 
 		$this->assertTrue( $authorizer->canEditSubject( new PageId( self::PAGE_ID ) ) );
@@ -62,8 +58,7 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 	public function testDeniesUnresolvablePageWhenUserLacksGlobalEditRight(): void {
 		$authorizer = new AuthorityBasedSubjectAuthorizer(
 			$this->authorityWithoutAnyPermissions(),
-			$this->titleFactoryReturningNull(),
-			new NullLogger()
+			$this->titleFactoryReturningNull()
 		);
 
 		$this->assertFalse( $authorizer->canEditSubject( new PageId( self::PAGE_ID ) ) );
@@ -90,8 +85,7 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 	public function testAuthorizeFallsBackToGlobalEditRightWhenThePageCannotBeResolved(): void {
 		$authorizer = new AuthorityBasedSubjectAuthorizer(
 			$this->authorityThatCanEditEveryPage(),
-			$this->titleFactoryReturningNull(),
-			new NullLogger()
+			$this->titleFactoryReturningNull()
 		);
 
 		$this->assertTrue( $authorizer->authorize( new PageId( self::PAGE_ID ) ) );
@@ -100,8 +94,7 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 	public function testAuthorizeDeniesUnresolvablePageWhenUserLacksGlobalEditRight(): void {
 		$authorizer = new AuthorityBasedSubjectAuthorizer(
 			$this->authorityWithoutAnyPermissions(),
-			$this->titleFactoryReturningNull(),
-			new NullLogger()
+			$this->titleFactoryReturningNull()
 		);
 
 		$this->assertFalse( $authorizer->authorize( new PageId( self::PAGE_ID ) ) );
@@ -118,100 +111,15 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 		$authority->method( 'authorizeWrite' )->willReturn( false );
 		$authority->method( 'definitelyCan' )->willReturn( true );
 
-		$authorizer = new AuthorityBasedSubjectAuthorizer( $authority, $titleFactory, new NullLogger() );
+		$authorizer = new AuthorityBasedSubjectAuthorizer( $authority, $titleFactory );
 		$pageId = new PageId( self::PAGE_ID );
 
 		$this->assertFalse( $authorizer->authorize( $pageId ) );
 		$this->assertTrue( $authorizer->canEditSubject( $pageId ) );
 	}
 
-	public function testAuthorizeReadIsDeniedWhenThePageCannotBeRead(): void {
-		$authorizer = $this->newAuthorizer( $this->authorityWithGlobalReadButNoPageRead() );
-
-		$this->assertFalse( $authorizer->authorizeRead( new PageId( self::PAGE_ID ) ) );
-	}
-
-	public function testAuthorizeReadIsAllowedWhenThePageCanBeRead(): void {
-		// Also asserts logger silence, so a future edit that moves the logger->info call outside
-		// the denial branch fails this test.
-		$logger = new TestLogger( true );
-		$authorizer = new AuthorityBasedSubjectAuthorizer(
-			$this->authorityThatCanEditEveryPage(),
-			$this->titleFactoryReturningPage(),
-			$logger
-		);
-
-		$this->assertTrue( $authorizer->authorizeRead( new PageId( self::PAGE_ID ) ) );
-		$this->assertSame( [], $logger->getBuffer() );
-	}
-
-	public function testAuthorizeReadDeniesWhenThePageCannotBeResolved(): void {
-		// Unlike the write side there is no global-right fallback: content is only reachable
-		// through a resolved page, so an unresolvable one has nothing to authorize.
-		$authorizer = new AuthorityBasedSubjectAuthorizer(
-			$this->authorityThatCanEditEveryPage(),
-			$this->titleFactoryReturningNull(),
-			new NullLogger()
-		);
-
-		$this->assertFalse( $authorizer->authorizeRead( new PageId( self::PAGE_ID ) ) );
-	}
-
-	public function testAuthorizeReadUsesBindingAuthorizeRead(): void {
-		// Pin the verb: authorizeRead runs the full per-title check including the expensive ACL
-		// hook that quick checks skip. Reverting to a hint verb fails this test.
-		$title = Title::makeTitle( NS_MAIN, 'Target page' );
-		$titleFactory = $this->createStub( TitleFactory::class );
-		$titleFactory->method( 'newFromID' )->willReturn( $title );
-
-		$authority = $this->createMock( Authority::class );
-		$authority->method( 'probablyCan' )->willReturn( true );
-		$authority->method( 'definitelyCan' )->willReturn( true );
-		$authority->method( 'authorizeRead' )->willReturn( false );
-		$authority->method( 'getUser' )->willReturn( new UserIdentityValue( 9999, 'Petr' ) );
-
-		$authorizer = new AuthorityBasedSubjectAuthorizer( $authority, $titleFactory, new NullLogger() );
-
-		$this->assertFalse( $authorizer->authorizeRead( new PageId( self::PAGE_ID ) ) );
-	}
-
-	public function testAuthorizeReadChecksTheReadAction(): void {
-		// An authority that permits only the 'read' action: a gate asking for any other
-		// action (e.g. 'edit') is denied, pinning the permission string end-to-end.
-		$title = Title::makeTitle( NS_MAIN, 'Target page' );
-		$titleFactory = $this->createStub( TitleFactory::class );
-		$titleFactory->method( 'newFromID' )->willReturn( $title );
-
-		$authority = $this->createMock( Authority::class );
-		$authority->method( 'authorizeRead' )->willReturnCallback(
-			static fn ( string $action ): bool => $action === 'read'
-		);
-		$authority->method( 'getUser' )->willReturn( new UserIdentityValue( 9999, 'Petr' ) );
-
-		$authorizer = new AuthorityBasedSubjectAuthorizer( $authority, $titleFactory, new NullLogger() );
-
-		$this->assertTrue( $authorizer->authorizeRead( new PageId( self::PAGE_ID ) ) );
-	}
-
-	public function testDeniedReadIsLogged(): void {
-		$logger = new TestLogger( true, null, true );
-		$authorizer = new AuthorityBasedSubjectAuthorizer(
-			$this->authorityWithoutAnyPermissions(),
-			$this->titleFactoryReturningPage(),
-			$logger
-		);
-
-		$authorizer->authorizeRead( new PageId( self::PAGE_ID ) );
-
-		$this->assertSame(
-			[ [ 'info', 'Denied read of page {page} to {user}',
-				[ 'page' => 'Protected_page', 'user' => 'Petr' ] ] ],
-			$logger->getBuffer()
-		);
-	}
-
 	private function newAuthorizer( Authority $authority ): AuthorityBasedSubjectAuthorizer {
-		return new AuthorityBasedSubjectAuthorizer( $authority, $this->titleFactoryReturningPage(), new NullLogger() );
+		return new AuthorityBasedSubjectAuthorizer( $authority, $this->titleFactoryReturningPage() );
 	}
 
 	/**

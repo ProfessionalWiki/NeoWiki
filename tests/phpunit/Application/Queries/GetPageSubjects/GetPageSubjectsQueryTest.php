@@ -12,7 +12,6 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
-use ProfessionalWiki\NeoWiki\Application\SubjectReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -28,6 +27,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
@@ -365,11 +365,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 			schemaLookup: $schemaLookup ?? new InMemorySchemaLookup(),
 			schemaSerializer: new SchemaPresentationSerializer(),
 			pageIdentifiersLookup: $pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
-			readAuthorizer: new class implements SubjectReadAuthorizer {
-				public function authorizeRead( PageId $pageId ): bool {
-					return true;
-				}
-			},
+			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 		);
 	}
 

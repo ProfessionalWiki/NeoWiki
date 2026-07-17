@@ -8,7 +8,7 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
-use ProfessionalWiki\NeoWiki\Application\SubjectReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -27,7 +27,7 @@ readonly class GetPageSubjectsQuery {
 		private SchemaLookup $schemaLookup,
 		private SchemaPresentationSerializer $schemaSerializer,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
-		private SubjectReadAuthorizer $readAuthorizer,
+		private PageReadAuthorizer $readAuthorizer,
 	) {
 	}
 
@@ -36,7 +36,7 @@ readonly class GetPageSubjectsQuery {
 
 		// A denied page takes exactly the path a page without Subjects takes, so the response
 		// is byte-identical to absence and cannot be used to probe page readability (#1046).
-		$pageSubjects = $this->readAuthorizer->authorizeRead( $id )
+		$pageSubjects = $this->readAuthorizer->authorizeReadByPageId( $id )
 			? $this->subjectRepository->getSubjectsByPageId( $id )
 			: PageSubjects::newEmpty();
 
@@ -133,7 +133,7 @@ readonly class GetPageSubjectsQuery {
 	 * the handler already authorized, which must stay readable.
 	 */
 	private function pageIsReadable( ?PageIdentifiers $pageIdentifiers ): bool {
-		return $pageIdentifiers !== null && $this->readAuthorizer->authorizeRead( $pageIdentifiers->getId() );
+		return $pageIdentifiers !== null && $this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() );
 	}
 
 	/**

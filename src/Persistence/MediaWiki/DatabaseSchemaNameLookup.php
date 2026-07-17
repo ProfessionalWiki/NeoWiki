@@ -2,8 +2,8 @@
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
-use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\TitleFactory;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use RuntimeException;
@@ -19,7 +19,7 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	public function __construct(
 		private readonly IDatabase $db,
 		private readonly SearchEngine $searchEngine,
-		private readonly Authority $authority,
+		private readonly PageReadAuthorizer $readAuthorizer,
 		private readonly TitleFactory $titleFactory,
 	) {
 	}
@@ -40,9 +40,7 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	/**
 	 * The search engine applies its own visibility rules inconsistently across engines, and the
 	 * raw DB branch applies none, so both branches share this binding per-title read filter.
-	 * Filtered names are simply absent, like Schemas that do not exist (#1046). Filtering here
-	 * deliberately does not log per-name denials: enumeration filtering would log proportionally
-	 * to list size, unlike the single-page content gates.
+	 * Filtered names are simply absent, like Schemas that do not exist (#1046).
 	 *
 	 * @param TitleValue[] $titles
 	 * @return TitleValue[]
@@ -50,8 +48,9 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	private function filterReadable( array $titles ): array {
 		return array_values( array_filter(
 			$titles,
-			fn ( TitleValue $titleValue ): bool =>
-				$this->authority->authorizeRead( 'read', $this->titleFactory->newFromLinkTarget( $titleValue ) )
+			fn ( TitleValue $titleValue ): bool => $this->readAuthorizer->authorizeReadByPageTitle(
+				$this->titleFactory->newFromLinkTarget( $titleValue )
+			)
 		) );
 	}
 

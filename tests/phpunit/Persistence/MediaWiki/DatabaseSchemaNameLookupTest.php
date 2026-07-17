@@ -7,10 +7,12 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use MediaWiki\Title\TitleValue;
+use Psr\Log\NullLogger;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup
@@ -49,7 +51,11 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 		return new DatabaseSchemaNameLookup(
 			db: $this->getDb(),
 			searchEngine: $this->getServiceContainer()->newSearchEngine(),
-			authority: $authority ?? $this->mockRegisteredUltimateAuthority(),
+			readAuthorizer: new AuthorityBasedPageReadAuthorizer(
+				$authority ?? $this->mockRegisteredUltimateAuthority(),
+				$this->getServiceContainer()->getTitleFactory(),
+				new NullLogger()
+			),
 			titleFactory: $this->getServiceContainer()->getTitleFactory(),
 		);
 	}
@@ -152,29 +158,6 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame( [ 'SchemaNameLookupTest22' ], $names );
-	}
-
-	public function testGateUsesBindingAuthorizeRead(): void {
-		// probablyCan is a UI-hint check that skips the expensive ACL hook; the filter must
-		// use the binding authorizeRead with the 'read' action. Reverting fails this test.
-		$this->createSchema( 'GatePinSchema' );
-
-		$authority = $this->createMock( Authority::class );
-		$authority->method( 'probablyCan' )->willReturn( true );
-		$authority->method( 'authorizeRead' )->willReturnCallback(
-			function ( string $action ): bool {
-				$this->assertSame( 'read', $action );
-				return false;
-			}
-		);
-
-		$names = array_map(
-			static fn ( TitleValue $title ): string => $title->getText(),
-			$this->getLookup( $authority )->getSchemaNamesMatching( '', 50 )
-		);
-
-		$this->assertNotContains( 'GatePinSchema', $names );
-		$this->assertSame( [], $names );
 	}
 
 }

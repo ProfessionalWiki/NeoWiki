@@ -9,7 +9,7 @@ use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
-use ProfessionalWiki\NeoWiki\Application\SubjectReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -25,7 +25,7 @@ readonly class ValidateSubjectUpdateQuery {
 		private StatementListBuilder $statementListBuilder,
 		private SelectStatementResolver $selectStatementResolver,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
-		private SubjectReadAuthorizer $readAuthorizer,
+		private PageReadAuthorizer $readAuthorizer,
 	) {
 	}
 
@@ -46,7 +46,7 @@ readonly class ValidateSubjectUpdateQuery {
 			throw SubjectNotFoundException::forId( $id );
 		}
 
-		if ( !$this->readAuthorizer->authorizeRead( $pageIdentifiers->getId() ) ) {
+		if ( !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
 			// Denial is shaped exactly like absence: this endpoint previously oracled Subject
 			// existence via its 404, so denied and absent must stay indistinguishable (#1046).
 			throw SubjectNotFoundException::forId( $id );
