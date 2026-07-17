@@ -1,0 +1,122 @@
+# QLever SPARQL 1.1 graph store as ddev custom services, for the SPARQL projection
+# plugin (#586). `qlever` backs the wiki (the dev counterpart of the compose stack's
+# demo sidecar); `test_qlever` is the isolated instance the SPARQL query system test
+# writes to (mirroring CI). It mirrors docker-compose.neo.yaml's wiki/test split.
+services:
+  qlever:
+    image: docker.io/adfreiburg/qlever:latest
+    container_name: ddev-${DDEV_SITENAME}-qlever
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}
+      com.ddev.approot: ${DDEV_APPROOT}
+    restart: "no"
+    # Run as root so the qlever process (image uid 999) can write its index into the named
+    # volume. Docker mounts a fresh named volume root-owned; unlike rootless Podman (where the
+    # compose stack ran, and userns remapping made uid 999 own the mount), nothing here grants
+    # 999 write access, so the index build fails with "Permission denied" as the default user.
+    # Dev-only sidecar, so running as root is fine.
+    user: "0:0"
+    # Bearer token the wiki sends to authorize SPARQL updates; the server starts with
+    # the same value via -a. Fixed dev credential, like this stack's Neo4j password.
+    # LocalSettings.ddev.php sends the identical literal ('neowiki_dev_token').
+    environment:
+      - QLEVER_ACCESS_TOKEN=neowiki_dev_token
+      # SPARQL endpoint through the ddev router on its own hostname:
+      # https://qlever-<project>.ddev.site (no host port, no worktree collisions).
+      # NeoWiki itself reaches the store in-network at http://qlever:7019/.
+      - VIRTUAL_HOST=qlever-${DDEV_HOSTNAME}
+      - HTTP_EXPOSE=80:7019
+      - HTTPS_EXPOSE=443:7019
+    # The image's default entrypoint is an interactive CLI wrapper; bypass it and drive
+    # the engine binaries (qlever-index / qlever-server) directly.
+    entrypoint:
+      - /bin/bash
+      - -lc
+      - |
+        set -e
+        cd /index
+        # Build an empty index once. The sentinel keeps a container restart from
+        # re-indexing, which would wipe the persisted SPARQL updates. NeoWiki fills the
+        # store at runtime over the SPARQL 1.1 Update endpoint (page edits and
+        # RebuildGraphDatabases.php), not from a source file.
+        if [ ! -f .neowiki-indexed ]; then
+          : > data.nt
+          qlever-index -i neowiki -F nt -f data.nt
+          touch .neowiki-indexed
+        fi
+        # --persist-updates is mandatory: without it every SPARQL update is lost on
+        # restart. With it, updates persist to neowiki.update-triples on the named volume
+        # and are reloaded on startup.
+        # --service-allowed-iri-prefixes disables SPARQL federation. NeoWiki's query surfaces
+        # let wiki users send arbitrary SPARQL, and SERVICE makes the store issue outbound
+        # requests from its own network position — here, inside the ddev network. QLever
+        # allows every IRI when the option is omitted, so this sets the documented deny-all
+        # value: an invalid prefix ("-") that no IRI can match. Keep it last: it takes an
+        # arbitrary number of prefixes, so a bare value placed after it would be read as one.
+        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --persist-updates --service-allowed-iri-prefixes -
+    volumes:
+      # Named volume (not a bind mount) so the index directory avoids host ownership /
+      # labeling issues and so the index plus its persisted updates survive restarts.
+      - qlever-index-data:/index
+    # qlever-server ignores SIGTERM/SIGINT, so a short grace period keeps shutdown snappy.
+    # Safe: updates are persisted at acknowledgement time, so the kill loses none.
+    stop_grace_period: 2s
+    healthcheck:
+      # Minimal SPARQL query over the endpoint via GET (URL-encoded, so no shell quoting):
+      # SELECT * WHERE { ?s ?p ?o } LIMIT 1. Returns 200 once the server is serving.
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:7019/?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Dedicated QLever store for the SPARQL query system test, isolated from the demo `qlever`
+  # service the way `test_neo` is isolated from `neo`: the system test writes and deletes
+  # Subjects, so it must not mutate the demo data. Reached in-network as http://test_qlever:7019/
+  # (see QLEVER_TEST_URL in phpunit.xml.dist); no host exposure.
+  test_qlever:
+    image: docker.io/adfreiburg/qlever:latest
+    # Keep the ddev-<project>-<service> convention exactly (including the underscore), matching
+    # test_neo, so phpunit.xml.dist's `test_qlever` hostname resolves in-network.
+    container_name: ddev-${DDEV_SITENAME}-test_qlever
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}
+      com.ddev.approot: ${DDEV_APPROOT}
+    restart: "no"
+    # Run as root so uid 999 can write the index volume; see the demo `qlever` service above.
+    user: "0:0"
+    # Fixed access token (intentional, like test_neo's fixed password): the test suite uses this
+    # exact value to authorize its updates. Do not parameterize without updating phpunit.xml.dist.
+    environment:
+      - QLEVER_ACCESS_TOKEN=neowiki_test_token
+    entrypoint:
+      - /bin/bash
+      - -lc
+      - |
+        set -e
+        cd /index
+        # Build an empty index once; the sentinel keeps a container restart from re-indexing (which
+        # would error on the existing index). NeoWiki fills the store at runtime over the SPARQL 1.1
+        # Update endpoint. Unlike the demo `qlever` service, --persist-updates is deliberately omitted:
+        # this store is ephemeral test scaffolding — each test run clears it (DROP ALL) and never relies
+        # on updates surviving a restart — so keeping updates in memory is simpler and lighter.
+        if [ ! -f .neowiki-indexed ]; then
+          : > data.nt
+          qlever-index -i neowiki -F nt -f data.nt
+          touch .neowiki-indexed
+        fi
+        # --service-allowed-iri-prefixes disables SPARQL federation, as on the demo `qlever`
+        # service above; see the comment there. No test federates, so deny-all is also what
+        # the system test should run against.
+        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --service-allowed-iri-prefixes -
+    volumes:
+      - test-qlever-index-data:/index
+    stop_grace_period: 2s
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:7019/?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  qlever-index-data:
+  test-qlever-index-data:

@@ -41,4 +41,13 @@ hooks:
         && exit 0; sleep 2;
         done; echo "Timed out waiting for test_neo" >&2; exit 1
       service: test_neo
+    # Wait for the QLever SPARQL store (in the web container, the way install-wiki.sh
+    # reaches it) before seeding: the demo data imports SPARQL pages that project into
+    # it. qlever starts fast (empty index), so this normally passes at once; it just
+    # guards against the store lagging the seed step.
+    - exec: >-
+        for i in $(seq 1 90); do
+        curl -fsS -o /dev/null "http://qlever:7019/?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"
+        && exit 0; sleep 2;
+        done; echo "Timed out waiting for qlever" >&2; exit 1
     - exec: bash /var/www/html/.ddev/setup/install-wiki.sh

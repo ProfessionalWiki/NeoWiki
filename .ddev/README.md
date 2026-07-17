@@ -18,7 +18,7 @@ The prebuilt demo image and its compose stack are a separate concern and do not 
 ## Usage
 
 ```sh
-ddev start        # brings up web, db, neo, test_neo, node watcher; installs + seeds on first run
+ddev start        # brings up web, db, neo, test_neo, qlever, test_qlever, node watcher; installs + seeds on first run
 ddev describe     # URLs (wiki, Mailpit), service status; -j for JSON
 ddev exec <cmd>   # run a command in the web container
 ddev stop         # stop this project's containers; ddev's shared router and ssh-agent keep running
@@ -45,8 +45,12 @@ Day-to-day tooling (`make phpunit`, `make cs`, `make tsci`, ...) is wrapped by t
 - **Neo4j Browser**: `https://neo4j-<project>.ddev.site` — routed by hostname through the shared
   router, no extra host port. Inside the Browser, connect with
   `bolt+s://neo4j-<project>.ddev.site:17687`, user `neo4j`, password `password`.
+- **QLever SPARQL endpoint**: `https://qlever-<project>.ddev.site` — routed by hostname through the
+  shared router, no extra host port. Reads are open; writes need the `neowiki_dev_token` Bearer token.
 - **From code/containers**: services resolve by compose name — `bolt://neo:7687`,
-  `bolt://test_neo:7689`, SMTP `127.0.0.1:1025` (Mailpit lives in the web container).
+  `bolt://test_neo:7689`, SPARQL `http://qlever:7019/` (and `http://test_qlever:7019/`, the isolated
+  store the SPARQL query system test writes to), SMTP `127.0.0.1:1025` (Mailpit lives in the web
+  container).
 - **Shells and CLIs**: `ddev exec -s neo cypher-shell -u neo4j -p password '...'`,
   `ddev ssh -s <service>`, `ddev logs -s <service>`, `ddev mysql` (DB also gets an
   auto-published host port for GUI clients — see `ddev describe`).
@@ -54,14 +58,36 @@ Day-to-day tooling (`make phpunit`, `make cs`, `make tsci`, ...) is wrapped by t
   case still requiring a direct port publish: add it per checkout in the gitignored
   `.ddev/config.local.yaml`.
 
+## QLever SPARQL store
+
+The stack bundles a [QLever](https://github.com/ad-freiburg/qlever) SPARQL 1.1 store as a working
+example of NeoWiki's SPARQL projection plugin. `qlever` backs the wiki: `mw/LocalSettings.ddev.php`
+points `$wgNeoWikiSparqlStores` at `http://qlever:7019/` (`native` projection), so every page save and
+`RebuildGraphDatabases.php` also projects the page's RDF into it. `test_qlever` is the isolated store the
+SPARQL query system test (`QuerySparqlEndToEndTest`) writes to, reached in-network at
+`http://test_qlever:7019/`.
+
+The demo store runs with `--persist-updates`, so projected data survives container restarts — updates are
+written to a named volume and reloaded on startup, and the empty index is built only once. Query it from
+the host at `https://qlever-<project>.ddev.site`, or in-network:
+
+```sh
+ddev exec curl http://qlever:7019/ \
+  --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' \
+  -H 'Accept: application/sparql-results+json'
+```
+
+Writes require the `neowiki_dev_token` Bearer token; reads do not.
+
 ## What the pieces are
 
 - `config.yaml` — php 8.3, apache-fpm (MediaWiki's rest.php/api.php need PATH_INFO, which ddev's
   default nginx does not route), mariadb 11.8, docroot `Docker/mediawiki`. Deliberately has no
   `name:` so worktrees self-name from their directory. Also carries the lifecycle hooks: the
   pre-start MediaWiki-core clone and the post-start Neo4j-user + install steps.
-- `docker-compose.neo.yaml` / `docker-compose.node.yaml` — the Neo4j pair (wiki + test instance)
-  and the TypeScript build watcher.
+- `docker-compose.neo.yaml` / `docker-compose.qlever.yaml` / `docker-compose.node.yaml` — the Neo4j
+  pair (wiki + test instance), the QLever SPARQL pair (wiki + test instance, for the SPARQL
+  projection plugin), and the TypeScript build watcher.
 - `docker-compose.extension-mount.yaml` — bind-mounts this checkout into the MediaWiki core tree
   at `extensions/NeoWiki`, so tools see the same nested layout as CI.
 - `mw/LocalSettings.ddev.php` — ddev-flavored settings (flat docroot, ddev DB credentials,

@@ -116,7 +116,7 @@ jobs:
       # stack's /index: the image runs as a non-root user with no /index (the dev stack provides it via a
       # volume), so a bare `docker run` must use an already-writable in-image path.
       # --service-allowed-iri-prefixes disables SPARQL federation, matching the dev stack (see
-      # Docker/docker-compose.dev.yml): QLever allows every SERVICE IRI unless the option is given, and "-"
+      # .ddev/docker-compose.qlever.yaml): QLever allows every SERVICE IRI unless the option is given, and "-"
       # is the documented deny-all value (an invalid prefix no IRI matches). No test federates.
       - name: Start QLever
         run: |

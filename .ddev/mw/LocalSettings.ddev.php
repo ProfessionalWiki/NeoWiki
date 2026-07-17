@@ -104,6 +104,22 @@ $wgNeoWikiEnableDevelopmentUI = true;
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:password@neo:7687';
 $wgNeoWikiNeo4jInternalReadUrl = 'bolt://mediawiki_read:mediawiki_read@neo:7687';
 
+# SPARQL graph store (QLever) for the SPARQL projection plugin (#586). The qlever service is a
+# ddev custom service (.ddev/docker-compose.qlever.yaml), reached in-network at http://qlever:7019/.
+# The access token is the fixed dev credential the service starts with. Skipped under PHPUnit so
+# integration tests never post to the dev store: they configure their own store with mocked HTTP via
+# overrideConfigValue(), and the SPARQL query system test targets test_qlever, so the default here
+# must stay empty during tests.
+if ( !defined( 'MW_PHPUNIT_TEST' ) ) {
+	$wgNeoWikiSparqlStores = [
+		[
+			'updateUrl' => 'http://qlever:7019/',
+			'accessToken' => 'neowiki_dev_token',
+			'projection' => 'native',
+		],
+	];
+}
+
 // Allow anonymous REST API calls on the wiki.
 $wgCrossSiteAJAXdomains = [ '*' ];
 

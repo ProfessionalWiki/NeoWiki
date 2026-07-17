@@ -220,7 +220,7 @@ forms, so no read-only validator is needed (unlike the Cypher surfaces). They ne
 `queryUrl` — and return the W3C `application/sparql-results+json` document unmodified.
 
 The bundled development stack ships a working QLever example wired up this way — see
-[`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`
+[`.ddev/README.md`](../../.ddev/README.md#qlever-sparql-store) for the service, its `--persist-updates`
 requirement, and how to query it.
 
 ### Restricting federation
