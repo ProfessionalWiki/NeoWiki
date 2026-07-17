@@ -56,6 +56,54 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testRebuildCreatesGraphUniquenessConstraints(): void {
+		// setUpNeo4j() dropped any pre-existing constraints, so the graph starts without them.
+		// A subject page is present so the rebuild re-projects real data: the constraints are
+		// created before the re-projection, so this also proves an unchanged re-save does not
+		// violate them.
+		$this->createPageWithSubjects( 'Page with subject', TestSubject::build() );
+
+		$this->runRebuild();
+
+		$this->assertSame(
+			[
+				[
+					'name' => 'Page wiki_id id',
+					'type' => 'NODE_PROPERTY_UNIQUENESS',
+					'entityType' => 'NODE',
+					'labelsOrTypes' => [ 'Page' ],
+					'properties' => [ 'wiki_id', 'id' ],
+				],
+				[
+					'name' => 'Subject id',
+					'type' => 'NODE_PROPERTY_UNIQUENESS',
+					'entityType' => 'NODE',
+					'labelsOrTypes' => [ 'Subject' ],
+					'properties' => [ 'id' ],
+				],
+			],
+			$this->readGraph(
+				'SHOW CONSTRAINTS YIELD name, type, entityType, labelsOrTypes, properties ORDER BY name'
+			)->toRecursiveArray()
+		);
+	}
+
+	/**
+	 * The rebuild runs on wikis with no Neo4j backend (e.g. a SPARQL-only install), so ensuring
+	 * constraints must be a no-op there rather than throwing.
+	 *
+	 * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::createGraphDatabaseConstraints
+	 */
+	public function testEnsuringConstraintsIsSkippedWhenNeo4jIsNotConfigured(): void {
+		$this->runWithoutGraphBackend( function (): void {
+			$extension = NeoWikiExtension::getInstance();
+			$this->assertNull( $extension->getNeo4jPlugin(), 'precondition: no Neo4j backend is configured' );
+
+			// Must not throw despite there being no Neo4j write engine to target.
+			$extension->createGraphDatabaseConstraints();
+		} );
+	}
+
 	private function runRebuild(): void {
 		ob_start();
 		try {

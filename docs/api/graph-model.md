@@ -107,9 +107,15 @@ When a Subject is deleted but still has incoming relations from other Subjects, 
 
 ## Constraints
 
-Two uniqueness constraints are intended for the graph — the `(wiki_id, id)` pair is unique on `:Page` nodes
-([ADR 22](../adr/022-multi-wiki-node-identity.md)), and `Subject.id` is unique. These are **not** created
-automatically yet ([#874](https://github.com/ProfessionalWiki/NeoWiki/issues/874)).
+Two node uniqueness constraints are created on the graph: the `(wiki_id, id)` pair is unique on `:Page` nodes
+([ADR 22](../adr/022-multi-wiki-node-identity.md)), and `Subject.id` is unique. They are (re)created by the
+`RebuildGraphDatabases.php` maintenance script — the path that builds the graph from the MediaWiki source of
+truth — and creation is idempotent (`CREATE CONSTRAINT ... IF NOT EXISTS`), so re-running it is safe.
+
+Relation (edge) `id` values are not constrained at the graph level: Neo4j relationship uniqueness constraints
+are per relationship type, and Relations use an open, user-defined set of relationship types, so no single
+constraint can enforce global Relation-`id` uniqueness (see
+[#351](https://github.com/ProfessionalWiki/NeoWiki/issues/351)).
 
 ## Related Documentation
 
