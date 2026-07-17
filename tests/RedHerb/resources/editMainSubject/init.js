@@ -8,7 +8,6 @@
 	const DIALOG_STATE_KEY = require( './constants.js' ).DIALOG_STATE_KEY;
 
 	const TRIGGER_SELECTOR = '.ext-redherb-edit-main-subject-trigger';
-	const MAIN_SUBJECT_SELECTOR = '.ext-neowiki-view[data-mw-neowiki-subject-id]';
 
 	const dialogState = Vue.reactive( { open: false, subjectId: null } );
 	let mounted = false;
@@ -31,21 +30,18 @@
 	}
 
 	function resolveMainSubjectId() {
-		const el = document.querySelector( MAIN_SUBJECT_SELECTOR );
-		if ( el === null ) {
-			return null;
+		const pageId = mw.config.get( 'wgArticleId' );
+		if ( !pageId ) {
+			return Promise.resolve( null );
 		}
-		return el.dataset.mwNeowikiSubjectId || null;
+		return nw.NeoWikiExtension.getInstance().getSubjectRepository().getPageSubjects( pageId )
+			.then( ( result ) => {
+				const mainSubjectId = result.pageSubjects.getMainSubjectId();
+				return mainSubjectId === null ? null : mainSubjectId.text;
+			} );
 	}
 
-	function handleClick( ev ) {
-		const trigger = ev.target.closest( TRIGGER_SELECTOR );
-		if ( trigger === null ) {
-			return;
-		}
-		ev.preventDefault();
-
-		const subjectId = resolveMainSubjectId();
+	function openDialog( subjectId ) {
 		if ( subjectId === null ) {
 			mw.notify(
 				mw.message( 'redherb-edit-main-subject-no-main' ).text(),
@@ -57,6 +53,24 @@
 		ensureMounted();
 		dialogState.subjectId = subjectId;
 		dialogState.open = true;
+	}
+
+	function handleClick( ev ) {
+		const trigger = ev.target.closest( TRIGGER_SELECTOR );
+		if ( trigger === null ) {
+			return;
+		}
+		ev.preventDefault();
+
+		resolveMainSubjectId()
+			.then( openDialog )
+			.catch( ( err ) => {
+				mw.log.error( err );
+				mw.notify(
+					err instanceof Error ? err.message : String( err ),
+					{ type: 'error' }
+				);
+			} );
 	}
 
 	queueMicrotask( () => {

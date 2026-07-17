@@ -31,8 +31,8 @@ class SpecialRedHerbContentPageCount extends SpecialPage {
 				parameters: [ 'namespaceId' => NS_MAIN ],
 				limits: Neo4jQueryLimits::forUser( $this->getUser() ),
 			) );
-		} catch ( Exception ) {
-			$out->addWikiMsg( 'redherb-content-page-count-error' );
+		} catch ( Exception $e ) {
+			$out->addWikiMsg( 'redherb-content-page-count-error', $e->getMessage() );
 			return;
 		}
 

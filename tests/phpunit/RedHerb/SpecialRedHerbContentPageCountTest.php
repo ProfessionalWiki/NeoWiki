@@ -36,6 +36,14 @@ class SpecialRedHerbContentPageCountTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testErrorOutputIncludesUnderlyingCauseWhenGraphBackendMissing(): void {
+		$html = $this->runWithoutGraphBackend(
+			fn() => $this->executeContentPageCount()
+		);
+
+		$this->assertStringContainsString( 'A configured Neo4j backend is required', $html );
+	}
+
 	private function executeContentPageCount(): string {
 		$context = new DerivativeContext( RequestContext::getMain() );
 		$context->setTitle( Title::makeTitle( NS_SPECIAL, 'RedHerbContentPageCount' ) );
