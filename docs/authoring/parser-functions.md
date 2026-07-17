@@ -150,7 +150,7 @@ custom result formatting in templates.
 - Errors (rejected queries, syntax errors, the database being unavailable, etc.) render as a
   styled error message in place of the result.
 - Output is HTML-escaped, so query results containing `<`, `>`, `&`, etc. display safely.
-- The output is wrapped in `<pre><code class="json">` and the error message in
+- The output is wrapped in `<div class="mw-neowiki-cypher-result"><pre>` and the error message in
   `<div class="error">`, so you can target either with CSS.
 
 ### Examples
