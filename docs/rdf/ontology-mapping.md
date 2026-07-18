@@ -51,15 +51,16 @@ for the built-in [native projection](rdf-export.md), so a `Mapping:Native` page 
     "version": 1,
     "prefixes": {
         "edm": "http://www.europeana.eu/schemas/edm/",
-        "dc": "http://purl.org/dc/elements/1.1/"
+        "rdaGr2": "http://rdvocab.info/ElementsGr2/",
+        "skos": "http://www.w3.org/2004/02/skos/core#"
     },
     "schemas": {
         "Person": {
-            "subject": { "class": "edm:ProvidedCHO" },
+            "subject": { "class": "edm:Agent" },
             "properties": {
-                "Name":    { "predicate": "dc:title", "lang": "en" },
-                "Website": { "predicate": "edm:isShownAt" },
-                "Author":  { "predicate": "dc:creator" }
+                "Description": { "predicate": "skos:note", "lang": "en" },
+                "Birth date":  { "predicate": "rdaGr2:dateOfBirth" },
+                "Birth place": { "predicate": "rdaGr2:placeOfBirth" }
             }
         },
         "City": {

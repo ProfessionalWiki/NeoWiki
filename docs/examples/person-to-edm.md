@@ -234,7 +234,7 @@ a triple store — the pluggable SPARQL store that would let you run EDM SPARQL 
 [#586](https://github.com/ProfessionalWiki/NeoWiki/issues/586), which consumes the
 `newRdfProjection(name)` seam this work exposes. Until then, feed the `DumpRdf --projection=EDM` output
 into any SPARQL engine (e.g. a local QLever) to query the EDM projection. Once #586 lands, a store can be
-configured to hold the `edm` projection directly and be queried in EDM terms.
+configured to hold the `EDM` projection directly and be queried in EDM terms.
 
 ## Known next tier: CIDOC-CRM
 
