@@ -96,6 +96,61 @@ A Layout defines how a Subject is displayed.
 
 <!-- REST-ENDPOINTS:END -->
 
+## The `expand` parameter
+
+The Subject read and page-subjects read endpoints take an optional multi-valued `expand` query parameter (e.g.
+`?expand=page|relations`) that embeds related data so a client can render without follow-up requests. On the
+Subject read, `page` adds the page fields described in [Subject format](subject-format.md#reading-subjects) to
+each returned Subject. On the page-subjects read, `schemas` adds a top-level `schemas` map from Schema name to the
+[Schema format](schema-format.md) body of every Schema the returned Subjects use. Both endpoints accept
+`relations`, which shapes the response differently on each endpoint. Per-Subject objects follow
+[Subject format](subject-format.md) — page fields are trimmed from the examples below.
+
+`expand=relations` resolves every relation-type Statement value (each holds a `target` Subject ID) to the full
+target Subject; match a relation value's `target` against the resolved Subjects to look one up. A `target` that
+does not resolve to an existing Subject is silently omitted — the relation value itself is unchanged.
+
+On the **Subject read**, the targets are merged into the same `subjects` map as the requested Subject, which
+`requestedId` identifies:
+
+```json
+{
+  "requestedId": "sEpfwJLnxyQy6vR",
+  "subjects": {
+    "sEpfwJLnxyQy6vR": {
+      "id": "sEpfwJLnxyQy6vR",
+      "label": "Rijksmuseum",
+      "schema": "Museum",
+      "statements": {
+        "City": { "type": "relation", "value": [ { "id": "rEpfwJLoEB5UuQS", "target": "sEpfwJLnuwcxvuJ" } ] }
+      }
+    },
+    "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "schema": "City", "statements": { ... } }
+  }
+}
+```
+
+On the **page-subjects read**, the page's own Subjects stay in `subjects` and the resolved targets go in a separate
+top-level `referencedSubjects` map keyed by Subject ID:
+
+```json
+{
+  "pageId": 93,
+  "mainSubjectId": "sEpfwJLnxyQy6vR",
+  "subjects": {
+    "sEpfwJLnxyQy6vR": { "id": "sEpfwJLnxyQy6vR", "label": "Rijksmuseum", "schema": "Museum", "statements": { ... } },
+    "sEpfwJLAtndAaaA": { ... }
+  },
+  "referencedSubjects": {
+    "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "schema": "City", "statements": { ... } }
+  }
+}
+```
+
+A target already among the page's own Subjects (a relation to another Subject on the same page) is not repeated in
+`referencedSubjects`. When `relations` is requested but nothing resolves, `referencedSubjects` is an empty array
+(`[]`).
+
 ## Stability
 
 **Pre-1.0.** Endpoints and payloads may change without notice. Don't build third-party integrations on
