@@ -298,6 +298,8 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 			[ 'targetId' => $targetId ]
 		);
 
+		$this->assertFalse( $result->isEmpty(), 'Stub target should exist' );
+
 		$row = $result->first()->toRecursiveArray();
 
 		$this->assertSame( [ 'Subject' ], $row['labels'] );
