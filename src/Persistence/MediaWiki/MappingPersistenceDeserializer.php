@@ -85,13 +85,15 @@ class MappingPersistenceDeserializer {
 		}
 
 		try {
-			$schema = new SchemaName( $schemaName );
+			// The key is the Schema name; constructing it validates the key — an empty or reserved name
+			// throws — so a malformed key skips the entry, like a missing subject.class does. The result
+			// is not stored: the entry's Schema is its key in Mapping::$schemas.
+			new SchemaName( $schemaName );
 		} catch ( InvalidArgumentException ) {
 			return null;
 		}
 
 		return new SchemaMapping(
-			schema: $schema,
 			subjectClass: $class,
 			properties: $this->propertyMappingsFromJson( $entry ),
 		);

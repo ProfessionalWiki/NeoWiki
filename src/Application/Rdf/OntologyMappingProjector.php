@@ -82,7 +82,7 @@ class OntologyMappingProjector implements PageProjector {
 			// Cannot happen for a Mapping that passed save-time validation; guard the projection anyway.
 			$this->logger->warning(
 				'Mapping "' . $this->target . '" has an unresolvable subject class for Schema "'
-				. $schemaMapping->schema->getText() . '"; skipping the type triple.'
+				. $subject->getSchemaName()->getText() . '"; skipping the type triple.'
 			);
 		}
 		else {

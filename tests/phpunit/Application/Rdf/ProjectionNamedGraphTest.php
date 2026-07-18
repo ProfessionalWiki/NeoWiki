@@ -109,7 +109,6 @@ class ProjectionNamedGraphTest extends TestCase {
 			prefixes: [ 'edm' => 'http://www.europeana.eu/schemas/edm/' ],
 			schemas: [
 				'Person' => new SchemaMapping(
-					schema: new SchemaName( 'Person' ),
 					subjectClass: 'edm:Agent',
 					properties: new PropertyMappings( [] )
 				),
