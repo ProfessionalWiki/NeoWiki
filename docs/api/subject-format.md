@@ -198,7 +198,7 @@ Returns the same statement format as storage, with additional fields:
   (e.g. `Help:Installation`); `pageNamespaceId` is the page's canonical MediaWiki namespace ID (e.g. `0`
   for the main namespace, `12` for Help), which is stable regardless of the wiki's content language.
 - Passing `?expand=relations` also embeds the Subjects targeted by this Subject's relation values; see
-  [REST API](rest-api.md) for the response shape.
+  [REST API](rest-api.md#the-expand-parameter) for the response shape.
 
 ### Writing Subjects
 
