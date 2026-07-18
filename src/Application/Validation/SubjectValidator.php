@@ -108,11 +108,12 @@ readonly class SubjectValidator {
 
 		$violations = [];
 
-		foreach ( $value->relations as $relation ) {
+		foreach ( $value->relations as $index => $relation ) {
 			$violation = $this->validateRelationTarget(
 				$relation,
 				$statement->getPropertyName(),
-				$definition->getTargetSchema()
+				$definition->getTargetSchema(),
+				$index
 			);
 
 			if ( $violation !== null ) {
@@ -123,10 +124,16 @@ readonly class SubjectValidator {
 		return $violations;
 	}
 
+	/**
+	 * The target's position in the multi-value RelationValue is carried as valuePartIndex so
+	 * ViolationDiff can tell a newly-added bad target apart from a pre-existing same-code
+	 * violation on the same property, exactly as SelectType/UrlType do for their parts.
+	 */
 	private function validateRelationTarget(
 		Relation $relation,
 		PropertyName $propertyName,
-		SchemaName $targetSchema
+		SchemaName $targetSchema,
+		int $valuePartIndex
 	): ?Violation {
 		$target = $this->subjectLookup->getSubject( $relation->targetId );
 
@@ -135,6 +142,7 @@ readonly class SubjectValidator {
 				propertyName: $propertyName,
 				code: 'relation-target-not-found',
 				args: [ $relation->targetId->text ],
+				valuePartIndex: $valuePartIndex,
 			);
 		}
 
@@ -143,6 +151,7 @@ readonly class SubjectValidator {
 				propertyName: $propertyName,
 				code: 'relation-target-schema-mismatch',
 				args: [ $targetSchema->getText(), $target->getSchemaName()->getText() ],
+				valuePartIndex: $valuePartIndex,
 			);
 		}
 

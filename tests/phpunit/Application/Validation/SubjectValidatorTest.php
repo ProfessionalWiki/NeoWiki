@@ -480,6 +480,27 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertEquals( new PropertyName( 'Links' ), $violations[0]->propertyName );
 	}
 
+	public function testMultiValueRelationReportsEachTargetViolationAtItsOwnPartIndex(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty( multiple: true ) ] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				$this->newRelationStatement( self::MISMATCHING_TARGET_ID, self::MISMATCHING_TARGET_ID ),
+			] ),
+			$schema,
+		);
+
+		// Distinct valuePartIndex per target is what lets ViolationDiff treat a newly-added bad
+		// target as new on the Replace enforcement path, rather than collapsing it into a
+		// pre-existing same-code violation on the same property.
+		$this->assertCount( 2, $violations );
+		$this->assertSame( 'relation-target-schema-mismatch', $violations[0]->code );
+		$this->assertSame( 0, $violations[0]->valuePartIndex );
+		$this->assertSame( 'relation-target-schema-mismatch', $violations[1]->code );
+		$this->assertSame( 1, $violations[1]->valuePartIndex );
+	}
+
 	// --- Helpers ---
 
 	private function newRelationProperty( bool $multiple = true ): RelationProperty {

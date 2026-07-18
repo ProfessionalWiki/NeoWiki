@@ -204,7 +204,7 @@ Reconciling that asymmetry is left to the enforcement tier (ADR 21).
 Emitted by `SubjectValidator`.
 `args`: `[expectedSchema, actualSchema]` — the target Schema the relation Property declares
 (`targetSchema`), and the Schema the resolved target Subject actually uses.
-`valuePartIndex`: never set.
+`valuePartIndex`: index of the offending relation target within the `RelationValue`.
 `propertyName`: the relation property.
 
 A relation targets a Subject that exists but whose own Schema is not the Property's declared
@@ -218,7 +218,7 @@ Schema, so this is normally only reachable through the API — for example a bul
 
 Emitted by `SubjectValidator`.
 `args`: `[targetId]` — the target Subject ID that did not resolve.
-`valuePartIndex`: never set.
+`valuePartIndex`: index of the offending relation target within the `RelationValue`.
 `propertyName`: the relation property.
 
 A relation targets a Subject ID that does not resolve to any existing Subject. It is a non-blocking
