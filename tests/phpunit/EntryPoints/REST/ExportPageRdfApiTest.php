@@ -241,6 +241,45 @@ JSON
 		$this->assertSame( 400, $this->export( query: [ 'projection' => 'edm' ] )->getStatusCode() );
 	}
 
+	public function testProjectionCasingResolvesToTheCanonicalMappingPageTitle(): void {
+		// MediaWiki capitalizes only the first title letter, so "eDM" and "EDM" are the same Mapping:EDM
+		// page. Both must mint the canonical "EDM" named graph, not one keyed on the requested casing.
+		$this->createEdmMapping();
+
+		$lowerFirst = $this->export( query: [ 'projection' => 'eDM' ] );
+		$exact = $this->export( query: [ 'projection' => 'EDM' ] );
+
+		$this->assertSame( 200, $lowerFirst->getStatusCode() );
+		$this->assertSame( 200, $exact->getStatusCode() );
+		$this->assertStringEndsWith(
+			'/graph/EDM/page/' . $this->pageId,
+			$this->soleGraphIn( $lowerFirst->getBody()->getContents() ),
+			'A projection requested with non-canonical casing still mints the canonical named graph.'
+		);
+		$this->assertStringEndsWith(
+			'/graph/EDM/page/' . $this->pageId,
+			$this->soleGraphIn( $exact->getBody()->getContents() )
+		);
+	}
+
+	public function testReadRestrictedMappingNamesAreAbsentFromTheKnownProjectionsList(): void {
+		// The 400 list must not leak the titles of Mapping pages the caller cannot read (#1046). A caller
+		// that can read the page sees "EDM"; one that cannot must not — though "native" (not a page) stays.
+		$this->createEdmMapping();
+
+		$readable = $this->export( query: [ 'projection' => 'bogus' ] );
+		$restricted = $this->export(
+			query: [ 'projection' => 'bogus' ],
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		);
+
+		$this->assertStringContainsString( 'EDM', $readable->getBody()->getContents() );
+
+		$restrictedBody = $restricted->getBody()->getContents();
+		$this->assertStringNotContainsString( 'EDM', $restrictedBody, 'A read-restricted Mapping page name must not leak into the 400 list.' );
+		$this->assertStringContainsString( 'native', $restrictedBody, 'The always-available native projection stays listed.' );
+	}
+
 	/**
 	 * The export surface is where the projection name selected by the request reaches the projector that
 	 * mints the graph (#1053). Asserting the graph IRI here, rather than only on the projector, is what

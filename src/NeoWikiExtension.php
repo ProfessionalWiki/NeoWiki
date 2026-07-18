@@ -405,6 +405,35 @@ class NeoWikiExtension {
 	}
 
 	/**
+	 * The known projection names the given authority may read, for the REST 400 body. "native" is not a
+	 * page and is always kept; a Mapping name is kept only when its page is readable, so a read-restricted
+	 * Mapping page's title never leaks into the error (#1046, mirroring the Schema
+	 * {@see \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup} read filter). This is
+	 * the REST boundary; the system-context {@see self::getRdfProjectionNames()} used by DumpRdf and the
+	 * SPARQL store stays unfiltered.
+	 *
+	 * @param string[] $names
+	 * @return string[]
+	 */
+	public function filterReadableProjectionNames( array $names, Authority $authority ): array {
+		$readAuthorizer = $this->newPageReadAuthorizer( $authority );
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+
+		return array_values( array_filter(
+			$names,
+			static function ( string $name ) use ( $readAuthorizer, $titleFactory ): bool {
+				if ( $name === RdfPageProjector::PROJECTION ) {
+					return true;
+				}
+
+				$title = $titleFactory->newFromText( $name, NeoWikiExtension::NS_MAPPING );
+
+				return $title !== null && $readAuthorizer->authorizeReadByPageTitle( $title );
+			}
+		) );
+	}
+
+	/**
 	 * The native prefixes (Subject IRIs stay native) plus the Mapping's declared ontology prefixes, for
 	 * readable output. Unsafe prefix namespaces are dropped defensively so a Mapping can never inject a
 	 * `@prefix` declaration into the document, even though save-time validation already rejects them.
@@ -429,6 +458,7 @@ class NeoWikiExtension {
 				pageContentFetcher: $this->getPageContentFetcher(),
 				authority: $this->getRequestAuthority(),
 				mappingDeserializer: $this->getMappingPersistenceDeserializer(),
+				titleParser: MediaWikiServices::getInstance()->getTitleParser(),
 			),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),

@@ -34,9 +34,17 @@ class ExportPageRdfApi extends SimpleHandler {
 		$resolution = $extension->resolveRdfProjection( $projectionName );
 
 		if ( $resolution->projection === null ) {
+			// Read-filter the known-projection list with the caller's own authority, so the 400 never
+			// leaks the titles of Mapping pages they may not read — the same gate placement as the
+			// per-page read check below.
+			$knownProjections = $extension->filterReadableProjectionNames(
+				$resolution->knownProjectionNames,
+				$this->getAuthority()
+			);
+
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'message' => 'Unknown RDF projection: "' . $projectionName . '". Known projections: '
-					. implode( ', ', $resolution->knownProjectionNames ) . '.',
+					. implode( ', ', $knownProjections ) . '.',
 			] );
 		}
 
