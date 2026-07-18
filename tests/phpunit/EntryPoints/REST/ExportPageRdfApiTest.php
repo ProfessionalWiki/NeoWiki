@@ -205,6 +205,21 @@ JSON
 		$this->assertSame( 400, $response->getStatusCode() );
 	}
 
+	public function testUnknownProjectionStillReturns400WhenAReservedNamedMappingPageExists(): void {
+		// A Mapping page titled with the reserved projection name "native" can only reach the wiki via
+		// import or a move, both of which bypass the save-time name check. Enumerating the known
+		// projections for the 400 must skip such a page rather than let its unusable name throw — otherwise
+		// every unknown-projection request 500s instead of returning the helpful 400.
+		$this->createMapping( 'Seedmapping', '{ "version": 1, "schemas": {} }' );
+		$this->importXml(
+			str_replace( 'Mapping:Seedmapping', 'Mapping:Native', $this->exportPageToXml( 'Mapping:Seedmapping' ) )
+		);
+
+		$response = $this->export( query: [ 'projection' => 'bogus' ] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
 	public function testValidTargetProjectsTheMappedVocabularyWithNativeSubjectIris(): void {
 		$this->createEdmMapping();
 
