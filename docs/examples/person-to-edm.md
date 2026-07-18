@@ -54,47 +54,41 @@ fields are the form the near-1:1 EDM projection consumes.
 Birth Location is a **relation** to a `City` Subject. The demo `City` Schema
 ([`DemoData/Schema/City.json`](../../DemoData/Schema/City.json)) is used unchanged.
 
-## 2. The Mappings
+## 2. The Mapping
 
-Two Mapping pages, one per (Schema, target). Each is a page in the `Mapping:` namespace.
-
-**[`Mapping:PersonToEDM`](../../DemoData/Mapping/PersonToEDM.json)** — `Person` → EDM:
+One Mapping page, **[`Mapping:EDM`](../../DemoData/Mapping/EDM.json)**, targets EDM and holds an entry
+for every mapped Schema. The page title (`EDM`) is the projection name. Abbreviated to the two entries
+this walkthrough uses (the shipped file also maps `Artwork` and `Artist`, and declares the extra
+`dc`/`dcterms`/`foaf`/`xsd` prefixes those need):
 
 ```json
 {
     "version": 1,
-    "schema": "Person",
-    "target": "edm",
     "prefixes": {
         "edm": "http://www.europeana.eu/schemas/edm/",
         "rdaGr2": "http://rdvocab.info/ElementsGr2/",
         "skos": "http://www.w3.org/2004/02/skos/core#"
     },
-    "subject": { "class": "edm:Agent" },
-    "properties": {
-        "Gender":      { "predicate": "rdaGr2:gender" },
-        "Birth date":  { "predicate": "rdaGr2:dateOfBirth" },
-        "Birth place": { "predicate": "rdaGr2:placeOfBirth" },
-        "Description": { "predicate": "skos:note", "lang": "en" }
+    "schemas": {
+        "Person": {
+            "subject": { "class": "edm:Agent" },
+            "properties": {
+                "Gender":      { "predicate": "rdaGr2:gender" },
+                "Birth date":  { "predicate": "rdaGr2:dateOfBirth" },
+                "Birth place": { "predicate": "rdaGr2:placeOfBirth" },
+                "Description": { "predicate": "skos:note", "lang": "en" }
+            }
+        },
+        "City": {
+            "subject": { "class": "edm:Place" },
+            "properties": {}
+        }
     }
 }
 ```
 
-**[`Mapping:CityToEDM`](../../DemoData/Mapping/CityToEDM.json)** — `City` → EDM. It maps **only the
-class** (`edm:Place`), with no property mappings:
-
-```json
-{
-    "version": 1,
-    "schema": "City",
-    "target": "edm",
-    "prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" },
-    "subject": { "class": "edm:Place" },
-    "properties": {}
-}
-```
-
-For the birthplace use case, all EDM needs from Málaga is a labelled `edm:Place` that
+`prefixes` are page-level, shared by every entry. The **City** entry maps **only the class**
+(`edm:Place`), with no property mappings. For the birthplace use case, all EDM needs from Málaga is a labelled `edm:Place` that
 `rdaGr2:placeOfBirth` can point at. The City's `Country`/`Population`/`Website` have no near-1:1 EDM
 `Place` predicate in the flat tier (place geography would use `wgs84_pos`, outside the toy model), so
 they are deliberately unmapped — see the [findings](#findings).
@@ -114,13 +108,13 @@ parameter selects the vocabulary):
 # native (default):
 curl '.../rest.php/neowiki/v0/page/<id>/rdf?format=turtle'
 # EDM:
-curl '.../rest.php/neowiki/v0/page/<id>/rdf?projection=edm&format=turtle'
+curl '.../rest.php/neowiki/v0/page/<id>/rdf?projection=EDM&format=turtle'
 ```
 
 In bulk, via the dump script (one named graph per page):
 
 ```sh
-php maintenance/run.php NeoWiki:DumpRdf --projection=edm > dump-edm.trig
+php maintenance/run.php NeoWiki:DumpRdf --projection=EDM > dump-edm.trig
 ```
 
 ## 5. Native vs EDM output
@@ -188,12 +182,12 @@ What changed, native → EDM:
 
 In the **per-page** EDM export of `Pablo_Picasso`, `neo-subj:s2birthcity2aa2` (Málaga) appears as the
 object of `rdaGr2:placeOfBirth` but is **untyped** — its `a edm:Place` triple lives in Málaga's own
-page graph. The **bulk** `DumpRdf --projection=edm` contains both named graphs, so across the dataset
+page graph. The **bulk** `DumpRdf --projection=EDM` contains both named graphs, so across the dataset
 Málaga is a typed `edm:Place`:
 
 ```trig
-<.../graph/edm/page/115> { neo-subj:s2picasso2aaaa2 a edm:Agent; … rdaGr2:placeOfBirth neo-subj:s2birthcity2aa2 }
-<.../graph/edm/page/116> { neo-subj:s2birthcity2aa2 a edm:Place; rdfs:label "Málaga" }
+<.../graph/EDM/page/115> { neo-subj:s2picasso2aaaa2 a edm:Agent; … rdaGr2:placeOfBirth neo-subj:s2birthcity2aa2 }
+<.../graph/EDM/page/116> { neo-subj:s2birthcity2aa2 a edm:Place; rdfs:label "Málaga" }
 ```
 
 The native projection of the same pages lands in sibling `.../graph/native/page/{id}` graphs, so both projections can
@@ -219,7 +213,7 @@ The point of this exercise is to surface gaps honestly. From doing it:
    **id**, and the v1 value mapper emits that id as the literal — so `rdaGr2:gender` would carry an
    opaque `o1…` id, not `"Male"`. We used a **text** property to get a meaningful literal. A
    select→label (or select→`skos:Concept` IRI) projection is future work.
-3. **EDM's flat `Place` vocabulary is thin.** `CityToEDM` maps only the class. Country/Population/Website
+3. **EDM's flat `Place` vocabulary is thin.** The City entry maps only the class. Country/Population/Website
    have no obvious near-1:1 EDM `Place` predicate without stretching semantics; coordinates would need a
    geo vocabulary (`wgs84_pos`) beyond the toy model. Class-only is the honest v1 result and is exactly
    what the birthplace reference needs.
@@ -238,7 +232,7 @@ a genuine v1 **format** gap rather than a deliberate boundary.
 v1 ships the projection and the export surfaces (endpoint + dump). It does **not** yet load the RDF into
 a triple store — the pluggable SPARQL store that would let you run EDM SPARQL against this data is
 [#586](https://github.com/ProfessionalWiki/NeoWiki/issues/586), which consumes the
-`newRdfProjection(name)` seam this work exposes. Until then, feed the `DumpRdf --projection=edm` output
+`newRdfProjection(name)` seam this work exposes. Until then, feed the `DumpRdf --projection=EDM` output
 into any SPARQL engine (e.g. a local QLever) to query the EDM projection. Once #586 lands, a store can be
 configured to hold the `edm` projection directly and be queried in EDM terms.
 

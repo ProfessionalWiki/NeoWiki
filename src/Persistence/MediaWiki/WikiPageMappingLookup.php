@@ -12,7 +12,6 @@ use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 
 class WikiPageMappingLookup implements MappingLookup {
 
@@ -20,7 +19,6 @@ class WikiPageMappingLookup implements MappingLookup {
 		private readonly PageContentFetcher $pageContentFetcher,
 		private readonly Authority $authority,
 		private readonly MappingPersistenceDeserializer $mappingDeserializer,
-		private readonly MappingNameLookup $mappingNameLookup,
 	) {
 	}
 
@@ -37,23 +35,6 @@ class WikiPageMappingLookup implements MappingLookup {
 		catch ( InvalidArgumentException ) {
 			return null;
 		}
-	}
-
-	/**
-	 * @return Mapping[]
-	 */
-	public function getAllMappings(): array {
-		$mappings = [];
-
-		foreach ( $this->mappingNameLookup->getMappingNames() as $name ) {
-			$mapping = $this->getMapping( $name );
-
-			if ( $mapping !== null ) {
-				$mappings[] = $mapping;
-			}
-		}
-
-		return $mappings;
 	}
 
 	private function getContent( MappingName $name ): ?MappingContent {

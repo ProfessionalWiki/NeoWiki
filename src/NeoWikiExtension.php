@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki;
 
 use Exception;
+use InvalidArgumentException;
 use LogicException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
@@ -61,7 +62,6 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
-use ProfessionalWiki\NeoWiki\Application\Mappings;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageExporter;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
@@ -69,6 +69,8 @@ use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjection;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjectionResolution;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfSerializer;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
@@ -341,9 +343,9 @@ class NeoWikiExtension {
 
 	/**
 	 * Resolves a projection name to its projector and serializer, or — when the name is neither "native"
-	 * nor a declared target — to the known projection names for a 400/usage message. Mapping pages are
-	 * enumerated at most once (the "native" default enumerates nothing), so a caller that needs both the
-	 * resolution and the known-names list on the unknown-target path pays for a single enumeration.
+	 * nor a Mapping page's name — to the known projection names for a 400/usage message. The name is the
+	 * Mapping page title, so resolution is one title lookup; the known-names list is needed only on the
+	 * unknown path and reads just the page names (no content parsing).
 	 */
 	public function resolveRdfProjection( string $projectionName ): RdfProjectionResolution {
 		if ( $projectionName === RdfPageProjector::PROJECTION ) {
@@ -352,58 +354,69 @@ class NeoWikiExtension {
 			);
 		}
 
-		$mappings = new Mappings( $this->getMappingLookup()->getAllMappings() );
-		$forTarget = $mappings->forTarget( $projectionName );
+		$mapping = $this->loadMappingByName( $projectionName );
 
-		if ( $forTarget === [] ) {
-			return RdfProjectionResolution::unknownTarget(
-				array_merge( [ RdfPageProjector::PROJECTION ], $mappings->targets() )
-			);
+		if ( $mapping === null ) {
+			return RdfProjectionResolution::unknownTarget( $this->getRdfProjectionNames() );
 		}
 
 		return RdfProjectionResolution::projection(
 			new RdfProjection(
 				new OntologyMappingProjector(
-					$projectionName,
-					$forTarget,
+					$mapping,
 					$this->getRdfNamespaces(),
 					$this->getRdfValueMapperRegistry(),
 					LoggerFactory::getInstance( 'NeoWiki' ),
 				),
-				new HardfRdfSerializer( $this->ontologyPrefixMap( $forTarget ) ),
+				new HardfRdfSerializer( $this->ontologyPrefixMap( $mapping ) ),
 			)
 		);
 	}
 
 	/**
-	 * The known projection names: "native" plus every target any Mapping page declares. Used to reject
-	 * an unknown projection with a helpful list of the valid ones.
+	 * The Mapping page for a projection name, or null when the name is not a usable Mapping name (empty
+	 * or reserved) or no such page exists. Title normalization applies inside the lookup, so first-letter
+	 * case behaves exactly like a `[[Mapping:...]]` link.
+	 */
+	private function loadMappingByName( string $projectionName ): ?Mapping {
+		try {
+			$name = new MappingName( $projectionName );
+		} catch ( InvalidArgumentException ) {
+			return null;
+		}
+
+		return $this->getMappingLookup()->getMapping( $name );
+	}
+
+	/**
+	 * The known projection names: "native" plus the name of every Mapping page. Used to reject an unknown
+	 * projection with a helpful list of the valid ones.
 	 *
 	 * @return string[]
 	 */
 	public function getRdfProjectionNames(): array {
 		return array_merge(
 			[ RdfPageProjector::PROJECTION ],
-			( new Mappings( $this->getMappingLookup()->getAllMappings() ) )->targets()
+			array_map(
+				static fn ( MappingName $name ): string => $name->getText(),
+				$this->getMappingNameLookup()->getMappingNames()
+			)
 		);
 	}
 
 	/**
-	 * The native prefixes (Subject IRIs stay native) plus the Mappings' declared ontology prefixes, for
+	 * The native prefixes (Subject IRIs stay native) plus the Mapping's declared ontology prefixes, for
 	 * readable output. Unsafe prefix namespaces are dropped defensively so a Mapping can never inject a
 	 * `@prefix` declaration into the document, even though save-time validation already rejects them.
 	 *
-	 * @param \ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping[] $mappings
 	 * @return array<string, string>
 	 */
-	private function ontologyPrefixMap( array $mappings ): array {
+	private function ontologyPrefixMap( Mapping $mapping ): array {
 		$prefixes = $this->getRdfNamespaces()->prefixMap();
 
-		foreach ( $mappings as $mapping ) {
-			foreach ( $mapping->prefixes as $label => $namespace ) {
-				if ( CurieExpander::isSafeAbsoluteIri( $namespace ) ) {
-					$prefixes[$label] = $namespace;
-				}
+		foreach ( $mapping->prefixes as $label => $namespace ) {
+			if ( CurieExpander::isSafeAbsoluteIri( $namespace ) ) {
+				$prefixes[$label] = $namespace;
 			}
 		}
 
@@ -416,9 +429,7 @@ class NeoWikiExtension {
 				pageContentFetcher: $this->getPageContentFetcher(),
 				authority: $this->getRequestAuthority(),
 				mappingDeserializer: $this->getMappingPersistenceDeserializer(),
-				mappingNameLookup: $this->getMappingNameLookup(),
 			),
-			mappingNameLookup: $this->getMappingNameLookup(),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),

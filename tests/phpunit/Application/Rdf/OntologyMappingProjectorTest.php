@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMappings;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\SchemaMapping;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
@@ -54,12 +55,20 @@ class OntologyMappingProjectorTest extends TestCase {
 	}
 
 	/**
-	 * @param Mapping[] $mappings
+	 * Builds a page-level Mapping named "edm" (so its named graph is /graph/edm/page/{id}) from the given
+	 * per-Schema entries and page-level prefixes.
+	 *
+	 * @param SchemaMapping[] $schemaMappings
+	 * @param array<string, string> $prefixes
 	 */
-	private function newProjector( array $mappings ): OntologyMappingProjector {
+	private function newProjector( array $schemaMappings, array $prefixes = [ 'edm' => self::EDM, 'dc' => self::DC ] ): OntologyMappingProjector {
+		$schemas = [];
+		foreach ( $schemaMappings as $schemaMapping ) {
+			$schemas[$schemaMapping->schema->getText()] = $schemaMapping;
+		}
+
 		return new OntologyMappingProjector(
-			'edm',
-			$mappings,
+			new Mapping( new MappingName( 'edm' ), $prefixes, $schemas ),
 			$this->ns,
 			RdfValueMapperRegistry::withCoreMappers(),
 			$this->logger,
@@ -136,12 +145,9 @@ class OntologyMappingProjectorTest extends TestCase {
 		return TestPage::build( id: 42, mainSubject: $person, childSubjects: new SubjectMap( $city ) );
 	}
 
-	private function personMapping(): Mapping {
-		return new Mapping(
-			name: new MappingName( 'Person to EDM' ),
+	private function personMapping(): SchemaMapping {
+		return new SchemaMapping(
 			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [ 'edm' => self::EDM, 'dc' => self::DC ],
 			subjectClass: 'edm:ProvidedCHO',
 			properties: new PropertyMappings( [
 				'Name' => new PropertyMapping( 'dc:title', 'en', null ),
@@ -152,12 +158,9 @@ class OntologyMappingProjectorTest extends TestCase {
 		);
 	}
 
-	private function cityMapping(): Mapping {
-		return new Mapping(
-			name: new MappingName( 'City to EDM' ),
+	private function cityMapping(): SchemaMapping {
+		return new SchemaMapping(
 			schema: new SchemaName( 'City' ),
-			target: 'edm',
-			prefixes: [ 'edm' => self::EDM, 'dc' => self::DC ],
 			subjectClass: 'edm:Place',
 			properties: new PropertyMappings( [
 				'Name' => new PropertyMapping( 'dc:title' ),
@@ -258,12 +261,9 @@ class OntologyMappingProjectorTest extends TestCase {
 		$this->assertCount( 1, $this->logger->getLogCalls()->getMessages() );
 	}
 
-	private function personMappingWithNameLang( string $lang ): Mapping {
-		return new Mapping(
-			name: new MappingName( 'Person to EDM' ),
+	private function personMappingWithNameLang( string $lang ): SchemaMapping {
+		return new SchemaMapping(
 			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [ 'dc' => self::DC ],
 			subjectClass: 'http://example.org/CHO',
 			properties: new PropertyMappings( [
 				'Name' => new PropertyMapping( 'dc:title', $lang, null ),
@@ -292,7 +292,13 @@ class OntologyMappingProjectorTest extends TestCase {
 	 * reaches the serialized document and it still parses.
 	 */
 	public function testUnsafeTermsAreDroppedAtProjectionTimeWhenSaveValidationWasBypassed(): void {
-		$quads = $this->newProjector( [ $this->adversarialMapping() ] )
+		$prefixes = [
+			'dc' => self::DC,
+			// A prefix whose namespace breaks out of the prefix table; a CURIE using it must be dropped.
+			'evil' => 'http://evil.example/"> .# ',
+		];
+
+		$quads = $this->newProjector( [ $this->adversarialMapping() ], $prefixes )
 			->projectPage( TestPage::build( id: 42, mainSubject: $this->adversarialSubject() ) );
 
 		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
@@ -307,16 +313,9 @@ class OntologyMappingProjectorTest extends TestCase {
 		);
 	}
 
-	private function adversarialMapping(): Mapping {
-		return new Mapping(
-			name: new MappingName( 'Adversarial' ),
+	private function adversarialMapping(): SchemaMapping {
+		return new SchemaMapping(
 			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [
-				'dc' => self::DC,
-				// A prefix whose namespace breaks out of the prefix table; a CURIE using it must be dropped.
-				'evil' => 'http://evil.example/"> .# ',
-			],
 			// A subject class that would break out of its IRI: it must not produce an rdf:type triple.
 			subjectClass: 'http://x/> <http://evil.example/s> <http://evil.example/p> <http://evil.example/o',
 			properties: new PropertyMappings( [
@@ -380,11 +379,8 @@ class OntologyMappingProjectorTest extends TestCase {
 	public function testDatatypeAndLanguageOnARelationPropertyAreIgnored(): void {
 		// Constructed directly, bypassing the save-time lang/datatype mutual-exclusion check, to prove
 		// the projector ignores literal overrides on a relation (its object is an IRI, not a literal).
-		$mapping = new Mapping(
-			name: new MappingName( 'Person to EDM' ),
+		$mapping = new SchemaMapping(
 			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [ 'dc' => self::DC, 'edm' => self::EDM ],
 			subjectClass: 'http://example.org/CHO',
 			properties: new PropertyMappings( [
 				'BornIn' => new PropertyMapping( 'dc:spatial', 'en', 'edm:year' ),
@@ -424,12 +420,9 @@ class OntologyMappingProjectorTest extends TestCase {
 		);
 	}
 
-	private function personBirthYearMappingWithLang( string $lang ): Mapping {
-		return new Mapping(
-			name: new MappingName( 'Person to EDM' ),
+	private function personBirthYearMappingWithLang( string $lang ): SchemaMapping {
+		return new SchemaMapping(
 			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [ 'dc' => self::DC ],
 			subjectClass: 'http://example.org/CHO',
 			properties: new PropertyMappings( [
 				'BirthYear' => new PropertyMapping( 'dc:date', $lang, null ),
@@ -437,36 +430,30 @@ class OntologyMappingProjectorTest extends TestCase {
 		);
 	}
 
-	public function testDuplicateMappingsForASchemaAreTieBrokenAlphabeticallyAndLogged(): void {
-		// Two Mappings claim (Person, edm) with different classes. Passed in reverse alphabetical order,
-		// the projector must still pick "A ..." — proving it sorts rather than takes the first given.
-		$loser = $this->personMappingNamed( 'B mapping', 'edm:ProvidedCHO' );
-		$winner = $this->personMappingNamed( 'A mapping', 'edm:Place' );
+	public function testProjectsSubjectsOfDifferentSchemasOnTheSamePage(): void {
+		// One page, two Subjects of different Schemas, both with an entry on the Mapping page: both project
+		// with their own class, so a multi-Schema Mapping page covers every Schema it lists.
+		$quads = $this->newProjector( [ $this->personMapping(), $this->cityMapping() ] )
+			->projectPage( $this->examplePage() );
 
-		$page = TestPage::build( id: 42, mainSubject: $this->examplePersonWithoutRelations() );
-
-		$quads = $this->newProjector( [ $loser, $winner ] )->projectPage( $page );
-
+		$graph = $this->ns->graph( 'edm', new PageId( 42 ) );
 		$this->assertTrue(
 			$quads->contains( new Quad(
 				$this->ns->subject( new SubjectId( self::PERSON_ID ) ),
 				$this->ns->rdfType(),
-				new Iri( self::EDM . 'Place' ),
-				$this->ns->graph( 'edm', new PageId( 42 ) )
+				new Iri( self::EDM . 'ProvidedCHO' ),
+				$graph
 			) ),
-			'The alphabetically first Mapping wins the tie-break.'
+			'The Person Subject projects with the Person entry class.'
 		);
-		$this->assertCount( 1, $this->logger->getLogCalls()->getMessages() );
-	}
-
-	private function personMappingNamed( string $name, string $subjectClass ): Mapping {
-		return new Mapping(
-			name: new MappingName( $name ),
-			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [ 'edm' => self::EDM ],
-			subjectClass: $subjectClass,
-			properties: new PropertyMappings( [] )
+		$this->assertTrue(
+			$quads->contains( new Quad(
+				$this->ns->subject( new SubjectId( self::CITY_ID ) ),
+				$this->ns->rdfType(),
+				new Iri( self::EDM . 'Place' ),
+				$graph
+			) ),
+			'The City Subject projects with the City entry class.'
 		);
 	}
 

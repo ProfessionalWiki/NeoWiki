@@ -28,8 +28,8 @@ class DatabaseMappingNameLookup implements MappingNameLookup {
 			->caller( __METHOD__ )
 			->fetchFieldValues();
 
-		// The DB key uses underscores; the display text (spaces) matches Title::getText(), so the name
-		// compares equal to the page identity a MappingContentHandler sees when detecting duplicates.
+		// The DB key uses underscores; the display text (spaces) matches Title::getText(), so each name is
+		// the projection/target name a caller passes to ?projection= or --projection.
 		return array_map(
 			static fn ( string $title ): MappingName => new MappingName( str_replace( '_', ' ', $title ) ),
 			$titles

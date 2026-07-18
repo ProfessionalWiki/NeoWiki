@@ -9,8 +9,8 @@ use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
-use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMappings;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\SchemaMapping;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Quad;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\QuadList;
@@ -96,8 +96,7 @@ class ProjectionNamedGraphTest extends TestCase {
 
 	private function edmProjector(): OntologyMappingProjector {
 		return new OntologyMappingProjector(
-			'edm',
-			[ $this->personToEdmMapping() ],
+			$this->personToEdmMapping(),
 			$this->ns,
 			RdfValueMapperRegistry::withCoreMappers(),
 			new LegacyLoggerSpy(),
@@ -106,12 +105,15 @@ class ProjectionNamedGraphTest extends TestCase {
 
 	private function personToEdmMapping(): Mapping {
 		return new Mapping(
-			name: new MappingName( 'Person to EDM' ),
-			schema: new SchemaName( 'Person' ),
-			target: 'edm',
+			name: new MappingName( 'edm' ),
 			prefixes: [ 'edm' => 'http://www.europeana.eu/schemas/edm/' ],
-			subjectClass: 'edm:Agent',
-			properties: new PropertyMappings( [] )
+			schemas: [
+				'Person' => new SchemaMapping(
+					schema: new SchemaName( 'Person' ),
+					subjectClass: 'edm:Agent',
+					properties: new PropertyMappings( [] )
+				),
+			],
 		);
 	}
 

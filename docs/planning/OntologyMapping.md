@@ -10,7 +10,9 @@ Status: Draft strawman, for discussion with ECHOLOT partners (T2.3 and T3.x).
 Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 
 > **As-built (v1, 2026-07).** The near-1:1 term-substitution tier of this design has shipped: Mappings as
-> pages in a `Mapping:` namespace, and an ontology projection selectable alongside the native one on the
+> pages in a `Mapping:` namespace — one page per target ontology, the page title being the target name
+> ([#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)) — and an ontology projection
+> selectable alongside the native one on the
 > RDF export endpoint and `DumpRdf`. See the [Ontology Mapping reference](../rdf/ontology-mapping.md)
 > and the worked [Person → EDM example](../examples/person-to-edm.md). The structural / node-synthesis
 > tier and the mapping-formalism question (Q1, [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995))
@@ -330,14 +332,16 @@ above, since the store has no sync-back to the wiki.
 mapping per Schema? Per-target is more modular and independently installable; combined may reduce duplication for shared
 sub-patterns.
 
-*v1: a separate Mapping per (Schema, target), enforced at save time — a second page claiming the same pair is rejected.
-Combined multi-target mappings stay open for a later format version.*
+*v1: one Mapping page per target ontology, holding an entry for every mapped Schema — the page title is the target name,
+so uniqueness needs no save-time check ([#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)). Combined
+multi-target pages stay open for a later format version.*
 
 **Q7: Authoring and distribution.** Where do Mappings live (a dedicated namespace? API-only?), who authors them (data
 modellers) vs installs them (wiki admins), and how are bundles (e.g. "CIDOC-CRM for Person / Place / Object") packaged
 and shared across wikis and a farm?
 
-*v1: Mappings live as pages in a dedicated `Mapping:` namespace, authored like Schemas/Layouts and gated by the
+*v1: Mappings live as pages in a dedicated `Mapping:` namespace (one page per target ontology, named by it —
+[ADR 17](../adr/017-names-as-identifiers.md)-style), authored like Schemas/Layouts and gated by the
 `neowiki-mapping-edit` right, and seedable as demo/bundle data (the Person→EDM example ships this way). Packaging and
 farm-wide sharing of bundles is not yet addressed.*
 
@@ -377,4 +381,5 @@ nesting look like in the schema format, and how much of the synthesis machinery 
   — one person model expressed across several ontologies (takin); shared evaluation vehicle for the modelling fork and
   the first mappings.
 - Discussions: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996) (this doc),
-  [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999) (native projection).
+  [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999) (native projection),
+  [#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065) (mapping storage granularity).
