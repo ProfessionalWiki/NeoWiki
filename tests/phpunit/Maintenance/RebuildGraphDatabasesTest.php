@@ -56,35 +56,24 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::createGraphDatabaseConstraints
+	 */
 	public function testRebuildCreatesGraphUniquenessConstraints(): void {
 		// setUpNeo4j() dropped any pre-existing constraints, so the graph starts without them.
-		// A subject page is present so the rebuild re-projects real data: the constraints are
-		// created before the re-projection, so this also proves an unchanged re-save does not
-		// violate them.
+		// A subject page is present so the rebuild re-projects real data under the freshly created
+		// constraints. Only the wiring is asserted here (both constraints exist by name); their shape
+		// and enforcement are covered by Neo4jConstraintUpdaterTest.
 		$this->createPageWithSubjects( 'Page with subject', TestSubject::build() );
 
 		$this->runRebuild();
 
 		$this->assertSame(
 			[
-				[
-					'name' => 'Page wiki_id id',
-					'type' => 'NODE_PROPERTY_UNIQUENESS',
-					'entityType' => 'NODE',
-					'labelsOrTypes' => [ 'Page' ],
-					'properties' => [ 'wiki_id', 'id' ],
-				],
-				[
-					'name' => 'Subject id',
-					'type' => 'NODE_PROPERTY_UNIQUENESS',
-					'entityType' => 'NODE',
-					'labelsOrTypes' => [ 'Subject' ],
-					'properties' => [ 'id' ],
-				],
+				[ 'name' => 'Page wiki_id id' ],
+				[ 'name' => 'Subject id' ],
 			],
-			$this->readGraph(
-				'SHOW CONSTRAINTS YIELD name, type, entityType, labelsOrTypes, properties ORDER BY name'
-			)->toRecursiveArray()
+			$this->readGraph( 'SHOW CONSTRAINTS YIELD name ORDER BY name' )->toRecursiveArray()
 		);
 	}
 
