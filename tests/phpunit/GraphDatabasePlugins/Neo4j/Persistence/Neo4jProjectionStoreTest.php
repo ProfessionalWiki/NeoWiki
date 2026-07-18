@@ -43,6 +43,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	private const GUID_2 = 'sTestNQS1111112';
 	private const GUID_3 = 'sTestNQS1111113';
 	private const GUID_4 = 'sTestNQS1111114';
+	private const GUID_5 = 'sTestNQS1111115';
 	private const SCHEMA_ID_A = 'sTestNQS111111A';
 	private const SCHEMA_ID_Z = 'sTestNQS111111Z';
 	private const WIKI_ID = 'my_wiki';
@@ -391,6 +392,52 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1 );
 	}
 
+	public function testReducingReferencedSubjectToStubKeepsIncomingRelationsButStripsOutgoingRelationsAndProperties(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1 has a scalar property and two outgoing relations (to GUID_3 and GUID_4).
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build(
+				id: self::GUID_1,
+				statements: new StatementList( [
+					TestStatement::build( property: 'nickname', value: 'Ada' ),
+					TestStatement::buildRelation(
+						property: 'locatedIn',
+						relations: [
+							TestRelation::build( id: 'rTestNQS1111rrB', targetId: self::GUID_3 ),
+							TestRelation::build( id: 'rTestNQS1111rrE', targetId: self::GUID_4 ),
+						],
+					),
+				] ),
+			),
+		) );
+
+		// GUID_2 and GUID_5, on their own pages, each hold an incoming relation to GUID_1.
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rCA' ),
+		) );
+		$store->savePage( TestPage::build(
+			id: 3,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_5, self::GUID_1, 'rTestNQS1111rDA' ),
+		) );
+
+		$this->assertTrue(
+			$this->subjectHasProperty( self::GUID_1, 'nickname' ),
+			'Precondition: the subject has a projected scalar property before being stubbed'
+		);
+		$this->assertOutgoingRelationCount( self::GUID_1, 2, 'Precondition: the subject has two outgoing relations' );
+
+		// Remove GUID_1 from its page while GUID_2 and GUID_5 still reference it.
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectIsStub( self::GUID_1 );
+		$this->assertOutgoingRelationCount( self::GUID_1, 0 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1 );
+		$this->assertRelationExists( self::GUID_5, 'LocatedIn', self::GUID_1 );
+	}
+
 	private function newProjectionStoreWithLocationRelation( string $wikiId = self::WIKI_ID ): GraphDatabasePlugin {
 		$extension = NeoWikiExtension::getInstance();
 
@@ -414,6 +461,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 				logger: new NullLogger(),
 				wikiId: $wikiId,
 			),
+			constraintUpdater: new Neo4jConstraintUpdater( new Neo4jWriteQueryEngine( $extension->getNeo4jClient() ) ),
 			wikiId: $wikiId,
 		);
 	}
@@ -442,6 +490,24 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			$result->isEmpty(),
 			"Relation {$fromSubjectId}-[{$relationType}]->{$toSubjectId} should exist"
 		);
+	}
+
+	private function subjectHasProperty( string $subjectId, string $property ): bool {
+		$result = $this->readGraph(
+			'MATCH (subject {id: $id}) RETURN $property IN keys(subject) AS hasProperty',
+			[ 'id' => $subjectId, 'property' => $property ]
+		);
+
+		return $result->first()->toRecursiveArray()['hasProperty'];
+	}
+
+	private function assertOutgoingRelationCount( string $subjectId, int $expected, string $message = '' ): void {
+		$result = $this->readGraph(
+			'MATCH ({id: $id})-[relation]->() RETURN count(relation) AS count',
+			[ 'id' => $subjectId ]
+		);
+
+		$this->assertSame( $expected, $result->first()->toRecursiveArray()['count'], $message );
 	}
 
 	private function assertSubjectIsStub( string $subjectId ): void {
