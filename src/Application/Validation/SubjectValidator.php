@@ -113,7 +113,7 @@ readonly class SubjectValidator {
 				$relation,
 				$statement->getPropertyName(),
 				$definition->getTargetSchema(),
-				$index
+				(int)$index
 			);
 
 			if ( $violation !== null ) {
