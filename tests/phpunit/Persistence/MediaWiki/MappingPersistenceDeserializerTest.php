@@ -44,6 +44,30 @@ class MappingPersistenceDeserializerTest extends TestCase {
 		$this->assertNull( $this->deserialize( $this->validJson() )->forSchema( new SchemaName( 'Artwork' ) ) );
 	}
 
+	public function testSkipsAMalformedSchemaEntryButKeepsItsValidSiblings(): void {
+		// "Broken" has no subject.class — a shape only an import can store, since save validation rejects
+		// it. It is skipped while the valid entries before and after it deserialize, mirroring the
+		// per-property skip, so one bad entry never sinks the whole page's projection.
+		$mapping = $this->deserialize( <<<JSON
+			{
+				"version": 1,
+				"prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" },
+				"schemas": {
+					"Person": { "subject": { "class": "edm:Agent" }, "properties": {} },
+					"Broken": { "properties": {} },
+					"City": { "subject": { "class": "edm:Place" }, "properties": {} }
+				}
+			}
+			JSON );
+
+		$this->assertSame( 'edm:Agent', $mapping->forSchema( new SchemaName( 'Person' ) )?->subjectClass );
+		$this->assertSame( 'edm:Place', $mapping->forSchema( new SchemaName( 'City' ) )?->subjectClass );
+		$this->assertNull(
+			$mapping->forSchema( new SchemaName( 'Broken' ) ),
+			'the entry missing subject.class is skipped, not included'
+		);
+	}
+
 	public function testDeserializesAPropertyWithALanguageTag(): void {
 		$name = $this->deserialize( $this->validJson() )->forSchema( new SchemaName( 'Person' ) )?->properties->get( 'Name' );
 
