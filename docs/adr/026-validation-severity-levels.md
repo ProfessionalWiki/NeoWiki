@@ -99,7 +99,7 @@ because enforcement is off by default and an admin can lift it for the duration 
 
 Every serialized violation gains an always-present `"severity": "error" | "warning"` field, in the dry-run validate
 endpoints' 200 body and in the enforcement 422 body alike. In the domain model, every violation carries its severity,
-stamped at validation time from the configuration of the Constraint it violates.
+stamped at validation time from the violated Constraint's configuration or the fixed classification above.
 
 ## Consequences
 
@@ -117,8 +117,8 @@ Pros:
 
 Cons:
 
-* Enforcement only bites once schema authors mark Constraints as `error`: flipping `$wgNeoWikiEnforceValidation` on
-  has no blocking effect while Schemas are unannotated.
+* Enforcement only bites for authorable Constraints once schema authors mark them `error`: while Schemas are
+  unannotated, flipping `$wgNeoWikiEnforceValidation` on blocks nothing beyond the fixed-`error` conditions.
 * The Schema editor UI must expose a severity control per Constraint.
 * The PHP and TypeScript JSON parsers must handle both the scalar and the object Constraint form.
 * Severity is one more concept schema authors need to understand.
