@@ -94,10 +94,9 @@ outbound description, including the native relation reification — with none of
 triples, in the hosting page's named graph. Inbound relations pointing at the Subject from elsewhere
 are not included.
 
-Returns `404` when the Subject does not exist, is no longer on its hosting page, or is on a page the
-caller may not read — the three are indistinguishable. A malformed Subject ID returns `400`. A
-readable Subject whose Schema has no mapping for the requested ontology target projects to an empty
-graph — a `200`, not a `404`.
+Returns `404` when the Subject does not exist or is on a page the caller may not read — the two are
+indistinguishable. A malformed Subject ID returns `400`. A readable Subject whose Schema has no mapping
+for the requested ontology target projects to an empty graph — a `200`, not a `404`.
 
 ```sh
 curl 'https://wiki.example/rest.php/neowiki/v0/subject/s1demo8aaaaaab5/rdf?projection=EDM'
