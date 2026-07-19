@@ -212,7 +212,6 @@
 	"neowiki-mapping-invalid": "Mapping content is invalid ({{PLURAL:$1|$1 error|$1 errors}}):",
 	"neowiki-mapping-invalid-detail": "$1: $2",
 	"neowiki-mapping-name-invalid": "Invalid mapping name: $1",
-	"neowiki-mapping-duplicate-target": "The schema \"$1\" is already mapped to target \"$2\" by mapping \"$3\". There can only be one mapping per schema and target.",
 
 	"neowiki-edit-layout": "Edit layout",
 	"neowiki-layout-display-schema": "Schema",

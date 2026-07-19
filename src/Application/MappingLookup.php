@@ -9,14 +9,10 @@ use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 
 interface MappingLookup {
 
-	public function getMapping( MappingName $name ): ?Mapping;
-
 	/**
-	 * Every valid Mapping across all Mapping pages. Structurally invalid Mapping pages are omitted.
-	 * Used to select the Mappings for a projection target and to detect duplicate (Schema, target) pairs.
-	 *
-	 * @return Mapping[]
+	 * The Mapping stored on the page of the given target/projection name, or null when the page does not
+	 * exist, is unreadable, or is structurally invalid.
 	 */
-	public function getAllMappings(): array;
+	public function getMapping( MappingName $name ): ?Mapping;
 
 }

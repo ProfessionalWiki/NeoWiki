@@ -6,9 +6,9 @@ namespace ProfessionalWiki\NeoWiki\Application\Rdf;
 
 /**
  * The outcome of resolving a projection name: either the {@see RdfProjection}, or — when the name is
- * neither "native" nor a target any Mapping declares — the list of known projection names for a
- * helpful error. It lets a caller resolve the projection and list the valid names from a single
- * enumeration of the Mapping pages, instead of enumerating twice (once to resolve, once to list).
+ * neither "native" nor a Mapping page's name — the list of known projection names for a helpful error.
+ * It bundles the two outcomes so a caller both resolves the projection and, on the unknown path, reports
+ * the valid names, without the caller branching on which happened.
  */
 readonly class RdfProjectionResolution {
 

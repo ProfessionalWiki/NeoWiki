@@ -40,7 +40,7 @@ All NeoWiki IRIs live under `$base` (`$wgNeoWikiRdfBaseUri`). Standard vocabular
 | `neo-page:` | `$base/page/` | Page resource IRIs (`neo-page:42`) — the subject of the page-metadata triples |
 | `neo-graph:` | `$base/graph/{projection}/page/` | Named-graph IRIs, qualified by projection (`$base/graph/native/page/42`) |
 
-The `{projection}` segment of the named-graph IRI is `native` or a Mapping target (e.g. `edm`), encoded like the
+The `{projection}` segment of the named-graph IRI is `native` or a Mapping page name (e.g. `EDM`), encoded like the
 Property and Schema names below, so sibling projections of a page write disjoint graphs and can share one triple
 store — see [Ontology Mapping](ontology-mapping.md). The page *resource* IRI (`neo-page:42`) stays
 projection-independent and keeps appearing inside the triples.
@@ -65,9 +65,9 @@ describe the same set of entities. A warning is logged for each omitted Subject.
 ## Endpoint
 
 RDF is served per page or per Subject. Both take the same `projection` and `format` query parameters.
-The `projection` selects the vocabulary: `native` (the default, described here) or an ontology target
-declared by a Mapping page — see [Ontology Mapping](ontology-mapping.md); an unknown target returns
-`400`. The `format` picks the serialization, falling back to the `Accept` header, then to TriG:
+The `projection` selects the vocabulary: `native` (the default, described here) or the name of a
+Mapping page — see [Ontology Mapping](ontology-mapping.md); an unknown projection returns `400`. The
+`format` picks the serialization, falling back to the `Accept` header, then to TriG:
 
 | `format` | `Accept` | Content-Type | Named graph |
 |---|---|---|---|
@@ -100,19 +100,19 @@ readable Subject whose Schema has no mapping for the requested ontology target p
 graph — a `200`, not a `404`.
 
 ```sh
-curl 'https://wiki.example/rest.php/neowiki/v0/subject/s1demo8aaaaaab5/rdf?projection=edm'
+curl 'https://wiki.example/rest.php/neowiki/v0/subject/s1demo8aaaaaab5/rdf?projection=EDM'
 ```
 
 ## Bulk dump
 
 `maintenance/DumpRdf.php` streams the projection of **every** subject page to stdout as TriG, one named
 graph per page. Progress goes to stderr so stdout stays a clean RDF document. It defaults to the native
-projection; `--projection=<target>` selects an ontology projection (see
+projection; `--projection=<name>` selects an ontology projection by its Mapping page name (see
 [Ontology Mapping](ontology-mapping.md)).
 
 ```sh
 php maintenance/run.php NeoWiki:DumpRdf > dump.trig
-php maintenance/run.php NeoWiki:DumpRdf --projection=edm > dump-edm.trig
+php maintenance/run.php NeoWiki:DumpRdf --projection=EDM > dump-edm.trig
 ```
 
 ## Not covered here

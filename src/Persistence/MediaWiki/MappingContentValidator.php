@@ -15,12 +15,10 @@ use RuntimeException;
  *
  *  1. Structural validation against mappingContentSchema.json (versioned, deliberately minimal).
  *  2. Semantic IRI-safety validation: every declared prefix namespace, and every class, predicate and
- *     datatype term, must expand to a valid, safe absolute IRI (the #1029 lesson). A term that cannot
- *     be resolved against the declared prefixes, or that would break out of its IRI, is rejected here
- *     rather than percent-encoded — a Mapping must reproduce the ontology's exact terms.
- *
- * The duplicate (Schema, target) check is not here: it needs to enumerate the other Mapping pages, so
- * it lives in {@see \ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContentHandler}.
+ *     datatype term across all Schema entries, must expand to a valid, safe absolute IRI (the #1029
+ *     lesson). A term that cannot be resolved against the declared prefixes, or that would break out of
+ *     its IRI, is rejected here rather than percent-encoded — a Mapping must reproduce the ontology's
+ *     exact terms.
  */
 class MappingContentValidator {
 
@@ -93,16 +91,10 @@ class MappingContentValidator {
 
 		$errors = $this->prefixErrors( $prefixes );
 
-		$subject = $data['subject'] ?? null;
-		$class = is_array( $subject ) ? $this->stringOrNull( $subject['class'] ?? null ) : null;
-		if ( $class !== null && $expander->expand( $class ) === null ) {
-			$errors['/subject/class'] = $this->unresolvedTermMessage( $class );
-		}
-
-		$properties = is_array( $data['properties'] ?? null ) ? $data['properties'] : [];
-		foreach ( $properties as $name => $entry ) {
+		$schemas = is_array( $data['schemas'] ?? null ) ? $data['schemas'] : [];
+		foreach ( $schemas as $schemaName => $entry ) {
 			if ( is_array( $entry ) ) {
-				$errors = array_merge( $errors, $this->propertyErrors( (string)$name, $entry, $expander ) );
+				$errors = array_merge( $errors, $this->schemaErrors( (string)$schemaName, $entry, $expander ) );
 			}
 		}
 
@@ -131,17 +123,41 @@ class MappingContentValidator {
 	 * @param array<mixed> $entry
 	 * @return array<string, string>
 	 */
-	private function propertyErrors( string $name, array $entry, CurieExpander $expander ): array {
+	private function schemaErrors( string $schemaName, array $entry, CurieExpander $expander ): array {
+		$base = '/schemas/' . $schemaName;
+		$errors = [];
+
+		$subject = $entry['subject'] ?? null;
+		$class = is_array( $subject ) ? $this->stringOrNull( $subject['class'] ?? null ) : null;
+		if ( $class !== null && $expander->expand( $class ) === null ) {
+			$errors[$base . '/subject/class'] = $this->unresolvedTermMessage( $class );
+		}
+
+		$properties = is_array( $entry['properties'] ?? null ) ? $entry['properties'] : [];
+		foreach ( $properties as $name => $propertyEntry ) {
+			if ( is_array( $propertyEntry ) ) {
+				$errors = array_merge( $errors, $this->propertyErrors( $base, (string)$name, $propertyEntry, $expander ) );
+			}
+		}
+
+		return $errors;
+	}
+
+	/**
+	 * @param array<mixed> $entry
+	 * @return array<string, string>
+	 */
+	private function propertyErrors( string $base, string $name, array $entry, CurieExpander $expander ): array {
 		$errors = [];
 
 		$predicate = $this->stringOrNull( $entry['predicate'] ?? null );
 		if ( $predicate !== null && $expander->expand( $predicate ) === null ) {
-			$errors['/properties/' . $name . '/predicate'] = $this->unresolvedTermMessage( $predicate );
+			$errors[$base . '/properties/' . $name . '/predicate'] = $this->unresolvedTermMessage( $predicate );
 		}
 
 		$datatype = $this->stringOrNull( $entry['datatype'] ?? null );
 		if ( $datatype !== null && $expander->expand( $datatype ) === null ) {
-			$errors['/properties/' . $name . '/datatype'] = $this->unresolvedTermMessage( $datatype );
+			$errors[$base . '/properties/' . $name . '/datatype'] = $this->unresolvedTermMessage( $datatype );
 		}
 
 		return $errors;

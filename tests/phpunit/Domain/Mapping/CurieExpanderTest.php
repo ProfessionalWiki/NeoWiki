@@ -86,4 +86,26 @@ class CurieExpanderTest extends TestCase {
 		$this->assertTrue( CurieExpander::isSafeAbsoluteIri( 'http://www.europeana.eu/schemas/edm/' ) );
 	}
 
+	public function testIsValidPrefixLabelAcceptsALabelWithLettersDigitsUnderscoreAndHyphen(): void {
+		$this->assertTrue( CurieExpander::isValidPrefixLabel( 'edm' ) );
+		$this->assertTrue( CurieExpander::isValidPrefixLabel( 'rdaGr2' ) );
+		$this->assertTrue( CurieExpander::isValidPrefixLabel( 'a_b-c9' ) );
+	}
+
+	/**
+	 * @dataProvider unsafePrefixLabelProvider
+	 */
+	public function testIsValidPrefixLabelRejectsAnUnsafeLabel( string $label ): void {
+		$this->assertFalse( CurieExpander::isValidPrefixLabel( $label ) );
+	}
+
+	public static function unsafePrefixLabelProvider(): iterable {
+		yield 'empty' => [ '' ];
+		yield 'leading digit' => [ '1edm' ];
+		yield 'contains a space' => [ 'a b' ];
+		yield 'contains a colon' => [ 'ex:local' ];
+		yield 'contains an angle bracket' => [ 'a<b' ];
+		yield 'breaks out of the @prefix line with a newline and a triple' => [ "x\nedm:injected a edm:Pwned .\n#" ];
+	}
+
 }

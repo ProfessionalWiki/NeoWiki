@@ -9,7 +9,6 @@ use MediaWiki\Title\TitleFactory;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
-use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use Wikimedia\ObjectCache\HashBagOStuff;
@@ -45,7 +44,6 @@ class CachingMappingLookupTest extends TestCase {
 	private function newLookup( MappingLookup $inner, StubPageReadAuthorizer $readAuthorizer ): CachingMappingLookup {
 		return new CachingMappingLookup(
 			$inner,
-			$this->createMock( MappingNameLookup::class ),
 			new WANObjectCache( [ 'cache' => new HashBagOStuff() ] ),
 			$this->newTitleFactory(),
 			$readAuthorizer,

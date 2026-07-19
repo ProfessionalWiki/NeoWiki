@@ -195,9 +195,9 @@ JSON
 	}
 
 	public function testValidTargetProjectsTheMappedVocabularyWithNativeSubjectIris(): void {
-		$this->createBerlinToEdmMapping();
+		$this->createEdmMapping();
 
-		$response = $this->export( query: [ 'projection' => 'edm', 'format' => 'turtle' ] );
+		$response = $this->export( query: [ 'projection' => 'EDM', 'format' => 'turtle' ] );
 		$body = $response->getBody()->getContents();
 
 		$this->assertSame( 200, $response->getStatusCode() );
@@ -207,10 +207,10 @@ JSON
 	}
 
 	public function testReadableSubjectWithoutAMappingForTheTargetReturnsAnEmptyGraph(): void {
-		// "edm" is a known projection because Berlin's Schema is mapped to it, but this Subject's Schema
-		// is not, so its ontology projection is empty. A readable Subject is never hidden behind a 404,
-		// so the response is a 200 empty graph rather than a not-found.
-		$this->createBerlinToEdmMapping();
+		// "EDM" is a known projection because Berlin's Schema has an entry on the Mapping page, but this
+		// Subject's Schema does not, so its ontology projection is empty. A readable Subject is never
+		// hidden behind a 404, so the response is a 200 empty graph rather than a not-found.
+		$this->createEdmMapping();
 
 		$this->createSchema( 'ExportSubjectRdfApiTestUnmappedSchema' );
 		$this->createPageWithSubjects(
@@ -222,7 +222,7 @@ JSON
 			)
 		);
 
-		$response = $this->export( query: [ 'projection' => 'edm', 'format' => 'turtle' ], subjectId: self::UNMAPPED_ID );
+		$response = $this->export( query: [ 'projection' => 'EDM', 'format' => 'turtle' ], subjectId: self::UNMAPPED_ID );
 
 		$this->assertSame( 200, $response->getStatusCode() );
 		$this->assertSame(
@@ -240,19 +240,21 @@ JSON
 		$this->assertStringNotContainsString( self::PARIS_ID, $body, 'A sibling Subject IRI is not included.' );
 	}
 
-	private function createBerlinToEdmMapping(): void {
-		$this->createMapping( 'ExportSubjectRdfApiTestBerlinToEdm', <<<JSON
+	private function createEdmMapping(): void {
+		$this->createMapping( 'EDM', <<<JSON
 			{
 				"version": 1,
-				"schema": "{$this->schemaName()}",
-				"target": "edm",
 				"prefixes": {
 					"edm": "http://www.europeana.eu/schemas/edm/",
 					"dc": "http://purl.org/dc/elements/1.1/"
 				},
-				"subject": { "class": "edm:Place" },
-				"properties": {
-					"population": { "predicate": "dc:description" }
+				"schemas": {
+					"{$this->schemaName()}": {
+						"subject": { "class": "edm:Place" },
+						"properties": {
+							"population": { "predicate": "dc:description" }
+						}
+					}
 				}
 			}
 			JSON );

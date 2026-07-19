@@ -17,7 +17,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
  */
 class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase {
 
-	private function render( string $json, string $name = 'Person to EDM' ): string {
+	private function render( string $json, string $name = 'EDM' ): string {
 		$handler = new MappingContentHandler( MappingContent::CONTENT_MODEL_ID );
 		$page = Title::makeTitle( NeoWikiExtension::NS_MAPPING, $name )->toPageIdentity();
 		$cpoParams = new ContentParseParams( $page, null, null, true );
@@ -26,28 +26,30 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 	}
 
 	public function testMappingJsonIsVisibleOnTheReadTab(): void {
-		$this->assertStringContainsString( 'edm:Agent', $this->render( $this->personToEdm() ) );
+		$this->assertStringContainsString( 'edm:Agent', $this->render( $this->edm() ) );
 	}
 
-	private function personToEdm(): string {
+	private function edm(): string {
 		return <<<JSON
 			{
 				"version": 1,
-				"schema": "Person",
-				"target": "edm",
 				"prefixes": {
 					"edm": "http://www.europeana.eu/schemas/edm/",
 					"rdaGr2": "http://rdvocab.info/ElementsGr2/",
 					"skos": "http://www.w3.org/2004/02/skos/core#"
 				},
-				"subject": {
-					"class": "edm:Agent"
-				},
-				"properties": {
-					"Gender": { "predicate": "rdaGr2:gender" },
-					"Birth date": { "predicate": "rdaGr2:dateOfBirth" },
-					"Birth place": { "predicate": "rdaGr2:placeOfBirth" },
-					"Description": { "predicate": "skos:note", "lang": "en" }
+				"schemas": {
+					"Person": {
+						"subject": {
+							"class": "edm:Agent"
+						},
+						"properties": {
+							"Gender": { "predicate": "rdaGr2:gender" },
+							"Birth date": { "predicate": "rdaGr2:dateOfBirth" },
+							"Birth place": { "predicate": "rdaGr2:placeOfBirth" },
+							"Description": { "predicate": "skos:note", "lang": "en" }
+						}
+					}
 				}
 			}
 			JSON;

@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Rdf;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMapping;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\SchemaMapping;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
@@ -23,14 +24,14 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use Psr\Log\LoggerInterface;
 
 /**
- * Projects a {@see Page} into a target ontology using the {@see Mapping}s configured for that target
- * (OntologyMapping.md, v1 near-1:1 term-substitution tier). Per Subject that has a Mapping for the
- * target it emits `rdf:type <mapped class>`, `rdfs:label` (always), and one triple per mapped property
- * value — mapping only the vocabulary; the Subject IRI stays native (`neo-subj:`), because the entity
- * is the wiki's own. Unmapped properties are absent, so the output is conformant to the target
- * ontology. There is no intermediate-node synthesis and no `neo:Relation` reification in v1; relation
- * values become a direct triple to the target Subject's native IRI, which may be untyped when that
- * Subject has no Mapping of its own.
+ * Projects a {@see Page} into a target ontology using one page-level {@see Mapping} (OntologyMapping.md,
+ * v1 near-1:1 term-substitution tier). The Mapping page's name is the projection target; it holds one
+ * entry per mapped Schema. Per Subject whose Schema has an entry it emits `rdf:type <mapped class>`,
+ * `rdfs:label` (always), and one triple per mapped property value — mapping only the vocabulary, because
+ * the Subject IRI stays native (`neo-subj:`), the entity being the wiki's own. Unmapped properties are
+ * absent, so the output is conformant to the target ontology. There is no intermediate-node synthesis and
+ * no `neo:Relation` reification in v1; relation values become a direct triple to the target Subject's
+ * native IRI, which may be untyped when that Subject has no entry of its own.
  *
  * Every quad is placed in the page's named graph for this projection's target (`{$base}/graph/{target}/page/{id}`,
  * #1053), so the per-page sync used by the native projection (NativeRdfProjection.md) works for an ontology
@@ -39,67 +40,17 @@ use Psr\Log\LoggerInterface;
  */
 class OntologyMappingProjector implements PageProjector {
 
-	/**
-	 * @var array<string, Mapping> Chosen Mapping per Schema name, for the projector's target.
-	 */
-	private readonly array $mappingsBySchema;
+	private readonly string $target;
+	private readonly CurieExpander $expander;
 
-	/**
-	 * @param Mapping[] $mappings The Mappings for the store's target (one per Schema after tie-breaking).
-	 */
 	public function __construct(
-		private readonly string $target,
-		array $mappings,
+		private readonly Mapping $mapping,
 		private readonly RdfNamespaces $namespaces,
 		private readonly RdfValueMapperRegistry $valueMappers,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->mappingsBySchema = $this->resolveMappingsBySchema( $mappings );
-	}
-
-	/**
-	 * @param Mapping[] $mappings
-	 * @return array<string, Mapping>
-	 */
-	private function resolveMappingsBySchema( array $mappings ): array {
-		$grouped = [];
-
-		foreach ( $mappings as $mapping ) {
-			$grouped[$mapping->schema->getText()][] = $mapping;
-		}
-
-		$resolved = [];
-
-		foreach ( $grouped as $schemaName => $candidates ) {
-			$resolved[$schemaName] = $this->pickMapping( $schemaName, $candidates );
-		}
-
-		return $resolved;
-	}
-
-	/**
-	 * The v1 guarantee is one Mapping per (Schema, target), enforced at save time. Should duplicate
-	 * pages exist anyway (pre-production race), the projection stays deterministic: pick the
-	 * alphabetically first page title and log, rather than depend on enumeration order.
-	 *
-	 * @param Mapping[] $candidates
-	 */
-	private function pickMapping( string $schemaName, array $candidates ): Mapping {
-		if ( count( $candidates ) === 1 ) {
-			return $candidates[0];
-		}
-
-		usort(
-			$candidates,
-			static fn ( Mapping $a, Mapping $b ): int => strcmp( $a->name->getText(), $b->name->getText() )
-		);
-
-		$this->logger->warning(
-			'Multiple Mappings claim Schema "' . $schemaName . '" for target "' . $this->target
-			. '"; using "' . $candidates[0]->name->getText() . '".'
-		);
-
-		return $candidates[0];
+		$this->target = $mapping->name->getText();
+		$this->expander = new CurieExpander( $mapping->prefixes );
 	}
 
 	public function projectPage( Page $page ): QuadList {
@@ -107,10 +58,10 @@ class OntologyMappingProjector implements PageProjector {
 		$quads = [];
 
 		foreach ( $page->getSubjects()->getAllSubjects()->asArray() as $subject ) {
-			$mapping = $this->mappingsBySchema[$subject->getSchemaName()->getText()] ?? null;
+			$schemaMapping = $this->mapping->forSchema( $subject->getSchemaName() );
 
-			if ( $mapping !== null ) {
-				$quads = array_merge( $quads, $this->subjectQuads( $subject, $mapping, $graph ) );
+			if ( $schemaMapping !== null ) {
+				$quads = array_merge( $quads, $this->subjectQuads( $subject, $schemaMapping, $graph ) );
 			}
 		}
 
@@ -121,7 +72,7 @@ class OntologyMappingProjector implements PageProjector {
 	 * Projects a single Subject on the page into the target ontology — its per-Subject block from
 	 * {@see projectPage()} (mapped type, label, mapped property values, relations as direct triples)
 	 * placed in the target's named graph. A Subject that is not on the page, or whose Schema has no
-	 * Mapping for this target, yields an empty list.
+	 * entry in this Mapping, yields an empty list.
 	 */
 	public function projectSubject( Page $page, SubjectId $subjectId ): QuadList {
 		$subject = $page->getSubjects()->getAllSubjects()->getSubject( $subjectId );
@@ -130,44 +81,46 @@ class OntologyMappingProjector implements PageProjector {
 			return new QuadList();
 		}
 
-		$mapping = $this->mappingsBySchema[$subject->getSchemaName()->getText()] ?? null;
+		$schemaMapping = $this->mapping->forSchema( $subject->getSchemaName() );
 
-		if ( $mapping === null ) {
+		if ( $schemaMapping === null ) {
 			return new QuadList();
 		}
 
 		return QuadList::fromArray(
-			$this->subjectQuads( $subject, $mapping, $this->namespaces->graph( $this->target, $page->getId() ) )
+			$this->subjectQuads( $subject, $schemaMapping, $this->namespaces->graph( $this->target, $page->getId() ) )
 		);
 	}
 
 	/**
 	 * @return Quad[]
 	 */
-	private function subjectQuads( Subject $subject, Mapping $mapping, Iri $graph ): array {
-		$expander = new CurieExpander( $mapping->prefixes );
+	private function subjectQuads( Subject $subject, SchemaMapping $schemaMapping, Iri $graph ): array {
 		$subjectIri = $this->namespaces->subject( $subject->id );
 
 		$quads = [
 			new Quad( $subjectIri, $this->namespaces->rdfsLabel(), RdfLiteralFactory::typed( $subject->label->text, 'string' ), $graph ),
 		];
 
-		$class = $expander->expand( $mapping->subjectClass );
+		$class = $this->expander->expand( $schemaMapping->subjectClass );
 		if ( $class === null ) {
 			// Cannot happen for a Mapping that passed save-time validation; guard the projection anyway.
-			$this->logger->warning( 'Mapping "' . $mapping->name->getText() . '" has an unresolvable subject class; skipping the type triple.' );
+			$this->logger->warning(
+				'Mapping "' . $this->target . '" has an unresolvable subject class for Schema "'
+				. $subject->getSchemaName()->getText() . '"; skipping the type triple.'
+			);
 		}
 		else {
 			array_unshift( $quads, new Quad( $subjectIri, $this->namespaces->rdfType(), $class, $graph ) );
 		}
 
 		foreach ( $subject->getStatements()->asArray() as $statement ) {
-			$propertyMapping = $mapping->properties->get( $statement->getPropertyName()->text );
+			$propertyMapping = $schemaMapping->properties->get( $statement->getPropertyName()->text );
 
 			if ( $propertyMapping !== null ) {
 				$quads = array_merge(
 					$quads,
-					$this->projectStatement( $statement, $propertyMapping, $expander, $subjectIri, $graph, $mapping )
+					$this->projectStatement( $statement, $propertyMapping, $subjectIri, $graph )
 				);
 			}
 		}
@@ -181,16 +134,14 @@ class OntologyMappingProjector implements PageProjector {
 	private function projectStatement(
 		Statement $statement,
 		PropertyMapping $propertyMapping,
-		CurieExpander $expander,
 		Iri $subjectIri,
-		Iri $graph,
-		Mapping $mapping
+		Iri $graph
 	): array {
-		$predicate = $expander->expand( $propertyMapping->predicate );
+		$predicate = $this->expander->expand( $propertyMapping->predicate );
 
 		if ( $predicate === null ) {
 			$this->logger->warning(
-				'Mapping "' . $mapping->name->getText() . '" has an unresolvable predicate for property "'
+				'Mapping "' . $this->target . '" has an unresolvable predicate for property "'
 				. $statement->getPropertyName()->text . '"; skipping it.'
 			);
 			return [];
@@ -200,7 +151,7 @@ class OntologyMappingProjector implements PageProjector {
 			return $this->projectRelationStatement( $statement, $predicate, $subjectIri, $graph );
 		}
 
-		return $this->projectLiteralStatement( $statement, $propertyMapping, $predicate, $expander, $subjectIri, $graph, $mapping );
+		return $this->projectLiteralStatement( $statement, $propertyMapping, $predicate, $subjectIri, $graph );
 	}
 
 	/**
@@ -233,10 +184,8 @@ class OntologyMappingProjector implements PageProjector {
 		Statement $statement,
 		PropertyMapping $propertyMapping,
 		Iri $predicate,
-		CurieExpander $expander,
 		Iri $subjectIri,
-		Iri $graph,
-		Mapping $mapping
+		Iri $graph
 	): array {
 		$literals = $this->valueMappers->mapValue( $statement->getPropertyType(), $statement->getValue() );
 
@@ -247,7 +196,7 @@ class OntologyMappingProjector implements PageProjector {
 		$quads = [];
 
 		foreach ( $literals as $literal ) {
-			$object = $this->applyOverrides( $literal, $propertyMapping, $expander, $mapping, $statement->getPropertyName()->text );
+			$object = $this->applyOverrides( $literal, $propertyMapping, $statement->getPropertyName()->text );
 			$quads[] = new Quad( $subjectIri, $predicate, $object, $graph );
 		}
 
@@ -269,27 +218,25 @@ class OntologyMappingProjector implements PageProjector {
 	private function applyOverrides(
 		Literal $literal,
 		PropertyMapping $propertyMapping,
-		CurieExpander $expander,
-		Mapping $mapping,
 		string $propertyName
 	): Literal {
 		if ( $propertyMapping->datatype !== null ) {
-			$datatype = $expander->expand( $propertyMapping->datatype );
+			$datatype = $this->expander->expand( $propertyMapping->datatype );
 
 			return $datatype === null ? $literal : new Literal( $literal->lexicalForm, $datatype );
 		}
 
 		if ( $propertyMapping->language !== null && $this->isPlainString( $literal ) ) {
-			return $this->withLanguageTag( $literal, $propertyMapping->language, $mapping, $propertyName );
+			return $this->withLanguageTag( $literal, $propertyMapping->language, $propertyName );
 		}
 
 		return $literal;
 	}
 
-	private function withLanguageTag( Literal $literal, string $language, Mapping $mapping, string $propertyName ): Literal {
+	private function withLanguageTag( Literal $literal, string $language, string $propertyName ): Literal {
 		if ( !Literal::isValidLanguageTag( $language ) ) {
 			$this->logger->warning(
-				'Mapping "' . $mapping->name->getText() . '" has an invalid language tag "' . $language
+				'Mapping "' . $this->target . '" has an invalid language tag "' . $language
 				. '" for property "' . $propertyName . '"; emitting the literal without a language tag.'
 			);
 			return $literal;

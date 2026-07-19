@@ -111,8 +111,7 @@
 	"neowiki-layout-name-invalid": "Error message shown when a Layout page title is not a valid layout name (empty). Parameters:\n* $1 - the reason the name is invalid",
 	"neowiki-mapping-invalid": "Error message shown when saving a structurally or semantically invalid ontology Mapping. Parameters:\n* $1 - number of validation errors",
 	"neowiki-mapping-invalid-detail": "One line of detail for a single Mapping validation error. Parameters:\n* $1 - JSON pointer to the location of the error\n* $2 - the validation error message",
-	"neowiki-mapping-name-invalid": "Error message shown when a Mapping page title is not a valid mapping name (empty). Parameters:\n* $1 - the reason the name is invalid",
-	"neowiki-mapping-duplicate-target": "Error message shown when saving a Mapping whose (schema, target) pair is already claimed by another Mapping page. Parameters:\n* $1 - the schema name\n* $2 - the target ontology name\n* $3 - the name of the existing Mapping page that already claims the pair",
+	"neowiki-mapping-name-invalid": "Error message shown when a Mapping page title is not a valid mapping name (empty or the reserved name \"native\"). Parameters:\n* $1 - the reason the name is invalid",
 
 	"neowiki-edit-layout": "Aria label for the edit button on a Layout page.",
 	"neowiki-layout-display-schema": "Label for the schema field in the layout display.",

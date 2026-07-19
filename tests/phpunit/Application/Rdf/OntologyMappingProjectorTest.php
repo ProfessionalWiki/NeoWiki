@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMappings;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\SchemaMapping;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
@@ -55,12 +56,15 @@ class OntologyMappingProjectorTest extends TestCase {
 	}
 
 	/**
-	 * @param Mapping[] $mappings
+	 * Builds a page-level Mapping named "edm" (so its named graph is /graph/edm/page/{id}) from the given
+	 * per-Schema entries, keyed by Schema name as in production, plus the page-level prefixes.
+	 *
+	 * @param array<string, SchemaMapping> $schemas
+	 * @param array<string, string> $prefixes
 	 */
-	private function newProjector( array $mappings ): OntologyMappingProjector {
+	private function newProjector( array $schemas, array $prefixes = [ 'edm' => self::EDM, 'dc' => self::DC ] ): OntologyMappingProjector {
 		return new OntologyMappingProjector(
-			'edm',
-			$mappings,
+			new Mapping( new MappingName( 'edm' ), $prefixes, $schemas ),
 			$this->ns,
 			RdfValueMapperRegistry::withCoreMappers(),
 			$this->logger,
@@ -68,7 +72,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	}
 
 	public function testProjectsMappedVocabularyOnlyWithNativeSubjectIris(): void {
-		$quads = $this->newProjector( [ $this->personMapping(), $this->cityMapping() ] )
+		$quads = $this->newProjector( [ 'Person' => $this->personMapping(), 'City' => $this->cityMapping() ] )
 			->projectPage( $this->examplePage() );
 
 		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
@@ -146,10 +150,10 @@ class OntologyMappingProjectorTest extends TestCase {
 	 * projection, in the target's named graph, and nothing else. The target Person sits between two
 	 * siblings; its BornIn relation points at the City sibling, whose IRI appears as the dc:spatial
 	 * object but whose own mapped block (edm:Place, …) must not — so a "project every Subject"
-	 * regression fails even though the City has a Mapping of its own.
+	 * regression fails even though the City has an entry of its own.
 	 */
 	public function testProjectSubjectEmitsOnlyTheTargetSubjectsMappedBlockInTheTargetGraph(): void {
-		$quads = $this->newProjector( [ $this->personMapping(), $this->cityMapping() ] )
+		$quads = $this->newProjector( [ 'Person' => $this->personMapping(), 'City' => $this->cityMapping() ] )
 			->projectSubject( $this->pagePersonBetweenSiblings(), new SubjectId( self::PERSON_ID ) );
 
 		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
@@ -161,9 +165,9 @@ class OntologyMappingProjectorTest extends TestCase {
 		$this->logger->assertNoLoggingCallsWhereMade();
 	}
 
-	public function testProjectSubjectForASubjectWhoseSchemaHasNoMappingForTheTargetReturnsNothing(): void {
-		// Only Person is mapped; the requested Subject uses the unmapped Ghost Schema.
-		$quads = $this->newProjector( [ $this->personMapping() ] )
+	public function testProjectSubjectForASubjectWhoseSchemaHasNoEntryReturnsNothing(): void {
+		// Only Person has an entry; the requested Subject uses the unmapped Ghost Schema.
+		$quads = $this->newProjector( [ 'Person' => $this->personMapping() ] )
 			->projectSubject( $this->pagePersonBetweenSiblings(), new SubjectId( self::GHOST_ID ) );
 
 		$this->assertTrue( $quads->isEmpty() );
@@ -171,7 +175,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	}
 
 	public function testProjectSubjectForASubjectNotOnThePageReturnsNothing(): void {
-		$quads = $this->newProjector( [ $this->personMapping() ] )
+		$quads = $this->newProjector( [ 'Person' => $this->personMapping() ] )
 			->projectSubject( TestPage::build( id: 42, mainSubject: $this->examplePerson() ), new SubjectId( self::CITY_ID ) );
 
 		$this->assertTrue( $quads->isEmpty() );
@@ -216,12 +220,8 @@ class OntologyMappingProjectorTest extends TestCase {
 			TRIG;
 	}
 
-	private function personMapping(): Mapping {
-		return new Mapping(
-			name: new MappingName( 'Person to EDM' ),
-			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [ 'edm' => self::EDM, 'dc' => self::DC ],
+	private function personMapping(): SchemaMapping {
+		return new SchemaMapping(
 			subjectClass: 'edm:ProvidedCHO',
 			properties: new PropertyMappings( [
 				'Name' => new PropertyMapping( 'dc:title', 'en', null ),
@@ -232,12 +232,8 @@ class OntologyMappingProjectorTest extends TestCase {
 		);
 	}
 
-	private function cityMapping(): Mapping {
-		return new Mapping(
-			name: new MappingName( 'City to EDM' ),
-			schema: new SchemaName( 'City' ),
-			target: 'edm',
-			prefixes: [ 'edm' => self::EDM, 'dc' => self::DC ],
+	private function cityMapping(): SchemaMapping {
+		return new SchemaMapping(
 			subjectClass: 'edm:Place',
 			properties: new PropertyMappings( [
 				'Name' => new PropertyMapping( 'dc:title' ),
@@ -258,7 +254,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			childSubjects: new SubjectMap( $ghost )
 		);
 
-		$quads = $this->newProjector( [ $this->personMapping() ] )->projectPage( $page );
+		$quads = $this->newProjector( [ 'Person' => $this->personMapping() ] )->projectPage( $page );
 
 		$ghostIri = $this->ns->subject( new SubjectId( self::CITY_ID ) );
 		$this->assertFalse(
@@ -289,7 +285,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		);
 
 		// Only Person is mapped; the City target Subject is not even on the page.
-		$quads = $this->newProjector( [ $this->personMapping() ] )->projectPage( $page );
+		$quads = $this->newProjector( [ 'Person' => $this->personMapping() ] )->projectPage( $page );
 
 		$cityIri = $this->ns->subject( new SubjectId( self::CITY_ID ) );
 		$this->assertTrue(
@@ -310,7 +306,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	public function testInvalidStoredLanguageTagIsDroppedAndTheLiteralStaysPlain(): void {
 		// A Mapping constructed directly, simulating one stored before validation (importDump / a
 		// pre-validation page): its "en_US" tag is not BCP-47-shaped.
-		$quads = $this->newProjector( [ $this->personMappingWithNameLang( 'en_US' ) ] )
+		$quads = $this->newProjector( [ 'Person' => $this->personMappingWithNameLang( 'en_US' ) ] )
 			->projectPage( TestPage::build( id: 42, mainSubject: $this->examplePersonWithoutRelations() ) );
 
 		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
@@ -324,7 +320,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	}
 
 	public function testMaliciousLanguageTagCannotInjectADatatypeIntoTheDocument(): void {
-		$quads = $this->newProjector( [ $this->personMappingWithNameLang( 'en"^^xsd:evil' ) ] )
+		$quads = $this->newProjector( [ 'Person' => $this->personMappingWithNameLang( 'en"^^xsd:evil' ) ] )
 			->projectPage( TestPage::build( id: 42, mainSubject: $this->examplePersonWithoutRelations() ) );
 
 		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
@@ -338,12 +334,8 @@ class OntologyMappingProjectorTest extends TestCase {
 		$this->assertCount( 1, $this->logger->getLogCalls()->getMessages() );
 	}
 
-	private function personMappingWithNameLang( string $lang ): Mapping {
-		return new Mapping(
-			name: new MappingName( 'Person to EDM' ),
-			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [ 'dc' => self::DC ],
+	private function personMappingWithNameLang( string $lang ): SchemaMapping {
+		return new SchemaMapping(
 			subjectClass: 'http://example.org/CHO',
 			properties: new PropertyMappings( [
 				'Name' => new PropertyMapping( 'dc:title', $lang, null ),
@@ -372,7 +364,13 @@ class OntologyMappingProjectorTest extends TestCase {
 	 * reaches the serialized document and it still parses.
 	 */
 	public function testUnsafeTermsAreDroppedAtProjectionTimeWhenSaveValidationWasBypassed(): void {
-		$quads = $this->newProjector( [ $this->adversarialMapping() ] )
+		$prefixes = [
+			'dc' => self::DC,
+			// A prefix whose namespace breaks out of the prefix table; a CURIE using it must be dropped.
+			'evil' => 'http://evil.example/"> .# ',
+		];
+
+		$quads = $this->newProjector( [ 'Person' => $this->adversarialMapping() ], $prefixes )
 			->projectPage( TestPage::build( id: 42, mainSubject: $this->adversarialSubject() ) );
 
 		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
@@ -387,16 +385,8 @@ class OntologyMappingProjectorTest extends TestCase {
 		);
 	}
 
-	private function adversarialMapping(): Mapping {
-		return new Mapping(
-			name: new MappingName( 'Adversarial' ),
-			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [
-				'dc' => self::DC,
-				// A prefix whose namespace breaks out of the prefix table; a CURIE using it must be dropped.
-				'evil' => 'http://evil.example/"> .# ',
-			],
+	private function adversarialMapping(): SchemaMapping {
+		return new SchemaMapping(
 			// A subject class that would break out of its IRI: it must not produce an rdf:type triple.
 			subjectClass: 'http://x/> <http://evil.example/s> <http://evil.example/p> <http://evil.example/o',
 			properties: new PropertyMappings( [
@@ -443,7 +433,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	public function testLanguageTagIsIgnoredForATypedLiteral(): void {
 		$page = TestPage::build( id: 42, mainSubject: $this->personWithBirthYear() );
 
-		$quads = $this->newProjector( [ $this->personBirthYearMappingWithLang( 'en' ) ] )->projectPage( $page );
+		$quads = $this->newProjector( [ 'Person' => $this->personBirthYearMappingWithLang( 'en' ) ] )->projectPage( $page );
 
 		$this->assertTrue(
 			$quads->contains( new Quad(
@@ -460,11 +450,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	public function testDatatypeAndLanguageOnARelationPropertyAreIgnored(): void {
 		// Constructed directly, bypassing the save-time lang/datatype mutual-exclusion check, to prove
 		// the projector ignores literal overrides on a relation (its object is an IRI, not a literal).
-		$mapping = new Mapping(
-			name: new MappingName( 'Person to EDM' ),
-			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [ 'dc' => self::DC, 'edm' => self::EDM ],
+		$mapping = new SchemaMapping(
 			subjectClass: 'http://example.org/CHO',
 			properties: new PropertyMappings( [
 				'BornIn' => new PropertyMapping( 'dc:spatial', 'en', 'edm:year' ),
@@ -482,7 +468,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			),
 		);
 
-		$quads = $this->newProjector( [ $mapping ] )->projectPage( $page );
+		$quads = $this->newProjector( [ 'Person' => $mapping ] )->projectPage( $page );
 
 		$this->assertTrue(
 			$quads->contains( new Quad(
@@ -504,12 +490,8 @@ class OntologyMappingProjectorTest extends TestCase {
 		);
 	}
 
-	private function personBirthYearMappingWithLang( string $lang ): Mapping {
-		return new Mapping(
-			name: new MappingName( 'Person to EDM' ),
-			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [ 'dc' => self::DC ],
+	private function personBirthYearMappingWithLang( string $lang ): SchemaMapping {
+		return new SchemaMapping(
 			subjectClass: 'http://example.org/CHO',
 			properties: new PropertyMappings( [
 				'BirthYear' => new PropertyMapping( 'dc:date', $lang, null ),
@@ -517,36 +499,30 @@ class OntologyMappingProjectorTest extends TestCase {
 		);
 	}
 
-	public function testDuplicateMappingsForASchemaAreTieBrokenAlphabeticallyAndLogged(): void {
-		// Two Mappings claim (Person, edm) with different classes. Passed in reverse alphabetical order,
-		// the projector must still pick "A ..." — proving it sorts rather than takes the first given.
-		$loser = $this->personMappingNamed( 'B mapping', 'edm:ProvidedCHO' );
-		$winner = $this->personMappingNamed( 'A mapping', 'edm:Place' );
+	public function testProjectsSubjectsOfDifferentSchemasOnTheSamePage(): void {
+		// One page, two Subjects of different Schemas, both with an entry on the Mapping page: both project
+		// with their own class, so a multi-Schema Mapping page covers every Schema it lists.
+		$quads = $this->newProjector( [ 'Person' => $this->personMapping(), 'City' => $this->cityMapping() ] )
+			->projectPage( $this->examplePage() );
 
-		$page = TestPage::build( id: 42, mainSubject: $this->examplePersonWithoutRelations() );
-
-		$quads = $this->newProjector( [ $loser, $winner ] )->projectPage( $page );
-
+		$graph = $this->ns->graph( 'edm', new PageId( 42 ) );
 		$this->assertTrue(
 			$quads->contains( new Quad(
 				$this->ns->subject( new SubjectId( self::PERSON_ID ) ),
 				$this->ns->rdfType(),
-				new Iri( self::EDM . 'Place' ),
-				$this->ns->graph( 'edm', new PageId( 42 ) )
+				new Iri( self::EDM . 'ProvidedCHO' ),
+				$graph
 			) ),
-			'The alphabetically first Mapping wins the tie-break.'
+			'The Person Subject projects with the Person entry class.'
 		);
-		$this->assertCount( 1, $this->logger->getLogCalls()->getMessages() );
-	}
-
-	private function personMappingNamed( string $name, string $subjectClass ): Mapping {
-		return new Mapping(
-			name: new MappingName( $name ),
-			schema: new SchemaName( 'Person' ),
-			target: 'edm',
-			prefixes: [ 'edm' => self::EDM ],
-			subjectClass: $subjectClass,
-			properties: new PropertyMappings( [] )
+		$this->assertTrue(
+			$quads->contains( new Quad(
+				$this->ns->subject( new SubjectId( self::CITY_ID ) ),
+				$this->ns->rdfType(),
+				new Iri( self::EDM . 'Place' ),
+				$graph
+			) ),
+			'The City Subject projects with the City entry class.'
 		);
 	}
 

@@ -31,41 +31,58 @@ and mapped output side by side, and the current gaps.
 ## Ontology Mappings are wiki pages
 
 A Mapping is a page in the **`Mapping:` namespace** with content model `NeoWikiMapping` (JSON), edited
-like a Schema or Layout page and gated by the `neowiki-mapping-edit` right. Each Mapping binds **one
-Schema** to **one target ontology**. A Schema can have several Mappings (one per target); the Schema is
-never changed to fit an ontology.
+like a Schema or Layout page and gated by the `neowiki-mapping-edit` right. There is **one Mapping page
+per target ontology**, and the page title is the target's name — the projection name you pass to the
+export surfaces below ([ADR 17](../adr/017-names-as-identifiers.md)-style, just like Schema pages). The
+page `Mapping:EDM`, for example, defines the `EDM` projection.
 
-**One Mapping per (Schema, target).** Saving a Mapping whose `(schema, target)` pair another Mapping
-page already claims is rejected. (The check is lookup-based, so a concurrent double-save could still
-slip a duplicate through before production; if that happens, the projector picks the alphabetically
-first Mapping page and logs a warning.)
+A single page holds an entry for **every mapped Schema**. You map a Schema to an ontology by adding an
+entry to that ontology's page, not by creating a page. A Schema still maps to several ontologies — one
+entry on each ontology's page — and the Schema is never changed to fit an ontology.
+
+Uniqueness is **by construction**: a page cannot list the same Schema twice (they are JSON object keys),
+and page titles are unique, so no save-time duplicate check is needed. The name **`native`** is reserved
+for the built-in [native projection](rdf-export.md), so a `Mapping:Native` page is rejected on save.
 
 ## Format (version 1)
 
 ```json
 {
     "version": 1,
-    "schema": "Person",
-    "target": "edm",
     "prefixes": {
         "edm": "http://www.europeana.eu/schemas/edm/",
-        "dc": "http://purl.org/dc/elements/1.1/"
+        "rdaGr2": "http://rdvocab.info/ElementsGr2/",
+        "skos": "http://www.w3.org/2004/02/skos/core#"
     },
-    "subject": { "class": "edm:ProvidedCHO" },
-    "properties": {
-        "Name":    { "predicate": "dc:title", "lang": "en" },
-        "Website": { "predicate": "edm:isShownAt" },
-        "Author":  { "predicate": "dc:creator" }
+    "schemas": {
+        "Person": {
+            "subject": { "class": "edm:Agent" },
+            "properties": {
+                "Description": { "predicate": "skos:note", "lang": "en" },
+                "Birth date":  { "predicate": "rdaGr2:dateOfBirth" },
+                "Birth place": { "predicate": "rdaGr2:placeOfBirth" }
+            }
+        },
+        "City": {
+            "subject": { "class": "edm:Place" },
+            "properties": {}
+        }
     }
 }
 ```
 
+Top level:
+
 | Field | Required | Meaning |
 |---|---|---|
 | `version` | yes | Format version. Must be `1`. |
-| `schema` | yes | Name of the native Schema this Mapping applies to. |
-| `target` | yes | Short identifier of the target ontology/profile (`[A-Za-z][A-Za-z0-9_-]*`). This is the value passed to the `projection` parameter below. |
-| `prefixes` | no | Prefix label → namespace IRI, used to expand the CURIEs below. |
+| `prefixes` | no | Prefix label → namespace IRI, shared by every entry, used to expand the CURIEs below. |
+| `schemas` | yes | Native Schema name → the entry that projects its Subjects (see below). May be empty. A Schema's existence is not checked at save time. |
+
+Each **schema** entry (a value in `schemas`):
+
+| Field | Required | Meaning |
+|---|---|---|
 | `subject.class` | yes | The `rdf:type` given to each Subject of the Schema. A CURIE or an absolute IRI. |
 | `properties` | yes | NeoWiki property name → how to project it (see below). May be empty. |
 
@@ -96,7 +113,7 @@ with a logged warning. A bad stored Mapping degrades the projection rather than 
 
 ## What gets emitted
 
-For each Subject on a page whose Schema has a Mapping for the requested target:
+For each Subject on a page whose Schema has an entry on the requested projection's Mapping page:
 
 - `rdf:type <subject.class>`.
 - `rdfs:label "<label>"` — always, so every projected entity is labelled.
@@ -111,9 +128,9 @@ Deliberate v1 boundaries:
 - **Subject IRIs stay native** (`neo-subj:` under the wiki's RDF base URI): the entity is the wiki's
   own; only the *vocabulary* comes from the target ontology. Cross-linking to external entities
   (`owl:sameAs`, reconciliation) is later work.
-- A **Subject whose Schema has no Mapping** for the target is absent entirely. Its IRI can still appear
-  as the target of a relation from a mapped Subject — untyped — exactly as a missing Schema behaves in
-  the native projection.
+- A **Subject whose Schema has no entry** on the Mapping page is absent entirely. Its IRI can still
+  appear as the target of a relation from a mapped Subject — untyped — exactly as a missing Schema
+  behaves in the native projection.
 - **No page-metadata triples** are emitted (no page node, `neo:hasSubject`, etc.).
 - Quads are placed in the **per-page named graph for this target** (`$base/graph/{target}/page/{id}`), like the
   native projection, so the same per-page sync infrastructure works for an ontology store — and because the graph
@@ -123,31 +140,31 @@ Deliberate v1 boundaries:
 
 The RDF export surfaces take an optional `projection`:
 
-`GET /rest.php/neowiki/v0/page/{pageId}/rdf?projection=edm`
+`GET /rest.php/neowiki/v0/page/{pageId}/rdf?projection=EDM`
 
-- `projection` is `native` (the default, unchanged behaviour) or a target that some Mapping page
-  declares.
-- An unknown target returns **`400`** listing the known projections.
+- `projection` is `native` (the default, unchanged behaviour) or the name of a Mapping page (its title).
+- An unknown projection returns **`400`** listing the known projections.
 
 ```sh
 # Native (default):
 curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf'
 # EDM ontology projection:
-curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf?projection=edm&format=turtle'
+curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf?projection=EDM&format=turtle'
 ```
 
 The bulk dump takes the same option:
 
 ```sh
-php maintenance/run.php NeoWiki:DumpRdf --projection=edm > dump.trig
+php maintenance/run.php NeoWiki:DumpRdf --projection=EDM > dump.trig
 ```
 
 ## Authoring a Mapping
 
-1. Create a page in the `Mapping:` namespace (any title — the title is just the Mapping's name).
-2. Declare the `prefixes` you will use, set the `schema` and `target`, and give the Subject a
-   `subject.class`.
-3. Map the properties you want to publish. Only listed properties are projected.
-4. Save. Structural errors, unresolvable/unsafe terms, and a duplicate `(schema, target)` are reported
-   on save.
-5. Export a page of that Schema with `?projection=<target>` to see the result.
+1. Create a page in the `Mapping:` namespace named after the target ontology — the title is the
+   projection name, e.g. `Mapping:EDM`. If a page for that ontology already exists, edit it instead.
+2. Declare the page-level `prefixes` you will use.
+3. Add an entry under `schemas` for each Schema you want to project: give the Subject a `subject.class`
+   and map the properties you want to publish. Only listed properties are projected.
+4. Save. Structural errors and unresolvable/unsafe terms are reported on save; the reserved page name
+   `native` is rejected.
+5. Export a page of a mapped Schema with `?projection=<page title>` to see the result.

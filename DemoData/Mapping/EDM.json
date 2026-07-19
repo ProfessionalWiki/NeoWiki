@@ -1,0 +1,46 @@
+{
+	"version": 1,
+	"prefixes": {
+		"edm": "http://www.europeana.eu/schemas/edm/",
+		"rdaGr2": "http://rdvocab.info/ElementsGr2/",
+		"skos": "http://www.w3.org/2004/02/skos/core#",
+		"dc": "http://purl.org/dc/elements/1.1/",
+		"dcterms": "http://purl.org/dc/terms/",
+		"foaf": "http://xmlns.com/foaf/0.1/",
+		"xsd": "http://www.w3.org/2001/XMLSchema#"
+	},
+	"schemas": {
+		"Person": {
+			"subject": { "class": "edm:Agent" },
+			"properties": {
+				"Gender": { "predicate": "rdaGr2:gender" },
+				"Birth date": { "predicate": "rdaGr2:dateOfBirth" },
+				"Birth place": { "predicate": "rdaGr2:placeOfBirth" },
+				"Description": { "predicate": "skos:note", "lang": "en" }
+			}
+		},
+		"Artist": {
+			"subject": { "class": "edm:Agent" },
+			"properties": {
+				"Born": { "predicate": "rdaGr2:dateOfBirth", "datatype": "xsd:gYear" },
+				"Died": { "predicate": "rdaGr2:dateOfDeath", "datatype": "xsd:gYear" },
+				"Movement": { "predicate": "dc:subject", "lang": "en" },
+				"Wikipedia": { "predicate": "foaf:page" }
+			}
+		},
+		"Artwork": {
+			"subject": { "class": "edm:ProvidedCHO" },
+			"properties": {
+				"Creator": { "predicate": "dc:creator" },
+				"Year": { "predicate": "dcterms:created", "datatype": "xsd:gYear" },
+				"Medium": { "predicate": "dcterms:medium" },
+				"Located at": { "predicate": "edm:currentLocation" },
+				"Image": { "predicate": "edm:isShownBy" }
+			}
+		},
+		"City": {
+			"subject": { "class": "edm:Place" },
+			"properties": {}
+		}
+	}
+}
