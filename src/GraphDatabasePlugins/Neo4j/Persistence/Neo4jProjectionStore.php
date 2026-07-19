@@ -222,38 +222,11 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	}
 
 	private function removeNonStubLabels( TransactionInterface $transaction, SubjectId $subjectId ): void {
-		$labelsToRemove = array_diff(
-			$this->getSubjectLabels( $transaction, $subjectId ),
-			[ 'Subject' ]
+		Neo4jNodeLabels::remove(
+			$transaction,
+			$subjectId->text,
+			array_diff( Neo4jNodeLabels::read( $transaction, $subjectId->text ), [ 'Subject' ] )
 		);
-
-		if ( $labelsToRemove === [] ) {
-			return;
-		}
-
-		$transaction->run(
-			'MATCH (subject {id: $subjectId}) REMOVE subject:' . Cypher::buildLabelList( $labelsToRemove ),
-			[ 'subjectId' => $subjectId->text ]
-		);
-	}
-
-	/**
-	 * @return string[]
-	 */
-	private function getSubjectLabels( TransactionInterface $transaction, SubjectId $subjectId ): array {
-		/**
-		 * @var SummarizedResult $result
-		 */
-		$result = $transaction->run(
-			'MATCH (subject {id: $subjectId}) RETURN labels(subject) AS labels',
-			[ 'subjectId' => $subjectId->text ]
-		);
-
-		if ( $result->isEmpty() ) {
-			return [];
-		}
-
-		return $result->first()->get( 'labels' )->toArray();
 	}
 
 	private function subjectHasIncomingRelations( TransactionInterface $transaction, SubjectId $subjectId ): bool {
