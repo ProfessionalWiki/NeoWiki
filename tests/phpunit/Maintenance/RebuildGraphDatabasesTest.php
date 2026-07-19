@@ -56,6 +56,45 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jProjectionStore::initialize
+	 */
+	public function testRebuildCreatesGraphUniquenessConstraints(): void {
+		// setUpNeo4j() dropped any pre-existing constraints, so the graph starts without them. A subject
+		// page is present so the rebuild re-projects real data under the freshly created constraints. This
+		// is the end-to-end proof that the rebuild's initialization step (routed through the graph plugin
+		// system) reaches Neo4j: both constraints exist by name. Their shape and enforcement are covered by
+		// Neo4jConstraintUpdaterTest.
+		$this->createPageWithSubjects( 'Page with subject', TestSubject::build() );
+
+		$this->runRebuild();
+
+		$this->assertSame(
+			[
+				[ 'name' => 'Page wiki_id id' ],
+				[ 'name' => 'Subject id' ],
+			],
+			$this->readGraph( 'SHOW CONSTRAINTS YIELD name ORDER BY name' )->toRecursiveArray()
+		);
+	}
+
+	/**
+	 * The rebuild runs on wikis with no graph backend configured (e.g. a SPARQL-only install with no
+	 * store), so its initialization step must be a no-op there rather than throwing.
+	 *
+	 * @covers \ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin::initialize
+	 */
+	public function testInitializingGraphDatabasesDoesNotThrowWithoutABackend(): void {
+		$this->runWithoutGraphBackend( function (): void {
+			$extension = NeoWikiExtension::getInstance();
+			$this->assertNull( $extension->getNeo4jPlugin(), 'precondition: no Neo4j backend is configured' );
+
+			// The rebuild's initialization step, resolved through the facade exactly as the script does.
+			// Must not throw despite there being no store to initialize.
+			$extension->getGraphDatabasePlugin()->initialize();
+		} );
+	}
+
 	private function runRebuild(): void {
 		ob_start();
 		try {

@@ -51,6 +51,14 @@ class FailureIsolatingGraphDatabasePluginTest extends TestCase {
 		$this->assertSame( [ $pageId ], $spy->deletedPageIds );
 	}
 
+	public function testInitializeIsDelegatedToTheWrappedPlugin(): void {
+		$spy = new SpyGraphDatabasePlugin();
+
+		$this->newDecorator( $spy )->initialize();
+
+		$this->assertSame( 1, $spy->initializeCount );
+	}
+
 	public function testSucceedingProjectionLogsNothing(): void {
 		$this->newDecorator( new SpyGraphDatabasePlugin() )->savePage( TestPage::build( id: 42 ) );
 
@@ -98,12 +106,29 @@ class FailureIsolatingGraphDatabasePluginTest extends TestCase {
 		$decorator->deletePage( new PageId( 1 ) );
 	}
 
+	/**
+	 * initialize() runs only on the propagating rebuild path, never the isolated hook path, so this
+	 * decorator passes it straight through: a failure surfaces rather than being swallowed and logged
+	 * the way a save or delete failure is.
+	 */
+	public function testInitializeFailureIsNotSwallowed(): void {
+		$decorator = $this->newDecorator( new ThrowingGraphDatabasePlugin() );
+
+		$this->expectExceptionMessage( ThrowingGraphDatabasePlugin::FAILURE_MESSAGE );
+
+		$decorator->initialize();
+	}
+
 	private function pluginThrowing( Throwable $error ): GraphDatabasePlugin {
 		return new class( $error ) implements GraphDatabasePlugin {
 
 			public function __construct(
 				private readonly Throwable $error
 			) {
+			}
+
+			public function initialize(): void {
+				throw $this->error;
 			}
 
 			public function savePage( Page $page ): void {

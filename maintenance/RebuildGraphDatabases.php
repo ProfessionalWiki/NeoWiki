@@ -33,6 +33,8 @@ class RebuildGraphDatabases extends Maintenance {
 	}
 
 	public function execute(): void {
+		$this->initializeGraphDatabases();
+
 		$pageIds = $this->getSubjectPageIds();
 
 		$this->outputChanneled( 'Rebuilding graph databases for ' . count( $pageIds ) . ' subject pages...' );
@@ -50,6 +52,17 @@ class RebuildGraphDatabases extends Maintenance {
 		$this->outputChanneled( "Rebuild finished. Rebuilt $rebuilt of " . count( $pageIds ) . ' pages.' );
 
 		$this->removeDeletedPages();
+	}
+
+	/**
+	 * Initializing the backends before re-projecting guarantees a rebuilt graph carries any store-level
+	 * structures they need (e.g. uniqueness constraints). The rebuild is the production path that
+	 * (re)establishes the graph from the MediaWiki source of truth, so it is the natural, idempotent
+	 * point to ensure those structures exist (#874).
+	 */
+	private function initializeGraphDatabases(): void {
+		$this->outputChanneled( 'Initializing graph databases...' );
+		NeoWikiExtension::getInstance()->getGraphDatabasePlugin()->initialize();
 	}
 
 	/**

@@ -22,10 +22,22 @@ class CompositeGraphDatabasePluginTest extends TestCase {
 	public function testEmptyCompositeDoesNotThrow(): void {
 		$composite = new CompositeGraphDatabasePlugin();
 
+		$composite->initialize();
 		$composite->savePage( TestPage::build() );
 		$composite->deletePage( new PageId( 1 ) );
 
 		$this->addToAssertionCount( 1 );
+	}
+
+	public function testInitializeDispatchesToAllPlugins(): void {
+		$spy1 = new SpyGraphDatabasePlugin();
+		$spy2 = new SpyGraphDatabasePlugin();
+		$composite = new CompositeGraphDatabasePlugin( $spy1, $spy2 );
+
+		$composite->initialize();
+
+		$this->assertSame( 1, $spy1->initializeCount );
+		$this->assertSame( 1, $spy2->initializeCount );
 	}
 
 	public function testSavePageDispatchesToAllPlugins(): void {
@@ -64,6 +76,14 @@ class CompositeGraphDatabasePluginTest extends TestCase {
 
 		$this->assertSame( [ $page1, $page2 ], $spy->savedPages );
 		$this->assertCount( 1, $spy->deletedPageIds );
+	}
+
+	public function testInitializePropagatesAPluginFailure(): void {
+		$composite = new CompositeGraphDatabasePlugin( new ThrowingGraphDatabasePlugin() );
+
+		$this->expectExceptionMessage( ThrowingGraphDatabasePlugin::FAILURE_MESSAGE );
+
+		$composite->initialize();
 	}
 
 	public function testSavePagePropagatesAPluginFailure(): void {

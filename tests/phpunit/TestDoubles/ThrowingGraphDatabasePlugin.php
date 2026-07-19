@@ -17,6 +17,10 @@ class ThrowingGraphDatabasePlugin implements GraphDatabasePlugin {
 
 	public const string FAILURE_MESSAGE = 'projection backend unreachable';
 
+	public function initialize(): void {
+		throw new RuntimeException( self::FAILURE_MESSAGE );
+	}
+
 	public function savePage( Page $page ): void {
 		throw new RuntimeException( self::FAILURE_MESSAGE );
 	}
