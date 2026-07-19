@@ -207,7 +207,7 @@ $result = NeoWikiExtension::getInstance()->newCypherQueryService()->execute( new
 ```
 
 `execute()` returns a `Neo4jQueryResult` (columns, rows, truncation flag) and throws a `QueryException`
-subclass on failure; `newCypherQueryService()` itself throws a `LogicException` on a wiki with no graph
+subclass on failure; `newCypherQueryService()` itself throws a `LogicException` on a wiki with no Neo4j
 backend configured.
 
 The `User` in `forUser()` only sizes the limits: how heavy a single query may be, not whether the user may
@@ -419,7 +419,7 @@ implementation details that happen to be reachable, and they can change in any r
 The `.ext-neowiki-view` placeholder elements and `data-mw-neowiki-*` attributes are the private contract
 between NeoWiki's backend and its frontend for mounting Views. They are not an integration surface: do not
 select these elements, read Subject IDs out of them, restyle their internals, or remove and replace them
-with your own rendering. Their structure can change in any release.
+with your own rendering.
 
 To control where and how a Subject renders:
 
@@ -432,7 +432,7 @@ To control where and how a Subject renders:
   the [public JS API](#using-neowikis-public-js-api) and render your own components, mounted as described in
   [Mounting standalone Vue features](#mounting-standalone-vue-features). RedHerb's
   [`editMainSubject`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/editMainSubject)
-  resolves the page's Main Subject this way.
+  resolves the page's Main Subject through the public JS API.
 
 ### The internal Neo4j client
 
