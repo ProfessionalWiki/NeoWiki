@@ -63,7 +63,7 @@ class ValidateSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Proposed Statements (property/value pairs). Shape matches docs/api/subject-format.md.',
+				self::PARAM_DESCRIPTION => 'Proposed Statements (property/value pairs). Shape matches the subject JSON format documented at https://neowiki.ai/docs/api/subject-format.',
 			],
 		];
 	}
