@@ -68,6 +68,27 @@ class MappingPersistenceDeserializerTest extends TestCase {
 		);
 	}
 
+	public function testSkipsAnEntryWithAReservedSchemaKeyButKeepsItsValidSiblings(): void {
+		// "page" is a reserved Schema name, so no Subject can carry it and the entry is unreachable. Save
+		// validation permits the key (it never constructs a SchemaName), so a saved page can hold one; the
+		// deserializer validates the key by constructing a SchemaName and skips the entry when that throws,
+		// keeping its valid siblings rather than letting one dead entry sink the whole page's mapping.
+		$mapping = $this->deserialize( <<<JSON
+			{
+				"version": 1,
+				"prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" },
+				"schemas": {
+					"Person": { "subject": { "class": "edm:Agent" }, "properties": {} },
+					"page": { "subject": { "class": "edm:Place" }, "properties": {} },
+					"City": { "subject": { "class": "edm:Place" }, "properties": {} }
+				}
+			}
+			JSON );
+
+		$this->assertSame( 'edm:Agent', $mapping->forSchema( new SchemaName( 'Person' ) )?->subjectClass );
+		$this->assertSame( 'edm:Place', $mapping->forSchema( new SchemaName( 'City' ) )?->subjectClass );
+	}
+
 	public function testDeserializesAPropertyWithALanguageTag(): void {
 		$name = $this->deserialize( $this->validJson() )->forSchema( new SchemaName( 'Person' ) )?->properties->get( 'Name' );
 
