@@ -300,11 +300,16 @@ class NeoWikiHooks {
 		$hints = $extension->newSubjectPermissionHints( $skin->getAuthority() );
 		$pageId = new PageId( $title->getArticleID() );
 
+		$isContentNamespace = MediaWikiServices::getInstance()
+			->getNamespaceInfo()
+			->isContent( $title->getNamespace() );
+
 		$neoWikiTools = ( new PageToolsBuilder() )->build(
 			title: $title,
-			isContentNamespace: MediaWikiServices::getInstance()
-				->getNamespaceInfo()
-				->isContent( $title->getNamespace() ),
+			pageId: $title->getArticleID(),
+			isContentNamespace: $isContentNamespace,
+			hasSubjects: $isContentNamespace
+				&& $extension->newPageSubjectsLookup()->pageHasSubjects( $pageId ),
 			canCreateMainSubject: $hints->canCreateMainSubject( $pageId ),
 			canEditSubject: $hints->canEditSubject( $pageId ),
 			isLatestRevision: self::pageIsLatestRevision( $skin->getOutput() ),
