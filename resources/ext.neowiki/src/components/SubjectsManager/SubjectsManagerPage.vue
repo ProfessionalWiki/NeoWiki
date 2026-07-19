@@ -8,15 +8,28 @@
 				{{ $i18n( 'neowiki-managesubjects-count', subjects.length ).text() }}
 			</span>
 			<span v-else class="ext-neowiki-subjects-manager__count" />
-			<CdxButton
-				v-if="canCreate && !isCompletelyEmpty"
-				weight="primary"
-				action="progressive"
-				@click="onAddClicked"
-			>
-				<CdxIcon :icon="cdxIconAdd" />
-				{{ $i18n( 'neowiki-managesubjects-add-button' ).text() }}
-			</CdxButton>
+			<div class="ext-neowiki-subjects-manager__controls-actions">
+				<CdxMenuButton
+					v-if="!loading && subjects.length > 0"
+					v-model:selected="exportMenuSelection"
+					class="ext-neowiki-subjects-manager__export-menu"
+					:menu-items="pageExportItems"
+					:aria-label="$i18n( 'neowiki-managesubjects-export-button' ).text()"
+					@update:selected="openExport"
+				>
+					<CdxIcon :icon="cdxIconDownload" />
+					{{ $i18n( 'neowiki-managesubjects-export-button' ).text() }}
+				</CdxMenuButton>
+				<CdxButton
+					v-if="canCreate && !isCompletelyEmpty"
+					weight="primary"
+					action="progressive"
+					@click="onAddClicked"
+				>
+					<CdxIcon :icon="cdxIconAdd" />
+					{{ $i18n( 'neowiki-managesubjects-add-button' ).text() }}
+				</CdxButton>
+			</div>
 		</div>
 
 		<p
@@ -174,6 +187,16 @@
 									</data>
 								</button>
 							</span>
+							<CdxMenuButton
+								v-model:selected="exportMenuSelection"
+								class="ext-neowiki-subjects-manager__export-menu"
+								:menu-items="subjectExportItems( mainSubject as Subject )"
+								:aria-label="$i18n( 'neowiki-managesubjects-export-button' ).text()"
+								@update:selected="openExport"
+							>
+								<CdxIcon :icon="cdxIconDownload" />
+								{{ $i18n( 'neowiki-managesubjects-export-button' ).text() }}
+							</CdxMenuButton>
 						</footer>
 					</div>
 				</details>
@@ -320,6 +343,16 @@
 										</data>
 									</button>
 								</span>
+								<CdxMenuButton
+									v-model:selected="exportMenuSelection"
+									class="ext-neowiki-subjects-manager__export-menu"
+									:menu-items="subjectExportItems( subject )"
+									:aria-label="$i18n( 'neowiki-managesubjects-export-button' ).text()"
+									@update:selected="openExport"
+								>
+									<CdxIcon :icon="cdxIconDownload" />
+									{{ $i18n( 'neowiki-managesubjects-export-button' ).text() }}
+								</CdxMenuButton>
 							</footer>
 						</div>
 					</details>
@@ -386,6 +419,7 @@ import type { MenuButtonItemData } from '@wikimedia/codex';
 import {
 	cdxIconAdd,
 	cdxIconCollapse,
+	cdxIconDownload,
 	cdxIconDraggable,
 	cdxIconEdit,
 	cdxIconEllipsis,
@@ -406,8 +440,13 @@ import EditSummary from '@/components/common/EditSummary.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
+import { subjectExportMenuItems, pageExportMenuItems } from '@/presentation/DataExportMenu.ts';
 
 const pageId = Number( mw.config.get( 'wgNeoWikiManageSubjectsPageId' ) );
+
+// RDF projections readable by the viewing user (native + ontology mappings), permission-filtered
+// server-side. Drives the export menus; native is always present, so this is never truly empty.
+const rdfProjections = ( mw.config.get( 'wgNeoWikiRdfProjections' ) as string[] | null ) ?? [];
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
@@ -550,6 +589,26 @@ function dispatchRowAction( value: string | number | null, subject: Subject ): v
 		openEditor( subject );
 	} else if ( value === 'delete' ) {
 		confirmDelete( subject );
+	}
+}
+
+const exportMenuSelection = ref<string | number | null>( null );
+
+function subjectExportItems( subject: Subject ): MenuButtonItemData[] {
+	return subjectExportMenuItems( subject.getId().text, rdfProjections );
+}
+
+const pageExportItems = computed<MenuButtonItemData[]>(
+	() => pageExportMenuItems( pageId, rdfProjections )
+);
+
+// The menu item value is the export endpoint URL; open it in a new tab so the Data tab UI state
+// (expanded rows, edits in progress) survives. Codex 1.14 menu-item anchors cannot set a target,
+// so we navigate on selection rather than rely on the item's `url`.
+function openExport( value: string | number | null ): void {
+	exportMenuSelection.value = null;
+	if ( typeof value === 'string' && value !== '' ) {
+		window.open( value, '_blank', 'noopener' );
 	}
 }
 
@@ -797,6 +856,12 @@ onUnmounted( () => {
 		justify-content: space-between;
 		gap: @spacing-100;
 		margin-bottom: @spacing-150;
+	}
+
+	&__controls-actions {
+		display: flex;
+		align-items: center;
+		gap: @spacing-100;
 	}
 
 	&__count {
@@ -1104,7 +1169,9 @@ onUnmounted( () => {
 
 	&__row-footer {
 		display: flex;
-		justify-content: flex-start;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
 		gap: @spacing-100;
 		margin-top: @spacing-100;
 		padding-top: @spacing-75;

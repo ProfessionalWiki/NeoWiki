@@ -19,6 +19,7 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use Psr\Log\LoggerInterface;
 
@@ -60,7 +61,7 @@ class OntologyMappingProjector implements PageProjector {
 			$schemaMapping = $this->mapping->forSchema( $subject->getSchemaName() );
 
 			if ( $schemaMapping !== null ) {
-				$quads = array_merge( $quads, $this->projectSubject( $subject, $schemaMapping, $graph ) );
+				$quads = array_merge( $quads, $this->subjectQuads( $subject, $schemaMapping, $graph ) );
 			}
 		}
 
@@ -68,9 +69,33 @@ class OntologyMappingProjector implements PageProjector {
 	}
 
 	/**
+	 * Projects a single Subject on the page into the target ontology — its per-Subject block from
+	 * {@see projectPage()} (mapped type, label, mapped property values, relations as direct triples)
+	 * placed in the target's named graph. A Subject that is not on the page, or whose Schema has no
+	 * entry in this Mapping, yields an empty list.
+	 */
+	public function projectSubject( Page $page, SubjectId $subjectId ): QuadList {
+		$subject = $page->getSubjects()->getAllSubjects()->getSubject( $subjectId );
+
+		if ( $subject === null ) {
+			return new QuadList();
+		}
+
+		$schemaMapping = $this->mapping->forSchema( $subject->getSchemaName() );
+
+		if ( $schemaMapping === null ) {
+			return new QuadList();
+		}
+
+		return QuadList::fromArray(
+			$this->subjectQuads( $subject, $schemaMapping, $this->namespaces->graph( $this->target, $page->getId() ) )
+		);
+	}
+
+	/**
 	 * @return Quad[]
 	 */
-	private function projectSubject( Subject $subject, SchemaMapping $schemaMapping, Iri $graph ): array {
+	private function subjectQuads( Subject $subject, SchemaMapping $schemaMapping, Iri $graph ): array {
 		$subjectIri = $this->namespaces->subject( $subject->id );
 
 		$quads = [

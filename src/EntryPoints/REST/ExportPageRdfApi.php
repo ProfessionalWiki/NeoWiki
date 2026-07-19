@@ -6,10 +6,8 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use MediaWiki\Rest\StringStream;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -22,11 +20,7 @@ use Wikimedia\ParamValidator\ParamValidator;
  */
 class ExportPageRdfApi extends SimpleHandler {
 
-	private const string FORMAT_TRIG = 'trig';
-	private const string FORMAT_TURTLE = 'turtle';
-
-	private const string CONTENT_TYPE_TRIG = 'application/trig; charset=utf-8';
-	private const string CONTENT_TYPE_TURTLE = 'text/turtle; charset=utf-8';
+	use RdfFormatNegotiation;
 
 	public function run( int $pageId ): Response {
 		$extension = NeoWikiExtension::getInstance();
@@ -74,42 +68,6 @@ class ExportPageRdfApi extends SimpleHandler {
 		return $this->getResponseFactory()->createHttpError( 404, [
 			'message' => 'No NeoWiki data found for page: ' . $pageId,
 		] );
-	}
-
-	private function resolveFormat(): RdfFormat {
-		$requested = $this->getValidatedParams()['format'] ?? null;
-
-		if ( $requested === self::FORMAT_TURTLE ) {
-			return RdfFormat::Turtle;
-		}
-
-		if ( $requested === self::FORMAT_TRIG ) {
-			return RdfFormat::TriG;
-		}
-
-		return $this->formatFromAcceptHeader();
-	}
-
-	private function formatFromAcceptHeader(): RdfFormat {
-		$accept = $this->getRequest()->getHeaderLine( 'Accept' );
-
-		// TriG is a superset of Turtle, so only pick Turtle when the client asks for it specifically.
-		if ( str_contains( $accept, 'text/turtle' ) && !str_contains( $accept, 'application/trig' ) ) {
-			return RdfFormat::Turtle;
-		}
-
-		return RdfFormat::TriG;
-	}
-
-	private function rdfResponse( string $document, RdfFormat $format ): Response {
-		$response = $this->getResponseFactory()->create();
-		$response->setHeader(
-			'Content-Type',
-			$format === RdfFormat::Turtle ? self::CONTENT_TYPE_TURTLE : self::CONTENT_TYPE_TRIG
-		);
-		$response->setBody( new StringStream( $document ) );
-
-		return $response;
 	}
 
 	public function getParamSettings(): array {

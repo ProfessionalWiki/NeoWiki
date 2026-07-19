@@ -20,6 +20,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
@@ -44,6 +45,7 @@ class RdfPageProjectorTest extends TestCase {
 	private const string ACME_ID = 's1acmeaaaaaaaa1';
 	private const string JANE_ID = 's1janeaaaaaaaa2';
 	private const string CEO_RELATION_ID = 'r1ceoaaaaaaaaa3';
+	private const string AFTER_ID = 's1afteraaaaaaa9';
 
 	private RdfNamespaces $ns;
 	private LegacyLoggerSpy $logger;
@@ -286,6 +288,147 @@ class RdfPageProjectorTest extends TestCase {
 			[ 'Dropped 1 unrepresentable value(s) of property "Established" on page 42 when projecting to RDF' ],
 			$this->logger->getLogCalls()->getMessages()
 		);
+	}
+
+	/**
+	 * The per-Subject export projects exactly the requested Subject's block from a full-page projection —
+	 * its type, label, Statements and reified Relation — and nothing else: no page-metadata quads and
+	 * none of the sibling Subjects' quads, even though a sibling (Jane) is the Relation target whose IRI
+	 * does appear. The target sits between two siblings so a "project every Subject" regression fails.
+	 */
+	public function testProjectSubjectEmitsOnlyTheTargetSubjectsBlockIncludingRelationReification(): void {
+		$schemaLookup = new InMemorySchemaLookup(
+			$this->companySchema(),
+			TestSchema::build( name: 'Person', properties: new PropertyDefinitions( [] ) ),
+		);
+
+		$quads = $this->newProjector( $schemaLookup )
+			->projectSubject( $this->pageWithAcmeBetweenSiblings(), new SubjectId( self::ACME_ID ) );
+
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( $this->acmeSubjectTriG() ),
+			ParsedRdf::canonicalQuads( $this->serialize( $quads ) )
+		);
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testProjectSubjectDerivesTheNamedGraphFromTheHostingPageId(): void {
+		$quads = $this->newProjector( new InMemorySchemaLookup( $this->companySchema() ) )
+			->projectSubject( TestPage::build( id: 77, mainSubject: $this->acmeWithCeo() ), new SubjectId( self::ACME_ID ) );
+
+		$this->assertSame(
+			[ 'https://wiki.example/graph/native/page/77' ],
+			$this->distinctGraphs( $quads ),
+			'Every quad belongs to the hosting page\'s native named graph, derived from its id.'
+		);
+	}
+
+	public function testProjectSubjectForASubjectNotOnThePageReturnsNothing(): void {
+		$quads = $this->newProjector( new InMemorySchemaLookup( $this->companySchema() ) )
+			->projectSubject( TestPage::build( id: 42, mainSubject: $this->acmeWithCeo() ), new SubjectId( self::AFTER_ID ) );
+
+		$this->assertTrue( $quads->isEmpty() );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testProjectSubjectForASubjectWithAnUnavailableSchemaReturnsNothingAndLogs(): void {
+		$page = TestPage::build( id: 42, mainSubject: $this->acmeWithCeo() );
+
+		// Only Person is registered, so the requested Company Subject's Schema is unavailable and it is
+		// skipped — the same graceful degradation as the full-page projection.
+		$quads = $this->newProjector( new InMemorySchemaLookup(
+			TestSchema::build( name: 'Person', properties: new PropertyDefinitions( [] ) )
+		) )->projectSubject( $page, new SubjectId( self::ACME_ID ) );
+
+		$this->assertTrue( $quads->isEmpty() );
+		$this->assertSame(
+			[ 'Schema not found: Company' ],
+			$this->logger->getLogCalls()->getMessages()
+		);
+	}
+
+	private function acmeWithCeo(): Subject {
+		return TestSubject::build(
+			id: self::ACME_ID,
+			label: 'ACME Corp',
+			schemaName: new SchemaName( 'Company' ),
+			statements: new StatementList( [
+				TestStatement::build( 'Founded', new NumberValue( 2019 ), 'number' ),
+				TestStatement::buildRelation( 'CEO', [
+					TestRelation::build(
+						id: self::CEO_RELATION_ID,
+						targetId: self::JANE_ID,
+						properties: [ 'Since' => 2022 ],
+					),
+				] ),
+			] )
+		);
+	}
+
+	private function pageWithAcmeBetweenSiblings(): Page {
+		$jane = TestSubject::build(
+			id: self::JANE_ID,
+			label: 'Jane Smith',
+			schemaName: new SchemaName( 'Person' ),
+			statements: new StatementList( [
+				TestStatement::build( 'Age', new NumberValue( 45 ), 'number' ),
+			] )
+		);
+		$after = TestSubject::build(
+			id: self::AFTER_ID,
+			label: 'Later Co',
+			schemaName: new SchemaName( 'Company' ),
+			statements: new StatementList( [
+				TestStatement::build( 'Founded', new NumberValue( 2000 ), 'number' ),
+			] )
+		);
+
+		return TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build(
+				title: 'ACME Corp',
+				creationTime: '20240301090000',
+				modificationTime: '20251115164500',
+				lastEditor: 'Admin',
+			),
+			mainSubject: $jane,
+			childSubjects: new SubjectMap( $this->acmeWithCeo(), $after ),
+		);
+	}
+
+	private function acmeSubjectTriG(): string {
+		return <<<TRIG
+			@prefix neo: <https://wiki.example/ontology/> .
+			@prefix neo-subj: <https://wiki.example/entity/> .
+			@prefix neo-prop: <https://wiki.example/prop/> .
+			@prefix neo-schema: <https://wiki.example/schema/> .
+			@prefix neo-rel: <https://wiki.example/relation/> .
+			@prefix neo-graph: <https://wiki.example/graph/native/page/> .
+			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+			neo-graph:42 {
+				neo-subj:s1acmeaaaaaaaa1 a neo-schema:Company ;
+					rdfs:label "ACME Corp" ;
+					neo-prop:Founded 2019 ;
+					neo-prop:CEO neo-subj:s1janeaaaaaaaa2 .
+
+				neo-rel:r1ceoaaaaaaaaa3 a neo:Relation ;
+					neo:source neo-subj:s1acmeaaaaaaaa1 ;
+					neo:target neo-subj:s1janeaaaaaaaa2 ;
+					neo:relationType neo-prop:CEO ;
+					neo-prop:Since 2022 .
+			}
+			TRIG;
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	private function distinctGraphs( QuadList $quads ): array {
+		return array_values( array_unique( array_map(
+			static fn ( Quad $quad ): string => $quad->graph->value,
+			$quads->asArray()
+		) ) );
 	}
 
 	/**

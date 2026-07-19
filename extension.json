@@ -255,6 +255,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newDeleteSubjectApi"
 		},
 		{
+			"path": "/neowiki/v0/subject/{subjectId}/rdf",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newExportSubjectRdfApi"
+		},
+		{
 			"path": "/neowiki/v0/schema/{schemaName}",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaApi"
@@ -586,7 +591,12 @@
 				"neowiki-managesubjects-id-label",
 				"neowiki-managesubjects-id-copy",
 				"neowiki-managesubjects-id-copied",
-				"neowiki-managesubjects-id-copy-error"
+				"neowiki-managesubjects-id-copy-error",
+				"neowiki-managesubjects-export-button",
+				"neowiki-managesubjects-export-json",
+				"neowiki-managesubjects-export-native",
+				"neowiki-managesubjects-export-turtle",
+				"neowiki-managesubjects-export-trig"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
