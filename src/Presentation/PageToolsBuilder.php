@@ -15,7 +15,9 @@ class PageToolsBuilder {
 	 */
 	public function build(
 		Title $title,
+		int $pageId,
 		bool $isContentNamespace,
+		bool $hasSubjects,
 		bool $canCreateMainSubject,
 		bool $canEditSubject,
 		bool $isLatestRevision,
@@ -46,6 +48,15 @@ class PageToolsBuilder {
 				)->text(),
 				'href' => $title->getLocalURL( [ 'action' => SubjectsAction::ACTION_NAME ] ),
 				'id' => 't-neowiki-manage-subjects',
+			];
+		}
+
+		if ( $hasSubjects ) {
+			$items[] = [
+				'text' => wfMessage( 'neowiki-page-tools-rdf' )->text(),
+				'href' => wfScript( 'rest' ) . '/neowiki/v0/page/'
+					. $pageId . '/rdf?format=turtle',
+				'id' => 't-neowiki-rdf',
 			];
 		}
 

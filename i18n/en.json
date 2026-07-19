@@ -42,6 +42,7 @@
 	"neowiki-page-tools-view-subjects": "View subjects",
 	"neowiki-page-tools-edit-json": "View or edit JSON",
 	"neowiki-page-tools-view-json": "View JSON",
+	"neowiki-page-tools-rdf": "View RDF",
 
 	"neowiki-property-editor-name": "Name",
 	"neowiki-property-editor-type": "Type",
