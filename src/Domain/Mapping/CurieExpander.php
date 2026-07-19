@@ -60,6 +60,18 @@ readonly class CurieExpander {
 	}
 
 	/**
+	 * Whether the string is a safe CURIE prefix label to place raw in an RDF `@prefix` declaration: a
+	 * letter followed by letters, digits, `_` or `-` (the save-time label grammar in
+	 * mappingContentSchema.json). Like the namespace, the label reaches the serializer's prefix table,
+	 * so a label containing whitespace, a colon, or an angle bracket would break out of the `@prefix`
+	 * line and inject triples. Save validation already rejects such labels; this guards the projection
+	 * path against a Mapping stored outside it (import, a pre-validation page).
+	 */
+	public static function isValidPrefixLabel( string $label ): bool {
+		return preg_match( '/^[A-Za-z][A-Za-z0-9_-]*$/', $label ) === 1;
+	}
+
+	/**
 	 * Whether the string is a syntactically valid absolute IRI safe to place raw in an RDF document:
 	 * it has a scheme and contains no IRIREF-illegal character. Used for prefix namespace IRIs too,
 	 * which reach the serializer's prefix table and so are an injection vector even when unused.

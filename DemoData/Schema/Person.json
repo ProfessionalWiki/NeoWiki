@@ -1,5 +1,5 @@
 {
-	"description": "A human being. Maps to CIDOC CRM E21 Person (http://www.cidoc-crm.org/cidoc-crm/E21_Person) and, via the PersonToEDM Mapping, to EDM edm:Agent. Life events such as birth can be modelled richly as their own event Subjects (see the Birth schema), or flatly via the Birth date and Birth place fields here — the flat form is what the near-1:1 EDM projection consumes.",
+	"description": "A human being. Maps to CIDOC CRM E21 Person (http://www.cidoc-crm.org/cidoc-crm/E21_Person) and, via the EDM Mapping, to EDM edm:Agent. Life events such as birth can be modelled richly as their own event Subjects (see the Birth schema), or flatly via the Birth date and Birth place fields here — the flat form is what the near-1:1 EDM projection consumes.",
 	"propertyDefinitions": {
 		"Description": {
 			"type": "text",

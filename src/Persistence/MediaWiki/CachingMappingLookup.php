@@ -11,24 +11,23 @@ use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\Database;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
- * Caches deserialized Mappings, mirroring {@see CachingSchemaLookup}. Enumerating all Mappings (for
- * projection and for duplicate detection) reads every Mapping page; the cache key includes each page's
- * latest revision id, so a Mapping edit transparently invalidates its entry and a bulk RDF dump reuses
- * cached Mappings across pages instead of re-parsing them per page.
+ * Caches deserialized Mappings, mirroring {@see CachingSchemaLookup}. The cache key includes the Mapping
+ * page's latest revision id, so a Mapping edit transparently invalidates its entry and a bulk RDF dump
+ * reuses a cached Mapping across every page it projects instead of re-parsing it per page.
  */
 class CachingMappingLookup implements MappingLookup {
 
-	private const CACHE_VERSION = 1;
+	// The cached value is a Mapping; bumped from 1 when the stored/aggregate shape changed (one page per
+	// target ontology), so a warm cache from before the change is not served in the old shape.
+	private const CACHE_VERSION = 2;
 
 	public function __construct(
 		private readonly MappingLookup $mappingLookup,
-		private readonly MappingNameLookup $mappingNameLookup,
 		private readonly WANObjectCache $cache,
 		private readonly TitleFactory $titleFactory,
 		private readonly PageReadAuthorizer $readAuthorizer,
@@ -62,23 +61,6 @@ class CachingMappingLookup implements MappingLookup {
 		);
 
 		return $mapping;
-	}
-
-	/**
-	 * @return Mapping[]
-	 */
-	public function getAllMappings(): array {
-		$mappings = [];
-
-		foreach ( $this->mappingNameLookup->getMappingNames() as $name ) {
-			$mapping = $this->getMapping( $name );
-
-			if ( $mapping !== null ) {
-				$mappings[] = $mapping;
-			}
-		}
-
-		return $mappings;
 	}
 
 	private function makeCacheKey( Title $title ): string {

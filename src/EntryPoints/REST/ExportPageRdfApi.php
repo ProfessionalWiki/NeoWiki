@@ -15,8 +15,8 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 /**
  * Exports one page's Subjects and metadata as RDF. The `projection` query parameter selects the
- * vocabulary: "native" (default, NativeRdfProjection.md) or an ontology target that a Mapping page
- * declares (OntologyMapping.md) — an unknown projection is a 400. The `format` query parameter picks
+ * vocabulary: "native" (default, NativeRdfProjection.md) or the name of a Mapping page
+ * (OntologyMapping.md) — an unknown projection is a 400. The `format` query parameter picks
  * the serialization, falling back to the Accept header, then to TriG. TriG keeps the per-page named
  * graph; Turtle emits the same triples without it.
  */
@@ -34,9 +34,17 @@ class ExportPageRdfApi extends SimpleHandler {
 		$resolution = $extension->resolveRdfProjection( $projectionName );
 
 		if ( $resolution->projection === null ) {
+			// Read-filter the known-projection list with the caller's own authority, so the 400 never
+			// leaks the titles of Mapping pages they may not read — the same gate placement as the
+			// per-page read check below.
+			$knownProjections = $extension->filterReadableProjectionNames(
+				$resolution->knownProjectionNames,
+				$this->getAuthority()
+			);
+
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'message' => 'Unknown RDF projection: "' . $projectionName . '". Known projections: '
-					. implode( ', ', $resolution->knownProjectionNames ) . '.',
+					. implode( ', ', $knownProjections ) . '.',
 			] );
 		}
 
@@ -125,7 +133,7 @@ class ExportPageRdfApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'query',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
-				self::PARAM_DESCRIPTION => 'RDF projection to produce: "native" (default) for NeoWiki-native vocabulary, or an ontology target declared by a Mapping page (e.g. "edm"). An unknown target returns 400.',
+				self::PARAM_DESCRIPTION => 'RDF projection to produce: "native" (default) for NeoWiki-native vocabulary, or the name of a Mapping page (e.g. "EDM"). An unknown projection returns 400.',
 			],
 		];
 	}

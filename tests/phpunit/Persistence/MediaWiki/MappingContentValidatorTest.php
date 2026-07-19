@@ -33,20 +33,22 @@ class MappingContentValidatorTest extends TestCase {
 		$this->assertValid( <<<JSON
 			{
 				"version": 1,
-				"schema": "Person",
-				"target": "custom",
-				"subject": { "class": "http://example.org/ns/Person" },
-				"properties": {
-					"Name": { "predicate": "http://example.org/ns/name" }
+				"schemas": {
+					"Person": {
+						"subject": { "class": "http://example.org/ns/Person" },
+						"properties": {
+							"Name": { "predicate": "http://example.org/ns/name" }
+						}
+					}
 				}
 			}
 			JSON );
 	}
 
-	public function testRejectsAMissingSchema(): void {
+	public function testRejectsAMissingSchemasKey(): void {
 		$this->assertInvalidAt(
 			<<<JSON
-			{ "version": 1, "target": "edm", "subject": { "class": "edm:X" }, "prefixes": { "edm": "http://europeana.eu/edm/" }, "properties": {} }
+			{ "version": 1, "prefixes": { "edm": "http://europeana.eu/edm/" } }
 			JSON,
 			'/'
 		);
@@ -55,27 +57,18 @@ class MappingContentValidatorTest extends TestCase {
 	public function testRejectsAMissingSubjectClass(): void {
 		$this->assertInvalidAt(
 			<<<JSON
-			{ "version": 1, "schema": "Person", "target": "edm", "subject": {}, "properties": {} }
+			{ "version": 1, "schemas": { "Person": { "subject": {}, "properties": {} } } }
 			JSON,
-			'/subject'
+			'/schemas/Person/subject'
 		);
 	}
 
 	public function testRejectsAWrongFormatVersion(): void {
 		$this->assertInvalidAt(
 			<<<JSON
-			{ "version": 2, "schema": "Person", "target": "edm", "subject": { "class": "edm:X" }, "prefixes": { "edm": "http://europeana.eu/edm/" }, "properties": {} }
+			{ "version": 2, "schemas": { "Person": { "subject": { "class": "edm:X" }, "properties": {} } }, "prefixes": { "edm": "http://europeana.eu/edm/" } }
 			JSON,
 			'/version'
-		);
-	}
-
-	public function testRejectsATargetWithUnsafeCharacters(): void {
-		$this->assertInvalidAt(
-			<<<JSON
-			{ "version": 1, "schema": "Person", "target": "e dm", "subject": { "class": "edm:X" }, "prefixes": { "edm": "http://europeana.eu/edm/" }, "properties": {} }
-			JSON,
-			'/target'
 		);
 	}
 
@@ -86,16 +79,18 @@ class MappingContentValidatorTest extends TestCase {
 			<<<JSON
 			{
 				"version": 1,
-				"schema": "Artwork",
-				"target": "cidoc",
 				"prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" },
-				"subject": { "class": "edm:ProvidedCHO" },
-				"properties": {
-					"Creator": { "predicate": "crm:P14_carried_out_by" }
+				"schemas": {
+					"Artwork": {
+						"subject": { "class": "edm:ProvidedCHO" },
+						"properties": {
+							"Creator": { "predicate": "crm:P14_carried_out_by" }
+						}
+					}
 				}
 			}
 			JSON,
-			'/properties/Creator/predicate'
+			'/schemas/Artwork/properties/Creator/predicate'
 		);
 	}
 
@@ -104,14 +99,16 @@ class MappingContentValidatorTest extends TestCase {
 			<<<JSON
 			{
 				"version": 1,
-				"schema": "Artwork",
-				"target": "cidoc",
 				"prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" },
-				"subject": { "class": "crm:E22_Human-Made_Object" },
-				"properties": {}
+				"schemas": {
+					"Artwork": {
+						"subject": { "class": "crm:E22_Human-Made_Object" },
+						"properties": {}
+					}
+				}
 			}
 			JSON,
-			'/subject/class'
+			'/schemas/Artwork/subject/class'
 		);
 	}
 
@@ -124,16 +121,18 @@ class MappingContentValidatorTest extends TestCase {
 			<<<JSON
 			{
 				"version": 1,
-				"schema": "Person",
-				"target": "edm",
 				"prefixes": { "dc": "http://purl.org/dc/elements/1.1/" },
-				"subject": { "class": "http://example.org/CHO" },
-				"properties": {
-					"Name": { "predicate": "dc:title> <http://evil.example/s> <http://evil/p> <http://evil/o" }
+				"schemas": {
+					"Person": {
+						"subject": { "class": "http://example.org/CHO" },
+						"properties": {
+							"Name": { "predicate": "dc:title> <http://evil.example/s> <http://evil/p> <http://evil/o" }
+						}
+					}
 				}
 			}
 			JSON,
-			'/properties/Name/predicate'
+			'/schemas/Person/properties/Name/predicate'
 		);
 	}
 
@@ -143,11 +142,13 @@ class MappingContentValidatorTest extends TestCase {
 			<<<JSON
 			{
 				"version": 1,
-				"schema": "Person",
-				"target": "edm",
 				"prefixes": { "evil": "http://evil.example/\\"> .# " },
-				"subject": { "class": "http://example.org/CHO" },
-				"properties": {}
+				"schemas": {
+					"Person": {
+						"subject": { "class": "http://example.org/CHO" },
+						"properties": {}
+					}
+				}
 			}
 			JSON,
 			'/prefixes/evil'
@@ -179,7 +180,7 @@ class MappingContentValidatorTest extends TestCase {
 	 * @dataProvider invalidLanguageTagProvider
 	 */
 	public function testRejectsANonBcp47LanguageTag( string $lang ): void {
-		$this->assertInvalidAt( $this->mappingWithLang( $lang ), '/properties/Name/lang' );
+		$this->assertInvalidAt( $this->mappingWithLang( $lang ), '/schemas/Person/properties/Name/lang' );
 	}
 
 	/**
@@ -200,12 +201,14 @@ class MappingContentValidatorTest extends TestCase {
 		return <<<JSON
 			{
 				"version": 1,
-				"schema": "Person",
-				"target": "edm",
 				"prefixes": { "dc": "http://purl.org/dc/elements/1.1/" },
-				"subject": { "class": "http://example.org/CHO" },
-				"properties": {
-					"Name": { "predicate": "dc:title", "lang": {$encodedLang} }
+				"schemas": {
+					"Person": {
+						"subject": { "class": "http://example.org/CHO" },
+						"properties": {
+							"Name": { "predicate": "dc:title", "lang": {$encodedLang} }
+						}
+					}
 				}
 			}
 			JSON;
@@ -217,16 +220,18 @@ class MappingContentValidatorTest extends TestCase {
 			<<<JSON
 			{
 				"version": 1,
-				"schema": "Person",
-				"target": "edm",
 				"prefixes": { "dc": "http://purl.org/dc/elements/1.1/", "xsd": "http://www.w3.org/2001/XMLSchema#" },
-				"subject": { "class": "http://example.org/CHO" },
-				"properties": {
-					"Name": { "predicate": "dc:title", "lang": "en", "datatype": "xsd:string" }
+				"schemas": {
+					"Person": {
+						"subject": { "class": "http://example.org/CHO" },
+						"properties": {
+							"Name": { "predicate": "dc:title", "lang": "en", "datatype": "xsd:string" }
+						}
+					}
 				}
 			}
 			JSON,
-			'/properties/Name'
+			'/schemas/Person/properties/Name'
 		);
 	}
 
@@ -234,17 +239,23 @@ class MappingContentValidatorTest extends TestCase {
 		return <<<JSON
 			{
 				"version": 1,
-				"schema": "Person",
-				"target": "edm",
 				"prefixes": {
 					"edm": "http://www.europeana.eu/schemas/edm/",
 					"dc": "http://purl.org/dc/elements/1.1/"
 				},
-				"subject": { "class": "edm:ProvidedCHO" },
-				"properties": {
-					"Name": { "predicate": "dc:title", "lang": "en" },
-					"Website": { "predicate": "edm:isShownAt" },
-					"Author": { "predicate": "dc:creator" }
+				"schemas": {
+					"Person": {
+						"subject": { "class": "edm:ProvidedCHO" },
+						"properties": {
+							"Name": { "predicate": "dc:title", "lang": "en" },
+							"Website": { "predicate": "edm:isShownAt" },
+							"Author": { "predicate": "dc:creator" }
+						}
+					},
+					"City": {
+						"subject": { "class": "edm:Place" },
+						"properties": {}
+					}
 				}
 			}
 			JSON;

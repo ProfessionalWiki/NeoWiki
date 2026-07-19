@@ -199,16 +199,63 @@ JSON
 	}
 
 	public function testUnknownProjectionReturns400(): void {
-		// No Mapping page declares "edm", so it is not a known projection.
-		$response = $this->export( query: [ 'projection' => 'edm' ] );
+		// No Mapping page is named "bogus", so it is not a known projection.
+		$response = $this->export( query: [ 'projection' => 'bogus' ] );
 
 		$this->assertSame( 400, $response->getStatusCode() );
 	}
 
-	public function testValidTargetProjectsTheMappedVocabularyWithNativeSubjectIris(): void {
-		$this->createBerlinToEdmMapping();
+	public function testUnknownProjectionStillReturns400WhenAReservedNamedMappingPageExists(): void {
+		// A Mapping page titled with the reserved projection name "native" can only reach the wiki via
+		// import or a move, both of which bypass the save-time name check. Enumerating the known
+		// projections for the 400 must skip such a page rather than let its unusable name throw — otherwise
+		// every unknown-projection request 500s instead of returning the helpful 400.
+		$this->createMapping( 'Seedmapping', '{ "version": 1, "schemas": {} }' );
+		$this->importXml(
+			str_replace( 'Mapping:Seedmapping', 'Mapping:Native', $this->exportPageToXml( 'Mapping:Seedmapping' ) )
+		);
 
-		$response = $this->export( query: [ 'projection' => 'edm', 'format' => 'turtle' ] );
+		$response = $this->export( query: [ 'projection' => 'bogus' ] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	public function testImportedMappingWithAnUnsafePrefixLabelCannotInjectTriplesIntoTheExport(): void {
+		// A prefix label is validated at save time, but import bypasses that (like a reserved page name).
+		// A label carrying a newline and RDF syntax must not reach the serializer's @prefix table, where
+		// it would break out of the declaration and inject attacker-controlled triples into the export.
+		$this->createMapping( 'Injectionseed', <<<JSON
+			{
+				"version": 1,
+				"prefixes": {
+					"edm": "http://www.europeana.eu/schemas/edm/",
+					"INJTOKEN": "http://example.org/ns/"
+				},
+				"schemas": {
+					"{$this->schemaName()}": { "subject": { "class": "edm:Place" }, "properties": {} }
+				}
+			}
+			JSON );
+
+		$xml = $this->exportPageToXml( 'Mapping:Injectionseed' );
+		$xml = str_replace( 'Mapping:Injectionseed', 'Mapping:Injectionbad', $xml );
+		$xml = str_replace( 'INJTOKEN', 'x\nedm:INJECTEDMARKER a edm:Pwned .\n#', $xml );
+		$this->importXml( $xml );
+
+		$response = $this->export( query: [ 'projection' => 'Injectionbad', 'format' => 'turtle' ] );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertStringNotContainsString(
+			'INJECTEDMARKER',
+			$response->getBody()->getContents(),
+			'An unsafe prefix label from an imported Mapping must be dropped, not emitted into the @prefix table.'
+		);
+	}
+
+	public function testValidTargetProjectsTheMappedVocabularyWithNativeSubjectIris(): void {
+		$this->createEdmMapping();
+
+		$response = $this->export( query: [ 'projection' => 'EDM', 'format' => 'turtle' ] );
 		$body = $response->getBody()->getContents();
 
 		$this->assertSame( 200, $response->getStatusCode() );
@@ -217,37 +264,87 @@ JSON
 		$this->assertStringNotContainsString( self::SCHEMA, $body, 'No native schema class is emitted.' );
 	}
 
+	public function testProjectionNameIsTheMappingPageTitle(): void {
+		// The projection name is the Mapping page title. MediaWiki normalizes only the first letter, so
+		// the exact title "EDM" resolves while lowercase "edm" (normalized to "Edm") does not.
+		$this->createEdmMapping();
+
+		$this->assertSame( 200, $this->export( query: [ 'projection' => 'EDM' ] )->getStatusCode() );
+		$this->assertSame( 400, $this->export( query: [ 'projection' => 'edm' ] )->getStatusCode() );
+	}
+
+	public function testProjectionCasingResolvesToTheCanonicalMappingPageTitle(): void {
+		// MediaWiki capitalizes only the first title letter, so "eDM" and "EDM" are the same Mapping:EDM
+		// page. Both must mint the canonical "EDM" named graph, not one keyed on the requested casing.
+		$this->createEdmMapping();
+
+		$lowerFirst = $this->export( query: [ 'projection' => 'eDM' ] );
+		$exact = $this->export( query: [ 'projection' => 'EDM' ] );
+
+		$this->assertSame( 200, $lowerFirst->getStatusCode() );
+		$this->assertSame( 200, $exact->getStatusCode() );
+		$this->assertStringEndsWith(
+			'/graph/EDM/page/' . $this->pageId,
+			$this->soleGraphIn( $lowerFirst->getBody()->getContents() ),
+			'A projection requested with non-canonical casing still mints the canonical named graph.'
+		);
+		$this->assertStringEndsWith(
+			'/graph/EDM/page/' . $this->pageId,
+			$this->soleGraphIn( $exact->getBody()->getContents() )
+		);
+	}
+
+	public function testReadRestrictedMappingNamesAreAbsentFromTheKnownProjectionsList(): void {
+		// The 400 list must not leak the titles of Mapping pages the caller cannot read (#1046). A caller
+		// that can read the page sees "EDM"; one that cannot must not — though "native" (not a page) stays.
+		$this->createEdmMapping();
+
+		$readable = $this->export( query: [ 'projection' => 'bogus' ] );
+		$restricted = $this->export(
+			query: [ 'projection' => 'bogus' ],
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		);
+
+		$this->assertStringContainsString( 'EDM', $readable->getBody()->getContents() );
+
+		$restrictedBody = $restricted->getBody()->getContents();
+		$this->assertStringNotContainsString( 'EDM', $restrictedBody, 'A read-restricted Mapping page name must not leak into the 400 list.' );
+		$this->assertStringContainsString( 'native', $restrictedBody, 'The always-available native projection stays listed.' );
+	}
+
 	/**
 	 * The export surface is where the projection name selected by the request reaches the projector that
 	 * mints the graph (#1053). Asserting the graph IRI here, rather than only on the projector, is what
 	 * catches that resolution handing the projector the wrong name.
 	 */
 	public function testOntologyProjectionPlacesItsQuadsInTheTargetsOwnPageNamedGraph(): void {
-		$this->createBerlinToEdmMapping();
+		$this->createEdmMapping();
 
-		$response = $this->export( query: [ 'projection' => 'edm' ] );
+		$response = $this->export( query: [ 'projection' => 'EDM' ] );
 
 		$this->assertSame( 200, $response->getStatusCode() );
 		$this->assertStringEndsWith(
-			'/graph/edm/page/' . $this->pageId,
+			'/graph/EDM/page/' . $this->pageId,
 			$this->soleGraphIn( $response->getBody()->getContents() ),
 			'The ontology projection writes the target\'s own named graph, not the native one, so a store can hold both.'
 		);
 	}
 
-	private function createBerlinToEdmMapping(): void {
-		$this->createMapping( 'BerlinToEdm', <<<JSON
+	private function createEdmMapping(): void {
+		$this->createMapping( 'EDM', <<<JSON
 			{
 				"version": 1,
-				"schema": "{$this->schemaName()}",
-				"target": "edm",
 				"prefixes": {
 					"edm": "http://www.europeana.eu/schemas/edm/",
 					"dc": "http://purl.org/dc/elements/1.1/"
 				},
-				"subject": { "class": "edm:Place" },
-				"properties": {
-					"population": { "predicate": "dc:description" }
+				"schemas": {
+					"{$this->schemaName()}": {
+						"subject": { "class": "edm:Place" },
+						"properties": {
+							"population": { "predicate": "dc:description" }
+						}
+					}
 				}
 			}
 			JSON );

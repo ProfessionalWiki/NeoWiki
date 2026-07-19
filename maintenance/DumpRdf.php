@@ -32,8 +32,7 @@ class DumpRdf extends Maintenance {
 		);
 		$this->addOption(
 			'projection',
-			'RDF projection to produce: "native" (default) or an ontology target declared by a Mapping '
-			. 'page (e.g. "edm").',
+			'RDF projection to produce: "native" (default) or the name of a Mapping page (e.g. "EDM").',
 			false,
 			true
 		);
