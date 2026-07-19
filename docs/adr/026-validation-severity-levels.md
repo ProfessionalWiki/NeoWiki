@@ -18,9 +18,8 @@ The current mechanism cannot serve both. Enforcement is a per-wiki boolean (`$wg
 is on, a write is rejected with a 422 only if it introduces violations that were not present on the prior revision,
 so pre-existing invalidity never locks a Subject. Every violation blocks except `schema-not-found`, which is
 hardcoded as non-blocking. Validation is thus already two-state in behavior, but which state a violation falls into
-is decided by code and the wiki-level switch alone; Schemas play no part in it. We want that decision in the hands of
-schema authors, per Constraint, and ADR 21 anticipated exactly this kind of "Schema-scope-or-below severity-level
-work".
+is decided by code and the wiki-level switch alone. We want that decision in the hands of schema authors, per
+Constraint, and ADR 21 anticipated exactly this kind of "Schema-scope-or-below severity-level work".
 
 ADR 21 also carries forward a requirement first recorded in [ADR 12](012-backend-validation.md): invalid Subjects are
 a normal, supported state. Schema changes can invalidate persisted Subjects at any time, so the system keeps invalid
@@ -40,8 +39,6 @@ Blocking semantics:
   block. The newly-introduced-violations check from ADR 21 is unchanged, and severity is not part of violation
   identity in that check: changing a Constraint's severity does not make an existing violation count as new.
 * With enforcement off, no violation blocks, as today.
-* Validate and write responses always include severity, so UIs and API consumers can distinguish the tiers regardless
-  of the enforcement setting.
 
 The default severity is `warning`. The architecture treats invalid Subjects as a normal state (the ADR 21 requirement
 above), so surfacing a violation without blocking is the consistent default, and blocking is the exception a schema
@@ -98,15 +95,16 @@ because enforcement is off by default and an admin can lift it for the duration 
 ### Wire format and domain model
 
 Every serialized violation gains an always-present `"severity": "error" | "warning"` field, in the dry-run validate
-endpoints' 200 body and in the enforcement 422 body alike. In the domain model, every violation carries its severity,
-stamped at validation time from the violated Constraint's configuration or the fixed classification above.
+endpoints' 200 body and in the enforcement 422 body alike, so UIs and API consumers can distinguish the tiers
+regardless of the enforcement setting. In the domain model, every violation carries its severity, stamped at
+validation time from the violated Constraint's configuration or the fixed classification above.
 
 ## Consequences
 
 Pros:
 
-* Schema authors control which constraints are strict and which are advisory, per Constraint. Messy imports can be
-  persisted with warnings while essential fields still block.
+* Schema authors control which Constraints are strict and which are advisory. Messy imports can be persisted with
+  warnings while essential fields still block.
 * API responses distinguish warnings from errors, and the frontend can style them accordingly (Codex `warning` vs
   `error` status).
 * The wire format change is additive, and existing Schema JSON stays valid via the scalar shorthand.
