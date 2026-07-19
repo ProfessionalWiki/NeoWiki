@@ -42,6 +42,9 @@ class RdfAutodiscoveryLinksTest extends NeoWikiIntegrationTestCase {
 		$this->assertNotNull( $trig, 'An application/trig alternate link is expected on a page with Subjects.' );
 		$this->assertStringContainsString( "/neowiki/v0/page/{$pageId}/rdf?projection=native&format=turtle", $turtle );
 		$this->assertStringContainsString( "/neowiki/v0/page/{$pageId}/rdf?projection=native&format=trig", $trig );
+		// Absolute (canonical) URLs, not relative paths, so Linked Data tooling can dereference them.
+		$this->assertStringStartsWith( 'http', $turtle );
+		$this->assertStringStartsWith( 'http', $trig );
 	}
 
 	public function testDoesNotAdvertiseExportsForPageWithoutSubjects(): void {
