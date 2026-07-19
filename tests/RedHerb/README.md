@@ -24,6 +24,8 @@ extension point to the file that demonstrates it.
   [`src/RedHerbFrontendModulesHook.php`](src/RedHerbFrontendModulesHook.php).
 - **Reading NeoWiki data / authorization** — [`src/RedHerbSidebarHook.php`](src/RedHerbSidebarHook.php) and
   [`src/Specials/SpecialRedHerbSubjectFinder.php`](src/Specials/SpecialRedHerbSubjectFinder.php).
+- **Running Cypher queries (PHP query service)** —
+  [`src/Specials/SpecialRedHerbContentPageCount.php`](src/Specials/SpecialRedHerbContentPageCount.php).
 
 ### Frontend (JS/Vue)
 

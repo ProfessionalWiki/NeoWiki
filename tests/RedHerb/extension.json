@@ -47,6 +47,9 @@
 	"SpecialPages": {
 		"RedHerbSubjectFinder": {
 			"class": "ProfessionalWiki\\RedHerb\\Specials\\SpecialRedHerbSubjectFinder"
+		},
+		"RedHerbContentPageCount": {
+			"class": "ProfessionalWiki\\RedHerb\\Specials\\SpecialRedHerbContentPageCount"
 		}
 	},
 

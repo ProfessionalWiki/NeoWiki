@@ -106,7 +106,8 @@ Neo4j projection.
 ### Page Property Providers
 
 Page Property Providers contribute key/value metadata to the Page node in the graph (queryable via Cypher;
-Neo4j is currently the only graph backend). Implement `PagePropertyProvider`:
+Neo4j is currently the only graph backend). Providers run when a page carrying the NeoWiki subject slot is
+saved or rebuilt; pages without Subjects are not projected. Implement `PagePropertyProvider`:
 
 ```php
 class StaticPagePropertyProvider implements PagePropertyProvider {
@@ -197,6 +198,36 @@ you to remove pages that are already gone from your store.
 
 Examples: [`src/RedHerbSidebarHook.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbSidebarHook.php)
 and [`src/Specials/SpecialRedHerbSubjectFinder.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/Specials/SpecialRedHerbSubjectFinder.php).
+
+### Running Cypher queries
+
+To run a read-only Cypher query from PHP, use `NeoWikiExtension::getInstance()->newCypherQueryService()`.
+It rejects write queries, enforces the timeout against the backend, and truncates results to the row cap;
+resolve the limits configured in [`$wgNeoWikiQueryLimits`](../api/query-api.md) with
+`Neo4jQueryLimits::forUser()`:
+
+```php
+$result = NeoWikiExtension::getInstance()->newCypherQueryService()->execute( new Neo4jQueryRequest(
+	cypher: 'MATCH (s:Subject:Person) WHERE s.`Birth year` > $minYear RETURN s.name AS name',
+	parameters: [ 'minYear' => 2000 ],
+	limits: Neo4jQueryLimits::forUser( $this->getUser() ),
+) );
+```
+
+`execute()` returns a `Neo4jQueryResult` (columns, rows, truncation flag) and throws a `QueryException`
+subclass on failure; `newCypherQueryService()` itself throws a `LogicException` on a wiki with no Neo4j
+backend configured.
+
+The `User` in `forUser()` only sizes the limits: how heavy a single query may be, not whether the user may
+query at all or how often. When running user-supplied queries, check the `neowiki-query` right and rate
+limit yourself, as the [Query API](../api/query-api.md) endpoint does.
+
+Two sharp edges: the write check is keyword-based and also rejects `CALL` and `SHOW`, even for read-only
+procedures (see the [parser function notes](../authoring/parser-functions.md)). And the row cap truncates
+the result only after the query has run in full, so bound expensive queries with `LIMIT` in the Cypher
+itself.
+
+Example: [`src/Specials/SpecialRedHerbContentPageCount.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/Specials/SpecialRedHerbContentPageCount.php).
 
 ## Frontend extension points (JS/Vue)
 
@@ -385,3 +416,57 @@ These extension points are designed or partially present but not yet open to ext
 - **A published TypeScript types package.** TypeScript authors get types today by pointing their `tsconfig` at
   NeoWiki's source (see "Authoring in TypeScript" and [ADR 24](../adr/024-frontend-extension-mechanism.md)). A
   published, versioned package is deferred until a consumer needs types without a NeoWiki checkout.
+
+## Internal surfaces
+
+Everything on this page is alpha, but the surfaces below are internal even by that standard: they are
+implementation details that happen to be reachable, and they can change in any release without notice.
+
+### NeoWiki's rendered HTML
+
+The `.ext-neowiki-view` placeholder elements and `data-mw-neowiki-*` attributes are the private contract
+between NeoWiki's backend and its frontend for mounting Views. They are not an integration surface: do not
+select these elements, read Subject IDs out of them, restyle their internals, or remove and replace them
+with your own rendering.
+
+To control where and how a Subject renders:
+
+- To place a Subject rendering in page content, use the
+  [`{{#view}}` parser function](../authoring/parser-functions.md), optionally with a Layout to control which
+  properties are shown.
+- To render Subjects in your own visual format, register a custom View Type
+  (see [Registering a View Type frontend](#registering-a-view-type-frontend)).
+- For fully custom UI outside the View system, fetch the data through the [REST API](../api/rest-api.md) or
+  the [public JS API](#using-neowikis-public-js-api) and render your own components, mounted as described in
+  [Mounting standalone Vue features](#mounting-standalone-vue-features). RedHerb's
+  [`editMainSubject`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/editMainSubject)
+  resolves the page's Main Subject through the public JS API.
+
+### The internal Neo4j client
+
+`NeoWikiExtension::getInstance()->getNeo4jClient()` and `getReadOnlyNeo4jClient()` return the Laudis client
+NeoWiki itself uses. Neo4j access is treated as an implementation detail of NeoWiki's persistence layer
+([ADR 13](../adr/013-restrict-neo4j-access.md)). Nothing stops an extension from querying through the raw
+client, but compare what the documented query interfaces
+([`{{#cypher_raw}}`](../authoring/parser-functions.md), [`nw.query`](../authoring/lua-api.md), the
+[Query API](../api/query-api.md), and the [PHP query service](#running-cypher-queries)) provide over it:
+
+- **Read-only enforcement.** The query interfaces reject write queries (a keyword check plus `EXPLAIN`;
+  the keyword check also rejects read-only `CALL` and `SHOW`); with the raw client, a bug in calling code
+  can corrupt the graph projection, which is what ADR 13 exists to prevent.
+- **Resource limits.** The query interfaces enforce a configured timeout against the backend and cap the
+  rows returned; the raw client has neither. The row cap does not bound the work a query does, so use
+  `LIMIT` in the Cypher either way.
+- **Result handling.** The query interfaces return normalized rows and columns; the raw client returns
+  Laudis driver types that you convert yourself.
+- **Churn exposure.** The query interfaces are documented contracts (alpha, like everything on this page);
+  the client accessors are internal wiring that can change or disappear in any release.
+
+Writing to the graph directly deserves particular caution: the graph is a projection of wiki content that
+NeoWiki rewrites at will. Saving a page that carries the Subject slot re-projects that page's nodes, and
+the `RebuildGraphDatabases` maintenance script rebuilds the projection from scratch, so anything a third
+party writes into the graph can be overwritten, orphaned, or deleted at any time. For page-level key/value
+metadata there is a durable path: [Page Property Providers](#page-property-providers), which NeoWiki
+re-runs whenever a Subject-slot page is saved or rebuilt. For arbitrary nodes and relationships there is
+currently no durable third-party write path into NeoWiki's graph; a
+[Graph Database Backend](#graph-database-backends) projects durably, but into its own store.
