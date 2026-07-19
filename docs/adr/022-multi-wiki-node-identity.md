@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: Draft
+Status: Accepted (2026-07-19)
 
 ## Context
 
@@ -53,7 +53,7 @@ re-key — cheap while not in production, but a real change the broader Subject 
 
 ## Consequences
 
-- Fixes cross-wiki `Page` node overwrites, and enables per-wiki query filtering for the farm.
+- Fixes cross-wiki `Page` node overwrites and enables per-wiki query filtering for the farm.
 - Revises the "`Page.id` is unique" statement in [graph-model](../api/graph-model.md): uniqueness becomes
   per `(wiki_id, id)`. That reference doc is updated when this is implemented.
 - The change ripples into existing queries that look up a page node by id: they must include `wiki_id`.
