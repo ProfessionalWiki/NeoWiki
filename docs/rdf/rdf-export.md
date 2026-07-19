@@ -102,6 +102,13 @@ for the requested ontology target projects to an empty graph — a `200`, not a 
 curl 'https://wiki.example/rest.php/neowiki/v0/subject/s1demo8aaaaaab5/rdf?projection=EDM'
 ```
 
+### Finding these exports
+
+These exports are surfaced in the UI: the Data tab (`?action=subjects`) links to each Subject's JSON and
+per-projection Turtle/TriG, and to the same for the whole page. Pages that carry NeoWiki data also
+advertise the page export through `<link rel="alternate">` autodiscovery tags (Turtle and TriG, native
+projection) in the HTML head, so Linked Data tooling can locate the data without reading this reference.
+
 ## Bulk dump
 
 `maintenance/DumpRdf.php` streams the projection of **every** subject page to stdout as TriG, one named

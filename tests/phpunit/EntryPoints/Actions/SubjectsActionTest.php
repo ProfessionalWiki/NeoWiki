@@ -4,14 +4,22 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Actions;
 
+use Article;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
-use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction
+ * @group Database
  */
-class SubjectsActionTest extends MediaWikiIntegrationTestCase {
+class SubjectsActionTest extends NeoWikiIntegrationTestCase {
+
+	use NeoWikiMockAuthorityTrait;
 
 	public function testNullTitleIsNotEligible(): void {
 		$this->assertFalse( SubjectsAction::isEligibleTitle( null ) );
@@ -41,6 +49,44 @@ class SubjectsActionTest extends MediaWikiIntegrationTestCase {
 		$title->method( 'getNamespace' )->willReturn( NS_MAIN );
 
 		$this->assertTrue( SubjectsAction::isEligibleTitle( $title ) );
+	}
+
+	public function testExposesReadableRdfProjectionsAsConfigVar(): void {
+		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
+
+		$out = $this->runOnView( 'SubjectsActionTest projections', $this->getTestSysop()->getAuthority() );
+
+		$this->assertSame(
+			[ 'native', 'EDM' ],
+			$out->getJsConfigVars()['wgNeoWikiRdfProjections']
+		);
+	}
+
+	public function testOmitsRdfProjectionsTheViewingUserCannotRead(): void {
+		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
+
+		$out = $this->runOnView(
+			'SubjectsActionTest restricted',
+			$this->authorityWithGlobalReadButNoPageRead()
+		);
+
+		$this->assertSame(
+			[ 'native' ],
+			$out->getJsConfigVars()['wgNeoWikiRdfProjections'],
+			'A read-restricted Mapping page name must not reach a reader who cannot see it.'
+		);
+	}
+
+	private function runOnView( string $pageName, Authority $authority ): OutputPage {
+		$title = $this->getExistingTestPage( $pageName )->getTitle();
+
+		$context = new RequestContext();
+		$context->setTitle( $title );
+		$context->setAuthority( $authority );
+
+		( new SubjectsAction( Article::newFromTitle( $title, $context ), $context ) )->onView();
+
+		return $context->getOutput();
 	}
 
 }
