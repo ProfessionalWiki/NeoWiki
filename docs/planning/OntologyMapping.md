@@ -12,9 +12,9 @@ Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 > **As-built (v1, 2026-07).** The near-1:1 term-substitution tier of this design has shipped: Mappings as
 > pages in a `Mapping:` namespace — one page per target ontology, the page title being the target name
 > ([#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)) — and an ontology projection
-> selectable alongside the native one on the
-> RDF export endpoint and `DumpRdf`. See the [Ontology Mapping reference](../rdf/ontology-mapping.md)
-> and the worked [Person → EDM example](../examples/person-to-edm.md). The structural / node-synthesis
+> selectable alongside the native one on the RDF export endpoint and `DumpRdf`. See the
+> [Ontology Mapping reference](../rdf/ontology-mapping.md) and the worked
+> [Person → EDM example](../examples/person-to-edm.md). The structural / node-synthesis
 > tier and the mapping-formalism question (Q1, [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995))
 > remain open; the stored `"version": 1` format is provisional. Provisional answers v1 gives to some open
 > questions below are noted inline.
@@ -340,7 +340,7 @@ multi-target pages stay open for a later format version.*
 modellers) vs installs them (wiki admins), and how are bundles (e.g. "CIDOC-CRM for Person / Place / Object") packaged
 and shared across wikis and a farm?
 
-*v1: Mappings live as pages in a dedicated `Mapping:` namespace (one page per target ontology, named by it —
+*v1: Mappings live as pages in a dedicated `Mapping:` namespace (one page per target ontology, named after it —
 [ADR 17](../adr/017-names-as-identifiers.md)-style), authored like Schemas/Layouts and gated by the
 `neowiki-mapping-edit` right, and seedable as demo/bundle data (the Person→EDM example ships this way). Packaging and
 farm-wide sharing of bundles is not yet addressed.*

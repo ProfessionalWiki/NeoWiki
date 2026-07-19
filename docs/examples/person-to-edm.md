@@ -88,10 +88,11 @@ this walkthrough uses (the shipped file also maps `Artwork` and `Artist`, and de
 ```
 
 `prefixes` are page-level, shared by every entry. The **City** entry maps **only the class**
-(`edm:Place`), with no property mappings. For the birthplace use case, all EDM needs from Málaga is a labelled `edm:Place` that
-`rdaGr2:placeOfBirth` can point at. The City's `Country`/`Population`/`Website` have no near-1:1 EDM
-`Place` predicate in the flat tier (place geography would use `wgs84_pos`, outside the toy model), so
-they are deliberately unmapped — see the [findings](#findings).
+(`edm:Place`), with no property mappings. For the birthplace use case, all EDM needs from Málaga is
+a labelled `edm:Place` that `rdaGr2:placeOfBirth` can point at. The City's
+`Country`/`Population`/`Website` have no near-1:1 EDM `Place` predicate in the flat tier (place
+geography would use `wgs84_pos`, outside the toy model), so they are deliberately unmapped — see the
+[findings](#findings).
 
 ## 3. The demo page
 
