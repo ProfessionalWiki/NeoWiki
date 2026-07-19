@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use MediaWiki\Html\Html;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Page\ProperPageIdentity;
@@ -16,6 +17,7 @@ use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\Title\ForeignTitle;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -61,6 +63,7 @@ class NeoWikiHooks {
 
 		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $skin );
 		$out->addHtml( self::getNeoWikiAppHtml( $out ) );
+		self::addRdfAutodiscoveryLinks( $out );
 
 		if ( !NeoWikiExtension::getInstance()->shouldAutoRenderMainSubject() ) {
 			return;
@@ -111,6 +114,34 @@ class NeoWikiHooks {
 
 	private static function pageIsLatestRevision( OutputPage $out ): bool {
 		return $out->getRevisionId() === $out->getTitle()->getLatestRevID();
+	}
+
+	/**
+	 * Advertises the page's RDF export (native projection) via `<link rel="alternate">` autodiscovery
+	 * tags — one Turtle, one TriG — so Linked Data tooling finds the data without reading the API docs.
+	 * Emitted only when the page has Subjects, so the advertised endpoint never 404s. Native only; the
+	 * per-projection exports are reachable from the Data tab UI.
+	 */
+	private static function addRdfAutodiscoveryLinks( OutputPage $out ): void {
+		$pageId = $out->getTitle()->getArticleID();
+
+		if ( !NeoWikiExtension::getInstance()->newPageSubjectsLookup()->pageHasSubjects( new PageId( $pageId ) ) ) {
+			return;
+		}
+
+		$services = MediaWikiServices::getInstance();
+		$endpoint = $services->getMainConfig()->get( MainConfigNames::RestPath )
+			. '/neowiki/v0/page/' . $pageId . '/rdf?projection=' . RdfPageProjector::PROJECTION;
+		$urlUtils = $services->getUrlUtils();
+
+		foreach ( [ 'turtle' => 'text/turtle', 'trig' => 'application/trig' ] as $format => $type ) {
+			$href = $endpoint . '&format=' . $format;
+			$out->addLink( [
+				'rel' => 'alternate',
+				'type' => $type,
+				'href' => $urlUtils->expand( $href, PROTO_CANONICAL ) ?? $href,
+			] );
+		}
 	}
 
 	private static function handleSchemaPage( OutputPage $out, Skin $skin ): void {

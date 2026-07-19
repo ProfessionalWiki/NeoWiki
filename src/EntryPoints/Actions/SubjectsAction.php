@@ -45,10 +45,17 @@ class SubjectsAction extends FormlessAction {
 			);
 		}
 
-		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $this->getSkin() );
+		$extension = NeoWikiExtension::getInstance();
+		$extension->newFrontendModuleLoader()->load( $out, $this->getSkin() );
 
 		$out->addJsConfigVars( [
 			'wgNeoWikiManageSubjectsPageId' => $title->getArticleID(),
+			// The export UI (Data tab menus) is driven by this list. Filtered by the viewing user's
+			// read authority so restricted Mapping page titles never reach a reader who cannot see them.
+			'wgNeoWikiRdfProjections' => $extension->filterReadableProjectionNames(
+				$extension->getRdfProjectionNames(),
+				$this->getAuthority()
+			),
 		] );
 
 		return Html::element( 'div', [ 'id' => 'ext-neowiki-manage-subjects' ] );
