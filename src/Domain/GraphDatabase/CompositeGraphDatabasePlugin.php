@@ -27,6 +27,12 @@ class CompositeGraphDatabasePlugin implements GraphDatabasePlugin {
 		$this->plugins = $plugins;
 	}
 
+	public function initialize(): void {
+		foreach ( $this->plugins as $plugin ) {
+			$plugin->initialize();
+		}
+	}
+
 	public function savePage( Page $page ): void {
 		foreach ( $this->plugins as $plugin ) {
 			$plugin->savePage( $page );

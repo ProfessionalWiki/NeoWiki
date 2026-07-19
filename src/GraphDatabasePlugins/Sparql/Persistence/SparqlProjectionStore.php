@@ -45,6 +45,11 @@ readonly class SparqlProjectionStore implements GraphDatabasePlugin {
 	) {
 	}
 
+	public function initialize(): void {
+		// Nothing to prepare: a SPARQL graph store has no store-level structures (e.g. uniqueness
+		// constraints) to create up front, unlike Neo4j.
+	}
+
 	public function savePage( Page $page ): void {
 		$projector = $this->resolveProjector();
 		$graph = $this->namespaces->graph( $this->projectionName, $page->getId() );

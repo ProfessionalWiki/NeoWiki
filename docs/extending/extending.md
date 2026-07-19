@@ -151,6 +151,10 @@ NeoWiki currently supports Neo4j only, but the graph projection is an extension 
 ```php
 class MyGraphDatabasePlugin implements GraphDatabasePlugin {
 
+	public function initialize(): void {
+		// Create any store-level structures your backend needs (e.g. constraints or indexes).
+	}
+
 	public function savePage( Page $page ): void {
 		// Project the page and its subjects into your store.
 	}
@@ -167,6 +171,10 @@ Register with `NeoWikiRegistrar::addGraphDatabasePlugin()`. Example:
 
 `savePage` hands you the page with all of its Subjects and runs for every revision, so subject edits, undeletions
 and page moves all reach you as a save. `deletePage` gets only the page id.
+
+`initialize` runs once at the start of a `RebuildGraphDatabases` run, before any page is projected — create the
+store-level structures a fresh store needs there (this is how NeoWiki's own Neo4j backend creates its uniqueness
+constraints). Make it idempotent, since every rebuild calls it; it never runs on an individual edit.
 
 **Signal failure by throwing.** On an edit, delete or undelete, NeoWiki logs the failure and lets the user's
 operation commit, so a backend being down never blocks the wiki or starves the other backends — your projection is

@@ -10,11 +10,17 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 
 class SpyGraphDatabasePlugin implements GraphDatabasePlugin {
 
+	public int $initializeCount = 0;
+
 	/** @var Page[] */
 	public array $savedPages = [];
 
 	/** @var PageId[] */
 	public array $deletedPageIds = [];
+
+	public function initialize(): void {
+		$this->initializeCount++;
+	}
 
 	public function savePage( Page $page ): void {
 		$this->savedPages[] = $page;

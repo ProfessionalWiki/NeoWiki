@@ -76,7 +76,6 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfSerializer;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportPageRdfApi;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jConstraintUpdater;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -702,19 +701,6 @@ class NeoWikiExtension {
 
 	public function getWriteQueryEngine(): Neo4jWriteQueryEngine {
 		return $this->requireNeo4jPlugin()->getWriteQueryEngine();
-	}
-
-	/**
-	 * Creates the graph-database uniqueness constraints when a Neo4j backend is configured, and is a
-	 * no-op otherwise (SPARQL stores have no constraints to create). Idempotent — the underlying
-	 * CREATE CONSTRAINT statements use IF NOT EXISTS — so it is safe to run on every graph rebuild.
-	 */
-	public function createGraphDatabaseConstraints(): void {
-		$neo4jPlugin = $this->getNeo4jPlugin();
-
-		if ( $neo4jPlugin !== null ) {
-			( new Neo4jConstraintUpdater( $neo4jPlugin->getWriteQueryEngine() ) )->createDefaultConstraints();
-		}
 	}
 
 	public function isDevelopmentUIEnabled(): bool {

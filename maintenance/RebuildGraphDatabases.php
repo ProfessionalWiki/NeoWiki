@@ -33,7 +33,7 @@ class RebuildGraphDatabases extends Maintenance {
 	}
 
 	public function execute(): void {
-		$this->createGraphConstraints();
+		$this->initializeGraphDatabases();
 
 		$pageIds = $this->getSubjectPageIds();
 
@@ -55,13 +55,14 @@ class RebuildGraphDatabases extends Maintenance {
 	}
 
 	/**
-	 * Creating the constraints before re-projecting guarantees a rebuilt graph carries them. The rebuild
-	 * is the production path that (re)establishes the graph from the MediaWiki source of truth, so it is
-	 * the natural, idempotent point to ensure the uniqueness constraints exist (#874).
+	 * Initializing the backends before re-projecting guarantees a rebuilt graph carries any store-level
+	 * structures they need (e.g. uniqueness constraints). The rebuild is the production path that
+	 * (re)establishes the graph from the MediaWiki source of truth, so it is the natural, idempotent
+	 * point to ensure those structures exist (#874).
 	 */
-	private function createGraphConstraints(): void {
-		$this->outputChanneled( 'Ensuring graph database uniqueness constraints exist...' );
-		NeoWikiExtension::getInstance()->createGraphDatabaseConstraints();
+	private function initializeGraphDatabases(): void {
+		$this->outputChanneled( 'Initializing graph databases...' );
+		NeoWikiExtension::getInstance()->getGraphDatabasePlugin()->initialize();
 	}
 
 	/**

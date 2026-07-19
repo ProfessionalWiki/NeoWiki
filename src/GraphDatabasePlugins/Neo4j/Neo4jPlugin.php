@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQuerySe
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jReadQueryEngine;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\ParserFunction\CypherRawParserFunction;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientReadQueryEngine;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jConstraintUpdater;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jProjectionStore;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
@@ -42,6 +43,7 @@ readonly class Neo4jPlugin {
 		LoggerInterface $logger,
 		string $wikiId,
 	) {
+		$this->writeQueryEngine = new Neo4jWriteQueryEngine( $client );
 		$this->projectionStore = new Neo4jProjectionStore(
 			client: $client,
 			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
@@ -50,10 +52,11 @@ readonly class Neo4jPlugin {
 				logger: $logger,
 				wikiId: $wikiId,
 			),
+			// Reuse the write engine the plugin already owns so initialize() creates constraints through it.
+			constraintUpdater: new Neo4jConstraintUpdater( $this->writeQueryEngine ),
 			wikiId: $wikiId,
 		);
 		$this->readQueryEngine = new Neo4jClientReadQueryEngine( $readOnlyClient );
-		$this->writeQueryEngine = new Neo4jWriteQueryEngine( $client );
 		$this->readOnlyClient = $readOnlyClient;
 	}
 
