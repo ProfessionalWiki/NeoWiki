@@ -196,16 +196,6 @@ parameters:
 			path: src/GraphDatabasePlugins/Neo4j/Persistence/Neo4jQueryStore.php
 
 		-
-			message: "#^Cannot call method get\\(\\) on mixed\\.$#"
-			count: 1
-			path: src/GraphDatabasePlugins/Neo4j/Persistence/Neo4jSubjectUpdater.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\GraphDatabasePlugins\\\\Neo4j\\\\Persistence\\\\Neo4jSubjectUpdater\\:\\:getNodeLabels\\(\\) should return array\\<string\\> but returns array\\<int, mixed\\>\\.$#"
-			count: 1
-			path: src/GraphDatabasePlugins/Neo4j/Persistence/Neo4jSubjectUpdater.php
-
-		-
 			message: "#^Cannot access property \\$page_title on array\\|stdClass\\|false\\.$#"
 			count: 1
 			path: src/Persistence/MediaWiki/DatabaseLayoutNameLookup.php
