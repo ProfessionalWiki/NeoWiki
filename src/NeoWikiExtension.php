@@ -68,12 +68,14 @@ use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjection;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjectionResolution;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfSubjectExporter;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfSerializer;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportPageRdfApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportSubjectRdfApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -328,6 +330,16 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newRdfSubjectExporterForProjection( RdfProjection $projection, Authority $authority ): RdfSubjectExporter {
+		return new RdfSubjectExporter(
+			$this->getPageIdentifiersLookup(),
+			$this->newRdfPageLoader(),
+			$projection->projector,
+			$projection->serializer,
+			$this->newPageReadAuthorizer( $authority ),
+		);
+	}
+
 	/**
 	 * The projection for a name, or null when the name is neither "native" nor a target any Mapping page
 	 * declares. The seam the SPARQL store plugin (#586) consumes for its own store (it needs only
@@ -436,6 +448,10 @@ class NeoWikiExtension {
 
 	public static function newExportPageRdfApi(): ExportPageRdfApi {
 		return new ExportPageRdfApi();
+	}
+
+	public static function newExportSubjectRdfApi(): ExportSubjectRdfApi {
+		return new ExportSubjectRdfApi();
 	}
 
 	/**

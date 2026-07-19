@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use Psr\Log\LoggerInterface;
 
@@ -109,7 +110,7 @@ class OntologyMappingProjector implements PageProjector {
 			$mapping = $this->mappingsBySchema[$subject->getSchemaName()->getText()] ?? null;
 
 			if ( $mapping !== null ) {
-				$quads = array_merge( $quads, $this->projectSubject( $subject, $mapping, $graph ) );
+				$quads = array_merge( $quads, $this->subjectQuads( $subject, $mapping, $graph ) );
 			}
 		}
 
@@ -117,9 +118,33 @@ class OntologyMappingProjector implements PageProjector {
 	}
 
 	/**
+	 * Projects a single Subject on the page into the target ontology — its per-Subject block from
+	 * {@see projectPage()} (mapped type, label, mapped property values, relations as direct triples)
+	 * placed in the target's named graph. A Subject that is not on the page, or whose Schema has no
+	 * Mapping for this target, yields an empty list.
+	 */
+	public function projectSubject( Page $page, SubjectId $subjectId ): QuadList {
+		$subject = $page->getSubjects()->getAllSubjects()->getSubject( $subjectId );
+
+		if ( $subject === null ) {
+			return new QuadList();
+		}
+
+		$mapping = $this->mappingsBySchema[$subject->getSchemaName()->getText()] ?? null;
+
+		if ( $mapping === null ) {
+			return new QuadList();
+		}
+
+		return QuadList::fromArray(
+			$this->subjectQuads( $subject, $mapping, $this->namespaces->graph( $this->target, $page->getId() ) )
+		);
+	}
+
+	/**
 	 * @return Quad[]
 	 */
-	private function projectSubject( Subject $subject, Mapping $mapping, Iri $graph ): array {
+	private function subjectQuads( Subject $subject, Mapping $mapping, Iri $graph ): array {
 		$expander = new CurieExpander( $mapping->prefixes );
 		$subjectIri = $this->namespaces->subject( $subject->id );
 

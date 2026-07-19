@@ -41,6 +41,7 @@ class OntologyMappingProjectorTest extends TestCase {
 
 	private const string PERSON_ID = 's1janeaaaaaaaa2';
 	private const string CITY_ID = 's1cityaaaaaaaa3';
+	private const string GHOST_ID = 's1ghostaaaaaaa9';
 
 	private const string EDM = 'http://www.europeana.eu/schemas/edm/';
 	private const string DC = 'http://purl.org/dc/elements/1.1/';
@@ -111,7 +112,11 @@ class OntologyMappingProjectorTest extends TestCase {
 	}
 
 	private function examplePage(): Page {
-		$person = TestSubject::build(
+		return TestPage::build( id: 42, mainSubject: $this->examplePerson(), childSubjects: new SubjectMap( $this->exampleCity() ) );
+	}
+
+	private function examplePerson(): Subject {
+		return TestSubject::build(
 			id: self::PERSON_ID,
 			label: 'Jane',
 			schemaName: new SchemaName( 'Person' ),
@@ -123,8 +128,10 @@ class OntologyMappingProjectorTest extends TestCase {
 				TestStatement::buildRelation( 'BornIn', [ TestRelation::build( targetId: self::CITY_ID ) ] ),
 			] )
 		);
+	}
 
-		$city = TestSubject::build(
+	private function exampleCity(): Subject {
+		return TestSubject::build(
 			id: self::CITY_ID,
 			label: 'Berlin',
 			schemaName: new SchemaName( 'City' ),
@@ -132,8 +139,81 @@ class OntologyMappingProjectorTest extends TestCase {
 				TestStatement::build( 'Name', new StringValue( 'Berlin' ), 'text' ),
 			] )
 		);
+	}
 
-		return TestPage::build( id: 42, mainSubject: $person, childSubjects: new SubjectMap( $city ) );
+	/**
+	 * The per-Subject export projects exactly the requested Subject's mapped block from a full-page
+	 * projection, in the target's named graph, and nothing else. The target Person sits between two
+	 * siblings; its BornIn relation points at the City sibling, whose IRI appears as the dc:spatial
+	 * object but whose own mapped block (edm:Place, …) must not — so a "project every Subject"
+	 * regression fails even though the City has a Mapping of its own.
+	 */
+	public function testProjectSubjectEmitsOnlyTheTargetSubjectsMappedBlockInTheTargetGraph(): void {
+		$quads = $this->newProjector( [ $this->personMapping(), $this->cityMapping() ] )
+			->projectSubject( $this->pagePersonBetweenSiblings(), new SubjectId( self::PERSON_ID ) );
+
+		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
+
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( $this->personOnlyTriG() ),
+			ParsedRdf::canonicalQuads( $output )
+		);
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testProjectSubjectForASubjectWhoseSchemaHasNoMappingForTheTargetReturnsNothing(): void {
+		// Only Person is mapped; the requested Subject uses the unmapped Ghost Schema.
+		$quads = $this->newProjector( [ $this->personMapping() ] )
+			->projectSubject( $this->pagePersonBetweenSiblings(), new SubjectId( self::GHOST_ID ) );
+
+		$this->assertTrue( $quads->isEmpty() );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testProjectSubjectForASubjectNotOnThePageReturnsNothing(): void {
+		$quads = $this->newProjector( [ $this->personMapping() ] )
+			->projectSubject( TestPage::build( id: 42, mainSubject: $this->examplePerson() ), new SubjectId( self::CITY_ID ) );
+
+		$this->assertTrue( $quads->isEmpty() );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	private function pagePersonBetweenSiblings(): Page {
+		return TestPage::build(
+			id: 42,
+			mainSubject: $this->exampleCity(),
+			childSubjects: new SubjectMap( $this->examplePerson(), $this->ghostSubject() )
+		);
+	}
+
+	private function ghostSubject(): Subject {
+		return TestSubject::build(
+			id: self::GHOST_ID,
+			label: 'Unmapped',
+			schemaName: new SchemaName( 'Ghost' ),
+			statements: new StatementList( [ TestStatement::build( 'Name', new StringValue( 'Unmapped' ), 'text' ) ] )
+		);
+	}
+
+	private function personOnlyTriG(): string {
+		return <<<TRIG
+			@prefix neo-subj: <https://wiki.example/entity/> .
+			@prefix neo-graph: <https://wiki.example/graph/edm/page/> .
+			@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+			@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+			@prefix edm: <http://www.europeana.eu/schemas/edm/> .
+			@prefix dc: <http://purl.org/dc/elements/1.1/> .
+
+			neo-graph:42 {
+				neo-subj:s1janeaaaaaaaa2 a edm:ProvidedCHO ;
+					rdfs:label "Jane" ;
+					dc:title "Jane"@en ;
+					edm:isShownAt "https://jane.example"^^xsd:anyURI ;
+					dc:date "1990"^^edm:year ;
+					dc:spatial neo-subj:s1cityaaaaaaaa3 .
+			}
+			TRIG;
 	}
 
 	private function personMapping(): Mapping {

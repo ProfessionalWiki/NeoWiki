@@ -64,24 +64,41 @@ describe the same set of entities. A warning is logged for each omitted Subject.
 
 ## Endpoint
 
-`GET /rest.php/neowiki/v0/page/{pageId}/rdf`
-
-Returns the page's projection. The `projection` query parameter selects the vocabulary: `native` (the
-default, described here) or an ontology target declared by a Mapping page — see
-[Ontology Mapping](ontology-mapping.md). An unknown target returns `400`.
-
-The format is chosen by the `format` query parameter, falling back to the `Accept` header, then to
-TriG:
+RDF is served per page or per Subject. Both take the same `projection` and `format` query parameters.
+The `projection` selects the vocabulary: `native` (the default, described here) or an ontology target
+declared by a Mapping page — see [Ontology Mapping](ontology-mapping.md); an unknown target returns
+`400`. The `format` picks the serialization, falling back to the `Accept` header, then to TriG:
 
 | `format` | `Accept` | Content-Type | Named graph |
 |---|---|---|---|
 | `trig` (default) | `application/trig` | `application/trig; charset=utf-8` | yes |
 | `turtle` | `text/turtle` | `text/turtle; charset=utf-8` | no (same triples, no graph wrapper) |
 
+### Page
+
+`GET /rest.php/neowiki/v0/page/{pageId}/rdf`
+
+Returns the page's projection: its page metadata and every Subject on it, in the page's named graph.
 Returns `404` when the page does not exist or has no NeoWiki Subject data.
 
 ```sh
 curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf?format=turtle'
+```
+
+### Subject
+
+`GET /rest.php/neowiki/v0/subject/{subjectId}/rdf`
+
+Returns one Subject's projection: exactly the triples the page export emits for that Subject — its
+outbound description, including the native relation reification — with none of the page-metadata
+triples, in the hosting page's named graph. Inbound relations pointing at the Subject from elsewhere
+are not included.
+
+Returns `404` when the Subject does not exist, is no longer on its hosting page, or is on a page the
+caller may not read — the three are indistinguishable. A malformed Subject ID returns `400`.
+
+```sh
+curl 'https://wiki.example/rest.php/neowiki/v0/subject/s1demo8aaaaaab5/rdf?projection=edm'
 ```
 
 ## Bulk dump

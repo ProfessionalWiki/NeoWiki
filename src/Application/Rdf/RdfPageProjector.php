@@ -21,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -68,10 +69,35 @@ class RdfPageProjector implements PageProjector {
 		$quads = $this->projectPageMetadata( $page, $subjects, $graph );
 
 		foreach ( $subjects as [ $subject, $schema ] ) {
-			$quads = array_merge( $quads, $this->projectSubject( $subject, $schema, $graph, $page->getId() ) );
+			$quads = array_merge( $quads, $this->subjectQuads( $subject, $schema, $graph, $page->getId() ) );
 		}
 
 		return QuadList::fromArray( $quads );
+	}
+
+	/**
+	 * Projects a single Subject on the page — its per-Subject block from {@see projectPage()} (type,
+	 * label, Statements, reified Relations) placed in the page's native named graph, without any
+	 * page-metadata quads. A Subject that is not on the page, or whose Schema is unavailable (logged,
+	 * as in the full-page projection), yields an empty list.
+	 */
+	public function projectSubject( Page $page, SubjectId $subjectId ): QuadList {
+		$subject = $page->getSubjects()->getAllSubjects()->getSubject( $subjectId );
+
+		if ( $subject === null ) {
+			return new QuadList();
+		}
+
+		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+
+		if ( $schema === null ) {
+			$this->logger->warning( 'Schema not found: ' . $subject->getSchemaName()->getText() );
+			return new QuadList();
+		}
+
+		return QuadList::fromArray(
+			$this->subjectQuads( $subject, $schema, $this->namespaces->graph( self::PROJECTION, $page->getId() ), $page->getId() )
+		);
 	}
 
 	/**
@@ -168,7 +194,7 @@ class RdfPageProjector implements PageProjector {
 	/**
 	 * @return Quad[]
 	 */
-	private function projectSubject( Subject $subject, Schema $schema, Iri $graph, PageId $pageId ): array {
+	private function subjectQuads( Subject $subject, Schema $schema, Iri $graph, PageId $pageId ): array {
 		$subjectIri = $this->namespaces->subject( $subject->id );
 
 		$quads = [
