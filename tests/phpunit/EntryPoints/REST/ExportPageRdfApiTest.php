@@ -220,6 +220,38 @@ JSON
 		$this->assertSame( 400, $response->getStatusCode() );
 	}
 
+	public function testImportedMappingWithAnUnsafePrefixLabelCannotInjectTriplesIntoTheExport(): void {
+		// A prefix label is validated at save time, but import bypasses that (like a reserved page name).
+		// A label carrying a newline and RDF syntax must not reach the serializer's @prefix table, where
+		// it would break out of the declaration and inject attacker-controlled triples into the export.
+		$this->createMapping( 'Injectionseed', <<<JSON
+			{
+				"version": 1,
+				"prefixes": {
+					"edm": "http://www.europeana.eu/schemas/edm/",
+					"INJTOKEN": "http://example.org/ns/"
+				},
+				"schemas": {
+					"{$this->schemaName()}": { "subject": { "class": "edm:Place" }, "properties": {} }
+				}
+			}
+			JSON );
+
+		$xml = $this->exportPageToXml( 'Mapping:Injectionseed' );
+		$xml = str_replace( 'Mapping:Injectionseed', 'Mapping:Injectionbad', $xml );
+		$xml = str_replace( 'INJTOKEN', 'x\nedm:INJECTEDMARKER a edm:Pwned .\n#', $xml );
+		$this->importXml( $xml );
+
+		$response = $this->export( query: [ 'projection' => 'Injectionbad', 'format' => 'turtle' ] );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertStringNotContainsString(
+			'INJECTEDMARKER',
+			$response->getBody()->getContents(),
+			'An unsafe prefix label from an imported Mapping must be dropped, not emitted into the @prefix table.'
+		);
+	}
+
 	public function testValidTargetProjectsTheMappedVocabularyWithNativeSubjectIris(): void {
 		$this->createEdmMapping();
 

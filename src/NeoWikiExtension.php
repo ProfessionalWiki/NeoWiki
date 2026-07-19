@@ -435,8 +435,9 @@ class NeoWikiExtension {
 
 	/**
 	 * The native prefixes (Subject IRIs stay native) plus the Mapping's declared ontology prefixes, for
-	 * readable output. Unsafe prefix namespaces are dropped defensively so a Mapping can never inject a
-	 * `@prefix` declaration into the document, even though save-time validation already rejects them.
+	 * readable output. Both the label and the namespace of each prefix are dropped defensively when unsafe,
+	 * so a Mapping can never inject a `@prefix` declaration (or a triple broken out of one) into the
+	 * document, even though save-time validation already rejects them — an import bypasses that validation.
 	 *
 	 * @return array<string, string>
 	 */
@@ -444,7 +445,7 @@ class NeoWikiExtension {
 		$prefixes = $this->getRdfNamespaces()->prefixMap();
 
 		foreach ( $mapping->prefixes as $label => $namespace ) {
-			if ( CurieExpander::isSafeAbsoluteIri( $namespace ) ) {
+			if ( CurieExpander::isValidPrefixLabel( (string)$label ) && CurieExpander::isSafeAbsoluteIri( $namespace ) ) {
 				$prefixes[$label] = $namespace;
 			}
 		}
