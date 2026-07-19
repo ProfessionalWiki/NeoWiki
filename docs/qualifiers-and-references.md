@@ -4,37 +4,37 @@ order: 2
 ---
 # Qualifiers and References
 
-NeoWiki Statements have no qualifiers, references, or rank like Wikibase Statements do.
-NeoWiki uses a different approach, which still allows you to express qualified and referenced data,
-and comes with notable benefits like unlimited depth and Schemas (validation, UIs).
+NeoWiki Statements have no qualifiers, references, or rank the way Wikibase Statements do. NeoWiki uses a different
+approach, which still allows you to express qualified and referenced data, and comes with notable benefits like
+unlimited depth and Schemas (validation, UIs).
 
-This page explains how NeoWiki models the same needs, and why
-NeoWiki follows the [Property Graph model](https://en.wikipedia.org/wiki/Property_graph).
+This page explains how NeoWiki models the same needs, and why it follows the
+[Property Graph model](https://en.wikipedia.org/wiki/Property_graph).
 
 For the underlying concepts (Subject, Statement, Relation, Schema), see the [Glossary](glossary.md).
 
 ## The short version
 
-NeoWiki's Statements are flat: one property and its Value. It has no inner structure.
+NeoWiki's Statements are flat: one property and its Value. They have no inner structure.
 
-You model what would be a "Statement" in Wikibase as a NeoWiki Subject.
+You model what would be a qualified Statement in Wikibase as a NeoWiki Subject.
 
-Example: In Wikibase, you might have an Item
-about Berlin, with Statements about its population, qualified by year of measurement. In NeoWiki you instead
-have one Subject for Berlin, and then an additional Subject per population. These population Subjects are linked
-to the Berlin Subject via Relation Values.
+Example: In Wikibase, you might have an Item about Berlin, with Statements about its population, qualified by year of
+measurement. In NeoWiki you instead have one Subject for Berlin, and then an additional Subject per population figure.
+The Berlin Subject links to these population Subjects via Relations.
 
-Because your population Subjects have their own schema, your users get a form-like experience with the right properties
-shown when adding a new population and whatever validation rules you specified applied. In
-Wikibase terms, you get *schemas for your qualifiers*.
+Because your population Subjects have their own Schema, your users get a form-like experience when adding a new
+population: the right properties are shown, and the validation rules you specified are applied. In Wikibase terms, you
+get *schemas for your qualifiers*.
 
-NeoWiki allows storing an arbitrary number of Subjects on a single page, so there is no explosion of Subject pages as
-a Wikibase user might expect.
+NeoWiki allows storing an arbitrary number of Subjects on a single page, so there is no explosion of Subject pages,
+which a Wikibase user might otherwise expect.
 
 ## Qualifying a value: model it as its own Subject
 
 When a value needs context, promote it into a dedicated Subject and link it from the main Subject with a Relation. This
-is the same move as a Semantic MediaWiki subobject or a Wikidata "item id" value, but the intermediate node has a Schema.
+is the same move as a Semantic MediaWiki subobject or an Item-valued Statement in Wikidata, but the intermediate node
+has a Schema.
 
 Take a museum's yearly attendance. You define an `Attendance` Schema and link one Attendance Subject per year:
 
@@ -78,7 +78,8 @@ of the linked Subject, or put one on the Relation. The `Source` in the Attendanc
 
 ## Rank
 
-NeoWiki has no rank. The cases Wikibase solves with rank are modelled like everything else.
+NeoWiki has no rank. What rank encodes is ordinary data, modelled with the standard mechanisms as the data modeller
+sees fit — typically a date property for current vs. historical values, or a status property for deprecated ones.
 
 ## Mapping from Wikibase
 
@@ -94,6 +95,9 @@ NeoWiki has no rank. The cases Wikibase solves with rank are modelled like every
 
 ## Why this approach
 
+NeoWiki follows the Property Graph model: Subjects are nodes with typed properties, and Relations are edges that can
+carry properties of their own, so qualifying a relationship needs no extra machinery.
+
 - **Simplicity.** A Statement stays a property/value pair and a Schema stays two-dimensional — easy to reason about,
   edit, and render.
 - **Schemas for everything.** Qualifiers and references live on Subjects and Relations that have Schemas, so they are
@@ -103,8 +107,8 @@ NeoWiki has no rank. The cases Wikibase solves with rank are modelled like every
 - **Clean projection.** Linked Subjects are graph nodes and Relations are graph edges, so the graph and RDF
   projections fall out naturally (below).
 
-The trade-off is more Subjects to create. This downside is partially mitigated by NeoWiki's support for multiple 
-Subjects per page, and we might implement additional UIs for easy management of Subjects referenced via Relation Values.
+The trade-off is more Subjects to create. This downside is partially mitigated by NeoWiki's support for multiple
+Subjects per page.
 
 ## In the graph and in RDF
 
