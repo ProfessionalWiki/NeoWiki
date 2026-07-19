@@ -217,3 +217,23 @@ describe( 'statementsToJson', () => {
 	} );
 
 } );
+
+describe( 'unregistered-type round-trip', () => {
+
+	it( 'preserves the raw value and type name of an unregistered-type statement', () => {
+		const statements = Neo.getInstance().getSubjectDeserializer().deserializeStatements( {
+			Swatch: {
+				value: { hex: '#ff5733', palette: 'warm' },
+				type: 'zzz-color',
+			},
+		} );
+
+		expect( statementsToJson( statements ) ).toEqual( {
+			Swatch: {
+				value: { hex: '#ff5733', palette: 'warm' },
+				propertyType: 'zzz-color',
+			},
+		} );
+	} );
+
+} );

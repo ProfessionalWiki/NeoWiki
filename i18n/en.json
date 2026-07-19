@@ -12,6 +12,7 @@
 
 	"right-neowiki-schema-edit": "Create and edit NeoWiki schemas",
 	"right-neowiki-layout-edit": "Create and edit NeoWiki layouts",
+	"right-neowiki-mapping-edit": "Create and edit NeoWiki ontology mappings",
 	"right-neowiki-query": "Run NeoWiki queries",
 
 	"specialpages-group-neowiki": "NeoWiki",
@@ -25,6 +26,11 @@
 	"neowiki-property-type-datetime": "Date & Time",
 	"neowiki-property-type-date": "Date",
 	"neowiki-property-type-boolean": "Boolean",
+	"neowiki-property-type-unregistered": "Unavailable type",
+	"neowiki-property-type-unregistered-note": "The type \"$1\" is not available on this wiki.",
+	"neowiki-property-type-unregistered-input-note": "The type \"$1\" is not available on this wiki. The value cannot be edited and is preserved as-is.",
+	"neowiki-property-type-unregistered-attributes-note": "Settings for this type are preserved but cannot be edited.",
+	"neowiki-property-type-unregistered-notification": "Some data on this page uses the property type \"$1\" from an extension that is not available. The data is shown as stored but cannot be edited normally.",
 	"neowiki-boolean-true": "Yes",
 	"neowiki-boolean-false": "No",
 
@@ -33,7 +39,9 @@
 	"neowiki-page-tools-label": "NeoWiki",
 	"neowiki-page-tools-create-subject": "Create subject",
 	"neowiki-page-tools-manage-subjects": "Manage subjects",
+	"neowiki-page-tools-view-subjects": "View subjects",
 	"neowiki-page-tools-edit-json": "View or edit JSON",
+	"neowiki-page-tools-view-json": "View JSON",
 
 	"neowiki-property-editor-name": "Name",
 	"neowiki-property-editor-type": "Type",
@@ -76,6 +84,7 @@
 	"neowiki-field-single-value-only": "Only one value can be selected.",
 	"neowiki-field-type-mismatch": "This value was saved as type \"$1\" but the property now expects \"$2\".",
 	"neowiki-field-schema-not-found": "The schema \"$1\" is missing. Restore it before saving.",
+	"neowiki-field-unregistered-type": "The type \"$1\" is not available on this wiki.",
 	"neowiki-field-label-required": "Please provide a label for the subject.",
 	"neowiki-select-placeholder": "Select an option",
 	"neowiki-select-no-results": "No matching options.",
@@ -134,6 +143,13 @@
 	"neowiki-cypher-error-backend-unavailable": "The graph database is currently unavailable.",
 	"neowiki-cypher-error-internal": "The Cypher query could not be completed: $1",
 
+	"neowiki-sparql-raw-error-json-encode": "Failed to encode query result as JSON",
+
+	"neowiki-sparql-error-empty-query": "The SPARQL query must not be empty.",
+	"neowiki-sparql-error-syntax": "The SPARQL query was rejected by the store: $1",
+	"neowiki-sparql-error-store-unavailable": "The SPARQL store is currently unavailable.",
+	"neowiki-sparql-error-internal": "The SPARQL query could not be completed: $1",
+
 	"neowiki-view-error-extra-positional": "Unexpected extra positional argument: $1",
 	"neowiki-view-error-conflicting-subject": "Subject specified both positionally and as a named subject argument.",
 	"neowiki-view-error-unknown-arg": "Unknown argument: $1",
@@ -166,6 +182,7 @@
 	"neowiki-schemas-column-description": "Description",
 	"neowiki-schemas-column-properties": "Properties",
 	"neowiki-schemas-empty": "No schemas have been created yet.",
+	"neowiki-schema-sidebar-all-schemas": "All schemas",
 
 	"neowiki-schema-delete": "Delete schema",
 	"neowiki-schema-delete-confirm-title": "Delete schema?",
@@ -192,6 +209,9 @@
 	"neowiki-layout-invalid": "Layout content is invalid ({{PLURAL:$1|$1 error|$1 errors}}):",
 	"neowiki-layout-invalid-detail": "$1: $2",
 	"neowiki-layout-name-invalid": "Invalid layout name: $1",
+	"neowiki-mapping-invalid": "Mapping content is invalid ({{PLURAL:$1|$1 error|$1 errors}}):",
+	"neowiki-mapping-invalid-detail": "$1: $2",
+	"neowiki-mapping-name-invalid": "Invalid mapping name: $1",
 
 	"neowiki-edit-layout": "Edit layout",
 	"neowiki-layout-display-schema": "Schema",
@@ -211,10 +231,10 @@
 	"neowiki-layout-editor-schema": "Schema",
 	"neowiki-layout-editor-view-type": "View type",
 	"neowiki-layout-editor-show-all-properties": "Show all properties",
-	"neowiki-layout-editor-shown-properties": "Shown · $1",
-	"neowiki-layout-editor-hidden-properties": "Hidden · $1",
+	"neowiki-layout-editor-shown-count": "$1 of $2 shown",
 	"neowiki-layout-editor-show-property": "Show property",
 	"neowiki-layout-editor-hide-property": "Hide property",
+	"neowiki-layout-editor-keep-one-shown": "At least one property must be shown",
 	"neowiki-layout-editor-summary-default": "Update layout via NeoWiki UI",
 	"neowiki-layout-editor-success": "Updated $1 layout",
 	"neowiki-layout-editor-error": "Failed to update $1 layout.",

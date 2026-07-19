@@ -6,41 +6,116 @@ namespace ProfessionalWiki\NeoWiki;
 
 use MediaWiki\Config\Config;
 use MediaWiki\WikiMap\WikiMap;
-use RuntimeException;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class NeoWikiConfigFactory {
+
+	public function __construct(
+		private readonly LoggerInterface $logger = new NullLogger(),
+	) {
+	}
 
 	public function buildFromMediaWikiConfig( Config $config ): NeoWikiConfig {
 		return new NeoWikiConfig(
 			enableDevelopmentUIs: $config->get( 'NeoWikiEnableDevelopmentUI' ) === true,
-			neo4jInternalWriteUrl: $this->buildInternalWriteUrl( $config ),
-			neo4jInternalReadUrl: $this->builtInternalReadUrl( $config ),
+			neo4jInternalWriteUrl: self::resolveWriteUrl( $this->configString( $config, 'NeoWikiNeo4jInternalWriteUrl' ) ),
+			neo4jInternalReadUrl: self::resolveReadUrl( $this->configString( $config, 'NeoWikiNeo4jInternalReadUrl' ) ),
 			wikiId: WikiMap::getCurrentWikiId(),
+			rdfBaseUri: $this->buildRdfBaseUri( $config ),
+			sparqlStores: $this->buildSparqlStores( $config ),
 		);
 	}
 
-	private function buildInternalWriteUrl( Config $config ): string {
-		if ( is_string( getenv( 'NEO4J_URL_OVERRIDE' ) ) ) { // Used by the CI to change its test config
-			return getenv( 'NEO4J_URL_OVERRIDE' );
+	/**
+	 * Parses the `NeoWikiSparqlStores` config into value objects. A malformed entry (not an array, or
+	 * without a usable `updateUrl`) is skipped with a warning rather than throwing: a config typo must
+	 * not take down the wiki, but it must not be silent either.
+	 *
+	 * @return SparqlStoreConfig[]
+	 */
+	private function buildSparqlStores( Config $config ): array {
+		$raw = $config->has( 'NeoWikiSparqlStores' ) ? $config->get( 'NeoWikiSparqlStores' ) : null;
+
+		if ( !is_array( $raw ) ) {
+			return [];
 		}
 
-		if ( is_string( $config->get( 'NeoWikiNeo4jInternalWriteUrl' ) ) ) {
-			return $config->get( 'NeoWikiNeo4jInternalWriteUrl' );
+		$stores = [];
+
+		foreach ( $raw as $index => $entry ) {
+			$store = $this->buildSparqlStore( $entry, $index );
+
+			if ( $store !== null ) {
+				$stores[] = $store;
+			}
 		}
 
-		throw new RuntimeException( 'Missing required config: NeoWikiNeo4jInternalWriteUrl' );
+		return $stores;
 	}
 
-	private function builtInternalReadUrl( Config $config ): string {
-		if ( is_string( getenv( 'NEO4J_URL_READ_OVERRIDE' ) ) ) { // Used by the CI to change its test config
-			return getenv( 'NEO4J_URL_READ_OVERRIDE' );
+	private function buildSparqlStore( mixed $entry, int|string $index ): ?SparqlStoreConfig {
+		if ( !is_array( $entry ) ) {
+			$this->logger->warning( 'Ignoring NeoWikiSparqlStores entry {index}: not an array.', [ 'index' => $index ] );
+			return null;
 		}
 
-		if ( is_string( $config->get( 'NeoWikiNeo4jInternalReadUrl' ) ) ) {
-			return $config->get( 'NeoWikiNeo4jInternalReadUrl' );
+		$updateUrl = $entry['updateUrl'] ?? null;
+
+		if ( !is_string( $updateUrl ) || trim( $updateUrl ) === '' ) {
+			$this->logger->warning(
+				'Ignoring NeoWikiSparqlStores entry {index}: missing or empty "updateUrl".',
+				[ 'index' => $index ]
+			);
+			return null;
 		}
 
-		throw new RuntimeException( 'Missing required config: NeoWikiNeo4jInternalReadUrl' );
+		$accessToken = $entry['accessToken'] ?? null;
+		$projection = $entry['projection'] ?? null;
+
+		// The read surfaces query `queryUrl`; it defaults to `updateUrl` because for QLever the query and
+		// update endpoints are the same value. A store that separates them (e.g. a read replica or a
+		// read-protected endpoint) sets `queryUrl` explicitly.
+		$queryUrl = $entry['queryUrl'] ?? null;
+
+		return new SparqlStoreConfig(
+			updateUrl: $updateUrl,
+			queryUrl: is_string( $queryUrl ) && trim( $queryUrl ) !== '' ? $queryUrl : $updateUrl,
+			accessToken: is_string( $accessToken ) && $accessToken !== '' ? $accessToken : null,
+			projection: is_string( $projection ) && $projection !== '' ? $projection : RdfPageProjector::PROJECTION,
+		);
+	}
+
+	/**
+	 * The base URI for all minted RDF IRIs. Defaults to the wiki's canonical URL so IRIs are stable
+	 * and resolvable; admins can override it (e.g. to align with an institutional URI policy).
+	 */
+	private function buildRdfBaseUri( Config $config ): string {
+		$configured = $config->get( 'NeoWikiRdfBaseUri' );
+
+		if ( is_string( $configured ) && $configured !== '' ) {
+			return $configured;
+		}
+
+		$canonicalServer = $config->get( 'CanonicalServer' );
+
+		return is_string( $canonicalServer ) ? $canonicalServer : '';
+	}
+
+	private function configString( Config $config, string $key ): ?string {
+		$value = $config->get( $key );
+		return is_string( $value ) ? $value : null;
+	}
+
+	public static function resolveWriteUrl( ?string $configValue ): ?string {
+		$override = getenv( 'NEO4J_URL_OVERRIDE' ); // Used by the CI to change its test config
+		return is_string( $override ) ? $override : $configValue;
+	}
+
+	public static function resolveReadUrl( ?string $configValue ): ?string {
+		$override = getenv( 'NEO4J_URL_READ_OVERRIDE' ); // Used by the CI to change its test config
+		return is_string( $override ) ? $override : $configValue;
 	}
 
 }

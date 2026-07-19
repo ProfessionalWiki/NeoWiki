@@ -7,6 +7,13 @@ export enum ValueType {
 	Boolean = 'boolean',
 	Relation = 'relation',
 
+	/**
+	 * Placeholder for a Value whose property type is not registered (e.g. owned
+	 * by a disabled or failed extension). The raw stored data is preserved so it
+	 * remains visible and round-trips on save instead of being lost.
+	 */
+	UnregisteredType = 'unregisteredType',
+
 }
 
 export interface BaseValueRepresentation {
@@ -52,7 +59,13 @@ export class Relation {
 
 }
 
-export type Value = StringValue | NumberValue | BooleanValue | RelationValue;
+export interface UnregisteredTypeValue extends BaseValueRepresentation {
+	readonly type: ValueType.UnregisteredType;
+	readonly typeName: string;
+	readonly raw: unknown;
+}
+
+export type Value = StringValue | NumberValue | BooleanValue | RelationValue | UnregisteredTypeValue;
 
 export function newStringValue( ...parts: string[] | [ string[] ] ): StringValue {
 	const resolved = Array.isArray( parts[ 0 ] ) ? parts[ 0 ] : parts as string[];
@@ -84,6 +97,14 @@ export function newRelation( id: string | undefined, target: SubjectId | string 
 		id,
 		typeof target === 'string' ? new SubjectId( target ) : target,
 	);
+}
+
+export function newUnregisteredTypeValue( typeName: string, raw: unknown ): UnregisteredTypeValue {
+	return {
+		type: ValueType.UnregisteredType,
+		typeName: typeName,
+		raw: raw,
+	};
 }
 
 export function relationValuesHaveSameTargets(
@@ -119,6 +140,8 @@ export function valueToJson( value: Value ): unknown {
 			return ( value as RelationValue ).relations.map(
 				( relation ) => ( { id: relation.id, target: relation.target.text } ),
 			);
+		case ValueType.UnregisteredType:
+			return ( value as UnregisteredTypeValue ).raw;
 		default:
 			throw new Error( `Unsupported value type: ${ ( value as Value ).type }` );
 	}
@@ -145,6 +168,8 @@ export function isValueEmpty( value: Value | undefined ): boolean {
 			return false;
 		case ValueType.Relation:
 			return value.relations.length === 0;
+		case ValueType.UnregisteredType:
+			return false;
 		default:
 			return true;
 	}

@@ -4,11 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
-use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
-use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -24,11 +23,11 @@ class OnRevisionCreatedHandler {
 	) {
 	}
 
-	public function onRevisionCreated( RevisionRecord $revisionRecord, UserIdentity $user ): void {
-		$this->storeRevisionRecord( $revisionRecord, $user );
+	public function onRevisionCreated( RevisionRecord $revisionRecord, ?UserIdentity $user ): bool {
+		return $this->storeRevisionRecord( $revisionRecord, $user );
 	}
 
-	private function storeRevisionRecord( RevisionRecord $revisionRecord, ?UserIdentity $user ): void {
+	private function storeRevisionRecord( RevisionRecord $revisionRecord, ?UserIdentity $user ): bool {
 		if ( $revisionRecord->getPageId() === 0 ) {
 			throw new \RuntimeException( 'Page ID should not be 0' );
 		}
@@ -36,7 +35,7 @@ class OnRevisionCreatedHandler {
 		$neoContent = $this->getNeoContent( $revisionRecord );
 
 		if ( $neoContent === null ) {
-			return;
+			return false;
 		}
 
 		$contentData = $neoContent->getPageSubjects();
@@ -51,23 +50,20 @@ class OnRevisionCreatedHandler {
 				)
 			)
 		);
+
+		return true;
 	}
 
 	private function getNeoContent( RevisionRecord $revisionRecord ): ?SubjectContent {
-		try {
-			$content = $revisionRecord->getSlots()->getContent( MediaWikiSubjectRepository::SLOT_NAME );
-		}
-		catch ( RevisionAccessException ) {
-			// TODO: log this
+		if ( !$revisionRecord->hasSlot( MediaWikiSubjectRepository::SLOT_NAME ) ) {
 			return null;
 		}
 
-		if ( $content instanceof SubjectContent ) {
-			return $content;
-		}
+		// The slot exists; a read failure here is a genuine error and must propagate —
+		// the refresh contract treats genuine failures as exceptions, not skips.
+		$content = $revisionRecord->getSlots()->getContent( MediaWikiSubjectRepository::SLOT_NAME );
 
-		// TODO: log this
-		return null;
+		return $content instanceof SubjectContent ? $content : null;
 	}
 
 	public function onPageDelete( int $pageId ): void {
@@ -76,7 +72,7 @@ class OnRevisionCreatedHandler {
 
 	public function onPageUndelete( RevisionRecord $restoredRevision ): void {
 		// Calling isCurrent() on the RevisionRecord does not work, because it is always false.
-		$this->storeRevisionRecord( $restoredRevision, null, null );
+		$this->storeRevisionRecord( $restoredRevision, null );
 	}
 
 }

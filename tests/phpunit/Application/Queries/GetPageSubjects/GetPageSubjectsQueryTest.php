@@ -27,6 +27,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
@@ -92,6 +93,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						],
 						pageId: null,
 						pageTitle: null,
+						pageNamespaceId: null,
 					),
 					's11111111111ca2' => new GetSubjectResponseItem(
 						id: 's11111111111ca2',
@@ -100,6 +102,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						statements: [],
 						pageId: null,
 						pageTitle: null,
+						pageNamespaceId: null,
 					),
 					's11111111111ca3' => new GetSubjectResponseItem(
 						id: 's11111111111ca3',
@@ -108,6 +111,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						statements: [],
 						pageId: null,
 						pageTitle: null,
+						pageNamespaceId: null,
 					),
 					's11111111111ca1' => new GetSubjectResponseItem(
 						id: 's11111111111ca1',
@@ -116,6 +120,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						statements: [],
 						pageId: null,
 						pageTitle: null,
+						pageNamespaceId: null,
 					),
 				]
 			),
@@ -207,10 +212,16 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$referenced = TestSubject::build( id: 's11111111111tar', label: new SubjectLabel( 'target subject' ) );
 		$subjectLookup = new InMemorySubjectLookup( $referenced );
+		// The gate omits referenced Subjects whose page does not resolve, so the lookup must
+		// honor the production invariant: a returned Subject always has a resolvable page.
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup( [
+			[ $referenced->id, new PageIdentifiers( new PageId( 137 ), 'Target Page', 0 ) ],
+		] );
 
 		$presenter = $this->newSpyPresenter();
 
-		$this->newQuery( $presenter, $repository, subjectLookup: $subjectLookup )->execute( 42, includeReferencedSubjects: true );
+		$this->newQuery( $presenter, $repository, subjectLookup: $subjectLookup, pageIdentifiersLookup: $pageIdentifiersLookup )
+			->execute( 42, includeReferencedSubjects: true );
 
 		$this->assertNotNull( $presenter->response->referencedSubjects );
 		$this->assertArrayHasKey( 's11111111111tar', $presenter->response->referencedSubjects );
@@ -279,13 +290,16 @@ class GetPageSubjectsQueryTest extends TestCase {
 			new PageId( 42 )
 		);
 
-		$subjectLookup = new InMemorySubjectLookup(
-			TestSubject::build( id: 's11111111111tar', label: new SubjectLabel( 'shared target' ) )
-		);
+		$referenced = TestSubject::build( id: 's11111111111tar', label: new SubjectLabel( 'shared target' ) );
+		$subjectLookup = new InMemorySubjectLookup( $referenced );
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup( [
+			[ $referenced->id, new PageIdentifiers( new PageId( 137 ), 'Target Page', 0 ) ],
+		] );
 
 		$presenter = $this->newSpyPresenter();
 
-		$this->newQuery( $presenter, $repository, subjectLookup: $subjectLookup )->execute( 42, includeReferencedSubjects: true );
+		$this->newQuery( $presenter, $repository, subjectLookup: $subjectLookup, pageIdentifiersLookup: $pageIdentifiersLookup )
+			->execute( 42, includeReferencedSubjects: true );
 
 		$this->assertSame(
 			[ 's11111111111tar' ],
@@ -315,7 +329,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 		$referenced = TestSubject::build( id: 's11111111111tar' );
 		$subjectLookup = new InMemorySubjectLookup( $referenced );
 		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup( [
-			[ $referenced->id, new PageIdentifiers( new PageId( 137 ), 'Target Page' ) ],
+			[ $referenced->id, new PageIdentifiers( new PageId( 137 ), 'Target Page', 12 ) ],
 		] );
 
 		$presenter = $this->newSpyPresenter();
@@ -325,6 +339,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$this->assertSame( 137, $presenter->response->referencedSubjects['s11111111111tar']->pageId );
 		$this->assertSame( 'Target Page', $presenter->response->referencedSubjects['s11111111111tar']->pageTitle );
+		$this->assertSame( 12, $presenter->response->referencedSubjects['s11111111111tar']->pageNamespaceId );
 	}
 
 	public function testReferencedSubjectsAndSchemasAreNullWhenNotRequested(): void {
@@ -350,6 +365,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 			schemaLookup: $schemaLookup ?? new InMemorySchemaLookup(),
 			schemaSerializer: new SchemaPresentationSerializer(),
 			pageIdentifiersLookup: $pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
+			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 		);
 	}
 

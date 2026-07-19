@@ -1,0 +1,70 @@
+NeoWiki keeps [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/operations/installation.md#optional-sparql-graph-stores SPARQL 1.1 graph stores] such as [https://qlever.dev/ QLever] in sync with the wiki's structured data: each page becomes a named graph of RDF triples — one per [[RDF and ontology mappings|projection]] the store holds — updated on each edit and dropped on deletion. This wiki's store holds the native projection. This page demonstrates the three ways to query it. It is imported only into wikis that have a SPARQL store configured, like the NeoWiki development stack.
+
+== Query with a parser function ==
+
+The <code><nowiki>{{#sparql_raw}}</nowiki></code> parser function runs a read-only SPARQL query against the first configured store and returns the raw [https://www.w3.org/TR/sparql11-results-json/ SPARQL JSON results]. Entity, schema, and property IRIs are minted under the wiki's RDF base URI, which defaults to the wiki's own server URL — the examples below write it as <code><nowiki>{{SERVER}}</nowiki></code> so they work on any wiki.
+
+Source:
+
+<syntaxhighlight lang="mediawiki">
+{{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
+</syntaxhighlight>
+
+Result:
+
+{{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
+
+Each graph is named for the projection and the page it holds — <code>{{SERVER}}/graph/native/page/&lt;pageid&gt;</code> — so results can carry provenance, and one store can hold several projections without a page's triples in one overwriting the other's. This query lists people together with the graph each one comes from:
+
+<syntaxhighlight lang="mediawiki">
+{{#sparql_raw:SELECT ?graph ?person WHERE { GRAPH ?graph { ?p <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Person> . ?p <http://www.w3.org/2000/01/rdf-schema#label> ?person } } ORDER BY ?person LIMIT 5}}
+</syntaxhighlight>
+
+Result:
+
+{{#sparql_raw:SELECT ?graph ?person WHERE { GRAPH ?graph { ?p <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Person> . ?p <http://www.w3.org/2000/01/rdf-schema#label> ?person } } ORDER BY ?person LIMIT 5}}
+
+== Query from Lua ==
+
+<code>mw.neowiki.sparqlQuery</code> returns the same results document as a Lua table, so Scribunto modules can format it. From [[Module:LuaExample]]:
+
+<syntaxhighlight lang="lua">
+function p.largestMuseums( frame )
+	local base = mw.site.server
+	local result = nw.sparqlQuery(
+		'SELECT ?label ?visitors WHERE { ' ..
+		'?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <' .. base .. '/schema/Museum> . ' ..
+		'?m <http://www.w3.org/2000/01/rdf-schema#label> ?label . ' ..
+		'?m <' .. base .. '/prop/Annual_visitors> ?visitors ' ..
+		'} ORDER BY DESC(?visitors) LIMIT 3'
+	)
+
+	local list = {}
+	for _, binding in ipairs( result.results.bindings ) do
+		list[#list + 1] = '* ' .. binding.label.value .. ' (' .. binding.visitors.value .. ' visitors)'
+	end
+	return table.concat( list, '\n' )
+end
+</syntaxhighlight>
+
+Invoke it from wikitext:
+
+<syntaxhighlight lang="mediawiki">
+{{#invoke:LuaExample|largestMuseums}}
+</syntaxhighlight>
+
+Result:
+
+{{#invoke:LuaExample|largestMuseums}}
+
+== Query over REST ==
+
+The same queries work over the wiki's REST API, which returns the results document as JSON:
+
+<code>POST {{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/query/sparql</code>
+
+<syntaxhighlight lang="json">
+{ "query": "SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 5" }
+</syntaxhighlight>
+
+For details, see the [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/reference/query-api.md query API], [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/reference/parser-functions.md parser function], and [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/reference/lua-api.md Lua] documentation. For querying the property graph with Cypher instead, see [[Developers]].

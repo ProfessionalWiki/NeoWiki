@@ -3,9 +3,16 @@ services:
   # overlay alongside the dev overlay, or by running `make dev-tools` from the
   # extension root.
   #
-  # Default ports (7474, 7687) are Neo4j conventions. Override via env if you
-  # run multiple worktrees with the tools overlay enabled.
+  # Default ports (7474, 7687, 7019) are the Neo4j and QLever conventions and are not
+  # auto-allocated, so run the tools overlay with one worktree at a time. Override via
+  # env (NEO_BROWSER_PORT / NEO_BOLT_PORT / QLEVER_PORT) to run several simultaneously.
   neo:
     ports:
       - "${NEO_BROWSER_PORT:-7474}:7474"
       - "${NEO_BOLT_PORT:-7687}:7687"
+
+  # Exposes the dev QLever SPARQL endpoint on the host for manual querying, e.g.
+  #   curl http://localhost:7019/ --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' -H 'Accept: application/sparql-results+json'
+  qlever:
+    ports:
+      - "${QLEVER_PORT:-7019}:7019"

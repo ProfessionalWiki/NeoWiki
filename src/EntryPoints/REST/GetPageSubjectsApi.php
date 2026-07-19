@@ -20,7 +20,7 @@ class GetPageSubjectsApi extends SimpleHandler {
 
 		$expandOptions = explode( '|', $this->getRequest()->getQueryParams()['expand'] ?? '' );
 
-		NeoWikiExtension::getInstance()->newGetPageSubjectsQuery( $presenter )->execute(
+		NeoWikiExtension::getInstance()->newGetPageSubjectsQuery( $presenter, $this->getAuthority() )->execute(
 			pageId: $pageId,
 			includeSchemas: in_array( self::EXPAND_SCHEMAS, $expandOptions, true ),
 			includeReferencedSubjects: in_array( self::EXPAND_RELATIONS, $expandOptions, true ),

@@ -4,10 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubjectUpdate;
 
+use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -22,6 +24,8 @@ readonly class ValidateSubjectUpdateQuery {
 		private SubjectValidator $subjectValidator,
 		private StatementListBuilder $statementListBuilder,
 		private SelectStatementResolver $selectStatementResolver,
+		private PageIdentifiersLookup $pageIdentifiersLookup,
+		private PageReadAuthorizer $readAuthorizer,
 	) {
 	}
 
@@ -31,10 +35,23 @@ readonly class ValidateSubjectUpdateQuery {
 	 * @return Violation[]
 	 *
 	 * @throws \InvalidArgumentException when the subject id format is invalid.
-	 * @throws SubjectNotFoundException when the subject does not exist.
+	 * @throws SubjectNotFoundException when the subject does not exist or the caller may not read its page.
 	 */
 	public function validate( string $subjectId, string $label, array $statements ): array {
 		$id = new SubjectId( $subjectId );
+		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $id );
+
+		if ( $pageIdentifiers === null ) {
+			// No owning page in the graph means the repository cannot load the Subject either.
+			throw SubjectNotFoundException::forId( $id );
+		}
+
+		if ( !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
+			// Denial is shaped exactly like absence: this endpoint previously oracled Subject
+			// existence via its 404, so denied and absent must stay indistinguishable (#1046).
+			throw SubjectNotFoundException::forId( $id );
+		}
+
 		$subject = $this->subjectRepository->getSubject( $id );
 
 		if ( $subject === null ) {

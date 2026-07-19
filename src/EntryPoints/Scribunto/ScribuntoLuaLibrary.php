@@ -13,6 +13,9 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\CypherErrorMessage;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua\CypherQueryRunner;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\Lua\SparqlQueryRunner;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\SparqlErrorMessage;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class ScribuntoLuaLibrary extends LibraryBase {
@@ -20,6 +23,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 	private ?SubjectDataLookup $subjectDataLookup = null;
 	private ?SchemaLuaSerializer $schemaLuaSerializer = null;
 	private ?CypherQueryRunner $cypherQueryRunner = null;
+	private ?SparqlQueryRunner $sparqlQueryRunner = null;
 
 	private function getSubjectDataLookup(): SubjectDataLookup {
 		if ( $this->subjectDataLookup === null ) {
@@ -53,6 +57,16 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		return $this->cypherQueryRunner;
 	}
 
+	private function getSparqlQueryRunner(): SparqlQueryRunner {
+		if ( $this->sparqlQueryRunner === null ) {
+			$this->sparqlQueryRunner = new SparqlQueryRunner(
+				NeoWikiExtension::getInstance()->newSparqlQueryService()
+			);
+		}
+
+		return $this->sparqlQueryRunner;
+	}
+
 	public function register(): array {
 		$lib = [
 			'getValue' => [ $this, 'getValue' ],
@@ -60,9 +74,18 @@ class ScribuntoLuaLibrary extends LibraryBase {
 			'getMainSubject' => [ $this, 'getMainSubject' ],
 			'getSubject' => [ $this, 'getSubject' ],
 			'getChildSubjects' => [ $this, 'getChildSubjects' ],
-			'query' => [ $this, 'query' ],
 			'getSchema' => [ $this, 'getSchema' ],
 		];
+
+		$neo4jFunctions = NeoWikiExtension::getInstance()->getNeo4jPlugin()?->getLuaLibraryFunctionNames() ?? [];
+		foreach ( $neo4jFunctions as $name ) {
+			$lib[$name] = [ $this, $name ];
+		}
+
+		$sparqlFunctions = NeoWikiExtension::getInstance()->getFirstSparqlPlugin()?->getLuaLibraryFunctionNames() ?? [];
+		foreach ( $sparqlFunctions as $name ) {
+			$lib[$name] = [ $this, $name ];
+		}
 
 		return $this->getEngine()->registerInterface(
 			__DIR__ . '/mw.neowiki.lua', $lib, []
@@ -131,6 +154,22 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		}
 
 		return [ $rows ];
+	}
+
+	public function sparqlQuery( ?string $sparql = null ): array {
+		$this->checkType( 'mw.neowiki.sparqlQuery', 1, $sparql, 'string' );
+		$this->incrementExpensiveFunctionCount();
+
+		try {
+			$document = $this->getSparqlQueryRunner()->run( $sparql ?? '' );
+		} catch ( SparqlQueryException $e ) {
+			$message = SparqlErrorMessage::for( $e );
+			throw new LuaError( $this->getParser()->msg( $message->key, ...$message->params )->text() );
+		} catch ( Exception $e ) {
+			throw new LuaError( $e->getMessage() );
+		}
+
+		return [ $document ];
 	}
 
 	public function getSchema( ?string $schemaName = null ): array {

@@ -72,6 +72,12 @@ class ViolationTest extends TestCase {
 		$this->assertFalse( $violation->isBlocking() );
 	}
 
+	public function testUnregisteredTypeIsNotBlocking(): void {
+		$violation = new Violation( propertyName: new PropertyName( 'Swatch' ), code: 'unregistered-type', args: [ 'color' ] );
+
+		$this->assertFalse( $violation->isBlocking() );
+	}
+
 	public function testOtherCodesAreBlocking(): void {
 		$required = new Violation( propertyName: new PropertyName( 'Status' ), code: 'required' );
 		$invalid = new Violation( propertyName: new PropertyName( 'Website' ), code: 'invalid-url' );

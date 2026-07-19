@@ -7,6 +7,7 @@ import { Statement } from '@/domain/Statement';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue } from '@/domain/Value';
 import { TextType } from '@/domain/propertyTypes/Text';
+import { RelationType } from '@/domain/propertyTypes/Relation';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
 import { UrlType } from '@/domain/propertyTypes/Url';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
@@ -99,6 +100,177 @@ describe( 'RestSubjectRepository', () => {
 
 			await expect( repository.getSubject( new SubjectId( ID ) ) )
 				.rejects.toThrow( 'No response found for URL: ' + url );
+		} );
+
+	} );
+
+	describe( 'getSubjectWithReferencedSubjects', () => {
+
+		const requestedId = 's11111111111111';
+		const referencedId1 = 's22222222222222';
+		const referencedId2 = 's33333333333333';
+
+		const bundleResponse = {
+			requestedId: requestedId,
+			subjects: {
+				[ referencedId1 ]: {
+					id: referencedId1,
+					label: 'Product One',
+					schema: 'Product',
+					pageId: 2,
+					pageTitle: 'Product One',
+					statements: {},
+				},
+				[ requestedId ]: {
+					id: requestedId,
+					label: 'Main',
+					schema: 'Company',
+					pageId: 1,
+					pageTitle: 'Main',
+					statements: {
+						Products: {
+							value: [ { target: referencedId1 }, { target: referencedId2 } ],
+							type: RelationType.typeName,
+						},
+					},
+				},
+				[ referencedId2 ]: {
+					id: referencedId2,
+					label: 'Product Two',
+					schema: 'Product',
+					pageId: 3,
+					pageTitle: 'Product Two',
+					statements: {},
+				},
+			},
+		};
+
+		function repositoryReturning( response: object ): RestSubjectRepository {
+			return newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ `https://example.com/rest.php/neowiki/v0/subject/${ requestedId }?expand=page|relations` ]:
+					new Response( JSON.stringify( response ), { status: 200 } ),
+			} ) );
+		}
+
+		it( 'returns the requested Subject together with every bundled referenced Subject', async () => {
+			const repository = repositoryReturning( bundleResponse );
+
+			const { requestedSubject, referencedSubjects } =
+				await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( requestedSubject.getLabel() ).toBe( 'Main' );
+			expect( referencedSubjects.map( ( subject ) => subject.getLabel() ) ).toEqual(
+				[ 'Product One', 'Product Two' ],
+			);
+		} );
+
+		it( 'deserializes referenced Subjects with their page context', async () => {
+			const repository = repositoryReturning( bundleResponse );
+
+			const { referencedSubjects } =
+				await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			const referenced = referencedSubjects[ 0 ] as SubjectWithContext;
+			expect( referenced.getPageIdentifiers().getPageName() ).toBe( 'Product One' );
+		} );
+
+		it( 'issues a single request for the whole bundle', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				[ `https://example.com/rest.php/neowiki/v0/subject/${ requestedId }?expand=page|relations` ]:
+					new Response( JSON.stringify( bundleResponse ), { status: 200 } ),
+			} );
+			const getSpy = vi.spyOn( inMemoryHttpClient, 'get' );
+
+			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
+
+			await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( getSpy ).toHaveBeenCalledOnce();
+		} );
+
+		it( 'throws when the requested Subject is missing from the response', async () => {
+			const repository = repositoryReturning( {} );
+
+			await expect( repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) ) )
+				.rejects.toThrow( 'Subject not found' );
+		} );
+
+		function subjectWithUnregisteredPropertyType( id: string ): object {
+			return {
+				id: id,
+				label: 'Broken',
+				schema: 'Product',
+				pageId: 4,
+				pageTitle: 'Broken',
+				statements: {
+					Mystery: {
+						value: 'x',
+						type: 'unregistered-property-type',
+					},
+				},
+			};
+		}
+
+		function undeserializableSubject( id: string ): object {
+			return {
+				id: id,
+				label: 'Broken',
+				schema: 'Product',
+				pageId: 4,
+				pageTitle: 'Broken',
+				statements: {
+					// Missing the required `type`, so the statement cannot be deserialized.
+					Mystery: {
+						value: 'x',
+					},
+				},
+			};
+		}
+
+		it( 'includes referenced Subjects that use an unregistered property type instead of skipping them', async () => {
+			const repository = repositoryReturning( {
+				requestedId: requestedId,
+				subjects: {
+					[ referencedId1 ]: subjectWithUnregisteredPropertyType( referencedId1 ),
+					[ requestedId ]: bundleResponse.subjects[ requestedId ],
+					[ referencedId2 ]: bundleResponse.subjects[ referencedId2 ],
+				},
+			} );
+
+			const { referencedSubjects } =
+				await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( referencedSubjects.map( ( subject ) => subject.getId().text ) )
+				.toEqual( [ referencedId1, referencedId2 ] );
+		} );
+
+		it( 'skips referenced Subjects that fail to deserialize', async () => {
+			const repository = repositoryReturning( {
+				requestedId: requestedId,
+				subjects: {
+					[ referencedId1 ]: undeserializableSubject( referencedId1 ),
+					[ requestedId ]: bundleResponse.subjects[ requestedId ],
+					[ referencedId2 ]: bundleResponse.subjects[ referencedId2 ],
+				},
+			} );
+
+			const { requestedSubject, referencedSubjects } =
+				await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( requestedSubject.getLabel() ).toBe( 'Main' );
+			expect( referencedSubjects.map( ( subject ) => subject.getId().text ) ).toEqual( [ referencedId2 ] );
+		} );
+
+		it( 'throws when the requested Subject fails to deserialize', async () => {
+			const repository = repositoryReturning( {
+				requestedId: requestedId,
+				subjects: {
+					[ requestedId ]: undeserializableSubject( requestedId ),
+				},
+			} );
+
+			await expect( repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) ) )
+				.rejects.toThrow( 'Invalid statement JSON' );
 		} );
 
 	} );

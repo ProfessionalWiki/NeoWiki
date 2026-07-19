@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
-use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
@@ -17,9 +16,10 @@ class NeoWikiExtensionTest extends TestCase {
 		$this->assertSame( NeoWikiExtension::getInstance(), NeoWikiExtension::getInstance() );
 	}
 
-	public function testGetServiceFromPhpLibrary(): void {
-		$this->expectException( OutOfBoundsException::class );
-		NeoWikiExtension::getInstance()->getPropertyTypeRegistry()->getTypeOrThrow( 'does-not-exist' );
+	public function testPropertyTypeLookupReturnsNullForUnregisteredType(): void {
+		$this->assertNull(
+			NeoWikiExtension::getInstance()->getPropertyTypeLookup()->getType( 'does-not-exist' )
+		);
 	}
 
 }

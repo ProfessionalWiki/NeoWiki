@@ -13,7 +13,7 @@ so that metadata can be queried across them.
 A wiki must be able to **restrict graph queries to its own data**.
 
 MediaWiki page ids are per-wiki sequential. In a shared graph, `Page` nodes from different wikis therefore collide on
-`id` and overwrite each other. The "`Page.id` is unique" constraint ([graph-model](../reference/graph-model.md)) does
+`id` and overwrite each other. The "`Page.id` is unique" constraint ([graph-model](../api/graph-model.md)) does
 not hold across wikis.
 
 The broader Subject Sources work introduces a general `(source, localId)` identity for all Subjects. That is larger and
@@ -54,7 +54,7 @@ re-key — cheap while not in production, but a real change the broader Subject 
 ## Consequences
 
 - Fixes cross-wiki `Page` node overwrites, and enables per-wiki query filtering for the farm.
-- Revises the "`Page.id` is unique" statement in [graph-model](../reference/graph-model.md): uniqueness becomes
+- Revises the "`Page.id` is unique" statement in [graph-model](../api/graph-model.md): uniqueness becomes
   per `(wiki_id, id)`. That reference doc is updated when this is implemented.
 - The change ripples into existing queries that look up a page node by id: they must include `wiki_id`.
 - The full namespacing model (subject-id prefixing via Source plugins) remains deferred to the Subject Sources work.
@@ -70,6 +70,6 @@ re-key — cheap while not in production, but a real change the broader Subject 
 
 - [ADR 19: Graph Database Architecture](019-graph-database-architecture.md)
 - [ADR 14: Improved Id Format](014-improved-id-format.md)
-- [Graph Model reference](../reference/graph-model.md)
+- [Graph Model reference](../api/graph-model.md)
 - [Subject Sources planning doc](../planning/SubjectSources.md); issue
   [#905](https://github.com/ProfessionalWiki/NeoWiki/issues/905).

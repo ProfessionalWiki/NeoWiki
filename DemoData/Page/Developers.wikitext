@@ -20,6 +20,8 @@ Result:
 
 {{#cypher_raw:MATCH (m:Museum) RETURN m.name AS name, m.`Annual visitors` AS visitors ORDER BY visitors DESC LIMIT 5}}
 
+{{#ifexist:SPARQL queries|This wiki also projects its structured data to RDF, queryable with SPARQL: see [[SPARQL queries]].}}
+
 == Read values in wikitext ==
 
 The <code><nowiki>{{#neowiki_value}}</nowiki></code> parser function reads a single property from a subject on a page.
@@ -86,7 +88,7 @@ Oldest museums in this demo:
 
 {{#invoke:LuaExample|oldestMuseums}}
 
-For the full library reference, see the [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/reference/lua-api.md Lua API documentation].
+For the full library reference, see the [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/authoring/lua-api.md Lua API documentation].
 
 == Reactive UI ==
 

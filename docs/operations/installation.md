@@ -108,8 +108,8 @@ Add the following to your `LocalSettings.php`:
 ```php
 wfLoadExtension( 'NeoWiki' );
 
-// Required. NeoWiki has no working state without a Neo4j connection.
-// For a simple setup, point both URLs at the same Neo4j user.
+// Required for NeoWiki's features. Without them the wiki still loads and ordinary pages work,
+// but NeoWiki's features are disabled. For a simple setup, point both URLs at the same Neo4j user.
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:SECRET@neo4j-host:7687';
 $wgNeoWikiNeo4jInternalReadUrl  = 'bolt://neo4j:SECRET@neo4j-host:7687';
 
@@ -119,8 +119,9 @@ wfLoadExtension( 'CodeEditor' );
 wfLoadExtension( 'ParserFunctions' );
 ```
 
-Both URLs are required. Until both are set, the wiki throws a `RuntimeException` on every request. The format is
-`bolt://user:password@host:7687`.
+Both URLs are required for NeoWiki's structured-data features. Without them the wiki still loads and ordinary
+pages render, but NeoWiki's features are disabled and the query surfaces (`{{#cypher_raw}}`, `nw.query`,
+`POST /neowiki/v0/query/cypher`) are absent. The format is `bolt://user:password@host:7687`.
 
 ### 4. Run the updater
 
@@ -162,11 +163,90 @@ These are the settings you are most likely to change. For the full list with des
 
 | Setting | Purpose | Default | Required |
 |---|---|---|---|
-| `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | Yes |
-| `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | Yes |
+| `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | For features¹ |
+| `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | For features¹ |
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new constraint violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
+| `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
+
+¹ Required for NeoWiki's structured-data features. The wiki still loads without them; NeoWiki's features are
+simply disabled until both are set.
+
+## Optional: SPARQL graph stores
+
+Alongside Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This
+works with QLever and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF: every page
+becomes a named graph, replaced on each edit and dropped on deletion.
+
+A SPARQL store does not yet replace Neo4j: NeoWiki's interactive features (the Subject editing UIs, views, and value
+accessors) still require a configured Neo4j backend. Running NeoWiki without Neo4j is tracked in
+[#1040](https://github.com/ProfessionalWiki/NeoWiki/issues/1040).
+
+Configure the stores with `$wgNeoWikiSparqlStores`, a list of objects:
+
+```php
+$wgNeoWikiSparqlStores = [
+	[
+		// Required: the store's SPARQL 1.1 Update endpoint (the write path posts here).
+		'updateUrl' => 'https://qlever.example/api/neowiki',
+		// Optional: the store's SPARQL 1.1 Query endpoint (the read path posts here).
+		// Defaults to updateUrl, which is correct for QLever, where the two are the same.
+		'queryUrl' => 'https://qlever.example/api/neowiki',
+		// Optional: sent as an HTTP Bearer token (e.g. a QLever access token) on both update and
+		// query requests — QLever only requires it for updates, but a read-protected store needs it too.
+		'accessToken' => 'SECRET',
+		// Optional: the RDF vocabulary written to this store. Defaults to 'native'; may be any
+		// configured Mapping target, such as 'edm'.
+		'projection' => 'native',
+	],
+];
+```
+
+A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki. Leaving
+`$wgNeoWikiSparqlStores` empty (the default) configures no SPARQL stores.
+
+### Querying a SPARQL store
+
+When at least one store is configured, three read-only query surfaces become available and target the **first**
+configured store (multi-store query addressing is a later addition):
+
+- The [`{{#sparql_raw}}`](../authoring/parser-functions.md#sparql_raw) parser function.
+- The [`nw.sparqlQuery()`](../authoring/lua-api.md#nwsparqlquerysparql) Lua function.
+- The [`POST /neowiki/v0/query/sparql`](../api/query-api.md#sparql-query-endpoint) REST endpoint.
+
+Each is read-only *by protocol*: the query is sent as a SPARQL 1.1 *query* operation, whose grammar has no update
+forms, so no read-only validator is needed (unlike the Cypher surfaces). They never post to `updateUrl` — only to
+`queryUrl` — and return the W3C `application/sparql-results+json` document unmodified.
+
+The bundled development stack ships a working QLever example wired up this way — see
+[`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`
+requirement, and how to query it.
+
+### Restricting federation
+
+The query surfaces are read-only, but SPARQL's `SERVICE` clause lets a query direct the store to fetch results
+from another endpoint. The store makes those requests itself, from its own network position — often one that
+reaches internal services the wiki's visitors cannot. Restrict federation at the store unless you mean to offer it.
+
+QLever allows every `SERVICE` IRI unless `--service-allowed-iri-prefixes` is given. Pass the IRI prefixes you want
+to allow, or the deny-all value `-` (an invalid prefix that no IRI matches):
+
+```sh
+# No federation:
+qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes -
+
+# Or allow only specific endpoints:
+qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes https://sparql.example.org/
+```
+
+The bundled development stack sets the deny-all value, so federation is off unless you change it. The setting can
+also be changed at runtime through the store's endpoint by anyone holding its access token, so keep that token
+secret. Other SPARQL stores have equivalent settings — consult their documentation.
+
+Restricting the store is worth combining with restricting who may query it. The query surfaces are gated by the
+`neowiki-query` right, which by default is granted to everyone including anonymous visitors; see
+[Permissions](../api/query-api.md#permissions) for how to narrow it.
 
 ## Production hardening
 

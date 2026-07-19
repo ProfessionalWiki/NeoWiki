@@ -107,6 +107,18 @@ local function testQueryRejectsWriteQuery()
 	return type( err ) == 'string' and string.find( err, 'read-only Cypher queries are allowed', 1, true ) ~= nil
 end
 
+-- sparqlQuery tests
+
+local function testSparqlQueryRejectsEmptyString()
+	local ok, err = pcall( function()
+		return nw.sparqlQuery( '' )
+	end )
+	if ok then
+		return 'unexpected success'
+	end
+	return type( err ) == 'string' and string.find( err, 'must not be empty', 1, true ) ~= nil
+end
+
 -- getSchema tests
 
 local function testGetSchemaReturnsNameAndPropertyCount()
@@ -213,6 +225,10 @@ local tests = {
 	  func = testQueryRejectsEmptyString, expect = { true } },
 	{ name = 'query rejects write query with localized message',
 	  func = testQueryRejectsWriteQuery, expect = { true } },
+
+	-- sparqlQuery
+	{ name = 'sparqlQuery rejects empty string with localized message',
+	  func = testSparqlQueryRejectsEmptyString, expect = { true } },
 
 	-- getSchema
 	{ name = 'getSchema returns name and property count',

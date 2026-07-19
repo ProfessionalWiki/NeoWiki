@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
@@ -25,16 +26,14 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use RuntimeException;
 
@@ -49,14 +48,14 @@ class CreateSubjectActionTest extends TestCase {
 	private InMemorySubjectRepository $subjectRepository;
 	private IdGenerator $idGenerator;
 	private CreateSubjectPresenterSpy $presenterSpy;
-	private SubjectAuthorizer $authorizer;
+	private SubjectWriteAuthorizer $authorizer;
 	private InMemorySchemaLookup $schemaLookup;
 
 	public function setUp(): void {
 		$this->subjectRepository = new InMemorySubjectRepository();
 		$this->idGenerator = new StubIdGenerator( self::STUB_ID );
 		$this->presenterSpy = new CreateSubjectPresenterSpy();
-		$this->authorizer = new SucceedingSubjectAuthorizer();
+		$this->authorizer = new SpySubjectWriteAuthorizer( allowed: true );
 		$this->schemaLookup = new InMemorySchemaLookup();
 	}
 
@@ -68,7 +67,7 @@ class CreateSubjectActionTest extends TestCase {
 			$this->idGenerator,
 			$this->authorizer,
 			new StatementListBuilder(
-				new PropertyTypeToValueType( $registry ),
+				$registry,
 				$this->idGenerator
 			),
 			$this->schemaLookup,
@@ -154,7 +153,7 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	public function testUserIsNotAllowedToCreateSubject(): void {
-		$this->authorizer = new FailingSubjectAuthorizer();
+		$this->authorizer = new SpySubjectWriteAuthorizer( allowed: false );
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'You do not have the necessary permissions to create this subject' );
@@ -479,6 +478,43 @@ class CreateSubjectActionTest extends TestCase {
 				),
 			] )
 		) );
+	}
+
+	private function registerPersonSchemaWithRequiredUnregisteredProperty(): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( 'PersonSchema' ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Swatch' => UnregisteredTypeProperty::fromPartialJson(
+					new PropertyCore( description: '', required: true, default: null ),
+					[ 'type' => 'color' ],
+				),
+			] )
+		) );
+	}
+
+	/**
+	 * The extension owning the type is gone, so no value can be supplied for the required
+	 * property. Blocking the create would make the Schema unusable until it returns.
+	 */
+	public function testEnforcementOnAllowsCreateWhenARequiredPropertyHasAnUnregisteredType(): void {
+		$this->registerPersonSchemaWithRequiredUnregisteredProperty();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: true )->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Bob',
+				schemaName: 'PersonSchema',
+				statements: [],
+			)
+		);
+
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
+		$this->assertCount( 1, $this->presenterSpy->violations );
+		$this->assertSame( 'unregistered-type', $this->presenterSpy->violations[0]->code );
 	}
 
 	public function testEnforcementOffPersistsCreateWithViolations(): void {

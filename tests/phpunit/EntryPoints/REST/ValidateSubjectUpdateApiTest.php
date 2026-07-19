@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi
@@ -22,7 +23,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
-	use MockAuthorityTrait;
+	use NeoWikiMockAuthorityTrait;
 
 	public function testHappyPathReturns200WithEmptyViolations(): void {
 		$this->createPages();
@@ -100,6 +101,41 @@ class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'not found', $responseBody['message'] );
 	}
 
+	public function testSubjectOnAnUnreadablePageIsIndistinguishableFromAnAbsentSubject(): void {
+		$this->createPages();
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $this->validBody() ),
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		);
+
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 404, $response->getStatusCode() );
+		$this->assertSame(
+			SubjectNotFoundException::forId( new SubjectId( 'sTestSU11111111' ) )->getMessage(),
+			$body['message']
+		);
+	}
+
+	public function testSubjectReadableByANonUltimateAuthorityIsValidated(): void {
+		$this->createPages();
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $this->validBody() ),
+			authority: $this->mockRegisteredAuthority(
+				static fn ( string $permission ): bool => $permission === 'read'
+			)
+		);
+
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( [], $body['violations'] );
+	}
+
 	public function testMalformedSubjectIdReturns400(): void {
 		$response = $this->executeHandler(
 			$this->newValidateSubjectUpdateApi(),
@@ -166,9 +202,7 @@ class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function newValidateSubjectUpdateApi(): ValidateSubjectUpdateApi {
-		return new ValidateSubjectUpdateApi(
-			query: NeoWikiExtension::getInstance()->newValidateSubjectUpdateQuery(),
-		);
+		return new ValidateSubjectUpdateApi();
 	}
 
 	private function createRequestData( string $subjectId, array $body ): RequestData {

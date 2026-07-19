@@ -17,8 +17,9 @@
 				{{ $i18n( 'neowiki-property-editor-type' ).text() }}
 			</template>
 			<CdxSelect
-				v-model:selected="localProperty.type"
+				:selected="localProperty.type"
 				:menu-items="typeOptions"
+				@update:selected="changePropertyType"
 			/>
 		</CdxField>
 
@@ -54,9 +55,9 @@
 
 <script setup lang="ts">
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
-import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput } from '@wikimedia/codex';
+import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput, type MenuItemData } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
 	property: PropertyDefinition;
@@ -105,11 +106,46 @@ function updatePropertyAttributes<T extends PropertyDefinition>( attributes: Par
 	};
 }
 
+const propertyTypeRegistry = NeoWikiServices.getPropertyTypeRegistry();
+
+// Rebuild the property when the type changes so its type-specific fields are
+// initialized (e.g. a Select gets an empty options list). Otherwise the editors
+// for the new type would receive a property missing the fields they expect.
+function changePropertyType( type: string ): void {
+	localProperty.value = propertyTypeRegistry.getType( type ).createPropertyDefinitionFromJson(
+		{
+			name: localProperty.value.name,
+			type: type,
+			description: localProperty.value.description,
+			required: localProperty.value.required,
+			default: undefined
+		} as PropertyDefinition,
+		{}
+	);
+}
+
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
-const typeOptions = componentRegistry.getLabelsAndIcons().map( ( { value, label, icon } ) => ( {
-	value: value,
-	label: mw.message( label ).text(),
-	icon: icon
-} ) );
+// An unregistered type (e.g. owned by a disabled or failed extension) is never
+// offered for selection, but when it is the property's current type it is shown
+// as a disabled entry so the select does not render empty.
+const typeOptions = computed( (): MenuItemData[] => {
+	const options: MenuItemData[] = componentRegistry.getLabelsAndIcons().map( ( { value, label, icon } ) => ( {
+		value: value,
+		label: mw.message( label ).text(),
+		icon: icon
+	} ) );
+
+	const currentType = localProperty.value.type;
+	if ( !options.some( ( option ) => option.value === currentType ) ) {
+		options.unshift( {
+			value: currentType,
+			label: mw.message( componentRegistry.getLabel( currentType ) ).text(),
+			icon: componentRegistry.getIcon( currentType ),
+			disabled: true
+		} );
+	}
+
+	return options;
+} );
 </script>

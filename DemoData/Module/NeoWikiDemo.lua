@@ -302,9 +302,8 @@ local PERSON_EVENTS_ROLES = {
 -- Renders the current Person page's life events as a table by reverse-querying
 -- the graph: the canonical edges run Birth -> Person, so a person's role in each
 -- event ("was born" / CIDOC P98i, mother, father) is derived here rather than
--- stored as an inverse edge. Date is read as b.Date[0] because the `date` property
--- is stored as a string list; switch to toString(b.Date[0]) if/when date is stored
--- as a native Neo4j date.
+-- stored as an inverse edge. The `date` property is stored as a native Neo4j
+-- date list; the result normalizer renders b.Date[0] as a Y-m-d string.
 function p.personEvents( frame )
 	local name = mw.title.getCurrentTitle().text
 

@@ -20,7 +20,7 @@ the same ontology term (e.g., `foaf:name`) must be mapped separately for every S
 
 **Enforced consistency.** Same-named properties cannot accidentally have different types across Schemas.
 
-**Cross-schema query semantics.** A property name on a Subject node in the [graph](../reference/graph-model.md) is
+**Cross-schema query semantics.** A property name on a Subject node in the [graph](../api/graph-model.md) is
 guaranteed to mean the same thing regardless of the Subject's Schema.
 
 **Reduced redundancy.** Properties like "Name" or "Website" are defined once instead of duplicated across
@@ -30,7 +30,7 @@ every Schema that uses them.
 
 ## Cons of Global Properties
 
-**Thin abstraction.** Currently a [Property Definition](../concepts/glossary.md#property-definition) carries its type,
+**Thin abstraction.** Currently a [Property Definition](../glossary.md#property-definition) carries its type,
 constraints (like `minimum`/`maximum`), `required`, `default`, `multiple`, and display hints (like `precision`).
 Whether a property is required, what its default is, and what constraints apply are per-Schema decisions. Display
 settings are per-[Layout](../adr/018-views.md). Once you move all of that out, a global property is just a name
@@ -87,3 +87,20 @@ With global properties:
 - UX suffers notably
 - The boundary between what lives on the property, the Schema, and the View needs to be resolved
 - Additional refactoring work
+
+## Addendum: use cases from the 2026-07-03 WP2/3/4 discussion
+
+Two use cases sharpen both columns above:
+
+- **For global-style use: load a standard ontology and go (takin).** Institutions that already live in a standard
+  (EDM, CIDOC-CRM, Wikidata's model) want to install NeoWiki, load that vocabulary, and produce conformant data
+  natively — the way Omeka or Arches users work — without first inventing local names. Under local properties this is
+  served by preloaded schema + ontology-mapping bundles ([OntologyMapping.md](OntologyMapping.md)): installing a
+  bundle yields working Schemas plus projections in the target vocabulary out of the box.
+- **For local properties: serving many masters (takin).** ECHOLOT targets several ontologies at once (CIDOC-CRM, EDM,
+  Wikidata's model). Committing the data model to any one of them forces awkward translations to all the others, or
+  "Frankenstein models" mixing several; neutral local Schemas mapped outward keep every target first-class.
+
+Whether local-plus-mappings delivers the load-and-go experience is to be tested empirically (proposed 2026-07-03):
+implement the shared person toy model as a native Schema, define an ontology mapping for it, and project to EDM end
+to end (see [OntologyMapping.md](OntologyMapping.md)).

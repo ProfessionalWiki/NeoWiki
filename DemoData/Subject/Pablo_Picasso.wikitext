@@ -1,0 +1,3 @@
+'''Pablo Picasso''' (1881–1973) was a Spanish painter, sculptor, and printmaker who co-founded the Cubist movement. He was born in [[Málaga]] and spent most of his working life in France.
+
+This page's Person Subject carries the flat toy-model fields (gender, birth date, birth place, description, source) used by the [[Mapping:EDM]] ontology mapping to project the page into EDM. See the person→EDM walkthrough in the NeoWiki docs.

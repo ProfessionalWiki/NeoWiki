@@ -119,7 +119,8 @@ product-line schema the others lack). The shared graph still allows **cross-wiki
 schema is local to another wiki **cannot be rendered or edited cross-wiki via the View system or the normal editing
 UIs** — HW accepted this limitation for the MVP. Such cross-wiki access must **degrade gracefully** (an informative
 error or an import option), not break the page. Across *independent* instances no shared registry can be assumed, so
-references stay `(source, name)` with the mapping layer ([RdfMapping.md](RdfMapping.md)) aligning vocabularies.
+references stay `(source, name)` with the ontology mapping ([OntologyMapping.md](OntologyMapping.md)) aligning
+vocabularies.
 
 ## Storage and query (Neo4j)
 
@@ -251,10 +252,11 @@ id; rich chain-of-production provenance is a separate model.
   [008 one-schema-per-subject](../adr/008-one-schema-per-subject.md),
   [014 improved-id-format](../adr/014-improved-id-format.md), [015 dedicated editors](../adr/015-dedicated-editors.md),
   [018 views](../adr/018-views.md), [019 graph database architecture](../adr/019-graph-database-architecture.md).
-- Planning: [GlobalProperties](GlobalProperties.md), [RdfMapping](RdfMapping.md).
+- Planning: [GlobalProperties](GlobalProperties.md), [NativeRdfProjection](NativeRdfProjection.md),
+  [OntologyMapping](OntologyMapping.md).
 - Issues: [#889](https://github.com/ProfessionalWiki/NeoWiki/issues/889) (refresh-without-edit; replaces the closed
   #782), [#905](https://github.com/ProfessionalWiki/NeoWiki/issues/905) (multi-wiki node identity),
   [#789](https://github.com/ProfessionalWiki/NeoWiki/issues/789) (public PHP API),
-  [#831](https://github.com/ProfessionalWiki/NeoWiki/issues/831) (typed statement values — prerequisite for type-aware
-  querying of materialised Subjects), [#830](https://github.com/ProfessionalWiki/NeoWiki/issues/830) (earlier RfC,
+  [#831](https://github.com/ProfessionalWiki/NeoWiki/issues/831) (typed statement values — related, independent work;
+  not a prerequisite of this), [#830](https://github.com/ProfessionalWiki/NeoWiki/issues/830) (earlier RfC,
   closed/superseded).

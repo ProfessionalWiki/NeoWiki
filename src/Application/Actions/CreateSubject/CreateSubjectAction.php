@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -25,7 +25,7 @@ readonly class CreateSubjectAction {
 		private CreateSubjectPresenter $presenter,
 		private SubjectRepository $subjectRepository,
 		private IdGenerator $idGenerator,
-		private SubjectAuthorizer $subjectAuthorizer,
+		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
 		private SelectStatementResolver $selectStatementResolver,
@@ -39,14 +39,15 @@ readonly class CreateSubjectAction {
 			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
 		}
 
-		if ( ( $request->isMainSubject && !$this->subjectAuthorizer->canCreateMainSubject(
-				) ) || !$this->subjectAuthorizer->canCreateChildSubject() ) {
+		$pageId = new PageId( $request->pageId );
+
+		if ( !$this->writeAuthorizer->authorize( $pageId ) ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to create this subject' );
 		}
 
 		$subject = $this->buildSubject( $request );
 
-		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( new PageId( $request->pageId ) );
+		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageId );
 
 		try {
 			if ( $request->isMainSubject ) {
@@ -66,7 +67,7 @@ readonly class CreateSubjectAction {
 			return;
 		}
 
-		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( $request->pageId ), $request->comment );
+		$this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $request->comment );
 		$this->presenter->presentCreated( $subject->id->text, $violations );
 	}
 

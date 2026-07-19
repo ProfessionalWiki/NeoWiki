@@ -1,14 +1,32 @@
 {
-	"description": "A human being. Maps to CIDOC CRM E21 Person (http://www.cidoc-crm.org/cidoc-crm/E21_Person). Deliberately lean: life events such as birth live on their own Subjects, not as fields here.",
+	"description": "A human being. Maps to CIDOC CRM E21 Person (http://www.cidoc-crm.org/cidoc-crm/E21_Person) and, via the EDM Mapping, to EDM edm:Agent. Life events such as birth can be modelled richly as their own event Subjects (see the Birth schema), or flatly via the Birth date and Birth place fields here — the flat form is what the near-1:1 EDM projection consumes.",
 	"propertyDefinitions": {
 		"Description": {
 			"type": "text",
-			"description": "Short biography. CIDOC P3 has note."
+			"description": "Short biography. CIDOC P3 has note; EDM skos:note."
 		},
 		"Also known as": {
 			"type": "text",
 			"multiple": true,
 			"description": "Alternative names and appellations. CIDOC P1 is identified by (E41 Appellation)."
+		},
+		"Gender": {
+			"type": "text",
+			"description": "Gender, as a literal (EDM rdaGr2:gender). Kept as text rather than select on purpose: the v1 ontology projection emits a select value's stored option id, not its label, so a controlled-vocabulary select would project an opaque id."
+		},
+		"Birth date": {
+			"type": "date",
+			"description": "Date of birth (EDM rdaGr2:dateOfBirth). Flat alternative to a Birth event Subject."
+		},
+		"Birth place": {
+			"type": "relation",
+			"relation": "Born in",
+			"targetSchema": "City",
+			"description": "Place of birth, as a relation to a City (EDM rdaGr2:placeOfBirth; the City projects as edm:Place)."
+		},
+		"Source": {
+			"type": "text",
+			"description": "Bibliographic source for the data. Deliberately left out of the EDM Mapping, to show that unmapped properties are absent from an ontology projection."
 		}
 	}
 }

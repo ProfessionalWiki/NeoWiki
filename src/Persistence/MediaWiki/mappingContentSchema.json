@@ -1,0 +1,86 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema#",
+	"type": "object",
+	"required": [
+		"version",
+		"schemas"
+	],
+	"properties": {
+		"version": {
+			"const": 1,
+			"$error": "The mapping format version must be 1."
+		},
+		"prefixes": {
+			"type": "object",
+			"propertyNames": {
+				"pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+			},
+			"additionalProperties": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"schemas": {
+			"type": "object",
+			"propertyNames": {
+				"minLength": 1
+			},
+			"additionalProperties": {
+				"type": "object",
+				"required": [
+					"subject",
+					"properties"
+				],
+				"properties": {
+					"subject": {
+						"type": "object",
+						"required": [
+							"class"
+						],
+						"properties": {
+							"class": {
+								"type": "string",
+								"minLength": 1
+							}
+						},
+						"additionalProperties": false
+					},
+					"properties": {
+						"type": "object",
+						"additionalProperties": {
+							"type": "object",
+							"required": [
+								"predicate"
+							],
+							"properties": {
+								"predicate": {
+									"type": "string",
+									"minLength": 1
+								},
+								"lang": {
+									"type": "string",
+									"pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+									"$error": "The language tag must be BCP-47-shaped (e.g. \"en\" or \"pt-BR\")."
+								},
+								"datatype": {
+									"type": "string",
+									"minLength": 1
+								}
+							},
+							"additionalProperties": false,
+							"not": {
+								"required": [
+									"lang",
+									"datatype"
+								],
+								"$error": "A property mapping cannot set both a language tag and a datatype."
+							}
+						}
+					}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"additionalProperties": false
+}

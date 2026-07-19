@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject;
 
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -16,16 +16,17 @@ readonly class SetMainSubjectAction {
 	public function __construct(
 		private SetMainSubjectPresenter $presenter,
 		private SubjectRepository $subjectRepository,
-		private SubjectAuthorizer $subjectAuthorizer,
+		private SubjectWriteAuthorizer $writeAuthorizer,
 	) {
 	}
 
 	public function setMainSubject( SetMainSubjectRequest $request ): void {
-		if ( !$this->subjectAuthorizer->canEditSubject() ) {
+		$pageId = new PageId( $request->pageId );
+
+		if ( !$this->writeAuthorizer->authorize( $pageId ) ) {
 			throw new \RuntimeException( 'You do not have the necessary permissions to change the main subject' );
 		}
 
-		$pageId = new PageId( $request->pageId );
 		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageId );
 		$previousMain = $pageSubjects->getMainSubject();
 

@@ -85,7 +85,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Map of property names to Statements. Replaces the Subject\'s statement list entirely; omitted property names are deleted. Pass `{}` to delete all statements. Nested shape matches the subject JSON format documented in docs/reference/subject-format.md.',
+				self::PARAM_DESCRIPTION => 'Map of property names to Statements. Replaces the Subject\'s statement list entirely; omitted property names are deleted. Pass `{}` to delete all statements. Nested shape matches the subject JSON format documented at https://neowiki.ai/docs/api/subject-format.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',

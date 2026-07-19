@@ -5,6 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki;
 
 use Exception;
+use InvalidArgumentException;
+use LogicException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use MediaWiki\Context\RequestContext;
@@ -16,9 +18,6 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Session\CsrfTokenSet;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CompositeCypherQueryValidator;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CypherQueryValidator;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction;
@@ -46,17 +45,38 @@ use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
-use ProfessionalWiki\NeoWiki\Persistence\CompositeGraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\Persistence\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
+use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\MappingLookup;
+use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageExporter;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjection;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjectionResolution;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfSerializer;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
+use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportPageRdfApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
@@ -72,12 +92,15 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRouteRegistration;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetSubjectsOrderingApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
@@ -87,17 +110,25 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepos
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseMappingNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jPageIdentifiersLookup;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\ExplainCypherQueryValidator;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\KeywordCypherQueryValidator;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jQueryStore;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\CallbackProjectionResolver;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlQueryApi;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlRouteRegistration;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
+use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
@@ -113,26 +144,54 @@ class NeoWikiExtension {
 
 	public const int NS_SCHEMA = 7474;
 	public const int NS_LAYOUT = 7476;
+	public const int NS_MAPPING = 7478;
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
 	private Neo4jValueBuilderRegistry $valueBuilderRegistry;
+	private RdfValueMapperRegistry $rdfValueMapperRegistry;
 	private bool $extensionsRegistered = false;
 	private SubjectRepository $subjectRepository;
 	private CompositeGraphDatabasePlugin $graphDatabasePlugin;
-	private ?Neo4jQueryStore $neo4jQueryStore = null;
+	private CompositeGraphDatabasePlugin $isolatingGraphDatabasePlugin;
+	private GraphDatabasePluginRegistry $graphDatabasePluginRegistry;
+	private ?Neo4jPlugin $neo4jPlugin = null;
+	/** @var SparqlPlugin[]|null */
+	private ?array $sparqlPlugins = null;
 	private ClientInterface $neo4jClient;
 	private ClientInterface $readOnlyNeo4jClient;
+	private static ?self $instance = null;
 
 	public static function getInstance(): self {
-		/** @var ?self $instance */
-		static $instance = null;
-
-		$instance ??= new self(
-			( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( MediaWikiServices::getInstance()->getMainConfig() )
+		self::$instance ??= new self(
+			( new NeoWikiConfigFactory( LoggerFactory::getInstance( 'NeoWiki' ) ) )
+				->buildFromMediaWikiConfig( MediaWikiServices::getInstance()->getMainConfig() )
 		);
 
-		return $instance;
+		return self::$instance;
+	}
+
+	// Test seam: NeoWikiExtension caches config-derived state in a singleton with no other reset.
+	// Tests that vary graph-backend config must rebuild it. See NeoWikiIntegrationTestCase::runWithoutGraphBackend().
+	public static function resetInstance(): void {
+		self::$instance = null;
+	}
+
+	public static function onExtensionRegistration(): void {
+		// This registration-time gate must agree with NeoWikiConfig::hasNeo4jBackend() at request time,
+		// so both resolve the URLs through the shared NeoWikiConfigFactory::resolveReadUrl/resolveWriteUrl helpers.
+		$readUrl = NeoWikiConfigFactory::resolveReadUrl(
+			is_string( $GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] ?? null ) ? $GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] : null
+		);
+		$writeUrl = NeoWikiConfigFactory::resolveWriteUrl(
+			is_string( $GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] ?? null ) ? $GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] : null
+		);
+
+		$GLOBALS['wgRestAPIAdditionalRouteFiles'] = array_merge(
+			$GLOBALS['wgRestAPIAdditionalRouteFiles'] ?? [],
+			Neo4jRouteRegistration::routeFiles( $readUrl, $writeUrl ),
+			SparqlRouteRegistration::routeFiles( $GLOBALS['wgNeoWikiSparqlStores'] ?? null )
+		);
 	}
 
 	private function __construct(
@@ -162,6 +221,16 @@ class NeoWikiExtension {
 		return $this->valueBuilderRegistry;
 	}
 
+	public function getRdfValueMapperRegistry(): RdfValueMapperRegistry {
+		if ( !isset( $this->rdfValueMapperRegistry ) ) {
+			$this->rdfValueMapperRegistry = RdfValueMapperRegistry::withCoreMappers();
+		}
+
+		$this->ensureExtensionsRegistered();
+
+		return $this->rdfValueMapperRegistry;
+	}
+
 	private function ensureExtensionsRegistered(): void {
 		if ( $this->extensionsRegistered ) {
 			return;
@@ -175,16 +244,14 @@ class NeoWikiExtension {
 				$this->getPropertyTypeRegistry(),
 				$this->getValueBuilderRegistry(),
 				$this->getPagePropertyProviderRegistry(),
+				$this->getGraphDatabasePluginRegistry(),
+				$this->getRdfValueMapperRegistry(),
 			) ]
 		);
 	}
 
-	public function getPropertyTypeToValueType(): PropertyTypeToValueType {
-		return new PropertyTypeToValueType( $this->getPropertyTypeRegistry() );
-	}
-
 	public function newSubjectContentDataDeserializer(): SubjectContentDataDeserializer {
-		return new SubjectContentDataDeserializer( new StatementDeserializer( $this->getPropertyTypeToValueType() ) );
+		return new SubjectContentDataDeserializer( new StatementDeserializer( $this->getPropertyTypeLookup() ) );
 	}
 
 	public function getPagePropertyProviderRegistry(): PagePropertyProviderRegistry {
@@ -198,53 +265,408 @@ class NeoWikiExtension {
 		return $this->pagePropertyProviderRegistry;
 	}
 
+	/**
+	 * Hook-facing write path (edit/delete/undelete). Each backend is isolated and logged, so a
+	 * projection failure never aborts the triggering user operation and one failing backend does not
+	 * starve the others. See FailureIsolatingGraphDatabasePlugin.
+	 */
 	public function getStoreContentUC(): OnRevisionCreatedHandler {
+		return $this->newStoreContentHandler( $this->getIsolatingGraphDatabasePlugin() );
+	}
+
+	/**
+	 * Maintenance rebuild path (RebuildGraphDatabases). Failures propagate so the script reports which
+	 * pages failed to reconcile, rather than the hook path's per-plugin isolation swallowing them.
+	 */
+	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
+		return $this->newStoreContentHandler( $this->getGraphDatabasePlugin() );
+	}
+
+	private function newStoreContentHandler( GraphDatabasePlugin $graphDatabasePlugin ): OnRevisionCreatedHandler {
 		return new OnRevisionCreatedHandler(
-			$this->getGraphDatabasePlugin(),
-			new PagePropertiesBuilder(
-				revisionStore: MediaWikiServices::getInstance()->getRevisionStore(),
-				contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory(),
-				providerRegistry: $this->getPagePropertyProviderRegistry(),
+			$graphDatabasePlugin,
+			$this->getPagePropertiesBuilder(),
+		);
+	}
+
+	public function getPagePropertiesBuilder(): PagePropertiesBuilder {
+		return new PagePropertiesBuilder(
+			revisionStore: MediaWikiServices::getInstance()->getRevisionStore(),
+			contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory(),
+			titleFormatter: MediaWikiServices::getInstance()->getTitleFormatter(),
+			providerRegistry: $this->getPagePropertyProviderRegistry(),
+		);
+	}
+
+	public function getRdfNamespaces(): RdfNamespaces {
+		return new RdfNamespaces( $this->config->rdfBaseUri );
+	}
+
+	public function getRdfSerializer(): RdfSerializer {
+		return new HardfRdfSerializer( $this->getRdfNamespaces()->prefixMap() );
+	}
+
+	public function newRdfPageProjector(): RdfPageProjector {
+		return new RdfPageProjector(
+			$this->getRdfValueMapperRegistry(),
+			$this->getRdfNamespaces(),
+			$this->getSchemaLookup(),
+			LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
+	public function newRdfPageLoader(): RdfPageLoader {
+		return new RdfPageLoader(
+			MediaWikiServices::getInstance()->getWikiPageFactory(),
+			$this->getPagePropertiesBuilder(),
+		);
+	}
+
+	public function newRdfPageExporterForProjection( RdfProjection $projection ): RdfPageExporter {
+		return new RdfPageExporter(
+			$this->newRdfPageLoader(),
+			$projection->projector,
+			$projection->serializer,
+		);
+	}
+
+	/**
+	 * The projection for a name, or null when the name is neither "native" nor a target any Mapping page
+	 * declares. The seam the SPARQL store plugin (#586) consumes for its own store (it needs only
+	 * {@see RdfProjection::$projector}); the RDF export surfaces use {@see self::resolveRdfProjection()}
+	 * instead, which also reports the known names on the unknown-target path. Ontology mappings hold only
+	 * the target vocabulary; Subject IRIs stay native, so the native prefixes always seed the serializer.
+	 */
+	public function newRdfProjection( string $projectionName ): ?RdfProjection {
+		return $this->resolveRdfProjection( $projectionName )->projection;
+	}
+
+	/**
+	 * Resolves a projection name to its projector and serializer, or — when the name is neither "native"
+	 * nor a Mapping page's name — to the known projection names for a 400/usage message. The name is the
+	 * Mapping page title, so resolution is one title lookup; the known-names list is needed only on the
+	 * unknown path and reads just the page names (no content parsing).
+	 */
+	public function resolveRdfProjection( string $projectionName ): RdfProjectionResolution {
+		if ( $projectionName === RdfPageProjector::PROJECTION ) {
+			return RdfProjectionResolution::projection(
+				new RdfProjection( $this->newRdfPageProjector(), $this->getRdfSerializer() )
+			);
+		}
+
+		$mapping = $this->loadMappingByName( $projectionName );
+
+		if ( $mapping === null ) {
+			return RdfProjectionResolution::unknownTarget( $this->getRdfProjectionNames() );
+		}
+
+		return RdfProjectionResolution::projection(
+			new RdfProjection(
+				new OntologyMappingProjector(
+					$mapping,
+					$this->getRdfNamespaces(),
+					$this->getRdfValueMapperRegistry(),
+					LoggerFactory::getInstance( 'NeoWiki' ),
+				),
+				new HardfRdfSerializer( $this->ontologyPrefixMap( $mapping ) ),
 			)
 		);
 	}
 
+	/**
+	 * The Mapping page for a projection name, or null when the name is not a usable Mapping name (empty
+	 * or reserved) or no such page exists. Title normalization applies inside the lookup, so first-letter
+	 * case behaves exactly like a `[[Mapping:...]]` link.
+	 */
+	private function loadMappingByName( string $projectionName ): ?Mapping {
+		try {
+			$name = new MappingName( $projectionName );
+		} catch ( InvalidArgumentException ) {
+			return null;
+		}
+
+		return $this->getMappingLookup()->getMapping( $name );
+	}
+
+	/**
+	 * The known projection names: "native" plus the name of every Mapping page. Used to reject an unknown
+	 * projection with a helpful list of the valid ones.
+	 *
+	 * @return string[]
+	 */
+	public function getRdfProjectionNames(): array {
+		return array_merge(
+			[ RdfPageProjector::PROJECTION ],
+			array_map(
+				static fn ( MappingName $name ): string => $name->getText(),
+				$this->getMappingNameLookup()->getMappingNames()
+			)
+		);
+	}
+
+	/**
+	 * The known projection names the given authority may read, for the REST 400 body. "native" is not a
+	 * page and is always kept; a Mapping name is kept only when its page is readable, so a read-restricted
+	 * Mapping page's title never leaks into the error (#1046, mirroring the Schema
+	 * {@see \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup} read filter). This is
+	 * the REST boundary; the system-context {@see self::getRdfProjectionNames()} used by DumpRdf and the
+	 * SPARQL store stays unfiltered.
+	 *
+	 * @param string[] $names
+	 * @return string[]
+	 */
+	public function filterReadableProjectionNames( array $names, Authority $authority ): array {
+		$readAuthorizer = $this->newPageReadAuthorizer( $authority );
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+
+		return array_values( array_filter(
+			$names,
+			static function ( string $name ) use ( $readAuthorizer, $titleFactory ): bool {
+				if ( $name === RdfPageProjector::PROJECTION ) {
+					return true;
+				}
+
+				$title = $titleFactory->newFromText( $name, NeoWikiExtension::NS_MAPPING );
+
+				return $title !== null && $readAuthorizer->authorizeReadByPageTitle( $title );
+			}
+		) );
+	}
+
+	/**
+	 * The native prefixes (Subject IRIs stay native) plus the Mapping's declared ontology prefixes, for
+	 * readable output. Both the label and the namespace of each prefix are dropped defensively when unsafe,
+	 * so a Mapping can never inject a `@prefix` declaration (or a triple broken out of one) into the
+	 * document, even though save-time validation already rejects them — an import bypasses that validation.
+	 *
+	 * @return array<string, string>
+	 */
+	private function ontologyPrefixMap( Mapping $mapping ): array {
+		$prefixes = $this->getRdfNamespaces()->prefixMap();
+
+		foreach ( $mapping->prefixes as $label => $namespace ) {
+			if ( CurieExpander::isValidPrefixLabel( (string)$label ) && CurieExpander::isSafeAbsoluteIri( $namespace ) ) {
+				$prefixes[$label] = $namespace;
+			}
+		}
+
+		return $prefixes;
+	}
+
+	public function getMappingLookup(): MappingLookup {
+		return new CachingMappingLookup(
+			mappingLookup: new WikiPageMappingLookup(
+				pageContentFetcher: $this->getPageContentFetcher(),
+				authority: $this->getRequestAuthority(),
+				mappingDeserializer: $this->getMappingPersistenceDeserializer(),
+				titleParser: MediaWikiServices::getInstance()->getTitleParser(),
+			),
+			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
+		);
+	}
+
+	public function getMappingNameLookup(): MappingNameLookup {
+		return new DatabaseMappingNameLookup( db: $this->getDbConnection() );
+	}
+
+	public function getMappingPersistenceDeserializer(): MappingPersistenceDeserializer {
+		return new MappingPersistenceDeserializer();
+	}
+
+	public static function newExportPageRdfApi(): ExportPageRdfApi {
+		return new ExportPageRdfApi();
+	}
+
+	/**
+	 * Propagating fan-out over every backend, used by the maintenance rebuild path so failures surface.
+	 */
 	public function getGraphDatabasePlugin(): GraphDatabasePlugin {
 		if ( !isset( $this->graphDatabasePlugin ) ) {
-			$this->graphDatabasePlugin = new CompositeGraphDatabasePlugin(
-				$this->getNeo4jPlugin()
-			);
+			$this->graphDatabasePlugin = new CompositeGraphDatabasePlugin( ...$this->getGraphDatabasePlugins() );
 		}
 
 		return $this->graphDatabasePlugin;
 	}
 
-	public function getNeo4jPlugin(): Neo4jQueryStore {
-		if ( $this->neo4jQueryStore === null ) {
-			$this->neo4jQueryStore = $this->newNeo4jQueryStore( $this->getSchemaLookup() );
+	/**
+	 * Hook-path fan-out: each backend individually wrapped so a projection failure is isolated and
+	 * logged rather than aborting the triggering user operation.
+	 */
+	private function getIsolatingGraphDatabasePlugin(): GraphDatabasePlugin {
+		if ( !isset( $this->isolatingGraphDatabasePlugin ) ) {
+			$logger = LoggerFactory::getInstance( 'NeoWiki' );
+
+			$this->isolatingGraphDatabasePlugin = new CompositeGraphDatabasePlugin(
+				...array_map(
+					static fn ( GraphDatabasePlugin $plugin ) => new FailureIsolatingGraphDatabasePlugin( $plugin, $logger ),
+					$this->getGraphDatabasePlugins()
+				)
+			);
 		}
 
-		return $this->neo4jQueryStore;
+		return $this->isolatingGraphDatabasePlugin;
 	}
 
-	public function newNeo4jQueryStore( SchemaLookup $schemaLookup ): Neo4jQueryStore {
-		return new Neo4jQueryStore(
+	/**
+	 * The graph database plugins to fan out to: core (bundled) plugins first, then extension plugins.
+	 *
+	 * Core's plugins are seeded directly here, not via the registry. Registering the Neo4j plugin via
+	 * the registry would make getGraphDatabasePluginRegistry() build it, whose construction transitively
+	 * fires the NeoWikiRegistration hook and re-enters that accessor. Composing core here keeps the
+	 * registry extension-only and the plugin order deterministic.
+	 *
+	 * @return GraphDatabasePlugin[]
+	 */
+	private function getGraphDatabasePlugins(): array {
+		return array_merge(
+			$this->getCoreGraphDatabasePlugins(),
+			$this->getGraphDatabasePluginRegistry()->getPlugins()
+		);
+	}
+
+	/**
+	 * The bundled backends, in deterministic order: Neo4j first when configured, then one SPARQL plugin
+	 * per configured store (#586). Empty when neither is configured.
+	 *
+	 * @return GraphDatabasePlugin[]
+	 */
+	private function getCoreGraphDatabasePlugins(): array {
+		$plugins = [];
+
+		$neo4jPlugin = $this->getNeo4jPlugin();
+		if ( $neo4jPlugin !== null ) {
+			$plugins[] = $neo4jPlugin->getGraphDatabasePlugin();
+		}
+
+		foreach ( $this->getSparqlPlugins() as $sparqlPlugin ) {
+			$plugins[] = $sparqlPlugin->getGraphDatabasePlugin();
+		}
+
+		return $plugins;
+	}
+
+	/**
+	 * One SPARQL plugin per configured store, cached like the Neo4j plugin. Construction is I/O-free
+	 * (no HTTP, no projection resolution), so building these outside the failure isolation is safe.
+	 *
+	 * @return SparqlPlugin[]
+	 */
+	private function getSparqlPlugins(): array {
+		if ( $this->sparqlPlugins === null ) {
+			$this->sparqlPlugins = array_map(
+				fn ( SparqlStoreConfig $store ): SparqlPlugin => $this->buildSparqlPlugin( $store ),
+				$this->config->sparqlStores
+			);
+		}
+
+		return $this->sparqlPlugins;
+	}
+
+	/**
+	 * The first configured SPARQL store's plugin, or null when none is configured. The read surfaces
+	 * (parser function, Lua, REST) target this one store; multi-store query addressing is a follow-up.
+	 */
+	public function getFirstSparqlPlugin(): ?SparqlPlugin {
+		return $this->getSparqlPlugins()[0] ?? null;
+	}
+
+	// Guard for surfaces whose registration is already gated on a configured store, so callers get a
+	// non-null plugin without repeating the null handling.
+	public function requireFirstSparqlPlugin(): SparqlPlugin {
+		$plugin = $this->getFirstSparqlPlugin();
+		if ( $plugin === null ) {
+			throw new LogicException( 'A configured SPARQL store is required here.' );
+		}
+
+		return $plugin;
+	}
+
+	public function newSparqlQueryService(): SparqlQueryService {
+		return $this->requireFirstSparqlPlugin()->newQueryService();
+	}
+
+	public static function newSparqlQueryApi(): SparqlQueryApi {
+		return new SparqlQueryApi(
+			self::getInstance()->newSparqlQueryService()
+		);
+	}
+
+	private function buildSparqlPlugin( SparqlStoreConfig $store ): SparqlPlugin {
+		return new SparqlPlugin(
+			store: $store,
+			// The projection is resolved lazily per save through this seam (never at construction), so
+			// the store tracks the current Mapping definitions. Closures, not $this, keep the store
+			// depending on the narrow resolver rather than the whole extension.
+			projectionResolver: new CallbackProjectionResolver(
+				fn ( string $projectionName ): ?RdfProjection => $this->newRdfProjection( $projectionName ),
+				fn (): array => $this->getRdfProjectionNames(),
+			),
+			namespaces: $this->getRdfNamespaces(),
+			httpRequestFactory: MediaWikiServices::getInstance()->getHttpRequestFactory(),
+		);
+	}
+
+	public function getGraphDatabasePluginRegistry(): GraphDatabasePluginRegistry {
+		if ( !isset( $this->graphDatabasePluginRegistry ) ) {
+			$this->graphDatabasePluginRegistry = new GraphDatabasePluginRegistry();
+		}
+
+		$this->ensureExtensionsRegistered();
+
+		return $this->graphDatabasePluginRegistry;
+	}
+
+	public function getNeo4jPlugin(): ?Neo4jPlugin {
+		if ( !$this->config->hasNeo4jBackend() ) {
+			return null;
+		}
+
+		if ( $this->neo4jPlugin === null ) {
+			$this->neo4jPlugin = $this->buildNeo4jPlugin( $this->getSchemaLookup() );
+		}
+
+		return $this->neo4jPlugin;
+	}
+
+	// Guard for surfaces whose registration is already gated on a configured backend, so callers get a
+	// non-null plugin without repeating the null handling.
+	public function requireNeo4jPlugin(): Neo4jPlugin {
+		$plugin = $this->getNeo4jPlugin();
+		if ( $plugin === null ) {
+			throw new LogicException( 'A configured Neo4j backend is required here.' );
+		}
+
+		return $plugin;
+	}
+
+	// Test seam: lets tests build a projection store with a custom SchemaLookup.
+	// This is a hack; we should have a proper test environment.
+	public function newNeo4jProjectionStore( SchemaLookup $schemaLookup ): GraphDatabasePlugin {
+		return $this->buildNeo4jPlugin( $schemaLookup )->getGraphDatabasePlugin();
+	}
+
+	private function buildNeo4jPlugin( SchemaLookup $schemaLookup ): Neo4jPlugin {
+		return new Neo4jPlugin(
 			client: $this->getNeo4jClient(),
 			readOnlyClient: $this->getReadOnlyNeo4jClient(),
-			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
-				schemaLookup: $schemaLookup, // Note: this is a hack, we should have a proper test environment
-				valueBuilderRegistry: $this->getValueBuilderRegistry(),
-				logger: LoggerFactory::getInstance( 'NeoWiki' ),
-				wikiId: $this->config->wikiId,
-			),
+			schemaLookup: $schemaLookup,
+			valueBuilderRegistry: $this->getValueBuilderRegistry(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 			wikiId: $this->config->wikiId,
 		);
 	}
 
 	public function getNeo4jClient(): ClientInterface {
 		if ( !isset( $this->neo4jClient ) ) {
+			$writeUrl = $this->config->neo4jInternalWriteUrl;
+			if ( $writeUrl === null ) {
+				throw new GraphBackendNotConfiguredException();
+			}
 			$this->neo4jClient = ClientBuilder::create()
-				->withDriver( 'default', $this->config->neo4jInternalWriteUrl )
+				->withDriver( 'default', $writeUrl )
 				->withDefaultDriver( 'default' )
 				->build();
 		}
@@ -254,8 +676,12 @@ class NeoWikiExtension {
 
 	public function getReadOnlyNeo4jClient(): ClientInterface {
 		if ( !isset( $this->readOnlyNeo4jClient ) ) {
+			$readUrl = $this->config->neo4jInternalReadUrl;
+			if ( $readUrl === null ) {
+				throw new GraphBackendNotConfiguredException();
+			}
 			$this->readOnlyNeo4jClient = ClientBuilder::create()
-				->withDriver( 'default', $this->config->neo4jInternalReadUrl )
+				->withDriver( 'default', $readUrl )
 				->withDefaultDriver( 'default' )
 				->build();
 		}
@@ -263,19 +689,8 @@ class NeoWikiExtension {
 		return $this->readOnlyNeo4jClient;
 	}
 
-	public function getCypherQueryValidator(): CypherQueryValidator {
-		return new CompositeCypherQueryValidator( [
-			new KeywordCypherQueryValidator(),
-			new ExplainCypherQueryValidator( $this->getReadOnlyNeo4jClient() ),
-		] );
-	}
-
 	public function newCypherQueryService(): Neo4jQueryService {
-		return new Neo4jQueryService(
-			$this->getNeo4jPlugin(),
-			$this->getCypherQueryValidator(),
-			new Neo4jResultNormalizer(),
-		);
+		return $this->requireNeo4jPlugin()->newQueryService();
 	}
 
 	public static function newCypherQueryApi(): CypherQueryApi {
@@ -285,7 +700,7 @@ class NeoWikiExtension {
 	}
 
 	public function getWriteQueryEngine(): Neo4jWriteQueryEngine {
-		return $this->getNeo4jPlugin();
+		return $this->requireNeo4jPlugin()->getWriteQueryEngine();
 	}
 
 	public function isDevelopmentUIEnabled(): bool {
@@ -345,12 +760,38 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newSubjectPageRebuilder(): SubjectPageRebuilder {
+		return $this->newSubjectPageRebuilderWith( $this->newRebuildStoreContentHandler() );
+	}
+
+	/**
+	 * Import path: projects the current revision of a page like the rebuild path, but with the hook
+	 * path's failure isolation, since a projection failure must not abort the user's import.
+	 */
+	public function newImportSubjectPageRebuilder(): SubjectPageRebuilder {
+		return $this->newSubjectPageRebuilderWith( $this->getStoreContentUC() );
+	}
+
+	private function newSubjectPageRebuilderWith( OnRevisionCreatedHandler $handler ): SubjectPageRebuilder {
+		return new SubjectPageRebuilder(
+			$handler,
+			MediaWikiServices::getInstance()->getWikiPageFactory()
+		);
+	}
+
+	public function newDeletedSubjectPageIdsLookup(): DeletedSubjectPageIdsLookup {
+		return new DatabaseDeletedSubjectPageIdsLookup(
+			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
+			MediaWikiServices::getInstance()->getSlotRoleStore()
+		);
+	}
+
 	public function newCreateSubjectAction( CreateSubjectPresenter $presenter, Authority $authority ): CreateSubjectAction {
 		return new CreateSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
 			idGenerator: $this->getIdGenerator(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
@@ -386,11 +827,18 @@ class NeoWikiExtension {
 
 	public function getStatementListBuilder(): StatementListBuilder {
 		return new StatementListBuilder(
-			propertyTypeToValueType: $this->getPropertyTypeToValueType(),
+			propertyTypeLookup: $this->getPropertyTypeLookup(),
 			idGenerator: $this->getIdGenerator()
 		);
 	}
 
+	// NeoWiki requires a configured graph backend: the subject -> page reverse index lives only in Neo4j,
+	// so this lookup (and Subject CRUD, {{#view}}, {{#neowiki_value}}, the mw.neowiki.* getters) needs one.
+	// A no-backend wiki is a misconfiguration, surfaced loudly rather than silently degraded:
+	// getReadOnlyNeo4jClient() throws GraphBackendNotConfiguredException, and the content-page render path
+	// (NeoWikiHooks::handleContentPage) short-circuits with a warning instead of failing the page. Making
+	// these work without a graph backend needs a MediaWiki-native reverse index; that is future work
+	// (#586 / #895), only worthwhile if a deliberate storage-only product is chosen (ADR 019 defers it).
 	private function getPageIdentifiersLookup(): PageIdentifiersLookup {
 		return new Neo4jPageIdentifiersLookup( $this->getReadOnlyNeo4jClient() );
 	}
@@ -398,7 +846,8 @@ class NeoWikiExtension {
 	public function newDeleteSubjectAction( Authority $authority ): DeleteSubjectAction {
 		return new DeleteSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority )
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup()
 		);
 	}
 
@@ -406,7 +855,7 @@ class NeoWikiExtension {
 		return new SetMainSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 		);
 	}
 
@@ -414,13 +863,30 @@ class NeoWikiExtension {
 		return new SetSubjectsOrderingAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 		);
 	}
 
-	public function newSubjectAuthorizer( Authority $authority ): SubjectAuthorizer {
+	public function newSubjectPermissionHints( Authority $authority ): SubjectPermissionHints {
+		return $this->newAuthorityBasedSubjectAuthorizer( $authority );
+	}
+
+	public function newSubjectWriteAuthorizer( Authority $authority ): SubjectWriteAuthorizer {
+		return $this->newAuthorityBasedSubjectAuthorizer( $authority );
+	}
+
+	public function newPageReadAuthorizer( Authority $authority ): PageReadAuthorizer {
+		return new AuthorityBasedPageReadAuthorizer(
+			authority: $authority,
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
+	private function newAuthorityBasedSubjectAuthorizer( Authority $authority ): AuthorityBasedSubjectAuthorizer {
 		return new AuthorityBasedSubjectAuthorizer(
-			authority: $authority
+			authority: $authority,
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 		);
 	}
 
@@ -449,8 +915,8 @@ class NeoWikiExtension {
 			),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
-			authority: $this->getRequestAuthority(),
-			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider()
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
 		);
 	}
 
@@ -468,7 +934,9 @@ class NeoWikiExtension {
 		return new WikiPageLayoutLookup(
 			pageContentFetcher: $this->getPageContentFetcher(),
 			authority: $this->getRequestAuthority(),
-			layoutDeserializer: $this->getLayoutPersistenceDeserializer()
+			layoutDeserializer: $this->getLayoutPersistenceDeserializer(),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
 		);
 	}
 
@@ -479,11 +947,17 @@ class NeoWikiExtension {
 	public function getSchemaNameLookup(): SchemaNameLookup {
 		return new DatabaseSchemaNameLookup(
 			db: $this->getDbConnection(),
-			searchEngine: MediaWikiServices::getInstance()->newSearchEngine()
+			searchEngine: MediaWikiServices::getInstance()->newSearchEngine(),
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 		);
 	}
 
 	public function getSubjectLabelLookup(): SubjectLabelLookup {
+		if ( $this->getNeo4jPlugin() === null ) {
+			return new NullSubjectLabelLookup();
+		}
+
 		return new Neo4jSubjectLabelLookup(
 			client: $this->getReadOnlyNeo4jClient()
 		);
@@ -502,7 +976,7 @@ class NeoWikiExtension {
 		return $db;
 	}
 
-	public function newGetPageSubjectsQuery( GetPageSubjectsPresenter $presenter ): GetPageSubjectsQuery {
+	public function newGetPageSubjectsQuery( GetPageSubjectsPresenter $presenter, Authority $authority ): GetPageSubjectsQuery {
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
@@ -510,18 +984,20 @@ class NeoWikiExtension {
 			schemaLookup: $this->getSchemaLookup(),
 			schemaSerializer: $this->getSchemaPresentationSerializer(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
-	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter ): GetSubjectQuery {
+	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
 			subjectLookup: $this->getSubjectRepository(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
-	public function newGetSubjectQueryForRevision( RestGetSubjectPresenter $presenter, RevisionRecord $revision ): GetSubjectQuery {
+	public function newGetSubjectQueryForRevision( RestGetSubjectPresenter $presenter, RevisionRecord $revision, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
 			subjectLookup: new PointInTimeSubjectLookup(
@@ -531,19 +1007,21 @@ class NeoWikiExtension {
 				primaryRevision: $revision,
 			),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
 	public function newReplaceSubjectAction( ReplaceSubjectPresenter $presenter, Authority $authority ): ReplaceSubjectAction {
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
-			subjectAuthorizer: $this->newSubjectAuthorizer( $authority ),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 		);
 	}
 
@@ -576,13 +1054,15 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newValidateSubjectUpdateQuery(): ValidateSubjectUpdateQuery {
+	public function newValidateSubjectUpdateQuery( Authority $authority ): ValidateSubjectUpdateQuery {
 		return new ValidateSubjectUpdateQuery(
 			subjectRepository: $this->getSubjectRepository(),
 			schemaLookup: $this->getSchemaLookup(),
 			subjectValidator: $this->getSubjectValidator(),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
@@ -593,9 +1073,7 @@ class NeoWikiExtension {
 	}
 
 	public static function newValidateSubjectUpdateApi(): ValidateSubjectUpdateApi {
-		return new ValidateSubjectUpdateApi(
-			query: self::getInstance()->newValidateSubjectUpdateQuery(),
-		);
+		return new ValidateSubjectUpdateApi();
 	}
 
 	public static function newCreateMainSubjectApi(): CreateSubjectApi {

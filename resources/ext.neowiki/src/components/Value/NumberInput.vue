@@ -49,12 +49,9 @@ const startIcon = NeoWikiServices.getComponentRegistry().getIcon( NumberType.typ
 
 const emit = defineEmits<ValueInputEmits>();
 
-const liveValidationError = ref<string | null>( null );
-
 const { validationError, clearServerViolation } = useFieldServerViolation(
 	toRef( props, 'property' ),
 	toRef( props, 'serverViolations' ),
-	liveValidationError,
 	emit
 );
 
@@ -73,28 +70,14 @@ initializeInputValue( props.modelValue );
 
 watch( () => props.modelValue, ( newValue ) => {
 	initializeInputValue( newValue );
-	validate( newValue && newValue.type === ValueType.Number ? newValue as NumberValue : undefined );
 } );
-
-const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( NumberType.typeName );
 
 function onInput( newValue: string ): void {
 	internalInputValue.value = newValue;
 	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );
 	emit( 'update:modelValue', value );
-	validate( value );
 	clearServerViolation();
 }
-
-function validate( value: NumberValue | undefined ): void {
-	const errors = propertyType.validate( value, props.property );
-	liveValidationError.value = errors.length === 0 ? null :
-		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
-}
-
-watch( () => props.property, () => {
-	validate( props.modelValue && props.modelValue.type === ValueType.Number ? props.modelValue as NumberValue : undefined );
-} );
 
 const isInputEmpty = ( inputString: string ): boolean =>
 	inputString === '' || isNaN( Number( inputString ) );
@@ -104,8 +87,4 @@ defineExpose<ValueInputExposes>( {
 		return isInputEmpty( internalInputValue.value ) ? undefined : newNumberValue( Number( internalInputValue.value ) );
 	}
 } );
-
-// Initial validation (call after internalInputValue is set)
-validate( props.modelValue && props.modelValue.type === ValueType.Number ? props.modelValue as NumberValue : undefined );
-
 </script>

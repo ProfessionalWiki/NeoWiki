@@ -1,44 +1,16 @@
 ( function () {
 	'use strict';
 
-	var nw = require( 'ext.neowiki' );
-	var icons = require( './icons.json' );
-	var HEX_REGEX = require( './hexRegex.js' );
-	var ColorDisplay = require( './ColorDisplay.vue' );
-	var ColorInput = require( './ColorInput.vue' );
-	var ColorAttributesEditor = require( './ColorAttributesEditor.vue' );
-	var RedHerbCard = require( './RedHerbCard.vue' );
+	const nw = require( 'ext.neowiki' );
+	const icons = require( './icons.json' );
+	const ColorDisplay = require( './ColorDisplay.vue' );
+	const ColorInput = require( './ColorInput.vue' );
+	const ColorAttributesEditor = require( './ColorAttributesEditor.vue' );
+	const RedHerbCard = require( './RedHerbCard.vue' );
 
-	var COLOR_TYPE_NAME = 'color';
+	const COLOR_TYPE_NAME = 'color';
 
-	function validate( value, property ) {
-		var errors = [];
-
-		if ( property.required && ( value === undefined || value.parts.length === 0 ) ) {
-			errors.push( { code: 'required' } );
-			return errors;
-		}
-
-		if ( value === undefined || value.parts.length === 0 ) {
-			return errors;
-		}
-
-		var raw = value.parts[ 0 ];
-
-		if ( !HEX_REGEX.test( raw ) ) {
-			errors.push( { code: 'invalid-hex' } );
-			return errors;
-		}
-
-		var allowed = property.allowedColors;
-		if ( Array.isArray( allowed ) && allowed.length > 0 && allowed.indexOf( raw ) === -1 ) {
-			errors.push( { code: 'not-in-palette' } );
-		}
-
-		return errors;
-	}
-
-	mw.hook( 'neowiki.registration' ).add( function ( registrar ) {
+	mw.hook( 'neowiki.registration' ).add( ( registrar ) => {
 		registrar.registerPropertyType( {
 			typeName: COLOR_TYPE_NAME,
 			valueType: nw.ValueType.String,
@@ -51,7 +23,6 @@
 			getExampleValue: function () {
 				return nw.newStringValue( '#ff5733' );
 			},
-			validate: validate,
 			displayComponent: ColorDisplay,
 			inputComponent: ColorInput,
 			attributesEditor: ColorAttributesEditor,

@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\PageIdentity;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
@@ -124,6 +125,25 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'error', $responseData['status'] );
 		$this->assertSame( 'You do not have the necessary permissions to create this subject', $responseData['message'] );
 		$this->assertArrayNotHasKey( 'violations', $responseData );
+	}
+
+	public function testDeniedOnProtectedPageDespiteGlobalEditRight(): void {
+		$this->createSchema( 'Employee' );
+
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createValidRequestData(),
+			authority: $this->mockRegisteredAuthority(
+				// Holds the wiki-global 'edit' right, but cannot edit this specific (e.g. protected) page.
+				static fn ( string $permission, ?PageIdentity $page = null ): bool =>
+					$permission === 'edit' && $page === null
+			)
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 403, $response->getStatusCode() );
+		$this->assertSame( 'You do not have the necessary permissions to create this subject', $responseData['message'] );
 	}
 
 	public function testResponseIncludesViolationsWhenRequiredPropertyMissing(): void {

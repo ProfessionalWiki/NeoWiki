@@ -4,11 +4,20 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
+use DateTimeImmutable;
+use DateTimeZone;
+use Laudis\Neo4j\Types\AbstractCypherObject;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId;
+use Laudis\Neo4j\Types\LocalDateTime;
+use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
+use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use RuntimeException;
 
@@ -64,9 +73,90 @@ class Neo4jResultNormalizer {
 			];
 		}
 
+		if ( $value instanceof AbstractCypherObject ) {
+			return $this->convertPropertyObject( $value );
+		}
+
 		throw new RuntimeException(
 			sprintf( 'Unsupported Cypher value type: %s', get_debug_type( $value ) )
 		);
+	}
+
+	private function convertPropertyObject( AbstractCypherObject $value ): string|array {
+		if ( $value instanceof DateTime ) {
+			return $this->offsetDateTimeToIso( $value );
+		}
+
+		if ( $value instanceof DateTimeZoneId ) {
+			return $this->zoneIdDateTimeToIso( $value );
+		}
+
+		if ( $value instanceof LocalDateTime ) {
+			return gmdate( 'Y-m-d\TH:i:s', $value->getSeconds() )
+				. $this->fractionalSeconds( $value->getNanoseconds() );
+		}
+
+		if ( $value instanceof Date ) {
+			return $value->toDateTime()->format( 'Y-m-d' );
+		}
+
+		if ( $value instanceof Time ) {
+			return $this->timeOfDayToIso( $value->getNanoSeconds() )
+				. $this->offsetFromSeconds( $value->getTzOffsetSeconds() );
+		}
+
+		if ( $value instanceof LocalTime ) {
+			return $this->timeOfDayToIso( $value->getNanoseconds() );
+		}
+
+		return $this->convertAssociative( $value->toArray() );
+	}
+
+	private function offsetDateTimeToIso( DateTime $value ): string {
+		$offsetSeconds = $value->getTimeZoneOffsetSeconds();
+
+		// getSeconds() is the UTC epoch; add the offset to get the wall-clock time
+		// that the offset suffix labels.
+		$wallClockTimestamp = $value->getSeconds() + $offsetSeconds;
+
+		return gmdate( 'Y-m-d\TH:i:s', $wallClockTimestamp )
+			. $this->fractionalSeconds( $value->getNanoseconds() )
+			. $this->offsetFromSeconds( $offsetSeconds );
+	}
+
+	private function zoneIdDateTimeToIso( DateTimeZoneId $value ): string {
+		$dateTime = ( new DateTimeImmutable( '@' . $value->getSeconds() ) )
+			->setTimezone( new DateTimeZone( $value->getTimezoneIdentifier() ) );
+
+		return $dateTime->format( 'Y-m-d\TH:i:s' )
+			. $this->fractionalSeconds( $value->getNanoseconds() )
+			. $dateTime->format( 'P' );
+	}
+
+	private function timeOfDayToIso( int $nanosecondsSinceMidnight ): string {
+		$seconds = intdiv( $nanosecondsSinceMidnight, 1_000_000_000 );
+
+		return sprintf(
+			'%02d:%02d:%02d',
+			intdiv( $seconds, 3600 ),
+			intdiv( $seconds % 3600, 60 ),
+			$seconds % 60
+		) . $this->fractionalSeconds( $nanosecondsSinceMidnight % 1_000_000_000 );
+	}
+
+	private function offsetFromSeconds( int $offsetSeconds ): string {
+		$sign = $offsetSeconds < 0 ? '-' : '+';
+		$absoluteSeconds = abs( $offsetSeconds );
+
+		return sprintf( '%s%02d:%02d', $sign, intdiv( $absoluteSeconds, 3600 ), intdiv( $absoluteSeconds % 3600, 60 ) );
+	}
+
+	private function fractionalSeconds( int $nanoseconds ): string {
+		if ( $nanoseconds === 0 ) {
+			return '';
+		}
+
+		return rtrim( sprintf( '.%09d', $nanoseconds ), '0' );
 	}
 
 	private function convertList( CypherList $list ): array {

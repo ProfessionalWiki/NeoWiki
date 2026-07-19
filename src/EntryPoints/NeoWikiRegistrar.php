@@ -4,10 +4,14 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\Literal;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 
@@ -17,6 +21,8 @@ readonly class NeoWikiRegistrar {
 		private PropertyTypeRegistry $propertyTypeRegistry,
 		private Neo4jValueBuilderRegistry $valueBuilderRegistry,
 		private PagePropertyProviderRegistry $pagePropertyProviderRegistry,
+		private GraphDatabasePluginRegistry $graphDatabasePluginRegistry,
+		private RdfValueMapperRegistry $rdfValueMapperRegistry,
 	) {
 	}
 
@@ -31,8 +37,21 @@ readonly class NeoWikiRegistrar {
 		$this->valueBuilderRegistry->registerBuilder( $propertyTypeName, $builder );
 	}
 
+	/**
+	 * Registers how a Property Type's value projects to RDF literals for the native RDF export.
+	 *
+	 * @param callable(NeoValue): Literal[] $mapper
+	 */
+	public function addRdfValueMapper( string $propertyTypeName, callable $mapper ): void {
+		$this->rdfValueMapperRegistry->registerMapper( $propertyTypeName, $mapper );
+	}
+
 	public function addPagePropertyProvider( PagePropertyProvider $provider ): void {
 		$this->pagePropertyProviderRegistry->addProvider( $provider );
+	}
+
+	public function addGraphDatabasePlugin( GraphDatabasePlugin $plugin ): void {
+		$this->graphDatabasePluginRegistry->addPlugin( $plugin );
 	}
 
 }

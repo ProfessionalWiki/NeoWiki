@@ -2,7 +2,7 @@
 
 Date: 2026-05-06
 
-Status: Accepted. Supersedes [ADR 12](012-backend-validation.md).
+Status: Accepted. Supersedes [ADR 12](012-backend-validation.md). Amended by [ADR 25](025-backend-driven-frontend-validation.md).
 
 ## Context
 

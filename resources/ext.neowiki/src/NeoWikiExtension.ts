@@ -1,5 +1,5 @@
-import { RightsBasedSubjectAuthorizer } from '@/persistence/RightsBasedSubjectAuthorizer.ts';
-import { SubjectAuthorizer } from '@/application/SubjectAuthorizer.ts';
+import { RightsBasedSubjectPermissionHints } from '@/persistence/RightsBasedSubjectPermissionHints.ts';
+import { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts';
 import { RightsFetcher, UserObjectBasedRightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import TextDisplay from '@/components/Value/TextDisplay.vue';
@@ -31,13 +31,13 @@ import { LayoutRepository } from '@/application/LayoutRepository.ts';
 import { RestLayoutRepository } from '@/persistence/RestLayoutRepository.ts';
 import { LayoutSerializer } from '@/persistence/LayoutSerializer.ts';
 import { LayoutDeserializer } from '@/persistence/LayoutDeserializer.ts';
-import { LayoutAuthorizer } from '@/application/LayoutAuthorizer.ts';
-import { RightsBasedLayoutAuthorizer } from '@/persistence/RightsBasedLayoutAuthorizer.ts';
+import { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
+import { RightsBasedLayoutPermissionHints } from '@/persistence/RightsBasedLayoutPermissionHints.ts';
 import { CsrfSendingHttpClient } from '@/infrastructure/HttpClient/CsrfSendingHttpClient.ts';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
-import { RightsBasedSchemaAuthorizer } from '@/persistence/RightsBasedSchemaAuthorizer.ts';
-import { SchemaAuthorizer } from '@/application/SchemaAuthorizer.ts';
+import { RightsBasedSchemaPermissionHints } from '@/persistence/RightsBasedSchemaPermissionHints.ts';
+import { SchemaPermissionHints } from '@/application/SchemaPermissionHints.ts';
 import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
@@ -51,7 +51,10 @@ import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import { Neo } from '@/Neo.ts';
 // import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
-import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconClock, cdxIconCalendar, cdxIconCheck } from '@wikimedia/codex-icons';
+import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconClock, cdxIconCalendar, cdxIconCheck, cdxIconAlert } from '@wikimedia/codex-icons';
+import UnregisteredTypeValueDisplay from '@/components/Value/UnregisteredTypeValueDisplay.vue';
+import UnregisteredTypeValueInput from '@/components/Value/UnregisteredTypeValueInput.vue';
+import UnregisteredTypeAttributesEditor from '@/components/SchemaEditor/Property/UnregisteredTypeAttributesEditor.vue';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
@@ -60,7 +63,6 @@ import RelationAttributesEditor from '@/components/SchemaEditor/Property/Relatio
 import DateTimeAttributesEditor from '@/components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
 import DateAttributesEditor from '@/components/SchemaEditor/Property/DateAttributesEditor.vue';
 import BooleanAttributesEditor from '@/components/SchemaEditor/Property/BooleanAttributesEditor.vue';
-import { SubjectValidator } from '@/domain/SubjectValidator.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader.ts';
 import { createPinia } from 'pinia';
@@ -150,6 +152,16 @@ export class NeoWikiExtension {
 			icon: cdxIconCheck,
 		} );
 
+		// Render any property type that is not registered (e.g. owned by a disabled
+		// or failed extension) with read-only placeholders instead of throwing.
+		registry.setUnregisteredTypeFallback( {
+			valueDisplayComponent: UnregisteredTypeValueDisplay,
+			valueEditor: UnregisteredTypeValueInput,
+			attributesEditor: UnregisteredTypeAttributesEditor,
+			label: 'neowiki-property-type-unregistered',
+			icon: cdxIconAlert,
+		} );
+
 		return registry;
 	}
 
@@ -177,8 +189,8 @@ export class NeoWikiExtension {
 		return window.mw;
 	}
 
-	public newSubjectAuthorizer(): SubjectAuthorizer {
-		return new RightsBasedSubjectAuthorizer(
+	public newSubjectPermissionHints(): SubjectPermissionHints {
+		return new RightsBasedSubjectPermissionHints(
 			this.getUserObjectBasedRightsFetcher(),
 		);
 	}
@@ -210,8 +222,8 @@ export class NeoWikiExtension {
 		);
 	}
 
-	public newLayoutAuthorizer(): LayoutAuthorizer {
-		return new RightsBasedLayoutAuthorizer(
+	public newLayoutPermissionHints(): LayoutPermissionHints {
+		return new RightsBasedLayoutPermissionHints(
 			this.getUserObjectBasedRightsFetcher(),
 		);
 	}
@@ -222,8 +234,8 @@ export class NeoWikiExtension {
 		);
 	}
 
-	public newSchemaAuthorizer(): SchemaAuthorizer {
-		return new RightsBasedSchemaAuthorizer(
+	public newSchemaPermissionHints(): SchemaPermissionHints {
+		return new RightsBasedSchemaPermissionHints(
 			this.getUserObjectBasedRightsFetcher(),
 		);
 	}
@@ -265,12 +277,6 @@ export class NeoWikiExtension {
 	public getValidationDebounceMs(): number {
 		const value = mw.config.get( 'wgNeoWikiValidationDebounceMs' );
 		return typeof value === 'number' ? value : 300;
-	}
-
-	public newSubjectValidator(): SubjectValidator {
-		return new SubjectValidator(
-			this.getPropertyTypeRegistry(),
-		);
 	}
 
 	public getPropertyTypeRegistry(): PropertyTypeRegistry {

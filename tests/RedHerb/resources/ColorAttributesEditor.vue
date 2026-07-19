@@ -21,7 +21,7 @@
 						<cdx-icon
 							:icon="dragIcon"
 							size="small"
-						/>
+						></cdx-icon>
 					</span>
 					<span
 						class="ext-redherb-color-attributes__swatch"
@@ -44,7 +44,7 @@
 						<cdx-icon
 							:icon="removeIcon"
 							size="small"
-						/>
+						></cdx-icon>
 					</cdx-button>
 				</li>
 			</ul>
@@ -57,7 +57,7 @@
 				<cdx-icon
 					:icon="addIcon"
 					size="small"
-				/>
+				></cdx-icon>
 				{{ addLabel }}
 			</cdx-button>
 		</neo-nested-field>
@@ -65,21 +65,22 @@
 </template>
 
 <script>
-var vue = require( 'vue' );
-var codex = require( './codex.js' );
-var icons = require( './icons.json' );
-var nw = require( 'ext.neowiki' );
+const vue = require( 'vue' );
+const codex = require( './codex.js' );
+const icons = require( './icons.json' );
+const nw = require( 'ext.neowiki' );
 
-var HEX_REGEX = require( './hexRegex.js' );
-var nextId = 0;
+const HEX_REGEX = require( './hexRegex.js' );
+let nextId = 0;
 
 function wrapEntries( colors ) {
-	return ( colors || [] ).map( function ( value ) {
+	return ( colors || [] ).map( ( value ) => {
 		nextId += 1;
 		return { id: 'entry-' + nextId, value: value };
 	} );
 }
 
+// @vue/component
 module.exports = exports = {
 	components: {
 		CdxButton: codex.CdxButton,
@@ -92,12 +93,12 @@ module.exports = exports = {
 	},
 	emits: [ 'update:property' ],
 	setup: function ( props, ctx ) {
-		var entries = vue.ref( wrapEntries( props.property.allowedColors ) );
-		var paletteList = vue.ref( null );
+		const entries = vue.ref( wrapEntries( props.property.allowedColors ) );
+		const paletteList = vue.ref( null );
 
 		vue.watch(
-			function () { return props.property.allowedColors; },
-			function ( newColors ) {
+			() => props.property.allowedColors,
+			( newColors ) => {
 				if ( sameColors( colorsOf( entries.value ), newColors || [] ) ) {
 					return;
 				}
@@ -133,7 +134,7 @@ module.exports = exports = {
 		nw.useSortable( paletteList, {
 			handle: '.ext-redherb-color-attributes__drag-handle',
 			onReorder: function ( oldIndex, newIndex ) {
-				var moved = entries.value.splice( oldIndex, 1 )[ 0 ];
+				const moved = entries.value.splice( oldIndex, 1 )[ 0 ];
 				entries.value.splice( newIndex, 0, moved );
 				emitColors();
 			}
@@ -149,7 +150,9 @@ module.exports = exports = {
 			addIcon: icons.cdxIconAdd,
 			removeIcon: icons.cdxIconClose,
 			dragIcon: icons.cdxIconDraggable,
-			hexIsValid: function ( value ) { return HEX_REGEX.test( value ); },
+			hexIsValid: function ( value ) {
+				return HEX_REGEX.test( value );
+			},
 			addEntry: addEntry,
 			removeEntry: removeEntry,
 			updateEntry: updateEntry
@@ -158,14 +161,14 @@ module.exports = exports = {
 };
 
 function colorsOf( entries ) {
-	return entries.map( function ( entry ) { return entry.value; } );
+	return entries.map( ( entry ) => entry.value );
 }
 
 function sameColors( a, b ) {
 	if ( a.length !== b.length ) {
 		return false;
 	}
-	for ( var i = 0; i < a.length; i += 1 ) {
+	for ( let i = 0; i < a.length; i += 1 ) {
 		if ( a[ i ] !== b[ i ] ) {
 			return false;
 		}

@@ -26,6 +26,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 
@@ -94,6 +95,17 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			->handle( $this->createMockParser(), 'City' );
 
 		$this->assertNoParseHtml( 'Berlin', $result );
+	}
+
+	public function testReturnsEmptyStringForValueOfUnregisteredType(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'Swatch' ), 'color', new UnregisteredTypeValue( 'color', [ '#ff5733' ] ) )
+		);
+
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
+			->handle( $this->createMockParser(), 'Swatch' );
+
+		$this->assertSame( '', $result );
 	}
 
 	public function testReturnsMultiValueStringWithDefaultSeparator(): void {

@@ -2,9 +2,9 @@
 
 Date: 2026-06-22
 
-Status: Draft
+Status: Accepted (2026-07-06)
 
-Feedback desired! Also see the **Open questions** section below.
+Feedback remains welcome on the **Open questions** section below.
 
 ## Context
 
@@ -43,7 +43,7 @@ closed decision.
 ### Page Properties are not exposed via Subjects
 
 Approval state and system page metadata (`name`, `creationTime`, `lastEditor`, `categories`) are
-[Page Properties](../concepts/glossary.md#page-property) — facts stored on the page node, the built-in ones plus any an
+[Page Properties](../glossary.md#page-property) — facts stored on the page node, the built-in ones plus any an
 extension contributes through the `PagePropertyProvider` plugin. They are surfaced via query (Cypher), not through the
 View or editor. The Source model could expose them as read-only Subjects; for this use case it deliberately does not —
 they stay Page Properties.
@@ -85,7 +85,8 @@ offline, or removed schema — rendering degrades gracefully rather than breakin
 Deferred and/or still being designed; consortium feedback is expected here.
 
 - **Federation resolution** — fetch-at-read vs cache/materialise; for triple-store backends, federated queries.
-- **RDF / IRI export and ontology mapping** — see [planning/RdfMapping.md](../planning/RdfMapping.md).
+- **RDF / IRI export and ontology mapping** — see [planning/NativeRdfProjection.md](../planning/NativeRdfProjection.md)
+  and [planning/OntologyMapping.md](../planning/OntologyMapping.md).
 - **Editing sourced Subjects (write-back)** — end-of-roadmap. How useful? Things like editing Wikibase Items
   via NeoWiki UI, or editing data from a remote NeoWiki
 - **The Source interface contract** for by-id and query resolution.
@@ -109,4 +110,6 @@ Deferred and/or still being designed; consortium feedback is expected here.
   [ADR 19: Graph Database Architecture](019-graph-database-architecture.md),
   [ADR 14: Improved Id Format](014-improved-id-format.md),
   [ADR 8: One Schema per Subject](008-one-schema-per-subject.md), [ADR 18: Views](018-views.md).
-- [planning/RdfMapping.md](../planning/RdfMapping.md), [planning/GlobalProperties.md](../planning/GlobalProperties.md).
+- [planning/NativeRdfProjection.md](../planning/NativeRdfProjection.md),
+  [planning/OntologyMapping.md](../planning/OntologyMapping.md),
+  [planning/GlobalProperties.md](../planning/GlobalProperties.md).

@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Page\PageIdentity;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -11,9 +12,11 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi
@@ -23,6 +26,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  */
 class GetPageSubjectsApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
+	use NeoWikiMockAuthorityTrait;
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
@@ -134,7 +138,7 @@ JSON
 				schemaName: new SchemaName( 'GetPageSubjectsApiTestRelationSchema' ),
 				statements: new StatementList( [
 					TestStatement::buildRelation( 'partner', [
-						\ProfessionalWiki\NeoWiki\Tests\Data\TestRelation::build(
+						TestRelation::build(
 							id: 'rTestGPS1111aa2',
 							targetId: 'sTestGPS1111aa1',
 						),
@@ -197,6 +201,96 @@ JSON
 
 		$this->assertNull( $body['mainSubjectId'] );
 		$this->assertSame( [ 'sTestGPS1111121' ], array_keys( $body['subjects'] ) );
+	}
+
+	public function testSubjectsOnAnUnreadablePageAreAbsent(): void {
+		$restrictedPageId = $this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_Restricted',
+			mainSubject: TestSubject::build( id: 'sTestGPS1111141' )
+		)->getPage()->getId();
+
+		$emptyPageId = $this->insertPage(
+			'GetPageSubjectsApiTest_NoSubjects',
+			'Just wikitext, no NeoWiki subjects.'
+		)['id'];
+
+		$denied = json_decode( $this->executeHandler(
+			new GetPageSubjectsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'pageId' => (string)$restrictedPageId ],
+				'queryParams' => [ 'expand' => 'schemas|relations' ],
+			] ),
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		)->getBody()->getContents(), true );
+
+		$empty = json_decode( $this->executeHandler(
+			new GetPageSubjectsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'pageId' => (string)$emptyPageId ],
+				'queryParams' => [ 'expand' => 'schemas|relations' ],
+			] )
+		)->getBody()->getContents(), true );
+
+		// Only the echoed page id may differ between "denied" and "has no Subjects".
+		$empty['pageId'] = $restrictedPageId;
+		$this->assertSame( $empty, $denied );
+	}
+
+	public function testReferencedSubjectOnAnUnreadablePageIsOmitted(): void {
+		$this->createSchema(
+			'GetPageSubjectsApiTestRelationSchema2',
+			<<<JSON
+{
+	"title": "GetPageSubjectsApiTestRelationSchema2",
+	"propertyDefinitions": {
+		"MyRelation": {
+			"type": "relation",
+			"relation": "MyRelation",
+			"targetSchema": "GetPageSubjectsApiTestSchema"
+		}
+	}
+}
+JSON
+		);
+
+		$this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_RestrictedTarget',
+			mainSubject: TestSubject::build(
+				id: 'sTestGPS1111151',
+				schemaName: new SchemaName( 'GetPageSubjectsApiTestSchema' ),
+			)
+		);
+
+		$sourcePageId = $this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_Source',
+			mainSubject: TestSubject::build(
+				id: 'sTestGPS1111152',
+				schemaName: new SchemaName( 'GetPageSubjectsApiTestRelationSchema2' ),
+				statements: new StatementList( [
+					TestStatement::buildRelation( 'MyRelation', [
+						TestRelation::build( id: 'rTestGPS1111152', targetId: 'sTestGPS1111151' ),
+					] ),
+				] )
+			)
+		)->getPage()->getId();
+
+		$denyTargetPage = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
+			$page === null || $page->getDBkey() !== 'GetPageSubjectsApiTest_RestrictedTarget';
+
+		$body = json_decode( $this->executeHandler(
+			new GetPageSubjectsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'pageId' => (string)$sourcePageId ],
+				'queryParams' => [ 'expand' => 'relations' ],
+			] ),
+			authority: $this->mockRegisteredAuthority( $denyTargetPage )
+		)->getBody()->getContents(), true );
+
+		$this->assertArrayHasKey( 'sTestGPS1111152', $body['subjects'] );
+		$this->assertSame( [], $body['referencedSubjects'] );
 	}
 
 }

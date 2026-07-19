@@ -6,6 +6,18 @@ function neowiki.setupInterface()
 	php = mw_interface
 	mw_interface = nil
 
+	-- query is only registered on the PHP side when a Neo4j backend is configured.
+	-- Drop the Lua wrapper too, so mw.neowiki.query is genuinely absent otherwise
+	-- (rather than a function that fails one call deeper on a nil php.query).
+	if not php.query then
+		neowiki.query = nil
+	end
+
+	-- Likewise, sparqlQuery is registered only when a SPARQL store is configured.
+	if not php.sparqlQuery then
+		neowiki.sparqlQuery = nil
+	end
+
 	mw = mw or {}
 	mw.neowiki = neowiki
 
@@ -34,6 +46,10 @@ end
 
 function neowiki.query( cypher, params )
 	return php.query( cypher, params )
+end
+
+function neowiki.sparqlQuery( sparql )
+	return php.sparqlQuery( sparql )
 end
 
 function neowiki.getSchema( name )

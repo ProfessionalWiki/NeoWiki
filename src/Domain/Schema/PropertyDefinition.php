@@ -6,6 +6,8 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
+use Throwable;
 
 abstract class PropertyDefinition {
 
@@ -37,15 +39,19 @@ abstract class PropertyDefinition {
 	}
 
 	public function toJson(): array {
-		return array_merge(
-			[
-				'type' => $this->getPropertyType(),
-				'description' => $this->getDescription(),
-				'required' => $this->isRequired(),
-				'default' => $this->getDefault(),
-			],
-			$this->nonCoreToJson()
-		);
+		return array_merge( $this->coreToJson(), $this->nonCoreToJson() );
+	}
+
+	/**
+	 * The fields common to every Property Type.
+	 */
+	protected function coreToJson(): array {
+		return [
+			'type' => $this->getPropertyType(),
+			'description' => $this->getDescription(),
+			'required' => $this->isRequired(),
+			'default' => $this->getDefault(),
+		];
 	}
 
 	/**
@@ -61,11 +67,14 @@ abstract class PropertyDefinition {
 	 * @throws InvalidArgumentException
 	 */
 	public static function fromJson( array $json, PropertyTypeLookup $propertyTypeLookup ): self {
-		$propertyType = $propertyTypeLookup->getType( $json['type'] );
-
-		if ( $propertyType === null ) {
-			throw new InvalidArgumentException( 'Unknown property type: ' . $json['type'] );
+		// A definition without a usable type name is structurally invalid, as opposed to
+		// merely referencing a type no extension registered. Callers skip it; without
+		// this guard the lookup below fails with a TypeError they do not catch.
+		if ( !array_key_exists( 'type', $json ) || !is_string( $json['type'] ) || $json['type'] === '' ) {
+			throw new InvalidArgumentException( 'Property definition needs a non-empty type: ' . json_encode( $json ) );
 		}
+
+		$propertyType = $propertyTypeLookup->getType( $json['type'] );
 
 		$propertyCore = new PropertyCore(
 			description: $json['description'] ?? '',
@@ -73,9 +82,16 @@ abstract class PropertyDefinition {
 			default: $json['default'] ?? null
 		);
 
+		// The extension owning the type is disabled or failed to load. Preserve the
+		// definition instead of dropping it, so the rest of the Schema keeps working
+		// and the property survives a re-save.
+		if ( $propertyType === null ) {
+			return UnregisteredTypeProperty::fromPartialJson( $propertyCore, $json );
+		}
+
 		try {
 			return $propertyType->buildPropertyDefinitionFromJson( $propertyCore, $json );
-		} catch ( \Throwable $e ) {
+		} catch ( Throwable $e ) {
 			throw new InvalidArgumentException( 'Invalid property definition: ' . json_encode( $json ), 0, $e );
 		}
 	}

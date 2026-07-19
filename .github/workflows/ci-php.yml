@@ -5,12 +5,14 @@ on:
   push:
     paths-ignore:
       - '.github/workflows/ci-ts.yml'
+      - '.github/workflows/ci-redherb.yml'
       - '.github/workflows/neo-ci-ts.yml'
       - 'resources/**'
       - 'Neo/neojs/**'
   pull_request:
     paths-ignore:
       - '.github/workflows/ci-ts.yml'
+      - '.github/workflows/ci-redherb.yml'
       - '.github/workflows/neo-ci-ts.yml'
       - 'resources/**'
       - 'Neo/neojs/**'
@@ -31,6 +33,11 @@ jobs:
     env:
       NEO4J_URL_OVERRIDE: bolt://neo4j:password@localhost:7689
       NEO4J_URL_READ_OVERRIDE: bolt://mediawiki_read:mediawiki_read@localhost:7689
+      # Live QLever store for the SPARQL query system test. Overrides the dev-stack hostname in
+      # phpunit.xml.dist (PHPUnit <env> does not override an existing environment variable), so the test
+      # reaches the QLever the "Start QLever" step publishes on the runner's localhost.
+      QLEVER_TEST_URL: http://localhost:7019/
+      QLEVER_TEST_ACCESS_TOKEN: neowiki_test_token
 
     services:
       test_neo:
@@ -101,12 +108,42 @@ jobs:
           resource: http-get://localhost:7689
           timeout: 60000
 
+      # QLever for the SPARQL query system test. It cannot be a `services:` container: its bring-up needs
+      # a multi-step entrypoint (build an empty index, then serve) that a service container cannot express
+      # (no command/args, only an image + options). So it is started explicitly, like the "Create neo4j
+      # user" docker step below. --persist-updates is omitted: the store is fresh per CI run and the test
+      # clears it, so keeping updates in memory is enough. The index is built in /tmp rather than the dev
+      # stack's /index: the image runs as a non-root user with no /index (the dev stack provides it via a
+      # volume), so a bare `docker run` must use an already-writable in-image path.
+      # --service-allowed-iri-prefixes disables SPARQL federation, matching the dev stack (see
+      # Docker/docker-compose.dev.yml): QLever allows every SERVICE IRI unless the option is given, and "-"
+      # is the documented deny-all value (an invalid prefix no IRI matches). No test federates.
+      - name: Start QLever
+        run: |
+          docker run -d --name test_qlever -p 7019:7019 -e QLEVER_ACCESS_TOKEN=neowiki_test_token \
+            --entrypoint /bin/bash docker.io/adfreiburg/qlever:latest -lc '
+              set -e
+              cd /tmp
+              : > data.nt
+              qlever-index -i neowiki -F nt -f data.nt
+              exec qlever-server -i neowiki -p 7019 -a "$QLEVER_ACCESS_TOKEN" -m 1G --service-allowed-iri-prefixes -'
+
       - name: Run update.php
         run: php maintenance/update.php --quick
 
       - name: Create neo4j user
         run: docker exec test_neo bash -c \
           "echo \"CREATE USER mediawiki_read SET PASSWORD 'mediawiki_read' CHANGE NOT REQUIRED; GRANT ROLE reader TO mediawiki_read;\" | cypher-shell -u neo4j -p password -a bolt://localhost:7689"
+
+      - name: Wait for QLever
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS -o /dev/null "http://localhost:7019/?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; then
+              echo "QLever is serving"; exit 0
+            fi
+            sleep 2
+          done
+          echo "QLever did not become ready in time; dumping logs:"; docker logs test_qlever; exit 1
 
       - name: Run PHPUnit
         run: php tests/phpunit/phpunit.php -c extensions/NeoWiki/phpunit.xml.dist

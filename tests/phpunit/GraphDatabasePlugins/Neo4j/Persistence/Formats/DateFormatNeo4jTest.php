@@ -8,8 +8,10 @@ use Laudis\Neo4j\Types\Date;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -20,15 +22,13 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class DateFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 
 	public function setUp(): void {
-		self::markTestSkipped( 'Format not supported yet' );
-		//$this->setUpNeo4j();
+		$this->setUpNeo4j();
 	}
 
-	public function testStoresAsDates(): void {
-		$store = $this->newNeo4jQueryStore();
+	private function savePageWithDateStatement(): SubjectId {
 		$subjectId = TestSubject::uniqueId();
 
-		$store->savePage( TestPage::build(
+		$this->newProjectionStore()->savePage( TestPage::build(
 			mainSubject: TestSubject::build(
 				id: $subjectId,
 				statements: new StatementList( [
@@ -41,7 +41,13 @@ class DateFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 			),
 		) );
 
-		$result = $store->runReadQuery(
+		return $subjectId;
+	}
+
+	public function testStoresAsDates(): void {
+		$subjectId = $this->savePageWithDateStatement();
+
+		$result = $this->readGraph(
 			"MATCH (n {id: '$subjectId'}) RETURN n.MyProperty[0] + duration('P3D') AS ModifiedDate1, n.MyProperty[1] as Date2"
 		)->toRecursiveArray()[0];
 
@@ -54,6 +60,37 @@ class DateFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 			new Date( 19629 ),
 			$result['Date2']
 		);
+	}
+
+	public function testStoredDatesNormalizeToIsoStrings(): void {
+		$subjectId = $this->savePageWithDateStatement();
+
+		$rows = ( new Neo4jResultNormalizer() )->convertRows(
+			$this->readGraph(
+				"MATCH (n {id: '$subjectId'}) RETURN n.MyProperty AS dates"
+			)
+		);
+
+		$this->assertSame(
+			[ 1 => [ 'dates' => [
+				1 => '2023-09-28',
+				2 => '2023-09-29',
+			] ] ],
+			$rows
+		);
+	}
+
+	public function testDateOperationsWorkOnStoredValues(): void {
+		$subjectId = $this->savePageWithDateStatement();
+
+		$result = $this->readGraph(
+			"MATCH (n {id: '$subjectId'})
+				WHERE n.MyProperty[0] < date('2023-09-29')
+					AND n.MyProperty[1] > date('2023-09-28')
+				RETURN n.id AS id"
+		);
+
+		$this->assertSame( $subjectId->text, $result->first()->get( 'id' ) );
 	}
 
 }

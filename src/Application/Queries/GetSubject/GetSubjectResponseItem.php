@@ -16,6 +16,7 @@ readonly class GetSubjectResponseItem {
 		public array $statements,
 		public ?int $pageId,
 		public ?string $pageTitle,
+		public ?int $pageNamespaceId,
 	) {
 	}
 

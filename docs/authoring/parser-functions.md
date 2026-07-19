@@ -1,0 +1,204 @@
+---
+title: Parser Functions
+order: 1
+---
+# Parser Functions
+
+NeoWiki provides three parser functions for use in wikitext.
+
+| If you want to... | Use |
+|-------------------|-----|
+| Render a Subject visually on the page | [`{{#view}}`](#view) |
+| Insert one property's value inline as text | [`{{#neowiki_value}}`](#neowiki_value) |
+| Run a custom Cypher query and see the raw results | [`{{#cypher_raw}}`](#cypher_raw) |
+| Run a custom SPARQL query and see the raw results | [`{{#sparql_raw}}`](#sparql_raw) |
+
+For programmatic access from Lua modules, see the [Lua API](lua-api.md).
+
+For definitions of terms like Subject, Schema, and Layout, see the [Glossary](../glossary.md).
+
+## `{{#view}}`
+
+Renders a Subject as HTML on the page using a [View Type](../glossary.md#view-type) (currently
+`infobox`). Optionally uses a [Layout](../glossary.md#layout) to control which properties are shown
+and how.
+
+### Syntax
+
+```
+{{#view: }}                                           renders the current page's Main Subject
+{{#view: <subjectId>}}                                renders the specified Subject
+{{#view: subject=<subjectId>}}                        same, with the Subject specified as a named argument
+{{#view: layout=<layoutName>}}                        renders the current page's Main Subject with the named Layout
+{{#view: <subjectId> | layout=<layoutName>}}          renders the specified Subject with the named Layout
+{{#view: subject=<subjectId> | layout=<layoutName>}}  same, with the Subject specified as a named argument
+```
+
+### Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `<subjectId>` (positional) | Subject ID to render. Defaults to the current page's Main Subject. |
+| `subject=<subjectId>` | Named alternative to the positional form. Cannot be combined with the positional form. |
+| `layout=<layoutName>` | Layout to apply. Without one, all properties are shown in schema order. |
+
+### Notes
+
+- Returns an empty string if the resolved Subject does not exist.
+- The View Type (e.g. `infobox`) is determined by the Layout. Only `infobox` is implemented today.
+- Rendering happens client-side, so the Subject view appears once the page's JavaScript has loaded.
+
+### Examples
+
+```
+{{#view: }}
+{{#view: s1abc5def6ghi78}}
+{{#view: layout=CompanyOverview}}
+{{#view: s1abc5def6ghi78 | layout=CompanyOverview}}
+{{#view: subject=s1abc5def6ghi78 | layout=CompanyOverview}}
+```
+
+Unknown named arguments, more than one positional argument, or specifying the
+Subject both positionally and as `subject=` produce a visible parser error.
+
+## `{{#neowiki_value}}`
+
+Returns the value of a single property from a Subject, formatted as a string. Designed for inline
+use in wikitext and for other extensions that need to read NeoWiki metadata via parser functions.
+
+### Syntax
+
+```
+{{#neowiki_value: <propertyName> }}
+{{#neowiki_value: <propertyName> | page=<pageName> }}
+{{#neowiki_value: <propertyName> | subject=<subjectId> }}
+{{#neowiki_value: <propertyName> | separator=<separator> }}
+```
+
+### Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `propertyName` (positional) | The name of the property to read. Required. |
+| `page` | Read from the Main Subject of the named page. Defaults to the current page. Ignored when `subject` is also passed. |
+| `subject` | Read from the Subject with the given ID. Takes precedence over `page`. |
+| `separator` | Separator for multi-valued properties. Defaults to `, `. |
+
+### Output by property type
+
+| Type | Output |
+|------|--------|
+| `text`, `url`, `select` | The string value. Multiple values joined with `separator`. |
+| `number` | The number, e.g. `42` or `19.99`. |
+| `boolean` | `true` or `false`. |
+| `relation` | The target Subject's label. Multiple targets joined with `separator`. Falls back to the target Subject ID if the label cannot be looked up. |
+
+Boolean and number values are always rendered, even for `false` and `0` — these are not treated
+as "empty".
+
+### Output is plain text
+
+The output is HTML-escaped and not interpreted as wikitext. Links, templates, and HTML inside
+property values render as literal characters. Useful when you want exactly what the user typed;
+not useful when you want to emit links or styled markup.
+
+When you pass the result to another parser function as an argument, that function also receives
+HTML-encoded text — a value of `Engineers & Designers` arrives as `Engineers &amp; Designers`.
+
+### Returns empty when
+
+- The Subject does not exist on the page (or named page), or the Subject ID was not found.
+- The Subject has no value for that property.
+- The value is an empty collection (e.g. a multi-valued text property with no entries).
+
+### Examples
+
+```
+Founded: {{#neowiki_value: Founded at}}
+Status: {{#neowiki_value: Status | page=ACME Inc}}
+Process owner: {{#neowiki_value: Process owner | subject=s1abc5def6ghi78}}
+Tags: {{#neowiki_value: Tags | separator=;}}
+```
+
+Passing a value to another extension's parser function:
+
+```
+{{#read-confirmation: audience={{#neowiki_value: Target audience}}}}
+```
+
+## `{{#cypher_raw}}`
+
+Executes a read-only Cypher query and returns the raw results as JSON in a code block. Mainly
+useful for development and debugging. It is available only when a Neo4j graph backend is configured;
+on a wiki without one, `{{#cypher_raw: …}}` is not registered and renders as ordinary wikitext.
+
+For end-user dashboards, formatted query result rendering is planned (see
+[#809](https://github.com/ProfessionalWiki/NeoWiki/issues/809)). A Lua
+[`nw.query()`](lua-api.md#nwquerycypher-params) function is already available for building
+custom result formatting in templates.
+
+### Syntax
+
+```
+{{#cypher_raw: <cypherQuery>}}
+```
+
+### Notes
+
+- Only read queries are allowed. Anything that creates, modifies, or deletes data is rejected,
+  including `CALL` (even for read-only procedures).
+- Errors (rejected queries, syntax errors, the database being unavailable, etc.) render as a
+  styled error message in place of the result.
+- Output is HTML-escaped, so query results containing `<`, `>`, `&`, etc. display safely.
+- The output is wrapped in `<div class="mw-neowiki-cypher-result"><pre>` and the error message in
+  `<div class="error">`, so you can target either with CSS.
+
+### Examples
+
+```
+{{#cypher_raw: MATCH (s:Subject) RETURN s.name LIMIT 10}}
+
+{{#cypher_raw: MATCH (s:Subject) WHERE 'Company' IN labels(s) RETURN s.name, s.`Founded at`}}
+```
+
+## `{{#sparql_raw}}`
+
+Executes a read-only SPARQL query against the first configured [SPARQL store](../operations/installation.md#optional-sparql-graph-stores)
+and returns the raw results as JSON in a code block. The SPARQL counterpart of `{{#cypher_raw}}`, mainly
+useful for development and debugging. It is available only when a SPARQL store is configured; on a wiki
+without one, `{{#sparql_raw: …}}` is not registered and renders as ordinary wikitext.
+
+The output is the W3C [`application/sparql-results+json`](https://www.w3.org/TR/sparql11-results-json/)
+document, unmodified — the standard `head` / `results` structure (or `boolean` for an `ASK` query).
+
+### Syntax
+
+```
+{{#sparql_raw: <sparqlQuery>}}
+```
+
+### Notes
+
+- Read-only by protocol, not by a keyword filter: the query is sent as a SPARQL 1.1 *query* operation
+  (`SELECT` / `ASK` / `CONSTRUCT` / `DESCRIBE`), and the SPARQL query grammar contains no update forms, so
+  no read-only validator is needed (unlike Cypher, where one language expresses both reads and writes).
+- Errors (a query the store rejects, the store being unavailable, etc.) render as a styled error message
+  in place of the result.
+- Output is HTML-escaped, so results containing `<`, `>`, `&`, etc. display safely.
+- The output is wrapped in `<div class="mw-neowiki-sparql-result"><pre>` and the error message in
+  `<div class="error">`, so you can target either with CSS.
+
+### Examples
+
+```
+{{#sparql_raw: SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 10}}
+```
+
+## Related Documentation
+
+- [Lua API](lua-api.md) — Programmatic access to the same data via `mw.neowiki`
+- [Glossary](../glossary.md) — Definitions of Subject, Schema, Layout, View, etc.
+- [Schema Format](../api/schema-format.md) — How Schemas and properties are defined
+- [Subject Format](../api/subject-format.md) — How Subject data is stored
+- [Graph Model](../api/graph-model.md) — Neo4j node and relationship structure (relevant for
+  `{{#cypher_raw}}` queries)

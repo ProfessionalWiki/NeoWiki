@@ -13,10 +13,12 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthori
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeToValueType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UrlProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
@@ -27,14 +29,15 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\Application\SubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FailingSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SucceedingSubjectAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction
@@ -55,17 +58,17 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function newAction(
-		?SubjectAuthorizer $authorizer = null,
+		?SubjectWriteAuthorizer $authorizer = null,
 		bool $validationEnforced = false,
 	): ReplaceSubjectAction {
 		$registry = PropertyTypeRegistry::withCoreTypes();
 		$builder = new StatementListBuilder(
-			propertyTypeToValueType: new PropertyTypeToValueType( $registry ),
+			propertyTypeLookup: $registry,
 			idGenerator: new StubIdGenerator( '11111111111127' )
 		);
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->subjectRepository,
-			subjectAuthorizer: $authorizer ?? new SucceedingSubjectAuthorizer(),
+			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: $builder,
 			schemaLookup: $this->schemaLookup,
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
@@ -75,6 +78,9 @@ class ReplaceSubjectActionTest extends TestCase {
 			),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
+				[ new SubjectId( self::SUBJECT_ID ), new PageIdentifiers( new PageId( 7 ), 'Test page', 0 ) ]
+			] ),
 		);
 	}
 
@@ -167,11 +173,20 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->assertSame( 'Edit summary', $this->subjectRepository->comments[self::SUBJECT_ID] );
 	}
 
+	public function testAuthorizesAgainstTheSubjectsResolvedPage(): void {
+		$spy = new SpySubjectWriteAuthorizer( allowed: true );
+		$this->subjectRepository->updateSubject( TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) ) );
+
+		$this->newAction( $spy )->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+
+		$this->assertEquals( new PageId( 7 ), $spy->authorizedPageId );
+	}
+
 	public function testUnauthorizedThrows(): void {
 		$subject = TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) );
 		$this->subjectRepository->updateSubject( $subject );
 
-		$action = $this->newAction( new FailingSubjectAuthorizer() );
+		$action = $this->newAction( new SpySubjectWriteAuthorizer( allowed: false ) );
 
 		$this->expectException( SubjectEditNotAuthorizedException::class );
 
@@ -334,6 +349,71 @@ class ReplaceSubjectActionTest extends TestCase {
 				),
 			] )
 		) );
+	}
+
+	private function registerSchemaWithNameAndUnregisteredSwatch(): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( self::SCHEMA_NAME ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Name' => new UrlProperty(
+					core: new PropertyCore( description: '', required: false, default: null ),
+					multiple: false,
+					uniqueItems: false,
+				),
+				'Swatch' => UnregisteredTypeProperty::fromPartialJson(
+					new PropertyCore( description: '', required: false, default: null ),
+					[ 'type' => 'color', 'allowedColors' => [ '#ff5733' ] ],
+				),
+			] )
+		) );
+	}
+
+	public function testEnforcementOnPersistsStatementOfUnregisteredType(): void {
+		$this->registerSchemaWithNameAndUnregisteredSwatch();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		) );
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'After',
+			[
+				'Name' => [ 'propertyType' => 'url', 'value' => 'https://pro.wiki' ],
+				'Swatch' => [ 'propertyType' => 'color', 'value' => [ '#ff5733' ] ],
+			],
+			null
+		);
+
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertEquals(
+			new UnregisteredTypeValue( 'color', [ '#ff5733' ] ),
+			$this->subjectRepository
+				->getSubject( new SubjectId( self::SUBJECT_ID ) )
+				->getStatements()
+				->getStatement( new PropertyName( 'Swatch' ) )
+				->getValue()
+		);
+	}
+
+	public function testStatementOfUnregisteredTypeIsReportedAsANonBlockingViolation(): void {
+		$this->registerSchemaWithNameAndUnregisteredSwatch();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		) );
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'After',
+			[ 'Swatch' => [ 'propertyType' => 'color', 'value' => [ '#ff5733' ] ] ],
+			null
+		);
+
+		$this->assertCount( 1, $this->presenterSpy->violations );
+		$this->assertSame( 'unregistered-type', $this->presenterSpy->violations[0]->code );
+		$this->assertFalse( $this->presenterSpy->violations[0]->isBlocking() );
 	}
 
 	public function testEnforcementOffPersistsEditWithNewViolations(): void {

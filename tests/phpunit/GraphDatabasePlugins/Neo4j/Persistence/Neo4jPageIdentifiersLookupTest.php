@@ -49,7 +49,7 @@ class Neo4jPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testFindsIdOfPage(): void {
-		$queryStore = NeoWikiExtension::getInstance()->newNeo4jQueryStore(
+		$queryStore = NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
 			)
@@ -65,7 +65,7 @@ class Neo4jPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 
 		$queryStore->savePage( TestPage::build(
 			id: 42,
-			properties: TestPageProperties::build( title: 'Bar' ),
+			properties: TestPageProperties::build( title: 'Bar', namespaceId: 12 ),
 			childSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_1 ),
 				TestSubject::build( id: self::GUID_2 ), // Target
@@ -82,7 +82,7 @@ class Neo4jPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 		) );
 
 		$this->assertEquals(
-			new PageIdentifiers( new PageId( 42 ), 'Bar' ),
+			new PageIdentifiers( new PageId( 42 ), 'Bar', 12 ),
 			$this->newLookup( $this->getClient() )->getPageIdOfSubject( new SubjectId( self::GUID_2 ) )
 		);
 	}

@@ -12,6 +12,7 @@ partners, knowledge managers, MediaWiki ecosystem evaluators, and live-demo audi
 | `Subject/<Name>.json` | Subjects (data instances). Optional paired `<Name>.wikitext` for prose. | Main namespace, `<Name>` |
 | `Layout/<Name>.json` | Layouts (curated displays for a Schema) | `Layout:<Name>` |
 | `Page/<Name>.wikitext` | Free-form wiki pages (hubs, references) | Main namespace, `<Name>` |
+| `SparqlPage/<Name>.wikitext` | Pages demoing the SPARQL surfaces. Imported only when `$wgNeoWikiSparqlStores` is non-empty (elsewhere `{{#sparql_raw}}` is unregistered and would render literally). | Main namespace, `<Name>` |
 | `Module/<Name>.lua` | Scribunto modules | `Module:<Name>` |
 
 `ImportDemoData.php` is additive: it creates and updates pages but does NOT delete pages whose
@@ -30,8 +31,8 @@ a clean-slate import after renames or deletions.
 Subject, relation, and option IDs:
 
 - 15 characters total, starting with `s` / `r` / `o` respectively.
-- Remaining 14 characters use a base32-ish alphabet that excludes look-alikes: no `0`, `o`, `O`,
-  `l`, `I`.
+- Remaining 14 characters use a base32-ish alphabet that excludes look-alikes: no `0`, `O`, `l`, `I`
+  (lowercase `o` and `i` are allowed; see `SubjectId`/`RelationId`).
 - Existing conventions:
   - Museum corpus uses random base62 (e.g. `sEpfwJLnxyQy6vR`).
   - Older corpora group by prefix (`s1demo1...` ACME, `s1demo7...` ACME structural,

@@ -8,6 +8,7 @@ use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
+use PermissionsError;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -29,6 +30,13 @@ class SpecialNeoJson extends SpecialPage {
 		if ( $title === null ) {
 			$this->getOutput()->addWikiMsg( 'neowiki-todo-page-does-not-exist' ); // TODO
 			return;
+		}
+
+		// Deny early, before rendering the form, for users who cannot edit the page. This is only a
+		// hint: the write itself is authorized in onSubmit().
+		if ( !NeoWikiExtension::getInstance()->newSubjectPermissionHints( $this->getAuthority() )
+				->canEditSubject( new PageId( $title->getId() ) ) ) {
+			throw new PermissionsError( 'edit' );
 		}
 
 		$json = $this->getNeoJson( $title );
@@ -77,6 +85,13 @@ class SpecialNeoJson extends SpecialPage {
 	}
 
 	private function onSubmit( array $formData, Title $title ): bool {
+		// This performs the Subject write, so it needs the binding authorization rather than the
+		// hint that execute() gated the form on.
+		if ( !NeoWikiExtension::getInstance()->newSubjectWriteAuthorizer( $this->getAuthority() )
+				->authorize( new PageId( $title->getId() ) ) ) {
+			throw new PermissionsError( 'edit' );
+		}
+
 		$content = SubjectContent::newFromData(
 			NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize( $formData['json'] )
 		);

@@ -47,9 +47,8 @@ import { CdxField, CdxIcon, CdxMultiselectLookup, CdxSelect } from '@wikimedia/c
 import type { ChipInputItem, MenuItemData } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, ValueType } from '@/domain/Value';
-import { resolveSelectLabel, SelectProperty, SelectType } from '@/domain/propertyTypes/Select.ts';
+import { resolveSelectLabel, SelectProperty } from '@/domain/propertyTypes/Select.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 
 const props = withDefaults(
@@ -62,17 +61,12 @@ const props = withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
-const liveValidationError = ref<string | null>( null );
-
 function relevantServerViolations(): readonly SubjectViolation[] {
 	const name = props.property.name.toString();
 	return ( props.serverViolations ?? [] ).filter( ( v ) => v.propertyName === name );
 }
 
 const validationError = computed<string | null>( () => {
-	if ( liveValidationError.value !== null ) {
-		return liveValidationError.value;
-	}
 	// For Select (both single and multi), show the first relevant server violation.
 	const hit = relevantServerViolations()[ 0 ];
 	if ( hit ) {
@@ -117,26 +111,12 @@ const singleSelectedValue = computed( () =>
 	selection.value.length > 0 ? selection.value[ 0 ] : ''
 );
 
-const propertyType = NeoWikiServices.getPropertyTypeRegistry().getType( SelectType.typeName );
-
 function getFilteredOptions(): MenuItemData[] {
 	const query = String( inputValue.value ).toLowerCase();
 	return props.property.options
 		.filter( ( option ) => !selection.value.includes( option.id ) )
 		.filter( ( option ) => query === '' || option.label.toLowerCase().includes( query ) )
 		.map( ( option ) => ( { value: option.id, label: option.label } ) );
-}
-
-function validate(): void {
-	const value = selection.value.length > 0 ?
-		newStringValue( selection.value ) :
-		undefined;
-	// 'required' is deferred to the server (surfaced at save) like every other
-	// input; we do not flag an empty select before the user has chosen a value.
-	const errors = propertyType.validate( value, props.property )
-		.filter( ( e ) => e.code !== 'required' );
-	liveValidationError.value = errors.length === 0 ? null :
-		mw.message( `neowiki-field-${ errors[ 0 ].code }`, ...( errors[ 0 ].args ?? [] ) ).text();
 }
 
 function emitClearIfServerViolationPresent(): void {
@@ -152,7 +132,6 @@ function onSingleSelect( selected: string ): void {
 	selection.value = selected ? [ selected ] : [];
 	emit( 'update:modelValue', selection.value.length > 0 ?
 		newStringValue( selection.value ) : undefined );
-	validate();
 	emitClearIfServerViolationPresent();
 }
 
@@ -180,7 +159,6 @@ watch( chips, () => {
 		inputValue.value = '';
 		menuItems.value = [];
 		emit( 'update:modelValue', parts.length > 0 ? newStringValue( parts ) : undefined );
-		validate();
 		emitClearIfServerViolationPresent();
 	} );
 }, { deep: true } );
@@ -191,15 +169,8 @@ watch( () => props.modelValue, ( newValue ) => {
 	if ( JSON.stringify( newParts ) !== JSON.stringify( selection.value ) ) {
 		selection.value = [ ...newParts ];
 		chips.value = newParts.map( chipFromId );
-		validate();
 	}
 } );
-
-watch( () => props.property, () => {
-	validate();
-} );
-
-validate();
 
 defineExpose<ValueInputExposes>( {
 	getCurrentValue(): Value | undefined {

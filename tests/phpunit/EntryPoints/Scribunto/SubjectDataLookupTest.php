@@ -24,6 +24,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 
@@ -91,6 +92,16 @@ class SubjectDataLookupTest extends TestCase {
 		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ 'Berlin' ], $lookup->getValue( $this->createTitle(), 'City' ) );
+	}
+
+	public function testGetValueReturnsNullForValueOfUnregisteredType(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'Swatch' ), 'color', new UnregisteredTypeValue( 'color', [ '#ff5733' ] ) )
+		);
+
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
+
+		$this->assertSame( [ null ], $lookup->getValue( $this->createTitle(), 'Swatch' ) );
 	}
 
 	public function testGetValueReturnsFirstStringForMultiValue(): void {

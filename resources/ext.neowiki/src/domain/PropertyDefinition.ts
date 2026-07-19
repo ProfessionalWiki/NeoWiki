@@ -61,19 +61,25 @@ export class PropertyDefinitionDeserializer {
 	) {}
 
 	public propertyDefinitionFromJson( name: string | PropertyName, json: any ): PropertyDefinition {
-		const propertyType = this.registry.getType( json.type );
-		return propertyType.createPropertyDefinitionFromJson(
-			{
-				name: typeof name === 'string' ? new PropertyName( name ) : name,
-				type: json.type as string,
-				description: json.description ?? '',
-				required: json.required ?? false,
-				default: json.default !== undefined && json.default !== null ?
-					this.valueDeserializer.deserialize( json.default, json.type ) :
-					undefined,
-			} as PropertyDefinition,
-			json,
-		);
+		const base: PropertyDefinition = {
+			name: typeof name === 'string' ? new PropertyName( name ) : name,
+			type: json.type as string,
+			description: json.description ?? '',
+			required: json.required ?? false,
+			default: json.default !== undefined && json.default !== null ?
+				this.valueDeserializer.deserialize( json.default, json.type ) :
+				undefined,
+		};
+
+		// A type owned by a disabled or failed extension is not registered. Degrade
+		// to the base definition so the rest of the Schema still loads and renders.
+		// Retain the original type-specific keys (constraints, display attributes)
+		// so they are not silently dropped when the Schema is later re-saved.
+		if ( !this.registry.hasType( json.type ) ) {
+			return { ...json, ...base };
+		}
+
+		return this.registry.getType( json.type ).createPropertyDefinitionFromJson( base, json );
 	}
 
 }

@@ -21,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 
@@ -56,6 +57,7 @@ class GetSubjectQueryTest extends TestCase {
 				),
 			),
 			new InMemoryPageIdentifiersLookup(),
+			new StubPageReadAuthorizer( allowed: true ),
 		);
 
 		$query->execute(
@@ -96,6 +98,7 @@ class GetSubjectQueryTest extends TestCase {
 						],
 						pageId: null,
 						pageTitle: null,
+						pageNamespaceId: null,
 					)
 				]
 			),
@@ -127,6 +130,7 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			new InMemorySubjectLookup(),
 			new InMemoryPageIdentifiersLookup(),
+			new StubPageReadAuthorizer( allowed: true ),
 		);
 
 		$query->execute(
@@ -146,9 +150,10 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			new InMemorySubjectLookup( $subject ),
 			new InMemoryPageIdentifiersLookup( [
-				[ new SubjectId( TestSubject::ZERO_GUID ), new PageIdentifiers( new PageId( 1 ), 'wrong title' ) ],
-				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'right title' ) ],
+				[ new SubjectId( TestSubject::ZERO_GUID ), new PageIdentifiers( new PageId( 1 ), 'wrong title', 0 ) ],
+				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'right title', 12 ) ],
 			] ),
+			new StubPageReadAuthorizer( allowed: true ),
 		);
 
 		$query->execute(
@@ -161,6 +166,7 @@ class GetSubjectQueryTest extends TestCase {
 
 		$this->assertSame( 42, $response->subjects[$response->requestedId]->pageId );
 		$this->assertSame( 'right title', $response->subjects[$response->requestedId]->pageTitle );
+		$this->assertSame( 12, $response->subjects[$response->requestedId]->pageNamespaceId );
 	}
 
 	public function testIncludeReferencedSubjects(): void {
@@ -193,9 +199,10 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			new InMemorySubjectLookup( $subject, $referencedSubject ),
 			new InMemoryPageIdentifiersLookup( [
-				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'subject title' ) ],
-				[ $referencedSubject->id, new PageIdentifiers( new PageId( 1337 ), 'referenced title' ) ],
+				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'subject title', 0 ) ],
+				[ $referencedSubject->id, new PageIdentifiers( new PageId( 1337 ), 'referenced title', 12 ) ],
 			] ),
+			new StubPageReadAuthorizer( allowed: true ),
 		);
 
 		$query->execute(
@@ -211,6 +218,7 @@ class GetSubjectQueryTest extends TestCase {
 		$this->assertSame( 'referenced subject', $response->subjects[$referencedSubject->id->text]->label );
 		$this->assertSame( 1337, $response->subjects[$referencedSubject->id->text]->pageId );
 		$this->assertSame( 'referenced title', $response->subjects[$referencedSubject->id->text]->pageTitle );
+		$this->assertSame( 12, $response->subjects[$referencedSubject->id->text]->pageNamespaceId );
 	}
 
 }

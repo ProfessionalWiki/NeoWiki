@@ -18,6 +18,8 @@
 		"MediaWiki": ">= 1.43.0"
 	},
 
+	"callback": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::onExtensionRegistration",
+
 	"MessagesDirs": {
 		"NeoWiki": [
 			"i18n"
@@ -41,6 +43,7 @@
 		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
 		"PageDeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageDeleteComplete",
 		"RevisionUndeleted": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionUndeleted",
+		"AfterImportPage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onAfterImportPage",
 
 		"CodeEditorGetPageLanguage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onCodeEditorGetPageLanguage",
 
@@ -58,7 +61,8 @@
 	"ContentHandlers": {
 		"NeoWikiSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SubjectContentHandler",
 		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SchemaContentHandler",
-		"NeoWikiLayout": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\LayoutContentHandler"
+		"NeoWikiLayout": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\LayoutContentHandler",
+		"NeoWikiMapping": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\MappingContentHandler"
 	},
 
 	"namespaces": [
@@ -91,12 +95,28 @@
 			"id": 7477,
 			"constant": "NS_NEOWIKI_LAYOUT_TALK",
 			"name": "Layout_talk"
+		},
+		{
+			"id": 7478,
+			"constant": "NS_NEOWIKI_MAPPING",
+			"name": "Mapping",
+			"defaultcontentmodel": "NeoWikiMapping",
+			"subpages": false,
+			"content": false,
+			"movable": false,
+			"protection": "neowiki-mapping-edit"
+		},
+		{
+			"id": 7479,
+			"constant": "NS_NEOWIKI_MAPPING_TALK",
+			"name": "Mapping_talk"
 		}
 	],
 
 	"AvailableRights": [
 		"neowiki-schema-edit",
 		"neowiki-layout-edit",
+		"neowiki-mapping-edit",
 		"neowiki-query"
 	],
 
@@ -106,7 +126,8 @@
 		},
 		"user": {
 			"neowiki-schema-edit": true,
-			"neowiki-layout-edit": true
+			"neowiki-layout-edit": true,
+			"neowiki-mapping-edit": true
 		}
 	},
 
@@ -116,7 +137,8 @@
 		},
 		"editpage": {
 			"neowiki-schema-edit": true,
-			"neowiki-layout-edit": true
+			"neowiki-layout-edit": true,
+			"neowiki-mapping-edit": true
 		}
 	},
 
@@ -169,6 +191,14 @@
 		"NeoWikiNeo4jInternalReadUrl": {
 			"description": "Bolt URL NeoWiki uses for read and query traffic against Neo4j; should use a least-privilege Neo4j user.",
 			"value": null
+		},
+		"NeoWikiRdfBaseUri": {
+			"description": "Base URI under which the RDF export mints all NeoWiki IRIs (entity, property, schema, page, etc.). When null, defaults to the wiki's canonical URL ($wgCanonicalServer). Wiki-level on purpose, so sibling projections describe the same entities with identical IRIs.",
+			"value": null
+		},
+		"NeoWikiSparqlStores": {
+			"description": "SPARQL 1.1 graph stores to keep in sync with page changes and to query, in addition to any Neo4j backend. A list of objects, each with: 'updateUrl' (required, the store's SPARQL 1.1 Update endpoint, e.g. a QLever instance); 'queryUrl' (optional, the store's SPARQL 1.1 Query endpoint the read surfaces use; defaults to 'updateUrl', which is correct for QLever where the two are the same); 'accessToken' (optional, sent as an HTTP Bearer token on both update and query requests, e.g. for a QLever access token or a read-protected endpoint); and 'projection' (optional, the RDF vocabulary written to the store: 'native' by default, or any configured Mapping target). The query surfaces (the {{#sparql_raw}} parser function, nw.sparqlQuery() in Lua, and POST /neowiki/v0/query/sparql) target the first configured store. Works with QLever and any SPARQL 1.1 store. Empty by default.",
+			"value": []
 		}
 	},
 
@@ -193,6 +223,11 @@
 			"path": "/neowiki/v0/page/{pageId}/subjects",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetPageSubjectsApi"
+		},
+		{
+			"path": "/neowiki/v0/page/{pageId}/rdf",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newExportPageRdfApi"
 		},
 		{
 			"path": "/neowiki/v0/page/{pageId}/mainSubject",
@@ -258,11 +293,6 @@
 			"path": "/neowiki/v0/subject/{subjectId}/validate",
 			"method": [ "POST" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newValidateSubjectUpdateApi"
-		},
-		{
-			"path": "/neowiki/v0/query/cypher",
-			"method": [ "POST" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCypherQueryApi"
 		}
 	],
 
@@ -331,6 +361,7 @@
 						"cdxIconEyeClosed",
 						"cdxIconClock",
 						"cdxIconCalendar",
+						"cdxIconAlert",
 						"cdxIconCollapse",
 						"cdxIconExpand",
 						"cdxIconPushPin",
@@ -349,6 +380,11 @@
 				"neowiki-property-type-datetime",
 				"neowiki-property-type-date",
 				"neowiki-property-type-boolean",
+				"neowiki-property-type-unregistered",
+				"neowiki-property-type-unregistered-note",
+				"neowiki-property-type-unregistered-input-note",
+				"neowiki-property-type-unregistered-attributes-note",
+				"neowiki-property-type-unregistered-notification",
 				"neowiki-boolean-true",
 				"neowiki-boolean-false",
 				"neowiki-infobox-type",
@@ -367,6 +403,7 @@
 				"neowiki-field-single-value-only",
 				"neowiki-field-type-mismatch",
 				"neowiki-field-schema-not-found",
+				"neowiki-field-unregistered-type",
 				"neowiki-field-label-required",
 				"neowiki-select-placeholder",
 				"neowiki-select-no-results",
@@ -470,7 +507,6 @@
 				"neowiki-layout-display-schema",
 				"neowiki-layout-display-view-type",
 				"neowiki-layout-display-rules-caption",
-				"neowiki-layout-sidebar-all-layouts",
 				"neowiki-layout-display-rule-property",
 				"neowiki-layout-display-rule-attributes",
 				"neowiki-layout-display-no-rules",
@@ -482,10 +518,10 @@
 				"neowiki-layout-editor-schema",
 				"neowiki-layout-editor-view-type",
 				"neowiki-layout-editor-show-all-properties",
-				"neowiki-layout-editor-shown-properties",
-				"neowiki-layout-editor-hidden-properties",
+				"neowiki-layout-editor-shown-count",
 				"neowiki-layout-editor-show-property",
 				"neowiki-layout-editor-hide-property",
+				"neowiki-layout-editor-keep-one-shown",
 				"neowiki-layout-editor-summary-default",
 				"neowiki-layout-editor-success",
 				"neowiki-layout-editor-error",

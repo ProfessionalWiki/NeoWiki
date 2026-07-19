@@ -22,28 +22,6 @@ export abstract class BasePropertyType<P extends PropertyDefinition, V extends V
 
 	public abstract getExampleValue( property: P ): V;
 
-	// TODO: do we need to allow undefined for value?
-	public abstract validate( value: V | undefined, property: P ): ValueValidationError[];
-
-}
-
-export interface ValueValidationError {
-
-	/**
-	 * Can be used to construct a message key for i18n by prefixing it with 'neowiki-field-'
-	 */
-	code: string;
-
-	/**
-	 * Arguments for the message
-	 */
-	args?: unknown[];
-
-	/**
-	 * The source/cause of the error
-	 */
-	source?: unknown;
-
 }
 
 export type PropertyType = BasePropertyType<PropertyDefinition, Value>;
@@ -64,6 +42,10 @@ export class PropertyTypeRegistry {
 		}
 
 		return type;
+	}
+
+	public hasType( typeName: string ): boolean {
+		return this.propertyTypes.has( typeName );
 	}
 
 	public getTypeNames(): string[] {
