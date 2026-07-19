@@ -31,6 +31,7 @@ class ExportSubjectRdfApiTest extends NeoWikiIntegrationTestCase {
 	private const string SCHEMA = 'ExportSubjectRdfApiTestSchema';
 	private const string BERLIN_ID = 'sTestSRA1111111';
 	private const string PARIS_ID = 'sTestSRA2222222';
+	private const string UNMAPPED_ID = 'sTestSRA3333333';
 	private const string ABSENT_ID = 'sTestSRA9999999';
 
 	private int $pageId;
@@ -203,6 +204,32 @@ JSON
 		$this->assertStringContainsString( 'europeana.eu/schemas/edm', $body, 'The mapped ontology vocabulary is used.' );
 		$this->assertStringContainsString( self::BERLIN_ID, $body, 'The Subject IRI stays native.' );
 		$this->assertStringNotContainsString( self::SCHEMA, $body, 'No native schema class is emitted.' );
+	}
+
+	public function testReadableSubjectWithoutAMappingForTheTargetReturnsAnEmptyGraph(): void {
+		// "edm" is a known projection because Berlin's Schema is mapped to it, but this Subject's Schema
+		// is not, so its ontology projection is empty. A readable Subject is never hidden behind a 404,
+		// so the response is a 200 empty graph rather than a not-found.
+		$this->createBerlinToEdmMapping();
+
+		$this->createSchema( 'ExportSubjectRdfApiTestUnmappedSchema' );
+		$this->createPageWithSubjects(
+			'ExportSubjectRdfApiTest_Unmapped',
+			mainSubject: TestSubject::build(
+				id: self::UNMAPPED_ID,
+				label: new SubjectLabel( 'Freetown' ),
+				schemaName: new SchemaName( 'ExportSubjectRdfApiTestUnmappedSchema' )
+			)
+		);
+
+		$response = $this->export( query: [ 'projection' => 'edm', 'format' => 'turtle' ], subjectId: self::UNMAPPED_ID );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame(
+			[],
+			ParsedRdf::canonicalQuads( $response->getBody()->getContents() ),
+			'A readable Subject with no Mapping for the target projects to an empty graph, not a 404.'
+		);
 	}
 
 	public function testReturnsOnlyTheRequestedSubjectsTriples(): void {

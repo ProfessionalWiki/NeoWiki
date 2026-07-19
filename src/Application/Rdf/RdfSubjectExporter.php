@@ -18,10 +18,10 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
  * gone or carries no Subject slot, the current revision no longer holds it (a graph lagging the slot),
  * or the hosting page is not readable.
  *
- * The read gate lives here, not in the handler as for {@see RdfPageExporter} (whose page id is a path
- * param known up front): a Subject's hosting page is only known after the graph resolves it. Folding
- * the gate in keeps every not-found reason byte identical (cf. #1046) and mirrors GetSubjectQuery,
- * which authorizes the resolved page the same way.
+ * The read gate lives here rather than in the REST handler, where the page export keeps it (its page
+ * id is a path parameter known up front): a Subject's hosting page is only known after the graph
+ * resolves it. Folding the gate in keeps every not-found reason byte identical (cf. #1046) and mirrors
+ * GetSubjectQuery, which authorizes the resolved page the same way.
  */
 readonly class RdfSubjectExporter {
 
