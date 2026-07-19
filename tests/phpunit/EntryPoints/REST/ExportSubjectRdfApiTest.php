@@ -183,6 +183,25 @@ JSON
 		$this->assertSame( 400, $response->getStatusCode() );
 	}
 
+	public function testReadRestrictedMappingNamesAreAbsentFromTheKnownProjectionsList(): void {
+		// The unknown-projection 400 list must not leak the titles of Mapping pages the caller cannot
+		// read (#1046). A caller who can read the page sees "EDM"; one who cannot must not — though
+		// "native" (not a page) stays listed for everyone.
+		$this->createEdmMapping();
+
+		$readable = $this->export( query: [ 'projection' => 'bogus' ] );
+		$restricted = $this->export(
+			query: [ 'projection' => 'bogus' ],
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		);
+
+		$this->assertStringContainsString( 'EDM', $readable->getBody()->getContents() );
+
+		$restrictedBody = $restricted->getBody()->getContents();
+		$this->assertStringNotContainsString( 'EDM', $restrictedBody, 'A read-restricted Mapping page name must not leak into the 400 list.' );
+		$this->assertStringContainsString( 'native', $restrictedBody, 'The always-available native projection stays listed.' );
+	}
+
 	public function testOmittedProjectionEqualsExplicitNative(): void {
 		$default = $this->export();
 		$explicit = $this->export( query: [ 'projection' => 'native' ] );
