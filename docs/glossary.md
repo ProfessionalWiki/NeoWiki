@@ -42,7 +42,7 @@ Statements have
 
 Example: Property Name "age" with Value `42` and Property Type `number`.
 
-NeoWiki Statements are not equivalent to Wikibase Statements. The latter has a rank, qualifiers,  references, and an ID. For similar modeling, NeoWiki uses Subjects (multiple per page).
+NeoWiki Statements are not equivalent to Wikibase Statements. The latter have a rank, qualifiers, references, and an ID. For similar modeling, NeoWiki uses Subjects (multiple per page). See [Qualifiers and References](qualifiers-and-references.md) for how to model these.
 
 ### Value
 
