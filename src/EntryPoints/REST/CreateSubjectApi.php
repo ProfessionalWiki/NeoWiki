@@ -84,7 +84,7 @@ class CreateSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) for the Subject. Nested shape matches the subject JSON format documented in docs/api/subject-format.md.',
+				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) for the Subject. Nested shape matches the subject JSON format documented at https://neowiki.ai/docs/api/subject-format.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',
