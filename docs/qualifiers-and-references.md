@@ -4,9 +4,9 @@ order: 2
 ---
 # Qualifiers and References
 
-NeoWiki Statements have no qualifiers, references, or ranks the way Wikibase Statements do. This is deliberate, and
-it is the question we hear most often from people coming from Wikibase. This page explains how NeoWiki models the same
-needs, and why it takes a different shape.
+NeoWiki Statements have no qualifiers, references, or rank the way Wikibase Statements do. This is deliberate. If you
+are coming from Wikibase and wondering where they went, this page explains how NeoWiki models the same needs, and why
+it takes a different shape.
 
 For the underlying concepts (Subject, Statement, Relation, Schema), see the [Glossary](glossary.md).
 
@@ -21,18 +21,7 @@ nesting qualifiers and references inside a Statement, you model the extra struct
 - **A reference** → an ordinary, typed property on that Subject or Relation. References are not special.
 
 Because the things you link have Schemas, the "qualifiers" and "references" are themselves typed and validated. In
-Wikibase terms, you get *schemas for your qualifiers* — something Wikibase does not offer.
-
-## Flat Statements by design
-
-A [Statement](glossary.md#statement) is a property name, a value, and the property's type. That is all. There is no
-qualifier list, no reference list, no rank, and no per-Statement ID.
-
-Richer structure is expressed by linking [Subjects](glossary.md#subject) through
-[Relations](glossary.md#value) ([ADR 7](adr/007-multiple-subjects-per-page.md),
-[ADR 10](adr/010-add-guids-to-relations.md)), not by adding fields inside a Statement. This keeps Schemas
-two-dimensional and predictable, keeps the editing UIs simple, and makes the surrounding context schema-defined rather
-than a free-form bag.
+Wikibase terms, you get *schemas for your qualifiers*.
 
 ## Qualifying a value: model it as its own Subject
 
@@ -51,27 +40,15 @@ Attendance Schema
   Source:   url
 ```
 
-```json
-{
-  "label": "Rijksmuseum",
-  "schema": "Museum",
-  "statements": {
-    "Attendance figures": {
-      "type": "relation",
-      "value": [ { "target": "s…2024" }, { "target": "s…2023" } ]
-    }
-  }
-}
-```
-
 Each Attendance Subject (`{ Year: 2024, Visitors: 2500000, Source: "https://…" }`) carries what Wikibase would express
 as the qualifier (`Year`) and the reference (`Source`) on a single population-style Statement. Here they are real,
 typed properties governed by the `Attendance` Schema, so they validate and render like any other data. There is no
 depth limit: a linked Subject can link to further Subjects.
 
-The full JSON shape is in the [Subject Format](api/subject-format.md) reference. The Attendance Subjects can
-live on their own pages or as [Child Subjects](glossary.md#page) on the museum's page; whether Child Subjects should
-*also* be linked to the page's Main Subject automatically is an open question
+The [Subject Format](api/subject-format.md#complete-example) reference shows this exact pattern in JSON: a city whose
+population Subjects carry a `Date` and a `References` property. The Attendance Subjects can live on their own pages or
+as [Child Subjects](glossary.md#page) on the museum's page; whether Child Subjects should *also* be linked to the
+page's Main Subject automatically is an open question
 ([#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)).
 
 ## Qualifying a relationship: relation properties
@@ -95,8 +72,7 @@ they are typed and validated like everything else, is being designed in
 ## References
 
 A reference is provenance, so it is modelled as a normal property: add a `Source` (or similar) property to the Schema
-of the linked Subject, or as a property on the Relation. The `Source` in the Attendance example above is exactly this.
-Nothing about a reference is a special kind of thing in NeoWiki — it is a typed property like any other.
+of the linked Subject, or put one on the Relation. The `Source` in the Attendance example above is exactly this.
 
 ## Rank
 
@@ -104,9 +80,21 @@ NeoWiki has no rank. The cases Wikibase solves with rank are modelled explicitly
 
 - **Current vs. historical values** → separate Subjects that carry a date (the attendance pattern), then query or sort
   for the one you want.
-- **Deprecated or wrong values** → do not store them, or add an explicit status property.
+- **Deprecated or wrong values** → an explicit status property, or simply not storing them.
 
 This is more verbose than a rank flag, but explicit and directly queryable.
+
+## Mapping from Wikibase
+
+| Wikibase | NeoWiki |
+|---|---|
+| Statement | A Subject's Statement (property + value), or a Relation |
+| Qualifier on a literal value | A property on a linked Subject (reify the value) |
+| Qualifier on a relationship | A property on the Relation |
+| Reference | An ordinary property (e.g. `Source`) on the linked Subject or Relation |
+| Rank | No equivalent; model explicitly (dated Subjects, status properties) |
+| Statement ID | Statements have none; Subjects and Relations both have stable IDs |
+| `novalue` / `somevalue` | Not currently modelled (open: [#937](https://github.com/ProfessionalWiki/NeoWiki/issues/937)) |
 
 ## Why this shape
 
@@ -128,20 +116,8 @@ In Neo4j, a Relation is an edge and a linked Subject is another node; see the
 
 In RDF, the projection uses Wikibase-style reification: a direct triple for simple queries, plus a Relation node that
 preserves the Relation's ID and its properties. A linked Subject is simply its own resource with its own triples, so a
-"qualified value" round-trips without loss. The mapping is being worked out in the
-[Native RDF Projection planning doc](planning/NativeRdfProjection.md).
-
-## Mapping from Wikibase
-
-| Wikibase | NeoWiki |
-|---|---|
-| Statement | A Subject's Statement (property + value), or a Relation |
-| Qualifier on a literal value | A property on a linked Subject (reify the value) |
-| Qualifier on a relationship | A property on the Relation |
-| Reference | An ordinary property (e.g. `Source`) on the linked Subject or Relation |
-| Rank | No equivalent; model explicitly (dated Subjects, status properties) |
-| Statement ID | Statements have none; Subjects and Relations both have stable IDs |
-| `novalue` / `somevalue` | Not currently modelled (open: [#937](https://github.com/ProfessionalWiki/NeoWiki/issues/937)) |
+"qualified value" round-trips without loss. See [RDF Export](rdf/rdf-export.md) for the native projection, and
+[Ontology Mapping](rdf/ontology-mapping.md) for projecting into standard ontologies such as EDM.
 
 ## Related metadata and display
 
@@ -159,5 +135,7 @@ Two things Wikibase veterans sometimes group with qualifiers are handled separat
 - [ADR 7: Multiple Subjects Per Page](adr/007-multiple-subjects-per-page.md)
 - [ADR 10: Add GUIDs to Relations](adr/010-add-guids-to-relations.md)
 - [Subject Format](api/subject-format.md) and [Graph Model](api/graph-model.md)
-- Open design: [#630 (relation property schemas)](https://github.com/ProfessionalWiki/NeoWiki/issues/630),
+- [Worked example: Person to EDM](examples/person-to-edm.md) — ontology mapping end to end; its CIDOC-CRM tier
+  revisits intermediate-node modelling at the RDF level
+- Open design: [#630 (Relations design)](https://github.com/ProfessionalWiki/NeoWiki/issues/630),
   [#959 (Main/Child Subject semantics)](https://github.com/ProfessionalWiki/NeoWiki/issues/959)
