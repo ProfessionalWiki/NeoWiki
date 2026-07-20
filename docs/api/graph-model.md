@@ -82,6 +82,23 @@ Values a PropertyType cannot represent are dropped from the projection: a proper
 PropertyType produces no node property, and non-ISO 8601 `date`/`dateTime` parts are omitted from the stored value.
 The revision slot stays authoritative.
 
+### Stub Subject nodes
+
+A Subject node can exist as a *stub*: a node stripped down to only its `id` and `wiki_id` properties and the
+`Subject` label — no `name`, no Schema label, and no Statement-derived properties. A stub keeps a Subject's identity
+available for incoming relations while carrying none of its data.
+
+Stubs arise in two ways:
+
+- **Referenced but removed.** When a Subject is removed from its page (or its page is deleted) but other Subjects
+  still hold relations to it, its node is reduced to a stub rather than deleted, and its `HasSubject` and outgoing
+  relationships are removed. This keeps the incoming references valid.
+- **Referenced but not yet created.** When a Relation targets a Subject that does not exist yet, a stub target node
+  is created so the relationship can be stored.
+
+When the real Subject is later saved, its node is upgraded in place — matched by `id` alone, so the stub gains its
+properties and Schema label without creating a duplicate node.
+
 ## Relationships
 
 ### HasSubject
@@ -106,10 +123,8 @@ backtick-escaped.
 | `id` | string | Relation ID, 15 characters starting with `r` |
 | *(additional)* | scalar | Any properties from the Relation's property map |
 
-When a Subject is deleted but still has incoming relations from other Subjects, its outgoing relationships and
-`HasSubject` relationship are removed, but the node itself is kept so incoming references stay valid. Such a retained
-node keeps its Schema labels and dynamic properties; the absence of an incoming `HasSubject` relationship distinguishes
-it from a live Subject.
+When a Subject with incoming relations from other Subjects is removed, its node is kept as a
+[stub](#stub-subject-nodes) so those incoming references remain valid.
 
 ## Constraints
 

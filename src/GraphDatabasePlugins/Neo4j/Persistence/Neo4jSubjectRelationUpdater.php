@@ -15,6 +15,7 @@ class Neo4jSubjectRelationUpdater {
 		private readonly SubjectId $subjectId,
 		private readonly TypedRelationList $relations,
 		private readonly TransactionInterface $transaction,
+		private readonly string $wikiId,
 	) {
 	}
 
@@ -57,9 +58,14 @@ class Neo4jSubjectRelationUpdater {
 	}
 
 	private function createOrUpdate( TypedRelation $relation ): void {
+		// A relation whose target Subject does not exist yet creates it as a stub: a node with only
+		// the id and wiki_id properties and the Subject label. ON CREATE keeps an already-existing
+		// target (a real Subject or an earlier stub) untouched. The stub is upgraded in place when the
+		// real Subject is later saved, since the save path also matches the node by id alone.
 		$this->transaction->run(
 			'MERGE (subject {id: $subjectId})
 			 MERGE (target {id: $targetId})
+			 ON CREATE SET target:Subject, target.wiki_id = $wikiId
 			 MERGE (subject)-[relation:' . Cypher::escape( $relation->type->text ) . ' {id: $relationId}]->(target)
 			 SET relation = $relationProperties',
 			[
@@ -67,6 +73,7 @@ class Neo4jSubjectRelationUpdater {
 				'relationId' => $relation->id->asString(),
 				'relationProperties' => $this->getPropertiesForNeo4j( $relation ),
 				'targetId' => $relation->targetId->text,
+				'wikiId' => $this->wikiId,
 			]
 		);
 	}
