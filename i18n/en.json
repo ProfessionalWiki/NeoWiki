@@ -86,6 +86,8 @@
 	"neowiki-field-schema-not-found": "The schema \"$1\" is missing. Restore it before saving.",
 	"neowiki-field-unregistered-type": "The type \"$1\" is not available on this wiki.",
 	"neowiki-field-label-required": "Please provide a label for the subject.",
+	"neowiki-field-relation-target-schema-mismatch": "This relation must point to a subject using the \"$1\" schema, but the selected subject uses \"$2\".",
+	"neowiki-field-relation-target-not-found": "The subject \"$1\" this relation points to does not exist yet.",
 	"neowiki-select-placeholder": "Select an option",
 	"neowiki-select-no-results": "No matching options.",
 	"neowiki-select-unknown-option": "(unknown option)",

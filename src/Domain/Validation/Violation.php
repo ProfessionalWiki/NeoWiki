@@ -13,7 +13,7 @@ readonly class Violation {
 	 * is in a degraded state. They are reported but never reject a write. These are the
 	 * `warning` tier that ADR 26 will make configurable per Constraint.
 	 */
-	private const NON_BLOCKING_CODES = [ 'schema-not-found', 'unregistered-type' ];
+	private const NON_BLOCKING_CODES = [ 'schema-not-found', 'unregistered-type', 'relation-target-not-found' ];
 
 	public function __construct(
 		public ?PropertyName $propertyName,

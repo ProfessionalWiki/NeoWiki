@@ -4,19 +4,25 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Validation;
 
+use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 
 readonly class SubjectValidator {
 
 	public function __construct(
 		private PropertyTypeLookup $propertyTypeLookup,
+		private SubjectLookup $subjectLookup,
 	) {
 	}
 
@@ -75,7 +81,86 @@ readonly class SubjectValidator {
 			$violations[] = $rawViolation->withPropertyName( $propertyName );
 		}
 
+		return array_merge( $violations, $this->validateRelationTargets( $statement, $definition ) );
+	}
+
+	/**
+	 * Server-side relation-target checks. Schema-scoped by necessity: both need the writer's-schema
+	 * RelationProperty (for its declared targetSchema) and a Subject lookup, neither of which
+	 * PropertyType::validate() has access to. This runs after the per-type dispatch, so the
+	 * Statement's type still matches the Schema's relation property here; a type-mismatched
+	 * Statement returned earlier and is not treated as a relation.
+	 *
+	 * A missing target is a non-blocking `relation-target-not-found` warning (red-link philosophy:
+	 * the target may be minted later, e.g. during import); a resolvable target whose own Schema is
+	 * not the declared targetSchema is a blocking `relation-target-schema-mismatch` error.
+	 *
+	 * The Schema compared is the target's own writer's-schema, read from its revision slot rather
+	 * than from a graph node property. Reaching that slot still resolves the target id through the
+	 * subject -> page index, which lives only in the graph projection (see
+	 * {@see \ProfessionalWiki\NeoWiki\NeoWikiExtension::getPageIdentifiersLookup()}), so an
+	 * unrebuilt or stale graph reports an existing target as not found. That is the same
+	 * degradation the read path has, and the reason not-found is non-blocking.
+	 *
+	 * @return Violation[]
+	 */
+	private function validateRelationTargets( Statement $statement, PropertyDefinition $definition ): array {
+		$value = $statement->getValue();
+
+		if ( !$definition instanceof RelationProperty || !$value instanceof RelationValue ) {
+			return [];
+		}
+
+		$violations = [];
+
+		foreach ( $value->relations as $index => $relation ) {
+			$violation = $this->validateRelationTarget(
+				$relation,
+				$statement->getPropertyName(),
+				$definition->getTargetSchema(),
+				(int)$index
+			);
+
+			if ( $violation !== null ) {
+				$violations[] = $violation;
+			}
+		}
+
 		return $violations;
+	}
+
+	/**
+	 * The target's position in the multi-value RelationValue is carried as valuePartIndex so
+	 * ViolationDiff can tell a newly-added bad target apart from a pre-existing same-code
+	 * violation on the same property, exactly as SelectType/UrlType do for their parts.
+	 */
+	private function validateRelationTarget(
+		Relation $relation,
+		PropertyName $propertyName,
+		SchemaName $targetSchema,
+		int $valuePartIndex
+	): ?Violation {
+		$target = $this->subjectLookup->getSubject( $relation->targetId );
+
+		if ( $target === null ) {
+			return new Violation(
+				propertyName: $propertyName,
+				code: 'relation-target-not-found',
+				args: [ $relation->targetId->text ],
+				valuePartIndex: $valuePartIndex,
+			);
+		}
+
+		if ( $target->getSchemaName()->getText() !== $targetSchema->getText() ) {
+			return new Violation(
+				propertyName: $propertyName,
+				code: 'relation-target-schema-mismatch',
+				args: [ $targetSchema->getText(), $target->getSchemaName()->getText() ],
+				valuePartIndex: $valuePartIndex,
+			);
+		}
+
+		return null;
 	}
 
 	/**
