@@ -61,10 +61,35 @@ class RelationTypeTest extends TestCase {
 		$this->assertSame( 'required', $violations[0]->code );
 	}
 
+	public function testPropertyOmittingMultipleWithTwoTargetsReturnsSingleValueOnly(): void {
+		// `multiple` is optional in the Schema JSON and defaults to false, so a relation property
+		// authored or imported without the key is single-valued. Since single-value-only blocks,
+		// a Subject that already holds two targets on such a property stops saving under
+		// enforcement. Pinned here because the default is what decides that, not the validation.
+		$violations = ( new RelationType() )->validate(
+			new RelationValue(
+				TestRelation::build( targetId: 'srt111111111aaa' ),
+				TestRelation::build( targetId: 'srt111111111bbb' ),
+			),
+			$this->newRelationPropertyWithoutMultipleKey(),
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'single-value-only', $violations[0]->code );
+		$this->assertTrue( $violations[0]->isBlocking() );
+	}
+
 	private function newRelationProperty( bool $multiple, bool $required = false ): RelationProperty {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: $required, default: null ),
 			[ 'relation' => 'has', 'targetSchema' => 'Person', 'multiple' => $multiple ],
+		);
+	}
+
+	private function newRelationPropertyWithoutMultipleKey(): RelationProperty {
+		return RelationProperty::fromPartialJson(
+			new PropertyCore( description: '', required: false, default: null ),
+			[ 'relation' => 'has', 'targetSchema' => 'Person' ],
 		);
 	}
 
