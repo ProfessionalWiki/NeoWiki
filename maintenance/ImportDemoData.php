@@ -15,6 +15,8 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\LayoutContentSource;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\FirstRevisionAuthorPageTitlesLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiPageDeleter;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use User;
 
@@ -37,11 +39,23 @@ class ImportDemoData extends Maintenance {
 
 	private function newImportAction(): ImportPagesAction {
 		$user = $this->getUser();
+		$services = MediaWikiServices::getInstance();
 
 		return new ImportPagesAction(
 			presenter: $this->newImportPresenter(),
 			pageContentSaver: new PageContentSaver(
-				wikiPageFactory: MediaWikiServices::getInstance()->getWikiPageFactory(),
+				wikiPageFactory: $services->getWikiPageFactory(),
+				performer: $user,
+			),
+			importedPageTitlesLookup: new FirstRevisionAuthorPageTitlesLookup(
+				db: $this->getPrimaryDB(),
+				actorNormalization: $services->getActorNormalization(),
+				revisionLookup: $services->getRevisionLookup(),
+				titleFactory: $services->getTitleFactory(),
+				importer: $user,
+			),
+			pageDeleter: new MediaWikiPageDeleter(
+				deletePageFactory: $services->getDeletePageFactory(),
 				performer: $user,
 			),
 			schemaContentSource: new SchemaContentSource(
@@ -121,6 +135,18 @@ class ImportDemoData extends Maintenance {
 			}
 
 			public function presentImportFailed( string $pageTitle, string $errorMessage ): void {
+				$this->maintenance->outputChanneled( "FAILED: $errorMessage", $pageTitle );
+			}
+
+			public function presentDeletionStarted( string $pageTitle ): void {
+				$this->maintenance->outputChanneled( "Deleting $pageTitle... ", $pageTitle );
+			}
+
+			public function presentDeleted( string $pageTitle ): void {
+				$this->maintenance->outputChanneled( "done", $pageTitle );
+			}
+
+			public function presentDeletionFailed( string $pageTitle, string $errorMessage ): void {
 				$this->maintenance->outputChanneled( "FAILED: $errorMessage", $pageTitle );
 			}
 
