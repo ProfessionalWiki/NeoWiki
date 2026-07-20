@@ -4,24 +4,21 @@ order: 3
 ---
 # Subject JSON Format
 
-This document describes the JSON format used to store Subject data in MediaWiki revision slots and returned by
-the REST API (GET endpoints). The same format is used for write operations (POST/PUT) with minor differences
-noted below.
+Subject data is [stored as JSON](../adr/002-store-data-as-json.md). The REST API returns and accepts the same object
+shapes; its read envelope and write differences are under [REST API](#rest-api).
 
-For definitions of terms like Subject, Statement, and Value, see the [Glossary](../glossary.md).
+For Subject, Statement, and Value, see the [Glossary](../glossary.md).
 
-## Overview
+## Top-level structure
 
-Subject data is stored as JSON in a dedicated MediaWiki revision slot. Each page can contain multiple Subjects:
-one optional "main subject" and zero or more "child subjects".
-
-## Top-Level Structure
+A page holds one optional main Subject and zero or more child Subjects
+([ADR 007](../adr/007-multiple-subjects-per-page.md)), all in one `subjects` map with `mainSubject` pointing at
+the main one.
 
 ```json
 {
   "mainSubject": "<subject-id>",
   "subjects": {
-    "<subject-id>": { ... },
     "<subject-id>": { ... }
   }
 }
@@ -29,19 +26,16 @@ one optional "main subject" and zero or more "child subjects".
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `mainSubject` | string | No | ID of the main subject on this page. If omitted, the page has no main subject. |
-| `subjects` | object | No | Map of subject IDs to subject objects. If omitted, the page has no subjects. |
+| `mainSubject` | string | No | ID of the page's main Subject. Omitted or `null` when the page has none. |
+| `subjects` | object | No | Map of Subject ID to [Subject object](#subject-object). Omitted or empty when the page has no Subjects. |
 
-## Subject Object
-
-Each subject in the `subjects` map has the following structure:
+## Subject object
 
 ```json
 {
   "label": "Professional Wiki GmbH",
   "schema": "Company",
   "statements": {
-    "<property-name>": { ... },
     "<property-name>": { ... }
   }
 }
@@ -49,68 +43,13 @@ Each subject in the `subjects` map has the following structure:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `label` | string | Yes | Human-readable label for the subject |
-| `schema` | string | Yes | Name of the Schema this subject follows (page name in the Schema namespace) |
-| `statements` | object | No | Map of property names to statement objects. If omitted, the subject has no statements. |
+| `label` | string | Yes | Human-readable label for the Subject. |
+| `schema` | string | Yes | Name of the Schema the Subject follows (a page in the Schema namespace). |
+| `statements` | object | No | Map of property name to [Statement object](#statement-object). Omitted when the Subject has none. |
 
-## Statement Object
+A property mapped to `null` instead of a Statement object is skipped when the JSON is read.
 
-Each statement represents a property value and includes the "writer's schema" - the property type at the time
-the value was written. This allows the system to handle schema changes gracefully.
-
-```json
-{
-  "type": "<property-type>",
-  "value": <value>
-}
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `type` | string | Yes | The property type when this value was written (writer's schema). See Value Formats below. |
-| `value` | varies | Yes | The actual value. Format depends on `type`. |
-
-## Value Formats by Type
-
-### Text (`text`)
-
-Array of strings.
-
-```json
-{
-  "type": "text",
-  "value": ["Germany"]
-}
-```
-
-```json
-{
-  "type": "text",
-  "value": ["First value", "Second value"]
-}
-```
-
-### URL (`url`)
-
-Array of strings (URLs).
-
-```json
-{
-  "type": "url",
-  "value": ["https://professional.wiki"]
-}
-```
-
-```json
-{
-  "type": "url",
-  "value": ["https://professional.wiki", "https://wikibase.consulting"]
-}
-```
-
-### Number (`number`)
-
-Single numeric value (integer or float).
+## Statement object
 
 ```json
 {
@@ -119,36 +58,52 @@ Single numeric value (integer or float).
 }
 ```
 
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | The property's type when the value was written — the writer's schema ([ADR 011](../adr/011-include-writers-schema.md)). |
+| `value` | varies | Yes | The value, shaped by `type`. See [Value formats](#value-formats). |
+
+## Value formats
+
+`type` holds the property type name, which fixes the `value` shape:
+
+| `type` | `value` |
+|--------|---------|
+| `text`, `url`, `select`, `date`, `dateTime` | Array of strings, one per value part. |
+| `number` | A single number (integer or float). |
+| `boolean` | A single boolean. |
+| `relation` | Array of [relation objects](#relations). |
+
+A multi-part `text` value:
+
 ```json
-{
-  "type": "number",
-  "value": 3.14159
-}
+{ "type": "text", "value": [ "First value", "Second value" ] }
 ```
 
-### Relation (`relation`)
+Every registered PropertyType uses one of these four `value` shapes. A `type` whose PropertyType is not
+registered — its extension disabled — keeps the raw value that was stored
+([`unregistered-type`](validation-codes.md#unregistered-type)).
 
-Array of Relation objects, each pointing to another subject.
+### Relations
+
+Each `relation` value is an array of objects pointing at other Subjects:
 
 ```json
 {
   "type": "relation",
   "value": [
-    {
-      "id": "r1demo5rrrrrrr1",
-      "target": "s1demo4sssssss1"
-    }
+    { "id": "r1demo5rrrrrrr1", "target": "s1demo4sssssss1" }
   ]
 }
 ```
 
 | Field | Type | Required | Description |
-|-------|------|-------------|-------------|
-| `id` | string | Yes | Unique identifier for this relation |
-| `target` | string | Yes | Subject ID of the target subject |
-| `properties` | object | No | Key-value pairs of relation properties. Only included when non-empty. |
+|-------|------|----------|-------------|
+| `id` | string | Yes | ID of this relation. |
+| `target` | string | Yes | ID of the target Subject. |
+| `properties` | object | No | Key-value relation properties. Present only when non-empty. |
 
-Relation properties example:
+With relation properties:
 
 ```json
 {
@@ -161,68 +116,42 @@ Relation properties example:
 }
 ```
 
-## Empty and Null Values
+## IDs
 
-- If `mainSubject` is omitted or `null`, the page has no main subject
-- If `subjects` is omitted, it defaults to an empty object (no subjects)
-- If `statements` is omitted, the subject has no statements
-- Individual statements set to `null` are skipped during deserialization
-
-## ID Formats
-
-### Subject IDs
-
-Subject IDs are 15-character nanoid-style identifiers that are lexicographically sortable by creation time.
-They start with `s`.
-
-Example: `s1demo5sssssss1`
-
-### Relation IDs
-
-Relation IDs follow the same format as subject IDs but start with `r`.
-
-Example: `r1demo5rrrrrrr1`
-
-See [ADR 014](../adr/014-improved-id-format.md) for details on the ID format.
+Subject and Relation IDs are 15-character nanoid-style strings, lexicographically sortable by creation time.
+Subject IDs start with `s` (`s1demo5sssssss1`), Relation IDs with `r` (`r1demo5rrrrrrr1`). See
+[ADR 014](../adr/014-improved-id-format.md).
 
 ## REST API
 
 ### Reading Subjects
 
-`GET /rest.php/neowiki/v0/subject/{subjectId}`
+`GET /rest.php/neowiki/v0/subject/{subjectId}` returns a top-level `requestedId` and a `subjects` map; each
+Subject gains an `id` field. Statements use the storage `type` key.
 
-Returns the same statement format as storage, with additional fields:
-- `requestedId`: The ID that was requested
-- Each subject includes an `id` field. Passing `?expand=page` adds the page fields `pageId`,
-  `pageTitle`, and `pageNamespaceId`. `pageTitle` is the full page title including the namespace prefix
-  (e.g. `Help:Installation`); `pageNamespaceId` is the page's canonical MediaWiki namespace ID (e.g. `0`
-  for the main namespace, `12` for Help), which is stable regardless of the wiki's content language.
-- Passing `?expand=relations` also embeds the Subjects targeted by this Subject's relation values; see
-  [REST API](rest-api.md#the-expand-parameter) for the response shape.
+- `?expand=page` adds `pageId`, `pageTitle`, and `pageNamespaceId` to each Subject. `pageTitle` is the full page
+  title with namespace prefix (e.g. `Help:Installation`); `pageNamespaceId` is the canonical MediaWiki namespace
+  ID (e.g. `0` for the main namespace, `12` for Help).
+- `?expand=relations` embeds the Subjects this one's relations target; see
+  [REST API](rest-api.md#the-expand-parameter) for the shape.
+- `?revisionId=` returns the Subject as of that MediaWiki revision; an unknown or unreadable revision returns `404`.
 
 ### Creating Subjects
 
-`POST /rest.php/neowiki/v0/page/{pageId}/mainSubject`
-`POST /rest.php/neowiki/v0/page/{pageId}/childSubjects`
+`POST /rest.php/neowiki/v0/page/{pageId}/mainSubject` and `.../childSubjects` create a Subject on a page. The body
+takes `label`, `schema`, and `statements` (all required), plus an optional `comment` edit summary. Statements use the
+`propertyType` write shape [below](#writing-subjects), not the storage `type` key.
 
-Create a Subject on a page from a [Subject object](#subject-object) (`label`, `schema`, `statements`),
-with an optional `comment` edit summary.
-
-The Subject ID is normally minted server-side. To set it yourself — for example to wire relations across
-a batch before the target Subjects exist — pass an optional `id`:
+The server mints the Subject ID unless you pass one:
 
 | Field | Required | Notes |
-|---|---|---|
-| `id` | No | Subject ID to assign. Must be well-formed (`400` otherwise) and unused (`409` otherwise). Omit to have the server mint one. Pre-mint a batch of IDs with `POST /neowiki/v0/subject-ids`. |
-
-After creation the ID is immutable; the replace endpoint below ignores it.
+|-------|----------|-------|
+| `id` | No | Subject ID to assign. Well-formed (`400` otherwise) and unused (`409` otherwise). Pre-mint a batch with `POST /rest.php/neowiki/v0/subject-ids` to wire relations before their targets exist. |
 
 ### Writing Subjects
 
-`PUT /rest.php/neowiki/v0/subject/{subjectId}`
-
-Full replace of the Subject's writable state (label and statements). The request body uses
-`propertyType` instead of `type` for statements:
+`PUT /rest.php/neowiki/v0/subject/{subjectId}` replaces the Subject's label and statements. Statements use
+`propertyType` in place of `type`:
 
 ```json
 {
@@ -238,19 +167,20 @@ Full replace of the Subject's writable state (label and statements). The request
 ```
 
 | Field | Required | Notes |
-|---|---|---|
+|-------|----------|-------|
 | `label` | Yes | Non-empty after `trim`. |
-| `statements` | Yes | Map of property name to Statement. Property names not in the map are deleted from the Subject. Pass `{}` to clear all statements. |
-| `comment` | No | Optional edit summary. |
+| `statements` | Yes | Map of property name to Statement; omitted names are deleted. Pass `{}` to clear all. |
+| `comment` | No | Edit summary. |
 
-The Subject's `id`, `schema`, `pageId`, `pageTitle`, and `pageNamespaceId` are immutable after creation
-and are not part of the request body. If sent, they are ignored.
+A statement entry without `propertyType`, or whose value is empty for its type, is dropped without error. For
+schema/value validation outcomes see [Validation Codes](validation-codes.md).
 
-Relation IDs can be omitted for new relations (a fresh ID is generated server-side).
+A relation may omit `id`; the server generates one. The Subject's `id`, `schema`, and page fields are immutable
+and ignored if sent.
 
-## Complete Example
+## Complete example
 
-A page about Berlin with multiple subjects (main subject + child subjects for population data):
+A page about Berlin with a main Subject and a child Subject for population data:
 
 ```json
 {
@@ -287,11 +217,3 @@ A page about Berlin with multiple subjects (main subject + child subjects for po
   }
 }
 ```
-
-## Related Documentation
-
-- [ADR 002: Store Data as JSON](../adr/002-store-data-as-json.md)
-- [ADR 004: Use Dedicated Slot](../adr/004-use-dedicated-slot.md)
-- [ADR 007: Multiple Subjects Per Page](../adr/007-multiple-subjects-per-page.md)
-- [ADR 011: Include Writer's Schema](../adr/011-include-writers-schema.md)
-- [ADR 014: Improved ID Format](../adr/014-improved-id-format.md)
