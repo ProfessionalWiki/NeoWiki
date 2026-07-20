@@ -501,6 +501,43 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertSame( 1, $violations[1]->valuePartIndex );
 	}
 
+	public function testRelationTargetViolationCarriesItsArrayPositionNotAViolationCounter(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty( multiple: true ) ] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				$this->newRelationStatement( self::MATCHING_TARGET_ID, self::MISMATCHING_TARGET_ID ),
+			] ),
+			$schema,
+		);
+
+		// The valid target at index 0 emits nothing, so the sole violation belongs to the target at
+		// index 1. Pinning the position here is what the all-targets-invalid case above cannot do:
+		// there, the array position and the ordinal of the violation itself agree, so a counter-based
+		// implementation would pass it. ViolationDiff keys on valuePartIndex, so the difference
+		// decides whether an edit's violations line up with the pre-existing ones.
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'relation-target-schema-mismatch', $violations[0]->code );
+		$this->assertSame( 1, $violations[0]->valuePartIndex );
+	}
+
+	public function testNonexistentRelationTargetCarriesItsArrayPosition(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty( multiple: true ) ] );
+
+		$violations = $this->validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				$this->newRelationStatement( self::MATCHING_TARGET_ID, self::NONEXISTENT_TARGET_ID ),
+			] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'relation-target-not-found', $violations[0]->code );
+		$this->assertSame( 1, $violations[0]->valuePartIndex );
+	}
+
 	// --- Helpers ---
 
 	private function newRelationProperty( bool $multiple = true ): RelationProperty {

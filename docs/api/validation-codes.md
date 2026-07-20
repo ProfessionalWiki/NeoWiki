@@ -208,11 +208,12 @@ Emitted by `SubjectValidator`.
 `propertyName`: the relation property.
 
 A relation targets a Subject that exists but whose own Schema is not the Property's declared
-`targetSchema`. The target is resolved through the canonical revision-slot-backed Subject lookup (the
-same one the read path uses), so the check reflects the target's stored writer's-schema rather than the
-secondary graph projection. This is a blocking `error` (ADR 26): it is rejected at write time when
-`$wgNeoWikiEnforceValidation` is enabled. The subject editor's picker filters candidates by target
-Schema, so this is normally only reachable through the API — for example a bulk import.
+`targetSchema`. The Schema compared is the target's own stored writer's-schema, read from its revision
+slot rather than from a graph node property. Reaching that slot still resolves the target ID through
+the subject-to-page index, which lives only in the graph projection, so this check only runs for
+targets the graph currently knows about. This is a blocking `error` (ADR 26): it is rejected at write
+time when `$wgNeoWikiEnforceValidation` is enabled. The subject editor's picker filters candidates by
+target Schema, so this is normally only reachable through the API — for example a bulk import.
 
 ### `relation-target-not-found`
 
@@ -227,13 +228,23 @@ hardcoded non-blocking set, so it never rejects a write even under enforcement. 
 pointing at a not-yet-created Subject is wiki-native red-link behavior, and an import may legitimately
 mint the target later.
 
+Resolution goes through the subject-to-page index, which lives only in the graph projection, so a
+target that exists in revision slots but is missing from the graph is reported as not found. An
+import populates the slots without updating the projection
+([#1022](https://github.com/ProfessionalWiki/NeoWiki/issues/1022)), so imported targets warn until
+[the graph is rebuilt](../operations/maintenance.md#rebuilding-the-graph). Being non-blocking, this
+misreport never costs a write.
+
 ## Known limitations (Foundation round)
 
-The PHP `SubjectValidator` performs two Subject-level checks:
+The PHP `SubjectValidator` performs these Subject-level checks:
 
 - **`required`** — PHP iterates the Schema's properties to catch absent-required cases.
 - **`type-mismatch`** — PHP compares the Statement's writer's-schema type against the Schema's
   current type and surfaces drift per ADR 11 / ADR 12.
+- **[`relation-target-schema-mismatch`](#relation-target-schema-mismatch)** and
+  **[`relation-target-not-found`](#relation-target-not-found)** — documented above; both need a
+  Subject lookup, which `PropertyType::validate()` has no access to.
 
 ### Deliberate behavior, not a gap
 
