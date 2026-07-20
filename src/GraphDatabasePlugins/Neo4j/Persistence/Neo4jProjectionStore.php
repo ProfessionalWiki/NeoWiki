@@ -70,17 +70,18 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 
 	/**
 	 * Removes the subjects that are attached to the page in the graph but are no longer present on the
-	 * page. This reuses deleteSubject so that a removed subject still referenced by other subjects is
+	 * page. This reuses removeSubjects so that a removed subject still referenced by other subjects is
 	 * kept as a stub instead of being deleted, keeping the incoming relations valid.
 	 */
 	private function removeAbsentSubjects( TransactionInterface $transaction, Page $page ): void {
 		$presentSubjectIds = $page->getSubjects()->getAllSubjects()->getIdsAsTextArray();
 
-		foreach ( $this->getSubjectIdsByPageId( $transaction, $page->getId() ) as $attachedSubjectId ) {
-			if ( !in_array( $attachedSubjectId, $presentSubjectIds, true ) ) {
-				$this->deleteSubject( $transaction, new SubjectId( $attachedSubjectId ) );
-			}
-		}
+		$absentSubjectIds = array_values( array_filter(
+			$this->getSubjectIdsByPageId( $transaction, $page->getId() ),
+			fn( string $subjectId ) => !in_array( $subjectId, $presentSubjectIds, true )
+		) );
+
+		$this->removeSubjects( $transaction, $absentSubjectIds );
 	}
 
 	private function detachSubjectsFromPage( TransactionInterface $transaction, PageId $pageId ): void {
@@ -153,9 +154,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 
 	public function deletePage( PageId $pageId ): void {
 		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $pageId ): void {
-			foreach ( $this->getSubjectIdsByPageId( $transaction, $pageId ) as $subjectId ) {
-				$this->deleteSubject( $transaction, new SubjectId( $subjectId ) );
-			}
+			$this->removeSubjects( $transaction, $this->getSubjectIdsByPageId( $transaction, $pageId ) );
 
 			$this->deletePageNode( $transaction, $pageId );
 		} );
@@ -178,7 +177,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		 */
 		$results = $transaction->run(
 			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId})-[:HasSubject]->(subject:Subject)
-				RETURN subject.id AS id, subject AS properties, labels(subject) AS labels',
+				RETURN subject.id AS id',
 			[ 'pageId' => $pageId->id, 'wikiId' => $this->wikiId ]
 		);
 
@@ -188,17 +187,68 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		);
 	}
 
-	private function deleteSubject( TransactionInterface $transaction, SubjectId $subjectId ): void {
-		if ( $this->subjectHasIncomingRelations( $transaction, $subjectId ) ) {
-			$this->reduceSubjectToStub( $transaction, $subjectId );
+	/**
+	 * Removes the given subjects from the graph. A subject still referenced by an incoming relation from
+	 * another subject is reduced to a stub so that reference stays valid; the rest are deleted outright.
+	 *
+	 * The referenced/unreferenced split is computed with a single query and the unreferenced subjects are
+	 * deleted with a single query, rather than one round trip per subject.
+	 *
+	 * @param string[] $subjectIds
+	 */
+	private function removeSubjects( TransactionInterface $transaction, array $subjectIds ): void {
+		if ( $subjectIds === [] ) {
+			return;
 		}
-		else {
-			$transaction->run(
-				'MATCH (subject {id: $subjectId})
-				DETACH DELETE subject',
-				[ 'subjectId' => $subjectId->text ]
-			);
+
+		$referencedSubjectIds = $this->subjectIdsWithIncomingRelations( $transaction, $subjectIds );
+
+		$this->deleteSubjects( $transaction, array_values( array_diff( $subjectIds, $referencedSubjectIds ) ) );
+
+		foreach ( $referencedSubjectIds as $subjectId ) {
+			$this->reduceSubjectToStub( $transaction, new SubjectId( $subjectId ) );
 		}
+	}
+
+	/**
+	 * Returns the subset of the given subject ids that still have an incoming relation from a *different*
+	 * subject. HasSubject relations do not count, and neither does a self-loop: a subject whose only
+	 * incoming relation is its own outgoing self-reference has no external referrer, so it is deleted
+	 * rather than kept as an unreachable stub.
+	 *
+	 * @param string[] $subjectIds
+	 * @return string[]
+	 */
+	private function subjectIdsWithIncomingRelations( TransactionInterface $transaction, array $subjectIds ): array {
+		/**
+		 * @var SummarizedResult $result
+		 */
+		$result = $transaction->run(
+			'UNWIND $subjectIds AS subjectId
+				MATCH (subject {id: subjectId})<-[incomingRelation]-(other)
+				WHERE NOT incomingRelation:HasSubject AND other <> subject
+				RETURN DISTINCT subject.id AS id',
+			[ 'subjectIds' => $subjectIds ]
+		);
+
+		return array_map(
+			fn( $record ) => $record->get( 'id' ),
+			$result->toArray()
+		);
+	}
+
+	/**
+	 * @param string[] $subjectIds
+	 */
+	private function deleteSubjects( TransactionInterface $transaction, array $subjectIds ): void {
+		if ( $subjectIds === [] ) {
+			return;
+		}
+
+		$transaction->run(
+			'MATCH (subject) WHERE subject.id IN $subjectIds DETACH DELETE subject',
+			[ 'subjectIds' => $subjectIds ]
+		);
 	}
 
 	/**
@@ -213,6 +263,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 				OPTIONAL MATCH ()-[hasSubject:HasSubject]->(subject)
 				OPTIONAL MATCH (subject)-[outgoingRelation]->()
 				DELETE hasSubject, outgoingRelation
+				WITH DISTINCT subject
 				SET subject = {id: $subjectId, wiki_id: $wikiId}
 				SET subject:Subject',
 			[ 'subjectId' => $subjectId->text, 'wikiId' => $this->wikiId ]
@@ -227,15 +278,6 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 			$subjectId->text,
 			array_diff( Neo4jNodeLabels::read( $transaction, $subjectId->text ), [ 'Subject' ] )
 		);
-	}
-
-	private function subjectHasIncomingRelations( TransactionInterface $transaction, SubjectId $subjectId ): bool {
-		return $transaction->run(
-			'MATCH (subject {id: $subjectId})<-[incomingRelation]-()
-			WHERE NOT incomingRelation:HasSubject
-			RETURN incomingRelation',
-			[ 'subjectId' => $subjectId->text ]
-		)->isEmpty() === false;
 	}
 
 }
