@@ -305,7 +305,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$store->savePage( TestPage::build( id: 1 ) );
 
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1, 'rTestNQS1111rr1' );
 	}
 
 	public function testSavingPageWithoutAReferencedSubjectReducesItToAStub(): void {
@@ -361,7 +361,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->deletePage( new PageId( 1 ) );
 
 		$this->assertSubjectIsStub( self::GUID_1 );
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1, 'rTestNQS1111rr1' );
 	}
 
 	public function testSavingASubjectUpgradesItsStubInPlace(): void {
@@ -390,7 +390,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( [ 'Subject', TestSubject::DEFAULT_SCHEMA_ID ], $labels );
 		$this->assertSame( 'Real subject', $row['name'] );
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1, 'rTestNQS1111rr1' );
 	}
 
 	public function testReducingReferencedSubjectToStubKeepsIncomingRelationsButStripsOutgoingRelationsAndProperties(): void {
@@ -435,8 +435,55 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSubjectIsStub( self::GUID_1 );
 		$this->assertOutgoingRelationCount( self::GUID_1, 0 );
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1 );
-		$this->assertRelationExists( self::GUID_5, 'LocatedIn', self::GUID_1 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1, 'rTestNQS1111rCA' );
+		$this->assertRelationExists( self::GUID_5, 'LocatedIn', self::GUID_1, 'rTestNQS1111rDA' );
+	}
+
+	public function testFlippingASubjectBetweenMainAndChildLeavesASingleHasSubjectEdge(): void {
+		$store = $this->newProjectionStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::GUID_2 ),
+			)
+		) );
+
+		// Swap the roles: GUID_2 becomes the main subject and GUID_1 becomes a child.
+		// The HasSubject relation carries the isMain flag, so re-saving must not leave a
+		// second, stale HasSubject edge behind for either subject.
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_2 ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::GUID_1 ),
+			)
+		) );
+
+		$this->assertPageHasSubjects(
+			[
+				[ 'id' => self::GUID_1, 'hs' => [ 'isMain' => false ] ],
+				[ 'id' => self::GUID_2, 'hs' => [ 'isMain' => true ] ],
+			],
+			42
+		);
+	}
+
+	public function testRemovingASelfReferencingSubjectDeletesItRatherThanStubbingIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1 holds a relation to itself and nothing else references it.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		// Removing it from its page must delete it: a self-loop is not an external reference,
+		// so keeping it as a stub would leave an unreachable orphan node.
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_1 );
 	}
 
 	private function newProjectionStoreWithLocationRelation( string $wikiId = self::WIKI_ID ): GraphDatabasePlugin {
@@ -481,9 +528,14 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function assertRelationExists( string $fromSubjectId, string $relationType, string $toSubjectId ): void {
+	private function assertRelationExists(
+		string $fromSubjectId,
+		string $relationType,
+		string $toSubjectId,
+		?string $expectedRelationId = null
+	): void {
 		$result = $this->readGraph(
-			'MATCH ({id: $from})-[relation:' . $relationType . ']->({id: $to}) RETURN relation',
+			'MATCH ({id: $from})-[relation:' . $relationType . ']->({id: $to}) RETURN relation.id AS id',
 			[ 'from' => $fromSubjectId, 'to' => $toSubjectId ]
 		);
 
@@ -491,6 +543,16 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			$result->isEmpty(),
 			"Relation {$fromSubjectId}-[{$relationType}]->{$toSubjectId} should exist"
 		);
+
+		// Readers reconcile relations by their id, so a relation that survives by endpoints and type
+		// but loses its id is broken. Assert the id is preserved when the caller pins it down.
+		if ( $expectedRelationId !== null ) {
+			$this->assertSame(
+				$expectedRelationId,
+				$result->first()->toRecursiveArray()['id'],
+				"Relation {$fromSubjectId}-[{$relationType}]->{$toSubjectId} should keep its id"
+			);
+		}
 	}
 
 	private function subjectHasProperty( string $subjectId, string $property ): bool {
