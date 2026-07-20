@@ -10,7 +10,6 @@ use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\ValidationParams;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingContentValidator;
 use StatusValue;
 
@@ -61,7 +60,7 @@ JSON
 	}
 
 	public function canBeUsedOn( Title $title ): bool {
-		return $title->getNamespace() === NeoWikiExtension::NS_MAPPING;
+		return NamespaceContentModels::forNamespace( $title->getNamespace() ) === MappingContent::CONTENT_MODEL_ID;
 	}
 
 }

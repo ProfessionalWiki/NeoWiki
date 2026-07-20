@@ -12,7 +12,6 @@ use MediaWiki\Content\ValidationParams;
 use MediaWiki\Title\Title;
 use MediaWiki\Parser\ParserOutput;
 use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutContentValidator;
 use StatusValue;
 
@@ -69,7 +68,7 @@ JSON
 	}
 
 	public function canBeUsedOn( Title $title ): bool {
-		return $title->getNamespace() === NeoWikiExtension::NS_LAYOUT;
+		return NamespaceContentModels::forNamespace( $title->getNamespace() ) === LayoutContent::CONTENT_MODEL_ID;
 	}
 
 }

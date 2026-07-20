@@ -23,6 +23,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\NamespaceContentModels;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
@@ -260,16 +261,10 @@ class NeoWikiHooks {
 	}
 
 	public static function onContentModelCanBeUsedOn( string $modelId, Title $title, bool &$ok ): void {
-		if ( $title->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
-			$ok = $modelId === SchemaContent::CONTENT_MODEL_ID;
-		}
+		$expectedModel = NamespaceContentModels::forNamespace( $title->getNamespace() );
 
-		if ( $title->getNamespace() === NeoWikiExtension::NS_LAYOUT ) {
-			$ok = $modelId === LayoutContent::CONTENT_MODEL_ID;
-		}
-
-		if ( $title->getNamespace() === NeoWikiExtension::NS_MAPPING ) {
-			$ok = $modelId === MappingContent::CONTENT_MODEL_ID;
+		if ( $expectedModel !== null ) {
+			$ok = $modelId === $expectedModel;
 		}
 	}
 

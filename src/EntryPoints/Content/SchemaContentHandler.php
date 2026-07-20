@@ -12,7 +12,6 @@ use MediaWiki\Content\ValidationParams;
 use MediaWiki\Title\Title;
 use MediaWiki\Parser\ParserOutput;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use StatusValue;
 
@@ -70,7 +69,7 @@ JSON
 	}
 
 	public function canBeUsedOn( Title $title ): bool {
-		return $title->getNamespace() === NeoWikiExtension::NS_SCHEMA;
+		return NamespaceContentModels::forNamespace( $title->getNamespace() ) === SchemaContent::CONTENT_MODEL_ID;
 	}
 
 }
