@@ -45,6 +45,17 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $this->findLinkById( $sidebar[self::NEOWIKI_SECTION] ?? [], 't-neowiki-layouts' ) );
 	}
 
+	public function testContentPageSidebarBuildsWithoutGraphBackend(): void {
+		$sidebar = $this->runWithoutGraphBackend(
+			fn (): array => $this->buildSidebar( Title::makeTitle( NS_MAIN, 'Sidebar Without Backend' ) )
+		);
+
+		$this->assertNull(
+			$this->findLinkById( $sidebar[self::NEOWIKI_SECTION] ?? [], 't-neowiki-rdf' ),
+			'Building a content-page sidebar must not require a graph backend, and the View RDF link must be omitted without one.'
+		);
+	}
+
 	private function assertAllPagesLinkInNeoWikiSection(
 		int $namespace,
 		string $linkId,

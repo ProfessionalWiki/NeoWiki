@@ -273,12 +273,17 @@ class NeoWikiHooks {
 			->getNamespaceInfo()
 			->isContent( $title->getNamespace() );
 
+		// Building the Subjects lookup eagerly constructs the Neo4j client, which throws without a
+		// configured backend; guard so content pages still render backend-less (cf. handleContentPage).
+		$hasSubjects = $isContentNamespace
+			&& $extension->getNeo4jPlugin() !== null
+			&& $extension->newPageSubjectsLookup()->pageHasSubjects( $pageId );
+
 		$neoWikiTools = ( new PageToolsBuilder() )->build(
 			title: $title,
 			pageId: $title->getArticleID(),
 			isContentNamespace: $isContentNamespace,
-			hasSubjects: $isContentNamespace
-				&& $extension->newPageSubjectsLookup()->pageHasSubjects( $pageId ),
+			hasSubjects: $hasSubjects,
 			canCreateMainSubject: $hints->canCreateMainSubject( $pageId ),
 			canEditSubject: $hints->canEditSubject( $pageId ),
 			isLatestRevision: self::pageIsLatestRevision( $skin->getOutput() ),
