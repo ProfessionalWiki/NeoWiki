@@ -10,16 +10,29 @@ use MediaWiki\Content\TextContent;
 use MediaWiki\Content\WikitextContent;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\Persistence\ImportedPageTitlesLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Persistence\PageDeleter;
 use RuntimeException;
 
 class ImportPagesAction {
 
+	private const string DELETION_REASON = 'No longer part of the NeoWiki demo data';
+
+	/**
+	 * @var array<string, true> Prefixed DB keys of the pages this run imported, whether or not the
+	 *   save succeeded. Everything the import owns that is not in this set is a page whose source
+	 *   file is gone, and so gets deleted.
+	 */
+	private array $currentTitleKeys = [];
+
 	public function __construct(
 		private readonly ImportPresenter $presenter,
 		private readonly PageContentSaver $pageContentSaver,
+		private readonly ImportedPageTitlesLookup $importedPageTitlesLookup,
+		private readonly PageDeleter $pageDeleter,
 		private readonly SchemaContentSource $schemaContentSource,
 		private readonly SubjectPageSource $subjectPageSource,
 		private readonly PageContentSource $pageContentSource,
@@ -30,6 +43,8 @@ class ImportPagesAction {
 	}
 
 	public function import(): void {
+		$this->currentTitleKeys = [];
+
 		foreach ( $this->schemaContentSource->getSchemas() as $schemaName => $schemaContent ) {
 			$this->createPage(
 				"Schema:$schemaName",
@@ -85,6 +100,8 @@ class ImportPagesAction {
 			);
 		}
 
+		$this->deleteRemovedPages();
+
 		$this->presenter->presentDone();
 	}
 
@@ -117,6 +134,8 @@ class ImportPagesAction {
 			return;
 		}
 
+		$this->currentTitleKeys[$title->getPrefixedDBkey()] = true;
+
 		$savingResult = $this->pageContentSaver->saveContent(
 			page: $title,
 			contentBySlot: $contentBySlot,
@@ -144,6 +163,29 @@ class ImportPagesAction {
 		}
 
 		throw new RuntimeException();
+	}
+
+	private function deleteRemovedPages(): void {
+		foreach ( $this->importedPageTitlesLookup->getImportedPageTitles() as $title ) {
+			if ( !isset( $this->currentTitleKeys[$title->getPrefixedDBkey()] ) ) {
+				$this->deletePage( $title );
+			}
+		}
+	}
+
+	private function deletePage( Title $title ): void {
+		$prefixedTitle = $title->getPrefixedText();
+
+		$this->presenter->presentDeletionStarted( $prefixedTitle );
+
+		$status = $this->pageDeleter->deletePage( $title->toPageIdentity(), self::DELETION_REASON );
+
+		if ( $status->succeeded ) {
+			$this->presenter->presentDeleted( $prefixedTitle );
+			return;
+		}
+
+		$this->presenter->presentDeletionFailed( $prefixedTitle, $status->errorMessage ?? '' );
 	}
 
 }

@@ -15,9 +15,11 @@ partners, knowledge managers, MediaWiki ecosystem evaluators, and live-demo audi
 | `SparqlPage/<Name>.wikitext` | Pages demoing the SPARQL surfaces. Imported only when `$wgNeoWikiSparqlStores` is non-empty (elsewhere `{{#sparql_raw}}` is unregistered and would render literally). | Main namespace, `<Name>` |
 | `Module/<Name>.lua` | Scribunto modules | `Module:<Name>` |
 
-`ImportDemoData.php` is additive: it creates and updates pages but does NOT delete pages whose
-source files were removed. Use `make reinstall-db && make load-test-data` from the repo root for
-a clean-slate import after renames or deletions.
+`ImportDemoData.php` reseeds the demo set: it creates and updates pages from these directories, and
+deletes pages a previous import created whose source file is now gone. So renaming or removing a
+file and re-importing is enough — no `make reinstall-db` needed. Only pages the import itself created
+are pruned; a page someone else created — like `Main_Page`, which the installer creates and the
+import merely overwrites — is never deleted, even if its source file is removed.
 
 ## Filename and ID conventions
 
@@ -139,10 +141,11 @@ the content.
 From the repo root:
 
 ```sh
-# Incremental import (does not delete removed pages).
+# Reseeds the demo set: creates/updates pages and deletes ones the import previously created
+# whose source files are gone. Enough on its own after renames or deletions.
 make load-test-data
 
-# Clean-slate import (drops the wiki database first). Use after renames or deletions.
+# Full clean-slate reset (drops the wiki database first). Rarely needed.
 make reinstall-db && make load-test-data
 
 # Reproject the Neo4j graph if Cypher results look stale.

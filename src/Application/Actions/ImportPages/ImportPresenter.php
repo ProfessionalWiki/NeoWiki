@@ -16,4 +16,10 @@ interface ImportPresenter {
 
 	public function presentImportFailed( string $pageTitle, string $errorMessage ): void;
 
+	public function presentDeletionStarted( string $pageTitle ): void;
+
+	public function presentDeleted( string $pageTitle ): void;
+
+	public function presentDeletionFailed( string $pageTitle, string $errorMessage ): void;
+
 }

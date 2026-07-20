@@ -13,7 +13,9 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageData;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\LayoutContentSource;
+use ProfessionalWiki\NeoWiki\Persistence\ImportedPageTitlesLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
+use ProfessionalWiki\NeoWiki\Persistence\PageDeleter;
 use MediaWiki\Content\WikitextContent;
 
 /**
@@ -46,6 +48,8 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 				MediaWikiServices::getInstance()->getWikiPageFactory(),
 				$this->getTestUser()->getUser(),
 			),
+			$this->createMock( ImportedPageTitlesLookup::class ),
+			$this->createMock( PageDeleter::class ),
 			$this->schemaContentSource,
 			$this->subjectPageSource,
 			$this->pageContentSource,
@@ -135,6 +139,18 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 
 			public function presentImportFailed( string $pageTitle, string $errorMessage ): void {
 				$this->messages[] = "Import failed for $pageTitle: $errorMessage";
+			}
+
+			public function presentDeletionStarted( string $pageTitle ): void {
+				$this->messages[] = "Deleting $pageTitle...";
+			}
+
+			public function presentDeleted( string $pageTitle ): void {
+				$this->messages[] = "Deleted $pageTitle";
+			}
+
+			public function presentDeletionFailed( string $pageTitle, string $errorMessage ): void {
+				$this->messages[] = "Deletion failed for $pageTitle: $errorMessage";
 			}
 
 			/**
