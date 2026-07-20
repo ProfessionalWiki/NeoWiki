@@ -7,11 +7,11 @@ length budget. A sentence earns its place only if it changes what that reader pr
 - Each fact has one home; every other page links to it instead of restating it.
 - The text carries no history of its own making: nothing addressed to a reviewer, a diff, or a past design discussion.
 - When unsure whether something belongs, leave it out and list it under "considered, omitted" in the PR description.
-- Improving an existing page never lengthens it by default.
+- Improving an existing page does not lengthen it by default.
 
 ## Genres
 
-Every page sits in one genre. Write to that genre's reader and register, and keep out what the last column names.
+Every page sits in one genre. Write to that genre's reader and register.
 
 | Where | Reader, and the decision they make | Register, and what to keep out |
 | --- | --- | --- |
