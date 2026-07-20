@@ -10,6 +10,7 @@ use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 
@@ -75,6 +76,22 @@ class SubjectsActionTest extends NeoWikiIntegrationTestCase {
 			$out->getJsConfigVars()['wgNeoWikiRdfProjections'],
 			'A read-restricted Mapping page name must not reach a reader who cannot see it.'
 		);
+	}
+
+	public function testExposesTheSubjectIriBaseAsConfigVar(): void {
+		$this->overrideConfigValue( 'NeoWikiRdfBaseUri', 'https://data.example.org' );
+		NeoWikiExtension::resetInstance();
+
+		try {
+			$out = $this->runOnView( 'SubjectsActionTest iri base', $this->getTestSysop()->getAuthority() );
+
+			$this->assertSame(
+				'https://data.example.org/entity/',
+				$out->getJsConfigVars()['wgNeoWikiSubjectIriBase']
+			);
+		} finally {
+			NeoWikiExtension::resetInstance();
+		}
 	}
 
 	private function runOnView( string $pageName, Authority $authority ): OutputPage {

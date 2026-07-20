@@ -27,6 +27,20 @@ class RdfNamespacesTest extends TestCase {
 		);
 	}
 
+	public function testSubjectIriBaseIsThePrefixSubjectIrisExtend(): void {
+		$this->assertSame(
+			'https://wiki.example/entity/',
+			$this->namespaces()->subjectIriBase()
+		);
+	}
+
+	public function testSubjectIriBaseTrimsATrailingSlashFromTheBaseUri(): void {
+		$this->assertSame(
+			'https://wiki.example/entity/',
+			( new RdfNamespaces( 'https://wiki.example/' ) )->subjectIriBase()
+		);
+	}
+
 	public function testPropertyIriSubstitutesSpacesWithUnderscores(): void {
 		$this->assertSame(
 			'https://wiki.example/prop/Has_author',

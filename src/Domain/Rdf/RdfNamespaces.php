@@ -42,7 +42,17 @@ readonly class RdfNamespaces {
 	}
 
 	public function subject( SubjectId $id ): Iri {
-		return new Iri( $this->baseUri . '/entity/' . $id->text );
+		return new Iri( $this->subjectIriBase() . $id->text );
+	}
+
+	/**
+	 * The IRI prefix a Subject id extends into its concept URI ({@see subject()}) — `$base/entity/`,
+	 * the `neo-subj:` namespace. Exposed so surfaces that build a Subject IRI without a SubjectId in
+	 * hand (the Data tab's copy-IRI control, seeded via a JS config var) share this one rule rather
+	 * than re-deriving the `/entity/` path and the base-URI trimming.
+	 */
+	public function subjectIriBase(): string {
+		return $this->baseUri . '/entity/';
 	}
 
 	public function property( string $propertyName ): Iri {
@@ -149,7 +159,7 @@ readonly class RdfNamespaces {
 	public function prefixMap(): array {
 		return [
 			'neo' => $this->baseUri . '/ontology/',
-			'neo-subj' => $this->baseUri . '/entity/',
+			'neo-subj' => $this->subjectIriBase(),
 			'neo-prop' => $this->baseUri . '/prop/',
 			'neo-schema' => $this->baseUri . '/schema/',
 			'neo-rel' => $this->baseUri . '/relation/',

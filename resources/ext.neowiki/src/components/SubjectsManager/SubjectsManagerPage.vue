@@ -171,22 +171,40 @@
 					<div class="ext-neowiki-subjects-manager__row-expanded">
 						<SubjectStatementsView :subject="mainSubject" />
 						<footer class="ext-neowiki-subjects-manager__row-footer">
-							<span class="ext-neowiki-subjects-manager__row-id">
-								<span class="ext-neowiki-subjects-manager__row-id-label">
-									{{ $i18n( 'neowiki-managesubjects-id-label' ).text() }}
+							<div class="ext-neowiki-subjects-manager__row-identifiers">
+								<span class="ext-neowiki-subjects-manager__row-id">
+									<span class="ext-neowiki-subjects-manager__row-id-label">
+										{{ $i18n( 'neowiki-managesubjects-id-label' ).text() }}
+									</span>
+									<button
+										type="button"
+										class="ext-neowiki-subjects-manager__row-id-button"
+										:title="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
+										:aria-label="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
+										@click="copySubjectId( mainSubject.getId().text )"
+									>
+										<data :value="mainSubject.getId().text">
+											{{ mainSubject.getId().text }}
+										</data>
+									</button>
 								</span>
-								<button
-									type="button"
-									class="ext-neowiki-subjects-manager__row-id-button"
-									:title="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
-									:aria-label="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
-									@click="copySubjectId( mainSubject.getId().text )"
-								>
-									<data :value="mainSubject.getId().text">
-										{{ mainSubject.getId().text }}
-									</data>
-								</button>
-							</span>
+								<span class="ext-neowiki-subjects-manager__row-iri">
+									<span class="ext-neowiki-subjects-manager__row-iri-label">
+										{{ $i18n( 'neowiki-managesubjects-iri-label' ).text() }}
+									</span>
+									<button
+										type="button"
+										class="ext-neowiki-subjects-manager__row-iri-button"
+										:title="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( mainSubject.getId().text ) ).text()"
+										:aria-label="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( mainSubject.getId().text ) ).text()"
+										@click="copySubjectIri( subjectIri( mainSubject.getId().text ) )"
+									>
+										<data :value="subjectIri( mainSubject.getId().text )">
+											{{ subjectIri( mainSubject.getId().text ) }}
+										</data>
+									</button>
+								</span>
+							</div>
 							<CdxMenuButton
 								v-model:selected="exportMenuSelection"
 								class="ext-neowiki-subjects-manager__export-menu"
@@ -327,22 +345,40 @@
 						<div class="ext-neowiki-subjects-manager__row-expanded">
 							<SubjectStatementsView :subject="subject" />
 							<footer class="ext-neowiki-subjects-manager__row-footer">
-								<span class="ext-neowiki-subjects-manager__row-id">
-									<span class="ext-neowiki-subjects-manager__row-id-label">
-										{{ $i18n( 'neowiki-managesubjects-id-label' ).text() }}
+								<div class="ext-neowiki-subjects-manager__row-identifiers">
+									<span class="ext-neowiki-subjects-manager__row-id">
+										<span class="ext-neowiki-subjects-manager__row-id-label">
+											{{ $i18n( 'neowiki-managesubjects-id-label' ).text() }}
+										</span>
+										<button
+											type="button"
+											class="ext-neowiki-subjects-manager__row-id-button"
+											:title="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
+											:aria-label="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
+											@click="copySubjectId( subject.getId().text )"
+										>
+											<data :value="subject.getId().text">
+												{{ subject.getId().text }}
+											</data>
+										</button>
 									</span>
-									<button
-										type="button"
-										class="ext-neowiki-subjects-manager__row-id-button"
-										:title="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
-										:aria-label="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
-										@click="copySubjectId( subject.getId().text )"
-									>
-										<data :value="subject.getId().text">
-											{{ subject.getId().text }}
-										</data>
-									</button>
-								</span>
+									<span class="ext-neowiki-subjects-manager__row-iri">
+										<span class="ext-neowiki-subjects-manager__row-iri-label">
+											{{ $i18n( 'neowiki-managesubjects-iri-label' ).text() }}
+										</span>
+										<button
+											type="button"
+											class="ext-neowiki-subjects-manager__row-iri-button"
+											:title="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( subject.getId().text ) ).text()"
+											:aria-label="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( subject.getId().text ) ).text()"
+											@click="copySubjectIri( subjectIri( subject.getId().text ) )"
+										>
+											<data :value="subjectIri( subject.getId().text )">
+												{{ subjectIri( subject.getId().text ) }}
+											</data>
+										</button>
+									</span>
+								</div>
 								<CdxMenuButton
 									v-model:selected="exportMenuSelection"
 									class="ext-neowiki-subjects-manager__export-menu"
@@ -448,6 +484,10 @@ const pageId = Number( mw.config.get( 'wgNeoWikiManageSubjectsPageId' ) );
 // server-side. Drives the export menus; native is always present, so this is never truly empty.
 const rdfProjections = ( mw.config.get( 'wgNeoWikiRdfProjections' ) as string[] | null ) ?? [];
 
+// The `$base/entity/` prefix a Subject id extends into its RDF concept URI, derived server-side from
+// the same rule the export mints IRIs with. The copy-IRI control appends the Subject id to it.
+const subjectIriBase = ( mw.config.get( 'wgNeoWikiSubjectIriBase' ) as string | null ) ?? '';
+
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
 const {
@@ -532,6 +572,10 @@ const deletingLabel = computed( () => deletingSubject.value?.getLabel() ?? '' );
 
 function schemaUrl( name: string ): string {
 	return mw.util.getUrl( `Schema:${ name }` );
+}
+
+function subjectIri( id: string ): string {
+	return subjectIriBase + id;
 }
 
 function statementCount( subject: Subject ): number {
@@ -633,6 +677,16 @@ async function copySubjectId( id: string ): Promise<void> {
 	} catch ( error ) {
 		console.error( 'Failed to copy subject ID:', error );
 		mw.notify( mw.msg( 'neowiki-managesubjects-id-copy-error' ), { type: 'error' } );
+	}
+}
+
+async function copySubjectIri( iri: string ): Promise<void> {
+	try {
+		await navigator.clipboard.writeText( iri );
+		mw.notify( mw.msg( 'neowiki-managesubjects-iri-copied', iri ), { type: 'success' } );
+	} catch ( error ) {
+		console.error( 'Failed to copy subject IRI:', error );
+		mw.notify( mw.msg( 'neowiki-managesubjects-iri-copy-error' ), { type: 'error' } );
 	}
 }
 
@@ -1073,13 +1127,28 @@ onUnmounted( () => {
 		white-space: nowrap;
 	}
 
-	&__row-id {
-		display: inline-flex;
-		align-items: baseline;
+	&__row-identifiers {
+		display: flex;
+		flex-direction: column;
 		gap: @spacing-25;
+		min-width: 0;
 	}
 
-	&__row-id-button {
+	&__row-id,
+	&__row-iri {
+		display: flex;
+		align-items: baseline;
+		gap: @spacing-25;
+		min-width: 0;
+	}
+
+	&__row-id-label,
+	&__row-iri-label {
+		flex-shrink: 0;
+	}
+
+	&__row-id-button,
+	&__row-iri-button {
 		appearance: none;
 		background: transparent;
 		border: 0;
@@ -1088,6 +1157,12 @@ onUnmounted( () => {
 		color: inherit;
 		font: inherit;
 		font-family: @font-family-monospace;
+		// The IRI is a full URL: let a long one ellipsize instead of stretching the footer. The whole
+		// value stays in the button title and is what the click copies.
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 
 		&:hover {
 			color: @color-base;
