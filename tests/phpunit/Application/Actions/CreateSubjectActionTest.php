@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
@@ -31,6 +32,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
@@ -45,12 +47,14 @@ class CreateSubjectActionTest extends TestCase {
 
 	private const string STUB_ID = 'EVNrDCjgVpv9oC';
 	private const string SELECT_SCHEMA_NAME = 'StatusSchema';
+	private const string SUPPLIED_ID = 'sABCDEF12345678';
 
 	private InMemorySubjectRepository $subjectRepository;
 	private IdGenerator $idGenerator;
 	private CreateSubjectPresenterSpy $presenterSpy;
 	private SubjectWriteAuthorizer $authorizer;
 	private InMemorySchemaLookup $schemaLookup;
+	private InMemoryPageIdentifiersLookup $pageIdentifiersLookup;
 
 	public function setUp(): void {
 		$this->subjectRepository = new InMemorySubjectRepository();
@@ -58,6 +62,7 @@ class CreateSubjectActionTest extends TestCase {
 		$this->presenterSpy = new CreateSubjectPresenterSpy();
 		$this->authorizer = new SpySubjectWriteAuthorizer( allowed: true );
 		$this->schemaLookup = new InMemorySchemaLookup();
+		$this->pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
 	}
 
 	private function newCreateSubjectAction( bool $validationEnforced = false ): CreateSubjectAction {
@@ -80,6 +85,7 @@ class CreateSubjectActionTest extends TestCase {
 					subjectLookup: new InMemorySubjectLookup(),
 				),
 			),
+			$this->pageIdentifiersLookup,
 			$validationEnforced,
 		);
 	}
@@ -617,6 +623,88 @@ class CreateSubjectActionTest extends TestCase {
 
 		$this->assertSame( 'presentSubjectAlreadyExists', $this->presenterSpy->result );
 		$this->assertFalse( $this->presenterSpy->validationFailed );
+	}
+
+	public function testCreateWithSuppliedIdUsesThatIdInsteadOfMinting(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: false,
+				label: 'Some Label',
+				schemaName: 'some-schema',
+				statements: [],
+				id: self::SUPPLIED_ID,
+			)
+		);
+
+		$this->assertSame( self::SUPPLIED_ID, $this->presenterSpy->result );
+	}
+
+	public function testCreateWithSuppliedIdKeepsTheStatements(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: false,
+				label: 'Some Label',
+				schemaName: 'some-schema',
+				statements: [
+					'animal' => [ 'propertyType' => 'text', 'value' => 'bunny' ],
+				],
+				id: self::SUPPLIED_ID,
+			)
+		);
+
+		$this->assertEquals(
+			new StatementList( [ TestStatement::build( property: 'animal', value: 'bunny' ) ] ),
+			$this->subjectRepository->getSubject( new SubjectId( self::SUPPLIED_ID ) )->getStatements()
+		);
+	}
+
+	public function testCreateWithSuppliedIdAlreadyUsedElsewherePresentsAlreadyExists(): void {
+		$this->pageIdentifiersLookup->addIdentifiers(
+			new SubjectId( self::SUPPLIED_ID ),
+			new PageIdentifiers( new PageId( 2 ), 'Other Page', 0 )
+		);
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: false,
+				label: 'Some Label',
+				schemaName: 'some-schema',
+				statements: [],
+				id: self::SUPPLIED_ID,
+			)
+		);
+
+		$this->assertSame( 'presentSubjectAlreadyExists', $this->presenterSpy->result );
+	}
+
+	public function testCreateWithoutSuppliedIdSkipsTheGraphInUseCheck(): void {
+		// The id the server will mint is already registered in the graph. A no-id create must still
+		// succeed, proving the graph is only consulted when the caller supplies an id.
+		$this->pageIdentifiersLookup->addIdentifiers(
+			new SubjectId( 's' . self::STUB_ID ),
+			new PageIdentifiers( new PageId( 2 ), 'Other Page', 0 )
+		);
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: 'some-schema',
+				statements: [],
+			)
+		);
+
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
 	}
 
 }

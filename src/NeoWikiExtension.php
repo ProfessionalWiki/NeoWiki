@@ -60,6 +60,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
@@ -93,6 +94,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\MintSubjectIdsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRouteRegistration;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
@@ -812,8 +814,13 @@ class NeoWikiExtension {
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			validationEnforced: $this->isValidationEnforced(),
 		);
+	}
+
+	public function newSubjectIdMinter(): SubjectIdMinter {
+		return new SubjectIdMinter( $this->getIdGenerator() );
 	}
 
 	public function getSelectStatementResolver(): SelectStatementResolver {
@@ -1087,6 +1094,12 @@ class NeoWikiExtension {
 	public static function newValidateSubjectApi(): ValidateSubjectApi {
 		return new ValidateSubjectApi(
 			query: self::getInstance()->newValidateSubjectQuery(),
+		);
+	}
+
+	public static function newMintSubjectIdsApi(): MintSubjectIdsApi {
+		return new MintSubjectIdsApi(
+			subjectIdMinter: self::getInstance()->newSubjectIdMinter(),
 		);
 	}
 

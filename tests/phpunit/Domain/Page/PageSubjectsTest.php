@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use RuntimeException;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects
@@ -188,6 +189,57 @@ class PageSubjectsTest extends TestCase {
 		$this->expectException( InvalidArgumentException::class );
 		// Same id appearing as main AND in the child ordering is illegal.
 		$data->setOrdering( $oldMain->id, [ $first->id, $oldMain->id ] );
+	}
+
+	public function testCreateChildSubjectAddsTheSubject(): void {
+		$data = new PageSubjects( TestSubject::build( TestSubject::uniqueId() ), new SubjectMap() );
+
+		$newChild = TestSubject::build( TestSubject::uniqueId() );
+		$data->createChildSubject( $newChild );
+
+		$this->assertEquals( new SubjectMap( $newChild ), $data->getChildSubjects() );
+	}
+
+	public function testCreateChildSubjectThrowsWhenIdMatchesAnExistingChild(): void {
+		$existingChild = TestSubject::build( TestSubject::uniqueId() );
+		$data = new PageSubjects( null, new SubjectMap( $existingChild ) );
+
+		$this->expectException( RuntimeException::class );
+		$data->createChildSubject( TestSubject::build( $existingChild->id ) );
+	}
+
+	public function testCreateChildSubjectThrowsWhenIdMatchesTheMainSubject(): void {
+		$main = TestSubject::build( TestSubject::uniqueId() );
+		$data = new PageSubjects( $main, new SubjectMap() );
+
+		$this->expectException( RuntimeException::class );
+		// Regression: the guard previously checked only sibling children, missing the main Subject.
+		$data->createChildSubject( TestSubject::build( $main->id ) );
+	}
+
+	public function testCreateMainSubjectSetsTheMainSubject(): void {
+		$data = new PageSubjects( null, new SubjectMap() );
+
+		$newMain = TestSubject::build( TestSubject::uniqueId() );
+		$data->createMainSubject( $newMain );
+
+		$this->assertSame( $newMain, $data->getMainSubject() );
+	}
+
+	public function testCreateMainSubjectThrowsWhenMainAlreadyExists(): void {
+		$data = new PageSubjects( TestSubject::build( TestSubject::uniqueId() ), new SubjectMap() );
+
+		$this->expectException( RuntimeException::class );
+		$data->createMainSubject( TestSubject::build( TestSubject::uniqueId() ) );
+	}
+
+	public function testCreateMainSubjectThrowsWhenIdMatchesAnExistingChild(): void {
+		$existingChild = TestSubject::build( TestSubject::uniqueId() );
+		$data = new PageSubjects( null, new SubjectMap( $existingChild ) );
+
+		$this->expectException( RuntimeException::class );
+		// Regression: a main Subject must not reuse an id already held by a child.
+		$data->createMainSubject( TestSubject::build( $existingChild->id ) );
 	}
 
 }

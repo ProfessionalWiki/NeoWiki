@@ -290,6 +290,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaSummariesApi"
 		},
 		{
+			"path": "/neowiki/v0/subject-ids",
+			"method": [ "POST" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newMintSubjectIdsApi"
+		},
+		{
 			"path": "/neowiki/v0/subject/validate",
 			"method": [ "POST" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newValidateSubjectApi"

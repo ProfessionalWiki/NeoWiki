@@ -200,6 +200,23 @@ Returns the same statement format as storage, with additional fields:
 - Passing `?expand=relations` also embeds the Subjects targeted by this Subject's relation values; see
   [REST API](rest-api.md#the-expand-parameter) for the response shape.
 
+### Creating Subjects
+
+`POST /rest.php/neowiki/v0/page/{pageId}/mainSubject`
+`POST /rest.php/neowiki/v0/page/{pageId}/childSubjects`
+
+Create a Subject on a page from a [Subject object](#subject-object) (`label`, `schema`, `statements`),
+with an optional `comment` edit summary.
+
+The Subject ID is normally minted server-side. To set it yourself — for example to wire relations across
+a batch before the target Subjects exist — pass an optional `id`:
+
+| Field | Required | Notes |
+|---|---|---|
+| `id` | No | Subject ID to assign. Must be well-formed (`400` otherwise) and unused (`409` otherwise). Omit to have the server mint one. Pre-mint a batch of IDs with `POST /neowiki/v0/subject-ids`. |
+
+After creation the ID is immutable; the replace endpoint below ignores it.
+
 ### Writing Subjects
 
 `PUT /rest.php/neowiki/v0/subject/{subjectId}`
