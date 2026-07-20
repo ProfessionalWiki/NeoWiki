@@ -163,8 +163,7 @@ resource.
 
 On `relation` properties. The relation targets a Subject that exists but whose own Schema is not the
 property's declared `targetSchema`. A target that cannot be resolved is reported as
-[`relation-target-not-found`](#relation-target-not-found) instead. The subject editor filters
-relation candidates by target Schema, so this normally only occurs on API writes such as imports.
+[`relation-target-not-found`](#relation-target-not-found) instead.
 
 `args`: `[expectedSchema, actualSchema]`. `valuePartIndex`: the offending target.
 
