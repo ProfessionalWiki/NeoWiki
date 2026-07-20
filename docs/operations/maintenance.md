@@ -5,8 +5,7 @@ order: 2
 
 # Maintaining NeoWiki
 
-This covers the upkeep an evaluation NeoWiki instance needs: rebuilding the graph and the current limitations to be
-aware of. For first-time setup, see [installation](installation.md).
+Upkeep tasks for an evaluation NeoWiki instance. For first-time setup, see [installation](installation.md).
 
 ## Rebuilding the graph
 
@@ -31,40 +30,31 @@ Two things to plan around:
 
 ## Upgrades
 
-NeoWiki adds no database tables of its own, so an upgrade is a code swap plus MediaWiki's standard updater. Update the
-NeoWiki code, then run the updater from the MediaWiki root:
+Update the NeoWiki code, then run MediaWiki's standard updater from the root:
 
 ```sh
 php maintenance/run.php update --quick
 ```
 
-If the new version changes how data is stored in the graph, [rebuild the projection](#rebuilding-the-graph) afterwards
-so it matches.
+If the new version changes how data is stored in the graph, [rebuild the projection](#rebuilding-the-graph) afterwards.
 
-NeoWiki is pre-release, so a new version can change the schema or data format with no migration path. Your evaluation
-data may not survive an upgrade, so be ready to rebuild it from scratch.
+NeoWiki is pre-release, so a new version can change the canonical revision-slot format with no migration path. Your
+evaluation data may not survive an upgrade, so be ready to recreate it from scratch — a projection rebuild does not
+recover data the new version can no longer read.
 
 ## What happens during a Neo4j outage
 
-The graph is a regenerable copy, so NeoWiki never fails an edit because it could not write to it. Ordinary wiki
-editing survives an outage; structured data does not.
-
 - **Editing pages works.** Edits, deletions and undeletions all commit. NeoWiki logs the projection failure on the
-  `NeoWiki` channel and stays out of the way.
-- **Editing and displaying Subjects fails**, along with queries and anything else that reads the graph. Subjects are
-  resolved to their page through an index that lives only in Neo4j.
+  `NeoWiki` channel.
+- **Editing and displaying Subjects fails**, along with queries and anything else that reads the graph.
 
-Once Neo4j is back, [rebuild the graph](#rebuilding-the-graph). It re-saves the pages that still exist and removes the
-ones MediaWiki no longer has, repairing both a failed save and a failed delete, and it names any page it could not
-reconcile.
+Once Neo4j is back, [rebuild the graph](#rebuilding-the-graph): it repairs both a failed save and a failed delete. It
+names any page it could not reconcile; re-run it once you have cleared the cause.
 
 Route the `NeoWiki` log channel somewhere you read. On a default MediaWiki install it goes nowhere, which leaves the
 rebuild's output as your only sign that anything went wrong.
 
-## Current limitations
+## Backups
 
-One known limitation while NeoWiki is pre-release:
-
-- **NeoWiki requires a configured graph backend.** The subject-to-page index lives only in Neo4j, so a wiki with no
-  backend configured cannot create, edit or display Subjects. Tracked in
-  [#895](https://github.com/ProfessionalWiki/NeoWiki/issues/895).
+Back up the MediaWiki database as usual; it holds the canonical data. Neo4j needs no backup — it is a regenerable copy
+you can [rebuild](#rebuilding-the-graph) from the revision slots.
