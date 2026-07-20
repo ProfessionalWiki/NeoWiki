@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\RestCreateSubjectPresenter;
@@ -25,6 +26,15 @@ class CreateSubjectApi extends SimpleHandler {
 
 		$body = $this->getValidatedBody();
 
+		$id = $body['id'] ?? null;
+
+		if ( $id !== null && !SubjectId::isValid( $id ) ) {
+			return $this->getResponseFactory()->createHttpError( 400, [
+				'status' => 'error',
+				'message' => "Subject ID has the wrong format: '$id'",
+			] );
+		}
+
 		$presenter = new RestCreateSubjectPresenter();
 
 		try {
@@ -36,6 +46,7 @@ class CreateSubjectApi extends SimpleHandler {
 					schemaName: $body['schema'],
 					statements: $body['statements'],
 					comment: $body['comment'] ?? null,
+					id: $id,
 				)
 			);
 		} catch ( \InvalidArgumentException $e ) {
@@ -91,6 +102,14 @@ class CreateSubjectApi extends SimpleHandler {
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
 				self::PARAM_DESCRIPTION => 'Optional edit summary.',
+			],
+			'id' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'Optional Subject ID to assign. Must be a well-formed, unused '
+					. 'Subject ID (malformed is rejected with 400, in-use with 409). When omitted, the server '
+					. 'mints one. Pre-mint IDs with POST /neowiki/v0/subject-ids to wire relations across a batch.',
 			],
 		];
 	}

@@ -8,11 +8,13 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
+use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -30,6 +32,13 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 	use MockAuthorityTrait;
+
+	protected function setUp(): void {
+		parent::setUp();
+		// Clear the graph so the client-supplied-id tests, which use fixed ids, start from a clean
+		// subject -> page index rather than nodes projected by earlier tests or runs.
+		$this->setUpNeo4j();
+	}
 
 	public function testCreatesSubject(): void {
 		$this->createSchema( 'Employee' );
@@ -277,6 +286,165 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Validation failed', $responseData['message'] );
 		$this->assertSame( 'Required', $responseData['violations'][0]['propertyName'] );
 		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
+	}
+
+	public function testCreatesChildSubjectWithSuppliedId(): void {
+		$this->createSchema( 'Employee' );
+		$suppliedId = 'sMintAAAAAAAAA1';
+
+		$body = $this->validBody();
+		$body['id'] = $suppliedId;
+
+		$response = $this->executeCreate( $this->getIdOfExistingPage(), $body, isMainSubject: false );
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( $suppliedId, $responseData['subjectId'] );
+
+		$subject = NeoWikiExtension::getInstance()->newSubjectRepository()->getSubject( new SubjectId( $suppliedId ) );
+		$this->assertSame( $suppliedId, $subject->getId()->text );
+	}
+
+	public function testCreatesMainSubjectWithSuppliedId(): void {
+		$this->createSchema( 'Employee' );
+		$suppliedId = 'sMintEEEEEEEEE5';
+
+		$body = $this->validBody();
+		$body['id'] = $suppliedId;
+
+		$response = $this->executeCreate( $this->getIdOfExistingPage(), $body, isMainSubject: true );
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( $suppliedId, $responseData['subjectId'] );
+	}
+
+	public function testMalformedSuppliedIdReturns400(): void {
+		$this->createSchema( 'Employee' );
+
+		$body = $this->validBody();
+		$body['id'] = 'not-a-valid-subject-id';
+
+		$response = $this->executeCreate( $this->getIdOfExistingPage(), $body, isMainSubject: false );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	public function testSuppliedIdAlreadyUsedOnAnotherPageReturns409(): void {
+		$this->createSchema( 'Employee' );
+		$suppliedId = 'sMintBBBBBBBBB2';
+
+		// Create the Subject on one page through the API, so it is projected into the graph.
+		$firstBody = $this->validBody();
+		$firstBody['id'] = $suppliedId;
+		$firstResponse = $this->executeCreate( $this->pageIdOfNewPage( 'CreateSubjectApiTestOtherPage' ), $firstBody, isMainSubject: false );
+		$this->assertSame( 201, $firstResponse->getStatusCode() );
+
+		// Reusing it on a different page is rejected via the graph's subject -> page index.
+		$secondBody = $this->validBody();
+		$secondBody['id'] = $suppliedId;
+		$secondResponse = $this->executeCreate( $this->getIdOfExistingPage(), $secondBody, isMainSubject: false );
+
+		$responseData = json_decode( $secondResponse->getBody()->getContents(), true );
+
+		$this->assertSame( 409, $secondResponse->getStatusCode() );
+		$this->assertSame( 'Subject already exists', $responseData['message'] );
+	}
+
+	public function testSuppliedIdMatchingAnExistingChildReturns409(): void {
+		$this->createSchema( 'Employee' );
+		$suppliedId = 'sMintCCCCCCCCC3';
+		$pageTitle = 'CreateSubjectApiTestExistingChild';
+
+		$this->createPageWithSubjects(
+			$pageTitle,
+			childSubjects: new SubjectMap( TestSubject::build( id: $suppliedId ) )
+		);
+
+		$body = $this->validBody();
+		$body['id'] = $suppliedId;
+
+		$response = $this->executeCreate( $this->pageIdOf( $pageTitle ), $body, isMainSubject: false );
+
+		$this->assertSame( 409, $response->getStatusCode() );
+	}
+
+	public function testSuppliedIdMatchingThePageMainSubjectReturns409(): void {
+		$this->createSchema( 'Employee' );
+		$suppliedId = 'sMintDDDDDDDDD4';
+		$pageTitle = 'CreateSubjectApiTestMainCollision';
+
+		$this->createPageWithSubjects(
+			$pageTitle,
+			mainSubject: TestSubject::build( id: $suppliedId )
+		);
+
+		$body = $this->validBody();
+		$body['id'] = $suppliedId;
+
+		// Creating a child Subject whose id equals the page's main Subject must be rejected
+		// (regression: the child guard previously ignored the main Subject).
+		$response = $this->executeCreate( $this->pageIdOf( $pageTitle ), $body, isMainSubject: false );
+
+		$this->assertSame( 409, $response->getStatusCode() );
+	}
+
+	public function testInterlinkedSubjectsCanBeCreatedInAnyOrder(): void {
+		$this->createSchema( 'Employee' );
+		$idA = 'sMintFFFFFFFFF6';
+		$idB = 'sMintGGGGGGGGG7';
+		$pageId = $this->getIdOfExistingPage();
+
+		// Subject B references A before A exists (relation targets are not validated on create).
+		$responseB = $this->executeCreate( $pageId, [
+			'label' => 'Subject B',
+			'schema' => 'Employee',
+			'id' => $idB,
+			'statements' => [
+				'Has colleague' => [
+					'propertyType' => 'relation',
+					'value' => [ [ 'target' => $idA ] ],
+				],
+			],
+		], isMainSubject: false );
+		$this->assertSame( 201, $responseB->getStatusCode() );
+
+		// Now create A with its pre-chosen id.
+		$responseA = $this->executeCreate( $pageId, [
+			'label' => 'Subject A',
+			'schema' => 'Employee',
+			'id' => $idA,
+			'statements' => [],
+		], isMainSubject: false );
+		$this->assertSame( 201, $responseA->getStatusCode() );
+
+		$repository = NeoWikiExtension::getInstance()->newSubjectRepository();
+		$this->assertSame( $idA, $repository->getSubject( new SubjectId( $idA ) )->getId()->text );
+		$this->assertSame( $idB, $repository->getSubject( new SubjectId( $idB ) )->getId()->text );
+	}
+
+	private function executeCreate( int $pageId, array $body, bool $isMainSubject = false ): Response {
+		return $this->executeHandler(
+			$this->newCreateSubjectApi( $isMainSubject ),
+			new RequestData( [
+				'method' => 'POST',
+				'pathParams' => [ 'pageId' => $pageId ],
+				'bodyContents' => json_encode( $body ),
+				'headers' => [ 'Content-Type' => 'application/json' ],
+			] )
+		);
+	}
+
+	private function pageIdOf( string $title ): int {
+		return MediaWikiServices::getInstance()->getWikiPageFactory()
+			->newFromTitle( Title::newFromText( $title ) )->getId();
+	}
+
+	private function pageIdOfNewPage( string $title ): int {
+		$this->editPage( Title::newFromText( $title ), 'Whatever wikitext' );
+		return $this->pageIdOf( $title );
 	}
 
 }

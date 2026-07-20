@@ -52,6 +52,7 @@ Read, change, and validate Subjects. New Subjects are created on a page — see
 | `DELETE /neowiki/v0/subject/{subjectId}` | Delete a Subject. |
 | `POST /neowiki/v0/subject/validate` | Check whether a new Subject is valid, without saving it. |
 | `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. |
+| `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |
 | `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. |
 
 ### Pages and Subjects

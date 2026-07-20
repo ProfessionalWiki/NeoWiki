@@ -91,15 +91,23 @@ class PageSubjects {
 			throw new RuntimeException( 'Main subject already exists' );
 		}
 
+		if ( $this->childSubjects->hasSubject( $subject->id ) ) {
+			throw new RuntimeException( 'Subject already exists' );
+		}
+
 		$this->mainSubject = $subject;
 	}
 
 	public function createChildSubject( Subject $subject ): void {
-		if ( $this->childSubjects->hasSubject( $subject->id ) ) {
-			throw new RuntimeException( 'Child subject already exists' );
+		if ( $this->hasSubjectWithId( $subject->id ) ) {
+			throw new RuntimeException( 'Subject already exists' );
 		}
 
 		$this->childSubjects->addOrUpdateSubject( $subject );
+	}
+
+	private function hasSubjectWithId( SubjectId $id ): bool {
+		return $this->isMainSubject( $id ) || $this->childSubjects->hasSubject( $id );
 	}
 
 	/**

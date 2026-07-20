@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
@@ -14,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
@@ -30,6 +32,7 @@ readonly class CreateSubjectAction {
 		private SchemaLookup $schemaLookup,
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
+		private PageIdentifiersLookup $pageIdentifiersLookup,
 		private bool $validationEnforced,
 	) {
 	}
@@ -46,6 +49,11 @@ readonly class CreateSubjectAction {
 		}
 
 		$subject = $this->buildSubject( $request );
+
+		if ( $request->id !== null && $this->subjectIdIsInUse( $subject->id ) ) {
+			$this->presenter->presentSubjectAlreadyExists();
+			return;
+		}
 
 		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageId );
 
@@ -84,15 +92,34 @@ readonly class CreateSubjectAction {
 
 	private function buildSubject( CreateSubjectRequest $request ): Subject {
 		$schemaName = new SchemaName( $request->schemaName );
-
-		return Subject::createNew(
-			idGenerator: $this->idGenerator,
-			label: new SubjectLabel( $request->label ),
-			schemaName: $schemaName,
-			statements: $this->statementListBuilder->build(
-				$this->resolveSelectValues( $schemaName, $request->statements )
-			)
+		$label = new SubjectLabel( $request->label );
+		$statements = $this->statementListBuilder->build(
+			$this->resolveSelectValues( $schemaName, $request->statements )
 		);
+
+		if ( $request->id === null ) {
+			return Subject::createNew(
+				idGenerator: $this->idGenerator,
+				label: $label,
+				schemaName: $schemaName,
+				statements: $statements,
+			);
+		}
+
+		return new Subject(
+			id: new SubjectId( $request->id ),
+			label: $label,
+			schemaName: $schemaName,
+			statements: $statements,
+		);
+	}
+
+	/**
+	 * Best-effort global uniqueness check: the subject -> page index lags slot writes, so this can
+	 * miss a very recently created Subject; ID entropy carries the rest (same posture as relation IDs).
+	 */
+	private function subjectIdIsInUse( SubjectId $id ): bool {
+		return $this->pageIdentifiersLookup->getPageIdOfSubject( $id ) !== null;
 	}
 
 	/**
