@@ -4,34 +4,28 @@ order: 6
 ---
 # Graph Model
 
-NeoWiki stores a query-optimized projection of its data in a Neo4j graph database ([ADR 3](../adr/003-neo4j-as-graph-database.md)).
-The source of truth for all data remains in MediaWiki revision slots ([ADR 4](../adr/004-use-dedicated-slot.md));
-the graph is a secondary store that enables efficient querying and relationship traversal.
+NeoWiki projects its data into a Neo4j graph for querying ([ADR 3](../adr/003-neo4j-as-graph-database.md)). The graph
+is a secondary store; the source of truth is the MediaWiki revision slots it is built from
+([ADR 4](../adr/004-use-dedicated-slot.md)).
 
 For definitions of domain terms like Subject, Statement, and Schema, see the [Glossary](../glossary.md).
 
 ## Overview
 
-The graph consists of two node types and two relationship categories:
+Two node types and two relationship categories:
 
 ```
 (:Page)-[:HasSubject {isMain}]->(:Subject:SchemaName)
 (:Subject)-[:RelationType {id, ...}]->(:Subject)
 ```
 
-Page nodes represent MediaWiki pages and carry page-level metadata. Subject nodes represent structured data entities.
-`HasSubject` relationships connect pages to their Subjects. Typed relationships connect Subjects to other Subjects
-via Relations.
-
 ## Page Nodes
 
-Every page that contains structured data has a corresponding `:Page` node. These nodes make page metadata available
-for graph queries.
+Every page that contains structured data has a `:Page` node.
 
-Page identity is scoped per wiki. A shared graph can hold pages from multiple wikis (e.g. a wiki farm), and MediaWiki
-page ids are only unique within a single wiki. Each page node therefore carries a `wiki_id` and is identified by the
-`(wiki_id, id)` pair ([ADR 22](../adr/022-multi-wiki-node-identity.md)). In a single-wiki install there is one
-`wiki_id` value and behaviour is unchanged.
+A shared graph can hold pages from multiple wikis (a wiki farm), and MediaWiki page ids are unique only within a wiki,
+so a page is identified by the `(wiki_id, id)` pair, not `id` alone ([ADR 22](../adr/022-multi-wiki-node-identity.md)).
+A single-wiki install has just one `wiki_id`.
 
 | Property | Neo4j Type | Description |
 |----------|------------|-------------|
@@ -44,18 +38,14 @@ page ids are only unique within a single wiki. Each page node therefore carries 
 | `lastEditor` | string | Username of the last editor |
 | `categories` | string[] | MediaWiki categories the page belongs to |
 
-`creationTime` and `lastUpdated` are stored as Neo4j datetime values (ISO 8601), converted from MediaWiki's
-`YmdHis` timestamp format.
-
-`namespaceId` holds MediaWiki's canonical namespace ID. Built-in namespaces (e.g. `0` main, `12` Help, `14`
-Category) have the same ID on every wiki, so filtering by `namespaceId` behaves consistently across a graph
-shared by multiple wikis. Custom namespaces defined via `$wgExtraNamespaces` get per-wiki IDs that may differ in
-meaning between wikis, so pair `namespaceId` with `wiki_id` to filter those unambiguously.
+Built-in namespaces have the same ID on every wiki, so `namespaceId` filters consistently across a shared graph.
+Custom namespaces (`$wgExtraNamespaces`) get per-wiki IDs whose meaning can differ between wikis; pair `namespaceId`
+with `wiki_id` to filter those unambiguously.
 
 ## Subject Nodes
 
-Each Subject stored on a page gets a `:Subject` node. Subject nodes carry two labels: `Subject` and the name of
-their Schema (e.g., `:Subject:Person`, `:Subject:Company`). The Schema label changes if a Subject's type changes.
+Each Subject stored on a page gets a `:Subject` node. Subject nodes carry two labels: `Subject` and the name of their
+Schema (e.g. `:Subject:Person`, `:Subject:Company`). The Schema label changes if a Subject's type changes.
 
 ### Fixed properties
 
@@ -66,17 +56,31 @@ their Schema (e.g., `:Subject:Person`, `:Subject:Company`). The Schema label cha
 | `wiki_id` | string | [MediaWiki Wiki ID](https://www.mediawiki.org/wiki/Manual:Wiki_ID) of the wiki that owns the Subject |
 
 Unlike page ids, Subject ids are globally unique nanoids ([ADR 14](../adr/014-improved-id-format.md)), so a Subject's
-identity is its `id` alone. The `wiki_id` is carried only for per-wiki query filtering in a shared graph; Subject-id
-namespacing is deferred ([ADR 22](../adr/022-multi-wiki-node-identity.md)).
+identity is its `id` alone. The `wiki_id` is carried only for per-wiki query filtering in a shared graph.
 
 ### Dynamic properties
 
-Each Statement on a Subject becomes a node property, keyed by Property Name. The value is converted to a
-Neo4j-compatible format by the corresponding PropertyType implementation. For example, a Statement with
-Property Name "Founded at" and a number value of `2019` results in a node property `Founded at: 2019`.
+Each non-relation Statement becomes a node property keyed by its Property Name. A `number` Statement with Property
+Name "Founded at" and value `2019` becomes the node property `Founded at: 2019`. A key that is not a valid Cypher
+identifier must be backtick-escaped when read (`` s.`Founded at` ``).
 
-Relation-type Statements are not stored as node properties. They are stored as relationships between Subject
-nodes (see below).
+The PropertyType determines the value's Neo4j type:
+
+| PropertyType | Neo4j value |
+|--------------|-------------|
+| `text`, `url`, `select` | list of strings |
+| `number` | integer or float |
+| `boolean` | boolean |
+| `date` | list of dates |
+| `dateTime` | list of datetimes |
+| `relation` | stored as a [relationship](#typed-relations), not a node property |
+
+A Property Name that collides with a fixed property (`id`, `name`, `wiki_id`) does not override it: the fixed value
+wins and the Statement's value is not projected.
+
+Values a PropertyType cannot represent are dropped from the projection: a property whose type has no registered
+PropertyType produces no node property, and non-ISO 8601 `date`/`dateTime` parts are omitted from the stored value.
+The revision slot stays authoritative.
 
 ## Relationships
 
@@ -93,8 +97,8 @@ A page can have at most one Main Subject and any number of Child Subjects
 
 ### Typed Relations
 
-Subject-to-Subject relationships represent Relations. The relationship type in Neo4j is the Relation Type defined
-in the Property Definition (e.g., `Has author`, `Has product`). Names that are not valid Cypher identifiers are
+Subject-to-Subject relationships represent Relations. The relationship type in Neo4j is the Relation Type defined in
+the Property Definition (e.g. `Has author`, `Has product`). Names that are not valid Cypher identifiers are
 backtick-escaped.
 
 | Property | Neo4j Type | Description |
@@ -103,20 +107,18 @@ backtick-escaped.
 | *(additional)* | scalar | Any properties from the Relation's property map |
 
 When a Subject is deleted but still has incoming relations from other Subjects, its outgoing relationships and
-`HasSubject` relationship are removed, but the node itself is kept so that the incoming references remain valid.
+`HasSubject` relationship are removed, but the node itself is kept so incoming references stay valid. Such a retained
+node keeps its Schema labels and dynamic properties; the absence of an incoming `HasSubject` relationship distinguishes
+it from a live Subject.
 
 ## Constraints
 
-Two node uniqueness constraints are defined for the graph: the `(wiki_id, id)` pair is unique on `:Page` nodes
-([ADR 22](../adr/022-multi-wiki-node-identity.md)), and `Subject.id` is unique. They are created by running the
-`RebuildGraphDatabases.php` maintenance script, and creation is idempotent (`CREATE CONSTRAINT ... IF NOT EXISTS`),
-so re-running it is safe. The incremental projection that runs on each page edit does not create them, so an
-existing graph gains them only after the rebuild has been run.
+Two node uniqueness constraints apply: `(wiki_id, id)` on `:Page` nodes
+([ADR 22](../adr/022-multi-wiki-node-identity.md)) and `id` on `:Subject` nodes. A graph that has never been rebuilt
+with `RebuildGraphDatabases.php` lacks them: the incremental per-edit projection does not create them.
 
-Relation (edge) `id` values are not constrained at the graph level: Neo4j relationship uniqueness constraints
-are per relationship type, and Relations use an open, user-defined set of relationship types, so no single
-constraint can enforce global Relation-`id` uniqueness (see
-[#351](https://github.com/ProfessionalWiki/NeoWiki/issues/351)).
+Relation (edge) `id` values carry no uniqueness constraint
+([#351](https://github.com/ProfessionalWiki/NeoWiki/issues/351)).
 
 ## Related Documentation
 
