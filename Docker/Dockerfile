@@ -42,7 +42,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
 COPY fs_overlay/ /
 
-RUN a2enmod rewrite && a2enconf short-url
+RUN a2enmod rewrite proxy proxy_http && a2enconf short-url
 
 FROM configured-mw AS production-mw
 

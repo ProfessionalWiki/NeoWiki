@@ -56,6 +56,9 @@ class SubjectsAction extends FormlessAction {
 				$extension->getRdfProjectionNames(),
 				$this->getAuthority()
 			),
+			// The copy-IRI control appends the Subject id to this base to show the full neo-subj:
+			// concept URI, deriving it from the same server-side rule the RDF export mints IRIs with.
+			'wgNeoWikiSubjectIriBase' => $extension->getRdfNamespaces()->subjectIriBase(),
 		] );
 
 		return Html::element( 'div', [ 'id' => 'ext-neowiki-manage-subjects' ] );

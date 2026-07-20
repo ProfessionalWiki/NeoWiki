@@ -102,6 +102,38 @@ for the requested ontology target projects to an empty graph — a `200`, not a 
 curl 'https://wiki.example/rest.php/neowiki/v0/subject/s1demo8aaaaaab5/rdf?projection=EDM'
 ```
 
+### Dereferencing subject IRIs
+
+Every Subject's `neo-subj:` IRI — `$base/entity/{subjectId}` — is a dereferenceable concept URI. A `GET`
+content-negotiates it and answers `303 See Other` with an absolute `Location`:
+
+| `Accept` | Redirects to |
+|---|---|
+| `application/trig` | the Subject's TriG RDF (`.../subject/{id}/rdf?format=trig`) |
+| `text/turtle` | the Subject's Turtle RDF (`.../subject/{id}/rdf?format=turtle`) |
+| `text/html`, `*/*`, absent, anything else | the Subject's hosting page |
+
+TriG wins when both RDF types are acceptable; the RDF redirects use the native projection. A Subject that
+is absent or on a page the caller may not read returns one indistinguishable `404`; a malformed id `400`.
+
+The negotiator is always reachable at the REST path, which needs no server configuration:
+
+```sh
+curl -H 'Accept: text/turtle' 'https://wiki.example/rest.php/neowiki/v0/entity/s1demo8aaaaaab5'
+```
+
+To make the bare `neo-subj:` IRI itself dereference, route `/entity/{id}` to that REST path. MediaWiki's
+REST router matches on the request path, so an internal self-proxy (not a plain rewrite, which would leave
+the path unchanged) presents it without a client-visible redirect. The dev image ships this, on Apache with
+`mod_proxy` and `mod_proxy_http`:
+
+```apache
+RewriteRule ^/?entity/(.+)$ http://127.0.0.1/w/rest.php/neowiki/v0/entity/$1 [P,L]
+```
+
+This applies when `$wgNeoWikiRdfBaseUri` is the wiki's own host (the default); an external or institutional
+base URI is the operator's own routing concern.
+
 ### Finding these exports
 
 These exports are surfaced in the UI: the Data tab (`?action=subjects`) links to each Subject's JSON and

@@ -260,6 +260,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newExportSubjectRdfApi"
 		},
 		{
+			"path": "/neowiki/v0/entity/{subjectId}",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newResolveSubjectIriApi"
+		},
+		{
 			"path": "/neowiki/v0/schema/{schemaName}",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaApi"
@@ -599,6 +604,10 @@
 				"neowiki-managesubjects-id-copy",
 				"neowiki-managesubjects-id-copied",
 				"neowiki-managesubjects-id-copy-error",
+				"neowiki-managesubjects-iri-label",
+				"neowiki-managesubjects-iri-copy",
+				"neowiki-managesubjects-iri-copied",
+				"neowiki-managesubjects-iri-copy-error",
 				"neowiki-managesubjects-export-button",
 				"neowiki-managesubjects-export-json",
 				"neowiki-managesubjects-export-native",
