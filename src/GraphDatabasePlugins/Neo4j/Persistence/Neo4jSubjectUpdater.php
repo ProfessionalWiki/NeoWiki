@@ -5,15 +5,12 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
-use Laudis\Neo4j\Databags\SummarizedResult;
-use Laudis\Neo4j\Types\CypherList;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use Psr\Log\LoggerInterface;
 
 class Neo4jSubjectUpdater {
@@ -124,17 +121,10 @@ class Neo4jSubjectUpdater {
 	}
 
 	private function updateNodeLabels( Subject $subject ): void {
-		$oldLabels = $this->getNodeLabels( $subject->id );
+		$oldLabels = Neo4jNodeLabels::read( $this->transaction, $subject->id->text );
 		$newLabels = [ 'Subject', $subject->getSchemaName()->getText() ];
 
-		$labelsToRemove = array_diff( $oldLabels, $newLabels );
-
-		if ( $labelsToRemove !== [] ) {
-			$this->transaction->run(
-				'MATCH (n {id: $id}) REMOVE n:' . Cypher::buildLabelList( $labelsToRemove ),
-				[ 'id' => $subject->id->text ]
-			);
-		}
+		Neo4jNodeLabels::remove( $this->transaction, $subject->id->text, array_diff( $oldLabels, $newLabels ) );
 
 		$labelsToAdd = array_diff( $newLabels, $oldLabels );
 
@@ -146,35 +136,12 @@ class Neo4jSubjectUpdater {
 		}
 	}
 
-	/**
-	 * @return string[]
-	 */
-	private function getNodeLabels( SubjectId $id ): array {
-		/**
-		 * @var SummarizedResult $result
-		 */
-		$result = $this->transaction->run(
-			'MATCH (n) WHERE n.id = $id RETURN labels(n)',
-			[ 'id' => $id->text ]
-		);
-
-		if ( $result->isEmpty() ) {
-			return [];
-		}
-
-		/**
-		 * @var CypherList $labels
-		 */
-		$labels = $result->first()->get( 'labels(n)' );
-
-		return $labels->toArray();
-	}
-
 	private function updateRelations( Subject $subject, Schema $schema ): void {
 		$updater = new Neo4jSubjectRelationUpdater(
 			$subject->getId(),
 			$subject->getTypedRelations( $schema ),
-			$this->transaction
+			$this->transaction,
+			$this->wikiId
 		);
 		$updater->updateRelations();
 	}

@@ -25,6 +25,7 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 	private const string SUBJECT_ID = 'sTestSRU1111111';
 	private const string TARGET_SUBJECT_1 = 'sTestSRU1111112';
 	private const string TARGET_SUBJECT_2 = 'sTestSRU1111113';
+	private const string WIKI_ID = 'test_wiki';
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
@@ -66,7 +67,8 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		$updater = new Neo4jSubjectRelationUpdater(
 			new SubjectId( self::SUBJECT_ID ),
 			$relations,
-			NeoWikiExtension::getInstance()->getNeo4jClient()
+			NeoWikiExtension::getInstance()->getNeo4jClient(),
+			self::WIKI_ID
 		);
 		$updater->updateRelations();
 	}
@@ -275,6 +277,35 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertCount( 1, $result->getResults()->toRecursiveArray() );
+	}
+
+	public function testRelationToNonExistentTargetCreatesStubTarget(): void {
+		$targetId = 'sTestSRU111nope';
+
+		$this->updateRelations(
+			new TypedRelationList( [
+				TestRelation::build(
+					id: 'rTestSRU1111rr1',
+					targetId: $targetId,
+					properties: new RelationProperties( [] ),
+				)->withType( new RelationType( 'RelationType' ) )
+			] )
+		);
+
+		$result = NeoWikiExtension::getInstance()->getNeo4jClient()->run(
+			'MATCH (target {id: $targetId})
+				RETURN labels(target) AS labels, target.id AS id, target.wiki_id AS wikiId, size(keys(target)) AS propertyCount',
+			[ 'targetId' => $targetId ]
+		);
+
+		$this->assertFalse( $result->isEmpty(), 'Stub target should exist' );
+
+		$row = $result->first()->toRecursiveArray();
+
+		$this->assertSame( [ 'Subject' ], $row['labels'] );
+		$this->assertSame( $targetId, $row['id'] );
+		$this->assertSame( self::WIKI_ID, $row['wikiId'] );
+		$this->assertSame( 2, $row['propertyCount'], 'Stub target should keep only the id and wiki_id properties' );
 	}
 
 }
