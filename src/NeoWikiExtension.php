@@ -92,6 +92,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutSummariesApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetMappingSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
@@ -1182,6 +1183,10 @@ class NeoWikiExtension {
 
 	public static function newGetLayoutSummariesApi(): GetLayoutSummariesApi {
 		return new GetLayoutSummariesApi();
+	}
+
+	public static function newGetMappingSummariesApi(): GetMappingSummariesApi {
+		return new GetMappingSummariesApi();
 	}
 
 	public static function newGetSubjectLabelsApi(): GetSubjectLabelsApi {
