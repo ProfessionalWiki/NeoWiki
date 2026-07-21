@@ -21,7 +21,9 @@ per-page `read` permission; page protection and `$wgNamespaceProtection` do not 
 empty list, or a `404` — never a `403`. `GET /subject-labels` is the exception: it filters only by wiki and Schema, not
 by per-page `read`.
 
-Subject write endpoints require per-page `edit` permission and answer `403` on denial.
+Subject write endpoints require per-page `edit` permission. On the create, main-subject, and ordering
+endpoints, which are keyed by page id, a page you may not read and a page id that does not exist answer an
+identical `404`; a page you may read but not edit answers `403`.
 
 The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
 [Query API](query-api.md)).
