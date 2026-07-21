@@ -15,11 +15,11 @@ Every endpoint is also published as a complete [OpenAPI 3.0 description](#full-s
 
 ## Permissions
 
-The Subject, page-subjects, Schema, Layout, RDF export, and entity-dereference read endpoints enforce the caller's
-per-page `read` permission; page protection and `$wgNamespaceProtection` do not restrict them, because MediaWiki's
-`read` action ignores both. When you may not read a page they respond as if the data were absent — a `null` value, an
-empty list, or a `404` — never a `403`. `GET /subject-labels` is the exception: it filters only by wiki and Schema, not
-by per-page `read`.
+The Subject, page-subjects, subject-labels, Schema, Layout, RDF export, and entity-dereference read endpoints enforce
+the caller's per-page `read` permission; page protection and `$wgNamespaceProtection` do not restrict them, because
+MediaWiki's `read` action ignores both. When you may not read a page they respond as if the data were absent — a `null`
+value, an empty list, or a `404` — never a `403`. `GET /subject-labels` omits the labels of Subjects whose page you
+cannot read; because that filter runs per result, it caps `limit` at 50.
 
 Subject write endpoints require per-page `edit` permission and answer `403` on denial.
 

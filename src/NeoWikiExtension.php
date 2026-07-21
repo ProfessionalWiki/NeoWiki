@@ -997,6 +997,7 @@ class NeoWikiExtension {
 		return new Neo4jSubjectLabelLookup(
 			client: $this->getReadOnlyNeo4jClient(),
 			wikiId: $this->config->wikiId,
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
 		);
 	}
 

@@ -10,6 +10,7 @@ use MediaWiki\Rest\StringStream;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookupResult;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
 class GetSubjectLabelsApi extends SimpleHandler {
 
@@ -57,6 +58,8 @@ class GetSubjectLabelsApi extends SimpleHandler {
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_DEFAULT => 10,
+				IntegerDef::PARAM_MIN => 1,
+				IntegerDef::PARAM_MAX => 50,
 				self::PARAM_DESCRIPTION => 'Maximum number of items to return.',
 			],
 		];
