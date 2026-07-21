@@ -7,6 +7,8 @@ import { MultiStringProperty } from '@/domain/PropertyDefinition.ts';
 import { PropertyType } from '@/domain/PropertyType.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
+import { ValueInputEmitFunction } from '@/components/Value/ValueInputContract.ts';
+import { useServerViolations } from '@/composables/useServerViolations.ts';
 
 interface UseStringValueInputReturn {
 	displayValues: ComputedRef<string[]>;
@@ -20,10 +22,7 @@ interface UseStringValueInputReturn {
 export function useStringValueInput<P extends MultiStringProperty>(
 	modelValue: Ref<Value | undefined>,
 	property: Ref<P>,
-	emit: {
-		( e: 'update:modelValue', value: Value | undefined ): void;
-		( e: 'clear-server-violation', payload: { propertyName: string; valuePartIndex: number | null } ): void;
-	},
+	emit: ValueInputEmitFunction,
 	propertyType: PropertyType,
 	serverViolations?: Ref<readonly SubjectViolation[] | undefined>,
 ): UseStringValueInputReturn {
@@ -58,18 +57,15 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		return internalValue.value ? internalValue.value.parts : [];
 	} );
 
-	function relevantViolations(): readonly SubjectViolation[] {
-		const all = serverViolations?.value;
-		if ( !all ) {
-			return [];
-		}
-		const name = property.value.name.toString();
-		return all.filter( ( v ) => v.propertyName === name );
-	}
+	const { relevant, format, emitClears } = useServerViolations(
+		property,
+		serverViolations ?? ref<readonly SubjectViolation[] | undefined>( undefined ),
+		emit,
+	);
 
 	function mergeServerIntoInputMessages( baseMessages: ValidationMessages[] ): ValidationMessages[] {
 		const merged = [ ...baseMessages ];
-		for ( const v of relevantViolations() ) {
+		for ( const v of relevant() ) {
 			if ( typeof v.valuePartIndex !== 'number' ) {
 				continue;
 			}
@@ -79,12 +75,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 			}
 			const existing = merged[ i ];
 			if ( !existing || Object.keys( existing ).length === 0 ) {
-				merged[ i ] = {
-					error: mw.message(
-						`neowiki-field-${ v.code }`,
-						...( v.args as string[] ),
-					).text(),
-				};
+				merged[ i ] = { error: format( v ) };
 			}
 		}
 		return merged;
@@ -95,7 +86,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		// per-input slot to attach to, so we surface it through the field-level
 		// summary regardless of multi/single — otherwise something like a
 		// "required" violation on a multi-value property would silently vanish.
-		const fieldLevel = relevantViolations().find(
+		const fieldLevel = relevant().find(
 			( v ) => v.valuePartIndex === null || v.valuePartIndex === undefined,
 		);
 
@@ -103,12 +94,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 			// For multi: per-input server violations stay in their slots; only a
 			// server-sourced field-level violation surfaces in the summary slot.
 			if ( fieldLevel ) {
-				return {
-					error: mw.message(
-						`neowiki-field-${ fieldLevel.code }`,
-						...( fieldLevel.args as string[] ),
-					).text(),
-				};
+				return { error: format( fieldLevel ) };
 			}
 			return {};
 		}
@@ -121,12 +107,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		}
 
 		if ( fieldLevel ) {
-			return {
-				error: mw.message(
-					`neowiki-field-${ fieldLevel.code }`,
-					...( fieldLevel.args as string[] ),
-				).text(),
-			};
+			return { error: format( fieldLevel ) };
 		}
 
 		return {};
@@ -145,24 +126,21 @@ export function useStringValueInput<P extends MultiStringProperty>(
 
 		updateValidationMessages( currentInputValues );
 
-		// Emit clear-server-violation for the index that just changed, if a server
-		// violation existed there for this property.
-		const name = property.value.name.toString();
-		const relevant = relevantViolations();
-		if ( relevant.length > 0 ) {
-			if ( property.value.multiple ) {
-				// Identify which index changed by diffing against the previous values.
-				const len = Math.max( currentInputValues.length, previousInputValues.length );
-				for ( let i = 0; i < len; i++ ) {
-					if ( currentInputValues[ i ] !== previousInputValues[ i ] ) {
-						if ( relevant.some( ( v ) => v.valuePartIndex === i ) ) {
-							emit( 'clear-server-violation', { propertyName: name, valuePartIndex: i } );
-						}
-					}
+		// Optimistically clear the server violations this edit could have resolved:
+		// on a multi-value field, the value parts whose input changed plus the
+		// shared field-level summary; on a single-value field, only the summary.
+		// useServerViolations emits only for indices it actually holds.
+		if ( property.value.multiple ) {
+			const len = Math.max( currentInputValues.length, previousInputValues.length );
+			const changedIndices: number[] = [];
+			for ( let i = 0; i < len; i++ ) {
+				if ( currentInputValues[ i ] !== previousInputValues[ i ] ) {
+					changedIndices.push( i );
 				}
-			} else if ( relevant.some( ( v ) => v.valuePartIndex === null || v.valuePartIndex === undefined ) ) {
-				emit( 'clear-server-violation', { propertyName: name, valuePartIndex: null } );
 			}
+			emitClears( changedIndices );
+		} else {
+			emitClears( [] );
 		}
 
 		// Emit every non-empty entry, including ones that are invalid. The
