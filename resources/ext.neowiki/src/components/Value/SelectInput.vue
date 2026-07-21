@@ -42,14 +42,14 @@ import type { Value } from '@/domain/Value';
 </script>
 
 <script setup lang="ts">
-import { ref, watch, computed, nextTick } from 'vue';
+import { ref, watch, computed, nextTick, toRef } from 'vue';
 import { CdxField, CdxIcon, CdxMultiselectLookup, CdxSelect } from '@wikimedia/codex';
 import type { ChipInputItem, MenuItemData } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, ValueType } from '@/domain/Value';
 import { resolveSelectLabel, SelectProperty } from '@/domain/propertyTypes/Select.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { SubjectViolation } from '@/domain/SubjectViolation.ts';
+import { useServerViolations } from '@/composables/useServerViolations.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<SelectProperty>>(),
@@ -61,19 +61,13 @@ const props = withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
-function relevantServerViolations(): readonly SubjectViolation[] {
-	const name = props.property.name.toString();
-	return ( props.serverViolations ?? [] ).filter( ( v ) => v.propertyName === name );
-}
-
-const validationError = computed<string | null>( () => {
-	// For Select (both single and multi), show the first relevant server violation.
-	const hit = relevantServerViolations()[ 0 ];
-	if ( hit ) {
-		return mw.message( `neowiki-field-${ hit.code }`, ...( hit.args as string[] ) ).text();
-	}
-	return null;
-} );
+// For Select (single and multi) the field shows one aggregate error — the first
+// relevant server violation — so an edit clears every held violation ('all').
+const { firstMessage: validationError, emitClears } = useServerViolations(
+	toRef( props, 'property' ),
+	toRef( props, 'serverViolations' ),
+	emit
+);
 
 const selectPlaceholder = computed( () =>
 	mw.message( 'neowiki-select-placeholder' ).text()
@@ -119,20 +113,11 @@ function getFilteredOptions(): MenuItemData[] {
 		.map( ( option ) => ( { value: option.id, label: option.label } ) );
 }
 
-function emitClearIfServerViolationPresent(): void {
-	if ( relevantServerViolations().length > 0 ) {
-		emit( 'clear-server-violation', {
-			propertyName: props.property.name.toString(),
-			valuePartIndex: null
-		} );
-	}
-}
-
 function onSingleSelect( selected: string ): void {
 	selection.value = selected ? [ selected ] : [];
 	emit( 'update:modelValue', selection.value.length > 0 ?
 		newStringValue( selection.value ) : undefined );
-	emitClearIfServerViolationPresent();
+	emitClears( 'all' );
 }
 
 function onInput(): void {
@@ -159,7 +144,7 @@ watch( chips, () => {
 		inputValue.value = '';
 		menuItems.value = [];
 		emit( 'update:modelValue', parts.length > 0 ? newStringValue( parts ) : undefined );
-		emitClearIfServerViolationPresent();
+		emitClears( 'all' );
 	} );
 }, { deep: true } );
 
