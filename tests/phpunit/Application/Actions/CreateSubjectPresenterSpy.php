@@ -25,6 +25,10 @@ class CreateSubjectPresenterSpy implements CreateSubjectPresenter {
 		$this->result = 'presentSubjectAlreadyExists';
 	}
 
+	public function presentPageNotFound(): void {
+		$this->result = 'presentPageNotFound';
+	}
+
 	public function presentValidationFailed( array $violations ): void {
 		$this->validationFailed = true;
 		$this->violations = $violations;

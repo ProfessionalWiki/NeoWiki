@@ -34,4 +34,9 @@ class RestSetSubjectsOrderingPresenter implements SetSubjectsOrderingPresenter {
 		$this->statusCode = 400;
 	}
 
+	public function presentPageNotFound(): void {
+		$this->apiResponse = [ 'status' => 'error', 'message' => 'Page not found' ];
+		$this->statusCode = 404;
+	}
+
 }

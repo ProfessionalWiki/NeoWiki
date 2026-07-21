@@ -822,6 +822,7 @@ class NeoWikiExtension {
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
 			idGenerator: $this->getIdGenerator(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
@@ -891,6 +892,7 @@ class NeoWikiExtension {
 		return new SetMainSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 		);
 	}
@@ -899,6 +901,7 @@ class NeoWikiExtension {
 		return new SetSubjectsOrderingAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 		);
 	}

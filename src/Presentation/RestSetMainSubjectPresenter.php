@@ -34,4 +34,9 @@ class RestSetMainSubjectPresenter implements SetMainSubjectPresenter {
 		$this->statusCode = 404;
 	}
 
+	public function presentPageNotFound(): void {
+		$this->apiResponse = [ 'status' => 'error', 'message' => 'Page not found' ];
+		$this->statusCode = 404;
+	}
+
 }
