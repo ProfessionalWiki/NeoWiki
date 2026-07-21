@@ -36,6 +36,12 @@ describe( 'subjectIdFromRowDomId', () => {
 		expect( subjectIdFromRowDomId( 'section-heading' ) ).toBeNull();
 	} );
 
+	it( 'returns null for a same-length prefix that is not ours', () => {
+		// 'ext-neowiki-subject-ROW-' is 24 characters like the real prefix but differs in case, so a
+		// naive slice without a prefix check would wrongly extract a valid id from it.
+		expect( subjectIdFromRowDomId( 'ext-neowiki-subject-ROW-' + VALID_ID ) ).toBeNull();
+	} );
+
 	it( 'returns null for an empty string', () => {
 		expect( subjectIdFromRowDomId( '' ) ).toBeNull();
 	} );
