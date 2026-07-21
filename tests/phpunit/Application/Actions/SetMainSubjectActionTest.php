@@ -159,6 +159,21 @@ class SetMainSubjectActionTest extends TestCase {
 		$this->assertTrue( $presenter->pageNotFound );
 	}
 
+	public function testReportsPageNotFoundWhenTheSaveFails(): void {
+		// The page passed the read and write checks but is gone by the time the save runs: the
+		// dropped write must be reported as not-found, never as changed.
+		$repository = $this->newRepositoryWithMainAndChild();
+		$repository->failNextSave = true;
+
+		$presenter = $this->newSpyPresenter();
+		$this->newAction( $presenter, $repository )->setMainSubject(
+			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID )
+		);
+
+		$this->assertTrue( $presenter->pageNotFound );
+		$this->assertFalse( $presenter->changed );
+	}
+
 	private function newRepositoryWithMainAndChild(): InMemorySubjectRepository {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(

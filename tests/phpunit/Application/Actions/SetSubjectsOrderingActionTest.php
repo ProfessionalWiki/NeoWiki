@@ -250,6 +250,25 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		$this->assertTrue( $presenter->pageNotFound );
 	}
 
+	public function testReportsPageNotFoundWhenTheSaveFails(): void {
+		// The page passed the read and write checks but is gone by the time the save runs: the
+		// dropped write must be reported as not-found, never as changed.
+		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$repository->failNextSave = true;
+
+		$presenter = $this->newSpyPresenter();
+		$this->newAction( $presenter, $repository )->setOrdering(
+			new SetSubjectsOrderingRequest(
+				pageId: self::PAGE_ID,
+				mainSubjectId: self::MAIN_ID,
+				childSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
+			)
+		);
+
+		$this->assertTrue( $presenter->pageNotFound );
+		$this->assertFalse( $presenter->changed );
+	}
+
 	private function newRepositoryWithMainAndThreeChildren(): InMemorySubjectRepository {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(

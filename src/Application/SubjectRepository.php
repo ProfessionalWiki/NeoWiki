@@ -8,6 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 
 interface SubjectRepository extends SubjectLookup {
 
@@ -29,8 +30,12 @@ interface SubjectRepository extends SubjectLookup {
 	public function getSubjectsByPageId( PageId $pageId ): PageSubjects;
 
 	/**
+	 * Returns the outcome of the save. A PageContentSavingStatus::ERROR means the write did not land
+	 * - most notably when the target page no longer resolves - so callers can avoid reporting success
+	 * for a write that was silently dropped.
+	 *
 	 * TODO: document exceptions
 	 */
-	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): void;
+	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): PageContentSavingStatus;
 
 }

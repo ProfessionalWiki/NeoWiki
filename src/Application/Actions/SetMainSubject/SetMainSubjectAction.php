@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 
 readonly class SetMainSubjectAction {
 
@@ -57,8 +58,7 @@ readonly class SetMainSubjectAction {
 		$pageSubjects->removeSubject( $previousMain->id );
 		$pageSubjects->createChildSubject( $previousMain );
 
-		$this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $comment );
-		$this->presenter->presentMainSubjectChanged();
+		$this->saveAndPresentChanged( $pageSubjects, $pageId, $comment );
 	}
 
 	private function promoteToMain(
@@ -87,7 +87,19 @@ readonly class SetMainSubjectAction {
 			$pageSubjects->createChildSubject( $previousMain );
 		}
 
-		$this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $comment );
+		$this->saveAndPresentChanged( $pageSubjects, $pageId, $comment );
+	}
+
+	private function saveAndPresentChanged( PageSubjects $pageSubjects, PageId $pageId, ?string $comment ): void {
+		$status = $this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $comment );
+
+		// The read gate at the top already turns an unresolvable page away; this catches the page
+		// going away between that check and the save, so a dropped write is never reported as changed.
+		if ( $status->status === PageContentSavingStatus::ERROR ) {
+			$this->presenter->presentPageNotFound();
+			return;
+		}
+
 		$this->presenter->presentMainSubjectChanged();
 	}
 
