@@ -20,6 +20,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use RuntimeException;
 
 readonly class CreateSubjectAction {
@@ -86,7 +87,15 @@ readonly class CreateSubjectAction {
 			return;
 		}
 
-		$this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $request->comment );
+		$status = $this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $request->comment );
+
+		// The read gate above already turns an unresolvable page away; this catches the page going
+		// away between that check and the save, so a dropped write is never reported as created.
+		if ( $status->status === PageContentSavingStatus::ERROR ) {
+			$this->presenter->presentPageNotFound();
+			return;
+		}
+
 		$this->presenter->presentCreated( $subject->id->text, $violations );
 	}
 

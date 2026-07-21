@@ -221,6 +221,25 @@ class CreateSubjectActionTest extends TestCase {
 		$this->assertSame( 'presentPageNotFound', $this->presenterSpy->result );
 	}
 
+	public function testReportsPageNotFoundWhenTheSaveFails(): void {
+		// The page passed the read and write checks but is gone by the time the save runs: the
+		// dropped write must be reported as not-found, never as created.
+		$this->subjectRepository->failNextSave = true;
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: 'some-schema-id',
+				statements: []
+			)
+		);
+
+		$this->assertSame( 'presentPageNotFound', $this->presenterSpy->result );
+		$this->assertNull( $this->subjectRepository->getSubject( new SubjectId( 's' . self::STUB_ID ) ) );
+	}
+
 	public function testCommentIsPassedToRepository(): void {
 		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
 

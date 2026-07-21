@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use RuntimeException;
 
 readonly class SetSubjectsOrderingAction {
@@ -55,7 +56,15 @@ readonly class SetSubjectsOrderingAction {
 			return;
 		}
 
-		$this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $request->comment );
+		$status = $this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $request->comment );
+
+		// The read gate above already turns an unresolvable page away; this catches the page going
+		// away between that check and the save, so a dropped write is never reported as changed.
+		if ( $status->status === PageContentSavingStatus::ERROR ) {
+			$this->presenter->presentPageNotFound();
+			return;
+		}
+
 		$this->presenter->presentOrderingChanged();
 	}
 

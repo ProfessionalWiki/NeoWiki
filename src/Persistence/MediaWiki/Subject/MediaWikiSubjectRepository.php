@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 
 class MediaWikiSubjectRepository implements SubjectRepository {
 
@@ -89,16 +90,14 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		$content->setPageSubjects( $contentData );
 	}
 
-	private function saveContent( SubjectContent $content, PageId $pageId, ?string $comment = null ): void {
-		$this->pageContentSaver->saveContent(
+	private function saveContent( SubjectContent $content, PageId $pageId, ?string $comment = null ): PageContentSavingStatus {
+		return $this->pageContentSaver->saveContent(
 			$pageId,
 			[
 				self::SLOT_NAME => $content,
 			],
 			CommentStoreComment::newUnsavedComment( $comment ?? 'Update NeoWiki subject' )
 		);
-
-		// TODO: expose failure information
 	}
 
 	public function deleteSubject( SubjectId $id, ?string $comment ): void {
@@ -129,11 +128,11 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		return $this->getContentByPageId( $pageId )?->getPageSubjects() ?? PageSubjects::newEmpty();
 	}
 
-	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): void {
+	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): PageContentSavingStatus {
 		$content = $this->getContentByPageId( $pageId ) ?? SubjectContent::newEmpty();
 
 		$content->setPageSubjects( $pageSubjects );
 
-		$this->saveContent( $content, $pageId, $comment );
+		return $this->saveContent( $content, $pageId, $comment );
 	}
 }
