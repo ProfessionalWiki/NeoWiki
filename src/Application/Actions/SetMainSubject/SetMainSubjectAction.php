@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject;
 
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -16,12 +17,21 @@ readonly class SetMainSubjectAction {
 	public function __construct(
 		private SetMainSubjectPresenter $presenter,
 		private SubjectRepository $subjectRepository,
+		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 	) {
 	}
 
 	public function setMainSubject( SetMainSubjectRequest $request ): void {
 		$pageId = new PageId( $request->pageId );
+
+		// Gate on read before write, and before any no-op short-circuit below: a page the caller may
+		// not read, and a page that does not exist, both answer the same not-found shape, so a hidden
+		// page cannot be told apart from an absent one by sweeping page ids.
+		if ( !$this->readAuthorizer->authorizeReadByPageId( $pageId ) ) {
+			$this->presenter->presentPageNotFound();
+			return;
+		}
 
 		if ( !$this->writeAuthorizer->authorize( $pageId ) ) {
 			throw new \RuntimeException( 'You do not have the necessary permissions to change the main subject' );

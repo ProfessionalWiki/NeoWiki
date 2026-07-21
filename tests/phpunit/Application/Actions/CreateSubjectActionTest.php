@@ -29,6 +29,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
@@ -38,6 +39,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use RuntimeException;
 
 /**
@@ -52,6 +54,7 @@ class CreateSubjectActionTest extends TestCase {
 	private InMemorySubjectRepository $subjectRepository;
 	private IdGenerator $idGenerator;
 	private CreateSubjectPresenterSpy $presenterSpy;
+	private PageReadAuthorizer $readAuthorizer;
 	private SubjectWriteAuthorizer $authorizer;
 	private InMemorySchemaLookup $schemaLookup;
 	private InMemoryPageIdentifiersLookup $pageIdentifiersLookup;
@@ -60,6 +63,7 @@ class CreateSubjectActionTest extends TestCase {
 		$this->subjectRepository = new InMemorySubjectRepository();
 		$this->idGenerator = new StubIdGenerator( self::STUB_ID );
 		$this->presenterSpy = new CreateSubjectPresenterSpy();
+		$this->readAuthorizer = new StubPageReadAuthorizer( allowed: true );
 		$this->authorizer = new SpySubjectWriteAuthorizer( allowed: true );
 		$this->schemaLookup = new InMemorySchemaLookup();
 		$this->pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
@@ -71,6 +75,7 @@ class CreateSubjectActionTest extends TestCase {
 			$this->presenterSpy,
 			$this->subjectRepository,
 			$this->idGenerator,
+			$this->readAuthorizer,
 			$this->authorizer,
 			new StatementListBuilder(
 				$registry,
@@ -177,6 +182,43 @@ class CreateSubjectActionTest extends TestCase {
 				statements: []
 			)
 		);
+	}
+
+	public function testReportsPageNotFoundWhenUserMayNotReadPage(): void {
+		$this->readAuthorizer = new StubPageReadAuthorizer( allowed: false );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: 'some-schema-id',
+				statements: []
+			)
+		);
+
+		$this->assertSame( 'presentPageNotFound', $this->presenterSpy->result );
+		// A denied read never reaches the write: no Subject is created.
+		$this->assertNull( $this->subjectRepository->getSubject( new SubjectId( 's' . self::STUB_ID ) ) );
+	}
+
+	public function testReadDenialTakesPrecedenceOverWriteDenial(): void {
+		// A page the caller can neither read nor edit answers not-found, never the write 403, so a
+		// hidden page is indistinguishable from an absent one.
+		$this->readAuthorizer = new StubPageReadAuthorizer( allowed: false );
+		$this->authorizer = new SpySubjectWriteAuthorizer( allowed: false );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: 'some-schema-id',
+				statements: []
+			)
+		);
+
+		$this->assertSame( 'presentPageNotFound', $this->presenterSpy->result );
 	}
 
 	public function testCommentIsPassedToRepository(): void {

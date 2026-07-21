@@ -28,4 +28,17 @@ trait NeoWikiMockAuthorityTrait {
 		return $this->mockRegisteredAuthority( $canReadGloballyButNotPerPage );
 	}
 
+	/**
+	 * Can read every page and holds the wiki-global 'edit' right, but cannot edit any specific page
+	 * (as under page protection or an ACL extension that grants read but denies edit). Such a page
+	 * is readable, so its existence is already public: a write to it is answered with 403, not the
+	 * not-found shape reserved for pages the caller cannot read.
+	 */
+	private function authorityWithGlobalEditButNoPageEdit(): Authority {
+		$canReadAnyPageAndEditGloballyButNotPerPage = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
+			$permission === 'read' || ( $permission === 'edit' && $page === null );
+
+		return $this->mockRegisteredAuthority( $canReadAnyPageAndEditGloballyButNotPerPage );
+	}
+
 }

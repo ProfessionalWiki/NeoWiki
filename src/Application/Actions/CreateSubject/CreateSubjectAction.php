@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
@@ -27,6 +28,7 @@ readonly class CreateSubjectAction {
 		private CreateSubjectPresenter $presenter,
 		private SubjectRepository $subjectRepository,
 		private IdGenerator $idGenerator,
+		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
@@ -43,6 +45,15 @@ readonly class CreateSubjectAction {
 		}
 
 		$pageId = new PageId( $request->pageId );
+
+		// Gate on read before write, and before touching any page state: a page the caller may not
+		// read, and a page that does not exist, both answer the same not-found shape, so restricted
+		// pages cannot be told apart from absent ones by sweeping page ids. Only a page the caller
+		// can read (its existence already public) proceeds to the write check and its 403.
+		if ( !$this->readAuthorizer->authorizeReadByPageId( $pageId ) ) {
+			$this->presenter->presentPageNotFound();
+			return;
+		}
 
 		if ( !$this->writeAuthorizer->authorize( $pageId ) ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to create this subject' );
