@@ -14,8 +14,8 @@ MediaWiki concept. Also known as "Wiki page".
 Pages have
 
 * A **title**: shown in the URL and H1, can be changed by "moving" the page.
-* An **id**: persistent numeric auto-increment ID, sometimes useful for programmatic interaction, like via the API.
-* **Content**: wikitext, editable both via source and visual editors
+* An **id**: persistent numeric ID.
+* **Content**: wikitext
 * **Subjects**: list of Subjects, can be empty ([ADR 7](adr/007-multiple-subjects-per-page.md))
 * **Main Subject**: optional identifier of a Subject in the page's Subjects list. Indicates which Subject represents the same entity as the page itself. All other Subjects stored on a page are called **Child Subjects**.
 
@@ -36,8 +36,8 @@ Corresponds to one row in an infobox.
 
 Statements have
 
-- A `propertyName`. Refers to the Property Definition with the same name.
-- A `propertyType`. This is the type of the referenced property at the time the Statement was last changed. This is called "the writer's schema". ("Property Type" was formerly "Value Format")
+- A `propertyName`. Refers to the Property Definition with the same name in the Subject's Schema.
+- A `propertyType`: the type the referenced property had when the Statement was last changed — "the writer's schema".
 - A `value` of type Value
 
 Example: Property Name "age" with Value `42` and Property Type `number`.
@@ -46,22 +46,24 @@ NeoWiki Statements are not equivalent to Wikibase Statements. The latter have a 
 
 ### Value
 
-Values have a type, for instance, "url". This is called the **Value Type**. NeoWiki has a predefined list of these Value Types.
+Values have a type, for instance, `string`. This is called the **Value Type**. NeoWiki has a predefined list of
+these Value Types; each Property Type stores its values as one of them — a `url` property's value is a StringValue.
 
-Values can have multiple **parts**. For instance, a "url" value could be `["https://pro.wiki", "https://professional.wiki"]`.
+String and Relation Values can hold multiple **parts**. For instance, a `url` property's value could be
+`["https://pro.wiki", "https://professional.wiki"]`.
 
 Value Types:
 
-- StringValue, identified with `string`. A non-empty collection of strings
-- NumberValue, identified with `number`
-- BooleanValue, identified with `boolean`
-- RelationValue, identified with `relation`. A non-empty collection of Relation
+- StringValue, identified with `string`. A collection of strings
+- NumberValue, identified with `number`. A single number
+- BooleanValue, identified with `boolean`. A single boolean
+- RelationValue, identified with `relation`. A collection of Relations
 
 Each Relation has
 
 - An `id`: persistent identifier. Relation IDs start with `r` and are always 15 characters long
 - A `target`: Subject ID of the referenced Subject
-- `properties`: Possibly empty collection of property-value pairs. TODO: rename like we did with statements
+- `properties`: possibly empty collection of property-value pairs
 
 
 
@@ -73,11 +75,10 @@ Schemas have a name, description, and a list of Property Definitions
 
 ### Property Definition
 
-They always have a Property Name and a Property Type. Depending on the Type, they might have additional information.
-Property Types can be defined by extensions.
+A Property Definition has:
 
 - A **name**. Example: "Website".
-- A **type**. Example: "url". (formerly "format")
+- A **type**: a Property Type. Example: "url".
 - Boolean **required**
 - Optional **description** string
 - Optional **default**, which is a Value
@@ -86,13 +87,18 @@ Property Types can be defined by extensions.
 - **Display Attributes**: presentation configuration specific to the Property Type. Example: `"precision": 2`,
   `"color": "blue"`. These serve as defaults that can be overridden per-Layout via Display Rules.
 
+### Property Type
+
+The kind of data a Property Definition holds, and how it is edited and displayed. Examples: "text", "url",
+"number", "relation". Extensions can define additional Property Types ([Extending NeoWiki](extending/extending.md)).
+Each Property Type stores its values as one of the Value Types.
+
 
 
 ## View
 
 A View is an on-page rendering of a Subject. Views are placed on wiki pages via the `{{#view}}` parser function or
-automatically for a page's Main Subject. Each View renders a Subject using a **View Type** (e.g., infobox, card,
-table).
+automatically for a page's Main Subject. Each View renders a Subject using a View Type.
 
 A View can optionally reference a Layout to customize which properties are shown and how. Without a Layout, all
 properties are shown in Schema-defined order.
@@ -114,24 +120,16 @@ You create a finances Layout for that company Schema that shows only Revenue, Pr
 Layouts have:
 
 - A **Schema** reference
-- A **View Type**, such as "infobox", "factbox", or "table"
+- A **View Type**
 - **Display Rules**: an ordered list that specifies which properties to show and how (see below)
 - **Settings**: Layout-level configuration specific to the View Type (e.g., `borderColor` for infobox)
 - Optional **description**
 
-When a Subject is displayed without a specified Layout, all properties are shown in Schema-defined order (fallback
-behavior). There is no stored "Default Layout" entity.
-
 ### Display Rule
 
-A Display Rule is an entry in a Layout's ordered allowlist. Each Display Rule references a property by name and
-optionally overrides Display Attributes for that property. Unlisted properties are hidden.
-
-Display Rules have:
-
-- A **property** reference (the property name from the Schema's Property Definitions)
-- Optional **Display Attributes** overrides (e.g., `precision`, `color`). These override the defaults from the
-  Property Definition. Unspecified Display Attributes are inherited from the Property Definition.
+A Display Rule is an entry in a Layout's ordered allowlist: it references a property by name and optionally
+overrides its Display Attributes; unspecified ones are inherited from the Property Definition. Unlisted
+properties are hidden.
 
 
 
@@ -141,11 +139,4 @@ A key-value pair stored on the Page node in the graph database. Page Properties 
 itself, as opposed to Subject Statements, which are structured data about the entities described on the page.
 
 Built-in Page Properties include `name`, `namespaceId`, `creationTime`, `lastUpdated`, `categories`, and `lastEditor`.
-Extensions can contribute additional Page Properties.
-
-Page Properties are written when the page is edited and during a full graph rebuild. When extension-contributed
-data changes outside an edit, an extension can refresh them on demand without creating a revision (see
-[Extending NeoWiki](extending/extending.md)).
-
-When using Neo4j, Page Properties are available on every Page node and are queryable via Cypher
-(e.g., `MATCH (page:Page) WHERE page.lastUpdated > datetime("2024-01-01")`).
+Extensions can contribute additional Page Properties (see [Extending NeoWiki](extending/extending.md)).

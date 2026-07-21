@@ -5,8 +5,7 @@ order: 1
 # Extending NeoWiki
 
 NeoWiki exposes extension points so other MediaWiki extensions can add custom Property Types, contribute
-page metadata to the graph, and reuse NeoWiki's UI. This page is the reference for those extension points and
-the APIs extensions build on.
+page metadata to the graph, and reuse NeoWiki's UI.
 
 NeoWiki concepts referenced here — Subject, Schema, Property Type, Page Property — are defined in the
 [Glossary](../glossary.md).
@@ -50,6 +49,9 @@ public static function onNeoWikiRegistration( NeoWikiRegistrar $registrar ): voi
 
 Full example: [`src/RedHerbHooks.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbHooks.php).
 
+Registering a Property Type or View Type under a name already in use — a built-in's or another extension's —
+replaces the earlier registration; the last registration wins, on both the backend and the frontend.
+
 ## Backend extension points (PHP)
 
 ### Property Types
@@ -64,7 +66,7 @@ Example: [`src/ColorType.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/
 [`src/ColorProperty.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/ColorProperty.php)
 (`extends PropertyDefinition`).
 
-If your Property Type stores a value that isn't already a Neo4j scalar, also register a builder that converts it,
+To project your Property Type's values into Neo4j, register a builder that converts the Value to Neo4j scalars,
 keyed by the Property Type name:
 
 ```php
@@ -73,32 +75,11 @@ $registrar->addNeo4jValueBuilder( ColorType::NAME, static fn ( $value ) => $valu
 
 #### Contributing RDF value mappers
 
-For the [RDF export](../rdf/rdf-export.md), register a mapper that turns your Property Type's value into RDF
-literals, keyed by the Property Type name. It returns a list of `Literal`s (one per value part):
-
-```php
-$registrar->addRdfValueMapper(
-	ColorType::NAME,
-	static function ( NeoValue $value ): array {
-		// Your mapper is called for whatever a Statement holds, so guard the value shape.
-		$scalars = $value->toScalars();
-
-		if ( !is_array( $scalars ) ) {
-			return [];
-		}
-
-		$literals = [];
-
-		foreach ( $scalars as $part ) {
-			if ( is_scalar( $part ) ) {
-				$literals[] = RdfLiteralFactory::typed( (string)$part, 'string' );
-			}
-		}
-
-		return $literals;
-	}
-);
-```
+For the [RDF export](../rdf/rdf-export.md), register a mapper keyed by the Property Type name with
+`NeoWikiRegistrar::addRdfValueMapper()`. It receives the Statement's `NeoValue` and returns a `Literal` list, one
+per value part. Guard the value shape, since the mapper is called for whatever a Statement holds. RedHerb's
+[`RedHerbHooks.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbHooks.php)
+registers a guarded mapper for its color type.
 
 Without a mapper, a Property Type's Statements are omitted from the RDF export, just as they are from the
 Neo4j projection.
@@ -119,8 +100,10 @@ class StaticPagePropertyProvider implements PagePropertyProvider {
 }
 ```
 
-Register with `NeoWikiRegistrar::addPagePropertyProvider()`. The context exposes the page id, title,
-creation and modification times, categories, and last editor. Example:
+Register with `NeoWikiRegistrar::addPagePropertyProvider()`. Keys are merged across all providers into one
+key/value map, with the last-registered provider winning on a key collision, so namespace your keys (e.g. with an
+extension prefix). The context exposes the page id, title and namespace, creation and modification times,
+categories, and last editor. Example:
 [`src/StaticPagePropertyProvider.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/StaticPagePropertyProvider.php).
 
 ### Refreshing a page's data without an edit
@@ -170,12 +153,13 @@ class MyGraphDatabasePlugin implements GraphDatabasePlugin {
 Register with `NeoWikiRegistrar::addGraphDatabasePlugin()`. Example:
 [`src/RedHerbGraphDatabasePlugin.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbGraphDatabasePlugin.php).
 
-`savePage` hands you the page with all of its Subjects and runs for every revision, so subject edits, undeletions
-and page moves all reach you as a save. `deletePage` gets only the page id.
+`savePage` hands you the page with all of its Subjects and the Page Properties contributed by every
+`PagePropertyProvider`, and runs for every revision, so subject edits, undeletions and page moves all reach you as a
+save. `deletePage` gets only the page id.
 
 `initialize` runs once at the start of a `RebuildGraphDatabases` run, before any page is projected — create the
-store-level structures a fresh store needs there (this is how NeoWiki's own Neo4j backend creates its uniqueness
-constraints). Make it idempotent, since every rebuild calls it; it never runs on an individual edit.
+store-level structures a fresh store needs there. Make it idempotent, since every rebuild calls it; it never runs
+on an individual edit.
 
 **Signal failure by throwing.** On an edit, delete or undelete, NeoWiki logs the failure and lets the user's
 operation commit, so a backend being down never blocks the wiki or starves the other backends — your projection is
@@ -222,10 +206,10 @@ The `User` in `forUser()` only sizes the limits: how heavy a single query may be
 query at all or how often. When running user-supplied queries, check the `neowiki-query` right and rate
 limit yourself, as the [Query API](../api/query-api.md) endpoint does.
 
-Two sharp edges: the write check is keyword-based and also rejects `CALL` and `SHOW`, even for read-only
-procedures (see the [parser function notes](../authoring/parser-functions.md)). And the row cap truncates
-the result only after the query has run in full, so bound expensive queries with `LIMIT` in the Cypher
-itself.
+Two sharp edges: the write check is a keyword check plus `EXPLAIN`, and the keyword check also rejects `CALL` and
+`SHOW`, even for read-only procedures (see the [parser function notes](../authoring/parser-functions.md)). And the
+row cap truncates the result only after the query has run in full, so bound expensive queries with `LIMIT` in the
+Cypher itself.
 
 Example: [`src/Specials/SpecialRedHerbContentPageCount.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/Specials/SpecialRedHerbContentPageCount.php).
 
@@ -369,9 +353,8 @@ and [`resources/subjectFinder/`](https://github.com/ProfessionalWiki/NeoWiki/tre
 
 ### Authoring in TypeScript
 
-Plain JavaScript is the simplest path and needs no build step. You can instead write your extension in TypeScript and
-get types for NeoWiki's API. This is configuration on your side; NeoWiki ships nothing extra for it. See
-[ADR 24](../adr/024-frontend-extension-mechanism.md) for the reasoning.
+You can write your extension in TypeScript and get types for NeoWiki's API. This is configuration on your side;
+NeoWiki ships nothing extra for it. See [ADR 24](../adr/024-frontend-extension-mechanism.md) for the reasoning.
 
 Point your `tsconfig.json` `paths` at NeoWiki's barrel source, which sits next to your extension in `extensions/`:
 
@@ -459,8 +442,6 @@ client, but compare what the documented query interfaces
   `LIMIT` in the Cypher either way.
 - **Result handling.** The query interfaces return normalized rows and columns; the raw client returns
   Laudis driver types that you convert yourself.
-- **Churn exposure.** The query interfaces are documented contracts (alpha, like everything on this page);
-  the client accessors are internal wiring that can change or disappear in any release.
 
 Writing to the graph directly deserves particular caution: the graph is a projection of wiki content that
 NeoWiki rewrites at will. Saving a page that carries the Subject slot re-projects that page's nodes, and
