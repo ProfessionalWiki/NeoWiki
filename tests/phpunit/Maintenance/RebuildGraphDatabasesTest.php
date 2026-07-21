@@ -37,6 +37,21 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		NeoWikiExtension::resetInstance();
 	}
 
+	public function testRebuildSucceedsOnAWikiThatHasNeverStoredASubject(): void {
+		// A wiki with no Subjects has never registered the 'neo' slot role, so the role-id lookup
+		// throws NameTableAccessException. Forcing that state (empty table + a store without a warmed
+		// cache) proves the rebuild treats it as an empty run instead of crashing.
+		$this->truncateTable( 'slot_roles' );
+		$this->getServiceContainer()->resetServiceForTesting( 'SlotRoleStore' );
+
+		$spy = new SpyGraphDatabasePlugin();
+		$this->registerGraphDatabasePlugins( $spy );
+
+		$this->runRebuild();
+
+		$this->assertSame( [], $spy->savedPages, 'a wiki with no Subjects has nothing to project' );
+	}
+
 	public function testRebuildRemovesADeletedSubjectPageFromTheGraph(): void {
 		$this->createPageWithSubjects( 'Surviving page before', TestSubject::build() );
 		$deleted = $this->createPageWithSubjects( 'Deleted during outage', TestSubject::build() );
