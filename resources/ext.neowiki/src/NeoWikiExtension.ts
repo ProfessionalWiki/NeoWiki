@@ -33,6 +33,8 @@ import { LayoutSerializer } from '@/persistence/LayoutSerializer.ts';
 import { LayoutDeserializer } from '@/persistence/LayoutDeserializer.ts';
 import { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
 import { RightsBasedLayoutPermissionHints } from '@/persistence/RightsBasedLayoutPermissionHints.ts';
+import { MappingPermissionHints } from '@/application/MappingPermissionHints.ts';
+import { RightsBasedMappingPermissionHints } from '@/persistence/RightsBasedMappingPermissionHints.ts';
 import { CsrfSendingHttpClient } from '@/infrastructure/HttpClient/CsrfSendingHttpClient.ts';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
@@ -224,6 +226,12 @@ export class NeoWikiExtension {
 
 	public newLayoutPermissionHints(): LayoutPermissionHints {
 		return new RightsBasedLayoutPermissionHints(
+			this.getUserObjectBasedRightsFetcher(),
+		);
+	}
+
+	public newMappingPermissionHints(): MappingPermissionHints {
+		return new RightsBasedMappingPermissionHints(
 			this.getUserObjectBasedRightsFetcher(),
 		);
 	}

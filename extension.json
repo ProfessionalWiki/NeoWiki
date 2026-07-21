@@ -153,7 +153,8 @@
 	"SpecialPages": {
 		"NeoJson": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson",
 		"Schemas": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSchemas",
-		"Layouts": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialLayouts"
+		"Layouts": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialLayouts",
+		"Mappings": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialMappings"
 	},
 
 	"Actions": {
@@ -293,6 +294,11 @@
 			"path": "/neowiki/v0/schemas",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaSummariesApi"
+		},
+		{
+			"path": "/neowiki/v0/mappings",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetMappingSummariesApi"
 		},
 		{
 			"path": "/neowiki/v0/subject-ids",
@@ -549,6 +555,30 @@
 				"neowiki-layouts-column-type",
 				"neowiki-layouts-column-description",
 				"neowiki-layouts-empty",
+				"neowiki-special-mappings",
+				"neowiki-mappings-column-name",
+				"neowiki-mappings-column-schemas",
+				"neowiki-mappings-schema-count",
+				"neowiki-mappings-schemas-none",
+				"neowiki-mappings-empty",
+				"neowiki-mapping-creator-button",
+				"neowiki-mapping-creator-title",
+				"neowiki-mapping-creator-name-field",
+				"neowiki-mapping-creator-name-placeholder",
+				"neowiki-mapping-creator-name-required",
+				"neowiki-mapping-creator-name-reserved",
+				"neowiki-mapping-creator-name-taken",
+				"neowiki-mapping-creator-save",
+				"neowiki-mapping-creator-error",
+				"neowiki-mapping-creator-summary-default",
+				"neowiki-edit-mapping",
+				"neowiki-mapping-delete",
+				"neowiki-mapping-delete-confirm-title",
+				"neowiki-mapping-delete-confirm-message",
+				"neowiki-mapping-delete-confirm-delete",
+				"neowiki-mapping-delete-summary-default",
+				"neowiki-mapping-delete-success",
+				"neowiki-mapping-delete-error",
 				"neowiki-layout-creator-title",
 				"neowiki-layout-creator-button",
 				"neowiki-layout-creator-name-field",

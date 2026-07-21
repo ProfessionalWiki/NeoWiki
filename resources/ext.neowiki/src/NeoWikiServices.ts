@@ -9,6 +9,7 @@ import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
 import { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
 import { LayoutRepository } from '@/application/LayoutRepository.ts';
+import { MappingPermissionHints } from '@/application/MappingPermissionHints.ts';
 
 export enum Service { // TODO: make private
 	ComponentRegistry = 'ComponentRegistry',
@@ -19,7 +20,8 @@ export enum Service { // TODO: make private
 	SubjectLabelSearch = 'SubjectLabelSearch',
 	ViewTypeRegistry = 'ViewTypeRegistry',
 	LayoutPermissionHints = 'LayoutPermissionHints',
-	LayoutRepository = 'LayoutRepository'
+	LayoutRepository = 'LayoutRepository',
+	MappingPermissionHints = 'MappingPermissionHints'
 }
 
 export class NeoWikiServices {
@@ -43,6 +45,7 @@ export class NeoWikiServices {
 			[ Service.ViewTypeRegistry ]: neoWiki.getViewTypeRegistry(),
 			[ Service.LayoutPermissionHints ]: neoWiki.newLayoutPermissionHints(),
 			[ Service.LayoutRepository ]: neoWiki.getLayoutRepository(),
+			[ Service.MappingPermissionHints ]: neoWiki.newMappingPermissionHints(),
 		};
 	}
 
@@ -80,6 +83,10 @@ export class NeoWikiServices {
 
 	public static getLayoutRepository(): LayoutRepository {
 		return inject( Service.LayoutRepository ) as LayoutRepository;
+	}
+
+	public static getMappingPermissionHints(): MappingPermissionHints {
+		return inject( Service.MappingPermissionHints ) as MappingPermissionHints;
 	}
 
 }

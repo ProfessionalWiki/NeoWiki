@@ -337,6 +337,15 @@ class NeoWikiHooks {
 			);
 		}
 
+		if ( $title->getNamespace() === NeoWikiExtension::NS_MAPPING ) {
+			$neoWikiTools[] = self::allPagesLink(
+				$skin,
+				specialPage: 'Mappings',
+				message: 'neowiki-mapping-sidebar-all-mappings',
+				linkId: 't-neowiki-mappings'
+			);
+		}
+
 		if ( $neoWikiTools !== [] ) {
 			// The section array key is used by MediaWiki as the message key for
 			// the section heading, so it must match an existing message name.

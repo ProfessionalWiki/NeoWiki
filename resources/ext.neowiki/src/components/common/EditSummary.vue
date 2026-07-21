@@ -88,6 +88,10 @@ const onSaveClick = (): void => {
 	emit( 'save', editSummary.value );
 };
 
+// Lets a parent trigger the save from elsewhere (e.g. Enter in another field) while keeping
+// whatever summary is currently entered, rather than reimplementing the save with an empty one.
+defineExpose( { submit: onSaveClick } );
+
 </script>
 
 <style lang="less">

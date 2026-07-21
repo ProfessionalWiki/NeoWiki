@@ -7,7 +7,7 @@ Each export is produced on demand from the page's current data and downloads as 
 
 == The Mapping page ==
 
-Each Mapping page targets one ontology, named by the page title, and holds an entry for every mapped Schema. This wiki ships one:
+Each Mapping page targets one ontology, named by the page title, and holds an entry for every mapped Schema. [[Special:Mappings]] lists them all; this wiki ships one:
 
 * [[Mapping:EDM]] — the Person, City, Artwork and Artist Schemas, all mapped to EDM
 

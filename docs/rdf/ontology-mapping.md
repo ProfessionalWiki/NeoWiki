@@ -24,7 +24,8 @@ with native and mapped output side by side and the current gaps.
 
 A Mapping is a page in the **`Mapping:` namespace** with content model `NeoWikiMapping` (JSON), gated by the
 `neowiki-mapping-edit` right. There is **one Mapping page per target ontology**, and the page title is the
-projection name you pass to the export surfaces: the page `Mapping:EDM` defines the `EDM` projection.
+projection name you pass to the export surfaces: the page `Mapping:EDM` defines the `EDM` projection. The
+`Special:Mappings` page lists every Mapping on the wiki.
 
 A single page holds an entry for **every mapped Schema** — map a Schema to an ontology by adding an entry to
 that ontology's page, not by creating a page. A Schema maps to several ontologies through one entry on each

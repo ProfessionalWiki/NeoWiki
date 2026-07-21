@@ -83,6 +83,15 @@ A Layout defines how a Subject is displayed.
 | `GET /neowiki/v0/layouts` | List Layouts. Paginated with `limit` and `offset`. |
 | `GET /neowiki/v0/layout/{layoutName}` | Fetch a Layout by name. |
 
+### Mappings
+
+An ontology Mapping projects native Schemas to a target ontology. For the format and concepts, see
+[Ontology Mapping](../rdf/ontology-mapping.md).
+
+| Endpoint | Description |
+|---|---|
+| `GET /neowiki/v0/mappings` | List ontology Mappings, each with the names of its mapped Schemas. Paginated with `limit` and `offset`. |
+
 ### Query
 
 | Endpoint | Description |
