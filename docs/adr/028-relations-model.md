@@ -33,10 +33,9 @@ Qualification and references are already modeled as typed Subjects
 ([Qualifiers and References](../qualifiers-and-references.md)): a qualified value becomes its own Subject under its own
 Schema, validated and rendered like any other data. Edge properties are a second, half-built path to the same end —
 scalar-only, with no editing UI, no Lua exposure, dropped by the ontology-mapping projection, and silently lost when a
-Subject carrying REST-written edge properties is re-saved through the editor
-([#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119)). Finishing them would mean schema definitions for
-edge properties, an editor, and Lua and mapping support — duplicating what Subjects already provide. Schema-less
-qualifier bags are the Wikibase failure mode named in the epic
+Subject carrying REST-written edge properties is re-saved through the editor. Finishing them would mean schema
+definitions for edge properties, an editor, and Lua and mapping support — duplicating what Subjects already provide.
+Schema-less qualifier bags are the Wikibase failure mode named in the epic
 ([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)); removal is tracked in
 [#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119).
 
@@ -105,7 +104,7 @@ keying divergence.
 
 ## Consequences
 
-- Implementation is gated on ratification (team and partner review). Trackers:
+- Implementation is gated on ratification. Trackers:
   [#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119) (remove edge properties),
   [#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991) (target-Schema list),
   [#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120) (red links).
