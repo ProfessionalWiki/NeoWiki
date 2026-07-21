@@ -200,5 +200,3 @@ The toy model's CIDOC-CRM column is out of scope for v1. CIDOC-CRM mediates birt
 event node with no counterpart in NeoWiki's flat data, which v1's term substitution cannot mint. Choosing a formalism
 that can is the open mapping-formalism question ([OntologyMapping.md Q1](../planning/OntologyMapping.md#open-questions),
 [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995)).
-</content>
-</invoke>
