@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { ref, Ref } from 'vue';
 import { enableAutoUnmount, mount } from '@vue/test-utils';
-import { useSubjectDrag, SubjectDragHandlers, subjectRowDomId } from '@/composables/useSubjectDrag';
+import { useSubjectDrag, SubjectDragHandlers } from '@/composables/useSubjectDrag';
+import { subjectRowDomId } from '@/presentation/subjectRowDomId';
 
 interface UseSortableCall {
 	containerRef: Ref<HTMLElement | null>;
