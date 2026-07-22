@@ -467,7 +467,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { useSubjectDrag } from '@/composables/useSubjectDrag.ts';
-import { subjectRowDomId, subjectIdFromRowDomId } from '@/presentation/subjectRowDomId.ts';
+import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowDomId.ts';
 import { Subject } from '@/domain/Subject';
 import { Schema } from '@/domain/Schema';
 import { SubjectId } from '@/domain/SubjectId';
@@ -663,10 +663,11 @@ function toggleExpanded( id: string ): void {
 		next.delete( id );
 	} else {
 		next.add( id );
-		// Make the address bar a shareable deep link to the row the user just opened. replaceState (not a
-		// location.hash assignment) adds no history entry and fires no hashchange, so it does not
-		// re-trigger applyHash. Collapsing deliberately leaves the fragment in place.
-		history.replaceState( null, '', '#' + subjectRowDomId( id ) );
+		// Make the address bar a shareable deep link to the row the user just opened. The fragment is the
+		// bare Subject id (like Wikibase's `#P123`); replaceState (not a location.hash assignment) adds no
+		// history entry and fires no hashchange, so it does not re-trigger applyHash. Collapsing
+		// deliberately leaves the fragment in place.
+		history.replaceState( null, '', '#' + id );
 	}
 	expandedIds.value = next;
 }
@@ -867,7 +868,7 @@ async function executeDelete( comment: string ): Promise<void> {
 }
 
 function applyHash(): void {
-	const id = subjectIdFromRowDomId( window.location.hash.slice( 1 ) );
+	const id = subjectIdFromHash( window.location.hash.slice( 1 ) );
 	if ( id === null ) {
 		return;
 	}

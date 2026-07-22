@@ -13,7 +13,6 @@ use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ResolveSubjectIriApi;
-use ProfessionalWiki\NeoWiki\Presentation\SubjectRowAnchor;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
@@ -34,6 +33,11 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
+
+		// Pin the default dereference target so the Accept-negotiation tests are independent of any
+		// ambient $wgNeoWikiSubjectDereferenceTarget (e.g. a dev LocalSettings override). Tests that
+		// exercise a specific target override this.
+		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'page' );
 
 		$this->createSchema( self::SCHEMA );
 
@@ -104,15 +108,6 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertHostingPageLocation( $response );
 	}
 
-	public function testPageDereferenceTargetRedirectsToThePlainHostingPage(): void {
-		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'page' );
-
-		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
-
-		$this->assertSame( 303, $response->getStatusCode() );
-		$this->assertHostingPageLocation( $response );
-	}
-
 	public function testDataTabDereferenceTargetRedirectsToTheSubjectsRow(): void {
 		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'data-tab' );
 
@@ -129,9 +124,9 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		);
 		$this->assertStringContainsString( 'action=subjects', $location, 'The redirect opens the Data tab.' );
 		$this->assertStringEndsWith(
-			'#' . SubjectRowAnchor::domId( self::SUBJECT_ID ),
+			'#' . self::SUBJECT_ID,
 			$location,
-			'The fragment is the Subject row anchor the Data tab expands and highlights.'
+			'The fragment is the bare Subject id the Data tab expands and highlights.'
 		);
 	}
 

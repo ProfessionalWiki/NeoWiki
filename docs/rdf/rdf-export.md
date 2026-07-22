@@ -108,7 +108,7 @@ TriG wins when both RDF types are acceptable; the RDF redirects use the native p
 on a page the caller may not read returns one indistinguishable `404`; a malformed id `400`.
 
 The HTML target is the Subject's hosting page by default, or that page's Data tab (`?action=subjects`) opened on the
-Subject's row when `$wgNeoWikiSubjectDereferenceTarget` is `data-tab`.
+Subject's row (`#{subjectId}`) when `$wgNeoWikiSubjectDereferenceTarget` is `data-tab`.
 
 The negotiator is always reachable at the REST path, which needs no server configuration:
 

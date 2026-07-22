@@ -14,7 +14,6 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectDereferenceTarget;
-use ProfessionalWiki\NeoWiki\Presentation\SubjectRowAnchor;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
@@ -104,9 +103,8 @@ class ResolveSubjectIriApi extends SimpleHandler {
 	private function hostingPageUrl( Title $title, string $subjectId ): string {
 		if ( $this->dereferenceTarget() === SubjectDereferenceTarget::DataTab ) {
 			// The Data tab reads this fragment on mount to expand, scroll to, and highlight the row. The
-			// fragment is the row's DOM id; {@see SubjectRowAnchor} is the PHP source of truth for that scheme.
-			return $title->getCanonicalURL( [ 'action' => SubjectsAction::ACTION_NAME ] )
-				. '#' . SubjectRowAnchor::domId( $subjectId );
+			// fragment is the bare Subject id (like Wikibase's `#P123`), not the row's internal DOM id.
+			return $title->getCanonicalURL( [ 'action' => SubjectsAction::ACTION_NAME ] ) . '#' . $subjectId;
 		}
 
 		return $title->getCanonicalURL();
