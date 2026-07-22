@@ -2,6 +2,20 @@
 
 If you are not familiar with the NeoWiki terminology yet, see [the glossary](../glossary.md).
 
+## Statement-Level Requirements
+
+The grant phrases several requirements in Wikibase vocabulary: "qualification of data statements" (T3.1),
+"statement-level access", and "Wikibase data model support" (both T3.2). In Wikibase, qualification, references, and
+rank are machinery on the Statement itself. NeoWiki Statements are deliberately flat, and the model already
+expresses the same information: the value is reified into a linked Subject typed by its own Schema, or, when the link
+between two Subjects is what needs qualifying, the Relation carries the properties. See
+[Qualifiers and References](../qualifiers-and-references.md), which maps each Wikibase construct to its NeoWiki
+expression, including in RDF; that mapping is also the translation a Wikibase-model import (T3.2) will apply. No
+statement machinery is needed. Statement-level read access is the Subject payload itself, and Relations are
+individually addressable by their stable IDs. What remains open is not the model: inline editing and display of
+reified values (the multi-Subject editor question below) and write granularity (the statement-level writes question
+below).
+
 ## Open Questions
 
 ### High Priority
@@ -32,6 +46,9 @@ If you are not familiar with the NeoWiki terminology yet, see [the glossary](../
 * Is our [Graph Model](../api/graph-model.md) OK? In particular, is it OK to have non-Subject data in there, like the connected
   MediaWiki pages? (80% likely, briefly covered in Vienna: can filter out these values when querying)
 * How important is multilinguality for ECHOLOT? Do we need to provide anything beyond our current data model to support that?
+* Statement-level writes: the Subject write API replaces the whole Subject with no base-revision check, so concurrent
+  writers lose each other's updates (last write wins). Do WP4 enrichment flows need a partial-update operation or
+  defined conflict semantics? (Becomes concrete once a reconciliation service writes alongside human editors.)
 
 ### Low Priority
 
@@ -42,3 +59,4 @@ If you are not familiar with the NeoWiki terminology yet, see [the glossary](../
 * Is multi-Subject support in the editor essential?
   Example: Person has a "Name" property. Name is a Subject with its own PersonName schema. The "Edit Person" form would show the
   PersonName fields and create or update both the Person Subject and linked PersonName Subject.
+  Display raises the same question: showing a linked Subject's values on the linking Subject's page currently requires Lua.
