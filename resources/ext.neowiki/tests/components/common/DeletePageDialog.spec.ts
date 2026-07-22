@@ -27,6 +27,7 @@ function mountDialog( props: Record<string, unknown> = {} ): VueWrapper {
 			open: true,
 			pageTitle: 'Schema:Person',
 			displayName: 'Person',
+			typeLabel: 'schema',
 			...props,
 		},
 		global: {

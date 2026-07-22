@@ -103,8 +103,11 @@
 	"neowiki-edit-summary-help-text-schema": "Changes affect all Subjects using this Schema.",
 
 	"neowiki-delete-confirm-title": "Delete $1?",
-	"neowiki-delete-confirm-message": "The page $1 will be permanently deleted.",
+	"neowiki-delete-confirm-message": "The $1 will be deleted.",
 	"neowiki-delete-confirm-button": "Delete",
+	"neowiki-schema-noun": "schema",
+	"neowiki-layout-noun": "layout",
+	"neowiki-mapping-noun": "mapping",
 	"neowiki-delete-reason-label": "Reason",
 	"neowiki-delete-reason-placeholder": "Reason for deletion",
 	"neowiki-delete-summary-default": "Deleted via the NeoWiki UI",
