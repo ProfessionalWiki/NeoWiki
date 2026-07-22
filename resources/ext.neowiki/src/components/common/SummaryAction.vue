@@ -1,10 +1,10 @@
 <template>
-	<div class="ext-neowiki-edit-summary">
+	<div class="ext-neowiki-summary-action">
 		<CdxAccordion @toggle="onAccordionToggle">
 			<template #title>
-				<span class="ext-neowiki-edit-summary__label">
+				<span class="ext-neowiki-summary-action__label">
 					{{ $i18n( 'neowiki-edit-summary-label' ).text() }}
-					<span class="ext-neowiki-edit-summary__optional-flag">
+					<span class="ext-neowiki-summary-action__optional-flag">
 						{{ $i18n( 'cdx-label-optional-flag' ).text() }}
 					</span>
 				</span>
@@ -28,12 +28,12 @@
 
 		<div
 			v-if="props.helpText"
-			class="ext-neowiki-edit-summary__help-text"
+			class="ext-neowiki-summary-action__help-text"
 		>
 			{{ props.helpText }}
 		</div>
 
-		<div class="ext-neowiki-edit-summary__actions">
+		<div class="ext-neowiki-summary-action__actions">
 			<CdxButton
 				:action="props.saveButtonAction"
 				weight="primary"
@@ -97,7 +97,7 @@ defineExpose( { submit: onSaveClick } );
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-.ext-neowiki-edit-summary {
+.ext-neowiki-summary-action {
 	.cdx-accordion {
 		border-bottom: 0;
 

@@ -13,7 +13,7 @@
 			/>
 
 			<template #footer>
-				<EditSummary
+				<SummaryAction
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-layout-creator-save' ).text()"
 					:save-disabled="!hasChanged"
@@ -35,7 +35,7 @@ import { ref, watch } from 'vue';
 import { CdxDialog } from '@wikimedia/codex';
 import LayoutCreator from './LayoutCreator.vue';
 import type { LayoutCreatorExposes } from './LayoutCreator.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { Layout } from '@/domain/Layout.ts';
 import type { LayoutSaveHandler } from '@/components/LayoutEditor/LayoutEditorDialog.vue';

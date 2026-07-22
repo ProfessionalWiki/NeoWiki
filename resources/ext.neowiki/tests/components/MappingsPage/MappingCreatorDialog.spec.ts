@@ -12,7 +12,7 @@ const CdxDialogStub = {
 	emits: [ 'update:open' ],
 };
 
-const EditSummaryStub = {
+const SummaryActionStub = {
 	template: '<button class="edit-summary-stub" @click="$emit( \'save\', \'\' )">save</button>',
 	emits: [ 'save' ],
 };
@@ -24,7 +24,7 @@ function mountDialog(): VueWrapper {
 			mocks: { $i18n: createI18nMock() },
 			stubs: {
 				CdxDialog: CdxDialogStub,
-				EditSummary: EditSummaryStub,
+				SummaryAction: SummaryActionStub,
 			},
 		},
 	} );
@@ -35,7 +35,7 @@ async function enterNameAndSave( wrapper: VueWrapper, name: string ): Promise<vo
 	await wrapper.find( '.edit-summary-stub' ).trigger( 'click' );
 }
 
-// Uses the real EditSummary so pressing Enter exercises its exposed submit
+// Uses the real SummaryAction so pressing Enter exercises its exposed submit
 // (which saves with whatever summary is currently entered).
 function mountDialogWithRealEditSummary(): VueWrapper {
 	return mount( MappingCreatorDialog, {

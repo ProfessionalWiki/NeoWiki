@@ -92,7 +92,7 @@ function mountComponent( summaries: unknown[] = [] ): VueWrapper {
 			stubs: {
 				SchemaCreatorDialog: SchemaCreatorDialogStub,
 				SchemaEditorDialog: SchemaEditorDialogStub,
-				EditSummary: true,
+				SummaryAction: true,
 				I18nSlot: true,
 				CdxIcon: true,
 			},

@@ -13,7 +13,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -32,7 +32,7 @@ const SubjectEditorStub = {
 	},
 };
 
-const EditSummaryStub = {
+const SummaryActionStub = {
 	template: '<div class="edit-summary-stub"></div>',
 	props: [ 'helpText', 'saveButtonLabel', 'saveDisabled' ],
 	emits: [ 'save' ],
@@ -153,7 +153,7 @@ describe( 'SubjectEditorDialog', () => {
 	const saveButtonTestStubs = {
 		SubjectEditor: SubjectEditorStub,
 		SchemaEditorDialog: true,
-		EditSummary: EditSummaryStub,
+		SummaryAction: SummaryActionStub,
 	};
 
 	describe( 'Save button', () => {
@@ -161,7 +161,7 @@ describe( 'SubjectEditorDialog', () => {
 			const wrapper = mountComponent( true, saveButtonTestStubs );
 			await flushPromises();
 
-			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( true );
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
 		} );
 
 		it( 'enables save after a change is made', async () => {
@@ -170,7 +170,7 @@ describe( 'SubjectEditorDialog', () => {
 
 			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
 
-			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( false );
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
 		} );
 
 		it( 'disables save again when dialog reopens', async () => {
@@ -178,12 +178,12 @@ describe( 'SubjectEditorDialog', () => {
 			await flushPromises();
 
 			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
-			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( false );
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
 
 			await wrapper.setProps( { open: false } );
 			await wrapper.setProps( { open: true } );
 
-			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( true );
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
 		} );
 	} );
 
@@ -278,7 +278,7 @@ describe( 'SubjectEditorDialog', () => {
 	const validationTestStubs = {
 		SubjectEditor: SubjectEditorStub,
 		SchemaEditorDialog: true,
-		EditSummary: EditSummaryStub,
+		SummaryAction: SummaryActionStub,
 	};
 
 	describe( 'ValidationFailedError handling', () => {
@@ -293,7 +293,7 @@ describe( 'SubjectEditorDialog', () => {
 			const wrapper = mountComponent( true, validationTestStubs, onSave );
 			await flushPromises();
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			const passedViolations = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
@@ -313,7 +313,7 @@ describe( 'SubjectEditorDialog', () => {
 			const wrapper = mountComponent( true, validationTestStubs, onSave );
 			await flushPromises();
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
@@ -330,7 +330,7 @@ describe( 'SubjectEditorDialog', () => {
 			const wrapper = mountComponent( true, validationTestStubs, onSave );
 			await flushPromises();
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			expect( ( mw.notify as Mock ).mock.calls ).toContainEqual( [
@@ -350,7 +350,7 @@ describe( 'SubjectEditorDialog', () => {
 			const wrapper = mountComponent( true, validationTestStubs, onSave );
 			await flushPromises();
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			expect( wrapper.find( '.ext-neowiki-subject-editor__form-errors' ).exists() ).toBe( true );
@@ -371,7 +371,7 @@ describe( 'SubjectEditorDialog', () => {
 			const wrapper = mountComponent( true, validationTestStubs, onSave );
 			await flushPromises();
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			expect( ( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[] ) ).toHaveLength( 1 );
@@ -391,7 +391,7 @@ describe( 'SubjectEditorDialog', () => {
 			const wrapper = mountComponent( true, validationTestStubs, onSave );
 			await flushPromises();
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			expect( ( mw.notify as Mock ).mock.calls ).toContainEqual( [
@@ -442,7 +442,7 @@ describe( 'SubjectEditorDialog', () => {
 			const wrapper = mountComponent( true, validationTestStubs, onSave );
 			await flushPromises();
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];

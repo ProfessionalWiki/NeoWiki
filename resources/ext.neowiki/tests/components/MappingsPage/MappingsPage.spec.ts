@@ -83,7 +83,7 @@ function mountComponent( summaries: MappingSummary[] = [] ): VueWrapper {
 			mocks: { $i18n: createI18nMock() },
 			stubs: {
 				MappingCreatorDialog: MappingCreatorDialogStub,
-				EditSummary: true,
+				SummaryAction: true,
 				I18nSlot: true,
 				CdxIcon: true,
 			},

@@ -16,7 +16,7 @@
 			/>
 
 			<template #footer>
-				<EditSummary
+				<SummaryAction
 					:help-text="$i18n( 'neowiki-edit-summary-help-text-schema' ).text()"
 					:save-button-label="$i18n( 'neowiki-save-schema' ).text()"
 					:save-disabled="!hasChanged"
@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';

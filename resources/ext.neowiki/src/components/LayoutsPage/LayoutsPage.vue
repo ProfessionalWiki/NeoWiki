@@ -96,7 +96,7 @@
 			</I18nSlot>
 
 			<template #footer>
-				<EditSummary
+				<SummaryAction
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-layout-delete-confirm-delete' ).text()"
 					:save-disabled="false"
@@ -118,7 +118,7 @@ import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { Layout } from '@/domain/Layout.ts';
 import LayoutCreatorDialog from './LayoutCreatorDialog.vue';
 import LayoutEditorDialog from '@/components/LayoutEditor/LayoutEditorDialog.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 
 const paginationSizeOptions: { value: number }[] = [
