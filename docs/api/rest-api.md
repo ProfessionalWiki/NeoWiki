@@ -114,10 +114,8 @@ default 10); the response carries the items and a `nextCursor`:
 { "schemas": [ ... ], "nextCursor": "1462" }
 ```
 
-Pass that value back as `cursor` to fetch the next page. `nextCursor` is `null` on the last page; a non-null cursor
-means another page follows, though in rare cases (trailing items that fail to load) that page may come back empty.
-Treat the cursor as opaque and do not construct one yourself; a malformed cursor is rejected with a `400`. Cursors stay
-valid across item creation and deletion, and no total count is reported.
+Pass that value back as `cursor` to fetch the next page; `null` marks the last page. Do not construct a cursor
+yourself — a malformed one is rejected with a `400`. Cursors stay valid while items are created and deleted.
 
 ## The `expand` parameter
 
