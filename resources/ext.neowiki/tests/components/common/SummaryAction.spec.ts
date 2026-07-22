@@ -1,19 +1,19 @@
 import { mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconCheck, cdxIconTrash } from '@wikimedia/codex-icons';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
 const $i18n = createI18nMock();
 
-describe( 'EditSummary', () => {
+describe( 'SummaryAction', () => {
 	beforeEach( () => {
 		setupMwMock( { functions: [ 'message', 'msg' ] } );
 	} );
 
-	function mountComponent( props: Partial<InstanceType<typeof EditSummary>[ '$props' ]> = {} ): VueWrapper {
-		return mount( EditSummary, {
+	function mountComponent( props: Partial<InstanceType<typeof SummaryAction>[ '$props' ]> = {} ): VueWrapper {
+		return mount( SummaryAction, {
 			props: {
 				helpText: '',
 				saveButtonLabel: 'Save',

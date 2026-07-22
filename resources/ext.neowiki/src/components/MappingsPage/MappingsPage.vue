@@ -89,7 +89,7 @@
 			</I18nSlot>
 
 			<template #footer>
-				<EditSummary
+				<SummaryAction
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-mapping-delete-confirm-delete' ).text()"
 					:save-disabled="false"
@@ -108,7 +108,7 @@ import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useMappingPermissions } from '@/composables/useMappingPermissions.ts';
 import MappingCreatorDialog from './MappingCreatorDialog.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 
 const paginationSizeOptions: { value: number }[] = [

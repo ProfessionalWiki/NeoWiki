@@ -2,7 +2,7 @@ import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
@@ -21,7 +21,7 @@ const SchemaEditorStub = {
 	},
 };
 
-const EditSummaryStub = {
+const SummaryActionStub = {
 	template: '<div class="edit-summary-stub"></div>',
 	props: [ 'helpText', 'saveButtonLabel', 'saveDisabled' ],
 	emits: [ 'save' ],
@@ -42,7 +42,7 @@ describe( 'SchemaEditorDialog', () => {
 
 	const stubs = {
 		SchemaEditor: SchemaEditorStub,
-		EditSummary: EditSummaryStub,
+		SummaryAction: SummaryActionStub,
 		CloseConfirmationDialog: CloseConfirmationDialogStub,
 	};
 
@@ -65,7 +65,7 @@ describe( 'SchemaEditorDialog', () => {
 			const wrapper = mountComponent();
 			await flushPromises();
 
-			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( true );
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
 		} );
 
 		it( 'enables save after a change is made', async () => {
@@ -74,7 +74,7 @@ describe( 'SchemaEditorDialog', () => {
 
 			await wrapper.findComponent( SchemaEditor ).vm.$emit( 'change' );
 
-			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( false );
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
 		} );
 
 		it( 'disables save again when dialog reopens', async () => {
@@ -82,12 +82,12 @@ describe( 'SchemaEditorDialog', () => {
 			await flushPromises();
 
 			await wrapper.findComponent( SchemaEditor ).vm.$emit( 'change' );
-			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( false );
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
 
 			await wrapper.setProps( { open: false } );
 			await wrapper.setProps( { open: true } );
 
-			expect( wrapper.findComponent( EditSummary ).props( 'saveDisabled' ) ).toBe( true );
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
 		} );
 	} );
 

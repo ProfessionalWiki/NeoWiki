@@ -151,7 +151,7 @@ export { default as UrlDisplay } from './components/Value/UrlDisplay.vue';
 export { default as UrlInput } from './components/Value/UrlInput.vue';
 export { default as Infobox } from './components/Views/Infobox.vue';
 export { default as CloseConfirmationDialog } from './components/common/CloseConfirmationDialog.vue';
-export { default as EditSummary } from './components/common/EditSummary.vue';
+export { default as SummaryAction } from './components/common/SummaryAction.vue';
 export { default as I18nSlot } from './components/common/I18nSlot.vue';
 export { default as NeoMultiLookupInput } from './components/common/NeoMultiLookupInput.vue';
 export { default as NeoMultiTextInput } from './components/common/NeoMultiTextInput.vue';

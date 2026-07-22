@@ -22,8 +22,8 @@
 		</CdxField>
 
 		<template #footer>
-			<EditSummary
-				ref="editSummaryRef"
+			<SummaryAction
+				ref="summaryActionRef"
 				help-text=""
 				:save-button-label="$i18n( 'neowiki-mapping-creator-save' ).text()"
 				:save-disabled="saving"
@@ -37,7 +37,7 @@
 import { ref, watch } from 'vue';
 import { CdxDialog, CdxField, CdxTextInput } from '@wikimedia/codex';
 import type { ValidationStatusType } from '@wikimedia/codex';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 
 // The reserved projection name (RdfPageProjector::PROJECTION). The backend rejects a Mapping:Native
 // save (MappingName via MappingContentHandler::validateSave, case-insensitively); this client check
@@ -61,16 +61,16 @@ const mappingName = ref( '' );
 const nameError = ref( '' );
 const nameStatus = ref<ValidationStatusType>( 'default' );
 const saving = ref( false );
-const editSummaryRef = ref<InstanceType<typeof EditSummary> | null>( null );
+const summaryActionRef = ref<InstanceType<typeof SummaryAction> | null>( null );
 
 function close(): void {
 	emit( 'update:open', false );
 }
 
-// Enter in the name field saves through the EditSummary so the currently entered summary is used,
+// Enter in the name field saves through the SummaryAction so the currently entered summary is used,
 // exactly as clicking its save button does.
 function onNameEnter(): void {
-	editSummaryRef.value?.submit();
+	summaryActionRef.value?.submit();
 }
 
 function onDialogUpdateOpen( value: boolean ): void {
