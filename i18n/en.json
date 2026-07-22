@@ -197,12 +197,6 @@
 	"neowiki-schema-sidebar-all-schemas": "All schemas",
 
 	"neowiki-schema-delete": "Delete schema",
-	"neowiki-schema-delete-confirm-title": "Delete schema?",
-	"neowiki-schema-delete-confirm-message": "The schema $1 will be permanently deleted.",
-	"neowiki-schema-delete-confirm-delete": "Delete",
-	"neowiki-schema-delete-summary-default": "Delete schema via NeoWiki UI",
-	"neowiki-schema-delete-success": "Deleted $1 schema",
-	"neowiki-schema-delete-error": "Failed to delete $1 schema.",
 
 	"neowiki-close-confirmation-title": "Discard unsaved changes?",
 	"neowiki-close-confirmation-message": "Your changes have not been saved and will be lost.",
@@ -278,12 +272,6 @@
 	"neowiki-mapping-creator-summary-default": "Create mapping via NeoWiki UI",
 	"neowiki-edit-mapping": "Edit mapping",
 	"neowiki-mapping-delete": "Delete mapping",
-	"neowiki-mapping-delete-confirm-title": "Delete mapping?",
-	"neowiki-mapping-delete-confirm-message": "The mapping $1 will be permanently deleted.",
-	"neowiki-mapping-delete-confirm-delete": "Delete",
-	"neowiki-mapping-delete-summary-default": "Delete mapping via NeoWiki UI",
-	"neowiki-mapping-delete-success": "Deleted $1 mapping",
-	"neowiki-mapping-delete-error": "Failed to delete $1 mapping.",
 
 	"neowiki-layout-creator-title": "Create layout",
 	"neowiki-layout-creator-button": "Create",
@@ -301,12 +289,6 @@
 	"neowiki-layout-creator-summary-default": "Create layout via NeoWiki UI",
 
 	"neowiki-layout-delete": "Delete layout",
-	"neowiki-layout-delete-confirm-title": "Delete layout?",
-	"neowiki-layout-delete-confirm-message": "The layout $1 will be permanently deleted.",
-	"neowiki-layout-delete-confirm-delete": "Delete",
-	"neowiki-layout-delete-summary-default": "Delete layout via NeoWiki UI",
-	"neowiki-layout-delete-success": "Deleted $1 layout",
-	"neowiki-layout-delete-error": "Failed to delete $1 layout.",
 
 	"neowiki-managesubjects-tab": "Data",
 	"neowiki-managesubjects-title": "Subjects on $1",
