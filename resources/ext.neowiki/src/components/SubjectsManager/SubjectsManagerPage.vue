@@ -14,11 +14,11 @@
 					v-model:selected="exportMenuSelection"
 					class="ext-neowiki-subjects-manager__export-menu"
 					:menu-items="pageExportItems"
-					:aria-label="$i18n( 'neowiki-managesubjects-export-button' ).text()"
+					:aria-label="$i18n( 'neowiki-managesubjects-export-all-button' ).text()"
 					@update:selected="openExport"
 				>
 					<CdxIcon :icon="cdxIconDownload" />
-					{{ $i18n( 'neowiki-managesubjects-export-button' ).text() }}
+					{{ $i18n( 'neowiki-managesubjects-export-all-button' ).text() }}
 				</CdxMenuButton>
 				<CdxButton
 					v-if="canCreate && !isCompletelyEmpty"
@@ -171,40 +171,44 @@
 					<div class="ext-neowiki-subjects-manager__row-expanded">
 						<SubjectStatementsView :subject="mainSubject" />
 						<footer class="ext-neowiki-subjects-manager__row-footer">
-							<div class="ext-neowiki-subjects-manager__row-identifiers">
-								<span class="ext-neowiki-subjects-manager__row-id">
-									<span class="ext-neowiki-subjects-manager__row-id-label">
+							<dl class="ext-neowiki-subjects-manager__row-identifiers">
+								<div class="ext-neowiki-subjects-manager__row-id">
+									<dt class="ext-neowiki-subjects-manager__row-id-label">
 										{{ $i18n( 'neowiki-managesubjects-id-label' ).text() }}
-									</span>
-									<button
-										type="button"
-										class="ext-neowiki-subjects-manager__row-id-button"
-										:title="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
-										:aria-label="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
-										@click="copySubjectId( mainSubject.getId().text )"
-									>
-										<data :value="mainSubject.getId().text">
-											{{ mainSubject.getId().text }}
-										</data>
-									</button>
-								</span>
-								<span class="ext-neowiki-subjects-manager__row-iri">
-									<span class="ext-neowiki-subjects-manager__row-iri-label">
+									</dt>
+									<dd class="ext-neowiki-subjects-manager__row-id-value">
+										<button
+											type="button"
+											class="ext-neowiki-subjects-manager__row-id-button"
+											:title="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
+											:aria-label="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
+											@click="copySubjectId( mainSubject.getId().text )"
+										>
+											<data :value="mainSubject.getId().text">
+												{{ mainSubject.getId().text }}
+											</data>
+										</button>
+									</dd>
+								</div>
+								<div class="ext-neowiki-subjects-manager__row-iri">
+									<dt class="ext-neowiki-subjects-manager__row-iri-label">
 										{{ $i18n( 'neowiki-managesubjects-iri-label' ).text() }}
-									</span>
-									<button
-										type="button"
-										class="ext-neowiki-subjects-manager__row-iri-button"
-										:title="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( mainSubject.getId().text ) ).text()"
-										:aria-label="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( mainSubject.getId().text ) ).text()"
-										@click="copySubjectIri( subjectIri( mainSubject.getId().text ) )"
-									>
-										<data :value="subjectIri( mainSubject.getId().text )">
-											{{ subjectIri( mainSubject.getId().text ) }}
-										</data>
-									</button>
-								</span>
-							</div>
+									</dt>
+									<dd class="ext-neowiki-subjects-manager__row-iri-value">
+										<button
+											type="button"
+											class="ext-neowiki-subjects-manager__row-iri-button"
+											:title="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( mainSubject.getId().text ) ).text()"
+											:aria-label="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( mainSubject.getId().text ) ).text()"
+											@click="copySubjectIri( subjectIri( mainSubject.getId().text ) )"
+										>
+											<data :value="subjectIri( mainSubject.getId().text )">
+												{{ subjectIri( mainSubject.getId().text ) }}
+											</data>
+										</button>
+									</dd>
+								</div>
+							</dl>
 							<CdxMenuButton
 								v-model:selected="exportMenuSelection"
 								class="ext-neowiki-subjects-manager__export-menu"
@@ -345,40 +349,44 @@
 						<div class="ext-neowiki-subjects-manager__row-expanded">
 							<SubjectStatementsView :subject="subject" />
 							<footer class="ext-neowiki-subjects-manager__row-footer">
-								<div class="ext-neowiki-subjects-manager__row-identifiers">
-									<span class="ext-neowiki-subjects-manager__row-id">
-										<span class="ext-neowiki-subjects-manager__row-id-label">
+								<dl class="ext-neowiki-subjects-manager__row-identifiers">
+									<div class="ext-neowiki-subjects-manager__row-id">
+										<dt class="ext-neowiki-subjects-manager__row-id-label">
 											{{ $i18n( 'neowiki-managesubjects-id-label' ).text() }}
-										</span>
-										<button
-											type="button"
-											class="ext-neowiki-subjects-manager__row-id-button"
-											:title="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
-											:aria-label="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
-											@click="copySubjectId( subject.getId().text )"
-										>
-											<data :value="subject.getId().text">
-												{{ subject.getId().text }}
-											</data>
-										</button>
-									</span>
-									<span class="ext-neowiki-subjects-manager__row-iri">
-										<span class="ext-neowiki-subjects-manager__row-iri-label">
+										</dt>
+										<dd class="ext-neowiki-subjects-manager__row-id-value">
+											<button
+												type="button"
+												class="ext-neowiki-subjects-manager__row-id-button"
+												:title="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
+												:aria-label="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
+												@click="copySubjectId( subject.getId().text )"
+											>
+												<data :value="subject.getId().text">
+													{{ subject.getId().text }}
+												</data>
+											</button>
+										</dd>
+									</div>
+									<div class="ext-neowiki-subjects-manager__row-iri">
+										<dt class="ext-neowiki-subjects-manager__row-iri-label">
 											{{ $i18n( 'neowiki-managesubjects-iri-label' ).text() }}
-										</span>
-										<button
-											type="button"
-											class="ext-neowiki-subjects-manager__row-iri-button"
-											:title="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( subject.getId().text ) ).text()"
-											:aria-label="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( subject.getId().text ) ).text()"
-											@click="copySubjectIri( subjectIri( subject.getId().text ) )"
-										>
-											<data :value="subjectIri( subject.getId().text )">
-												{{ subjectIri( subject.getId().text ) }}
-											</data>
-										</button>
-									</span>
-								</div>
+										</dt>
+										<dd class="ext-neowiki-subjects-manager__row-iri-value">
+											<button
+												type="button"
+												class="ext-neowiki-subjects-manager__row-iri-button"
+												:title="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( subject.getId().text ) ).text()"
+												:aria-label="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( subject.getId().text ) ).text()"
+												@click="copySubjectIri( subjectIri( subject.getId().text ) )"
+											>
+												<data :value="subjectIri( subject.getId().text )">
+													{{ subjectIri( subject.getId().text ) }}
+												</data>
+											</button>
+										</dd>
+									</div>
+								</dl>
 								<CdxMenuButton
 									v-model:selected="exportMenuSelection"
 									class="ext-neowiki-subjects-manager__export-menu"
@@ -1145,8 +1153,10 @@ onUnmounted( () => {
 	&__row-identifiers {
 		display: flex;
 		flex-direction: column;
-		gap: @spacing-25;
 		min-width: 0;
+		margin: 0;
+		font-size: @font-size-x-small;
+		color: @color-subtle;
 	}
 
 	&__row-id,
@@ -1160,6 +1170,13 @@ onUnmounted( () => {
 	&__row-id-label,
 	&__row-iri-label {
 		flex-shrink: 0;
+	}
+
+	&__row-id-value,
+	&__row-iri-value {
+		display: flex;
+		min-width: 0;
+		margin: 0;
 	}
 
 	&__row-id-button,
@@ -1266,8 +1283,6 @@ onUnmounted( () => {
 		margin-top: @spacing-100;
 		padding-top: @spacing-75;
 		border-top: @border-width-base @border-style-base @border-color-subtle;
-		font-size: @font-size-x-small;
-		color: @color-subtle;
 	}
 
 	&__add-more.cdx-button {

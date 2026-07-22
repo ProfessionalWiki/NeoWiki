@@ -332,6 +332,7 @@
 	"neowiki-managesubjects-iri-copy": "Copy subject IRI $1",
 	"neowiki-managesubjects-iri-copied": "Copied \"$1\" to clipboard.",
 	"neowiki-managesubjects-iri-copy-error": "Couldn't copy the subject IRI.",
+	"neowiki-managesubjects-export-all-button": "Export all",
 	"neowiki-managesubjects-export-button": "Export",
 	"neowiki-managesubjects-export-json": "JSON",
 	"neowiki-managesubjects-export-native": "Native",
