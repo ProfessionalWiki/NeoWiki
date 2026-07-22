@@ -26,9 +26,9 @@ may read (see [Cursor pagination](#cursor-pagination)): a restricted Schema, Lay
 one that does not exist, and no total count is reported, so nothing about restricted rows can be inferred from the
 pagination.
 
-Subject write endpoints require per-page `edit` permission. On the create, main-subject, and ordering
-endpoints, which are keyed by page id, a page you may not read and a page id that does not exist answer an
-identical `404`; a page you may read but not edit answers `403`.
+Subject write endpoints require per-page `edit` permission and answer `403` on denial. On the write endpoints keyed
+by page id ([Pages and Subjects](#pages-and-subjects)), a page you may not read answers the same `404` as a page id
+that does not exist.
 
 The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
 [Query API](query-api.md)).
