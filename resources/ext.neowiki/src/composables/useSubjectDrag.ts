@@ -1,7 +1,7 @@
 import { Ref } from 'vue';
 import { useSortable } from '@/composables/useSortable';
 import { SubjectId } from '@/domain/SubjectId';
-import { subjectIdFromRowDomId } from '@/presentation/subjectRowDomId';
+import { subjectIdFromRowDomId } from '@/presentation/subjectRowAnchor';
 
 const DRAG_HANDLE_SELECTOR = '.ext-neowiki-subjects-manager__row-drag-handle';
 const GHOST_CLASS = 'ext-neowiki-subjects-manager__row--ghost';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { subjectRowDomId, subjectIdFromRowDomId, subjectIdFromHash } from '@/presentation/subjectRowDomId';
+import { subjectRowDomId, subjectIdFromRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnchor';
 
 const VALID_ID = 's12345abcdefghj';
 
