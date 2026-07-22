@@ -3,7 +3,7 @@
 		<CdxAccordion @toggle="onAccordionToggle">
 			<template #title>
 				<span class="ext-neowiki-summary-action__label">
-					{{ $i18n( 'neowiki-edit-summary-label' ).text() }}
+					{{ props.label || $i18n( 'neowiki-edit-summary-label' ).text() }}
 					<span class="ext-neowiki-summary-action__optional-flag">
 						{{ $i18n( 'cdx-label-optional-flag' ).text() }}
 					</span>
@@ -15,13 +15,13 @@
 				:hide-label="true"
 			>
 				<template #label>
-					{{ $i18n( 'neowiki-edit-summary-label' ).text() }}
+					{{ props.label || $i18n( 'neowiki-edit-summary-label' ).text() }}
 				</template>
 
 				<CdxTextArea
 					ref="textAreaRef"
 					v-model="editSummary"
-					:placeholder="$i18n( 'neowiki-edit-summary-placeholder' ).text()"
+					:placeholder="props.placeholder || $i18n( 'neowiki-edit-summary-placeholder' ).text()"
 				/>
 			</CdxField>
 		</CdxAccordion>
@@ -60,10 +60,16 @@ const props = withDefaults(
 		saveDisabled: boolean;
 		saveButtonAction?: 'progressive' | 'destructive';
 		saveButtonIcon?: Icon;
+		label?: string;
+		placeholder?: string;
 	}>(),
 	{
 		saveButtonAction: 'progressive',
-		saveButtonIcon: () => cdxIconCheck
+		saveButtonIcon: () => cdxIconCheck,
+		// Default to the edit-summary wording; callers such as the delete dialog override these
+		// to label the field a "reason".
+		label: '',
+		placeholder: ''
 	}
 );
 
