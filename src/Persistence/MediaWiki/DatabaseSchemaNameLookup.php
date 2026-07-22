@@ -16,6 +16,8 @@ use Wikimedia\Rdbms\IResultWrapper;
 
 class DatabaseSchemaNameLookup implements SchemaNameLookup {
 
+	private const READABLE_NAMES_BATCH_SIZE = 100;
+
 	public function __construct(
 		private readonly IDatabase $db,
 		private readonly SearchEngine $searchEngine,
@@ -54,16 +56,42 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 		) );
 	}
 
-	public function getSchemaCount(): int {
-		/** @var string $count */
-		$count = $this->db->selectField(
-			'page',
-			'COUNT(*)',
-			[ 'page_namespace' => NeoWikiExtension::NS_SCHEMA ],
-			__METHOD__
-		);
+	/**
+	 * Keyset pagination over page_id: each batch seeks past the last seen page ID instead of
+	 * re-walking the namespace, so a request costs the batches it consumes, not the whole
+	 * namespace, and pages stay stable when Schemas are created or deleted between requests.
+	 * Unreadable Schemas are never yielded, so a cursor built from the yielded keys pages over
+	 * readable Schemas only (#1062).
+	 *
+	 * @return iterable<int, TitleValue> Readable Schema names keyed by page ID, in page-ID order.
+	 */
+	public function getReadableSchemaNames( int $afterPageId = 0 ): iterable {
+		$lastPageId = $afterPageId;
 
-		return (int)$count;
+		do {
+			$res = $this->db->select(
+				'page',
+				[ 'page_id', 'page_title' ],
+				[
+					'page_namespace' => NeoWikiExtension::NS_SCHEMA,
+					$this->db->expr( 'page_id', '>', $lastPageId ),
+				],
+				__METHOD__,
+				[
+					'ORDER BY' => 'page_id ASC',
+					'LIMIT' => self::READABLE_NAMES_BATCH_SIZE,
+				]
+			);
+
+			foreach ( $res as $row ) {
+				$lastPageId = (int)$row->page_id;
+				$title = new TitleValue( NeoWikiExtension::NS_SCHEMA, $row->page_title );
+
+				if ( $this->readAuthorizer->authorizeReadByPageTitle( $this->titleFactory->newFromLinkTarget( $title ) ) ) {
+					yield $lastPageId => $title;
+				}
+			}
+		} while ( $res->numRows() === self::READABLE_NAMES_BATCH_SIZE );
 	}
 
 	private function getSearchSuggestions( string $search, int $limit, int $offset ): SearchSuggestionSet {

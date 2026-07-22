@@ -22,14 +22,18 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 
 	use NeoWikiMockAuthorityTrait;
 
+	/**
+	 * @var array<string, int>
+	 */
+	private array $pageIds = [];
+
 	public function setUp(): void {
 		$this->tablesUsed[] = 'page';
 		$this->truncateTables( $this->tablesUsed, $this->db );
 
-		$this->createSchema( 'SchemaNameLookupTest1' );
-		$this->createSchema( 'SchemaNameLookupTest21' );
-		$this->createSchema( 'SchemaNameLookupTest22' );
-		$this->createSchema( 'SchemaNameLookupTest3' );
+		foreach ( [ 'SchemaNameLookupTest1', 'SchemaNameLookupTest21', 'SchemaNameLookupTest22', 'SchemaNameLookupTest3' ] as $name ) {
+			$this->pageIds[$name] = $this->createSchema( $name )->getPageId();
+		}
 	}
 
 	/**
@@ -114,8 +118,60 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testGetSchemaCount(): void {
-		$this->assertSame( 4, $this->getLookup()->getSchemaCount() );
+	public function testGetReadableSchemaNamesYieldsEverySchemaKeyedByPageId(): void {
+		$this->assertSame(
+			[
+				$this->pageIds['SchemaNameLookupTest1'] => 'SchemaNameLookupTest1',
+				$this->pageIds['SchemaNameLookupTest21'] => 'SchemaNameLookupTest21',
+				$this->pageIds['SchemaNameLookupTest22'] => 'SchemaNameLookupTest22',
+				$this->pageIds['SchemaNameLookupTest3'] => 'SchemaNameLookupTest3',
+			],
+			array_map(
+				static fn ( TitleValue $title ): string => $title->getText(),
+				iterator_to_array( $this->getLookup()->getReadableSchemaNames() )
+			)
+		);
+	}
+
+	public function testGetReadableSchemaNamesStartsAfterTheGivenPageId(): void {
+		$this->assertSame(
+			[
+				$this->pageIds['SchemaNameLookupTest22'] => 'SchemaNameLookupTest22',
+				$this->pageIds['SchemaNameLookupTest3'] => 'SchemaNameLookupTest3',
+			],
+			array_map(
+				static fn ( TitleValue $title ): string => $title->getText(),
+				iterator_to_array(
+					$this->getLookup()->getReadableSchemaNames( $this->pageIds['SchemaNameLookupTest21'] )
+				)
+			)
+		);
+	}
+
+	public function testGetReadableSchemaNamesOmitsUnreadableSchemas(): void {
+		// GateHiddenSchema is created before GateVisibleSchema so the denied row sits mid-list. A
+		// denied Schema must not be yielded at all: the summaries endpoint fills its page from this
+		// iterable and builds its cursor from the yielded keys, so a skipped Schema neither takes
+		// page space nor becomes inferable from the pagination (#1062).
+		$this->createSchema( 'GateHiddenSchema' );
+		$visibleId = $this->createSchema( 'GateVisibleSchema' )->getPageId();
+
+		$denyHidden = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
+			$page === null || $page->getDBkey() !== 'GateHiddenSchema';
+
+		$this->assertSame(
+			[
+				$this->pageIds['SchemaNameLookupTest1'] => 'SchemaNameLookupTest1',
+				$this->pageIds['SchemaNameLookupTest21'] => 'SchemaNameLookupTest21',
+				$this->pageIds['SchemaNameLookupTest22'] => 'SchemaNameLookupTest22',
+				$this->pageIds['SchemaNameLookupTest3'] => 'SchemaNameLookupTest3',
+				$visibleId => 'GateVisibleSchema',
+			],
+			array_map(
+				static fn ( TitleValue $title ): string => $title->getText(),
+				iterator_to_array( $this->getLookup( $this->mockRegisteredAuthority( $denyHidden ) )->getReadableSchemaNames() )
+			)
+		);
 	}
 
 	public function testUnreadableSchemaNamesAreOmitted(): void {

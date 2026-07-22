@@ -11,36 +11,6 @@ parameters:
 			path: src/NeoWikiExtension.php
 
 		-
-			message: "#^Cannot access property \\$page_title on array\\|stdClass\\|false\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
-
-		-
-			message: "#^Instantiated class TitleValue not found\\.$#"
-			count: 2
-			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\DatabaseSchemaNameLookup\\:\\:dbResultToTitleValueArray\\(\\) has invalid return type TitleValue\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\DatabaseSchemaNameLookup\\:\\:getFirstSchemaNames\\(\\) has invalid return type TitleValue\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\DatabaseSchemaNameLookup\\:\\:getSchemaNamesMatching\\(\\) has invalid return type TitleValue\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\DatabaseSchemaNameLookup\\:\\:searchSuggestionsToTitleArray\\(\\) has invalid return type TitleValue\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
-
-		-
 			message: "#^Call to method getPrefixedText\\(\\) on an unknown class Title\\.$#"
 			count: 1
 			path: src/Persistence/MediaWiki/PageContentFetcher.php
@@ -196,36 +166,6 @@ parameters:
 			path: src/GraphDatabasePlugins/Neo4j/Persistence/Neo4jQueryStore.php
 
 		-
-			message: "#^Cannot access property \\$page_title on array\\|stdClass\\|false\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/DatabaseLayoutNameLookup.php
-
-		-
-			message: "#^Instantiated class TitleValue not found\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/DatabaseLayoutNameLookup.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\DatabaseLayoutNameLookup\\:\\:dbResultToTitleValueArray\\(\\) has invalid return type TitleValue\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/DatabaseLayoutNameLookup.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\MediaWiki\\\\DatabaseLayoutNameLookup\\:\\:getLayoutNames\\(\\) has invalid return type TitleValue\\.$#"
-			count: 1
-			path: src/Persistence/MediaWiki/DatabaseLayoutNameLookup.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\LayoutNameLookup\\:\\:getLayoutNames\\(\\) has invalid return type TitleValue\\.$#"
-			count: 1
-			path: src/Persistence/LayoutNameLookup.php
-
-		-
-			message: "#^Method ProfessionalWiki\\\\NeoWiki\\\\Persistence\\\\SchemaNameLookup\\:\\:getSchemaNamesMatching\\(\\) has invalid return type TitleValue\\.$#"
-			count: 1
-			path: src/Persistence/SchemaNameLookup.php
-
-		-
 			message: "#^Call to method getHeader\\(\\) on an unknown class WebRequest\\.$#"
 			count: 1
 			path: src/Presentation/CsrfValidator.php
@@ -299,3 +239,48 @@ parameters:
 			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, string\\|null given\\.$#"
 			count: 1
 			path: src/GraphDatabasePlugins/Neo4j/Application/KeywordCypherQueryValidator.php
+
+		-
+			message: "#^Cannot access property \\$page_id on array\\|stdClass\\|false\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseLayoutNameLookup.php
+
+		-
+			message: "#^Cannot access property \\$page_title on array\\|stdClass\\|false\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseLayoutNameLookup.php
+
+		-
+			message: "#^Parameter \\#2 \\$op of method Wikimedia\\\\Rdbms\\\\IReadableDatabase\\:\\:expr\\(\\) expects '\\!\\='\\|'\\='\\|'\\\\\\\\x3C'\\|'\\\\\\\\x3C\\='\\|'\\\\\\\\x3E'\\|'\\\\\\\\x3E\\='\\|'LIKE'\\|'NOT LIKE', '\\>' given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseLayoutNameLookup.php
+
+		-
+			message: "#^Cannot access property \\$page_id on array\\|stdClass\\|false\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseMappingNameLookup.php
+
+		-
+			message: "#^Cannot access property \\$page_title on array\\|stdClass\\|false\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseMappingNameLookup.php
+
+		-
+			message: "#^Parameter \\#2 \\$op of method Wikimedia\\\\Rdbms\\\\IReadableDatabase\\:\\:expr\\(\\) expects '\\!\\='\\|'\\='\\|'\\\\\\\\x3C'\\|'\\\\\\\\x3C\\='\\|'\\\\\\\\x3E'\\|'\\\\\\\\x3E\\='\\|'LIKE'\\|'NOT LIKE', '\\>' given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseMappingNameLookup.php
+
+		-
+			message: "#^Cannot access property \\$page_id on array\\|stdClass\\|false\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
+
+		-
+			message: "#^Cannot access property \\$page_title on array\\|stdClass\\|false\\.$#"
+			count: 2
+			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php
+
+		-
+			message: "#^Parameter \\#2 \\$op of method Wikimedia\\\\Rdbms\\\\IReadableDatabase\\:\\:expr\\(\\) expects '\\!\\='\\|'\\='\\|'\\\\\\\\x3C'\\|'\\\\\\\\x3C\\='\\|'\\\\\\\\x3E'\\|'\\\\\\\\x3E\\='\\|'LIKE'\\|'NOT LIKE', '\\>' given\\.$#"
+			count: 1
+			path: src/Persistence/MediaWiki/DatabaseSchemaNameLookup.php

@@ -48,9 +48,10 @@ export class RestSchemaRepository implements SchemaRepository {
 		return await response.json();
 	}
 
-	public async getSchemaSummaries( offset: number, limit: number ): Promise<SchemaSummaryPage> {
+	public async getSchemaSummaries( cursor: string | null, limit: number ): Promise<SchemaSummaryPage> {
+		const cursorParam = cursor === null ? '' : `&cursor=${ encodeURIComponent( cursor ) }`;
 		const response = await this.httpClient.get(
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/schemas?limit=${ limit }&offset=${ offset }`,
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/schemas?limit=${ limit }${ cursorParam }`,
 		);
 
 		if ( !response.ok ) {

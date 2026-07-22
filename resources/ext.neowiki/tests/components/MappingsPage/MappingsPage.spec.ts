@@ -18,7 +18,7 @@ const checkCreatePermissionMock = vi.fn();
 const checkEditPermissionMock = vi.fn();
 const checkDeletePermissionMock = vi.fn();
 
-let mappingsResponse: { mappings: MappingSummary[]; totalRows: number } = { mappings: [], totalRows: 0 };
+let mappingsResponse: { mappings: MappingSummary[]; nextCursor: string | null } = { mappings: [], nextCursor: null };
 
 vi.mock( '@/composables/useMappingPermissions.ts', () => ( {
 	useMappingPermissions: () => ( {
@@ -71,7 +71,7 @@ function findDeleteButtons( wrapper: VueWrapper ): VueWrapper[] {
 function mountComponent( summaries: MappingSummary[] = [] ): VueWrapper {
 	mappingsResponse = {
 		mappings: summaries,
-		totalRows: summaries.length,
+		nextCursor: null,
 	};
 	setupMwMock( {
 		functions: [ 'msg', 'util', 'message', 'notify' ],
@@ -99,7 +99,7 @@ describe( 'MappingsPage', () => {
 		checkCreatePermissionMock.mockClear();
 		checkEditPermissionMock.mockClear();
 		checkDeletePermissionMock.mockClear();
-		mappingsResponse = { mappings: [], totalRows: 0 };
+		mappingsResponse = { mappings: [], nextCursor: null };
 	} );
 
 	it( 'links each mapped schema name to its Schema page and shows the count', async () => {

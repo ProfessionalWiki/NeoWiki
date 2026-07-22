@@ -113,6 +113,7 @@ import { CdxButton, CdxDialog, CdxIcon, CdxTable } from '@wikimedia/codex';
 import type { TableColumn } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
+import { useCursorPagination } from '@/composables/useCursorPagination.ts';
 import { useLayoutPermissions } from '@/composables/useLayoutPermissions.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { Layout } from '@/domain/Layout.ts';
@@ -128,10 +129,16 @@ const paginationSizeOptions: { value: number }[] = [
 ];
 
 const loading = ref( true );
-const totalRows = ref( 0 );
 const isCreatorOpen = ref( false );
 const pageSize = ref( paginationSizeOptions[ 0 ].value );
 const lastOffset = ref( 0 );
+// Undefined while the end of the listing is unknown, which keeps CdxTable in its indeterminate
+// pagination. Once a response carries a null cursor the exact count is known, and the table needs
+// it: its indeterminate next-button heuristic (a short page) misses a listing that ends exactly on
+// a page boundary. The count covers only rows this client has itself paged through, so it reveals
+// nothing the row listing did not already.
+const totalRows = ref<number | undefined>( undefined );
+const { cursorFor, recordNextCursor } = useCursorPagination();
 const { canCreateLayouts, canEditLayout: canEditLayouts, checkCreatePermission, checkEditPermission } = useLayoutPermissions();
 const layoutStore = useLayoutStore();
 
@@ -194,11 +201,13 @@ async function fetchLayouts( offset: number, limit: number ): Promise<void> {
 	pageSize.value = limit;
 	lastOffset.value = offset;
 
+	const cursor = cursorFor( offset );
+	const cursorParam = cursor === null ? '' : `&cursor=${ encodeURIComponent( cursor ) }`;
 	const restApiUrl = NeoWikiExtension.getInstance().getMediaWiki().util.wikiScript( 'rest' );
 	const httpClient = NeoWikiExtension.getInstance().newHttpClient();
 
 	const response = await httpClient.get(
-		`${ restApiUrl }/neowiki/v0/layouts?limit=${ limit }&offset=${ offset }`
+		`${ restApiUrl }/neowiki/v0/layouts?limit=${ limit }${ cursorParam }`
 	);
 
 	if ( !response.ok ) {
@@ -206,7 +215,7 @@ async function fetchLayouts( offset: number, limit: number ): Promise<void> {
 		return;
 	}
 
-	const result: { layouts: LayoutSummary[]; totalRows: number } = await response.json();
+	const result: { layouts: LayoutSummary[]; nextCursor: string | null } = await response.json();
 
 	rows.value = result.layouts.map( ( summary ) => ( {
 		name: summary.name,
@@ -215,7 +224,8 @@ async function fetchLayouts( offset: number, limit: number ): Promise<void> {
 		description: summary.description
 	} ) );
 
-	totalRows.value = result.totalRows;
+	recordNextCursor( offset, limit, result.nextCursor );
+	totalRows.value = result.nextCursor === null ? offset + result.layouts.length : undefined;
 	loading.value = false;
 }
 

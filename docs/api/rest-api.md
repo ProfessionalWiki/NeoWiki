@@ -15,11 +15,16 @@ Every endpoint is also published as a complete [OpenAPI 3.0 description](#full-s
 
 ## Permissions
 
-The Subject, page-subjects, subject-labels, Schema, Layout, RDF export, and entity-dereference read endpoints enforce
-the caller's per-page `read` permission; page protection and `$wgNamespaceProtection` do not restrict them, because
-MediaWiki's `read` action ignores both. When you may not read a page they respond as if the data were absent — a `null`
-value, an empty list, or a `404` — never a `403`. `GET /subject-labels` omits the labels of Subjects whose page you
-cannot read; because that filter runs per result, it caps `limit` at 50.
+The Subject, page-subjects, subject-labels, Schema, Layout, Mapping, RDF export, and entity-dereference read endpoints
+enforce the caller's per-page `read` permission; page protection and `$wgNamespaceProtection` do not restrict them,
+because MediaWiki's `read` action ignores both. When you may not read a page they respond as if the data were absent — a
+`null` value, an empty list, or a `404` — never a `403`. `GET /subject-labels` omits the labels of Subjects whose page
+you cannot read; because that filter runs per result, it caps `limit` at 50.
+
+The `GET /schemas`, `GET /layouts`, and `GET /mappings` list endpoints paginate with an opaque cursor over the rows you
+may read (see [Cursor pagination](#cursor-pagination)): a restricted Schema, Layout, or Mapping is skipped exactly like
+one that does not exist, and no total count is reported, so nothing about restricted rows can be inferred from the
+pagination.
 
 Subject write endpoints require per-page `edit` permission and answer `403` on denial.
 
@@ -70,7 +75,7 @@ A Schema defines a Subject type and its properties. For the body shape, see
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/schemas` | List Schemas. Paginated with `limit` and `offset`. |
+| `GET /neowiki/v0/schemas` | List Schemas. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. |
 | `GET /neowiki/v0/schema/{schemaName}` | Fetch a Schema by name. |
 | `GET /neowiki/v0/schema-names/{search}` | Find Schema names by prefix. |
 
@@ -80,7 +85,7 @@ A Layout defines how a Subject is displayed.
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/layouts` | List Layouts. Paginated with `limit` and `offset`. |
+| `GET /neowiki/v0/layouts` | List Layouts. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. |
 | `GET /neowiki/v0/layout/{layoutName}` | Fetch a Layout by name. |
 
 ### Mappings
@@ -90,7 +95,7 @@ An ontology Mapping projects native Schemas to a target ontology. For the format
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/mappings` | List ontology Mappings, each with the names of its mapped Schemas. Paginated with `limit` and `offset`. |
+| `GET /neowiki/v0/mappings` | List ontology Mappings, each with the names of its mapped Schemas. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. |
 
 ### Query
 
@@ -99,6 +104,20 @@ An ontology Mapping projects native Schemas to a target ontology. For the format
 | `POST /neowiki/v0/query/cypher` | Run a read-only Cypher query against the graph. See [Query API](query-api.md). |
 
 <!-- REST-ENDPOINTS:END -->
+
+## Cursor pagination
+
+The Schema, Layout, and Mapping list endpoints paginate with an opaque cursor. Request up to `limit` items (1–50,
+default 10); the response carries the items and a `nextCursor`:
+
+```json
+{ "schemas": [ ... ], "nextCursor": "1462" }
+```
+
+Pass that value back as `cursor` to fetch the next page. `nextCursor` is `null` on the last page; a non-null cursor
+means another page follows, though in rare cases (trailing items that fail to load) that page may come back empty.
+Treat the cursor as opaque and do not construct one yourself; a malformed cursor is rejected with a `400`. Cursors stay
+valid across item creation and deletion, and no total count is reported.
 
 ## The `expand` parameter
 
