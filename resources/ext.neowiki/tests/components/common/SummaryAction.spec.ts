@@ -75,4 +75,31 @@ describe( 'SummaryAction', () => {
 		const icon = wrapper.findComponent( CdxIcon );
 		expect( icon.props( 'icon' ) ).toBe( cdxIconTrash );
 	} );
+
+	it( 'defaults the field label to the edit-summary message', () => {
+		const wrapper = mountComponent();
+
+		expect( wrapper.text() ).toContain( 'neowiki-edit-summary-label' );
+	} );
+
+	it( 'uses the provided label prop over the default', () => {
+		const wrapper = mountComponent( { label: 'Reason' } );
+
+		expect( wrapper.text() ).toContain( 'Reason' );
+		expect( wrapper.text() ).not.toContain( 'neowiki-edit-summary-label' );
+	} );
+
+	it( 'defaults the field placeholder to the edit-summary message', () => {
+		const wrapper = mountComponent();
+
+		expect( wrapper.find( 'textarea' ).attributes( 'placeholder' ) )
+			.toBe( 'neowiki-edit-summary-placeholder' );
+	} );
+
+	it( 'uses the provided placeholder prop over the default', () => {
+		const wrapper = mountComponent( { placeholder: 'Why are you deleting this?' } );
+
+		expect( wrapper.find( 'textarea' ).attributes( 'placeholder' ) )
+			.toBe( 'Why are you deleting this?' );
+	} );
 } );
