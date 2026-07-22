@@ -466,7 +466,8 @@ import {
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
-import { subjectRowDomId, useSubjectDrag } from '@/composables/useSubjectDrag.ts';
+import { useSubjectDrag } from '@/composables/useSubjectDrag.ts';
+import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnchor.ts';
 import { Subject } from '@/domain/Subject';
 import { Schema } from '@/domain/Schema';
 import { SubjectId } from '@/domain/SubjectId';
@@ -657,11 +658,21 @@ function openExport( value: string | number | null ): void {
 }
 
 function toggleExpanded( id: string ): void {
+	// The arrival highlight is a one-time "you landed here" cue from a deep link. The first manual
+	// expand/collapse is the user taking over, so dismiss it: otherwise it would linger on the
+	// originally linked row while the address-bar fragment (rewritten below) moves to a different one,
+	// leaving the visible highlight and a copied URL disagreeing. Mirrors focusedId, likewise transient.
+	highlightedId.value = null;
 	const next = new Set( expandedIds.value );
 	if ( next.has( id ) ) {
 		next.delete( id );
 	} else {
 		next.add( id );
+		// Make the address bar a shareable deep link to the row the user just opened. The fragment is the
+		// bare Subject id (like Wikibase's `#P123`); replaceState (not a location.hash assignment) adds no
+		// history entry and fires no hashchange, so it does not re-trigger applyHash. Collapsing
+		// deliberately leaves the fragment in place.
+		history.replaceState( null, '', '#' + id );
 	}
 	expandedIds.value = next;
 }
@@ -862,8 +873,12 @@ async function executeDelete( comment: string ): Promise<void> {
 }
 
 function applyHash(): void {
-	const id = window.location.hash.slice( 1 );
-	if ( !id ) {
+	const id = subjectIdFromHash( window.location.hash.slice( 1 ) );
+	if ( id === null ) {
+		// The fragment no longer names a Subject (navigated to a foreign anchor, or cleared), so no row
+		// is the deep-link target any more: drop any stale highlight rather than leave it on a row the
+		// address bar no longer points at.
+		highlightedId.value = null;
 		return;
 	}
 	highlightedId.value = id;

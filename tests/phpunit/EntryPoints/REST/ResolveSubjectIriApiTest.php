@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Config\ConfigException;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
@@ -32,6 +33,11 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
+
+		// Pin the default dereference target so the Accept-negotiation tests are independent of any
+		// ambient $wgNeoWikiSubjectDereferenceTarget (e.g. a dev LocalSettings override). Tests that
+		// exercise a specific target override this.
+		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'page' );
 
 		$this->createSchema( self::SCHEMA );
 
@@ -100,6 +106,45 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 303, $response->getStatusCode() );
 		$this->assertHostingPageLocation( $response );
+	}
+
+	public function testDataTabDereferenceTargetRedirectsToTheSubjectsRow(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'data-tab' );
+
+		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
+
+		$location = $response->getHeaderLine( 'Location' );
+
+		$this->assertSame( 303, $response->getStatusCode() );
+		$this->assertMatchesRegularExpression( '#^https?://#', $location, 'The Location is an absolute URL.' );
+		$this->assertStringContainsString(
+			Title::newFromID( $this->pageId )->getPrefixedDBkey(),
+			$location,
+			'The redirect targets the hosting page.'
+		);
+		$this->assertStringContainsString( 'action=subjects', $location, 'The redirect opens the Data tab.' );
+		$this->assertStringEndsWith(
+			'#' . self::SUBJECT_ID,
+			$location,
+			'The fragment is the bare Subject id the Data tab expands and highlights.'
+		);
+	}
+
+	public function testDataTabTargetLeavesTheRdfBranchesUnchanged(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'data-tab' );
+
+		$response = $this->deref( headers: [ 'Accept' => 'application/trig' ] );
+
+		$this->assertSame( 303, $response->getStatusCode() );
+		$this->assertSubjectRdfLocation( $response, 'trig' );
+	}
+
+	public function testUnrecognizedDereferenceTargetIsAConfigError(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'sidebar' );
+
+		$this->expectException( ConfigException::class );
+
+		$this->deref( headers: [ 'Accept' => 'text/html' ] );
 	}
 
 	public function testReturns404ForAnUnknownSubject(): void {

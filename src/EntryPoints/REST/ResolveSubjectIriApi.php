@@ -4,11 +4,14 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
+use MediaWiki\Config\ConfigException;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -20,7 +23,8 @@ use Wikimedia\ParamValidator\ParamValidator;
  *   - `Accept` includes `application/trig` → the Subject's TriG RDF export.
  *   - else `Accept` includes `text/turtle` → the Subject's Turtle RDF export (TriG wins a tie, matching
  *     {@see RdfFormatNegotiation}).
- *   - else (a browser's `text/html`, `*&#47;*`, an absent or unrecognized `Accept`) → the hosting page.
+ *   - else (a browser's `text/html`, `*&#47;*`, an absent or unrecognized `Accept`) → the hosting page, or
+ *     its Data tab row when `$wgNeoWikiSubjectDereferenceTarget` is `data-tab`.
  *
  * The RDF branches target the native projection: selecting an ontology target or a specific
  * serialization stays on the per-Subject RDF endpoint, keeping this concept-URI surface Accept-only.
@@ -92,7 +96,30 @@ class ResolveSubjectIriApi extends SimpleHandler {
 			return $this->noDataResponse( $subjectId );
 		}
 
-		return $this->getResponseFactory()->createSeeOther( $title->getCanonicalURL() );
+		return $this->getResponseFactory()->createSeeOther( $this->hostingPageUrl( $title, $subjectId ) );
+	}
+
+	private function hostingPageUrl( Title $title, string $subjectId ): string {
+		if ( $this->dataTabDereference() ) {
+			// The Data tab reads this fragment on mount to expand, scroll to, and highlight the row. The
+			// fragment is the bare Subject id (like Wikibase's `#P123`), not the row's internal DOM id.
+			return $title->getCanonicalURL( [ 'action' => SubjectsAction::ACTION_NAME ] ) . '#' . $subjectId;
+		}
+
+		return $title->getCanonicalURL();
+	}
+
+	private function dataTabDereference(): bool {
+		$value = MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiSubjectDereferenceTarget' );
+
+		// An unrecognized value is surfaced as a configuration error rather than silently treated as 'page'.
+		return match ( $value ) {
+			'data-tab' => true,
+			'page' => false,
+			default => throw new ConfigException(
+				'Unrecognized $wgNeoWikiSubjectDereferenceTarget value: ' . var_export( $value, true )
+			),
+		};
 	}
 
 	private function noDataResponse( string $subjectId ): Response {

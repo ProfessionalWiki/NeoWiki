@@ -18,6 +18,7 @@ For an end-to-end example comparing the native and ontology-mapped output, see t
 | Setting | Default | Purpose |
 |---|---|---|
 | `$wgNeoWikiRdfBaseUri` | the wiki's canonical URL (`$wgCanonicalServer`) | Base URI under which all NeoWiki IRIs are minted. |
+| `$wgNeoWikiSubjectDereferenceTarget` | `page` | Where a browser dereferencing a Subject IRI lands: the hosting `page`, or its `data-tab` row. |
 
 ## IRI scheme
 
@@ -105,6 +106,9 @@ content-negotiates it and answers `303 See Other` with an absolute `Location`:
 
 TriG wins when both RDF types are acceptable; the RDF redirects use the native projection. A Subject that is absent or
 on a page the caller may not read returns one indistinguishable `404`; a malformed id `400`.
+
+The HTML target is the Subject's hosting page by default, or that page's Data tab (`?action=subjects`) opened on the
+Subject's row (`#{subjectId}`) when `$wgNeoWikiSubjectDereferenceTarget` is `data-tab`.
 
 The negotiator is always reachable at the REST path, which needs no server configuration:
 
