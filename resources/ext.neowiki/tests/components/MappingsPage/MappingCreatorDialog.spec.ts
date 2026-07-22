@@ -37,7 +37,7 @@ async function enterNameAndSave( wrapper: VueWrapper, name: string ): Promise<vo
 
 // Uses the real SummaryAction so pressing Enter exercises its exposed submit
 // (which saves with whatever summary is currently entered).
-function mountDialogWithRealEditSummary(): VueWrapper {
+function mountDialogWithRealSummaryAction(): VueWrapper {
 	return mount( MappingCreatorDialog, {
 		props: { open: true },
 		global: {
@@ -95,7 +95,7 @@ describe( 'MappingCreatorDialog', () => {
 
 	it( 'submits when Enter is pressed in the name field', async () => {
 		createMock.mockResolvedValue( {} );
-		const wrapper = mountDialogWithRealEditSummary();
+		const wrapper = mountDialogWithRealSummaryAction();
 
 		await wrapper.find( 'input' ).setValue( 'EDM' );
 		await wrapper.find( 'input' ).trigger( 'keyup.enter' );
@@ -110,7 +110,7 @@ describe( 'MappingCreatorDialog', () => {
 		createMock.mockReturnValue( new Promise( ( resolve ) => {
 			resolveCreate = resolve;
 		} ) );
-		const wrapper = mountDialogWithRealEditSummary();
+		const wrapper = mountDialogWithRealSummaryAction();
 
 		await wrapper.find( 'input' ).setValue( 'EDM' );
 		await wrapper.find( 'input' ).trigger( 'keyup.enter' );
