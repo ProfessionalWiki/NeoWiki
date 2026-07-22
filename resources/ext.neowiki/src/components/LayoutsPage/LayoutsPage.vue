@@ -89,6 +89,7 @@
 			:open="isDeleteConfirmOpen"
 			:page-title="`Layout:${ deletingLayoutName }`"
 			:display-name="deletingLayoutName"
+			:type-label="$i18n( 'neowiki-layout-noun' ).text()"
 			@update:open="isDeleteConfirmOpen = $event"
 			@deleted="fetchLayouts( lastOffset, pageSize )"
 		/>

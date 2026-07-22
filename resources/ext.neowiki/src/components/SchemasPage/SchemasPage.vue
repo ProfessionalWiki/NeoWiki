@@ -84,6 +84,7 @@
 			:open="isDeleteConfirmOpen"
 			:page-title="`Schema:${ deletingSchemaName }`"
 			:display-name="deletingSchemaName"
+			:type-label="$i18n( 'neowiki-schema-noun' ).text()"
 			@update:open="isDeleteConfirmOpen = $event"
 			@deleted="fetchSchemas( lastOffset, pageSize )"
 		/>

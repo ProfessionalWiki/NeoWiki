@@ -134,5 +134,6 @@ describe( 'LayoutsPage', () => {
 		expect( dialog.props( 'open' ) ).toBe( true );
 		expect( dialog.props( 'pageTitle' ) ).toBe( 'Layout:CompanyOverview' );
 		expect( dialog.props( 'displayName' ) ).toBe( 'CompanyOverview' );
+		expect( dialog.props( 'typeLabel' ) ).toBe( 'neowiki-layout-noun' );
 	} );
 } );

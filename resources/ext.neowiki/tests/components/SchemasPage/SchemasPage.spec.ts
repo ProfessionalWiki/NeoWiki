@@ -243,5 +243,6 @@ describe( 'SchemasPage', () => {
 		expect( dialog.props( 'open' ) ).toBe( true );
 		expect( dialog.props( 'pageTitle' ) ).toBe( 'Schema:Person' );
 		expect( dialog.props( 'displayName' ) ).toBe( 'Person' );
+		expect( dialog.props( 'typeLabel' ) ).toBe( 'neowiki-schema-noun' );
 	} );
 } );

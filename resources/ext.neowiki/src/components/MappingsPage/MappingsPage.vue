@@ -82,6 +82,7 @@
 			:open="isDeleteConfirmOpen"
 			:page-title="`Mapping:${ deletingMappingName }`"
 			:display-name="deletingMappingName"
+			:type-label="$i18n( 'neowiki-mapping-noun' ).text()"
 			@update:open="isDeleteConfirmOpen = $event"
 			@deleted="fetchMappings( lastOffset, pageSize )"
 		/>

@@ -6,7 +6,7 @@
 		@update:open="onUpdateOpen"
 	>
 		<I18nSlot message-key="neowiki-delete-confirm-message">
-			<strong>{{ props.displayName }}</strong>
+			{{ props.typeLabel }} <strong>{{ props.displayName }}</strong>
 		</I18nSlot>
 
 		<template #footer>
@@ -36,6 +36,9 @@ const props = defineProps<{
 	pageTitle: string;
 	// The bare name shown in the confirmation message and notifications.
 	displayName: string;
+	// The lowercase entity noun shown before the name, e.g. `schema`, so the message reads
+	// "The schema Person will be deleted" rather than exposing that it is a wiki page.
+	typeLabel: string;
 }>();
 
 const emit = defineEmits<{

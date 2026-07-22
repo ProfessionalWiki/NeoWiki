@@ -254,6 +254,7 @@ describe( 'MappingsPage', () => {
 		expect( dialog.props( 'open' ) ).toBe( true );
 		expect( dialog.props( 'pageTitle' ) ).toBe( 'Mapping:EDM' );
 		expect( dialog.props( 'displayName' ) ).toBe( 'EDM' );
+		expect( dialog.props( 'typeLabel' ) ).toBe( 'neowiki-mapping-noun' );
 	} );
 
 	it( 'navigates to the raw-JSON edit view when the edit button is clicked', async () => {
