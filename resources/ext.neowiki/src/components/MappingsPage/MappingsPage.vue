@@ -78,38 +78,25 @@
 			@created="onMappingCreated"
 		/>
 
-		<CdxDialog
+		<DeletePageDialog
 			:open="isDeleteConfirmOpen"
-			:title="$i18n( 'neowiki-mapping-delete-confirm-title' ).text()"
-			:use-close-button="true"
+			:page-title="`Mapping:${ deletingMappingName }`"
+			:display-name="deletingMappingName"
 			@update:open="isDeleteConfirmOpen = $event"
-		>
-			<I18nSlot message-key="neowiki-mapping-delete-confirm-message">
-				<strong>{{ deletingMappingName }}</strong>
-			</I18nSlot>
-
-			<template #footer>
-				<SummaryAction
-					help-text=""
-					:save-button-label="$i18n( 'neowiki-mapping-delete-confirm-delete' ).text()"
-					:save-disabled="false"
-					@save="executeDelete"
-				/>
-			</template>
-		</CdxDialog>
+			@deleted="fetchMappings( lastOffset, pageSize )"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { CdxButton, CdxDialog, CdxIcon, CdxTable } from '@wikimedia/codex';
+import { CdxButton, CdxIcon, CdxTable } from '@wikimedia/codex';
 import type { TableColumn } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useMappingPermissions } from '@/composables/useMappingPermissions.ts';
 import MappingCreatorDialog from './MappingCreatorDialog.vue';
-import SummaryAction from '@/components/common/SummaryAction.vue';
-import I18nSlot from '@/components/common/I18nSlot.vue';
+import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 
 const paginationSizeOptions: { value: number }[] = [
 	{ value: 10 },
@@ -214,33 +201,6 @@ function editMapping( name: string ): void {
 function confirmDelete( mappingName: string ): void {
 	deletingMappingName.value = mappingName;
 	isDeleteConfirmOpen.value = true;
-}
-
-async function executeDelete( summary: string ): Promise<void> {
-	isDeleteConfirmOpen.value = false;
-	const name = deletingMappingName.value;
-	const reason = summary || mw.msg( 'neowiki-mapping-delete-summary-default' );
-
-	try {
-		const api = new mw.Api();
-		const token = await api.getEditToken();
-		await api.post( {
-			action: 'delete',
-			title: `Mapping:${ name }`,
-			reason: reason,
-			token: token
-		} );
-		mw.notify( mw.msg( 'neowiki-mapping-delete-success', name ), { type: 'success' } );
-		await fetchMappings( lastOffset.value, pageSize.value );
-	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{
-				title: mw.msg( 'neowiki-mapping-delete-error', name ),
-				type: 'error'
-			}
-		);
-	}
 }
 
 onMounted( async () => {

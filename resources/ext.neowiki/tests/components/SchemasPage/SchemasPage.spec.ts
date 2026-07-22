@@ -4,8 +4,9 @@ import { ref } from 'vue';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
-import { CdxButton, CdxDialog } from '@wikimedia/codex';
+import { CdxButton } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 
@@ -92,8 +93,7 @@ function mountComponent( summaries: unknown[] = [] ): VueWrapper {
 			stubs: {
 				SchemaCreatorDialog: SchemaCreatorDialogStub,
 				SchemaEditorDialog: SchemaEditorDialogStub,
-				SummaryAction: true,
-				I18nSlot: true,
+				DeletePageDialog: true,
 				CdxIcon: true,
 			},
 		},
@@ -230,7 +230,7 @@ describe( 'SchemasPage', () => {
 		expect( wrapper.findComponent( SchemaEditorDialog ).exists() ).toBe( false );
 	} );
 
-	it( 'opens delete confirmation when delete button is clicked', async () => {
+	it( 'opens the delete confirmation for the clicked schema', async () => {
 		canEditSchemaRef.value = true;
 		const wrapper = mountComponent( [
 			{ name: 'Person', description: '', propertyCount: 3 },
@@ -239,7 +239,9 @@ describe( 'SchemasPage', () => {
 
 		await findDeleteButtons( wrapper )[ 0 ].trigger( 'click' );
 
-		const dialog = wrapper.findComponent( CdxDialog );
+		const dialog = wrapper.findComponent( DeletePageDialog );
 		expect( dialog.props( 'open' ) ).toBe( true );
+		expect( dialog.props( 'pageTitle' ) ).toBe( 'Schema:Person' );
+		expect( dialog.props( 'displayName' ) ).toBe( 'Person' );
 	} );
 } );

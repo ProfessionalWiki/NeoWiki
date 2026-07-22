@@ -86,12 +86,6 @@
 	"neowiki-schema-sidebar-all-schemas": "Label for the link in the NeoWiki section of the sidebar on Schema pages that navigates to [[Special:Schemas]].",
 
 	"neowiki-schema-delete": "Aria label for the delete button on a Schema row in the schemas list.",
-	"neowiki-schema-delete-confirm-title": "Title of the confirmation dialog shown when deleting a schema.",
-	"neowiki-schema-delete-confirm-message": "Message in the delete confirmation dialog. $1 is the schema name.",
-	"neowiki-schema-delete-confirm-delete": "Label for the delete button in the schema deletion dialog.",
-	"neowiki-schema-delete-summary-default": "Default deletion reason used when deleting a schema via the UI.",
-	"neowiki-schema-delete-success": "Success notification shown after deleting a schema. $1 is the schema name.",
-	"neowiki-schema-delete-error": "Error notification title shown when deleting a schema fails. $1 is the schema name.",
 
 	"neowiki-close-confirmation-title": "Title of the confirmation dialog shown when closing a dialog with unsaved changes.",
 	"neowiki-close-confirmation-message": "Message in the confirmation dialog asking the user to confirm discarding unsaved changes.",
@@ -176,12 +170,6 @@
 	"neowiki-mapping-creator-summary-default": "Default edit summary used when creating a mapping via the UI.",
 	"neowiki-edit-mapping": "Aria label for the edit button on a Mapping row in the mappings list.",
 	"neowiki-mapping-delete": "Aria label for the delete button on a Mapping row in the mappings list.",
-	"neowiki-mapping-delete-confirm-title": "Title of the confirmation dialog shown when deleting a mapping.",
-	"neowiki-mapping-delete-confirm-message": "Message in the delete confirmation dialog. $1 is the mapping name.",
-	"neowiki-mapping-delete-confirm-delete": "Label for the delete button in the mapping deletion dialog.",
-	"neowiki-mapping-delete-summary-default": "Default deletion reason used when deleting a mapping via the UI.",
-	"neowiki-mapping-delete-success": "Success notification shown after deleting a mapping. $1 is the mapping name.",
-	"neowiki-mapping-delete-error": "Error notification title shown when deleting a mapping fails. $1 is the mapping name.",
 
 	"neowiki-layout-creator-title": "Title of the dialog for creating a new layout.",
 	"neowiki-layout-creator-button": "Label for the button that opens the layout creation dialog on [[Special:Layouts]].",
@@ -199,12 +187,6 @@
 	"neowiki-layout-creator-summary-default": "Default edit summary used when creating a layout via the UI.",
 
 	"neowiki-layout-delete": "Aria label for the delete button on a Layout row in the layouts list.",
-	"neowiki-layout-delete-confirm-title": "Title of the confirmation dialog shown when deleting a layout.",
-	"neowiki-layout-delete-confirm-message": "Message in the delete confirmation dialog. $1 is the layout name.",
-	"neowiki-layout-delete-confirm-delete": "Label for the delete button in the layout deletion dialog.",
-	"neowiki-layout-delete-summary-default": "Default deletion reason used when deleting a layout via the UI.",
-	"neowiki-layout-delete-success": "Success notification shown after deleting a layout. $1 is the layout name.",
-	"neowiki-layout-delete-error": "Error notification title shown when deleting a layout fails. $1 is the layout name.",
 	"neowiki-property-type-select": "Label for the select/dropdown property type shown in the property type selector.",
 	"neowiki-property-editor-min-exceeds-max": "Error shown in the schema editor when the minimum value exceeds the maximum value for a number property.",
 	"neowiki-property-editor-options": "Label for the options field in the select property type editor, where schema creators define the allowed values.",
