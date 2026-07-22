@@ -658,6 +658,11 @@ function openExport( value: string | number | null ): void {
 }
 
 function toggleExpanded( id: string ): void {
+	// The arrival highlight is a one-time "you landed here" cue from a deep link. The first manual
+	// expand/collapse is the user taking over, so dismiss it: otherwise it would linger on the
+	// originally linked row while the address-bar fragment (rewritten below) moves to a different one,
+	// leaving the visible highlight and a copied URL disagreeing. Mirrors focusedId, likewise transient.
+	highlightedId.value = null;
 	const next = new Set( expandedIds.value );
 	if ( next.has( id ) ) {
 		next.delete( id );
@@ -870,6 +875,10 @@ async function executeDelete( comment: string ): Promise<void> {
 function applyHash(): void {
 	const id = subjectIdFromHash( window.location.hash.slice( 1 ) );
 	if ( id === null ) {
+		// The fragment no longer names a Subject (navigated to a foreign anchor, or cleared), so no row
+		// is the deep-link target any more: drop any stale highlight rather than leave it on a row the
+		// address bar no longer points at.
+		highlightedId.value = null;
 		return;
 	}
 	highlightedId.value = id;
