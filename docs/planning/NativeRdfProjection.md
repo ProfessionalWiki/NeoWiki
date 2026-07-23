@@ -236,11 +236,9 @@ DROP SILENT GRAPH <neo-graph:42>
 - **Ontology mapping.** The [Global Properties](GlobalProperties.md) document concluded that ontology alignment
   (e.g., "Person.Name maps to `foaf:name`") should happen via a separate ontology mapping, not by changing the data
   model. That mapping is designed in [Ontology Mapping](OntologyMapping.md). The projection described here emits
-  NeoWiki-native predicates; an ontology mapping instead projects the data into standard-ontology terms. Note that
-  ontology mappings need to be quite expressive: CIDOC-CRM alignment isn't just predicate renaming — it requires
-  generating intermediate nodes that don't exist in NeoWiki's data. For example, a simple NeoWiki "Creator" relation
-  from an Object to a Person would need to expand to `E22_Human-Made_Object → P108i_was_produced_by →
-  E12_Production → P14_carried_out_by → E39_Actor` in CIDOC-CRM, creating the Production event node in RDF.
+  NeoWiki-native predicates; an ontology mapping instead projects the data into standard-ontology terms. Ontology
+  mappings need to be quite expressive: CIDOC-CRM alignment isn't just predicate renaming — it requires generating
+  intermediate nodes that don't exist in NeoWiki's data (worked example under Q4 below).
   At the ECHOLOT meeting in Bilbao (March 2026), the consortium agreed that wiki admins should be able to define
   mappings between ontologies they care about and the NeoWiki Schemas of their wiki. This confirms the
   separate-mapping approach and means several open questions below (Q1, Q2, Q4) are less critical for the native
