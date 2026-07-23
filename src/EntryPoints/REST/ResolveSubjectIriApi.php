@@ -109,7 +109,9 @@ class ResolveSubjectIriApi extends SimpleHandler {
 	}
 
 	private function dataTabDereference(): bool {
-		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiDereferenceSubjectsToDataTab' ) === true;
+		// The effective flag combines the MediaWiki:NeoWiki page with $wgNeoWikiDereferenceSubjectsToDataTab
+		// (the page wins when it sets a valid boolean; an invalid page value has already fallen back).
+		return NeoWikiExtension::getInstance()->dereferenceSubjectsToDataTab();
 	}
 
 	private function noDataResponse( string $subjectId ): Response {

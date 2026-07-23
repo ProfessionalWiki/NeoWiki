@@ -16,6 +16,8 @@ use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\Response;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Session\CsrfTokenSet;
+use MediaWiki\Title\Title;
+use MessageLocalizer;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
@@ -29,6 +31,10 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectPr
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
+use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigSchema;
+use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigValidator;
+use ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigLookup;
+use ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigSource;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
@@ -109,6 +115,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
@@ -139,6 +146,7 @@ use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
+use ProfessionalWiki\NeoWiki\Presentation\ConfigDocumentationBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\FrontendModuleLoader;
 use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
@@ -152,6 +160,11 @@ class NeoWikiExtension {
 	public const int NS_SCHEMA = 7474;
 	public const int NS_LAYOUT = 7476;
 	public const int NS_MAPPING = 7478;
+
+	/**
+	 * The page in the MediaWiki namespace holding the on-wiki JSON configuration (MediaWiki:NeoWiki).
+	 */
+	public const string CONFIG_PAGE_TITLE = 'NeoWiki';
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
@@ -167,6 +180,7 @@ class NeoWikiExtension {
 	private ?array $sparqlPlugins = null;
 	private ClientInterface $neo4jClient;
 	private ClientInterface $readOnlyNeo4jClient;
+	private ?WikiConfigSource $wikiConfigSource = null;
 	private static ?self $instance = null;
 
 	public static function getInstance(): self {
@@ -740,10 +754,73 @@ class NeoWikiExtension {
 	}
 
 	public function shouldAutoRenderMainSubject(): bool {
-		// Behavioral config read live from MainConfig (like NeoWikiEnforceValidation),
-		// so the admin's LocalSettings value applies per request and tests can override
-		// it via overrideConfigValue() without rebuilding the getInstance() singleton.
-		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiAutoRenderMainSubject' ) === true;
+		return $this->getWikiConfigLookup()->getEffectiveValue( 'autoRenderMainSubject' ) === true;
+	}
+
+	/**
+	 * Whether a browser dereferencing a Subject concept URI is sent to the hosting page's Data tab,
+	 * combining the on-wiki configuration page with $wgNeoWikiDereferenceSubjectsToDataTab (the page wins
+	 * when it sets a valid boolean).
+	 */
+	public function dereferenceSubjectsToDataTab(): bool {
+		return $this->getWikiConfigLookup()->getEffectiveValue( 'dereferenceSubjectsToDataTab' ) === true;
+	}
+
+	/**
+	 * The combining lookup for the exposed settings. Built fresh each call so the PHP fallback and the
+	 * kill switch are read live from MainConfig (overridable in tests without a singleton rebuild), while
+	 * the page read is memoized on the shared source, keeping it to at most one read per request.
+	 */
+	public function getWikiConfigLookup(): WikiConfigLookup {
+		return new WikiConfigLookup(
+			$this->getConfigSchema(),
+			$this->getWikiConfigSource(),
+			MediaWikiServices::getInstance()->getMainConfig(),
+			$this->isInWikiConfigEnabled(),
+			LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
+	private function getWikiConfigSource(): WikiConfigSource {
+		// Cached so MediaWiki:NeoWiki is read at most once per request. Never read during extension setup:
+		// this is only reached when a request resolves an exposed setting.
+		$this->wikiConfigSource ??= new MediaWikiWikiConfigSource(
+			$this->getPageContentFetcher(),
+			$this->getRequestAuthority(),
+			self::CONFIG_PAGE_TITLE,
+			LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+
+		return $this->wikiConfigSource;
+	}
+
+	public function getConfigSchema(): ConfigSchema {
+		return new ConfigSchema();
+	}
+
+	public function getConfigValidator(): ConfigValidator {
+		return new ConfigValidator( $this->getConfigSchema() );
+	}
+
+	public function newConfigDocumentationBuilder( MessageLocalizer $messageLocalizer ): ConfigDocumentationBuilder {
+		return new ConfigDocumentationBuilder( $this->getConfigSchema(), $messageLocalizer );
+	}
+
+	/**
+	 * Whether the on-wiki configuration page may be read and written. Read live from MainConfig so the
+	 * kill switch applies per request and tests can toggle it without rebuilding the singleton.
+	 */
+	public function isInWikiConfigEnabled(): bool {
+		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiEnableInWikiConfig' ) === true;
+	}
+
+	/**
+	 * Whether the given title is the on-wiki configuration page and reading it is enabled.
+	 */
+	public function isConfigPage( Title $title ): bool {
+		return $this->isInWikiConfigEnabled()
+			&& $title->getNamespace() === NS_MEDIAWIKI
+			&& $title->getText() === self::CONFIG_PAGE_TITLE;
 	}
 
 	public function getPageContentFetcher(): PageContentFetcher {

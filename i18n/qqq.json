@@ -272,5 +272,15 @@
 	"neowiki-managesubjects-export-choose-format": "Announced to screen-reader users when the data export menu returns to its list of export formats (JSON, Turtle, TriG).",
 	"neowiki-managesubjects-export-choose-projection": "Announced to screen-reader users when the data export menu shows its list of projections after a format is chosen. A projection is the ontology/vocabulary the data is exported as, e.g. EDM or CIDOC-CRM.",
 	"neowiki-managesubjects-export-native": "Display name of the native (NeoWiki-vocabulary) RDF projection, shown in the projection list of the data export menu.",
-	"action-subjects": "Description of the Subject management action used by MediaWiki when generating action descriptions."
+	"action-subjects": "Description of the Subject management action used by MediaWiki when generating action descriptions.",
+	"neowiki-config-invalid": "Heading shown above the list of errors when an edit to the MediaWiki:NeoWiki JSON configuration page is rejected.",
+	"neowiki-config-error-not-object": "Error shown when the MediaWiki:NeoWiki configuration is not a JSON object.",
+	"neowiki-config-error-unknown-key": "Error shown when the configuration contains a setting that is not exposed on-wiki. $1 is the unknown key.",
+	"neowiki-config-error-invalid-boolean": "Error shown when a setting that must be a boolean is not. $1 is the setting key. The words \"true\" and \"false\" are literal JSON values and must not be translated.",
+	"neowiki-config-type-boolean": "Accepted-value description in the configuration reference table for a boolean setting. Contains HTML: the literal JSON values \"true\" and \"false\", each wrapped in a <code> tag, must not be translated.",
+	"neowiki-config-docs-heading": "Heading of the configuration reference shown on the MediaWiki:NeoWiki configuration page. Also the link target of {{msg-neowiki|neowiki-config-docs-pointer}}.",
+	"neowiki-config-docs-pointer": "One-line pointer shown above the configuration editor and view. $1 is the anchor of the on-page reference, $2 is the URL of the external documentation.",
+	"neowiki-config-docs-column-key": "Column header in the configuration reference table for the setting key written on the page.",
+	"neowiki-config-docs-column-value": "Column header in the configuration reference table for the value the setting accepts.",
+	"neowiki-config-docs-column-setting": "Column header in the configuration reference table for the LocalSettings.php setting that the page key overrides."
 }

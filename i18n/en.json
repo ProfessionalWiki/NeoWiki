@@ -341,5 +341,15 @@
 	"neowiki-managesubjects-export-choose-format": "Choose a format",
 	"neowiki-managesubjects-export-choose-projection": "Choose a projection",
 	"neowiki-managesubjects-export-native": "Native",
-	"action-subjects": "manage subjects on this page"
+	"action-subjects": "manage subjects on this page",
+	"neowiki-config-invalid": "The NeoWiki configuration was not saved because it is invalid:",
+	"neowiki-config-error-not-object": "The configuration must be a JSON object.",
+	"neowiki-config-error-unknown-key": "Unknown configuration setting \"$1\".",
+	"neowiki-config-error-invalid-boolean": "\"$1\" must be true or false.",
+	"neowiki-config-type-boolean": "<code>true</code> or <code>false</code>",
+	"neowiki-config-docs-heading": "Configuration reference",
+	"neowiki-config-docs-pointer": "This page configures NeoWiki as JSON. See the [[#$1|configuration reference]] below and the [$2 configuration documentation].",
+	"neowiki-config-docs-column-key": "Setting",
+	"neowiki-config-docs-column-value": "Accepted value",
+	"neowiki-config-docs-column-setting": "LocalSettings.php setting"
 }

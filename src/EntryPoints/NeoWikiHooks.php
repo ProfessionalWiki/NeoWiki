@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
@@ -17,7 +18,9 @@ use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\Title\ForeignTitle;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
+use MessageLocalizer;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigExample;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -396,6 +399,107 @@ class NeoWikiHooks {
 				]
 			)
 		);
+	}
+
+	/**
+	 * Forces the JSON content model on the on-wiki configuration page, so MediaWiki core requires the
+	 * editinterface and editsitejson rights to edit it and enforces JSON syntax on save.
+	 */
+	public static function onContentHandlerDefaultModelFor( Title $title, ?string &$model ): void {
+		if ( NeoWikiExtension::getInstance()->isConfigPage( $title ) ) {
+			$model = CONTENT_MODEL_JSON;
+		}
+	}
+
+	/**
+	 * Validates the on-wiki configuration page on save, blocking the edit with precise per-field errors
+	 * when the configuration is invalid. A JSON syntax error is left to the JSON content model itself.
+	 */
+	public static function onEditFilter( EditPage $editor, string $text, string $section, string &$error, string $summary ): void {
+		$extension = NeoWikiExtension::getInstance();
+
+		if ( !$extension->isConfigPage( $editor->getTitle() ) ) {
+			return;
+		}
+
+		$errors = $extension->getConfigValidator()->validate( $text );
+
+		if ( $errors !== [] ) {
+			$error = self::formatConfigErrors( $errors, $editor->getContext() );
+		}
+	}
+
+	/**
+	 * @param array[] $errors A list of message specs, each [ messageKey, ...params ].
+	 */
+	private static function formatConfigErrors( array $errors, MessageLocalizer $localizer ): string {
+		$items = '';
+
+		foreach ( $errors as $errorSpec ) {
+			$items .= Html::rawElement( 'li', [], $localizer->msg( ...$errorSpec )->escaped() );
+		}
+
+		return Html::errorBox(
+			$localizer->msg( 'neowiki-config-invalid' )->escaped() . Html::rawElement( 'ul', [], $items )
+		);
+	}
+
+	/**
+	 * Preloads a small valid example when the on-wiki configuration page is created, so an administrator
+	 * starts from a working configuration rather than a blank page.
+	 */
+	public static function onEditFormPreloadText( ?string &$text, Title $title ): void {
+		if ( NeoWikiExtension::getInstance()->isConfigPage( $title ) ) {
+			$text = ConfigExample::JSON;
+		}
+	}
+
+	/**
+	 * On the on-wiki configuration page, suppresses the default MediaWiki-namespace intro and frames the
+	 * JSON editor with a pointer to the documentation and the schema-generated configuration reference.
+	 */
+	public static function onAlternateEdit( EditPage $editPage ): void {
+		$extension = NeoWikiExtension::getInstance();
+
+		if ( !$extension->isConfigPage( $editPage->getTitle() ) ) {
+			return;
+		}
+
+		$editPage->suppressIntro = true;
+
+		$builder = $extension->newConfigDocumentationBuilder( $editPage->getContext() );
+		$editPage->editFormTextTop = $builder->buildPointer();
+		$editPage->editFormTextBottom = $builder->buildReference();
+	}
+
+	/**
+	 * On viewing the on-wiki configuration page, trims the rendered page to the core JSON table and frames
+	 * it with the documentation pointer and the schema-generated configuration reference.
+	 */
+	public static function onConfigPageBeforePageDisplay( OutputPage $out, Skin $skin ): void {
+		$title = $out->getTitle();
+
+		if ( $title === null || !NeoWikiExtension::getInstance()->isConfigPage( $title ) ) {
+			return;
+		}
+
+		$action = MediaWikiServices::getInstance()->getActionFactory()->getActionName( $out->getContext() );
+
+		if ( $action !== 'view' ) {
+			return;
+		}
+
+		$builder = NeoWikiExtension::getInstance()->newConfigDocumentationBuilder( $out->getContext() );
+		$trimmed = self::trimToJsonTable( $out->getHTML() );
+
+		$out->clearHTML();
+		$out->addHTML( $builder->buildPointer() . $trimmed . $builder->buildReference() );
+	}
+
+	private static function trimToJsonTable( string $html ): string {
+		$position = strpos( $html, '<table class="mw-json"' );
+
+		return $position === false ? $html : substr( $html, $position );
 	}
 
 }

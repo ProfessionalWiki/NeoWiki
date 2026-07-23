@@ -47,11 +47,19 @@
 
 		"CodeEditorGetPageLanguage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onCodeEditorGetPageLanguage",
 
-		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",
+		"BeforePageDisplay": [
+			"ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",
+			"ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onConfigPageBeforePageDisplay"
+		],
 
 		"SpecialPage_initList": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSpecialPageInitList",
 
 		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn",
+
+		"ContentHandlerDefaultModelFor": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentHandlerDefaultModelFor",
+		"EditFilter": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFilter",
+		"AlternateEdit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onAlternateEdit",
+		"EditFormPreloadText": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFormPreloadText",
 
 		"SidebarBeforeOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSidebarBeforeOutput",
 		"SkinTemplateNavigation::Universal": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSkinTemplateNavigationUniversal",
@@ -165,6 +173,10 @@
 		"NeoWikiEnableDevelopmentUI": {
 			"description": "Whether development UIs should be enabled",
 			"value": false
+		},
+		"NeoWikiEnableInWikiConfig": {
+			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiDereferenceSubjectsToDataTab and NeoWikiAutoRenderMainSubject; its values take precedence over LocalSettings.php.",
+			"value": true
 		},
 		"NeoWikiEnforceValidation": {
 			"description": "Whether write endpoints reject edits that introduce new constraint violations. When false, violations are surfaced in responses but writes always persist.",
