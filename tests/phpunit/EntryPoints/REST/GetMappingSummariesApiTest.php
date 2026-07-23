@@ -154,4 +154,67 @@ JSON
 		$this->assertNull( $data['nextCursor'] );
 	}
 
+	public function testUnloadableMappingDoesNotConsumePageSpace(): void {
+		// A readable Mapping whose stored JSON cannot be parsed into a Mapping (here it is missing the
+		// required "schemas" key) is skipped by the summary loader, and a readable Mapping after it
+		// fills the freed slot, so the page still returns a full $limit items and reports no more to
+		// come. Such a page is reachable in production through XML import, which bypasses
+		// MappingContentHandler::validateSave (#1022).
+		$this->createMappingsWithUnloadableMiddle();
+
+		$page = $this->requestMappings( [ 'limit' => '2' ] );
+
+		$this->assertSame( [ 'Alpha', 'Gamma' ], array_column( $page['mappings'], 'name' ) );
+		$this->assertNull( $page['nextCursor'] );
+	}
+
+	public function testWalkingPastAnUnloadableMappingNeverYieldsAnEmptyPage(): void {
+		// Walked one item at a time, the unloadable Mapping is skipped inside the page that reaches it
+		// rather than served as an empty page with a follow-up cursor: it never appears, and no page in
+		// the walk comes back empty while items still remain.
+		$this->createMappingsWithUnloadableMiddle();
+
+		$firstPage = $this->requestMappings( [ 'limit' => '1' ] );
+
+		$this->assertSame( [ 'Alpha' ], array_column( $firstPage['mappings'], 'name' ) );
+		$this->assertIsString( $firstPage['nextCursor'] );
+
+		$secondPage = $this->requestMappings( [ 'limit' => '1', 'cursor' => $firstPage['nextCursor'] ] );
+
+		$this->assertSame( [ 'Gamma' ], array_column( $secondPage['mappings'], 'name' ) );
+		$this->assertNull( $secondPage['nextCursor'] );
+	}
+
+	/**
+	 * @return array{mappings: list<array{name: string, schemas: list<string>}>, nextCursor: ?string}
+	 */
+	private function requestMappings( array $queryParams ): array {
+		return json_decode(
+			$this->executeHandler(
+				new GetMappingSummariesApi(),
+				new RequestData( [ 'method' => 'GET', 'queryParams' => $queryParams ] )
+			)->getBody()->getContents(),
+			true
+		);
+	}
+
+	/**
+	 * Creates three Mappings in page-ID order — Alpha, an unloadable Beta, then Gamma — so a page
+	 * request has to skip a readable-but-unparseable Mapping sitting between two good ones. Beta's dump
+	 * is derived from Alpha (a real list member) so no extra page pollutes the listing, and its content
+	 * is broken by dropping the required "schemas" key. It goes in through XML import because
+	 * MappingContentHandler::validateSave would reject such content on the edit path (#1022).
+	 */
+	private function createMappingsWithUnloadableMiddle(): void {
+		$this->markPageTableAsUsed();
+		$this->createMapping( 'Alpha', '{"version":1,"schemas":{}}' );
+
+		$xml = $this->exportPageToXml( 'Mapping:Alpha' );
+		$xml = str_replace( 'Mapping:Alpha', 'Mapping:Beta', $xml );
+		$xml = str_replace( '"schemas"', '"schemaX"', $xml );
+		$this->importXml( $xml );
+
+		$this->createMapping( 'Gamma', '{"version":1,"schemas":{}}' );
+	}
+
 }
