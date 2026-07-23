@@ -7,6 +7,8 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
+use ProfessionalWiki\NeoWiki\Domain\Validation\SeverityNormalizer;
 use Throwable;
 
 abstract class PropertyDefinition {
@@ -26,6 +28,10 @@ abstract class PropertyDefinition {
 		return $this->core->required;
 	}
 
+	public function severityOf( string $constraint ): Severity {
+		return $this->core->constraintSeverities[$constraint] ?? Severity::Warning;
+	}
+
 	public function getDefault(): mixed {
 		return $this->core->default;
 	}
@@ -39,7 +45,10 @@ abstract class PropertyDefinition {
 	}
 
 	public function toJson(): array {
-		return array_merge( $this->coreToJson(), $this->nonCoreToJson() );
+		return SeverityNormalizer::apply(
+			array_merge( $this->coreToJson(), $this->nonCoreToJson() ),
+			$this->core->constraintSeverities
+		);
 	}
 
 	/**
@@ -74,23 +83,43 @@ abstract class PropertyDefinition {
 			throw new InvalidArgumentException( 'Property definition needs a non-empty type: ' . json_encode( $json ) );
 		}
 
+		[ $values, $severities ] = SeverityNormalizer::extract( $json );
+
+		/** @var string $description */
+		$description = $values['description'] ?? '';
+		/** @var bool $required */
+		$required = $values['required'] ?? false;
+
 		$propertyType = $propertyTypeLookup->getType( $json['type'] );
 
+		// Severity is a Constraint concept. Display Attributes are explicitly not Constraints
+		// (they are overridable per Layout), so a severity on one is meaningless. Drop it:
+		// left in the map it would make toJson re-emit the attribute as an object and break
+		// every consumer that reads it as a scalar.
+		if ( $propertyType !== null ) {
+			foreach ( $propertyType->getDisplayAttributeNames() as $displayAttribute ) {
+				unset( $severities[$displayAttribute] );
+			}
+		}
+
 		$propertyCore = new PropertyCore(
-			description: $json['description'] ?? '',
-			required: $json['required'] ?? false,
-			default: $json['default'] ?? null
+			description: $description,
+			required: $required,
+			default: $values['default'] ?? null,
+			constraintSeverities: $severities,
 		);
 
-		// The extension owning the type is disabled or failed to load. Preserve the
-		// definition instead of dropping it, so the rest of the Schema keeps working
-		// and the property survives a re-save.
+		// The extension owning the type is disabled or failed to load. Preserve the property
+		// (incl. its object-form constraint severities) so the Schema still serves it and a
+		// re-save does not drop it; it never validates, so the severity map is inert here.
+		// It is built from the normalized $values (not raw $json) so toJson re-wraps every
+		// annotated key through the same apply() path as registered types.
 		if ( $propertyType === null ) {
-			return UnregisteredTypeProperty::fromPartialJson( $propertyCore, $json );
+			return UnregisteredTypeProperty::fromPartialJson( $propertyCore, $values );
 		}
 
 		try {
-			return $propertyType->buildPropertyDefinitionFromJson( $propertyCore, $json );
+			return $propertyType->buildPropertyDefinitionFromJson( $propertyCore, $values );
 		} catch ( Throwable $e ) {
 			throw new InvalidArgumentException( 'Invalid property definition: ' . json_encode( $json ), 0, $e );
 		}
