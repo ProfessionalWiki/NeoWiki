@@ -29,6 +29,7 @@ class ViolationSerializerTest extends TestCase {
 				'propertyName' => 'Website',
 				'code' => 'invalid-url',
 				'args' => [ 'bad' ],
+				'severity' => 'warning',
 				'valuePartIndex' => 2,
 			],
 			$serialized

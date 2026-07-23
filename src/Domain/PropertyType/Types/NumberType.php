@@ -43,7 +43,7 @@ class NumberType implements PropertyType {
 
 		if ( !$value instanceof NumberValue ) {
 			if ( $definition->isRequired() ) {
-				return [ new Violation( propertyName: null, code: 'required' ) ];
+				return [ new Violation( propertyName: null, code: 'required', severity: $definition->severityOf( 'required' ) ) ];
 			}
 			return [];
 		}
@@ -55,6 +55,7 @@ class NumberType implements PropertyType {
 				propertyName: null,
 				code: 'min-value',
 				args: [ $definition->getMinimum() ],
+				severity: $definition->severityOf( 'minimum' ),
 			);
 		}
 
@@ -63,6 +64,7 @@ class NumberType implements PropertyType {
 				propertyName: null,
 				code: 'max-value',
 				args: [ $definition->getMaximum() ],
+				severity: $definition->severityOf( 'maximum' ),
 			);
 		}
 

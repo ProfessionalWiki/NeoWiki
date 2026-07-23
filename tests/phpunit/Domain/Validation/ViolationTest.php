@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Validation;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 /**
@@ -66,24 +67,28 @@ class ViolationTest extends TestCase {
 		$this->assertSame( 1, $named->valuePartIndex );
 	}
 
-	public function testSchemaNotFoundIsNotBlocking(): void {
-		$violation = new Violation( propertyName: null, code: 'schema-not-found', args: [ 'Person' ] );
+	public function testErrorSeverityIsBlocking(): void {
+		$violation = new Violation( propertyName: null, code: 'required', severity: Severity::Error );
+
+		$this->assertTrue( $violation->isBlocking() );
+	}
+
+	public function testWarningSeverityIsNotBlocking(): void {
+		$violation = new Violation( propertyName: null, code: 'required', severity: Severity::Warning );
 
 		$this->assertFalse( $violation->isBlocking() );
 	}
 
-	public function testUnregisteredTypeIsNotBlocking(): void {
-		$violation = new Violation( propertyName: new PropertyName( 'Swatch' ), code: 'unregistered-type', args: [ 'color' ] );
+	public function testDefaultSeverityIsWarning(): void {
+		$violation = new Violation( propertyName: null, code: 'required' );
 
-		$this->assertFalse( $violation->isBlocking() );
+		$this->assertSame( Severity::Warning, $violation->severity );
 	}
 
-	public function testOtherCodesAreBlocking(): void {
-		$required = new Violation( propertyName: new PropertyName( 'Status' ), code: 'required' );
-		$invalid = new Violation( propertyName: new PropertyName( 'Website' ), code: 'invalid-url' );
+	public function testWithPropertyNamePreservesSeverity(): void {
+		$original = new Violation( propertyName: null, code: 'max-value', severity: Severity::Error );
 
-		$this->assertTrue( $required->isBlocking() );
-		$this->assertTrue( $invalid->isBlocking() );
+		$this->assertSame( Severity::Error, $original->withPropertyName( new PropertyName( 'Age' ) )->severity );
 	}
 
 }

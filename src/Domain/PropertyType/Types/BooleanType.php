@@ -42,7 +42,7 @@ class BooleanType implements PropertyType {
 		}
 
 		if ( !$value instanceof BooleanValue && $definition->isRequired() ) {
-			return [ new Violation( propertyName: null, code: 'required' ) ];
+			return [ new Violation( propertyName: null, code: 'required', severity: $definition->severityOf( 'required' ) ) ];
 		}
 
 		return [];

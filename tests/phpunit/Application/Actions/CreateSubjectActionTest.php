@@ -25,6 +25,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -482,7 +483,7 @@ class CreateSubjectActionTest extends TestCase {
 			description: '',
 			properties: new PropertyDefinitions( [
 				'Name' => new SelectProperty(
-					core: new PropertyCore( description: '', required: true, default: null ),
+					core: new PropertyCore( description: '', required: true, default: null, constraintSeverities: [ 'required' => Severity::Error ] ),
 					options: [ new SelectOption( id: 'opt_alice', label: 'Alice' ) ],
 					multiple: false,
 				),

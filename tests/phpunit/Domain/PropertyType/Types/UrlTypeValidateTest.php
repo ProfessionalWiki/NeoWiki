@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\UrlType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UrlProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 
@@ -70,6 +71,7 @@ class UrlTypeValidateTest extends TestCase {
 		$this->assertCount( 1, $violations );
 		$this->assertSame( 'invalid-url', $violations[0]->code );
 		$this->assertSame( 0, $violations[0]->valuePartIndex );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
 	public function testEachInvalidPartReturnsIndexedViolation(): void {

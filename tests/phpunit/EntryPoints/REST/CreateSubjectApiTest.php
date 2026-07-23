@@ -267,7 +267,7 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->createSchema(
 			'EnforcementSchema',
-			'{"title":"EnforcementSchema","propertyDefinitions":{"Required":{"type":"text","required":true}}}'
+			'{"title":"EnforcementSchema","propertyDefinitions":{"Required":{"type":"text","required":{"severity":"error"}}}}'
 		);
 
 		$body = $this->validBody();

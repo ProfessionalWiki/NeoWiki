@@ -407,7 +407,7 @@ class SubjectValidatorTest extends TestCase {
 
 		$this->assertCount( 2, $violations );
 		$this->assertSame( 'required', $violations[0]->code );
-		$this->assertTrue( $violations[0]->isBlocking() );
+		$this->assertFalse( $violations[0]->isBlocking() );
 		$this->assertSame( 'unregistered-type', $violations[1]->code );
 	}
 
