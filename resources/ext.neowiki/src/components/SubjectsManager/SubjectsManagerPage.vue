@@ -435,6 +435,7 @@
 
 		<CdxDialog
 			:open="deleteConfirmOpen"
+			class="ext-neowiki-ui"
 			:title="$i18n( 'neowiki-managesubjects-delete-confirm-title' ).text()"
 			:use-close-button="true"
 			@update:open="deleteConfirmOpen = $event"

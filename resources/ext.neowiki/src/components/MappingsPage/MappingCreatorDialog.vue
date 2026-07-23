@@ -2,7 +2,7 @@
 	<CdxDialog
 		:open="props.open"
 		:use-close-button="true"
-		class="ext-neowiki-mapping-creator-dialog"
+		class="ext-neowiki-ui ext-neowiki-mapping-creator-dialog"
 		:title="$i18n( 'neowiki-mapping-creator-title' ).text()"
 		@update:open="onDialogUpdateOpen"
 	>

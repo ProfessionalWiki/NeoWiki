@@ -203,7 +203,10 @@ useSortable( listRef, {
 			cursor: grab;
 
 			.ext-neowiki-display-rule-list__item:hover &,
-			.ext-neowiki-display-rule-list__item:focus-within & {
+			.ext-neowiki-display-rule-list__item:has( :focus-visible ) & {
+				// :has( :focus-visible ) rather than :focus-within: keyboard tabbing must reveal the
+				// drag handle, but a mouse click also focuses the control it hits and would keep the
+				// handle pinned visible after the pointer leaves.
 				opacity: @opacity-base;
 			}
 		}

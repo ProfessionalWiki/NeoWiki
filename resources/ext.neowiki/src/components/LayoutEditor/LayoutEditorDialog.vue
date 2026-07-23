@@ -3,7 +3,7 @@
 		<CdxDialog
 			:open="props.open"
 			:use-close-button="true"
-			class="ext-neowiki-layout-editor-dialog"
+			class="ext-neowiki-ui ext-neowiki-layout-editor-dialog"
 			:title="$i18n( 'neowiki-editing-layout', props.initialLayout.getName() ).text()"
 			@update:open="onDialogUpdateOpen"
 		>

@@ -2,7 +2,7 @@
 <template>
 	<CdxDialog
 		:open="subjectStore.subjectCreatorOpen"
-		class="ext-neowiki-subject-creator-dialog"
+		class="ext-neowiki-ui ext-neowiki-subject-creator-dialog"
 		:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' && !selectedSchemaName }"
 		:title="$i18n( 'neowiki-subject-creator-title' ).text()"
 		@update:open="onDialogUpdateOpen"

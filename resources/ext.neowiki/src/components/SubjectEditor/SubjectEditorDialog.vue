@@ -2,7 +2,7 @@
 	<div class="ext-neowiki-subject-editor-container">
 		<CdxDialog
 			:open="open"
-			class="ext-neowiki-subject-editor-dialog"
+			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog"
 			:title="$i18n( 'neowiki-subject-editor-title', props.subject.getLabel() ).text()"
 			@update:open="onDialogUpdateOpen"
 		>
