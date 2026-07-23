@@ -70,7 +70,9 @@
 						'ext-neowiki-subjects-manager__row--highlighted':
 							highlightedId === mainSubject.getId().text,
 						'ext-neowiki-subjects-manager__row--focused':
-							focusedId === mainSubject.getId().text
+							focusedId === mainSubject.getId().text,
+						'ext-neowiki-subjects-manager__row--expanded':
+							expandedIds.has( mainSubject.getId().text )
 					}"
 					:open="expandedIds.has( mainSubject.getId().text )"
 				>
@@ -125,6 +127,14 @@
 								@click.stop="openEditor( mainSubject )"
 							>
 								<CdxIcon :icon="cdxIconEdit" />
+							</CdxButton>
+							<CdxButton
+								weight="quiet"
+								:aria-label="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+								:title="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+								@click.stop="copySubjectLink( mainSubject )"
+							>
+								<CdxIcon :icon="cdxIconLink" />
 							</CdxButton>
 							<CdxButton
 								v-if="canDelete"
@@ -250,7 +260,9 @@
 						'ext-neowiki-subjects-manager__row--highlighted':
 							highlightedId === subject.getId().text,
 						'ext-neowiki-subjects-manager__row--focused':
-							focusedId === subject.getId().text
+							focusedId === subject.getId().text,
+						'ext-neowiki-subjects-manager__row--expanded':
+							expandedIds.has( subject.getId().text )
 					}"
 				>
 					<details :open="expandedIds.has( subject.getId().text )">
@@ -298,6 +310,14 @@
 									@click.stop="openEditor( subject )"
 								>
 									<CdxIcon :icon="cdxIconEdit" />
+								</CdxButton>
+								<CdxButton
+									weight="quiet"
+									:aria-label="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+									:title="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+									@click.stop="copySubjectLink( subject )"
+								>
+									<CdxIcon :icon="cdxIconLink" />
 								</CdxButton>
 								<CdxButton
 									v-if="canDelete"
@@ -452,6 +472,7 @@ import {
 	cdxIconEdit,
 	cdxIconEllipsis,
 	cdxIconExpand,
+	cdxIconLink,
 	cdxIconPushPin,
 	cdxIconTrash
 } from '@wikimedia/codex-icons';
@@ -588,6 +609,13 @@ const editMenuItem = computed<MenuButtonItemData>( () => ( {
 	icon: cdxIconEdit
 } ) );
 
+// Not permission-gated: everyone, including read-only users, can copy a deep link to a row.
+const copyLinkMenuItem = computed<MenuButtonItemData>( () => ( {
+	value: 'copy-link',
+	label: mw.msg( 'neowiki-managesubjects-row-copy-link' ),
+	icon: cdxIconLink
+} ) );
+
 const deleteMenuItem = computed<MenuButtonItemData>( () => ( {
 	value: 'delete',
 	label: mw.msg( 'neowiki-managesubjects-row-delete' ),
@@ -600,6 +628,7 @@ const mainRowMenuItems = computed<MenuButtonItemData[]>( () => {
 	if ( canEdit.value ) {
 		items.push( editMenuItem.value );
 	}
+	items.push( copyLinkMenuItem.value );
 	if ( canDelete.value ) {
 		items.push( deleteMenuItem.value );
 	}
@@ -611,6 +640,7 @@ const otherRowMenuItems = computed<MenuButtonItemData[]>( () => {
 	if ( canEdit.value ) {
 		items.push( promoteMenuItem.value, editMenuItem.value );
 	}
+	items.push( copyLinkMenuItem.value );
 	if ( canDelete.value ) {
 		items.push( deleteMenuItem.value );
 	}
@@ -625,6 +655,8 @@ function dispatchRowAction( value: string | number | null, subject: Subject ): v
 		promoteToMain( subject );
 	} else if ( value === 'edit' ) {
 		openEditor( subject );
+	} else if ( value === 'copy-link' ) {
+		copySubjectLink( subject );
 	} else if ( value === 'delete' ) {
 		confirmDelete( subject );
 	}
@@ -671,6 +703,21 @@ async function copySubjectIri( iri: string ): Promise<void> {
 	} catch ( error ) {
 		console.error( 'Failed to copy subject IRI:', error );
 		mw.notify( mw.msg( 'neowiki-managesubjects-iri-copy-error' ), { type: 'error' } );
+	}
+}
+
+async function copySubjectLink( subject: Subject ): Promise<void> {
+	// Build the deep link from the live address bar rather than mw.util.getUrl, so it inherits the
+	// wiki's URL style (short URLs, action paths, query strings) as-served. The fragment is the bare
+	// Subject id — the same anchor the deep-link mount handler resolves to this row.
+	const url = new URL( location.href );
+	url.hash = subject.getId().text;
+	try {
+		await navigator.clipboard.writeText( url.toString() );
+		mw.notify( mw.msg( 'neowiki-managesubjects-link-copied' ), { type: 'success' } );
+	} catch ( error ) {
+		console.error( 'Failed to copy subject link:', error );
+		mw.notify( mw.msg( 'neowiki-managesubjects-link-copy-error' ), { type: 'error' } );
 	}
 }
 
@@ -1187,7 +1234,8 @@ onUnmounted( () => {
 
 			.ext-neowiki-subjects-manager__row:hover &,
 			.ext-neowiki-subjects-manager__row:focus-within &,
-			.ext-neowiki-subjects-manager__row--highlighted & {
+			.ext-neowiki-subjects-manager__row--highlighted &,
+			.ext-neowiki-subjects-manager__row--expanded & {
 				opacity: 1;
 				transform: translateX( 0 );
 			}
@@ -1227,6 +1275,7 @@ onUnmounted( () => {
 			.ext-neowiki-subjects-manager__row:hover &,
 			.ext-neowiki-subjects-manager__row:focus-within &,
 			.ext-neowiki-subjects-manager__row--highlighted &,
+			.ext-neowiki-subjects-manager__row--expanded &,
 			&:has( [ aria-expanded='true' ] ) {
 				opacity: 1;
 			}

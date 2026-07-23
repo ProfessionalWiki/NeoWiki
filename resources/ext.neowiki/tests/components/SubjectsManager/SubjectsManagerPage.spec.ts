@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import { shallowMount, VueWrapper, flushPromises } from '@vue/test-utils';
+import { CdxMenuButton } from '@wikimedia/codex';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { Subject } from '@/domain/Subject.ts';
@@ -59,6 +60,7 @@ vi.mock( '@/composables/useSubjectDrag.ts', () => ( {
 } ) );
 
 const HIGHLIGHT_CLASS = 'ext-neowiki-subjects-manager__row--highlighted';
+const EXPANDED_CLASS = 'ext-neowiki-subjects-manager__row--expanded';
 
 function rowFor( wrapper: VueWrapper, id: string ): VueWrapper {
 	return wrapper.find( '#' + subjectRowDomId( id ) ) as unknown as VueWrapper;
@@ -149,6 +151,18 @@ describe( 'SubjectsManagerPage deep-link / hash wiring', () => {
 		expect( rowFor( wrapper, ID_A ).classes() ).not.toContain( HIGHLIGHT_CLASS );
 	} );
 
+	it( 'carries the --expanded modifier class only while the row is open', async () => {
+		const wrapper = await mountPage();
+
+		expect( rowFor( wrapper, ID_A ).classes() ).not.toContain( EXPANDED_CLASS );
+
+		await rowFor( wrapper, ID_A ).find( 'summary' ).trigger( 'click' );
+		expect( rowFor( wrapper, ID_A ).classes() ).toContain( EXPANDED_CLASS );
+
+		await rowFor( wrapper, ID_A ).find( 'summary' ).trigger( 'click' );
+		expect( rowFor( wrapper, ID_A ).classes() ).not.toContain( EXPANDED_CLASS );
+	} );
+
 	it( 'dismisses the arrival highlight on the first manual expand of a different row', async () => {
 		window.location.hash = '#' + ID_A;
 
@@ -169,6 +183,103 @@ describe( 'SubjectsManagerPage deep-link / hash wiring', () => {
 		wrapper.unmount();
 
 		expect( removeListener ).toHaveBeenCalledWith( 'hashchange', expect.any( Function ) );
+	} );
+
+} );
+
+describe( 'SubjectsManagerPage row copy-link action', () => {
+	let writeText: ReturnType<typeof vi.fn>;
+
+	beforeEach( () => {
+		storeSubjects = [ subject( ID_A ) ];
+		mainSubjectId = null;
+		loadPageSubjectsMock.mockClear();
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+
+		writeText = vi.fn().mockResolvedValue( undefined );
+		Object.defineProperty( navigator, 'clipboard', {
+			value: { writeText },
+			configurable: true,
+		} );
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		window.location.hash = '';
+		vi.restoreAllMocks();
+	} );
+
+	it( 'offers copy-link in the overflow menu to a read-only user on both the main and other rows', async () => {
+		storeSubjects = [ subject( ID_A ), subject( ID_B ) ];
+		mainSubjectId = new SubjectId( ID_A );
+
+		const wrapper = await mountPage();
+
+		const menus = wrapper.findAllComponents( CdxMenuButton );
+		expect( menus ).toHaveLength( 2 );
+		// The read-only user has neither edit nor delete rights, so copy-link is the whole menu: it is
+		// the one row action that is not permission-gated, and it makes the otherwise-empty ⋯ menu useful.
+		for ( const menu of menus ) {
+			expect( menu.props( 'menuItems' ).map( ( item ) => item.value ) ).toEqual( [ 'copy-link' ] );
+		}
+	} );
+
+	it( 'copies a URL whose fragment is the subject id and shows the success toast', async () => {
+		const replaceState = vi.spyOn( window.history, 'replaceState' );
+
+		const wrapper = await mountPage();
+		wrapper.findComponent( CdxMenuButton ).vm.$emit( 'update:selected', 'copy-link' );
+		await flushPromises();
+
+		expect( writeText ).toHaveBeenCalledTimes( 1 );
+		const copiedUrl = writeText.mock.calls[ 0 ][ 0 ] as string;
+		expect( new URL( copiedUrl ).hash ).toBe( '#' + ID_A );
+
+		expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-managesubjects-link-copied', { type: 'success' } );
+
+		// Copying reads the address bar but must not mutate it, expand the row, or highlight it.
+		expect( replaceState ).not.toHaveBeenCalled();
+		expect( window.location.hash ).toBe( '' );
+		expect( ( rowFor( wrapper, ID_A ).find( 'details' ).element as HTMLDetailsElement ).open ).toBe( false );
+		expect( rowFor( wrapper, ID_A ).classes() ).not.toContain( HIGHLIGHT_CLASS );
+	} );
+
+	it( 'shows the error toast when the clipboard write is rejected', async () => {
+		writeText.mockRejectedValue( new Error( 'clipboard denied' ) );
+		const consoleError = vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+
+		const wrapper = await mountPage();
+		wrapper.findComponent( CdxMenuButton ).vm.$emit( 'update:selected', 'copy-link' );
+		await flushPromises();
+
+		expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-managesubjects-link-copy-error', { type: 'error' } );
+		expect( consoleError ).toHaveBeenCalled();
+	} );
+
+	it( 'renders an inline copy-link button on both rows for a read-only user', async () => {
+		storeSubjects = [ subject( ID_A ), subject( ID_B ) ];
+		mainSubjectId = new SubjectId( ID_A );
+
+		const wrapper = await mountPage();
+
+		// One on the main-subject row, one on the single other row. For a read-only user the rest of the
+		// inline action cluster (promote/edit/delete/drag) is gated away, so this is its only affordance —
+		// and it lives where the ⋯ menu is hidden (desktop widths).
+		const buttons = wrapper.findAll( '[aria-label="neowiki-managesubjects-row-copy-link"]' );
+		expect( buttons ).toHaveLength( 2 );
+	} );
+
+	it( 'copies the deep-link URL and shows the success toast when the inline button is clicked', async () => {
+		const wrapper = await mountPage();
+
+		await wrapper.find( '[aria-label="neowiki-managesubjects-row-copy-link"]' ).trigger( 'click' );
+		await flushPromises();
+
+		expect( writeText ).toHaveBeenCalledTimes( 1 );
+		expect( new URL( writeText.mock.calls[ 0 ][ 0 ] as string ).hash ).toBe( '#' + ID_A );
+		expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-managesubjects-link-copied', { type: 'success' } );
 	} );
 
 } );
