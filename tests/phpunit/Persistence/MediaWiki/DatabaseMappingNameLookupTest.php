@@ -8,6 +8,7 @@ use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseMappingNameLookup;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
@@ -111,6 +112,19 @@ class DatabaseMappingNameLookupTest extends NeoWikiIntegrationTestCase {
 				)
 			)
 		);
+	}
+
+	public function testGetReadableMappingNamesDrainsPastTheBatchSize(): void {
+		// The generator pages the namespace in 100-row keyset batches. With more rows than one batch,
+		// it must keep querying past the first batch: every Mapping is yielded, the lowest page ID
+		// first and the highest last. A single truncated batch would drop the tail.
+		$bulk = $this->createBarePages( NeoWikiExtension::NS_MAPPING, 'BulkMapping', 120 );
+
+		$drained = iterator_to_array( $this->getLookup()->getReadableMappingNames() );
+
+		$this->assertCount( count( $this->pageIds ) + count( $bulk ), $drained );
+		$this->assertSame( $this->pageIds['MappingLookupTest1'], array_key_first( $drained ) );
+		$this->assertSame( max( $bulk ), array_key_last( $drained ) );
 	}
 
 }

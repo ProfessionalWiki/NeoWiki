@@ -216,4 +216,67 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ 'SchemaNameLookupTest22' ], $names );
 	}
 
+	public function testGetReadableSchemaNamesDrainsEveryBatchInPageIdOrder(): void {
+		// The generator pages the namespace in 100-row keyset batches. With more rows than one batch,
+		// it must keep querying past the first batch and yield every Schema exactly once, in strictly
+		// ascending page-ID order — a single truncated batch would drop the tail.
+		$bulk = $this->createBarePages( NeoWikiExtension::NS_SCHEMA, 'BulkSchema', 120 );
+
+		$this->assertSame(
+			$this->expectedByPageId( $bulk ),
+			array_map(
+				static fn ( TitleValue $title ): string => $title->getText(),
+				iterator_to_array( $this->getLookup()->getReadableSchemaNames() )
+			)
+		);
+	}
+
+	public function testGetReadableSchemaNamesContinuesPastAnUnreadableRowAtABatchBoundary(): void {
+		// The Schema whose page ID sits exactly on the first batch boundary (row 100, batch size 100)
+		// is denied. The generator advances its keyset anchor past every scanned row, readable or not,
+		// so the next batch still seeks beyond the denied row and returns rows 101+. The denied row is
+		// the only one absent; every later row still arrives.
+		$bulk = $this->createBarePages( NeoWikiExtension::NS_SCHEMA, 'BulkSchema', 120 );
+
+		$expected = $this->expectedByPageId( $bulk );
+		// 100 = DatabaseSchemaNameLookup::READABLE_NAMES_BATCH_SIZE (private); the 100th row is the last of batch one.
+		$boundaryPageId = array_keys( $expected )[99];
+		$boundaryTitle = $expected[$boundaryPageId];
+		unset( $expected[$boundaryPageId] );
+
+		$denyBoundary = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
+			$page === null || $page->getDBkey() !== $boundaryTitle;
+
+		$this->assertSame(
+			$expected,
+			array_map(
+				static fn ( TitleValue $title ): string => $title->getText(),
+				iterator_to_array(
+					$this->getLookup( $this->mockRegisteredAuthority( $denyBoundary ) )->getReadableSchemaNames()
+				)
+			)
+		);
+	}
+
+	/**
+	 * The 4 setUp Schemas then the bulk rows, each page ID mapped to its title, in page-ID order —
+	 * the exact [pageId => name] map getReadableSchemaNames should yield when everything is readable.
+	 *
+	 * @param array<string, int> $bulk
+	 * @return array<int, string>
+	 */
+	private function expectedByPageId( array $bulk ): array {
+		$expected = [];
+
+		foreach ( $this->pageIds as $name => $id ) {
+			$expected[$id] = $name;
+		}
+
+		foreach ( $bulk as $title => $id ) {
+			$expected[$id] = $title;
+		}
+
+		return $expected;
+	}
+
 }
