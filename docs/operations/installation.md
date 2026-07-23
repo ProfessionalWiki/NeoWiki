@@ -160,15 +160,11 @@ If all four steps work, your install is complete.
 
 ### Optional: Pretty URLs for the Data tab
 
-Serve the Data tab (the `subjects` action) at `/wiki/PageName/subjects` instead of the
-`index.php?action=subjects` form:
+Serve the Data tab at `/wiki/PageName/subjects` instead of `index.php?action=subjects` with:
 
 ```php
 $wgActionPaths['subjects'] = "/wiki/$1/subjects";
 ```
-
-Use the same pattern as your wiki's article path. The Docker stack ships this by default. A page whose title ends
-in `/subjects` is then shadowed — reachable only through `index.php?title=`.
 
 ## Key settings
 
