@@ -302,7 +302,10 @@ useSortable( listRef, {
 
 			.ext-neowiki-property-list__item:hover &,
 			.ext-neowiki-property-list__item--selected &,
-			.ext-neowiki-property-list__item:focus-within & {
+			.ext-neowiki-property-list__item:has( :focus-visible ) & {
+				// :has( :focus-visible ) rather than :focus-within: keyboard tabbing must reveal the
+				// action controls, but a mouse click also focuses the button it hits and would keep the
+				// cluster pinned visible after the pointer leaves.
 				opacity: 1;
 				transform: translateX( 0 );
 			}

@@ -1,6 +1,7 @@
 <template>
 	<CdxDialog
 		:open="props.open"
+		class="ext-neowiki-ui"
 		:title="$i18n( 'neowiki-delete-confirm-title', props.displayName ).text()"
 		:use-close-button="true"
 		@update:open="onUpdateOpen"
