@@ -53,12 +53,11 @@ names stay readable. **Caveat:** the space→underscore step collides when a nam
 underscore (`Has author` and `Has_author` share the `neo-prop:Has_author` predicate IRI). The native
 projection accepts this. (The base URI is trusted admin config and is not encoded.)
 
-A `url` value projects as an **IRI object** (`<https://…>`), so it joins the graph as a resource that can
-be followed rather than an inert string; a value that is not a valid absolute IRI falls back to an
-`xsd:anyURI` literal, losing nothing. The other value types map to `xsd` datatypes: `text`/`select` →
-`xsd:string`, `number` → `xsd:decimal` (or `xsd:integer` when fractionless), `boolean` → `xsd:boolean`,
-`date` → `xsd:date`, `date-time` → `xsd:dateTime`. Extensions map their own property types via
-[`addRdfValueMapper`](../extending/extending.md#contributing-rdf-value-mappers).
+A `url` value projects as an **IRI object** (`<https://…>`); a value that is not a valid absolute IRI
+falls back to an `xsd:anyURI` literal, so nothing is lost. The other value types map to `xsd` datatypes:
+`text`/`select` → `xsd:string`, `number` → `xsd:decimal` (or `xsd:integer` when fractionless), `boolean`
+→ `xsd:boolean`, `date` → `xsd:date`, `date-time` → `xsd:dateTime`. Extensions map their own property
+types via [`addRdfValueMapper`](../extending/extending.md#contributing-rdf-value-mappers).
 
 A Subject whose Schema is unavailable (for example, its Schema page was deleted) is omitted from the
 projection entirely — the same graceful degradation as the Neo4j projection — so the two stores always
