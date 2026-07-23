@@ -335,8 +335,11 @@
 	"neowiki-managesubjects-export-all-button": "Export all",
 	"neowiki-managesubjects-export-button": "Export",
 	"neowiki-managesubjects-export-json": "JSON",
+	"neowiki-managesubjects-export-format-turtle": "Turtle",
+	"neowiki-managesubjects-export-format-trig": "TriG",
+	"neowiki-managesubjects-export-back": "Back",
+	"neowiki-managesubjects-export-choose-format": "Choose a format",
+	"neowiki-managesubjects-export-choose-projection": "Choose a projection",
 	"neowiki-managesubjects-export-native": "Native",
-	"neowiki-managesubjects-export-turtle": "$1 · Turtle",
-	"neowiki-managesubjects-export-trig": "$1 · TriG",
 	"action-subjects": "manage subjects on this page"
 }
