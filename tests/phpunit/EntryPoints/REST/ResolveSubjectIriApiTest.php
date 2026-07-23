@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
-use MediaWiki\Config\ConfigException;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
@@ -34,10 +33,10 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 	public function setUp(): void {
 		$this->setUpNeo4j();
 
-		// Pin the default dereference target so the Accept-negotiation tests are independent of any
-		// ambient $wgNeoWikiSubjectDereferenceTarget (e.g. a dev LocalSettings override). Tests that
-		// exercise a specific target override this.
-		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'page' );
+		// Pin the default so the Accept-negotiation tests are independent of any ambient
+		// $wgNeoWikiDereferenceSubjectsToDataTab (e.g. a dev LocalSettings override). The Data-tab tests
+		// override this.
+		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', false );
 
 		$this->createSchema( self::SCHEMA );
 
@@ -109,7 +108,7 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testDataTabDereferenceTargetRedirectsToTheSubjectsRow(): void {
-		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'data-tab' );
+		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', true );
 
 		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
 
@@ -131,20 +130,12 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testDataTabTargetLeavesTheRdfBranchesUnchanged(): void {
-		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'data-tab' );
+		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', true );
 
 		$response = $this->deref( headers: [ 'Accept' => 'application/trig' ] );
 
 		$this->assertSame( 303, $response->getStatusCode() );
 		$this->assertSubjectRdfLocation( $response, 'trig' );
-	}
-
-	public function testUnrecognizedDereferenceTargetIsAConfigError(): void {
-		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'sidebar' );
-
-		$this->expectException( ConfigException::class );
-
-		$this->deref( headers: [ 'Accept' => 'text/html' ] );
 	}
 
 	public function testReturns404ForAnUnknownSubject(): void {
