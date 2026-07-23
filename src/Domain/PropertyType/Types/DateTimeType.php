@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
@@ -46,23 +47,23 @@ class DateTimeType implements PropertyType {
 
 		if ( $rawValue === null ) {
 			return $definition->isRequired()
-				? [ new Violation( propertyName: null, code: 'required' ) ]
+				? [ new Violation( propertyName: null, code: 'required', severity: $definition->severityOf( 'required' ) ) ]
 				: [];
 		}
 
 		$parsed = DateTimeProperty::parseStrictDateTime( $rawValue );
 
 		if ( $parsed === null ) {
-			return [ new Violation( propertyName: null, code: 'invalid-datetime' ) ];
+			return [ new Violation( propertyName: null, code: 'invalid-datetime', severity: Severity::Error ) ];
 		}
 
 		return array_values( array_filter( [
-			$this->checkMinimum( $parsed, $definition->getMinimum() ),
-			$this->checkMaximum( $parsed, $definition->getMaximum() ),
+			$this->checkMinimum( $parsed, $definition->getMinimum(), $definition->severityOf( 'minimum' ) ),
+			$this->checkMaximum( $parsed, $definition->getMaximum(), $definition->severityOf( 'maximum' ) ),
 		] ) );
 	}
 
-	private function checkMinimum( DateTimeImmutable $parsed, ?string $minString ): ?Violation {
+	private function checkMinimum( DateTimeImmutable $parsed, ?string $minString, Severity $severity ): ?Violation {
 		if ( $minString === null ) {
 			return null;
 		}
@@ -70,10 +71,10 @@ class DateTimeType implements PropertyType {
 		if ( $min === null || $parsed >= $min ) {
 			return null;
 		}
-		return new Violation( propertyName: null, code: 'min-value', args: [ $minString ] );
+		return new Violation( propertyName: null, code: 'min-value', args: [ $minString ], severity: $severity );
 	}
 
-	private function checkMaximum( DateTimeImmutable $parsed, ?string $maxString ): ?Violation {
+	private function checkMaximum( DateTimeImmutable $parsed, ?string $maxString, Severity $severity ): ?Violation {
 		if ( $maxString === null ) {
 			return null;
 		}
@@ -81,7 +82,7 @@ class DateTimeType implements PropertyType {
 		if ( $max === null || $parsed <= $max ) {
 			return null;
 		}
-		return new Violation( propertyName: null, code: 'max-value', args: [ $maxString ] );
+		return new Violation( propertyName: null, code: 'max-value', args: [ $maxString ], severity: $severity );
 	}
 
 	private function extractFirstString( NeoValue $value ): ?string {

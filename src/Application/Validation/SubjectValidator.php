@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 
@@ -33,7 +34,7 @@ readonly class SubjectValidator {
 		$violations = [];
 
 		if ( trim( $label->text ) === '' ) {
-			$violations[] = new Violation( propertyName: null, code: 'label-required' );
+			$violations[] = new Violation( propertyName: null, code: 'label-required', severity: Severity::Error );
 		}
 
 		foreach ( $statements->asArray() as $statement ) {
@@ -63,6 +64,7 @@ readonly class SubjectValidator {
 				propertyName: $propertyName,
 				code: 'type-mismatch',
 				args: [ $statement->getPropertyType(), $definition->getPropertyType() ],
+				severity: Severity::Error,
 			) ];
 		}
 
@@ -148,6 +150,7 @@ readonly class SubjectValidator {
 				code: 'relation-target-not-found',
 				args: [ $relation->targetId->text ],
 				valuePartIndex: $valuePartIndex,
+				severity: Severity::Warning,
 			);
 		}
 
@@ -157,6 +160,7 @@ readonly class SubjectValidator {
 				code: 'relation-target-schema-mismatch',
 				args: [ $targetSchema->getText(), $target->getSchemaName()->getText() ],
 				valuePartIndex: $valuePartIndex,
+				severity: Severity::Error,
 			);
 		}
 
@@ -187,7 +191,7 @@ readonly class SubjectValidator {
 			// extension returns. Report the degraded type instead.
 			$violations[] = $this->propertyTypeLookup->getType( $definition->getPropertyType() ) === null
 				? $this->newUnregisteredTypeViolation( $propertyName, $definition->getPropertyType() )
-				: new Violation( propertyName: $propertyName, code: 'required' );
+				: new Violation( propertyName: $propertyName, code: 'required', severity: $definition->severityOf( 'required' ) );
 		}
 
 		return $violations;
@@ -198,6 +202,7 @@ readonly class SubjectValidator {
 			propertyName: $propertyName,
 			code: 'unregistered-type',
 			args: [ $propertyType ],
+			severity: Severity::Warning,
 		);
 	}
 

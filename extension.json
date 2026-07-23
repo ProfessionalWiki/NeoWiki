@@ -167,7 +167,7 @@
 			"value": false
 		},
 		"NeoWikiEnforceValidation": {
-			"description": "Whether write endpoints reject edits that introduce new constraint violations. When false, violations are surfaced in responses but writes always persist.",
+			"description": "Whether write endpoints reject edits that introduce new error-severity violations. Warnings never block. When false, violations are surfaced in responses but writes always persist.",
 			"value": false
 		},
 		"NeoWikiAutoRenderMainSubject": {

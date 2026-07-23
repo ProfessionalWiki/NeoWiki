@@ -1,6 +1,29 @@
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema#",
 	"type": "object",
+	"$defs": {
+		"severity": {
+			"enum": [ "error", "warning" ]
+		},
+		"booleanConstraint": {
+			"oneOf": [
+				{ "type": "boolean" },
+				{
+					"type": "object",
+					"required": [ "severity" ],
+					"additionalProperties": false,
+					"properties": { "severity": { "$ref": "#/$defs/severity" } }
+				}
+			]
+		},
+		"scalarConstraint": {
+			"if": { "type": "object" },
+			"then": {
+				"required": [ "value", "severity" ],
+				"properties": { "severity": { "$ref": "#/$defs/severity" } }
+			}
+		}
+	},
 	"properties": {
 		"description": {
 			"type": "string"
@@ -22,15 +45,16 @@
 							"type": "string",
 							"minLength": 1
 						},
-						"required": {
-							"type": "boolean"
-						},
+						"required": { "$ref": "#/$defs/booleanConstraint" },
 						"multiple": {
 							"type": "boolean"
 						},
-						"uniqueItems": {
-							"type": "boolean"
-						}
+						"uniqueItems": { "$ref": "#/$defs/booleanConstraint" },
+						"minimum": { "$ref": "#/$defs/scalarConstraint" },
+						"maximum": { "$ref": "#/$defs/scalarConstraint" },
+						"minLength": { "$ref": "#/$defs/scalarConstraint" },
+						"maxLength": { "$ref": "#/$defs/scalarConstraint" },
+						"options": { "$ref": "#/$defs/scalarConstraint" }
 					},
 					"allOf": [
 						{

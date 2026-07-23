@@ -209,6 +209,68 @@ JSON
 		);
 	}
 
+	public function testRequiredWithSeverityObjectFormPassesValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty( '{ "type": "text", "required": { "severity": "error" } }' )
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
+	public function testScalarConstraintWithValidSeverityObjectFormPassesValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty( '{ "type": "number", "maximum": { "value": 100, "severity": "error" } }' )
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
+	public function testScalarConstraintWithInvalidSeverityStringFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "number", "maximum": { "value": 100, "severity": "eror" } }' )
+			)
+		);
+	}
+
+	public function testScalarConstraintObjectFormMissingValueFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "number", "maximum": { "severity": "error" } }' )
+			)
+		);
+	}
+
+	/**
+	 * The boolean object form implies true and carries no value key. Permitting a stray
+	 * one would let "value": false round-trip back as true, silently flipping the Constraint.
+	 */
+	public function testBooleanConstraintObjectFormWithValueKeyFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "text", "required": { "value": false, "severity": "error" } }' )
+			)
+		);
+	}
+
 	/**
 	 * Wraps the property under test between two valid siblings so a regression that only
 	 * inspects the first or last property definition is caught.

@@ -27,7 +27,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 				'status' => 'created',
 				'subjectId' => 's1demo1aaaaaaa1',
 				'violations' => [
-					[ 'propertyName' => 'Status', 'code' => 'required', 'args' => [] ],
+					[ 'propertyName' => 'Status', 'code' => 'required', 'args' => [], 'severity' => 'warning' ],
 				],
 			],
 			$presenter->getJsonArray()
@@ -68,7 +68,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 				'status' => 'error',
 				'message' => 'Validation failed',
 				'violations' => [
-					[ 'propertyName' => 'Required', 'code' => 'required', 'args' => [] ],
+					[ 'propertyName' => 'Required', 'code' => 'required', 'args' => [], 'severity' => 'warning' ],
 				],
 			],
 			$presenter->getJsonArray()

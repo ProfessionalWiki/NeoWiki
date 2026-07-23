@@ -5,9 +5,12 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 
@@ -91,6 +94,27 @@ class NumberTypeValidateTest extends TestCase {
 		);
 
 		$this->assertSame( [], $violations );
+	}
+
+	public function testMaxValueViolationDefaultsToWarningSeverity(): void {
+		$violations = $this->type->validate(
+			new NumberValue( 101 ),
+			$this->newProperty( required: false, maximum: 100 ),
+		);
+
+		$this->assertSame( Severity::Warning, $violations[0]->severity );
+	}
+
+	public function testMaxValueViolationUsesErrorWhenMaximumAnnotated(): void {
+		$definition = PropertyDefinition::fromJson(
+			[ 'type' => 'number', 'maximum' => [ 'value' => 100, 'severity' => 'error' ] ],
+			PropertyTypeRegistry::withCoreTypes(),
+		);
+
+		$violations = $this->type->validate( new NumberValue( 101 ), $definition );
+
+		$this->assertSame( 'max-value', $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
 	private function newProperty(

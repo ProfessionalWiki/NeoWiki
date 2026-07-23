@@ -87,6 +87,9 @@ carve-out:
 | `invalid-url` / `invalid-date` / `invalid-datetime` | the value cannot be interpreted as its type | `error` | type integrity, comparable to a parse error in a linter, which is fatal regardless of rule configuration |
 | `single-value-only` | multiple values on a single-value property | `error` | `multiple` declares the value's shape, like `type` itself, so it is a shape condition rather than a Constraint |
 | `schema-not-found` | the Subject's Schema page is missing | `warning` | severity configuration lives in the Schema and there is none to read from; a warning keeps the Subject editable |
+| `unregistered-type` | the Statement's Property Type is not registered (extension disabled) | `warning` | degraded wiki state, not a bad edit; keeps the Subject editable, like `schema-not-found` |
+| `relation-target-not-found` | a relation value points to a Subject that does not exist | `warning` | red-link philosophy: the target may be minted later (e.g. during import) |
+| `relation-target-schema-mismatch` | a resolvable relation target's own Schema is not the declared `targetSchema` | `error` | a resolvable target with the wrong shape is a genuine integrity error |
 
 The fixed `error` for uninterpretable values (`invalid-url`, `invalid-date`, `invalid-datetime`) is the most
 debatable of these classifications: messy cultural-heritage imports contain exactly such values. It stays workable
