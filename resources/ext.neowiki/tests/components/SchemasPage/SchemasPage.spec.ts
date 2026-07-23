@@ -79,10 +79,10 @@ function findDeleteButtons( wrapper: VueWrapper ): VueWrapper[] {
 		.filter( ( btn ) => btn.attributes( 'aria-label' ) === 'neowiki-schema-delete' );
 }
 
-function mountComponent( summaries: unknown[] = [] ): VueWrapper {
+function mountComponent( summaries: unknown[] = [], nextCursor: string | null = null ): VueWrapper {
 	schemasResponse = {
 		schemas: summaries,
-		nextCursor: null,
+		nextCursor: nextCursor,
 	};
 	setupMwMock( { functions: [ 'msg', 'util', 'message', 'notify' ] } );
 
@@ -160,6 +160,21 @@ describe( 'SchemasPage', () => {
 
 		expect( nextButton.attributes( 'disabled' ) ).toBeDefined();
 		expect( wrapper.text() ).toContain( 'of 10' );
+	} );
+
+	it( 'keeps next enabled while the listing continues', async () => {
+		// A full page with a non-null cursor means more rows follow. The component must leave
+		// totalRows undefined so CdxTable stays in its indeterminate mode (next enabled, "of many"
+		// label); a known total here would wrongly disable next and hide the remaining pages.
+		const wrapper = mountComponent( Array.from( { length: 10 }, ( _value, index ) => (
+			{ name: `Schema${ index }`, description: '', propertyCount: 1 }
+		) ), 'next-page-cursor' );
+		await flushPromises();
+
+		const nextButton = wrapper.find( '.cdx-table-pager button[aria-label="Next page"]' );
+
+		expect( nextButton.attributes( 'disabled' ) ).toBeUndefined();
+		expect( wrapper.text() ).toContain( 'of many' );
 	} );
 
 	it( 'shows empty value indicator for schemas without a description', async () => {

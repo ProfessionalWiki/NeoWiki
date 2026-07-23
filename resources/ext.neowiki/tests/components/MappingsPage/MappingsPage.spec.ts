@@ -68,10 +68,10 @@ function findDeleteButtons( wrapper: VueWrapper ): VueWrapper[] {
 		.filter( ( btn ) => btn.attributes( 'aria-label' ) === 'neowiki-mapping-delete' );
 }
 
-function mountComponent( summaries: MappingSummary[] = [] ): VueWrapper {
+function mountComponent( summaries: MappingSummary[] = [], nextCursor: string | null = null ): VueWrapper {
 	mappingsResponse = {
 		mappings: summaries,
-		nextCursor: null,
+		nextCursor: nextCursor,
 	};
 	setupMwMock( {
 		functions: [ 'msg', 'util', 'message', 'notify' ],
@@ -155,6 +155,25 @@ describe( 'MappingsPage', () => {
 		await flushPromises();
 
 		expect( wrapper.text() ).toContain( 'neowiki-mappings-empty' );
+	} );
+
+	it( 'keeps next enabled while the listing continues', async () => {
+		// A full page (the default size) with a non-null cursor means more rows follow. The
+		// component must leave totalRows undefined so CdxTable stays in its indeterminate mode
+		// (next enabled, "of many" label); a known total here would wrongly disable next and hide
+		// the remaining pages.
+		const wrapper = mountComponent(
+			Array.from( { length: 10 }, ( _value, index ) => (
+				{ name: `Mapping${ index }`, schemas: [] }
+			) ),
+			'next-page-cursor',
+		);
+		await flushPromises();
+
+		const nextButton = wrapper.find( '.cdx-table-pager button[aria-label="Next page"]' );
+
+		expect( nextButton.attributes( 'disabled' ) ).toBeUndefined();
+		expect( wrapper.text() ).toContain( 'of many' );
 	} );
 
 	it( 'shows the create button when the user may create mappings', async () => {
