@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
-use ProfessionalWiki\NeoWiki\Domain\Rdf\Literal;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfTerm;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
@@ -38,9 +38,10 @@ readonly class NeoWikiRegistrar {
 	}
 
 	/**
-	 * Registers how a Property Type's value projects to RDF literals for the native RDF export.
+	 * Registers how a Property Type's value projects to RDF terms for the native RDF export: a list of
+	 * literals, or IRIs for values that denote a resource.
 	 *
-	 * @param callable(NeoValue): Literal[] $mapper
+	 * @param callable(NeoValue): RdfTerm[] $mapper
 	 */
 	public function addRdfValueMapper( string $propertyTypeName, callable $mapper ): void {
 		$this->rdfValueMapperRegistry->registerMapper( $propertyTypeName, $mapper );

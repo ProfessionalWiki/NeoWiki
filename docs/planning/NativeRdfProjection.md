@@ -94,8 +94,8 @@ Each Statement becomes one or more triples using the Property Name as predicate.
 (e.g., a text property with multiple parts) produce multiple triples with the same predicate.
 
 ```turtle
-neo-subj:s0gje3k4m8n2p1q  neo-prop:Website  "https://example.com"^^xsd:anyURI ;
-                           neo-prop:Website  "https://johndoe.dev"^^xsd:anyURI ;
+neo-subj:s0gje3k4m8n2p1q  neo-prop:Website  <https://example.com> ;
+                           neo-prop:Website  <https://johndoe.dev> ;
                            neo-prop:Age      42 ;
                            neo-prop:Active   true .
 ```
@@ -107,7 +107,7 @@ neo-subj:s0gje3k4m8n2p1q  neo-prop:Website  "https://example.com"^^xsd:anyURI ;
 | `text` | `xsd:string` | Each part is a separate triple |
 | `number` | `xsd:decimal` | Or `xsd:integer` when the value has no fractional part |
 | `boolean` | `xsd:boolean` | |
-| `url` | `xsd:anyURI` | Each part is a separate triple |
+| `url` | IRI object (`<…>`), or `xsd:anyURI` when the value is not a valid absolute IRI | Each part is a separate triple |
 
 ### Relations
 
@@ -191,7 +191,7 @@ GRAPH neo-graph:42 {
     # Main Subject: ACME Corp (Company)
     neo-subj:s0gje3k4m8n2p1q  a                neo-schema:Company ;
                                rdfs:label       "ACME Corp" ;
-                               neo-prop:Website  "https://acme.example"^^xsd:anyURI ;
+                               neo-prop:Website  <https://acme.example> ;
                                neo-prop:Founded  2019 ;
                                neo-prop:CEO      neo-subj:s0abc1def2ghi3j .
 

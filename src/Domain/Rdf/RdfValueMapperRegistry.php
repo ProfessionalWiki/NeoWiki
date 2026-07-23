@@ -16,9 +16,10 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 
 /**
- * Maps a Statement's {@see NeoValue} to the RDF {@see Literal}s that represent it, keyed by the
- * Statement's Property Type. The seam mirrors Neo4jValueBuilderRegistry so extension-defined
- * property types can contribute their RDF representation via NeoWikiRegistrar::addRdfValueMapper.
+ * Maps a Statement's {@see NeoValue} to the RDF {@see RdfTerm}s that represent it — {@see Literal}s, or
+ * {@see Iri}s for values that denote a resource (a url) — keyed by the Statement's Property Type. The
+ * seam mirrors Neo4jValueBuilderRegistry so extension-defined property types can contribute their RDF
+ * representation via NeoWikiRegistrar::addRdfValueMapper.
  *
  * Relation values are not mapped here; the projector reifies them separately (two-layer approach).
  * A Property Type without a mapper (including an unregistered type) yields null and is skipped,
@@ -27,19 +28,19 @@ use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 class RdfValueMapperRegistry {
 
 	/**
-	 * @var array<string, callable(NeoValue): Literal[]>
+	 * @var array<string, callable(NeoValue): RdfTerm[]>
 	 */
 	private array $mappers = [];
 
 	/**
-	 * @param callable(NeoValue): Literal[] $mapper
+	 * @param callable(NeoValue): RdfTerm[] $mapper
 	 */
 	public function registerMapper( string $propertyTypeName, callable $mapper ): void {
 		$this->mappers[$propertyTypeName] = $mapper;
 	}
 
 	/**
-	 * @return Literal[]|null null when no mapper is registered for the Property Type.
+	 * @return RdfTerm[]|null null when no mapper is registered for the Property Type.
 	 */
 	public function mapValue( string $propertyTypeName, NeoValue $value ): ?array {
 		if ( !array_key_exists( $propertyTypeName, $this->mappers ) ) {
@@ -58,7 +59,7 @@ class RdfValueMapperRegistry {
 
 		$registry->registerMapper( TextType::NAME, self::stringMapper( 'string' ) );
 		$registry->registerMapper( SelectType::NAME, self::stringMapper( 'string' ) );
-		$registry->registerMapper( UrlType::NAME, self::stringMapper( 'anyURI' ) );
+		$registry->registerMapper( UrlType::NAME, self::urlMapper( ... ) );
 		$registry->registerMapper( NumberType::NAME, self::mapNumber( ... ) );
 		$registry->registerMapper( BooleanType::NAME, self::mapBoolean( ... ) );
 		$registry->registerMapper( DateType::NAME, self::mapDate( ... ) );
@@ -88,6 +89,36 @@ class RdfValueMapperRegistry {
 
 			return $literals;
 		};
+	}
+
+	/**
+	 * Maps a url value: each part becomes an IRI object when it is a valid absolute IRI, so the statement
+	 * joins the graph as a resource that SPARQL can follow rather than an inert string. A part that is not
+	 * a valid absolute IRI (e.g. the scheme-less values the url Property Type still accepts) keeps the
+	 * xsd:anyURI literal form, so nothing is lost. Reuses {@see Iri::isSafeAbsolute}, the same IRI-safety
+	 * check the Mapping layer applies to authored terms.
+	 *
+	 * @return RdfTerm[]
+	 */
+	private static function urlMapper( NeoValue $value ): array {
+		$scalars = $value->toScalars();
+
+		if ( !is_array( $scalars ) ) {
+			return [];
+		}
+
+		$terms = [];
+
+		foreach ( $scalars as $part ) {
+			if ( is_scalar( $part ) ) {
+				$string = (string)$part;
+				$terms[] = Iri::isSafeAbsolute( $string )
+					? new Iri( $string )
+					: RdfLiteralFactory::typed( $string, 'anyURI' );
+			}
+		}
+
+		return $terms;
 	}
 
 	/**
