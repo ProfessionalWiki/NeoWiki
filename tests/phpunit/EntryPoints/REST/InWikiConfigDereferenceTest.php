@@ -41,7 +41,8 @@ class InWikiConfigDereferenceTest extends NeoWikiIntegrationTestCase {
 	public function setUp(): void {
 		$this->setUpNeo4j();
 
-		// Pin the PHP config to the default so a passing test proves the page value, not an ambient override.
+		// Pin the PHP config to false (the win case's page value is true) so a passing test proves the page
+		// value, not an ambient override; the fallback cases then land on the plain page.
 		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', false );
 
 		$this->createSchema( self::SCHEMA );
