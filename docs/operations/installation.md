@@ -160,7 +160,7 @@ If all four steps work, your install is complete.
 
 ### Optional: Pretty URLs for the Data tab
 
-The Data tab is the `subjects` action. Add an action path to serve it at `/wiki/PageName/subjects` instead of the
+Serve the Data tab (the `subjects` action) at `/wiki/PageName/subjects` instead of the
 `index.php?action=subjects` form:
 
 ```php
