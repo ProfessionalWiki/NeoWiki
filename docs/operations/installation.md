@@ -158,6 +158,18 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
 
 If all four steps work, your install is complete.
 
+### Optional: Pretty URLs for the Data tab
+
+The Data tab is the `subjects` action. Add an action path to serve it at `/wiki/PageName/subjects` instead of the
+`index.php?action=subjects` form:
+
+```php
+$wgActionPaths['subjects'] = "/wiki/$1/subjects";
+```
+
+Use the same pattern as your wiki's article path. The Docker stack ships this by default. A page whose title ends
+in `/subjects` is then shadowed — reachable only through `index.php?title=`.
+
 ## Key settings
 
 These are the settings you are most likely to change. For the full list with descriptions and defaults, see the
