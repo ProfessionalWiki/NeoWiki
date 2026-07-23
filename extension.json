@@ -198,7 +198,7 @@
 			"value": null
 		},
 		"NeoWikiSubjectDereferenceTarget": {
-			"description": "Where a browser dereferencing a Subject's concept URI (Accept: text/html) is sent: 'page' (default) for the Subject's hosting page, or 'data-tab' for that page's Data tab (?action=subjects) opened on the Subject's row (expanded, scrolled to, highlighted). Any other value is a configuration error.",
+			"description": "Where a browser dereferencing a Subject's concept URI (Accept: text/html) is sent: 'page' (default) for the Subject's hosting page, or 'data-tab' for that page's Data tab (?action=subjects) opened on the Subject's row (expanded, scrolled to, highlighted). Any other value falls back to 'page' and logs a warning.",
 			"value": "page"
 		},
 		"NeoWikiSparqlStores": {

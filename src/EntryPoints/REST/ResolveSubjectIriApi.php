@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
-use MediaWiki\Config\ConfigException;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
@@ -112,14 +112,20 @@ class ResolveSubjectIriApi extends SimpleHandler {
 	private function dataTabDereference(): bool {
 		$value = MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiSubjectDereferenceTarget' );
 
-		// An unrecognized value is surfaced as a configuration error rather than silently treated as 'page'.
-		return match ( $value ) {
-			'data-tab' => true,
-			'page' => false,
-			default => throw new ConfigException(
-				'Unrecognized $wgNeoWikiSubjectDereferenceTarget value: ' . var_export( $value, true )
-			),
-		};
+		if ( $value === 'data-tab' ) {
+			return true;
+		}
+
+		if ( $value !== 'page' ) {
+			// A config typo must not take down the wiki: fall back to the 'page' default — a correct
+			// response for the visitor dereferencing the concept URI — and log so the admin who set the
+			// value notices it (alongside the unexpected landing page).
+			LoggerFactory::getInstance( 'NeoWiki' )->warning(
+				'Unrecognized $wgNeoWikiSubjectDereferenceTarget value ' . var_export( $value, true ) . '; falling back to "page".'
+			);
+		}
+
+		return false;
 	}
 
 	private function noDataResponse( string $subjectId ): Response {

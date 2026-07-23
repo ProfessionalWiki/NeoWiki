@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
-use MediaWiki\Config\ConfigException;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
@@ -16,6 +15,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\ResolveSubjectIriApi;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\ResolveSubjectIriApi
@@ -139,12 +139,19 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectRdfLocation( $response, 'trig' );
 	}
 
-	public function testUnrecognizedDereferenceTargetIsAConfigError(): void {
+	public function testUnrecognizedDereferenceTargetFallsBackToThePlainHostingPageAndLogsAWarning(): void {
 		$this->overrideConfigValue( 'NeoWikiSubjectDereferenceTarget', 'sidebar' );
+		$logger = new LegacyLoggerSpy();
+		$this->setLogger( 'NeoWiki', $logger );
 
-		$this->expectException( ConfigException::class );
+		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
 
-		$this->deref( headers: [ 'Accept' => 'text/html' ] );
+		$this->assertSame( 303, $response->getStatusCode() );
+		$this->assertHostingPageLocation( $response );
+		$this->assertStringContainsString(
+			'Unrecognized $wgNeoWikiSubjectDereferenceTarget value',
+			implode( "\n", $logger->getLogCalls()->getMessages() )
+		);
 	}
 
 	public function testReturns404ForAnUnknownSubject(): void {
