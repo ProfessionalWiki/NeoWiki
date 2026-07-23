@@ -18,7 +18,7 @@ For an end-to-end example comparing the native and ontology-mapped output, see t
 | Setting | Default | Purpose |
 |---|---|---|
 | `$wgNeoWikiRdfBaseUri` | the wiki's canonical URL (`$wgCanonicalServer`) | Base URI under which all NeoWiki IRIs are minted. |
-| `$wgNeoWikiDereferenceSubjectsToDataTab` | `false` | Whether a browser dereferencing a Subject IRI lands on the hosting page's Data tab row instead of the plain page. |
+| `$wgNeoWikiDereferenceSubjectsToDataTab` | `true` | Whether a browser dereferencing a Subject IRI lands on the hosting page's Data tab row (`true`) or the plain page (`false`). |
 
 ## IRI scheme
 
@@ -107,8 +107,8 @@ content-negotiates it and answers `303 See Other` with an absolute `Location`:
 TriG wins when both RDF types are acceptable; the RDF redirects use the native projection. A Subject that is absent or
 on a page the caller may not read returns one indistinguishable `404`; a malformed id `400`.
 
-The HTML target is the Subject's hosting page by default, or that page's Data tab (`?action=subjects`) opened on the
-Subject's row (`#{subjectId}`) when `$wgNeoWikiDereferenceSubjectsToDataTab` is enabled.
+The default HTML target is that page's Data tab (`/Example_Page/subjects`) opened on the Subject's row.
+When `$wgNeoWikiDereferenceSubjectsToDataTab` is set to `false`, the target is the wiki page itself (`/Example_Page`).
 
 The negotiator is always reachable at the REST path, which needs no server configuration:
 
@@ -130,7 +130,7 @@ the operator's own routing concern.
 
 ### Finding these exports
 
-These exports are surfaced in the UI. The Data tab (`?action=subjects`) links to each Subject's JSON and per-projection
+These exports are surfaced in the UI. The Data tab links to each Subject's JSON and per-projection
 Turtle/TriG, and the same for the whole page. Pages that carry NeoWiki data also emit `<link rel="alternate">`
 autodiscovery tags (Turtle and TriG, native projection) in the HTML head.
 
