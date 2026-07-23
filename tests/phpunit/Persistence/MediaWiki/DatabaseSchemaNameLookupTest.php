@@ -233,9 +233,9 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 
 	public function testGetReadableSchemaNamesContinuesPastAnUnreadableRowAtABatchBoundary(): void {
 		// The Schema whose page ID sits exactly on the first batch boundary (row 100, batch size 100)
-		// is denied. The generator advances its keyset anchor past every scanned row, readable or not,
-		// so the next batch still seeks beyond the denied row and returns rows 101+. The denied row is
-		// the only one absent; every later row still arrives.
+		// is denied. The drain's continue decision must count fetched rows, not yielded ones: batch
+		// one comes back full yet yields only 99, and the next batch must still be fetched, so rows
+		// 101+ arrive and the denied row is the only one absent.
 		$bulk = $this->createBarePages( NeoWikiExtension::NS_SCHEMA, 'BulkSchema', 120 );
 
 		$expected = $this->expectedByPageId( $bulk );
