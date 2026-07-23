@@ -11,7 +11,7 @@ queries](../api/query-api.md), RDF export), through parse-time accessors (parser
 projection into graph and SPARQL stores and RDF dumps.
 Earlier ADRs settled individual pieces: Neo4j is reachable only through the backend ([ADR 13](013-restrict-neo4j-access.md)),
 SPARQL stores may be exposed directly ([ADR 19](019-graph-database-architecture.md)), and graph nodes carry per-wiki
-identity ([ADR 22](022-multi-wiki-node-identity.md), which left ACL-based query filtering out of scope). This ADR
+identity ([ADR 22](022-multi-wiki-node-identity.md)). This ADR
 records the overall access-control model those pieces belong to, and lists the decisions that are still open.
 
 Constraints the model rests on:
@@ -43,12 +43,11 @@ Constraints the model rests on:
   such surfaces must bound their result sizes.
 - **Graph projections carry scoping keys, not ACL state.** `wiki_id` and `namespaceId` let query authors scope
   queries ([ADR 22](022-multi-wiki-node-identity.md), [graph-model](../api/graph-model.md)). User groups and page
-  restrictions are never projected: the keys are revision-derived, so nothing in a store goes stale when permissions
-  change.
+  restrictions are never projected; the projected keys are revision-derived, so nothing in a store goes stale when
+  permissions change.
 - **Raw query surfaces have whole-store read semantics.** A raw query surface executes a caller-supplied Cypher or
   SPARQL query; its result rows are not attributable to pages and are not trimmed. The REST query endpoints are gated
-  by the wiki-level `neowiki-query` right
-  ([query-api.md](../api/query-api.md)); granting that right grants read access to everything the wiki projects into
+  by the wiki-level `neowiki-query` right; granting that right gives read access to everything the wiki projects into
   the store. Exposing a store directly (which ADR 19 allows for SPARQL) is a different surface: see "Projection as
   publication" below.
 
@@ -62,7 +61,7 @@ Constraints the model rests on:
   placeholder rendered at parse time, data fetched per user over REST. **TODO:** decide the parse-path rule and what
   it means for each surface.
 - **Server-side query filter injection.** Farm deployments add scoping predicates in their own query layer; core
-  offers no extension point for injecting them server-side. **TODO:** design the seam.
+  offers no extension point for injecting them server-side. **TODO:** design that extension point.
 - **Cross-wiki subject display.** Rendering a subject from another wiki goes through REST, not Cypher, so query-side
   scoping does not cover it. **TODO:** decide the check and the degradation behavior when the schema or subject is
   not accessible. Relates to [ADR 23](023-subject-sources.md).
@@ -70,7 +69,7 @@ Constraints the model rests on:
   changes, and how deployments with restricted content are expected to configure it.
 - **Projection as publication.** Directly exposed SPARQL endpoints (ADR 19) and RDF dumps bypass per-user checks.
   **TODO:** decide whether projection/dump content is limited to what the public reader may read.
-- **TODO:** confirm as a non-goal: per-subject ACLs independent of the owning page.
+- **Per-subject ACLs.** Proposed non-goal: no ACLs on a Subject independent of its owning page. **TODO:** confirm.
 
 ## Out of scope
 
@@ -80,8 +79,8 @@ Constraints the model rests on:
 ## Consequences
 
 - Every new surface that exposes NeoWiki data must be classified: page-attributable (per-row gate), raw query
-  (whole-store semantics), projection/dump (semantics pending above), or parse-time (semantics pending above).
-  There is no unclassified option.
+  (whole-store semantics), projection/dump, or parse-time (the last two pending above). There is no unclassified
+  option.
 - Restricting a page does not remove its data from stores; it changes what the backend returns.
 
 ## Alternatives Considered
