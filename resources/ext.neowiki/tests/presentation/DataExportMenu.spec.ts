@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { subjectExportMenuItems, pageExportMenuItems } from '@/presentation/DataExportMenu';
+import {
+	subjectExportUrls, pageExportUrls, projectionLabel,
+} from '@/presentation/DataExportMenu';
 
 describe( 'DataExportMenu', () => {
 	beforeEach( () => {
@@ -10,58 +12,34 @@ describe( 'DataExportMenu', () => {
 		} );
 	} );
 
-	describe( 'subjectExportMenuItems', () => {
-		it( 'lists JSON first, then Turtle and TriG for each projection in order', () => {
-			const items = subjectExportMenuItems( 's2picasso2aaaa2', [ 'native', 'EDM' ] );
-
-			expect( items.map( ( item ) => item.value ) ).toEqual( [
-				'/w/rest.php/neowiki/v0/subject/s2picasso2aaaa2',
-				'/w/rest.php/neowiki/v0/subject/s2picasso2aaaa2/rdf?projection=native&format=turtle',
-				'/w/rest.php/neowiki/v0/subject/s2picasso2aaaa2/rdf?projection=native&format=trig',
-				'/w/rest.php/neowiki/v0/subject/s2picasso2aaaa2/rdf?projection=EDM&format=turtle',
-				'/w/rest.php/neowiki/v0/subject/s2picasso2aaaa2/rdf?projection=EDM&format=trig',
-			] );
+	describe( 'subjectExportUrls', () => {
+		it( 'builds the JSON URL at the subject base', () => {
+			expect( subjectExportUrls( 's2picasso2aaaa2' ).jsonUrl )
+				.toBe( '/w/rest.php/neowiki/v0/subject/s2picasso2aaaa2' );
 		} );
 
-		it( 'labels JSON, the native projection, and mapping projections distinctly', () => {
-			const items = subjectExportMenuItems( 's2picasso2aaaa2', [ 'native', 'EDM' ] );
-
-			expect( items.map( ( item ) => item.label ) ).toEqual( [
-				'[neowiki-managesubjects-export-json]',
-				'[neowiki-managesubjects-export-turtle|[neowiki-managesubjects-export-native]]',
-				'[neowiki-managesubjects-export-trig|[neowiki-managesubjects-export-native]]',
-				'[neowiki-managesubjects-export-turtle|EDM]',
-				'[neowiki-managesubjects-export-trig|EDM]',
-			] );
-		} );
-
-		it( 'percent-encodes the projection name in the RDF URLs', () => {
-			const items = subjectExportMenuItems( 's1aaaaaaaaaaaa1', [ 'Wikidata items' ] );
-
-			expect( items[ 1 ].value ).toBe(
-				'/w/rest.php/neowiki/v0/subject/s1aaaaaaaaaaaa1/rdf?projection=Wikidata%20items&format=turtle',
-			);
-		} );
-
-		it( 'returns only the JSON entry when there are no readable projections', () => {
-			const items = subjectExportMenuItems( 's1aaaaaaaaaaaa1', [] );
-
-			expect( items ).toHaveLength( 1 );
-			expect( items[ 0 ].value ).toBe( '/w/rest.php/neowiki/v0/subject/s1aaaaaaaaaaaa1' );
+		it( 'builds RDF URLs with projection and format, percent-encoding the projection', () => {
+			const { rdfUrl } = subjectExportUrls( 's1aaaaaaaaaaaa1' );
+			expect( rdfUrl( 'native', 'turtle' ) )
+				.toBe( '/w/rest.php/neowiki/v0/subject/s1aaaaaaaaaaaa1/rdf?projection=native&format=turtle' );
+			expect( rdfUrl( 'Wikidata items', 'trig' ) )
+				.toBe( '/w/rest.php/neowiki/v0/subject/s1aaaaaaaaaaaa1/rdf?projection=Wikidata%20items&format=trig' );
 		} );
 	} );
 
-	describe( 'pageExportMenuItems', () => {
+	describe( 'pageExportUrls', () => {
 		it( 'targets the page subjects JSON and the page RDF endpoint', () => {
-			const items = pageExportMenuItems( 42, [ 'native', 'EDM' ] );
+			const { jsonUrl, rdfUrl } = pageExportUrls( 42 );
+			expect( jsonUrl ).toBe( '/w/rest.php/neowiki/v0/page/42/subjects' );
+			expect( rdfUrl( 'EDM', 'turtle' ) )
+				.toBe( '/w/rest.php/neowiki/v0/page/42/rdf?projection=EDM&format=turtle' );
+		} );
+	} );
 
-			expect( items.map( ( item ) => item.value ) ).toEqual( [
-				'/w/rest.php/neowiki/v0/page/42/subjects',
-				'/w/rest.php/neowiki/v0/page/42/rdf?projection=native&format=turtle',
-				'/w/rest.php/neowiki/v0/page/42/rdf?projection=native&format=trig',
-				'/w/rest.php/neowiki/v0/page/42/rdf?projection=EDM&format=turtle',
-				'/w/rest.php/neowiki/v0/page/42/rdf?projection=EDM&format=trig',
-			] );
+	describe( 'projectionLabel', () => {
+		it( 'maps native to the Native message and passes other names through', () => {
+			expect( projectionLabel( 'native' ) ).toBe( '[neowiki-managesubjects-export-native]' );
+			expect( projectionLabel( 'EDM' ) ).toBe( 'EDM' );
 		} );
 	} );
 } );

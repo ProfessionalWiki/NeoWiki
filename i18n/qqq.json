@@ -266,8 +266,11 @@
 	"neowiki-managesubjects-export-all-button": "Label and accessible name of the button in the Data-tab header that opens the export menu for all Subjects on the page. See {{msg-neowiki|neowiki-managesubjects-export-button}} for the per-Subject equivalent.",
 	"neowiki-managesubjects-export-button": "Label and accessible name of the button that opens the data export menu for a single Subject on the Data tab.",
 	"neowiki-managesubjects-export-json": "Export menu item that downloads the raw JSON representation of the Subject or page.",
-	"neowiki-managesubjects-export-native": "Display name of the native (NeoWiki-vocabulary) RDF projection, used as $1 in {{msg-neowiki|neowiki-managesubjects-export-turtle}} and {{msg-neowiki|neowiki-managesubjects-export-trig}}.",
-	"neowiki-managesubjects-export-turtle": "Export menu item for the Turtle serialization of an RDF projection. $1 is the projection name (e.g. the message {{msg-neowiki|neowiki-managesubjects-export-native}}, or an ontology name such as \"EDM\"). \"Turtle\" is the name of the RDF serialization format and is not translated.",
-	"neowiki-managesubjects-export-trig": "Export menu item for the TriG serialization of an RDF projection. $1 is the projection name (e.g. the message {{msg-neowiki|neowiki-managesubjects-export-native}}, or an ontology name such as \"EDM\"). \"TriG\" is the name of the RDF serialization format and is not translated.",
+	"neowiki-managesubjects-export-format-turtle": "Level-1 export menu item selecting the Turtle serialization; reveals the projection list. \"Turtle\" is the RDF serialization format name and is not translated.",
+	"neowiki-managesubjects-export-format-trig": "Level-1 export menu item selecting the TriG serialization; reveals the projection list. \"TriG\" is the RDF serialization format name and is not translated.",
+	"neowiki-managesubjects-export-back": "Export menu item that returns from the projection list to the serialization choice.",
+	"neowiki-managesubjects-export-choose-format": "Announced to screen-reader users when the data export menu returns to its list of export formats (JSON, Turtle, TriG).",
+	"neowiki-managesubjects-export-choose-projection": "Announced to screen-reader users when the data export menu shows its list of projections after a format is chosen. A projection is the ontology/vocabulary the data is exported as, e.g. EDM or CIDOC-CRM.",
+	"neowiki-managesubjects-export-native": "Display name of the native (NeoWiki-vocabulary) RDF projection, shown in the projection list of the data export menu.",
 	"action-subjects": "Description of the Subject management action used by MediaWiki when generating action descriptions."
 }
