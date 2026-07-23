@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Mapping\SchemaMapping;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\Literal;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Quad;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\QuadList;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
@@ -85,10 +86,11 @@ class OntologyMappingProjectorTest extends TestCase {
 	}
 
 	/**
-	 * The example exercises: rdfs:label always emitted; a language tag on a plain string (Name); a
-	 * datatype override on a number (BirthYear); an unmapped property present on the Subject but absent
-	 * in the output (Height); a relation projected as a direct triple to the target Subject's native
-	 * IRI (BornIn → City); and native (neo-subj:) Subject IRIs throughout.
+	 * The example exercises: rdfs:label always emitted; a language tag on a plain string (Name); a url
+	 * value projected as an IRI object (Homepage → edm:isShownAt); a datatype override on a number
+	 * (BirthYear); an unmapped property present on the Subject but absent in the output (Height); a
+	 * relation projected as a direct triple to the target Subject's native IRI (BornIn → City); and
+	 * native (neo-subj:) Subject IRIs throughout.
 	 */
 	private function expectedTriG(): string {
 		return <<<TRIG
@@ -104,7 +106,7 @@ class OntologyMappingProjectorTest extends TestCase {
 				neo-subj:s1janeaaaaaaaa2 a edm:ProvidedCHO ;
 					rdfs:label "Jane" ;
 					dc:title "Jane"@en ;
-					edm:isShownAt "https://jane.example"^^xsd:anyURI ;
+					edm:isShownAt <https://jane.example> ;
 					dc:date "1990"^^edm:year ;
 					dc:spatial neo-subj:s1cityaaaaaaaa3 .
 
@@ -213,7 +215,7 @@ class OntologyMappingProjectorTest extends TestCase {
 				neo-subj:s1janeaaaaaaaa2 a edm:ProvidedCHO ;
 					rdfs:label "Jane" ;
 					dc:title "Jane"@en ;
-					edm:isShownAt "https://jane.example"^^xsd:anyURI ;
+					edm:isShownAt <https://jane.example> ;
 					dc:date "1990"^^edm:year ;
 					dc:spatial neo-subj:s1cityaaaaaaaa3 .
 			}
@@ -443,6 +445,44 @@ class OntologyMappingProjectorTest extends TestCase {
 				$this->ns->graph( 'edm', new PageId( 42 ) )
 			) ),
 			'A typed literal keeps its datatype; a language tag does not apply to it.'
+		);
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testExplicitDatatypeOverrideOnAUrlPropertyEmitsALiteralNotAnIri(): void {
+		// A url value projects as an IRI object by default, but an explicit `datatype` on the property
+		// mapping is deliberate configuration and wins: the value is emitted as a literal with that datatype.
+		$mapping = new SchemaMapping(
+			subjectClass: 'edm:ProvidedCHO',
+			properties: new PropertyMappings( [
+				'Homepage' => new PropertyMapping( 'edm:isShownAt', null, 'http://www.w3.org/2001/XMLSchema#anyURI' ),
+			] )
+		);
+		$page = TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build(
+				id: self::PERSON_ID,
+				label: 'Jane',
+				schemaName: new SchemaName( 'Person' ),
+				statements: new StatementList( [
+					TestStatement::build( 'Homepage', new StringValue( 'https://jane.example' ), 'url' ),
+				] )
+			),
+		);
+
+		$quads = $this->newProjector( [ 'Person' => $mapping ] )->projectPage( $page );
+
+		$predicate = new Iri( self::EDM . 'isShownAt' );
+		$graph = $this->ns->graph( 'edm', new PageId( 42 ) );
+		$subjectIri = $this->ns->subject( new SubjectId( self::PERSON_ID ) );
+
+		$this->assertTrue(
+			$quads->contains( new Quad( $subjectIri, $predicate, new Literal( 'https://jane.example', $this->ns->xsd( 'anyURI' ) ), $graph ) ),
+			'An explicit datatype override wins over the default IRI projection for a url value.'
+		);
+		$this->assertFalse(
+			$quads->contains( new Quad( $subjectIri, $predicate, new Iri( 'https://jane.example' ), $graph ) ),
+			'The url value is not also emitted as an IRI object when a datatype override is set.'
 		);
 		$this->logger->assertNoLoggingCallsWhereMade();
 	}

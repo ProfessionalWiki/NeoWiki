@@ -214,20 +214,20 @@ class RdfPageProjector implements PageProjector {
 		$quads = [];
 
 		foreach ( $subject->getStatements()->asArray() as $statement ) {
-			$literals = $this->valueMappers->mapValue( $statement->getPropertyType(), $statement->getValue() );
+			$terms = $this->valueMappers->mapValue( $statement->getPropertyType(), $statement->getValue() );
 
 			// null means the Property Type has no RDF mapper (a relation, handled separately, or an
 			// unregistered type). Skip it, matching the Neo4j projection's graceful degradation.
-			if ( $literals === null ) {
+			if ( $terms === null ) {
 				continue;
 			}
 
-			$this->warnOnDroppedValues( $statement, count( $literals ), $pageId );
+			$this->warnOnDroppedValues( $statement, count( $terms ), $pageId );
 
 			$predicate = $this->namespaces->property( $statement->getPropertyName()->text );
 
-			foreach ( $literals as $literal ) {
-				$quads[] = new Quad( $subjectIri, $predicate, $literal, $graph );
+			foreach ( $terms as $term ) {
+				$quads[] = new Quad( $subjectIri, $predicate, $term, $graph );
 			}
 		}
 

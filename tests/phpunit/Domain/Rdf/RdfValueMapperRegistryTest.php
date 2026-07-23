@@ -31,10 +31,29 @@ class RdfValueMapperRegistryTest extends TestCase {
 		);
 	}
 
-	public function testUrlMapsToXsdAnyUri(): void {
+	public function testValidUrlMapsToAnIriObject(): void {
 		$this->assertEquals(
-			[ new Literal( 'https://pro.wiki', $this->xsd( 'anyURI' ) ) ],
+			[ new Iri( 'https://pro.wiki' ) ],
 			RdfValueMapperRegistry::withCoreMappers()->mapValue( 'url', new StringValue( 'https://pro.wiki' ) )
+		);
+	}
+
+	public function testUrlThatIsNotAValidIriFallsBackToAnXsdAnyUriLiteral(): void {
+		// The url Property Type also accepts scheme-less values (e.g. "example.com"), which are not valid
+		// absolute IRIs; those keep the string-literal form so nothing is lost.
+		$this->assertEquals(
+			[ new Literal( 'example.com', $this->xsd( 'anyURI' ) ) ],
+			RdfValueMapperRegistry::withCoreMappers()->mapValue( 'url', new StringValue( 'example.com' ) )
+		);
+	}
+
+	public function testUrlMapsEachPartIndependentlyToAnIriOrLiteral(): void {
+		$this->assertEquals(
+			[
+				new Iri( 'https://pro.wiki' ),
+				new Literal( 'example.com', $this->xsd( 'anyURI' ) ),
+			],
+			RdfValueMapperRegistry::withCoreMappers()->mapValue( 'url', new StringValue( 'https://pro.wiki', 'example.com' ) )
 		);
 	}
 
