@@ -4,7 +4,7 @@ order: 1
 ---
 # Parser Functions
 
-NeoWiki provides three parser functions for use in wikitext.
+NeoWiki provides these parser functions for use in wikitext.
 
 | If you want to... | Use |
 |-------------------|-----|
@@ -44,8 +44,8 @@ and how.
 
 ### Notes
 
-- Returns an empty string if the resolved Subject does not exist.
-- The View Type (e.g. `infobox`) is determined by the Layout. Only `infobox` is implemented today.
+- Renders nothing when the Subject does not exist, or when no Subject is given and the page has no
+  Main Subject.
 - Rendering happens client-side, so the Subject view appears once the page's JavaScript has loaded.
 
 ### Examples
@@ -63,8 +63,7 @@ Subject both positionally and as `subject=` produce a visible parser error.
 
 ## `{{#neowiki_value}}`
 
-Returns the value of a single property from a Subject, formatted as a string. Designed for inline
-use in wikitext and for other extensions that need to read NeoWiki metadata via parser functions.
+Returns the value of a single property from a Subject, formatted as a string.
 
 ### Syntax
 
@@ -88,7 +87,7 @@ use in wikitext and for other extensions that need to read NeoWiki metadata via 
 
 | Type | Output |
 |------|--------|
-| `text`, `url`, `select` | The string value. Multiple values joined with `separator`. |
+| `text`, `url`, `select`, `date`, `dateTime` | The string value. Multiple values joined with `separator`. |
 | `number` | The number, e.g. `42` or `19.99`. |
 | `boolean` | `true` or `false`. |
 | `relation` | The target Subject's label. Multiple targets joined with `separator`. Falls back to the target Subject ID if the label cannot be looked up. |
@@ -99,8 +98,7 @@ as "empty".
 ### Output is plain text
 
 The output is HTML-escaped and not interpreted as wikitext. Links, templates, and HTML inside
-property values render as literal characters. Useful when you want exactly what the user typed;
-not useful when you want to emit links or styled markup.
+property values render as literal characters.
 
 When you pass the result to another parser function as an argument, that function also receives
 HTML-encoded text — a value of `Engineers & Designers` arrives as `Engineers &amp; Designers`.
@@ -128,14 +126,13 @@ Passing a value to another extension's parser function:
 
 ## `{{#cypher_raw}}`
 
-Executes a read-only Cypher query and returns the raw results as JSON in a code block. Mainly
-useful for development and debugging. It is available only when a Neo4j graph backend is configured;
-on a wiki without one, `{{#cypher_raw: …}}` is not registered and renders as ordinary wikitext.
+Executes a read-only Cypher query and returns the raw results as JSON in a code block, for
+development and debugging. Available only when a Neo4j graph backend is configured; on a wiki
+without one, `{{#cypher_raw: …}}` is not registered and renders as ordinary wikitext. The
+[Graph Model](../api/graph-model.md) describes the node and relationship structure to query.
 
-For end-user dashboards, formatted query result rendering is planned (see
-[#809](https://github.com/ProfessionalWiki/NeoWiki/issues/809)). A Lua
-[`nw.query()`](lua-api.md#nwquerycypher-params) function is already available for building
-custom result formatting in templates.
+For formatted result rendering, build it in a template with Lua
+[`nw.query()`](lua-api.md#nwquerycypher-params).
 
 ### Syntax
 
@@ -147,6 +144,9 @@ custom result formatting in templates.
 
 - Only read queries are allowed. Anything that creates, modifies, or deletes data is rejected,
   including `CALL` (even for read-only procedures).
+- Results are capped at the `maxRows` limit from `$wgNeoWikiQueryLimits` (higher for users with
+  `apihighlimits`); rows beyond it are dropped silently. Queries also stop at that tier's
+  `timeoutSeconds`.
 - Errors (rejected queries, syntax errors, the database being unavailable, etc.) render as a
   styled error message in place of the result.
 - Output is HTML-escaped, so query results containing `<`, `>`, `&`, etc. display safely.
@@ -164,12 +164,12 @@ custom result formatting in templates.
 ## `{{#sparql_raw}}`
 
 Executes a read-only SPARQL query against the first configured [SPARQL store](../operations/installation.md#optional-sparql-graph-stores)
-and returns the raw results as JSON in a code block. The SPARQL counterpart of `{{#cypher_raw}}`, mainly
-useful for development and debugging. It is available only when a SPARQL store is configured; on a wiki
-without one, `{{#sparql_raw: …}}` is not registered and renders as ordinary wikitext.
+and returns the raw results as JSON in a code block. The SPARQL counterpart of `{{#cypher_raw}}`, for
+development and debugging. Available only when a SPARQL store is configured; on a wiki without one,
+`{{#sparql_raw: …}}` is not registered and renders as ordinary wikitext.
 
-The output is the W3C [`application/sparql-results+json`](https://www.w3.org/TR/sparql11-results-json/)
-document, unmodified — the standard `head` / `results` structure (or `boolean` for an `ASK` query).
+The JSON is the W3C [`application/sparql-results+json`](https://www.w3.org/TR/sparql11-results-json/)
+document — the standard `head` / `results` structure (or `boolean` for an `ASK` query).
 
 ### Syntax
 
@@ -179,9 +179,9 @@ document, unmodified — the standard `head` / `results` structure (or `boolean`
 
 ### Notes
 
-- Read-only by protocol, not by a keyword filter: the query is sent as a SPARQL 1.1 *query* operation
-  (`SELECT` / `ASK` / `CONSTRUCT` / `DESCRIBE`), and the SPARQL query grammar contains no update forms, so
-  no read-only validator is needed (unlike Cypher, where one language expresses both reads and writes).
+- Read-only: the query cannot modify the store.
+- No row cap is applied — the full results document is returned. Queries stop at the
+  `timeoutSeconds` from `$wgNeoWikiQueryLimits` (higher for users with `apihighlimits`).
 - Errors (a query the store rejects, the store being unavailable, etc.) render as a styled error message
   in place of the result.
 - Output is HTML-escaped, so results containing `<`, `>`, `&`, etc. display safely.
@@ -193,12 +193,3 @@ document, unmodified — the standard `head` / `results` structure (or `boolean`
 ```
 {{#sparql_raw: SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 10}}
 ```
-
-## Related Documentation
-
-- [Lua API](lua-api.md) — Programmatic access to the same data via `mw.neowiki`
-- [Glossary](../glossary.md) — Definitions of Subject, Schema, Layout, View, etc.
-- [Schema Format](../api/schema-format.md) — How Schemas and properties are defined
-- [Subject Format](../api/subject-format.md) — How Subject data is stored
-- [Graph Model](../api/graph-model.md) — Neo4j node and relationship structure (relevant for
-  `{{#cypher_raw}}` queries)

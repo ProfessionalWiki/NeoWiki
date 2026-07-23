@@ -80,31 +80,20 @@
 			@update:open="onEditorOpenChange"
 		/>
 
-		<CdxDialog
+		<DeletePageDialog
 			:open="isDeleteConfirmOpen"
-			:title="$i18n( 'neowiki-schema-delete-confirm-title' ).text()"
-			:use-close-button="true"
+			:page-title="`Schema:${ deletingSchemaName }`"
+			:display-name="deletingSchemaName"
+			:type-label="$i18n( 'neowiki-schema-noun' ).text()"
 			@update:open="isDeleteConfirmOpen = $event"
-		>
-			<I18nSlot message-key="neowiki-schema-delete-confirm-message">
-				<strong>{{ deletingSchemaName }}</strong>
-			</I18nSlot>
-
-			<template #footer>
-				<EditSummary
-					help-text=""
-					:save-button-label="$i18n( 'neowiki-schema-delete-confirm-delete' ).text()"
-					:save-disabled="false"
-					@save="executeDelete"
-				/>
-			</template>
-		</CdxDialog>
+			@deleted="fetchSchemas( lastOffset, pageSize )"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref, shallowRef, onMounted, nextTick } from 'vue';
-import { CdxButton, CdxDialog, CdxIcon, CdxTable } from '@wikimedia/codex';
+import { CdxButton, CdxIcon, CdxTable } from '@wikimedia/codex';
 import type { TableColumn } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
@@ -114,8 +103,7 @@ import { Schema } from '@/domain/Schema.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import SchemaCreatorDialog from './SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
-import I18nSlot from '@/components/common/I18nSlot.vue';
+import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 
 const paginationSizeOptions: { value: number }[] = [
 	{ value: 10 },
@@ -238,33 +226,6 @@ function onEditorOpenChange( value: boolean ): void {
 function confirmDelete( schemaName: string ): void {
 	deletingSchemaName.value = schemaName;
 	isDeleteConfirmOpen.value = true;
-}
-
-async function executeDelete( summary: string ): Promise<void> {
-	isDeleteConfirmOpen.value = false;
-	const name = deletingSchemaName.value;
-	const reason = summary || mw.msg( 'neowiki-schema-delete-summary-default' );
-
-	try {
-		const api = new mw.Api();
-		const token = await api.getEditToken();
-		await api.post( {
-			action: 'delete',
-			title: `Schema:${ name }`,
-			reason: reason,
-			token: token
-		} );
-		mw.notify( mw.msg( 'neowiki-schema-delete-success', name ), { type: 'success' } );
-		await fetchSchemas( lastOffset.value, pageSize.value );
-	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{
-				title: mw.msg( 'neowiki-schema-delete-error', name ),
-				type: 'error'
-			}
-		);
-	}
 }
 
 onMounted( async () => {

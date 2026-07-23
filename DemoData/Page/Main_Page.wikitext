@@ -12,7 +12,7 @@ This is a public demo of NeoWiki, an early-stage MediaWiki extension. Explore th
 * Structured data, queried in a page: [[Museum collection]] runs live graph queries over linked museums, artworks, and exhibitions.
 * Several Subjects on one page: open the Data tab on [{{fullurl:Rijksmuseum|action=subjects}} Rijksmuseum] to see the museum and its yearly visitor records as separate Subjects.
 * Every Subject is shaped by a [[Special:Schemas|Schema]], and [[Special:Layouts|Layouts]] control how Subjects are displayed.
-* Every Subject's data as RDF: [[RDF and ontology mappings]] shows native and EDM projections of the demo content.
+* Every Subject's data as RDF: [[RDF and ontology mappings]] shows native and EDM projections of the demo content, the latter defined by [[Special:Mappings|Mappings]].
 
 '''Trying it hands-on'''
 

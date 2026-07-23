@@ -47,11 +47,19 @@
 
 		"CodeEditorGetPageLanguage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onCodeEditorGetPageLanguage",
 
-		"BeforePageDisplay": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",
+		"BeforePageDisplay": [
+			"ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",
+			"ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onConfigPageBeforePageDisplay"
+		],
 
 		"SpecialPage_initList": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSpecialPageInitList",
 
 		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn",
+
+		"ContentHandlerDefaultModelFor": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentHandlerDefaultModelFor",
+		"EditFilter": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFilter",
+		"AlternateEdit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onAlternateEdit",
+		"EditFormPreloadText": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFormPreloadText",
 
 		"SidebarBeforeOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSidebarBeforeOutput",
 		"SkinTemplateNavigation::Universal": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSkinTemplateNavigationUniversal",
@@ -153,7 +161,8 @@
 	"SpecialPages": {
 		"NeoJson": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson",
 		"Schemas": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSchemas",
-		"Layouts": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialLayouts"
+		"Layouts": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialLayouts",
+		"Mappings": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialMappings"
 	},
 
 	"Actions": {
@@ -164,6 +173,10 @@
 		"NeoWikiEnableDevelopmentUI": {
 			"description": "Whether development UIs should be enabled",
 			"value": false
+		},
+		"NeoWikiEnableInWikiConfig": {
+			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiDereferenceSubjectsToDataTab and NeoWikiAutoRenderMainSubject; its values take precedence over LocalSettings.php.",
+			"value": true
 		},
 		"NeoWikiEnforceValidation": {
 			"description": "Whether write endpoints reject edits that introduce new constraint violations. When false, violations are surfaced in responses but writes always persist.",
@@ -195,6 +208,10 @@
 		"NeoWikiRdfBaseUri": {
 			"description": "Base URI under which the RDF export mints all NeoWiki IRIs (entity, property, schema, page, etc.). When null, defaults to the wiki's canonical URL ($wgCanonicalServer). Wiki-level on purpose, so sibling projections describe the same entities with identical IRIs.",
 			"value": null
+		},
+		"NeoWikiDereferenceSubjectsToDataTab": {
+			"description": "Whether a browser dereferencing a Subject's concept URI (Accept: text/html) is sent to the hosting page's Data tab (?action=subjects) opened on the Subject's row (expanded, scrolled to, highlighted). When false (default), it is sent to the plain hosting page.",
+			"value": false
 		},
 		"NeoWikiSparqlStores": {
 			"description": "SPARQL 1.1 graph stores to keep in sync with page changes and to query, in addition to any Neo4j backend. A list of objects, each with: 'updateUrl' (required, the store's SPARQL 1.1 Update endpoint, e.g. a QLever instance); 'queryUrl' (optional, the store's SPARQL 1.1 Query endpoint the read surfaces use; defaults to 'updateUrl', which is correct for QLever where the two are the same); 'accessToken' (optional, sent as an HTTP Bearer token on both update and query requests, e.g. for a QLever access token or a read-protected endpoint); and 'projection' (optional, the RDF vocabulary written to the store: 'native' by default, or any configured Mapping target). The query surfaces (the {{#sparql_raw}} parser function, nw.sparqlQuery() in Lua, and POST /neowiki/v0/query/sparql) target the first configured store. Works with QLever and any SPARQL 1.1 store. Empty by default.",
@@ -260,6 +277,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newExportSubjectRdfApi"
 		},
 		{
+			"path": "/neowiki/v0/entity/{subjectId}",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newResolveSubjectIriApi"
+		},
+		{
 			"path": "/neowiki/v0/schema/{schemaName}",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaApi"
@@ -288,6 +310,11 @@
 			"path": "/neowiki/v0/schemas",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaSummariesApi"
+		},
+		{
+			"path": "/neowiki/v0/mappings",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetMappingSummariesApi"
 		},
 		{
 			"path": "/neowiki/v0/subject-ids",
@@ -336,8 +363,11 @@
 				"CdxChipInput",
 				"CdxMultiselectLookup",
 				"CdxTextArea",
+				"CdxMenu",
 				"CdxMenuButton",
 				"useResizeObserver",
+				"useFloatingMenu",
+				"useGeneratedId",
 				"CdxMessage",
 				"CdxToggleSwitch",
 				"CdxToggleButtonGroup",
@@ -356,8 +386,11 @@
 						"cdxIconTrash",
 						"cdxIconArrowPrevious",
 						"cdxIconArrowNext",
+						"cdxIconNext",
+						"cdxIconPrevious",
 						"cdxIconInfo",
 						"cdxIconEdit",
+						"cdxIconDownload",
 						"cdxIconLink",
 						"cdxIconCheck",
 						"cdxIconSearchCaseSensitive",
@@ -446,6 +479,17 @@
 				"neowiki-edit-summary-label",
 				"neowiki-edit-summary-placeholder",
 				"neowiki-edit-summary-help-text-schema",
+				"neowiki-delete-confirm-title",
+				"neowiki-delete-confirm-message",
+				"neowiki-delete-confirm-button",
+				"neowiki-schema-noun",
+				"neowiki-layout-noun",
+				"neowiki-mapping-noun",
+				"neowiki-delete-reason-label",
+				"neowiki-delete-reason-placeholder",
+				"neowiki-delete-summary-default",
+				"neowiki-delete-success",
+				"neowiki-delete-error",
 				"neowiki-subject-editor-title",
 				"neowiki-subject-editor-save",
 				"neowiki-schema-editor-new-property",
@@ -482,6 +526,7 @@
 				"neowiki-subject-creator-creating-schema",
 				"neowiki-subject-creator-back",
 				"neowiki-edit-schema",
+				"neowiki-schema-delete",
 				"neowiki-schema-editor-summary-default",
 				"neowiki-schema-editor-success",
 				"neowiki-schema-editor-error",
@@ -544,6 +589,24 @@
 				"neowiki-layouts-column-type",
 				"neowiki-layouts-column-description",
 				"neowiki-layouts-empty",
+				"neowiki-special-mappings",
+				"neowiki-mappings-column-name",
+				"neowiki-mappings-column-schemas",
+				"neowiki-mappings-schema-count",
+				"neowiki-mappings-schemas-none",
+				"neowiki-mappings-empty",
+				"neowiki-mapping-creator-button",
+				"neowiki-mapping-creator-title",
+				"neowiki-mapping-creator-name-field",
+				"neowiki-mapping-creator-name-placeholder",
+				"neowiki-mapping-creator-name-required",
+				"neowiki-mapping-creator-name-reserved",
+				"neowiki-mapping-creator-name-taken",
+				"neowiki-mapping-creator-save",
+				"neowiki-mapping-creator-error",
+				"neowiki-mapping-creator-summary-default",
+				"neowiki-edit-mapping",
+				"neowiki-mapping-delete",
 				"neowiki-layout-creator-title",
 				"neowiki-layout-creator-button",
 				"neowiki-layout-creator-name-field",
@@ -559,12 +622,6 @@
 				"neowiki-layout-creator-error",
 				"neowiki-layout-creator-summary-default",
 				"neowiki-layout-delete",
-				"neowiki-layout-delete-confirm-title",
-				"neowiki-layout-delete-confirm-message",
-				"neowiki-layout-delete-confirm-delete",
-				"neowiki-layout-delete-summary-default",
-				"neowiki-layout-delete-success",
-				"neowiki-layout-delete-error",
 				"neowiki-managesubjects-title",
 				"neowiki-managesubjects-not-applicable",
 				"neowiki-managesubjects-add-button",
@@ -584,6 +641,7 @@
 				"neowiki-managesubjects-row-delete",
 				"neowiki-managesubjects-row-promote",
 				"neowiki-managesubjects-row-demote",
+				"neowiki-managesubjects-row-copy-link",
 				"neowiki-managesubjects-row-more",
 				"neowiki-managesubjects-row-drag-handle",
 				"neowiki-managesubjects-statement-count",
@@ -599,11 +657,21 @@
 				"neowiki-managesubjects-id-copy",
 				"neowiki-managesubjects-id-copied",
 				"neowiki-managesubjects-id-copy-error",
+				"neowiki-managesubjects-iri-label",
+				"neowiki-managesubjects-iri-copy",
+				"neowiki-managesubjects-iri-copied",
+				"neowiki-managesubjects-iri-copy-error",
+				"neowiki-managesubjects-link-copied",
+				"neowiki-managesubjects-link-copy-error",
+				"neowiki-managesubjects-export-all-button",
 				"neowiki-managesubjects-export-button",
 				"neowiki-managesubjects-export-json",
-				"neowiki-managesubjects-export-native",
-				"neowiki-managesubjects-export-turtle",
-				"neowiki-managesubjects-export-trig"
+				"neowiki-managesubjects-export-format-turtle",
+				"neowiki-managesubjects-export-format-trig",
+				"neowiki-managesubjects-export-back",
+				"neowiki-managesubjects-export-choose-format",
+				"neowiki-managesubjects-export-choose-projection",
+				"neowiki-managesubjects-export-native"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

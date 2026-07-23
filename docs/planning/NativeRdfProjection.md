@@ -236,11 +236,9 @@ DROP SILENT GRAPH <neo-graph:42>
 - **Ontology mapping.** The [Global Properties](GlobalProperties.md) document concluded that ontology alignment
   (e.g., "Person.Name maps to `foaf:name`") should happen via a separate ontology mapping, not by changing the data
   model. That mapping is designed in [Ontology Mapping](OntologyMapping.md). The projection described here emits
-  NeoWiki-native predicates; an ontology mapping instead projects the data into standard-ontology terms. Note that
-  ontology mappings need to be quite expressive: CIDOC-CRM alignment isn't just predicate renaming — it requires
-  generating intermediate nodes that don't exist in NeoWiki's data. For example, a simple NeoWiki "Creator" relation
-  from an Object to a Person would need to expand to `E22_Human-Made_Object → P108i_was_produced_by →
-  E12_Production → P14_carried_out_by → E39_Actor` in CIDOC-CRM, creating the Production event node in RDF.
+  NeoWiki-native predicates; an ontology mapping instead projects the data into standard-ontology terms. Ontology
+  mappings need to be quite expressive: CIDOC-CRM alignment isn't just predicate renaming — it requires generating
+  intermediate nodes that don't exist in NeoWiki's data (worked example under Q4 below).
   At the ECHOLOT meeting in Bilbao (March 2026), the consortium agreed that wiki admins should be able to define
   mappings between ontologies they care about and the NeoWiki Schemas of their wiki. This confirms the
   separate-mapping approach and means several open questions below (Q1, Q2, Q4) are less critical for the native
@@ -294,6 +292,15 @@ vocabulary alignment happens in the ontology mapping.*
 `source`, `target`, `relationType`, and properties). Is this the right approach for the CH/LOD community? Are
 there conventions we should follow? Should we plan the data model with future RDF-star migration in mind?
 
+*Feedback and as-built (2026-07): shipped as specified — Relations emit both the direct triple and the reified
+Relation node; see [Relations](#relations) and the [RDF Export reference](../rdf/rdf-export.md). George Bruseker
+(takin): having both the direct and the indirect representation is handy; the Wikibase-style reification is
+essentially a named graph. RDF-star migration stays out of scope here (see
+[What This Does Not Cover](#what-this-does-not-cover)). Still moving: the `relationType` term was flagged as
+confusing ([#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999)), and renaming it is committed as
+part of the cohesive relations design pass ([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)), which
+may also reshape the Relation node.*
+
 **Q4: CIDOC-CRM alignment.** CIDOC-CRM is the dominant ontology in cultural heritage. It uses an event-centric
 model (relationships mediated through events) which is quite different from NeoWiki's entity-property model. For
 example, a simple "Creator" relation in NeoWiki would correspond to the CIDOC-CRM path
@@ -333,6 +340,10 @@ properties (`hasSomeFeature`). This is the most common RDF convention. (2) Under
 practical for cultural heritage users less familiar with URL encoding. Both are viable; this is a convention
 choice, not an architectural one.*
 
+*Resolved by shipping: underscores — spaces in Property Names become underscores in the IRI local name
+(`Has_author`); see the [RDF Export reference](../rdf/rdf-export.md). Partner concurrence that either convention
+works (George Bruseker, takin, 2026-07-06).*
+
 ### Implementation decisions (can resolve ourselves)
 
 **Q8: Property type in RDF.** NeoWiki Statements include the "writer's schema" (the property type at write time).
@@ -346,7 +357,8 @@ Tentative answer: accept the loss; ordering is a display concern handled by View
 
 *Feedback: Question raised whether ordering truly matters for some use cases (e.g., pages in a book). Tentative
 answer unchanged: accept ordering loss in the native projection. If specific use cases require ordering, it can be
-added later (e.g., via `rdf:List` or index properties).*
+added later (e.g., via `rdf:List` or index properties). Concurrence (George Bruseker, takin, 2026-07-06): where
+ordering is real data, model it explicitly so it stays recoverable in the export.*
 
 **Q10: Schema namespace page.** Should NeoWiki emit an RDFS/OWL definition for each Schema (as a class) and each
 Property Definition (as a property with domain/range)? This would make the RDF self-describing. Tentative answer:

@@ -4,45 +4,35 @@ order: 2
 ---
 # Ontology Mapping
 
-NeoWiki stores data in its own native Schemas and projects it to RDF.
+Alongside the built-in [native projection](rdf-export.md), which needs no mapping, you can project to an
+established ontology such as EDM by defining an **ontology mapping**.
 
-Users can project to established ontologies like EDM and Dublin Core by defining **ontology mappings**.
+The native projection and each ontology mapping are sibling projections of the same source data. Several can
+run at once: an export request selects one by name, and a SPARQL store can be configured for any of them.
 
-NeoWiki also comes with a [**native projection**](rdf-export.md), based on the native Schemas, available
-without having to define an ontology mapping first.
+The design and its open questions live in [planning/OntologyMapping.md](../planning/OntologyMapping.md); this
+page is the as-built reference for the shipped v1. The
+[Person-to-EDM worked example](../examples/person-to-edm.md) walks through a Person Schema projected to EDM,
+with native and mapped output side by side and the current gaps.
 
-The native projection and each ontology mapping are sibling projections of the same source data. Multiple
-can be supported at the same time, letting API users choose their RDF format, and giving wiki admins the
-option to realize multiple projections in separate SPARQL stores.
-
-The design and its open questions are in
-[planning/OntologyMapping.md](../planning/OntologyMapping.md); this page is the as-built reference for
-the shipped v1. See the
-[Person-to-EDM worked example](../examples/person-to-edm.md) for a complete walkthrough: a Person Schema projected to EDM, the native
-and mapped output side by side, and the current gaps.
-
-> **v1 is deliberately minimal and the stored format is provisional.** v1 covers only the *near-1:1
-> tier* — term substitution: a target class for the Subject and one target predicate per mapped
-> property. It does **not** synthesize the intermediate event nodes that CIDOC-CRM-style ontologies
-> need. The mapping-formalism question is still open
-> ([OntologyMapping.md Q1](../planning/OntologyMapping.md#open-questions), [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995)),
-> so the `"version": 1` format may change. It is versioned so a later tier can supersede it.
+> **v1 scope.** It covers only *near-1:1* term substitution — a target class per Subject and one target
+> predicate per mapped property — and does **not** synthesize the intermediate event nodes that
+> CIDOC-CRM-style ontologies need. The stored `"version": 1` format may change; see the
+> [open questions](../planning/OntologyMapping.md#open-questions).
 
 ## Ontology Mappings are wiki pages
 
-A Mapping is a page in the **`Mapping:` namespace** with content model `NeoWikiMapping` (JSON), edited
-like a Schema or Layout page and gated by the `neowiki-mapping-edit` right. There is **one Mapping page
-per target ontology**, and the page title is the target's name — the projection name you pass to the
-export surfaces below ([ADR 17](../adr/017-names-as-identifiers.md)-style, just like Schema pages). The
-page `Mapping:EDM`, for example, defines the `EDM` projection.
+A Mapping is a page in the **`Mapping:` namespace** with content model `NeoWikiMapping` (JSON), gated by the
+`neowiki-mapping-edit` right. There is **one Mapping page per target ontology**, and the page title is the
+projection name you pass to the export surfaces: the page `Mapping:EDM` defines the `EDM` projection. The
+`Special:Mappings` page lists every Mapping on the wiki.
 
-A single page holds an entry for **every mapped Schema**. You map a Schema to an ontology by adding an
-entry to that ontology's page, not by creating a page. A Schema still maps to several ontologies — one
-entry on each ontology's page — and the Schema is never changed to fit an ontology.
+A single page holds an entry for **every mapped Schema** — map a Schema to an ontology by adding an entry to
+that ontology's page, not by creating a page. A Schema maps to several ontologies through one entry on each
+ontology's page.
 
-Uniqueness is **by construction**: a page cannot list the same Schema twice (they are JSON object keys),
-and page titles are unique, so no save-time duplicate check is needed. The name **`native`** is reserved
-for the built-in [native projection](rdf-export.md), so a `Mapping:Native` page is rejected on save.
+The name **`native`** is reserved for the built-in [native projection](rdf-export.md), so a `Mapping:Native`
+page is rejected on save.
 
 ## Format (version 1)
 
@@ -97,74 +87,52 @@ Each **property** entry:
 ### CURIEs, IRIs, and safety
 
 A `class`, `predicate`, or `datatype` is either a **CURIE** `prefix:local` whose prefix is declared in
-`prefixes`, or an **absolute IRI** containing `://`. A CURIE with an undeclared prefix is rejected (it
-is a typo, not a bare IRI). Non-authority IRI schemes (`urn:`, `mailto:`, …) are out of scope for v1.
+`prefixes`, or an **absolute IRI** containing `://`. A CURIE with an undeclared prefix is rejected;
+non-authority schemes (`urn:`, `mailto:`, …) are out of scope for v1.
 
-Terms are expanded to exact ontology IRIs and are **never percent-encoded** — a Mapping must reproduce
-the ontology's terms verbatim. A term (or a declared prefix namespace) that would expand to an IRI
-containing an IRIREF-illegal character (`< > " { } | ^ \` backtick, space, control characters) is
-**rejected at save time**. The `lang` tag is constrained the same way — it must be BCP-47-shaped, so it
-cannot smuggle a datatype or a stray `"` into the serialized literal.
+Terms are reproduced verbatim, never percent-encoded. A term or a declared prefix namespace that would expand
+to an IRI containing an IRIREF-illegal character (`< > " { } | ^ \` backtick, space, control characters) is
+**rejected at save time**, as is a `lang` tag that is not BCP-47-shaped and a property entry that sets both
+`lang` and `datatype`.
 
-Both checks are re-applied at **projection time**, so a Mapping stored before validation existed (or
-loaded via `importDump`) still cannot corrupt the output: a class, predicate, datatype, or prefix that
-does not re-expand safely is dropped, and an invalid language tag falls back to a plain literal — each
-with a logged warning. A bad stored Mapping degrades the projection rather than aborting the export.
+The same checks re-run at **projection time**: a class, predicate, datatype, or prefix that does not re-expand
+safely is dropped, an invalid language tag falls back to a plain literal, and each is logged. The projection
+degrades rather than aborting the export.
 
 ## What gets emitted
 
 For each Subject on a page whose Schema has an entry on the requested projection's Mapping page:
 
 - `rdf:type <subject.class>`.
-- `rdfs:label "<label>"` — always, so every projected entity is labelled.
-- One triple per mapped property **value** (multi-valued properties repeat the predicate). Unmapped
-  properties are **absent** — conformant output is the point.
-- A **relation** value becomes a direct triple to the target Subject's IRI. No `neo:Relation`
-  reification node and no relation qualifiers are projected (native-vocabulary constructs with no v1
-  mapping).
+- `rdfs:label "<label>"` — the Subject's label, always.
+- One triple per mapped property **value**; multi-valued properties repeat the predicate. Unmapped properties
+  are absent.
+- A **relation** value becomes a direct triple to the target Subject's IRI. No `neo:Relation` reification node
+  and no relation qualifiers are projected.
 
-Deliberate v1 boundaries:
+v1 boundaries:
 
-- **Subject IRIs stay native** (`neo-subj:` under the wiki's RDF base URI): the entity is the wiki's
-  own; only the *vocabulary* comes from the target ontology. Cross-linking to external entities
-  (`owl:sameAs`, reconciliation) is later work.
-- A **Subject whose Schema has no entry** on the Mapping page is absent entirely. Its IRI can still
-  appear as the target of a relation from a mapped Subject — untyped — exactly as a missing Schema
-  behaves in the native projection.
+- **Subject IRIs stay native** (`neo-subj:`): only the vocabulary comes from the target ontology. Cross-linking
+  to external entities (`owl:sameAs`, reconciliation) is later work.
+- A **Subject whose Schema has no entry** on the Mapping page is absent, but its IRI can still appear as a
+  bare IRI — no type, no label — as the target of a relation from a mapped Subject.
 - **No page-metadata triples** are emitted (no page node, `neo:hasSubject`, etc.).
-- Quads are placed in the **per-page named graph for this target** (`$base/graph/{target}/page/{id}`), like the
-  native projection, so the same per-page sync infrastructure works for an ontology store — and because the graph
-  is qualified by the target, sibling projections of a page can share one store.
+- Quads go in the per-page named graph for this target (`$base/graph/{target}/page/{id}`), where `{target}` is
+  the projection name.
 
 ## Selecting a projection
 
-The RDF export surfaces take an optional `projection`:
-
-`GET /rest.php/neowiki/v0/page/{pageId}/rdf?projection=EDM`
-
-- `projection` is `native` (the default, unchanged behaviour) or the name of a Mapping page (its title).
-- An unknown projection returns **`400`** listing the known projections.
-
-```sh
-# Native (default):
-curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf'
-# EDM ontology projection:
-curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf?projection=EDM&format=turtle'
-```
-
-The bulk dump takes the same option:
-
-```sh
-php maintenance/run.php NeoWiki:DumpRdf --projection=EDM > dump.trig
-```
+The RDF export surfaces — the per-page and per-Subject endpoints and the `DumpRdf` bulk dump — take a
+`projection` parameter whose value is a projection name — a Mapping page title without the `Mapping:`
+prefix (`EDM`), or `native` for the built-in projection. See
+[RDF Export](rdf-export.md#endpoint) for the contract.
 
 ## Authoring a Mapping
 
-1. Create a page in the `Mapping:` namespace named after the target ontology — the title is the
-   projection name, e.g. `Mapping:EDM`. If a page for that ontology already exists, edit it instead.
+1. Create a page in the `Mapping:` namespace named after the target ontology (`Mapping:EDM`), or edit the
+   existing one.
 2. Declare the page-level `prefixes` you will use.
-3. Add an entry under `schemas` for each Schema you want to project: give the Subject a `subject.class`
-   and map the properties you want to publish. Only listed properties are projected.
-4. Save. Structural errors and unresolvable/unsafe terms are reported on save; the reserved page name
-   `native` is rejected.
-5. Export a page of a mapped Schema with `?projection=<page title>` to see the result.
+3. Add an entry under `schemas` for each Schema to project: give the Subject a `subject.class` and map the
+   properties to publish.
+4. Save. Structural errors and unresolvable or unsafe terms are reported on save.
+5. Export a page of a mapped Schema with `?projection=EDM` (the page title without the `Mapping:` prefix).

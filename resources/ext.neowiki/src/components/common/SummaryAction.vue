@@ -1,10 +1,10 @@
 <template>
-	<div class="ext-neowiki-edit-summary">
+	<div class="ext-neowiki-summary-action">
 		<CdxAccordion @toggle="onAccordionToggle">
 			<template #title>
-				<span class="ext-neowiki-edit-summary__label">
-					{{ $i18n( 'neowiki-edit-summary-label' ).text() }}
-					<span class="ext-neowiki-edit-summary__optional-flag">
+				<span class="ext-neowiki-summary-action__label">
+					{{ props.label || $i18n( 'neowiki-edit-summary-label' ).text() }}
+					<span class="ext-neowiki-summary-action__optional-flag">
 						{{ $i18n( 'cdx-label-optional-flag' ).text() }}
 					</span>
 				</span>
@@ -15,25 +15,25 @@
 				:hide-label="true"
 			>
 				<template #label>
-					{{ $i18n( 'neowiki-edit-summary-label' ).text() }}
+					{{ props.label || $i18n( 'neowiki-edit-summary-label' ).text() }}
 				</template>
 
 				<CdxTextArea
 					ref="textAreaRef"
 					v-model="editSummary"
-					:placeholder="$i18n( 'neowiki-edit-summary-placeholder' ).text()"
+					:placeholder="props.placeholder || $i18n( 'neowiki-edit-summary-placeholder' ).text()"
 				/>
 			</CdxField>
 		</CdxAccordion>
 
 		<div
 			v-if="props.helpText"
-			class="ext-neowiki-edit-summary__help-text"
+			class="ext-neowiki-summary-action__help-text"
 		>
 			{{ props.helpText }}
 		</div>
 
-		<div class="ext-neowiki-edit-summary__actions">
+		<div class="ext-neowiki-summary-action__actions">
 			<CdxButton
 				:action="props.saveButtonAction"
 				weight="primary"
@@ -60,10 +60,16 @@ const props = withDefaults(
 		saveDisabled: boolean;
 		saveButtonAction?: 'progressive' | 'destructive';
 		saveButtonIcon?: Icon;
+		label?: string;
+		placeholder?: string;
 	}>(),
 	{
 		saveButtonAction: 'progressive',
-		saveButtonIcon: () => cdxIconCheck
+		saveButtonIcon: () => cdxIconCheck,
+		// Default to the edit-summary wording; callers such as the delete dialog override these
+		// to label the field a "reason".
+		label: '',
+		placeholder: ''
 	}
 );
 
@@ -88,12 +94,16 @@ const onSaveClick = (): void => {
 	emit( 'save', editSummary.value );
 };
 
+// Lets a parent trigger the save from elsewhere (e.g. Enter in another field) while keeping
+// whatever summary is currently entered, rather than reimplementing the save with an empty one.
+defineExpose( { submit: onSaveClick } );
+
 </script>
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-.ext-neowiki-edit-summary {
+.ext-neowiki-summary-action {
 	.cdx-accordion {
 		border-bottom: 0;
 

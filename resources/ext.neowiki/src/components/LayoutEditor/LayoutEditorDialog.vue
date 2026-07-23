@@ -14,7 +14,7 @@
 			/>
 
 			<template #footer>
-				<EditSummary
+				<SummaryAction
 					:help-text="$i18n( 'neowiki-edit-summary-help-text-layout' ).text()"
 					:save-button-label="$i18n( 'neowiki-save-layout' ).text()"
 					:save-disabled="!hasChanged"
@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import LayoutEditor from '@/components/LayoutEditor/LayoutEditor.vue';
 import type { LayoutEditorExposes } from '@/components/LayoutEditor/LayoutEditor.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { Layout } from '@/domain/Layout.ts';

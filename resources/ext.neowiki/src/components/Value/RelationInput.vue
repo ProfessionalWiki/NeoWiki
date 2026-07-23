@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, toRef } from 'vue';
 import { CdxField, CdxIcon, ValidationMessages } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
@@ -56,7 +56,7 @@ import { ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/component
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { Value, ValueType, RelationValue, newRelation, relationValuesHaveSameTargets } from '@/domain/Value';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { SubjectViolation } from '@/domain/SubjectViolation.ts';
+import { useServerViolations } from '@/composables/useServerViolations.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<RelationProperty>>(),
@@ -73,27 +73,18 @@ const emit = defineEmits<ValueInputEmits>();
 const internalValue = ref<RelationValue | undefined>( undefined );
 const singleHasUnmatchedText = ref( false );
 
-function relevantServerViolations(): readonly SubjectViolation[] {
-	const name = props.property.name.toString();
-	return ( props.serverViolations ?? [] ).filter( ( v ) => v.propertyName === name );
-}
+const { firstMessage, emitClears } = useServerViolations(
+	toRef( props, 'property' ),
+	toRef( props, 'serverViolations' ),
+	emit
+);
 
-// Field-level server violation (NeoMultiLookupInput has no per-index slot).
-function serverFieldMessages(): ValidationMessages {
-	const hit = relevantServerViolations()[ 0 ];
-	if ( hit ) {
-		return {
-			error: mw.message( `neowiki-field-${ hit.code }`, ...( hit.args as string[] ) ).text()
-		};
-	}
-	return {};
-}
-
+// One aggregate error for the whole property (NeoMultiLookupInput has no per-index slot).
 const displayedFieldMessages = computed( (): ValidationMessages => {
-	if ( singleHasUnmatchedText.value ) {
+	if ( singleHasUnmatchedText.value || firstMessage.value === null ) {
 		return {};
 	}
-	return serverFieldMessages();
+	return { error: firstMessage.value };
 } );
 
 const fieldStatus = computed( (): 'error' | 'default' => {
@@ -102,15 +93,6 @@ const fieldStatus = computed( (): 'error' | 'default' => {
 	}
 	return displayedFieldMessages.value.error !== undefined ? 'error' : 'default';
 } );
-
-function emitClearIfServerViolationPresent(): void {
-	if ( relevantServerViolations().length > 0 ) {
-		emit( 'clear-server-violation', {
-			propertyName: props.property.name.toString(),
-			valuePartIndex: null
-		} );
-	}
-}
 
 function initializeInternalValue( value: Value | undefined ): void {
 	if ( value && value.type === ValueType.Relation ) {
@@ -156,7 +138,7 @@ function onSingleSelectionChanged( id: string | null ): void {
 	}
 
 	emit( 'update:modelValue', newRelationValue );
-	emitClearIfServerViolationPresent();
+	emitClears( 'all' );
 }
 
 function onSingleBlur( hasUnmatchedText: boolean ): void {
@@ -179,7 +161,7 @@ function onSelectionsChanged( ids: ( string | null )[] ): void {
 	}
 
 	emit( 'update:modelValue', newRelationValue );
-	emitClearIfServerViolationPresent();
+	emitClears( 'all' );
 }
 
 defineExpose<ValueInputExposes>( {

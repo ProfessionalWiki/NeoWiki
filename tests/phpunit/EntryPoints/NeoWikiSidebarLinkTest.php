@@ -38,11 +38,22 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testAddsNoAllPagesLinkOutsideSchemaAndLayoutNamespaces(): void {
+	public function testAllMappingsLinkIsPlacedInTheNeoWikiSection(): void {
+		$this->assertAllPagesLinkInNeoWikiSection(
+			namespace: NeoWikiExtension::NS_MAPPING,
+			linkId: 't-neowiki-mappings',
+			text: 'All mappings',
+			hrefContains: 'Mappings',
+			hrefExcludes: 'Schemas'
+		);
+	}
+
+	public function testAddsNoAllPagesLinkOutsideNeoWikiNamespaces(): void {
 		$sidebar = $this->buildSidebar( Title::makeTitle( NS_MAIN, 'Ordinary Page' ) );
 
 		$this->assertNull( $this->findLinkById( $sidebar[self::NEOWIKI_SECTION] ?? [], 't-neowiki-schemas' ) );
 		$this->assertNull( $this->findLinkById( $sidebar[self::NEOWIKI_SECTION] ?? [], 't-neowiki-layouts' ) );
+		$this->assertNull( $this->findLinkById( $sidebar[self::NEOWIKI_SECTION] ?? [], 't-neowiki-mappings' ) );
 	}
 
 	private function assertAllPagesLinkInNeoWikiSection(

@@ -8,6 +8,7 @@ use Exception;
 use LogicException;
 use Maintenance;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Storage\NameTableAccessException;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
@@ -145,7 +146,14 @@ class RebuildGraphDatabases extends Maintenance {
 	 */
 	private function getSubjectPageIds(): array {
 		$services = MediaWikiServices::getInstance();
-		$roleId = $services->getSlotRoleStore()->getId( MediaWikiSubjectRepository::SLOT_NAME );
+
+		try {
+			$roleId = $services->getSlotRoleStore()->getId( MediaWikiSubjectRepository::SLOT_NAME );
+		} catch ( NameTableAccessException ) {
+			// No page has ever stored a Subject, so the slot role was never registered. There is
+			// nothing to rebuild; report an empty run instead of crashing.
+			return [];
+		}
 
 		$rows = $this->getReplicaDB()->newSelectQueryBuilder()
 			->select( 'page_id' )

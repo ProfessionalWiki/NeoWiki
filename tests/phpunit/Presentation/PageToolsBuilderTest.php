@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 
 	private const PAGE_NAME = 'PageToolsBuilderTestPage';
+	private const PAGE_ID = 42;
 
 	public function testReturnsNoItemsOutsideContentNamespace(): void {
 		$this->assertSame(
@@ -28,9 +29,32 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 			[
 				$this->createSubjectItem(),
 				$this->manageSubjectsItem(),
+				$this->rdfItem(),
 				$this->editJsonItem(),
 			],
-			$this->build()
+			$this->build( hasSubjects: true )
+		);
+	}
+
+	public function testShowsRdfLinkWhenPageHasSubjects(): void {
+		$this->assertSame(
+			[ $this->manageSubjectsItem(), $this->rdfItem() ],
+			$this->build(
+				hasSubjects: true,
+				canCreateMainSubject: false,
+				devUiEnabled: false
+			)
+		);
+	}
+
+	public function testHidesRdfLinkWhenPageHasNoSubjects(): void {
+		$this->assertSame(
+			[ $this->manageSubjectsItem() ],
+			$this->build(
+				hasSubjects: false,
+				canCreateMainSubject: false,
+				devUiEnabled: false
+			)
 		);
 	}
 
@@ -101,6 +125,7 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	 */
 	private function build(
 		bool $isContentNamespace = true,
+		bool $hasSubjects = false,
 		bool $canCreateMainSubject = true,
 		bool $canEditSubject = true,
 		bool $isLatestRevision = true,
@@ -109,7 +134,9 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	): array {
 		return ( new PageToolsBuilder() )->build(
 			title: Title::newFromText( self::PAGE_NAME ),
+			pageId: self::PAGE_ID,
 			isContentNamespace: $isContentNamespace,
+			hasSubjects: $hasSubjects,
 			canCreateMainSubject: $canCreateMainSubject,
 			canEditSubject: $canEditSubject,
 			isLatestRevision: $isLatestRevision,
@@ -140,6 +167,18 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 			'text' => wfMessage( $messageKey )->text(),
 			'href' => Title::newFromText( self::PAGE_NAME )->getLocalURL( [ 'action' => 'subjects' ] ),
 			'id' => 't-neowiki-manage-subjects',
+		];
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function rdfItem(): array {
+		return [
+			'text' => wfMessage( 'neowiki-page-tools-rdf' )->text(),
+			'href' => wfScript( 'rest' ) . '/neowiki/v0/page/'
+				. self::PAGE_ID . '/rdf?format=turtle',
+			'id' => 't-neowiki-rdf',
 		];
 	}
 

@@ -4,31 +4,26 @@ order: 1
 ---
 # RDF Export
 
-NeoWiki projects its data to RDF in its own vocabulary — the **native projection**. Each wiki page
-becomes a named graph containing its page metadata, its Subjects (one RDF resource each), their
-Statements, and their Relations. The projection is lossless and self-sufficient.
+NeoWiki projects its data to RDF in its own vocabulary — the **native projection**. Each wiki page becomes a named
+graph holding its page metadata and its Subjects (one RDF resource each) with their Statements and Relations.
 
-The model is specified in [NativeRdfProjection.md](../planning/NativeRdfProjection.md); this page is
-the as-built reference for the export surface (config, IRI scheme, endpoint, script). The SPARQL
-store and live sync, ontology mappings, and RDF import are separate, later concerns.
+The model is specified in [NativeRdfProjection.md](../planning/NativeRdfProjection.md); this page is the as-built
+reference for the export surface.
 
-For an end-to-end example that exports a page as RDF and compares the native and ontology-mapped
-output, see the [Person-to-EDM worked example](../examples/person-to-edm.md).
+For an end-to-end example comparing the native and ontology-mapped output, see the
+[Person-to-EDM worked example](../examples/person-to-edm.md).
 
 ## Configuration
 
 | Setting | Default | Purpose |
 |---|---|---|
 | `$wgNeoWikiRdfBaseUri` | the wiki's canonical URL (`$wgCanonicalServer`) | Base URI under which all NeoWiki IRIs are minted. |
-
-The base URI is wiki-level on purpose: sibling projections (native and, later, ontology-mapped)
-describe the same entities, so their Subject IRIs must be identical across stores. Set it explicitly
-to align with an institutional URI policy.
+| `$wgNeoWikiDereferenceSubjectsToDataTab` | `false` | Whether a browser dereferencing a Subject IRI lands on the hosting page's Data tab row instead of the plain page. |
 
 ## IRI scheme
 
-All NeoWiki IRIs live under `$base` (`$wgNeoWikiRdfBaseUri`). Standard vocabulary (`rdf:`, `rdfs:`,
-`xsd:`, `dcterms:`) is used for standard concepts.
+All NeoWiki IRIs live under `$base` (`$wgNeoWikiRdfBaseUri`). Standard vocabulary (`rdf:`, `rdfs:`, `xsd:`,
+`dcterms:`) is used for standard concepts.
 
 | Prefix | Namespace | Used for |
 |---|---|---|
@@ -38,37 +33,34 @@ All NeoWiki IRIs live under `$base` (`$wgNeoWikiRdfBaseUri`). Standard vocabular
 | `neo-schema:` | `$base/schema/` | Schema classes (`neo-schema:Person`) |
 | `neo-rel:` | `$base/relation/` | Relation node IRIs (`neo-rel:r1demo8aaaaaaD6`) |
 | `neo-page:` | `$base/page/` | Page resource IRIs (`neo-page:42`) — the subject of the page-metadata triples |
-| `neo-graph:` | `$base/graph/{projection}/page/` | Named-graph IRIs, qualified by projection (`$base/graph/native/page/42`) |
 
-The `{projection}` segment of the named-graph IRI is `native` or a Mapping page name (e.g. `EDM`), encoded like the
-Property and Schema names below, so sibling projections of a page write disjoint graphs and can share one triple
-store — see [Ontology Mapping](ontology-mapping.md). The page *resource* IRI (`neo-page:42`) stays
-projection-independent and keeps appearing inside the triples.
+Each page's named-graph IRI is `$base/graph/{projection}/page/{id}`. The `{projection}` segment is `native` or a
+Mapping page name (e.g. `EDM`), encoded like the names below — see [Ontology Mapping](ontology-mapping.md). The page
+*resource* IRI (`neo-page:42`)
+stays projection-independent and appears inside the triples.
 
-Property and Schema names form the local part of their IRI: spaces become underscores
-(e.g. `Has author` → `neo-prop:Has_author`), and any character that is illegal in an IRI (`%`, the
-specials `< > " { } | ^ \`, backtick, and control characters) is percent-encoded so an authored name
-can never break out of its IRI or forge extra triples. Non-ASCII Unicode is kept raw, so multilingual
-names stay readable. **Caveat:** the space→underscore step collides when a name already contains an
-underscore (`Has author` and `Has_author` share the `neo-prop:Has_author` predicate IRI). The native
-projection accepts this. (The base URI is trusted admin config and is not encoded.)
+Property, Schema, and Relation-type names, and Relation-property keys, form the local part of their IRI: spaces become
+underscores (`Has author` → `neo-prop:Has_author`), and characters illegal in an IRI (`%`, `< > " { } | ^ \`, backtick,
+control characters) are percent-encoded. Non-ASCII Unicode is kept raw. **Caveat:** the space→underscore step collides
+when a name already contains an underscore — `Has author` and `Has_author` share the `neo-prop:Has_author` IRI, which
+the native projection accepts. The base URI is trusted admin config and is not encoded.
 
-A `url` value projects as an **IRI object** (`<https://…>`); a value that is not a valid absolute IRI
-falls back to an `xsd:anyURI` literal, so nothing is lost. The other value types map to `xsd` datatypes:
-`text`/`select` → `xsd:string`, `number` → `xsd:decimal` (or `xsd:integer` when fractionless), `boolean`
-→ `xsd:boolean`, `date` → `xsd:date`, `date-time` → `xsd:dateTime`. Extensions map their own property
-types via [`addRdfValueMapper`](../extending/extending.md#contributing-rdf-value-mappers).
+A `url` value projects as an **IRI object** (`<https://…>`); a value that is not a valid absolute IRI falls back to
+an `xsd:anyURI` literal, so nothing is lost. The other value types map to `xsd` datatypes: `text`/`select` →
+`xsd:string`, `number` → `xsd:decimal` (or `xsd:integer` when fractionless), `boolean` → `xsd:boolean`, `date` →
+`xsd:date`, `dateTime` → `xsd:dateTime`. Extensions map their own property types via
+[`addRdfValueMapper`](../extending/extending.md#contributing-rdf-value-mappers). A Statement whose property type has no
+registered mapper — including an unregistered type — is omitted from the projection.
 
-A Subject whose Schema is unavailable (for example, its Schema page was deleted) is omitted from the
-projection entirely — the same graceful degradation as the Neo4j projection — so the two stores always
-describe the same set of entities. A warning is logged for each omitted Subject.
+A Subject whose Schema cannot be loaded (for example, its Schema page was deleted) is omitted from the projection; a
+warning is logged for each.
 
 ## Endpoint
 
-RDF is served per page or per Subject. Both take the same `projection` and `format` query parameters.
-The `projection` selects the vocabulary: `native` (the default, described here) or the name of a
-Mapping page — see [Ontology Mapping](ontology-mapping.md); an unknown projection returns `400`. The
-`format` picks the serialization, falling back to the `Accept` header, then to TriG:
+RDF is served per page or per Subject. Both take the same `projection` and `format` query parameters. `projection`
+selects the vocabulary: `native` (the default, described here) or the name of a Mapping page — see
+[Ontology Mapping](ontology-mapping.md); an unknown projection returns `400`. `format` picks the serialization,
+falling back to the `Accept` header, then to TriG; a value other than `trig` or `turtle` returns `400`:
 
 | `format` | `Accept` | Content-Type | Named graph |
 |---|---|---|---|
@@ -79,8 +71,8 @@ Mapping page — see [Ontology Mapping](ontology-mapping.md); an unknown project
 
 `GET /rest.php/neowiki/v0/page/{pageId}/rdf`
 
-Returns the page's projection: its page metadata and every Subject on it, in the page's named graph.
-Returns `404` when the page does not exist or has no NeoWiki Subject data.
+Returns the page's projection: its page metadata and every Subject on it, in the page's named graph. Returns `404`
+when the page does not exist, carries no NeoWiki Subject data, or is not readable by the caller.
 
 ```sh
 curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf?format=turtle'
@@ -90,32 +82,64 @@ curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf?format=turtle'
 
 `GET /rest.php/neowiki/v0/subject/{subjectId}/rdf`
 
-Returns one Subject's projection: exactly the triples the page export emits for that Subject — its
-outbound description, including the native relation reification — with none of the page-metadata
-triples, in the hosting page's named graph. Inbound relations pointing at the Subject from elsewhere
-are not included.
+Returns one Subject's projection: exactly the triples the page export emits for that Subject — its outbound
+description, including the native relation reification — with none of the page-metadata triples, in the hosting page's
+named graph. Inbound relations pointing at the Subject from elsewhere are not included.
 
-Returns `404` when the Subject does not exist or is on a page the caller may not read — the two are
-indistinguishable. A malformed Subject ID returns `400`. A readable Subject whose Schema has no mapping
-for the requested ontology target projects to an empty graph — a `200`, not a `404`.
+Returns `404` when the Subject does not exist or is on a page the caller may not read — the two are indistinguishable.
+A malformed Subject ID returns `400`. A readable Subject whose Schema has no mapping for the requested ontology target
+projects to an empty graph — a `200`, not a `404`.
 
 ```sh
 curl 'https://wiki.example/rest.php/neowiki/v0/subject/s1demo8aaaaaab5/rdf?projection=EDM'
 ```
 
+### Dereferencing subject IRIs
+
+Every Subject's `neo-subj:` IRI — `$base/entity/{subjectId}` — is a dereferenceable concept URI. A `GET`
+content-negotiates it and answers `303 See Other` with an absolute `Location`:
+
+| `Accept` | Redirects to |
+|---|---|
+| `application/trig` | the Subject's TriG RDF (`.../subject/{id}/rdf?format=trig`) |
+| `text/turtle` | the Subject's Turtle RDF (`.../subject/{id}/rdf?format=turtle`) |
+| `text/html`, `*/*`, absent, anything else | the Subject's hosting page |
+
+TriG wins when both RDF types are acceptable; the RDF redirects use the native projection. A Subject that is absent or
+on a page the caller may not read returns one indistinguishable `404`; a malformed id `400`.
+
+The HTML target is the Subject's hosting page by default, or that page's Data tab (`?action=subjects`) opened on the
+Subject's row (`#{subjectId}`) when `$wgNeoWikiDereferenceSubjectsToDataTab` is enabled.
+
+The negotiator is always reachable at the REST path, which needs no server configuration:
+
+```sh
+curl -H 'Accept: text/turtle' 'https://wiki.example/rest.php/neowiki/v0/entity/s1demo8aaaaaab5'
+```
+
+To make the bare `neo-subj:` IRI dereference, route `/entity/{id}` to that REST path with an internal proxy — a plain
+rewrite leaves the path unchanged, so MediaWiki's REST router never matches it. The dev image ships this on Apache
+(`mod_proxy` + `mod_proxy_http`); its `/w/` is the dev image's `$wgScriptPath`, which a different install replaces with
+its own `rest.php` path:
+
+```apache
+RewriteRule ^/?entity/(.+)$ http://127.0.0.1/w/rest.php/neowiki/v0/entity/$1 [P,L]
+```
+
+This applies when `$wgNeoWikiRdfBaseUri` is the wiki's own host (the default); an external or institutional base URI is
+the operator's own routing concern.
+
 ### Finding these exports
 
-These exports are surfaced in the UI: the Data tab (`?action=subjects`) links to each Subject's JSON and
-per-projection Turtle/TriG, and to the same for the whole page. Pages that carry NeoWiki data also
-advertise the page export through `<link rel="alternate">` autodiscovery tags (Turtle and TriG, native
-projection) in the HTML head, so Linked Data tooling can locate the data without reading this reference.
+These exports are surfaced in the UI. The Data tab (`?action=subjects`) links to each Subject's JSON and per-projection
+Turtle/TriG, and the same for the whole page. Pages that carry NeoWiki data also emit `<link rel="alternate">`
+autodiscovery tags (Turtle and TriG, native projection) in the HTML head.
 
 ## Bulk dump
 
-`maintenance/DumpRdf.php` streams the projection of **every** subject page to stdout as TriG, one named
-graph per page. Progress goes to stderr so stdout stays a clean RDF document. It defaults to the native
-projection; `--projection=<name>` selects an ontology projection by its Mapping page name (see
-[Ontology Mapping](ontology-mapping.md)).
+`maintenance/DumpRdf.php` streams the projection of **every** subject page to stdout as TriG, one named graph per page.
+Progress goes to stderr. It defaults to the native projection; `--projection=<name>`
+selects an ontology projection by its Mapping page name (see [Ontology Mapping](ontology-mapping.md)).
 
 ```sh
 php maintenance/run.php NeoWiki:DumpRdf > dump.trig

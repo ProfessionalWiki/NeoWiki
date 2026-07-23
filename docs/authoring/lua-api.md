@@ -40,13 +40,17 @@ value. Use [`nw.getAll()`](#nwgetallpropertyname-options) when you need every va
 | `propertyName` | string | Required. The name of the property. |
 | `options` | table | Optional. `{ page = '...' }` or `{ subject = '...' }`. If both are passed, `subject` takes precedence. |
 
+The current-page (no options) and `{ page = '...' }` forms read the page's **Main Subject**; a property
+that lives only on a Child Subject is not found. Use `{ subject = '...' }` to address a specific Subject
+(including a Child) by ID.
+
 #### Returns
 
 The first value of the property, type-converted for Lua:
 
 | Property type | Returned type |
 |---------------|---------------|
-| `text`, `url`, `select` | string |
+| `text`, `url`, `select`, `date`, `dateTime` | string |
 | `number` | number |
 | `boolean` | boolean |
 | `relation` | string (target Subject's label, falls back to target ID if lookup fails) |
@@ -66,16 +70,15 @@ nw.getValue('City', { subject = 's1abc5def6ghi78' })   --> "Berlin"
 
 ### `nw.getAll(propertyName, options)`
 
-Returns every value for a property as a 1-indexed Lua table. Use this when a property is
-multi-valued and you need all values. Even single-valued properties are wrapped in a 1-element
-table.
+Returns every value for a property as a 1-indexed Lua table. Even single-valued properties are
+wrapped in a 1-element table.
 
 Same parameters and resolution rules as [`nw.getValue()`](#nwgetvaluepropertyname-options).
 
 #### Returns
 
-A 1-indexed Lua table of values, type-converted as in `getValue`. For relations, each entry is
-the target Subject's label.
+A 1-indexed Lua table of values, in the order they are stored on the Subject, type-converted as in
+`getValue`. For relations, each entry is the target Subject's label.
 
 Returns `nil` under the same conditions as `getValue`.
 
@@ -166,10 +169,9 @@ end
 
 ### `nw.query(cypher, params)`
 
-Runs a read-only Cypher query against the graph database and returns each row as a Lua table. Use
-this when a single property lookup is not enough — for example, to join multiple Subjects, filter
-or sort in the query, or build a custom table. It is available only when a Neo4j graph backend is
-configured; on a wiki without one, `mw.neowiki.query` is nil.
+Runs a read-only Cypher query against the graph database and returns each row as a Lua table. It
+is available only when a Neo4j graph backend is configured; on a wiki without one,
+`mw.neowiki.query` is nil.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -196,9 +198,6 @@ Scalar values come back as strings, numbers, booleans, or `nil`. Nested Cypher l
 | `duration` | `{ months, days, seconds, nanoseconds }` |
 | `point` | `{ x, y, crs, srid }` (plus `z` for 3D points) |
 
-Temporal values come back as ISO 8601 strings (timezone offsets to whole-minute precision). `duration`
-and spatial `point` values come back as component tables.
-
 #### Errors
 
 Always throws on failure; wrap in `pcall` if you need graceful degradation.
@@ -209,8 +208,7 @@ Always throws on failure; wrap in `pcall` if you need graceful degradation.
 
 #### Expensive
 
-Every call counts as an expensive parser function. Keep an eye on your page's expensive function
-limit if a template calls `nw.query` in a loop.
+Every call counts as an expensive parser function.
 
 #### Examples
 
@@ -241,7 +239,7 @@ without one, `mw.neowiki.sparqlQuery` is nil.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `sparql` | string | Required. A SPARQL `SELECT` or `ASK` query. Read-only by protocol. `CONSTRUCT` / `DESCRIBE` are not supported yet (they return an RDF graph, not a results document). |
+| `sparql` | string | Required. A SPARQL `SELECT` or `ASK` query. Read-only by protocol. `CONSTRUCT` and `DESCRIBE` are not supported. |
 
 #### Returns
 
@@ -259,8 +257,7 @@ Always throws on failure; wrap in `pcall` if you need graceful degradation.
 
 #### Expensive
 
-Every call counts as an expensive parser function. Keep an eye on your page's expensive function
-limit if a template calls `nw.sparqlQuery` in a loop.
+Every call counts as an expensive parser function.
 
 #### Examples
 
@@ -276,9 +273,7 @@ end
 
 ### `nw.getSchema(name)`
 
-Returns a Schema as a Lua table so your module can inspect it at runtime. Use it to build generic
-infoboxes, render a property list for any Schema, or check what properties a Subject should have —
-without hardcoding property names.
+Returns a Schema as a Lua table so a module can inspect it at runtime.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -287,8 +282,7 @@ without hardcoding property names.
 #### Returns
 
 A Schema table, or `nil` if no Schema with that name exists. An empty or whitespace-only `name`
-and the reserved names `page` and `subject` also return `nil`, so bad input never errors — always
-guard with `if schema then`.
+and the reserved names `page` and `subject` also return `nil`. Guard with `if schema then`.
 
 Top-level fields:
 
@@ -298,30 +292,33 @@ Top-level fields:
 | `description` | string | The Schema description. Omitted when empty. |
 | `properties` | table | 1-indexed list of properties, in Schema-defined order. |
 
-Every property entry has `name`, `type`, and `required`. Further fields depend on `type`:
+Every property entry has `name`, `type`, and `required`, plus `description` and `default` when
+those are set. Beyond that core, the fields depend on `type`:
 
 | Property type | Always present | Present only when set |
 |---------------|----------------|------------------------|
-| `text` | `multiple`, `uniqueItems` | `description`, `default` |
-| `url`  | `multiple`, `uniqueItems` | `description`, `default` |
-| `number` | — | `description`, `default`, `precision`, `minimum`, `maximum` |
-| `select` | `multiple`, `options` (1-indexed list of `{ id, label }` entries) | `description`, `default` |
-| `relation` | `multiple`, `relation`, `targetSchema` | `description`, `default` |
+| `text` | `multiple`, `uniqueItems` | `minLength`, `maxLength` |
+| `url` | `multiple`, `uniqueItems` | — |
+| `number` | — | `precision`, `minimum`, `maximum` |
+| `date`, `dateTime` | — | `minimum`, `maximum` |
+| `select` | `multiple`, `options` (1-indexed list of `{ id, label }` entries) | — |
+| `relation` | `multiple`, `relation`, `targetSchema` | — |
+| `boolean` | — | — |
 
 Optional fields are **omitted entirely** when unset, so check with `if prop.description then …`.
-Boolean flags in the "always present" column (such as `required`, `multiple`, `uniqueItems`) are
-emitted even when `false` — read them directly. `if prop.required then` would silently skip
-`false` as well as missing.
+`required` is always present, and `multiple`/`uniqueItems` are present for the types the table
+marks under **Always present**; where present, these boolean flags are emitted even when `false`,
+so read them directly rather than testing truthiness. For a type where the table does not list
+`multiple`/`uniqueItems`, they are absent (`nil`), not `false`.
 
 #### Errors
 
-Raises a Lua error only when `name` is missing or not a string. Every other case — unknown Schema,
-empty string, reserved name — returns `nil`.
+Raises a Lua error only when `name` is missing or not a string. Wrap a computed or possibly-`nil`
+name in `pcall`.
 
 #### Expensive
 
-Every call counts as an expensive parser function against the page's limit. Call `nw.getSchema`
-once per page and reuse the result rather than re-fetching inside a loop.
+Every call counts as an expensive parser function.
 
 #### Examples
 
@@ -335,8 +332,7 @@ end
 ```
 
 ```lua
--- Render a property overview for the current page's Main Subject — works
--- for any Schema, because nothing is hardcoded.
+-- Render a property overview for the current page's Main Subject.
 local subject = nw.getMainSubject()
 local schema = subject and nw.getSchema( subject.schema )
 
@@ -397,8 +393,10 @@ Notes:
 
 ## Performance
 
-Calls that look up another page or a specific Subject ID count as expensive parser functions
-(against the page's expensive function limit). Calls that read from the current page do not.
+Each of these counts as an expensive parser function (against the page's expensive function limit):
+`nw.query`, `nw.sparqlQuery`, `nw.getSchema`, and `nw.getSubject` on every call; `nw.getValue`,
+`nw.getAll`, `nw.getMainSubject`, and `nw.getChildSubjects` only when passed a `page`/`subject`
+option or page name. Reads of the current page do not count.
 
 ## Related Documentation
 

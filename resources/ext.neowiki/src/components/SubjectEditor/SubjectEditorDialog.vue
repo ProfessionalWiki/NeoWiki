@@ -77,7 +77,7 @@
 
 			<!-- TODO: We should make this into a component-->
 			<template #footer>
-				<EditSummary
+				<SummaryAction
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-subject-editor-save' ).text()"
 					:save-disabled="!hasChanged"
@@ -106,7 +106,7 @@
 <script setup lang="ts">
 import { ref, nextTick, computed, watch } from 'vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import { CdxButton, CdxDialog, CdxIcon, CdxMessage } from '@wikimedia/codex';
 import { cdxIconClose } from '@wikimedia/codex-icons';

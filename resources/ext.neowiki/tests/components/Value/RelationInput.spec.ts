@@ -290,4 +290,100 @@ describe( 'RelationInput', () => {
 			expect( currentValue.relations[ 0 ].target.text ).toBe( 's1demo1aaaaaaa1' );
 		} );
 	} );
+
+	describe( 'clearing server violations', () => {
+		it( 'clears a part-indexed violation using its own index', async () => {
+			const wrapper = newWrapper( {
+				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				serverViolations: [
+					{
+						propertyName: 'Owner',
+						code: 'relation-target-schema-mismatch',
+						args: [ 'Company', 'Person' ],
+						valuePartIndex: 0,
+					},
+				],
+			} );
+
+			wrapper.findComponent( SubjectLookup ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
+			await wrapper.vm.$nextTick();
+
+			// The parent drops violations by exact valuePartIndex match, so a null here would
+			// never match index 0 and the error would outlive the fix the user just made.
+			expect( wrapper.emitted( 'clear-server-violation' ) ).toEqual( [
+				[ { propertyName: 'Owner', valuePartIndex: 0 } ],
+			] );
+		} );
+
+		it( 'clears every violation on the property, one emit per index', async () => {
+			const wrapper = newWrapper( {
+				property: newRelationProperty( { name: 'Owners', targetSchema: 'Company', multiple: true } ),
+				serverViolations: [
+					{ propertyName: 'Owners', code: 'relation-target-not-found', args: [ 'x' ], valuePartIndex: 0 },
+					{ propertyName: 'Owners', code: 'relation-target-schema-mismatch', args: [], valuePartIndex: 1 },
+				],
+			} );
+
+			wrapper.findComponent( NeoMultiLookupInput ).vm.$emit( 'update:modelValue', [ 's1demo1aaaaaaa1' ] );
+			await wrapper.vm.$nextTick();
+
+			// This field shows one aggregate error, so clearing only the displayed violation
+			// would strand the rest with nothing on screen to explain them.
+			expect( wrapper.emitted( 'clear-server-violation' ) ).toEqual( [
+				[ { propertyName: 'Owners', valuePartIndex: 0 } ],
+				[ { propertyName: 'Owners', valuePartIndex: 1 } ],
+			] );
+		} );
+
+		it( 'does not emit when the property has no violation', async () => {
+			const wrapper = newWrapper( {
+				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				serverViolations: [
+					{ propertyName: 'Other', code: 'required', args: [], valuePartIndex: null },
+				],
+			} );
+
+			wrapper.findComponent( SubjectLookup ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
+			await wrapper.vm.$nextTick();
+
+			expect( wrapper.emitted( 'clear-server-violation' ) ).toBeUndefined();
+		} );
+
+		it( 'clears a field-level (null-index) violation on the property', async () => {
+			const wrapper = newWrapper( {
+				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				serverViolations: [
+					{ propertyName: 'Owner', code: 'required', args: [], valuePartIndex: null },
+				],
+			} );
+
+			wrapper.findComponent( SubjectLookup ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
+			await wrapper.vm.$nextTick();
+
+			// A required violation carries valuePartIndex: null; the parent drops by exact match,
+			// so the clear must carry null too or the stale error outlives the user's fix.
+			expect( wrapper.emitted( 'clear-server-violation' ) ).toEqual( [
+				[ { propertyName: 'Owner', valuePartIndex: null } ],
+			] );
+		} );
+
+		it( 'uses the violation index rather than the array position on a gapped multi', async () => {
+			const wrapper = newWrapper( {
+				property: newRelationProperty( { name: 'Owners', targetSchema: 'Company', multiple: true } ),
+				serverViolations: [
+					{ propertyName: 'Owners', code: 'relation-target-not-found', args: [ 'x' ], valuePartIndex: 0 },
+					{ propertyName: 'Owners', code: 'relation-target-schema-mismatch', args: [], valuePartIndex: 2 },
+				],
+			} );
+
+			wrapper.findComponent( NeoMultiLookupInput ).vm.$emit( 'update:modelValue', [ 's1demo1aaaaaaa1' ] );
+			await wrapper.vm.$nextTick();
+
+			// Gapped indices 0 and 2: a positional counter would emit 0 and 1, stranding index 2.
+			expect( wrapper.emitted( 'clear-server-violation' ) ).toEqual( [
+				[ { propertyName: 'Owners', valuePartIndex: 0 } ],
+				[ { propertyName: 'Owners', valuePartIndex: 2 } ],
+			] );
+		} );
+	} );
 } );

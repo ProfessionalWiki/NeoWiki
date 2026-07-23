@@ -8,10 +8,10 @@ order: 1
 NeoWiki is pre-release software. It is not production ready, and breaking changes can land at any time without a
 migration path. Treat any install as an evaluation or pilot and run it on disposable data.
 
-There are two ways to install NeoWiki, both covered below. The Docker stack is self-contained and the fastest way to a
-working wiki, so use it for evaluation. The manual install adds NeoWiki to a MediaWiki you already run.
+The Docker stack is self-contained and the fastest way to a working wiki, so use it for evaluation. The manual
+install adds NeoWiki to a MediaWiki you already run.
 
-To install the development environment, see the [README on GitHub](https://github.com/ProfessionalWiki/NeoWiki/blob/master/README.md) instead.
+To set up the development environment instead, see the [README on GitHub](https://github.com/ProfessionalWiki/NeoWiki/blob/master/README.md).
 
 ## Method A: Docker
 
@@ -37,16 +37,15 @@ For an empty wiki without the sample data, run `make up && make install-db && ma
 
 Open `http://localhost:8484` and log in as `AdminName` with the password `AdminPassword`.
 
-You now have a complete evaluation instance with the development UI enabled and demo data loaded.
-
 ### Optional: share the demo with others
 
 By default, the stack runs on localhost. To let others reach it, host it on a server. Edit `Docker/.env` and change
 every value marked `# Change for production`, which covers the passwords and `MW_SERVER`. Then start the stack with the
-`server` profile, which adds automatic HTTPS through Caddy:
+`server` profile, which adds automatic HTTPS through Caddy. Run it from the repository root so the follow-up `make`
+commands target the same stack:
 
 ```sh
-docker compose --profile server up -d
+docker compose -p neowiki-neowiki --env-file Docker/.env -f Docker/docker-compose.yml --profile server up -d
 ```
 
 Then run `make install-db`, `make load-neo4j-users` and `make import-demo-data` against it. This is still an
@@ -63,16 +62,20 @@ Use this to add NeoWiki to a MediaWiki you already run. You provide the surround
 | MediaWiki 1.43.0 or later | |
 | PHP 8.3 with `ext-json`   | |
 | Composer                  | Installs NeoWiki's runtime dependencies. No `vendor/` is shipped. |
-| Neo4j 5.x over Bolt       | The graph backend. A reachable instance is required. |
+| Neo4j 5.x over Bolt       | The graph backend. Required to use NeoWiki's structured-data features; the wiki boots without it. |
 | Node.js 24 or later       | Needed only to build the frontend bundle in step 2. |
 
 These extensions are recommended. NeoWiki runs without them, but you lose the matching functionality:
 
 - **Scribunto** adds the Lua API and its `nw.*` functions.
-- **CodeEditor** adds JSON syntax highlighting when you edit Schema and Layout pages.
+- **CodeEditor** adds JSON syntax highlighting when you edit Schema, Layout, and Mapping pages.
 - **ParserFunctions** is commonly used alongside NeoWiki's parser functions.
 
-The steps below assume the extension is checked out at `extensions/NeoWiki/` under your MediaWiki root.
+Check the extension out at `extensions/NeoWiki/` under your MediaWiki root:
+
+```sh
+git clone https://github.com/ProfessionalWiki/NeoWiki.git extensions/NeoWiki
+```
 
 ### 1. Install Composer dependencies
 
@@ -91,8 +94,7 @@ composer update
 
 ### 2. Build the frontend bundle
 
-The compiled frontend is git-ignored, so a fresh clone ships no UI until you build it. The build is standalone and
-needs Node.js 24 or later:
+A fresh checkout ships no compiled frontend, so there is no UI until you build it:
 
 ```sh
 cd extensions/NeoWiki/resources/ext.neowiki
@@ -108,8 +110,7 @@ Add the following to your `LocalSettings.php`:
 ```php
 wfLoadExtension( 'NeoWiki' );
 
-// Required for NeoWiki's features. Without them the wiki still loads and ordinary pages work,
-// but NeoWiki's features are disabled. For a simple setup, point both URLs at the same Neo4j user.
+// Point both at your Neo4j instance; for a simple setup, use the same user for both.
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:SECRET@neo4j-host:7687';
 $wgNeoWikiNeo4jInternalReadUrl  = 'bolt://neo4j:SECRET@neo4j-host:7687';
 
@@ -119,9 +120,8 @@ wfLoadExtension( 'CodeEditor' );
 wfLoadExtension( 'ParserFunctions' );
 ```
 
-Both URLs are required for NeoWiki's structured-data features. Without them the wiki still loads and ordinary
-pages render, but NeoWiki's features are disabled and the query surfaces (`{{#cypher_raw}}`, `nw.query`,
-`POST /neowiki/v0/query/cypher`) are absent. The format is `bolt://user:password@host:7687`.
+Without both Neo4j URLs set, the wiki still loads and ordinary pages render, but NeoWiki's structured-data features
+and the query surfaces (`{{#cypher_raw}}`, `nw.query`, `POST /neowiki/v0/query/cypher`) stay disabled.
 
 ### 4. Run the updater
 
@@ -131,7 +131,9 @@ Run this from the MediaWiki root:
 php maintenance/run.php update --quick
 ```
 
-If your wiki already has subject pages, build the Neo4j projection from MediaWiki:
+Build the Neo4j projection from MediaWiki whenever it is out of sync with the revision slots — after the initial
+install if the wiki already has subject pages, and after Subjects arrive by a path other than a normal edit (such as
+an import):
 
 ```sh
 php maintenance/run.php NeoWiki:RebuildGraphDatabases
@@ -156,6 +158,14 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
 
 If all four steps work, your install is complete.
 
+### Optional: Pretty URLs for the Data tab
+
+Serve the Data tab at `/wiki/PageName/subjects` instead of `index.php?action=subjects` with:
+
+```php
+$wgActionPaths['subjects'] = "/wiki/$1/subjects";
+```
+
 ## Key settings
 
 These are the settings you are most likely to change. For the full list with descriptions and defaults, see the
@@ -163,15 +173,35 @@ These are the settings you are most likely to change. For the full list with des
 
 | Setting | Purpose | Default | Required |
 |---|---|---|---|
-| `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | For features¹ |
-| `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | For features¹ |
+| `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | For features |
+| `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | For features |
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new constraint violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
 
-¹ Required for NeoWiki's structured-data features. The wiki still loads without them; NeoWiki's features are
-simply disabled until both are set.
+## On-wiki configuration
+
+A wiki administrator without server access can set part of NeoWiki's configuration on the `MediaWiki:NeoWiki`
+page. It holds JSON and, like other site configuration, is editable only with the `editinterface` and
+`editsitejson` rights. Two settings are exposed: `dereferenceSubjectsToDataTab` (overriding
+`$wgNeoWikiDereferenceSubjectsToDataTab`) and `autoRenderMainSubject` (overriding `$wgNeoWikiAutoRenderMainSubject`).
+Editing the page shows a reference table of the exposed keys and their accepted values, and creating it
+preloads a working example.
+
+A valid value on the page takes precedence over `LocalSettings.php`, per setting. A missing page, a
+wrong-shaped value, or an unavailable database falls back to the `LocalSettings.php` value, so a
+configuration typo cannot take down the wiki. Saving the page rejects unknown keys and wrong-typed values.
+
+Every other setting stays in `LocalSettings.php` — deliberately, for secrets and infrastructure
+(`$wgNeoWikiSparqlStores`), for settings too consequential for a wiki page (`$wgNeoWikiRdfBaseUri` re-mints
+every IRI when changed), and for development toggles (`$wgNeoWikiEnableDevelopmentUI`).
+
+`autoRenderMainSubject` changes take effect as pages are re-parsed; already-cached pages keep their previous
+rendering until then, or until purged with `?action=purge`.
+
+Set `$wgNeoWikiEnableInWikiConfig` to `false` to disable the page entirely: it is then never given the JSON
+content model, validated, or read.
 
 ## Optional: SPARQL graph stores
 
@@ -180,8 +210,7 @@ works with QLever and any other SPARQL 1.1 store. Each configured store receives
 becomes a named graph, replaced on each edit and dropped on deletion.
 
 A SPARQL store does not yet replace Neo4j: NeoWiki's interactive features (the Subject editing UIs, views, and value
-accessors) still require a configured Neo4j backend. Running NeoWiki without Neo4j is tracked in
-[#1040](https://github.com/ProfessionalWiki/NeoWiki/issues/1040).
+accessors) still require a configured Neo4j backend.
 
 Configure the stores with `$wgNeoWikiSparqlStores`, a list of objects:
 
@@ -203,21 +232,19 @@ $wgNeoWikiSparqlStores = [
 ];
 ```
 
-A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki. Leaving
-`$wgNeoWikiSparqlStores` empty (the default) configures no SPARQL stores.
+A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
 
 ### Querying a SPARQL store
 
 When at least one store is configured, three read-only query surfaces become available and target the **first**
-configured store (multi-store query addressing is a later addition):
+configured store:
 
 - The [`{{#sparql_raw}}`](../authoring/parser-functions.md#sparql_raw) parser function.
 - The [`nw.sparqlQuery()`](../authoring/lua-api.md#nwsparqlquerysparql) Lua function.
 - The [`POST /neowiki/v0/query/sparql`](../api/query-api.md#sparql-query-endpoint) REST endpoint.
 
-Each is read-only *by protocol*: the query is sent as a SPARQL 1.1 *query* operation, whose grammar has no update
-forms, so no read-only validator is needed (unlike the Cypher surfaces). They never post to `updateUrl` — only to
-`queryUrl` — and return the W3C `application/sparql-results+json` document unmodified.
+Each is read-only: the query is sent as a SPARQL 1.1 *query* operation, posted only to `queryUrl` and never
+`updateUrl`.
 
 The bundled development stack ships a working QLever example wired up this way — see
 [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`
@@ -253,8 +280,6 @@ Restricting the store is worth combining with restricting who may query it. The 
 NeoWiki is pre-release, so this is not needed for an evaluation. It applies later, when NeoWiki is production-ready.
 
 ### Separate read and write Neo4j users
-
-This applies only to wikis that use Neo4j as the graph backend.
 
 Give read and query traffic its own Neo4j user that cannot modify the graph. Create a read-only user:
 

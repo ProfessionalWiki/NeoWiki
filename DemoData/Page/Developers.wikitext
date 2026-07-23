@@ -4,6 +4,7 @@ NeoWiki exposes a programmable surface: a graph database, parser functions, a Lu
 
 * [[Special:Schemas]]: all schemas
 * [[Special:Layouts]]: all layouts
+* [[Special:Mappings]]: all ontology mappings
 * [[Special:NeoJson|Special:NeoJson/&lt;subject id&gt;]]: view any subject as JSON
 
 == Query the graph ==

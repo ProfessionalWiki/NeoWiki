@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Contracts\ClientInterface;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookupResult;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -19,6 +20,8 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup
@@ -142,11 +145,92 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testExcludesForeignSubjectsReachableThroughALocalPage(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: self::SUBJECT_ID_1, label: new SubjectLabel( 'Apple Pie' ) ),
+		) );
+
+		// A cross-wiki-shared Subject id (ADR 22) can leave a local Page holding a Subject stamped
+		// for another wiki. The Subject filter must still withhold it so its foreign label, and a
+		// page id that resolves against the wrong wiki, cannot surface.
+		$this->getClient()->run(
+			'CREATE (:Page { id: 500, wiki_id: $wikiId })-[:HasSubject { isMain: false }]->'
+				. '(:Subject:' . Cypher::escape( TestSubject::DEFAULT_SCHEMA_ID )
+				. ' { id: "sTestSLL4444441", name: "Apple Tart", wiki_id: $otherWikiId })',
+			[ 'wikiId' => $this->currentWikiId(), 'otherWikiId' => $this->currentWikiId() . '-other' ]
+		);
+
+		$this->assertEquals(
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie' ) ],
+			$this->getSubjectLabelsMatching( 'Apple' )
+		);
+	}
+
+	public function testReturnsALocallyOwnedSubjectOnceWhenAForeignPageAlsoReferencesIt(): void {
+		$this->saveSubjectOnPage( pageId: 7, subjectId: self::SUBJECT_ID_1, label: 'Apple Pie' );
+
+		// In a shared graph the same Subject node (ADR 22 keeps it by bare id) can be referenced by
+		// a foreign wiki's Page too. Only the local owning Page is followed, so the label appears
+		// once and the page id used for the read check resolves within this wiki, not the foreign
+		// one whose colliding page id would gate an unrelated local page.
+		$this->getClient()->run(
+			'MATCH (subject:Subject { id: $subjectId }) '
+				. 'CREATE (:Page { id: 7, wiki_id: $otherWikiId })-[:HasSubject { isMain: false }]->(subject)',
+			[ 'subjectId' => self::SUBJECT_ID_1, 'otherWikiId' => $this->currentWikiId() . '-other' ]
+		);
+
+		$this->assertEquals(
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie' ) ],
+			$this->getSubjectLabelsMatching( 'Apple' )
+		);
+	}
+
+	public function testSubjectsOnUnreadablePagesAreOmitted(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: self::SUBJECT_ID_1, label: new SubjectLabel( 'Apple Pie' ) ),
+		) );
+
+		$this->assertSame(
+			[],
+			$this->newLookup( readAuthorizer: new StubPageReadAuthorizer( allowed: false ) )
+				->getSubjectLabelsMatching( 'Apple', 10, TestSubject::DEFAULT_SCHEMA_ID )
+		);
+	}
+
+	public function testOverFetchesPastUnreadableRowsToFillTheLimit(): void {
+		$this->saveSubjectOnPage( pageId: 1, subjectId: 'sTestSLL1111141', label: 'Apple 1' );
+		$this->saveSubjectOnPage( pageId: 2, subjectId: 'sTestSLL1111142', label: 'Apple 2' );
+		$this->saveSubjectOnPage( pageId: 3, subjectId: 'sTestSLL1111143', label: 'Apple 3' );
+
+		// Page 2 is hidden and sorts between the two readable rows, so a naive "LIMIT 2 then
+		// filter" would return only Apple 1. Over-fetching then re-limiting must still yield two.
+		$results = $this->newLookup( readAuthorizer: new SelectivePageReadAuthorizer( deniedPageIds: [ 2 ] ) )
+			->getSubjectLabelsMatching( 'Apple', 2, TestSubject::DEFAULT_SCHEMA_ID );
+
+		$this->assertEquals(
+			[
+				new SubjectLabelLookupResult( 'sTestSLL1111141', 'Apple 1' ),
+				new SubjectLabelLookupResult( 'sTestSLL1111143', 'Apple 3' ),
+			],
+			$results
+		);
+	}
+
 	private function saveSubjects( SubjectMap $subjects ): void {
 		$this->newProjectionStore()->savePage( TestPage::build(
 			id: 1,
 			properties: TestPageProperties::build( title: 'Foo' ),
 			childSubjects: $subjects
+		) );
+	}
+
+	private function saveSubjectOnPage( int $pageId, string $subjectId, string $label ): void {
+		$this->newProjectionStore()->savePage( TestPage::build(
+			id: $pageId,
+			properties: TestPageProperties::build( title: 'Page ' . $pageId ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: $subjectId, label: new SubjectLabel( $label ) )
+			)
 		) );
 	}
 
@@ -165,10 +249,14 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		return $this->newLookup()->getSubjectLabelsMatching( $search, $limit, TestSubject::DEFAULT_SCHEMA_ID );
 	}
 
-	private function newLookup( ClientInterface $client = null ): Neo4jSubjectLabelLookup {
+	private function newLookup(
+		ClientInterface $client = null,
+		?PageReadAuthorizer $readAuthorizer = null
+	): Neo4jSubjectLabelLookup {
 		return new Neo4jSubjectLabelLookup(
 			client: $client ?? $this->getClient(),
 			wikiId: $this->currentWikiId(),
+			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
 		);
 	}
 
@@ -179,17 +267,24 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 	/**
 	 * Creates a Subject node directly in the graph, bypassing the projection store, so a test can
 	 * plant a node with a chosen wiki_id (or none at all, as written before wiki_id stamping existed).
+	 *
+	 * The node is attached to a Page carrying the same wiki_id via a HasSubject edge, so it is
+	 * reachable by the lookup's Page->Subject traversal. Without the Page it would be dropped for
+	 * having no Page at all, which would make the wiki filter these tests target untested.
 	 */
 	private function createSubjectNode( string $id, string $name, ?string $wikiId ): void {
-		$properties = [ 'id' => $id, 'name' => $name ];
+		$subjectProperties = [ 'id' => $id, 'name' => $name ];
+		$pageProperties = [ 'id' => 0 ];
 
 		if ( $wikiId !== null ) {
-			$properties['wiki_id'] = $wikiId;
+			$subjectProperties['wiki_id'] = $wikiId;
+			$pageProperties['wiki_id'] = $wikiId;
 		}
 
 		$this->getClient()->run(
-			'CREATE (n:Subject:' . Cypher::escape( TestSubject::DEFAULT_SCHEMA_ID ) . ' $properties)',
-			[ 'properties' => $properties ]
+			'CREATE (:Page $pageProperties)-[:HasSubject { isMain: false }]->'
+				. '(:Subject:' . Cypher::escape( TestSubject::DEFAULT_SCHEMA_ID ) . ' $subjectProperties)',
+			[ 'pageProperties' => $pageProperties, 'subjectProperties' => $subjectProperties ]
 		);
 	}
 

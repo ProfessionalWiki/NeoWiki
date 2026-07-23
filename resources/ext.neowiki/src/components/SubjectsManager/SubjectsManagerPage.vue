@@ -9,17 +9,12 @@
 			</span>
 			<span v-else class="ext-neowiki-subjects-manager__count" />
 			<div class="ext-neowiki-subjects-manager__controls-actions">
-				<CdxMenuButton
+				<DataExportButton
 					v-if="!loading && subjects.length > 0"
-					v-model:selected="exportMenuSelection"
-					class="ext-neowiki-subjects-manager__export-menu"
-					:menu-items="pageExportItems"
-					:aria-label="$i18n( 'neowiki-managesubjects-export-button' ).text()"
-					@update:selected="openExport"
-				>
-					<CdxIcon :icon="cdxIconDownload" />
-					{{ $i18n( 'neowiki-managesubjects-export-button' ).text() }}
-				</CdxMenuButton>
+					:label="$i18n( 'neowiki-managesubjects-export-all-button' ).text()"
+					:projections="rdfProjections"
+					v-bind="pageExportUrls( pageId )"
+				/>
 				<CdxButton
 					v-if="canCreate && !isCompletelyEmpty"
 					weight="primary"
@@ -75,7 +70,9 @@
 						'ext-neowiki-subjects-manager__row--highlighted':
 							highlightedId === mainSubject.getId().text,
 						'ext-neowiki-subjects-manager__row--focused':
-							focusedId === mainSubject.getId().text
+							focusedId === mainSubject.getId().text,
+						'ext-neowiki-subjects-manager__row--expanded':
+							expandedIds.has( mainSubject.getId().text )
 					}"
 					:open="expandedIds.has( mainSubject.getId().text )"
 				>
@@ -132,6 +129,14 @@
 								<CdxIcon :icon="cdxIconEdit" />
 							</CdxButton>
 							<CdxButton
+								weight="quiet"
+								:aria-label="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+								:title="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+								@click.stop="copySubjectLink( mainSubject )"
+							>
+								<CdxIcon :icon="cdxIconLink" />
+							</CdxButton>
+							<CdxButton
 								v-if="canDelete"
 								weight="quiet"
 								action="destructive"
@@ -171,32 +176,49 @@
 					<div class="ext-neowiki-subjects-manager__row-expanded">
 						<SubjectStatementsView :subject="mainSubject" />
 						<footer class="ext-neowiki-subjects-manager__row-footer">
-							<span class="ext-neowiki-subjects-manager__row-id">
-								<span class="ext-neowiki-subjects-manager__row-id-label">
-									{{ $i18n( 'neowiki-managesubjects-id-label' ).text() }}
-								</span>
-								<button
-									type="button"
-									class="ext-neowiki-subjects-manager__row-id-button"
-									:title="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
-									:aria-label="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
-									@click="copySubjectId( mainSubject.getId().text )"
-								>
-									<data :value="mainSubject.getId().text">
-										{{ mainSubject.getId().text }}
-									</data>
-								</button>
-							</span>
-							<CdxMenuButton
-								v-model:selected="exportMenuSelection"
-								class="ext-neowiki-subjects-manager__export-menu"
-								:menu-items="subjectExportItems( mainSubject as Subject )"
-								:aria-label="$i18n( 'neowiki-managesubjects-export-button' ).text()"
-								@update:selected="openExport"
-							>
-								<CdxIcon :icon="cdxIconDownload" />
-								{{ $i18n( 'neowiki-managesubjects-export-button' ).text() }}
-							</CdxMenuButton>
+							<dl class="ext-neowiki-subjects-manager__row-identifiers">
+								<div class="ext-neowiki-subjects-manager__row-id">
+									<dt class="ext-neowiki-subjects-manager__row-id-label">
+										{{ $i18n( 'neowiki-managesubjects-id-label' ).text() }}
+									</dt>
+									<dd class="ext-neowiki-subjects-manager__row-id-value">
+										<button
+											type="button"
+											class="ext-neowiki-subjects-manager__row-id-button"
+											:title="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
+											:aria-label="$i18n( 'neowiki-managesubjects-id-copy', mainSubject.getId().text ).text()"
+											@click="copySubjectId( mainSubject.getId().text )"
+										>
+											<data :value="mainSubject.getId().text">
+												{{ mainSubject.getId().text }}
+											</data>
+										</button>
+									</dd>
+								</div>
+								<div class="ext-neowiki-subjects-manager__row-iri">
+									<dt class="ext-neowiki-subjects-manager__row-iri-label">
+										{{ $i18n( 'neowiki-managesubjects-iri-label' ).text() }}
+									</dt>
+									<dd class="ext-neowiki-subjects-manager__row-iri-value">
+										<button
+											type="button"
+											class="ext-neowiki-subjects-manager__row-iri-button"
+											:title="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( mainSubject.getId().text ) ).text()"
+											:aria-label="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( mainSubject.getId().text ) ).text()"
+											@click="copySubjectIri( subjectIri( mainSubject.getId().text ) )"
+										>
+											<data :value="subjectIri( mainSubject.getId().text )">
+												{{ subjectIri( mainSubject.getId().text ) }}
+											</data>
+										</button>
+									</dd>
+								</div>
+							</dl>
+							<DataExportButton
+								:label="$i18n( 'neowiki-managesubjects-export-button' ).text()"
+								:projections="rdfProjections"
+								v-bind="subjectExportUrls( mainSubject.getId().text )"
+							/>
 						</footer>
 					</div>
 				</details>
@@ -238,7 +260,9 @@
 						'ext-neowiki-subjects-manager__row--highlighted':
 							highlightedId === subject.getId().text,
 						'ext-neowiki-subjects-manager__row--focused':
-							focusedId === subject.getId().text
+							focusedId === subject.getId().text,
+						'ext-neowiki-subjects-manager__row--expanded':
+							expandedIds.has( subject.getId().text )
 					}"
 				>
 					<details :open="expandedIds.has( subject.getId().text )">
@@ -288,6 +312,14 @@
 									<CdxIcon :icon="cdxIconEdit" />
 								</CdxButton>
 								<CdxButton
+									weight="quiet"
+									:aria-label="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+									:title="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+									@click.stop="copySubjectLink( subject )"
+								>
+									<CdxIcon :icon="cdxIconLink" />
+								</CdxButton>
+								<CdxButton
 									v-if="canDelete"
 									weight="quiet"
 									action="destructive"
@@ -327,32 +359,49 @@
 						<div class="ext-neowiki-subjects-manager__row-expanded">
 							<SubjectStatementsView :subject="subject" />
 							<footer class="ext-neowiki-subjects-manager__row-footer">
-								<span class="ext-neowiki-subjects-manager__row-id">
-									<span class="ext-neowiki-subjects-manager__row-id-label">
-										{{ $i18n( 'neowiki-managesubjects-id-label' ).text() }}
-									</span>
-									<button
-										type="button"
-										class="ext-neowiki-subjects-manager__row-id-button"
-										:title="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
-										:aria-label="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
-										@click="copySubjectId( subject.getId().text )"
-									>
-										<data :value="subject.getId().text">
-											{{ subject.getId().text }}
-										</data>
-									</button>
-								</span>
-								<CdxMenuButton
-									v-model:selected="exportMenuSelection"
-									class="ext-neowiki-subjects-manager__export-menu"
-									:menu-items="subjectExportItems( subject )"
-									:aria-label="$i18n( 'neowiki-managesubjects-export-button' ).text()"
-									@update:selected="openExport"
-								>
-									<CdxIcon :icon="cdxIconDownload" />
-									{{ $i18n( 'neowiki-managesubjects-export-button' ).text() }}
-								</CdxMenuButton>
+								<dl class="ext-neowiki-subjects-manager__row-identifiers">
+									<div class="ext-neowiki-subjects-manager__row-id">
+										<dt class="ext-neowiki-subjects-manager__row-id-label">
+											{{ $i18n( 'neowiki-managesubjects-id-label' ).text() }}
+										</dt>
+										<dd class="ext-neowiki-subjects-manager__row-id-value">
+											<button
+												type="button"
+												class="ext-neowiki-subjects-manager__row-id-button"
+												:title="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
+												:aria-label="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
+												@click="copySubjectId( subject.getId().text )"
+											>
+												<data :value="subject.getId().text">
+													{{ subject.getId().text }}
+												</data>
+											</button>
+										</dd>
+									</div>
+									<div class="ext-neowiki-subjects-manager__row-iri">
+										<dt class="ext-neowiki-subjects-manager__row-iri-label">
+											{{ $i18n( 'neowiki-managesubjects-iri-label' ).text() }}
+										</dt>
+										<dd class="ext-neowiki-subjects-manager__row-iri-value">
+											<button
+												type="button"
+												class="ext-neowiki-subjects-manager__row-iri-button"
+												:title="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( subject.getId().text ) ).text()"
+												:aria-label="$i18n( 'neowiki-managesubjects-iri-copy', subjectIri( subject.getId().text ) ).text()"
+												@click="copySubjectIri( subjectIri( subject.getId().text ) )"
+											>
+												<data :value="subjectIri( subject.getId().text )">
+													{{ subjectIri( subject.getId().text ) }}
+												</data>
+											</button>
+										</dd>
+									</div>
+								</dl>
+								<DataExportButton
+									:label="$i18n( 'neowiki-managesubjects-export-button' ).text()"
+									:projections="rdfProjections"
+									v-bind="subjectExportUrls( subject.getId().text )"
+								/>
 							</footer>
 						</div>
 					</details>
@@ -394,7 +443,7 @@
 				<strong>{{ deletingLabel }}</strong>
 			</I18nSlot>
 			<template #footer>
-				<EditSummary
+				<SummaryAction
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-managesubjects-delete-confirm-button' ).text()"
 					:save-disabled="false"
@@ -419,34 +468,40 @@ import type { MenuButtonItemData } from '@wikimedia/codex';
 import {
 	cdxIconAdd,
 	cdxIconCollapse,
-	cdxIconDownload,
 	cdxIconDraggable,
 	cdxIconEdit,
 	cdxIconEllipsis,
 	cdxIconExpand,
+	cdxIconLink,
 	cdxIconPushPin,
 	cdxIconTrash
 } from '@wikimedia/codex-icons';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
-import { subjectRowDomId, useSubjectDrag } from '@/composables/useSubjectDrag.ts';
+import { useSubjectDrag } from '@/composables/useSubjectDrag.ts';
+import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnchor.ts';
 import { Subject } from '@/domain/Subject';
 import { Schema } from '@/domain/Schema';
 import { SubjectId } from '@/domain/SubjectId';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
+import DataExportButton from '@/components/SubjectsManager/DataExportButton.vue';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
-import { subjectExportMenuItems, pageExportMenuItems } from '@/presentation/DataExportMenu.ts';
+import { subjectExportUrls, pageExportUrls } from '@/presentation/DataExportMenu.ts';
 
 const pageId = Number( mw.config.get( 'wgNeoWikiManageSubjectsPageId' ) );
 
 // RDF projections readable by the viewing user (native + ontology mappings), permission-filtered
 // server-side. Drives the export menus; native is always present, so this is never truly empty.
 const rdfProjections = ( mw.config.get( 'wgNeoWikiRdfProjections' ) as string[] | null ) ?? [];
+
+// The `$base/entity/` prefix a Subject id extends into its RDF concept URI, derived server-side from
+// the same rule the export mints IRIs with. The copy-IRI control appends the Subject id to it.
+const subjectIriBase = ( mw.config.get( 'wgNeoWikiSubjectIriBase' ) as string | null ) ?? '';
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
@@ -534,6 +589,10 @@ function schemaUrl( name: string ): string {
 	return mw.util.getUrl( `Schema:${ name }` );
 }
 
+function subjectIri( id: string ): string {
+	return subjectIriBase + id;
+}
+
 function statementCount( subject: Subject ): number {
 	return subject.getStatements().withNonEmptyValues().getPropertyNames().length;
 }
@@ -550,6 +609,13 @@ const editMenuItem = computed<MenuButtonItemData>( () => ( {
 	icon: cdxIconEdit
 } ) );
 
+// Not permission-gated: everyone, including read-only users, can copy a deep link to a row.
+const copyLinkMenuItem = computed<MenuButtonItemData>( () => ( {
+	value: 'copy-link',
+	label: mw.msg( 'neowiki-managesubjects-row-copy-link' ),
+	icon: cdxIconLink
+} ) );
+
 const deleteMenuItem = computed<MenuButtonItemData>( () => ( {
 	value: 'delete',
 	label: mw.msg( 'neowiki-managesubjects-row-delete' ),
@@ -562,6 +628,7 @@ const mainRowMenuItems = computed<MenuButtonItemData[]>( () => {
 	if ( canEdit.value ) {
 		items.push( editMenuItem.value );
 	}
+	items.push( copyLinkMenuItem.value );
 	if ( canDelete.value ) {
 		items.push( deleteMenuItem.value );
 	}
@@ -573,6 +640,7 @@ const otherRowMenuItems = computed<MenuButtonItemData[]>( () => {
 	if ( canEdit.value ) {
 		items.push( promoteMenuItem.value, editMenuItem.value );
 	}
+	items.push( copyLinkMenuItem.value );
 	if ( canDelete.value ) {
 		items.push( deleteMenuItem.value );
 	}
@@ -587,37 +655,29 @@ function dispatchRowAction( value: string | number | null, subject: Subject ): v
 		promoteToMain( subject );
 	} else if ( value === 'edit' ) {
 		openEditor( subject );
+	} else if ( value === 'copy-link' ) {
+		copySubjectLink( subject );
 	} else if ( value === 'delete' ) {
 		confirmDelete( subject );
 	}
 }
 
-const exportMenuSelection = ref<string | number | null>( null );
-
-function subjectExportItems( subject: Subject ): MenuButtonItemData[] {
-	return subjectExportMenuItems( subject.getId().text, rdfProjections );
-}
-
-const pageExportItems = computed<MenuButtonItemData[]>(
-	() => pageExportMenuItems( pageId, rdfProjections )
-);
-
-// The menu item value is the export endpoint URL; open it in a new tab so the Data tab UI state
-// (expanded rows, edits in progress) survives. Codex 1.14 menu-item anchors cannot set a target,
-// so we navigate on selection rather than rely on the item's `url`.
-function openExport( value: string | number | null ): void {
-	exportMenuSelection.value = null;
-	if ( typeof value === 'string' && value !== '' ) {
-		window.open( value, '_blank', 'noopener' );
-	}
-}
-
 function toggleExpanded( id: string ): void {
+	// The arrival highlight is a one-time "you landed here" cue from a deep link. The first manual
+	// expand/collapse is the user taking over, so dismiss it: otherwise it would linger on the
+	// originally linked row while the address-bar fragment (rewritten below) moves to a different one,
+	// leaving the visible highlight and a copied URL disagreeing. Mirrors focusedId, likewise transient.
+	highlightedId.value = null;
 	const next = new Set( expandedIds.value );
 	if ( next.has( id ) ) {
 		next.delete( id );
 	} else {
 		next.add( id );
+		// Make the address bar a shareable deep link to the row the user just opened. The fragment is the
+		// bare Subject id (like Wikibase's `#P123`); replaceState (not a location.hash assignment) adds no
+		// history entry and fires no hashchange, so it does not re-trigger applyHash. Collapsing
+		// deliberately leaves the fragment in place.
+		history.replaceState( null, '', '#' + id );
 	}
 	expandedIds.value = next;
 }
@@ -633,6 +693,31 @@ async function copySubjectId( id: string ): Promise<void> {
 	} catch ( error ) {
 		console.error( 'Failed to copy subject ID:', error );
 		mw.notify( mw.msg( 'neowiki-managesubjects-id-copy-error' ), { type: 'error' } );
+	}
+}
+
+async function copySubjectIri( iri: string ): Promise<void> {
+	try {
+		await navigator.clipboard.writeText( iri );
+		mw.notify( mw.msg( 'neowiki-managesubjects-iri-copied', iri ), { type: 'success' } );
+	} catch ( error ) {
+		console.error( 'Failed to copy subject IRI:', error );
+		mw.notify( mw.msg( 'neowiki-managesubjects-iri-copy-error' ), { type: 'error' } );
+	}
+}
+
+async function copySubjectLink( subject: Subject ): Promise<void> {
+	// Build the deep link from the live address bar rather than mw.util.getUrl, so it inherits the
+	// wiki's URL style (short URLs, action paths, query strings) as-served. The fragment is the bare
+	// Subject id — the same anchor the deep-link mount handler resolves to this row.
+	const url = new URL( location.href );
+	url.hash = subject.getId().text;
+	try {
+		await navigator.clipboard.writeText( url.toString() );
+		mw.notify( mw.msg( 'neowiki-managesubjects-link-copied' ), { type: 'success' } );
+	} catch ( error ) {
+		console.error( 'Failed to copy subject link:', error );
+		mw.notify( mw.msg( 'neowiki-managesubjects-link-copy-error' ), { type: 'error' } );
 	}
 }
 
@@ -808,8 +893,12 @@ async function executeDelete( comment: string ): Promise<void> {
 }
 
 function applyHash(): void {
-	const id = window.location.hash.slice( 1 );
-	if ( !id ) {
+	const id = subjectIdFromHash( window.location.hash.slice( 1 ) );
+	if ( id === null ) {
+		// The fragment no longer names a Subject (navigated to a foreign anchor, or cleared), so no row
+		// is the deep-link target any more: drop any stale highlight rather than leave it on a row the
+		// address bar no longer points at.
+		highlightedId.value = null;
 		return;
 	}
 	highlightedId.value = id;
@@ -861,7 +950,7 @@ onUnmounted( () => {
 	&__controls-actions {
 		display: flex;
 		align-items: center;
-		gap: @spacing-100;
+		gap: @spacing-75;
 	}
 
 	&__count {
@@ -1073,13 +1162,37 @@ onUnmounted( () => {
 		white-space: nowrap;
 	}
 
-	&__row-id {
-		display: inline-flex;
-		align-items: baseline;
-		gap: @spacing-25;
+	&__row-identifiers {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		margin: 0;
+		font-size: @font-size-x-small;
+		color: @color-subtle;
 	}
 
-	&__row-id-button {
+	&__row-id,
+	&__row-iri {
+		display: flex;
+		align-items: baseline;
+		gap: @spacing-25;
+		min-width: 0;
+	}
+
+	&__row-id-label,
+	&__row-iri-label {
+		flex-shrink: 0;
+	}
+
+	&__row-id-value,
+	&__row-iri-value {
+		display: flex;
+		min-width: 0;
+		margin: 0;
+	}
+
+	&__row-id-button,
+	&__row-iri-button {
 		appearance: none;
 		background: transparent;
 		border: 0;
@@ -1088,6 +1201,12 @@ onUnmounted( () => {
 		color: inherit;
 		font: inherit;
 		font-family: @font-family-monospace;
+		// The IRI is a full URL: let a long one ellipsize instead of stretching the footer. The whole
+		// value stays in the button title and is what the click copies.
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 
 		&:hover {
 			color: @color-base;
@@ -1114,8 +1233,13 @@ onUnmounted( () => {
 			transition: opacity @transition-duration-medium @transition-timing-function-system, transform @transition-duration-medium @transition-timing-function-system;
 
 			.ext-neowiki-subjects-manager__row:hover &,
-			.ext-neowiki-subjects-manager__row:focus-within &,
-			.ext-neowiki-subjects-manager__row--highlighted & {
+			.ext-neowiki-subjects-manager__row:has( :focus-visible ) &,
+			.ext-neowiki-subjects-manager__row--highlighted &,
+			.ext-neowiki-subjects-manager__row--expanded & {
+				// :has( :focus-visible ) rather than :focus-within: keyboard focus must reveal the
+				// controls a user is tabbing through, but mouse clicks also focus what they hit (a copy
+				// button, the summary when toggling a row) and would pin the controls visible after the
+				// pointer leaves.
 				opacity: 1;
 				transform: translateX( 0 );
 			}
@@ -1153,9 +1277,11 @@ onUnmounted( () => {
 			transition: opacity @transition-duration-medium @transition-timing-function-system;
 
 			.ext-neowiki-subjects-manager__row:hover &,
-			.ext-neowiki-subjects-manager__row:focus-within &,
+			.ext-neowiki-subjects-manager__row:has( :focus-visible ) &,
 			.ext-neowiki-subjects-manager__row--highlighted &,
+			.ext-neowiki-subjects-manager__row--expanded &,
 			&:has( [ aria-expanded='true' ] ) {
+				// Keyboard-only focus reveal for the same reason as __row-actions above.
 				opacity: 1;
 			}
 		}
@@ -1176,8 +1302,6 @@ onUnmounted( () => {
 		margin-top: @spacing-100;
 		padding-top: @spacing-75;
 		border-top: @border-width-base @border-style-base @border-color-subtle;
-		font-size: @font-size-x-small;
-		color: @color-subtle;
 	}
 
 	&__add-more.cdx-button {

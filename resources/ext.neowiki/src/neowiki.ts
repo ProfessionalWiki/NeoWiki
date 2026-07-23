@@ -7,6 +7,7 @@ import SchemaDisplay from '@/components/SchemaDisplay/SchemaDisplay.vue';
 import LayoutDisplay from '@/components/LayoutDisplay/LayoutDisplay.vue';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import LayoutsPage from '@/components/LayoutsPage/LayoutsPage.vue';
+import MappingsPage from '@/components/MappingsPage/MappingsPage.vue';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
@@ -165,6 +166,21 @@ function initializeLayoutsPage(): void {
 	} );
 }
 
+function initializeMappingsPage(): void {
+	queueMicrotask( () => {
+		const mappingsPage = document.getElementById( 'ext-neowiki-mappings' );
+
+		if ( mappingsPage !== null ) {
+			const ext = NeoWikiExtension.getInstance();
+
+			const app = createMwApp( MappingsPage );
+			app.use( ext.getPinia() );
+			NeoWikiServices.registerServices( app );
+			app.mount( mappingsPage );
+		}
+	} );
+}
+
 function initializeSubjectsManagerPage(): void {
 	queueMicrotask( () => {
 		const subjectsManager = document.getElementById( 'ext-neowiki-manage-subjects' );
@@ -192,5 +208,6 @@ if ( !isTestEnvironment ) {
 	initializeLayoutView();
 	initializeSchemasPage();
 	initializeLayoutsPage();
+	initializeMappingsPage();
 	initializeSubjectsManagerPage();
 }

@@ -44,6 +44,9 @@ $wgScriptPath = '/w';
 $wgArticlePath = "/wiki/$1";
 $wgUsePathInfo = true;
 
+## Pretty URLs for the NeoWiki Data tab: /wiki/PageName/subjects
+$wgActionPaths['subjects'] = "/wiki/$1/subjects";
+
 ## The protocol and server name to use in fully-qualified URLs
 $wgServer = getenv( 'MW_SERVER' );
 

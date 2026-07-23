@@ -311,6 +311,19 @@ describe( 'useStringValueInput', () => {
 			);
 		} );
 
+		it( 'does not clear a per-index violation on a single-value field edit', () => {
+			const { onInput } = createComposableWithViolations(
+				[ violation( { code: 'min-length', args: [ '10' ], valuePartIndex: 0 } ) ],
+				{ name: new PropertyName( 'testProp' ), multiple: false },
+			);
+
+			onInput( 'some longer text' );
+
+			// Single-value inputs have no per-part slot, so a per-index violation is not
+			// optimistically cleared on edit — only a field-level (null-index) one would be.
+			expect( mockEmit ).not.toHaveBeenCalledWith( 'clear-server-violation', expect.anything() );
+		} );
+
 		it( 'does not emit clear-server-violation when no violation exists for the property', () => {
 			const { onInput } = createComposableWithViolations(
 				[],
@@ -357,6 +370,28 @@ describe( 'useStringValueInput', () => {
 			onInput( [ 'changed', 'bad' ] );
 
 			expect( mockEmit ).not.toHaveBeenCalledWith( 'clear-server-violation', expect.anything() );
+		} );
+
+		it( 'clears a field-level (null-index) violation on edit of a multi-value field', async () => {
+			const modelValueRef = ref<Value | undefined>( newStringValue( 'a', 'b' ) );
+			const propertyRef = ref( createMockPropertyDefinition( {
+				name: new PropertyName( 'testProp' ),
+				multiple: true,
+			} ) ) as Ref<MultiStringProperty>;
+			const serverViolationsRef = ref<SubjectViolation[]>( [ violation( { code: 'unique-items', valuePartIndex: null } ) ] );
+
+			const { onInput } = useStringValueInput( modelValueRef, propertyRef, mockEmit, mockPropertyType, serverViolationsRef );
+			await nextTick();
+			mockEmit.mockClear();
+
+			onInput( [ 'a', 'c' ] );
+
+			// The field-level summary slot is shown for multi too, so an edit must clear it —
+			// on master the multi branch only cleared numeric indices, leaving it stranded.
+			expect( mockEmit ).toHaveBeenCalledWith(
+				'clear-server-violation',
+				{ propertyName: 'testProp', valuePartIndex: null },
+			);
 		} );
 
 		it( 'recomputes messages when the serverViolations ref changes', async () => {

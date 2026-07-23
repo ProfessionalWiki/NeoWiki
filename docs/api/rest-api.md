@@ -3,31 +3,23 @@ title: REST API
 order: 1
 ---
 
-<!-- DOC INTENT — read before editing.
-Audience: developers deciding if NeoWiki's API fits, and developers doing a specific task with it.
-Job: let them scan what the API can do and find the right endpoint fast.
-Keep out: how the API/spec is built, CI/test mechanics, generator internals — those live in code and tests.
-Order: group by resource; keep a resource's operations together; lead with the common reads; cross-link, don't restate.
-Voice: terse — every sentence earns its place; link to the format docs instead of repeating them.
--->
-
 # REST API
 
-NeoWiki's REST API lives under `/rest.php/neowiki/v0/*` and uses JSON.
+NeoWiki's REST API lives under `/rest.php/neowiki/v0/*`. Requests and responses are JSON; the RDF export endpoints
+return TriG or Turtle instead.
 
-By default, reads are public and writes require a logged-in user with edit rights and a CSRF token. Additional
-permissions might be required depending on the wiki configuration.
+By default, reads are public and writes require a logged-in user with `edit` rights and a CSRF token; wiki
+configuration may require more.
 
-You can find all endpoints in [the OpenAPI 3.0 description](#full-specification) exposed via the REST API itself.
-Demo wiki example: [neowiki.dev/w/rest.php/specs/v0/module/-](https://neowiki.dev/w/rest.php/specs/v0/module/-)
+Every endpoint is also published as a complete [OpenAPI 3.0 description](#full-specification).
 
 ## Permissions
 
-The Subject, Schema, Layout, Mapping and RDF read endpoints enforce the caller's per-page `read` permission: read
-whitelists and permission extensions apply. (MediaWiki's `read` action ignores page protection and
-`$wgNamespaceProtection`, so neither restricts these endpoints.) When you may not read a page, they respond as if
-the data were absent — a `null` value, an empty list, or a `404` — rather than with a `403`. Treat a not-found
-response as "not available": it may mean the data does not exist, or that you may not read it.
+The Subject, page-subjects, subject-labels, Schema, Layout, RDF export, and entity-dereference read endpoints enforce
+the caller's per-page `read` permission; page protection and `$wgNamespaceProtection` do not restrict them, because
+MediaWiki's `read` action ignores both. When you may not read a page they respond as if the data were absent — a `null`
+value, an empty list, or a `404` — never a `403`. `GET /subject-labels` omits the labels of Subjects whose page you
+cannot read; because that filter runs per result, it caps `limit` at 50.
 
 Subject write endpoints require per-page `edit` permission and answer `403` on denial.
 
@@ -49,12 +41,13 @@ Read, change, and validate Subjects. New Subjects are created on a page — see
 |---|---|
 | `GET /neowiki/v0/subject/{subjectId}` | Fetch a Subject. Optional `revisionId`; `expand` with `page` or `relations`. |
 | `GET /neowiki/v0/subject/{subjectId}/rdf` | Export one Subject as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or an ontology target. See [RDF export](../rdf/rdf-export.md). |
+| `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI. `303` to the Subject's RDF (`Accept: application/trig` or `text/turtle`) or to the hosting page (otherwise). See [Dereferencing subject IRIs](../rdf/rdf-export.md#dereferencing-subject-iris). |
 | `PUT /neowiki/v0/subject/{subjectId}` | Replace a Subject's label and statements. |
 | `DELETE /neowiki/v0/subject/{subjectId}` | Delete a Subject. |
-| `POST /neowiki/v0/subject/validate` | Check whether a new Subject is valid, without saving it. |
-| `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. |
+| `POST /neowiki/v0/subject/validate` | Check whether a new Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
+| `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |
-| `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. |
+| `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. Query: `schema` (required), `search` (label prefix), `limit`. |
 
 ### Pages and Subjects
 
@@ -90,6 +83,15 @@ A Layout defines how a Subject is displayed.
 | `GET /neowiki/v0/layouts` | List Layouts. Paginated with `limit` and `offset`. |
 | `GET /neowiki/v0/layout/{layoutName}` | Fetch a Layout by name. |
 
+### Mappings
+
+An ontology Mapping projects native Schemas to a target ontology. For the format and concepts, see
+[Ontology Mapping](../rdf/ontology-mapping.md).
+
+| Endpoint | Description |
+|---|---|
+| `GET /neowiki/v0/mappings` | List ontology Mappings, each with the names of its mapped Schemas. Paginated with `limit` and `offset`. |
+
 ### Query
 
 | Endpoint | Description |
@@ -100,17 +102,16 @@ A Layout defines how a Subject is displayed.
 
 ## The `expand` parameter
 
-The Subject read and page-subjects read endpoints take an optional multi-valued `expand` query parameter (e.g.
-`?expand=page|relations`) that embeds related data so a client can render without follow-up requests. On the
-Subject read, `page` adds the page fields described in [Subject format](subject-format.md#reading-subjects) to
-each returned Subject. On the page-subjects read, `schemas` adds a top-level `schemas` map from Schema name to the
-[Schema format](schema-format.md) body of every Schema the returned Subjects use. Both endpoints accept
-`relations`, which shapes the response differently on each endpoint. Per-Subject objects follow
-[Subject format](subject-format.md) — page fields are trimmed from the examples below.
+The Subject read and page-subjects read endpoints take an optional multi-valued `expand` query parameter (pipe-separated,
+e.g. `?expand=schemas|relations`) that embeds related data in the response. On the Subject read, `page` adds the page fields
+described in [Subject format](subject-format.md#reading-subjects) to each returned Subject. On the page-subjects read,
+`schemas` adds a top-level `schemas` map from Schema name to the [Schema format](schema-format.md) body of every Schema
+the returned Subjects use. Both endpoints accept `relations`, which shapes the response differently on each endpoint.
+Per-Subject objects follow [Subject format](subject-format.md) — page fields are trimmed from the examples below.
 
-`expand=relations` resolves every relation-type Statement value (each holds a `target` Subject ID) to the full
-target Subject; match a relation value's `target` against the resolved Subjects to look one up. A `target` that
-does not resolve to an existing Subject is silently omitted — the relation value itself is unchanged.
+`expand=relations` resolves every relation-type Statement value (each holds a `target` Subject ID) to the full target
+Subject; match a relation value's `target` against the resolved Subjects to look one up. A `target` that does not
+resolve to a Subject you can read is silently omitted — the relation value itself is unchanged.
 
 On the **Subject read**, the targets are merged into the same `subjects` map as the requested Subject, which
 `requestedId` identifies:
@@ -160,17 +161,8 @@ A target already among the page's own Subjects (a relation to another Subject on
 
 ## Full specification
 
-Every endpoint also publishes a complete OpenAPI 3.0 description: parameters, request bodies, and
-responses.
-
-Browse it live on the demo wiki:
-[neowiki.dev/w/rest.php/specs/v0/module/-](https://neowiki.dev/w/rest.php/specs/v0/module/-).
-Paste that JSON into [editor.swagger.io](https://editor.swagger.io) or any OpenAPI viewer.
-
-To expose it on your own wiki, register the spec routes in `LocalSettings.php`:
-
-```php
-$wgRestAPIAdditionalRouteFiles[] = 'includes/Rest/specs.v0.json';
-```
-
-Then fetch `/rest.php/specs/v0/module/-` on your wiki.
+The OpenAPI 3.0 description carries every endpoint's parameters, request bodies, and responses. Browse it live on the
+demo wiki: [neowiki.dev/w/rest.php/specs/v0/module/-](https://neowiki.dev/w/rest.php/specs/v0/module/-). Paste that JSON
+into [editor.swagger.io](https://editor.swagger.io) or any OpenAPI viewer. On your own wiki, register the spec routes
+first — `$wgRestAPIAdditionalRouteFiles[] = 'includes/Rest/specs.v0.json';` in `LocalSettings.php` — then fetch
+`/rest.php/specs/v0/module/-`.
