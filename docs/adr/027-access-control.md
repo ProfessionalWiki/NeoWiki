@@ -6,9 +6,9 @@ Status: Draft
 
 ## Context
 
-NeoWiki data leaves the system through several kinds of surface: REST lookup endpoints, the REST query endpoints that
-execute a caller-supplied Cypher or SPARQL query ([query-api.md](../api/query-api.md)), parse-time accessors (parser
-functions and Lua), RDF export, and projection into graph and SPARQL stores.
+NeoWiki data leaves the system through the REST API (lookups, [caller-supplied Cypher/SPARQL
+queries](../api/query-api.md), RDF export), through parse-time accessors (parser functions and Lua), and through
+projection into graph and SPARQL stores and RDF dumps.
 Earlier ADRs settled individual pieces: Neo4j is reachable only through the backend ([ADR 13](013-restrict-neo4j-access.md)),
 SPARQL stores may be exposed directly ([ADR 19](019-graph-database-architecture.md)), and graph nodes carry per-wiki
 identity ([ADR 22](022-multi-wiki-node-identity.md), which left ACL-based query filtering out of scope). This ADR
