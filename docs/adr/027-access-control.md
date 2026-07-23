@@ -6,8 +6,9 @@ Status: Draft
 
 ## Context
 
-NeoWiki data leaves the system through several kinds of surface: REST lookup endpoints, raw Cypher and SPARQL query
-endpoints, parse-time accessors (parser functions and Lua), RDF export, and projection into graph and SPARQL stores.
+NeoWiki data leaves the system through several kinds of surface: REST lookup endpoints, the REST query endpoints that
+execute a caller-supplied Cypher or SPARQL query ([query-api.md](../api/query-api.md)), parse-time accessors (parser
+functions and Lua), RDF export, and projection into graph and SPARQL stores.
 Earlier ADRs settled individual pieces: Neo4j is reachable only through the backend ([ADR 13](013-restrict-neo4j-access.md)),
 SPARQL stores may be exposed directly ([ADR 19](019-graph-database-architecture.md)), and graph nodes carry per-wiki
 identity ([ADR 22](022-multi-wiki-node-identity.md), which left ACL-based query filtering out of scope). This ADR
@@ -44,8 +45,9 @@ Constraints the model rests on:
   queries ([ADR 22](022-multi-wiki-node-identity.md), [graph-model](../api/graph-model.md)). User groups and page
   restrictions are never projected: the keys are revision-derived, so nothing in a store goes stale when permissions
   change.
-- **Raw query surfaces have whole-store read semantics.** Cypher and SPARQL result rows are not attributable to pages
-  and are not trimmed. The NeoWiki-mediated REST query endpoints are gated by the wiki-level `neowiki-query` right
+- **Raw query surfaces have whole-store read semantics.** A raw query surface executes a caller-supplied Cypher or
+  SPARQL query; its result rows are not attributable to pages and are not trimmed. The REST query endpoints are gated
+  by the wiki-level `neowiki-query` right
   ([query-api.md](../api/query-api.md)); granting that right grants read access to everything the wiki projects into
   the store. Exposing a store directly (which ADR 19 allows for SPARQL) is a different surface: see "Projection as
   publication" below.
