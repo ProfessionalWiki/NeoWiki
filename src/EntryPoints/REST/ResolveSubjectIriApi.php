@@ -22,8 +22,8 @@ use Wikimedia\ParamValidator\ParamValidator;
  *   - `Accept` includes `application/trig` → the Subject's TriG RDF export.
  *   - else `Accept` includes `text/turtle` → the Subject's Turtle RDF export (TriG wins a tie, matching
  *     {@see RdfFormatNegotiation}).
- *   - else (a browser's `text/html`, `*&#47;*`, an absent or unrecognized `Accept`) → the hosting page, or
- *     its Data tab row when `$wgNeoWikiDereferenceSubjectsToDataTab` is enabled.
+ *   - else (a browser's `text/html`, `*&#47;*`, an absent or unrecognized `Accept`) → the hosting page's
+ *     Data tab row by default, or the plain page when `$wgNeoWikiDereferenceSubjectsToDataTab` is disabled.
  *
  * The RDF branches target the native projection: selecting an ontology target or a specific
  * serialization stays on the per-Subject RDF endpoint, keeping this concept-URI surface Accept-only.

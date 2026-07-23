@@ -33,11 +33,6 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 	public function setUp(): void {
 		$this->setUpNeo4j();
 
-		// Pin the default so the Accept-negotiation tests are independent of any ambient
-		// $wgNeoWikiDereferenceSubjectsToDataTab (e.g. a dev LocalSettings override). The Data-tab tests
-		// override this.
-		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', false );
-
 		$this->createSchema( self::SCHEMA );
 
 		$this->pageId = $this->createPageWithSubjects(
@@ -65,6 +60,14 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * NeoWiki ships the Data tab as the dereference target (extension.json). The plain-hosting-page tests
+	 * opt out explicitly; the default test leaves the setting unset to exercise the shipped default.
+	 */
+	private function disableDataTabDereference(): void {
+		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', false );
+	}
+
 	public function testAcceptTriGRedirectsToTheSubjectTriGExport(): void {
 		$response = $this->deref( headers: [ 'Accept' => 'application/trig' ] );
 
@@ -86,30 +89,35 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectRdfLocation( $response, 'trig' );
 	}
 
-	public function testAcceptHtmlRedirectsToTheHostingPage(): void {
+	public function testAcceptHtmlRedirectsToThePlainHostingPageWhenDataTabDisabled(): void {
+		$this->disableDataTabDereference();
+
 		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
 
 		$this->assertSame( 303, $response->getStatusCode() );
 		$this->assertHostingPageLocation( $response );
 	}
 
-	public function testWildcardAcceptRedirectsToTheHostingPage(): void {
+	public function testWildcardAcceptRedirectsToThePlainHostingPageWhenDataTabDisabled(): void {
+		$this->disableDataTabDereference();
+
 		$response = $this->deref( headers: [ 'Accept' => '*/*' ] );
 
 		$this->assertSame( 303, $response->getStatusCode() );
 		$this->assertHostingPageLocation( $response );
 	}
 
-	public function testAbsentAcceptRedirectsToTheHostingPage(): void {
+	public function testAbsentAcceptRedirectsToThePlainHostingPageWhenDataTabDisabled(): void {
+		$this->disableDataTabDereference();
+
 		$response = $this->deref();
 
 		$this->assertSame( 303, $response->getStatusCode() );
 		$this->assertHostingPageLocation( $response );
 	}
 
-	public function testDataTabDereferenceTargetRedirectsToTheSubjectsRow(): void {
-		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', true );
-
+	public function testHtmlDereferenceRedirectsToTheSubjectsDataTabRowByDefault(): void {
+		// No config override: NeoWiki ships the Data tab as the default dereference target.
 		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
 
 		$location = $response->getHeaderLine( 'Location' );
