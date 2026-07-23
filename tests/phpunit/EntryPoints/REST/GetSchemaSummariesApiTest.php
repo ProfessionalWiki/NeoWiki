@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
@@ -27,7 +29,7 @@ class GetSchemaSummariesApiTest extends NeoWikiIntegrationTestCase {
 		$data = json_decode( $response->getBody()->getContents(), true );
 
 		$this->assertSame( [], $data['schemas'] );
-		$this->assertSame( 0, $data['totalRows'] );
+		$this->assertNull( $data['nextCursor'] );
 	}
 
 	public function testReturnsSchemaSummaries(): void {
@@ -63,8 +65,8 @@ JSON
 
 		$data = json_decode( $response->getBody()->getContents(), true );
 
-		$this->assertSame( 2, $data['totalRows'] );
 		$this->assertCount( 2, $data['schemas'] );
+		$this->assertNull( $data['nextCursor'] );
 
 		$byName = [];
 		foreach ( $data['schemas'] as $summary ) {
@@ -78,44 +80,119 @@ JSON
 		$this->assertSame( 1, $byName['Person']['propertyCount'] );
 	}
 
-	public function testPaginationLimitsResults(): void {
+	public function testFollowingTheCursorWalksAllPages(): void {
 		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
 		$this->createSchema( 'Beta', '{"title":"Beta","description":"Second","propertyDefinitions":{}}' );
 		$this->createSchema( 'Gamma', '{"title":"Gamma","description":"Third","propertyDefinitions":{}}' );
 
-		$response = $this->executeHandler(
+		$firstPage = json_decode( $this->executeHandler(
 			new GetSchemaSummariesApi(),
 			new RequestData( [
 				'method' => 'GET',
-				'queryParams' => [ 'limit' => '2', 'offset' => '0' ],
+				'queryParams' => [ 'limit' => '2' ],
 			] )
-		);
+		)->getBody()->getContents(), true );
 
-		$data = json_decode( $response->getBody()->getContents(), true );
+		$this->assertSame( [ 'Alpha', 'Beta' ], array_column( $firstPage['schemas'], 'name' ) );
+		$this->assertIsString( $firstPage['nextCursor'] );
 
-		$this->assertCount( 2, $data['schemas'] );
-		$this->assertSame( 3, $data['totalRows'] );
+		$secondPage = json_decode( $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'limit' => '2', 'cursor' => $firstPage['nextCursor'] ],
+			] )
+		)->getBody()->getContents(), true );
+
+		$this->assertSame( [ 'Gamma' ], array_column( $secondPage['schemas'], 'name' ) );
+		$this->assertNull( $secondPage['nextCursor'] );
 	}
 
-	public function testPaginationOffset(): void {
+	public function testExactPageBoundaryEndsPagination(): void {
 		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
 		$this->createSchema( 'Beta', '{"title":"Beta","description":"Second","propertyDefinitions":{}}' );
-		$this->createSchema( 'Gamma', '{"title":"Gamma","description":"Third","propertyDefinitions":{}}' );
 
-		$response = $this->executeHandler(
+		$data = json_decode( $this->executeHandler(
 			new GetSchemaSummariesApi(),
 			new RequestData( [
 				'method' => 'GET',
-				'queryParams' => [ 'limit' => '2', 'offset' => '1' ],
+				'queryParams' => [ 'limit' => '2' ],
 			] )
-		);
-
-		$data = json_decode( $response->getBody()->getContents(), true );
+		)->getBody()->getContents(), true );
 
 		$this->assertCount( 2, $data['schemas'] );
-		$this->assertSame( 'Beta', $data['schemas'][0]['name'] );
-		$this->assertSame( 'Gamma', $data['schemas'][1]['name'] );
-		$this->assertSame( 3, $data['totalRows'] );
+		$this->assertNull( $data['nextCursor'] );
+	}
+
+	/**
+	 * @dataProvider cursorPastEndProvider
+	 */
+	public function testCursorPastTheEndReturnsAnEmptyLastPage( string $cursor ): void {
+		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
+
+		$data = json_decode( $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'cursor' => $cursor ],
+			] )
+		)->getBody()->getContents(), true );
+
+		$this->assertSame( [], $data['schemas'] );
+		$this->assertNull( $data['nextCursor'] );
+	}
+
+	public static function cursorPastEndProvider(): array {
+		return [
+			'past the last page id' => [ '999999' ],
+			'beyond integer range (saturates)' => [ '99999999999999999999999' ],
+		];
+	}
+
+	public function testRejectsMalformedCursor(): void {
+		$this->expectException( HttpException::class );
+		$this->expectExceptionCode( 400 );
+
+		$this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'cursor' => 'not-a-cursor' ],
+			] )
+		);
+	}
+
+	public function testExcludesSchemasTheRequestUserCannotReadWithoutLeavingAGapInThePage(): void {
+		// End-to-end guard for the #1062 count oracle: a Schema the request user may not read is
+		// skipped and a readable one after it fills its slot, so the page carries no trace of the
+		// restricted Schema. This exercises the handler's getRequestAuthority wiring, which the
+		// persistence-layer tests bypass by injecting an authority directly.
+		$this->createSchema( 'ReadableSchema', '{"title":"ReadableSchema","description":"","propertyDefinitions":{}}' );
+		$this->createSchema( 'RestrictedSchema', '{"title":"RestrictedSchema","description":"","propertyDefinitions":{}}' );
+		$this->createSchema( 'TrailingSchema', '{"title":"TrailingSchema","description":"","propertyDefinitions":{}}' );
+
+		RequestContext::getMain()->setUser( $this->getTestUser()->getUser() );
+		$this->setTemporaryHook(
+			'getUserPermissionsErrors',
+			static function ( $title, $user, $action, &$result ): bool {
+				if ( $action === 'read' && $title->getDBkey() === 'RestrictedSchema' ) {
+					$result = [ 'badaccess-group0' ];
+					return false;
+				}
+				return true;
+			}
+		);
+
+		$data = json_decode( $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'limit' => '2' ],
+			] )
+		)->getBody()->getContents(), true );
+
+		$this->assertSame( [ 'ReadableSchema', 'TrailingSchema' ], array_column( $data['schemas'], 'name' ) );
+		$this->assertNull( $data['nextCursor'] );
 	}
 
 }

@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -75,6 +76,23 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 			'main',
 			new SchemaContent(
 				$json ?? '{"title":"' . $name . '","propertyDefinitions":{}}',
+			)
+		);
+
+		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
+	}
+
+	protected function createLayout( string $name, ?string $json = null ): ?RevisionRecord {
+		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
+			Title::newFromText( $name, NeoWikiExtension::NS_LAYOUT )
+		);
+
+		$updater = $wikiPage->newPageUpdater( $this->getTestSysop()->getUser() );
+
+		$updater->setContent(
+			'main',
+			new LayoutContent(
+				$json ?? '{ "schema": "' . $name . '", "type": "infobox" }'
 			)
 		);
 

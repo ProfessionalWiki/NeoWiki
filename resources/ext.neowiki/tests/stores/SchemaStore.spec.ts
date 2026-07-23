@@ -52,36 +52,36 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 		vi.restoreAllMocks();
 	} );
 
-	it( 'pages through every schema summary across multiple pages', async () => {
+	it( 'pages through every schema summary by following the cursor', async () => {
 		const getSchemaSummaries = vi.fn()
-			.mockResolvedValueOnce( { schemas: manySummaries( 50, 'A' ), totalRows: 60 } )
-			.mockResolvedValueOnce( { schemas: manySummaries( 10, 'B' ), totalRows: 60 } );
+			.mockResolvedValueOnce( { schemas: manySummaries( 50, 'A' ), nextCursor: 'cursor-1' } )
+			.mockResolvedValueOnce( { schemas: manySummaries( 10, 'B' ), nextCursor: null } );
 		withRepository( { getSchemaSummaries } );
 
 		const result = await useSchemaStore().getAllSchemaSummaries();
 
 		expect( result ).toHaveLength( 60 );
-		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 1, 0, 50 );
-		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, 50, 50 );
+		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 1, null, 50 );
+		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, 'cursor-1', 50 );
 	} );
 
-	it( 'advances by page size, not loaded count, when a page omits unloadable schemas', async () => {
-		// The endpoint counts 60 schema pages in totalRows but can only load 49 in the
-		// first window (one is restricted or malformed) and 10 in the second.
+	it( 'keeps following the cursor when a page omits unloadable schemas', async () => {
+		// A page can come back shorter than requested when a readable schema fails to load
+		// (malformed); the cursor, not the page length, decides whether more pages follow.
 		const getSchemaSummaries = vi.fn()
-			.mockResolvedValueOnce( { schemas: manySummaries( 49, 'A' ), totalRows: 60 } )
-			.mockResolvedValueOnce( { schemas: manySummaries( 10, 'B' ), totalRows: 60 } );
+			.mockResolvedValueOnce( { schemas: manySummaries( 49, 'A' ), nextCursor: 'cursor-1' } )
+			.mockResolvedValueOnce( { schemas: manySummaries( 10, 'B' ), nextCursor: null } );
 		withRepository( { getSchemaSummaries } );
 
 		const result = await useSchemaStore().getAllSchemaSummaries();
 
 		expect( result ).toHaveLength( 59 );
-		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, 50, 50 );
+		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, 'cursor-1', 50 );
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
 	} );
 
 	it( 'caches the summaries and does not refetch on the next call', async () => {
-		const getSchemaSummaries = vi.fn().mockResolvedValue( { schemas: [ summary( 'A' ) ], totalRows: 1 } );
+		const getSchemaSummaries = vi.fn().mockResolvedValue( { schemas: [ summary( 'A' ) ], nextCursor: null } );
 		withRepository( { getSchemaSummaries } );
 		const store = useSchemaStore();
 
@@ -92,7 +92,7 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 	} );
 
 	it( 'shares one in-flight request across concurrent callers', async () => {
-		const getSchemaSummaries = vi.fn().mockResolvedValue( { schemas: [ summary( 'A' ) ], totalRows: 1 } );
+		const getSchemaSummaries = vi.fn().mockResolvedValue( { schemas: [ summary( 'A' ) ], nextCursor: null } );
 		withRepository( { getSchemaSummaries } );
 		const store = useSchemaStore();
 
@@ -104,7 +104,7 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 	it( 'releases the in-flight request after a failure so the next call retries', async () => {
 		const getSchemaSummaries = vi.fn()
 			.mockRejectedValueOnce( new Error( 'load failed' ) )
-			.mockResolvedValueOnce( { schemas: [ summary( 'A' ) ], totalRows: 1 } );
+			.mockResolvedValueOnce( { schemas: [ summary( 'A' ) ], nextCursor: null } );
 		withRepository( { getSchemaSummaries } );
 		const store = useSchemaStore();
 
@@ -116,7 +116,7 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 	} );
 
 	it( 'refetches summaries after a schema is saved', async () => {
-		const getSchemaSummaries = vi.fn().mockResolvedValue( { schemas: [ summary( 'A' ) ], totalRows: 1 } );
+		const getSchemaSummaries = vi.fn().mockResolvedValue( { schemas: [ summary( 'A' ) ], nextCursor: null } );
 		const saveSchema = vi.fn().mockResolvedValue( undefined );
 		withRepository( { getSchemaSummaries, saveSchema } );
 		const store = useSchemaStore();

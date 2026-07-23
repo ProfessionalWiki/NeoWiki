@@ -15,7 +15,7 @@ const canEditSchemaRef = ref( false );
 const checkCreatePermissionMock = vi.fn();
 const checkEditPermissionMock = vi.fn();
 
-let schemasResponse: { schemas: unknown[]; totalRows: number } = { schemas: [], totalRows: 0 };
+let schemasResponse: { schemas: unknown[]; nextCursor: string | null } = { schemas: [], nextCursor: null };
 
 vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	useSchemaPermissions: () => ( {
@@ -83,7 +83,7 @@ function findDeleteButtons( wrapper: VueWrapper ): VueWrapper[] {
 function mountComponent( summaries: unknown[] = [] ): VueWrapper {
 	schemasResponse = {
 		schemas: summaries,
-		totalRows: summaries.length,
+		nextCursor: null,
 	};
 	setupMwMock( { functions: [ 'msg', 'util', 'message', 'notify' ] } );
 
@@ -108,7 +108,7 @@ describe( 'SchemasPage', () => {
 		checkEditPermissionMock.mockClear();
 		fetchSchemaMock.mockClear();
 		getSchemaMock.mockClear();
-		schemasResponse = { schemas: [], totalRows: 0 };
+		schemasResponse = { schemas: [], nextCursor: null };
 	} );
 
 	it( 'shows create button when user has create permission', async () => {
@@ -145,6 +145,21 @@ describe( 'SchemasPage', () => {
 		await flushPromises();
 
 		expect( wrapper.findComponent( SchemaCreatorDialog ).exists() ).toBe( false );
+	} );
+
+	it( 'disables next when a full page ends the listing', async () => {
+		// A listing that ends exactly on a page boundary returns a full page with a null
+		// cursor. CdxTable's indeterminate mode would keep next enabled (its heuristic is a
+		// short page), so the component must switch the table to a known total.
+		const wrapper = mountComponent( Array.from( { length: 10 }, ( _value, index ) => (
+			{ name: `Schema${ index }`, description: '', propertyCount: 1 }
+		) ) );
+		await flushPromises();
+
+		const nextButton = wrapper.find( '.cdx-table-pager button[aria-label="Next page"]' );
+
+		expect( nextButton.attributes( 'disabled' ) ).toBeDefined();
+		expect( wrapper.text() ).toContain( 'of 10' );
 	} );
 
 	it( 'shows empty value indicator for schemas without a description', async () => {

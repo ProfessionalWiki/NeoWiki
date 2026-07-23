@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetMappingSummariesApi;
@@ -27,7 +29,7 @@ class GetMappingSummariesApiTest extends NeoWikiIntegrationTestCase {
 		$data = json_decode( $response->getBody()->getContents(), true );
 
 		$this->assertSame( [], $data['mappings'] );
-		$this->assertSame( 0, $data['totalRows'] );
+		$this->assertNull( $data['nextCursor'] );
 	}
 
 	public function testReturnsMappingSummariesWithAlphabeticallySortedMappedSchemaNames(): void {
@@ -66,8 +68,8 @@ JSON
 
 		$data = json_decode( $response->getBody()->getContents(), true );
 
-		$this->assertSame( 2, $data['totalRows'] );
 		$this->assertCount( 2, $data['mappings'] );
+		$this->assertNull( $data['nextCursor'] );
 
 		$byName = [];
 		foreach ( $data['mappings'] as $summary ) {
@@ -78,44 +80,78 @@ JSON
 		$this->assertSame( [ 'Manuscript' ], $byName['Dublin Core']['schemas'] );
 	}
 
-	public function testPaginationLimitsResults(): void {
+	public function testFollowingTheCursorWalksAllPages(): void {
 		$this->createMapping( 'Alpha', '{"version":1,"schemas":{}}' );
 		$this->createMapping( 'Beta', '{"version":1,"schemas":{}}' );
 		$this->createMapping( 'Gamma', '{"version":1,"schemas":{}}' );
 
-		$response = $this->executeHandler(
+		$firstPage = json_decode( $this->executeHandler(
 			new GetMappingSummariesApi(),
 			new RequestData( [
 				'method' => 'GET',
-				'queryParams' => [ 'limit' => '2', 'offset' => '0' ],
+				'queryParams' => [ 'limit' => '2' ],
 			] )
-		);
+		)->getBody()->getContents(), true );
 
-		$data = json_decode( $response->getBody()->getContents(), true );
+		$this->assertSame( [ 'Alpha', 'Beta' ], array_column( $firstPage['mappings'], 'name' ) );
+		$this->assertIsString( $firstPage['nextCursor'] );
 
-		$this->assertCount( 2, $data['mappings'] );
-		$this->assertSame( 3, $data['totalRows'] );
+		$secondPage = json_decode( $this->executeHandler(
+			new GetMappingSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'limit' => '2', 'cursor' => $firstPage['nextCursor'] ],
+			] )
+		)->getBody()->getContents(), true );
+
+		$this->assertSame( [ 'Gamma' ], array_column( $secondPage['mappings'], 'name' ) );
+		$this->assertNull( $secondPage['nextCursor'] );
 	}
 
-	public function testPaginationOffset(): void {
-		$this->createMapping( 'Alpha', '{"version":1,"schemas":{}}' );
-		$this->createMapping( 'Beta', '{"version":1,"schemas":{}}' );
-		$this->createMapping( 'Gamma', '{"version":1,"schemas":{}}' );
+	public function testRejectsMalformedCursor(): void {
+		$this->expectException( HttpException::class );
+		$this->expectExceptionCode( 400 );
 
-		$response = $this->executeHandler(
+		$this->executeHandler(
 			new GetMappingSummariesApi(),
 			new RequestData( [
 				'method' => 'GET',
-				'queryParams' => [ 'limit' => '2', 'offset' => '1' ],
+				'queryParams' => [ 'cursor' => 'not-a-cursor' ],
 			] )
 		);
+	}
 
-		$data = json_decode( $response->getBody()->getContents(), true );
+	public function testExcludesMappingsTheRequestUserCannotReadWithoutLeavingAGapInThePage(): void {
+		// End-to-end guard for the #1062 count oracle: a Mapping the request user may not read is
+		// skipped and a readable one after it fills its slot, so the page carries no trace of the
+		// restricted Mapping. This exercises the handler's getRequestAuthority wiring, which the
+		// persistence-layer tests bypass by injecting an authority directly.
+		$this->createMapping( 'ReadableMapping', '{"version":1,"schemas":{}}' );
+		$this->createMapping( 'RestrictedMapping', '{"version":1,"schemas":{}}' );
+		$this->createMapping( 'TrailingMapping', '{"version":1,"schemas":{}}' );
 
-		$this->assertCount( 2, $data['mappings'] );
-		$this->assertSame( 'Beta', $data['mappings'][0]['name'] );
-		$this->assertSame( 'Gamma', $data['mappings'][1]['name'] );
-		$this->assertSame( 3, $data['totalRows'] );
+		RequestContext::getMain()->setUser( $this->getTestUser()->getUser() );
+		$this->setTemporaryHook(
+			'getUserPermissionsErrors',
+			static function ( $title, $user, $action, &$result ): bool {
+				if ( $action === 'read' && $title->getDBkey() === 'RestrictedMapping' ) {
+					$result = [ 'badaccess-group0' ];
+					return false;
+				}
+				return true;
+			}
+		);
+
+		$data = json_decode( $this->executeHandler(
+			new GetMappingSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'limit' => '2' ],
+			] )
+		)->getBody()->getContents(), true );
+
+		$this->assertSame( [ 'ReadableMapping', 'TrailingMapping' ], array_column( $data['mappings'], 'name' ) );
+		$this->assertNull( $data['nextCursor'] );
 	}
 
 }

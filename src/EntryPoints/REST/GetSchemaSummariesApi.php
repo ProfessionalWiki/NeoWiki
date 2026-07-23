@@ -7,35 +7,32 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Rest\StringStream;
+use MediaWiki\Title\TitleValue;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
 class GetSchemaSummariesApi extends SimpleHandler {
+
+	use CursorPaginationTrait;
 
 	public function run(): Response {
 		$params = $this->getValidatedParams();
 		$extension = NeoWikiExtension::getInstance();
-		$schemaNameLookup = $extension->getSchemaNameLookup();
 		$schemaLookup = $extension->getSchemaLookup();
 
-		$summaries = [];
-
-		foreach ( $schemaNameLookup->getSchemaNamesMatching( '', $params['limit'], $params['offset'] ) as $title ) {
-			$schema = $schemaLookup->getSchema( new SchemaName( $title->getText() ) );
-
-			if ( $schema === null ) {
-				continue;
+		$page = $this->buildPage(
+			$extension->getSchemaNameLookup()->getReadableSchemaNames( $this->pageIdFromCursor( $params['cursor'] ) ),
+			$params['limit'],
+			function ( TitleValue $title ) use ( $schemaLookup ): ?array {
+				$schema = $schemaLookup->getSchema( new SchemaName( $title->getText() ) );
+				return $schema === null ? null : $this->schemaToSummary( $schema );
 			}
-
-			$summaries[] = $this->schemaToSummary( $schema );
-		}
+		);
 
 		$result = [
-			'schemas' => $summaries,
-			'totalRows' => $schemaNameLookup->getSchemaCount(),
+			'schemas' => $page['items'],
+			'nextCursor' => $page['nextCursor'],
 		];
 
 		$response = $this->getResponseFactory()->create();
@@ -46,25 +43,7 @@ class GetSchemaSummariesApi extends SimpleHandler {
 	}
 
 	public function getParamSettings(): array {
-		return [
-			'limit' => [
-				self::PARAM_SOURCE => 'query',
-				ParamValidator::PARAM_TYPE => 'integer',
-				ParamValidator::PARAM_REQUIRED => false,
-				ParamValidator::PARAM_DEFAULT => 10,
-				IntegerDef::PARAM_MIN => 1,
-				IntegerDef::PARAM_MAX => 50,
-				self::PARAM_DESCRIPTION => 'Maximum number of items to return.',
-			],
-			'offset' => [
-				self::PARAM_SOURCE => 'query',
-				ParamValidator::PARAM_TYPE => 'integer',
-				ParamValidator::PARAM_REQUIRED => false,
-				ParamValidator::PARAM_DEFAULT => 0,
-				IntegerDef::PARAM_MIN => 0,
-				self::PARAM_DESCRIPTION => 'Zero-based index of the first item to return.',
-			],
-		];
+		return $this->paginationParamSettings();
 	}
 
 	/**
