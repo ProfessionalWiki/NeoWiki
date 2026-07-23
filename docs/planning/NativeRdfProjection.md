@@ -294,6 +294,15 @@ vocabulary alignment happens in the ontology mapping.*
 `source`, `target`, `relationType`, and properties). Is this the right approach for the CH/LOD community? Are
 there conventions we should follow? Should we plan the data model with future RDF-star migration in mind?
 
+*Feedback and as-built (2026-07): shipped as specified — Relations emit both the direct triple and the reified
+Relation node; see [Relations](#relations) and the [RDF Export reference](../rdf/rdf-export.md). George Bruseker
+(takin): having both the direct and the indirect representation is handy; the Wikibase-style reification is
+essentially a named graph. RDF-star migration stays out of scope here (see
+[What This Does Not Cover](#what-this-does-not-cover)). Still moving: the `relationType` term was flagged as
+confusing ([#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999)), and renaming it is committed as
+part of the cohesive relations design pass ([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)), which
+may also reshape the Relation node.*
+
 **Q4: CIDOC-CRM alignment.** CIDOC-CRM is the dominant ontology in cultural heritage. It uses an event-centric
 model (relationships mediated through events) which is quite different from NeoWiki's entity-property model. For
 example, a simple "Creator" relation in NeoWiki would correspond to the CIDOC-CRM path
@@ -333,6 +342,10 @@ properties (`hasSomeFeature`). This is the most common RDF convention. (2) Under
 practical for cultural heritage users less familiar with URL encoding. Both are viable; this is a convention
 choice, not an architectural one.*
 
+*Resolved by shipping: underscores — spaces in Property Names become underscores in the IRI local name
+(`Has_author`); see the [RDF Export reference](../rdf/rdf-export.md). Partner concurrence that either convention
+works (George Bruseker, takin, 2026-07-06).*
+
 ### Implementation decisions (can resolve ourselves)
 
 **Q8: Property type in RDF.** NeoWiki Statements include the "writer's schema" (the property type at write time).
@@ -346,7 +359,8 @@ Tentative answer: accept the loss; ordering is a display concern handled by View
 
 *Feedback: Question raised whether ordering truly matters for some use cases (e.g., pages in a book). Tentative
 answer unchanged: accept ordering loss in the native projection. If specific use cases require ordering, it can be
-added later (e.g., via `rdf:List` or index properties).*
+added later (e.g., via `rdf:List` or index properties). Concurrence (George Bruseker, takin, 2026-07-06): where
+ordering is real data, model it explicitly so it stays recoverable in the export.*
 
 **Q10: Schema namespace page.** Should NeoWiki emit an RDFS/OWL definition for each Schema (as a class) and each
 Property Definition (as a property with domain/range)? This would make the RDF self-describing. Tentative answer:
