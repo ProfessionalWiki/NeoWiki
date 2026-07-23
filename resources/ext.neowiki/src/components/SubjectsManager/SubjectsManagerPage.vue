@@ -1233,9 +1233,13 @@ onUnmounted( () => {
 			transition: opacity @transition-duration-medium @transition-timing-function-system, transform @transition-duration-medium @transition-timing-function-system;
 
 			.ext-neowiki-subjects-manager__row:hover &,
-			.ext-neowiki-subjects-manager__row:focus-within &,
+			.ext-neowiki-subjects-manager__row:has( :focus-visible ) &,
 			.ext-neowiki-subjects-manager__row--highlighted &,
 			.ext-neowiki-subjects-manager__row--expanded & {
+				// :has( :focus-visible ) rather than :focus-within: keyboard focus must reveal the
+				// controls a user is tabbing through, but mouse clicks also focus what they hit (a copy
+				// button, the summary when toggling a row) and would pin the controls visible after the
+				// pointer leaves.
 				opacity: 1;
 				transform: translateX( 0 );
 			}
@@ -1273,10 +1277,11 @@ onUnmounted( () => {
 			transition: opacity @transition-duration-medium @transition-timing-function-system;
 
 			.ext-neowiki-subjects-manager__row:hover &,
-			.ext-neowiki-subjects-manager__row:focus-within &,
+			.ext-neowiki-subjects-manager__row:has( :focus-visible ) &,
 			.ext-neowiki-subjects-manager__row--highlighted &,
 			.ext-neowiki-subjects-manager__row--expanded &,
 			&:has( [ aria-expanded='true' ] ) {
+				// Keyboard-only focus reveal for the same reason as __row-actions above.
 				opacity: 1;
 			}
 		}
