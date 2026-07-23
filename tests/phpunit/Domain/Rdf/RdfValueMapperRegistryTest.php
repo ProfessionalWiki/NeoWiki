@@ -47,6 +47,16 @@ class RdfValueMapperRegistryTest extends TestCase {
 		);
 	}
 
+	public function testUrlContainingIriBreakoutCharactersStaysALiteralNotAnIri(): void {
+		// Emitting a url value as a raw IRI object is a new injection surface: a value that could break out
+		// of an IRIREF (here via `"`, `>` and a space) must not become a raw IRI. It stays a literal, which
+		// the serializer escapes.
+		$this->assertEquals(
+			[ new Literal( 'https://evil.example/"> .', $this->xsd( 'anyURI' ) ) ],
+			RdfValueMapperRegistry::withCoreMappers()->mapValue( 'url', new StringValue( 'https://evil.example/"> .' ) )
+		);
+	}
+
 	public function testUrlMapsEachPartIndependentlyToAnIriOrLiteral(): void {
 		$this->assertEquals(
 			[
