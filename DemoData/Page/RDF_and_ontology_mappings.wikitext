@@ -15,14 +15,17 @@ Each Mapping page targets one ontology, named by the page title, and holds an en
 
 Follow these in order; each link downloads the projection so you can read it.
 
+You don't need these links to reach an export: on any subject page, the Data tab offers per-projection downloads (Turtle or TriG) and a copy-IRI control, and the sidebar has a View RDF link.
+
 # '''Pablo Picasso''', [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/page/{{PAGEID:Pablo Picasso}}/rdf native] vs [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/page/{{PAGEID:Pablo Picasso}}/rdf?projection=EDM EDM]: the native file has everything, including the two-layer "Born in" relation and the page metadata; the EDM file is an <code>edm:Agent</code> carrying only the mapped vocabulary, with the unmapped <code>Source</code> absent.
 # '''Málaga''', [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/page/{{PAGEID:Málaga}}/rdf?projection=EDM EDM]: an <code>edm:Place</code> with the very same entity IRI that Picasso's <code>rdaGr2:placeOfBirth</code> points at, because sibling projections share entity IRIs.
 # '''The Milkmaid''', [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/page/{{PAGEID:The Milkmaid}}/rdf?projection=EDM EDM]: an <code>edm:ProvidedCHO</code> whose <code>dc:creator</code> is the IRI of [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/page/{{PAGEID:Johannes Vermeer}}/rdf?projection=EDM Vermeer] (an <code>edm:Agent</code>) and whose <code>edm:currentLocation</code> is the Rijksmuseum.
-# '''Johann Sebastian Bach''', [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/page/{{PAGEID:Johann Sebastian Bach}}/rdf?projection=EDM EDM]: Bach's birth is modelled as its own Birth Subject instead of flat fields, so his <code>edm:Agent</code> projects sparse. Same Person Schema as Picasso, a different modelling style.
+# '''Johann Sebastian Bach''', [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/page/{{PAGEID:Johann Sebastian Bach}}/rdf?projection=EDM EDM]: Bach's birth is modelled as its own [[Birth of Johann Sebastian Bach|Birth Subject]] instead of flat fields, so his <code>edm:Agent</code> projects sparse. Same Person Schema as Picasso, a different modelling style.
 # '''ACME Inc''', [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/page/{{PAGEID:ACME Inc}}/rdf?projection=EDM EDM]: its Company Schema has no EDM Mapping, so the EDM projection comes back empty. An unmapped Schema is simply left out, so the projection stays conformant.
 
 == Learn more ==
 
+* [[Special:Mappings]]: every ontology Mapping on this wiki
 * [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/rdf/rdf-export.md RDF export reference]
 * [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/rdf/ontology-mapping.md Ontology mapping reference]
 * [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/examples/person-to-edm.md Person-to-EDM worked example]
