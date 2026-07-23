@@ -1,0 +1,59 @@
+/**
+ * Keyboard-only focus rings for NeoWiki's Codex buttons.
+ *
+ * Codex 1.14 styles button focus on bare `:focus`, so a mouse click — which
+ * focuses the button but, per the browser heuristic, does not match
+ * `:focus-visible` — leaves the progressive focus ring painted until focus
+ * moves away. Focus indication should be shown to keyboard users only.
+ *
+ * For `:focus:not( :focus-visible )` we drop the inset ring and restore each
+ * variant's resting `border-color`, mirroring the per-variant focus selectors
+ * in Codex's own stylesheet with `:focus-visible` and a NeoWiki scope class
+ * added. That extra class plus `:focus-visible` keep every rule more specific
+ * than the Codex rule it neutralises, so ours win regardless of load order, and
+ * the scope keeps the override off MediaWiki core and other extensions' Codex
+ * buttons. The `:not( :active )` / `:not( .cdx-button--is-active )` guards match
+ * Codex's, so the pressed and toggled states are left alone; the transparent
+ * Windows-High-Contrast outline on `:enabled:focus` is likewise untouched.
+ *
+ * Scope: `.ext-neowiki-ui` marks our Vue app mount roots (added in neowiki.ts)
+ * and our dialogs (Codex teleports these out of the mount tree, so each
+ * CdxDialog carries the class); `.ext-neowiki-view` is the on-page view
+ * placeholder. Focusable Codex UI we render must sit inside one of these.
+ *
+ * Text inputs are out of scope by design: browsers match `:focus-visible` on
+ * pointer focus for text entry, so their editing ring never reaches the
+ * `:not( :focus-visible )` branch below.
+ */
+
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+:is( .ext-neowiki-ui, .ext-neowiki-view ) {
+	// Framed default buttons (normal weight, any action): grey resting border.
+	.cdx-button:enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ),
+	.cdx-button.cdx-button--fake-button--enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ) {
+		border-color: @border-color-base;
+		box-shadow: none;
+	}
+
+	// Quiet buttons (any action): transparent resting border.
+	.cdx-button:enabled.cdx-button--weight-quiet:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ),
+	.cdx-button.cdx-button--fake-button--enabled.cdx-button--weight-quiet:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ) {
+		border-color: @border-color-transparent;
+		box-shadow: none;
+	}
+
+	// Primary progressive buttons: progressive resting border.
+	.cdx-button:enabled.cdx-button--weight-primary.cdx-button--action-progressive:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ),
+	.cdx-button.cdx-button--fake-button--enabled.cdx-button--weight-primary.cdx-button--action-progressive:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ) {
+		border-color: @border-color-progressive;
+		box-shadow: none;
+	}
+
+	// Primary destructive buttons: destructive resting border.
+	.cdx-button:enabled.cdx-button--weight-primary.cdx-button--action-destructive:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ),
+	.cdx-button.cdx-button--fake-button--enabled.cdx-button--weight-primary.cdx-button--action-destructive:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ) {
+		border-color: @border-color-destructive;
+		box-shadow: none;
+	}
+}

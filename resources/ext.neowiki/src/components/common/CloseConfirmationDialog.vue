@@ -1,6 +1,7 @@
 <template>
 	<CdxDialog
 		:open="open"
+		class="ext-neowiki-ui"
 		:title="$i18n( 'neowiki-close-confirmation-title' ).text()"
 		:use-close-button="true"
 		:stacked-actions="true"

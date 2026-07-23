@@ -1,5 +1,8 @@
 import { createMwApp } from 'vue';
+import type { App } from 'vue';
 import type { Pinia } from 'pinia';
+// Global, scoped focus-ring override; see the file header for the rationale.
+import '@/assets/keyboard-focus.less';
 import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { CdxTooltip } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -35,6 +38,17 @@ export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: Abort
 	}, { signal } );
 }
 
+/**
+ * Mounts a NeoWiki Vue app, tagging its root element with `ext-neowiki-ui` so
+ * the keyboard-only focus override (assets/keyboard-focus.less) applies to our
+ * Codex buttons without touching those of MediaWiki core or other extensions.
+ * Dialogs teleport out of this root and carry the class on the CdxDialog itself.
+ */
+function mountNeoWikiApp( app: App, element: Element ): void {
+	element.classList.add( 'ext-neowiki-ui' );
+	app.mount( element );
+}
+
 function fireRegistrationHook(): void {
 	const ext = NeoWikiExtension.getInstance();
 	mw.hook( 'neowiki.registration' ).fire(
@@ -66,7 +80,7 @@ function initializeNeoWikiApp(): void {
 			const pinia = ext.getPinia();
 			app.use( pinia );
 			NeoWikiServices.registerServices( app );
-			app.mount( neowikiApp );
+			mountNeoWikiApp( app, neowikiApp );
 			registerSubjectCreatorClickHandler( pinia );
 		}
 	} );
@@ -101,7 +115,7 @@ function initializeSchemaView(): void {
 			const app = createMwApp( SchemaDisplay, { schema } );
 			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
-			app.mount( viewSchema );
+			mountNeoWikiApp( app, viewSchema );
 		}
 	} );
 }
@@ -116,7 +130,7 @@ function initializeSchemasPage(): void {
 			const app = createMwApp( SchemasPage );
 			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
-			app.mount( schemasPage );
+			mountNeoWikiApp( app, schemasPage );
 		}
 	} );
 }
@@ -146,7 +160,7 @@ function initializeLayoutView(): void {
 			const app = createMwApp( LayoutDisplay, { layout } );
 			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
-			app.mount( viewLayout );
+			mountNeoWikiApp( app, viewLayout );
 		}
 	} );
 }
@@ -161,7 +175,7 @@ function initializeLayoutsPage(): void {
 			const app = createMwApp( LayoutsPage );
 			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
-			app.mount( layoutsPage );
+			mountNeoWikiApp( app, layoutsPage );
 		}
 	} );
 }
@@ -176,7 +190,7 @@ function initializeMappingsPage(): void {
 			const app = createMwApp( MappingsPage );
 			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
-			app.mount( mappingsPage );
+			mountNeoWikiApp( app, mappingsPage );
 		}
 	} );
 }
@@ -192,7 +206,7 @@ function initializeSubjectsManagerPage(): void {
 			const pinia = ext.getPinia();
 			app.use( pinia );
 			NeoWikiServices.registerServices( app );
-			app.mount( subjectsManager );
+			mountNeoWikiApp( app, subjectsManager );
 			registerSubjectCreatorClickHandler( pinia );
 		}
 	} );

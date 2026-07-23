@@ -3,7 +3,7 @@
 		<CdxDialog
 			:open="props.open"
 			:use-close-button="true"
-			class="ext-neowiki-schema-creator-dialog"
+			class="ext-neowiki-ui ext-neowiki-schema-creator-dialog"
 			:class="{ 'cdx-dialog--dividers': hasOverflow }"
 			:title="$i18n( 'neowiki-schema-creator-title' ).text()"
 			@update:open="onDialogUpdateOpen"

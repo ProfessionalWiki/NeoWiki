@@ -1,6 +1,7 @@
 <template>
 	<CdxDialog
 		:open="open"
+		class="ext-neowiki-ui"
 		:title="$i18n( 'neowiki-schema-abandonment-title' ).text()"
 		:use-close-button="true"
 		@update:open="onUpdateOpen"
