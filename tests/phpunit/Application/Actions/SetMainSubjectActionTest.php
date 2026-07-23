@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction
@@ -107,10 +108,11 @@ class SetMainSubjectActionTest extends TestCase {
 		$this->assertSame( self::MAIN_ID, $saved->getMainSubject()->id->text );
 	}
 
-	public function testThrowsWhenUserMayNotEditSubject(): void {
+	public function testThrowsWhenUserMayReadButNotEditPage(): void {
 		$action = new SetMainSubjectAction(
 			presenter: $this->newSpyPresenter(),
 			subjectRepository: new InMemorySubjectRepository(),
+			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
 		);
 
@@ -118,6 +120,58 @@ class SetMainSubjectActionTest extends TestCase {
 		$this->expectExceptionMessage( 'You do not have the necessary permissions to change the main subject' );
 
 		$action->setMainSubject( new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID ) );
+	}
+
+	public function testReportsPageNotFoundWhenUserMayNotReadPage(): void {
+		$repository = $this->newRepositoryWithMainAndChild();
+		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
+
+		$presenter = $this->newSpyPresenter();
+
+		( new SetMainSubjectAction(
+			presenter: $presenter,
+			subjectRepository: $repository,
+			readAuthorizer: new StubPageReadAuthorizer( allowed: false ),
+			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: true ),
+		) )->setMainSubject(
+			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID )
+		);
+
+		$this->assertTrue( $presenter->pageNotFound );
+		// The page is left untouched: a denied read never reaches the write.
+		$this->assertEquals( $before, $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) ) );
+	}
+
+	public function testReadDenialTakesPrecedenceOverWriteDenial(): void {
+		// A page the caller can neither read nor edit answers not-found, never the write 403, so a
+		// hidden page is indistinguishable from an absent one.
+		$presenter = $this->newSpyPresenter();
+
+		( new SetMainSubjectAction(
+			presenter: $presenter,
+			subjectRepository: $this->newRepositoryWithMainAndChild(),
+			readAuthorizer: new StubPageReadAuthorizer( allowed: false ),
+			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
+		) )->setMainSubject(
+			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID )
+		);
+
+		$this->assertTrue( $presenter->pageNotFound );
+	}
+
+	public function testReportsPageNotFoundWhenTheSaveFails(): void {
+		// The page passed the read and write checks but is gone by the time the save runs: the
+		// dropped write must be reported as not-found, never as changed.
+		$repository = $this->newRepositoryWithMainAndChild();
+		$repository->failNextSave = true;
+
+		$presenter = $this->newSpyPresenter();
+		$this->newAction( $presenter, $repository )->setMainSubject(
+			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID )
+		);
+
+		$this->assertTrue( $presenter->pageNotFound );
+		$this->assertFalse( $presenter->changed );
 	}
 
 	private function newRepositoryWithMainAndChild(): InMemorySubjectRepository {
@@ -136,6 +190,7 @@ class SetMainSubjectActionTest extends TestCase {
 		return new SetMainSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $repository,
+			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: true ),
 		);
 	}
@@ -146,6 +201,7 @@ class SetMainSubjectActionTest extends TestCase {
 			public bool $changed = false;
 			public bool $noChange = false;
 			public bool $notFound = false;
+			public bool $pageNotFound = false;
 
 			public function presentMainSubjectChanged(): void {
 				$this->changed = true;
@@ -157,6 +213,10 @@ class SetMainSubjectActionTest extends TestCase {
 
 			public function presentSubjectNotFound(): void {
 				$this->notFound = true;
+			}
+
+			public function presentPageNotFound(): void {
+				$this->pageNotFound = true;
 			}
 
 		};

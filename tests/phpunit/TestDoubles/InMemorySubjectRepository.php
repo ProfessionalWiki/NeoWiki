@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 
 class InMemorySubjectRepository implements SubjectRepository {
 
@@ -28,6 +29,12 @@ class InMemorySubjectRepository implements SubjectRepository {
 	public array $comments = [];
 
 	public int $updateSubjectCallCount = 0;
+
+	/**
+	 * When true, savePageSubjects reports a save failure without storing anything, standing in for a
+	 * page that has gone away underneath the write (the branch PageContentSaver returns ERROR for).
+	 */
+	public bool $failNextSave = false;
 
 	public function getSubject( SubjectId $subjectId ): ?Subject {
 		return $this->subjects[$subjectId->text] ?? null;
@@ -52,13 +59,19 @@ class InMemorySubjectRepository implements SubjectRepository {
 		return PageSubjects::newEmpty();
 	}
 
-	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): void {
+	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): PageContentSavingStatus {
+		if ( $this->failNextSave ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::ERROR, 'Page not found' );
+		}
+
 		$this->subjectsByPage[$pageId->id] = $pageSubjects;
 		$this->comments[$pageId->id] = $comment;
 
 		foreach ( $pageSubjects->getAllSubjects()->asArray() as $subject ) {
 			$this->subjects[$subject->getId()->text] = $subject;
 		}
+
+		return new PageContentSavingStatus( PageContentSavingStatus::REVISION_CREATED );
 	}
 
 }

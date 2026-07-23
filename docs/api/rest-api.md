@@ -21,7 +21,9 @@ MediaWiki's `read` action ignores both. When you may not read a page they respon
 value, an empty list, or a `404` — never a `403`. `GET /subject-labels` omits the labels of Subjects whose page you
 cannot read; because that filter runs per result, it caps `limit` at 50.
 
-Subject write endpoints require per-page `edit` permission and answer `403` on denial.
+Subject write endpoints require per-page `edit` permission and answer `403` on denial. The write endpoints keyed by
+page id ([Pages and Subjects](#pages-and-subjects)) answer the same `404` for a page you may not read as for a page id
+that does not exist.
 
 The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
 [Query API](query-api.md)).

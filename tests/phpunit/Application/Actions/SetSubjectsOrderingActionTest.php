@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use RuntimeException;
 
 /**
@@ -185,10 +186,11 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		$this->assertTrue( $saved->getChildSubjects()->isEmpty() );
 	}
 
-	public function testThrowsWhenUserMayNotEditSubject(): void {
+	public function testThrowsWhenUserMayReadButNotEditPage(): void {
 		$action = new SetSubjectsOrderingAction(
 			presenter: $this->newSpyPresenter(),
 			subjectRepository: new InMemorySubjectRepository(),
+			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
 		);
 
@@ -202,6 +204,69 @@ class SetSubjectsOrderingActionTest extends TestCase {
 				childSubjectIds: [],
 			)
 		);
+	}
+
+	public function testReportsPageNotFoundWhenUserMayNotReadPage(): void {
+		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
+		$presenter = $this->newSpyPresenter();
+
+		( new SetSubjectsOrderingAction(
+			presenter: $presenter,
+			subjectRepository: $repository,
+			readAuthorizer: new StubPageReadAuthorizer( allowed: false ),
+			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: true ),
+		) )->setOrdering(
+			new SetSubjectsOrderingRequest(
+				pageId: self::PAGE_ID,
+				mainSubjectId: self::MAIN_ID,
+				childSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
+			)
+		);
+
+		$this->assertTrue( $presenter->pageNotFound );
+		// A denied read never reaches the write: the ordering is left untouched.
+		$this->assertEquals( $before, $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) ) );
+	}
+
+	public function testReadDenialTakesPrecedenceOverWriteDenial(): void {
+		// A page the caller can neither read nor edit answers not-found, never the write 403, so a
+		// hidden page is indistinguishable from an absent one.
+		$presenter = $this->newSpyPresenter();
+
+		( new SetSubjectsOrderingAction(
+			presenter: $presenter,
+			subjectRepository: $this->newRepositoryWithMainAndThreeChildren(),
+			readAuthorizer: new StubPageReadAuthorizer( allowed: false ),
+			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
+		) )->setOrdering(
+			new SetSubjectsOrderingRequest(
+				pageId: self::PAGE_ID,
+				mainSubjectId: self::MAIN_ID,
+				childSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
+			)
+		);
+
+		$this->assertTrue( $presenter->pageNotFound );
+	}
+
+	public function testReportsPageNotFoundWhenTheSaveFails(): void {
+		// The page passed the read and write checks but is gone by the time the save runs: the
+		// dropped write must be reported as not-found, never as changed.
+		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$repository->failNextSave = true;
+
+		$presenter = $this->newSpyPresenter();
+		$this->newAction( $presenter, $repository )->setOrdering(
+			new SetSubjectsOrderingRequest(
+				pageId: self::PAGE_ID,
+				mainSubjectId: self::MAIN_ID,
+				childSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
+			)
+		);
+
+		$this->assertTrue( $presenter->pageNotFound );
+		$this->assertFalse( $presenter->changed );
 	}
 
 	private function newRepositoryWithMainAndThreeChildren(): InMemorySubjectRepository {
@@ -224,6 +289,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		return new SetSubjectsOrderingAction(
 			presenter: $presenter,
 			subjectRepository: $repository,
+			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: true ),
 		);
 	}
@@ -234,6 +300,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			public bool $changed = false;
 			public bool $noChange = false;
 			public bool $invalid = false;
+			public bool $pageNotFound = false;
 			public ?string $invalidReason = null;
 
 			public function presentOrderingChanged(): void {
@@ -247,6 +314,10 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			public function presentInvalidOrdering( string $reason ): void {
 				$this->invalid = true;
 				$this->invalidReason = $reason;
+			}
+
+			public function presentPageNotFound(): void {
+				$this->pageNotFound = true;
 			}
 
 		};

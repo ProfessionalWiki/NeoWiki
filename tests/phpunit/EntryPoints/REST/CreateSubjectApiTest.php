@@ -5,12 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Page\PageIdentity;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -31,7 +30,10 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  */
 class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
-	use MockAuthorityTrait;
+	use NeoWikiMockAuthorityTrait;
+
+	// A page id far above anything a fresh test database mints, so it resolves to no page.
+	private const int NONEXISTENT_PAGE_ID = 999999;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -119,13 +121,14 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		return MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title )->getId();
 	}
 
-	public function testPermissionDenied(): void {
+	public function testReadableButNotEditablePageReturns403(): void {
 		$this->createSchema( 'Employee' );
 
+		// The caller can read the page - so its existence is already public - but cannot edit it.
 		$response = $this->executeHandler(
 			$this->newCreateSubjectApi(),
 			$this->createValidRequestData(),
-			authority: $this->mockAnonAuthorityWithPermissions( [] )
+			authority: $this->authorityWithGlobalEditButNoPageEdit()
 		);
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
@@ -136,23 +139,35 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertArrayNotHasKey( 'violations', $responseData );
 	}
 
-	public function testDeniedOnProtectedPageDespiteGlobalEditRight(): void {
+	public function testUnreadablePageIsIndistinguishableFromNonexistentPage(): void {
 		$this->createSchema( 'Employee' );
 
-		$response = $this->executeHandler(
+		// A real page the caller may not read: a write to it must not reveal that it exists.
+		$unreadable = $this->executeHandler(
 			$this->newCreateSubjectApi(),
 			$this->createValidRequestData(),
-			authority: $this->mockRegisteredAuthority(
-				// Holds the wiki-global 'edit' right, but cannot edit this specific (e.g. protected) page.
-				static fn ( string $permission, ?PageIdentity $page = null ): bool =>
-					$permission === 'edit' && $page === null
-			)
+			authority: $this->authorityWithGlobalReadButNoPageRead()
 		);
 
-		$responseData = json_decode( $response->getBody()->getContents(), true );
+		// A page id that resolves to no page at all.
+		$nonexistent = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			new RequestData( [
+				'method' => 'POST',
+				'pathParams' => [ 'pageId' => self::NONEXISTENT_PAGE_ID ],
+				'bodyContents' => json_encode( $this->validBody() ),
+				'headers' => [ 'Content-Type' => 'application/json' ],
+			] ),
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		);
 
-		$this->assertSame( 403, $response->getStatusCode() );
-		$this->assertSame( 'You do not have the necessary permissions to create this subject', $responseData['message'] );
+		$this->assertSame( 404, $unreadable->getStatusCode() );
+		$this->assertSame( 404, $nonexistent->getStatusCode() );
+		// Byte-identical: a caller sweeping page ids cannot tell a hidden page from an absent one.
+		$this->assertSame(
+			$nonexistent->getBody()->getContents(),
+			$unreadable->getBody()->getContents()
+		);
 	}
 
 	public function testResponseIncludesViolationsWhenRequiredPropertyMissing(): void {
