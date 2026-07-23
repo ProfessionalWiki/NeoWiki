@@ -197,9 +197,9 @@
 			"description": "Base URI under which the RDF export mints all NeoWiki IRIs (entity, property, schema, page, etc.). When null, defaults to the wiki's canonical URL ($wgCanonicalServer). Wiki-level on purpose, so sibling projections describe the same entities with identical IRIs.",
 			"value": null
 		},
-		"NeoWikiSubjectDereferenceTarget": {
-			"description": "Where a browser dereferencing a Subject's concept URI (Accept: text/html) is sent: 'page' (default) for the Subject's hosting page, or 'data-tab' for that page's Data tab (?action=subjects) opened on the Subject's row (expanded, scrolled to, highlighted). Any other value is a configuration error.",
-			"value": "page"
+		"NeoWikiDereferenceSubjectsToDataTab": {
+			"description": "Whether a browser dereferencing a Subject's concept URI (Accept: text/html) is sent to the hosting page's Data tab (?action=subjects) opened on the Subject's row (expanded, scrolled to, highlighted). When false (default), it is sent to the plain hosting page.",
+			"value": false
 		},
 		"NeoWikiSparqlStores": {
 			"description": "SPARQL 1.1 graph stores to keep in sync with page changes and to query, in addition to any Neo4j backend. A list of objects, each with: 'updateUrl' (required, the store's SPARQL 1.1 Update endpoint, e.g. a QLever instance); 'queryUrl' (optional, the store's SPARQL 1.1 Query endpoint the read surfaces use; defaults to 'updateUrl', which is correct for QLever where the two are the same); 'accessToken' (optional, sent as an HTTP Bearer token on both update and query requests, e.g. for a QLever access token or a read-protected endpoint); and 'projection' (optional, the RDF vocabulary written to the store: 'native' by default, or any configured Mapping target). The query surfaces (the {{#sparql_raw}} parser function, nw.sparqlQuery() in Lua, and POST /neowiki/v0/query/sparql) target the first configured store. Works with QLever and any SPARQL 1.1 store. Empty by default.",
