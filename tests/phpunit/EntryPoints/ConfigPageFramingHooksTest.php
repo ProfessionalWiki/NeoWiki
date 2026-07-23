@@ -20,7 +20,12 @@ use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 class ConfigPageFramingHooksTest extends MediaWikiIntegrationTestCase {
 
 	private const string SEED_HTML =
-		'<div id="intro">Default intro</div><table class="mw-json"><tr><td>data</td></tr></table>';
+		'<div id="intro">Default intro</div>'
+		. '<div class="noresize"><table class="mw-json"><tbody><tr><td>data</td></tr></tbody></table></div>';
+
+	private const string DIFF_HTML =
+		'<table class="diff"><tr><td class="diff-marker">+</td></tr></table>'
+		. '<div class="noresize"><table class="mw-json"><tbody><tr><td>data</td></tr></tbody></table></div>';
 
 	private function configTitle(): Title {
 		return Title::makeTitle( NS_MEDIAWIKI, 'NeoWiki' );
@@ -66,11 +71,15 @@ class ConfigPageFramingHooksTest extends MediaWikiIntegrationTestCase {
 	}
 
 	private function renderView( Title $title, string $action ): string {
+		return $this->renderViewWithRequest( $title, [ 'action' => $action ], self::SEED_HTML );
+	}
+
+	private function renderViewWithRequest( Title $title, array $requestParams, string $seedHtml ): string {
 		$context = $this->englishContext( $title );
-		$context->setRequest( new FauxRequest( [ 'action' => $action ] ) );
+		$context->setRequest( new FauxRequest( $requestParams ) );
 
 		$out = $context->getOutput();
-		$out->addHTML( self::SEED_HTML );
+		$out->addHTML( $seedHtml );
 
 		NeoWikiHooks::onConfigPageBeforePageDisplay( $out, $context->getSkin() );
 
@@ -84,6 +93,27 @@ class ConfigPageFramingHooksTest extends MediaWikiIntegrationTestCase {
 		$this->assertStringContainsString( '<table class="mw-json"', $html );
 		$this->assertStringContainsString( 'neowiki.ai', $html );
 		$this->assertStringContainsString( '$wgNeoWikiDereferenceSubjectsToDataTab', $html );
+	}
+
+	public function testFramedConfigViewEmitsBalancedDivs(): void {
+		$html = $this->renderView( $this->configTitle(), 'view' );
+
+		$this->assertSame(
+			substr_count( $html, '<div' ),
+			substr_count( $html, '</div>' ),
+			'The framed config view must not leak the closing tag of the core JSON table wrapper.'
+		);
+	}
+
+	public function testConfigPageDiffIsNotFramed(): void {
+		$html = $this->renderViewWithRequest(
+			$this->configTitle(),
+			[ 'action' => 'view', 'diff' => '2' ],
+			self::DIFF_HTML
+		);
+
+		$this->assertStringContainsString( 'diff-marker', $html );
+		$this->assertStringNotContainsString( '$wgNeoWikiDereferenceSubjectsToDataTab', $html );
 	}
 
 	public function testConfigPageIsUntouchedForNonViewActions(): void {

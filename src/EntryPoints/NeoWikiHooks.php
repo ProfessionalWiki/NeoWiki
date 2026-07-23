@@ -483,23 +483,41 @@ class NeoWikiHooks {
 			return;
 		}
 
-		$action = MediaWikiServices::getInstance()->getActionFactory()->getActionName( $out->getContext() );
+		$context = $out->getContext();
+		$action = MediaWikiServices::getInstance()->getActionFactory()->getActionName( $context );
 
-		if ( $action !== 'view' ) {
+		// A diff request also resolves to the 'view' action, but renders a comparison the framing
+		// would discard, so only a plain page view is reduced to the JSON table and framed.
+		if ( $action !== 'view' || $context->getRequest()->getCheck( 'diff' ) ) {
 			return;
 		}
 
-		$builder = NeoWikiExtension::getInstance()->newConfigDocumentationBuilder( $out->getContext() );
-		$trimmed = self::trimToJsonTable( $out->getHTML() );
+		$builder = NeoWikiExtension::getInstance()->newConfigDocumentationBuilder( $context );
+		$table = self::extractJsonTable( $out->getHTML() );
 
 		$out->clearHTML();
-		$out->addHTML( $builder->buildPointer() . $trimmed . $builder->buildReference() );
+		$out->addHTML( $builder->buildPointer() . $table . $builder->buildReference() );
 	}
 
-	private static function trimToJsonTable( string $html ): string {
-		$position = strpos( $html, '<table class="mw-json"' );
+	/**
+	 * Extracts just the core JSON table element. Core wraps it in a <div class="noresize">, so taking
+	 * the balanced <table>...</table> rather than everything to the end of the body avoids re-emitting
+	 * that wrapper's orphaned closing tag.
+	 */
+	private static function extractJsonTable( string $html ): string {
+		$start = strpos( $html, '<table class="mw-json"' );
 
-		return $position === false ? $html : substr( $html, $position );
+		if ( $start === false ) {
+			return $html;
+		}
+
+		$end = strpos( $html, '</table>', $start );
+
+		if ( $end === false ) {
+			return substr( $html, $start );
+		}
+
+		return substr( $html, $start, $end - $start + strlen( '</table>' ) );
 	}
 
 }
