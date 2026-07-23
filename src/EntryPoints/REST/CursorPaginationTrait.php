@@ -59,8 +59,9 @@ trait CursorPaginationTrait {
 
 	/**
 	 * Fills a page with up to $limit summaries and derives the follow-up cursor. The cursor is the
-	 * page ID of the last consumed name, so names a load skips (readable but malformed) are not
-	 * re-consumed by the next page. nextCursor is null exactly when the listing is exhausted.
+	 * page ID of the last served item: a name skipped mid-page (readable but malformed) sorts below
+	 * it and is not revisited, while a malformed name after it is scanned and skipped afresh by the
+	 * next page. nextCursor is null exactly when the listing is exhausted.
 	 *
 	 * @param iterable<int, mixed> $readableNames
 	 * @param callable(mixed): ?array $loadSummary null when the name does not resolve to a listable item
