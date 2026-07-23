@@ -168,7 +168,7 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | For features |
 | `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | For features |
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
-| `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new constraint violations | `false` | No |
+| `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new `error`-severity violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
 
