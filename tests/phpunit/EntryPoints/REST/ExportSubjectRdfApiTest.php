@@ -137,6 +137,26 @@ JSON
 		$this->assertSame( 'application/trig; charset=utf-8', $response->getHeaderLine( 'Content-Type' ) );
 	}
 
+	public function testTriGExportNamesTheDownloadAfterTheSubjectId(): void {
+		$response = $this->export();
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame(
+			'inline; filename="' . self::BERLIN_ID . '.trig"',
+			$response->getHeaderLine( 'Content-Disposition' )
+		);
+	}
+
+	public function testTurtleExportNamesTheDownloadWithTheTtlExtension(): void {
+		$response = $this->export( query: [ 'format' => 'turtle' ] );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame(
+			'inline; filename="' . self::BERLIN_ID . '.ttl"',
+			$response->getHeaderLine( 'Content-Disposition' )
+		);
+	}
+
 	public function testReturns404ForAnUnknownSubject(): void {
 		$response = $this->export( subjectId: self::ABSENT_ID );
 

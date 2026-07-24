@@ -67,7 +67,7 @@ class ExportSubjectRdfApi extends SimpleHandler {
 			return $this->noDataResponse( $subjectId );
 		}
 
-		return $this->rdfResponse( $document, $format );
+		return $this->rdfResponse( $document, $format, $subjectId );
 	}
 
 	private function noDataResponse( string $subjectId ): Response {
