@@ -9,6 +9,7 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetMappingSummariesApi;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
@@ -206,15 +207,33 @@ JSON
 	 * MappingContentHandler::validateSave would reject such content on the edit path (#1022).
 	 */
 	private function createMappingsWithUnloadableMiddle(): void {
-		$this->markPageTableAsUsed();
-		$this->createMapping( 'Alpha', '{"version":1,"schemas":{}}' );
+		$alpha = $this->createMapping( 'Alpha', '{"version":1,"schemas":{}}' )->getPageId();
 
 		$xml = $this->exportPageToXml( 'Mapping:Alpha' );
 		$xml = str_replace( 'Mapping:Alpha', 'Mapping:Beta', $xml );
 		$xml = str_replace( '"schemas"', '"schemaX"', $xml );
+		// Guard the fixture's own premise: the title substitution must have produced a Beta dump and the
+		// content substitution must have removed the required key. If either misses (e.g. an export-format
+		// change), the import would recreate a loadable Alpha instead of an unloadable Beta.
+		$this->assertStringContainsString( 'Mapping:Beta', $xml );
+		$this->assertStringNotContainsString( '"schemas"', $xml );
 		$this->importXml( $xml );
 
-		$this->createMapping( 'Gamma', '{"version":1,"schemas":{}}' );
+		$gamma = $this->createMapping( 'Gamma', '{"version":1,"schemas":{}}' )->getPageId();
+
+		// The import must have created a distinct Beta page sitting between Alpha and Gamma in page-ID
+		// order. Without this, a silently no-op import (Beta absent) leaves only Alpha and Gamma, whose
+		// listing is byte-identical to the asserted result — so both tests would pass while the skip
+		// branch they exist to pin never runs.
+		$beta = (int)$this->getDb()->newSelectQueryBuilder()
+			->select( 'page_id' )
+			->from( 'page' )
+			->where( [ 'page_namespace' => NeoWikiExtension::NS_MAPPING, 'page_title' => 'Beta' ] )
+			->caller( __METHOD__ )
+			->fetchField();
+
+		$this->assertGreaterThan( $alpha, $beta, 'the imported unloadable Beta page must exist' );
+		$this->assertGreaterThan( $beta, $gamma );
 	}
 
 }
