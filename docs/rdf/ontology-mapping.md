@@ -67,7 +67,7 @@ Top level:
 |---|---|---|
 | `version` | yes | Format version. Must be `1`. |
 | `prefixes` | no | Prefix label → namespace IRI, shared by every entry, used to expand the CURIEs below. |
-| `schemas` | yes | Native Schema name → the entry that projects its Subjects (see below). May be empty. A Schema's existence is not checked at save time. |
+| `schemas` | yes | Native Schema name → the entry that projects its Subjects (see below). May be empty. A Schema's existence is not checked at save time; the page's read view shows a missing Schema as a red link. |
 
 Each **schema** entry (a value in `schemas`):
 

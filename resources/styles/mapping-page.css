@@ -1,0 +1,11 @@
+/* Server-rendered read view of a Mapping page (MappingPageHtmlBuilder). */
+
+.ext-neowiki-mapping-page__version {
+	color: var( --color-subtle, #54595d );
+	font-size: 0.875rem;
+	margin-bottom: 0.5em;
+}
+
+.ext-neowiki-mapping-page__empty {
+	color: var( --color-subtle, #54595d );
+}
