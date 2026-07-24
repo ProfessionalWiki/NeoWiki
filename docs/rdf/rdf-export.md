@@ -67,6 +67,9 @@ falling back to the `Accept` header, then to TriG; a value other than `trig` or 
 | `trig` (default) | `application/trig` | `application/trig; charset=utf-8` | yes |
 | `turtle` | `text/turtle` | `text/turtle; charset=utf-8` | no (same triples, no graph wrapper) |
 
+Responses carry `Content-Disposition: inline` with a filename of the page or Subject ID plus the format's
+extension (`42.trig`, `42.ttl`).
+
 ### Page
 
 `GET /rest.php/neowiki/v0/page/{pageId}/rdf`

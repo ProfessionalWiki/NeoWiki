@@ -61,7 +61,7 @@ class ExportPageRdfApi extends SimpleHandler {
 			return $this->noDataResponse( $pageId );
 		}
 
-		return $this->rdfResponse( $document, $format );
+		return $this->rdfResponse( $document, $format, (string)$pageId );
 	}
 
 	private function noDataResponse( int $pageId ): Response {
