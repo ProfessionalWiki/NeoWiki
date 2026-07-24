@@ -60,7 +60,7 @@ class MappingPageHtmlBuilder {
 		return Html::element(
 			'div',
 			[ 'class' => 'ext-neowiki-mapping-page__version' ],
-			wfMessage( 'neowiki-mapping-page-version' )->numParams( $mapping->version )->text()
+			wfMessage( 'neowiki-mapping-page-version' )->numParams( $mapping->version )->inContentLanguage()->text()
 		);
 	}
 
@@ -222,16 +222,16 @@ class MappingPageHtmlBuilder {
 		return Html::element(
 			'p',
 			[ 'class' => 'ext-neowiki-mapping-page__empty' ],
-			wfMessage( 'neowiki-mapping-page-no-schemas' )->text()
+			wfMessage( 'neowiki-mapping-page-no-schemas' )->inContentLanguage()->text()
 		);
 	}
 
 	private function headingHtml( string $messageKey ): string {
-		return Html::element( 'h2', [], wfMessage( $messageKey )->text() );
+		return Html::element( 'h2', [], wfMessage( $messageKey )->inContentLanguage()->text() );
 	}
 
 	private function headerCellHtml( string $messageKey ): string {
-		return Html::element( 'th', [], wfMessage( $messageKey )->text() );
+		return Html::element( 'th', [], wfMessage( $messageKey )->inContentLanguage()->text() );
 	}
 
 }

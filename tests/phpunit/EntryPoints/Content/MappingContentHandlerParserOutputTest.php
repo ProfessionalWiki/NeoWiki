@@ -60,6 +60,12 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 		);
 	}
 
+	public function testHeaderTextUsesTheContentLanguageRatherThanTheViewerLanguage(): void {
+		$this->setUserLang( 'qqx' );
+
+		$this->assertStringContainsString( 'Mapped schemas', $this->render( $this->edm() ) );
+	}
+
 	public function testMappedSchemaPagesAreRegisteredAsLinks(): void {
 		$parserOutput = $this->parserOutput( $this->edm() );
 
