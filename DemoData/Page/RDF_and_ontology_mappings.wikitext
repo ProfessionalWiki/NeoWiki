@@ -26,7 +26,7 @@ You don't need these links to reach an export: on any subject page, the Data tab
 == Learn more ==
 
 * [[Special:Mappings]]: every ontology Mapping on this wiki
-* [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/rdf/rdf-export.md RDF export reference]
-* [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/rdf/ontology-mapping.md Ontology mapping reference]
-* [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/examples/person-to-edm.md Person-to-EDM worked example]
+* [https://neowiki.ai/docs/rdf/rdf-export RDF export reference]
+* [https://neowiki.ai/docs/rdf/ontology-mapping Ontology mapping reference]
+* [https://neowiki.ai/docs/examples/person-to-edm Person-to-EDM worked example]
 * Tell us what you need from RDF and ontology mapping: [https://github.com/ProfessionalWiki/NeoWiki/discussions/996 join the discussion].
