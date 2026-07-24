@@ -176,7 +176,11 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 			];
 		}
 
-		$this->getDb()->insert( 'page', $rows, __METHOD__ );
+		$this->getDb()->newInsertQueryBuilder()
+			->insertInto( 'page' )
+			->rows( $rows )
+			->caller( __METHOD__ )
+			->execute();
 
 		$pageIds = [];
 
