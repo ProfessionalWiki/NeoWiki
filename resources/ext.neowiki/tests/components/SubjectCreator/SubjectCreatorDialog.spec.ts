@@ -4,7 +4,7 @@ import { ref } from 'vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import SchemaPicker from '@/components/common/SchemaPicker.vue';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -83,7 +83,7 @@ const SchemaCreatorStub = {
 	},
 };
 
-const EditSummaryStub = {
+const SummaryActionStub = {
 	template: '<div class="edit-summary-stub"><button class="save-button" @click="$emit( \'save\', \'\' )">Save</button></div>',
 	props: [ 'helpText', 'saveButtonLabel', 'saveDisabled' ],
 	emits: [ 'save' ],
@@ -132,7 +132,7 @@ describe( 'SubjectCreatorDialog', () => {
 					SchemaPicker: SchemaPickerStub,
 					SubjectEditor: SubjectEditorStub,
 					SchemaCreator: SchemaCreatorStub,
-					EditSummary: EditSummaryStub,
+					SummaryAction: SummaryActionStub,
 					CloseConfirmationDialog: CloseConfirmationDialogStub,
 					SchemaAbandonmentDialog: SchemaAbandonmentDialogStub,
 					CdxButton: true,
@@ -297,7 +297,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
-		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', 'test summary' );
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'test summary' );
 		await flushPromises();
 
 		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
@@ -315,7 +315,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
-		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 		await flushPromises();
 
 		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
@@ -333,7 +333,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
-		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', 'test summary' );
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'test summary' );
 		await flushPromises();
 
 		expect( subjectStore.createChildSubject ).toHaveBeenCalledWith(
@@ -354,7 +354,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
-		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 		await flushPromises();
 
 		expect( mw.storage.session.set ).toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
@@ -371,7 +371,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
-		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 		await flushPromises();
 
 		expect( mw.notify ).toHaveBeenCalledWith(
@@ -393,7 +393,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await labelInput.setValue( '' );
 		await flushPromises();
 
-		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 		await flushPromises();
 
 		expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
@@ -485,7 +485,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			await clickContinue( wrapper );
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', 'Created subject' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'Created subject' );
 			await flushPromises();
 
 			expect( schemaStore.saveSchema ).toHaveBeenCalledWith(
@@ -511,7 +511,7 @@ describe( 'SubjectCreatorDialog', () => {
 			await switchToNewSchema( wrapper );
 			await clickContinue( wrapper );
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', 'My edit summary' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'My edit summary' );
 			await flushPromises();
 
 			expect( schemaStore.saveSchema ).toHaveBeenCalledWith(
@@ -526,7 +526,7 @@ describe( 'SubjectCreatorDialog', () => {
 			await switchToNewSchema( wrapper );
 			await clickContinue( wrapper );
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			expect( schemaStore.saveSchema ).toHaveBeenCalledWith(
@@ -545,7 +545,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			await clickContinue( wrapper );
 
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			expect( mw.notify ).toHaveBeenCalledWith(
@@ -916,7 +916,7 @@ describe( 'SubjectCreatorDialog', () => {
 			await flushPromises();
 			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
-			await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 		}
 

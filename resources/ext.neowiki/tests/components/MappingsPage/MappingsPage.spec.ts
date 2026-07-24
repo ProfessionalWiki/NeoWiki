@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import MappingsPage from '@/components/MappingsPage/MappingsPage.vue';
 import MappingCreatorDialog from '@/components/MappingsPage/MappingCreatorDialog.vue';
+import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHelpers.ts';
-import { CdxButton, CdxDialog } from '@wikimedia/codex';
+import { CdxButton } from '@wikimedia/codex';
 
 interface MappingSummary {
 	name: string;
@@ -83,8 +84,7 @@ function mountComponent( summaries: MappingSummary[] = [], nextCursor: string | 
 			mocks: { $i18n: createI18nMock() },
 			stubs: {
 				MappingCreatorDialog: MappingCreatorDialogStub,
-				EditSummary: true,
-				I18nSlot: true,
+				DeletePageDialog: true,
 				CdxIcon: true,
 			},
 		},
@@ -277,7 +277,7 @@ describe( 'MappingsPage', () => {
 		expect( findDeleteButtons( wrapper ) ).toHaveLength( 0 );
 	} );
 
-	it( 'opens the delete confirmation when the delete button is clicked', async () => {
+	it( 'opens the delete confirmation for the clicked mapping', async () => {
 		canDeleteMappingRef.value = true;
 		const wrapper = mountComponent( [
 			{ name: 'EDM', schemas: [ 'Person' ] },
@@ -286,7 +286,11 @@ describe( 'MappingsPage', () => {
 
 		await findDeleteButtons( wrapper )[ 0 ].trigger( 'click' );
 
-		expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( true );
+		const dialog = wrapper.findComponent( DeletePageDialog );
+		expect( dialog.props( 'open' ) ).toBe( true );
+		expect( dialog.props( 'pageTitle' ) ).toBe( 'Mapping:EDM' );
+		expect( dialog.props( 'displayName' ) ).toBe( 'EDM' );
+		expect( dialog.props( 'typeLabel' ) ).toBe( 'neowiki-mapping-noun' );
 	} );
 
 	it( 'navigates to the raw-JSON edit view when the edit button is clicked', async () => {

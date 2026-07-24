@@ -1,15 +1,11 @@
 import { Ref } from 'vue';
 import { useSortable } from '@/composables/useSortable';
 import { SubjectId } from '@/domain/SubjectId';
+import { subjectIdFromRowDomId } from '@/presentation/subjectRowAnchor';
 
 const DRAG_HANDLE_SELECTOR = '.ext-neowiki-subjects-manager__row-drag-handle';
 const GHOST_CLASS = 'ext-neowiki-subjects-manager__row--ghost';
 const SORTABLE_GROUP_NAME = 'neowiki-subjects';
-const ROW_ID_PREFIX = 'ext-neowiki-subject-row-';
-
-export function subjectRowDomId( idText: string ): string {
-	return ROW_ID_PREFIX + idText;
-}
 
 export interface SubjectDragHandlers {
 	/**
@@ -66,12 +62,6 @@ export function useSubjectDrag(
 }
 
 function subjectIdFromRow( element: HTMLElement ): SubjectId | null {
-	if ( !element.id.startsWith( ROW_ID_PREFIX ) ) {
-		return null;
-	}
-	const raw = element.id.slice( ROW_ID_PREFIX.length );
-	if ( !SubjectId.isValid( raw ) ) {
-		return null;
-	}
-	return new SubjectId( raw );
+	const subjectId = subjectIdFromRowDomId( element.id );
+	return subjectId === null ? null : new SubjectId( subjectId );
 }

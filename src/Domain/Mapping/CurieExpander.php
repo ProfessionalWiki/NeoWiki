@@ -20,10 +20,6 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
  */
 readonly class CurieExpander {
 
-	// The characters an RDF IRIREF may not contain: the ASCII specials plus backtick and backslash.
-	// Space and the control characters are handled by the code-point check below.
-	private const string ILLEGAL_CHARS = '<>"{}|^`\\';
-
 	/**
 	 * @param array<string, string> $prefixes Prefix label to namespace IRI.
 	 */
@@ -72,26 +68,12 @@ readonly class CurieExpander {
 	}
 
 	/**
-	 * Whether the string is a syntactically valid absolute IRI safe to place raw in an RDF document:
-	 * it has a scheme and contains no IRIREF-illegal character. Used for prefix namespace IRIs too,
-	 * which reach the serializer's prefix table and so are an injection vector even when unused.
+	 * Whether the string is a syntactically valid absolute IRI safe to place raw in an RDF document.
+	 * Used for prefix namespace IRIs too, which reach the serializer's prefix table and so are an
+	 * injection vector even when unused. The check itself lives on the {@see Iri} value object.
 	 */
 	public static function isSafeAbsoluteIri( string $iri ): bool {
-		if ( preg_match( '/^[A-Za-z][A-Za-z0-9+.\-]*:/', $iri ) !== 1 ) {
-			return false;
-		}
-
-		foreach ( str_split( $iri ) as $byte ) {
-			$code = ord( $byte );
-
-			// Controls (0x00–0x20, incl. space) and DEL are never allowed; nor are the specials. Bytes
-			// >= 0x80 are UTF-8 continuation of raw Unicode and pass through, keeping IRIs readable.
-			if ( $code <= 0x20 || $code === 0x7F || str_contains( self::ILLEGAL_CHARS, $byte ) ) {
-				return false;
-			}
-		}
-
-		return true;
+		return Iri::isSafeAbsolute( $iri );
 	}
 
 }

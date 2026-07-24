@@ -18,6 +18,7 @@ For an end-to-end example comparing the native and ontology-mapped output, see t
 | Setting | Default | Purpose |
 |---|---|---|
 | `$wgNeoWikiRdfBaseUri` | the wiki's canonical URL (`$wgCanonicalServer`) | Base URI under which all NeoWiki IRIs are minted. |
+| `$wgNeoWikiDereferenceSubjectsToDataTab` | `true` | Whether a browser dereferencing a Subject IRI lands on the hosting page's Data tab row (`true`) or the plain page (`false`). |
 
 ## IRI scheme
 
@@ -44,9 +45,10 @@ control characters) are percent-encoded. Non-ASCII Unicode is kept raw. **Caveat
 when a name already contains an underscore — `Has author` and `Has_author` share the `neo-prop:Has_author` IRI, which
 the native projection accepts. The base URI is trusted admin config and is not encoded.
 
-Value types map to `xsd` datatypes: `text`/`select` → `xsd:string`, `url` → `xsd:anyURI`, `number` → `xsd:decimal`
-(or `xsd:integer` when fractionless), `boolean` → `xsd:boolean`, `date` → `xsd:date`, `dateTime` → `xsd:dateTime`.
-Extensions map their own property types via
+A `url` value projects as an **IRI object** (`<https://…>`); a value that is not a valid absolute IRI falls back to
+an `xsd:anyURI` literal, so nothing is lost. The other value types map to `xsd` datatypes: `text`/`select` →
+`xsd:string`, `number` → `xsd:decimal` (or `xsd:integer` when fractionless), `boolean` → `xsd:boolean`, `date` →
+`xsd:date`, `dateTime` → `xsd:dateTime`. Extensions map their own property types via
 [`addRdfValueMapper`](../extending/extending.md#contributing-rdf-value-mappers). A Statement whose property type has no
 registered mapper — including an unregistered type — is omitted from the projection.
 
@@ -106,6 +108,9 @@ content-negotiates it and answers `303 See Other` with an absolute `Location`:
 TriG wins when both RDF types are acceptable; the RDF redirects use the native projection. A Subject that is absent or
 on a page the caller may not read returns one indistinguishable `404`; a malformed id `400`.
 
+The default HTML target is that page's Data tab (`/Example_Page/subjects`) opened on the Subject's row.
+When `$wgNeoWikiDereferenceSubjectsToDataTab` is set to `false`, the target is the wiki page itself (`/Example_Page`).
+
 The negotiator is always reachable at the REST path, which needs no server configuration:
 
 ```sh
@@ -126,7 +131,7 @@ the operator's own routing concern.
 
 ### Finding these exports
 
-These exports are surfaced in the UI. The Data tab (`?action=subjects`) links to each Subject's JSON and per-projection
+These exports are surfaced in the UI. The Data tab links to each Subject's JSON and per-projection
 Turtle/TriG, and the same for the whole page. Pages that carry NeoWiki data also emit `<link rel="alternate">`
 autodiscovery tags (Turtle and TriG, native projection) in the HTML head.
 

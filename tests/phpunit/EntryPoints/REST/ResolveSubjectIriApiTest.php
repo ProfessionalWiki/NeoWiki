@@ -60,6 +60,14 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * NeoWiki ships the Data tab as the dereference target (extension.json). The plain-hosting-page tests
+	 * opt out explicitly; the default test leaves the setting unset to exercise the shipped default.
+	 */
+	private function disableDataTabDereference(): void {
+		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', false );
+	}
+
 	public function testAcceptTriGRedirectsToTheSubjectTriGExport(): void {
 		$response = $this->deref( headers: [ 'Accept' => 'application/trig' ] );
 
@@ -81,25 +89,61 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectRdfLocation( $response, 'trig' );
 	}
 
-	public function testAcceptHtmlRedirectsToTheHostingPage(): void {
+	public function testAcceptHtmlRedirectsToThePlainHostingPageWhenDataTabDisabled(): void {
+		$this->disableDataTabDereference();
+
 		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
 
 		$this->assertSame( 303, $response->getStatusCode() );
 		$this->assertHostingPageLocation( $response );
 	}
 
-	public function testWildcardAcceptRedirectsToTheHostingPage(): void {
+	public function testWildcardAcceptRedirectsToThePlainHostingPageWhenDataTabDisabled(): void {
+		$this->disableDataTabDereference();
+
 		$response = $this->deref( headers: [ 'Accept' => '*/*' ] );
 
 		$this->assertSame( 303, $response->getStatusCode() );
 		$this->assertHostingPageLocation( $response );
 	}
 
-	public function testAbsentAcceptRedirectsToTheHostingPage(): void {
+	public function testAbsentAcceptRedirectsToThePlainHostingPageWhenDataTabDisabled(): void {
+		$this->disableDataTabDereference();
+
 		$response = $this->deref();
 
 		$this->assertSame( 303, $response->getStatusCode() );
 		$this->assertHostingPageLocation( $response );
+	}
+
+	public function testHtmlDereferenceRedirectsToTheSubjectsDataTabRowByDefault(): void {
+		// No config override: NeoWiki ships the Data tab as the default dereference target.
+		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
+
+		$location = $response->getHeaderLine( 'Location' );
+
+		$this->assertSame( 303, $response->getStatusCode() );
+		$this->assertMatchesRegularExpression( '#^https?://#', $location, 'The Location is an absolute URL.' );
+		$this->assertStringContainsString(
+			Title::newFromID( $this->pageId )->getPrefixedDBkey(),
+			$location,
+			'The redirect targets the hosting page.'
+		);
+		$this->assertStringContainsString( 'action=subjects', $location, 'The redirect opens the Data tab.' );
+		$this->assertStringEndsWith(
+			'#' . self::SUBJECT_ID,
+			$location,
+			'The fragment is the bare Subject id the Data tab expands and highlights.'
+		);
+	}
+
+	public function testDataTabTargetLeavesTheRdfBranchesUnchanged(): void {
+		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', true );
+
+		$response = $this->deref( headers: [ 'Accept' => 'application/trig' ] );
+
+		$this->assertSame( 303, $response->getStatusCode() );
+		$this->assertSubjectRdfLocation( $response, 'trig' );
 	}
 
 	public function testReturns404ForAnUnknownSubject(): void {

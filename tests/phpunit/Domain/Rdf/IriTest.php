@@ -39,4 +39,16 @@ class IriTest extends TestCase {
 		);
 	}
 
+	public function testIsSafeAbsoluteAcceptsAnAbsoluteIri(): void {
+		$this->assertTrue( Iri::isSafeAbsolute( 'https://example.org/a' ) );
+	}
+
+	public function testIsSafeAbsoluteRejectsAStringWithoutAScheme(): void {
+		$this->assertFalse( Iri::isSafeAbsolute( 'example.org/a' ) );
+	}
+
+	public function testIsSafeAbsoluteRejectsAnIriContainingIllegalCharacters(): void {
+		$this->assertFalse( Iri::isSafeAbsolute( 'http://evil.example/"> .# ' ) );
+	}
+
 }

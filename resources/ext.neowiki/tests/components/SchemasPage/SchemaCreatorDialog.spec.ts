@@ -2,7 +2,7 @@ import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { CdxDialog } from '@wikimedia/codex';
@@ -37,7 +37,7 @@ const SchemaCreatorStub = {
 	},
 };
 
-const EditSummaryStub = {
+const SummaryActionStub = {
 	template: '<div class="edit-summary-stub"><button class="save-button" @click="$emit( \'save\', \'\' )">Save</button></div>',
 	props: [ 'helpText', 'saveButtonLabel', 'saveDisabled' ],
 	emits: [ 'save' ],
@@ -66,7 +66,7 @@ describe( 'SchemaCreatorDialog', () => {
 				plugins: [ pinia ],
 				stubs: {
 					SchemaCreator: SchemaCreatorStub,
-					EditSummary: EditSummaryStub,
+					SummaryAction: SummaryActionStub,
 					CloseConfirmationDialog: CloseConfirmationDialogStub,
 					CdxDialog: CdxDialogStub,
 					CdxIcon: true,
@@ -100,7 +100,7 @@ describe( 'SchemaCreatorDialog', () => {
 
 		( wrapper.findComponent( SchemaCreatorStub ).vm as any ).setStubValid( false );
 
-		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 		await flushPromises();
 
 		expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe( 'SchemaCreatorDialog', () => {
 	it( 'saves schema and emits created on success', async () => {
 		const wrapper = mountComponent();
 
-		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', 'My summary' );
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'My summary' );
 		await flushPromises();
 
 		expect( schemaStore.saveSchema ).toHaveBeenCalledWith(
@@ -130,7 +130,7 @@ describe( 'SchemaCreatorDialog', () => {
 	it( 'uses default summary when none provided', async () => {
 		const wrapper = mountComponent();
 
-		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 		await flushPromises();
 
 		expect( schemaStore.saveSchema ).toHaveBeenCalledWith(
@@ -147,7 +147,7 @@ describe( 'SchemaCreatorDialog', () => {
 
 		const wrapper = mountComponent();
 
-		await wrapper.findComponent( EditSummary ).vm.$emit( 'save', '' );
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 		await flushPromises();
 
 		expect( mw.notify ).toHaveBeenCalledWith(

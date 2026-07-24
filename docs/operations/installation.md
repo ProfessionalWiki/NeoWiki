@@ -158,6 +158,14 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
 
 If all four steps work, your install is complete.
 
+### Optional: Pretty URLs for the Data tab
+
+Serve the Data tab at `/wiki/PageName/subjects` instead of `index.php?action=subjects` with:
+
+```php
+$wgActionPaths['subjects'] = "/wiki/$1/subjects";
+```
+
 ## Key settings
 
 These are the settings you are most likely to change. For the full list with descriptions and defaults, see the
@@ -171,6 +179,29 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new constraint violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
+
+## On-wiki configuration
+
+A wiki administrator without server access can set part of NeoWiki's configuration on the `MediaWiki:NeoWiki`
+page. It holds JSON and, like other site configuration, is editable only with the `editinterface` and
+`editsitejson` rights. Two settings are exposed: `dereferenceSubjectsToDataTab` (overriding
+`$wgNeoWikiDereferenceSubjectsToDataTab`) and `autoRenderMainSubject` (overriding `$wgNeoWikiAutoRenderMainSubject`).
+Editing the page shows a reference table of the exposed keys and their accepted values, and creating it
+preloads a working example.
+
+A valid value on the page takes precedence over `LocalSettings.php`, per setting. A missing page, a
+wrong-shaped value, or an unavailable database falls back to the `LocalSettings.php` value, so a
+configuration typo cannot take down the wiki. Saving the page rejects unknown keys and wrong-typed values.
+
+Every other setting stays in `LocalSettings.php` — deliberately, for secrets and infrastructure
+(`$wgNeoWikiSparqlStores`), for settings too consequential for a wiki page (`$wgNeoWikiRdfBaseUri` re-mints
+every IRI when changed), and for development toggles (`$wgNeoWikiEnableDevelopmentUI`).
+
+`autoRenderMainSubject` changes take effect as pages are re-parsed; already-cached pages keep their previous
+rendering until then, or until purged with `?action=purge`.
+
+Set `$wgNeoWikiEnableInWikiConfig` to `false` to disable the page entirely: it is then never given the JSON
+content model, validated, or read.
 
 ## Optional: SPARQL graph stores
 

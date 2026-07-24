@@ -151,7 +151,7 @@ class RdfPageProjectorTest extends TestCase {
 
 				neo-subj:s1acmeaaaaaaaa1 a neo-schema:Company ;
 					rdfs:label "ACME Corp" ;
-					neo-prop:Website "https://acme.example"^^xsd:anyURI ;
+					neo-prop:Website <https://acme.example> ;
 					neo-prop:Founded 2019 ;
 					neo-prop:CEO neo-subj:s1janeaaaaaaaa2 .
 
@@ -168,7 +168,7 @@ class RdfPageProjectorTest extends TestCase {
 			TRIG;
 	}
 
-	public function testMultiValuedTextProducesRepeatedPredicates(): void {
+	public function testMultiValuedUrlProducesRepeatedPredicatesWithIriObjects(): void {
 		$subject = TestSubject::build(
 			id: self::ACME_ID,
 			label: 'ACME Corp',
@@ -184,12 +184,12 @@ class RdfPageProjectorTest extends TestCase {
 		$this->assertTrue( $quads->contains( $this->quad(
 			$this->ns->subject( new SubjectId( self::ACME_ID ) ),
 			$this->ns->property( 'Website' ),
-			new Literal( 'https://a.example', $this->ns->xsd( 'anyURI' ) )
+			new Iri( 'https://a.example' )
 		) ) );
 		$this->assertTrue( $quads->contains( $this->quad(
 			$this->ns->subject( new SubjectId( self::ACME_ID ) ),
 			$this->ns->property( 'Website' ),
-			new Literal( 'https://b.example', $this->ns->xsd( 'anyURI' ) )
+			new Iri( 'https://b.example' )
 		) ) );
 	}
 

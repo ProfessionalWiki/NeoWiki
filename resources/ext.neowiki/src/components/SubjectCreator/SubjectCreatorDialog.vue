@@ -2,7 +2,7 @@
 <template>
 	<CdxDialog
 		:open="subjectStore.subjectCreatorOpen"
-		class="ext-neowiki-subject-creator-dialog"
+		class="ext-neowiki-ui ext-neowiki-subject-creator-dialog"
 		:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' && !selectedSchemaName }"
 		:title="$i18n( 'neowiki-subject-creator-title' ).text()"
 		@update:open="onDialogUpdateOpen"
@@ -137,7 +137,7 @@
 			v-else-if="selectedSchemaName"
 			#footer
 		>
-			<EditSummary
+			<SummaryAction
 				help-text=""
 				:save-button-label="$i18n( 'neowiki-subject-creator-save' ).text()"
 				:save-disabled="!hasChanged"
@@ -175,7 +175,7 @@ import { CdxMessage } from '@wikimedia/codex';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCreator.vue';
-import EditSummary from '@/components/common/EditSummary.vue';
+import SummaryAction from '@/components/common/SummaryAction.vue';
 import SchemaPicker from '@/components/common/SchemaPicker.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonmentDialog.vue';

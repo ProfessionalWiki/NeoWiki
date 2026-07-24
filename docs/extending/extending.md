@@ -76,8 +76,9 @@ $registrar->addNeo4jValueBuilder( ColorType::NAME, static fn ( $value ) => $valu
 #### Contributing RDF value mappers
 
 For the [RDF export](../rdf/rdf-export.md), register a mapper keyed by the Property Type name with
-`NeoWikiRegistrar::addRdfValueMapper()`. It receives the Statement's `NeoValue` and returns a `Literal` list, one
-per value part. Guard the value shape, since the mapper is called for whatever a Statement holds. RedHerb's
+`NeoWikiRegistrar::addRdfValueMapper()`. It receives the Statement's `NeoValue` and returns a list of RDF terms —
+`Literal`s, or `Iri`s for values that denote a resource, as the built-in `url` mapper does — one per value part.
+Guard the value shape, since the mapper is called for whatever a Statement holds. RedHerb's
 [`RedHerbHooks.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbHooks.php)
 registers a guarded mapper for its color type.
 
