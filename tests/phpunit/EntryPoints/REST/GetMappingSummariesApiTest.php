@@ -213,10 +213,13 @@ JSON
 		$xml = str_replace( 'Mapping:Alpha', 'Mapping:Beta', $xml );
 		$xml = str_replace( '"schemas"', '"schemaX"', $xml );
 		// Guard the fixture's own premise: the title substitution must have produced a Beta dump and the
-		// content substitution must have removed the required key. If either misses (e.g. an export-format
-		// change), the import would recreate a loadable Alpha instead of an unloadable Beta.
+		// content substitution must have replaced the required key with its schemaX token. If either
+		// misses (e.g. an export-format change), the import would recreate a loadable Alpha instead of an
+		// unloadable Beta. Both guards assert a replacement TARGET, so each fails when its str_replace
+		// matched nothing — asserting the removed "schemas" token is absent would instead be tautological,
+		// since str_replace makes that true unconditionally.
 		$this->assertStringContainsString( 'Mapping:Beta', $xml );
-		$this->assertStringNotContainsString( '"schemas"', $xml );
+		$this->assertStringContainsString( '"schemaX"', $xml );
 		$this->importXml( $xml );
 
 		$gamma = $this->createMapping( 'Gamma', '{"version":1,"schemas":{}}' )->getPageId();
