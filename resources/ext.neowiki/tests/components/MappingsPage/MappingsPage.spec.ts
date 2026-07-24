@@ -4,7 +4,7 @@ import { ref } from 'vue';
 import MappingsPage from '@/components/MappingsPage/MappingsPage.vue';
 import MappingCreatorDialog from '@/components/MappingsPage/MappingCreatorDialog.vue';
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHelpers.ts';
 import { CdxButton } from '@wikimedia/codex';
 
 interface MappingSummary {
@@ -19,7 +19,7 @@ const checkCreatePermissionMock = vi.fn();
 const checkEditPermissionMock = vi.fn();
 const checkDeletePermissionMock = vi.fn();
 
-let mappingsResponse: { mappings: MappingSummary[]; totalRows: number } = { mappings: [], totalRows: 0 };
+let mappingsResponse: { mappings: MappingSummary[]; nextCursor: string | null } = { mappings: [], nextCursor: null };
 
 vi.mock( '@/composables/useMappingPermissions.ts', () => ( {
 	useMappingPermissions: () => ( {
@@ -69,10 +69,10 @@ function findDeleteButtons( wrapper: VueWrapper ): VueWrapper[] {
 		.filter( ( btn ) => btn.attributes( 'aria-label' ) === 'neowiki-mapping-delete' );
 }
 
-function mountComponent( summaries: MappingSummary[] = [] ): VueWrapper {
+function mountComponent( summaries: MappingSummary[] = [], nextCursor: string | null = null ): VueWrapper {
 	mappingsResponse = {
 		mappings: summaries,
-		totalRows: summaries.length,
+		nextCursor: nextCursor,
 	};
 	setupMwMock( {
 		functions: [ 'msg', 'util', 'message', 'notify' ],
@@ -99,7 +99,7 @@ describe( 'MappingsPage', () => {
 		checkCreatePermissionMock.mockClear();
 		checkEditPermissionMock.mockClear();
 		checkDeletePermissionMock.mockClear();
-		mappingsResponse = { mappings: [], totalRows: 0 };
+		mappingsResponse = { mappings: [], nextCursor: null };
 	} );
 
 	it( 'links each mapped schema name to its Schema page and shows the count', async () => {
@@ -155,6 +155,42 @@ describe( 'MappingsPage', () => {
 		await flushPromises();
 
 		expect( wrapper.text() ).toContain( 'neowiki-mappings-empty' );
+	} );
+
+	it( 'disables next when a full page ends the listing', async () => {
+		// A listing that ends exactly on a page boundary returns a full page with a null cursor.
+		// CdxTable's indeterminate mode would keep next enabled (its heuristic is a short page), so
+		// the component must switch the table to a known total.
+		const wrapper = mountComponent(
+			Array.from( { length: 10 }, ( _value, index ) => (
+				{ name: `Mapping${ index }`, schemas: [] }
+			) ),
+		);
+		await flushPromises();
+
+		const nextButton = findNextPageButton( wrapper );
+
+		expect( nextButton.attributes( 'disabled' ) ).toBeDefined();
+		expect( wrapper.text() ).toContain( 'of 10' );
+	} );
+
+	it( 'keeps next enabled while the listing continues', async () => {
+		// A full page (the default size) with a non-null cursor means more rows follow. The
+		// component must leave totalRows undefined so CdxTable stays in its indeterminate mode
+		// (next enabled, "of many" label); a known total here would wrongly disable next and hide
+		// the remaining pages.
+		const wrapper = mountComponent(
+			Array.from( { length: 10 }, ( _value, index ) => (
+				{ name: `Mapping${ index }`, schemas: [] }
+			) ),
+			'next-page-cursor',
+		);
+		await flushPromises();
+
+		const nextButton = findNextPageButton( wrapper );
+
+		expect( nextButton.attributes( 'disabled' ) ).toBeUndefined();
+		expect( wrapper.text() ).toContain( 'of many' );
 	} );
 
 	it( 'shows the create button when the user may create mappings', async () => {

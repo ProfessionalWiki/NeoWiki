@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -81,6 +82,23 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
 	}
 
+	protected function createLayout( string $name, ?string $json = null ): ?RevisionRecord {
+		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
+			Title::newFromText( $name, NeoWikiExtension::NS_LAYOUT )
+		);
+
+		$updater = $wikiPage->newPageUpdater( $this->getTestSysop()->getUser() );
+
+		$updater->setContent(
+			'main',
+			new LayoutContent(
+				$json ?? '{ "schema": "' . $name . '", "type": "infobox" }'
+			)
+		);
+
+		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
+	}
+
 	protected function createMapping( string $name, string $json ): ?RevisionRecord {
 		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
 			Title::newFromText( $name, NeoWikiExtension::NS_MAPPING )
@@ -128,6 +146,57 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		if ( !in_array( 'page', $this->tablesUsed ) ) {
 			$this->tablesUsed[] = 'page';
 		}
+	}
+
+	/**
+	 * Bulk-inserts bare page rows — no revisions or content — straight into the page table with a
+	 * single multi-row insert. The keyset name-lookup generators read only page_id and page_title and
+	 * authorize by Title, so bare rows are enough to drive them past their batch size far more cheaply
+	 * than creating that many real pages. Titles are $titlePrefix followed by a zero-padded counter
+	 * (Foo001, Foo002, …). Returns each created title mapped to its assigned page ID, in page-ID order.
+	 *
+	 * @return array<string, int>
+	 */
+	protected function createBarePages( int $namespace, string $titlePrefix, int $count ): array {
+		$titles = [];
+		$rows = [];
+
+		for ( $i = 1; $i <= $count; $i++ ) {
+			$title = sprintf( '%s%03d', $titlePrefix, $i );
+			$titles[] = $title;
+			$rows[] = [
+				'page_namespace' => $namespace,
+				'page_title' => $title,
+				'page_random' => 0.5,
+				'page_touched' => $this->getDb()->timestamp(),
+				'page_latest' => 0,
+				'page_len' => 0,
+				'page_is_redirect' => 0,
+				'page_is_new' => 0,
+			];
+		}
+
+		$this->getDb()->newInsertQueryBuilder()
+			->insertInto( 'page' )
+			->rows( $rows )
+			->caller( __METHOD__ )
+			->execute();
+
+		$pageIds = [];
+
+		$result = $this->getDb()->newSelectQueryBuilder()
+			->select( [ 'page_id', 'page_title' ] )
+			->from( 'page' )
+			->where( [ 'page_namespace' => $namespace, 'page_title' => $titles ] )
+			->orderBy( 'page_id ASC' )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		foreach ( $result as $row ) {
+			$pageIds[$row->page_title] = (int)$row->page_id;
+		}
+
+		return $pageIds;
 	}
 
 	/**

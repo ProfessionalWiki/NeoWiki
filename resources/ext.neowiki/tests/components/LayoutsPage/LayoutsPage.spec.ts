@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import LayoutsPage from '@/components/LayoutsPage/LayoutsPage.vue';
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHelpers.ts';
 import { CdxButton } from '@wikimedia/codex';
 
 interface LayoutSummary {
@@ -11,6 +11,7 @@ interface LayoutSummary {
 	schema: string;
 	type: string;
 	description: string;
+	ruleCount: number;
 }
 
 const canCreateLayoutsRef = ref( false );
@@ -18,7 +19,7 @@ const canEditLayoutRef = ref( false );
 const checkCreatePermissionMock = vi.fn();
 const checkEditPermissionMock = vi.fn();
 
-let layoutsResponse: { layouts: LayoutSummary[]; totalRows: number } = { layouts: [], totalRows: 0 };
+let layoutsResponse: { layouts: LayoutSummary[]; nextCursor: string | null } = { layouts: [], nextCursor: null };
 
 vi.mock( '@/composables/useLayoutPermissions.ts', () => ( {
 	useLayoutPermissions: () => ( {
@@ -29,7 +30,7 @@ vi.mock( '@/composables/useLayoutPermissions.ts', () => ( {
 	} ),
 } ) );
 
-// The store is only exercised by the editor path, not by the deletion flow under test.
+// The store is only exercised by the editor path, not by the deletion or pagination flows under test.
 vi.mock( '@/stores/LayoutStore.ts', () => ( {
 	useLayoutStore: () => ( {
 		fetchLayout: vi.fn(),
@@ -63,8 +64,21 @@ function findDeleteButtons( wrapper: VueWrapper ): VueWrapper[] {
 		.filter( ( btn ) => btn.attributes( 'aria-label' ) === 'neowiki-layout-delete' );
 }
 
-function mountComponent( summaries: LayoutSummary[] = [] ): VueWrapper {
-	layoutsResponse = { layouts: summaries, totalRows: summaries.length };
+function fullPage(): LayoutSummary[] {
+	return Array.from( { length: 10 }, ( _value, index ) => ( {
+		name: `Layout${ index }`,
+		schema: 'Person',
+		type: 'infobox',
+		description: '',
+		ruleCount: 0,
+	} ) );
+}
+
+function mountComponent( summaries: LayoutSummary[] = [], nextCursor: string | null = null ): VueWrapper {
+	layoutsResponse = {
+		layouts: summaries,
+		nextCursor: nextCursor,
+	};
 	setupMwMock( { functions: [ 'msg', 'util', 'message', 'notify' ] } );
 
 	return mount( LayoutsPage, {
@@ -85,6 +99,7 @@ const sampleLayout: LayoutSummary = {
 	schema: 'Company',
 	type: 'infobox',
 	description: 'Overview',
+	ruleCount: 0,
 };
 
 describe( 'LayoutsPage', () => {
@@ -93,7 +108,7 @@ describe( 'LayoutsPage', () => {
 		canEditLayoutRef.value = false;
 		checkCreatePermissionMock.mockClear();
 		checkEditPermissionMock.mockClear();
-		layoutsResponse = { layouts: [], totalRows: 0 };
+		layoutsResponse = { layouts: [], nextCursor: null };
 	} );
 
 	it( 'links each layout name to its Layout page', async () => {
@@ -135,5 +150,31 @@ describe( 'LayoutsPage', () => {
 		expect( dialog.props( 'pageTitle' ) ).toBe( 'Layout:CompanyOverview' );
 		expect( dialog.props( 'displayName' ) ).toBe( 'CompanyOverview' );
 		expect( dialog.props( 'typeLabel' ) ).toBe( 'neowiki-layout-noun' );
+	} );
+
+	it( 'disables next when a full page ends the listing', async () => {
+		// A listing that ends exactly on a page boundary returns a full page with a null cursor.
+		// CdxTable's indeterminate mode would keep next enabled (its heuristic is a short page), so
+		// the component must switch the table to a known total.
+		const wrapper = mountComponent( fullPage(), null );
+		await flushPromises();
+
+		const nextButton = findNextPageButton( wrapper );
+
+		expect( nextButton.attributes( 'disabled' ) ).toBeDefined();
+		expect( wrapper.text() ).toContain( 'of 10' );
+	} );
+
+	it( 'keeps next enabled while the listing continues', async () => {
+		// A full page with a non-null cursor means more rows follow. The component must leave
+		// totalRows undefined so CdxTable stays in its indeterminate mode (next enabled, "of many"
+		// label); a known total here would wrongly disable next and hide the remaining pages.
+		const wrapper = mountComponent( fullPage(), 'next-page-cursor' );
+		await flushPromises();
+
+		const nextButton = findNextPageButton( wrapper );
+
+		expect( nextButton.attributes( 'disabled' ) ).toBeUndefined();
+		expect( wrapper.text() ).toContain( 'of many' );
 	} );
 } );

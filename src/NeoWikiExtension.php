@@ -507,7 +507,11 @@ class NeoWikiExtension {
 	}
 
 	public function getMappingNameLookup(): MappingNameLookup {
-		return new DatabaseMappingNameLookup( db: $this->getDbConnection() );
+		return new DatabaseMappingNameLookup(
+			db: $this->getDbConnection(),
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+		);
 	}
 
 	public function getMappingPersistenceDeserializer(): MappingPersistenceDeserializer {
@@ -1256,6 +1260,8 @@ class NeoWikiExtension {
 	public function getLayoutNameLookup(): LayoutNameLookup {
 		return new DatabaseLayoutNameLookup(
 			db: $this->getDbConnection(),
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 		);
 	}
 

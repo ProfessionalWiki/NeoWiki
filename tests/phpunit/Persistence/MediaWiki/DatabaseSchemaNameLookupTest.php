@@ -22,14 +22,18 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 
 	use NeoWikiMockAuthorityTrait;
 
+	/**
+	 * @var array<string, int>
+	 */
+	private array $pageIds = [];
+
 	public function setUp(): void {
 		$this->tablesUsed[] = 'page';
 		$this->truncateTables( $this->tablesUsed, $this->db );
 
-		$this->createSchema( 'SchemaNameLookupTest1' );
-		$this->createSchema( 'SchemaNameLookupTest21' );
-		$this->createSchema( 'SchemaNameLookupTest22' );
-		$this->createSchema( 'SchemaNameLookupTest3' );
+		foreach ( [ 'SchemaNameLookupTest1', 'SchemaNameLookupTest21', 'SchemaNameLookupTest22', 'SchemaNameLookupTest3' ] as $name ) {
+			$this->pageIds[$name] = $this->createSchema( $name )->getPageId();
+		}
 	}
 
 	/**
@@ -114,8 +118,60 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testGetSchemaCount(): void {
-		$this->assertSame( 4, $this->getLookup()->getSchemaCount() );
+	public function testGetReadableSchemaNamesYieldsEverySchemaKeyedByPageId(): void {
+		$this->assertSame(
+			[
+				$this->pageIds['SchemaNameLookupTest1'] => 'SchemaNameLookupTest1',
+				$this->pageIds['SchemaNameLookupTest21'] => 'SchemaNameLookupTest21',
+				$this->pageIds['SchemaNameLookupTest22'] => 'SchemaNameLookupTest22',
+				$this->pageIds['SchemaNameLookupTest3'] => 'SchemaNameLookupTest3',
+			],
+			array_map(
+				static fn ( TitleValue $title ): string => $title->getText(),
+				iterator_to_array( $this->getLookup()->getReadableSchemaNames() )
+			)
+		);
+	}
+
+	public function testGetReadableSchemaNamesStartsAfterTheGivenPageId(): void {
+		$this->assertSame(
+			[
+				$this->pageIds['SchemaNameLookupTest22'] => 'SchemaNameLookupTest22',
+				$this->pageIds['SchemaNameLookupTest3'] => 'SchemaNameLookupTest3',
+			],
+			array_map(
+				static fn ( TitleValue $title ): string => $title->getText(),
+				iterator_to_array(
+					$this->getLookup()->getReadableSchemaNames( $this->pageIds['SchemaNameLookupTest21'] )
+				)
+			)
+		);
+	}
+
+	public function testGetReadableSchemaNamesOmitsUnreadableSchemas(): void {
+		// GateHiddenSchema is created before GateVisibleSchema so the denied row sits mid-list. A
+		// denied Schema must not be yielded at all: the summaries endpoint fills its page from this
+		// iterable and builds its cursor from the yielded keys, so a skipped Schema neither takes
+		// page space nor becomes inferable from the pagination (#1062).
+		$this->createSchema( 'GateHiddenSchema' );
+		$visibleId = $this->createSchema( 'GateVisibleSchema' )->getPageId();
+
+		$denyHidden = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
+			$page === null || $page->getDBkey() !== 'GateHiddenSchema';
+
+		$this->assertSame(
+			[
+				$this->pageIds['SchemaNameLookupTest1'] => 'SchemaNameLookupTest1',
+				$this->pageIds['SchemaNameLookupTest21'] => 'SchemaNameLookupTest21',
+				$this->pageIds['SchemaNameLookupTest22'] => 'SchemaNameLookupTest22',
+				$this->pageIds['SchemaNameLookupTest3'] => 'SchemaNameLookupTest3',
+				$visibleId => 'GateVisibleSchema',
+			],
+			array_map(
+				static fn ( TitleValue $title ): string => $title->getText(),
+				iterator_to_array( $this->getLookup( $this->mockRegisteredAuthority( $denyHidden ) )->getReadableSchemaNames() )
+			)
+		);
 	}
 
 	public function testUnreadableSchemaNamesAreOmitted(): void {
@@ -158,6 +214,77 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame( [ 'SchemaNameLookupTest22' ], $names );
+	}
+
+	public function testGetReadableSchemaNamesDrainsEveryBatchInPageIdOrder(): void {
+		// The generator pages the namespace in fixed-size keyset batches. With more rows than one batch,
+		// it must keep querying past the first batch and yield every Schema exactly once, in strictly
+		// ascending page-ID order — a single truncated batch would drop the tail.
+		$bulk = $this->createBarePages(
+			NeoWikiExtension::NS_SCHEMA,
+			'BulkSchema',
+			DatabaseSchemaNameLookup::READABLE_NAMES_BATCH_SIZE + 20
+		);
+
+		$this->assertSame(
+			$this->expectedByPageId( $bulk ),
+			array_map(
+				static fn ( TitleValue $title ): string => $title->getText(),
+				iterator_to_array( $this->getLookup()->getReadableSchemaNames() )
+			)
+		);
+	}
+
+	public function testGetReadableSchemaNamesContinuesPastAnUnreadableRowAtABatchBoundary(): void {
+		// The Schema whose page ID sits exactly on the first batch boundary (the last row of the first
+		// full batch) is denied. The drain's continue decision must count fetched rows, not yielded ones:
+		// batch one comes back full yet yields one short, and the next batch must still be fetched, so the
+		// rows past the boundary arrive and the denied row is the only one absent.
+		$bulk = $this->createBarePages(
+			NeoWikiExtension::NS_SCHEMA,
+			'BulkSchema',
+			DatabaseSchemaNameLookup::READABLE_NAMES_BATCH_SIZE + 20
+		);
+
+		$expected = $this->expectedByPageId( $bulk );
+		// The last row of the first batch sits at index READABLE_NAMES_BATCH_SIZE - 1.
+		$boundaryPageId = array_keys( $expected )[DatabaseSchemaNameLookup::READABLE_NAMES_BATCH_SIZE - 1];
+		$boundaryTitle = $expected[$boundaryPageId];
+		unset( $expected[$boundaryPageId] );
+
+		$denyBoundary = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
+			$page === null || $page->getDBkey() !== $boundaryTitle;
+
+		$this->assertSame(
+			$expected,
+			array_map(
+				static fn ( TitleValue $title ): string => $title->getText(),
+				iterator_to_array(
+					$this->getLookup( $this->mockRegisteredAuthority( $denyBoundary ) )->getReadableSchemaNames()
+				)
+			)
+		);
+	}
+
+	/**
+	 * The setUp Schemas then the bulk rows, each page ID mapped to its title, in page-ID order —
+	 * the exact [pageId => name] map getReadableSchemaNames should yield when everything is readable.
+	 *
+	 * @param array<string, int> $bulk
+	 * @return array<int, string>
+	 */
+	private function expectedByPageId( array $bulk ): array {
+		$expected = [];
+
+		foreach ( $this->pageIds as $name => $id ) {
+			$expected[$id] = $name;
+		}
+
+		foreach ( $bulk as $title => $id ) {
+			$expected[$id] = $title;
+		}
+
+		return $expected;
 	}
 
 }

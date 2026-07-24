@@ -8,14 +8,14 @@ export interface SchemaSummary {
 
 export interface SchemaSummaryPage {
 	schemas: SchemaSummary[];
-	totalRows: number;
+	nextCursor: string | null;
 }
 
 export interface SchemaLookup {
 
 	getSchema( schemaName: SchemaName ): Promise<Schema>;
 	getSchemaNames( search: string ): Promise<string[]>;
-	getSchemaSummaries( offset: number, limit: number ): Promise<SchemaSummaryPage>;
+	getSchemaSummaries( cursor: string | null, limit: number ): Promise<SchemaSummaryPage>;
 
 }
 
@@ -43,16 +43,20 @@ export class InMemorySchemaLookup implements SchemaLookup {
 		return [ ...this.schemaNames ];
 	}
 
-	public async getSchemaSummaries( offset: number, limit: number ): Promise<SchemaSummaryPage> {
+	public async getSchemaSummaries( cursor: string | null, limit: number ): Promise<SchemaSummaryPage> {
 		const summaries = [ ...this.schemas.values() ].map( ( schema ) => ( {
 			name: schema.getName(),
 			description: schema.getDescription(),
 			propertyCount: [ ...schema.getPropertyDefinitions() ].length,
 		} ) );
 
+		// The cursor is opaque to callers; this fake encodes the next start index in it.
+		const start = cursor === null ? 0 : parseInt( cursor, 10 );
+		const end = start + limit;
+
 		return {
-			schemas: summaries.slice( offset, offset + limit ),
-			totalRows: summaries.length,
+			schemas: summaries.slice( start, end ),
+			nextCursor: end < summaries.length ? String( end ) : null,
 		};
 	}
 

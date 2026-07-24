@@ -1,6 +1,6 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
 import { Component, DefineComponent } from 'vue';
-import { vi } from 'vitest';
+import { expect, vi } from 'vitest';
 import { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { NeoWikiTestServices } from './NeoWikiTestServices.ts';
 
@@ -13,6 +13,18 @@ export function createI18nMock(): ReturnType<typeof vi.fn> {
 	return vi.fn().mockImplementation( ( key ) => ( {
 		text: () => key,
 	} ) );
+}
+
+/**
+ * Locates the CdxTable pager's "Next page" button, asserting it exists so a selector that matches
+ * nothing fails loudly here. A missed find() returns an empty DOMWrapper whose
+ * attributes( 'disabled' ) is undefined, which would silently satisfy a toBeUndefined()
+ * enabled-state assertion against a button that is not in the DOM.
+ */
+export function findNextPageButton( wrapper: VueWrapper ): DOMWrapper<Element> {
+	const button = wrapper.find( '.cdx-table-pager button[aria-label="Next page"]' );
+	expect( button.exists() ).toBe( true );
+	return button;
 }
 
 export function createTestWrapper<TComponent extends DefineComponent<any, any, any>>(

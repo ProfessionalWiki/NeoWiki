@@ -61,25 +61,24 @@ export const useSchemaStore = defineStore( 'schema', {
 
 			return this.summariesRequest;
 		},
-		// Pages through the summaries endpoint (capped at 50) by request offset, not by
-		// loaded count: the endpoint counts every Schema page in totalRows but omits ones
-		// it cannot load (restricted or malformed), so advancing by summaries.length would
-		// re-request earlier names and duplicate entries. Stop once the offset passes the
-		// total. The in-flight request is released on completion so a later load (after the
-		// cache is cleared, or after a failure) starts fresh.
+		// Pages through the summaries endpoint (capped at 50) by following the response's
+		// cursor until it is null. The cursor, not the page length, decides whether more
+		// pages follow: a page can come back shorter than requested when a readable Schema
+		// fails to load (malformed). The in-flight request is released on completion so a
+		// later load (after the cache is cleared, or after a failure) starts fresh.
 		async fetchAllSchemaSummaries(): Promise<SchemaSummary[]> {
 			const repository = NeoWikiExtension.getInstance().getSchemaRepository();
 			const pageSize = 50;
 			const summaries: SchemaSummary[] = [];
 
 			try {
-				const firstPage = await repository.getSchemaSummaries( 0, pageSize );
-				summaries.push( ...firstPage.schemas );
+				let cursor: string | null = null;
 
-				for ( let offset = pageSize; offset < firstPage.totalRows; offset += pageSize ) {
-					const page = await repository.getSchemaSummaries( offset, pageSize );
+				do {
+					const page = await repository.getSchemaSummaries( cursor, pageSize );
 					summaries.push( ...page.schemas );
-				}
+					cursor = page.nextCursor;
+				} while ( cursor !== null );
 
 				this.allSummaries = summaries;
 				return summaries;
