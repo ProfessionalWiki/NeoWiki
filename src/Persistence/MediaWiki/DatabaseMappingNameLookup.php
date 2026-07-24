@@ -14,7 +14,7 @@ use Wikimedia\Rdbms\IDatabase;
 
 class DatabaseMappingNameLookup implements MappingNameLookup {
 
-	private const READABLE_NAMES_BATCH_SIZE = 100;
+	public const int READABLE_NAMES_BATCH_SIZE = 100;
 
 	public function __construct(
 		private readonly IDatabase $db,

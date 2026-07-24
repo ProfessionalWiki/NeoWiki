@@ -114,17 +114,44 @@ class DatabaseMappingNameLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testGetReadableMappingNamesDrainsPastTheBatchSize(): void {
-		// The generator pages the namespace in 100-row keyset batches. With more rows than one batch,
-		// it must keep querying past the first batch: every Mapping is yielded, the lowest page ID
-		// first and the highest last. A single truncated batch would drop the tail.
-		$bulk = $this->createBarePages( NeoWikiExtension::NS_MAPPING, 'BulkMapping', 120 );
+	public function testGetReadableMappingNamesDrainsEveryBatchInPageIdOrder(): void {
+		// The generator pages the namespace in fixed-size keyset batches. With more rows than one batch,
+		// it must keep querying past the first batch and yield every Mapping exactly once, in strictly
+		// ascending page-ID order — a single truncated batch would drop the tail.
+		$bulk = $this->createBarePages(
+			NeoWikiExtension::NS_MAPPING,
+			'BulkMapping',
+			DatabaseMappingNameLookup::READABLE_NAMES_BATCH_SIZE + 20
+		);
 
-		$drained = iterator_to_array( $this->getLookup()->getReadableMappingNames() );
+		$this->assertSame(
+			$this->expectedByPageId( $bulk ),
+			array_map(
+				static fn ( MappingName $name ): string => $name->getText(),
+				iterator_to_array( $this->getLookup()->getReadableMappingNames() )
+			)
+		);
+	}
 
-		$this->assertCount( count( $this->pageIds ) + count( $bulk ), $drained );
-		$this->assertSame( $this->pageIds['MappingLookupTest1'], array_key_first( $drained ) );
-		$this->assertSame( max( $bulk ), array_key_last( $drained ) );
+	/**
+	 * The setUp Mappings then the bulk rows, each page ID mapped to its title, in page-ID order —
+	 * the exact [pageId => name] map getReadableMappingNames should yield when everything is readable.
+	 *
+	 * @param array<string, int> $bulk
+	 * @return array<int, string>
+	 */
+	private function expectedByPageId( array $bulk ): array {
+		$expected = [];
+
+		foreach ( $this->pageIds as $name => $id ) {
+			$expected[$id] = $name;
+		}
+
+		foreach ( $bulk as $title => $id ) {
+			$expected[$id] = $title;
+		}
+
+		return $expected;
 	}
 
 }
