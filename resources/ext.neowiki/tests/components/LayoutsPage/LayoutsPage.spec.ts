@@ -2,7 +2,7 @@ import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import LayoutsPage from '@/components/LayoutsPage/LayoutsPage.vue';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHelpers.ts';
 
 interface LayoutSummary {
 	name: string;
@@ -99,7 +99,7 @@ describe( 'LayoutsPage', () => {
 		const wrapper = mountComponent( fullPage(), null );
 		await flushPromises();
 
-		const nextButton = wrapper.find( '.cdx-table-pager button[aria-label="Next page"]' );
+		const nextButton = findNextPageButton( wrapper );
 
 		expect( nextButton.attributes( 'disabled' ) ).toBeDefined();
 		expect( wrapper.text() ).toContain( 'of 10' );
@@ -112,7 +112,7 @@ describe( 'LayoutsPage', () => {
 		const wrapper = mountComponent( fullPage(), 'next-page-cursor' );
 		await flushPromises();
 
-		const nextButton = wrapper.find( '.cdx-table-pager button[aria-label="Next page"]' );
+		const nextButton = findNextPageButton( wrapper );
 
 		expect( nextButton.attributes( 'disabled' ) ).toBeUndefined();
 		expect( wrapper.text() ).toContain( 'of many' );

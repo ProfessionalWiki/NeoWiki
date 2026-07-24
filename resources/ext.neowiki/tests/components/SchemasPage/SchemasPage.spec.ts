@@ -4,7 +4,7 @@ import { ref } from 'vue';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHelpers.ts';
 import { CdxButton, CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -156,7 +156,7 @@ describe( 'SchemasPage', () => {
 		) ) );
 		await flushPromises();
 
-		const nextButton = wrapper.find( '.cdx-table-pager button[aria-label="Next page"]' );
+		const nextButton = findNextPageButton( wrapper );
 
 		expect( nextButton.attributes( 'disabled' ) ).toBeDefined();
 		expect( wrapper.text() ).toContain( 'of 10' );
@@ -171,7 +171,7 @@ describe( 'SchemasPage', () => {
 		) ), 'next-page-cursor' );
 		await flushPromises();
 
-		const nextButton = wrapper.find( '.cdx-table-pager button[aria-label="Next page"]' );
+		const nextButton = findNextPageButton( wrapper );
 
 		expect( nextButton.attributes( 'disabled' ) ).toBeUndefined();
 		expect( wrapper.text() ).toContain( 'of many' );
