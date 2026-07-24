@@ -1,5 +1,5 @@
 /**
- * Keyboard-only focus rings for NeoWiki's Codex buttons.
+ * Keyboard-only focus rings for NeoWiki's Codex buttons and toggle buttons.
  *
  * Codex 1.14 styles button focus on bare `:focus`, so a mouse click — which
  * focuses the button but, per the browser heuristic, does not match
@@ -54,6 +54,29 @@
 	.cdx-button:enabled.cdx-button--weight-primary.cdx-button--action-destructive:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ),
 	.cdx-button.cdx-button--fake-button--enabled.cdx-button--weight-primary.cdx-button--action-destructive:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ) {
 		border-color: @border-color-destructive;
+		box-shadow: none;
+	}
+
+	// Codex rings toggle buttons on bare `:focus` too (the CdxToggleButtonGroup schema picker and
+	// the CdxMenuButton row-action triggers). Same treatment: drop the inset ring and restore each
+	// variant's resting border-color. `--toggled-on` is the persistent selected state and is kept,
+	// distinct from the `--is-active` pressed state that these guards leave alone as above.
+
+	// Framed toggle, unselected: grey resting border.
+	.cdx-toggle-button--framed:enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-toggle-button--is-active ):not( .cdx-toggle-button--toggled-on ) {
+		border-color: @border-color-base;
+		box-shadow: none;
+	}
+
+	// Framed toggle, selected: progressive resting border.
+	.cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-toggle-button--is-active ) {
+		border-color: @border-color-progressive--active;
+		box-shadow: none;
+	}
+
+	// Quiet toggle (menu-button trigger): transparent resting border.
+	.cdx-toggle-button--quiet:enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-toggle-button--is-active ) {
+		border-color: @border-color-transparent;
 		box-shadow: none;
 	}
 }
