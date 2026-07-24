@@ -61,10 +61,7 @@ class ExportPageRdfApi extends SimpleHandler {
 			return $this->noDataResponse( $pageId );
 		}
 
-		#return $this->rdfResponse( $document, $format );
-		$response = $this->rdfResponse( $document, $format );
-		$response->setHeader( 'Content-Disposition', 'attachment; filename="' . $pageId . '.rdf"' );
-		return $response;
+		return $this->rdfResponse( $document, $format, (string)$pageId );
 	}
 
 	private function noDataResponse( int $pageId ): Response {

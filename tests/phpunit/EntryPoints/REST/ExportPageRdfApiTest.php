@@ -20,6 +20,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportPageRdfApi
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\RdfFormatNegotiation
  * @group Database
  */
 class ExportPageRdfApiTest extends NeoWikiIntegrationTestCase {
@@ -122,6 +123,33 @@ JSON
 		$this->assertSame( 'application/trig; charset=utf-8', $response->getHeaderLine( 'Content-Type' ) );
 	}
 
+	public function testTriGExportNamesTheDownloadAfterThePageId(): void {
+		$response = $this->export();
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame(
+			'inline; filename="' . $this->pageId . '.trig"',
+			$response->getHeaderLine( 'Content-Disposition' )
+		);
+	}
+
+	public function testTurtleExportNamesTheDownloadWithTheTtlExtension(): void {
+		$response = $this->export( query: [ 'format' => 'turtle' ] );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame(
+			'inline; filename="' . $this->pageId . '.ttl"',
+			$response->getHeaderLine( 'Content-Disposition' )
+		);
+	}
+
+	public function testErrorResponseCarriesNoDownloadFilename(): void {
+		$response = $this->export( pageId: 999999 );
+
+		$this->assertSame( 404, $response->getStatusCode() );
+		$this->assertSame( '', $response->getHeaderLine( 'Content-Disposition' ) );
+	}
+
 	public function testReturns404ForMissingPage(): void {
 		$response = $this->export( pageId: 999999 );
 
@@ -153,6 +181,10 @@ JSON
 		$this->assertSame(
 			$absentResponse->getHeaderLine( 'Content-Type' ),
 			$deniedResponse->getHeaderLine( 'Content-Type' )
+		);
+		$this->assertSame(
+			$absentResponse->getHeaderLine( 'Content-Disposition' ),
+			$deniedResponse->getHeaderLine( 'Content-Disposition' )
 		);
 	}
 
