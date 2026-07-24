@@ -276,6 +276,16 @@
 	"neowiki-edit-mapping": "Edit mapping",
 	"neowiki-mapping-delete": "Delete mapping",
 
+	"neowiki-mapping-page-version": "Format version $1",
+	"neowiki-mapping-page-schemas-heading": "Mapped schemas",
+	"neowiki-mapping-page-schema-column": "Schema",
+	"neowiki-mapping-page-class-column": "Target class",
+	"neowiki-mapping-page-properties-column": "Mapped properties",
+	"neowiki-mapping-page-no-schemas": "This mapping does not map any schemas yet.",
+	"neowiki-mapping-page-prefixes-heading": "Prefixes",
+	"neowiki-mapping-page-prefix-column": "Prefix",
+	"neowiki-mapping-page-namespace-column": "Namespace IRI",
+
 	"neowiki-layout-creator-title": "Create layout",
 	"neowiki-layout-creator-button": "Create",
 	"neowiki-layout-creator-name-field": "Layout name",

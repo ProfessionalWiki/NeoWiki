@@ -678,7 +678,8 @@
 		},
 		"ext.neowiki.styles": {
 			"styles": [
-				"resources/ext.neowiki/dist/neowiki.css"
+				"resources/ext.neowiki/dist/neowiki.css",
+				"resources/styles/mapping-page.css"
 			]
 		}
 	},
