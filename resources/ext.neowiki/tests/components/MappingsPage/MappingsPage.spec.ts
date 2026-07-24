@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import MappingsPage from '@/components/MappingsPage/MappingsPage.vue';
 import MappingCreatorDialog from '@/components/MappingsPage/MappingCreatorDialog.vue';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHelpers.ts';
 import { CdxButton, CdxDialog } from '@wikimedia/codex';
 
 interface MappingSummary {
@@ -170,7 +170,7 @@ describe( 'MappingsPage', () => {
 		);
 		await flushPromises();
 
-		const nextButton = wrapper.find( '.cdx-table-pager button[aria-label="Next page"]' );
+		const nextButton = findNextPageButton( wrapper );
 
 		expect( nextButton.attributes( 'disabled' ) ).toBeUndefined();
 		expect( wrapper.text() ).toContain( 'of many' );
