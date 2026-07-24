@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Rdf;
 
+use LogicException;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMapping;
@@ -16,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\Quad;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\QuadList;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfLiteralFactory;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfTerm;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -151,7 +153,7 @@ class OntologyMappingProjector implements PageProjector {
 			return $this->projectRelationStatement( $statement, $predicate, $subjectIri, $graph );
 		}
 
-		return $this->projectLiteralStatement( $statement, $propertyMapping, $predicate, $subjectIri, $graph );
+		return $this->projectValueStatement( $statement, $propertyMapping, $predicate, $subjectIri, $graph );
 	}
 
 	/**
@@ -180,23 +182,23 @@ class OntologyMappingProjector implements PageProjector {
 	/**
 	 * @return Quad[]
 	 */
-	private function projectLiteralStatement(
+	private function projectValueStatement(
 		Statement $statement,
 		PropertyMapping $propertyMapping,
 		Iri $predicate,
 		Iri $subjectIri,
 		Iri $graph
 	): array {
-		$literals = $this->valueMappers->mapValue( $statement->getPropertyType(), $statement->getValue() );
+		$terms = $this->valueMappers->mapValue( $statement->getPropertyType(), $statement->getValue() );
 
-		if ( $literals === null ) {
+		if ( $terms === null ) {
 			return [];
 		}
 
 		$quads = [];
 
-		foreach ( $literals as $literal ) {
-			$object = $this->applyOverrides( $literal, $propertyMapping, $statement->getPropertyName()->text );
+		foreach ( $terms as $term ) {
+			$object = $this->applyOverrides( $term, $propertyMapping, $statement->getPropertyName()->text );
 			$quads[] = new Quad( $subjectIri, $predicate, $object, $graph );
 		}
 
@@ -204,10 +206,13 @@ class OntologyMappingProjector implements PageProjector {
 	}
 
 	/**
-	 * Applies the optional datatype override or language tag. A datatype override wins over a language
-	 * tag (an RDF literal cannot carry both); the validator rejects a Mapping that sets both. A language
-	 * tag applies only to a plain string literal — for a typed literal (number, date, …) it is ignored,
-	 * since the writer's schema already fixed the datatype.
+	 * Applies the optional datatype override or language tag to a projected value term. A url value
+	 * projects as an {@see Iri} object; every other value type as a {@see Literal}. A datatype override is
+	 * deliberate configuration and wins: it forces a literal with that datatype, even for a url value that
+	 * would otherwise be an IRI object (and it wins over a language tag — an RDF literal cannot carry
+	 * both; the validator rejects a Mapping that sets both). A language tag applies only to a plain string
+	 * literal — it is ignored for a typed literal (number, date, …), whose datatype the writer's schema
+	 * already fixed, and for an IRI object, which is not a literal at all.
 	 *
 	 * The language tag is re-validated here as well as at save time: a Mapping created outside the
 	 * save-time validator (importDump, a page authored before validation existed) could carry a
@@ -216,21 +221,37 @@ class OntologyMappingProjector implements PageProjector {
 	 * output instead of aborting the whole export.
 	 */
 	private function applyOverrides(
-		Literal $literal,
+		RdfTerm $term,
 		PropertyMapping $propertyMapping,
 		string $propertyName
-	): Literal {
+	): RdfTerm {
 		if ( $propertyMapping->datatype !== null ) {
 			$datatype = $this->expander->expand( $propertyMapping->datatype );
 
-			return $datatype === null ? $literal : new Literal( $literal->lexicalForm, $datatype );
+			return $datatype === null ? $term : new Literal( $this->lexicalForm( $term ), $datatype );
 		}
 
-		if ( $propertyMapping->language !== null && $this->isPlainString( $literal ) ) {
-			return $this->withLanguageTag( $literal, $propertyMapping->language, $propertyName );
+		if ( $propertyMapping->language !== null && $term instanceof Literal && $this->isPlainString( $term ) ) {
+			return $this->withLanguageTag( $term, $propertyMapping->language, $propertyName );
 		}
 
-		return $literal;
+		return $term;
+	}
+
+	/**
+	 * The lexical form to reuse when a datatype override forces a value into a literal: a Literal's own
+	 * lexical form, or an IRI object's IRI string (a url value being converted back to a literal).
+	 */
+	private function lexicalForm( RdfTerm $term ): string {
+		if ( $term instanceof Literal ) {
+			return $term->lexicalForm;
+		}
+
+		if ( $term instanceof Iri ) {
+			return $term->value;
+		}
+
+		throw new LogicException( 'A projected value term is always an Iri or a Literal.' );
 	}
 
 	private function withLanguageTag( Literal $literal, string $language, string $propertyName ): Literal {

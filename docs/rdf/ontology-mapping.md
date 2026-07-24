@@ -82,7 +82,7 @@ Each **property** entry:
 |---|---|---|
 | `predicate` | yes | Target predicate for the property's values. A CURIE or an absolute IRI. |
 | `lang` | no | BCP-47-shaped language tag (`^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$`, e.g. `en`, `pt-BR`) applied to the produced literal **when it is a plain string** (text/select values). Ignored for typed literals (numbers, dates, …). Mutually exclusive with `datatype`. |
-| `datatype` | no | Absolute IRI or CURIE that overrides the literal's datatype. Mutually exclusive with `lang`. |
+| `datatype` | no | Absolute IRI or CURIE that overrides the literal's datatype. For a `url` value, which otherwise projects as an IRI object, setting `datatype` forces a literal with that datatype. Mutually exclusive with `lang`. |
 
 ### CURIEs, IRIs, and safety
 

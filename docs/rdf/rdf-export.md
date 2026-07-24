@@ -45,9 +45,10 @@ control characters) are percent-encoded. Non-ASCII Unicode is kept raw. **Caveat
 when a name already contains an underscore — `Has author` and `Has_author` share the `neo-prop:Has_author` IRI, which
 the native projection accepts. The base URI is trusted admin config and is not encoded.
 
-Value types map to `xsd` datatypes: `text`/`select` → `xsd:string`, `url` → `xsd:anyURI`, `number` → `xsd:decimal`
-(or `xsd:integer` when fractionless), `boolean` → `xsd:boolean`, `date` → `xsd:date`, `dateTime` → `xsd:dateTime`.
-Extensions map their own property types via
+A `url` value projects as an **IRI object** (`<https://…>`); a value that is not a valid absolute IRI falls back to
+an `xsd:anyURI` literal, so nothing is lost. The other value types map to `xsd` datatypes: `text`/`select` →
+`xsd:string`, `number` → `xsd:decimal` (or `xsd:integer` when fractionless), `boolean` → `xsd:boolean`, `date` →
+`xsd:date`, `dateTime` → `xsd:dateTime`. Extensions map their own property types via
 [`addRdfValueMapper`](../extending/extending.md#contributing-rdf-value-mappers). A Statement whose property type has no
 registered mapper — including an unregistered type — is omitted from the projection.
 
