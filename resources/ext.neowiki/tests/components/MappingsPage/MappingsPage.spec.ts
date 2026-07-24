@@ -157,6 +157,23 @@ describe( 'MappingsPage', () => {
 		expect( wrapper.text() ).toContain( 'neowiki-mappings-empty' );
 	} );
 
+	it( 'disables next when a full page ends the listing', async () => {
+		// A listing that ends exactly on a page boundary returns a full page with a null cursor.
+		// CdxTable's indeterminate mode would keep next enabled (its heuristic is a short page), so
+		// the component must switch the table to a known total.
+		const wrapper = mountComponent(
+			Array.from( { length: 10 }, ( _value, index ) => (
+				{ name: `Mapping${ index }`, schemas: [] }
+			) ),
+		);
+		await flushPromises();
+
+		const nextButton = findNextPageButton( wrapper );
+
+		expect( nextButton.attributes( 'disabled' ) ).toBeDefined();
+		expect( wrapper.text() ).toContain( 'of 10' );
+	} );
+
 	it( 'keeps next enabled while the listing continues', async () => {
 		// A full page (the default size) with a non-null cursor means more rows follow. The
 		// component must leave totalRows undefined so CdxTable stays in its indeterminate mode
