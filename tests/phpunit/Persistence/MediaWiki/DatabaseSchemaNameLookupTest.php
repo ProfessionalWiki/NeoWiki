@@ -217,10 +217,14 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testGetReadableSchemaNamesDrainsEveryBatchInPageIdOrder(): void {
-		// The generator pages the namespace in 100-row keyset batches. With more rows than one batch,
+		// The generator pages the namespace in fixed-size keyset batches. With more rows than one batch,
 		// it must keep querying past the first batch and yield every Schema exactly once, in strictly
 		// ascending page-ID order — a single truncated batch would drop the tail.
-		$bulk = $this->createBarePages( NeoWikiExtension::NS_SCHEMA, 'BulkSchema', 120 );
+		$bulk = $this->createBarePages(
+			NeoWikiExtension::NS_SCHEMA,
+			'BulkSchema',
+			DatabaseSchemaNameLookup::READABLE_NAMES_BATCH_SIZE + 20
+		);
 
 		$this->assertSame(
 			$this->expectedByPageId( $bulk ),
@@ -232,15 +236,19 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testGetReadableSchemaNamesContinuesPastAnUnreadableRowAtABatchBoundary(): void {
-		// The Schema whose page ID sits exactly on the first batch boundary (row 100, batch size 100)
-		// is denied. The drain's continue decision must count fetched rows, not yielded ones: batch
-		// one comes back full yet yields only 99, and the next batch must still be fetched, so rows
-		// 101+ arrive and the denied row is the only one absent.
-		$bulk = $this->createBarePages( NeoWikiExtension::NS_SCHEMA, 'BulkSchema', 120 );
+		// The Schema whose page ID sits exactly on the first batch boundary (the last row of the first
+		// full batch) is denied. The drain's continue decision must count fetched rows, not yielded ones:
+		// batch one comes back full yet yields one short, and the next batch must still be fetched, so the
+		// rows past the boundary arrive and the denied row is the only one absent.
+		$bulk = $this->createBarePages(
+			NeoWikiExtension::NS_SCHEMA,
+			'BulkSchema',
+			DatabaseSchemaNameLookup::READABLE_NAMES_BATCH_SIZE + 20
+		);
 
 		$expected = $this->expectedByPageId( $bulk );
-		// 100 = DatabaseSchemaNameLookup::READABLE_NAMES_BATCH_SIZE (private); the 100th row is the last of batch one.
-		$boundaryPageId = array_keys( $expected )[99];
+		// The last row of the first batch sits at index READABLE_NAMES_BATCH_SIZE - 1.
+		$boundaryPageId = array_keys( $expected )[DatabaseSchemaNameLookup::READABLE_NAMES_BATCH_SIZE - 1];
 		$boundaryTitle = $expected[$boundaryPageId];
 		unset( $expected[$boundaryPageId] );
 
@@ -259,7 +267,7 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * The 4 setUp Schemas then the bulk rows, each page ID mapped to its title, in page-ID order —
+	 * The setUp Schemas then the bulk rows, each page ID mapped to its title, in page-ID order —
 	 * the exact [pageId => name] map getReadableSchemaNames should yield when everything is readable.
 	 *
 	 * @param array<string, int> $bulk

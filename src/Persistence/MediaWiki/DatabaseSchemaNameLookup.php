@@ -16,7 +16,7 @@ use Wikimedia\Rdbms\IResultWrapper;
 
 class DatabaseSchemaNameLookup implements SchemaNameLookup {
 
-	private const READABLE_NAMES_BATCH_SIZE = 100;
+	public const int READABLE_NAMES_BATCH_SIZE = 100;
 
 	public function __construct(
 		private readonly IDatabase $db,
