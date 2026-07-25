@@ -3,7 +3,7 @@
 <div style="color:var(--color-subtle, #54595d);max-width:560px;margin-top:4px">Schemas, infoboxes, relations, and Cypher, native to MediaWiki.</div>
 </div>
 
-This is a public demo of NeoWiki, an early-stage MediaWiki extension. Explore the examples below, edit anything you like (it is a sandbox and resets periodically, so you cannot break it), and tell us what works and what is missing via the [https://github.com/ProfessionalWiki/NeoWiki/issues issue tracker] or by [https://professional.wiki/en/contact contacting Professional Wiki].
+This is a public demo of [https://neowiki.ai NeoWiki]. Explore the examples below, edit anything you like (it is a sandbox and resets periodically, so you cannot break it), and tell us what works and what is missing via the [https://github.com/ProfessionalWiki/NeoWiki/issues issue tracker] or by [https://professional.wiki/en/contact contacting Professional Wiki].
 
 == Start here ==
 
