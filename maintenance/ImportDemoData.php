@@ -26,6 +26,9 @@ require_once $basePath . '/maintenance/Maintenance.php';
 
 class ImportDemoData extends Maintenance {
 
+	// The demo Mapping page whose projection the EdmSparqlPage examples query: DemoData/Mapping/EDM.json.
+	private const string EDM_PROJECTION = 'EDM';
+
 	public function __construct() {
 		parent::__construct();
 
@@ -88,19 +91,28 @@ class ImportDemoData extends Maintenance {
 	}
 
 	/**
-	 * The SPARQL demo page invokes {{#sparql_raw}}, which only exists on wikis with a configured
-	 * SPARQL store — anywhere else it would render as literal wikitext. So that page is only
-	 * imported when a store is configured (as in the development stack).
+	 * Both SPARQL directories hold pages whose examples only work on a wiki whose store can answer them,
+	 * so each is gated on the store configuration rather than always imported:
+	 *
+	 * - `SparqlPage` invokes {{#sparql_raw}}, which only exists on wikis with a configured SPARQL store —
+	 *   anywhere else it would render as literal wikitext.
+	 * - `EdmSparqlPage` queries the EDM projection, so it needs a store that holds it. On a wiki whose
+	 *   store holds only the native projection those queries would silently return no rows.
 	 *
 	 * @return string[]
 	 */
 	private function getPageDirectories(): array {
-		$directories = [
-			NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Page',
-		];
+		$config = NeoWikiExtension::getInstance()->config;
+		$rootDirectory = NeoWikiExtension::getInstance()->getNeoWikiRootDirectory();
 
-		if ( $this->getConfig()->get( 'NeoWikiSparqlStores' ) !== [] ) {
-			$directories[] = NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/SparqlPage';
+		$directories = [ $rootDirectory . '/DemoData/Page' ];
+
+		if ( $config->sparqlStores !== [] ) {
+			$directories[] = $rootDirectory . '/DemoData/SparqlPage';
+		}
+
+		if ( $config->queriedStoreHoldsProjection( self::EDM_PROJECTION ) ) {
+			$directories[] = $rootDirectory . '/DemoData/EdmSparqlPage';
 		}
 
 		return $directories;

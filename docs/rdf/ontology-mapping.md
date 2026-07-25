@@ -8,7 +8,8 @@ Alongside the built-in [native projection](rdf-export.md), which needs no mappin
 established ontology such as EDM by defining an **ontology mapping**.
 
 The native projection and each ontology mapping are sibling projections of the same source data. Several can
-run at once: an export request selects one by name, and a SPARQL store can be configured for any of them.
+run at once: an export request selects one by name, and a SPARQL store can hold
+[any number of them](../operations/installation.md#several-projections-in-one-store) side by side.
 
 The design and its open questions live in [planning/OntologyMapping.md](../planning/OntologyMapping.md); this
 page is the as-built reference for the shipped v1. The
