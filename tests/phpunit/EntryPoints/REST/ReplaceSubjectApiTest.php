@@ -12,6 +12,7 @@ use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
@@ -81,6 +82,42 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertNotEmpty( $responseData['violations'] );
 		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
 		$this->assertSame( 'Status', $responseData['violations'][0]['propertyName'] );
+	}
+
+	/**
+	 * The read and write endpoints must key Statements the same way, so a Subject fetched from the API
+	 * can be sent back unchanged. When they diverged, the write silently stored nothing.
+	 */
+	public function testStatementsReadFromTheApiAreAcceptedVerbatim(): void {
+		$this->createPages();
+
+		$sent = $this->validBody();
+		$sent['statements'] = [
+			'Founded at' => [ 'type' => 'number', 'value' => 2019 ],
+			'Website' => [ 'type' => 'url', 'value' => [ 'https://example.com' ] ],
+		];
+		$this->executeHandler( $this->newReplaceSubjectApi(), $this->createRequestData( $sent ) );
+
+		$read = $this->readStatementsFromApi( 'sTestSA11111111' );
+
+		$echoed = $this->validBody();
+		$echoed['statements'] = $read;
+		$this->executeHandler( $this->newReplaceSubjectApi(), $this->createRequestData( $echoed ) );
+
+		$this->assertSame( $read, $this->readStatementsFromApi( 'sTestSA11111111' ) );
+		$this->assertSame( [ 'Founded at', 'Website' ], array_keys( $read ) );
+	}
+
+	private function readStatementsFromApi( string $subjectId ): array {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => $subjectId ],
+			] )
+		);
+
+		return json_decode( $response->getBody()->getContents(), true )['subjects'][$subjectId]['statements'];
 	}
 
 	public function testOmittedStatementKeyIsDeleted(): void {

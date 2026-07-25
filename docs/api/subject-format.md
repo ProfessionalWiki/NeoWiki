@@ -4,8 +4,9 @@ order: 3
 ---
 # Subject JSON Format
 
-Subject data is [stored as JSON](../adr/002-store-data-as-json.md). The REST API returns and accepts the same object
-shapes; its read envelope and write differences are under [REST API](#rest-api).
+Subject data is [stored as JSON](../adr/002-store-data-as-json.md). The REST API returns and accepts these same
+shapes, so a Statement read from the API can be sent back unchanged; the fields each endpoint adds or ignores are
+under [REST API](#rest-api).
 
 For Subject, Statement, and Value, see the [Glossary](../glossary.md).
 
@@ -139,7 +140,8 @@ Subject gains an `id` field.
 ### Creating Subjects
 
 `POST /rest.php/neowiki/v0/page/{pageId}/mainSubject` and `.../childSubjects` create a Subject on a page. The body
-takes `label`, `schema`, and `statements` (all required), plus an optional `comment` edit summary.
+takes `label`, `schema`, and [`statements`](#statement-object) (all required), plus an optional `comment` edit
+summary.
 
 The server mints the Subject ID unless you pass one:
 
@@ -170,8 +172,8 @@ The server mints the Subject ID unless you pass one:
 | `statements` | Yes | Map of property name to Statement; omitted names are deleted. Pass `{}` to clear all. |
 | `comment` | No | Edit summary. |
 
-A statement entry without `type`, or whose value is empty for its type, is dropped without error. For
-schema/value validation outcomes see [Validation Codes](validation-codes.md).
+On every endpoint that takes `statements`, an entry without `type`, or whose value is empty for its type, is
+dropped without error. For schema/value validation outcomes see [Validation Codes](validation-codes.md).
 
 A relation may omit `id`; the server generates one. The Subject's `id`, `schema`, and page fields are immutable
 and ignored if sent.
