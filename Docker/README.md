@@ -86,8 +86,21 @@ data. `phpunit.xml.dist` points the test at it via `QLEVER_TEST_URL=http://test_
 (fixed token `neowiki_test_token`); it is reached in-network only, with no host port. Unlike
 the demo store it runs **without** `--persist-updates`: it is ephemeral test scaffolding that
 each run clears (`DROP ALL`), so keeping updates in memory is enough. `make phpunit` brings it
-up as part of the dev stack; in CI it is started explicitly (see `.github/workflows/ci-php.yml`),
-because its multi-step bring-up cannot be expressed as a GitHub Actions service container.
+up on demand via the `test` profile; in CI it is started explicitly (see
+`.github/workflows/ci-php.yml`), because its multi-step bring-up cannot be expressed as a
+GitHub Actions service container.
+
+### The `test` profile
+
+`test_neo` and `test_qlever` exist only for the PHP test suite, so they sit behind the `test`
+compose profile and `make dev` does not start them. The PHP test targets (`make phpunit`,
+`make perf`) bring them up and seed them on demand, which costs a one-off Neo4j startup on the
+first run after the stack comes up. To drive them by hand, enable the profile:
+
+```sh
+docker compose -p <project> -f Docker/docker-compose.yml -f Docker/docker-compose.dev.yml \
+  --profile test up -d
+```
 
 ## Files
 
@@ -99,7 +112,8 @@ because its multi-step bring-up cannot be expressed as a GitHub Actions service 
   the profile-gated `caddy` (the `server` profile, for HTTPS hosting).
 - `docker-compose.dev.yml` — dev overlay; switches `mediawiki` to the dev image,
   bind-mounts the NeoWiki source, sets `MW_MODE=dev`, and adds the dev-only sidecars
-  `test_neo`, `qlever` (SPARQL store, see above), `node`, and `mailcatcher`.
+  `qlever` (SPARQL store, see above), `node`, and `mailcatcher`, plus the test-only
+  `test_neo` and `test_qlever` behind the `test` profile.
 - `docker-compose.tools.yml` — opt-in overlay that exposes Neo4j and QLever to the host.
 - `SettingsTemplate.php` — `LocalSettings.php` that branches on `MW_MODE`.
 - `.env.dist` — tracked defaults; auto-copied to `.env` on first `make dev`.

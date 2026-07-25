@@ -31,9 +31,10 @@ To work on NeoWiki (edit code, run tests, see changes live), bring up the bundle
 make dev
 ```
 
-This builds a dev-mode image, brings up the stack (mediawiki, db, neo, test_neo, node
+This builds a dev-mode image, brings up the stack (mediawiki, db, neo, qlever, node
 watcher, mailcatcher), runs first-time install and seed, and waits until the wiki is
-reachable. It prints the URL when ready (the default is `http://localhost:8484` but
+reachable. The test-only backends are not part of it; `make phpunit` starts those on
+demand. It prints the URL when ready (the default is `http://localhost:8484` but
 the actual port is auto-allocated; see [Reserved ports](Docker/README.md#reserved-host-ports)).
 
 Mailcatcher web UI is at the port `make dev` printed (default `8025`,

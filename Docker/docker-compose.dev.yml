@@ -50,7 +50,12 @@ services:
   # Dev-only sidecars. They live in this overlay (not the base file) so the base
   # "try-it-out" stack stays minimal and so `make down` removes them as orphans
   # regardless of the compose backend. See the Makefile `down` target.
+  # Behind the `test` profile: only the PHP test targets use it, so `make dev` does
+  # not pay for a second Neo4j JVM around the clock. `make phpunit` brings the profile
+  # up on demand (Makefile `_test-backends`).
   test_neo:
+    profiles:
+      - test
     image: neo4j:enterprise
     restart: unless-stopped
     volumes:
@@ -139,8 +144,11 @@ services:
   # Dedicated QLever store for the SPARQL query system test, isolated from the demo `qlever` service
   # above the way `test_neo` is isolated from `neo`: the system test writes and deletes Subjects, so it
   # must not mutate the demo data. It reaches this in-network as http://test_qlever:7019/ (see
-  # QLEVER_TEST_URL in phpunit.xml.dist); no host port is exposed.
+  # QLEVER_TEST_URL in phpunit.xml.dist); no host port is exposed. Behind the `test` profile for the
+  # same reason as test_neo.
   test_qlever:
+    profiles:
+      - test
     image: docker.io/adfreiburg/qlever:latest
     restart: unless-stopped
     # Same ceiling as qlever.
