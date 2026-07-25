@@ -71,6 +71,11 @@ describe( 'SchemaPicker', () => {
 		return wrapper.findAll( '.cdx-menu-item__text__description' ).map( ( d ) => d.text() );
 	}
 
+	function chosenSchema( wrapper: VueWrapper ): string | null {
+		const chosen = wrapper.find( '.cdx-menu-item--selected .cdx-menu-item__text__label' );
+		return chosen.exists() ? chosen.text() : null;
+	}
+
 	async function type( wrapper: VueWrapper, text: string ): Promise<void> {
 		await field( wrapper ).setValue( text );
 		await flushPromises();
@@ -254,6 +259,14 @@ describe( 'SchemaPicker', () => {
 			expect( fieldText( wrapper ) ).toBe( 'City' );
 		} );
 
+		it( 'marks a newly committed schema as the chosen one in the list', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await wrapper.setProps( { selected: 'City' } );
+
+			expect( chosenSchema( wrapper ) ).toBe( 'City' );
+		} );
+
 		it( 'shows a committed schema that is missing from the list', async () => {
 			const wrapper = await mountLoadedPicker();
 
@@ -282,10 +295,22 @@ describe( 'SchemaPicker', () => {
 	} );
 
 	describe( 'focusing', () => {
+		// The schemas are delivered only after focus() has been called, as they are over the
+		// network: focusing before they arrive is what used to leave the list closed until
+		// the user left the field and came back.
 		it( 'lists every schema straight away when focused, without waiting for a second focus', async () => {
+			let deliverSchemas: ( summaries: typeof SUMMARIES ) => void = () => undefined;
+			schemaStore.getAllSchemaSummaries = vi.fn().mockReturnValue(
+				new Promise( ( resolve ) => {
+					deliverSchemas = resolve;
+				} ),
+			);
 			const wrapper = mountPicker();
 
-			await ( wrapper.vm as unknown as { focus: () => Promise<void> } ).focus();
+			const focusing = ( wrapper.vm as unknown as { focus: () => Promise<void> } ).focus();
+			await nextTick();
+			deliverSchemas( SUMMARIES );
+			await focusing;
 			await nextTick();
 
 			expect( document.activeElement ).toBe( field( wrapper ).element );
