@@ -4,9 +4,8 @@ order: 3
 ---
 # Subject JSON Format
 
-Subject data is [stored as JSON](../adr/002-store-data-as-json.md). The REST API returns and accepts these same
-shapes, so a Statement read from the API can be sent back unchanged; the fields each endpoint adds or ignores are
-under [REST API](#rest-api).
+Subject data is [stored as JSON](../adr/002-store-data-as-json.md). The REST API returns and accepts the same
+shapes; the fields each endpoint adds or ignores are under [REST API](#rest-api).
 
 For Subject, Statement, and Value, see the [Glossary](../glossary.md).
 
@@ -140,8 +139,7 @@ Subject gains an `id` field.
 ### Creating Subjects
 
 `POST /rest.php/neowiki/v0/page/{pageId}/mainSubject` and `.../childSubjects` create a Subject on a page. The body
-takes `label`, `schema`, and [`statements`](#statement-object) (all required), plus an optional `comment` edit
-summary.
+takes `label`, `schema`, and [`statements`](#statement-object) (all required), plus an optional `comment` edit summary.
 
 The server mints the Subject ID unless you pass one:
 
