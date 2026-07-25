@@ -80,6 +80,12 @@ class ImportDemoData extends Maintenance {
 				],
 				new SimpleFileFetcher()
 			),
+			mediaWikiContentSource: new PageContentSource(
+				[
+					NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/MediaWiki',
+				],
+				new SimpleFileFetcher()
+			),
 			layoutContentSource: new LayoutContentSource(
 				NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Layout',
 				new SimpleFileFetcher()
