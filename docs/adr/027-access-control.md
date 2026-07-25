@@ -83,8 +83,7 @@ Constraints the model rests on:
   (whole-store semantics), projection/dump, or parse-time (the last two pending above). There is no unclassified
   option.
 - Restricting a page does not remove its data from stores; it changes what the backend returns.
-- The filter-injection extension point must be designed and implemented; until it exists, farm deployments scope
-  queries in their own query layer.
+- The filter-injection extension point must be designed and implemented for farms like BlueSpice Galaxy.
 
 ## Alternatives Considered
 
