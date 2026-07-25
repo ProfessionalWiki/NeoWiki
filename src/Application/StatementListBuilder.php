@@ -36,11 +36,11 @@ readonly class StatementListBuilder {
 		$built = [];
 
 		foreach ( $statements as $propertyName => $entry ) {
-			if ( !is_array( $entry ) || !isset( $entry['propertyType'] ) ) {
+			if ( !is_array( $entry ) || !isset( $entry['type'] ) ) {
 				continue;
 			}
 
-			$propertyType = $entry['propertyType'];
+			$propertyType = $entry['type'];
 			$value = $this->deserializeValue( $propertyType, $entry['value'] );
 
 			if ( $value->isEmpty() ) {

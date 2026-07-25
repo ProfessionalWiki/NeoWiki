@@ -109,7 +109,7 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$body = $this->validBody();
 		$body['statements'] = [
-			'Status' => [ 'propertyType' => 'select', 'value' => [ 'bogus-id' ] ],
+			'Status' => [ 'type' => 'select', 'value' => [ 'bogus-id' ] ],
 		];
 
 		$response = $this->executeHandler(
@@ -128,7 +128,7 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$body = $this->validBody();
 		$body['statements'] = [
-			'Status' => [ 'propertyType' => 'select', 'value' => [ 'Active' ] ],
+			'Status' => [ 'type' => 'select', 'value' => [ 'Active' ] ],
 		];
 
 		$response = $this->executeHandler(

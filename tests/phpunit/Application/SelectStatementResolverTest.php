@@ -45,7 +45,7 @@ class SelectStatementResolverTest extends TestCase {
 
 	public function testResolvesScalarIdValue(): void {
 		$patch = [
-			'Status' => [ 'propertyType' => 'select', 'value' => 'opt1' ],
+			'Status' => [ 'type' => 'select', 'value' => 'opt1' ],
 		];
 
 		$resolved = $this->newResolver()->resolve( $this->newSchemaWithSelect(), $patch );
@@ -55,7 +55,7 @@ class SelectStatementResolverTest extends TestCase {
 
 	public function testResolvesScalarLabelValue(): void {
 		$patch = [
-			'Status' => [ 'propertyType' => 'select', 'value' => 'Draft' ],
+			'Status' => [ 'type' => 'select', 'value' => 'Draft' ],
 		];
 
 		$resolved = $this->newResolver()->resolve( $this->newSchemaWithSelect(), $patch );
@@ -66,7 +66,7 @@ class SelectStatementResolverTest extends TestCase {
 	public function testResolvesIdLabelObjectValue(): void {
 		$patch = [
 			'Status' => [
-				'propertyType' => 'select',
+				'type' => 'select',
 				'value' => [ 'id' => 'opt2', 'label' => 'Approved' ],
 			],
 		];
@@ -79,7 +79,7 @@ class SelectStatementResolverTest extends TestCase {
 	public function testResolvesListOfIds(): void {
 		$patch = [
 			'Status' => [
-				'propertyType' => 'select',
+				'type' => 'select',
 				'value' => [ 'opt1', 'opt2' ],
 			],
 		];
@@ -92,7 +92,7 @@ class SelectStatementResolverTest extends TestCase {
 	public function testResolvesListOfMixedForms(): void {
 		$patch = [
 			'Status' => [
-				'propertyType' => 'select',
+				'type' => 'select',
 				'value' => [
 					'opt1',
 					'Approved',
@@ -108,7 +108,7 @@ class SelectStatementResolverTest extends TestCase {
 
 	public function testLeavesNonSelectPropertyUntouched(): void {
 		$patch = [
-			'Name' => [ 'propertyType' => 'text', 'value' => 'Some Name' ],
+			'Name' => [ 'type' => 'text', 'value' => 'Some Name' ],
 		];
 
 		$resolved = $this->newResolver()->resolve( $this->newSchemaWithSelect(), $patch );
@@ -128,7 +128,7 @@ class SelectStatementResolverTest extends TestCase {
 
 	public function testLeavesPatchUntouchedWhenSchemaDoesNotHaveProperty(): void {
 		$patch = [
-			'Unknown' => [ 'propertyType' => 'select', 'value' => 'something' ],
+			'Unknown' => [ 'type' => 'select', 'value' => 'something' ],
 		];
 
 		$resolved = $this->newResolver()->resolve( $this->newSchemaWithSelect(), $patch );
@@ -138,7 +138,7 @@ class SelectStatementResolverTest extends TestCase {
 
 	public function testResolveOrLeaveResolvesKnownLabelToId(): void {
 		$patch = [
-			'Status' => [ 'propertyType' => 'select', 'value' => [ 'Draft' ] ],
+			'Status' => [ 'type' => 'select', 'value' => [ 'Draft' ] ],
 		];
 
 		$resolved = $this->newResolver()->resolveOrLeave( $this->newSchemaWithSelect(), $patch );
@@ -148,7 +148,7 @@ class SelectStatementResolverTest extends TestCase {
 
 	public function testResolveOrLeaveLeavesUnknownValueInPlace(): void {
 		$patch = [
-			'Status' => [ 'propertyType' => 'select', 'value' => [ 'bogus-value' ] ],
+			'Status' => [ 'type' => 'select', 'value' => [ 'bogus-value' ] ],
 		];
 
 		$resolved = $this->newResolver()->resolveOrLeave( $this->newSchemaWithSelect(), $patch );
@@ -158,7 +158,7 @@ class SelectStatementResolverTest extends TestCase {
 
 	public function testResolveOrLeaveDoesNotThrowForUnknownValue(): void {
 		$patch = [
-			'Status' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ],
+			'Status' => [ 'type' => 'select', 'value' => 'Nonexistent' ],
 		];
 
 		$resolved = $this->newResolver()->resolveOrLeave( $this->newSchemaWithSelect(), $patch );
@@ -168,7 +168,7 @@ class SelectStatementResolverTest extends TestCase {
 
 	public function testThrowsOnUnknownValueForKnownSelectProperty(): void {
 		$patch = [
-			'Status' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ],
+			'Status' => [ 'type' => 'select', 'value' => 'Nonexistent' ],
 		];
 
 		$this->expectException( InvalidArgumentException::class );
@@ -178,7 +178,7 @@ class SelectStatementResolverTest extends TestCase {
 
 	public function testIncludesPropertyNameInErrorMessage(): void {
 		$patch = [
-			'Status' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ],
+			'Status' => [ 'type' => 'select', 'value' => 'Nonexistent' ],
 		];
 
 		$this->expectException( InvalidArgumentException::class );
