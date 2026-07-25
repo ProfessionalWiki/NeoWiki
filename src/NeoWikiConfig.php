@@ -30,12 +30,15 @@ readonly class NeoWikiConfig {
 	/**
 	 * Whether the store the SPARQL read surfaces query — the first configured one, see
 	 * {@see NeoWikiExtension::getFirstSparqlPlugin()} — holds the given projection, either as its own or
-	 * through a sibling entry projecting into the same endpoint. Sibling projections share a store, each
-	 * in its own family of per-page named graphs (#1053), so a query against that endpoint sees them all.
+	 * through a sibling entry projecting into the same store. Sibling projections share a store, each in
+	 * its own family of per-page named graphs (#1053), so a query against it sees them all.
 	 *
-	 * The projection name is a Mapping page title (or `native`) and is matched exactly. Entries are
-	 * matched on their query endpoint: a sibling writing elsewhere lands in another store, and its
-	 * triples are not readable here.
+	 * Entries are paired on `updateUrl`, the endpoint each projection is written to, since that is what
+	 * decides which store holds it: a sibling writing elsewhere lands in another store and is not
+	 * readable here. A store that reads and writes through different endpoints ({@see
+	 * SparqlStoreConfig::$queryUrl}) is still one store, so it still pairs.
+	 *
+	 * The projection name is a Mapping page title (or `native`), compared as configured.
 	 */
 	public function queriedStoreHoldsProjection( string $projection ): bool {
 		$queriedStore = $this->sparqlStores[0] ?? null;
@@ -45,7 +48,7 @@ readonly class NeoWikiConfig {
 		}
 
 		foreach ( $this->sparqlStores as $store ) {
-			if ( $store->projection === $projection && $store->queryUrl === $queriedStore->queryUrl ) {
+			if ( $store->projection === $projection && $store->updateUrl === $queriedStore->updateUrl ) {
 				return true;
 			}
 		}
