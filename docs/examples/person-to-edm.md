@@ -191,7 +191,7 @@ share one triple store. A consumer that needs a relation target's type or label 
 ## Querying via SPARQL
 
 Configure a SPARQL store for the `EDM` projection and each save is projected into it, queryable through the
-[SPARQL read surface](../operations/installation.md#querying-a-sparql-store). Configure the same endpoint for
+[SPARQL read surfaces](../operations/installation.md#querying-a-sparql-store). Configure the same endpoint for
 `native` too — [two entries, one endpoint](../operations/installation.md#several-projections-in-one-store) — and both
 projections are queryable at once.
 
@@ -208,7 +208,7 @@ SELECT ?agent ?dateOfBirth WHERE {
 ```
 
 The projections share entity IRIs, so a single query can also cross them. Here the birth date comes from EDM and
-`Source` — which the Mapping deliberately leaves unmapped — from the native projection of the same Subject:
+`Source` — which the Mapping leaves unmapped — from the native projection of the same Subject:
 
 ```sparql
 PREFIX edm: <http://www.europeana.eu/schemas/edm/>
