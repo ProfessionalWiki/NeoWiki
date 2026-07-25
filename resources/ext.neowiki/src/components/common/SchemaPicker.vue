@@ -1,8 +1,10 @@
 <template>
 	<div class="ext-neowiki-schema-picker">
-		<CdxCombobox
-			ref="comboboxRef"
-			v-model:selected="selectedSchema"
+		<CdxLookup
+			v-if="schemasLoaded"
+			ref="lookupRef"
+			v-model:selected="pickedSchema"
+			v-model:input-value="inputText"
 			:menu-items="menuItems"
 			:placeholder="$i18n( 'neowiki-schema-picker-placeholder' ).text()"
 			@input="filterSchemas"
@@ -13,10 +15,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { CdxCombobox } from '@wikimedia/codex';
+import { computed, nextTick, ref, watch } from 'vue';
+import { CdxLookup } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
-import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 
 const props = defineProps<{
@@ -29,10 +31,12 @@ const emit = defineEmits<{
 }>();
 
 const schemaStore = useSchemaStore();
-const selectedSchema = ref<string>( props.selected ?? '' );
+const pickedSchema = ref<string | null>( props.selected ?? null );
+const inputText = ref<string | number>( props.selected ?? '' );
 const summaries = ref<SchemaSummary[]>( [] );
+const schemasLoaded = ref( false );
 const query = ref<string>( '' );
-const comboboxRef = ref<InstanceType<typeof CdxCombobox> | null>( null );
+const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 
 const menuItems = computed<MenuItemData[]>( () => {
 	const matches = query.value === '' ?
@@ -45,53 +49,64 @@ const menuItems = computed<MenuItemData[]>( () => {
 	} ) );
 } );
 
-onMounted( async () => {
+// CdxLookup decides whether focus opens the menu from the menu items it was created
+// with, so the field is only rendered once the schemas are in. A picker whose schemas
+// failed to load still renders, so the field is never missing.
+async function loadSchemas(): Promise<void> {
 	try {
 		summaries.value = await schemaStore.getAllSchemaSummaries();
 	} catch ( error ) {
 		console.error( 'Failed to load schemas for the picker:', error );
 	}
-} );
+	schemasLoaded.value = true;
+}
+
+const schemasReady = loadSchemas();
 
 watch( () => props.selected, ( value ) => {
-	selectedSchema.value = value ?? '';
+	pickedSchema.value = selectableSchema( value ?? null );
+	inputText.value = value ?? '';
 } );
 
-function findSchema( name: string ): SchemaSummary | undefined {
-	const normalized = normalizeSchemaName( name );
-	return summaries.value.find( ( summary ) => summary.name === normalized );
+// CdxLookup takes the field's text for a selection from the matching menu entry and
+// empties the field when there is none, so it is only handed a schema it lists. The
+// field keeps showing the committed name either way.
+function selectableSchema( schemaName: string | null ): string | null {
+	return summaries.value.some( ( summary ) => summary.name === schemaName ) ? schemaName : null;
 }
 
-function filterSchemas( event: Event ): void {
-	query.value = ( event.target as HTMLInputElement ).value.trim().toLowerCase();
+function filterSchemas( value: string ): void {
+	query.value = value.trim().toLowerCase();
 }
 
-// CdxCombobox's `selected` tracks the typed text, not only menu picks, so only
-// commit it when it resolves to an exact existing schema. The name is matched the
-// way a save would normalise it (case-insensitive first letter, collapsed
-// whitespace), and the schema's canonical name is emitted rather than the raw input.
-// Resetting the filter on commit restores the full menu, so reopening the picker
-// without leaving the field browses every schema again rather than the stale filter.
-function onSelect( value: string ): void {
-	const schema = findSchema( value );
-	if ( schema && schema.name !== props.selected ) {
-		emit( 'select', schema.name );
-		query.value = '';
+// CdxLookup reports a selection only for a menu entry the user picks, and null while
+// they type, so a schema name typed out in full is not picked by itself. Resetting the
+// filter restores the full menu, so reopening the picker without leaving the field
+// browses every schema again rather than the last filter.
+function onSelect( schemaName: string | null ): void {
+	if ( schemaName === null ) {
+		return;
 	}
+
+	inputText.value = schemaName;
+	query.value = '';
+	emit( 'select', schemaName );
 }
 
-// On blur, snap `selected` back to the committed schema (empty for a target schema
-// that has not been set yet) so unconfirmed typing reverts and the field only ever
-// shows an existing schema. Clearing the query restores the full menu so the
-// committed label renders.
+// On blur, drop typing that was never picked: the field returns to the committed schema
+// (empty when none is set) and the menu to the full list.
 function reconcileOnBlur(): void {
-	selectedSchema.value = props.selected ?? '';
+	pickedSchema.value = selectableSchema( props.selected ?? null );
+	inputText.value = props.selected ?? '';
 	query.value = '';
 	emit( 'blur' );
 }
 
-function focus(): void {
-	const input = ( comboboxRef.value?.$el as HTMLElement )?.querySelector( 'input' );
+// Waits for the schemas so that focus lands on a field whose menu can open right away.
+async function focus(): Promise<void> {
+	await schemasReady;
+	await nextTick();
+	const input = ( lookupRef.value?.$el as HTMLElement )?.querySelector( 'input' );
 	input?.focus();
 }
 
@@ -99,7 +114,7 @@ defineExpose( { focus } );
 </script>
 
 <style lang="less">
-.ext-neowiki-schema-picker .cdx-combobox {
+.ext-neowiki-schema-picker .cdx-lookup {
 	width: 100%;
 }
 </style>
