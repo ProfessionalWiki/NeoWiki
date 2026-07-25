@@ -195,7 +195,7 @@ Configure a SPARQL store for the `EDM` projection and each save is projected int
 `native` too — [two entries, one endpoint](../operations/installation.md#several-projections-in-one-store) — and both
 projections are queryable at once.
 
-Asking in EDM terms reaches every Schema mapped to `edm:Agent`, not just `Person`:
+Querying in EDM terms reaches every Schema mapped to `edm:Agent`, not just `Person`:
 
 ```sparql
 PREFIX edm: <http://www.europeana.eu/schemas/edm/>
