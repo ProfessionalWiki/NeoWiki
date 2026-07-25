@@ -61,11 +61,11 @@ overwrite one another.
 - An **ontology mapping** defines an alternative target (CIDOC-CRM, EDM, …). A store can hold that projection — on its
   own or alongside others — and SPARQL against it is written in that ontology.
 - Projections are **pluggable per store**, consistent with [ADR 19](../adr/019-graph-database-architecture.md) (each
-  backend owns its mapping). As built, each entry in the
-  [#586](https://github.com/ProfessionalWiki/NeoWiki/issues/586) store config carries an endpoint and one projection,
-  so several projections in one store means several entries sharing an endpoint
-  ([config](../operations/installation.md#several-projections-in-one-store)). Running separate stores with different
-  projection sets stays a **deployment choice** — hard isolation, independent scaling — not a requirement.
+  backend owns its mapping). As built, each entry in the [#586](https://github.com/ProfessionalWiki/NeoWiki/issues/586)
+  store config carries an endpoint and one projection, so several projections in one store means several entries
+  sharing an endpoint ([config](../operations/installation.md#several-projections-in-one-store)). Running separate
+  stores with different projection sets stays a **deployment choice** — hard isolation, independent scaling — not a
+  requirement.
 
 Subject IRIs are identical across projections (only the vocabulary and the graph differ), so queries in a shared store
 join across sibling projections with no `owl:sameAs` machinery. Whether such a query must name the graphs depends on

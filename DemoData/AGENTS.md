@@ -64,7 +64,7 @@ Subject, relation, and option IDs:
    positional form `{{#view:id|LayoutName}}` is gone and now renders a visible parser error.
 5. **Link a conditionally-imported page through `{{#ifexist:}}`.** A plain link to a page from
    `SparqlPage/` or `EdmSparqlPage/` renders as a redlink wherever the import skipped it. Keep the
-   sentence inside `{{#ifexist:Target|...}}` so it disappears with its target, and keep the space
+   whole sentence inside `{{#ifexist:Target|...}}` so it disappears with its target, and keep the space
    between two such sentences outside the braces — ParserFunctions trims its arguments.
 
 ## Cypher gotchas

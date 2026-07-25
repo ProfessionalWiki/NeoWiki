@@ -26,7 +26,7 @@ Result:
 
 == Query across both projections ==
 
-[[Mapping:EDM]] maps no predicate for the Person Schema's <code>Source</code> field, so it is absent from the EDM projection — the native projection still has it as <code>neo-prop:Source</code>.
+[[Mapping:EDM]] maps no predicate for the Person Schema's <code>Source</code> property, so it is absent from the EDM projection — the native projection still has it as <code>neo-prop:Source</code>.
 
 Both projections mint the same entity IRIs, so one query can take the birth date from EDM and the source from the native projection:
 
@@ -40,7 +40,7 @@ Result:
 
 == Set this up ==
 
-Each store entry names one projection, and several entries may point at one endpoint — see [https://neowiki.ai/docs/operations/installation#optional-sparql-graph-stores Configuring SPARQL graph stores]. The [https://github.com/ProfessionalWiki/NeoWiki/blob/master/Docker/SettingsTemplate.php NeoWiki development stack] points a <code>native</code> and an <code>EDM</code> entry at one QLever, which is why these queries reach both.
+Each store entry names one projection, and several entries may point at one endpoint — see [https://neowiki.ai/docs/operations/installation#several-projections-in-one-store Several projections in one store]. The [https://github.com/ProfessionalWiki/NeoWiki/blob/master/Docker/SettingsTemplate.php NeoWiki development stack] points a <code>native</code> and an <code>EDM</code> entry at one QLever, which is why these queries reach both.
 
 == Learn more ==
 

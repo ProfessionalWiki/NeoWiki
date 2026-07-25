@@ -256,8 +256,8 @@ $wgNeoWikiSparqlStores = [
 ];
 ```
 
-Sibling projections mint the same entity IRIs, so one query can combine data from both: ask in the target
-ontology's terms while still reading a property that ontology does not model. The
+Sibling projections mint the same entity IRIs, so one query can combine data from both — the target ontology's terms
+alongside a property that ontology does not model. The
 [Person-to-EDM example](../examples/person-to-edm.md#querying-via-sparql) shows such a query.
 
 A newly added entry only receives pages saved from then on. Backfill it by
@@ -272,10 +272,10 @@ configured store:
 - The [`nw.sparqlQuery()`](../authoring/lua-api.md#nwsparqlquerysparql) Lua function.
 - The [`POST /neowiki/v0/query/sparql`](../api/query-api.md#sparql-query-endpoint) REST endpoint.
 
-A projection configured on a different endpoint is therefore not reachable from these surfaces.
-
 Each is read-only: the query is sent as a SPARQL 1.1 *query* operation, posted only to `queryUrl` and never
 `updateUrl`.
+
+A projection configured on a different endpoint is therefore not reachable from these surfaces.
 
 The bundled development stack ships a working QLever example wired up this way — see
 [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`
