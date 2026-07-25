@@ -51,14 +51,14 @@ Constraints the model rests on:
 - **Raw query surfaces have whole-store read semantics.** A raw query surface executes a caller-supplied Cypher or
   SPARQL query; its result rows are not attributable to pages and are not trimmed. The REST query endpoints are gated
   by the wiki-level `neowiki-query` right; granting that right gives read access to everything the wiki projects into
-  the store. Exposing a store directly (which ADR 19 allows for SPARQL) is a different surface: see "Projection as
-  publication" below.
+  the store. Exposing a store directly (which ADR 19 allows for SPARQL) is a different surface: see the projection
+  decision below.
 - **Raw queries will support server-side filter injection.** A deployment can register scoping predicates (such as
   restricting to the current wiki) that core applies to every caller-supplied query, so scoping is enforced rather
   than left to each caller.
-- **Projection is publication.** Stores and dumps have no per-user checks, so their content must not exceed what
-  every reader with access to them may read. A publicly exposed SPARQL endpoint or a published dump may therefore
-  carry only what the public reader may read; a store gated as a whole may carry more, up to its audience.
+- **Projections and dumps are generated without permission checks.** We may add such support later, enabling a
+  public projection (a public store with a public query endpoint, holding no restricted content) alongside a private
+  one that includes restricted content.
 
 ## Open decisions
 
@@ -83,12 +83,12 @@ Constraints the model rests on:
 ## Consequences
 
 - Every new surface that exposes NeoWiki data must be classified: page-attributable (per-row gate), raw query
-  (whole-store semantics), projection/dump, or parse-time (the last two pending above). There is no unclassified
-  option.
+  (whole-store semantics), projection/dump (no permission checks), or parse-time (pending above). There is no
+  unclassified option.
 - Restricting a page does not remove its data from stores; it changes what the backend returns.
 - The filter-injection extension point must be designed and implemented for farms like BlueSpice Galaxy.
-- Projection and dump code do not yet filter: they emit every subject. Until a public-readable-only projection
-  exists, a wiki with restricted content must not expose a store publicly or publish its dumps.
+- Dumps and projections contain restricted content (unless it is omitted via a non-permission mechanism such as the
+  Mappings), so they must not be exposed to readers who may not access that content.
 
 ## Alternatives Considered
 
