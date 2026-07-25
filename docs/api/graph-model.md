@@ -100,8 +100,8 @@ When the real Subject is later saved, its node is upgraded in place — matched 
 properties and Schema label without creating a duplicate node.
 
 A removal that strips a stub of its last incoming relation deletes the stub in the same operation, so removing a set of
-Subjects that only reference each other leaves no Subject nodes behind. Only stubs carrying the removing wiki's
-`wiki_id` are deleted this way.
+Subjects referenced only by each other leaves none of them behind. Only stubs carrying the removing wiki's `wiki_id`
+are deleted this way.
 
 ## Relationships
 
