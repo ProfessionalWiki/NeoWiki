@@ -49,9 +49,12 @@ describe( 'SchemaPicker', () => {
 		return wrapper;
 	}
 
+	// Focused, because CdxMenu only opens on focus: assertions about what the list shows
+	// would otherwise pass against a list the user cannot see.
 	async function mountLoadedPicker( props: Record<string, unknown> = {} ): Promise<VueWrapper> {
 		const wrapper = mountPicker( props );
 		await flushPromises();
+		await focusField( wrapper );
 		return wrapper;
 	}
 
@@ -72,7 +75,7 @@ describe( 'SchemaPicker', () => {
 	}
 
 	function chosenSchema( wrapper: VueWrapper ): string | null {
-		const chosen = wrapper.find( '.cdx-menu-item--selected .cdx-menu-item__text__label' );
+		const chosen = wrapper.find( '[role="option"][aria-selected="true"] .cdx-menu-item__text__label' );
 		return chosen.exists() ? chosen.text() : null;
 	}
 
@@ -87,7 +90,7 @@ describe( 'SchemaPicker', () => {
 	}
 
 	async function clickSchema( wrapper: VueWrapper, name: string ): Promise<void> {
-		const item = wrapper.findAll( '.cdx-menu-item' )
+		const item = wrapper.findAll( '[role="option"]' )
 			.find( ( candidate ) => candidate.text().includes( name ) );
 		expect( item, `no menu entry for ${ name }` ).toBeDefined();
 		await item!.trigger( 'click' );
@@ -111,6 +114,14 @@ describe( 'SchemaPicker', () => {
 			const wrapper = await mountLoadedPicker();
 
 			await type( wrapper, 'off' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Office' ] );
+		} );
+
+		it( 'ignores whitespace around the typed text when filtering', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await type( wrapper, '  off  ' );
 
 			expect( listedSchemas( wrapper ) ).toEqual( [ 'Office' ] );
 		} );
@@ -163,6 +174,15 @@ describe( 'SchemaPicker', () => {
 			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
 		} );
 
+		it( 'does not pick a schema whose name is typed out in full and confirmed with enter', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await type( wrapper, 'Office' );
+			await pressKey( wrapper, 'Enter' );
+
+			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
+		} );
+
 		it( 'picks the schema whose menu entry is clicked', async () => {
 			const wrapper = await mountLoadedPicker();
 
@@ -174,11 +194,11 @@ describe( 'SchemaPicker', () => {
 		it( 'picks the schema highlighted with the arrow keys and confirmed with enter', async () => {
 			const wrapper = await mountLoadedPicker();
 
-			await focusField( wrapper );
+			await pressKey( wrapper, 'ArrowDown' );
 			await pressKey( wrapper, 'ArrowDown' );
 			await pressKey( wrapper, 'Enter' );
 
-			expect( wrapper.emitted( 'select' ) ).toEqual( [ [ 'Product' ] ] );
+			expect( wrapper.emitted( 'select' ) ).toEqual( [ [ 'Office' ] ] );
 		} );
 
 		it( 'picks the clicked schema when its name was already typed out in full', async () => {
@@ -193,12 +213,19 @@ describe( 'SchemaPicker', () => {
 		it( 'picks the confirmed schema when its name was already typed out in full', async () => {
 			const wrapper = await mountLoadedPicker();
 
-			await focusField( wrapper );
 			await type( wrapper, 'Office' );
 			await pressKey( wrapper, 'ArrowDown' );
 			await pressKey( wrapper, 'Enter' );
 
 			expect( wrapper.emitted( 'select' ) ).toEqual( [ [ 'Office' ] ] );
+		} );
+
+		it( 'reports nothing when the picked schema is already the committed one', async () => {
+			const wrapper = await mountLoadedPicker( { selected: 'Office' } );
+
+			await clickSchema( wrapper, 'Office' );
+
+			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
 		} );
 
 		it( 'shows the picked schema in the field', async () => {
@@ -296,8 +323,7 @@ describe( 'SchemaPicker', () => {
 
 	describe( 'focusing', () => {
 		// The schemas are delivered only after focus() has been called, as they are over the
-		// network: focusing before they arrive is what used to leave the list closed until
-		// the user left the field and came back.
+		// network: the field must end up focused with its list open regardless.
 		it( 'lists every schema straight away when focused, without waiting for a second focus', async () => {
 			let deliverSchemas: ( summaries: typeof SUMMARIES ) => void = () => undefined;
 			schemaStore.getAllSchemaSummaries = vi.fn().mockReturnValue(
@@ -314,7 +340,7 @@ describe( 'SchemaPicker', () => {
 			await nextTick();
 
 			expect( document.activeElement ).toBe( field( wrapper ).element );
-			expect( wrapper.find( '.cdx-menu' ).isVisible() ).toBe( true );
+			expect( field( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'true' );
 			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
 		} );
 	} );

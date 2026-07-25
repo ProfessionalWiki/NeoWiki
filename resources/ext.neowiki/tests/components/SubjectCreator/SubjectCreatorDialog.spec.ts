@@ -39,8 +39,8 @@ vi.mock( '@/composables/useSchemaPermissions.ts' );
 const SchemaPickerStub = {
 	template: '<div class="schema-lookup-stub"></div>',
 	emits: [ 'select' ],
-	methods: {
-		focus: vi.fn(),
+	setup() {
+		return { focus: vi.fn() };
 	},
 };
 
@@ -401,6 +401,30 @@ describe( 'SubjectCreatorDialog', () => {
 			expect.any( String ),
 			expect.objectContaining( { type: 'error' } ),
 		);
+	} );
+
+	describe( 'Existing schema flow', () => {
+		it( 'focuses SchemaPicker when the dialog opens', async () => {
+			const wrapper = mountComponent();
+
+			subjectStore.subjectCreatorOpen = true;
+			await flushPromises();
+
+			const pickerVm = wrapper.findComponent( SchemaPicker ).vm as any;
+			expect( pickerVm.focus ).toHaveBeenCalled();
+		} );
+
+		it( 'focuses SchemaPicker when switching back to "Use existing"', async () => {
+			const wrapper = mountComponent();
+			await switchToNewSchema( wrapper );
+
+			wrapper.findComponent( { name: 'CdxToggleButtonGroup' } )
+				.vm.$emit( 'update:modelValue', 'existing' );
+			await flushPromises();
+
+			const pickerVm = wrapper.findComponent( SchemaPicker ).vm as any;
+			expect( pickerVm.focus ).toHaveBeenCalled();
+		} );
 	} );
 
 	describe( 'Create new schema flow', () => {

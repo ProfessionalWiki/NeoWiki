@@ -3,13 +3,13 @@
 		<CdxLookup
 			v-if="schemasLoaded"
 			ref="lookupRef"
-			v-model:selected="pickedSchema"
+			v-model:selected="selectedSchema"
 			v-model:input-value="inputText"
 			:menu-items="menuItems"
 			:placeholder="$i18n( 'neowiki-schema-picker-placeholder' ).text()"
 			@input="filterSchemas"
 			@update:selected="onSelect"
-			@blur="reconcileOnBlur"
+			@blur="revertUncommittedTyping"
 		/>
 	</div>
 </template>
@@ -31,7 +31,7 @@ const emit = defineEmits<{
 }>();
 
 const schemaStore = useSchemaStore();
-const pickedSchema = ref<string | null>( props.selected ?? null );
+const selectedSchema = ref<string | null>( props.selected ?? null );
 const inputText = ref<string | number>( props.selected ?? '' );
 const summaries = ref<SchemaSummary[]>( [] );
 const schemasLoaded = ref( false );
@@ -50,8 +50,9 @@ const menuItems = computed<MenuItemData[]>( () => {
 } );
 
 // CdxLookup decides whether focus opens the menu from the menu items it was created
-// with, so the field is only rendered once the schemas are in. A picker whose schemas
-// failed to load still renders, so the field is never missing.
+// with, so the field is only rendered once the schemas have arrived. Loading them is
+// also marked done when the request fails, so a failure leaves a usable field rather
+// than none at all.
 async function loadSchemas(): Promise<void> {
 	try {
 		summaries.value = await schemaStore.getAllSchemaSummaries();
@@ -63,9 +64,12 @@ async function loadSchemas(): Promise<void> {
 
 const schemasReady = loadSchemas();
 
+// The filter is reset alongside the field: CdxLookup resolves a selection against the
+// menu as it currently stands, and would empty the field for a schema the filter hides.
 watch( () => props.selected, ( value ) => {
-	pickedSchema.value = selectableSchema( value ?? null );
+	selectedSchema.value = selectableSchema( value ?? null );
 	inputText.value = value ?? '';
+	query.value = '';
 } );
 
 // CdxLookup takes the field's text for a selection from the matching menu entry and
@@ -80,9 +84,12 @@ function filterSchemas( value: string ): void {
 }
 
 // CdxLookup reports a selection only for a menu entry the user picks, and null while
-// they type, so a schema name typed out in full is not picked by itself. Resetting the
-// filter restores the full menu, so reopening the picker without leaving the field
-// browses every schema again rather than the last filter.
+// they type, so a schema name typed out in full is not picked by itself.
+//
+// Setting the field text is load-bearing: left to do it itself, CdxLookup announces the
+// name as typed input, which would re-apply the filter cleared on the next line.
+// Restoring the full menu means reopening the picker without leaving the field browses
+// every schema again rather than the last filter.
 function onSelect( schemaName: string | null ): void {
 	if ( schemaName === null ) {
 		return;
@@ -90,13 +97,14 @@ function onSelect( schemaName: string | null ): void {
 
 	inputText.value = schemaName;
 	query.value = '';
-	emit( 'select', schemaName );
+
+	if ( schemaName !== props.selected ) {
+		emit( 'select', schemaName );
+	}
 }
 
-// On blur, drop typing that was never picked: the field returns to the committed schema
-// (empty when none is set) and the menu to the full list.
-function reconcileOnBlur(): void {
-	pickedSchema.value = selectableSchema( props.selected ?? null );
+function revertUncommittedTyping(): void {
+	selectedSchema.value = selectableSchema( props.selected ?? null );
 	inputText.value = props.selected ?? '';
 	query.value = '';
 	emit( 'blur' );
