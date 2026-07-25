@@ -29,6 +29,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 	private SubjectPageSource $subjectPageSource;
 	private PageContentSource $pageContentSource;
 	private PageContentSource $moduleContentSource;
+	private PageContentSource $mediaWikiContentSource;
 	private LayoutContentSource $layoutContentSource;
 	private MappingContentSource $mappingContentSource;
 	private ImportPagesAction $importPagesAction;
@@ -39,6 +40,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 		$this->subjectPageSource = $this->createMock( SubjectPageSource::class );
 		$this->pageContentSource = $this->createMock( PageContentSource::class );
 		$this->moduleContentSource = $this->createMock( PageContentSource::class );
+		$this->mediaWikiContentSource = $this->createMock( PageContentSource::class );
 		$this->layoutContentSource = $this->createMock( LayoutContentSource::class );
 		$this->mappingContentSource = $this->createMock( MappingContentSource::class );
 
@@ -54,6 +56,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 			$this->subjectPageSource,
 			$this->pageContentSource,
 			$this->moduleContentSource,
+			$this->mediaWikiContentSource,
 			$this->layoutContentSource,
 			$this->mappingContentSource,
 		);

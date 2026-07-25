@@ -14,12 +14,16 @@ partners, knowledge managers, MediaWiki ecosystem evaluators, and live-demo audi
 | `Page/<Name>.wikitext` | Free-form wiki pages (hubs, references) | Main namespace, `<Name>` |
 | `SparqlPage/<Name>.wikitext` | Pages demoing the SPARQL surfaces. Imported only when `$wgNeoWikiSparqlStores` is non-empty (elsewhere `{{#sparql_raw}}` is unregistered and would render literally). | Main namespace, `<Name>` |
 | `Module/<Name>.lua` | Scribunto modules | `Module:<Name>` |
+| `MediaWiki/<Name>.wikitext` | Interface pages, such as `Sidebar` (the main menu) | `MediaWiki:<Name>` |
 
 `ImportDemoData.php` reseeds the demo set: it creates and updates pages from these directories, and
 deletes pages a previous import created whose source file is now gone. So renaming or removing a
 file and re-importing is enough — no `make reinstall-db` needed. Only pages the import itself created
 are pruned; a page someone else created — like `Main_Page`, which the installer creates and the
 import merely overwrites — is never deleted, even if its source file is removed.
+
+`MediaWiki/Sidebar.wikitext` links to `SPARQL queries`. Drop that line when seeding a wiki without a
+SPARQL store, or the main menu shows a red link.
 
 ## Filename and ID conventions
 

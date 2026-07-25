@@ -37,6 +37,7 @@ class ImportPagesAction {
 		private readonly SubjectPageSource $subjectPageSource,
 		private readonly PageContentSource $pageContentSource,
 		private readonly PageContentSource $moduleContentSource,
+		private readonly PageContentSource $mediaWikiContentSource,
 		private readonly LayoutContentSource $layoutContentSource,
 		private readonly MappingContentSource $mappingContentSource,
 	) {
@@ -96,6 +97,15 @@ class ImportPagesAction {
 				'Module:' . self::stripFileExtension( $moduleName ),
 				[
 					'main' => $this->fileNameAndSourceToContent( $moduleName, $moduleContent ),
+				]
+			);
+		}
+
+		foreach ( $this->mediaWikiContentSource->getPageContentStrings() as $fileName => $sourceText ) {
+			$this->createPage(
+				'MediaWiki:' . self::stripFileExtension( $fileName ),
+				[
+					'main' => $this->fileNameAndSourceToContent( $fileName, $sourceText ),
 				]
 			);
 		}
