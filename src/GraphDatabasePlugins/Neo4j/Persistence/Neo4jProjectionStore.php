@@ -287,19 +287,19 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	 * outgoing relations, which can strip the last incoming reference from another stub, so this runs
 	 * once after the whole batch rather than per subject.
 	 *
-	 * "No incoming relation at all" is the full orphan test, not just half of it: a full subject always
-	 * has an incoming HasSubject relation, so only stubs can ever match.
+	 * A stub is matched by the absence of a name rather than by the absence of an incoming HasSubject
+	 * relation. Both hold for a stub, but only the first holds for a stub alone: a full subject whose
+	 * schema failed to resolve on its last save keeps its data while losing its HasSubject relation,
+	 * and must not be deleted here. One pass then suffices, since a stub has no outgoing relations and
+	 * so cannot orphan another node when deleted.
 	 *
-	 * One pass suffices. A stub never has outgoing relations, so deleting one cannot orphan another.
-	 *
-	 * Unlike the id-anchored operations above, this matches by pattern rather than by subject id, so it
-	 * is scoped to this wiki: one wiki's save must not delete another wiki's nodes in a shared graph.
-	 * A stub carrying another wiki's id therefore survives here even once it is orphaned.
+	 * The scan is scoped to this wiki because one wiki's save must not delete another wiki's nodes in a
+	 * shared graph. A stub carrying another wiki's id therefore survives here even once it is orphaned.
 	 */
 	private function deleteOrphanStubs( TransactionInterface $transaction ): void {
 		$transaction->run(
 			'MATCH (stub:Subject {wiki_id: $wikiId})
-				WHERE NOT (stub)<--()
+				WHERE stub.name IS NULL AND NOT (stub)<--()
 				DETACH DELETE stub',
 			[ 'wikiId' => $this->wikiId ]
 		);

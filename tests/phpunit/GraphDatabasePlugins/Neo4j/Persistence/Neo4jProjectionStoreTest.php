@@ -555,6 +555,8 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		// Deleting the first page turns GUID_1 into a stub that GUID_2 still references.
 		$store->deletePage( new PageId( 1 ) );
+		$this->assertSubjectIsStub( self::GUID_1 );
+
 		$store->deletePage( new PageId( 2 ) );
 
 		$this->assertSubjectDoesNotExist( self::GUID_1 );
@@ -579,6 +581,24 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$wikiA->savePage( TestPage::build( id: 1 ) );
 
 		$this->assertSubjectExists( self::GUID_2 );
+	}
+
+	public function testRemovingASubjectLeavesAnUnlinkedFullSubjectAlone(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1 is projected normally, then re-saved under a schema the lookup does not know. The
+		// projection skips it, so it keeps its data while losing its HasSubject relation.
+		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
+		) );
+
+		// Removing an unrelated subject sweeps orphans, which must not include a subject with data.
+		$store->savePage( TestPage::build( id: 2, mainSubject: TestSubject::build( id: self::GUID_2 ) ) );
+		$store->savePage( TestPage::build( id: 2 ) );
+
+		$this->assertSubjectExists( self::GUID_1 );
 	}
 
 	private function newProjectionStoreWithLocationRelation( string $wikiId = self::WIKI_ID ): GraphDatabasePlugin {
