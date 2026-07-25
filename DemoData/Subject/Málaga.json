@@ -5,9 +5,9 @@
 			"label": "Málaga",
 			"schema": "City",
 			"statements": {
-				"Country": { "type": "text", "value": [ "Spain" ] },
-				"Population": { "type": "number", "value": 578460 },
-				"Website": { "type": "url", "value": [ "https://www.malaga.eu" ] }
+				"Country": { "propertyType": "text", "value": [ "Spain" ] },
+				"Population": { "propertyType": "number", "value": 578460 },
+				"Website": { "propertyType": "url", "value": [ "https://www.malaga.eu" ] }
 			}
 		}
 	}

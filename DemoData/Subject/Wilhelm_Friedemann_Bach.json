@@ -5,8 +5,8 @@
 			"label": "Wilhelm Friedemann Bach",
 			"schema": "Person",
 			"statements": {
-				"Description": { "type": "text", "value": [ "Composer and organist; eldest surviving son of Johann Sebastian Bach." ] },
-				"Also known as": { "type": "text", "value": [ "the Halle Bach" ] }
+				"Description": { "propertyType": "text", "value": [ "Composer and organist; eldest surviving son of Johann Sebastian Bach." ] },
+				"Also known as": { "propertyType": "text", "value": [ "the Halle Bach" ] }
 			}
 		}
 	}

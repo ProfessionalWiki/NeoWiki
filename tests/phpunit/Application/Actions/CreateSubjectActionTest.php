@@ -283,7 +283,7 @@ class CreateSubjectActionTest extends TestCase {
 				label: 'Some Label',
 				schemaName: self::SELECT_SCHEMA_NAME,
 				statements: [
-					'Status' => [ 'type' => 'select', 'value' => 'opt_draft' ],
+					'Status' => [ 'propertyType' => 'select', 'value' => 'opt_draft' ],
 				]
 			)
 		);
@@ -301,7 +301,7 @@ class CreateSubjectActionTest extends TestCase {
 				label: 'Some Label',
 				schemaName: self::SELECT_SCHEMA_NAME,
 				statements: [
-					'Status' => [ 'type' => 'select', 'value' => '  approved  ' ],
+					'Status' => [ 'propertyType' => 'select', 'value' => '  approved  ' ],
 				]
 			)
 		);
@@ -320,7 +320,7 @@ class CreateSubjectActionTest extends TestCase {
 				schemaName: self::SELECT_SCHEMA_NAME,
 				statements: [
 					'Status' => [
-						'type' => 'select',
+						'propertyType' => 'select',
 						'value' => [ 'id' => 'opt_approved', 'label' => 'Approved' ],
 					],
 				]
@@ -343,7 +343,7 @@ class CreateSubjectActionTest extends TestCase {
 				schemaName: self::SELECT_SCHEMA_NAME,
 				statements: [
 					'Status' => [
-						'type' => 'select',
+						'propertyType' => 'select',
 						'value' => [ 'id' => 'opt_draft', 'label' => 'WrongName' ],
 					],
 				]
@@ -362,7 +362,7 @@ class CreateSubjectActionTest extends TestCase {
 				schemaName: self::SELECT_SCHEMA_NAME,
 				statements: [
 					'Status' => [
-						'type' => 'select',
+						'propertyType' => 'select',
 						'value' => [
 							'opt_draft',
 							'Approved',
@@ -387,7 +387,7 @@ class CreateSubjectActionTest extends TestCase {
 				label: 'Some Label',
 				schemaName: 'UnknownSchema',
 				statements: [
-					'Status' => [ 'type' => 'select', 'value' => 'opt_draft' ],
+					'Status' => [ 'propertyType' => 'select', 'value' => 'opt_draft' ],
 				]
 			)
 		);
@@ -498,7 +498,7 @@ class CreateSubjectActionTest extends TestCase {
 				schemaName: '00000000-8888-0000-0000-000000000022',
 				statements: [
 					'Has product' => [
-						'type' => 'relation',
+						'propertyType' => 'relation',
 						'value' => [
 							[
 								// No ID
@@ -636,7 +636,7 @@ class CreateSubjectActionTest extends TestCase {
 				label: 'Bob',
 				schemaName: 'PersonSchema',
 				statements: [
-					'Name' => [ 'type' => 'select', 'value' => 'opt_alice' ],
+					'Name' => [ 'propertyType' => 'select', 'value' => 'opt_alice' ],
 				],
 			)
 		);
@@ -713,7 +713,7 @@ class CreateSubjectActionTest extends TestCase {
 				label: 'Some Label',
 				schemaName: 'some-schema',
 				statements: [
-					'animal' => [ 'type' => 'text', 'value' => 'bunny' ],
+					'animal' => [ 'propertyType' => 'text', 'value' => 'bunny' ],
 				],
 				id: self::SUPPLIED_ID,
 			)

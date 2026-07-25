@@ -5,8 +5,8 @@
 			"label": "Johann Christian Bach",
 			"schema": "Person",
 			"statements": {
-				"Description": { "type": "text", "value": [ "Composer; youngest son of Johann Sebastian Bach, active in London." ] },
-				"Also known as": { "type": "text", "value": [ "J. C. Bach", "the London Bach" ] }
+				"Description": { "propertyType": "text", "value": [ "Composer; youngest son of Johann Sebastian Bach, active in London." ] },
+				"Also known as": { "propertyType": "text", "value": [ "J. C. Bach", "the London Bach" ] }
 			}
 		}
 	}

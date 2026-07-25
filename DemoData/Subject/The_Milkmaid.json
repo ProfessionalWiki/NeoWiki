@@ -6,15 +6,15 @@
 			"schema": "Artwork",
 			"statements": {
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1658
 				},
 				"Medium": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Oil on canvas" ]
 				},
 				"Creator": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoLsv7dAs",
@@ -23,7 +23,7 @@
 					]
 				},
 				"Located at": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoMpL8EVs",
@@ -32,11 +32,11 @@
 					]
 				},
 				"Image": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://upload.wikimedia.org/wikipedia/commons/2/20/Johannes_Vermeer_-_Het_melkmeisje_-_Google_Art_Project.jpg" ]
 				},
 				"Estimated value": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 150
 				}
 			}

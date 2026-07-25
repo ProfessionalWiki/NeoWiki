@@ -6,27 +6,27 @@
 			"schema": "Artist",
 			"statements": {
 				"Born": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1599
 				},
 				"Died": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1660
 				},
 				"Nationality": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Spanish" ]
 				},
 				"Movement": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Baroque" ]
 				},
 				"Wikipedia": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://en.wikipedia.org/wiki/Diego_Vel%C3%A1zquez" ]
 				},
 				"Active period": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "1617–1660" ]
 				}
 			}

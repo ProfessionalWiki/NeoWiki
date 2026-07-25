@@ -6,11 +6,11 @@
 			"schema": "Institution",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Royal Netherlands Academy of Arts and Sciences, hosting humanities and social science research institutes." ]
 				},
 				"City": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaA2",
@@ -19,11 +19,11 @@
 					]
 				},
 				"Founded": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1808
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.knaw.nl" ]
 				}
 			}

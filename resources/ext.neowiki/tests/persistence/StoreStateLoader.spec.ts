@@ -50,7 +50,7 @@ function newMainSubjectWithRelationsTo( ...targets: SubjectId[] ): Subject {
 		statements: Neo.getInstance().getSubjectDeserializer().deserializeStatements( {
 			Products: {
 				value: targets.map( ( target ) => ( { target: target.text } ) ),
-				type: RelationType.typeName,
+				propertyType: RelationType.typeName,
 			},
 		} ),
 	} );

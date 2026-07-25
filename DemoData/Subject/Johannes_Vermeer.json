@@ -6,27 +6,27 @@
 			"schema": "Artist",
 			"statements": {
 				"Born": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1632
 				},
 				"Died": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1675
 				},
 				"Nationality": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Dutch" ]
 				},
 				"Movement": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Dutch Golden Age", "Baroque" ]
 				},
 				"Wikipedia": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://en.wikipedia.org/wiki/Johannes_Vermeer" ]
 				},
 				"Active period": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "1653–1675" ]
 				}
 			}

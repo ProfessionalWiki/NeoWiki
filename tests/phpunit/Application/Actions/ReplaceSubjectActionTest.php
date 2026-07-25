@@ -139,7 +139,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'Label',
-			[ 'Founded at' => [ 'type' => 'number', 'value' => 2019 ] ],
+			[ 'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ] ],
 			null
 		);
 
@@ -157,7 +157,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$action->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'Label',
-			[ 'Keep' => [ 'type' => 'text', 'value' => 'yes' ] ],
+			[ 'Keep' => [ 'propertyType' => 'text', 'value' => 'yes' ] ],
 			null
 		);
 
@@ -217,7 +217,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'Label',
-			[ 'Status' => [ 'type' => 'select', 'value' => 'Approved' ] ],
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ] ],
 			null
 		);
 
@@ -234,7 +234,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'Label',
-			[ 'Status' => [ 'type' => 'select', 'value' => 'opt_draft' ] ],
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'opt_draft' ] ],
 			null
 		);
 
@@ -270,7 +270,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'New Label',
-			[ 'Status' => [ 'type' => 'select', 'value' => 'Approved' ] ],
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ] ],
 			null
 		);
 
@@ -384,8 +384,8 @@ class ReplaceSubjectActionTest extends TestCase {
 			new SubjectId( self::SUBJECT_ID ),
 			'After',
 			[
-				'Name' => [ 'type' => 'url', 'value' => 'https://pro.wiki' ],
-				'Swatch' => [ 'type' => 'color', 'value' => [ '#ff5733' ] ],
+				'Name' => [ 'propertyType' => 'url', 'value' => 'https://pro.wiki' ],
+				'Swatch' => [ 'propertyType' => 'color', 'value' => [ '#ff5733' ] ],
 			],
 			null
 		);
@@ -411,7 +411,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'After',
-			[ 'Swatch' => [ 'type' => 'color', 'value' => [ '#ff5733' ] ] ],
+			[ 'Swatch' => [ 'propertyType' => 'color', 'value' => [ '#ff5733' ] ] ],
 			null
 		);
 
@@ -504,7 +504,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'After',
-			[ 'Alpha' => [ 'type' => 'select', 'value' => 'opt_a' ] ],
+			[ 'Alpha' => [ 'propertyType' => 'select', 'value' => 'opt_a' ] ],
 			null
 		);
 
@@ -560,7 +560,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'After',
-			[ 'Website' => [ 'type' => 'url', 'value' => [ 'not-a-url', 'also-not-a-url' ] ] ],
+			[ 'Website' => [ 'propertyType' => 'url', 'value' => [ 'not-a-url', 'also-not-a-url' ] ] ],
 			null
 		);
 

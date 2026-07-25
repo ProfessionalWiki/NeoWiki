@@ -5,8 +5,8 @@
 			"label": "Johann Sebastian Bach",
 			"schema": "Person",
 			"statements": {
-				"Description": { "type": "text", "value": [ "German composer and organist of the Baroque period." ] },
-				"Also known as": { "type": "text", "value": [ "J. S. Bach" ] }
+				"Description": { "propertyType": "text", "value": [ "German composer and organist of the Baroque period." ] },
+				"Also known as": { "propertyType": "text", "value": [ "J. S. Bach" ] }
 			}
 		}
 	}

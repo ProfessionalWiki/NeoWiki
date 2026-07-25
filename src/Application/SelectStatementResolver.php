@@ -54,7 +54,7 @@ readonly class SelectStatementResolver {
 				continue;
 			}
 
-			if ( ( $entry['type'] ?? null ) !== SelectType::NAME ) {
+			if ( ( $entry['propertyType'] ?? null ) !== SelectType::NAME ) {
 				continue;
 			}
 
@@ -129,7 +129,7 @@ readonly class SelectStatementResolver {
 				continue;
 			}
 
-			if ( ( $entry['type'] ?? null ) !== SelectType::NAME ) {
+			if ( ( $entry['propertyType'] ?? null ) !== SelectType::NAME ) {
 				continue;
 			}
 

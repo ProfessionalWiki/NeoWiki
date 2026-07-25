@@ -6,15 +6,15 @@
 			"schema": "Museum",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "French national museum housing the world's largest collection of Impressionist and Post-Impressionist masterpieces" ]
 				},
 				"Founded": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1986
 				},
 				"City": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoDErEFnn",
@@ -23,23 +23,23 @@
 					]
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.musee-orsay.fr" ]
 				},
 				"Specialization": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Impressionism", "Post-Impressionism", "Art Nouveau" ]
 				},
 				"Annual visitors": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 3270000
 				},
 				"Admission fee": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 16
 				},
 				"Links": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [
 						"https://www.instagram.com/museeorsay",
 						"https://twitter.com/MuseeOrsay"
@@ -52,15 +52,15 @@
 			"schema": "Attendance",
 			"statements": {
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2019
 				},
 				"Visitors": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 3651616
 				},
 				"Source": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.musee-orsay.fr/en/articles/key-figures" ]
 				}
 			}
@@ -70,15 +70,15 @@
 			"schema": "Attendance",
 			"statements": {
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2022
 				},
 				"Visitors": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 3270000
 				},
 				"Source": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.musee-orsay.fr/en/articles/key-figures" ]
 				}
 			}
@@ -88,15 +88,15 @@
 			"schema": "Attendance",
 			"statements": {
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2023
 				},
 				"Visitors": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 3960000
 				},
 				"Source": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.musee-orsay.fr/en/articles/key-figures" ]
 				}
 			}

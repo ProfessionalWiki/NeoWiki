@@ -43,11 +43,11 @@ describe( 'SubjectDeserializer', () => {
 			statements: {
 				Property1: {
 					value: [ 'foo' ],
-					type: 'text',
+					propertyType: 'text',
 				},
 				Property2: {
 					value: 1337,
-					type: 'number',
+					propertyType: 'number',
 				},
 			},
 			pageId: 42,

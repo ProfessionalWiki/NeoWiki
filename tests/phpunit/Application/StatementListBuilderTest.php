@@ -31,7 +31,7 @@ class StatementListBuilderTest extends TestCase {
 
 	public function testSingleStatementIsBuilt(): void {
 		$list = $this->newBuilder()->build( [
-			'Founded at' => [ 'type' => 'number', 'value' => 2019 ],
+			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
 		] );
 
 		$statement = $list->getStatement( new PropertyName( 'Founded at' ) );
@@ -42,8 +42,8 @@ class StatementListBuilderTest extends TestCase {
 
 	public function testMultipleStatementsAreBuilt(): void {
 		$list = $this->newBuilder()->build( [
-			'A' => [ 'type' => 'text', 'value' => 'one' ],
-			'B' => [ 'type' => 'number', 'value' => 2 ],
+			'A' => [ 'propertyType' => 'text', 'value' => 'one' ],
+			'B' => [ 'propertyType' => 'number', 'value' => 2 ],
 		] );
 
 		$this->assertNotNull( $list->getStatement( new PropertyName( 'A' ) ) );
@@ -52,7 +52,7 @@ class StatementListBuilderTest extends TestCase {
 
 	public function testUnregisteredTypePreservesRawValue(): void {
 		$list = $this->newBuilder()->build( [
-			'Swatch' => [ 'type' => 'color', 'value' => [ '#ff5733' ] ],
+			'Swatch' => [ 'propertyType' => 'color', 'value' => [ '#ff5733' ] ],
 		] );
 
 		$statement = $list->getStatement( new PropertyName( 'Swatch' ) );
@@ -64,8 +64,8 @@ class StatementListBuilderTest extends TestCase {
 
 	public function testEmptyValueIsDropped(): void {
 		$list = $this->newBuilder()->build( [
-			'Kept' => [ 'type' => 'text', 'value' => [ 'yes' ] ],
-			'Dropped' => [ 'type' => 'text', 'value' => [] ],
+			'Kept' => [ 'propertyType' => 'text', 'value' => [ 'yes' ] ],
+			'Dropped' => [ 'propertyType' => 'text', 'value' => [] ],
 		] );
 
 		$this->assertNotNull( $list->getStatement( new PropertyName( 'Kept' ) ) );
@@ -74,7 +74,7 @@ class StatementListBuilderTest extends TestCase {
 
 	public function testUnregisteredTypeStatementIsNotDroppedAsEmpty(): void {
 		$list = $this->newBuilder()->build( [
-			'Swatch' => [ 'type' => 'color', 'value' => [] ],
+			'Swatch' => [ 'propertyType' => 'color', 'value' => [] ],
 		] );
 
 		$this->assertNotNull( $list->getStatement( new PropertyName( 'Swatch' ) ) );
@@ -82,7 +82,7 @@ class StatementListBuilderTest extends TestCase {
 
 	public function testNullValueIsDropped(): void {
 		$list = $this->newBuilder()->build( [
-			'Wanted' => [ 'type' => 'text', 'value' => 'yes' ],
+			'Wanted' => [ 'propertyType' => 'text', 'value' => 'yes' ],
 			'Unwanted' => null,
 		] );
 

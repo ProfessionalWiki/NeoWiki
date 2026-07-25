@@ -5,7 +5,7 @@ import { Statement } from '@/domain/Statement';
 interface StatementJson {
 
 	value: unknown;
-	type: string;
+	propertyType: string;
 
 }
 
@@ -13,7 +13,7 @@ function isJsonStatement( json: unknown ): json is StatementJson {
 	return typeof json === 'object' &&
 		json !== null &&
 		'value' in json &&
-		'type' in json;
+		'propertyType' in json;
 }
 
 export class StatementDeserializer {
@@ -30,8 +30,8 @@ export class StatementDeserializer {
 
 		return new Statement(
 			new PropertyName( propertyName ),
-			json.type,
-			this.valueDeserializer.deserialize( json.value, json.type ),
+			json.propertyType,
+			this.valueDeserializer.deserialize( json.value, json.propertyType ),
 		);
 	}
 

@@ -5,9 +5,9 @@
 			"label": "Birth of Johann Ambrosius Bach",
 			"schema": "Birth",
 			"statements": {
-				"Brought into life": { "type": "relation", "value": [ { "id": "r1bachaaaaaaaa1", "target": "s1bachaaaaaaaa1" } ] },
-				"Took place at": { "type": "relation", "value": [ { "id": "r1bachaaaaaaaa2", "target": "s1bachaaaaaaac1" } ] },
-				"Date": { "type": "date", "value": [ "1645-02-22" ] }
+				"Brought into life": { "propertyType": "relation", "value": [ { "id": "r1bachaaaaaaaa1", "target": "s1bachaaaaaaaa1" } ] },
+				"Took place at": { "propertyType": "relation", "value": [ { "id": "r1bachaaaaaaaa2", "target": "s1bachaaaaaaac1" } ] },
+				"Date": { "propertyType": "date", "value": [ "1645-02-22" ] }
 			}
 		}
 	}
