@@ -19,7 +19,11 @@ class Neo4jSubjectUpdaterFactory {
 	) {
 	}
 
-	public function newSubjectUpdater( TransactionInterface $transaction, PageId $pageId ): Neo4jSubjectUpdater {
+	public function newSubjectUpdater(
+		TransactionInterface $transaction,
+		PageId $pageId,
+		Neo4jOrphanCandidates $orphanCandidates
+	): Neo4jSubjectUpdater {
 		return new Neo4jSubjectUpdater(
 			$transaction,
 			$pageId,
@@ -27,6 +31,7 @@ class Neo4jSubjectUpdaterFactory {
 			$this->valueBuilderRegistry,
 			$this->logger,
 			$this->wikiId,
+			$orphanCandidates,
 		);
 	}
 

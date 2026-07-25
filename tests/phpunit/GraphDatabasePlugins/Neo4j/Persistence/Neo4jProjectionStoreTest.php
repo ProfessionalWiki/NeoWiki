@@ -563,7 +563,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectDoesNotExist( self::GUID_2 );
 	}
 
-	public function testRemovingASubjectLeavesTheStubsOfOtherWikisAlone(): void {
+	public function testRemovingTheLastReferenceDeletesAStubWrittenByAnotherWiki(): void {
 		$wikiA = $this->newProjectionStoreWithLocationRelation( 'wiki_a' );
 		$wikiB = $this->newProjectionStoreWithLocationRelation( 'wiki_b' );
 
@@ -577,25 +577,31 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$wikiB->savePage( TestPage::build( id: 2, mainSubject: TestSubject::build( id: self::GUID_2 ) ) );
 		$wikiB->deletePage( new PageId( 2 ) );
 
-		// Removing GUID_1 orphans that stub, but wiki A must not delete another wiki's node.
+		// Removing GUID_1 strips that stub of its last reference, whichever wiki last wrote it.
 		$wikiA->savePage( TestPage::build( id: 1 ) );
 
-		$this->assertSubjectExists( self::GUID_2 );
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
 	}
 
 	public function testRemovingASubjectLeavesAnUnlinkedFullSubjectAlone(): void {
 		$store = $this->newProjectionStoreWithLocationRelation();
 
-		// GUID_1 is projected normally, then re-saved under a schema the lookup does not know. The
-		// projection skips it, so it keeps its data while losing its HasSubject relation.
+		// GUID_2 relates to GUID_1, so removing GUID_2 later makes GUID_1 a sweep candidate.
 		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		// Re-saving GUID_1 under a schema the lookup does not know makes the projection skip it, so it
+		// keeps its data while losing its HasSubject relation.
 		$store->savePage( TestPage::build(
 			id: 1,
 			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
 		) );
 
-		// Removing an unrelated subject sweeps orphans, which must not include a subject with data.
-		$store->savePage( TestPage::build( id: 2, mainSubject: TestSubject::build( id: self::GUID_2 ) ) );
+		// Removing GUID_2 takes GUID_1's last incoming relation with it, leaving a subject that has
+		// no incoming relation at all but still carries data.
 		$store->savePage( TestPage::build( id: 2 ) );
 
 		$this->assertSubjectExists( self::GUID_1 );

@@ -22,6 +22,7 @@ class Neo4jSubjectUpdater {
 		private readonly Neo4jValueBuilderRegistry $valueBuilderRegistry,
 		private readonly LoggerInterface $logger,
 		private readonly string $wikiId,
+		private readonly Neo4jOrphanCandidates $orphanCandidates,
 	) {
 	}
 
@@ -141,7 +142,8 @@ class Neo4jSubjectUpdater {
 			$subject->getId(),
 			$subject->getTypedRelations( $schema ),
 			$this->transaction,
-			$this->wikiId
+			$this->wikiId,
+			$this->orphanCandidates
 		);
 		$updater->updateRelations();
 	}
