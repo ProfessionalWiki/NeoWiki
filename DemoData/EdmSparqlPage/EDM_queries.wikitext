@@ -2,7 +2,7 @@ This wiki's SPARQL store holds two [[RDF and ontology mappings|projections]] of 
 
 Every example below uses the <code><nowiki>{{#sparql_raw}}</nowiki></code> parser function and returns raw [https://www.w3.org/TR/sparql11-results-json/ SPARQL JSON]. The Lua and REST surfaces answer the same queries — see [[SPARQL queries]].
 
-== Ask in EDM terms ==
+== Query in EDM terms ==
 
 The Person and Artist Schemas both map to <code>edm:Agent</code>, so a query in EDM terms spans them without knowing either Schema:
 
@@ -24,7 +24,7 @@ Result:
 
 {{#sparql_raw:PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX dc: <http://purl.org/dc/elements/1.1/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?work ?created ?creator WHERE { GRAPH ?workGraph { ?w a edm:ProvidedCHO ; rdfs:label ?work ; dcterms:created ?created ; dc:creator ?c } GRAPH ?creatorGraph { ?c a edm:Agent ; rdfs:label ?creator } } ORDER BY ?created}}
 
-== Ask across both projections ==
+== Query across both projections ==
 
 [[Mapping:EDM]] maps no predicate for the Person Schema's <code>Source</code> field, so it is absent from the EDM projection — the native projection still has it as <code>neo-prop:Source</code>.
 
