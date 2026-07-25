@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\PageContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\LayoutContentSource;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\FirstRevisionAuthorPageTitlesLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiPageDeleter;
@@ -91,13 +92,11 @@ class ImportDemoData extends Maintenance {
 	}
 
 	/**
-	 * Both SPARQL directories hold pages whose examples only work on a wiki whose store can answer them,
-	 * so each is gated on the store configuration rather than always imported:
-	 *
-	 * - `SparqlPage` invokes {{#sparql_raw}}, which only exists on wikis with a configured SPARQL store —
-	 *   anywhere else it would render as literal wikitext.
-	 * - `EdmSparqlPage` queries the EDM projection, so it needs a store that holds it. On a wiki whose
-	 *   store holds only the native projection those queries would silently return no rows.
+	 * Both SPARQL directories hold pages whose examples only work on a wiki whose queried store can
+	 * answer them, so each is gated on the projections that store holds rather than always imported.
+	 * `SparqlPage` asks in the native vocabulary; `EdmSparqlPage` asks in EDM and joins the two, so it
+	 * needs both. Importing either without its projections would render examples that silently return
+	 * no rows, and claim projections the store does not hold.
 	 *
 	 * @return string[]
 	 */
@@ -107,11 +106,13 @@ class ImportDemoData extends Maintenance {
 
 		$directories = [ $rootDirectory . '/DemoData/Page' ];
 
-		if ( $config->sparqlStores !== [] ) {
+		$holdsNative = $config->queriedStoreHoldsProjection( RdfPageProjector::PROJECTION );
+
+		if ( $holdsNative ) {
 			$directories[] = $rootDirectory . '/DemoData/SparqlPage';
 		}
 
-		if ( $config->queriedStoreHoldsProjection( self::EDM_PROJECTION ) ) {
+		if ( $holdsNative && $config->queriedStoreHoldsProjection( self::EDM_PROJECTION ) ) {
 			$directories[] = $rootDirectory . '/DemoData/EdmSparqlPage';
 		}
 

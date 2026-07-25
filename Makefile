@@ -419,7 +419,7 @@ reset: ## Wipe DB + Neo4j volumes and reseed demo data (recreates the dev stack)
 import-demo-data: ## Import the NeoWiki demo subjects
 	$(EXEC_MW_ROOT) php maintenance/run.php NeoWiki:ImportDemoData
 
-rebuild-graph-databases: ## Rebuild Neo4j projection from MariaDB
+rebuild-graph-databases: ## Rebuild every configured backend's projection from MariaDB
 	$(EXEC_MW_ROOT) php maintenance/run.php NeoWiki:RebuildGraphDatabases
 
 update-dot-php: ## Run MW maintenance/update.php

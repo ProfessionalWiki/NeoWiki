@@ -13,8 +13,8 @@ partners, knowledge managers, MediaWiki ecosystem evaluators, and live-demo audi
 | `Layout/<Name>.json` | Layouts (curated displays for a Schema) | `Layout:<Name>` |
 | `Mapping/<Name>.json` | Ontology mappings, one page per target ontology | `Mapping:<Name>` |
 | `Page/<Name>.wikitext` | Free-form wiki pages (hubs, references) | Main namespace, `<Name>` |
-| `SparqlPage/<Name>.wikitext` | Pages demoing the SPARQL surfaces. Imported only when `$wgNeoWikiSparqlStores` holds a usable store (elsewhere `{{#sparql_raw}}` is unregistered and would render literally). | Main namespace, `<Name>` |
-| `EdmSparqlPage/<Name>.wikitext` | Pages demoing SPARQL over the EDM ontology projection. Imported only when the queried store holds the `EDM` projection (elsewhere the queries would return no rows). | Main namespace, `<Name>` |
+| `SparqlPage/<Name>.wikitext` | Pages demoing the SPARQL surfaces in the native vocabulary. Imported only when the queried store holds the `native` projection (elsewhere `{{#sparql_raw}}` is unregistered or the queries return no rows). | Main namespace, `<Name>` |
+| `EdmSparqlPage/<Name>.wikitext` | Pages demoing SPARQL over the EDM ontology projection, including joins with the native one. Imported only when the queried store holds both projections. | Main namespace, `<Name>` |
 | `Module/<Name>.lua` | Scribunto modules | `Module:<Name>` |
 
 `ImportDemoData.php` reseeds the demo set: it creates and updates pages from these directories, and
