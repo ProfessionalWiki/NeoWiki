@@ -6,19 +6,24 @@ Status: Accepted
 
 ## Context
 
-Design decisions keep trading implementation simplicity against behavior at scale — most recently the orphan-stub
-sweep in [PR #1171](https://github.com/ProfessionalWiki/NeoWiki/pull/1171), where a per-save scan acceptable at demo
-scale would not survive a large deployment — without a recorded target to judge them by. The unit that drives cost is
-the number of Subjects in one graph store, farm-wide when wikis share it.
+To make good design and implementation decisions, we need to know how far NeoWiki should scale, so we avoid both
+degraded performance at scale and accidental complexity via unnecessary optimization.
 
 ## Decision
 
-* Need to work well with 1 million Subjects
-* Good to still work well with 10 million Subjects, not critical, and some degradation acceptable
-* Scalability beyond 50 million Subjects is a plus but with diminishing returns
+NeoWiki needs to handle these **total Subject counts**:
 
-## Consequences
+* Wikis up to 1 million Subjects should perform well across the board.
+* Wikis with ~10 million Subjects ideally remain performing well, though some degradation is acceptable
+* Higher scalability is nice. Where it is possible to cheaply support 100 million Subject cases, we should do so
 
-* Per-write work must be proportional to what the write changed, not to the size of the graph.
-* Bulk import and full projection rebuilds get wall-clock budgets derived from these sizes.
-* Existing code that predates these targets is brought into line through tracked issues as gaps are found.
+NeoWiki needs to handle these **total Schema counts**:
+
+* Wikis up to 500 Schemas should perform well
+* Usability/UX of wikis up to 200 Schemas should be good
+* Usability/UX of wikis with ~500 Schemas should not be terrible
+
+NeoWiki needs to handle these **Subjects per Page**:
+
+* Pages with up to 50 Subjects should perform well and have great UX
+* Pages with ~250 Subjects should not have terrible performance or UX
