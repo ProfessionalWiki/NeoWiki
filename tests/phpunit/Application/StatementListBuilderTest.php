@@ -62,6 +62,16 @@ class StatementListBuilderTest extends TestCase {
 		$this->assertEquals( new UnregisteredTypeValue( 'color', [ '#ff5733' ] ), $statement->getValue() );
 	}
 
+	public function testEmptyValueIsDropped(): void {
+		$list = $this->newBuilder()->build( [
+			'Kept' => [ 'type' => 'text', 'value' => [ 'yes' ] ],
+			'Dropped' => [ 'type' => 'text', 'value' => [] ],
+		] );
+
+		$this->assertNotNull( $list->getStatement( new PropertyName( 'Kept' ) ) );
+		$this->assertNull( $list->getStatement( new PropertyName( 'Dropped' ) ) );
+	}
+
 	public function testUnregisteredTypeStatementIsNotDroppedAsEmpty(): void {
 		$list = $this->newBuilder()->build( [
 			'Swatch' => [ 'type' => 'color', 'value' => [] ],
