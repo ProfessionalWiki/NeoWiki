@@ -33,6 +33,9 @@ Constraints the model rests on:
 - **The page is the unit of access control.** Every NeoWiki entity is governed by the page that stores it (Subjects,
   Schemas, Layouts, Mappings): reading requires the page's `read` permission, checked at full rigor
   (`authorizeRead`, so ACL-extension hooks run); writing requires `edit`. NeoWiki defines no ACL model of its own.
+- **Per-subject ACLs are a non-goal.** There is no access control finer than the page: no recorded use case needs
+  it, deployments separate sensitive data by page or wiki, and sub-page ACLs would complicate every read surface.
+  Revisit only with a concrete use case.
 - **A denied read is indistinguishable from absent data.** Gated read surfaces answer with a `null`, an empty list, or
   a `404` — never a `403` — and must not reveal existence through side channels such as counts
   ([#1062](https://github.com/ProfessionalWiki/NeoWiki/issues/1062)). Write denials answer `403`, and must equally
@@ -53,6 +56,9 @@ Constraints the model rests on:
 - **Raw queries will support server-side filter injection.** A deployment can register scoping predicates (such as
   restricting to the current wiki) that core applies to every caller-supplied query, so scoping is enforced rather
   than left to each caller.
+- **Projection is publication.** Stores and dumps have no per-user checks, so their content must not exceed what
+  every reader with access to them may read. A publicly exposed SPARQL endpoint or a published dump may therefore
+  carry only what the public reader may read; a store gated as a whole may carry more, up to its audience.
 
 ## Open decisions
 
@@ -68,9 +74,6 @@ Constraints the model rests on:
   not accessible. Relates to [ADR 23](023-subject-sources.md).
 - **Default grant of `neowiki-query`.** The right is granted to `*` by default. **TODO:** decide whether the default
   changes, and how deployments with restricted content are expected to configure it.
-- **Projection as publication.** Directly exposed SPARQL endpoints (ADR 19) and RDF dumps bypass per-user checks.
-  **TODO:** decide whether projection/dump content is limited to what the public reader may read.
-- **Per-subject ACLs.** Proposed non-goal: no ACLs on a Subject independent of its owning page. **TODO:** confirm.
 
 ## Out of scope
 
@@ -84,6 +87,8 @@ Constraints the model rests on:
   option.
 - Restricting a page does not remove its data from stores; it changes what the backend returns.
 - The filter-injection extension point must be designed and implemented for farms like BlueSpice Galaxy.
+- Projection and dump code do not yet filter: they emit every subject. Until a public-readable-only projection
+  exists, a wiki with restricted content must not expose a store publicly or publish its dumps.
 
 ## Alternatives Considered
 
