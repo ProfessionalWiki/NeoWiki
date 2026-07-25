@@ -601,6 +601,41 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectExists( self::GUID_1 );
 	}
 
+	public function testDroppingTheOnlyRelationToAStubDeletesTheStub(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1's relation targets a subject that does not exist, creating GUID_2 as a stub.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+		) );
+
+		$this->assertSubjectIsStub( self::GUID_2 );
+
+		// Re-saving GUID_1 without the relation leaves the stub with nothing pointing at it.
+		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+	}
+
+	public function testRetargetingTheOnlyRelationToAStubDeletesTheStub(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+		) );
+
+		// The same relation now points at GUID_3, so GUID_2 loses its only referrer.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_3, 'rTestNQS1111rr1' ),
+		) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+		$this->assertSubjectIsStub( self::GUID_3 );
+	}
+
 	private function newProjectionStoreWithLocationRelation( string $wikiId = self::WIKI_ID ): GraphDatabasePlugin {
 		$extension = NeoWikiExtension::getInstance();
 

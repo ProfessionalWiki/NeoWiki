@@ -36,6 +36,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 			$this->removeAbsentSubjects( $transaction, $page );
 			$this->detachSubjectsFromPage( $transaction, $page->getId() );
 			$this->updateSubjects( $transaction, $page );
+			$this->deleteOrphanStubs( $transaction );
 		} );
 	}
 
@@ -157,6 +158,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 			$this->removeSubjects( $transaction, $this->getSubjectIdsByPageId( $transaction, $pageId ) );
 
 			$this->deletePageNode( $transaction, $pageId );
+			$this->deleteOrphanStubs( $transaction );
 		} );
 	}
 
@@ -208,8 +210,6 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		foreach ( $referencedSubjectIds as $subjectId ) {
 			$this->reduceSubjectToStub( $transaction, new SubjectId( $subjectId ) );
 		}
-
-		$this->deleteOrphanStubs( $transaction );
 	}
 
 	/**
@@ -283,15 +283,16 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	}
 
 	/**
-	 * Deletes the stubs the removals left unreachable. Removals cascade: stubbing a subject deletes its
-	 * outgoing relations, which can strip the last incoming reference from another stub, so this runs
-	 * once after the whole batch rather than per subject.
+	 * Deletes the stubs this write left unreachable. A stub is worth keeping only for its incoming
+	 * relations, and a write can strip the last one in several ways: a removal cascade, since stubbing a
+	 * subject deletes its outgoing relations; a relation dropped from a subject; a relation pointed at a
+	 * new target. Running last, once per write, covers all of them.
 	 *
 	 * A stub is matched by the absence of a name rather than by the absence of an incoming HasSubject
 	 * relation. Both hold for a stub, but only the first holds for a stub alone: a full subject whose
-	 * schema failed to resolve on its last save keeps its data while losing its HasSubject relation,
-	 * and must not be deleted here. One pass then suffices, since a stub has no outgoing relations and
-	 * so cannot orphan another node when deleted.
+	 * schema failed to resolve keeps its data while losing its HasSubject relation, and must not be
+	 * deleted here. One pass then suffices, since a stub has no outgoing relations and so cannot orphan
+	 * another node when deleted.
 	 *
 	 * The scan is scoped to this wiki because one wiki's save must not delete another wiki's nodes in a
 	 * shared graph. A stub carrying another wiki's id therefore survives here even once it is orphaned.
