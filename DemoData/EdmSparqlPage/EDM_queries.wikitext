@@ -1,0 +1,47 @@
+This wiki's SPARQL store holds two [[RDF and ontology mappings|projections]] of the same pages: the '''native''' one, in NeoWiki's own vocabulary, and the '''EDM''' one defined by [[Mapping:EDM]]. Each page gets one named graph per projection, so both fit in one store and a query can be written in EDM terms, in native terms, or in both at once.
+
+Every example below uses the <code><nowiki>{{#sparql_raw}}</nowiki></code> parser function and returns raw [https://www.w3.org/TR/sparql11-results-json/ SPARQL JSON]. The Lua and REST surfaces answer the same queries — see [[SPARQL queries]].
+
+== Ask in EDM terms ==
+
+The Person and Artist Schemas both map to <code>edm:Agent</code>, so a query in EDM terms spans them without knowing either Schema:
+
+<syntaxhighlight lang="mediawiki">
+{{#sparql_raw:PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX rdaGr2: <http://rdvocab.info/ElementsGr2/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?agent ?dateOfBirth WHERE { GRAPH ?graph { ?a a edm:Agent ; rdfs:label ?agent ; rdaGr2:dateOfBirth ?dateOfBirth } } ORDER BY ?agent}}
+</syntaxhighlight>
+
+Result:
+
+{{#sparql_raw:PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX rdaGr2: <http://rdvocab.info/ElementsGr2/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?agent ?dateOfBirth WHERE { GRAPH ?graph { ?a a edm:Agent ; rdfs:label ?agent ; rdaGr2:dateOfBirth ?dateOfBirth } } ORDER BY ?agent}}
+
+A relation projects as a direct triple between two entity IRIs, so a query follows it the way it would in any EDM dataset. The artwork and its creator live on separate wiki pages, hence in separate named graphs:
+
+<syntaxhighlight lang="mediawiki">
+{{#sparql_raw:PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX dc: <http://purl.org/dc/elements/1.1/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?work ?created ?creator WHERE { GRAPH ?workGraph { ?w a edm:ProvidedCHO ; rdfs:label ?work ; dcterms:created ?created ; dc:creator ?c } GRAPH ?creatorGraph { ?c a edm:Agent ; rdfs:label ?creator } } ORDER BY ?created}}
+</syntaxhighlight>
+
+Result:
+
+{{#sparql_raw:PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX dc: <http://purl.org/dc/elements/1.1/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?work ?created ?creator WHERE { GRAPH ?workGraph { ?w a edm:ProvidedCHO ; rdfs:label ?work ; dcterms:created ?created ; dc:creator ?c } GRAPH ?creatorGraph { ?c a edm:Agent ; rdfs:label ?creator } } ORDER BY ?created}}
+
+== Ask across both projections ==
+
+An ontology projection carries only what the ontology models. [[Mapping:EDM]] maps no predicate for the Person Schema's <code>Source</code> field, so <code>Source</code> is absent from the EDM projection while the native projection still has it as <code>neo-prop:Source</code>.
+
+Both projections mint the same entity IRIs, so one query can take the birth date from EDM and the source from the native projection. The two graph columns show which projection each triple came from:
+
+<syntaxhighlight lang="mediawiki">
+{{#sparql_raw:PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX rdaGr2: <http://rdvocab.info/ElementsGr2/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX neo-prop: <{{SERVER}}/prop/> SELECT ?agent ?dateOfBirth ?source ?edmGraph ?nativeGraph WHERE { GRAPH ?edmGraph { ?a a edm:Agent ; rdaGr2:dateOfBirth ?dateOfBirth } GRAPH ?nativeGraph { ?a rdfs:label ?agent ; neo-prop:Source ?source } } ORDER BY ?agent}}
+</syntaxhighlight>
+
+Result:
+
+{{#sparql_raw:PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX rdaGr2: <http://rdvocab.info/ElementsGr2/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX neo-prop: <{{SERVER}}/prop/> SELECT ?agent ?dateOfBirth ?source ?edmGraph ?nativeGraph WHERE { GRAPH ?edmGraph { ?a a edm:Agent ; rdaGr2:dateOfBirth ?dateOfBirth } GRAPH ?nativeGraph { ?a rdfs:label ?agent ; neo-prop:Source ?source } } ORDER BY ?agent}}
+
+== Set this up ==
+
+Each store entry names one projection, and several entries may point at one endpoint. This wiki's [https://github.com/ProfessionalWiki/NeoWiki/blob/master/Docker/SettingsTemplate.php development stack] configures two: <code>native</code> first, then <code>EDM</code>. The query surfaces target the first entry, which is why these queries reach both.
+
+* [https://neowiki.ai/docs/operations/installation#optional-sparql-graph-stores Configuring SPARQL graph stores]
+* [https://neowiki.ai/docs/rdf/ontology-mapping Ontology mapping reference]
+* [https://neowiki.ai/docs/examples/person-to-edm Person-to-EDM worked example]

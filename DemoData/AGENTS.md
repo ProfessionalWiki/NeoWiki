@@ -13,6 +13,7 @@ partners, knowledge managers, MediaWiki ecosystem evaluators, and live-demo audi
 | `Layout/<Name>.json` | Layouts (curated displays for a Schema) | `Layout:<Name>` |
 | `Page/<Name>.wikitext` | Free-form wiki pages (hubs, references) | Main namespace, `<Name>` |
 | `SparqlPage/<Name>.wikitext` | Pages demoing the SPARQL surfaces. Imported only when `$wgNeoWikiSparqlStores` is non-empty (elsewhere `{{#sparql_raw}}` is unregistered and would render literally). | Main namespace, `<Name>` |
+| `EdmSparqlPage/<Name>.wikitext` | Pages demoing SPARQL over the EDM ontology projection. Imported only when the queried store holds the `EDM` projection (elsewhere the queries would return no rows). | Main namespace, `<Name>` |
 | `Module/<Name>.lua` | Scribunto modules | `Module:<Name>` |
 
 `ImportDemoData.php` reseeds the demo set: it creates and updates pages from these directories, and
@@ -60,6 +61,10 @@ Subject, relation, and option IDs:
 4. **`{{#view}}` takes one positional Subject ID plus named args.** Write
    `{{#view:id|layout=LayoutName}}` or `{{#view:subject=id|layout=LayoutName}}`. The old
    positional form `{{#view:id|LayoutName}}` is gone and now renders a visible parser error.
+5. **Link a conditionally-imported page through `{{#ifexist:}}`.** A plain link to a page from
+   `SparqlPage/` or `EdmSparqlPage/` renders as a redlink wherever the import skipped it. Keep the
+   sentence inside `{{#ifexist:Target|...}}` so it disappears with its target, and put separating
+   spaces outside the braces — ParserFunctions trims its arguments.
 
 ## Cypher gotchas
 

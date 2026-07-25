@@ -154,6 +154,18 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		$this->assertTrue( $logger->hasWarningRecords() );
 	}
 
+	public function testSiblingProjectionsSharingAnEndpointAreBothParsed(): void {
+		$config = $this->buildSparqlConfig( [
+			[ 'updateUrl' => 'https://qlever.example/api', 'projection' => 'native' ],
+			[ 'updateUrl' => 'https://qlever.example/api', 'projection' => 'EDM' ],
+		] );
+
+		$this->assertCount( 2, $config->sparqlStores );
+		$this->assertSame( 'native', $config->sparqlStores[0]->projection );
+		$this->assertSame( 'EDM', $config->sparqlStores[1]->projection );
+		$this->assertSame( 'https://qlever.example/api', $config->sparqlStores[1]->updateUrl );
+	}
+
 	public function testEmptySparqlStoresConfigProducesEmptyList(): void {
 		$this->assertSame( [], $this->buildSparqlConfig( [] )->sparqlStores );
 	}
