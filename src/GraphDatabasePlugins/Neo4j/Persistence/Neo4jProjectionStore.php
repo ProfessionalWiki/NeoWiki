@@ -294,6 +294,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	 *
 	 * Unlike the id-anchored operations above, this matches by pattern rather than by subject id, so it
 	 * is scoped to this wiki: one wiki's save must not delete another wiki's nodes in a shared graph.
+	 * A stub carrying another wiki's id therefore survives here even once it is orphaned.
 	 */
 	private function deleteOrphanStubs( TransactionInterface $transaction ): void {
 		$transaction->run(

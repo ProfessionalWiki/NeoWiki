@@ -561,6 +561,26 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectDoesNotExist( self::GUID_2 );
 	}
 
+	public function testRemovingASubjectLeavesTheStubsOfOtherWikisAlone(): void {
+		$wikiA = $this->newProjectionStoreWithLocationRelation( 'wiki_a' );
+		$wikiB = $this->newProjectionStoreWithLocationRelation( 'wiki_b' );
+
+		// GUID_1 on wiki A relates to GUID_2, creating it as a stub.
+		$wikiA->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+		) );
+
+		// Wiki B claims GUID_2 and drops it again, leaving a stub that carries wiki B's wiki_id.
+		$wikiB->savePage( TestPage::build( id: 2, mainSubject: TestSubject::build( id: self::GUID_2 ) ) );
+		$wikiB->deletePage( new PageId( 2 ) );
+
+		// Removing GUID_1 orphans that stub, but wiki A must not delete another wiki's node.
+		$wikiA->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectExists( self::GUID_2 );
+	}
+
 	private function newProjectionStoreWithLocationRelation( string $wikiId = self::WIKI_ID ): GraphDatabasePlugin {
 		$extension = NeoWikiExtension::getInstance();
 
@@ -669,6 +689,12 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$result = $this->readGraph( 'MATCH (subject {id: $id}) RETURN subject', [ 'id' => $subjectId ] );
 
 		$this->assertTrue( $result->isEmpty(), "Subject {$subjectId} should not exist" );
+	}
+
+	private function assertSubjectExists( string $subjectId ): void {
+		$result = $this->readGraph( 'MATCH (subject {id: $id}) RETURN subject', [ 'id' => $subjectId ] );
+
+		$this->assertFalse( $result->isEmpty(), "Subject {$subjectId} should exist" );
 	}
 
 	public function testSavingPageAndThenDeletingItLeavesNoTrace(): void {

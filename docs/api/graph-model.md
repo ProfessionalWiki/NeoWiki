@@ -99,8 +99,9 @@ Stubs arise in two ways:
 When the real Subject is later saved, its node is upgraded in place — matched by `id` alone, so the stub gains its
 properties and Schema label without creating a duplicate node.
 
-A removal that strips a stub of its last incoming relation deletes the stub in the same operation: removing a set of
-Subjects that only reference each other leaves no nodes behind.
+A removal that strips a stub of its last incoming relation deletes the stub in the same operation, so removing a set of
+Subjects that only reference each other leaves nothing behind. Only stubs carrying the removing wiki's `wiki_id` are
+deleted this way.
 
 ## Relationships
 
