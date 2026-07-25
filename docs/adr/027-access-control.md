@@ -50,6 +50,9 @@ Constraints the model rests on:
   by the wiki-level `neowiki-query` right; granting that right gives read access to everything the wiki projects into
   the store. Exposing a store directly (which ADR 19 allows for SPARQL) is a different surface: see "Projection as
   publication" below.
+- **Raw queries will support server-side filter injection.** A deployment can register scoping predicates (such as
+  restricting to the current wiki) that core applies to every caller-supplied query, so scoping is enforced rather
+  than left to each caller.
 
 ## Open decisions
 
@@ -60,8 +63,6 @@ Constraints the model rests on:
   ([#1059](https://github.com/ProfessionalWiki/NeoWiki/issues/1059)). `{{#view}}` is the leak-free pattern: a
   placeholder rendered at parse time, data fetched per user over REST. **TODO:** decide the parse-path rule and what
   it means for each surface.
-- **Server-side query filter injection.** Farm deployments add scoping predicates in their own query layer; core
-  offers no extension point for injecting them server-side. **TODO:** design that extension point.
 - **Cross-wiki subject display.** Rendering a subject from another wiki goes through REST, not Cypher, so query-side
   scoping does not cover it. **TODO:** decide the check and the degradation behavior when the schema or subject is
   not accessible. Relates to [ADR 23](023-subject-sources.md).
@@ -82,6 +83,8 @@ Constraints the model rests on:
   (whole-store semantics), projection/dump, or parse-time (the last two pending above). There is no unclassified
   option.
 - Restricting a page does not remove its data from stores; it changes what the backend returns.
+- The filter-injection extension point must be designed and implemented; until it exists, farm deployments scope
+  queries in their own query layer.
 
 ## Alternatives Considered
 
@@ -89,7 +92,6 @@ Constraints the model rests on:
   QLever, and unable to express hook-based MediaWiki permissions. Rejected, consistent with ADR 13.
 - **Project ACL state into the graph for pre-query trimming** (user groups, restriction markers): re-implements an
   open set of permission hooks as data and goes stale, because permission changes produce no revision to sync on.
-  Not pursued.
 
 ## Related
 
