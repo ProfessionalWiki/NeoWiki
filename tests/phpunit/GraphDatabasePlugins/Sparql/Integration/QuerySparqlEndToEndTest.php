@@ -37,6 +37,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  *
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Persistence\HttpSparqlQueryEndpoint
+ * @covers \ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Persistence\SparqlProjectionStore
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin
  * @group Database
@@ -124,7 +125,7 @@ class QuerySparqlEndToEndTest extends NeoWikiIntegrationTestCase {
 
 	public function testEachProjectionTypesTheSubjectInItsOwnGraphOfTheSharedStore(): void {
 		$subjectId = TestSubject::uniqueId();
-		$pageId = $this->savePageProjectedNativelyAndToEdm( $subjectId );
+		$pageId = $this->configureBothProjectionsAndSavePage( $subjectId );
 
 		$classesByGraph = $this->queryClassesByGraphOf( $subjectId );
 
@@ -147,7 +148,7 @@ class QuerySparqlEndToEndTest extends NeoWikiIntegrationTestCase {
 
 	public function testOneQueryJoinsDataFromBothProjectionsInTheSharedStore(): void {
 		$subjectId = TestSubject::uniqueId();
-		$this->savePageProjectedNativelyAndToEdm( $subjectId );
+		$this->configureBothProjectionsAndSavePage( $subjectId );
 
 		$namespaces = NeoWikiExtension::getInstance()->getRdfNamespaces();
 		$subjectIri = $namespaces->subject( $subjectId )->value;
@@ -169,13 +170,26 @@ class QuerySparqlEndToEndTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testDeletingThePageDropsBothProjectionsOfIt(): void {
+		$subjectId = TestSubject::uniqueId();
+		$this->configureBothProjectionsAndSavePage( $subjectId );
+
+		$this->deletePageUnderTest();
+
+		$this->assertSame(
+			[],
+			$this->queryClassesByGraphOf( $subjectId ),
+			'A delete must drop the page graph of every projection, not only the queried store\'s own.'
+		);
+	}
+
 	/**
-	 * Saves one page whose Subject is projected both natively and through a Mapping typing the test
-	 * Schema as edm:Agent, into a store holding both projections.
+	 * Reconfigures the store to hold both the native and an EDM projection — the latter through a Mapping
+	 * typing the test Schema as edm:Agent — then saves one page carrying the Subject.
 	 *
 	 * @return int The id of the saved page.
 	 */
-	private function savePageProjectedNativelyAndToEdm( SubjectId $subjectId ): int {
+	private function configureBothProjectionsAndSavePage( SubjectId $subjectId ): int {
 		$schemaName = TestSubject::DEFAULT_SCHEMA_ID;
 
 		$this->createMapping( self::EDM_PROJECTION, <<<JSON

@@ -54,13 +54,44 @@ class NeoWikiConfigTest extends TestCase {
 		$this->assertTrue( $config->queriedStoreHoldsProjection( 'EDM' ) );
 	}
 
-	public function testProjectionAtAnotherEndpointIsNotHeldByTheQueriedStore(): void {
+	public function testProjectionWrittenToAnotherStoreIsNotHeldByTheQueriedOne(): void {
 		$config = $this->newConfigWithStores(
 			$this->newStore( 'https://qlever.example/api', 'native' ),
 			$this->newStore( 'https://elsewhere.example/api', 'EDM' )
 		);
 
 		$this->assertFalse( $config->queriedStoreHoldsProjection( 'EDM' ) );
+	}
+
+	public function testSiblingProjectionIsHeldWhenTheQueriedStoreReadsThroughItsOwnEndpoint(): void {
+		$config = $this->newConfigWithStores(
+			new SparqlStoreConfig(
+				updateUrl: 'https://qlever.example/api',
+				queryUrl: 'https://replica.example/api',
+				accessToken: null,
+				projection: 'native',
+			),
+			$this->newStore( 'https://qlever.example/api', 'EDM' )
+		);
+
+		$this->assertTrue( $config->queriedStoreHoldsProjection( 'EDM' ) );
+	}
+
+	public function testProjectionOnlyReadableThroughTheQueriedEndpointIsNotHeld(): void {
+		$config = $this->newConfigWithStores(
+			$this->newStore( 'https://qlever.example/api', 'native' ),
+			new SparqlStoreConfig(
+				updateUrl: 'https://elsewhere.example/api',
+				queryUrl: 'https://qlever.example/api',
+				accessToken: null,
+				projection: 'EDM',
+			)
+		);
+
+		$this->assertFalse(
+			$config->queriedStoreHoldsProjection( 'EDM' ),
+			'A sibling that writes elsewhere does not put its triples in the queried store.'
+		);
 	}
 
 	public function testUnconfiguredProjectionIsNotHeld(): void {
@@ -81,9 +112,7 @@ class NeoWikiConfigTest extends TestCase {
 	}
 
 	public function testNoProjectionIsHeldWithoutAConfiguredStore(): void {
-		$this->assertFalse(
-			$this->newConfig( readUrl: null, writeUrl: null )->queriedStoreHoldsProjection( 'native' )
-		);
+		$this->assertFalse( $this->newConfigWithStores()->queriedStoreHoldsProjection( 'native' ) );
 	}
 
 	private function newStore( string $url, string $projection ): SparqlStoreConfig {
@@ -96,24 +125,20 @@ class NeoWikiConfigTest extends TestCase {
 	}
 
 	private function newConfigWithStores( SparqlStoreConfig ...$stores ): NeoWikiConfig {
-		return new NeoWikiConfig(
-			enableDevelopmentUIs: false,
-			neo4jInternalWriteUrl: null,
-			neo4jInternalReadUrl: null,
-			wikiId: 'testwiki',
-			rdfBaseUri: 'https://wiki.example',
-			sparqlStores: $stores,
-		);
+		return $this->newConfig( readUrl: null, writeUrl: null, sparqlStores: $stores );
 	}
 
-	private function newConfig( ?string $readUrl, ?string $writeUrl ): NeoWikiConfig {
+	/**
+	 * @param SparqlStoreConfig[] $sparqlStores
+	 */
+	private function newConfig( ?string $readUrl, ?string $writeUrl, array $sparqlStores = [] ): NeoWikiConfig {
 		return new NeoWikiConfig(
 			enableDevelopmentUIs: false,
 			neo4jInternalWriteUrl: $writeUrl,
 			neo4jInternalReadUrl: $readUrl,
 			wikiId: 'testwiki',
 			rdfBaseUri: 'https://wiki.example',
-			sparqlStores: [],
+			sparqlStores: $sparqlStores,
 		);
 	}
 

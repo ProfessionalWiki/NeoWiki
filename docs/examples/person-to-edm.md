@@ -193,10 +193,9 @@ share one triple store. A consumer that needs a relation target's type or label 
 Configure a SPARQL store for the `EDM` projection and each save is projected into it, queryable through the SPARQL
 read surface. Configure the same endpoint for `native` too — [two entries, one
 endpoint](../operations/installation.md#several-projections-in-one-store) — and both projections are queryable at
-once. This is what the development stack does; its demo wiki carries the queries below on its `EDM queries` page.
+once, which is what the development stack does.
 
-Asking in EDM terms reaches every Schema mapped to the class, so this query spans both `Person` (Picasso) and the
-demo wiki's `Artist` Schema:
+Asking in EDM terms reaches every Schema mapped to `edm:Agent`, not just `Person`:
 
 ```sparql
 PREFIX edm: <http://www.europeana.eu/schemas/edm/>
@@ -223,11 +222,10 @@ SELECT ?agent ?dateOfBirth ?source ?edmGraph ?nativeGraph WHERE {
 }
 ```
 
-The two graph variables bind to `.../graph/EDM/page/115` and `.../graph/native/page/115`: one page, two
-projections, one store.
+The two graph variables bind to `.../graph/EDM/page/115` and `.../graph/native/page/115`.
 
 For an ad-hoc load instead, feed the `DumpRdf --projection=EDM` output into any SPARQL engine (e.g. a local
-QLever). See also [Ontology Mapping](../rdf/ontology-mapping.md) and [RDF Export](../rdf/rdf-export.md).
+QLever).
 
 ## Known next tier: CIDOC-CRM
 

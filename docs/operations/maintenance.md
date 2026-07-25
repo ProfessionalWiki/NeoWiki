@@ -16,7 +16,8 @@ can wipe and rebuild the Neo4j copy from the canonical slots at any time. From t
 php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
 
-It re-saves every Subject from each page's latest revision, and removes the pages MediaWiki no longer has. Run it to:
+It re-saves every Subject from each page's latest revision into every configured backend — Neo4j and each SPARQL
+store, in each store's own projection — and removes the pages MediaWiki no longer has. Run it to:
 
 - Recover after a Neo4j wipe or restore.
 - Fix any drift between the Neo4j copy and the canonical revision slots.

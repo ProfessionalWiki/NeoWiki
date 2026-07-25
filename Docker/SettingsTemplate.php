@@ -233,8 +233,8 @@ $wgNeoWikiNeo4jInternalReadUrl = 'bolt://' . getenv( 'NEO4J_USERNAME_READ' ) . '
 //
 // Two entries, one endpoint: the native projection and the EDM projection of the demo data's
 // Mapping:EDM page are kept in the same QLever index as sibling projections. Each lands in its own
-// family of per-page named graphs (#1053), so neither overwrites the other, and a query can join
-// across both. `native` stays first because the query surfaces target the first store.
+// family of per-page named graphs (#1053), so neither overwrites the other. The query surfaces
+// target the first entry's endpoint, which both entries share, so a query reaches both projections.
 if ( $mwIsDev && !defined( 'MW_PHPUNIT_TEST' ) ) {
 	$wgNeoWikiSparqlStores = [
 		[
