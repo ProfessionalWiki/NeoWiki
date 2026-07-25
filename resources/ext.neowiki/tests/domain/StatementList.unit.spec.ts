@@ -189,17 +189,17 @@ describe( 'statementsToJson', () => {
 		expect( json ).toEqual( {
 			value1: {
 				value: [ 'test' ],
-				propertyType: TextType.typeName,
+				type: TextType.typeName,
 			},
 			value2: {
 				value: 123,
-				propertyType: NumberType.typeName,
+				type: NumberType.typeName,
 			},
 			value4: {
 				value: [
 					{ id: 'testId', target: 's11111111111111' },
 				],
-				propertyType: RelationType.typeName,
+				type: RelationType.typeName,
 			},
 		} );
 	} );
@@ -231,7 +231,7 @@ describe( 'unregistered-type round-trip', () => {
 		expect( statementsToJson( statements ) ).toEqual( {
 			Swatch: {
 				value: { hex: '#ff5733', palette: 'warm' },
-				propertyType: 'zzz-color',
+				type: 'zzz-color',
 			},
 		} );
 	} );

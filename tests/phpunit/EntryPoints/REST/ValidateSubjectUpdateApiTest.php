@@ -73,7 +73,7 @@ class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 
 		$body = $this->validBody();
 		$body['statements'] = [
-			'Founded at' => [ 'propertyType' => 'number', 'value' => 2025 ],
+			'Founded at' => [ 'type' => 'number', 'value' => 2025 ],
 		];
 
 		$response = $this->executeHandler(
