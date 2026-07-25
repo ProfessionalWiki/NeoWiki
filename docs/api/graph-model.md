@@ -99,6 +99,9 @@ Stubs arise in two ways:
 When the real Subject is later saved, its node is upgraded in place — matched by `id` alone, so the stub gains its
 properties and Schema label without creating a duplicate node.
 
+A removal that strips a stub of its last incoming relation deletes the stub in the same operation: removing a set of
+Subjects that only reference each other leaves no nodes behind.
+
 ## Relationships
 
 ### HasSubject
@@ -123,7 +126,7 @@ backtick-escaped.
 | `id` | string | Relation ID, 15 characters starting with `r` |
 | *(additional)* | scalar | Any properties from the Relation's property map |
 
-When a Subject with incoming relations from other Subjects is removed, its node is kept as a
+When a Subject is removed while other Subjects still reference it, its node is kept as a
 [stub](#stub-subject-nodes) so those incoming references remain valid.
 
 ## Constraints

@@ -486,6 +486,81 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectDoesNotExist( self::GUID_1 );
 	}
 
+	public function testRemovingMutuallyReferencingSubjectsFromTheirPageDeletesBoth(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1 and GUID_2 reference each other and nothing else references either of them.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+			childSubjects: new SubjectMap(
+				$this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr2' ),
+			)
+		) );
+
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_1 );
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+	}
+
+	public function testRemovingAReferenceCycleFromItsPageDeletesEverySubjectInIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1 -> GUID_2 -> GUID_3 -> GUID_1, with no reference from outside the cycle.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+			childSubjects: new SubjectMap(
+				$this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_3, 'rTestNQS1111rr2' ),
+				$this->buildSubjectWithLocationRelation( self::GUID_3, self::GUID_1, 'rTestNQS1111rr3' ),
+			)
+		) );
+
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_1 );
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+		$this->assertSubjectDoesNotExist( self::GUID_3 );
+	}
+
+	public function testRemovingTheLastSubjectReferencingAStubDeletesTheStub(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1's relation targets a subject that does not exist, creating GUID_2 as a stub.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+		) );
+
+		$this->assertSubjectIsStub( self::GUID_2 );
+
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+	}
+
+	public function testDeletingThePagesOfMutuallyReferencingSubjectsDeletesBoth(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1 and GUID_2 live on separate pages and reference each other.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+		) );
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr2' ),
+		) );
+
+		// Deleting the first page turns GUID_1 into a stub that GUID_2 still references.
+		$store->deletePage( new PageId( 1 ) );
+		$store->deletePage( new PageId( 2 ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_1 );
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+	}
+
 	private function newProjectionStoreWithLocationRelation( string $wikiId = self::WIKI_ID ): GraphDatabasePlugin {
 		$extension = NeoWikiExtension::getInstance();
 
