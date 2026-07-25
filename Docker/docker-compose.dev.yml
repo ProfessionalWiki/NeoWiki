@@ -38,9 +38,16 @@ services:
 
   neo:
     environment:
-      - NEO4J_server_memory_heap_initial__size=512m
+      # Low initial heap with the ceiling left where it was: the JVM grows into it
+      # under load but does not hold it while the stack sits idle, which is most of
+      # the time. AlwaysPreTouch (a Neo4j default) would defeat that by committing
+      # and touching the whole heap at startup.
+      - NEO4J_server_memory_heap_initial__size=128m
       - NEO4J_server_memory_heap_max__size=512m
-      - NEO4J_server_memory_pagecache_size=256m
+      # Off-heap and pre-allocated, so it costs its full size from startup. A dev
+      # graph is a few hundred nodes; raise this if you work with a large one.
+      - NEO4J_server_memory_pagecache_size=64m
+      - NEO4J_server_jvm_additional=-XX:-AlwaysPreTouch
     mem_limit: 1536m
 
   db:
@@ -63,10 +70,12 @@ services:
       - NEO4J_AUTH=neo4j/password
       - NEO4J_server_bolt_listen__address=:7689
       - NEO4J_server_http_listen__address=:7475
-      # Smaller than neo: only holds the PHPUnit graph fixtures.
-      - NEO4J_server_memory_heap_initial__size=384m
+      # Smaller than neo: only holds the PHPUnit graph fixtures. Same low-floor /
+      # unchanged-ceiling shape as neo above.
+      - NEO4J_server_memory_heap_initial__size=128m
       - NEO4J_server_memory_heap_max__size=384m
-      - NEO4J_server_memory_pagecache_size=128m
+      - NEO4J_server_memory_pagecache_size=64m
+      - NEO4J_server_jvm_additional=-XX:-AlwaysPreTouch
     mem_limit: 1g
     healthcheck:
       test: "wget http://localhost:7475/browser -O - | grep 'Neo4j Browser'"
