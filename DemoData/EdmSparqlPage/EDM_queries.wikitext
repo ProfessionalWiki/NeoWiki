@@ -1,4 +1,4 @@
-This wiki's SPARQL store holds two [[RDF and ontology mappings|projections]] of its pages: the '''native''' one, in NeoWiki's own vocabulary, and the '''EDM''' one defined by [[Mapping:EDM]]. A query can be written in EDM terms, in native terms, or in both at once.
+This wiki's SPARQL store holds two [[RDF and ontology mappings|projections]] of its pages: the '''native''' one, in NeoWiki's own vocabulary, and the '''EDM''' one defined by [[Mapping:EDM]], which targets the [https://pro.europeana.eu/page/edm-documentation Europeana Data Model]. A query can be written in EDM terms, in native terms, or in both at once.
 
 Every example below uses the <code><nowiki>{{#sparql_raw}}</nowiki></code> parser function and returns raw [https://www.w3.org/TR/sparql11-results-json/ SPARQL JSON]. The Lua and REST surfaces answer the same queries — see [[SPARQL queries]].
 
@@ -40,8 +40,9 @@ Result:
 
 == Set this up ==
 
-Each store entry names one projection, and several entries may point at one endpoint. The [https://github.com/ProfessionalWiki/NeoWiki/blob/master/Docker/SettingsTemplate.php NeoWiki development stack] points a <code>native</code> and an <code>EDM</code> entry at one QLever, which is why these queries reach both.
+Each store entry names one projection, and several entries may point at one endpoint — see [https://neowiki.ai/docs/operations/installation#optional-sparql-graph-stores Configuring SPARQL graph stores]. The [https://github.com/ProfessionalWiki/NeoWiki/blob/master/Docker/SettingsTemplate.php NeoWiki development stack] points a <code>native</code> and an <code>EDM</code> entry at one QLever, which is why these queries reach both.
 
-* [https://neowiki.ai/docs/operations/installation#optional-sparql-graph-stores Configuring SPARQL graph stores]
+== Learn more ==
+
 * [https://neowiki.ai/docs/rdf/ontology-mapping Ontology mapping reference]
 * [https://neowiki.ai/docs/examples/person-to-edm Person-to-EDM worked example]

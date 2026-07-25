@@ -226,8 +226,8 @@ $wgNeoWikiSparqlStores = [
 		// query requests — QLever only requires it for updates, but a read-protected store needs it too.
 		'accessToken' => 'SECRET',
 		// Optional: the RDF vocabulary written to this store. Defaults to 'native'; otherwise a
-		// Mapping page title without the prefix ('EDM' for Mapping:EDM), which is case-sensitive
-		// beyond its first letter, like any page title.
+		// Mapping page title without the prefix ('EDM' for Mapping:EDM). As with any page title,
+		// only the first letter is case-insensitive.
 		'projection' => 'native',
 	],
 ];
@@ -251,7 +251,6 @@ $wgNeoWikiSparqlStores = [
 	[
 		'updateUrl' => 'https://qlever.example/api/neowiki',
 		'accessToken' => 'SECRET',
-		// The Mapping page Mapping:EDM defines this projection.
 		'projection' => 'EDM',
 	],
 ];
@@ -273,11 +272,10 @@ configured store:
 - The [`nw.sparqlQuery()`](../authoring/lua-api.md#nwsparqlquerysparql) Lua function.
 - The [`POST /neowiki/v0/query/sparql`](../api/query-api.md#sparql-query-endpoint) REST endpoint.
 
+A projection configured on a different endpoint is therefore not reachable from these surfaces.
+
 Each is read-only: the query is sent as a SPARQL 1.1 *query* operation, posted only to `queryUrl` and never
 `updateUrl`.
-
-Because only that first store is queried, a projection configured on a different endpoint is not reachable from
-these surfaces.
 
 The bundled development stack ships a working QLever example wired up this way — see
 [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`

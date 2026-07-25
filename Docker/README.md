@@ -51,9 +51,9 @@ index holds both and a query can join across them; the demo data's `EDM queries`
 such queries.
 
 The `EDM` entry needs that Mapping page, so `make import-demo-data` is part of the setup:
-without it every Subject save logs an unknown-projection error and `make
-rebuild-graph-databases` reports every page as failed. On a stack that predates the second
-entry, run `make rebuild-graph-databases` to fill the EDM graphs for pages already saved.
+without it every Subject save logs an unknown-projection error and
+`make rebuild-graph-databases` reports every page as failed. On a stack that predates the
+second entry, run that rebuild to fill the EDM graphs for pages already saved.
 
 The server runs with `--persist-updates`, which is **mandatory**: without it QLever keeps
 SPARQL updates only in memory and loses them on restart. With it, updates are written to
