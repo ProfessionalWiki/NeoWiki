@@ -93,8 +93,8 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$sent = $this->validBody();
 		$sent['statements'] = [
-			'Founded at' => [ 'type' => 'number', 'value' => 2019 ],
-			'Website' => [ 'type' => 'url', 'value' => [ 'https://example.com' ] ],
+			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
+			'Website' => [ 'propertyType' => 'url', 'value' => [ 'https://example.com' ] ],
 		];
 		$this->executeHandler( $this->newReplaceSubjectApi(), $this->createRequestData( $sent ) );
 
@@ -125,8 +125,8 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$bodyWithTwoStatements = $this->validBody();
 		$bodyWithTwoStatements['statements'] = [
-			'Founded at' => [ 'type' => 'number', 'value' => 2019 ],
-			'Website' => [ 'type' => 'url', 'value' => [ 'https://example.com' ] ],
+			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
+			'Website' => [ 'propertyType' => 'url', 'value' => [ 'https://example.com' ] ],
 		];
 		$this->executeHandler(
 			$this->newReplaceSubjectApi(),
@@ -135,7 +135,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$bodyOmittingOne = $this->validBody();
 		$bodyOmittingOne['statements'] = [
-			'Founded at' => [ 'type' => 'number', 'value' => 2019 ],
+			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
 		];
 		$this->executeHandler(
 			$this->newReplaceSubjectApi(),
@@ -422,7 +422,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 			'label' => 'Test subject sTestSA11111111',
 			'statements' => [
 				'Founded at' => [
-					'type' => 'number',
+					'propertyType' => 'number',
 					'value' => 2019,
 				],
 			],

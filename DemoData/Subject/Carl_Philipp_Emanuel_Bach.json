@@ -5,8 +5,8 @@
 			"label": "Carl Philipp Emanuel Bach",
 			"schema": "Person",
 			"statements": {
-				"Description": { "type": "text", "value": [ "Composer; second surviving son of Johann Sebastian Bach." ] },
-				"Also known as": { "type": "text", "value": [ "C. P. E. Bach", "the Berlin Bach", "the Hamburg Bach" ] }
+				"Description": { "propertyType": "text", "value": [ "Composer; second surviving son of Johann Sebastian Bach." ] },
+				"Also known as": { "propertyType": "text", "value": [ "C. P. E. Bach", "the Berlin Bach", "the Hamburg Bach" ] }
 			}
 		}
 	}

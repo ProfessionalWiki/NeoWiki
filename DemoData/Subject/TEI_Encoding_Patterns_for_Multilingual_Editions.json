@@ -6,19 +6,19 @@
 			"schema": "Publication",
 			"statements": {
 				"Title": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "TEI Encoding Patterns for Multilingual Editions" ]
 				},
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2024
 				},
 				"Venue": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Journal of the Text Encoding Initiative" ]
 				},
 				"Authors": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaE3",
@@ -27,7 +27,7 @@
 					]
 				},
 				"URL": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://example.org/publications/tei-multilingual" ]
 				}
 			}

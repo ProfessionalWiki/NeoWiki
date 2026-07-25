@@ -6,15 +6,15 @@
 			"schema": "City",
 			"statements": {
 				"Country": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Spain" ]
 				},
 				"Population": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 347342
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.bilbao.eus" ]
 				}
 			}

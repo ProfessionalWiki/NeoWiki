@@ -5,11 +5,11 @@
 			"label": "Birth of Wilhelm Friedemann Bach",
 			"schema": "Birth",
 			"statements": {
-				"Brought into life": { "type": "relation", "value": [ { "id": "r1bachaaaaaaaa7", "target": "s1bachaaaaaaaa6" } ] },
-				"By mother": { "type": "relation", "value": [ { "id": "r1bachaaaaaaaa8", "target": "s1bachaaaaaaaa4" } ] },
-				"From father": { "type": "relation", "value": [ { "id": "r1bachaaaaaaaa9", "target": "s1bachaaaaaaaa3" } ] },
-				"Took place at": { "type": "relation", "value": [ { "id": "r1bachaaaaaaab1", "target": "s1bachaaaaaaac3" } ] },
-				"Date": { "type": "date", "value": [ "1710-11-22" ] }
+				"Brought into life": { "propertyType": "relation", "value": [ { "id": "r1bachaaaaaaaa7", "target": "s1bachaaaaaaaa6" } ] },
+				"By mother": { "propertyType": "relation", "value": [ { "id": "r1bachaaaaaaaa8", "target": "s1bachaaaaaaaa4" } ] },
+				"From father": { "propertyType": "relation", "value": [ { "id": "r1bachaaaaaaaa9", "target": "s1bachaaaaaaaa3" } ] },
+				"Took place at": { "propertyType": "relation", "value": [ { "id": "r1bachaaaaaaab1", "target": "s1bachaaaaaaac3" } ] },
+				"Date": { "propertyType": "date", "value": [ "1710-11-22" ] }
 			}
 		}
 	}

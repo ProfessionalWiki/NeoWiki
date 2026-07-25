@@ -5,9 +5,9 @@
 			"label": "Weimar",
 			"schema": "Place",
 			"statements": {
-				"Country": { "type": "text", "value": [ "Germany" ] },
-				"Coordinates": { "type": "text", "value": [ "50.9795, 11.3235" ] },
-				"Description": { "type": "text", "value": [ "City in Thuringia, Germany, where Johann Sebastian Bach served as court organist." ] }
+				"Country": { "propertyType": "text", "value": [ "Germany" ] },
+				"Coordinates": { "propertyType": "text", "value": [ "50.9795, 11.3235" ] },
+				"Description": { "propertyType": "text", "value": [ "City in Thuringia, Germany, where Johann Sebastian Bach served as court organist." ] }
 			}
 		}
 	}

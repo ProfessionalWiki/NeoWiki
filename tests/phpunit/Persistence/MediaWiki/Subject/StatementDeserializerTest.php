@@ -34,7 +34,7 @@ class StatementDeserializerTest extends TestCase {
 			$this->newDeserializer()->deserialize(
 				'MyNumber',
 				[
-					'type' => 'number',
+					'propertyType' => 'number',
 					'value' => 42,
 				]
 			)
@@ -58,7 +58,7 @@ class StatementDeserializerTest extends TestCase {
 			$this->newDeserializer()->deserialize(
 				'MyText',
 				[
-					'type' => 'text',
+					'propertyType' => 'text',
 					'value' => [ 'Foo', 'Bar', 'Baz' ],
 				]
 			)
@@ -86,7 +86,7 @@ class StatementDeserializerTest extends TestCase {
 			$this->newDeserializer()->deserialize(
 				'MyRelation',
 				[
-					'type' => 'relation',
+					'propertyType' => 'relation',
 					'value' => [
 						[
 							'id' => 'rTestSDT1111rr1',
@@ -115,7 +115,7 @@ class StatementDeserializerTest extends TestCase {
 			$this->newDeserializer()->deserialize(
 				'Swatch',
 				[
-					'type' => 'color',
+					'propertyType' => 'color',
 					'value' => [ '#ff5733' ],
 				]
 			)
@@ -125,9 +125,26 @@ class StatementDeserializerTest extends TestCase {
 	public function testUnregisteredTypeValueReserializesToTheOriginalJson(): void {
 		$value = [ 'nested' => [ 'a', 1, true ], 'other' => null ];
 
-		$statement = $this->newDeserializer()->deserialize( 'Swatch', [ 'type' => 'color', 'value' => $value ] );
+		$statement = $this->newDeserializer()->deserialize( 'Swatch', [ 'propertyType' => 'color', 'value' => $value ] );
 
 		$this->assertSame( $value, $statement->getValue()->toScalars() );
+	}
+
+	public function testDeserializesRevisionUsingTheLegacyTypeKey(): void {
+		$this->assertEquals(
+			new Statement(
+				property: new PropertyName( 'MyNumber' ),
+				propertyType: 'number',
+				value: new NumberValue( 42 )
+			),
+			$this->newDeserializer()->deserialize(
+				'MyNumber',
+				[
+					'type' => 'number',
+					'value' => 42,
+				]
+			)
+		);
 	}
 
 }

@@ -6,15 +6,15 @@
 			"schema": "Museum",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Dutch national museum dedicated to arts and history, home to masterpieces of the Dutch Golden Age" ]
 				},
 				"Founded": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1800
 				},
 				"City": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoEB5UuQS",
@@ -23,23 +23,23 @@
 					]
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.rijksmuseum.nl" ]
 				},
 				"Specialization": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Dutch Golden Age", "Dutch History", "Asian Art" ]
 				},
 				"Annual visitors": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2700000
 				},
 				"Admission fee": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 22.50
 				},
 				"Links": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [
 						"https://www.instagram.com/rijksmuseum",
 						"https://twitter.com/rijksmuseum"
@@ -51,45 +51,45 @@
 			"label": "Rijksmuseum 2024",
 			"schema": "Attendance",
 			"statements": {
-				"Year": { "type": "number", "value": 2024 },
-				"Visitors": { "type": "number", "value": 2500000 },
-				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2024" ] }
+				"Year": { "propertyType": "number", "value": 2024 },
+				"Visitors": { "propertyType": "number", "value": 2500000 },
+				"Source": { "propertyType": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2024" ] }
 			}
 		},
 		"sEpfwJLAtndBbbB": {
 			"label": "Rijksmuseum 2023",
 			"schema": "Attendance",
 			"statements": {
-				"Year": { "type": "number", "value": 2023 },
-				"Visitors": { "type": "number", "value": 2700000 },
-				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/rijksmuseum-rounds-off-historic-year" ] }
+				"Year": { "propertyType": "number", "value": 2023 },
+				"Visitors": { "propertyType": "number", "value": 2700000 },
+				"Source": { "propertyType": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/rijksmuseum-rounds-off-historic-year" ] }
 			}
 		},
 		"sEpfwJLAtndCccC": {
 			"label": "Rijksmuseum 2022",
 			"schema": "Attendance",
 			"statements": {
-				"Year": { "type": "number", "value": 2022 },
-				"Visitors": { "type": "number", "value": 1760000 },
-				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2022" ] }
+				"Year": { "propertyType": "number", "value": 2022 },
+				"Visitors": { "propertyType": "number", "value": 1760000 },
+				"Source": { "propertyType": "url", "value": [ "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2022" ] }
 			}
 		},
 		"sEpfwJLAtndDddD": {
 			"label": "Rijksmuseum 2021",
 			"schema": "Attendance",
 			"statements": {
-				"Year": { "type": "number", "value": 2021 },
-				"Visitors": { "type": "number", "value": 625000 },
-				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2021" ] }
+				"Year": { "propertyType": "number", "value": 2021 },
+				"Visitors": { "propertyType": "number", "value": 625000 },
+				"Source": { "propertyType": "url", "value": [ "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2021" ] }
 			}
 		},
 		"sEpfwJLAtndEeeE": {
 			"label": "Rijksmuseum 2020",
 			"schema": "Attendance",
 			"statements": {
-				"Year": { "type": "number", "value": 2020 },
-				"Visitors": { "type": "number", "value": 675000 },
-				"Source": { "type": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2020" ] }
+				"Year": { "propertyType": "number", "value": 2020 },
+				"Visitors": { "propertyType": "number", "value": 675000 },
+				"Source": { "propertyType": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2020" ] }
 			}
 		}
 	}

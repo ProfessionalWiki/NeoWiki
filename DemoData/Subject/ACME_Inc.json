@@ -6,29 +6,29 @@
 			"schema": "Company",
 			"statements": {
 				"Founded at": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2005
 				},
 				"Websites": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [
 						"https://acme.example"
 					]
 				},
 				"Status": {
-					"type": "select",
+					"propertyType": "select",
 					"value": ["o1demo1aaaaaaa1"]
 				},
 				"World domination progress": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 42
 				},
 				"Is public": {
-					"type": "boolean",
+					"propertyType": "boolean",
 					"value": true
 				},
 				"Products": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo1aaaaaar1",
@@ -45,7 +45,7 @@
 					]
 				},
 				"Departments": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo7aaaaaar1",
@@ -62,7 +62,7 @@
 					]
 				},
 				"Offices": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo7aaaaaar4",
@@ -75,7 +75,7 @@
 					]
 				},
 				"Headquarters": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo7aaaaaar6",

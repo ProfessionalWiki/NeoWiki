@@ -6,15 +6,15 @@
 			"schema": "Artwork",
 			"statements": {
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1888
 				},
 				"Medium": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Oil on canvas" ]
 				},
 				"Creator": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoJv75wqU",
@@ -23,7 +23,7 @@
 					]
 				},
 				"Located at": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoKte65Di",
@@ -32,11 +32,11 @@
 					]
 				},
 				"Image": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://upload.wikimedia.org/wikipedia/commons/9/94/Starry_Night_Over_the_Rhone.jpg" ]
 				},
 				"Estimated value": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 100
 				}
 			}

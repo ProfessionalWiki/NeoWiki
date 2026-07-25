@@ -5,7 +5,7 @@
 			"label": "Maria Barbara Bach",
 			"schema": "Person",
 			"statements": {
-				"Description": { "type": "text", "value": [ "First wife of Johann Sebastian Bach; mother of Wilhelm Friedemann and Carl Philipp Emanuel Bach." ] }
+				"Description": { "propertyType": "text", "value": [ "First wife of Johann Sebastian Bach; mother of Wilhelm Friedemann and Carl Philipp Emanuel Bach." ] }
 			}
 		}
 	}

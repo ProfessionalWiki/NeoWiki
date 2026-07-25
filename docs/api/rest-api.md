@@ -144,7 +144,7 @@ On the **Subject read**, the targets are merged into the same `subjects` map as 
       "label": "Rijksmuseum",
       "schema": "Museum",
       "statements": {
-        "City": { "type": "relation", "value": [ { "id": "rEpfwJLoEB5UuQS", "target": "sEpfwJLnuwcxvuJ" } ] }
+        "City": { "propertyType": "relation", "value": [ { "id": "rEpfwJLoEB5UuQS", "target": "sEpfwJLnuwcxvuJ" } ] }
       }
     },
     "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "schema": "City", "statements": { ... } }

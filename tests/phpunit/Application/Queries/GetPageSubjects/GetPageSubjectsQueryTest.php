@@ -87,7 +87,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						schemaName: 'TestSchema',
 						statements: [
 							'name' => [
-								'type' => 'text',
+								'propertyType' => 'text',
 								'value' => [ 'Berlin' ]
 							],
 						],

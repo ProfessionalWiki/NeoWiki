@@ -6,15 +6,15 @@
 			"schema": "City",
 			"statements": {
 				"Country": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Belgium" ]
 				},
 				"Population": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 565039
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.antwerpen.be" ]
 				}
 			}

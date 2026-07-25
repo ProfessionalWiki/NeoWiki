@@ -5,9 +5,9 @@
 			"label": "Eisenach",
 			"schema": "Place",
 			"statements": {
-				"Country": { "type": "text", "value": [ "Germany" ] },
-				"Coordinates": { "type": "text", "value": [ "50.9747, 10.3247" ] },
-				"Description": { "type": "text", "value": [ "Town in Thuringia, Germany; birthplace of Johann Sebastian Bach." ] }
+				"Country": { "propertyType": "text", "value": [ "Germany" ] },
+				"Coordinates": { "propertyType": "text", "value": [ "50.9747, 10.3247" ] },
+				"Description": { "propertyType": "text", "value": [ "Town in Thuringia, Germany; birthplace of Johann Sebastian Bach." ] }
 			}
 		}
 	}

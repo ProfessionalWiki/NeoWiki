@@ -6,15 +6,15 @@
 			"schema": "Artwork",
 			"statements": {
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1906
 				},
 				"Medium": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Oil on canvas" ]
 				},
 				"Creator": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoH2dWKCs",
@@ -23,7 +23,7 @@
 					]
 				},
 				"Located at": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoHyZeBJC",
@@ -32,11 +32,11 @@
 					]
 				},
 				"Image": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://upload.wikimedia.org/wikipedia/commons/a/aa/Claude_Monet_-_Water_Lilies_-_1906%2C_Ryerson.jpg" ]
 				},
 				"Estimated value": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 80
 				}
 			}

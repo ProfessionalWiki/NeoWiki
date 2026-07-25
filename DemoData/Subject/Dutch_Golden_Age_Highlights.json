@@ -6,15 +6,15 @@
 			"schema": "Exhibition",
 			"statements": {
 				"Start year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2023
 				},
 				"End year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2024
 				},
 				"Venue": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoXU13f3X",
@@ -23,7 +23,7 @@
 					]
 				},
 				"Featured artists": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoYRSxeGY",
@@ -32,15 +32,15 @@
 					]
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.rijksmuseum.nl/en/whats-on/exhibitions" ]
 				},
 				"Theme": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Masterworks from the Dutch Republic's golden century of art and trade" ]
 				},
 				"Visitor count": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 380000
 				}
 			}

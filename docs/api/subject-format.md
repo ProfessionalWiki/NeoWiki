@@ -53,22 +53,22 @@ A property mapped to `null` instead of a Statement object is skipped when the JS
 
 ```json
 {
-  "type": "number",
+  "propertyType": "number",
   "value": 2019
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | string | Yes | The property's type when the value was written — the writer's schema ([ADR 011](../adr/011-include-writers-schema.md)). |
-| `value` | varies | Yes | The value, shaped by `type`. See [Value formats](#value-formats). |
+| `propertyType` | string | Yes | The property's type when the value was written — the writer's schema ([ADR 011](../adr/011-include-writers-schema.md)). |
+| `value` | varies | Yes | The value, shaped by `propertyType`. See [Value formats](#value-formats). |
 
 ## Value formats
 
-`type` holds the property type name, which fixes the `value` shape:
+`propertyType` holds the property type name, which fixes the `value` shape:
 
-| `type` | `value` |
-|--------|---------|
+| `propertyType` | `value` |
+|----------------|---------|
 | `text`, `url`, `select`, `date`, `dateTime` | Array of strings, one per value part. |
 | `number` | A single number (integer or float). |
 | `boolean` | A single boolean. |
@@ -77,10 +77,10 @@ A property mapped to `null` instead of a Statement object is skipped when the JS
 A multi-part `text` value:
 
 ```json
-{ "type": "text", "value": [ "First value", "Second value" ] }
+{ "propertyType": "text", "value": [ "First value", "Second value" ] }
 ```
 
-Every registered PropertyType uses one of these four `value` shapes. A `type` whose PropertyType is not
+Every registered PropertyType uses one of these four `value` shapes. A `propertyType` whose PropertyType is not
 registered — its extension disabled — keeps the raw value that was stored
 ([`unregistered-type`](validation-codes.md#unregistered-type)).
 
@@ -90,7 +90,7 @@ Each `relation` value is an array of objects pointing at other Subjects:
 
 ```json
 {
-  "type": "relation",
+  "propertyType": "relation",
   "value": [
     { "id": "r1demo5rrrrrrr1", "target": "s1demo4sssssss1" }
   ]
@@ -156,7 +156,7 @@ The server mints the Subject ID unless you pass one:
   "label": "Updated Label",
   "statements": {
     "Founded at": {
-      "type": "number",
+      "propertyType": "number",
       "value": 2019
     }
   },
@@ -170,7 +170,7 @@ The server mints the Subject ID unless you pass one:
 | `statements` | Yes | Map of property name to Statement; omitted names are deleted. Pass `{}` to clear all. |
 | `comment` | No | Edit summary. |
 
-On every endpoint that takes `statements`, an entry without `type`, or whose value is empty for its type, is
+On every endpoint that takes `statements`, an entry without `propertyType`, or whose value is empty for its type, is
 dropped without error. For schema/value validation outcomes see [Validation Codes](validation-codes.md).
 
 A relation may omit `id`; the server generates one. The Subject's `id`, `schema`, and page fields are immutable
@@ -189,7 +189,7 @@ A page about Berlin with a main Subject and a child Subject for population data:
       "schema": "City",
       "statements": {
         "Country": {
-          "type": "text",
+          "propertyType": "text",
           "value": ["Germany"]
         }
       }
@@ -199,15 +199,15 @@ A page about Berlin with a main Subject and a child Subject for population data:
       "schema": "Population",
       "statements": {
         "Population": {
-          "type": "number",
+          "propertyType": "number",
           "value": 3677472
         },
         "Date": {
-          "type": "text",
+          "propertyType": "text",
           "value": ["2020-12-31"]
         },
         "References": {
-          "type": "url",
+          "propertyType": "url",
           "value": ["https://example.com/Pop2020"]
         }
       }

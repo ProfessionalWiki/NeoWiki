@@ -31,11 +31,11 @@ const subjectResponse = {
 	statements: {
 		label: {
 			value: 'John Doe',
-			type: TextType.typeName,
+			propertyType: TextType.typeName,
 		},
 		WorkUrl: {
 			value: 'https://pro.wiki',
-			type: UrlType.typeName,
+			propertyType: UrlType.typeName,
 		},
 	},
 };
@@ -130,7 +130,7 @@ describe( 'RestSubjectRepository', () => {
 					statements: {
 						Products: {
 							value: [ { target: referencedId1 }, { target: referencedId2 } ],
-							type: RelationType.typeName,
+							propertyType: RelationType.typeName,
 						},
 					},
 				},
@@ -205,7 +205,7 @@ describe( 'RestSubjectRepository', () => {
 				statements: {
 					Mystery: {
 						value: 'x',
-						type: 'unregistered-property-type',
+						propertyType: 'unregistered-property-type',
 					},
 				},
 			};

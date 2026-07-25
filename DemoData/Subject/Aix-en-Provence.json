@@ -6,15 +6,15 @@
 			"schema": "City",
 			"statements": {
 				"Country": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "France" ]
 				},
 				"Population": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 149695
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.aixenprovence.fr" ]
 				}
 			}

@@ -6,15 +6,15 @@
 			"schema": "Exhibition",
 			"statements": {
 				"Start year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2024
 				},
 				"End year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2025
 				},
 				"Venue": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoUY71QX2",
@@ -23,7 +23,7 @@
 					]
 				},
 				"Featured artists": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoVW2qior",
@@ -36,11 +36,11 @@
 					]
 				},
 				"Theme": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "The evolution of light and color in French Impressionism" ]
 				},
 				"Visitor count": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 450000
 				}
 			}
