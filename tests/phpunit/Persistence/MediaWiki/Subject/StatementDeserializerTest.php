@@ -41,6 +41,23 @@ class StatementDeserializerTest extends TestCase {
 		);
 	}
 
+	public function testDeserializesRevisionUsingTheLegacyTypeKey(): void {
+		$this->assertEquals(
+			new Statement(
+				property: new PropertyName( 'MyNumber' ),
+				propertyType: 'number',
+				value: new NumberValue( 42 )
+			),
+			$this->newDeserializer()->deserialize(
+				'MyNumber',
+				[
+					'type' => 'number',
+					'value' => 42,
+				]
+			)
+		);
+	}
+
 	/**
 	 * Core types only: no extension is loaded, so "color" is an unregistered type.
 	 */
@@ -128,23 +145,6 @@ class StatementDeserializerTest extends TestCase {
 		$statement = $this->newDeserializer()->deserialize( 'Swatch', [ 'propertyType' => 'color', 'value' => $value ] );
 
 		$this->assertSame( $value, $statement->getValue()->toScalars() );
-	}
-
-	public function testDeserializesRevisionUsingTheLegacyTypeKey(): void {
-		$this->assertEquals(
-			new Statement(
-				property: new PropertyName( 'MyNumber' ),
-				propertyType: 'number',
-				value: new NumberValue( 42 )
-			),
-			$this->newDeserializer()->deserialize(
-				'MyNumber',
-				[
-					'type' => 'number',
-					'value' => 42,
-				]
-			)
-		);
 	}
 
 }

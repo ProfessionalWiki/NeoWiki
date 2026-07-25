@@ -90,4 +90,18 @@ class StatementListBuilderTest extends TestCase {
 		$this->assertNull( $list->getStatement( new PropertyName( 'Unwanted' ) ) );
 	}
 
+	/**
+	 * The legacy `type` key is tolerated when reading stored revisions, never on API input:
+	 * accepting both here would restore the ambiguity the rename removed.
+	 */
+	public function testLegacyTypeKeyIsNotAcceptedAsPropertyType(): void {
+		$list = $this->newBuilder()->build( [
+			'Wanted' => [ 'propertyType' => 'text', 'value' => 'yes' ],
+			'Unwanted' => [ 'type' => 'text', 'value' => 'yes' ],
+		] );
+
+		$this->assertNotNull( $list->getStatement( new PropertyName( 'Wanted' ) ) );
+		$this->assertNull( $list->getStatement( new PropertyName( 'Unwanted' ) ) );
+	}
+
 }

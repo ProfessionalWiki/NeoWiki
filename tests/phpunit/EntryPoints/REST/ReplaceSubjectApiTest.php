@@ -92,18 +92,19 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->createPages();
 
 		$sent = $this->validBody();
-		$sent['statements'] = [
-			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
-			'Website' => [ 'propertyType' => 'url', 'value' => [ 'https://example.com' ] ],
-		];
+		$sent['statements'] = $this->twoStatements();
 		$this->executeHandler( $this->newReplaceSubjectApi(), $this->createRequestData( $sent ) );
 
 		$read = $this->readStatementsFromApi( 'sTestSA11111111' );
 
 		$echoed = $this->validBody();
+		$echoed['label'] = 'Echoed back';
 		$echoed['statements'] = $read;
 		$this->executeHandler( $this->newReplaceSubjectApi(), $this->createRequestData( $echoed ) );
 
+		// The label proves the echoed request was applied: without it, a rejected write leaves the
+		// Subject untouched and every statement assertion below passes for the wrong reason.
+		$this->assertSame( 'Echoed back', $this->getSubjectFromRepository( 'sTestSA11111111' )->label->text );
 		$this->assertSame( $read, $this->readStatementsFromApi( 'sTestSA11111111' ) );
 		$this->assertSame( [ 'Founded at', 'Website' ], array_keys( $read ) );
 	}
@@ -120,14 +121,18 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		return json_decode( $response->getBody()->getContents(), true )['subjects'][$subjectId]['statements'];
 	}
 
+	private function twoStatements(): array {
+		return [
+			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
+			'Website' => [ 'propertyType' => 'url', 'value' => [ 'https://example.com' ] ],
+		];
+	}
+
 	public function testOmittedStatementKeyIsDeleted(): void {
 		$this->createPages();
 
 		$bodyWithTwoStatements = $this->validBody();
-		$bodyWithTwoStatements['statements'] = [
-			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
-			'Website' => [ 'propertyType' => 'url', 'value' => [ 'https://example.com' ] ],
-		];
+		$bodyWithTwoStatements['statements'] = $this->twoStatements();
 		$this->executeHandler(
 			$this->newReplaceSubjectApi(),
 			$this->createRequestData( $bodyWithTwoStatements )
