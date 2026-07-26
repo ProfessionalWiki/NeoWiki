@@ -1,0 +1,5 @@
+/* Vector 2022 gives every logged-in user a "Switch to old look" link and renders it between the
+   first main menu section and the rest, so it reads as the last entry of the demo tour. */
+.vector-main-menu-action-opt-out {
+	display: none;
+}
