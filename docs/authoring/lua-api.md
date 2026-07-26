@@ -221,10 +221,11 @@ end
 ```
 
 ```lua
--- Parameterised — always prefer this over concatenating values into the query.
+-- Parameterised — always prefer this over concatenating values into the query. The Schema is the
+-- node's label, not a property, and Cypher parameters cannot supply labels.
 local rows = nw.query(
-    'MATCH (s:Subject {schema: $schema}) WHERE s.`Valid` = $valid RETURN s.name, s.`Expiry date`',
-    { schema = 'ISMS Document', valid = 'Yes' }
+    'MATCH (s:Subject:`ISMS Document`) WHERE s.`Valid` = $valid RETURN s.name, s.`Expiry date`',
+    { valid = 'Yes' }
 )
 ```
 
