@@ -62,13 +62,12 @@ Constraints the model rests on:
 
 ## Open decisions
 
-- **Parse-time read semantics.** Today the parse path is inconsistent: Schema/Mapping lookups are gated per user but
-  their output is parser-cached user-agnostically ([#1063](https://github.com/ProfessionalWiki/NeoWiki/issues/1063));
-  subject accessors (`{{#neowiki_value}}` and the `nw` data accessors) check only revision-deletion visibility, not
-  page `read`; `{{#cypher_raw}}` and `nw.query` check nothing
-  ([#1059](https://github.com/ProfessionalWiki/NeoWiki/issues/1059)). `{{#view}}` is the leak-free pattern: a
-  placeholder rendered at parse time, data fetched per user over REST. **TODO:** decide the parse-path rule and what
-  it means for each surface.
+- **Parse-time read semantics.** Today the parse path is inconsistent
+  ([#1059](https://github.com/ProfessionalWiki/NeoWiki/issues/1059)): Schema/Mapping lookups are gated per user but
+  their output is parser-cached user-agnostically; subject accessors (`{{#neowiki_value}}` and the `nw` data
+  accessors) check only revision-deletion visibility, not page `read`; `{{#cypher_raw}}` and `nw.query` check
+  nothing. `{{#view}}` is the leak-free pattern: a placeholder rendered at parse time, data fetched per user over
+  REST. **TODO:** decide the parse-path rule and what it means for each surface.
 - **Cross-wiki subject display.** Rendering a subject from another wiki goes through REST, not Cypher, so query-side
   scoping does not cover it. **TODO:** decide the check and the degradation behavior when the schema or subject is
   not accessible. Relates to [ADR 23](023-subject-sources.md).
