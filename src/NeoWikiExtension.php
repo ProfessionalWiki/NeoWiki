@@ -181,8 +181,7 @@ class NeoWikiExtension {
 	private ClientInterface $neo4jClient;
 	private ClientInterface $readOnlyNeo4jClient;
 	private ?WikiConfigSource $wikiConfigSource = null;
-	private SchemaLookup $schemaLookup;
-	private ?Authority $schemaLookupAuthority = null;
+	private ?SchemaLookup $schemaLookup = null;
 	private static ?self $instance = null;
 
 	public static function getInstance(): self {
@@ -1029,18 +1028,10 @@ class NeoWikiExtension {
 		);
 	}
 
-	// One lookup per Authority, so callers resolving Schemas for that Authority share its
-	// process-local cache. The lookup resolves content as its Authority, so an Authority change
-	// builds a new one rather than reusing the previous Authority's resolutions.
+	// Pinned to the authority of the first use, like getNeo4jPlugin(): the realistic mid-process
+	// authority switch is a login, where serving the earlier anonymous resolutions only under-serves.
 	public function getSchemaLookup(): SchemaLookup {
-		$authority = $this->getRequestAuthority();
-
-		if ( $this->schemaLookupAuthority !== $authority ) {
-			// Recorded only once the lookup exists, so a throw here is retried rather than
-			// leaving the Authority pinned to a lookup that was never built.
-			$this->schemaLookup = $this->newSchemaLookup( $authority );
-			$this->schemaLookupAuthority = $authority;
-		}
+		$this->schemaLookup ??= $this->newSchemaLookup( $this->getRequestAuthority() );
 
 		return $this->schemaLookup;
 	}

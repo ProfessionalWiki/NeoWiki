@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
-use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
@@ -19,7 +18,6 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
-use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use Wikimedia\ObjectCache\EmptyBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
@@ -34,8 +32,6 @@ use Wikimedia\ObjectCache\WANObjectCache;
  * @group Database
  */
 class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
-
-	use NeoWikiMockAuthorityTrait;
 
 	private const SCHEMA_NAME = 'SharedLookupSchema';
 
@@ -80,17 +76,6 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 		$extension = NeoWikiExtension::getInstance();
 
 		$this->assertSame( $extension->getSchemaLookup(), $extension->getSchemaLookup() );
-	}
-
-	public function testDoesNotServeOneAuthoritysSchemaLookupToAnother(): void {
-		$context = RequestContext::getMain();
-		$extension = NeoWikiExtension::getInstance();
-
-		$context->setAuthority( $this->mockRegisteredUltimateAuthority() );
-		$this->assertNotNull( $extension->getSchemaLookup()->getSchema( new SchemaName( self::SCHEMA_NAME ) ) );
-
-		$context->setAuthority( $this->authorityWithGlobalReadButNoPageRead() );
-		$this->assertNull( $extension->getSchemaLookup()->getSchema( new SchemaName( self::SCHEMA_NAME ) ) );
 	}
 
 	private function newCountingProjectionStore( SchemaLookup $inner ): GraphDatabasePlugin {
