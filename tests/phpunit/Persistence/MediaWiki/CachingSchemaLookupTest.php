@@ -89,7 +89,7 @@ class CachingSchemaLookupTest extends TestCase {
 		$this->assertEquals( $inner->schema, $second );
 	}
 
-	public function testResolvesAbsentSchemaOnlyOnceWhenTheSharedCacheStoresNothing(): void {
+	public function testResolvesUndeserializableSchemaOnlyOnceWhenTheSharedCacheStoresNothing(): void {
 		$inner = $this->newNullReturningSpyLookup();
 
 		$lookup = new CachingSchemaLookup( $inner, $this->newDiscardingCache(), $this->newTitleFactory( 1, 100, 100 ), new StubPageReadAuthorizer( allowed: true ), $this->newConnectionProvider() );
@@ -124,7 +124,7 @@ class CachingSchemaLookupTest extends TestCase {
 		};
 
 		$lookup = new CachingSchemaLookup( $this->newSpyLookup(), $this->newDiscardingCache(), $this->newTitleFactory( 1, 100, 100 ), $authorizer, $this->newConnectionProvider() );
-		$lookup->getSchema( new SchemaName( 'Person' ) );
+		$this->assertNotNull( $lookup->getSchema( new SchemaName( 'Person' ) ) );
 
 		$authorizer->allowed = false;
 

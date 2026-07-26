@@ -16,22 +16,19 @@ use Wikimedia\Rdbms\Database;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
- * Caches deserialized Schemas so that repeated reads (the per-keystroke dry-run validation, and
- * the validation plus graph projection of every Subject on a saved page) do not each re-load the
- * Schema wiki page and re-parse it. Caching is two-tier: a process-local tier serving the calls
- * within one request or maintenance run, over the shared WANObjectCache serving calls across them.
- *
- * Both tiers key on the Schema page's latest revision id, so editing the Schema transparently
- * invalidates the entry — no stale schemas. Neither tier is a read gate: the per-page read check
- * runs on every call, ahead of both.
+ * Caches deserialized Schemas so that repeated reads do not each re-load and re-parse the Schema
+ * wiki page. Two tiers: a process-local one serving the reads within a single request or
+ * maintenance run, over the shared WANObjectCache serving reads across them. Both key on the
+ * Schema page's latest revision id, so editing the Schema transparently invalidates the entry —
+ * no stale schemas.
  */
 class CachingSchemaLookup implements SchemaLookup {
 
 	private const CACHE_VERSION = 1;
 
 	/**
-	 * Resolved Schemas by cache key, including the nulls, so a Schema that is missing or
-	 * unreadable is not re-resolved per Subject either.
+	 * Schemas by cache key, including the null from a Schema page whose content does not
+	 * deserialize. A missing or unreadable page returns before this, so it is never memoized.
 	 *
 	 * @var array<string, ?Schema>
 	 */
@@ -90,8 +87,7 @@ class CachingSchemaLookup implements SchemaLookup {
 
 	/**
 	 * Keyed by the Schema page's article id and latest revision id, so editing
-	 * the Schema yields a new key and the old entry is never served again by
-	 * either tier.
+	 * the Schema yields a new key and the old entry is never served again.
 	 */
 	private function makeCacheKey( Title $title ): string {
 		return $this->cache->makeKey(

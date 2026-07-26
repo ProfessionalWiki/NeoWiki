@@ -1029,18 +1029,17 @@ class NeoWikiExtension {
 		);
 	}
 
-	/**
-	 * One lookup per Authority, so its process-local cache is shared by everything resolving Schemas
-	 * for that Authority — most notably the validation and the graph projection of every Subject on a
-	 * saved page. The lookup resolves content as its Authority, so a change of Authority builds a new
-	 * one rather than serving one Authority's resolutions to another.
-	 */
+	// One lookup per Authority, so callers resolving Schemas for that Authority share its
+	// process-local cache. The lookup resolves content as its Authority, so an Authority change
+	// builds a new one rather than reusing the previous Authority's resolutions.
 	public function getSchemaLookup(): SchemaLookup {
 		$authority = $this->getRequestAuthority();
 
 		if ( $this->schemaLookupAuthority !== $authority ) {
-			$this->schemaLookupAuthority = $authority;
+			// Recorded only once the lookup exists, so a throw here is retried rather than
+			// leaving the Authority pinned to a lookup that was never built.
 			$this->schemaLookup = $this->newSchemaLookup( $authority );
+			$this->schemaLookupAuthority = $authority;
 		}
 
 		return $this->schemaLookup;

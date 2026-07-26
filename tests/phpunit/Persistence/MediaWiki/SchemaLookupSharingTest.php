@@ -97,15 +97,12 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore( $this->newCachingLookup( $inner ) );
 	}
 
-	/**
-	 * Over a cache that stores nothing, so every read past the process-local tier reaches
-	 * the counting lookup, as on a wiki without a shared object cache.
-	 */
 	private function newCachingLookup( SchemaLookup $inner ): CachingSchemaLookup {
 		$services = MediaWikiServices::getInstance();
 
 		return new CachingSchemaLookup(
 			schemaLookup: $inner,
+			// Stores nothing, so every read past the process-local tier reaches the counting lookup.
 			cache: new WANObjectCache( [ 'cache' => new EmptyBagOStuff() ] ),
 			titleFactory: $services->getTitleFactory(),
 			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
