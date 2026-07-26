@@ -1,5 +1,5 @@
 * Demo tour
-** Main Page|Main page
+** mainpage|mainpage-description
 ** Museum collection|Museum collection
 ** ACME Inc|ACME Inc
 ** Research catalog|Research catalog
@@ -9,8 +9,10 @@
 ** Special:Schemas|Schemas
 ** Subject views|Subject views
 ** RDF and ontology mappings|RDF and ontology mappings
-** SPARQL queries|SPARQL queries
+** {{#ifexist:SPARQL queries|SPARQL queries{{!}}SPARQL queries|}}
 ** Developers|Developers hub
 * About NeoWiki
 ** https://neowiki.ai|NeoWiki website
 ** https://github.com/ProfessionalWiki/NeoWiki/issues|Issue tracker
+* This wiki
+** recentchanges-url|recentchanges
