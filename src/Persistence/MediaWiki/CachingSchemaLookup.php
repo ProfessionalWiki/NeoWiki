@@ -27,9 +27,6 @@ class CachingSchemaLookup implements SchemaLookup {
 	private const CACHE_VERSION = 1;
 
 	/**
-	 * Schemas by cache key, including the null from a Schema page whose content does not
-	 * deserialize. A missing or unreadable page returns before this, so it is never memoized.
-	 *
 	 * @var array<string, ?Schema>
 	 */
 	private array $resolvedSchemas = [];
