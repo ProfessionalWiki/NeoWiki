@@ -19,12 +19,14 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ImportPresenterSpy;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\PageContentSaverStub;
 
 /**
- * Covers which namespace each demo data source directory imports into. The saver is a stub, so the
- * titles the action derives from the file names can be checked without touching the database.
+ * Covers the title and content model each demo data source directory imports into. The saver is a
+ * stub, so what the action derives from the file names can be checked without touching the database.
  *
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\ImportPagesAction
  */
 class ImportPagesNamespaceTest extends MediaWikiIntegrationTestCase {
+
+	private PageContentSaverStub $saver;
 
 	public function testPageFilesImportIntoTheMainNamespace(): void {
 		$presenter = $this->runImport( pageFiles: [ 'Museum collection.wikitext' => 'hubs' ] );
@@ -44,6 +46,21 @@ class ImportPagesNamespaceTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( [ 'MediaWiki:Sidebar' ], $presenter->created );
 	}
 
+	public function testCssFilesKeepTheirExtensionInTheTitle(): void {
+		$presenter = $this->runImport( mediaWikiFiles: [ 'Vector-2022.css' => '.foo { display: none; }' ] );
+
+		$this->assertSame( [ 'MediaWiki:Vector-2022.css' ], $presenter->created );
+	}
+
+	public function testCssFilesImportAsSiteCss(): void {
+		$this->runImport( mediaWikiFiles: [ 'Vector-2022.css' => '.foo { display: none; }' ] );
+
+		$this->assertSame(
+			CONTENT_MODEL_CSS,
+			$this->saver->savedContent['Vector-2022.css']['main']->getModel()
+		);
+	}
+
 	/**
 	 * @param array<string, string> $pageFiles Source files (name => content) per source directory.
 	 * @param array<string, string> $moduleFiles
@@ -55,13 +72,14 @@ class ImportPagesNamespaceTest extends MediaWikiIntegrationTestCase {
 		array $mediaWikiFiles = [],
 	): ImportPresenterSpy {
 		$presenter = new ImportPresenterSpy();
+		$this->saver = new PageContentSaverStub(
+			$this->createMock( WikiPageFactory::class ),
+			$this->createMock( Authority::class )
+		);
 
 		( new ImportPagesAction(
 			presenter: $presenter,
-			pageContentSaver: new PageContentSaverStub(
-				$this->createMock( WikiPageFactory::class ),
-				$this->createMock( Authority::class )
-			),
+			pageContentSaver: $this->saver,
 			importedPageTitlesLookup: $this->createMock( ImportedPageTitlesLookup::class ),
 			pageDeleter: $this->createMock( PageDeleter::class ),
 			schemaContentSource: $this->createMock( SchemaContentSource::class ),

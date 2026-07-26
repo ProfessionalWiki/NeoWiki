@@ -17,6 +17,7 @@ partners, knowledge managers, MediaWiki ecosystem evaluators, and live-demo audi
 | `EdmSparqlPage/<Name>.wikitext` | Pages demoing SPARQL over the EDM ontology projection, including joins with the native one. Imported only when the queried store holds both projections. | Main namespace, `<Name>` |
 | `Module/<Name>.lua` | Scribunto modules | `Module:<Name>` |
 | `MediaWiki/<Name>.wikitext` | Interface pages, such as `Sidebar` (the main menu) | `MediaWiki:<Name>` |
+| `MediaWiki/<Name>.css` | Site CSS, per skin (`Vector-2022.css`) or for every skin (`Common.css`) | `MediaWiki:<Name>.css` |
 
 `ImportDemoData.php` reseeds the demo set: it creates and updates pages from these directories, and
 deletes pages a previous import created whose source file is now gone. So renaming or removing a
