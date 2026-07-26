@@ -431,7 +431,8 @@ smoke-test: ## Hit the running wiki from outside and verify it responds (CI smok
 # ---- Performance test data ---------------------------------------------------
 
 # Build, benchmark and restore big synthetic wikis. Artifacts land in the gitignored perf/.
-# Usage and caveats are in README.md#performance-test-data.
+# Usage and caveats are in README.md#performance-test-data. perf-snapshot and perf-restore
+# drive the containers, so unlike the other two they run on the host only.
 
 PERF_DIR := perf
 PERF_DUMP := $(PERF_DIR)/dump.xml
@@ -455,6 +456,7 @@ _require-pages:
 	@[ -n "$(pages)" ] || { echo "Usage: make perf-generate pages=N [subjects=10] [seed=1]" >&2; exit 1; }
 
 perf-generate: _require-pages ## Generate a synthetic wiki XML dump (pages=N [subjects=10] [seed=1])
+	@mkdir -p $(PERF_DIR)
 ifeq ($(INSIDE_CONTAINER),1)
 	php ../../maintenance/run.php NeoWiki:GeneratePerformanceDump \
 		--pages $(pages) \
@@ -462,7 +464,6 @@ ifeq ($(INSIDE_CONTAINER),1)
 		--seed $(or $(seed),1) \
 		--output $(PERF_DUMP) < /dev/null
 else
-	@mkdir -p $(PERF_DIR)
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf-generate pages=$(pages) subjects=$(subjects) seed=$(seed)' < /dev/null
 endif
 
@@ -471,7 +472,7 @@ ifeq ($(INSIDE_CONTAINER),1)
 	@set -e; \
 	[ -f $(PERF_DUMP) ] || { echo "$(PERF_DUMP) not found; run 'make perf-generate pages=N' first." >&2; exit 1; }; \
 	pages=$$(head -5 $(PERF_DUMP) | grep -o ' pages="[0-9]*"' | tr -dc 0-9); \
-	subjects=$$(head -5 $(PERF_DUMP) | grep -o ' subjects="[0-9]*"' | tr -dc 0-9); \
+	subjects=$$(head -5 $(PERF_DUMP) | grep -o ' total-subjects="[0-9]*"' | tr -dc 0-9); \
 	start=$$(date +%s.%N); \
 	php ../../maintenance/run.php importDump --no-updates $(CURDIR)/$(PERF_DUMP) < /dev/null; \
 	end=$$(date +%s.%N); \
@@ -485,34 +486,39 @@ else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf-import' < /dev/null
 endif
 
+# The old pair is removed first so a failed run leaves no snapshot rather than a half-updated
+# one, which _require-snapshot would accept and perf-restore would load as a mismatched pair.
 perf-snapshot: ## Snapshot MariaDB + Neo4j into perf/snapshot/
 	@mkdir -p $(PERF_SNAPSHOT_DIR)
+	@rm -f $(PERF_SQL) $(PERF_NEO)
 	$(DC) exec -T db mariadb-dump -u root -p$(MARIADB_ROOT_PASSWORD) \
-		--single-transaction --add-drop-database --databases $(MARIADB_DATABASE) > $(PERF_SQL)
+		--single-transaction --add-drop-database --databases $(MARIADB_DATABASE) > $(PERF_SQL) < /dev/null
 	$(MAKE) --no-print-directory _neo-stop
-	@$(NEO_ADMIN) database dump neo4j --to-stdout > $(PERF_NEO); status=$$?; \
-		$(MAKE) --no-print-directory _neo-start; exit $$status
+	@$(NEO_ADMIN) database dump neo4j --to-stdout > $(PERF_NEO) < /dev/null; status=$$?; \
+		$(MAKE) --no-print-directory _neo-start || exit 1; \
+		exit $$status
 	@echo "Snapshot written to $(PERF_SNAPSHOT_DIR)/"
 
 _require-snapshot:
-	@[ -f $(PERF_SQL) ] && [ -f $(PERF_NEO) ] \
+	@[ -s $(PERF_SQL) ] && [ -s $(PERF_NEO) ] \
 		|| { echo "No snapshot in $(PERF_SNAPSHOT_DIR)/; run 'make perf-snapshot' first." >&2; exit 1; }
 
 perf-restore: _require-snapshot ## Restore perf/snapshot/, replacing this stack's MariaDB and Neo4j data
 	$(DC) exec -T db mariadb -u root -p$(MARIADB_ROOT_PASSWORD) < $(PERF_SQL)
 	$(MAKE) --no-print-directory _neo-stop
 	@$(NEO_ADMIN) database load neo4j --from-stdin --overwrite-destination < $(PERF_NEO); status=$$?; \
-		$(MAKE) --no-print-directory _neo-start; exit $$status
+		$(MAKE) --no-print-directory _neo-start || exit 1; \
+		exit $$status
 	@echo "Restored. Run 'make update-dot-php' to bring the MediaWiki schema up to date with this checkout."
 
 _neo-stop:
-	@$(NEO_CYPHER) -d system 'STOP DATABASE neo4j WAIT'
+	@$(NEO_CYPHER) -d system 'STOP DATABASE neo4j WAIT' < /dev/null
 
 # START reports success even when the store it mounted is unusable, so prove the database
 # actually answers queries: a silently broken restore is worse than a failed one.
 _neo-start:
-	@$(NEO_CYPHER) -d system 'START DATABASE neo4j WAIT'
-	@$(NEO_CYPHER) -d neo4j 'RETURN 1' > /dev/null \
+	@$(NEO_CYPHER) -d system 'START DATABASE neo4j WAIT' < /dev/null
+	@$(NEO_CYPHER) -d neo4j 'RETURN 1' < /dev/null > /dev/null \
 		|| { echo "The neo4j database did not come back online." >&2; exit 1; }
 
 # ---- Production image --------------------------------------------------------

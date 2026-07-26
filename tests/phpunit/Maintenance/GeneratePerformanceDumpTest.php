@@ -5,8 +5,10 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Maintenance;
 
 use MediaWiki\Tests\Maintenance\MaintenanceBaseTestCase;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Maintenance\GeneratePerformanceDump;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use SimpleXMLElement;
 
@@ -34,18 +36,50 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 	}
 
 	public function testTheGeneratedSchemaIsValidSchemaContent(): void {
-		$schema = (string)$this->pages( $this->generate( pages: 1 ) )[0]->revision->text;
+		$schema = $this->schemaJson( $this->generate( pages: 1 ) );
 
 		$validator = SchemaContentValidator::newInstance();
 
 		$this->assertTrue( $validator->validate( $schema ), implode( "\n", $validator->getErrors() ) );
 	}
 
+	public function testEveryGeneratedPropertyDefinitionUsesARegisteredPropertyType(): void {
+		$types = array_column( $this->schema( $this->generate( pages: 1 ) )['propertyDefinitions'], 'type' );
+		$lookup = NeoWikiExtension::getInstance()->getPropertyTypeLookup();
+
+		$this->assertSame(
+			[],
+			array_values( array_filter(
+				array_unique( $types ),
+				static fn ( string $type ): bool => $lookup->getType( $type ) === null
+			) )
+		);
+	}
+
 	public function testEachPageCarriesTheRequestedNumberOfSubjects(): void {
 		$slot = $this->subjectSlot( $this->generate( pages: 2, subjectsPerPage: 3 ), 0 );
 
 		$this->assertCount( 3, $slot['subjects'] );
+	}
+
+	public function testTheMainSubjectIsOneOfThePageSubjects(): void {
+		$slot = $this->subjectSlot( $this->generate( pages: 2, subjectsPerPage: 3 ), 0 );
+
 		$this->assertArrayHasKey( $slot['mainSubject'], $slot['subjects'] );
+	}
+
+	/**
+	 * The Schema and the Statements are built separately, so they can drift apart into Subjects
+	 * carrying properties their Schema does not define.
+	 */
+	public function testTheSchemaDefinesExactlyThePropertiesTheSubjectsUse(): void {
+		$dump = $this->generate( pages: 2 );
+		$slot = $this->subjectSlot( $dump, 0 );
+
+		$this->assertSame(
+			array_keys( $this->schema( $dump )['propertyDefinitions'] ),
+			array_keys( $slot['subjects'][$slot['mainSubject']]['statements'] )
+		);
 	}
 
 	/**
@@ -69,8 +103,11 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 		);
 	}
 
-	public function testRelationsTargetSubjectsOnOtherPages(): void {
-		$dump = $this->generate( pages: 20 );
+	/**
+	 * @dataProvider runSizeProvider
+	 */
+	public function testRelationsTargetSubjectsOnOtherPages( int $pages ): void {
+		$dump = $this->generate( pages: $pages );
 
 		$this->assertSame(
 			[],
@@ -79,6 +116,13 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 				array_keys( $this->subjectSlot( $dump, 0 )['subjects'] )
 			)
 		);
+	}
+
+	public function runSizeProvider(): iterable {
+		yield 'run larger than every page offset' => [ 20 ];
+		// A run of exactly the largest offset is where an unclamped offset wraps onto its own page.
+		yield 'run the size of the largest page offset' => [ 13 ];
+		yield 'smallest run that has another page' => [ 2 ];
 	}
 
 	public function testTheSameOptionsProduceAnIdenticalDump(): void {
@@ -107,6 +151,33 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 		);
 	}
 
+	/**
+	 * The bound keeps every id at the 14 characters SubjectId and RelationId accept: one seed past
+	 * it would wrap around and mint a colliding id instead of a longer one.
+	 */
+	public function testTheHighestSeedStillMintsIdsOfTheAcceptedLength(): void {
+		$slot = $this->subjectSlot( $this->generate( pages: 1, seed: 11316495 ), 0 );
+
+		$this->assertTrue( SubjectId::isValid( $slot['mainSubject'] ), $slot['mainSubject'] );
+	}
+
+	public function testASeedPastTheHighestIsRejected(): void {
+		$this->maintenance->setOption( 'pages', '1' );
+		$this->maintenance->setOption( 'seed', '11316496' );
+
+		$this->expectCallToFatalError();
+
+		$this->maintenance->execute();
+	}
+
+	public function testAPageCountThatIsNotAPositiveIntegerIsRejected(): void {
+		$this->maintenance->setOption( 'pages', '0' );
+
+		$this->expectCallToFatalError();
+
+		$this->maintenance->execute();
+	}
+
 	private function generate( int $pages, ?int $subjectsPerPage = null, ?int $seed = null ): string {
 		// A fresh instance per call: Maintenance keeps the options it was given.
 		$this->maintenance = $this->createMaintenance();
@@ -124,7 +195,18 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 		$this->maintenance->setOption( 'output', $path );
 		$this->maintenance->execute();
 
-		return file_get_contents( $path );
+		return (string)file_get_contents( $path );
+	}
+
+	private function schemaJson( string $dump ): string {
+		return (string)$this->pages( $dump )[0]->revision->text;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function schema( string $dump ): array {
+		return json_decode( $this->schemaJson( $dump ), true );
 	}
 
 	/**

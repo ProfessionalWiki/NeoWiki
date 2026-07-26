@@ -8,6 +8,9 @@ use Maintenance;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../..';
 
@@ -29,11 +32,14 @@ class GeneratePerformanceDump extends Maintenance {
 	private const int MAX_SEED = 58 ** self::SEED_ID_LENGTH - 1;
 
 	/**
-	 * Relation targets sit on other pages, at these page offsets. Negative offsets resolve to
-	 * Subjects the import has already created; the positive one is a forward reference, which
-	 * creates a stub node that a later page upgrades in place.
+	 * Relation targets sit on other pages, at these page offsets, clamped to the run size. Mixing
+	 * negative and positive offsets means the import meets both targets that already exist and
+	 * targets it has to stub-create and later upgrade in place. A single-page run is the one case
+	 * where targets land on their own page: there is nowhere else for them to go.
 	 */
 	private const array RELATION_PAGE_OFFSETS = [ -1, -13, 1 ];
+
+	private const array RELATION_PROPERTY_NAMES = [ 'Related A', 'Related B', 'Related C' ];
 
 	private const int DEFAULT_SUBJECTS_PER_PAGE = 10;
 	private const int DEFAULT_SEED = 1;
@@ -46,15 +52,17 @@ class GeneratePerformanceDump extends Maintenance {
 	/** @var resource */
 	private $output;
 
+	private bool $outputIsFile;
+
 	public function __construct() {
 		parent::__construct();
 
 		$this->requireExtension( 'NeoWiki' );
 		$this->addDescription(
 			'Generates a MediaWiki XML dump of synthetic Subject pages for performance testing, plus the '
-			. 'Schema they use. Import it with importDump.php. The shape follows the "typical" column of '
-			. 'ADR 29: one Schema, 12 Statements per Subject of which 3 are relations to Subjects on other '
-			. 'pages. Output is deterministic: the same options always produce the same dump.'
+			. 'Schema they use. Import it with importDump.php. The shape sits at the scale ADR 29 calls '
+			. 'typical: one Schema, and 12 Statements per Subject of which 3 are relations to Subjects on '
+			. 'other pages. Output is deterministic: the same options always produce the same dump.'
 		);
 		$this->addOption( 'pages', 'Number of Subject pages to generate.', true, true );
 		$this->addOption(
@@ -65,8 +73,8 @@ class GeneratePerformanceDump extends Maintenance {
 		);
 		$this->addOption(
 			'seed',
-			'Seeds the generated ids and values, so dumps with different seeds can be imported into one '
-			. 'wiki without colliding. Default: ' . self::DEFAULT_SEED . '.',
+			'Seeds the generated page titles, ids and values, so dumps with different seeds can be '
+			. 'imported into one wiki without colliding. Default: ' . self::DEFAULT_SEED . '.',
 			false,
 			true
 		);
@@ -86,8 +94,7 @@ class GeneratePerformanceDump extends Maintenance {
 		$this->writeSchemaPage();
 		$this->writeSubjectPages();
 		$this->write( "</mediawiki>\n" );
-
-		fclose( $this->output );
+		$this->closeOutput();
 
 		$this->error(
 			'Wrote ' . $this->pages . ' pages with ' . $this->pages * $this->subjectsPerPage
@@ -114,18 +121,29 @@ class GeneratePerformanceDump extends Maintenance {
 	/** @return resource */
 	private function openOutput() {
 		$path = $this->getOption( 'output' );
+		$this->outputIsFile = $path !== null;
 
 		if ( $path === null ) {
 			return fopen( 'php://stdout', 'w' );
 		}
 
-		$handle = fopen( $path, 'w' );
+		$handle = @fopen( $path, 'w' );
 
 		if ( $handle === false ) {
 			$this->fatalError( "Cannot write to '$path'." );
 		}
 
 		return $handle;
+	}
+
+	/**
+	 * A close can still fail on a full disk, after every write reported success, so a dump that
+	 * this script called complete really is complete. stdout is not ours to close.
+	 */
+	private function closeOutput(): void {
+		if ( $this->outputIsFile && fclose( $this->output ) === false ) {
+			$this->fatalError( 'Closing the dump failed; it may be incomplete.' );
+		}
 	}
 
 	private function writeHeader(): void {
@@ -138,7 +156,8 @@ class GeneratePerformanceDump extends Maintenance {
 
 		// Read by the perf-import make target to report throughput without scanning the whole dump.
 		$this->write(
-			'  <!-- neowiki-perf pages="' . $this->pages . '" subjects="' . $this->pages * $this->subjectsPerPage
+			'  <!-- neowiki-perf pages="' . $this->pages
+			. '" total-subjects="' . $this->pages * $this->subjectsPerPage
 			. '" subjects-per-page="' . $this->subjectsPerPage . '" seed="' . $this->seed . '" -->' . "\n"
 		);
 
@@ -191,7 +210,7 @@ class GeneratePerformanceDump extends Maintenance {
 			'Notes' => [ 'type' => 'text' ],
 		];
 
-		foreach ( $this->relationPropertyNames() as $index => $propertyName ) {
+		foreach ( self::RELATION_PROPERTY_NAMES as $index => $propertyName ) {
 			$propertyDefinitions[$propertyName] = [
 				'type' => 'relation',
 				'relation' => 'Perf relation ' . ( $index + 1 ),
@@ -201,8 +220,8 @@ class GeneratePerformanceDump extends Maintenance {
 
 		$this->writePage(
 			title: $this->namespaceName( NS_NEOWIKI_SCHEMA ) . ':' . self::SCHEMA_NAME,
-			namespace: NS_NEOWIKI_SCHEMA,
-			model: 'NeoWikiSchema',
+			namespaceId: NS_NEOWIKI_SCHEMA,
+			model: SchemaContent::CONTENT_MODEL_ID,
 			text: $this->toJson( [
 				'description' => 'Synthetic Schema used by the generated performance-test Subjects.',
 				'propertyDefinitions' => $propertyDefinitions,
@@ -215,8 +234,8 @@ class GeneratePerformanceDump extends Maintenance {
 		for ( $pageIndex = 0; $pageIndex < $this->pages; $pageIndex++ ) {
 			$this->writePage(
 				title: $this->pageTitle( $pageIndex ),
-				namespace: NS_MAIN,
-				model: 'wikitext',
+				namespaceId: NS_MAIN,
+				model: CONTENT_MODEL_WIKITEXT,
 				text: 'Synthetic performance-test page ' . $pageIndex . ' with ' . $this->subjectsPerPage
 					. ' Subjects in the NeoWiki subject slot.',
 				subjectSlot: $this->buildPageSubjects( $pageIndex )
@@ -282,7 +301,7 @@ class GeneratePerformanceDump extends Maintenance {
 			'Notes' => [ 'type' => 'text', 'value' => [ 'Notes for Subject ' . $ordinal . '.' ] ],
 		];
 
-		foreach ( $this->relationPropertyNames() as $index => $propertyName ) {
+		foreach ( self::RELATION_PROPERTY_NAMES as $index => $propertyName ) {
 			$statements[$propertyName] = [
 				'type' => 'relation',
 				'value' => [
@@ -305,21 +324,23 @@ class GeneratePerformanceDump extends Maintenance {
 		return sprintf( '20%02d-%02d-%02d', 10 + $variation % 15, 1 + $variation % 12, 1 + $variation % 28 );
 	}
 
-	/** @return list<string> */
-	private function relationPropertyNames(): array {
-		return array_map(
-			static fn ( int $index ): string => 'Related ' . chr( ord( 'A' ) + $index ),
-			array_keys( self::RELATION_PAGE_OFFSETS )
-		);
-	}
-
 	private function relationTarget( int $pageIndex, int $subjectIndex, int $index ): string {
-		$offset = self::RELATION_PAGE_OFFSETS[$index];
+		$offset = $this->clampedPageOffset( self::RELATION_PAGE_OFFSETS[$index] );
 
 		// PHP's modulo keeps the sign of the dividend, so normalize a negative offset into range.
 		$targetPage = ( ( $pageIndex + $offset ) % $this->pages + $this->pages ) % $this->pages;
 
 		return $this->subjectId( $targetPage, ( $subjectIndex + $index + 1 ) % $this->subjectsPerPage );
+	}
+
+	/**
+	 * An offset as large as the run size wraps back onto its own page, so cap the distance one
+	 * short of the run.
+	 */
+	private function clampedPageOffset( int $offset ): int {
+		$distance = min( abs( $offset ), $this->pages - 1 );
+
+		return $offset < 0 ? -$distance : $distance;
 	}
 
 	private function subjectOrdinal( int $pageIndex, int $subjectIndex ): int {
@@ -353,7 +374,7 @@ class GeneratePerformanceDump extends Maintenance {
 
 	private function writePage(
 		string $title,
-		int $namespace,
+		int $namespaceId,
 		string $model,
 		string $text,
 		?string $subjectSlot
@@ -361,7 +382,7 @@ class GeneratePerformanceDump extends Maintenance {
 		$this->write(
 			"  <page>\n"
 			. '    ' . $this->element( 'title', $title ) . "\n"
-			. '    ' . $this->element( 'ns', (string)$namespace ) . "\n"
+			. '    ' . $this->element( 'ns', (string)$namespaceId ) . "\n"
 			. "    <revision>\n"
 			. '      ' . $this->element( 'timestamp', '2026-01-01T00:00:00Z' ) . "\n"
 			. "      <contributor>\n"
@@ -369,7 +390,7 @@ class GeneratePerformanceDump extends Maintenance {
 			. "      </contributor>\n"
 			. '      ' . $this->element( 'comment', 'Performance test data' ) . "\n"
 			. '      ' . $this->element( 'model', $model ) . "\n"
-			. '      ' . $this->element( 'format', $model === 'wikitext' ? 'text/x-wiki' : 'application/json' ) . "\n"
+			. '      ' . $this->element( 'format', $this->format( $model ) ) . "\n"
 			. '      ' . $this->preservedElement( 'text', $text ) . "\n"
 			. ( $subjectSlot === null ? '' : $this->subjectSlotElement( $subjectSlot ) )
 			. "    </revision>\n"
@@ -377,11 +398,15 @@ class GeneratePerformanceDump extends Maintenance {
 		);
 	}
 
+	private function format( string $model ): string {
+		return $model === CONTENT_MODEL_WIKITEXT ? CONTENT_FORMAT_WIKITEXT : CONTENT_FORMAT_JSON;
+	}
+
 	private function subjectSlotElement( string $subjectSlot ): string {
 		return "      <content>\n"
-			. '        ' . $this->element( 'role', 'neo' ) . "\n"
-			. '        ' . $this->element( 'model', 'NeoWikiSubject' ) . "\n"
-			. '        ' . $this->element( 'format', 'application/json' ) . "\n"
+			. '        ' . $this->element( 'role', MediaWikiSubjectRepository::SLOT_NAME ) . "\n"
+			. '        ' . $this->element( 'model', SubjectContent::CONTENT_MODEL_ID ) . "\n"
+			. '        ' . $this->element( 'format', CONTENT_FORMAT_JSON ) . "\n"
 			. '        ' . $this->preservedElement( 'text', $subjectSlot ) . "\n"
 			. "      </content>\n";
 	}
@@ -405,12 +430,16 @@ class GeneratePerformanceDump extends Maintenance {
 
 	/** @param array<string, mixed> $data */
 	private function toJson( array $data ): string {
-		return json_encode( $data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		return json_encode( $data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR );
 	}
 
+	/**
+	 * A dump at ADR 29 scale is gigabytes, so a full disk is a realistic failure. fwrite reports
+	 * that as a short write rather than as false, which would otherwise truncate the dump silently.
+	 */
 	private function write( string $text ): void {
-		if ( fwrite( $this->output, $text ) === false ) {
-			$this->fatalError( 'Writing the dump failed.' );
+		if ( fwrite( $this->output, $text ) !== strlen( $text ) ) {
+			$this->fatalError( 'Writing the dump failed; it is incomplete.' );
 		}
 	}
 

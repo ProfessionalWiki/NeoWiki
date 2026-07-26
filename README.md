@@ -66,25 +66,28 @@ Build a large synthetic wiki to measure against the targets in
 [ADR 29](docs/adr/029-scalability-targets.md):
 
 ```bash
+make rebuild-graph-databases    # once per stack, before measuring anything
 make perf-generate pages=1000   # write perf/dump.xml
 make perf-import                # import it, timing the write path
 make perf-snapshot              # save MariaDB + Neo4j to perf/snapshot/
 make perf-restore               # load perf/snapshot/ over this stack's data
 ```
 
+The rebuild is what creates the Neo4j uniqueness constraints, and a stack that has never run it
+has none, so without it every number measures an unindexed graph.
+
 `perf-generate` also takes `subjects` (default 10) and `seed` (default 1). It emits one Schema and
 `pages` × `subjects` Subjects carrying 12 Statements each, three of them relations to Subjects on
 other pages. The same options always produce the same dump, and no two seeds produce the same page
 titles or Subject ids, so dumps from different seeds can share one wiki.
 
-`perf-import` skips MediaWiki's link table updates; its last line reports elapsed time, pages/sec
-and Subjects/sec.
+`perf-import` runs with link table updates off, so the imported pages leave `pagelinks` and the
+search index empty: the number its last line reports is a write-path cost, and the wiki it produces
+is not fit for measuring reads. `make reset` returns the stack to demo data.
 
-Before `perf-snapshot`, run `make rebuild-graph-databases`: it creates the Neo4j uniqueness
-constraints, which a stack that has never run it does not have. A snapshot restores into any
-worktree stack, since they all use the same database name.
-
-After `perf-restore`:
+Snapshot a wiki nothing else is writing to — the MariaDB and Neo4j halves are not captured at the
+same instant. A snapshot restores into any worktree stack, since they all use the same database
+name. After `perf-restore`:
 
 - Run `make update-dot-php`: the MediaWiki schema is the snapshot's, not this checkout's.
 - Run `make rebuild-graph-databases` if the SPARQL store has to match. `perf-restore` replaces
