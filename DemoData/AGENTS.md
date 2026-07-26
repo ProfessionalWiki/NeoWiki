@@ -24,9 +24,6 @@ file and re-importing is enough — no `make reinstall-db` needed. Only pages th
 are pruned; a page someone else created — like `Main_Page`, which the installer creates and the
 import merely overwrites — is never deleted, even if its source file is removed.
 
-`MediaWiki/Sidebar.wikitext` links to `SPARQL queries`. Drop that line when seeding a wiki without a
-SPARQL store, or the main menu shows a red link.
-
 ## Filename and ID conventions
 
 - **Filenames must match the entity's label exactly**, including UTF-8 accents and apostrophes.
@@ -70,6 +67,12 @@ Subject, relation, and option IDs:
    `SparqlPage/` or `EdmSparqlPage/` renders as a redlink wherever the import skipped it. Keep the
    whole sentence inside `{{#ifexist:Target|...}}` so it disappears with its target, and keep the space
    between two such sentences outside the braces — ParserFunctions trims its arguments.
+6. **Sidebar labels double as element ids.** In `MediaWiki/Sidebar.wikitext` the second field becomes
+   the link's `n-<field>` id, which is what carries MediaWiki's accesskey and tooltip. Write
+   `recentchanges-url|recentchanges`, not `Special:RecentChanges|Recent changes`, or the keyboard
+   shortcut disappears with no other visible change. A sidebar line is transformed before it is split
+   on the pipe, so `{{#ifexist:}}` works there too — write the pipe as `{{!}}`, and an entry whose
+   target is missing drops out of the menu entirely.
 
 ## Cypher gotchas
 
