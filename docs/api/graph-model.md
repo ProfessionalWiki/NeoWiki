@@ -130,7 +130,7 @@ When a Subject with incoming relations from other Subjects is removed, its node 
 
 Two node uniqueness constraints apply: `(wiki_id, id)` on `:Page` nodes
 ([ADR 22](../adr/022-multi-wiki-node-identity.md)) and `id` on `:Subject` nodes. Both are created by `update.php` and
-by `RebuildGraphDatabases.php`; the incremental per-edit projection does not create them.
+by `RebuildGraphDatabases.php`, not by the incremental per-edit projection.
 
 Relation (edge) `id` values carry no uniqueness constraint
 ([#351](https://github.com/ProfessionalWiki/NeoWiki/issues/351)).
