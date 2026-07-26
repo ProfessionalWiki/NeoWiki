@@ -407,14 +407,14 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
 		) );
 
-		$this->assertNodeCountWithId( self::GUID_2, 1 );
+		$this->assertSingleNodeWithId( self::GUID_2 );
 	}
 
-	private function assertNodeCountWithId( string $id, int $expected ): void {
+	private function assertSingleNodeWithId( string $id ): void {
 		// Deliberately unlabeled, so a node that failed to get the Subject label still counts.
 		$result = $this->readGraph( 'MATCH (node {id: $id}) RETURN count(node) AS count', [ 'id' => $id ] );
 
-		$this->assertSame( $expected, $result->first()->toRecursiveArray()['count'] );
+		$this->assertSame( 1, $result->first()->toRecursiveArray()['count'] );
 	}
 
 	public function testReducingReferencedSubjectToStubKeepsIncomingRelationsButStripsOutgoingRelationsAndProperties(): void {

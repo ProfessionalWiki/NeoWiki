@@ -193,9 +193,11 @@ class NeoWikiHooks {
 	 * and RebuildGraphDatabases is not part of an ordinary install or upgrade. Idempotent, so running
 	 * it on every update.php is free.
 	 *
-	 * A backend being unreachable must not block the update: MediaWiki's own schema changes are the
-	 * point of the run, and the graph is rebuildable derived state. So the failure is reported and the
-	 * update continues.
+	 * A failing backend must not block the update: MediaWiki's own schema changes are the point of the
+	 * run, and the graph is rebuildable derived state. So the failure is reported and the update
+	 * continues. The catch is wider than the hook path's (FailureIsolatingGraphDatabasePlugin re-throws
+	 * TimeoutException and DBError) because there is no triggering user operation here that a throw
+	 * would have to abort: everything reachable from initialize() belongs to the graph backends.
 	 */
 	public static function initializeGraphDatabases( DatabaseUpdater $updater ): void {
 		$updater->output( "Initializing NeoWiki graph databases...\n" );
@@ -204,11 +206,21 @@ class NeoWikiHooks {
 			NeoWikiExtension::getInstance()->getGraphDatabasePlugin()->initialize();
 		} catch ( Exception $e ) {
 			$updater->output(
-				'...failed to initialize the NeoWiki graph databases: ' . $e->getMessage() . "\n"
+				'...failed to initialize the NeoWiki graph databases: '
+				. self::withoutCredentials( $e->getMessage() ) . "\n"
 				. "...the wiki is usable, but graph queries may be slow until this succeeds. Re-run\n"
-				. "...update.php once the backend is reachable.\n"
+				. "...update.php once the cause is resolved.\n"
 			);
 		}
+	}
+
+	/**
+	 * Strips the userinfo out of any URI in a message. A backend client reports an unreachable server by
+	 * quoting the connection URI it tried, credentials included, and this message goes to the operator's
+	 * terminal and to deployment logs.
+	 */
+	private static function withoutCredentials( string $message ): string {
+		return (string)preg_replace( '#://[^/@\s\'"]*@#', '://', $message );
 	}
 
 	public static function onParserFirstCallInit( Parser $parser ): void {

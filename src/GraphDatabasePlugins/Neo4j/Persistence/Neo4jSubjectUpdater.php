@@ -34,9 +34,9 @@ class Neo4jSubjectUpdater {
 			return;
 		}
 
-		// updateNodeProperties must stay first: it is what brings the node into existence, and the
-		// steps after it match that node as a :Subject. Reordering it after any of them would have
-		// them create a second, label-less node for the same id.
+		// updateNodeProperties must precede updateHasSubjectRelation and updateNodeLabels: those two only
+		// MATCH the subject's node, and this is the step that creates it for every subject. Move it after
+		// them and a subject with no relations silently loses its page link and its Schema label.
 		$this->updateNodeProperties( $subject );
 		$this->updateRelations( $subject, $schema );
 		$this->updateHasSubjectRelation( $subject, $isMainSubject );
