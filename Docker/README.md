@@ -40,10 +40,10 @@ from inside the stack via `make bash` or `docker compose exec`.
 
 The dev stack bundles a [QLever](https://github.com/ad-freiburg/qlever) SPARQL 1.1 graph
 store as a working example of NeoWiki's SPARQL projection plugin (issue #586). It is a
-dev-only sidecar (in `docker-compose.dev.yml`, like `test_neo`); the base "try-it-out" /
-demo stack does not run it. `SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at it
-(`http://qlever:7019/`) only in dev mode, so every page save and `RebuildGraphDatabases.php`
-also projects the page's RDF into QLever as named graphs.
+dev-only sidecar (in `docker-compose.dev.yml`); the base "try-it-out" / demo stack does not
+run it. `SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at it (`http://qlever:7019/`)
+only in dev mode, so every page save and `RebuildGraphDatabases.php` also projects the page's
+RDF into QLever as named graphs.
 
 Two entries point at that one endpoint: the `native` projection and the `EDM` one defined
 by the demo data's `Mapping:EDM` page. Each writes its own per-page named graphs, so one
@@ -90,17 +90,14 @@ up on demand via the `test` profile; in CI it is started explicitly (see
 `.github/workflows/ci-php.yml`), because its multi-step bring-up cannot be expressed as a
 GitHub Actions service container.
 
-### The `test` profile
+## The `test` profile
 
-`test_neo` and `test_qlever` exist only for the PHP test suite, so they sit behind the `test`
-compose profile and `make dev` does not start them. The PHP test targets (`make phpunit`,
-`make perf`) bring them up and seed them on demand, which costs a one-off Neo4j startup on the
-first run after the stack comes up. To drive them by hand, enable the profile:
+`test_neo` and `test_qlever` are only for the PHP test suite, so `make dev` does not start
+them. `make phpunit` and `make perf` start and seed them on demand; the first run after the
+stack comes up waits for Neo4j to boot. `make test-backends` starts them on their own.
 
-```sh
-docker compose -p <project> -f Docker/docker-compose.yml -f Docker/docker-compose.dev.yml \
-  --profile test up -d
-```
+Run these from the host. Inside the mediawiki container there is no compose to drive, so they
+report the backends as missing instead of starting them.
 
 ## Files
 
@@ -112,8 +109,8 @@ docker compose -p <project> -f Docker/docker-compose.yml -f Docker/docker-compos
   the profile-gated `caddy` (the `server` profile, for HTTPS hosting).
 - `docker-compose.dev.yml` — dev overlay; switches `mediawiki` to the dev image,
   bind-mounts the NeoWiki source, sets `MW_MODE=dev`, and adds the dev-only sidecars
-  `qlever` (SPARQL store, see above), `node`, and `mailcatcher`, plus the test-only
-  `test_neo` and `test_qlever` behind the `test` profile.
+  `qlever` (SPARQL store, see above), `node`, and `mailcatcher`, plus `test_neo` and
+  `test_qlever` behind the `test` profile.
 - `docker-compose.tools.yml` — opt-in overlay that exposes Neo4j and QLever to the host.
 - `SettingsTemplate.php` — `LocalSettings.php` that branches on `MW_MODE`.
 - `.env.dist` — tracked defaults; auto-copied to `.env` on first `make dev`.

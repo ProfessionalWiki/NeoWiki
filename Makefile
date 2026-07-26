@@ -25,8 +25,7 @@ PORT_RANGE_END := 8499
 DC := docker compose -p $(PROJECT_NAME) -f Docker/docker-compose.yml
 DC_DEV := $(DC) -f Docker/docker-compose.dev.yml
 DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
-# The test-only backends (test_neo, test_qlever) sit behind the `test` profile, so
-# reaching them needs the profile enabled. See `_test-backends`.
+# The `test` profile holds the test-only backends: test_neo and test_qlever.
 DC_TEST := $(DC_DEV) --profile test
 
 # Detect the engine from what `docker` actually is (its version string), not from
@@ -235,7 +234,7 @@ _first-run-seed-demo:
 
 # ---- DB and Neo4j init -------------------------------------------------------
 
-.PHONY: install-db load-neo4j-users wait-for-neo4j setup-test-neo _test-backends
+.PHONY: install-db load-neo4j-users wait-for-neo4j setup-test-neo test-backends
 
 install-db:
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh db:3306 -t 60'
@@ -259,19 +258,22 @@ load-neo4j-users:
 	$(DC) exec -T neo bash -c \
 		"echo \"CREATE USER $(NEO4J_USERNAME_READ) SET PASSWORD '$(NEO4J_PASSWORD_READ)' CHANGE NOT REQUIRED; GRANT ROLE reader TO $(NEO4J_USERNAME_READ);\" | cypher-shell -u neo4j -p $(NEO4J_PASSWORD) -a bolt://localhost:7687"
 
-# Bring up the test-only backends and seed them. Runs before every PHP test target.
+# Runs before every PHP test target.
 #
-# Short-circuits when both are already running: the bring-up path costs a few seconds
-# (compose up, wait-for-it, and a cypher-shell JVM for the seed), which would otherwise
-# be added to every `make phpunit filter=X` in a tight edit/test loop. The seed itself
-# is idempotent (CREATE USER ... IF NOT EXISTS), so the guard is an optimization, not a
-# correctness requirement.
+# The already-running check is a speed optimization, not a correctness requirement: the seed
+# is idempotent. Without it every `make phpunit filter=X` would pay a few seconds for the
+# compose up and the cypher-shell JVM.
 #
-# Inside the mediawiki container there is no compose to drive, and the host-side
-# caller has already done this before exec'ing in, so it is a no-op there.
-_test-backends:
+# Inside the mediawiki container there is no compose to drive, so it can only report that the
+# backends are missing.
+test-backends: ## Start and seed the test-only backends (the PHP test targets do this for you)
 ifeq ($(INSIDE_CONTAINER),1)
-	@:
+	@if ! /wait-for-it.sh test_neo:7689 -t 1 >/dev/null 2>&1 \
+		|| ! /wait-for-it.sh test_qlever:7019 -t 1 >/dev/null 2>&1; then \
+		echo "The test-only backends are not running. Start them on the host with" >&2; \
+		echo "'make test-backends', or run the PHP test targets from the host." >&2; \
+		exit 1; \
+	fi
 else
 	@if [ "$$(docker ps --filter label=com.docker.compose.project=$(PROJECT_NAME) \
 			--format '{{.Label "com.docker.compose.service"}}' \
@@ -318,7 +320,7 @@ test: phpunit ## Run PHP test suite
 
 cs: phpcs stan ## Run code style checks (phpcs + phpstan)
 
-phpunit: _test-backends ## Run PHPUnit (use filter=X for a single test)
+phpunit: test-backends ## Run PHPUnit (use filter=X for a single test)
 ifeq ($(INSIDE_CONTAINER),1)
 ifdef filter
 	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --filter $(filter) < /dev/null
@@ -333,7 +335,7 @@ else
 endif
 endif
 
-perf: _test-backends ## Run performance test group
+perf: test-backends ## Run performance test group
 ifeq ($(INSIDE_CONTAINER),1)
 	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --group Performance < /dev/null
 else
