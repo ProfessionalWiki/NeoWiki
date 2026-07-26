@@ -72,24 +72,23 @@ make perf-snapshot              # save MariaDB + Neo4j to perf/snapshot/
 make perf-restore               # load perf/snapshot/ over this stack's data
 ```
 
-`perf-generate` takes `pages=N` plus optional `subjects=10` and `seed=1`. It emits one Schema
-and `pages` × `subjects` Subjects carrying 12 Statements each, three of them relations to
-Subjects on other pages. The same options always produce the same dump, and no two seeds mint
-the same Subject id, so dumps from different seeds can share one wiki.
+`perf-generate` also takes `subjects` (default 10) and `seed` (default 1). It emits one Schema and
+`pages` × `subjects` Subjects carrying 12 Statements each, three of them relations to Subjects on
+other pages. The same options always produce the same dump, and no two seeds produce the same page
+titles or Subject ids, so dumps from different seeds can share one wiki.
 
-`perf-import` is the benchmark: its last line reports elapsed time, pages/sec and
-Subjects/sec. Snapshot and restore make the result reusable — `perf/` is gitignored, and every
-worktree stack uses the same wiki id, so a snapshot restores into any of them.
+`perf-import` skips MediaWiki's link table updates; its last line reports elapsed time, pages/sec
+and Subjects/sec.
 
-Three things to know about a restored wiki:
+Before `perf-snapshot`, run `make rebuild-graph-databases`: it creates the Neo4j uniqueness
+constraints, which a stack that has never run it does not have. A snapshot restores into any
+worktree stack, since they all use the same database name.
 
-- It has the MediaWiki schema the snapshot was taken with, so run `make update-dot-php` after
-  restoring.
-- It has the snapshot's Neo4j index state, and a stack that has never run
-  `make rebuild-graph-databases` has no `Subject(id)` index. Rebuild before snapshotting, or
-  every measured write pays a full-graph scan.
-- It has no QLever data: that index is filled at runtime over SPARQL, not snapshotted. Run
-  `make rebuild-graph-databases` when the SPARQL store has to match.
+After `perf-restore`:
+
+- Run `make update-dot-php`: the MediaWiki schema is the snapshot's, not this checkout's.
+- Run `make rebuild-graph-databases` if the SPARQL store has to match. `perf-restore` replaces
+  MariaDB and Neo4j only, so QLever keeps the data it already held.
 
 ### Per-worktree dev environments
 

@@ -430,9 +430,8 @@ smoke-test: ## Hit the running wiki from outside and verify it responds (CI smok
 
 # ---- Performance test data ---------------------------------------------------
 
-# Build, benchmark and rehydrate big synthetic wikis. Artifacts land in the gitignored
-# perf/. Usage and caveats (including QLever, which is not snapshotted) are in
-# README.md#performance-test-data.
+# Build, benchmark and restore big synthetic wikis. Artifacts land in the gitignored perf/.
+# Usage and caveats are in README.md#performance-test-data.
 
 PERF_DIR := perf
 PERF_DUMP := $(PERF_DIR)/dump.xml
@@ -455,7 +454,7 @@ NEO_ADMIN := $(DC) exec -T --user neo4j neo neo4j-admin
 _require-pages:
 	@[ -n "$(pages)" ] || { echo "Usage: make perf-generate pages=N [subjects=10] [seed=1]" >&2; exit 1; }
 
-perf-generate: _require-pages ## Generate a synthetic Subject dump (pages=N [subjects=10] [seed=1])
+perf-generate: _require-pages ## Generate a synthetic wiki XML dump (pages=N [subjects=10] [seed=1])
 ifeq ($(INSIDE_CONTAINER),1)
 	php ../../maintenance/run.php NeoWiki:GeneratePerformanceDump \
 		--pages $(pages) \
@@ -467,7 +466,7 @@ else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf-generate pages=$(pages) subjects=$(subjects) seed=$(seed)' < /dev/null
 endif
 
-perf-import: ## Import the generated dump, reporting elapsed time and throughput
+perf-import: ## Import perf/dump.xml, reporting elapsed time and throughput
 ifeq ($(INSIDE_CONTAINER),1)
 	@set -e; \
 	[ -f $(PERF_DUMP) ] || { echo "$(PERF_DUMP) not found; run 'make perf-generate pages=N' first." >&2; exit 1; }; \
@@ -499,7 +498,7 @@ _require-snapshot:
 	@[ -f $(PERF_SQL) ] && [ -f $(PERF_NEO) ] \
 		|| { echo "No snapshot in $(PERF_SNAPSHOT_DIR)/; run 'make perf-snapshot' first." >&2; exit 1; }
 
-perf-restore: _require-snapshot ## Restore perf/snapshot/ over the current stack's data
+perf-restore: _require-snapshot ## Restore perf/snapshot/, replacing this stack's MariaDB and Neo4j data
 	$(DC) exec -T db mariadb -u root -p$(MARIADB_ROOT_PASSWORD) < $(PERF_SQL)
 	$(MAKE) --no-print-directory _neo-stop
 	@$(NEO_ADMIN) database load neo4j --from-stdin --overwrite-destination < $(PERF_NEO); status=$$?; \

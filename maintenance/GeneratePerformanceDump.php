@@ -15,8 +15,8 @@ require_once $basePath . '/maintenance/Maintenance.php';
 
 class GeneratePerformanceDump extends Maintenance {
 
-	public const string SCHEMA_NAME = 'PerfTest';
-	public const string PAGE_TITLE_PREFIX = 'Perf test ';
+	private const string SCHEMA_NAME = 'PerfTest';
+	private const string PAGE_TITLE_PREFIX = 'Perf test ';
 
 	private const string BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
@@ -214,7 +214,7 @@ class GeneratePerformanceDump extends Maintenance {
 	private function writeSubjectPages(): void {
 		for ( $pageIndex = 0; $pageIndex < $this->pages; $pageIndex++ ) {
 			$this->writePage(
-				title: self::PAGE_TITLE_PREFIX . $this->formatPageNumber( $pageIndex ),
+				title: $this->pageTitle( $pageIndex ),
 				namespace: NS_MAIN,
 				model: 'wikitext',
 				text: 'Synthetic performance-test page ' . $pageIndex . ' with ' . $this->subjectsPerPage
@@ -226,6 +226,14 @@ class GeneratePerformanceDump extends Maintenance {
 				$this->error( 'Generated ' . ( $pageIndex + 1 ) . ' of ' . $this->pages . ' pages...' );
 			}
 		}
+	}
+
+	/**
+	 * The seed is part of the title, not just of the ids, so importing a second dump into the same
+	 * wiki adds its pages instead of overwriting the first dump's.
+	 */
+	private function pageTitle( int $pageIndex ): string {
+		return self::PAGE_TITLE_PREFIX . $this->seed . '-' . $this->formatPageNumber( $pageIndex );
 	}
 
 	private function formatPageNumber( int $pageIndex ): string {

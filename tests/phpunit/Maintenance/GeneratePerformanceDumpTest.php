@@ -28,7 +28,7 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 		$dump = $this->generate( pages: 2 );
 
 		$this->assertSame(
-			[ 'Schema:PerfTest', 'Perf test 0000000', 'Perf test 0000001' ],
+			[ 'Schema:PerfTest', 'Perf test 1-0000000', 'Perf test 1-0000001' ],
 			$this->pageTitles( $dump )
 		);
 	}
@@ -86,9 +86,24 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 	}
 
 	public function testAnotherSeedMintsDifferentSubjectIds(): void {
-		$this->assertNotEquals(
-			array_keys( $this->subjectSlot( $this->generate( pages: 3, seed: 1 ), 0 )['subjects'] ),
-			array_keys( $this->subjectSlot( $this->generate( pages: 3, seed: 2 ), 0 )['subjects'] )
+		$this->assertSame(
+			[],
+			array_intersect(
+				array_keys( $this->subjectSlot( $this->generate( pages: 3, seed: 1 ), 0 )['subjects'] ),
+				array_keys( $this->subjectSlot( $this->generate( pages: 3, seed: 2 ), 0 )['subjects'] )
+			)
+		);
+	}
+
+	public function testAnotherSeedUsesDifferentPageTitles(): void {
+		// Colliding titles would make importing a second dump overwrite the first dump's pages
+		// instead of adding to them.
+		$this->assertSame(
+			[],
+			array_intersect(
+				$this->subjectPageTitles( $this->generate( pages: 3, seed: 1 ) ),
+				$this->subjectPageTitles( $this->generate( pages: 3, seed: 2 ) )
+			)
 		);
 	}
 
@@ -127,6 +142,15 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 			static fn ( SimpleXMLElement $page ): string => (string)$page->title,
 			$this->pages( $dump )
 		);
+	}
+
+	/**
+	 * The Schema page is shared between seeds by design, so it is not part of this comparison.
+	 *
+	 * @return list<string>
+	 */
+	private function subjectPageTitles( string $dump ): array {
+		return array_slice( $this->pageTitles( $dump ), 1 );
 	}
 
 	private function subjectSlotJson( string $dump, int $pageIndex ): string {
