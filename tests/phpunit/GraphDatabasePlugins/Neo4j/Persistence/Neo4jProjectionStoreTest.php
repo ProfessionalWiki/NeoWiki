@@ -393,6 +393,30 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1, 'rTestNQS1111rr1' );
 	}
 
+	/**
+	 * A save creates the subject's node and then matches it again to attach its relations, its page and
+	 * its schema label. Every one of those matches addresses it as a :Subject, so the node has to carry
+	 * that label from creation: were the label added at the end of the save instead, the relation step
+	 * would not find the node it just created and would create a second one under the same id.
+	 */
+	public function testSavingANewSubjectWithARelationCreatesASingleNodeForIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		$this->assertNodeCountWithId( self::GUID_2, 1 );
+	}
+
+	private function assertNodeCountWithId( string $id, int $expected ): void {
+		// Deliberately unlabeled, so a node that failed to get the Subject label still counts.
+		$result = $this->readGraph( 'MATCH (node {id: $id}) RETURN count(node) AS count', [ 'id' => $id ] );
+
+		$this->assertSame( $expected, $result->first()->toRecursiveArray()['count'] );
+	}
+
 	public function testReducingReferencedSubjectToStubKeepsIncomingRelationsButStripsOutgoingRelationsAndProperties(): void {
 		$store = $this->newProjectionStoreWithLocationRelation();
 

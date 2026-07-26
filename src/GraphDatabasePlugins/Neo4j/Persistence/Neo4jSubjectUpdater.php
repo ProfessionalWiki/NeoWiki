@@ -34,16 +34,22 @@ class Neo4jSubjectUpdater {
 			return;
 		}
 
-		// Note: the below method calls might need to be in this order
+		// updateNodeProperties must stay first: it is what brings the node into existence, and the
+		// steps after it match that node as a :Subject. Reordering it after any of them would have
+		// them create a second, label-less node for the same id.
 		$this->updateNodeProperties( $subject );
 		$this->updateRelations( $subject, $schema );
 		$this->updateHasSubjectRelation( $subject, $isMainSubject );
 		$this->updateNodeLabels( $subject );
 	}
 
+	/**
+	 * Creates the node with the :Subject label rather than adding the label later, so that every
+	 * subsequent match of it can be label-scoped and use the :Subject(id) uniqueness index.
+	 */
 	private function updateNodeProperties( Subject $subject ): void {
 		$this->transaction->run(
-			'MERGE (n {id: $id}) SET n = $props',
+			'MERGE (n:Subject {id: $id}) SET n = $props',
 			[
 				'id' => $subject->id->text,
 				'props' => array_merge(
@@ -109,7 +115,7 @@ class Neo4jSubjectUpdater {
 
 	private function updateHasSubjectRelation( Subject $subject, bool $isMainSubject ): void {
 		$this->transaction->run(
-			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId}), (subject {id: $subjectId})
+			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId}), (subject:Subject {id: $subjectId})
 					MERGE (page)-[:HasSubject {isMain: $isMainSubject}]->(subject)',
 			[
 				'pageId' => $this->pageId->id,
@@ -130,7 +136,7 @@ class Neo4jSubjectUpdater {
 
 		if ( $labelsToAdd !== [] ) {
 			$this->transaction->run(
-				'MATCH (n {id: $id}) SET n:' . Cypher::buildLabelList( $labelsToAdd ),
+				'MATCH (n:Subject {id: $id}) SET n:' . Cypher::buildLabelList( $labelsToAdd ),
 				[ 'id' => $subject->id->text ]
 			);
 		}

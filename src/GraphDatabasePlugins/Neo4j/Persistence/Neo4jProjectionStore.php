@@ -225,7 +225,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		 */
 		$result = $transaction->run(
 			'UNWIND $subjectIds AS subjectId
-				MATCH (subject {id: subjectId})<-[incomingRelation]-(other)
+				MATCH (subject:Subject {id: subjectId})<-[incomingRelation]-(other)
 				WHERE NOT incomingRelation:HasSubject AND other <> subject
 				RETURN DISTINCT subject.id AS id',
 			[ 'subjectIds' => $subjectIds ]
@@ -246,7 +246,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		}
 
 		$transaction->run(
-			'MATCH (subject) WHERE subject.id IN $subjectIds DETACH DELETE subject',
+			'MATCH (subject:Subject) WHERE subject.id IN $subjectIds DETACH DELETE subject',
 			[ 'subjectIds' => $subjectIds ]
 		);
 	}
@@ -259,13 +259,12 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	 */
 	private function reduceSubjectToStub( TransactionInterface $transaction, SubjectId $subjectId ): void {
 		$transaction->run(
-			'MATCH (subject {id: $subjectId})
+			'MATCH (subject:Subject {id: $subjectId})
 				OPTIONAL MATCH ()-[hasSubject:HasSubject]->(subject)
 				OPTIONAL MATCH (subject)-[outgoingRelation]->()
 				DELETE hasSubject, outgoingRelation
 				WITH DISTINCT subject
-				SET subject = {id: $subjectId, wiki_id: $wikiId}
-				SET subject:Subject',
+				SET subject = {id: $subjectId, wiki_id: $wikiId}',
 			[ 'subjectId' => $subjectId->text, 'wikiId' => $this->wikiId ]
 		);
 

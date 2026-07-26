@@ -158,9 +158,9 @@ Register with `NeoWikiRegistrar::addGraphDatabasePlugin()`. Example:
 `PagePropertyProvider`, and runs for every revision, so subject edits, undeletions and page moves all reach you as a
 save. `deletePage` gets only the page id.
 
-`initialize` runs once at the start of a `RebuildGraphDatabases` run, before any page is projected — create the
-store-level structures a fresh store needs there. Make it idempotent, since every rebuild calls it; it never runs
-on an individual edit.
+`initialize` runs on `update.php`, and once at the start of a `RebuildGraphDatabases` run before any page is
+projected — create the store-level structures a fresh store needs there. Make it idempotent, since both paths call
+it every time; it never runs on an individual edit.
 
 **Signal failure by throwing.** On an edit, delete or undelete, NeoWiki logs the failure and lets the user's
 operation commit, so a backend being down never blocks the wiki or starves the other backends — your projection is

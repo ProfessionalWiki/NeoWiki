@@ -4,8 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use Exception;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
+use MediaWiki\Installer\DatabaseUpdater;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
@@ -175,6 +177,38 @@ class NeoWikiHooks {
 				);
 			}
 		);
+	}
+
+	/**
+	 * @see LoadExtensionSchemaUpdatesHook
+	 */
+	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ): void {
+		$updater->addExtensionUpdate( [ [ self::class, 'initializeGraphDatabases' ] ] );
+	}
+
+	/**
+	 * Creates the store-level structures the graph backends need — for Neo4j the uniqueness
+	 * constraints, whose indexes the projection's id lookups depend on. Running this from the updater
+	 * is what gets them onto a wiki built up edit by edit: the incremental projection creates nothing,
+	 * and RebuildGraphDatabases is not part of an ordinary install or upgrade. Idempotent, so running
+	 * it on every update.php is free.
+	 *
+	 * A backend being unreachable must not block the update: MediaWiki's own schema changes are the
+	 * point of the run, and the graph is rebuildable derived state. So the failure is reported and the
+	 * update continues.
+	 */
+	public static function initializeGraphDatabases( DatabaseUpdater $updater ): void {
+		$updater->output( "Initializing NeoWiki graph databases...\n" );
+
+		try {
+			NeoWikiExtension::getInstance()->getGraphDatabasePlugin()->initialize();
+		} catch ( Exception $e ) {
+			$updater->output(
+				'...failed to initialize the NeoWiki graph databases: ' . $e->getMessage() . "\n"
+				. "...the wiki is usable, but graph queries may be slow until this succeeds. Re-run\n"
+				. "...update.php once the backend is reachable.\n"
+			);
+		}
 	}
 
 	public static function onParserFirstCallInit( Parser $parser ): void {
