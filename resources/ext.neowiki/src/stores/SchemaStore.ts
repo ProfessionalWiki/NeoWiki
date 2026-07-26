@@ -49,9 +49,8 @@ export const useSchemaStore = defineStore( 'schema', {
 		// schema picker can show the full list and filter client-side. The cache is
 		// cleared on saveSchema. Concurrent callers (e.g. several relation-property
 		// pickers mounting in the same render) share one in-flight request rather
-		// than each running a full pagination. Only the current request may publish:
-		// one that saveSchema invalidated while it ran neither caches its summaries
-		// nor releases the request that replaced it.
+		// than each running a full pagination. Only the request the slot still holds
+		// caches its summaries and releases the slot.
 		async getAllSchemaSummaries(): Promise<SchemaSummary[]> {
 			if ( this.allSummaries !== null ) {
 				return this.allSummaries;
