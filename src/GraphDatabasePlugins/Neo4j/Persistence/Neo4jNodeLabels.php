@@ -14,8 +14,7 @@ use Laudis\Neo4j\Databags\SummarizedResult;
  * Neo4jProjectionStore (stripping a subject down to a stub). Those classes hold their transaction
  * differently, so the transaction is passed in per call rather than owned here.
  *
- * Only Subject nodes are addressed: both queries match on the :Subject label so they can use the
- * :Subject(id) uniqueness index. Passing the id of any other kind of node matches nothing.
+ * Only Subject nodes are addressed: passing the id of any other kind of node matches nothing.
  */
 class Neo4jNodeLabels {
 

@@ -44,8 +44,7 @@ class Neo4jSubjectUpdater {
 	}
 
 	/**
-	 * Creates the node with the :Subject label rather than adding the label later, so that every
-	 * subsequent match of it can be label-scoped and use the :Subject(id) uniqueness index.
+	 * Creates the node with the :Subject label: the later steps of the save match it by that label.
 	 */
 	private function updateNodeProperties( Subject $subject ): void {
 		$this->transaction->run(
