@@ -33,8 +33,7 @@ make dev
 
 This builds a dev-mode image, brings up the stack (mediawiki, db, neo, qlever, node
 watcher, mailcatcher), runs first-time install and seed, and waits until the wiki is
-reachable. The test-only backends are not part of it; `make phpunit` starts those on
-demand. It prints the URL when ready (the default is `http://localhost:8484` but
+reachable. It prints the URL when ready (the default is `http://localhost:8484` but
 the actual port is auto-allocated; see [Reserved ports](Docker/README.md#reserved-host-ports)).
 
 Mailcatcher web UI is at the port `make dev` printed (default `8025`,
@@ -58,6 +57,9 @@ make logs                 # tail logs
 make reset                # wipe DB + Neo and reseed demo data
 make import-demo-data     # load the latest demo data, overriding your changes
 ```
+
+The first `make phpunit` after `make dev` starts the test-only backends, so it is slower than
+later runs.
 
 For all targets, run `make help`.
 
