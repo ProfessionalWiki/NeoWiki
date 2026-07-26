@@ -364,13 +364,13 @@ structure:
     label = 'ACME Inc.',
     schema = 'Company',
     statements = {
-        ['Headquarters'] = { type = 'text',     values = { [1] = 'Berlin' } },
-        ['Founded at']   = { type = 'number',   values = { [1] = 2005 } },
-        ['Status']       = { type = 'select',   values = { [1] = 'Active' } },
-        ['Websites']     = { type = 'url',      values = { [1] = 'https://acme.com', [2] = 'https://acme.org' } },
-        ['Active']       = { type = 'boolean',  values = { [1] = true } },
+        ['Headquarters'] = { propertyType = 'text',     values = { [1] = 'Berlin' } },
+        ['Founded at']   = { propertyType = 'number',   values = { [1] = 2005 } },
+        ['Status']       = { propertyType = 'select',   values = { [1] = 'Active' } },
+        ['Websites']     = { propertyType = 'url',      values = { [1] = 'https://acme.com', [2] = 'https://acme.org' } },
+        ['Active']       = { propertyType = 'boolean',  values = { [1] = true } },
         ['Products']     = {
-            type = 'relation',
+            propertyType = 'relation',
             values = {
                 [1] = { id = 'r1...', target = 's1...', label = 'Foo' },
                 [2] = { id = 'r1...', target = 's1...', label = 'Bar' },
@@ -383,9 +383,9 @@ structure:
 Notes:
 
 - `statements` is keyed by property name. `values` within each statement is 1-indexed.
-- `type` is the property type at the time the Subject was last edited. If the Schema has changed
-  since (e.g. a property was changed from `text` to `select`), older Subjects keep their original
-  type until they are re-saved.
+- `propertyType` is the property type at the time the Subject was last edited. If the Schema has
+  changed since (e.g. a property was changed from `text` to `select`), older Subjects keep their
+  original type until they are re-saved.
 - A relation's `label` falls back to the target Subject ID if the label cannot be looked up
   (e.g. a broken reference).
 - Per-relation `properties` (qualifiers) are not currently exposed via Lua. Use the REST API if

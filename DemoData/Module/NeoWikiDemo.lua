@@ -61,7 +61,7 @@ function p.subject( frame )
 			end
 		end
 		rows[#rows + 1] = '|-'
-		rows[#rows + 1] = '| ' .. name .. ' || ' .. stmt.type .. ' || ' .. table.concat( vals, ', ' )
+		rows[#rows + 1] = '| ' .. name .. ' || ' .. stmt.propertyType .. ' || ' .. table.concat( vals, ', ' )
 	end
 
 	rows[#rows + 1] = '|}'

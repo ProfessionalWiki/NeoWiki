@@ -247,7 +247,7 @@ class SubjectDataLookup {
 	 */
 	private function statementToTable( Statement $statement ): array {
 		return [
-			'type' => $statement->getPropertyType(),
+			'propertyType' => $statement->getPropertyType(),
 			'values' => $this->statementValuesToLuaArray( $statement ),
 		];
 	}

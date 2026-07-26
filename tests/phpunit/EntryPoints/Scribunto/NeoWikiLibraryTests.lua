@@ -59,7 +59,7 @@ end
 local function testGetMainSubjectStatements()
 	local s = nw.getMainSubject( page )
 	if not s then return 'nil' end
-	return s.statements['City'].type, s.statements['City'].values[1]
+	return s.statements['City'].propertyType, s.statements['City'].values[1]
 end
 
 local function testGetMainSubjectNonexistentPage()
