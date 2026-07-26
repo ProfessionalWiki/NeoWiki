@@ -24,7 +24,7 @@ class Neo4jNodeLabels {
 		 * @var SummarizedResult $result
 		 */
 		$result = $transaction->run(
-			'MATCH (n {id: $id}) RETURN labels(n) AS labels',
+			'MATCH (n:Subject {id: $id}) RETURN labels(n) AS labels',
 			[ 'id' => $nodeId ]
 		);
 
@@ -44,7 +44,7 @@ class Neo4jNodeLabels {
 		}
 
 		$transaction->run(
-			'MATCH (n {id: $id}) REMOVE n:' . Cypher::buildLabelList( $labels ),
+			'MATCH (n:Subject {id: $id}) REMOVE n:' . Cypher::buildLabelList( $labels ),
 			[ 'id' => $nodeId ]
 		);
 	}

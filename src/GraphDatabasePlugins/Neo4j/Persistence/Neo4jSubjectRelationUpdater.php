@@ -33,7 +33,7 @@ class Neo4jSubjectRelationUpdater {
 	private function removeNonexistentRelations( array $relationIds ): void {
 		$this->transaction->run(
 			'
-				MATCH ({id: $subjectId})-[relation]->()
+				MATCH (:Subject {id: $subjectId})-[relation]->()
 				WHERE NOT relation.id IN $relationIds
 				DELETE relation',
 			[
@@ -45,7 +45,7 @@ class Neo4jSubjectRelationUpdater {
 
 	private function removeIfTypeOrTargetChanged( TypedRelation $relation ): void {
 		$this->transaction->run(
-			'MATCH (subject {id: $subjectId})-[oldRelation {id: $relationId}]->()
+			'MATCH (subject:Subject {id: $subjectId})-[oldRelation {id: $relationId}]->()
 			 WHERE oldRelation.type <> $relationType OR NOT (subject)-[oldRelation]->({id: $targetId})
 			 DELETE oldRelation',
 			[
@@ -63,9 +63,9 @@ class Neo4jSubjectRelationUpdater {
 		// target (a real Subject or an earlier stub) untouched. The stub is upgraded in place when the
 		// real Subject is later saved, since the save path also matches the node by id alone.
 		$this->transaction->run(
-			'MERGE (subject {id: $subjectId})
-			 MERGE (target {id: $targetId})
-			 ON CREATE SET target:Subject, target.wiki_id = $wikiId
+			'MERGE (subject:Subject {id: $subjectId})
+			 MERGE (target:Subject {id: $targetId})
+			 ON CREATE SET target.wiki_id = $wikiId
 			 MERGE (subject)-[relation:' . Cypher::escape( $relation->type->text ) . ' {id: $relationId}]->(target)
 			 SET relation = $relationProperties',
 			[

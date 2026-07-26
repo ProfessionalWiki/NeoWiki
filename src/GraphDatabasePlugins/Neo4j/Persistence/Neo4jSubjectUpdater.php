@@ -43,7 +43,7 @@ class Neo4jSubjectUpdater {
 
 	private function updateNodeProperties( Subject $subject ): void {
 		$this->transaction->run(
-			'MERGE (n {id: $id}) SET n = $props',
+			'MERGE (n:Subject {id: $id}) SET n = $props',
 			[
 				'id' => $subject->id->text,
 				'props' => array_merge(
@@ -109,7 +109,7 @@ class Neo4jSubjectUpdater {
 
 	private function updateHasSubjectRelation( Subject $subject, bool $isMainSubject ): void {
 		$this->transaction->run(
-			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId}), (subject {id: $subjectId})
+			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId}), (subject:Subject {id: $subjectId})
 					MERGE (page)-[:HasSubject {isMain: $isMainSubject}]->(subject)',
 			[
 				'pageId' => $this->pageId->id,
@@ -130,7 +130,7 @@ class Neo4jSubjectUpdater {
 
 		if ( $labelsToAdd !== [] ) {
 			$this->transaction->run(
-				'MATCH (n {id: $id}) SET n:' . Cypher::buildLabelList( $labelsToAdd ),
+				'MATCH (n:Subject {id: $id}) SET n:' . Cypher::buildLabelList( $labelsToAdd ),
 				[ 'id' => $subject->id->text ]
 			);
 		}
