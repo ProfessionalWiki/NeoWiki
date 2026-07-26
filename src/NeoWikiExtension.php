@@ -181,6 +181,8 @@ class NeoWikiExtension {
 	private ClientInterface $neo4jClient;
 	private ClientInterface $readOnlyNeo4jClient;
 	private ?WikiConfigSource $wikiConfigSource = null;
+	private SchemaLookup $schemaLookup;
+	private ?Authority $schemaLookupAuthority = null;
 	private static ?self $instance = null;
 
 	public static function getInstance(): self {
@@ -1027,16 +1029,33 @@ class NeoWikiExtension {
 		);
 	}
 
+	/**
+	 * One lookup per Authority, so its process-local cache is shared by everything resolving Schemas
+	 * for that Authority — most notably the validation and the graph projection of every Subject on a
+	 * saved page. The lookup resolves content as its Authority, so a change of Authority builds a new
+	 * one rather than serving one Authority's resolutions to another.
+	 */
 	public function getSchemaLookup(): SchemaLookup {
+		$authority = $this->getRequestAuthority();
+
+		if ( $this->schemaLookupAuthority !== $authority ) {
+			$this->schemaLookupAuthority = $authority;
+			$this->schemaLookup = $this->newSchemaLookup( $authority );
+		}
+
+		return $this->schemaLookup;
+	}
+
+	private function newSchemaLookup( Authority $authority ): SchemaLookup {
 		return new CachingSchemaLookup(
 			schemaLookup: new WikiPageSchemaLookup(
 				pageContentFetcher: $this->getPageContentFetcher(),
-				authority: $this->getRequestAuthority(),
+				authority: $authority,
 				schemaDeserializer: $this->getPersistenceSchemaDeserializer()
 			),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
-			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
 		);
 	}
