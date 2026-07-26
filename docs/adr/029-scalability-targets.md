@@ -11,24 +11,17 @@ degraded performance at scale and accidental complexity via unnecessary optimiza
 
 ## Decision
 
-NeoWiki needs to handle these **total Subject counts**:
+NeoWiki needs to handle these sizes, counted per graph store (a wiki farm sharing one store counts its total):
 
-* Wikis up to 1 million Subjects should perform well across the board (the 90% case is << 1 million)
-* Wikis with ~10 million Subjects ideally remain performing well, though some degradation is acceptable
-* Higher scalability is nice. Where it is possible to cheaply support 100 million Subject cases, we should do so
+| Metric                 | Typical (90% case)  | Great up to                      | Acceptable up to |
+|------------------------|---------------------|----------------------------------|------------------|
+| Total Subjects         | << 1 million        | 1 million                        | 10 million       |
+| Total Schemas          | 5-20 (outliers ~50) | 100 (UX-bound; performance: 500) | 500              |
+| Subjects per Page      | < 10                | 50                               | 250              |
+| Statements per Subject | < 15                | 50                               | 100              |
 
-NeoWiki needs to handle these **total Schema counts**:
+Great: performs well with great UX. Acceptable: usable, though some degradation of UX or performance is fine.
 
-* Wikis up to 500 Schemas should perform well
-* Usability/UX of wikis up to 100 Schemas should be good (the 90% case is << 100)
-* Usability/UX of wikis with ~500 Schemas should not be terrible
-
-NeoWiki needs to handle these **Subjects per Page**:
-
-* Pages with up to 50 Subjects should perform well and have great UX (the 90% case is < 10)
-* Pages with ~250 Subjects should not have terrible performance or UX
-
-NeoWiki needs to handle these **Statements per Subject**:
-
-* Subjects with up to 50 Statements should perform well and have great UX (the 90% case is < 15)
-* Subjects with ~250 Statements should not have terrible performance or UX
+Beyond the acceptable bound, support cheaply where possible rather than by design — wikis with 100 million Subjects
+being the marker case. High Statement counts are a modelling smell rather than a display problem: the data model's
+answer is child Subjects, which the Subjects per Page row budgets for.
