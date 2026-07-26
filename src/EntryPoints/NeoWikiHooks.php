@@ -187,17 +187,10 @@ class NeoWikiHooks {
 	}
 
 	/**
-	 * Creates the store-level structures the graph backends need — for Neo4j the uniqueness
-	 * constraints, whose indexes the projection's id lookups depend on. Running this from the updater
-	 * is what gets them onto a wiki built up edit by edit: the incremental projection creates nothing,
-	 * and RebuildGraphDatabases is not part of an ordinary install or upgrade. Idempotent, so running
-	 * it on every update.php is free.
-	 *
-	 * A failing backend must not block the update: MediaWiki's own schema changes are the point of the
-	 * run, and the graph is rebuildable derived state. So the failure is reported and the update
-	 * continues. The catch is wider than the hook path's (FailureIsolatingGraphDatabasePlugin re-throws
-	 * TimeoutException and DBError) because there is no triggering user operation here that a throw
-	 * would have to abort: everything reachable from initialize() belongs to the graph backends.
+	 * A failing backend is reported rather than thrown: the update must proceed to MediaWiki's own
+	 * schema changes, and the graph is rebuildable derived state. The catch is also broader than the
+	 * hook path's deliberate TimeoutException/DBError re-throws, since there is no user operation here
+	 * to abort and everything reachable from initialize() belongs to the graph backends.
 	 */
 	public static function initializeGraphDatabases( DatabaseUpdater $updater ): void {
 		$updater->output( "Initializing NeoWiki graph databases...\n" );
