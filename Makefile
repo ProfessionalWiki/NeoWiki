@@ -428,6 +428,94 @@ update-dot-php: ## Run MW maintenance/update.php
 smoke-test: ## Hit the running wiki from outside and verify it responds (CI smoke test)
 	bash Docker/tests/smoke.sh
 
+# ---- Performance test data ---------------------------------------------------
+
+# Build, benchmark and rehydrate big synthetic wikis. Artifacts land in the gitignored
+# perf/. Usage and caveats (including QLever, which is not snapshotted) are in
+# README.md#performance-test-data.
+
+PERF_DIR := perf
+PERF_DUMP := $(PERF_DIR)/dump.xml
+PERF_SNAPSHOT_DIR := $(PERF_DIR)/snapshot
+PERF_SQL := $(PERF_SNAPSHOT_DIR)/mediawiki.sql
+PERF_NEO := $(PERF_SNAPSHOT_DIR)/neo4j.dump
+
+# `neo4j-admin database dump` and `load` refuse to touch a database the server has
+# mounted, so both are bracketed by STOP/START DATABASE against the system database.
+NEO_CYPHER := $(DC) exec -T neo cypher-shell -u $(NEO4J_USERNAME) -p $(NEO4J_PASSWORD)
+
+# `docker compose exec` lands in the neo container as root, while the server runs as
+# neo4j. Loading as root leaves a store the server cannot write, which then fails to
+# start, so neo4j-admin runs as the owning user.
+NEO_ADMIN := $(DC) exec -T --user neo4j neo neo4j-admin
+
+.PHONY: perf-generate perf-import perf-snapshot perf-restore
+.PHONY: _require-pages _require-snapshot _neo-stop _neo-start
+
+_require-pages:
+	@[ -n "$(pages)" ] || { echo "Usage: make perf-generate pages=N [subjects=10] [seed=1]" >&2; exit 1; }
+
+perf-generate: _require-pages ## Generate a synthetic Subject dump (pages=N [subjects=10] [seed=1])
+ifeq ($(INSIDE_CONTAINER),1)
+	php ../../maintenance/run.php NeoWiki:GeneratePerformanceDump \
+		--pages $(pages) \
+		--subjects-per-page $(or $(subjects),10) \
+		--seed $(or $(seed),1) \
+		--output $(PERF_DUMP) < /dev/null
+else
+	@mkdir -p $(PERF_DIR)
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf-generate pages=$(pages) subjects=$(subjects) seed=$(seed)' < /dev/null
+endif
+
+perf-import: ## Import the generated dump, reporting elapsed time and throughput
+ifeq ($(INSIDE_CONTAINER),1)
+	@set -e; \
+	[ -f $(PERF_DUMP) ] || { echo "$(PERF_DUMP) not found; run 'make perf-generate pages=N' first." >&2; exit 1; }; \
+	pages=$$(head -5 $(PERF_DUMP) | grep -o ' pages="[0-9]*"' | tr -dc 0-9); \
+	subjects=$$(head -5 $(PERF_DUMP) | grep -o ' subjects="[0-9]*"' | tr -dc 0-9); \
+	start=$$(date +%s.%N); \
+	php ../../maintenance/run.php importDump --no-updates $(CURDIR)/$(PERF_DUMP) < /dev/null; \
+	end=$$(date +%s.%N); \
+	awk -v s=$$start -v e=$$end -v p="$$pages" -v n="$$subjects" 'BEGIN { \
+		d = e - s; \
+		printf "\nImported in %.1f s", d; \
+		if ( p > 0 && d > 0 ) printf ": %d pages (%.2f/sec), %d Subjects (%.2f/sec)", p, p / d, n, n / d; \
+		printf "\n"; \
+	}'
+else
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf-import' < /dev/null
+endif
+
+perf-snapshot: ## Snapshot MariaDB + Neo4j into perf/snapshot/
+	@mkdir -p $(PERF_SNAPSHOT_DIR)
+	$(DC) exec -T db mariadb-dump -u root -p$(MARIADB_ROOT_PASSWORD) \
+		--single-transaction --add-drop-database --databases $(MARIADB_DATABASE) > $(PERF_SQL)
+	$(MAKE) --no-print-directory _neo-stop
+	@$(NEO_ADMIN) database dump neo4j --to-stdout > $(PERF_NEO); status=$$?; \
+		$(MAKE) --no-print-directory _neo-start; exit $$status
+	@echo "Snapshot written to $(PERF_SNAPSHOT_DIR)/"
+
+_require-snapshot:
+	@[ -f $(PERF_SQL) ] && [ -f $(PERF_NEO) ] \
+		|| { echo "No snapshot in $(PERF_SNAPSHOT_DIR)/; run 'make perf-snapshot' first." >&2; exit 1; }
+
+perf-restore: _require-snapshot ## Restore perf/snapshot/ over the current stack's data
+	$(DC) exec -T db mariadb -u root -p$(MARIADB_ROOT_PASSWORD) < $(PERF_SQL)
+	$(MAKE) --no-print-directory _neo-stop
+	@$(NEO_ADMIN) database load neo4j --from-stdin --overwrite-destination < $(PERF_NEO); status=$$?; \
+		$(MAKE) --no-print-directory _neo-start; exit $$status
+	@echo "Restored. Run 'make update-dot-php' to bring the MediaWiki schema up to date with this checkout."
+
+_neo-stop:
+	@$(NEO_CYPHER) -d system 'STOP DATABASE neo4j WAIT'
+
+# START reports success even when the store it mounted is unusable, so prove the database
+# actually answers queries: a silently broken restore is worse than a failed one.
+_neo-start:
+	@$(NEO_CYPHER) -d system 'START DATABASE neo4j WAIT'
+	@$(NEO_CYPHER) -d neo4j 'RETURN 1' > /dev/null \
+		|| { echo "The neo4j database did not come back online." >&2; exit 1; }
+
 # ---- Production image --------------------------------------------------------
 
 .PHONY: wiki-production-image

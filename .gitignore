@@ -2,6 +2,7 @@ Docker/mediawiki/
 Docker/.env
 Docker/LocalSettings.local.php
 node_modules/
+perf/
 vendor/
 
 .phpunit.result.cache

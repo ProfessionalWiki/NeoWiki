@@ -60,6 +60,37 @@ make import-demo-data     # load the latest demo data, overriding your changes
 
 For all targets, run `make help`.
 
+### Performance test data
+
+Build a large synthetic wiki to measure against the targets in
+[ADR 29](docs/adr/029-scalability-targets.md):
+
+```bash
+make perf-generate pages=1000   # write perf/dump.xml
+make perf-import                # import it, timing the write path
+make perf-snapshot              # save MariaDB + Neo4j to perf/snapshot/
+make perf-restore               # load perf/snapshot/ over this stack's data
+```
+
+`perf-generate` takes `pages=N` plus optional `subjects=10` and `seed=1`. It emits one Schema
+and `pages` × `subjects` Subjects carrying 12 Statements each, three of them relations to
+Subjects on other pages. The same options always produce the same dump, and no two seeds mint
+the same Subject id, so dumps from different seeds can share one wiki.
+
+`perf-import` is the benchmark: its last line reports elapsed time, pages/sec and
+Subjects/sec. Snapshot and restore make the result reusable — `perf/` is gitignored, and every
+worktree stack uses the same wiki id, so a snapshot restores into any of them.
+
+Three things to know about a restored wiki:
+
+- It has the MediaWiki schema the snapshot was taken with, so run `make update-dot-php` after
+  restoring.
+- It has the snapshot's Neo4j index state, and a stack that has never run
+  `make rebuild-graph-databases` has no `Subject(id)` index. Rebuild before snapshotting, or
+  every measured write pays a full-graph scan.
+- It has no QLever data: that index is filled at runtime over SPARQL, not snapshotted. Run
+  `make rebuild-graph-databases` when the SPARQL store has to match.
+
 ### Per-worktree dev environments
 
 Each clone or worktree is a self-contained stack. Run `make dev` from any NeoWiki
