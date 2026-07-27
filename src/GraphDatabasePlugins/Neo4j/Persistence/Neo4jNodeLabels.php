@@ -8,24 +8,26 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 
 /**
- * Reads and removes the labels of a Neo4j node identified by its id, within a given transaction.
+ * Reads and removes the labels of a Subject node identified by its id, within a given transaction.
  *
  * Shared by Neo4jSubjectUpdater (reconciling a subject's labels with its schema) and
  * Neo4jProjectionStore (stripping a subject down to a stub). Those classes hold their transaction
  * differently, so the transaction is passed in per call rather than owned here.
+ *
+ * Only Subject nodes are addressed: passing the id of any other kind of node matches nothing.
  */
 class Neo4jNodeLabels {
 
 	/**
 	 * @return string[]
 	 */
-	public static function read( TransactionInterface $transaction, string $nodeId ): array {
+	public static function read( TransactionInterface $transaction, string $subjectId ): array {
 		/**
 		 * @var SummarizedResult $result
 		 */
 		$result = $transaction->run(
-			'MATCH (n {id: $id}) RETURN labels(n) AS labels',
-			[ 'id' => $nodeId ]
+			'MATCH (n:Subject {id: $id}) RETURN labels(n) AS labels',
+			[ 'id' => $subjectId ]
 		);
 
 		if ( $result->isEmpty() ) {
@@ -38,14 +40,14 @@ class Neo4jNodeLabels {
 	/**
 	 * @param string[] $labels
 	 */
-	public static function remove( TransactionInterface $transaction, string $nodeId, array $labels ): void {
+	public static function remove( TransactionInterface $transaction, string $subjectId, array $labels ): void {
 		if ( $labels === [] ) {
 			return;
 		}
 
 		$transaction->run(
-			'MATCH (n {id: $id}) REMOVE n:' . Cypher::buildLabelList( $labels ),
-			[ 'id' => $nodeId ]
+			'MATCH (n:Subject {id: $id}) REMOVE n:' . Cypher::buildLabelList( $labels ),
+			[ 'id' => $subjectId ]
 		);
 	}
 

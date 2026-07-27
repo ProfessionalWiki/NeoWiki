@@ -44,8 +44,8 @@ class FailureIsolatingGraphDatabasePlugin implements GraphDatabasePlugin {
 
 	/**
 	 * Passed straight through without isolation: this decorator wraps plugins only on the hook-facing
-	 * write path, and that path never initializes — initialize() runs solely on the propagating
-	 * rebuild path (see GraphDatabasePlugin), where a failure must surface rather than be swallowed.
+	 * write path, and that path never initializes — initialize() runs solely on the propagating update
+	 * and rebuild paths (see GraphDatabasePlugin), where a failure must surface rather than be swallowed.
 	 */
 	public function initialize(): void {
 		$this->plugin->initialize();
