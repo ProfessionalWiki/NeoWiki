@@ -304,6 +304,15 @@ describe( 'SchemaPicker', () => {
 			expect( fieldText( wrapper ) ).toBe( 'City' );
 		} );
 
+		it( 'shows a schema committed while a filter that hides it is active', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await type( wrapper, 'off' );
+			await wrapper.setProps( { selected: 'City' } );
+
+			expect( fieldText( wrapper ) ).toBe( 'City' );
+		} );
+
 		it( 'marks a newly committed schema as the chosen one in the list', async () => {
 			const wrapper = await mountLoadedPicker();
 
