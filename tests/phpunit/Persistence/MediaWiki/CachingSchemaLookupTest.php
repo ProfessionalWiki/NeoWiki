@@ -8,6 +8,7 @@ use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\Schema\Exception\SchemaContentUnavailableException;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
@@ -143,6 +144,31 @@ class CachingSchemaLookupTest extends TestCase {
 		$this->assertSame( 1, $inner->calls );
 	}
 
+	public function testDoesNotRememberARevisionWhoseContentCouldNotBeRead(): void {
+		// Unlike content that does not deserialize, an unreadable blob is transient. Remembering it
+		// would pin the Schema as missing until someone edited it, since the key is the revision id.
+		$inner = $this->newUnreadableContentSpyLookup();
+
+		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 100 ), new StubPageReadAuthorizer( allowed: true ), $this->newConnectionProvider() );
+
+		$this->assertNull( $lookup->getSchema( new SchemaName( 'Person' ) ) );
+		$this->assertNull( $lookup->getSchema( new SchemaName( 'Person' ) ) );
+
+		$this->assertSame( 2, $inner->calls );
+	}
+
+	public function testServesTheSchemaOnceTheRevisionBecomesReadableAgain(): void {
+		$inner = $this->newRecoveringSpyLookup();
+
+		$lookup = new CachingSchemaLookup( $inner, $this->newCache(), $this->newTitleFactory( 1, 100, 100, 100 ), new StubPageReadAuthorizer( allowed: true ), $this->newConnectionProvider() );
+
+		$this->assertNull( $lookup->getSchema( new SchemaName( 'Person' ) ) );
+		$this->assertEquals( $inner->schema, $lookup->getSchema( new SchemaName( 'Person' ) ) );
+		$this->assertEquals( $inner->schema, $lookup->getSchema( new SchemaName( 'Person' ) ) );
+
+		$this->assertSame( 2, $inner->calls );
+	}
+
 	/**
 	 * @return SchemaLookup&object{calls: int, schema: Schema}
 	 */
@@ -172,6 +198,46 @@ class CachingSchemaLookupTest extends TestCase {
 			public function getSchema( SchemaName $schemaName ): ?Schema {
 				$this->calls++;
 				return null;
+			}
+		};
+	}
+
+	/**
+	 * @return SchemaLookup&object{calls: int}
+	 */
+	private function newUnreadableContentSpyLookup(): SchemaLookup {
+		return new class() implements SchemaLookup {
+			public int $calls = 0;
+
+			public function getSchema( SchemaName $schemaName ): ?Schema {
+				$this->calls++;
+				throw SchemaContentUnavailableException::forName( $schemaName->getText() );
+			}
+		};
+	}
+
+	/**
+	 * Unreadable on the first call, then readable, as a transient blob failure behaves.
+	 *
+	 * @return SchemaLookup&object{calls: int, schema: Schema}
+	 */
+	private function newRecoveringSpyLookup(): SchemaLookup {
+		return new class() implements SchemaLookup {
+			public int $calls = 0;
+			public Schema $schema;
+
+			public function __construct() {
+				$this->schema = new Schema( new SchemaName( 'Test' ), 'desc', new PropertyDefinitions( [] ) );
+			}
+
+			public function getSchema( SchemaName $schemaName ): ?Schema {
+				$this->calls++;
+
+				if ( $this->calls === 1 ) {
+					throw SchemaContentUnavailableException::forName( $schemaName->getText() );
+				}
+
+				return $this->schema;
 			}
 		};
 	}

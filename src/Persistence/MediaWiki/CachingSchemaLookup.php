@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\Schema\Exception\SchemaContentUnavailableException;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -58,7 +59,16 @@ class CachingSchemaLookup implements SchemaLookup {
 		$cacheKey = $this->makeCacheKey( $title );
 
 		if ( !array_key_exists( $cacheKey, $this->resolvedSchemas ) ) {
-			$this->resolvedSchemas[$cacheKey] = $this->getFromSharedCache( $cacheKey, $schemaName );
+			try {
+				$this->resolvedSchemas[$cacheKey] = $this->getFromSharedCache( $cacheKey, $schemaName );
+			}
+			catch ( SchemaContentUnavailableException ) {
+				// The revision's content could not be read, which the next call may well manage.
+				// Neither tier may remember that: the key is the revision id, so the entry would
+				// outlive the failure until someone edited the Schema. Letting this unwind past
+				// getWithSetCallback() leaves the shared tier empty too.
+				return null;
+			}
 		}
 
 		return $this->resolvedSchemas[$cacheKey];
