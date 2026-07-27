@@ -23,16 +23,13 @@ longer has. Run it to:
 - Recover after a backend wipe or restore.
 - Fix any drift between a backend's copy and the canonical revision slots.
 
-Three things to plan around:
+Two things to plan around:
 
 - It reconciles pages, not stray data. Anything the projection never knew about — a node written directly to Neo4j,
   say, or a named graph left behind in a SPARQL store — is not something the rebuild can find. For a guaranteed-clean
   result, empty the backend before rebuilding: wipe Neo4j's data volume, or drop the wiki's named graphs from the store.
 - It runs as a single sequential process with no batching or resume, so the time scales with the number of pages. Plan
   downtime on large wikis.
-- Schema edits made while it runs do not reach it. It resolves each Schema once and keeps that copy for the rest of the
-  run, so a Schema edited mid-run is projected as it stood when the rebuild first read it. Edit Schemas before starting,
-  or re-run the rebuild afterwards.
 
 ## Upgrades
 
