@@ -421,8 +421,8 @@ class GeneratePerformanceDump extends Maintenance {
 
 	/**
 	 * Only element content is escaped, never an attribute value, so quotes are left alone. That
-	 * keeps the JSON subject slots — which are mostly quotes — about three times smaller than
-	 * escaping them would.
+	 * keeps the JSON subject slots — which are mostly quotes — nearly half the size escaping them
+	 * would produce.
 	 */
 	private function escape( string $text ): string {
 		return htmlspecialchars( $text, ENT_NOQUOTES | ENT_XML1, 'UTF-8' );
