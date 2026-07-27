@@ -17,7 +17,7 @@ Every page sits in one genre. Write to that genre's reader and register.
 | --- | --- | --- |
 | `glossary.md`, `qualifiers-and-references.md` | New users and evaluators forming the mental model | Intended design; no dev-state caveats, no mechanism |
 | `api/` | API consumers deciding what a request or response means and what to do next | Wire-format vocabulary; no PHP class names |
-| `authoring/`, `rdf/`, `examples/` | Admins and integrators looking up exact behavior | Contracts, signatures, examples; no narration |
+| `authoring/`, `rdf/` | Admins and integrators looking up exact behavior | Contracts, signatures, examples; no narration |
 | `operations/` | Sysadmins keeping an instance healthy | Tasks and remedies; system model only where needed to act |
 | `extending/` | Extension developers, whose interface is our internal identifiers | Point at working RedHerb code over prose |
 | `adr/` | Maintainers recording a decision | A dated record: context, decision, consequences; not retro-edited apart from status links |

@@ -45,4 +45,4 @@ Each store entry names one projection, and several entries may point at one endp
 == Learn more ==
 
 * [https://neowiki.ai/docs/rdf/ontology-mapping Ontology mapping reference]
-* [https://neowiki.ai/docs/examples/person-to-edm Person-to-EDM worked example]
+* [https://neowiki.ai/docs/rdf/person-to-edm Person-to-EDM worked example]

@@ -13,7 +13,7 @@ run at once: an export request selects one by name, and a SPARQL store can hold
 
 The design and its open questions live in [planning/OntologyMapping.md](../planning/OntologyMapping.md); this
 page is the as-built reference for the shipped v1. The
-[Person-to-EDM worked example](../examples/person-to-edm.md) walks through a Person Schema projected to EDM,
+[Person-to-EDM worked example](person-to-edm.md) walks through a Person Schema projected to EDM,
 with native and mapped output side by side and the current gaps.
 
 > **v1 scope.** It covers only *near-1:1* term substitution — a target class per Subject and one target
