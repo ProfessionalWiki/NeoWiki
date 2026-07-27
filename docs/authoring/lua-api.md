@@ -223,7 +223,7 @@ end
 ```lua
 -- Prefer parameterized queries over concatenating values into queries.
 local rows = nw.query(
-    'MATCH (s:Subject:`ISMS Document`) WHERE s.`Valid` = $valid RETURN s.name, s.`Expiry date`',
+    'MATCH (s:Subject:`ISMS Document`) WHERE $valid IN s.`Valid` RETURN s.name AS name, s.`Expiry date`[0] AS expiry',
     { valid = 'Yes' }
 )
 ```
