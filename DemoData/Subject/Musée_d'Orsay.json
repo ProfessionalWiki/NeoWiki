@@ -48,7 +48,7 @@
 			}
 		},
 		"sEpfwLY8VcdQZJL": {
-			"label": "2019",
+			"label": "Musée d'Orsay attendance 2019",
 			"schema": "Attendance",
 			"statements": {
 				"Year": {
@@ -66,7 +66,7 @@
 			}
 		},
 		"sEpfwLY8WnceT2y": {
-			"label": "2022",
+			"label": "Musée d'Orsay attendance 2022",
 			"schema": "Attendance",
 			"statements": {
 				"Year": {
@@ -84,7 +84,7 @@
 			}
 		},
 		"sEpfwLY8XjJ8gE1": {
-			"label": "2023",
+			"label": "Musée d'Orsay attendance 2023",
 			"schema": "Attendance",
 			"statements": {
 				"Year": {
