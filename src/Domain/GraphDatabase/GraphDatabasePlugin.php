@@ -19,8 +19,9 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
  * - On maintenance rebuilds (RebuildGraphDatabases), the wiring propagates failures so they are
  *   reported truthfully per page instead of being silently swallowed. An initialize() failure
  *   propagates like any other rebuild failure.
- * - On update.php, the wiring likewise propagates, but the caller reports an initialize() failure
- *   and lets the update continue: MediaWiki's own schema changes are the point of that run.
+ * - On update.php, the wiring likewise propagates, but the caller reports an initialize() failure and
+ *   lets the update continue, since aborting there would only skip the schema updates of the
+ *   extensions queued after NeoWiki.
  *
  * The hook path never initializes.
  */
