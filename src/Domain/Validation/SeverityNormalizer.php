@@ -70,7 +70,11 @@ final class SeverityNormalizer {
 				continue;
 			}
 
-			$json[$key] = is_bool( $json[$key] )
+			// Only `true` may drop the value key: extract() reads the value-less form as true,
+			// so emitting it for `false` would flip a Constraint the author disabled. Core
+			// booleans are always true here (booleanConstraint forbids a value key), but a
+			// custom Property Type's own boolean key is not constrained that way.
+			$json[$key] = $json[$key] === true
 				? [ 'severity' => $severity->value ]
 				: [ 'value' => $json[$key], 'severity' => $severity->value ];
 		}

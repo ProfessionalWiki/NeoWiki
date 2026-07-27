@@ -86,4 +86,26 @@ class SeverityNormalizerTest extends TestCase {
 
 		$this->assertSame( $original, SeverityNormalizer::apply( $values, $severities ) );
 	}
+
+	/**
+	 * The value-less object form implies true, so emitting it for a `false` value would read
+	 * back as `true` and silently enable a Constraint the author disabled. Core booleans are
+	 * always true when annotated — the content schema forbids a `value` key on them — but a
+	 * custom Property Type's own boolean key carries no such guard.
+	 */
+	public function testApplyKeepsFalseBooleanValueRatherThanImplyingTrue(): void {
+		$this->assertSame(
+			[ 'caseSensitive' => [ 'value' => false, 'severity' => 'error' ] ],
+			SeverityNormalizer::apply( [ 'caseSensitive' => false ], [ 'caseSensitive' => Severity::Error ] )
+		);
+	}
+
+	public function testFalseBooleanCustomKeyRoundTrips(): void {
+		$original = [ 'caseSensitive' => [ 'value' => false, 'severity' => 'error' ] ];
+
+		[ $values, $severities ] = SeverityNormalizer::extract( $original );
+
+		$this->assertFalse( $values['caseSensitive'] );
+		$this->assertSame( $original, SeverityNormalizer::apply( $values, $severities ) );
+	}
 }

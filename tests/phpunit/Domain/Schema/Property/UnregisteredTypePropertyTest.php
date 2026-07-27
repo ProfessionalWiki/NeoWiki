@@ -47,6 +47,24 @@ JSON
 		);
 	}
 
+	/**
+	 * A custom boolean Constraint set to false must keep its explicit `value` key: the
+	 * value-less object form implies true, so dropping it would flip the Constraint on.
+	 */
+	public function testObjectFormFalseCustomConstraintRoundTripsForUnregisteredType(): void {
+		$this->assertSerializationDoesNotChange(
+			<<<JSON
+{
+	"type": "color",
+	"description": "",
+	"required": false,
+	"default": null,
+	"caseSensitive": { "value": false, "severity": "error" }
+}
+JSON
+		);
+	}
+
 	public function testUnannotatedUnregisteredTypeRoundTripsUnchanged(): void {
 		$this->assertSerializationDoesNotChange(
 			<<<JSON
