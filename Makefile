@@ -449,8 +449,20 @@ NEO_CYPHER := $(DC) exec -T neo cypher-shell -u $(NEO4J_USERNAME) -p $(NEO4J_PAS
 # start, so neo4j-admin runs as the owning user.
 NEO_ADMIN := $(DC) exec -T --user neo4j neo neo4j-admin
 
+# Shell fragments rather than targets of their own: make runs any recipe line that mentions
+# $(MAKE) even under --dry-run, so recursing into a stop/start target would let
+# `make -n perf-snapshot` truncate the snapshot and `make -n perf-restore` overwrite the live
+# store for real.
+NEO_STOP = $(NEO_CYPHER) -d system 'STOP DATABASE neo4j WAIT' < /dev/null
+
+# START reports success even when the store it mounted is unusable, so prove the database
+# actually answers queries: a silently broken restore is worse than a failed one.
+NEO_START = { $(NEO_CYPHER) -d system 'START DATABASE neo4j WAIT' < /dev/null \
+	&& $(NEO_CYPHER) -d neo4j 'RETURN 1' < /dev/null > /dev/null; } \
+	|| { echo "The neo4j database did not come back online." >&2; exit 1; }
+
 .PHONY: perf-generate perf-import perf-snapshot perf-restore
-.PHONY: _require-pages _require-snapshot _neo-stop _neo-start
+.PHONY: _require-pages _require-snapshot
 
 _require-pages:
 	@[ -n "$(pages)" ] || { echo "Usage: make perf-generate pages=N [subjects=10] [seed=1]" >&2; exit 1; }
@@ -493,10 +505,11 @@ perf-snapshot: ## Snapshot MariaDB + Neo4j into perf/snapshot/
 	@rm -f $(PERF_SQL) $(PERF_NEO)
 	$(DC) exec -T db mariadb-dump -u root -p$(MARIADB_ROOT_PASSWORD) \
 		--single-transaction --add-drop-database --databases $(MARIADB_DATABASE) > $(PERF_SQL) < /dev/null
-	$(MAKE) --no-print-directory _neo-stop
-	@$(NEO_ADMIN) database dump neo4j --to-stdout > $(PERF_NEO) < /dev/null; status=$$?; \
-		$(MAKE) --no-print-directory _neo-start || exit 1; \
-		exit $$status
+	@set -e; \
+		neo_start() { $(NEO_START); }; \
+		trap neo_start EXIT; \
+		$(NEO_STOP); \
+		$(NEO_ADMIN) database dump neo4j --to-stdout > $(PERF_NEO) < /dev/null
 	@echo "Snapshot written to $(PERF_SNAPSHOT_DIR)/"
 
 _require-snapshot:
@@ -505,21 +518,12 @@ _require-snapshot:
 
 perf-restore: _require-snapshot ## Restore perf/snapshot/, replacing this stack's MariaDB and Neo4j data
 	$(DC) exec -T db mariadb -u root -p$(MARIADB_ROOT_PASSWORD) < $(PERF_SQL)
-	$(MAKE) --no-print-directory _neo-stop
-	@$(NEO_ADMIN) database load neo4j --from-stdin --overwrite-destination < $(PERF_NEO); status=$$?; \
-		$(MAKE) --no-print-directory _neo-start || exit 1; \
-		exit $$status
+	@set -e; \
+		neo_start() { $(NEO_START); }; \
+		trap neo_start EXIT; \
+		$(NEO_STOP); \
+		$(NEO_ADMIN) database load neo4j --from-stdin --overwrite-destination < $(PERF_NEO)
 	@echo "Restored. Run 'make update-dot-php' to bring the MediaWiki schema up to date with this checkout."
-
-_neo-stop:
-	@$(NEO_CYPHER) -d system 'STOP DATABASE neo4j WAIT' < /dev/null
-
-# START reports success even when the store it mounted is unusable, so prove the database
-# actually answers queries: a silently broken restore is worse than a failed one.
-_neo-start:
-	@$(NEO_CYPHER) -d system 'START DATABASE neo4j WAIT' < /dev/null
-	@$(NEO_CYPHER) -d neo4j 'RETURN 1' < /dev/null > /dev/null \
-		|| { echo "The neo4j database did not come back online." >&2; exit 1; }
 
 # ---- Production image --------------------------------------------------------
 
