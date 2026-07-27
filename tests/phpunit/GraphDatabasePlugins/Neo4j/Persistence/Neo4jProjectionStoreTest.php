@@ -593,18 +593,26 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
 		) );
 
-		// Re-saving GUID_1 under a schema the lookup does not know makes the projection skip it, so it
-		// keeps its data while losing its HasSubject relation.
+		// Re-saving GUID_1 under a schema this store's lookup does not know makes the projection skip it,
+		// so it keeps its data while losing its HasSubject relation. newProjectionStoreWithLocationRelation
+		// hands its store an InMemorySchemaLookup holding the default schema alone, so SCHEMA_ID_A does not
+		// resolve here despite setUp creating a Schema page for it: no store in this class reads those pages.
 		$store->savePage( TestPage::build(
 			id: 1,
 			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
 		) );
 
+		// The skip is what gives this test its teeth, so assert it happened rather than assuming it.
+		$this->assertSubjectIsNotStub( self::GUID_1 );
+		$this->assertHasNoIncomingHasSubjectRelation( self::GUID_1 );
+
 		// Removing GUID_2 takes GUID_1's last incoming relation with it, leaving a subject that has
 		// no incoming relation at all but still carries data.
 		$store->savePage( TestPage::build( id: 2 ) );
 
-		$this->assertSubjectExists( self::GUID_1 );
+		// Asserting the data survives, not merely the node: a sweep that reduced unreachable
+		// candidates to stubs instead of deleting them would leave a node behind either way.
+		$this->assertSubjectIsNotStub( self::GUID_1 );
 	}
 
 	public function testDroppingTheOnlyRelationToAStubDeletesTheStub(): void {
@@ -813,10 +821,38 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertTrue( $result->isEmpty(), "Subject {$subjectId} should not exist" );
 	}
 
-	private function assertSubjectExists( string $subjectId ): void {
-		$result = $this->readGraph( 'MATCH (subject {id: $id}) RETURN subject', [ 'id' => $subjectId ] );
+	/**
+	 * The inverse of assertSubjectIsStub: the node exists and still carries the data a stub sheds.
+	 * Asserting mere existence would not distinguish the two.
+	 */
+	private function assertSubjectIsNotStub( string $subjectId ): void {
+		$result = $this->readGraph(
+			'MATCH (subject {id: $id}) RETURN labels(subject) AS labels, subject.name AS name',
+			[ 'id' => $subjectId ]
+		);
 
 		$this->assertFalse( $result->isEmpty(), "Subject {$subjectId} should exist" );
+
+		$row = $result->first()->toRecursiveArray();
+
+		$this->assertNotNull( $row['name'], "Subject {$subjectId} should keep its name" );
+		$this->assertContains(
+			TestSubject::DEFAULT_SCHEMA_ID,
+			$row['labels'],
+			"Subject {$subjectId} should keep its Schema label"
+		);
+	}
+
+	private function assertHasNoIncomingHasSubjectRelation( string $subjectId ): void {
+		$result = $this->readGraph(
+			'MATCH (subject {id: $id}) RETURN EXISTS { ()-[:HasSubject]->(subject) } AS isLinked',
+			[ 'id' => $subjectId ]
+		);
+
+		$this->assertFalse(
+			$result->first()->toRecursiveArray()['isLinked'],
+			"Subject {$subjectId} should have no HasSubject relation"
+		);
 	}
 
 	public function testSavingPageAndThenDeletingItLeavesNoTrace(): void {
