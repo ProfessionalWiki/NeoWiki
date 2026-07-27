@@ -286,6 +286,32 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Validation failed', $responseData['message'] );
 		$this->assertSame( 'Required', $responseData['violations'][0]['propertyName'] );
 		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
+		$this->assertSame( 'error', $responseData['violations'][0]['severity'] );
+	}
+
+	public function testEnforcementAllowsUnannotatedConstraintViolation(): void {
+		$this->setMwGlobals( 'wgNeoWikiEnforceValidation', true );
+
+		$this->createSchema(
+			'UnannotatedSchema',
+			'{"title":"UnannotatedSchema","propertyDefinitions":{"Required":{"type":"text","required":true}}}'
+		);
+
+		$body = $this->validBody();
+		$body['schema'] = 'UnannotatedSchema';
+		$body['statements'] = [];
+
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( 'created', $responseData['status'] );
+		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
+		$this->assertSame( 'warning', $responseData['violations'][0]['severity'] );
 	}
 
 	public function testCreatesChildSubjectWithSuppliedId(): void {
