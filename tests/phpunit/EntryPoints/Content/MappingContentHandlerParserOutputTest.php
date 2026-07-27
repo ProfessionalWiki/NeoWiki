@@ -63,10 +63,13 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 	public function testSchemaSectionsFollowDocumentOrder(): void {
 		$html = $this->render( $this->edm() );
 
-		$this->assertLessThan(
-			strpos( $html, 'id="ext-neowiki-mapping-schema-City"' ),
-			strpos( $html, 'id="ext-neowiki-mapping-schema-Person"' )
-		);
+		$person = strpos( $html, 'id="ext-neowiki-mapping-schema-Person"' );
+		$city = strpos( $html, 'id="ext-neowiki-mapping-schema-City"' );
+
+		// Guarded, because assertLessThan( int, false ) compares as bool and would pass.
+		$this->assertIsInt( $person );
+		$this->assertIsInt( $city );
+		$this->assertLessThan( $city, $person );
 	}
 
 	public function testOverviewRowsShowTheTargetClassAndMappedPropertyCount(): void {
@@ -111,8 +114,11 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 	}
 
 	public function testPrefixLinksHonorTheWikiExternalLinkConfiguration(): void {
-		$this->overrideConfigValue( MainConfigNames::NoFollowLinks, false );
+		// Both directions, so an anchor that simply never emits rel cannot pass.
+		$this->overrideConfigValue( MainConfigNames::NoFollowLinks, true );
+		$this->assertStringContainsString( 'rel="nofollow"', $this->render( $this->edm() ) );
 
+		$this->overrideConfigValue( MainConfigNames::NoFollowLinks, false );
 		$html = $this->render( $this->edm() );
 
 		$this->assertStringContainsString( 'href="http://www.europeana.eu/schemas/edm/"', $html );
@@ -162,12 +168,15 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 	 * claim a mapping that does not exist.
 	 */
 	public function testSchemaNameThatIsNotTheCanonicalPageTitleIsNotLinked(): void {
-		$this->createSchemaPage( 'Person' );
+		// The page the non-canonical name normalizes to, so without the guard this would be a blue link
+		// claiming a mapping the projector will never make, rather than a red one.
+		$this->createSchemaPage( 'Person x' );
 		$this->getServiceContainer()->getLinkCache()->clear();
 
 		$parserOutput = $this->parserOutput( $this->mappingWithSchema( 'Person_x' ) );
 
 		$this->assertStringContainsString( '<span>Person_x</span>', $parserOutput->getRawText() );
+		$this->assertStringNotContainsString( 'Schema:Person_x', $parserOutput->getRawText() );
 		$this->assertFalse( $this->registersLocalLink( $parserOutput, NeoWikiExtension::NS_SCHEMA, 'Person_x' ) );
 	}
 
