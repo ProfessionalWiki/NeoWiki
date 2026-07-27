@@ -221,10 +221,10 @@ end
 ```
 
 ```lua
--- Parameterised — always prefer this over concatenating values into the query.
+-- Prefer parameterized queries over concatenating values into queries.
 local rows = nw.query(
-    'MATCH (s:Subject {schema: $schema}) WHERE s.`Valid` = $valid RETURN s.name, s.`Expiry date`',
-    { schema = 'ISMS Document', valid = 'Yes' }
+    'MATCH (s:Subject:`ISMS Document`) WHERE $valid IN s.`Valid` RETURN s.name AS name, s.`Expiry date`[0] AS expiry',
+    { valid = 'Yes' }
 )
 ```
 
