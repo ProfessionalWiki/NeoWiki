@@ -34,7 +34,7 @@ Project Subjects to RDF, natively or mapped onto standard ontologies.
 
 * [RDF Export](rdf/rdf-export.md) — native RDF projection: config, IRI scheme, endpoint, bulk dump
 * [Ontology Mapping](rdf/ontology-mapping.md) — projecting into EDM, Dublin Core, … via Mapping pages
-* [Worked example: Person to EDM](examples/person-to-edm.md) — end-to-end mapping walkthrough with findings
+* [Worked example: Person to EDM](rdf/person-to-edm.md) — end-to-end mapping walkthrough with findings
 
 ## Extend NeoWiki
 
@@ -63,7 +63,7 @@ For contributors adding to these docs:
 * An HTTP API or a JSON data format → `api/`
 * RDF projection or ontology mapping → `rdf/`
 * Extending NeoWiki from another extension → `extending/`
-* A worked, end-to-end example → `examples/`
+* A worked, end-to-end example → alongside the docs for the surface it walks through
 * A sysadmin install, maintenance, or deployment guide → `operations/`
 * A numbered, dated decision → `adr/`
 * Work-in-progress exploration → `planning/` (not published to the website)

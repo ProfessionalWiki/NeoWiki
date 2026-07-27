@@ -11,7 +11,7 @@ The model is specified in [NativeRdfProjection.md](../planning/NativeRdfProjecti
 reference for the export surface.
 
 For an end-to-end example comparing the native and ontology-mapped output, see the
-[Person-to-EDM worked example](../examples/person-to-edm.md).
+[Person-to-EDM worked example](person-to-edm.md).
 
 ## Configuration
 
