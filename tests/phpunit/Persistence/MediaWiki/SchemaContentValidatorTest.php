@@ -237,6 +237,37 @@ JSON
 		$this->assertTrue( $valid );
 	}
 
+	public function testOptionsWithSeverityObjectFormPassesValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty(
+				'{ "type": "select", "multiple": false, "options": { "value": [ { "id": "opt_a", "label": "A" } ], "severity": "error" } }'
+			)
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
+	/**
+	 * `multiple` declares the value's shape rather than a Constraint, so the object form is
+	 * rejected at authoring time: the normalizer is deliberately key-agnostic and would
+	 * otherwise unwrap it into a severity nothing reads.
+	 */
+	public function testShapeKeyWithSeverityObjectFormFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "text", "multiple": { "severity": "error" } }' )
+			)
+		);
+	}
+
 	public function testScalarConstraintWithInvalidSeverityStringFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
 

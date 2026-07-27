@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 
@@ -61,6 +62,7 @@ class DateTypeValidateTest extends TestCase {
 		);
 
 		$this->assertSame( 'invalid-date', $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
 	public function testYearOnlyReturnsInvalidDate(): void {

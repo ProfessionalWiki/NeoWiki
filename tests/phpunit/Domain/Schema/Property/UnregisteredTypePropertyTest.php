@@ -28,6 +28,25 @@ JSON
 		);
 	}
 
+	/**
+	 * The severity on a type-specific key the core knows nothing about must survive too:
+	 * the property is rebuilt from the normalized values, so re-serializing re-wraps the
+	 * key once rather than wrapping the already-wrapped object again.
+	 */
+	public function testObjectFormCustomConstraintSeverityRoundTripsForUnregisteredType(): void {
+		$this->assertSerializationDoesNotChange(
+			<<<JSON
+{
+	"type": "color",
+	"description": "",
+	"required": false,
+	"default": null,
+	"allowedColors": { "value": [ "#ff0000" ], "severity": "error" }
+}
+JSON
+		);
+	}
+
 	public function testUnannotatedUnregisteredTypeRoundTripsUnchanged(): void {
 		$this->assertSerializationDoesNotChange(
 			<<<JSON
