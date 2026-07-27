@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jOrphanCandidates;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectRelationUpdater;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -68,7 +69,8 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 			new SubjectId( self::SUBJECT_ID ),
 			$relations,
 			NeoWikiExtension::getInstance()->getNeo4jClient(),
-			self::WIKI_ID
+			self::WIKI_ID,
+			new Neo4jOrphanCandidates()
 		);
 		$updater->updateRelations();
 	}

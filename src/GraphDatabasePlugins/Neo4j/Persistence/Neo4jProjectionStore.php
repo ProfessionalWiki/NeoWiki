@@ -32,10 +32,13 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 
 	public function savePage( Page $page ): void {
 		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $page ): void {
+			$orphanCandidates = new Neo4jOrphanCandidates();
+
 			$this->upsertPageNode( $transaction, $page );
-			$this->removeAbsentSubjects( $transaction, $page );
+			$this->removeAbsentSubjects( $transaction, $page, $orphanCandidates );
 			$this->detachSubjectsFromPage( $transaction, $page->getId() );
-			$this->updateSubjects( $transaction, $page );
+			$this->updateSubjects( $transaction, $page, $orphanCandidates );
+			$this->deleteOrphanStubs( $transaction, $orphanCandidates );
 		} );
 	}
 
@@ -73,7 +76,11 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	 * page. This reuses removeSubjects so that a removed subject still referenced by other subjects is
 	 * kept as a stub instead of being deleted, keeping the incoming relations valid.
 	 */
-	private function removeAbsentSubjects( TransactionInterface $transaction, Page $page ): void {
+	private function removeAbsentSubjects(
+		TransactionInterface $transaction,
+		Page $page,
+		Neo4jOrphanCandidates $orphanCandidates
+	): void {
 		$presentSubjectIds = $page->getSubjects()->getAllSubjects()->getIdsAsTextArray();
 
 		$absentSubjectIds = array_values( array_filter(
@@ -81,7 +88,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 			fn( string $subjectId ) => !in_array( $subjectId, $presentSubjectIds, true )
 		) );
 
-		$this->removeSubjects( $transaction, $absentSubjectIds );
+		$this->removeSubjects( $transaction, $absentSubjectIds, $orphanCandidates );
 	}
 
 	private function detachSubjectsFromPage( TransactionInterface $transaction, PageId $pageId ): void {
@@ -138,8 +145,12 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		return $date->format( 'Y-m-d\TH:i:s' );
 	}
 
-	private function updateSubjects( TransactionInterface $transaction, Page $page ): void {
-		$updater = $this->subjectUpdaterFactory->newSubjectUpdater( $transaction, $page->getId() );
+	private function updateSubjects(
+		TransactionInterface $transaction,
+		Page $page,
+		Neo4jOrphanCandidates $orphanCandidates
+	): void {
+		$updater = $this->subjectUpdaterFactory->newSubjectUpdater( $transaction, $page->getId(), $orphanCandidates );
 
 		$mainSubject = $page->getSubjects()->getMainSubject();
 
@@ -154,9 +165,16 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 
 	public function deletePage( PageId $pageId ): void {
 		$this->client->writeTransaction( function ( TransactionInterface $transaction ) use ( $pageId ): void {
-			$this->removeSubjects( $transaction, $this->getSubjectIdsByPageId( $transaction, $pageId ) );
+			$orphanCandidates = new Neo4jOrphanCandidates();
+
+			$this->removeSubjects(
+				$transaction,
+				$this->getSubjectIdsByPageId( $transaction, $pageId ),
+				$orphanCandidates
+			);
 
 			$this->deletePageNode( $transaction, $pageId );
+			$this->deleteOrphanStubs( $transaction, $orphanCandidates );
 		} );
 	}
 
@@ -196,17 +214,25 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	 *
 	 * @param string[] $subjectIds
 	 */
-	private function removeSubjects( TransactionInterface $transaction, array $subjectIds ): void {
+	private function removeSubjects(
+		TransactionInterface $transaction,
+		array $subjectIds,
+		Neo4jOrphanCandidates $orphanCandidates
+	): void {
 		if ( $subjectIds === [] ) {
 			return;
 		}
 
 		$referencedSubjectIds = $this->subjectIdsWithIncomingRelations( $transaction, $subjectIds );
 
-		$this->deleteSubjects( $transaction, array_values( array_diff( $subjectIds, $referencedSubjectIds ) ) );
+		$this->deleteSubjects(
+			$transaction,
+			array_values( array_diff( $subjectIds, $referencedSubjectIds ) ),
+			$orphanCandidates
+		);
 
 		foreach ( $referencedSubjectIds as $subjectId ) {
-			$this->reduceSubjectToStub( $transaction, new SubjectId( $subjectId ) );
+			$this->reduceSubjectToStub( $transaction, new SubjectId( $subjectId ), $orphanCandidates );
 		}
 	}
 
@@ -240,14 +266,42 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	/**
 	 * @param string[] $subjectIds
 	 */
-	private function deleteSubjects( TransactionInterface $transaction, array $subjectIds ): void {
+	private function deleteSubjects(
+		TransactionInterface $transaction,
+		array $subjectIds,
+		Neo4jOrphanCandidates $orphanCandidates
+	): void {
 		if ( $subjectIds === [] ) {
 			return;
 		}
 
+		// DETACH DELETE cannot report what it detached from, so the targets are read first.
+		$orphanCandidates->add( ...$this->relationTargetsOf( $transaction, $subjectIds ) );
+
 		$transaction->run(
 			'MATCH (subject:Subject) WHERE subject.id IN $subjectIds DETACH DELETE subject',
 			[ 'subjectIds' => $subjectIds ]
+		);
+	}
+
+	/**
+	 * @param string[] $subjectIds
+	 * @return string[]
+	 */
+	private function relationTargetsOf( TransactionInterface $transaction, array $subjectIds ): array {
+		/**
+		 * @var SummarizedResult $result
+		 */
+		$result = $transaction->run(
+			'MATCH (subject:Subject)-[]->(target)
+				WHERE subject.id IN $subjectIds
+				RETURN DISTINCT target.id AS id',
+			[ 'subjectIds' => $subjectIds ]
+		);
+
+		return array_map(
+			fn( $record ) => $record->get( 'id' ),
+			$result->toArray()
 		);
 	}
 
@@ -257,16 +311,28 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	 * from other subjects are kept, so the stub keeps those references valid. The stub is upgraded back
 	 * to a full subject in place if the subject is saved again.
 	 */
-	private function reduceSubjectToStub( TransactionInterface $transaction, SubjectId $subjectId ): void {
-		$transaction->run(
+	private function reduceSubjectToStub(
+		TransactionInterface $transaction,
+		SubjectId $subjectId,
+		Neo4jOrphanCandidates $orphanCandidates
+	): void {
+		/**
+		 * @var SummarizedResult $result
+		 */
+		$result = $transaction->run(
 			'MATCH (subject:Subject {id: $subjectId})
 				OPTIONAL MATCH ()-[hasSubject:HasSubject]->(subject)
-				OPTIONAL MATCH (subject)-[outgoingRelation]->()
+				OPTIONAL MATCH (subject)-[outgoingRelation]->(target)
 				DELETE hasSubject, outgoingRelation
-				WITH DISTINCT subject
-				SET subject = {id: $subjectId, wiki_id: $wikiId}',
+				WITH subject, collect(DISTINCT target.id) AS targetIds
+				SET subject = {id: $subjectId, wiki_id: $wikiId}
+				RETURN targetIds',
 			[ 'subjectId' => $subjectId->text, 'wikiId' => $this->wikiId ]
 		);
+
+		foreach ( $result->toArray() as $record ) {
+			$orphanCandidates->add( ...$record->get( 'targetIds' ) );
+		}
 
 		$this->removeNonStubLabels( $transaction, $subjectId );
 	}
@@ -276,6 +342,40 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 			$transaction,
 			$subjectId->text,
 			array_diff( Neo4jNodeLabels::read( $transaction, $subjectId->text ), [ 'Subject' ] )
+		);
+	}
+
+	/**
+	 * Deletes the stubs this write left unreachable. Only the former targets of the edges it deleted are
+	 * checked: a node keeps its incoming relations unless one of them was deleted, so those targets are
+	 * the complete set of nodes the write can have orphaned. Anchoring on their ids keeps the cost
+	 * proportional to what the write changed rather than to the size of the graph.
+	 *
+	 * A candidate is confirmed to be a stub by the absence of a name, not by the absence of an incoming
+	 * HasSubject relation. Both hold for a stub, but only the first holds for a stub alone: a removed
+	 * subject commonly references normal subjects, and a subject whose schema failed to resolve keeps its
+	 * data while losing its HasSubject relation. One pass then suffices, since a stub has no outgoing
+	 * relations and so cannot orphan another node when deleted.
+	 *
+	 * A candidate that gained a new incoming relation later in the same transaction has one by the time
+	 * this runs, and survives.
+	 */
+	private function deleteOrphanStubs(
+		TransactionInterface $transaction,
+		Neo4jOrphanCandidates $orphanCandidates
+	): void {
+		$candidateIds = $orphanCandidates->getSubjectIds();
+
+		if ( $candidateIds === [] ) {
+			return;
+		}
+
+		$transaction->run(
+			'UNWIND $candidateIds AS candidateId
+				MATCH (stub:Subject {id: candidateId})
+				WHERE stub.name IS NULL AND NOT (stub)<--()
+				DETACH DELETE stub',
+			[ 'candidateIds' => $candidateIds ]
 		);
 	}
 

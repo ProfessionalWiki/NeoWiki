@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -16,6 +17,7 @@ class Neo4jSubjectRelationUpdater {
 		private readonly TypedRelationList $relations,
 		private readonly TransactionInterface $transaction,
 		private readonly string $wikiId,
+		private readonly Neo4jOrphanCandidates $orphanCandidates,
 	) {
 	}
 
@@ -31,30 +33,43 @@ class Neo4jSubjectRelationUpdater {
 	}
 
 	private function removeNonexistentRelations( array $relationIds ): void {
-		$this->transaction->run(
+		$this->collectOrphanCandidates( $this->transaction->run(
 			'
-				MATCH (:Subject {id: $subjectId})-[relation]->()
+				MATCH (:Subject {id: $subjectId})-[relation]->(target)
 				WHERE NOT relation.id IN $relationIds
-				DELETE relation',
+				DELETE relation
+				RETURN DISTINCT target.id AS id',
 			[
 				'subjectId' => $this->subjectId->text,
 				'relationIds' => $relationIds,
 			]
-		);
+		) );
 	}
 
 	private function removeIfTypeOrTargetChanged( TypedRelation $relation ): void {
-		$this->transaction->run(
-			'MATCH (subject:Subject {id: $subjectId})-[oldRelation {id: $relationId}]->()
+		$this->collectOrphanCandidates( $this->transaction->run(
+			'MATCH (subject:Subject {id: $subjectId})-[oldRelation {id: $relationId}]->(oldTarget)
 			 WHERE oldRelation.type <> $relationType OR NOT (subject)-[oldRelation]->(:Subject {id: $targetId})
-			 DELETE oldRelation',
+			 DELETE oldRelation
+			 RETURN DISTINCT oldTarget.id AS id',
 			[
 				'subjectId' => $this->subjectId->text,
 				'relationId' => $relation->id->asString(),
 				'relationType' => $relation->type->text,
 				'targetId' => $relation->targetId->text,
 			]
-		);
+		) );
+	}
+
+	/**
+	 * Records the targets of the relations just deleted: losing an incoming relation is what can leave
+	 * a target as an orphan stub, swept at the end of the transaction.
+	 */
+	private function collectOrphanCandidates( SummarizedResult $deletedRelationTargets ): void {
+		$this->orphanCandidates->add( ...array_map(
+			fn ( $record ) => $record->get( 'id' ),
+			$deletedRelationTargets->toArray()
+		) );
 	}
 
 	private function createOrUpdate( TypedRelation $relation ): void {

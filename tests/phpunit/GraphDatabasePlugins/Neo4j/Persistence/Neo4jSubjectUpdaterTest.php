@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use DateTimeImmutable;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jOrphanCandidates;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdater;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
@@ -61,6 +62,7 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 			$valueBuilderRegistry ?? Neo4jValueBuilderRegistry::withCoreBuilders(),
 			$this->logger,
 			'test_wiki',
+			new Neo4jOrphanCandidates(),
 		);
 	}
 
