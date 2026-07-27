@@ -36,11 +36,11 @@ describe( 'normalizeSchemaName', () => {
 
 describe( 'SchemaStore getAllSchemaSummaries', () => {
 
-	function summary( name: string ): { name: string; description: string; propertyCount: number } {
+	function summary( name: string ): SchemaSummary {
 		return { name, description: '', propertyCount: 0 };
 	}
 
-	function manySummaries( count: number, prefix: string ): ReturnType<typeof summary>[] {
+	function manySummaries( count: number, prefix: string ): SchemaSummary[] {
 		return Array.from( { length: count }, ( _value, index ) => summary( `${ prefix }${ index }` ) );
 	}
 
