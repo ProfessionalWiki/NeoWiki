@@ -258,10 +258,13 @@ load-neo4j-users:
 		"echo \"CREATE USER $(NEO4J_USERNAME_READ) SET PASSWORD '$(NEO4J_PASSWORD_READ)' CHANGE NOT REQUIRED; GRANT ROLE reader TO $(NEO4J_USERNAME_READ);\" | cypher-shell -u neo4j -p $(NEO4J_PASSWORD) -a bolt://localhost:7687"
 
 # Dev-only: wait for and seed the test_neo instance. Not called from prod or CI flows.
+# IF NOT EXISTS because test-neo4j-data is declared in the dev compose file and so
+# survives `make remove` (which loads the base file only): on a stack that has run
+# before, the user is already there and a bare CREATE USER would abort `make reset`.
 setup-test-neo:
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_neo:7689 -t 60'
 	$(DC_DEV) exec -T test_neo bash -c \
-		"echo \"CREATE USER mediawiki_read SET PASSWORD 'mediawiki_read' CHANGE NOT REQUIRED; GRANT ROLE reader TO mediawiki_read;\" | cypher-shell -u neo4j -p password -a bolt://localhost:7689"
+		"echo \"CREATE USER mediawiki_read IF NOT EXISTS SET PASSWORD 'mediawiki_read' CHANGE NOT REQUIRED; GRANT ROLE reader TO mediawiki_read;\" | cypher-shell -u neo4j -p password -a bolt://localhost:7689"
 
 # ---- Composer ----------------------------------------------------------------
 
