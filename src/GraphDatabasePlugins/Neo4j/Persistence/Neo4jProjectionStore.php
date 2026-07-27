@@ -285,6 +285,10 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	}
 
 	/**
+	 * The :Subject label is what lets this seek the id constraint's index. Without it Neo4j has no
+	 * label to scope the lookup to and scans every relation in the graph. Every id reaching here comes
+	 * from getSubjectIdsByPageId, which matches (subject:Subject), so the label narrows nothing.
+	 *
 	 * @param string[] $subjectIds
 	 * @return string[]
 	 */
@@ -293,7 +297,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		 * @var SummarizedResult $result
 		 */
 		$result = $transaction->run(
-			'MATCH (subject)-[]->(target)
+			'MATCH (subject:Subject)-[]->(target)
 				WHERE subject.id IN $subjectIds
 				RETURN DISTINCT target.id AS id',
 			[ 'subjectIds' => $subjectIds ]
