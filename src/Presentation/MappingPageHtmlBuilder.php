@@ -5,10 +5,12 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Presentation;
 
 use Closure;
+use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Html\Html;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Parser\Sanitizer;
+use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use stdClass;
@@ -28,12 +30,18 @@ class MappingPageHtmlBuilder {
 	/** @var list<string> */
 	private array $externalLinks = [];
 
+	/** @var array<string, Title> Schema name => its Schema page, for names that form a valid title. */
+	private array $schemaTitles = [];
+
 	/**
+	 * @param LinkTarget $pageTitle The Mapping page being rendered, for title-specific external link attributes.
 	 * @param Closure(mixed): string $renderJsonTable Renders a JSON subtree as the core mw-json table.
 	 */
 	public function __construct(
 		private readonly LinkRenderer $linkRenderer,
 		private readonly TitleFactory $titleFactory,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly LinkTarget $pageTitle,
 		private readonly Closure $renderJsonTable
 	) {
 	}
@@ -43,6 +51,8 @@ class MappingPageHtmlBuilder {
 		$this->externalLinks = [];
 
 		$schemas = $mapping->schemas;
+
+		$this->schemaTitles = $this->resolveSchemaTitles( $schemas );
 
 		$html = Html::rawElement(
 			'div',
@@ -54,6 +64,29 @@ class MappingPageHtmlBuilder {
 		);
 
 		return new MappingPageRendering( $html, $this->schemaLinks, $this->externalLinks );
+	}
+
+	/**
+	 * Resolves every schema name to its Schema page up front and primes the LinkCache with a single
+	 * existence query. Without this, both LinkRenderer::makeLink (red or blue?) and ParserOutput::addLink
+	 * (which page id?) do their own lookup per schema, and the schemas list is unbounded user input.
+	 *
+	 * @return array<string, Title>
+	 */
+	private function resolveSchemaTitles( stdClass $schemas ): array {
+		$titles = [];
+
+		foreach ( get_object_vars( $schemas ) as $name => $schema ) {
+			$title = $this->titleFactory->makeTitleSafe( NeoWikiExtension::NS_SCHEMA, (string)$name );
+
+			if ( $title !== null ) {
+				$titles[(string)$name] = $title;
+			}
+		}
+
+		$this->linkBatchFactory->newLinkBatch( $titles )->setCaller( __METHOD__ )->execute();
+
+		return $titles;
 	}
 
 	private function versionHtml( stdClass $mapping ): string {
@@ -108,7 +141,7 @@ class MappingPageHtmlBuilder {
 	}
 
 	private function schemaLinkHtml( string $name ): string {
-		$title = $this->titleFactory->makeTitleSafe( NeoWikiExtension::NS_SCHEMA, $name );
+		$title = $this->schemaTitles[$name] ?? null;
 
 		if ( $title === null ) {
 			return Html::element( 'span', [], $name );
@@ -191,9 +224,14 @@ class MappingPageHtmlBuilder {
 
 		$this->externalLinks[] = $iri;
 
-		return Html::element( 'a', [ 'class' => 'external', 'rel' => 'nofollow', 'href' => $iri ], $iri );
+		return $this->linkRenderer->makeExternalLink( $iri, $iri, $this->pageTitle );
 	}
 
+	/**
+	 * Namespace IRIs are arbitrary strings as far as the mapping format is concerned, and
+	 * LinkRenderer::makeExternalLink does no scheme validation, so anything that is not plainly a web
+	 * address stays unlinked rather than becoming an href.
+	 */
 	private function isLinkableUrl( string $url ): bool {
 		return preg_match( '#^(?:https?|ftps?)://#i', $url ) === 1;
 	}

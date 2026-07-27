@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Content;
 
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\Renderer\ContentParseParams;
-use MediaWiki\Linker\LinkTarget;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Title\Title;
@@ -40,17 +40,40 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 	}
 
 	public function testPerSchemaSubtreeIsRenderedAsAJsonTable(): void {
-		$html = $this->render( $this->edm() );
+		$personSection = $this->schemaSection( $this->render( $this->edm() ), 'Person' );
 
-		$this->assertStringContainsString( 'mw-json', $html );
-		$this->assertStringContainsString( 'rdaGr2:dateOfBirth', $html );
+		$this->assertStringContainsString( 'mw-json', $personSection );
+		$this->assertStringContainsString( 'rdaGr2:dateOfBirth', $personSection );
+	}
+
+	public function testSchemaSectionContainsOnlyItsOwnSubtree(): void {
+		$citySection = $this->schemaSection( $this->render( $this->edm() ), 'City' );
+
+		$this->assertStringContainsString( 'edm:Place', $citySection );
+		$this->assertStringNotContainsString( 'rdaGr2:dateOfBirth', $citySection );
 	}
 
 	public function testEachSchemaSectionHasADeepLinkableId(): void {
-		$this->assertStringContainsString(
-			'id="ext-neowiki-mapping-schema-Person"',
-			$this->render( $this->edm() )
+		$html = $this->render( $this->edm() );
+
+		$this->assertStringContainsString( 'id="ext-neowiki-mapping-schema-Person"', $html );
+		$this->assertStringContainsString( 'id="ext-neowiki-mapping-schema-City"', $html );
+	}
+
+	public function testSchemaSectionsFollowDocumentOrder(): void {
+		$html = $this->render( $this->edm() );
+
+		$this->assertLessThan(
+			strpos( $html, 'id="ext-neowiki-mapping-schema-City"' ),
+			strpos( $html, 'id="ext-neowiki-mapping-schema-Person"' )
 		);
+	}
+
+	public function testOverviewRowsShowTheTargetClassAndMappedPropertyCount(): void {
+		$html = $this->render( $this->edm() );
+
+		$this->assertStringContainsString( '>Person</a></td><td>edm:Agent</td><td>4</td>', $html );
+		$this->assertStringContainsString( '>City</a></td><td>edm:Place</td><td>0</td>', $html );
 	}
 
 	public function testFormatVersionIsRenderedAsASubtleLine(): void {
@@ -85,6 +108,15 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 
 		$this->assertStringContainsString( 'ext-neowiki-mapping-page__prefixes', $html );
 		$this->assertStringContainsString( 'href="http://www.europeana.eu/schemas/edm/"', $html );
+	}
+
+	public function testPrefixLinksHonorTheWikiExternalLinkConfiguration(): void {
+		$this->overrideConfigValue( MainConfigNames::NoFollowLinks, false );
+
+		$html = $this->render( $this->edm() );
+
+		$this->assertStringContainsString( 'href="http://www.europeana.eu/schemas/edm/"', $html );
+		$this->assertStringNotContainsString( 'rel="nofollow"', $html );
 	}
 
 	public function testPrefixIriWithAnUnsafeSchemeIsNotLinkified(): void {
@@ -146,8 +178,18 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 	}
 
 	/**
-	 * @param array<int, array{link: LinkTarget, pageid?: int}> $links
+	 * The rendered HTML from the section heading of $name up to the next schema section, so assertions
+	 * about a schema's own subtree cannot be satisfied by another schema's section or by the header.
 	 */
+	private function schemaSection( string $html, string $name ): string {
+		$start = strpos( $html, 'id="ext-neowiki-mapping-schema-' . $name . '"' );
+		$this->assertIsInt( $start, "No section rendered for schema $name" );
+
+		$next = strpos( $html, 'id="ext-neowiki-mapping-schema-', $start + 1 );
+
+		return $next === false ? substr( $html, $start ) : substr( $html, $start, $next - $start );
+	}
+
 	private function registersLocalLink( ParserOutput $parserOutput, int $namespace, string $dbKey ): bool {
 		$matches = array_filter(
 			$parserOutput->getLinkList( ParserOutputLinkTypes::LOCAL ),

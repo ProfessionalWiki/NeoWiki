@@ -10,8 +10,10 @@ use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Content\ValidationParams;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\PageReference;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleValue;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingContentValidator;
@@ -70,7 +72,7 @@ class MappingContentHandler extends JsonContentHandler {
 			$mapping = $content->getData()->getValue();
 
 			if ( $this->isRenderableMapping( $mapping ) ) {
-				$this->renderMapping( $content, $mapping, $parserOutput );
+				$this->renderMapping( $content, $mapping, $cpoParams->getPage(), $parserOutput );
 				return;
 			}
 		}
@@ -78,12 +80,19 @@ class MappingContentHandler extends JsonContentHandler {
 		parent::fillParserOutput( $content, $cpoParams, $parserOutput );
 	}
 
-	private function renderMapping( MappingContent $content, stdClass $mapping, ParserOutput $parserOutput ): void {
+	private function renderMapping(
+		MappingContent $content,
+		stdClass $mapping,
+		PageReference $page,
+		ParserOutput $parserOutput
+	): void {
 		$services = MediaWikiServices::getInstance();
 
 		$builder = new MappingPageHtmlBuilder(
 			$services->getLinkRenderer(),
 			$services->getTitleFactory(),
+			$services->getLinkBatchFactory(),
+			TitleValue::newFromPage( $page ),
 			static fn ( mixed $subtree ): string => $content->rootValueTable( $subtree )
 		);
 
