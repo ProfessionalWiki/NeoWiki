@@ -14,6 +14,28 @@ export function normalizeSchemaName( name: string ): string {
 	return collapsed.charAt( 0 ).toUpperCase() + collapsed.slice( 1 );
 }
 
+// Pages through the summaries endpoint (capped at 50) by following the response's
+// cursor until it is null. The cursor, not the page length, decides whether more
+// pages follow: a page can come back shorter than requested when a readable Schema
+// fails to load (malformed). Deliberately not a store action: it neither reads nor
+// maintains the cache, so exposing it alongside getAllSchemaSummaries would offer
+// callers a way to page the whole endpoint while bypassing both the cache and the
+// invalidation guard.
+async function fetchAllSchemaSummaries(): Promise<SchemaSummary[]> {
+	const repository = NeoWikiExtension.getInstance().getSchemaRepository();
+	const pageSize = 50;
+	const summaries: SchemaSummary[] = [];
+	let cursor: string | null = null;
+
+	do {
+		const page = await repository.getSchemaSummaries( cursor, pageSize );
+		summaries.push( ...page.schemas );
+		cursor = page.nextCursor;
+	} while ( cursor !== null );
+
+	return summaries;
+}
+
 export const useSchemaStore = defineStore( 'schema', {
 	state: () => ( {
 		schemas: new Map<string, Schema>(),
@@ -57,7 +79,7 @@ export const useSchemaStore = defineStore( 'schema', {
 			}
 
 			if ( this.summariesRequest === null ) {
-				this.summariesRequest = this.fetchAllSchemaSummaries();
+				this.summariesRequest = fetchAllSchemaSummaries();
 			}
 
 			const request = this.summariesRequest;
@@ -75,24 +97,6 @@ export const useSchemaStore = defineStore( 'schema', {
 					this.summariesRequest = null;
 				}
 			}
-		},
-		// Pages through the summaries endpoint (capped at 50) by following the response's
-		// cursor until it is null. The cursor, not the page length, decides whether more
-		// pages follow: a page can come back shorter than requested when a readable Schema
-		// fails to load (malformed).
-		async fetchAllSchemaSummaries(): Promise<SchemaSummary[]> {
-			const repository = NeoWikiExtension.getInstance().getSchemaRepository();
-			const pageSize = 50;
-			const summaries: SchemaSummary[] = [];
-			let cursor: string | null = null;
-
-			do {
-				const page = await repository.getSchemaSummaries( cursor, pageSize );
-				summaries.push( ...page.schemas );
-				cursor = page.nextCursor;
-			} while ( cursor !== null );
-
-			return summaries;
 		},
 		// Checks existence via the schema-names search (a 200 response) rather
 		// than getOrFetchSchema, which 404s for a missing name — those 404s are
