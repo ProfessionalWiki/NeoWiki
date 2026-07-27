@@ -341,6 +341,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertNotEmpty( $responseData['violations'] );
 		$this->assertSame( 'Required', $responseData['violations'][0]['propertyName'] );
 		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
+		$this->assertSame( 'error', $responseData['violations'][0]['severity'] );
 	}
 
 	private function createPages(): void {
