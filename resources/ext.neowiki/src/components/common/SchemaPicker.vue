@@ -35,13 +35,18 @@ const selectedSchema = ref<string | null>( props.selected ?? null );
 const inputText = ref<string | number>( props.selected ?? '' );
 const summaries = ref<SchemaSummary[]>( [] );
 const schemasLoaded = ref( false );
-const query = ref<string>( '' );
+// The field's text as last typed, verbatim, or null when nothing has been typed since the
+// last commit. It holds the raw text rather than the filter it reduces to because
+// CdxLookup leaves the pending state each keystroke puts it in only once it is handed a
+// different menu-items array, so keystrokes that filter alike must still rebuild the menu.
+const typedText = ref<string | null>( null );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 
 const menuItems = computed<MenuItemData[]>( () => {
-	const matches = query.value === '' ?
+	const filter = ( typedText.value ?? '' ).trim().toLowerCase();
+	const matches = filter === '' ?
 		summaries.value :
-		summaries.value.filter( ( summary ) => summary.name.toLowerCase().includes( query.value ) );
+		summaries.value.filter( ( summary ) => summary.name.toLowerCase().includes( filter ) );
 	return matches.map( ( summary ) => ( {
 		label: summary.name,
 		value: summary.name,
@@ -69,7 +74,7 @@ const schemasReady = loadSchemas();
 watch( () => props.selected, ( value ) => {
 	selectedSchema.value = selectableSchema( value ?? null );
 	inputText.value = value ?? '';
-	query.value = '';
+	typedText.value = null;
 } );
 
 // CdxLookup takes the field's text for a selection from the matching menu entry and
@@ -80,7 +85,7 @@ function selectableSchema( schemaName: string | null ): string | null {
 }
 
 function filterSchemas( value: string ): void {
-	query.value = value.trim().toLowerCase();
+	typedText.value = value;
 }
 
 // CdxLookup reports a selection only for a menu entry the user picks, and null while
@@ -96,7 +101,7 @@ function onSelect( schemaName: string | null ): void {
 	}
 
 	inputText.value = schemaName;
-	query.value = '';
+	typedText.value = null;
 
 	if ( schemaName !== props.selected ) {
 		emit( 'select', schemaName );
@@ -106,7 +111,7 @@ function onSelect( schemaName: string | null ): void {
 function revertUncommittedTyping(): void {
 	selectedSchema.value = selectableSchema( props.selected ?? null );
 	inputText.value = props.selected ?? '';
-	query.value = '';
+	typedText.value = null;
 	emit( 'blur' );
 }
 

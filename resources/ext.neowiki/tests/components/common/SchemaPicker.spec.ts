@@ -144,6 +144,24 @@ describe( 'SchemaPicker', () => {
 			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
 		} );
 
+		it( 'opens the list again when the field is emptied after a schema was picked', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await clickSchema( wrapper, 'Office' );
+			await type( wrapper, '' );
+
+			expect( field( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'true' );
+		} );
+
+		it( 'opens the list again when a space is typed into an empty field', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await pressKey( wrapper, 'Escape' );
+			await type( wrapper, ' ' );
+
+			expect( field( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'true' );
+		} );
+
 		it( 'lists no schemas and reports the failure when loading them fails', async () => {
 			const consoleError = vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 			schemaStore.getAllSchemaSummaries = vi.fn().mockRejectedValue( new Error( 'load failed' ) );
