@@ -16,9 +16,9 @@ use Wikimedia\Rdbms\Database;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
- * Caches deserialized Mappings, mirroring {@see CachingSchemaLookup}. The cache key includes the Mapping
- * page's latest revision id, so a Mapping edit transparently invalidates its entry and a bulk RDF dump
- * reuses a cached Mapping across every page it projects instead of re-parsing it per page.
+ * Caches deserialized Mappings, mirroring the shared-cache tier of {@see CachingSchemaLookup}. The cache
+ * key includes the Mapping page's latest revision id, so a Mapping edit transparently invalidates its entry
+ * and a bulk RDF dump reuses a cached Mapping across every page it projects instead of re-parsing it per page.
  */
 class CachingMappingLookup implements MappingLookup {
 
