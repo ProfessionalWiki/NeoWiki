@@ -498,18 +498,23 @@ else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf-import' < /dev/null
 endif
 
-# The old pair is removed first so a failed run leaves no snapshot rather than a half-updated
-# one, which _require-snapshot would accept and perf-restore would load as a mismatched pair.
+# Both halves are written beside their final names and moved into place only once both are
+# complete, so a run that fails or is interrupted leaves the previous snapshot untouched. A
+# host-side redirect creates its file the moment the line starts, so writing straight to the
+# final names would leave a truncated half that _require-snapshot accepts and perf-restore
+# then loads over the live data.
 perf-snapshot: ## Snapshot MariaDB + Neo4j into perf/snapshot/
 	@mkdir -p $(PERF_SNAPSHOT_DIR)
-	@rm -f $(PERF_SQL) $(PERF_NEO)
+	@rm -f $(PERF_SQL).part $(PERF_NEO).part
 	$(DC) exec -T db mariadb-dump -u root -p$(MARIADB_ROOT_PASSWORD) \
-		--single-transaction --add-drop-database --databases $(MARIADB_DATABASE) > $(PERF_SQL) < /dev/null
+		--single-transaction --add-drop-database --databases $(MARIADB_DATABASE) > $(PERF_SQL).part < /dev/null
 	@set -e; \
 		neo_start() { $(NEO_START); }; \
 		trap neo_start EXIT; \
 		$(NEO_STOP); \
-		$(NEO_ADMIN) database dump neo4j --to-stdout > $(PERF_NEO) < /dev/null
+		$(NEO_ADMIN) database dump neo4j --to-stdout > $(PERF_NEO).part < /dev/null
+	@mv $(PERF_SQL).part $(PERF_SQL)
+	@mv $(PERF_NEO).part $(PERF_NEO)
 	@echo "Snapshot written to $(PERF_SNAPSHOT_DIR)/"
 
 _require-snapshot:
