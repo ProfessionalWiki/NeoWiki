@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Presentation;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
 
@@ -21,6 +22,7 @@ class ViolationSerializerTest extends TestCase {
 				code: 'invalid-url',
 				args: [ 'bad' ],
 				valuePartIndex: 2,
+				severity: Severity::Error,
 			)
 		);
 
@@ -29,7 +31,7 @@ class ViolationSerializerTest extends TestCase {
 				'propertyName' => 'Website',
 				'code' => 'invalid-url',
 				'args' => [ 'bad' ],
-				'severity' => 'warning',
+				'severity' => 'error',
 				'valuePartIndex' => 2,
 			],
 			$serialized

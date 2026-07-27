@@ -39,8 +39,9 @@ class SeverityNormalizerTest extends TestCase {
 		$this->assertSame( [ 'required' => Severity::Error ], $severities );
 	}
 
-	public function testReservedKeysAreNeverNormalized(): void {
-		$raw = [ 'type' => 'number', 'description' => 'x', 'default' => 5 ];
+	public function testReservedKeyCarryingSeverityIsNotNormalized(): void {
+		// 'high' is not a severity: normalizing this key would throw rather than pass it through.
+		$raw = [ 'type' => 'number', 'description' => 'x', 'default' => [ 'severity' => 'high' ] ];
 
 		[ $values, $severities ] = SeverityNormalizer::extract( $raw );
 

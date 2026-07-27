@@ -117,6 +117,18 @@ class NumberTypeValidateTest extends TestCase {
 		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
+	public function testMinValueViolationUsesErrorWhenMinimumAnnotated(): void {
+		$definition = PropertyDefinition::fromJson(
+			[ 'type' => 'number', 'minimum' => [ 'value' => 0, 'severity' => 'error' ] ],
+			PropertyTypeRegistry::withCoreTypes(),
+		);
+
+		$violations = $this->type->validate( new NumberValue( -1 ), $definition );
+
+		$this->assertSame( 'min-value', $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
+	}
+
 	private function newProperty(
 		bool $required,
 		float|int|null $minimum = null,
