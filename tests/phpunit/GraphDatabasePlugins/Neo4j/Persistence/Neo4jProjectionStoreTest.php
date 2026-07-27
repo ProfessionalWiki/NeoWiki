@@ -642,6 +642,67 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectIsStub( self::GUID_3 );
 	}
 
+	public function testDroppingOneOfTwoRelationsToAStubKeepsIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$this->saveTwoPagesReferencingStub( $store );
+
+		// Dropping page 1's relation makes the stub a sweep candidate, but page 2 still references it.
+		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+
+		$this->assertSubjectIsStub( self::GUID_3 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
+	}
+
+	public function testDeletingOneOfTwoPagesReferencingAStubKeepsIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$this->saveTwoPagesReferencingStub( $store );
+
+		// Deleting page 1 removes GUID_1 outright, so the sweep gets the stub from the deleted
+		// subject's relation targets rather than from a relation edit. Page 2 still references it.
+		$store->deletePage( new PageId( 1 ) );
+
+		$this->assertSubjectIsStub( self::GUID_3 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
+	}
+
+	public function testStubbingOneOfTwoSubjectsReferencingAStubKeepsIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$this->saveTwoPagesReferencingStub( $store );
+
+		// GUID_4 references GUID_1, so removing GUID_1 reduces it to a stub instead of deleting it.
+		// That drops its relation to GUID_3, which page 2 still references.
+		$store->savePage( TestPage::build(
+			id: 3,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_4, self::GUID_1, 'rTestNQS1111rr3' ),
+		) );
+
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectIsStub( self::GUID_1 );
+		$this->assertSubjectIsStub( self::GUID_3 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
+	}
+
+	/**
+	 * GUID_1 and GUID_2 live on separate pages and both relate to GUID_3, which exists only as the
+	 * stub their relations created. Removing either referrer leaves the other one pointing at it.
+	 */
+	private function saveTwoPagesReferencingStub( GraphDatabasePlugin $store ): void {
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_3, 'rTestNQS1111rr1' ),
+		) );
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_3, 'rTestNQS1111rr2' ),
+		) );
+
+		$this->assertSubjectIsStub( self::GUID_3 );
+	}
+
 	private function newProjectionStoreWithLocationRelation( string $wikiId = self::WIKI_ID ): GraphDatabasePlugin {
 		$extension = NeoWikiExtension::getInstance();
 
