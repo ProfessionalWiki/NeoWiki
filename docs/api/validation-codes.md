@@ -14,7 +14,8 @@ Violations are returned by:
   body against an existing Subject's Schema.
 - `POST /neowiki/v0/subject` and `PUT /neowiki/v0/subject/{subjectId}` — the write endpoints include
   the resulting `violations` array in their `201`/`200` success body. Whether a write with violations
-  is rejected is covered under [Blocking and enforcement](#blocking-and-enforcement).
+  is rejected is covered under
+  [Severity, blocking, and enforcement](#severity-blocking-and-enforcement).
 
 The `/validate` endpoints return `200 OK` with a `{violations: [...]}` body whenever the request is
 well-formed; violations in the body do not change the HTTP status. `400` is reserved for malformed
