@@ -137,11 +137,11 @@ toy model ([Neutral Person to Many Standards](https://docs.google.com/spreadshee
 that expresses one person model across several ontologies. The same toy model doubles as the first end-to-end
 exercise of this document's approach: implement its neutral person schema in NeoWiki, define a Mapping for it, and
 project to EDM first — the near-1:1 tier — proving or disproving the mechanism by doing (proposed at the 2026-07-03
-WP2/3/4 call). What matters here is that the formalism needs both
-directions under **either** route: not every wiki will model maximally nested (a mapping must handle whatever the
-native model is), and sibling targets decompose differently — EDM stays flat where CIDOC-CRM wants events — so no
-single nesting depth spares all projections. Route (b) reduces how often synthesis fires and makes contraction fire
-for the flat targets instead; it does not remove the requirement (Q2, Q10).
+WP2/3/4 call). What matters here is that the formalism needs both directions under **either** route: not every wiki
+will model maximally nested (a mapping must handle whatever the native model is), and sibling targets decompose
+differently — EDM stays flat where CIDOC-CRM wants events — so no single nesting depth spares all projections.
+Route (b) reduces how often synthesis fires and makes contraction fire for the flat targets instead; it does not
+remove the requirement (Q2, Q10).
 
 ### Identity for synthesized nodes
 
@@ -240,7 +240,7 @@ ontology RDF into NeoWiki Subjects (T3.2 calls for native RDF/RDF\* import; T2.3
 bidirectional model-model mappings). Export ships first, but the formalism should be chosen with import in mind.
 
 Import is not export run backwards. A structural mapping is generally **not trivially invertible**: importing CIDOC-CRM
-means **recognising** the `E12_Production` pattern in the incoming graph and **collapsing** it back to a `Creator`
+means **recognizing** the `E12_Production` pattern in the incoming graph and **collapsing** it back to a `Creator`
 relation — graph pattern-matching on input, not template expansion of output. Import also pulls in adjacent concerns the
 export projection does not have:
 
@@ -316,7 +316,7 @@ with deep CIDOC-CRM / EDM / RDF experience.
 
 **Q2: Expressiveness for node synthesis.** Whatever formalism is chosen, can it express path expansion and
 intermediate-node minting (the `E12_Production` case) — not just term substitution? Can it equally express the
-[mirror direction](#what-makes-this-hard-structural-transformation) — recognising explicitly modelled structure and
+[mirror direction](#what-makes-this-hard-structural-transformation) — recognizing explicitly modelled structure and
 collapsing it for a flatter target? Both directions are recorded as an evaluation constraint on
 [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995). Are SHACL Advanced Features
 (SPARQL-based `sh:rule`) or `CONSTRUCT` the right executable substrate? Do partners already have CIDOC-CRM expansion
@@ -376,8 +376,8 @@ editing UI projecting the nesting down? Settled through the toy model, outside t
 nesting look like in the schema format, and how much of the synthesis machinery here stops being exercised in practice?
 
 *Update (2026-07): the fork no longer gates the transformation machinery — both directions are needed however it
-resolves, since sibling targets disagree about shape and at least one mismatches either modelling style ("one would
-need to expand (or contract) on export/import" — George Bruseker,
+resolves, since sibling targets disagree about shape and at least one mismatches whichever style the data is
+modelled in ("one would need to expand (or contract) on export/import" — George Bruseker,
 [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999), 2026-07-06). What the fork still steers: build
 order, editing-UI investment, and what standard Schema bundles default to.*
 
