@@ -289,6 +289,34 @@ JSON
 	}
 
 	/**
+	 * The positive `options` case above cannot fail on its own: the property definition schema
+	 * sets `additionalProperties: true`, so dropping the `options` $ref would still accept the
+	 * object form. These two pin that the $ref is actually wired up — without it a typo'd
+	 * severity saves cleanly and then throws on every subsequent read of the Schema page.
+	 */
+	public function testOptionsObjectFormWithInvalidSeverityFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "select", "multiple": false, "options": { "value": [ { "id": "opt_a", "label": "A" } ], "severity": "eror" } }'
+				)
+			)
+		);
+	}
+
+	public function testOptionsObjectFormMissingValueFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "select", "multiple": false, "options": { "severity": "error" } }' )
+			)
+		);
+	}
+
+	/**
 	 * The boolean object form implies true and carries no value key. Permitting a stray
 	 * one would let "value": false round-trip back as true, silently flipping the Constraint.
 	 */
