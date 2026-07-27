@@ -219,7 +219,7 @@ describe( 'RestSubjectRepository', () => {
 				pageId: 4,
 				pageTitle: 'Broken',
 				statements: {
-					// Missing the required `type`, so the statement cannot be deserialized.
+					// Missing the required `propertyType`, so the statement cannot be deserialized.
 					Mystery: {
 						value: 'x',
 					},
