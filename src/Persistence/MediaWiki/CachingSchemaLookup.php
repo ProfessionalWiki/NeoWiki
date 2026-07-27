@@ -18,10 +18,15 @@ use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * Caches deserialized Schemas so that repeated reads do not each re-load and re-parse the Schema
- * wiki page. Two tiers: a process-local one serving the reads within a single request or
- * maintenance run, over the shared WANObjectCache serving reads across them. Both key on the
- * Schema page's latest revision id, so editing the Schema transparently invalidates the entry —
- * no stale schemas.
+ * wiki page. Two tiers: a process-local one over the shared WANObjectCache. NeoWikiExtension pins
+ * one lookup in its singleton, so the process-local tier lasts as long as the PHP process — a
+ * single request under mod_php, an entire run under a maintenance script.
+ *
+ * Both key on the Schema page's latest revision id, which is read from the LinkCache. An edit made
+ * by this process refreshes that cache (see WikiPage::updateRevisionOn), so it yields a new key and
+ * takes effect at once. An edit made by another process does not reach this one's LinkCache, so a
+ * long-running script keeps serving the Schema as it stood when the script first resolved it. The
+ * shared tier has no such window, because the next process reads the current revision id.
  */
 class CachingSchemaLookup implements SchemaLookup {
 
@@ -93,8 +98,9 @@ class CachingSchemaLookup implements SchemaLookup {
 	}
 
 	/**
-	 * Keyed by the Schema page's article id and latest revision id, so editing
-	 * the Schema yields a new key and the old entry is never served again.
+	 * Keyed by the Schema page's article id and latest revision id, so an edit this process can see
+	 * yields a new key and the old entry is never served again. The class docblock covers the edits
+	 * it cannot see.
 	 */
 	private function makeCacheKey( Title $title ): string {
 		return $this->cache->makeKey(
