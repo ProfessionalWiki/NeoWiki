@@ -4,12 +4,19 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Maintenance;
 
+use ImportStringSource;
+use MediaWiki\Content\Content;
+use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Tests\Maintenance\MaintenanceBaseTestCase;
+use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Maintenance\GeneratePerformanceDump;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use SimpleXMLElement;
 
 // The maintenance script is not PSR-4 autoloadable (it lives outside src/), so load it explicitly.
@@ -53,6 +60,35 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 				array_unique( $types ),
 				static fn ( string $type ): bool => $lookup->getType( $type ) === null
 			) )
+		);
+	}
+
+	/**
+	 * The dump exists to be fed to importDump.php, and everything the payloads are wrapped in — the
+	 * slot role, the per-model format, the namespace table — is otherwise asserted by inspection only.
+	 */
+	public function testTheDumpImportsAsPagesCarryingTheirSubjects(): void {
+		$this->importDump( $this->generate( pages: 1, subjectsPerPage: 3 ) );
+
+		$this->assertCount( 3, $this->importedSubjects( 'Perf test 1-0000000' )->getAllSubjects()->asArray() );
+	}
+
+	public function testTheDumpImportsTheSchemaTheSubjectsReference(): void {
+		$this->importDump( $this->generate( pages: 1 ) );
+
+		$this->assertInstanceOf( SchemaContent::class, $this->importedContent( 'Schema:PerfTest', SlotRecord::MAIN ) );
+	}
+
+	/**
+	 * The perf-import make target reads these counts out of the dump's first lines to report
+	 * throughput, and reports none at all — without failing — if they are renamed or moved down.
+	 */
+	public function testTheHeaderCarriesTheCountsThePerfImportTargetReads(): void {
+		$dump = $this->generate( pages: 2, subjectsPerPage: 3 );
+
+		$this->assertSame(
+			'  <!-- neowiki-perf pages="2" total-subjects="6" subjects-per-page="3" seed="1" -->',
+			explode( "\n", $dump )[1]
 		);
 	}
 
@@ -196,6 +232,36 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 		$this->maintenance->execute();
 
 		return (string)file_get_contents( $path );
+	}
+
+	/**
+	 * Imports the way importDump.php does: bare, with no reporter wrapping the importer.
+	 */
+	private function importDump( string $dump ): void {
+		$this->tablesUsed[] = 'page';
+
+		$this->getServiceContainer()->getWikiImporterFactory()->getWikiImporter(
+			new ImportStringSource( $dump ),
+			$this->getTestSysop()->getAuthority()
+		)->doImport();
+	}
+
+	private function importedSubjects( string $pageName ): PageSubjects {
+		$content = $this->importedContent( $pageName, MediaWikiSubjectRepository::SLOT_NAME );
+
+		$this->assertInstanceOf( SubjectContent::class, $content );
+
+		return $content->getPageSubjects();
+	}
+
+	private function importedContent( string $pageName, string $slotRole ): ?Content {
+		$revision = $this->getServiceContainer()->getRevisionLookup()->getRevisionByTitle(
+			Title::newFromText( $pageName )
+		);
+
+		$this->assertNotNull( $revision, "the import should have created {$pageName}" );
+
+		return $revision->getContent( $slotRole );
 	}
 
 	private function schemaJson( string $dump ): string {
