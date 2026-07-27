@@ -36,18 +36,18 @@ Constraints the model rests on:
 - **Per-subject ACLs are a non-goal.** There is no access control finer than the page: no recorded use case needs
   it, deployments separate sensitive data by page or wiki, and sub-page ACLs would complicate every read surface.
   Revisit only with a concrete use case.
-- **A denied read is indistinguishable from absent data.** Gated read surfaces answer with a `null`, an empty list, or
-  a `404` — never a `403` — and must not reveal existence through side channels such as counts
-  ([#1062](https://github.com/ProfessionalWiki/NeoWiki/issues/1062)). Write denials answer `403`, and must equally
-  not reveal whether an unreadable page exists ([#1061](https://github.com/ProfessionalWiki/NeoWiki/issues/1061)).
-  [rest-api.md](../api/rest-api.md) documents this per endpoint.
+- **A denied read is indistinguishable from absent data.** Read surfaces gated on the page's `read` permission answer
+  with a `null`, an empty list, or a `404` — never a `403` — and must not reveal existence through side channels such
+  as counts ([#1062](https://github.com/ProfessionalWiki/NeoWiki/issues/1062)). Write denials answer `403`, and must
+  equally not reveal whether an unreadable page exists
+  ([#1061](https://github.com/ProfessionalWiki/NeoWiki/issues/1061)). [rest-api.md](../api/rest-api.md) documents this
+  per endpoint.
 - **Page-attributable results are filtered per row.** Read surfaces whose results are traceable to an owning page
   resolve each row's page and drop rows the caller may not read. Because this costs one permission check per row,
   such surfaces must bound their result sizes.
 - **Graph projections carry scoping keys, not ACL state.** `wiki_id` and `namespaceId` let query authors scope
   queries ([ADR 22](022-multi-wiki-node-identity.md), [graph-model](../api/graph-model.md)). User groups and page
-  restrictions are never projected; the projected keys are revision-derived, so nothing in a store goes stale when
-  permissions change.
+  restrictions are never projected, so nothing in a store goes stale when permissions change.
 - **Raw query surfaces have whole-store read semantics.** A raw query surface executes a caller-supplied Cypher or
   SPARQL query; its result rows are not attributable to pages and are not trimmed. The REST query endpoints are gated
   by the wiki-level `neowiki-query` right; granting that right gives read access to everything the wiki projects into
@@ -63,11 +63,11 @@ Constraints the model rests on:
 ## Open decisions
 
 - **Parse-time read semantics.** Today the parse path is inconsistent
-  ([#1059](https://github.com/ProfessionalWiki/NeoWiki/issues/1059)): Schema/Mapping lookups are gated per user but
-  their output is parser-cached user-agnostically; subject accessors (`{{#neowiki_value}}` and the `nw` data
-  accessors) check only revision-deletion visibility, not page `read`; `{{#cypher_raw}}` and `nw.query` check
-  nothing. `{{#view}}` is the leak-free pattern: a placeholder rendered at parse time, data fetched per user over
-  REST. **TODO:** decide the parse-path rule and what it means for each surface.
+  ([#1059](https://github.com/ProfessionalWiki/NeoWiki/issues/1059)): Schema lookups are gated per user but their
+  output is parser-cached user-agnostically; subject accessors (`{{#neowiki_value}}` and the `nw` data accessors)
+  check only revision-deletion visibility, not page `read`; `{{#cypher_raw}}`, `{{#sparql_raw}}`, `nw.query` and
+  `nw.sparqlQuery` check nothing. `{{#view}}` is the leak-free pattern: a placeholder rendered at parse time, data
+  fetched per user over REST. **TODO:** decide the parse-path rule and what it means for each surface.
 - **Cross-wiki subject display.** Rendering a subject from another wiki goes through REST, not Cypher, so query-side
   scoping does not cover it. **TODO:** decide the check and the degradation behavior when the schema or subject is
   not accessible. Relates to [ADR 23](023-subject-sources.md).
