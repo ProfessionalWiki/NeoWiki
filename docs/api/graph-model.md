@@ -99,6 +99,10 @@ Stubs arise in two ways:
 When the real Subject is later saved, its node is upgraded in place — matched by `id` alone, so the stub gains its
 properties and Schema label without creating a duplicate node.
 
+A write that strips a stub of its last incoming relation deletes the stub, whether that write removes the referring
+Subject, drops the Relation, or retargets it. Removing a set of Subjects referenced only by each other leaves none of
+them behind.
+
 ## Relationships
 
 ### HasSubject
@@ -124,7 +128,7 @@ backtick-escaped.
 | *(additional)* | scalar | Any properties from the Relation's property map |
 
 When a Subject is removed while other Subjects still reference it, its node is kept as a
-[stub](#stub-subject-nodes) so those incoming references remain valid.
+[stub](#stub-subject-nodes) for as long as those references last.
 
 ## Constraints
 
