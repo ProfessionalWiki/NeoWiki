@@ -7,6 +7,7 @@ namespace ProfessionalWiki\RedHerb;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
@@ -47,7 +48,7 @@ class ColorType implements PropertyType {
 		}
 
 		if ( $definition->isRequired() && $value->strings === [] ) {
-			return [ new Violation( propertyName: null, code: 'required' ) ];
+			return [ new Violation( propertyName: null, code: 'required', severity: $definition->severityOf( 'required' ) ) ];
 		}
 
 		$allowed = $definition->getAllowedColors();
@@ -62,6 +63,7 @@ class ColorType implements PropertyType {
 					code: 'invalid-color',
 					args: [ $part ],
 					valuePartIndex: $index,
+					severity: Severity::Error,
 				);
 				continue;
 			}
@@ -72,6 +74,7 @@ class ColorType implements PropertyType {
 					code: 'invalid-option',
 					args: [ $part ],
 					valuePartIndex: $index,
+					severity: $definition->severityOf( 'allowedColors' ),
 				);
 			}
 		}
