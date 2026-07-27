@@ -4,23 +4,27 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
-use PHPUnit\Framework\TestCase;
+use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingContentValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingContentValidator
  */
-class MappingContentValidatorTest extends TestCase {
+class MappingContentValidatorTest extends MediaWikiIntegrationTestCase {
+
+	private function newValidator(): MappingContentValidator {
+		return MappingContentValidator::newInstance( $this->getServiceContainer()->getTitleParser() );
+	}
 
 	private function assertValid( string $json ): void {
-		$validator = MappingContentValidator::newInstance();
+		$validator = $this->newValidator();
 		$this->assertTrue( $validator->validate( $json ), 'Expected valid, got: ' . implode( '; ', $validator->getErrors() ) );
 		$this->assertSame( [], $validator->getErrors() );
 	}
 
 	private function assertInvalidAt( string $json, string $expectedErrorPointer ): void {
-		$validator = MappingContentValidator::newInstance();
+		$validator = $this->newValidator();
 		$this->assertFalse( $validator->validate( $json ) );
 		$this->assertArrayHasKey( $expectedErrorPointer, $validator->getErrors() );
 	}
@@ -69,6 +73,80 @@ class MappingContentValidatorTest extends TestCase {
 			{ "version": 2, "schemas": { "Person": { "subject": { "class": "edm:X" }, "properties": {} } }, "prefixes": { "edm": "http://europeana.eu/edm/" } }
 			JSON,
 			'/version'
+		);
+	}
+
+	/**
+	 * The projector matches a Schema name byte for byte against the name a Subject carries, while a page
+	 * lookup normalizes underscores and the leading capital. A key that only resolves after normalization
+	 * would link to its Schema page yet never project, so it is rejected with the form to use.
+	 */
+	public function testRejectsASchemaNameThatIsNotTheCanonicalPageTitle(): void {
+		foreach ( [ 'Birth_place', 'birth place', ' Person' ] as $schemaName ) {
+			$this->assertInvalidAt(
+				(string)json_encode( [
+					'version' => 1,
+					'schemas' => [
+						$schemaName => [
+							'subject' => [ 'class' => 'http://example.org/ns/Person' ],
+							'properties' => (object)[],
+						],
+					],
+				] ),
+				'/schemas/' . $schemaName
+			);
+		}
+	}
+
+	public function testSaysWhichFormANonCanonicalSchemaNameShouldTake(): void {
+		$validator = $this->newValidator();
+		$validator->validate( (string)json_encode( [
+			'version' => 1,
+			'schemas' => [
+				'Birth_place' => [
+					'subject' => [ 'class' => 'http://example.org/ns/Place' ],
+					'properties' => (object)[],
+				],
+			],
+		] ) );
+
+		$this->assertStringContainsString(
+			'must be written as "Birth place"',
+			$validator->getErrors()['/schemas/Birth_place'] ?? ''
+		);
+	}
+
+	public function testRejectsASchemaNameThatIsNotAValidPageTitle(): void {
+		$this->assertInvalidAt(
+			(string)json_encode( [
+				'version' => 1,
+				'schemas' => [
+					'Bad|Name' => [
+						'subject' => [ 'class' => 'http://example.org/ns/Person' ],
+						'properties' => (object)[],
+					],
+				],
+			] ),
+			'/schemas/Bad|Name'
+		);
+	}
+
+	/**
+	 * The deserializer drops a reserved name, so accepting one here would store an entry that renders as
+	 * a mapped Schema but projects nothing.
+	 */
+	public function testRejectsAReservedSchemaName(): void {
+		$this->assertInvalidAt(
+			(string)json_encode( [
+				'version' => 1,
+				'schemas' => [
+					'Page' => [
+						'subject' => [ 'class' => 'http://example.org/ns/Person' ],
+						'properties' => (object)[],
+					],
+				],
+			] ),
+			'/schemas/Page'
 		);
 	}
 

@@ -156,6 +156,21 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 		$this->assertStringNotContainsString( 'redlink', $parserOutput->getRawText() );
 	}
 
+	/**
+	 * Save validation rejects a name that is not its Schema page's title, but XML import does not. Such a
+	 * name resolves to an existing Schema page while the projector never matches it, so linking it would
+	 * claim a mapping that does not exist.
+	 */
+	public function testSchemaNameThatIsNotTheCanonicalPageTitleIsNotLinked(): void {
+		$this->createSchemaPage( 'Person' );
+		$this->getServiceContainer()->getLinkCache()->clear();
+
+		$parserOutput = $this->parserOutput( $this->mappingWithSchema( 'Person_x' ) );
+
+		$this->assertStringContainsString( '<span>Person_x</span>', $parserOutput->getRawText() );
+		$this->assertFalse( $this->registersLocalLink( $parserOutput, NeoWikiExtension::NS_SCHEMA, 'Person_x' ) );
+	}
+
 	public function testEmptySchemasShowAFriendlyEmptyState(): void {
 		$html = $this->render( '{ "version": 1, "prefixes": {}, "schemas": {} }' );
 

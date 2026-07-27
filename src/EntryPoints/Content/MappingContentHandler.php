@@ -44,7 +44,7 @@ class MappingContentHandler extends JsonContentHandler {
 			$status->fatal( 'neowiki-mapping-name-invalid', $exception->getMessage() );
 		}
 
-		$validator = MappingContentValidator::newInstance();
+		$validator = MappingContentValidator::newInstance( MediaWikiServices::getInstance()->getTitleParser() );
 
 		if ( !$validator->validate( $content->getText() ) ) {
 			$status->fatal( 'neowiki-mapping-invalid', count( $validator->getErrors() ) );

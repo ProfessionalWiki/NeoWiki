@@ -71,6 +71,10 @@ class MappingPageHtmlBuilder {
 	 * existence query. Without this, both LinkRenderer::makeLink (red or blue?) and ParserOutput::addLink
 	 * (which page id?) do their own lookup per schema, and the schemas list is unbounded user input.
 	 *
+	 * A name is only linked when it is already the canonical page title. Save validation enforces that,
+	 * but XML import does not, and linking a name the projector will never match would show a blue link
+	 * on a Schema that is not in fact mapped.
+	 *
 	 * @return array<string, Title>
 	 */
 	private function resolveSchemaTitles( stdClass $schemas ): array {
@@ -79,7 +83,7 @@ class MappingPageHtmlBuilder {
 		foreach ( get_object_vars( $schemas ) as $name => $schema ) {
 			$title = $this->titleFactory->makeTitleSafe( NeoWikiExtension::NS_SCHEMA, (string)$name );
 
-			if ( $title !== null ) {
+			if ( $title !== null && $title->getText() === (string)$name ) {
 				$titles[(string)$name] = $title;
 			}
 		}
