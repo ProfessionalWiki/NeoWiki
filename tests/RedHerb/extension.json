@@ -159,8 +159,8 @@
 				"redherb-card-edit-subject",
 				"redherb-card-edit-schema",
 				"redherb-card-edit-layout",
-				"neowiki-field-invalid-hex",
-				"neowiki-field-not-in-palette",
+				"neowiki-field-invalid-color",
+				"neowiki-field-invalid-option",
 				"neowiki-field-required"
 			]
 		}
