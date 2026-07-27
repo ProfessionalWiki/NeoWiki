@@ -289,10 +289,10 @@ JSON
 	}
 
 	/**
-	 * The positive `options` case above cannot fail on its own: the property definition schema
-	 * sets `additionalProperties: true`, so dropping the `options` $ref would still accept the
-	 * object form. These two pin that the $ref is actually wired up — without it a typo'd
-	 * severity saves cleanly and then throws on every subsequent read of the Schema page.
+	 * The positive `options` case above cannot fail on its own: a key left declared but
+	 * unconstrained still accepts the object form, and being declared also puts it outside the
+	 * additionalProperties guard. These two pin that the $ref is actually wired up — without it
+	 * a typo'd severity saves cleanly and then throws on every subsequent read of the Schema page.
 	 */
 	public function testOptionsObjectFormWithInvalidSeverityFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
@@ -326,6 +326,76 @@ JSON
 		$this->assertFalse(
 			$validator->validate(
 				$this->schemaWithProperty( '{ "type": "text", "required": { "value": false, "severity": "error" } }' )
+			)
+		);
+	}
+
+	/**
+	 * A custom Property Type's own Constraint keys are not declared here, so only the
+	 * additionalProperties guard checks their severity. Without it the typo saves cleanly and
+	 * SeverityNormalizer::extract then throws on every read, which SchemaPersistenceDeserializer
+	 * swallows — silently removing the property from the Schema with no error and no log.
+	 */
+	public function testCustomKeyObjectFormWithInvalidSeverityFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "color", "allowedColors": { "value": [ "#ff0000" ], "severity": "eror" } }'
+				)
+			)
+		);
+	}
+
+	public function testCustomKeyObjectFormWithValidSeverityPassesValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty(
+				'{ "type": "color", "allowedColors": { "value": [ "#ff0000" ], "severity": "error" } }'
+			)
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
+	/**
+	 * `default` is reserved: SeverityNormalizer never treats it as a Constraint, so a default
+	 * value that happens to be an object carrying a `severity` key is data, not an annotation,
+	 * and the guard on unlisted keys must not reject it.
+	 */
+	public function testReservedDefaultKeyCarryingArbitrarySeverityPassesValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty( '{ "type": "color", "default": { "severity": "high" } }' )
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
+	/**
+	 * extract() reads only `value` and `severity`, so a stray sibling is silently discarded.
+	 * booleanConstraint already closes its object; scalarConstraint must too, or a typo'd
+	 * `sevrity` looks accepted while the Constraint keeps the default warning.
+	 */
+	public function testScalarConstraintObjectFormWithUnknownKeyFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "number", "maximum": { "value": 100, "severity": "error", "sevrity": "warning" } }'
+				)
 			)
 		);
 	}

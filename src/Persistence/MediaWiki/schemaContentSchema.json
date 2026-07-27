@@ -20,6 +20,19 @@
 			"if": { "type": "object" },
 			"then": {
 				"required": [ "value", "severity" ],
+				"additionalProperties": false,
+				"properties": {
+					"value": true,
+					"severity": { "$ref": "#/$defs/severity" }
+				}
+			}
+		},
+		"customConstraint": {
+			"if": {
+				"type": "object",
+				"required": [ "severity" ]
+			},
+			"then": {
 				"properties": { "severity": { "$ref": "#/$defs/severity" } }
 			}
 		}
@@ -33,7 +46,7 @@
 			"patternProperties": {
 				"^.*$": {
 					"type": "object",
-					"additionalProperties": true,
+					"additionalProperties": { "$ref": "#/$defs/customConstraint" },
 					"required": [
 						"type"
 					],
@@ -45,6 +58,7 @@
 							"type": "string",
 							"minLength": 1
 						},
+						"default": true,
 						"required": { "$ref": "#/$defs/booleanConstraint" },
 						"multiple": {
 							"type": "boolean"
