@@ -159,12 +159,12 @@ From the repo root:
 # whose source files are gone. Enough on its own after renames or deletions.
 make import-demo-data
 
-# Full clean-slate reset (wipes the DB and Neo4j volumes, recreates the dev stack). Rarely needed.
+# Wipes the wiki database and Neo4j, then reseeds. Rarely needed.
 make reset
 
-# Reproject the Neo4j graph if Cypher results look stale.
+# Reproject the graph stores if Cypher or SPARQL results look stale.
 make rebuild-graph-databases
 ```
 
-A successful import ends with `Import finished` and zero `FAILED` lines. The wiki runs at
-`http://localhost:8484/`.
+A successful import ends with `Import finished` and zero `FAILED` lines. The wiki runs at the
+port `make dev` printed (default `http://localhost:8484/`).
