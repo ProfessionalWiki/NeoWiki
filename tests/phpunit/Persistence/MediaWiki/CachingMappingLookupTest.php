@@ -60,9 +60,16 @@ class CachingMappingLookupTest extends TestCase {
 		return $provider;
 	}
 
+	/**
+	 * Title::getArticleID() and getLatestRevID() have no native return type, so an un-stubbed mock
+	 * returns null for both and makeCacheKey() builds its key out of two empty components. Stub them
+	 * so the key is the shape production uses, as CachingSchemaLookupTest does.
+	 */
 	private function newTitleFactory(): TitleFactory {
 		$title = $this->createMock( Title::class );
 		$title->method( 'exists' )->willReturn( true );
+		$title->method( 'getArticleID' )->willReturn( 1 );
+		$title->method( 'getLatestRevID' )->willReturn( 100 );
 
 		$factory = $this->createMock( TitleFactory::class );
 		$factory->method( 'newFromText' )->willReturn( $title );

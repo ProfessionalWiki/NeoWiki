@@ -33,10 +33,13 @@ class StatementDeserializer {
 	}
 
 	public function deserialize( string $propertyName, array $json ): Statement {
+		// Revisions written before the key was renamed hold "type", and revision content cannot be migrated.
+		$propertyType = $json['propertyType'] ?? $json['type'];
+
 		return new Statement(
 			property: new PropertyName( $propertyName ),
-			propertyType: $json['type'],
-			value: $this->deserializeValue( $json['type'], $json['value'] ),
+			propertyType: $propertyType,
+			value: $this->deserializeValue( $propertyType, $json['value'] ),
 		);
 	}
 

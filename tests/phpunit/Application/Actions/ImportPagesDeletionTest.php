@@ -4,8 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
-use MediaWiki\CommentStore\CommentStoreComment;
-use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
@@ -18,13 +16,12 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\MappingContentSourc
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\PageContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Persistence\ImportedPageTitlesLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use ProfessionalWiki\NeoWiki\Persistence\PageDeleter;
 use ProfessionalWiki\NeoWiki\Persistence\PageDeletionStatus;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ImportPresenterSpy;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\PageContentSaverStub;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\PageDeleterSpy;
 
 /**
@@ -128,6 +125,7 @@ class ImportPagesDeletionTest extends MediaWikiIntegrationTestCase {
 			subjectPageSource: $this->createMock( SubjectPageSource::class ),
 			pageContentSource: $pageContentSource,
 			moduleContentSource: $this->createMock( PageContentSource::class ),
+			mediaWikiContentSource: $this->createMock( PageContentSource::class ),
 			layoutContentSource: $this->createMock( LayoutContentSource::class ),
 			mappingContentSource: $this->createMock( MappingContentSource::class ),
 		) )->import();
@@ -151,37 +149,12 @@ class ImportPagesDeletionTest extends MediaWikiIntegrationTestCase {
 		};
 	}
 
-	/**
-	 * A saver that persists nothing and simply reports the outcome the test asked for, so the action's
-	 * deletion decision can be exercised without touching the database.
-	 */
 	private function newPageContentSaver( string ...$failingKeys ): PageContentSaver {
-		return new class(
+		return new PageContentSaverStub(
 			$this->createMock( WikiPageFactory::class ),
 			$this->createMock( Authority::class ),
 			$failingKeys
-		) extends PageContentSaver {
-
-			/**
-			 * @param string[] $failingKeys
-			 */
-			public function __construct(
-				WikiPageFactory $wikiPageFactory,
-				Authority $performer,
-				private readonly array $failingKeys
-			) {
-				parent::__construct( $wikiPageFactory, $performer );
-			}
-
-			public function saveContent( PageIdentity|PageId $page, array $contentBySlot, CommentStoreComment $comment ): PageContentSavingStatus {
-				if ( $page instanceof PageIdentity && in_array( $page->getDBkey(), $this->failingKeys, true ) ) {
-					return new PageContentSavingStatus( PageContentSavingStatus::ERROR, 'forced failure' );
-				}
-
-				return new PageContentSavingStatus( PageContentSavingStatus::REVISION_CREATED );
-			}
-
-		};
+		);
 	}
 
 	private function newPageDeleterSpy(): PageDeleterSpy {

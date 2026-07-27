@@ -230,12 +230,22 @@ $wgNeoWikiNeo4jInternalReadUrl = 'bolt://' . getenv( 'NEO4J_USERNAME_READ' ) . '
 // this same file in production mode) never references a non-existent service. Skipped under PHPUnit so
 // integration tests never post updates to the dev QLever — they configure their own store with mocked
 // HTTP via overrideConfigValue(), so the default here must stay empty during tests.
+//
+// Two entries, one endpoint: the native projection and the EDM projection of the demo data's
+// Mapping:EDM page are kept in the same QLever index as sibling projections. Each lands in its own
+// family of per-page named graphs (#1053), so neither overwrites the other. The query surfaces
+// target the first entry's endpoint, which both entries share, so a query reaches both projections.
 if ( $mwIsDev && !defined( 'MW_PHPUNIT_TEST' ) ) {
 	$wgNeoWikiSparqlStores = [
 		[
 			'updateUrl' => 'http://qlever:7019/',
 			'accessToken' => getenv( 'QLEVER_ACCESS_TOKEN' ) ?: null,
 			'projection' => 'native',
+		],
+		[
+			'updateUrl' => 'http://qlever:7019/',
+			'accessToken' => getenv( 'QLEVER_ACCESS_TOKEN' ) ?: null,
+			'projection' => 'EDM',
 		],
 	];
 }

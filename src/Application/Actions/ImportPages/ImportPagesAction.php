@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ImportPages;
 
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\Content;
+use MediaWiki\Content\CssContent;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Content\WikitextContent;
 use MediaWiki\Title\Title;
@@ -37,6 +38,7 @@ class ImportPagesAction {
 		private readonly SubjectPageSource $subjectPageSource,
 		private readonly PageContentSource $pageContentSource,
 		private readonly PageContentSource $moduleContentSource,
+		private readonly PageContentSource $mediaWikiContentSource,
 		private readonly LayoutContentSource $layoutContentSource,
 		private readonly MappingContentSource $mappingContentSource,
 	) {
@@ -100,6 +102,15 @@ class ImportPagesAction {
 			);
 		}
 
+		foreach ( $this->mediaWikiContentSource->getPageContentStrings() as $fileName => $sourceText ) {
+			$this->createPage(
+				'MediaWiki:' . self::stripFileExtension( $fileName ),
+				[
+					'main' => $this->fileNameAndSourceToContent( $fileName, $sourceText ),
+				]
+			);
+		}
+
 		$this->deleteRemovedPages();
 
 		$this->presenter->presentDone();
@@ -112,6 +123,11 @@ class ImportPagesAction {
 	private function fileNameAndSourceToContent( string $fileName, string $sourceText ): Content {
 		if ( str_ends_with( $fileName, '.wikitext' ) ) {
 			return new WikitextContent( $sourceText );
+		}
+
+		// Site CSS pages keep the extension in their title, so stripFileExtension leaves these alone.
+		if ( str_ends_with( $fileName, '.css' ) ) {
+			return new CssContent( $sourceText );
 		}
 
 		if ( str_ends_with( $fileName, '.lua' ) ) {

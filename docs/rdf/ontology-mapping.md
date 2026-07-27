@@ -8,7 +8,8 @@ Alongside the built-in [native projection](rdf-export.md), which needs no mappin
 established ontology such as EDM by defining an **ontology mapping**.
 
 The native projection and each ontology mapping are sibling projections of the same source data. Several can
-run at once: an export request selects one by name, and a SPARQL store can be configured for any of them.
+run at once: an export request selects one by name, and a SPARQL store can hold
+[several side by side](../operations/installation.md#several-projections-in-one-store).
 
 The design and its open questions live in [planning/OntologyMapping.md](../planning/OntologyMapping.md); this
 page is the as-built reference for the shipped v1. The
@@ -67,7 +68,7 @@ Top level:
 |---|---|---|
 | `version` | yes | Format version. Must be `1`. |
 | `prefixes` | no | Prefix label → namespace IRI, shared by every entry, used to expand the CURIEs below. |
-| `schemas` | yes | Native Schema name → the entry that projects its Subjects (see below). May be empty. A Schema's existence is not checked at save time. |
+| `schemas` | yes | Native Schema name → the entry that projects its Subjects (see below). May be empty. A Schema's existence is not checked at save time; the page's read view shows a missing Schema as a red link. |
 
 Each **schema** entry (a value in `schemas`):
 

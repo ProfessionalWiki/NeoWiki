@@ -44,7 +44,7 @@ card1_title=Museum collection
 
 * [[Developers|Developers hub]]: Cypher, parser functions, the mw.neowiki Lua library, and the REST API, each with source shown alongside the rendered result.
 * [https://github.com/ProfessionalWiki/NeoWiki Source on GitHub]
-* [https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs Technical documentation]
+* [https://neowiki.ai/docs/ Technical documentation]
 * [https://github.com/ProfessionalWiki/NeoWiki/issues Issue tracker]
 
 == About this wiki ==

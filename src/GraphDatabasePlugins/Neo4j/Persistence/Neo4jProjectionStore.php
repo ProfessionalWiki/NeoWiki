@@ -251,7 +251,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		 */
 		$result = $transaction->run(
 			'UNWIND $subjectIds AS subjectId
-				MATCH (subject {id: subjectId})<-[incomingRelation]-(other)
+				MATCH (subject:Subject {id: subjectId})<-[incomingRelation]-(other)
 				WHERE NOT incomingRelation:HasSubject AND other <> subject
 				RETURN DISTINCT subject.id AS id',
 			[ 'subjectIds' => $subjectIds ]
@@ -279,16 +279,12 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		$orphanCandidates->add( ...$this->relationTargetsOf( $transaction, $subjectIds ) );
 
 		$transaction->run(
-			'MATCH (subject) WHERE subject.id IN $subjectIds DETACH DELETE subject',
+			'MATCH (subject:Subject) WHERE subject.id IN $subjectIds DETACH DELETE subject',
 			[ 'subjectIds' => $subjectIds ]
 		);
 	}
 
 	/**
-	 * The :Subject label is what lets this seek the id constraint's index. Without it Neo4j has no
-	 * label to scope the lookup to and scans every relation in the graph. Every id reaching here comes
-	 * from getSubjectIdsByPageId, which matches (subject:Subject), so the label narrows nothing.
-	 *
 	 * @param string[] $subjectIds
 	 * @return string[]
 	 */
@@ -324,13 +320,12 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		 * @var SummarizedResult $result
 		 */
 		$result = $transaction->run(
-			'MATCH (subject {id: $subjectId})
+			'MATCH (subject:Subject {id: $subjectId})
 				OPTIONAL MATCH ()-[hasSubject:HasSubject]->(subject)
 				OPTIONAL MATCH (subject)-[outgoingRelation]->(target)
 				DELETE hasSubject, outgoingRelation
 				WITH subject, collect(DISTINCT target.id) AS targetIds
 				SET subject = {id: $subjectId, wiki_id: $wikiId}
-				SET subject:Subject
 				RETURN targetIds',
 			[ 'subjectId' => $subjectId->text, 'wikiId' => $this->wikiId ]
 		);

@@ -82,7 +82,7 @@ JSON
 		$this->assertSame( 'Berlin', $body['subjects']['sTestGPS1111111']['label'] );
 		$this->assertSame( 'GetPageSubjectsApiTestSchema', $body['subjects']['sTestGPS1111111']['schema'] );
 		$this->assertSame(
-			[ 'type' => 'text', 'value' => [ '3700000' ] ],
+			[ 'propertyType' => 'text', 'value' => [ '3700000' ] ],
 			$body['subjects']['sTestGPS1111111']['statements']['population']
 		);
 		$this->assertSame( 'Population 2024', $body['subjects']['sTestGPS1111112']['label'] );

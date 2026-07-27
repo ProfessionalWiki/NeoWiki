@@ -5,7 +5,7 @@
 			"label": "Johann Ambrosius Bach",
 			"schema": "Person",
 			"statements": {
-				"Description": { "type": "text", "value": [ "German musician; director of the town musicians in Eisenach and father of Johann Sebastian Bach." ] }
+				"Description": { "propertyType": "text", "value": [ "German musician; director of the town musicians in Eisenach and father of Johann Sebastian Bach." ] }
 			}
 		}
 	}

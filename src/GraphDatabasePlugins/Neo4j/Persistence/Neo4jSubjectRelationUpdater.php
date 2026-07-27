@@ -35,7 +35,7 @@ class Neo4jSubjectRelationUpdater {
 	private function removeNonexistentRelations( array $relationIds ): void {
 		$this->collectOrphanCandidates( $this->transaction->run(
 			'
-				MATCH ({id: $subjectId})-[relation]->(target)
+				MATCH (:Subject {id: $subjectId})-[relation]->(target)
 				WHERE NOT relation.id IN $relationIds
 				DELETE relation
 				RETURN DISTINCT target.id AS id',
@@ -48,8 +48,8 @@ class Neo4jSubjectRelationUpdater {
 
 	private function removeIfTypeOrTargetChanged( TypedRelation $relation ): void {
 		$this->collectOrphanCandidates( $this->transaction->run(
-			'MATCH (subject {id: $subjectId})-[oldRelation {id: $relationId}]->(oldTarget)
-			 WHERE oldRelation.type <> $relationType OR NOT (subject)-[oldRelation]->({id: $targetId})
+			'MATCH (subject:Subject {id: $subjectId})-[oldRelation {id: $relationId}]->(oldTarget)
+			 WHERE oldRelation.type <> $relationType OR NOT (subject)-[oldRelation]->(:Subject {id: $targetId})
 			 DELETE oldRelation
 			 RETURN DISTINCT oldTarget.id AS id',
 			[
@@ -76,11 +76,11 @@ class Neo4jSubjectRelationUpdater {
 		// A relation whose target Subject does not exist yet creates it as a stub: a node with only
 		// the id and wiki_id properties and the Subject label. ON CREATE keeps an already-existing
 		// target (a real Subject or an earlier stub) untouched. The stub is upgraded in place when the
-		// real Subject is later saved, since the save path also matches the node by id alone.
+		// real Subject is later saved, since the save path matches the same :Subject label and id.
 		$this->transaction->run(
-			'MERGE (subject {id: $subjectId})
-			 MERGE (target {id: $targetId})
-			 ON CREATE SET target:Subject, target.wiki_id = $wikiId
+			'MERGE (subject:Subject {id: $subjectId})
+			 MERGE (target:Subject {id: $targetId})
+			 ON CREATE SET target.wiki_id = $wikiId
 			 MERGE (subject)-[relation:' . Cypher::escape( $relation->type->text ) . ' {id: $relationId}]->(target)
 			 SET relation = $relationProperties',
 			[

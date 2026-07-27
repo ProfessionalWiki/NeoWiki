@@ -62,6 +62,16 @@ class StatementListBuilderTest extends TestCase {
 		$this->assertEquals( new UnregisteredTypeValue( 'color', [ '#ff5733' ] ), $statement->getValue() );
 	}
 
+	public function testEmptyValueIsDropped(): void {
+		$list = $this->newBuilder()->build( [
+			'Kept' => [ 'propertyType' => 'text', 'value' => [ 'yes' ] ],
+			'Dropped' => [ 'propertyType' => 'text', 'value' => [] ],
+		] );
+
+		$this->assertNotNull( $list->getStatement( new PropertyName( 'Kept' ) ) );
+		$this->assertNull( $list->getStatement( new PropertyName( 'Dropped' ) ) );
+	}
+
 	public function testUnregisteredTypeStatementIsNotDroppedAsEmpty(): void {
 		$list = $this->newBuilder()->build( [
 			'Swatch' => [ 'propertyType' => 'color', 'value' => [] ],
@@ -74,6 +84,20 @@ class StatementListBuilderTest extends TestCase {
 		$list = $this->newBuilder()->build( [
 			'Wanted' => [ 'propertyType' => 'text', 'value' => 'yes' ],
 			'Unwanted' => null,
+		] );
+
+		$this->assertNotNull( $list->getStatement( new PropertyName( 'Wanted' ) ) );
+		$this->assertNull( $list->getStatement( new PropertyName( 'Unwanted' ) ) );
+	}
+
+	/**
+	 * The legacy `type` key is tolerated when reading stored revisions, never on API input:
+	 * accepting both here would restore the ambiguity the rename removed.
+	 */
+	public function testLegacyTypeKeyIsNotAcceptedAsPropertyType(): void {
+		$list = $this->newBuilder()->build( [
+			'Wanted' => [ 'propertyType' => 'text', 'value' => 'yes' ],
+			'Unwanted' => [ 'type' => 'text', 'value' => 'yes' ],
 		] );
 
 		$this->assertNotNull( $list->getStatement( new PropertyName( 'Wanted' ) ) );

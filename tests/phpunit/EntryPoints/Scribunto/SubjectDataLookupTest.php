@@ -436,9 +436,9 @@ class SubjectDataLookupTest extends TestCase {
 		$this->assertSame( self::SUBJECT_ID, $result[0]['id'] );
 		$this->assertSame( 'Test Subject', $result[0]['label'] );
 		$this->assertSame( 'TestSchema', $result[0]['schema'] );
-		$this->assertSame( 'text', $result[0]['statements']['City']['type'] );
+		$this->assertSame( 'text', $result[0]['statements']['City']['propertyType'] );
 		$this->assertSame( [ 1 => 'Berlin' ], $result[0]['statements']['City']['values'] );
-		$this->assertSame( 'number', $result[0]['statements']['Population']['type'] );
+		$this->assertSame( 'number', $result[0]['statements']['Population']['propertyType'] );
 		$this->assertSame( [ 1 => 3645000 ], $result[0]['statements']['Population']['values'] );
 	}
 
@@ -523,7 +523,7 @@ class SubjectDataLookupTest extends TestCase {
 
 		$result = $lookup->getSubjectData( self::SUBJECT_ID );
 
-		$this->assertSame( 'relation', $result[0]['statements']['CEO']['type'] );
+		$this->assertSame( 'relation', $result[0]['statements']['CEO']['propertyType'] );
 		$this->assertSame( 'r1test5cccccccc', $result[0]['statements']['CEO']['values'][1]['id'] );
 		$this->assertSame( self::TARGET_SUBJECT_ID, $result[0]['statements']['CEO']['values'][1]['target'] );
 		$this->assertSame( 'Jane Doe', $result[0]['statements']['CEO']['values'][1]['label'] );
@@ -588,7 +588,7 @@ class SubjectDataLookupTest extends TestCase {
 
 		$result = $lookup->getMainSubjectData( $this->createTitle() );
 
-		$this->assertSame( 'boolean', $result[0]['statements']['Active']['type'] );
+		$this->assertSame( 'boolean', $result[0]['statements']['Active']['propertyType'] );
 		$this->assertSame( [ 1 => true ], $result[0]['statements']['Active']['values'] );
 	}
 

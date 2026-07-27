@@ -4,8 +4,8 @@ order: 3
 ---
 # Subject JSON Format
 
-Subject data is [stored as JSON](../adr/002-store-data-as-json.md). The REST API returns and accepts the same object
-shapes; its read envelope and write differences are under [REST API](#rest-api).
+Subject data is [stored as JSON](../adr/002-store-data-as-json.md). The REST API returns and accepts the same
+shapes; the fields each endpoint adds or ignores are under [REST API](#rest-api).
 
 For Subject, Statement, and Value, see the [Glossary](../glossary.md).
 
@@ -53,22 +53,22 @@ A property mapped to `null` instead of a Statement object is skipped when the JS
 
 ```json
 {
-  "type": "number",
+  "propertyType": "number",
   "value": 2019
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | string | Yes | The property's type when the value was written — the writer's schema ([ADR 011](../adr/011-include-writers-schema.md)). |
-| `value` | varies | Yes | The value, shaped by `type`. See [Value formats](#value-formats). |
+| `propertyType` | string | Yes | The property's type when the value was written — the writer's schema ([ADR 011](../adr/011-include-writers-schema.md)). |
+| `value` | varies | Yes | The value, shaped by `propertyType`. See [Value formats](#value-formats). |
 
 ## Value formats
 
-`type` holds the property type name, which fixes the `value` shape:
+`propertyType` holds the property type name, which fixes the `value` shape:
 
-| `type` | `value` |
-|--------|---------|
+| `propertyType` | `value` |
+|----------------|---------|
 | `text`, `url`, `select`, `date`, `dateTime` | Array of strings, one per value part. |
 | `number` | A single number (integer or float). |
 | `boolean` | A single boolean. |
@@ -77,10 +77,10 @@ A property mapped to `null` instead of a Statement object is skipped when the JS
 A multi-part `text` value:
 
 ```json
-{ "type": "text", "value": [ "First value", "Second value" ] }
+{ "propertyType": "text", "value": [ "First value", "Second value" ] }
 ```
 
-Every registered PropertyType uses one of these four `value` shapes. A `type` whose PropertyType is not
+Every registered PropertyType uses one of these four `value` shapes. A `propertyType` whose PropertyType is not
 registered — its extension disabled — keeps the raw value that was stored
 ([`unregistered-type`](validation-codes.md#unregistered-type)).
 
@@ -90,7 +90,7 @@ Each `relation` value is an array of objects pointing at other Subjects:
 
 ```json
 {
-  "type": "relation",
+  "propertyType": "relation",
   "value": [
     { "id": "r1demo5rrrrrrr1", "target": "s1demo4sssssss1" }
   ]
@@ -127,7 +127,7 @@ Subject IDs start with `s` (`s1demo5sssssss1`), Relation IDs with `r` (`r1demo5r
 ### Reading Subjects
 
 `GET /rest.php/neowiki/v0/subject/{subjectId}` returns a top-level `requestedId` and a `subjects` map; each
-Subject gains an `id` field. Statements use the storage `type` key.
+Subject gains an `id` field.
 
 - `?expand=page` adds `pageId`, `pageTitle`, and `pageNamespaceId` to each Subject. `pageTitle` is the full page
   title with namespace prefix (e.g. `Help:Installation`); `pageNamespaceId` is the canonical MediaWiki namespace
@@ -139,8 +139,7 @@ Subject gains an `id` field. Statements use the storage `type` key.
 ### Creating Subjects
 
 `POST /rest.php/neowiki/v0/page/{pageId}/mainSubject` and `.../childSubjects` create a Subject on a page. The body
-takes `label`, `schema`, and `statements` (all required), plus an optional `comment` edit summary. Statements use the
-`propertyType` write shape [below](#writing-subjects), not the storage `type` key.
+takes `label`, `schema`, and [`statements`](#statement-object) (all required), plus an optional `comment` edit summary.
 
 The server mints the Subject ID unless you pass one:
 
@@ -150,8 +149,7 @@ The server mints the Subject ID unless you pass one:
 
 ### Writing Subjects
 
-`PUT /rest.php/neowiki/v0/subject/{subjectId}` replaces the Subject's label and statements. Statements use
-`propertyType` in place of `type`:
+`PUT /rest.php/neowiki/v0/subject/{subjectId}` replaces the Subject's label and statements:
 
 ```json
 {
@@ -172,8 +170,8 @@ The server mints the Subject ID unless you pass one:
 | `statements` | Yes | Map of property name to Statement; omitted names are deleted. Pass `{}` to clear all. |
 | `comment` | No | Edit summary. |
 
-A statement entry without `propertyType`, or whose value is empty for its type, is dropped without error. For
-schema/value validation outcomes see [Validation Codes](validation-codes.md).
+On every endpoint that takes `statements`, an entry without `propertyType`, or whose value is empty for its type, is
+dropped without error. For schema/value validation outcomes see [Validation Codes](validation-codes.md).
 
 A relation may omit `id`; the server generates one. The Subject's `id`, `schema`, and page fields are immutable
 and ignored if sent.
@@ -191,7 +189,7 @@ A page about Berlin with a main Subject and a child Subject for population data:
       "schema": "City",
       "statements": {
         "Country": {
-          "type": "text",
+          "propertyType": "text",
           "value": ["Germany"]
         }
       }
@@ -201,15 +199,15 @@ A page about Berlin with a main Subject and a child Subject for population data:
       "schema": "Population",
       "statements": {
         "Population": {
-          "type": "number",
+          "propertyType": "number",
           "value": 3677472
         },
         "Date": {
-          "type": "text",
+          "propertyType": "text",
           "value": ["2020-12-31"]
         },
         "References": {
-          "type": "url",
+          "propertyType": "url",
           "value": ["https://example.com/Pop2020"]
         }
       }

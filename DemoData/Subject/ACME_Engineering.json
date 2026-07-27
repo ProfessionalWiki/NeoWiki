@@ -6,11 +6,11 @@
 			"schema": "Department",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Builds and maintains ACME's product portfolio, from the original Anvil through TNT." ]
 				},
 				"Headcount": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 184
 				}
 			}

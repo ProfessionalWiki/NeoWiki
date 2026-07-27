@@ -29,8 +29,8 @@ cultural-heritage ontologies such as CIDOC-CRM, EDM, HDTO, and BIBFRAME.
 An **ontology mapping** projects native NeoWiki data **directly into a target ontology**. That ontology RDF is what a
 configured triple store holds and what SPARQL queries run against. The NeoWiki-native projection
 ([NativeRdfProjection.md](NativeRdfProjection.md)) and each target ontology are **sibling projections** of the same
-source data, selected per store rather than stacked: a store is configured with one or more projections, each in its
-own family of named graphs, and different stores can hold different projection sets of the same wiki. The native
+source data, selected per store rather than stacked: a store can hold one or more projections, each in its own family
+of named graphs, and different stores can hold different projection sets of the same wiki. The native
 projection is the default (used when no ontology mapping is configured) and the lossless-export target; ontology
 mappings define the other targets.
 
@@ -61,9 +61,11 @@ overwrite one another.
 - An **ontology mapping** defines an alternative target (CIDOC-CRM, EDM, …). A store can hold that projection — on its
   own or alongside others — and SPARQL against it is written in that ontology.
 - Projections are **pluggable per store**, consistent with [ADR 19](../adr/019-graph-database-architecture.md) (each
-  backend owns its mapping). A store is configured with an endpoint and the **list of projections** to load into it (the
-  [#586](https://github.com/ProfessionalWiki/NeoWiki/issues/586) store config); running several stores with different
-  projection sets stays a **deployment choice** — hard isolation, independent scaling — not a requirement.
+  backend owns its mapping). As built, each entry in the [#586](https://github.com/ProfessionalWiki/NeoWiki/issues/586)
+  store config carries an endpoint and one projection, so several projections in one store means several entries
+  sharing an endpoint ([config](../operations/installation.md#several-projections-in-one-store)). Running separate
+  stores with different projection sets stays a **deployment choice** — hard isolation, independent scaling — not a
+  requirement.
 
 Subject IRIs are identical across projections (only the vocabulary and the graph differ), so queries in a shared store
 join across sibling projections with no `owl:sameAs` machinery. Whether such a query must name the graphs depends on
@@ -108,7 +110,15 @@ E22_Human-Made_Object  →  P108i_was_produced_by  →  E12_Production  →  P14
 
 The `E12_Production` node has **no counterpart in NeoWiki's data**. The mapping must mint it. This is the crux: any
 mapping formalism we adopt has to express **path expansion and node synthesis**, not just renaming. A formalism that
-only substitutes terms covers EDM but fails CIDOC-CRM — and CIDOC-CRM is the one that matters most for the case studies.
+only substitutes terms covers flat data going to EDM but fails CIDOC-CRM — and CIDOC-CRM is the one that matters most
+for the case studies.
+
+**The mirror requirement — contraction.** The transformation also runs the other way: where the data carries structure
+a target does not want, the mapping must walk it and collapse it — a Birth event Subject linked from a Person collapses
+to `rdaGr2:dateOfBirth` on the flat EDM agent. Both directions are needed because a wiki serves several targets at once
+([sibling projections](#projections-not-layers)) that disagree about shape, so at least one target mismatches whichever
+style the data is modelled in. Live on the demo wiki ([neowiki.dev](https://neowiki.dev)): flat-modelled Picasso
+projects fully to EDM; Bach, whose birth is an explicit Subject, projects sparse because contraction is unimplemented.
 
 ### Flat vs nested native modelling (open fork)
 
@@ -129,11 +139,11 @@ toy model ([Neutral Person to Many Standards](https://docs.google.com/spreadshee
 that expresses one person model across several ontologies. The same toy model doubles as the first end-to-end
 exercise of this document's approach: implement its neutral person schema in NeoWiki, define a Mapping for it, and
 project to EDM first — the near-1:1 tier — proving or disproving the mechanism by doing (proposed at the 2026-07-03
-WP2/3/4 call). What matters here is that the formalism needs synthesis
-capability under **either** route: not every wiki will model maximally nested (a mapping must handle whatever the
-native model is), and sibling targets decompose differently — EDM stays flat where CIDOC-CRM wants events — so no
-single nesting depth spares all projections. Route (b) reduces how often synthesis fires; it does not remove the
-requirement (Q2, Q10).
+WP2/3/4 call). What matters here is that the formalism needs both directions under **either** route: not every wiki
+will model maximally nested (a mapping must handle whatever the native model is), and sibling targets decompose
+differently — EDM stays flat where CIDOC-CRM wants events — so no single nesting depth spares all projections.
+Route (b) reduces how often synthesis fires and makes contraction fire for the flat targets instead; it does not
+remove the requirement (Q2, Q10).
 
 ### Identity for synthesized nodes
 
@@ -232,7 +242,7 @@ ontology RDF into NeoWiki Subjects (T3.2 calls for native RDF/RDF\* import; T2.3
 bidirectional model-model mappings). Export ships first, but the formalism should be chosen with import in mind.
 
 Import is not export run backwards. A structural mapping is generally **not trivially invertible**: importing CIDOC-CRM
-means **recognising** the `E12_Production` pattern in the incoming graph and **collapsing** it back to a `Creator`
+means **recognizing** the `E12_Production` pattern in the incoming graph and **collapsing** it back to a `Creator`
 relation — graph pattern-matching on input, not template expansion of output. Import also pulls in adjacent concerns the
 export projection does not have:
 
@@ -307,7 +317,10 @@ with deep CIDOC-CRM / EDM / RDF experience.
   rebuilding (George, 2026-07-03).
 
 **Q2: Expressiveness for node synthesis.** Whatever formalism is chosen, can it express path expansion and
-intermediate-node minting (the `E12_Production` case) — not just term substitution? Are SHACL Advanced Features
+intermediate-node minting (the `E12_Production` case) — not just term substitution? Can it equally express the
+[mirror direction](#what-makes-this-hard-structural-transformation) — recognizing explicitly modelled structure and
+collapsing it for a flatter target? Both directions are recorded as an evaluation constraint on
+[#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995). Are SHACL Advanced Features
 (SPARQL-based `sh:rule`) or `CONSTRUCT` the right executable substrate? Do partners already have CIDOC-CRM expansion
 patterns in an executable form we can target?
 
@@ -363,6 +376,12 @@ several projections at once — see [Projections, not layers](#projections-not-l
 case-study data live in flat Schemas with the mapping synthesizing intermediate nodes, or in nested Schemas with the
 editing UI projecting the nesting down? Settled through the toy model, outside this document. If (b) wins: what does
 nesting look like in the schema format, and how much of the synthesis machinery here stops being exercised in practice?
+
+*Update (2026-07): the fork no longer gates the transformation machinery — both directions are needed however it
+resolves, since sibling targets disagree about shape and at least one mismatches whichever style the data is
+modelled in ("one would need to expand (or contract) on export/import" — George Bruseker,
+[#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999), 2026-07-06). What the fork still steers: build
+order, editing-UI investment, and what standard Schema bundles default to.*
 
 ## Related
 

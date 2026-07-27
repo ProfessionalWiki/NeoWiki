@@ -3,7 +3,7 @@ Every NeoWiki page's Subjects are available as '''RDF'''. The same data is offer
 * A '''native projection''' in NeoWiki's own vocabulary. Lossless, always available, no setup.
 * '''Ontology projections''' that re-express the data in an established vocabulary such as the [https://pro.europeana.eu/page/edm-documentation Europeana Data Model] (EDM). Each one is defined by a '''Mapping''' page.
 
-Each export is produced on demand from the page's current data and downloads as a Turtle or TriG file. A projection can also be kept in a SPARQL store and queried live. See [[SPARQL queries]] on wikis that have a store configured, such as the NeoWiki development stack.
+Each export is produced on demand from the page's current data and downloads as a Turtle or TriG file. A projection can also be kept in a SPARQL store and queried live. {{#ifexist:SPARQL queries|This wiki has such a store: see [[SPARQL queries]].}} {{#ifexist:EDM queries|The store holds the native and the EDM projection side by side, so a query can join across both — see [[EDM queries]].}}
 
 == The Mapping page ==
 

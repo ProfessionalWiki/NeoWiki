@@ -5,9 +5,9 @@
 			"label": "Leipzig",
 			"schema": "Place",
 			"statements": {
-				"Country": { "type": "text", "value": [ "Germany" ] },
-				"Coordinates": { "type": "text", "value": [ "51.3397, 12.3731" ] },
-				"Description": { "type": "text", "value": [ "City in Saxony, Germany, where Johann Sebastian Bach was Thomaskantor." ] }
+				"Country": { "propertyType": "text", "value": [ "Germany" ] },
+				"Coordinates": { "propertyType": "text", "value": [ "51.3397, 12.3731" ] },
+				"Description": { "propertyType": "text", "value": [ "City in Saxony, Germany, where Johann Sebastian Bach was Thomaskantor." ] }
 			}
 		}
 	}

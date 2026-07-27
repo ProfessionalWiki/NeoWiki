@@ -6,15 +6,15 @@
 			"schema": "Artwork",
 			"statements": {
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1908
 				},
 				"Medium": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Oil on canvas with gold leaf" ]
 				},
 				"Creator": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoQh2vtqV",
@@ -23,7 +23,7 @@
 					]
 				},
 				"Located at": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoReZ4kwu",
@@ -32,11 +32,11 @@
 					]
 				},
 				"Image": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://upload.wikimedia.org/wikipedia/commons/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg" ]
 				},
 				"Estimated value": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 240
 				}
 			}

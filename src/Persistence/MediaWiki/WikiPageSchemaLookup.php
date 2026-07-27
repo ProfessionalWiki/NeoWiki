@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use InvalidArgumentException;
 use MediaWiki\Permissions\Authority;
+use ProfessionalWiki\NeoWiki\Application\Schema\Exception\SchemaContentUnavailableException;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -21,11 +22,18 @@ class WikiPageSchemaLookup implements SchemaLookup {
 	) {
 	}
 
+	/**
+	 * Returns null when the Schema page's content is not a valid Schema, and throws when that content
+	 * could not be read at all, so that a caching decorator can tell the durable outcome from the
+	 * transient one. See {@see SchemaContentUnavailableException}.
+	 *
+	 * @throws SchemaContentUnavailableException
+	 */
 	public function getSchema( SchemaName $schemaName ): ?Schema {
 		$content = $this->getContent( $schemaName );
 
 		if ( $content === null ) {
-			return null;
+			throw SchemaContentUnavailableException::forName( $schemaName->getText() );
 		}
 
 		try {

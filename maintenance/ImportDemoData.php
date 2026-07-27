@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\PageContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SchemaContentSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\SubjectPageSource;
 use ProfessionalWiki\NeoWiki\Application\Actions\ImportPages\LayoutContentSource;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\FirstRevisionAuthorPageTitlesLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiPageDeleter;
@@ -25,6 +26,9 @@ $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) 
 require_once $basePath . '/maintenance/Maintenance.php';
 
 class ImportDemoData extends Maintenance {
+
+	// The demo Mapping page whose projection the EdmSparqlPage examples query: DemoData/Mapping/EDM.json.
+	private const string EDM_PROJECTION = 'EDM';
 
 	public function __construct() {
 		parent::__construct();
@@ -76,6 +80,12 @@ class ImportDemoData extends Maintenance {
 				],
 				new SimpleFileFetcher()
 			),
+			mediaWikiContentSource: new PageContentSource(
+				[
+					NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/MediaWiki',
+				],
+				new SimpleFileFetcher()
+			),
 			layoutContentSource: new LayoutContentSource(
 				NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Layout',
 				new SimpleFileFetcher()
@@ -88,19 +98,28 @@ class ImportDemoData extends Maintenance {
 	}
 
 	/**
-	 * The SPARQL demo page invokes {{#sparql_raw}}, which only exists on wikis with a configured
-	 * SPARQL store — anywhere else it would render as literal wikitext. So that page is only
-	 * imported when a store is configured (as in the development stack).
+	 * Both SPARQL directories hold pages whose examples only work on a wiki whose queried store can
+	 * answer them, so each is gated on the projections that store holds rather than always imported.
+	 * `SparqlPage` asks in the native vocabulary; `EdmSparqlPage` asks in EDM and joins the two, so it
+	 * needs both. Importing either without its projections would render examples that silently return
+	 * no rows, and claim projections the store does not hold.
 	 *
 	 * @return string[]
 	 */
 	private function getPageDirectories(): array {
-		$directories = [
-			NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Page',
-		];
+		$config = NeoWikiExtension::getInstance()->config;
+		$rootDirectory = NeoWikiExtension::getInstance()->getNeoWikiRootDirectory();
 
-		if ( $this->getConfig()->get( 'NeoWikiSparqlStores' ) !== [] ) {
-			$directories[] = NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/SparqlPage';
+		$directories = [ $rootDirectory . '/DemoData/Page' ];
+
+		$holdsNative = $config->queriedStoreHoldsProjection( RdfPageProjector::PROJECTION );
+
+		if ( $holdsNative ) {
+			$directories[] = $rootDirectory . '/DemoData/SparqlPage';
+		}
+
+		if ( $holdsNative && $config->queriedStoreHoldsProjection( self::EDM_PROJECTION ) ) {
+			$directories[] = $rootDirectory . '/DemoData/EdmSparqlPage';
 		}
 
 		return $directories;

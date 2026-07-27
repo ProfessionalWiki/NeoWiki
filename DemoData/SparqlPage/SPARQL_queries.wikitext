@@ -1,10 +1,8 @@
-NeoWiki keeps [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/operations/installation.md#optional-sparql-graph-stores SPARQL 1.1 graph stores] such as [https://qlever.dev/ QLever] in sync with the wiki's structured data: each page becomes a named graph of RDF triples — one per [[RDF and ontology mappings|projection]] the store holds — updated on each edit and dropped on deletion. This wiki's store holds the native projection. This page demonstrates the three ways to query it. It is imported only into wikis that have a SPARQL store configured, like the NeoWiki development stack.
+NeoWiki keeps a [https://neowiki.ai/docs/operations/installation#optional-sparql-graph-stores SPARQL 1.1 graph store] such as [https://qlever.dev/ QLever] in sync with the wiki's structured data on every edit, so it can be queried live. This page shows the three ways to query it, using the native vocabulary. {{#ifexist:EDM queries|The store also holds the EDM projection: see [[EDM queries]] to query it, or to join across both.}}
 
 == Query with a parser function ==
 
-The <code><nowiki>{{#sparql_raw}}</nowiki></code> parser function runs a read-only SPARQL query against the first configured store and returns the raw [https://www.w3.org/TR/sparql11-results-json/ SPARQL JSON results]. Entity, schema, and property IRIs are minted under the wiki's RDF base URI, which defaults to the wiki's own server URL — the examples below write it as <code><nowiki>{{SERVER}}</nowiki></code> so they work on any wiki.
-
-Source:
+The <code><nowiki>{{#sparql_raw}}</nowiki></code> parser function runs a read-only SPARQL query and returns the raw [https://www.w3.org/TR/sparql11-results-json/ SPARQL JSON results]. IRIs are minted under the wiki's own URL, which the examples write as <code><nowiki>{{SERVER}}</nowiki></code> so they work on any wiki.
 
 <syntaxhighlight lang="mediawiki">
 {{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
@@ -14,7 +12,7 @@ Result:
 
 {{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
 
-Each graph is named for the projection and the page it holds — <code>{{SERVER}}/graph/native/page/&lt;pageid&gt;</code> — so results can carry provenance, and one store can hold several projections without a page's triples in one overwriting the other's. This query lists people together with the graph each one comes from:
+Each page's triples live in their own named graph, <code>{{SERVER}}/graph/native/page/&lt;pageid&gt;</code>, so a result can show which page it came from:
 
 <syntaxhighlight lang="mediawiki">
 {{#sparql_raw:SELECT ?graph ?person WHERE { GRAPH ?graph { ?p <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Person> . ?p <http://www.w3.org/2000/01/rdf-schema#label> ?person } } ORDER BY ?person LIMIT 5}}
@@ -26,7 +24,7 @@ Result:
 
 == Query from Lua ==
 
-<code>mw.neowiki.sparqlQuery</code> returns the same results document as a Lua table, so Scribunto modules can format it. From [[Module:LuaExample]]:
+<code>nw.sparqlQuery</code> returns the same results as a Lua table, so a Scribunto module can format them. From [[Module:LuaExample]]:
 
 <syntaxhighlight lang="lua">
 function p.largestMuseums( frame )
@@ -59,7 +57,7 @@ Result:
 
 == Query over REST ==
 
-The same queries work over the wiki's REST API, which returns the results document as JSON:
+The same queries work over the REST API, which returns the results as JSON:
 
 <code>POST {{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/query/sparql</code>
 
@@ -67,4 +65,9 @@ The same queries work over the wiki's REST API, which returns the results docume
 { "query": "SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 5" }
 </syntaxhighlight>
 
-For details, see the [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/reference/query-api.md query API], [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/reference/parser-functions.md parser function], and [https://github.com/ProfessionalWiki/NeoWiki/blob/master/docs/reference/lua-api.md Lua] documentation. For querying the property graph with Cypher instead, see [[Developers]].
+== Learn more ==
+
+* [https://neowiki.ai/docs/api/query-api Query API reference]
+* [https://neowiki.ai/docs/authoring/parser-functions Parser function reference]
+* [https://neowiki.ai/docs/authoring/lua-api Lua API reference]
+* [[Developers]], to query the property graph with Cypher instead

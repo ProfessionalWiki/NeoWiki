@@ -42,8 +42,18 @@ The dev stack bundles a [QLever](https://github.com/ad-freiburg/qlever) SPARQL 1
 store as a working example of NeoWiki's SPARQL projection plugin (issue #586). It is a
 dev-only sidecar (in `docker-compose.dev.yml`, like `test_neo`); the base "try-it-out" /
 demo stack does not run it. `SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at it
-(`http://qlever:7019/`, `native` projection) only in dev mode, so every page save and
-`RebuildGraphDatabases.php` also projects the page's RDF into QLever as a named graph.
+(`http://qlever:7019/`) only in dev mode, so every page save and `RebuildGraphDatabases.php`
+also projects the page's RDF into QLever as named graphs.
+
+Two entries point at that one endpoint: the `native` projection and the `EDM` one defined
+by the demo data's `Mapping:EDM` page. Each writes its own per-page named graphs, so one
+index holds both and a query can join across them; the demo data's `EDM queries` page shows
+such queries.
+
+The `EDM` entry needs that Mapping page, so `make import-demo-data` is part of the setup:
+without it every Subject save logs an unknown-projection error and a rebuild reports every
+page as failed. On a stack that predates the second entry, run
+`make rebuild-graph-databases` to fill the EDM graphs for pages already saved.
 
 The server runs with `--persist-updates`, which is **mandatory**: without it QLever keeps
 SPARQL updates only in memory and loses them on restart. With it, updates are written to

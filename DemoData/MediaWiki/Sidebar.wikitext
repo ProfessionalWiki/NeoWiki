@@ -1,0 +1,18 @@
+* Demo tour
+** mainpage|mainpage-description
+** Museum collection|Museum collection
+** ACME Inc|ACME Inc
+** Research catalog|Research catalog
+** People and life events|People and life events
+* Features
+** {{fullurl:Rijksmuseum|action=subjects}}|Subjects on a page
+** Special:Schemas|Schemas
+** Subject views|Subject views
+** RDF and ontology mappings|RDF and ontology mappings
+** {{#ifexist:SPARQL queries|SPARQL queries{{!}}SPARQL queries|}}
+** Developers|Developers hub
+* About NeoWiki
+** https://neowiki.ai|NeoWiki website
+** https://github.com/ProfessionalWiki/NeoWiki/issues|Issue tracker
+* This wiki
+** recentchanges-url|recentchanges

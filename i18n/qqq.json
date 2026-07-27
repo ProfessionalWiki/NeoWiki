@@ -174,6 +174,16 @@
 	"neowiki-edit-mapping": "Aria label for the edit button on a Mapping row in the mappings list.",
 	"neowiki-mapping-delete": "Aria label for the delete button on a Mapping row in the mappings list.",
 
+	"neowiki-mapping-page-version": "Format version shown as a subtle line at the top of the read view of a Mapping page. Parameters:\n* $1 - the mapping format version number",
+	"neowiki-mapping-page-schemas-heading": "Heading for the overview table on the read view of a Mapping page that lists the mapped Schemas, each linked to its Schema page.",
+	"neowiki-mapping-page-schema-column": "Column header for the Schema name in the mapped-schemas overview table on a Mapping page.",
+	"neowiki-mapping-page-class-column": "Column header for the target ontology class in the mapped-schemas overview table on a Mapping page.",
+	"neowiki-mapping-page-properties-column": "Column header for the number of mapped properties in the mapped-schemas overview table on a Mapping page.",
+	"neowiki-mapping-page-no-schemas": "Message shown on the read view of a Mapping page that maps no Schemas. Tone matches {{msg-mw|neowiki-mappings-empty}}.",
+	"neowiki-mapping-page-prefixes-heading": "Heading for the table on the read view of a Mapping page that lists the namespace prefixes the mapping declares.",
+	"neowiki-mapping-page-prefix-column": "Column header for the prefix in the prefixes table on a Mapping page.",
+	"neowiki-mapping-page-namespace-column": "Column header for the namespace IRI in the prefixes table on a Mapping page.",
+
 	"neowiki-layout-creator-title": "Title of the dialog for creating a new layout.",
 	"neowiki-layout-creator-button": "Label for the button that opens the layout creation dialog on [[Special:Layouts]].",
 	"neowiki-layout-creator-name-field": "Label for the layout name input field in the layout creation dialog.",

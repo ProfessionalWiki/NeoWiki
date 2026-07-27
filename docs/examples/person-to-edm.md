@@ -190,9 +190,41 @@ share one triple store. A consumer that needs a relation target's type or label 
 
 ## Querying via SPARQL
 
-Configure a SPARQL store for the `EDM` projection and each save is projected into it, queryable through the SPARQL
-read surface — see [Ontology Mapping](../rdf/ontology-mapping.md) and [RDF Export](../rdf/rdf-export.md). For an ad-hoc
-load, feed the `DumpRdf --projection=EDM` output into any SPARQL engine (e.g. a local QLever).
+Configure a SPARQL store for the `EDM` projection and each save is projected into it, queryable through the
+[SPARQL read surfaces](../operations/installation.md#querying-a-sparql-store). Configure the same endpoint for
+`native` too — [two entries, one endpoint](../operations/installation.md#several-projections-in-one-store) — and both
+projections are queryable at once.
+
+Querying in EDM terms reaches every Schema mapped to `edm:Agent`, not just `Person`:
+
+```sparql
+PREFIX edm: <http://www.europeana.eu/schemas/edm/>
+PREFIX rdaGr2: <http://rdvocab.info/ElementsGr2/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?agent ?dateOfBirth WHERE {
+  GRAPH ?graph { ?a a edm:Agent ; rdfs:label ?agent ; rdaGr2:dateOfBirth ?dateOfBirth }
+}
+```
+
+The projections share entity IRIs, so a single query can also cross them. Here the birth date comes from EDM and
+`Source` — which the Mapping leaves unmapped — from the native projection of the same Subject:
+
+```sparql
+PREFIX edm: <http://www.europeana.eu/schemas/edm/>
+PREFIX rdaGr2: <http://rdvocab.info/ElementsGr2/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX neo-prop: <https://wiki.example/prop/>
+
+SELECT ?agent ?dateOfBirth ?source ?edmGraph ?nativeGraph WHERE {
+  GRAPH ?edmGraph { ?a a edm:Agent ; rdaGr2:dateOfBirth ?dateOfBirth }
+  GRAPH ?nativeGraph { ?a rdfs:label ?agent ; neo-prop:Source ?source }
+}
+```
+
+The two graph variables bind to `.../graph/EDM/page/115` and `.../graph/native/page/115`.
+
+For an ad-hoc load instead, feed the `DumpRdf --projection=EDM` output into any SPARQL engine (e.g. a local QLever).
 
 ## Known next tier: CIDOC-CRM
 

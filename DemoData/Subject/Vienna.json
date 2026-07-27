@@ -6,15 +6,15 @@
 			"schema": "City",
 			"statements": {
 				"Country": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Austria" ]
 				},
 				"Population": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1982097
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.wien.gv.at" ]
 				}
 			}

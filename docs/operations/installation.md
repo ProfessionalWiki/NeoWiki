@@ -225,14 +225,43 @@ $wgNeoWikiSparqlStores = [
 		// Optional: sent as an HTTP Bearer token (e.g. a QLever access token) on both update and
 		// query requests — QLever only requires it for updates, but a read-protected store needs it too.
 		'accessToken' => 'SECRET',
-		// Optional: the RDF vocabulary written to this store. Defaults to 'native'; may be any
-		// configured Mapping target, such as 'edm'.
+		// Optional: the RDF vocabulary written to this store. Defaults to 'native'; otherwise a
+		// Mapping page title without the prefix ('EDM' for Mapping:EDM). As with any page title,
+		// only the first letter is case-insensitive.
 		'projection' => 'native',
 	],
 ];
 ```
 
 A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
+
+### Several projections in one store
+
+Each entry carries one projection, so a store that should hold several gets one entry per projection, all with
+the same `updateUrl`. Each projection writes its own [named graphs](../rdf/rdf-export.md#iri-scheme), so they never
+overwrite one another:
+
+```php
+$wgNeoWikiSparqlStores = [
+	[
+		'updateUrl' => 'https://qlever.example/api/neowiki',
+		'accessToken' => 'SECRET',
+		'projection' => 'native',
+	],
+	[
+		'updateUrl' => 'https://qlever.example/api/neowiki',
+		'accessToken' => 'SECRET',
+		'projection' => 'EDM',
+	],
+];
+```
+
+Sibling projections mint the same entity IRIs, so one query can combine data from both — the target ontology's terms
+alongside a property that ontology does not model. The
+[Person-to-EDM example](../examples/person-to-edm.md#querying-via-sparql) shows such a query.
+
+A newly added entry only receives pages saved from then on. Backfill it by
+[rebuilding the graph](maintenance.md#rebuilding-the-graph).
 
 ### Querying a SPARQL store
 
@@ -245,6 +274,8 @@ configured store:
 
 Each is read-only: the query is sent as a SPARQL 1.1 *query* operation, posted only to `queryUrl` and never
 `updateUrl`.
+
+A projection configured on a different endpoint is therefore not reachable from these surfaces.
 
 The bundled development stack ships a working QLever example wired up this way — see
 [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`

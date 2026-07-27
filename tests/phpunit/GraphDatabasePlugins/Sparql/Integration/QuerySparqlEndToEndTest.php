@@ -27,12 +27,18 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  * service reads it back over the SPARQL 1.1 Query endpoint. Proves the surfaces this PR adds work
  * end-to-end against a real SPARQL 1.1 store, not just against fakes.
  *
+ * Two projections of the same wiki sharing one store (#1027) are exercised here too, for the same
+ * reason: only a real store shows that their per-page named graphs (#1053) coexist rather than
+ * overwrite, and that one query can join across them.
+ *
  * Deliberately does NOT skip when the store is unreachable: a missing QLEVER_TEST_URL fails the test
  * with a clear message, and an unreachable store surfaces as a loud query/HTTP failure. A silently
  * skipped system test would leave the headline deliverable unverified.
  *
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Persistence\HttpSparqlQueryEndpoint
+ * @covers \ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector
+ * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Persistence\SparqlProjectionStore
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin
  * @group Database
  */
@@ -40,6 +46,8 @@ class QuerySparqlEndToEndTest extends NeoWikiIntegrationTestCase {
 
 	private const string PAGE_NAME = 'Sparql query system test page';
 	private const string LABEL_PREDICATE = 'http://www.w3.org/2000/01/rdf-schema#label';
+	private const string EDM_PROJECTION = 'EDM';
+	private const string EDM_AGENT_CLASS = 'http://www.europeana.eu/schemas/edm/Agent';
 
 	private string $storeUrl;
 	private ?string $accessToken;
@@ -54,12 +62,7 @@ class QuerySparqlEndToEndTest extends NeoWikiIntegrationTestCase {
 		// real one, so both the projection write path and the query read path reach the live store.
 		$this->setService( 'HttpRequestFactory', $this->realHttpRequestFactory() );
 
-		$this->overrideConfigValue( 'NeoWikiSparqlStores', [ [
-			'updateUrl' => $this->storeUrl,
-			'accessToken' => $this->accessToken,
-			'projection' => RdfPageProjector::PROJECTION,
-		] ] );
-		NeoWikiExtension::resetInstance();
+		$this->configureStoresForProjections( RdfPageProjector::PROJECTION );
 
 		$this->clearStore();
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
@@ -69,6 +72,25 @@ class QuerySparqlEndToEndTest extends NeoWikiIntegrationTestCase {
 	protected function tearDown(): void {
 		NeoWikiExtension::resetInstance();
 		parent::tearDown();
+	}
+
+	/**
+	 * Points one store entry per projection at the single test store, so the projections are siblings in
+	 * one QLever index — the shape the development stack ships (native + EDM).
+	 */
+	private function configureStoresForProjections( string ...$projections ): void {
+		$this->overrideConfigValue(
+			'NeoWikiSparqlStores',
+			array_map(
+				fn ( string $projection ): array => [
+					'updateUrl' => $this->storeUrl,
+					'accessToken' => $this->accessToken,
+					'projection' => $projection,
+				],
+				$projections
+			)
+		);
+		NeoWikiExtension::resetInstance();
 	}
 
 	public function testSubjectLabelRoundTripsThroughTheSparqlQueryService(): void {
@@ -101,6 +123,126 @@ class QuerySparqlEndToEndTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testEachProjectionTypesTheSubjectInItsOwnGraphOfTheSharedStore(): void {
+		$subjectId = TestSubject::uniqueId();
+		$pageId = $this->configureBothProjectionsAndSavePage( $subjectId );
+
+		$classesByGraph = $this->queryClassesByGraphOf( $subjectId );
+
+		$this->assertCount(
+			2,
+			$classesByGraph,
+			'Both projections must survive in the store, neither overwriting the other.'
+		);
+		$this->assertSame(
+			self::EDM_AGENT_CLASS,
+			$classesByGraph[ '/graph/EDM/page/' . $pageId ] ?? null,
+			'The EDM graph types the Subject with the mapped class.'
+		);
+		$this->assertStringEndsWith(
+			'/schema/' . TestSubject::DEFAULT_SCHEMA_ID,
+			$classesByGraph[ '/graph/native/page/' . $pageId ] ?? '',
+			'The native graph keeps typing it with its Schema class.'
+		);
+	}
+
+	public function testOneQueryJoinsDataFromBothProjectionsInTheSharedStore(): void {
+		$subjectId = TestSubject::uniqueId();
+		$this->configureBothProjectionsAndSavePage( $subjectId );
+
+		$namespaces = NeoWikiExtension::getInstance()->getRdfNamespaces();
+		$subjectIri = $namespaces->subject( $subjectId )->value;
+
+		$bindings = $this->runQuery(
+			'SELECT ?pageName WHERE {'
+			. ' GRAPH ?edmGraph { <' . $subjectIri . '> <' . $namespaces->rdfType()->value . '> <' . self::EDM_AGENT_CLASS . '> }'
+			. ' GRAPH ?nativeGraph {'
+			. ' ?page <' . $namespaces->term( RdfNamespaces::TERM_MAIN_SUBJECT )->value . '> <' . $subjectIri . '> ;'
+			. ' <' . $namespaces->term( RdfNamespaces::TERM_PAGE_NAME )->value . '> ?pageName }'
+			. ' }'
+		);
+
+		$this->assertSame(
+			[ self::PAGE_NAME ],
+			array_map( static fn ( array $binding ): string => $binding['pageName']['value'], $bindings ),
+			'A single query must combine the mapped class, which only the EDM projection carries, with the '
+			. 'page name, which only the native projection carries.'
+		);
+	}
+
+	public function testDeletingThePageDropsBothProjectionsOfIt(): void {
+		$subjectId = TestSubject::uniqueId();
+		$this->configureBothProjectionsAndSavePage( $subjectId );
+
+		$this->deletePageUnderTest();
+
+		$this->assertSame(
+			[],
+			$this->queryClassesByGraphOf( $subjectId ),
+			'A delete must drop the page graph of every projection, not only the queried store\'s own.'
+		);
+	}
+
+	/**
+	 * Reconfigures the store to hold both the native and an EDM projection — the latter through a Mapping
+	 * typing the test Schema as edm:Agent — then saves one page carrying the Subject.
+	 *
+	 * @return int The id of the saved page.
+	 */
+	private function configureBothProjectionsAndSavePage( SubjectId $subjectId ): int {
+		$schemaName = TestSubject::DEFAULT_SCHEMA_ID;
+
+		$this->createMapping( self::EDM_PROJECTION, <<<JSON
+			{
+				"version": 1,
+				"prefixes": {
+					"edm": "http://www.europeana.eu/schemas/edm/"
+				},
+				"schemas": {
+					"$schemaName": {
+						"subject": { "class": "edm:Agent" },
+						"properties": {}
+					}
+				}
+			}
+			JSON );
+
+		$this->configureStoresForProjections( RdfPageProjector::PROJECTION, self::EDM_PROJECTION );
+
+		$pageId = $this->createPageWithSubjects(
+			self::PAGE_NAME,
+			TestSubject::build( id: $subjectId, label: 'Sibling projection system test subject' )
+		)->getPage()->getId();
+		DeferredUpdates::doUpdates();
+
+		return $pageId;
+	}
+
+	/**
+	 * The class each named graph types the Subject with, keyed by the graph IRI with the wiki's RDF base
+	 * URI stripped so the keys are the projection-qualified paths.
+	 *
+	 * @return array<string, string>
+	 */
+	private function queryClassesByGraphOf( SubjectId $subjectId ): array {
+		$namespaces = NeoWikiExtension::getInstance()->getRdfNamespaces();
+		$subjectIri = $namespaces->subject( $subjectId )->value;
+
+		$bindings = $this->runQuery(
+			'SELECT ?graph ?class WHERE { GRAPH ?graph { <' . $subjectIri . '> <'
+			. $namespaces->rdfType()->value . '> ?class } }'
+		);
+
+		$classesByGraph = [];
+
+		foreach ( $bindings as $binding ) {
+			$graphPath = str_replace( $namespaces->baseUri, '', $binding['graph']['value'] );
+			$classesByGraph[$graphPath] = $binding['class']['value'];
+		}
+
+		return $classesByGraph;
+	}
+
 	private function savePageWithSubjectLabel( SubjectId $subjectId, string $label ): void {
 		$this->createPageWithSubjects(
 			self::PAGE_NAME,
@@ -115,17 +257,22 @@ class QuerySparqlEndToEndTest extends NeoWikiIntegrationTestCase {
 	private function queryLabelsOf( SubjectId $subjectId ): array {
 		$subjectIri = NeoWikiExtension::getInstance()->getRdfNamespaces()->subject( $subjectId )->value;
 
-		$result = NeoWikiExtension::getInstance()->newSparqlQueryService()->execute(
-			new SparqlQueryRequest(
-				sparql: 'SELECT ?label WHERE { <' . $subjectIri . '> <' . self::LABEL_PREDICATE . '> ?label }',
-				limits: new SparqlQueryLimits( 30 ),
-			)
-		);
-
 		return array_map(
 			static fn ( array $binding ): string => $binding['label']['value'],
-			$result->document['results']['bindings']
+			$this->runQuery( 'SELECT ?label WHERE { <' . $subjectIri . '> <' . self::LABEL_PREDICATE . '> ?label }' )
 		);
+	}
+
+	/**
+	 * @return list<array<string, array<string, string>>> The query's solution bindings.
+	 */
+	private function runQuery( string $sparql ): array {
+		return NeoWikiExtension::getInstance()->newSparqlQueryService()->execute(
+			new SparqlQueryRequest(
+				sparql: $sparql,
+				limits: new SparqlQueryLimits( 30 ),
+			)
+		)->document['results']['bindings'];
 	}
 
 	private function deletePageUnderTest(): void {

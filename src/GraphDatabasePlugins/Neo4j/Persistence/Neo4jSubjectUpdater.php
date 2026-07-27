@@ -27,7 +27,6 @@ class Neo4jSubjectUpdater {
 	}
 
 	public function updateSubject( Subject $subject, bool $isMainSubject ): void {
-		// TODO: we should make sure this schema retrieval is cached
 		$schema = $this->schemaRepository->getSchema( $subject->getSchemaName() );
 
 		if ( $schema === null ) {
@@ -35,16 +34,21 @@ class Neo4jSubjectUpdater {
 			return;
 		}
 
-		// Note: the below method calls might need to be in this order
+		// updateNodeProperties must precede updateHasSubjectRelation and updateNodeLabels: those two only
+		// MATCH the subject's node, and this is the step that creates it for every subject. Move it after
+		// them and a subject with no relations silently loses its page link and its Schema label.
 		$this->updateNodeProperties( $subject );
 		$this->updateRelations( $subject, $schema );
 		$this->updateHasSubjectRelation( $subject, $isMainSubject );
 		$this->updateNodeLabels( $subject );
 	}
 
+	/**
+	 * Creates the node with the :Subject label: the later steps of the save match it by that label.
+	 */
 	private function updateNodeProperties( Subject $subject ): void {
 		$this->transaction->run(
-			'MERGE (n {id: $id}) SET n = $props',
+			'MERGE (n:Subject {id: $id}) SET n = $props',
 			[
 				'id' => $subject->id->text,
 				'props' => array_merge(
@@ -110,7 +114,7 @@ class Neo4jSubjectUpdater {
 
 	private function updateHasSubjectRelation( Subject $subject, bool $isMainSubject ): void {
 		$this->transaction->run(
-			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId}), (subject {id: $subjectId})
+			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId}), (subject:Subject {id: $subjectId})
 					MERGE (page)-[:HasSubject {isMain: $isMainSubject}]->(subject)',
 			[
 				'pageId' => $this->pageId->id,
@@ -131,7 +135,7 @@ class Neo4jSubjectUpdater {
 
 		if ( $labelsToAdd !== [] ) {
 			$this->transaction->run(
-				'MATCH (n {id: $id}) SET n:' . Cypher::buildLabelList( $labelsToAdd ),
+				'MATCH (n:Subject {id: $id}) SET n:' . Cypher::buildLabelList( $labelsToAdd ),
 				[ 'id' => $subject->id->text ]
 			);
 		}

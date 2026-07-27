@@ -6,19 +6,19 @@
 			"schema": "Publication",
 			"statements": {
 				"Title": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Federated Cypher Queries Across Wiki Instances" ]
 				},
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2025
 				},
 				"Venue": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Knowledge-Based Systems" ]
 				},
 				"Authors": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaE7",
@@ -31,7 +31,7 @@
 					]
 				},
 				"URL": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://example.org/publications/federated-cypher" ]
 				}
 			}

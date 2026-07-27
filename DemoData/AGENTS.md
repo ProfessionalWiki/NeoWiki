@@ -11,9 +11,13 @@ partners, knowledge managers, MediaWiki ecosystem evaluators, and live-demo audi
 | `Schema/<Name>.json` | Schemas (Subject types, property definitions) | `Schema:<Name>` |
 | `Subject/<Name>.json` | Subjects (data instances). Optional paired `<Name>.wikitext` for prose. | Main namespace, `<Name>` |
 | `Layout/<Name>.json` | Layouts (curated displays for a Schema) | `Layout:<Name>` |
+| `Mapping/<Name>.json` | Ontology mappings, one page per target ontology | `Mapping:<Name>` |
 | `Page/<Name>.wikitext` | Free-form wiki pages (hubs, references) | Main namespace, `<Name>` |
-| `SparqlPage/<Name>.wikitext` | Pages demoing the SPARQL surfaces. Imported only when `$wgNeoWikiSparqlStores` is non-empty (elsewhere `{{#sparql_raw}}` is unregistered and would render literally). | Main namespace, `<Name>` |
+| `SparqlPage/<Name>.wikitext` | Pages demoing the SPARQL surfaces in the native vocabulary. Imported only when the queried store holds the `native` projection (elsewhere `{{#sparql_raw}}` is unregistered or the queries return no rows). | Main namespace, `<Name>` |
+| `EdmSparqlPage/<Name>.wikitext` | Pages demoing SPARQL over the EDM ontology projection, including joins with the native one. Imported only when the queried store holds both projections. | Main namespace, `<Name>` |
 | `Module/<Name>.lua` | Scribunto modules | `Module:<Name>` |
+| `MediaWiki/<Name>.wikitext` | Interface pages, such as `Sidebar` (the main menu) | `MediaWiki:<Name>` |
+| `MediaWiki/<Name>.css` | Site CSS, per skin (`Vector-2022.css`) or for every skin (`Common.css`) | `MediaWiki:<Name>.css` |
 
 `ImportDemoData.php` reseeds the demo set: it creates and updates pages from these directories, and
 deletes pages a previous import created whose source file is now gone. So renaming or removing a
@@ -60,6 +64,16 @@ Subject, relation, and option IDs:
 4. **`{{#view}}` takes one positional Subject ID plus named args.** Write
    `{{#view:id|layout=LayoutName}}` or `{{#view:subject=id|layout=LayoutName}}`. The old
    positional form `{{#view:id|LayoutName}}` is gone and now renders a visible parser error.
+5. **Link a conditionally-imported page through `{{#ifexist:}}`.** A plain link to a page from
+   `SparqlPage/` or `EdmSparqlPage/` renders as a redlink wherever the import skipped it. Keep the
+   whole sentence inside `{{#ifexist:Target|...}}` so it disappears with its target, and keep the space
+   between two such sentences outside the braces — ParserFunctions trims its arguments.
+6. **Sidebar labels double as element ids.** In `MediaWiki/Sidebar.wikitext` the second field becomes
+   the link's `n-<field>` id, which is what carries MediaWiki's accesskey and tooltip. Write
+   `recentchanges-url|recentchanges`, not `Special:RecentChanges|Recent changes`, or the keyboard
+   shortcut disappears with no other visible change. A sidebar line is transformed before it is split
+   on the pipe, so `{{#ifexist:}}` works there too — write the pipe as `{{!}}`, and an entry whose
+   target is missing drops out of the menu entirely.
 
 ## Cypher gotchas
 

@@ -216,7 +216,7 @@ JSON,
             "pageNamespaceId": 0,
             "statements": {
                 "MyRelation": {
-                	"type": "relation",
+                	"propertyType": "relation",
                 	"value": [
 						{
 							"id": "rTestGSA1111rr1",
@@ -248,7 +248,7 @@ JSON,
             "pageNamespaceId": 0,
             "statements": {
                 "MyRelation": {
-                "type": "relation",
+                "propertyType": "relation",
 				"value": [
 						{
 							"id": "rTestGSA1111rr3",

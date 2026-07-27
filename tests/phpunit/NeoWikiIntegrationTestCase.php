@@ -34,6 +34,19 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 
 	use HandlesNeo4jEnvOverrides;
 
+	/**
+	 * The singleton pins a SchemaLookup whose cache is keyed by page and revision id, and those ids
+	 * repeat across tests' temp tables, so an instance surviving a test would serve one test's Schema
+	 * to the next. A `@before` hook because most subclasses override setUp() without calling parent;
+	 * it runs before setUp(), so a subclass rebuilding the singleton in its own setUp() keeps that
+	 * instance.
+	 *
+	 * @before
+	 */
+	final protected function neoWikiSetUp(): void {
+		NeoWikiExtension::resetInstance();
+	}
+
 	protected function setUpNeo4j(): void {
 		try {
 			$client = NeoWikiExtension::getInstance()->getNeo4jClient();
@@ -203,9 +216,6 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	 * Registers extra graph database plugins through the NeoWikiRegistration hook and rebuilds the singleton
 	 * so they are composed into the write paths, letting a test drive the real hook wiring with a backend of
 	 * its choosing (a spy, or one that always throws).
-	 *
-	 * Callers must reset the singleton again in tearDown, so later tests get an instance built without the
-	 * temporary hook.
 	 */
 	protected function registerGraphDatabasePlugins( GraphDatabasePlugin ...$plugins ): void {
 		$this->setTemporaryHook(
