@@ -217,4 +217,28 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
 	} );
 
+	it( 'lets later callers share the replacement request when an invalidated one succeeds', async () => {
+		const afterSave = [ summary( 'Alpha' ), summary( 'Beta' ) ];
+		const invalidatedPage = deferred<SchemaSummaryPage>();
+		const currentPage = deferred<SchemaSummaryPage>();
+		const getSchemaSummaries = vi.fn()
+			.mockReturnValueOnce( invalidatedPage.promise )
+			.mockReturnValueOnce( currentPage.promise )
+			.mockResolvedValue( lastPage( [ summary( 'Redundant fetch' ) ] ) );
+		withRepository( { getSchemaSummaries, saveSchema: vi.fn().mockResolvedValue( undefined ) } );
+		const store = useSchemaStore();
+
+		const invalidatedRequest = store.getAllSchemaSummaries();
+		await store.saveSchema( newSchema( { title: 'Beta' } ) );
+		const currentRequest = store.getAllSchemaSummaries();
+		invalidatedPage.resolve( lastPage( [ summary( 'Stale' ) ] ) );
+		await invalidatedRequest;
+		const laterRequest = store.getAllSchemaSummaries();
+		currentPage.resolve( lastPage( afterSave ) );
+		await currentRequest;
+
+		expect( await laterRequest ).toEqual( afterSave );
+		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
+	} );
+
 } );
