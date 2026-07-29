@@ -152,7 +152,8 @@ jobs:
           echo "QLever did not become ready in time; dumping logs:"; docker logs test_qlever; exit 1
 
       - name: Run PHPUnit
-        run: php tests/phpunit/phpunit.php -c extensions/NeoWiki/phpunit.xml.dist
+        run: composer phpunit
+        working-directory: mediawiki/extensions/NeoWiki
 
   phpcs:
     name: "PHPCS with PHP 8.3"
