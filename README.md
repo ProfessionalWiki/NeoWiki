@@ -66,15 +66,11 @@ Build a large synthetic wiki to measure against the targets in
 [ADR 29](docs/adr/029-scalability-targets.md):
 
 ```bash
-make rebuild-graph-databases    # once per stack, before measuring anything
 make perf-generate pages=1000   # write perf/dump.xml
 make perf-import                # import it, timing the write path
 make perf-snapshot              # save MariaDB + Neo4j to perf/snapshot/
 make perf-restore               # load perf/snapshot/ over this stack's data
 ```
-
-The rebuild is what creates the Neo4j uniqueness constraints, and a stack that has never run it
-has none, so without it every number measures an unindexed graph.
 
 `perf-generate` also takes `subjects` (default 10) and `seed` (default 1). It emits one Schema and
 `pages` × `subjects` Subjects carrying 12 Statements each, three of them relations to Subjects on
