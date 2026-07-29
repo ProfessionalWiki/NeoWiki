@@ -171,26 +171,32 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 
 	public function testRelationsTargetSubjectsThatExistInTheDump(): void {
 		$dump = $this->generate( pages: 20 );
+		$targets = $this->allRelationTargets( $dump );
 
-		$this->assertSame(
-			[],
-			array_diff( $this->relationTargetsOfMainSubject( $dump, 0 ), $this->allSubjectIds( $dump ) )
-		);
+		$this->assertNotEmpty( $targets );
+		$this->assertSame( [], array_diff( $targets, $this->allSubjectIds( $dump ) ) );
 	}
 
 	/**
+	 * Every Subject, not just each page's main one: the target index is
+	 * `( subjectIndex + index + 1 ) % subjectsPerPage`, which can only wrap for a child Subject, so
+	 * asserting the main Subject alone leaves the wrapping case unmeasured.
+	 *
 	 * @dataProvider runSizeProvider
 	 */
 	public function testRelationsTargetSubjectsOnOtherPages( int $pages ): void {
 		$dump = $this->generate( pages: $pages );
 
-		$this->assertSame(
-			[],
-			array_intersect(
-				$this->relationTargetsOfMainSubject( $dump, 0 ),
-				array_keys( $this->subjectSlot( $dump, 0 )['subjects'] )
-			)
-		);
+		for ( $pageIndex = 0; $pageIndex < $pages; $pageIndex++ ) {
+			$targets = $this->relationTargetsOfPage( $dump, $pageIndex );
+
+			$this->assertNotEmpty( $targets );
+			$this->assertSame(
+				[],
+				array_intersect( $targets, array_keys( $this->subjectSlot( $dump, $pageIndex )['subjects'] ) ),
+				"page {$pageIndex} targets a Subject on its own page"
+			);
+		}
 	}
 
 	public function runSizeProvider(): iterable {
@@ -353,17 +359,33 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 	}
 
 	/**
+	 * Every relation target on one page, across all of its Subjects.
+	 *
 	 * @return list<string>
 	 */
-	private function relationTargetsOfMainSubject( string $dump, int $pageIndex ): array {
-		$slot = $this->subjectSlot( $dump, $pageIndex );
-		$statements = $slot['subjects'][$slot['mainSubject']]['statements'];
+	private function relationTargetsOfPage( string $dump, int $pageIndex ): array {
+		$targets = [];
 
-		return [
-			$statements['Related A']['value'][0]['target'],
-			$statements['Related B']['value'][0]['target'],
-			$statements['Related C']['value'][0]['target'],
-		];
+		foreach ( $this->subjectSlot( $dump, $pageIndex )['subjects'] as $subject ) {
+			foreach ( [ 'Related A', 'Related B', 'Related C' ] as $propertyName ) {
+				$targets[] = $subject['statements'][$propertyName]['value'][0]['target'];
+			}
+		}
+
+		return $targets;
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	private function allRelationTargets( string $dump ): array {
+		$targets = [];
+
+		for ( $pageIndex = 0; $pageIndex < count( $this->pages( $dump ) ) - 1; $pageIndex++ ) {
+			$targets = array_merge( $targets, $this->relationTargetsOfPage( $dump, $pageIndex ) );
+		}
+
+		return $targets;
 	}
 
 	/**
