@@ -36,11 +36,13 @@ class SparqlRawParserFunctionParsingTest extends MediaWikiIntegrationTestCase {
 			}
 		);
 
+		$parserOptions = ParserOptions::newFromAnon();
+
 		return $parser->parse(
 			'{{#sparql_raw: SELECT ?n WHERE { ?s ?p ?n } }}',
 			Title::makeTitle( NS_MAIN, 'SparqlRawParsingTest' ),
-			ParserOptions::newFromAnon()
-		)->getText();
+			$parserOptions
+		)->runOutputPipeline( $parserOptions, [] )->getContentHolderText();
 	}
 
 	public function testDatatypeIriSurvivesParsingUnchanged(): void {

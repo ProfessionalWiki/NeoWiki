@@ -32,7 +32,7 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 	}
 
 	private function render( string $json, string $name = 'EDM' ): string {
-		return $this->parserOutput( $json, $name )->getRawText();
+		return $this->parserOutput( $json, $name )->getContentHolderText();
 	}
 
 	public function testMappingJsonIsVisibleOnTheReadTab(): void {
@@ -134,7 +134,7 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 
 		$parserOutput = $this->parserOutput( $json );
 
-		$this->assertStringNotContainsString( 'href="javascript:', $parserOutput->getRawText() );
+		$this->assertStringNotContainsString( 'href="javascript:', $parserOutput->getContentHolderText() );
 		$this->assertArrayNotHasKey( 'javascript:alert(1)', $parserOutput->getExternalLinks() );
 	}
 
@@ -159,7 +159,7 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 		$parserOutput = $this->parserOutput( $this->mappingWithSchema( 'Person' ) );
 
 		$this->assertTrue( $this->registersLocalLink( $parserOutput, NeoWikiExtension::NS_SCHEMA, 'Person' ) );
-		$this->assertStringNotContainsString( 'redlink', $parserOutput->getRawText() );
+		$this->assertStringNotContainsString( 'redlink', $parserOutput->getContentHolderText() );
 	}
 
 	/**
@@ -175,8 +175,8 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 
 		$parserOutput = $this->parserOutput( $this->mappingWithSchema( 'Person_x' ) );
 
-		$this->assertStringContainsString( '<span>Person_x</span>', $parserOutput->getRawText() );
-		$this->assertStringNotContainsString( 'Schema:Person_x', $parserOutput->getRawText() );
+		$this->assertStringContainsString( '<span>Person_x</span>', $parserOutput->getContentHolderText() );
+		$this->assertStringNotContainsString( 'Schema:Person_x', $parserOutput->getContentHolderText() );
 		$this->assertFalse( $this->registersLocalLink( $parserOutput, NeoWikiExtension::NS_SCHEMA, 'Person_x' ) );
 	}
 

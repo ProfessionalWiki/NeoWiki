@@ -55,7 +55,7 @@ class LayoutContentHandler extends JsonContentHandler {
 		ContentParseParams $cpoParams,
 		ParserOutput &$parserOutput
 	): void {
-		$parserOutput->setRawText( '' );
+		$parserOutput->setContentHolderText( '' );
 	}
 
 	public function makeEmptyContent(): LayoutContent {
