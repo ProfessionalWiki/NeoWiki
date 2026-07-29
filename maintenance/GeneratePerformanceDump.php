@@ -283,31 +283,31 @@ class GeneratePerformanceDump extends Maintenance {
 
 		$statements = [
 			'Description' => [
-				'type' => 'text',
+				'propertyType' => 'text',
 				'value' => [ 'Synthetic Subject ' . $subjectIndex . ' on performance-test page ' . $pageIndex . '.' ],
 			],
 			'Code' => [
-				'type' => 'text',
+				'propertyType' => 'text',
 				'value' => [ 'PT-' . $this->formatPageNumber( $pageIndex ) . '-' . $subjectIndex ],
 			],
-			'Founded' => [ 'type' => 'number', 'value' => 1800 + $variation % 200 ],
-			'Rating' => [ 'type' => 'number', 'value' => round( $variation % 500 / 100, 2 ) ],
+			'Founded' => [ 'propertyType' => 'number', 'value' => 1800 + $variation % 200 ],
+			'Rating' => [ 'propertyType' => 'number', 'value' => round( $variation % 500 / 100, 2 ) ],
 			'Website' => [
-				'type' => 'url',
+				'propertyType' => 'url',
 				'value' => [ 'https://example.org/perf/' . $pageIndex . '/' . $subjectIndex ],
 			],
 			'Tags' => [
-				'type' => 'text',
+				'propertyType' => 'text',
 				'value' => [ 'tag' . $variation % 17, 'tag' . $variation * 7 % 23, 'tag' . $variation * 13 % 31 ],
 			],
-			'Active' => [ 'type' => 'boolean', 'value' => $variation % 2 === 0 ],
-			'Started' => [ 'type' => 'date', 'value' => [ $this->buildDate( $variation ) ] ],
-			'Notes' => [ 'type' => 'text', 'value' => [ 'Notes for Subject ' . $ordinal . '.' ] ],
+			'Active' => [ 'propertyType' => 'boolean', 'value' => $variation % 2 === 0 ],
+			'Started' => [ 'propertyType' => 'date', 'value' => [ $this->buildDate( $variation ) ] ],
+			'Notes' => [ 'propertyType' => 'text', 'value' => [ 'Notes for Subject ' . $ordinal . '.' ] ],
 		];
 
 		foreach ( self::RELATION_PROPERTY_NAMES as $index => $propertyName ) {
 			$statements[$propertyName] = [
-				'type' => 'relation',
+				'propertyType' => 'relation',
 				'value' => [
 					[
 						'id' => $this->relationId( $ordinal, $index ),
