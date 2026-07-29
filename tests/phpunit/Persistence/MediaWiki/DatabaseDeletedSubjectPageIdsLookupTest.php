@@ -100,7 +100,7 @@ class DatabaseDeletedSubjectPageIdsLookupTest extends NeoWikiIntegrationTestCase
 	 */
 	private function archiveRevisionOfExistingPage( RevisionRecord $revision ): void {
 		$row = $this->getDb()->newSelectQueryBuilder()
-			->select( [ 'rev_actor', 'rev_comment_id', 'rev_timestamp', 'rev_len', 'rev_sha1' ] )
+			->select( [ 'rev_actor', 'rev_comment_id', 'rev_timestamp', 'rev_len' ] )
 			->from( 'revision' )
 			->where( [ 'rev_id' => $revision->getId() ] )
 			->caller( __METHOD__ )
@@ -117,7 +117,6 @@ class DatabaseDeletedSubjectPageIdsLookupTest extends NeoWikiIntegrationTestCase
 				'ar_comment_id' => $row->rev_comment_id,
 				'ar_timestamp' => $row->rev_timestamp,
 				'ar_len' => $row->rev_len,
-				'ar_sha1' => $row->rev_sha1,
 				'ar_minor_edit' => 0,
 				'ar_deleted' => 0,
 			] )
