@@ -39,11 +39,13 @@ class CypherRawParserFunctionParsingTest extends MediaWikiIntegrationTestCase {
 			}
 		);
 
+		$parserOptions = ParserOptions::newFromAnon();
+
 		return $parser->parse(
 			'{{#cypher_raw: MATCH (m:Museum) RETURN m.Website AS site }}',
 			Title::makeTitle( NS_MAIN, 'CypherRawParsingTest' ),
-			ParserOptions::newFromAnon()
-		)->getText();
+			$parserOptions
+		)->runOutputPipeline( $parserOptions, [] )->getContentHolderText();
 	}
 
 	private function queryServiceReturningWebsite(): Neo4jQueryService {

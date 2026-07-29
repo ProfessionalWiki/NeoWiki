@@ -24,7 +24,6 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		parent::setUp();
 		$this->setUpNeo4j();
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
-		$this->markPageTableAsUsed();
 	}
 
 	public function testMovingPageUpdatesGraphNodeName(): void {

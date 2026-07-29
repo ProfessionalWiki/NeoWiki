@@ -2,12 +2,12 @@
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages;
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
-use MediaWiki\User\User;
 use PermissionsError;
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialNeoJson;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -71,7 +71,7 @@ class SpecialNeoJsonTest extends SpecialPageTestBase {
 		$user = $this->getTestUser()->getUser();
 
 		try {
-			$this->executeSpecialPage( $title->getPrefixedText(), $this->newJsonPost( $user ), null, $user );
+			$this->executeSpecialPage( $title->getPrefixedText(), $this->newJsonPost(), null, $user );
 			$this->fail( 'Expected a PermissionsError for a user who cannot edit the protected page' );
 		} catch ( PermissionsError ) {
 		}
@@ -88,9 +88,17 @@ class SpecialNeoJsonTest extends SpecialPageTestBase {
 		$title = $this->getExistingTestPage( 'NeoJsonRateLimitedTarget' )->getTitle();
 		$user = $this->getTestUser()->getUser();
 
+		// The Subject write takes its performer from the main request context.
+		RequestContext::getMain()->setUser( $user );
+
 		$this->assertTrue( $user->definitelyCan( 'edit', $title ), 'Precondition: the user has edit allowance left' );
 
-		$this->executeSpecialPage( $title->getPrefixedText(), $this->newJsonPost( $user ), null, $user );
+		$this->executeSpecialPage( $title->getPrefixedText(), $this->newJsonPost(), null, $user );
+
+		$this->assertNotNull(
+			NeoWikiExtension::getInstance()->newSubjectContentRepository()->getSubjectContentByPageTitle( $title ),
+			'Precondition: the POST wrote Subject content'
+		);
 
 		$this->assertFalse(
 			$user->definitelyCan( 'edit', $title ),
@@ -113,14 +121,11 @@ class SpecialNeoJsonTest extends SpecialPageTestBase {
 		);
 	}
 
-	private function newJsonPost( User $user ): FauxRequest {
-		return new FauxRequest(
-			[
-				'wpjson' => '[]',
-				'wpEditToken' => $user->getEditToken(),
-			],
-			wasPosted: true
-		);
+	/**
+	 * No wpEditToken: SpecialPageExecutor fills one in from the session the form's CSRF check reads.
+	 */
+	private function newJsonPost(): FauxRequest {
+		return new FauxRequest( [ 'wpjson' => '[]' ], wasPosted: true );
 	}
 
 	private function protectAgainstNonSysopEdits( WikiPage $page ): void {

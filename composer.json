@@ -42,6 +42,9 @@
 			"ProfessionalWiki\\NeoWiki\\Tests\\": "tests/phpunit/"
 		}
 	},
+	"scripts": {
+		"phpunit": "cd ${MW_INSTALL_PATH:-../..} && (composer phpunit:config 2>/dev/null || true) && vendor/bin/phpunit -c extensions/NeoWiki/phpunit.xml.dist --bootstrap tests/phpunit/bootstrap.php"
+	},
 	"config": {
 		"allow-plugins": {
 			"composer/installers": true,

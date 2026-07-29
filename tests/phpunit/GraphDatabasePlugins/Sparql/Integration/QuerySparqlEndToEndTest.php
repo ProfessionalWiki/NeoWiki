@@ -66,7 +66,6 @@ class QuerySparqlEndToEndTest extends NeoWikiIntegrationTestCase {
 
 		$this->clearStore();
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
-		$this->markPageTableAsUsed();
 	}
 
 	protected function tearDown(): void {

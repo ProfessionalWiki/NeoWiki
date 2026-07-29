@@ -16,7 +16,11 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 class SpecialNeoJson extends SpecialPage {
 
 	public function __construct() {
-		parent::__construct( 'NeoJson', listed: false );
+		parent::__construct( 'NeoJson' );
+	}
+
+	public function isListed(): bool {
+		return false;
 	}
 
 	/**

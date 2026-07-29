@@ -8,13 +8,16 @@ use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Rest\BasicAccess\StaticBasicAuthorizer;
 use MediaWiki\Rest\Handler\ModuleSpecHandler;
+use MediaWiki\Rest\Module\ModuleManager;
 use MediaWiki\Rest\Reporter\MWErrorReporter;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\ResponseFactory;
 use MediaWiki\Rest\Router;
 use MediaWiki\Rest\Validator\Validator;
+use MediaWiki\Session\SessionManager;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ReflectionMethod;
 use Wikimedia\Message\ITextFormatter;
 use Wikimedia\Message\MessageSpecifier;
 
@@ -28,6 +31,31 @@ use Wikimedia\Message\MessageSpecifier;
  */
 class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
+
+	/**
+	 * ModuleManager exists from MediaWiki 1.46, a release before Router started taking one, so the
+	 * Router's own signature is what decides which of the two it wants.
+	 */
+	private function routerTakesModuleManager(): bool {
+		$firstParameter = ( new ReflectionMethod( Router::class, '__construct' ) )->getParameters()[0];
+
+		return $firstParameter->getType()?->getName() !== 'array';
+	}
+
+	private function routeSource( ResponseFactory $responseFactory ): mixed {
+		if ( !$this->routerTakesModuleManager() ) {
+			return [];
+		}
+
+		$services = $this->getServiceContainer();
+
+		return new ModuleManager(
+			new ServiceOptions( ModuleManager::CONSTRUCTOR_OPTIONS, $services->getMainConfig() ),
+			ExtensionRegistry::getInstance()->getAttribute( 'RestModuleFiles' ),
+			$services->getLocalServerObjectCache(),
+			$responseFactory
+		);
+	}
 
 	private function buildRouter(): Router {
 		$services = $this->getServiceContainer();
@@ -45,12 +73,14 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 			}
 		};
 
+		$responseFactory = new ResponseFactory( [ $formatter ] );
+
 		return new Router(
-			[],
+			$this->routeSource( $responseFactory ),
 			ExtensionRegistry::getInstance()->getAttribute( 'RestRoutes' ),
 			new ServiceOptions( Router::CONSTRUCTOR_OPTIONS, $services->getMainConfig() ),
 			$services->getLocalServerObjectCache(),
-			new ResponseFactory( [ $formatter ] ),
+			$responseFactory,
 			new StaticBasicAuthorizer(),
 			$authority,
 			$objectFactory,
@@ -61,12 +91,22 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	private function newModuleSpecHandler(): ModuleSpecHandler {
+		$config = $this->getServiceContainer()->getMainConfig();
+
+		if ( ( new ReflectionMethod( ModuleSpecHandler::class, '__construct' ) )->getNumberOfParameters() > 1 ) {
+			return new ModuleSpecHandler( $config, SessionManager::singleton() );
+		}
+
+		return new ModuleSpecHandler( $config );
+	}
+
 	/**
 	 * @return array<string, mixed>
 	 */
 	private function fetchSpec(): array {
 		$response = $this->executeHandler(
-			new ModuleSpecHandler( $this->getServiceContainer()->getMainConfig() ),
+			$this->newModuleSpecHandler(),
 			new RequestData( [
 				'method' => 'GET',
 				// '-' is the ExtraRoutesModule hack: ModuleSpecHandler maps '-' to the empty module prefix,
