@@ -12,6 +12,7 @@ use MediaWiki\Content\TextContent;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
@@ -33,6 +34,7 @@ use WikiExporter;
 class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 
 	use HandlesNeo4jEnvOverrides;
+	use TempUserTestTrait;
 
 	/**
 	 * The singleton pins a SchemaLookup whose cache is keyed by page and revision id, and those ids
@@ -45,6 +47,11 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	 */
 	final protected function neoWikiSetUp(): void {
 		NeoWikiExtension::resetInstance();
+
+		// These tests edit as anonymous users, and MediaWiki refuses to give an IP an actor once
+		// temporary accounts are on. How NeoWiki behaves for a temporary account is its own
+		// question, not one this suite answers, so the feature is off while it runs.
+		$this->disableAutoCreateTempUser();
 	}
 
 	protected function setUpNeo4j(): void {
