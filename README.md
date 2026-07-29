@@ -79,7 +79,8 @@ has none, so without it every number measures an unindexed graph.
 `perf-generate` also takes `subjects` (default 10) and `seed` (default 1). It emits one Schema and
 `pages` × `subjects` Subjects carrying 12 Statements each, three of them relations to Subjects on
 other pages. The same options always produce the same dump, and no two seeds produce the same page
-titles or Subject ids, so dumps from different seeds can share one wiki.
+titles or Subject ids, so dumps from different seeds can share one wiki. Pages are written as a
+save would store them, so budget about 27 KB of dump per page.
 
 `perf-import` runs with link table updates off, so the imported pages leave `pagelinks` and the
 search index empty: the number its last line reports is a write-path cost, and the wiki it produces

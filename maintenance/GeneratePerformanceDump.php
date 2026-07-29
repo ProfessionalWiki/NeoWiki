@@ -5,12 +5,16 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Maintenance;
 
 use Maintenance;
+use MediaWiki\Content\JsonContent;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Storage\DerivedPageDataUpdater;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer;
 
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../..';
 
@@ -222,7 +226,7 @@ class GeneratePerformanceDump extends Maintenance {
 			title: $this->namespaceName( NS_NEOWIKI_SCHEMA ) . ':' . self::SCHEMA_NAME,
 			namespaceId: NS_NEOWIKI_SCHEMA,
 			model: SchemaContent::CONTENT_MODEL_ID,
-			text: $this->toJson( [
+			text: $this->toSchemaJson( [
 				'description' => 'Synthetic Schema used by the generated performance-test Subjects.',
 				'propertyDefinitions' => $propertyDefinitions,
 			] ),
@@ -266,7 +270,7 @@ class GeneratePerformanceDump extends Maintenance {
 			$subjects[$this->subjectId( $pageIndex, $subjectIndex )] = $this->buildSubject( $pageIndex, $subjectIndex );
 		}
 
-		return $this->toJson( [
+		return $this->toSubjectSlotJson( [
 			'mainSubject' => $this->subjectId( $pageIndex, 0 ),
 			'subjects' => $subjects,
 		] );
@@ -420,17 +424,50 @@ class GeneratePerformanceDump extends Maintenance {
 	}
 
 	/**
-	 * Only element content is escaped, never an attribute value, so quotes are left alone. That
-	 * keeps the JSON subject slots — which are mostly quotes — nearly half the size escaping them
-	 * would produce.
+	 * Only element content is escaped, never an attribute value, so quotes are left alone. Escaping
+	 * them would still add about a fifth to the dump for nothing: a pretty-printed subject slot runs
+	 * to roughly two thirds indentation and a twentieth quotes.
 	 */
 	private function escape( string $text ): string {
 		return htmlspecialchars( $text, ENT_NOQUOTES | ENT_XML1, 'UTF-8' );
 	}
 
-	/** @param array<string, mixed> $data */
-	private function toJson( array $data ): string {
-		return json_encode( $data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR );
+	/**
+	 * A subject slot as a save leaves it in the text table. @see SubjectContentDataSerializer::serialize
+	 * writes it, and then every modified slot goes through a pre-save transform
+	 * (@see DerivedPageDataUpdater::prepareContent), which for JSON content is
+	 * @see SubjectContent::beautifyJSON. Nothing on the import path reformats a slot, so whatever the
+	 * dump carries is what gets stored: measuring a corpus is measuring these bytes, and a compact
+	 * dump would hold a third of the blob a wiki of the same Subject count really holds.
+	 *
+	 * @param array<string, mixed> $data
+	 */
+	private function toSubjectSlotJson( array $data ): string {
+		return $this->encodeJson( $data, true );
+	}
+
+	/**
+	 * A Schema page is plain JsonContent, whose @see JsonContent::beautifyJSON indents with tabs
+	 * where SubjectContent's override uses spaces.
+	 *
+	 * @param array<string, mixed> $data
+	 */
+	private function toSchemaJson( array $data ): string {
+		return $this->encodeJson( $data, "\t" );
+	}
+
+	/**
+	 * @param array<string, mixed> $data
+	 * @param string|bool $indent As @see FormatJson::encode takes it.
+	 */
+	private function encodeJson( array $data, string|bool $indent ): string {
+		$json = FormatJson::encode( $data, $indent, FormatJson::UTF8_OK );
+
+		if ( $json === false ) {
+			$this->fatalError( 'Encoding the generated JSON failed.' );
+		}
+
+		return $json;
 	}
 
 	/**
