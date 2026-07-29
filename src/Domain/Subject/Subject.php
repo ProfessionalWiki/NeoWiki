@@ -78,4 +78,13 @@ class Subject {
 		$this->statements = $statements;
 	}
 
+	public function withStatements( StatementList $statements ): self {
+		return new self(
+			id: $this->id,
+			label: $this->label,
+			schemaName: $this->schemaName,
+			statements: $statements,
+		);
+	}
+
 }

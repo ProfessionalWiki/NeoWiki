@@ -47,4 +47,26 @@ class SubjectTest extends TestCase {
 		$this->assertSame( $newStatementList, $subject->getStatements() );
 	}
 
+	public function testWithStatementsKeepsIdLabelAndSchema(): void {
+		$subject = TestSubject::build( new SubjectId( TestSubject::ZERO_GUID ) );
+
+		$copy = $subject->withStatements( new StatementList( [] ) );
+
+		$this->assertSame( $subject->getId(), $copy->getId() );
+		$this->assertSame( $subject->getLabel(), $copy->getLabel() );
+		$this->assertSame( $subject->getSchemaName(), $copy->getSchemaName() );
+	}
+
+	public function testWithStatementsLeavesTheOriginalStatementsInPlace(): void {
+		$originalStatements = new StatementList( [
+			new Statement( new PropertyName( 'Original' ), 'text', new StringValue( 'hello' ) ),
+		] );
+		$subject = TestSubject::build( new SubjectId( TestSubject::ZERO_GUID ), statements: $originalStatements );
+
+		$copy = $subject->withStatements( new StatementList( [] ) );
+
+		$this->assertSame( $originalStatements, $subject->getStatements() );
+		$this->assertSame( [], $copy->getStatements()->asArray() );
+	}
+
 }

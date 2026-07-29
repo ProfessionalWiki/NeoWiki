@@ -176,6 +176,33 @@ dropped without error. For schema/value validation outcomes see [Validation Code
 A relation may omit `id`; the server generates one. The Subject's `id`, `schema`, and page fields are immutable
 and ignored if sent.
 
+### Writing one Statement
+
+`PUT /rest.php/neowiki/v0/subject/{subjectId}/statements/{propertyName}` sets a single Statement, leaving the
+Subject's label and its other Statements as they are:
+
+```json
+{
+  "statement": {
+    "propertyType": "url",
+    "value": ["https://example.com"]
+  },
+  "comment": "Optional edit summary"
+}
+```
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `statement` | Yes | A [Statement object](#statement-object). `propertyType` may be omitted, and then takes the type the Subject's Schema currently gives the property; a property the Schema does not define is rejected with `400`. A value that is empty for its type removes the Statement. |
+| `comment` | No | Edit summary. |
+
+`DELETE` on the same path removes the Statement and takes only `comment`. Removing a Statement the Subject does
+not have succeeds and changes nothing.
+
+`{propertyName}` is URL-encoded, so `Founded at` is `Founded%20at`. A property name containing `/` is not
+addressable this way on servers that reject `%2F` in paths; write those Statements with
+`PUT /subject/{subjectId}`.
+
 ### Write responses
 
 Creating and writing a Subject both answer with the Subject as persisted and the Schema it instantiates, so a
