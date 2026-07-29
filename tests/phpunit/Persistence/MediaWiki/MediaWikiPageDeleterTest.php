@@ -14,10 +14,6 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  */
 class MediaWikiPageDeleterTest extends NeoWikiIntegrationTestCase {
 
-	protected function setUp(): void {
-		parent::setUp();
-	}
-
 	public function testDeletesAnExistingPage(): void {
 		$title = $this->insertPage( 'Page to delete', 'content' )['title'];
 
