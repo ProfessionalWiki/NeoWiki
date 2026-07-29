@@ -41,7 +41,6 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		parent::setUp();
 		$this->captured = [];
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
-		$this->markPageTableAsUsed();
 	}
 
 	public function testConfiguredSparqlStoreReceivesPageEditAsGraphUpdate(): void {

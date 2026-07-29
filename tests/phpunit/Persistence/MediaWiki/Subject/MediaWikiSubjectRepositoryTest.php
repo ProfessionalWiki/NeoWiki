@@ -38,8 +38,7 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function createPages(): void {
-		$this->markPageTableAsUsed();
-		$this->truncateTables( $this->tablesUsed, $this->db );
+		$this->truncateTables( [ 'page' ], $this->db );
 
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
 

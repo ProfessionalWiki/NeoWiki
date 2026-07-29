@@ -21,7 +21,6 @@ class DatabaseDeletedSubjectPageIdsLookupTest extends NeoWikiIntegrationTestCase
 	protected function setUp(): void {
 		parent::setUp();
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
-		$this->markPageTableAsUsed();
 	}
 
 	public function testFindsTheSubjectPageThatNoLongerExists(): void {

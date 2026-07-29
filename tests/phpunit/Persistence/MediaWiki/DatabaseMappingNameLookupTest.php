@@ -28,8 +28,7 @@ class DatabaseMappingNameLookupTest extends NeoWikiIntegrationTestCase {
 	private array $pageIds = [];
 
 	public function setUp(): void {
-		$this->tablesUsed[] = 'page';
-		$this->truncateTables( $this->tablesUsed, $this->db );
+		$this->truncateTables( [ 'page' ], $this->db );
 
 		foreach ( [ 'MappingLookupTest1', 'MappingLookupTest2', 'MappingLookupTest3' ] as $name ) {
 			$this->pageIds[$name] = $this->createMapping( $name, '{"version":1,"schemas":{}}' )->getPageId();

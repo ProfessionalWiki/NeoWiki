@@ -162,12 +162,6 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		DeferredUpdates::doUpdates();
 	}
 
-	protected function markPageTableAsUsed(): void {
-		if ( !in_array( 'page', $this->tablesUsed ) ) {
-			$this->tablesUsed[] = 'page';
-		}
-	}
-
 	/**
 	 * Bulk-inserts bare page rows — no revisions or content — straight into the page table with a
 	 * single multi-row insert. The keyset name-lookup generators read only page_id and page_title and

@@ -16,7 +16,6 @@ class MediaWikiPageDeleterTest extends NeoWikiIntegrationTestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->markPageTableAsUsed();
 	}
 
 	public function testDeletesAnExistingPage(): void {
