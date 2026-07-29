@@ -290,6 +290,16 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newDeleteSubjectApi"
 		},
 		{
+			"path": "/neowiki/v0/subject/{subjectId}/statements/{propertyName}",
+			"method": [ "PUT" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newSetStatementApi"
+		},
+		{
+			"path": "/neowiki/v0/subject/{subjectId}/statements/{propertyName}",
+			"method": [ "DELETE" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newRemoveStatementApi"
+		},
+		{
 			"path": "/neowiki/v0/subject/{subjectId}/rdf",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newExportSubjectRdfApi"

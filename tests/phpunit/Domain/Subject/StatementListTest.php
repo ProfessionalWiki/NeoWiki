@@ -155,6 +155,74 @@ class StatementListTest extends TestCase {
 		);
 	}
 
+	public function testWithStatementAddsStatementForNewProperty(): void {
+		$list = new StatementList( [ TestStatement::build( property: 'P1' ) ] );
+
+		$added = TestStatement::build( property: 'P2', value: 'added' );
+
+		$this->assertEquals(
+			[ 'P1', 'P2' ],
+			array_keys( $list->withStatement( $added )->asArray() )
+		);
+	}
+
+	public function testWithStatementReplacesStatementInPlace(): void {
+		$list = new StatementList( [
+			TestStatement::build( property: 'P1' ),
+			TestStatement::build( property: 'P2', value: 'old' ),
+			TestStatement::build( property: 'P3' ),
+		] );
+
+		$replaced = $list->withStatement( TestStatement::build( property: 'P2', value: 'new' ) );
+
+		$this->assertSame( [ 'P1', 'P2', 'P3' ], array_keys( $replaced->asArray() ) );
+		$this->assertSame(
+			[ 'new' ],
+			$replaced->getStatement( new PropertyName( 'P2' ) )->getValue()->toScalars()
+		);
+	}
+
+	public function testWithStatementLeavesTheOriginalUntouched(): void {
+		$list = new StatementList( [ TestStatement::build( property: 'P1', value: 'original' ) ] );
+
+		$list->withStatement( TestStatement::build( property: 'P1', value: 'replacement' ) );
+
+		$this->assertSame(
+			[ 'original' ],
+			$list->getStatement( new PropertyName( 'P1' ) )->getValue()->toScalars()
+		);
+	}
+
+	public function testWithoutStatementRemovesOnlyTheNamedProperty(): void {
+		$list = new StatementList( [
+			TestStatement::build( property: 'P1' ),
+			TestStatement::build( property: 'P2' ),
+			TestStatement::build( property: 'P3' ),
+		] );
+
+		$this->assertSame(
+			[ 'P1', 'P3' ],
+			array_keys( $list->withoutStatement( new PropertyName( 'P2' ) )->asArray() )
+		);
+	}
+
+	public function testWithoutStatementKeepsListUnchangedForUnknownProperty(): void {
+		$list = new StatementList( [ TestStatement::build( property: 'P1' ) ] );
+
+		$this->assertEquals(
+			$list,
+			$list->withoutStatement( new PropertyName( 'P2' ) )
+		);
+	}
+
+	public function testWithoutStatementLeavesTheOriginalUntouched(): void {
+		$list = new StatementList( [ TestStatement::build( property: 'P1' ) ] );
+
+		$list->withoutStatement( new PropertyName( 'P1' ) );
+
+		$this->assertNotNull( $list->getStatement( new PropertyName( 'P1' ) ) );
+	}
+
 	public function testConstructorThrowsOnNonStatement(): void {
 		$this->expectException( \InvalidArgumentException::class );
 
