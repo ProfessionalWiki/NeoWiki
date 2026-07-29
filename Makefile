@@ -467,14 +467,21 @@ NEO_START = { $(NEO_CYPHER) -d system 'START DATABASE neo4j WAIT' < /dev/null \
 _require-pages:
 	@[ -n "$(pages)" ] || { echo "Usage: make perf-generate pages=N [subjects=10] [seed=1]" >&2; exit 1; }
 
+# Generated beside the final name and moved into place on success, for the same reason as the
+# snapshot halves: the generator truncates its output at fopen and writes the header — which
+# advertises the full intended page and Subject counts — before the first page. Writing straight
+# to the final name would leave an abandoned or disk-full run as a truncated dump that perf-import's
+# existence check accepts, and importDump then commits every complete page in it before failing.
 perf-generate: _require-pages ## Generate a synthetic wiki XML dump (pages=N [subjects=10] [seed=1])
 	@mkdir -p $(PERF_DIR)
 ifeq ($(INSIDE_CONTAINER),1)
+	@rm -f $(PERF_DUMP).part
 	php ../../maintenance/run.php NeoWiki:GeneratePerformanceDump \
 		--pages $(pages) \
 		--subjects-per-page $(or $(subjects),10) \
 		--seed $(or $(seed),1) \
-		--output $(PERF_DUMP) < /dev/null
+		--output $(PERF_DUMP).part < /dev/null
+	@mv $(PERF_DUMP).part $(PERF_DUMP)
 else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf-generate pages=$(pages) subjects=$(subjects) seed=$(seed)' < /dev/null
 endif
@@ -503,6 +510,11 @@ endif
 # host-side redirect creates its file the moment the line starts, so writing straight to the
 # final names would leave a truncated half that _require-snapshot accepts and perf-restore
 # then loads over the live data.
+#
+# The moves sit inside the same shell as the dump, ahead of the EXIT trap that restarts Neo4j:
+# `set -e` still skips them when a dump fails, but a restart that comes back unhealthy — the one
+# thing the trap can fail on — then still fails the target without discarding a snapshot whose
+# halves are both complete.
 perf-snapshot: ## Snapshot MariaDB + Neo4j into perf/snapshot/
 	@mkdir -p $(PERF_SNAPSHOT_DIR)
 	@rm -f $(PERF_SQL).part $(PERF_NEO).part
@@ -512,9 +524,9 @@ perf-snapshot: ## Snapshot MariaDB + Neo4j into perf/snapshot/
 		neo_start() { $(NEO_START); }; \
 		trap neo_start EXIT; \
 		$(NEO_STOP); \
-		$(NEO_ADMIN) database dump neo4j --to-stdout > $(PERF_NEO).part < /dev/null
-	@mv $(PERF_SQL).part $(PERF_SQL)
-	@mv $(PERF_NEO).part $(PERF_NEO)
+		$(NEO_ADMIN) database dump neo4j --to-stdout > $(PERF_NEO).part < /dev/null; \
+		mv $(PERF_SQL).part $(PERF_SQL); \
+		mv $(PERF_NEO).part $(PERF_NEO)
 	@echo "Snapshot written to $(PERF_SNAPSHOT_DIR)/"
 
 _require-snapshot:
