@@ -250,7 +250,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function newLookup(
-		ClientInterface $client = null,
+		?ClientInterface $client = null,
 		?PageReadAuthorizer $readAuthorizer = null
 	): Neo4jSubjectLabelLookup {
 		return new Neo4jSubjectLabelLookup(

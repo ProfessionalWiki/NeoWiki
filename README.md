@@ -40,7 +40,10 @@ Mailcatcher web UI is at the port `make dev` printed (default `8025`,
 configurable via `MAILCATCHER_PORT` in `Docker/.env`).
 
 The `node` sidecar runs `npm run build:watch`, so TypeScript changes under
-`resources/ext.neowiki/` rebuild automatically.
+`resources/ext.neowiki/` rebuild automatically. The watcher transpiles but does not
+type-check — for that, rely on your IDE while editing, and on `make ts-build` (or
+`make tsci`) and CI before pushing. `npm run tsc:watch` runs a standalone type-check
+watcher if you want one.
 
 To also expose Neo4j Browser and the Bolt endpoint to the host (single-worktree use),
 use `make dev-tools` instead. URLs print when the stack comes up.

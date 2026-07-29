@@ -21,12 +21,27 @@ jobs:
   test:
     name: "PHPUnit: MW ${{ matrix.mw }}, PHP ${{ matrix.php }}"
 
+    continue-on-error: ${{ matrix.experimental }}
+
     strategy:
       fail-fast: false
       matrix:
         include:
           - mw: 'REL1_43'
             php: '8.3'
+            experimental: false
+          - mw: 'REL1_44'
+            php: '8.3'
+            experimental: false
+          - mw: 'REL1_45'
+            php: '8.3'
+            experimental: false
+          - mw: 'REL1_46'
+            php: '8.4'
+            experimental: false
+          - mw: 'master'
+            php: '8.5'
+            experimental: true
 
     runs-on: ubuntu-latest
 
@@ -76,7 +91,7 @@ jobs:
             mediawiki
             !mediawiki/extensions/
             !mediawiki/vendor/
-          key: mw_${{ matrix.mw }}-php${{ matrix.php }}
+          key: mw_${{ matrix.mw }}-php${{ matrix.php }}-v2
 
       - name: Cache Composer cache
         uses: actions/cache@v5
@@ -146,7 +161,8 @@ jobs:
           echo "QLever did not become ready in time; dumping logs:"; docker logs test_qlever; exit 1
 
       - name: Run PHPUnit
-        run: php tests/phpunit/phpunit.php -c extensions/NeoWiki/phpunit.xml.dist
+        run: composer phpunit
+        working-directory: mediawiki/extensions/NeoWiki
 
   phpcs:
     name: "PHPCS with PHP 8.3"
@@ -203,7 +219,7 @@ jobs:
             mediawiki
             !mediawiki/extensions/
             !mediawiki/vendor/
-          key: mw_${{ matrix.mw }}-php${{ matrix.php }}
+          key: mw_${{ matrix.mw }}-php${{ matrix.php }}-v2
 
       - name: Cache Composer cache
         uses: actions/cache@v5

@@ -96,8 +96,12 @@ Stubs arise in two ways:
 - **Referenced but not yet created.** When a Relation targets a Subject that does not exist yet, a stub target node
   is created so the relationship can be stored.
 
-When the real Subject is later saved, its node is upgraded in place — matched by `id` alone, so the stub gains its
-properties and Schema label without creating a duplicate node.
+When the real Subject is later saved, its node is upgraded in place: the stub gains its properties and Schema label,
+and no duplicate node is created.
+
+A write that strips a stub of its last incoming relation deletes the stub, whether that write removes the referring
+Subject, drops the Relation, or retargets it. Removing a set of Subjects referenced only by each other leaves none of
+them behind.
 
 ## Relationships
 
@@ -123,14 +127,14 @@ backtick-escaped.
 | `id` | string | Relation ID, 15 characters starting with `r` |
 | *(additional)* | scalar | Any properties from the Relation's property map |
 
-When a Subject with incoming relations from other Subjects is removed, its node is kept as a
-[stub](#stub-subject-nodes) so those incoming references remain valid.
+When a Subject is removed while other Subjects still reference it, its node is kept as a
+[stub](#stub-subject-nodes) for as long as those references last.
 
 ## Constraints
 
 Two node uniqueness constraints apply: `(wiki_id, id)` on `:Page` nodes
-([ADR 22](../adr/022-multi-wiki-node-identity.md)) and `id` on `:Subject` nodes. A graph that has never been rebuilt
-with `RebuildGraphDatabases.php` lacks them: the incremental per-edit projection does not create them.
+([ADR 22](../adr/022-multi-wiki-node-identity.md)) and `id` on `:Subject` nodes. Both are created by `update.php` and
+by `RebuildGraphDatabases.php`, not by the incremental per-edit projection.
 
 Relation (edge) `id` values carry no uniqueness constraint
 ([#351](https://github.com/ProfessionalWiki/NeoWiki/issues/351)).

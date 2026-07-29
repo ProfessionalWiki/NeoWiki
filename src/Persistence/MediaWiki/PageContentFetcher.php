@@ -35,7 +35,7 @@ class PageContentFetcher {
 			return null;
 		}
 
-		$revision = $this->revisionLookup->getRevisionByTitle( $titleValue );
+		$revision = $this->revisionLookup->getRevisionByTitle( Title::newFromLinkTarget( $titleValue ) );
 
 		try {
 			return $revision?->getContent( $slotName, RevisionRecord::FOR_THIS_USER, $authority );

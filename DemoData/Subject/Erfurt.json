@@ -5,9 +5,9 @@
 			"label": "Erfurt",
 			"schema": "Place",
 			"statements": {
-				"Country": { "type": "text", "value": [ "Germany" ] },
-				"Coordinates": { "type": "text", "value": [ "50.9787, 11.0328" ] },
-				"Description": { "type": "text", "value": [ "City in Thuringia, Germany; birthplace of Johann Ambrosius Bach." ] }
+				"Country": { "propertyType": "text", "value": [ "Germany" ] },
+				"Coordinates": { "propertyType": "text", "value": [ "50.9787, 11.0328" ] },
+				"Description": { "propertyType": "text", "value": [ "City in Thuringia, Germany; birthplace of Johann Ambrosius Bach." ] }
 			}
 		}
 	}

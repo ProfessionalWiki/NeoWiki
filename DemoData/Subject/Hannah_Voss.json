@@ -6,11 +6,11 @@
 			"schema": "Author",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Knowledge graph researcher with a focus on provenance and FAIR data principles." ]
 				},
 				"Affiliation": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaB5",
@@ -19,7 +19,7 @@
 					]
 				},
 				"ORCID": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://orcid.org/0000-0001-9999-0000" ]
 				}
 			}

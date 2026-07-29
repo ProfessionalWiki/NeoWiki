@@ -6,11 +6,11 @@
 			"schema": "Department",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Drives global revenue across the Anvil, Rocket, and TNT product lines, with field teams in Europe and North America." ]
 				},
 				"Headcount": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 96
 				}
 			}

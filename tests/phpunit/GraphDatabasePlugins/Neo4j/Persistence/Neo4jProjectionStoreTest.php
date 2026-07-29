@@ -393,6 +393,30 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1, 'rTestNQS1111rr1' );
 	}
 
+	/**
+	 * A save creates the subject's node and then matches it again to attach its relations, its page and
+	 * its schema label. Every one of those matches addresses it as a :Subject, so the node has to carry
+	 * that label from creation: were the label added at the end of the save instead, the relation step
+	 * would not find the node it just created and would create a second one under the same id.
+	 */
+	public function testSavingANewSubjectWithARelationCreatesASingleNodeForIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		$this->assertSingleNodeWithId( self::GUID_2 );
+	}
+
+	private function assertSingleNodeWithId( string $id ): void {
+		// Deliberately unlabeled, so a node that failed to get the Subject label still counts.
+		$result = $this->readGraph( 'MATCH (node {id: $id}) RETURN count(node) AS count', [ 'id' => $id ] );
+
+		$this->assertSame( 1, $result->first()->toRecursiveArray()['count'] );
+	}
+
 	public function testReducingReferencedSubjectToStubKeepsIncomingRelationsButStripsOutgoingRelationsAndProperties(): void {
 		$store = $this->newProjectionStoreWithLocationRelation();
 
@@ -484,6 +508,231 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build( id: 1 ) );
 
 		$this->assertSubjectDoesNotExist( self::GUID_1 );
+	}
+
+	public function testRemovingMutuallyReferencingSubjectsFromTheirPageDeletesBoth(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1 and GUID_2 reference each other and nothing else references either of them.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+			childSubjects: new SubjectMap(
+				$this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr2' ),
+			)
+		) );
+
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_1 );
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+	}
+
+	public function testRemovingAReferenceCycleFromItsPageDeletesEverySubjectInIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1 -> GUID_2 -> GUID_3 -> GUID_1, with no reference from outside the cycle.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+			childSubjects: new SubjectMap(
+				$this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_3, 'rTestNQS1111rr2' ),
+				$this->buildSubjectWithLocationRelation( self::GUID_3, self::GUID_1, 'rTestNQS1111rr3' ),
+			)
+		) );
+
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_1 );
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+		$this->assertSubjectDoesNotExist( self::GUID_3 );
+	}
+
+	public function testRemovingTheLastSubjectReferencingAStubDeletesTheStub(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1's relation targets a subject that does not exist, creating GUID_2 as a stub.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+		) );
+
+		$this->assertSubjectIsStub( self::GUID_2 );
+
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+	}
+
+	public function testDeletingThePagesOfMutuallyReferencingSubjectsDeletesBoth(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1 and GUID_2 live on separate pages and reference each other.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+		) );
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr2' ),
+		) );
+
+		// Deleting the first page turns GUID_1 into a stub that GUID_2 still references.
+		$store->deletePage( new PageId( 1 ) );
+		$this->assertSubjectIsStub( self::GUID_1 );
+
+		$store->deletePage( new PageId( 2 ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_1 );
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+	}
+
+	public function testRemovingTheLastReferenceDeletesAStubWrittenByAnotherWiki(): void {
+		$wikiA = $this->newProjectionStoreWithLocationRelation( 'wiki_a' );
+		$wikiB = $this->newProjectionStoreWithLocationRelation( 'wiki_b' );
+
+		// GUID_1 on wiki A relates to GUID_2, creating it as a stub.
+		$wikiA->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+		) );
+
+		// Wiki B claims GUID_2 and drops it again, leaving a stub that carries wiki B's wiki_id.
+		$wikiB->savePage( TestPage::build( id: 2, mainSubject: TestSubject::build( id: self::GUID_2 ) ) );
+		$wikiB->deletePage( new PageId( 2 ) );
+
+		// Removing GUID_1 strips that stub of its last reference, whichever wiki last wrote it.
+		$wikiA->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+	}
+
+	public function testRemovingASubjectLeavesAnUnlinkedFullSubjectAlone(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_2 relates to GUID_1, so removing GUID_2 later makes GUID_1 a sweep candidate.
+		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		// Re-saving GUID_1 under a schema this store's lookup does not know makes the projection skip it,
+		// so it keeps its data while losing its HasSubject relation. newProjectionStoreWithLocationRelation
+		// hands its store an InMemorySchemaLookup holding the default schema alone, so SCHEMA_ID_A does not
+		// resolve here despite setUp creating a Schema page for it: no store in this class reads those pages.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
+		) );
+
+		// The skip is what gives this test its teeth, so assert it happened rather than assuming it.
+		$this->assertSubjectIsNotStub( self::GUID_1 );
+		$this->assertHasNoIncomingHasSubjectRelation( self::GUID_1 );
+
+		// Removing GUID_2 takes GUID_1's last incoming relation with it, leaving a subject that has
+		// no incoming relation at all but still carries data.
+		$store->savePage( TestPage::build( id: 2 ) );
+
+		// Asserting the data survives, not merely the node: a sweep that reduced unreachable
+		// candidates to stubs instead of deleting them would leave a node behind either way.
+		$this->assertSubjectIsNotStub( self::GUID_1 );
+	}
+
+	public function testDroppingTheOnlyRelationToAStubDeletesTheStub(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// GUID_1's relation targets a subject that does not exist, creating GUID_2 as a stub.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+		) );
+
+		$this->assertSubjectIsStub( self::GUID_2 );
+
+		// Re-saving GUID_1 without the relation leaves the stub with nothing pointing at it.
+		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+	}
+
+	public function testRetargetingTheOnlyRelationToAStubDeletesTheStub(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
+		) );
+
+		// The same relation now points at GUID_3, so GUID_2 loses its only referrer.
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_3, 'rTestNQS1111rr1' ),
+		) );
+
+		$this->assertSubjectDoesNotExist( self::GUID_2 );
+		$this->assertSubjectIsStub( self::GUID_3 );
+	}
+
+	public function testDroppingOneOfTwoRelationsToAStubKeepsIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$this->saveTwoPagesReferencingStub( $store );
+
+		// Dropping page 1's relation makes the stub a sweep candidate, but page 2 still references it.
+		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+
+		$this->assertSubjectIsStub( self::GUID_3 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
+	}
+
+	public function testDeletingOneOfTwoPagesReferencingAStubKeepsIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$this->saveTwoPagesReferencingStub( $store );
+
+		// Deleting page 1 removes GUID_1 outright, so the sweep gets the stub from the deleted
+		// subject's relation targets rather than from a relation edit. Page 2 still references it.
+		$store->deletePage( new PageId( 1 ) );
+
+		$this->assertSubjectIsStub( self::GUID_3 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
+	}
+
+	public function testStubbingOneOfTwoSubjectsReferencingAStubKeepsIt(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$this->saveTwoPagesReferencingStub( $store );
+
+		// GUID_4 references GUID_1, so removing GUID_1 reduces it to a stub instead of deleting it.
+		// That drops its relation to GUID_3, which page 2 still references.
+		$store->savePage( TestPage::build(
+			id: 3,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_4, self::GUID_1, 'rTestNQS1111rr3' ),
+		) );
+
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertSubjectIsStub( self::GUID_1 );
+		$this->assertSubjectIsStub( self::GUID_3 );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
+	}
+
+	/**
+	 * GUID_1 and GUID_2 live on separate pages and both relate to GUID_3, which exists only as the
+	 * stub their relations created. Removing either referrer leaves the other one pointing at it.
+	 */
+	private function saveTwoPagesReferencingStub( GraphDatabasePlugin $store ): void {
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_3, 'rTestNQS1111rr1' ),
+		) );
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_3, 'rTestNQS1111rr2' ),
+		) );
+
+		$this->assertSubjectIsStub( self::GUID_3 );
 	}
 
 	private function newProjectionStoreWithLocationRelation( string $wikiId = self::WIKI_ID ): GraphDatabasePlugin {
@@ -594,6 +843,40 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$result = $this->readGraph( 'MATCH (subject {id: $id}) RETURN subject', [ 'id' => $subjectId ] );
 
 		$this->assertTrue( $result->isEmpty(), "Subject {$subjectId} should not exist" );
+	}
+
+	/**
+	 * The inverse of assertSubjectIsStub: the node exists and still carries the data a stub sheds.
+	 * Asserting mere existence would not distinguish the two.
+	 */
+	private function assertSubjectIsNotStub( string $subjectId ): void {
+		$result = $this->readGraph(
+			'MATCH (subject {id: $id}) RETURN labels(subject) AS labels, subject.name AS name',
+			[ 'id' => $subjectId ]
+		);
+
+		$this->assertFalse( $result->isEmpty(), "Subject {$subjectId} should exist" );
+
+		$row = $result->first()->toRecursiveArray();
+
+		$this->assertNotNull( $row['name'], "Subject {$subjectId} should keep its name" );
+		$this->assertContains(
+			TestSubject::DEFAULT_SCHEMA_ID,
+			$row['labels'],
+			"Subject {$subjectId} should keep its Schema label"
+		);
+	}
+
+	private function assertHasNoIncomingHasSubjectRelation( string $subjectId ): void {
+		$result = $this->readGraph(
+			'MATCH (subject {id: $id}) RETURN EXISTS { ()-[:HasSubject]->(subject) } AS isLinked',
+			[ 'id' => $subjectId ]
+		);
+
+		$this->assertFalse(
+			$result->first()->toRecursiveArray()['isLinked'],
+			"Subject {$subjectId} should have no HasSubject relation"
+		);
 	}
 
 	public function testSavingPageAndThenDeletingItLeavesNoTrace(): void {

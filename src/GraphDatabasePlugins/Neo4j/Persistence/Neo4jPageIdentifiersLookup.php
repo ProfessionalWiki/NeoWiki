@@ -30,7 +30,7 @@ class Neo4jPageIdentifiersLookup implements PageIdentifiersLookup {
 				// ever linked to its own wiki's page node.
 				$result = $transaction->run(
 					'
-					MATCH (page:Page)-[:HasSubject]->(subject {id: $subjectId})
+					MATCH (page:Page)-[:HasSubject]->(subject:Subject {id: $subjectId})
 					RETURN page.id AS id, page.name AS name, page.namespaceId AS namespaceId',
 					[ 'subjectId' => $subjectId->text ]
 				);

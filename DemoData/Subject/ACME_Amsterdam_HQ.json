@@ -6,11 +6,11 @@
 			"schema": "Office",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Global headquarters. Houses executive leadership, engineering, and the original Anvil product team." ]
 				},
 				"City": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo7aaaaaar7",
@@ -19,11 +19,11 @@
 					]
 				},
 				"Address": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Herengracht 1, 1015 BB Amsterdam" ]
 				},
 				"Opened": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2005
 				}
 			}

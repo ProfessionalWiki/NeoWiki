@@ -6,19 +6,19 @@
 			"schema": "Publication",
 			"statements": {
 				"Title": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Linked Bibliography Mappings for European Archives" ]
 				},
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2021
 				},
 				"Venue": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Journal of Digital Humanities" ]
 				},
 				"Authors": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaD1",
@@ -27,7 +27,7 @@
 					]
 				},
 				"Project": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaD2",
@@ -36,7 +36,7 @@
 					]
 				},
 				"URL": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://example.org/publications/linked-bibliography-mappings" ]
 				}
 			}

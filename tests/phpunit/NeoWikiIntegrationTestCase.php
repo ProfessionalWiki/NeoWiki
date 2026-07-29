@@ -12,6 +12,7 @@ use MediaWiki\Content\TextContent;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
@@ -33,6 +34,25 @@ use WikiExporter;
 class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 
 	use HandlesNeo4jEnvOverrides;
+	use TempUserTestTrait;
+
+	/**
+	 * The singleton pins a SchemaLookup whose cache is keyed by page and revision id, and those ids
+	 * repeat across tests' temp tables, so an instance surviving a test would serve one test's Schema
+	 * to the next. A `@before` hook because most subclasses override setUp() without calling parent;
+	 * it runs before setUp(), so a subclass rebuilding the singleton in its own setUp() keeps that
+	 * instance.
+	 *
+	 * @before
+	 */
+	final protected function neoWikiSetUp(): void {
+		NeoWikiExtension::resetInstance();
+
+		// These tests edit as anonymous users, and MediaWiki refuses to give an IP an actor once
+		// temporary accounts are on. How NeoWiki behaves for a temporary account is its own
+		// question, not one this suite answers, so the feature is off while it runs.
+		$this->disableAutoCreateTempUser();
+	}
 
 	protected function setUpNeo4j(): void {
 		try {
@@ -65,7 +85,7 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
 	}
 
-	protected function createSchema( string $name, string $json = null ): ?RevisionRecord {
+	protected function createSchema( string $name, ?string $json = null ): ?RevisionRecord {
 		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
 			Title::newFromText( $name, NeoWikiExtension::NS_SCHEMA )
 		);
@@ -142,12 +162,6 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		DeferredUpdates::doUpdates();
 	}
 
-	protected function markPageTableAsUsed(): void {
-		if ( !in_array( 'page', $this->tablesUsed ) ) {
-			$this->tablesUsed[] = 'page';
-		}
-	}
-
 	/**
 	 * Bulk-inserts bare page rows — no revisions or content — straight into the page table with a
 	 * single multi-row insert. The keyset name-lookup generators read only page_id and page_title and
@@ -203,9 +217,6 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	 * Registers extra graph database plugins through the NeoWikiRegistration hook and rebuilds the singleton
 	 * so they are composed into the write paths, letting a test drive the real hook wiring with a backend of
 	 * its choosing (a spy, or one that always throws).
-	 *
-	 * Callers must reset the singleton again in tearDown, so later tests get an instance built without the
-	 * temporary hook.
 	 */
 	protected function registerGraphDatabasePlugins( GraphDatabasePlugin ...$plugins ): void {
 		$this->setTemporaryHook(

@@ -6,19 +6,19 @@
 			"schema": "Publication",
 			"statements": {
 				"Title": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Reconciling Author Identifiers Across Cultural Heritage Datasets" ]
 				},
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2022
 				},
 				"Venue": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Semantic Web Journal" ]
 				},
 				"Authors": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaD3",
@@ -31,7 +31,7 @@
 					]
 				},
 				"Project": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaD5",
@@ -40,7 +40,7 @@
 					]
 				},
 				"URL": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://example.org/publications/reconciling-author-identifiers" ]
 				}
 			}

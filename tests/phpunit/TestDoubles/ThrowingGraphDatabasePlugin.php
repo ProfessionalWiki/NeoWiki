@@ -17,16 +17,25 @@ class ThrowingGraphDatabasePlugin implements GraphDatabasePlugin {
 
 	public const string FAILURE_MESSAGE = 'projection backend unreachable';
 
+	/**
+	 * @param string $message What the backend reports on failure. A real client quotes the connection
+	 *        URI it tried, so tests about how NeoWiki relays that message pass one in.
+	 */
+	public function __construct(
+		private readonly string $message = self::FAILURE_MESSAGE
+	) {
+	}
+
 	public function initialize(): void {
-		throw new RuntimeException( self::FAILURE_MESSAGE );
+		throw new RuntimeException( $this->message );
 	}
 
 	public function savePage( Page $page ): void {
-		throw new RuntimeException( self::FAILURE_MESSAGE );
+		throw new RuntimeException( $this->message );
 	}
 
 	public function deletePage( PageId $pageId ): void {
-		throw new RuntimeException( self::FAILURE_MESSAGE );
+		throw new RuntimeException( $this->message );
 	}
 
 }

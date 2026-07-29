@@ -38,6 +38,8 @@
 	"Hooks": {
 		"MediaWikiServices": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onMediaWikiServices",
 
+		"LoadExtensionSchemaUpdates": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onLoadExtensionSchemaUpdates",
+
 		"ParserFirstCallInit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserFirstCallInit",
 
 		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
@@ -678,7 +680,8 @@
 		},
 		"ext.neowiki.styles": {
 			"styles": [
-				"resources/ext.neowiki/dist/neowiki.css"
+				"resources/ext.neowiki/dist/neowiki.css",
+				"resources/styles/mapping-page.css"
 			]
 		}
 	},

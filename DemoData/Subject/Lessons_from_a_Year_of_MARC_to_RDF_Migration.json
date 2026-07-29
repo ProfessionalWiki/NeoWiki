@@ -6,19 +6,19 @@
 			"schema": "Publication",
 			"statements": {
 				"Title": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Lessons from a Year of MARC to RDF Migration" ]
 				},
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2024
 				},
 				"Venue": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "D-Lib Magazine" ]
 				},
 				"Authors": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaE1",
@@ -27,7 +27,7 @@
 					]
 				},
 				"Project": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaE2",
@@ -36,7 +36,7 @@
 					]
 				},
 				"URL": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://example.org/publications/lessons-marc-to-rdf" ]
 				}
 			}

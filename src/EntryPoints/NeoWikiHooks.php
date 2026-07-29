@@ -4,8 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use Exception;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
+use MediaWiki\Installer\DatabaseUpdater;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
@@ -175,6 +177,71 @@ class NeoWikiHooks {
 				);
 			}
 		);
+	}
+
+	/**
+	 * @see LoadExtensionSchemaUpdatesHook
+	 */
+	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ): void {
+		$updater->addExtensionUpdate( [ [ self::class, 'initializeGraphDatabases' ] ] );
+	}
+
+	/**
+	 * A failing backend is reported rather than thrown, and the update carries on: DatabaseUpdater runs
+	 * MediaWiki's own schema changes before it fires LoadExtensionSchemaUpdates, so a throw here would
+	 * not protect those — it would skip the updates of every extension queued after NeoWiki. The graph
+	 * is rebuildable derived state, so it is not worth that.
+	 *
+	 * The catch is broader than the hook path's deliberate TimeoutException/DBError re-throws, since
+	 * there is no user operation here to abort. It deliberately covers building the plugins as well as
+	 * initializing them, so that a wiki whose NeoWiki configuration is not readable yet — as during a
+	 * fresh install — still finishes its update.
+	 */
+	public static function initializeGraphDatabases( DatabaseUpdater $updater ): void {
+		$updater->output( 'Initializing NeoWiki graph databases...' );
+
+		try {
+			NeoWikiExtension::getInstance()->getGraphDatabasePlugin()->initialize();
+		} catch ( Exception $e ) {
+			self::reportFailedGraphDatabaseInitialization( $updater, $e );
+			return;
+		}
+
+		$updater->output( "done.\n" );
+	}
+
+	private static function reportFailedGraphDatabaseInitialization( DatabaseUpdater $updater, Exception $e ): void {
+		$reason = self::withoutCredentials( $e->getMessage() );
+
+		$updater->output(
+			"failed.\n"
+			. '...' . $reason . "\n"
+			. "...Re-run update.php once the cause is resolved. While a backend is unreachable, Subject\n"
+			. "...editing and display and every graph read fail, and the edits made meanwhile are missing\n"
+			. "...from the projection: run RebuildGraphDatabases.php to reconcile it.\n"
+		);
+
+		// Logged as well, because update.php --quiet discards everything written to the updater, which
+		// would otherwise leave a failed initialization with no trace anywhere. The redacted reason
+		// rather than the exception, so that what is kept out of the terminal stays out of the log too.
+		LoggerFactory::getInstance( 'NeoWiki' )->error(
+			'NeoWiki failed to initialize its graph databases during update.php. The wiki is updated, but '
+			. 'the store-level structures its projection relies on are missing. Underlying error: ' . $reason
+		);
+	}
+
+	/**
+	 * Strips the userinfo out of any URI in a message. A backend client reports an unreachable server by
+	 * quoting the connection URI it tried, credentials included, and this message goes to the operator's
+	 * terminal and to deployment logs.
+	 *
+	 * The run is bounded only by whitespace and matched greedily up to its last `@`, because a password
+	 * may itself contain `/`, `@` or a quote: stopping at the first of those leaves the rest of it in
+	 * the message. The cost is that a credential-free URI whose path holds an `@` loses that path, which
+	 * is the right way round for a redaction.
+	 */
+	private static function withoutCredentials( string $message ): string {
+		return (string)preg_replace( '#(?<=://)\S*@#', '', $message );
 	}
 
 	public static function onParserFirstCallInit( Parser $parser ): void {

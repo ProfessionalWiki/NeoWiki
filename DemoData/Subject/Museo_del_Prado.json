@@ -6,15 +6,15 @@
 			"schema": "Museum",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Spain's main national art museum, featuring one of the finest collections of European art from the 12th to early 20th century" ]
 				},
 				"Founded": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1819
 				},
 				"City": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoG5ZtGDZ",
@@ -23,23 +23,23 @@
 					]
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.museodelprado.es" ]
 				},
 				"Specialization": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Spanish Art", "Italian Renaissance", "Flemish Painting" ]
 				},
 				"Annual visitors": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 3200000
 				},
 				"Admission fee": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 15
 				},
 				"Links": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [
 						"https://www.instagram.com/museoprado"
 					]

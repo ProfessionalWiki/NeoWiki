@@ -11,12 +11,18 @@ if ( !class_exists( \MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon\LuaEn
 /**
  * Lua integration tests for the mw.neowiki Scribunto library.
  *
- * Tests run against all available Lua engines (LuaSandbox and LuaStandalone)
- * via the suite() method inherited from LuaEngineTestBase.
- *
  * @group Lua
  * @group Database
  */
 class NeoWikiLibraryTest extends NeoWikiLibraryTestBase {
+
+	/**
+	 * Scribunto 1.46 onwards has each concrete test class name one engine. LuaStandalone is the
+	 * pick because it needs no PHP extension and so is present wherever the suite runs, not
+	 * because the library is specific to it.
+	 */
+	protected function getEngineName(): string {
+		return 'LuaStandalone';
+	}
 
 }

@@ -116,11 +116,11 @@ describe( 'StatementList', () => {
 			{
 				property1: {
 					value: 'value1',
-					type: TextType.typeName,
+					propertyType: TextType.typeName,
 				},
 				property2: {
 					value: 'value2',
-					type: TextType.typeName,
+					propertyType: TextType.typeName,
 				},
 			},
 		);
@@ -137,11 +137,11 @@ describe( 'StatementList', () => {
 			{
 				'': {
 					value: 'value1',
-					type: TextType.typeName,
+					propertyType: TextType.typeName,
 				}, // An empty string is not a valid PropertyName
 				property2: {
 					value: 'value2',
-					type: TextType.typeName,
+					propertyType: TextType.typeName,
 				},
 			},
 		) )
@@ -153,15 +153,15 @@ describe( 'StatementList', () => {
 			{
 				p1: {
 					value: 'hello',
-					type: TextType.typeName,
+					propertyType: TextType.typeName,
 				},
 				p2: {
 					value: 42,
-					type: NumberType.typeName,
+					propertyType: NumberType.typeName,
 				},
 				p3: {
 					value: [ 'foo', 'bar' ],
-					type: TextType.typeName,
+					propertyType: TextType.typeName,
 				},
 			},
 		);
@@ -224,7 +224,7 @@ describe( 'unregistered-type round-trip', () => {
 		const statements = Neo.getInstance().getSubjectDeserializer().deserializeStatements( {
 			Swatch: {
 				value: { hex: '#ff5733', palette: 'warm' },
-				type: 'zzz-color',
+				propertyType: 'zzz-color',
 			},
 		} );
 

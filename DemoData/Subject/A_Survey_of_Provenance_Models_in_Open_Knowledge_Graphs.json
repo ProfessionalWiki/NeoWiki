@@ -6,19 +6,19 @@
 			"schema": "Publication",
 			"statements": {
 				"Title": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "A Survey of Provenance Models in Open Knowledge Graphs" ]
 				},
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2020
 				},
 				"Venue": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "ISWC Proceedings" ]
 				},
 				"Authors": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaD6",
@@ -27,7 +27,7 @@
 					]
 				},
 				"Project": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaD7",
@@ -36,7 +36,7 @@
 					]
 				},
 				"URL": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://example.org/publications/provenance-survey" ]
 				}
 			}

@@ -295,9 +295,9 @@ cs: phpcs stan ## Run code style checks (phpcs + phpstan)
 phpunit: ## Run PHPUnit (use filter=X for a single test)
 ifeq ($(INSIDE_CONTAINER),1)
 ifdef filter
-	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --filter $(filter) < /dev/null
+	composer phpunit -- --filter $(filter) < /dev/null
 else
-	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist < /dev/null
+	composer phpunit < /dev/null
 endif
 else
 ifdef filter
@@ -309,7 +309,7 @@ endif
 
 perf: ## Run performance test group
 ifeq ($(INSIDE_CONTAINER),1)
-	php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --group Performance < /dev/null
+	composer phpunit -- --group Performance < /dev/null
 else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf' < /dev/null
 endif

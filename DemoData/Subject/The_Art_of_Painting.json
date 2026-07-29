@@ -6,15 +6,15 @@
 			"schema": "Artwork",
 			"statements": {
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 1666
 				},
 				"Medium": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Oil on canvas" ]
 				},
 				"Creator": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoScyfU3j",
@@ -23,7 +23,7 @@
 					]
 				},
 				"Located at": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rEpfwJLoTZQ5HBf",
@@ -32,11 +32,11 @@
 					]
 				},
 				"Image": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://upload.wikimedia.org/wikipedia/commons/4/4a/Johannes_Vermeer_-_The_Art_of_Painting_-_Google_Art_Project.jpg" ]
 				},
 				"Estimated value": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 200
 				}
 			}

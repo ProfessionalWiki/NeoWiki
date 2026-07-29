@@ -6,15 +6,15 @@
 			"schema": "Project",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Open-source named-entity recognition tooling tuned for historical European languages." ]
 				},
 				"Started": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2022
 				},
 				"Lead institution": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaC3",

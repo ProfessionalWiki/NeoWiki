@@ -28,8 +28,7 @@ class DatabaseSchemaNameLookupTest extends NeoWikiIntegrationTestCase {
 	private array $pageIds = [];
 
 	public function setUp(): void {
-		$this->tablesUsed[] = 'page';
-		$this->truncateTables( $this->tablesUsed, $this->db );
+		$this->truncateTables( [ 'page' ], $this->db );
 
 		foreach ( [ 'SchemaNameLookupTest1', 'SchemaNameLookupTest21', 'SchemaNameLookupTest22', 'SchemaNameLookupTest3' ] as $name ) {
 			$this->pageIds[$name] = $this->createSchema( $name )->getPageId();

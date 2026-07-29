@@ -28,8 +28,7 @@ class DatabaseLayoutNameLookupTest extends NeoWikiIntegrationTestCase {
 	private array $pageIds = [];
 
 	public function setUp(): void {
-		$this->tablesUsed[] = 'page';
-		$this->truncateTables( $this->tablesUsed, $this->db );
+		$this->truncateTables( [ 'page' ], $this->db );
 
 		foreach ( [ 'LayoutNameLookupTest1', 'LayoutNameLookupTest2', 'LayoutNameLookupTest3' ] as $name ) {
 			$this->pageIds[$name] = $this->createLayout( $name )->getPageId();

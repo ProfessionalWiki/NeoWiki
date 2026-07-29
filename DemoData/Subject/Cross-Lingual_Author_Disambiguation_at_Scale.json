@@ -6,19 +6,19 @@
 			"schema": "Publication",
 			"statements": {
 				"Title": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Cross-Lingual Author Disambiguation at Scale" ]
 				},
 				"Year": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2023
 				},
 				"Venue": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "ECIR Proceedings" ]
 				},
 				"Authors": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaE9",
@@ -31,7 +31,7 @@
 					]
 				},
 				"Project": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaF1",
@@ -40,7 +40,7 @@
 					]
 				},
 				"URL": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://example.org/publications/cross-lingual-disambiguation" ]
 				}
 			}

@@ -6,11 +6,11 @@
 			"schema": "Product",
 			"statements": {
 				"Available since": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2006
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [
 						"https://acme.example/product/anvil"
 					]

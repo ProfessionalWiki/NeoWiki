@@ -6,54 +6,54 @@
 			"schema": "Validation Demo",
 			"statements": {
 				"Title": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "All properties filled in" ]
 				},
 				"Summary": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "A valid summary that is comfortably between ten and one hundred characters long." ]
 				},
 				"Aliases": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Clean sample", "Reference subject" ]
 				},
 				"Homepage": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://example.com" ]
 				},
 				"Tags": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [
 						"https://example.com/a",
 						"https://example.com/b"
 					]
 				},
 				"Score": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 42.5
 				},
 				"Status": {
-					"type": "select",
+					"propertyType": "select",
 					"value": [ "oVgd1htUPMmGZYT" ]
 				},
 				"Topics": {
-					"type": "select",
+					"propertyType": "select",
 					"value": [ "oVgd1Fzq3xfLnxJ", "oVgd1LjchzFUcLg" ]
 				},
 				"Featured": {
-					"type": "boolean",
+					"propertyType": "boolean",
 					"value": true
 				},
 				"Release date": {
-					"type": "date",
+					"propertyType": "date",
 					"value": [ "2024-06-15" ]
 				},
 				"Last reviewed": {
-					"type": "dateTime",
+					"propertyType": "dateTime",
 					"value": [ "2024-06-15T09:30:00Z" ]
 				},
 				"Related product": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "rVgd1keRxJzQR6e",

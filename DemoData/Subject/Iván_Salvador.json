@@ -6,11 +6,11 @@
 			"schema": "Author",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Information scientist working on entity reconciliation across cultural heritage datasets." ]
 				},
 				"Affiliation": {
-					"type": "relation",
+					"propertyType": "relation",
 					"value": [
 						{
 							"id": "r1demo8aaaaaaB4",
@@ -19,7 +19,7 @@
 					]
 				},
 				"ORCID": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://orcid.org/0000-0002-7777-8888" ]
 				}
 			}

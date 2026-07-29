@@ -12,6 +12,7 @@ use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
@@ -83,14 +84,55 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Status', $responseData['violations'][0]['propertyName'] );
 	}
 
+	/**
+	 * The read and write endpoints must key Statements the same way, so a Subject fetched from the API
+	 * can be sent back unchanged. When they diverged, the write silently stored nothing.
+	 */
+	public function testStatementsReadFromTheApiAreAcceptedVerbatim(): void {
+		$this->createPages();
+
+		$sent = $this->validBody();
+		$sent['statements'] = $this->twoStatements();
+		$this->executeHandler( $this->newReplaceSubjectApi(), $this->createRequestData( $sent ) );
+
+		$read = $this->readStatementsFromApi( 'sTestSA11111111' );
+
+		$echoed = $this->validBody();
+		$echoed['label'] = 'Echoed back';
+		$echoed['statements'] = $read;
+		$this->executeHandler( $this->newReplaceSubjectApi(), $this->createRequestData( $echoed ) );
+
+		// The label proves the echoed request was applied: without it, a rejected write leaves the
+		// Subject untouched and every statement assertion below passes for the wrong reason.
+		$this->assertSame( 'Echoed back', $this->getSubjectFromRepository( 'sTestSA11111111' )->label->text );
+		$this->assertSame( $read, $this->readStatementsFromApi( 'sTestSA11111111' ) );
+		$this->assertSame( [ 'Founded at', 'Website' ], array_keys( $read ) );
+	}
+
+	private function readStatementsFromApi( string $subjectId ): array {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => $subjectId ],
+			] )
+		);
+
+		return json_decode( $response->getBody()->getContents(), true )['subjects'][$subjectId]['statements'];
+	}
+
+	private function twoStatements(): array {
+		return [
+			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
+			'Website' => [ 'propertyType' => 'url', 'value' => [ 'https://example.com' ] ],
+		];
+	}
+
 	public function testOmittedStatementKeyIsDeleted(): void {
 		$this->createPages();
 
 		$bodyWithTwoStatements = $this->validBody();
-		$bodyWithTwoStatements['statements'] = [
-			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
-			'Website' => [ 'propertyType' => 'url', 'value' => [ 'https://example.com' ] ],
-		];
+		$bodyWithTwoStatements['statements'] = $this->twoStatements();
 		$this->executeHandler(
 			$this->newReplaceSubjectApi(),
 			$this->createRequestData( $bodyWithTwoStatements )

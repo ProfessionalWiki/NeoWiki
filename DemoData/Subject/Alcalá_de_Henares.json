@@ -6,15 +6,15 @@
 			"schema": "City",
 			"statements": {
 				"Country": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Spain" ]
 				},
 				"Population": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 200702
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://www.ayto-alcaladehenares.es" ]
 				}
 			}

@@ -14,6 +14,28 @@ export function normalizeSchemaName( name: string ): string {
 	return collapsed.charAt( 0 ).toUpperCase() + collapsed.slice( 1 );
 }
 
+// Pages through the summaries endpoint (capped at 50) by following the response's
+// cursor until it is null. The cursor, not the page length, decides whether more
+// pages follow: a page can come back shorter than requested when a readable Schema
+// fails to load (malformed). Deliberately not a store action: it neither reads nor
+// maintains the cache, so exposing it alongside getAllSchemaSummaries would offer
+// callers a way to page the whole endpoint while bypassing both the cache and the
+// invalidation guard.
+async function fetchAllSchemaSummaries(): Promise<SchemaSummary[]> {
+	const repository = NeoWikiExtension.getInstance().getSchemaRepository();
+	const pageSize = 50;
+	const summaries: SchemaSummary[] = [];
+	let cursor: string | null = null;
+
+	do {
+		const page = await repository.getSchemaSummaries( cursor, pageSize );
+		summaries.push( ...page.schemas );
+		cursor = page.nextCursor;
+	} while ( cursor !== null );
+
+	return summaries;
+}
+
 export const useSchemaStore = defineStore( 'schema', {
 	state: () => ( {
 		schemas: new Map<string, Schema>(),
@@ -49,41 +71,31 @@ export const useSchemaStore = defineStore( 'schema', {
 		// schema picker can show the full list and filter client-side. The cache is
 		// cleared on saveSchema. Concurrent callers (e.g. several relation-property
 		// pickers mounting in the same render) share one in-flight request rather
-		// than each running a full pagination.
+		// than each running a full pagination. Only the request the slot still holds
+		// caches its summaries and releases the slot.
 		async getAllSchemaSummaries(): Promise<SchemaSummary[]> {
 			if ( this.allSummaries !== null ) {
 				return this.allSummaries;
 			}
 
 			if ( this.summariesRequest === null ) {
-				this.summariesRequest = this.fetchAllSchemaSummaries();
+				this.summariesRequest = fetchAllSchemaSummaries();
 			}
 
-			return this.summariesRequest;
-		},
-		// Pages through the summaries endpoint (capped at 50) by following the response's
-		// cursor until it is null. The cursor, not the page length, decides whether more
-		// pages follow: a page can come back shorter than requested when a readable Schema
-		// fails to load (malformed). The in-flight request is released on completion so a
-		// later load (after the cache is cleared, or after a failure) starts fresh.
-		async fetchAllSchemaSummaries(): Promise<SchemaSummary[]> {
-			const repository = NeoWikiExtension.getInstance().getSchemaRepository();
-			const pageSize = 50;
-			const summaries: SchemaSummary[] = [];
+			const request = this.summariesRequest;
 
 			try {
-				let cursor: string | null = null;
+				const summaries = await request;
 
-				do {
-					const page = await repository.getSchemaSummaries( cursor, pageSize );
-					summaries.push( ...page.schemas );
-					cursor = page.nextCursor;
-				} while ( cursor !== null );
+				if ( this.summariesRequest === request ) {
+					this.allSummaries = summaries;
+				}
 
-				this.allSummaries = summaries;
 				return summaries;
 			} finally {
-				this.summariesRequest = null;
+				if ( this.summariesRequest === request ) {
+					this.summariesRequest = null;
+				}
 			}
 		},
 		// Checks existence via the schema-names search (a 200 response) rather

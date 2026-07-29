@@ -6,23 +6,23 @@
 			"schema": "Sandbox",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "A sandbox Subject for the Subject views demo. Edit any field to see every view on the page update in place." ]
 				},
 				"Status": {
-					"type": "select",
+					"propertyType": "select",
 					"value": ["o1demo9aaaaaaa1"]
 				},
 				"Founded": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 2024
 				},
 				"Website": {
-					"type": "url",
+					"propertyType": "url",
 					"value": [ "https://sandbox.example" ]
 				},
 				"Importance": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 5
 				}
 			}

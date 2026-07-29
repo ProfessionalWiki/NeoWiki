@@ -181,6 +181,7 @@ class NeoWikiExtension {
 	private ClientInterface $neo4jClient;
 	private ClientInterface $readOnlyNeo4jClient;
 	private ?WikiConfigSource $wikiConfigSource = null;
+	private ?SchemaLookup $schemaLookup = null;
 	private static ?self $instance = null;
 
 	public static function getInstance(): self {
@@ -1027,16 +1028,30 @@ class NeoWikiExtension {
 		);
 	}
 
+	// Pinned to the authority of first use, like getNeo4jPlugin(). The pin fixes the authority behind
+	// both the Schema read gate and the inner lookup's revision-audience filter, and it lives as long
+	// as this singleton, so its scope is the PHP process: one request under mod_php, a whole run under
+	// a maintenance script. It narrows ADR 027's "every access decision runs against the caller's
+	// Authority" to the process's first authority, which is safe because the in-request switches go
+	// weaker to stronger — a login or account creation mutating the main context — where reusing the
+	// anonymous resolutions can only under-serve. Core's one switch the other way, beginAccountCreation()
+	// dropping a temp account to a fresh anonymous user, moves between two near-anonymous authorities.
 	public function getSchemaLookup(): SchemaLookup {
+		$this->schemaLookup ??= $this->newSchemaLookup( $this->getRequestAuthority() );
+
+		return $this->schemaLookup;
+	}
+
+	private function newSchemaLookup( Authority $authority ): SchemaLookup {
 		return new CachingSchemaLookup(
 			schemaLookup: new WikiPageSchemaLookup(
 				pageContentFetcher: $this->getPageContentFetcher(),
-				authority: $this->getRequestAuthority(),
+				authority: $authority,
 				schemaDeserializer: $this->getPersistenceSchemaDeserializer()
 			),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
-			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
 		);
 	}

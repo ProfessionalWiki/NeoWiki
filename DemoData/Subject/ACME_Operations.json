@@ -6,11 +6,11 @@
 			"schema": "Department",
 			"statements": {
 				"Description": {
-					"type": "text",
+					"propertyType": "text",
 					"value": [ "Runs the back-office functions: finance, people, IT, and facilities. Keeps the world-domination roadmap on schedule." ]
 				},
 				"Headcount": {
-					"type": "number",
+					"propertyType": "number",
 					"value": 47
 				}
 			}
