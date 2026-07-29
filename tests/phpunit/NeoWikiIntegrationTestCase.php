@@ -78,7 +78,7 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
 	}
 
-	protected function createSchema( string $name, string $json = null ): ?RevisionRecord {
+	protected function createSchema( string $name, ?string $json = null ): ?RevisionRecord {
 		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
 			Title::newFromText( $name, NeoWikiExtension::NS_SCHEMA )
 		);

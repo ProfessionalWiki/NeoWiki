@@ -18,7 +18,7 @@ class TestRelation {
 	public const string DEFAULT_TARGET_ID = 'srt555555555555';
 
 	public static function build(
-		string|RelationId $id = null,
+		string|RelationId|null $id = null,
 		string $targetId = self::DEFAULT_TARGET_ID, // TODO: also generate predictable IDs
 		array|RelationProperties $properties = []
 	): Relation {
