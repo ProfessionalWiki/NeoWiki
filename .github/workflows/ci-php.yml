@@ -82,7 +82,7 @@ jobs:
             mediawiki
             !mediawiki/extensions/
             !mediawiki/vendor/
-          key: mw_${{ matrix.mw }}-php${{ matrix.php }}
+          key: mw_${{ matrix.mw }}-php${{ matrix.php }}-v2
 
       - name: Cache Composer cache
         uses: actions/cache@v5
@@ -210,7 +210,7 @@ jobs:
             mediawiki
             !mediawiki/extensions/
             !mediawiki/vendor/
-          key: mw_${{ matrix.mw }}-php${{ matrix.php }}
+          key: mw_${{ matrix.mw }}-php${{ matrix.php }}-v2
 
       - name: Cache Composer cache
         uses: actions/cache@v5
