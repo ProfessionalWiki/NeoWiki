@@ -78,21 +78,30 @@ has none, so without it every number measures an unindexed graph.
 
 `perf-generate` also takes `subjects` (default 10) and `seed` (default 1). It emits one Schema and
 `pages` × `subjects` Subjects carrying 12 Statements each, three of them relations to Subjects on
-other pages. The same options always produce the same dump, and no two seeds produce the same page
-titles or Subject ids, so dumps from different seeds can share one wiki. Pages are written as a
-save would store them, so budget about 27 KB of dump per page.
+other pages. The same options always produce the same dump, and no two seeds produce the same
+Subject page titles or Subject ids, so dumps from different seeds can share one wiki. Pages are
+written as a save would store them, so budget about 27 KB of dump per page.
 
-`perf-import` runs with link table updates off, so the imported pages leave `pagelinks` and the
-search index empty: the number its last line reports is a write-path cost, and the wiki it produces
-is not fit for measuring reads. `make reset` returns the stack to demo data.
+`perf-import` runs with link table updates off, so `Special:Search` and WhatLinksHere will not find
+the imported pages. Everything NeoWiki reads is projected during the import, so the wiki it produces
+is fit for measuring reads as well; the number the last line reports is a write-path cost.
+`make reset` returns the stack to demo data.
 
 Snapshot a wiki nothing else is writing to — the MariaDB and Neo4j halves are not captured at the
 same instant. A snapshot restores into any worktree stack, since they all use the same database
 name. After `perf-restore`:
 
 - Run `make update-dot-php`: the MediaWiki schema is the snapshot's, not this checkout's.
-- Run `make rebuild-graph-databases` if the SPARQL store has to match. `perf-restore` replaces
-  MariaDB and Neo4j only, so QLever keeps the data it already held.
+- QLever is not part of the snapshot, and `make rebuild-graph-databases` only adds to it, so a
+  SPARQL store that has to match the restored wiki must start empty. No target empties it:
+
+  ```bash
+  make down                                     # also removes the qlever container
+  docker volume rm <project>_qlever-index-data  # <project> is the name `make dev` prints
+  make dev
+  make perf-restore
+  make rebuild-graph-databases
+  ```
 
 ### Per-worktree dev environments
 
