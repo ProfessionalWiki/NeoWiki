@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 readonly class ValidateSubjectUpdateQuery {
@@ -66,6 +67,7 @@ readonly class ValidateSubjectUpdateQuery {
 					propertyName: null,
 					code: 'schema-not-found',
 					args: [ $subject->getSchemaName()->getText() ],
+					severity: Severity::Warning,
 				),
 			];
 		}

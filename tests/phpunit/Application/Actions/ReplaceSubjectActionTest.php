@@ -28,6 +28,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
@@ -342,12 +343,12 @@ class ReplaceSubjectActionTest extends TestCase {
 			description: '',
 			properties: new PropertyDefinitions( [
 				'Alpha' => new SelectProperty(
-					core: new PropertyCore( description: '', required: true, default: null ),
+					core: new PropertyCore( description: '', required: true, default: null, constraintSeverities: [ 'required' => Severity::Error ] ),
 					options: [ new SelectOption( id: 'opt_a', label: 'A' ) ],
 					multiple: false,
 				),
 				'Beta' => new SelectProperty(
-					core: new PropertyCore( description: '', required: true, default: null ),
+					core: new PropertyCore( description: '', required: true, default: null, constraintSeverities: [ 'required' => Severity::Error ] ),
 					options: [ new SelectOption( id: 'opt_b', label: 'B' ) ],
 					multiple: false,
 				),

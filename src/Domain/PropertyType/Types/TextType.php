@@ -56,7 +56,7 @@ class TextType implements PropertyType {
 		}
 
 		if ( $definition->isRequired() && !$hasContent ) {
-			$violations[] = new Violation( propertyName: null, code: 'required' );
+			$violations[] = new Violation( propertyName: null, code: 'required', severity: $definition->severityOf( 'required' ) );
 		}
 
 		$violations = array_merge( $violations, $this->validateLengths( $value, $definition ) );
@@ -64,7 +64,7 @@ class TextType implements PropertyType {
 		if ( $definition->enforcesUniqueValues()
 			&& count( array_unique( $value->strings ) ) !== count( $value->strings )
 		) {
-			$violations[] = new Violation( propertyName: null, code: 'unique' );
+			$violations[] = new Violation( propertyName: null, code: 'unique', severity: $definition->severityOf( 'uniqueItems' ) );
 		}
 
 		return $violations;
@@ -93,6 +93,7 @@ class TextType implements PropertyType {
 					code: 'min-length',
 					args: [ $definition->getMinLength() ],
 					valuePartIndex: $index,
+					severity: $definition->severityOf( 'minLength' ),
 				);
 			}
 
@@ -102,6 +103,7 @@ class TextType implements PropertyType {
 					code: 'max-length',
 					args: [ $definition->getMaxLength() ],
 					valuePartIndex: $index,
+					severity: $definition->severityOf( 'maxLength' ),
 				);
 			}
 		}

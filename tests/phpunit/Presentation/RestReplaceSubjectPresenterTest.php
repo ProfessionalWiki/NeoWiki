@@ -28,8 +28,8 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 				'status' => 'updated',
 				'subjectId' => 's1demo1aaaaaaa1',
 				'violations' => [
-					[ 'propertyName' => 'Status', 'code' => 'required', 'args' => [] ],
-					[ 'propertyName' => null, 'code' => 'schema-not-found', 'args' => [ 'Person' ] ],
+					[ 'propertyName' => 'Status', 'code' => 'required', 'args' => [], 'severity' => 'warning' ],
+					[ 'propertyName' => null, 'code' => 'schema-not-found', 'args' => [ 'Person' ], 'severity' => 'warning' ],
 				],
 			],
 			$presenter->getJsonArray()
@@ -58,7 +58,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 				'status' => 'error',
 				'message' => 'Validation failed',
 				'violations' => [
-					[ 'propertyName' => 'Status', 'code' => 'required', 'args' => [] ],
+					[ 'propertyName' => 'Status', 'code' => 'required', 'args' => [], 'severity' => 'warning' ],
 				],
 			],
 			$presenter->getJsonArray()

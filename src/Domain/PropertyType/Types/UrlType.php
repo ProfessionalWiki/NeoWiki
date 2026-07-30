@@ -8,6 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UrlProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
@@ -56,7 +57,7 @@ class UrlType implements PropertyType {
 		}
 
 		if ( $definition->isRequired() && !$hasContent ) {
-			return [ new Violation( propertyName: null, code: 'required' ) ];
+			return [ new Violation( propertyName: null, code: 'required', severity: $definition->severityOf( 'required' ) ) ];
 		}
 
 		$violations = [];
@@ -68,6 +69,7 @@ class UrlType implements PropertyType {
 					propertyName: null,
 					code: 'invalid-url',
 					valuePartIndex: $index,
+					severity: Severity::Error,
 				);
 			}
 		}
@@ -75,7 +77,7 @@ class UrlType implements PropertyType {
 		if ( $definition->enforcesUniqueValues()
 			&& count( array_unique( $value->strings ) ) !== count( $value->strings )
 		) {
-			$violations[] = new Violation( propertyName: null, code: 'unique' );
+			$violations[] = new Violation( propertyName: null, code: 'unique', severity: $definition->severityOf( 'uniqueItems' ) );
 		}
 
 		return $violations;

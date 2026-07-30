@@ -19,6 +19,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
@@ -79,6 +80,7 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertCount( 1, $violations );
 		$this->assertSame( 'label-required', $violations[0]->code );
 		$this->assertNull( $violations[0]->propertyName );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
 	public function testWhitespaceOnlyLabelReturnsLabelRequired(): void {
@@ -248,6 +250,7 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertSame( 'type-mismatch', $violations[0]->code );
 		$this->assertEquals( new PropertyName( 'Age' ), $violations[0]->propertyName );
 		$this->assertSame( [ 'text', 'number' ], $violations[0]->args );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
 	public function testTypeMismatchSkipsPerTypeValidation(): void {
@@ -407,7 +410,7 @@ class SubjectValidatorTest extends TestCase {
 
 		$this->assertCount( 2, $violations );
 		$this->assertSame( 'required', $violations[0]->code );
-		$this->assertTrue( $violations[0]->isBlocking() );
+		$this->assertFalse( $violations[0]->isBlocking() );
 		$this->assertSame( 'unregistered-type', $violations[1]->code );
 	}
 

@@ -35,6 +35,5 @@
 	"redherb-card-edit-subject": "Edit subject",
 	"redherb-card-edit-schema": "Edit schema",
 	"redherb-card-edit-layout": "Edit layout",
-	"neowiki-field-invalid-hex": "Please enter a 6-digit hex color like #ff5733.",
-	"neowiki-field-not-in-palette": "This color is not in the allowed palette."
+	"neowiki-field-invalid-color": "\"$1\" is not a valid color. Enter a 6-digit hex color like #ff5733."
 }

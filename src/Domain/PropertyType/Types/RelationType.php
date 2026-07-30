@@ -8,6 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
@@ -44,13 +45,13 @@ class RelationType implements PropertyType {
 		$relations = $value instanceof RelationValue ? $value->relations : [];
 
 		if ( $definition->isRequired() && $relations === [] ) {
-			return [ new Violation( propertyName: null, code: 'required' ) ];
+			return [ new Violation( propertyName: null, code: 'required', severity: $definition->severityOf( 'required' ) ) ];
 		}
 
 		$violations = [];
 
 		if ( !$definition->allowsMultipleValues() && count( $relations ) > 1 ) {
-			$violations[] = new Violation( propertyName: null, code: 'single-value-only' );
+			$violations[] = new Violation( propertyName: null, code: 'single-value-only', severity: Severity::Error );
 		}
 
 		return $violations;

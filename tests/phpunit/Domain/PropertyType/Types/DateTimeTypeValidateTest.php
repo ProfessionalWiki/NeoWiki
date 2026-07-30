@@ -5,9 +5,12 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 
@@ -75,6 +78,7 @@ class DateTimeTypeValidateTest extends TestCase {
 		$this->assertCount( 1, $violations );
 		$this->assertSame( 'invalid-datetime', $violations[0]->code );
 		$this->assertNull( $violations[0]->propertyName );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
 	public function testYearOnlyReturnsInvalidDatetime(): void {
@@ -173,6 +177,7 @@ class DateTimeTypeValidateTest extends TestCase {
 		$this->assertSame( 'min-value', $violations[0]->code );
 		$this->assertSame( [ '2025-01-01T00:00:00Z' ], $violations[0]->args );
 		$this->assertNull( $violations[0]->propertyName );
+		$this->assertSame( Severity::Warning, $violations[0]->severity );
 	}
 
 	public function testAfterMaximumReturnsMaxValue(): void {
@@ -185,6 +190,44 @@ class DateTimeTypeValidateTest extends TestCase {
 		$this->assertSame( 'max-value', $violations[0]->code );
 		$this->assertSame( [ '2025-12-31T23:59:59Z' ], $violations[0]->args );
 		$this->assertNull( $violations[0]->propertyName );
+		$this->assertSame( Severity::Warning, $violations[0]->severity );
+	}
+
+	/**
+	 * Unlike NumberType, the bound severities reach checkMinimum()/checkMaximum() as arguments
+	 * rather than being read at the raise site. Each test therefore leaves the other bound
+	 * unannotated, so swapping the two arguments hands the violation the sibling's warning.
+	 */
+	public function testMinValueViolationUsesErrorWhenMinimumAnnotated(): void {
+		$definition = PropertyDefinition::fromJson(
+			[
+				'type' => 'dateTime',
+				'minimum' => [ 'value' => '2025-01-01T00:00:00Z', 'severity' => 'error' ],
+				'maximum' => '2025-12-31T23:59:59Z',
+			],
+			PropertyTypeRegistry::withCoreTypes(),
+		);
+
+		$violations = $this->type->validate( new StringValue( '2024-12-31T23:59:59Z' ), $definition );
+
+		$this->assertSame( 'min-value', $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
+	}
+
+	public function testMaxValueViolationUsesErrorWhenMaximumAnnotated(): void {
+		$definition = PropertyDefinition::fromJson(
+			[
+				'type' => 'dateTime',
+				'minimum' => '2025-01-01T00:00:00Z',
+				'maximum' => [ 'value' => '2025-12-31T23:59:59Z', 'severity' => 'error' ],
+			],
+			PropertyTypeRegistry::withCoreTypes(),
+		);
+
+		$violations = $this->type->validate( new StringValue( '2026-01-01T00:00:00Z' ), $definition );
+
+		$this->assertSame( 'max-value', $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
 	public function testEqualToBoundsReturnsNoViolations(): void {
