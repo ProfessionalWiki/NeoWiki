@@ -103,6 +103,16 @@ class ColorTypeValidateTest extends TestCase {
 		$this->assertSame( 0, $violations[0]->valuePartIndex );
 	}
 
+	public function testInvalidColorViolationReportsTheTrimmedValue(): void {
+		$violations = $this->type->validate(
+			new StringValue( ' #xxx ' ),
+			$this->newProperty( required: false ),
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( [ '#xxx' ], $violations[0]->args );
+	}
+
 	public function testMultipleInvalidHexProducesIndexedViolations(): void {
 		$violations = $this->type->validate(
 			new StringValue( '#aabbcc', 'red', '#xxx' ),
@@ -135,6 +145,15 @@ class ColorTypeValidateTest extends TestCase {
 		$this->assertSame( 'invalid-option', $violations[0]->code );
 		$this->assertSame( [ '#112233' ], $violations[0]->args );
 		$this->assertSame( 1, $violations[0]->valuePartIndex );
+	}
+
+	public function testWhitespacePaddedColorIsMatchedAgainstTheAllowList(): void {
+		$violations = $this->type->validate(
+			new StringValue( ' #aabbcc ' ),
+			$this->newProperty( required: false, allowedColors: [ '#aabbcc' ] ),
+		);
+
+		$this->assertSame( [], $violations );
 	}
 
 	/**
