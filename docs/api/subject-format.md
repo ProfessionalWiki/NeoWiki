@@ -171,7 +171,9 @@ The server mints the Subject ID unless you pass one:
 | `comment` | No | Edit summary. |
 
 On every endpoint that takes `statements`, an entry without `propertyType`, or whose value is empty for its type, is
-dropped without error. For schema/value validation outcomes see [Validation Codes](validation-codes.md).
+dropped without error. A value whose shape does not match its `propertyType` (see
+[Value formats](#value-formats)) is rejected with `400`. For schema/value validation outcomes see
+[Validation Codes](validation-codes.md).
 
 A relation may omit `id`; the server generates one. The Subject's `id`, `schema`, and page fields are immutable
 and ignored if sent.
