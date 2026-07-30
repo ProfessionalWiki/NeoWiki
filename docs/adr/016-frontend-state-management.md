@@ -2,7 +2,7 @@
 
 Date: 2025-04-17
 
-Status: Accepted
+Status: Accepted. Extended by [ADR 30](030-frontend-store-registry-semantics.md), which adds fetching and invalidation semantics.
 
 ## Context
 
