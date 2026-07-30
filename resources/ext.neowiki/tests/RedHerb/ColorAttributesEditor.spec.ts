@@ -83,6 +83,13 @@ describe( 'ColorAttributesEditor', () => {
 		await addButton( wrapper ).trigger( 'click' );
 
 		expect( colorInputs( wrapper ) ).toEqual( [ '#ff5733', '' ] );
+	} );
+
+	it( 'emits the palette with the added entry', async () => {
+		const wrapper = newWrapper( [ '#ff5733' ] );
+
+		await addButton( wrapper ).trigger( 'click' );
+
 		expect( lastEmittedPalette( wrapper ) ).toEqual( [ '#ff5733', '' ] );
 	} );
 

@@ -85,7 +85,9 @@ describe( 'SubjectFinderPanel', () => {
 	}
 
 	async function typeSchemaName( wrapper: VueWrapper, name: string ): Promise<void> {
-		await ( wrapper.findAllComponents( CdxTextInput )[ 0 ] as unknown as VueWrapper ).vm.$emit( 'update:modelValue', name );
+		const schemaInput = wrapper.findComponent( CdxTextInput );
+
+		await schemaInput.vm.$emit( 'update:modelValue', name );
 	}
 
 	async function selectSubject( wrapper: VueWrapper, subjectId: string | null ): Promise<void> {

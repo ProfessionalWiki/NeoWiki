@@ -33,9 +33,9 @@ export function resourceLoaderCommonJs( options: ResourceLoaderCommonJsOptions )
 	return {
 		name: 'resource-loader-commonjs',
 		enforce: 'pre',
-		async transform( code: string, id: string ): Promise<{ code: string; map: null } | undefined > {
+		async transform( code: string, id: string ): Promise<{ code: string; map: null } | undefined> {
 			const path = id.split( '?' )[ 0 ];
-			if ( !path.startsWith( options.sourceDir ) ) {
+			if ( !path.startsWith( options.sourceDir + '/' ) ) {
 				return undefined;
 			}
 
@@ -75,8 +75,11 @@ async function transformScriptBlock( sfc: string, resolveModule: ModuleResolver 
 	}
 
 	const [ block, open, script, close ] = match;
+	const rewritten = open + await toEsModule( script, resolveModule ) + close;
 
-	return sfc.replace( block, open + await toEsModule( script, resolveModule ) + close );
+	// Spliced rather than replaced, because a replacement string gives $& and friends
+	// their substitution meaning, which would mangle any script containing them.
+	return sfc.slice( 0, match.index ) + rewritten + sfc.slice( match.index + block.length );
 }
 
 const REQUIRE_CALL = /require\(\s*(['"])(.+?)\1\s*\)/g;
