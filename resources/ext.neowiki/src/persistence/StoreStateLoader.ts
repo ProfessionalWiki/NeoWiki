@@ -30,12 +30,15 @@ export class StoreStateLoader {
 
 	public async loadLayouts( layoutNames: Set<string> ): Promise<void> {
 		const layoutStore = useLayoutStore();
+		const epoch = layoutStore.mutationEpoch;
 
 		await Promise.all(
 			Array.from( layoutNames ).map( async ( layoutName ) => {
 				try {
 					const layout = await this.layoutLookup.getLayout( layoutName );
-					layoutStore.setLayout( layoutName, layout );
+					if ( epoch === layoutStore.mutationEpoch ) {
+						layoutStore.setLayout( layoutName, layout );
+					}
 				} catch {
 					// Layout not found or fetch failed — fallback to no-Layout behavior
 				}
@@ -44,20 +47,27 @@ export class StoreStateLoader {
 	}
 
 	private async loadForSubject( subjectId: SubjectId ): Promise<void> {
+		const subjectStore = useSubjectStore(); // TODO: inject
+		const schemaStore = useSchemaStore(); // TODO: inject
+		const subjectEpoch = subjectStore.mutationEpoch;
+		const schemaEpoch = schemaStore.mutationEpoch;
+
 		// The repository bundles the requested Subject with the Subjects its
 		// relations target, so storing them all avoids a re-fetch per relation.
 		const { requestedSubject, referencedSubjects } =
 			await this.subjectRepo.getSubjectWithReferencedSubjects( subjectId );
 
-		const subjectStore = useSubjectStore(); // TODO: inject
-		subjectStore.setSubject( requestedSubject );
-		for ( const subject of referencedSubjects ) {
-			subjectStore.setSubject( subject );
+		if ( subjectEpoch === subjectStore.mutationEpoch ) {
+			subjectStore.setSubject( requestedSubject );
+			for ( const subject of referencedSubjects ) {
+				subjectStore.setSubject( subject );
+			}
 		}
 
-		const schemaStore = useSchemaStore(); // TODO: inject
 		const schema = await this.schemaRepo.getSchema( requestedSubject.getSchemaName() ); // TODO: handle not found
-		schemaStore.setSchema( requestedSubject.getSchemaName(), schema );
+		if ( schemaEpoch === schemaStore.mutationEpoch ) {
+			schemaStore.setSchema( requestedSubject.getSchemaName(), schema );
+		}
 	}
 
 }

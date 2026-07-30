@@ -49,20 +49,48 @@ describe( 'LayoutStore', () => {
 		expect( store.getLayout( 'CompanyInfo' ) ).toEqual( layout );
 	} );
 
-	it( 'returns cached layout from getOrFetchLayout without fetching again', async () => {
-		const store = useLayoutStore();
-		const layout = newLayout( 'CachedLayout' );
-		store.setLayout( 'CachedLayout', layout );
-
-		const getLayoutRepositorySpy = vi.fn();
+	it( 'discards a fetch that a save overtook', async () => {
+		let resolveFetch!: ( layout: Layout ) => void;
+		const pending = new Promise<Layout>( ( resolve ) => {
+			resolveFetch = resolve;
+		} );
+		const saved = new Layout( 'CompanyInfo', 'Company', 'infobox', 'saved', [], {} );
 		vi.mocked( NeoWikiExtension.getInstance ).mockReturnValue( {
-			getLayoutRepository: getLayoutRepositorySpy,
+			getLayoutRepository: () => ( {
+				getLayout: () => pending,
+				saveLayout: vi.fn().mockResolvedValue( undefined ),
+			} ),
 		} as unknown as NeoWikiExtension );
+		const store = useLayoutStore();
 
-		const result = await store.getOrFetchLayout( 'CachedLayout' );
+		const request = store.fetchLayout( 'CompanyInfo' );
+		await store.saveLayout( saved );
+		resolveFetch( new Layout( 'CompanyInfo', 'Company', 'infobox', 'pre-save', [], {} ) );
+		await request;
 
-		expect( result ).toEqual( layout );
-		expect( getLayoutRepositorySpy ).not.toHaveBeenCalled();
+		expect( store.getLayout( 'CompanyInfo' ) ).toStrictEqual( saved );
+	} );
+
+	it( 'does not write through when the repository rejects the save', async () => {
+		vi.mocked( NeoWikiExtension.getInstance ).mockReturnValue( {
+			getLayoutRepository: () => ( {
+				saveLayout: vi.fn().mockRejectedValue( new Error( 'save failed' ) ),
+			} ),
+		} as unknown as NeoWikiExtension );
+		const store = useLayoutStore();
+
+		await expect( store.saveLayout( newLayout( 'CompanyInfo' ) ) ).rejects.toThrow( 'save failed' );
+
+		expect( store.getLayout( 'CompanyInfo' ) ).toBeUndefined();
+	} );
+
+	it( 'removes the layout from the registry', () => {
+		const store = useLayoutStore();
+		store.setLayout( 'CompanyInfo', newLayout( 'CompanyInfo' ) );
+
+		store.removeLayout( 'CompanyInfo' );
+
+		expect( store.getLayout( 'CompanyInfo' ) ).toBeUndefined();
 	} );
 
 } );
