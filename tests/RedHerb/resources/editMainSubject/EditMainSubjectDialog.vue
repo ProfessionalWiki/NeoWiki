@@ -61,14 +61,16 @@ module.exports = exports = {
 
 		function loadSubjectAndSchema( subjectIdText ) {
 			const subjectId = new nw.SubjectId( subjectIdText );
-			subjectStore.getOrFetchSubject( subjectId )
-				.then( ( subject ) => {
+			// Editors always open on freshly fetched data (NeoWiki ADR 30);
+			// getOrFetchSubject would reuse the page-load payload here.
+			subjectStore.fetchSubject( subjectId )
+				.then( () => {
+					const subject = subjectStore.getSubject( subjectId );
 					loadedSubject.value = subject;
 					label.value = subject.getLabel();
-					return schemaStore.getOrFetchSchema( subject.getSchemaName() );
-				} )
-				.then( ( schema ) => {
-					loadedSchema.value = schema;
+					return schemaStore.fetchSchema( subject.getSchemaName() ).then( () => {
+						loadedSchema.value = schemaStore.getSchema( subject.getSchemaName() );
+					} );
 				} )
 				.catch( ( err ) => {
 					mw.log.error( err );

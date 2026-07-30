@@ -50,8 +50,8 @@ module.exports = exports = {
 		const loadedSchema = vue.shallowRef( null );
 
 		function loadSchema() {
-			schemaStore.getOrFetchSchema( SCHEMA_NAME ).then( ( schema ) => {
-				loadedSchema.value = schema;
+			schemaStore.fetchSchema( SCHEMA_NAME ).then( () => {
+				loadedSchema.value = schemaStore.getSchema( SCHEMA_NAME );
 			} ).catch( ( err ) => {
 				loadedSchema.value = null;
 				mw.log.error( err );
@@ -64,7 +64,7 @@ module.exports = exports = {
 		}
 
 		vue.watch( open, ( isOpen ) => {
-			if ( isOpen && loadedSchema.value === null ) {
+			if ( isOpen ) {
 				loadSchema();
 			}
 			if ( !isOpen ) {
