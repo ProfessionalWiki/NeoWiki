@@ -46,7 +46,7 @@ class ColorType implements PropertyType {
 			return [];
 		}
 
-		if ( $definition->isRequired() && $value->strings === [] ) {
+		if ( $definition->isRequired() && !$this->hasContent( $value ) ) {
 			return [ new Violation( propertyName: null, code: 'required' ) ];
 		}
 
@@ -56,27 +56,43 @@ class ColorType implements PropertyType {
 		$violations = [];
 
 		foreach ( $value->strings as $index => $part ) {
-			if ( preg_match( self::HEX_COLOR_REGEX, $part ) !== 1 ) {
+			$color = trim( $part );
+
+			if ( $color === '' ) {
+				continue;
+			}
+
+			if ( preg_match( self::HEX_COLOR_REGEX, $color ) !== 1 ) {
 				$violations[] = new Violation(
 					propertyName: null,
 					code: 'invalid-color',
-					args: [ $part ],
+					args: [ $color ],
 					valuePartIndex: $index,
 				);
 				continue;
 			}
 
-			if ( $allowedSet !== null && !isset( $allowedSet[$part] ) ) {
+			if ( $allowedSet !== null && !isset( $allowedSet[$color] ) ) {
 				$violations[] = new Violation(
 					propertyName: null,
 					code: 'invalid-option',
-					args: [ $part ],
+					args: [ $color ],
 					valuePartIndex: $index,
 				);
 			}
 		}
 
 		return $violations;
+	}
+
+	private function hasContent( StringValue $value ): bool {
+		foreach ( $value->strings as $part ) {
+			if ( trim( $part ) !== '' ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 }

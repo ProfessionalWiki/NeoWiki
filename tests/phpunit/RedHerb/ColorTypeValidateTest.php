@@ -33,9 +33,58 @@ class ColorTypeValidateTest extends TestCase {
 		$this->assertNull( $violations[0]->valuePartIndex );
 	}
 
+	public function testRequiredAndSingleEmptyStringPartReturnsRequiredViolation(): void {
+		$violations = $this->type->validate(
+			new StringValue( '' ),
+			$this->newProperty( required: true ),
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'required', $violations[0]->code );
+		$this->assertNull( $violations[0]->valuePartIndex );
+	}
+
+	public function testRequiredAndWhitespaceOnlyPartReturnsRequiredViolation(): void {
+		$violations = $this->type->validate(
+			new StringValue( '   ' ),
+			$this->newProperty( required: true ),
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'required', $violations[0]->code );
+		$this->assertNull( $violations[0]->valuePartIndex );
+	}
+
 	public function testValidHexReturnsNoViolations(): void {
 		$violations = $this->type->validate(
 			new StringValue( '#aabbcc' ),
+			$this->newProperty( required: false ),
+		);
+
+		$this->assertSame( [], $violations );
+	}
+
+	public function testWhitespacePaddedHexReturnsNoViolations(): void {
+		$violations = $this->type->validate(
+			new StringValue( ' #aabbcc ' ),
+			$this->newProperty( required: false ),
+		);
+
+		$this->assertSame( [], $violations );
+	}
+
+	public function testEmptyStringPartIsSkippedWithNoViolation(): void {
+		$violations = $this->type->validate(
+			new StringValue( '' ),
+			$this->newProperty( required: false ),
+		);
+
+		$this->assertSame( [], $violations );
+	}
+
+	public function testWhitespaceOnlyPartIsSkippedWithNoViolation(): void {
+		$violations = $this->type->validate(
+			new StringValue( '   ' ),
 			$this->newProperty( required: false ),
 		);
 
