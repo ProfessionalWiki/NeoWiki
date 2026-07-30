@@ -428,6 +428,120 @@ update-dot-php: ## Run MW maintenance/update.php
 smoke-test: ## Hit the running wiki from outside and verify it responds (CI smoke test)
 	bash Docker/tests/smoke.sh
 
+# ---- Performance test data ---------------------------------------------------
+
+# Build, benchmark and restore big synthetic wikis. Artifacts land in the gitignored perf/.
+# Usage and caveats are in README.md#performance-test-data. perf-snapshot and perf-restore
+# drive the containers, so unlike the other two they run on the host only.
+
+PERF_DIR := perf
+PERF_DUMP := $(PERF_DIR)/dump.xml
+PERF_SNAPSHOT_DIR := $(PERF_DIR)/snapshot
+PERF_SQL := $(PERF_SNAPSHOT_DIR)/mediawiki.sql
+PERF_NEO := $(PERF_SNAPSHOT_DIR)/neo4j.dump
+
+# `neo4j-admin database dump` and `load` refuse to touch a database the server has
+# mounted, so both are bracketed by STOP/START DATABASE against the system database.
+NEO_CYPHER := $(DC) exec -T neo cypher-shell -u $(NEO4J_USERNAME) -p $(NEO4J_PASSWORD)
+
+# `docker compose exec` lands in the neo container as root, while the server runs as
+# neo4j. Loading as root leaves a store the server cannot write, which then fails to
+# start, so neo4j-admin runs as the owning user.
+NEO_ADMIN := $(DC) exec -T --user neo4j neo neo4j-admin
+
+# Shell fragments rather than targets of their own: make runs any recipe line that mentions
+# $(MAKE) even under --dry-run, so recursing into a stop/start target would let
+# `make -n perf-snapshot` truncate the snapshot and `make -n perf-restore` overwrite the live
+# store for real.
+NEO_STOP = $(NEO_CYPHER) -d system 'STOP DATABASE neo4j WAIT' < /dev/null
+
+# START reports success even when the store it mounted is unusable, so prove the database
+# actually answers queries: a silently broken restore is worse than a failed one.
+NEO_START = { $(NEO_CYPHER) -d system 'START DATABASE neo4j WAIT' < /dev/null \
+	&& $(NEO_CYPHER) -d neo4j 'RETURN 1' < /dev/null > /dev/null; } \
+	|| { echo "The neo4j database did not come back online." >&2; exit 1; }
+
+.PHONY: perf-generate perf-import perf-snapshot perf-restore
+.PHONY: _require-pages _require-snapshot
+
+_require-pages:
+	@[ -n "$(pages)" ] || { echo "Usage: make perf-generate pages=N [subjects=10] [seed=1]" >&2; exit 1; }
+
+# Generated beside the final name and moved into place on success, for the same reason as the
+# snapshot halves: the generator truncates its output at fopen and writes the header — which
+# advertises the full intended page and Subject counts — before the first page. Writing straight
+# to the final name would leave an abandoned or disk-full run as a truncated dump that perf-import's
+# existence check accepts, and importDump then commits every complete page in it before failing.
+perf-generate: _require-pages ## Generate a synthetic wiki XML dump (pages=N [subjects=10] [seed=1])
+	@mkdir -p $(PERF_DIR)
+ifeq ($(INSIDE_CONTAINER),1)
+	@rm -f $(PERF_DUMP).part
+	php ../../maintenance/run.php NeoWiki:GeneratePerformanceDump \
+		--pages $(pages) \
+		--subjects-per-page $(or $(subjects),10) \
+		--seed $(or $(seed),1) \
+		--output $(PERF_DUMP).part < /dev/null
+	@mv $(PERF_DUMP).part $(PERF_DUMP)
+else
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf-generate pages=$(pages) subjects=$(subjects) seed=$(seed)' < /dev/null
+endif
+
+perf-import: ## Import perf/dump.xml, reporting elapsed time and throughput
+ifeq ($(INSIDE_CONTAINER),1)
+	@set -e; \
+	[ -f $(PERF_DUMP) ] || { echo "$(PERF_DUMP) not found; run 'make perf-generate pages=N' first." >&2; exit 1; }; \
+	pages=$$(head -5 $(PERF_DUMP) | grep -o ' pages="[0-9]*"' | tr -dc 0-9); \
+	subjects=$$(head -5 $(PERF_DUMP) | grep -o ' total-subjects="[0-9]*"' | tr -dc 0-9); \
+	start=$$(date +%s.%N); \
+	php ../../maintenance/run.php importDump --no-updates $(CURDIR)/$(PERF_DUMP) < /dev/null; \
+	end=$$(date +%s.%N); \
+	awk -v s=$$start -v e=$$end -v p="$$pages" -v n="$$subjects" 'BEGIN { \
+		d = e - s; \
+		printf "\nImported in %.1f s", d; \
+		if ( p > 0 && d > 0 ) printf ": %d pages (%.2f/sec), %d Subjects (%.2f/sec)", p, p / d, n, n / d; \
+		printf "\n"; \
+	}'
+else
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf-import' < /dev/null
+endif
+
+# Both halves are written beside their final names and moved into place only once both are
+# complete, so a run that fails or is interrupted leaves the previous snapshot untouched. A
+# host-side redirect creates its file the moment the line starts, so writing straight to the
+# final names would leave a truncated half that _require-snapshot accepts and perf-restore
+# then loads over the live data.
+#
+# The moves sit inside the same shell as the dump, ahead of the EXIT trap that restarts Neo4j:
+# `set -e` still skips them when a dump fails, but a restart that comes back unhealthy — the one
+# thing the trap can fail on — then still fails the target without discarding a snapshot whose
+# halves are both complete.
+perf-snapshot: ## Snapshot MariaDB + Neo4j into perf/snapshot/
+	@mkdir -p $(PERF_SNAPSHOT_DIR)
+	@rm -f $(PERF_SQL).part $(PERF_NEO).part
+	$(DC) exec -T db mariadb-dump -u root -p$(MARIADB_ROOT_PASSWORD) \
+		--single-transaction --add-drop-database --databases $(MARIADB_DATABASE) > $(PERF_SQL).part < /dev/null
+	@set -e; \
+		neo_start() { $(NEO_START); }; \
+		trap neo_start EXIT; \
+		$(NEO_STOP); \
+		$(NEO_ADMIN) database dump neo4j --to-stdout > $(PERF_NEO).part < /dev/null; \
+		mv $(PERF_SQL).part $(PERF_SQL); \
+		mv $(PERF_NEO).part $(PERF_NEO)
+	@echo "Snapshot written to $(PERF_SNAPSHOT_DIR)/"
+
+_require-snapshot:
+	@[ -s $(PERF_SQL) ] && [ -s $(PERF_NEO) ] \
+		|| { echo "No snapshot in $(PERF_SNAPSHOT_DIR)/; run 'make perf-snapshot' first." >&2; exit 1; }
+
+perf-restore: _require-snapshot ## Restore perf/snapshot/, replacing this stack's MariaDB and Neo4j data
+	$(DC) exec -T db mariadb -u root -p$(MARIADB_ROOT_PASSWORD) < $(PERF_SQL)
+	@set -e; \
+		neo_start() { $(NEO_START); }; \
+		trap neo_start EXIT; \
+		$(NEO_STOP); \
+		$(NEO_ADMIN) database load neo4j --from-stdin --overwrite-destination < $(PERF_NEO)
+	@echo "Restored. Run 'make update-dot-php' to bring the MediaWiki schema up to date with this checkout."
+
 # ---- Production image --------------------------------------------------------
 
 .PHONY: wiki-production-image

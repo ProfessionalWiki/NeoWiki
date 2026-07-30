@@ -63,6 +63,45 @@ make import-demo-data     # load the latest demo data, overriding your changes
 
 For all targets, run `make help`.
 
+### Performance test data
+
+Build a large synthetic wiki to measure against the targets in
+[ADR 29](docs/adr/029-scalability-targets.md):
+
+```bash
+make perf-generate pages=1000   # write perf/dump.xml
+make perf-import                # import it, timing the write path
+make perf-snapshot              # save MariaDB + Neo4j to perf/snapshot/
+make perf-restore               # load perf/snapshot/ over this stack's data
+```
+
+`perf-generate` also takes `subjects` (default 10) and `seed` (default 1). It emits one Schema and
+`pages` × `subjects` Subjects carrying 12 Statements each, three of them relations to Subjects on
+other pages. The same options always produce the same dump, and no two seeds produce the same
+Subject page titles or Subject ids, so dumps from different seeds can share one wiki. Pages are
+written as a save would store them, so budget about 27 KB of dump per page.
+
+`perf-import` runs with link table updates off, so `Special:Search` and WhatLinksHere will not find
+the imported pages. Everything NeoWiki reads is projected during the import, so the wiki it produces
+is fit for measuring reads as well; the number the last line reports is a write-path cost.
+`make reset` returns the stack to demo data.
+
+Snapshot a wiki nothing else is writing to — the MariaDB and Neo4j halves are not captured at the
+same instant. A snapshot restores into any worktree stack, since they all use the same database
+name. After `perf-restore`:
+
+- Run `make update-dot-php`: the MediaWiki schema is the snapshot's, not this checkout's.
+- QLever is not part of the snapshot, and `make rebuild-graph-databases` only adds to it, so a
+  SPARQL store that has to match the restored wiki must start empty. No target empties it:
+
+  ```bash
+  make down                                     # also removes the qlever container
+  docker volume rm <project>_qlever-index-data  # <project> is the name `make dev` prints
+  make dev
+  make perf-restore
+  make rebuild-graph-databases
+  ```
+
 ### Per-worktree dev environments
 
 Each clone or worktree is a self-contained stack. Run `make dev` from any NeoWiki
