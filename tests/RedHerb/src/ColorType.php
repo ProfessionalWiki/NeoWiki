@@ -66,7 +66,7 @@ class ColorType implements PropertyType {
 				$violations[] = new Violation(
 					propertyName: null,
 					code: 'invalid-color',
-					args: [ $color ],
+					args: [ $part ],
 					valuePartIndex: $index,
 				);
 				continue;
@@ -76,7 +76,7 @@ class ColorType implements PropertyType {
 				$violations[] = new Violation(
 					propertyName: null,
 					code: 'invalid-option',
-					args: [ $color ],
+					args: [ $part ],
 					valuePartIndex: $index,
 				);
 			}

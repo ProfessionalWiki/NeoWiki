@@ -55,6 +55,15 @@ class ColorTypeValidateTest extends TestCase {
 		$this->assertNull( $violations[0]->valuePartIndex );
 	}
 
+	public function testRequiredAndContentInALaterPartReturnsNoViolation(): void {
+		$violations = $this->type->validate(
+			new StringValue( '', '#aabbcc' ),
+			$this->newProperty( required: true ),
+		);
+
+		$this->assertSame( [], $violations );
+	}
+
 	public function testValidHexReturnsNoViolations(): void {
 		$violations = $this->type->validate(
 			new StringValue( '#aabbcc' ),
@@ -103,14 +112,14 @@ class ColorTypeValidateTest extends TestCase {
 		$this->assertSame( 0, $violations[0]->valuePartIndex );
 	}
 
-	public function testInvalidColorViolationReportsTheTrimmedValue(): void {
+	public function testInvalidColorViolationReportsThePartAsGiven(): void {
 		$violations = $this->type->validate(
 			new StringValue( ' #xxx ' ),
 			$this->newProperty( required: false ),
 		);
 
 		$this->assertCount( 1, $violations );
-		$this->assertSame( [ '#xxx' ], $violations[0]->args );
+		$this->assertSame( [ ' #xxx ' ], $violations[0]->args );
 	}
 
 	public function testMultipleInvalidHexProducesIndexedViolations(): void {
@@ -124,6 +133,17 @@ class ColorTypeValidateTest extends TestCase {
 		$this->assertSame( 1, $violations[0]->valuePartIndex );
 		$this->assertSame( 'invalid-color', $violations[1]->code );
 		$this->assertSame( 2, $violations[1]->valuePartIndex );
+	}
+
+	public function testSkippedEmptyPartDoesNotShiftLaterViolationIndexes(): void {
+		$violations = $this->type->validate(
+			new StringValue( '', '#xxx' ),
+			$this->newProperty( required: false ),
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'invalid-color', $violations[0]->code );
+		$this->assertSame( 1, $violations[0]->valuePartIndex );
 	}
 
 	public function testNonStringValueReturnsNoViolations(): void {
