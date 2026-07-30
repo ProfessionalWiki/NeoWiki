@@ -6,6 +6,7 @@
 	],
 	"rules": {
 		"max-len": "off",
-		"compat/compat": "off"
+		"compat/compat": "off",
+		"vue/no-v-html": "error"
 	}
 }

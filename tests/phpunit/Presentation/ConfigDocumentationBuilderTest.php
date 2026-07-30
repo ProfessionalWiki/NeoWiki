@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Presentation;
 
 use MediaWiki\Context\RequestContext;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigSchema;
@@ -12,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Presentation\ConfigDocumentationBuilder;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Presentation\ConfigDocumentationBuilder
+ * @group Database
  */
 class ConfigDocumentationBuilderTest extends MediaWikiIntegrationTestCase {
 
@@ -21,6 +23,11 @@ class ConfigDocumentationBuilderTest extends MediaWikiIntegrationTestCase {
 		$context->setTitle( Title::makeTitle( NS_MEDIAWIKI, 'NeoWiki' ) );
 
 		return new ConfigDocumentationBuilder( new ConfigSchema(), $context );
+	}
+
+	private function overrideAcceptedValueMessage( string $wikitext ): void {
+		$this->overrideConfigValue( MainConfigNames::UseDatabaseMessages, true );
+		$this->editPage( Title::makeTitle( NS_MEDIAWIKI, 'Neowiki-config-type-boolean' ), $wikitext );
 	}
 
 	public function testReferenceListsEverySettingAndTheLocalSettingsNameItOverrides(): void {
@@ -56,6 +63,24 @@ class ConfigDocumentationBuilderTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertStringContainsString( '#' . ConfigDocumentationBuilder::ANCHOR, $html );
 		$this->assertStringContainsString( 'neowiki.ai/docs/operations/installation', $html );
+	}
+
+	public function testReferenceShowsScriptTagsFromAnOverriddenMessageAsText(): void {
+		$this->overrideAcceptedValueMessage( '<script>alert(1)</script>' );
+
+		$html = $this->newBuilder()->buildReference();
+
+		$this->assertStringNotContainsString( '<script', $html );
+		$this->assertStringContainsString( '&lt;script&gt;alert(1)&lt;/script&gt;', $html );
+	}
+
+	public function testReferenceDropsEventHandlersFromAnOverriddenMessage(): void {
+		$this->overrideAcceptedValueMessage( '<code onmouseover="alert(1)">yes</code>' );
+
+		$html = $this->newBuilder()->buildReference();
+
+		$this->assertStringNotContainsString( 'onmouseover', $html );
+		$this->assertStringContainsString( '<code>yes</code>', $html );
 	}
 
 }
