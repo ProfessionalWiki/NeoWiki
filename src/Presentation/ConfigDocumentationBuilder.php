@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Presentation;
 
 use MediaWiki\Html\Html;
+use MediaWiki\Parser\Sanitizer;
 use MessageLocalizer;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigSchema;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigSetting;
@@ -73,8 +74,6 @@ class ConfigDocumentationBuilder {
 	}
 
 	private function renderRow( ConfigSetting $setting ): string {
-		// The key and the LocalSettings.php setting fill their whole cell, so they are plain text; only the
-		// accepted value carries inline <code> spans on the literal JSON values, emitted raw below.
 		return Html::rawElement(
 			'tr',
 			[],
@@ -86,10 +85,11 @@ class ConfigDocumentationBuilder {
 
 	/**
 	 * The accepted-value description as HTML. The boolean type message wraps the literal JSON values in
-	 * <code> spans, so it is emitted raw — it is a trusted static message with no parameters.
+	 * <code> spans, so the message text is markup and cannot be escaped wholesale; it is sanitized down to
+	 * the raw-HTML tags and attributes wikitext permits instead.
 	 */
 	private function describeValue( ConfigSetting $setting ): string {
-		return $this->messageLocalizer->msg( ...$setting->describe() )->text();
+		return Sanitizer::removeSomeTags( $this->messageLocalizer->msg( ...$setting->describe() )->text() );
 	}
 
 }
