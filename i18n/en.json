@@ -255,6 +255,7 @@
 	"neowiki-layouts-column-type": "View type",
 	"neowiki-layouts-column-description": "Description",
 	"neowiki-layouts-empty": "No layouts have been created yet.",
+	"neowiki-layouts-edit-stale-error": "Could not load the layout. Please try again.",
 
 	"neowiki-special-mappings": "Ontology mappings",
 	"neowiki-mappings-column-name": "Name",

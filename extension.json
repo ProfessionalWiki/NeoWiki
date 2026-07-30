@@ -591,6 +591,7 @@
 				"neowiki-layouts-column-type",
 				"neowiki-layouts-column-description",
 				"neowiki-layouts-empty",
+				"neowiki-layouts-edit-stale-error",
 				"neowiki-special-mappings",
 				"neowiki-mappings-column-name",
 				"neowiki-mappings-column-schemas",

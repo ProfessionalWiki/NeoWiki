@@ -91,7 +91,7 @@
 			:display-name="deletingLayoutName"
 			:type-label="$i18n( 'neowiki-layout-noun' ).text()"
 			@update:open="isDeleteConfirmOpen = $event"
-			@deleted="fetchLayouts( lastOffset, pageSize )"
+			@deleted="onLayoutDeleted"
 		/>
 	</div>
 </template>
@@ -230,7 +230,19 @@ async function openEditor( layoutName: string ): Promise<void> {
 			layoutStore.fetchLayout( layoutName ),
 			fetchLayouts( lastOffset.value, pageSize.value )
 		] );
-		editingLayout.value = layoutStore.getLayout( layoutName ) ?? null;
+
+		const layout = layoutStore.getLayout( layoutName );
+		if ( layout === undefined ) {
+			// The epoch guard discarded this fetch's write-back (a mutation landed
+			// mid-flight), so the store has no fresh data for this layout. Don't open
+			// the editor on stale/null data; the user can retry the edit. SchemasPage's
+			// equivalent throws into its catch below instead (getSchema throws rather than
+			// returning undefined); this converges the two on showing the same kind of toast.
+			mw.notify( mw.msg( 'neowiki-layouts-edit-stale-error' ), { type: 'error' } );
+			return;
+		}
+
+		editingLayout.value = layout;
 		isEditorOpen.value = true;
 	} catch ( error ) {
 		mw.notify(
@@ -262,6 +274,11 @@ function onEditorOpenChange( value: boolean ): void {
 function confirmDelete( layoutName: string ): void {
 	deletingLayoutName.value = layoutName;
 	isDeleteConfirmOpen.value = true;
+}
+
+function onLayoutDeleted(): void {
+	layoutStore.removeLayout( deletingLayoutName.value );
+	fetchLayouts( lastOffset.value, pageSize.value );
 }
 
 onMounted( async () => {

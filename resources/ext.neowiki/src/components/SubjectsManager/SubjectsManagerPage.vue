@@ -491,7 +491,6 @@ import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
 import DataExportButton from '@/components/SubjectsManager/DataExportButton.vue';
-import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 import { subjectExportUrls, pageExportUrls } from '@/presentation/DataExportMenu.ts';
 
 const pageId = Number( mw.config.get( 'wgNeoWikiManageSubjectsPageId' ) );
@@ -881,10 +880,7 @@ async function executeDelete( comment: string ): Promise<void> {
 
 	try {
 		await subjectStore.deleteSubject( subject.getId(), summary );
-		// Reload so the list reflects the deletion. Mirrors the create flow; a reactive
-		// update would require deduplicating the pageSubjects/map state in the store.
-		setPendingNotification( 'neowiki-managesubjects-delete-success' );
-		window.location.reload();
+		mw.notify( mw.msg( 'neowiki-managesubjects-delete-success' ), { type: 'success' } );
 	} catch ( error ) {
 		console.error( 'Failed to delete subject:', error );
 		mw.notify( mw.msg( 'neowiki-managesubjects-delete-error', label ), { type: 'error' } );

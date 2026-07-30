@@ -201,7 +201,8 @@ describe( 'SubjectCreatorDialog', () => {
 		subjectStore.validateSubject = vi.fn().mockResolvedValue( [] );
 
 		schemaStore = useSchemaStore();
-		schemaStore.getOrFetchSchema = vi.fn().mockResolvedValue( newSchema( { title: SCHEMA_NAME } ) );
+		schemaStore.setSchema( SCHEMA_NAME, newSchema( { title: SCHEMA_NAME } ) );
+		schemaStore.fetchSchema = vi.fn().mockResolvedValue( undefined );
 		schemaStore.saveSchema = vi.fn().mockResolvedValue( undefined );
 
 		canCreateSchemas.value = true;

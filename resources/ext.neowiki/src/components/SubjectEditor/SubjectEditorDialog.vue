@@ -252,13 +252,17 @@ watch( subjectEditorRef, ( editor ) => {
 watch( () => props.subject, async ( newSubject ) => {
 	if ( newSubject ) {
 		await checkEditPermission( newSubject.getSchemaName() );
-		await loadSchema();
+		loadSchema();
 	}
 }, { immediate: true } );
 
-async function loadSchema(): Promise<void> {
+function loadSchema(): void {
 	try {
-		loadedSchema.value = await schemaStore.getOrFetchSchema( props.subject.getSchemaName() );
+		// Deliberately a registry read, not a fetch: hosts guarantee the schema is
+		// loaded (page seeding plus a fresh fetch in their openEditor), and this
+		// dialog is mounted inside every editable Infobox, so fetching here would
+		// fire a request per view at page load.
+		loadedSchema.value = schemaStore.getSchema( props.subject.getSchemaName() );
 	} catch ( error ) {
 		console.error( 'Failed to load schema:', error );
 		mw.notify(

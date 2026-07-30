@@ -86,7 +86,7 @@
 			:display-name="deletingSchemaName"
 			:type-label="$i18n( 'neowiki-schema-noun' ).text()"
 			@update:open="isDeleteConfirmOpen = $event"
-			@deleted="fetchSchemas( lastOffset, pageSize )"
+			@deleted="onSchemaDeleted"
 		/>
 	</div>
 </template>
@@ -208,7 +208,11 @@ async function openEditor( schemaName: string ): Promise<void> {
 			schemaStore.fetchSchema( schemaName ),
 			fetchSchemas( lastOffset.value, pageSize.value )
 		] );
-		editingSchema.value = schemaStore.getSchema( schemaName ) ?? null;
+		// getSchema throws rather than returning undefined on a miss (e.g. the epoch guard
+		// discarded fetchSchema's write-back), so a genuine miss lands in the catch below instead
+		// of ever reaching this assignment — unlike LayoutsPage, which checks getLayout's result
+		// explicitly because that getter can return undefined.
+		editingSchema.value = schemaStore.getSchema( schemaName );
 		isEditorOpen.value = true;
 	} catch ( error ) {
 		mw.notify(
@@ -236,6 +240,11 @@ function onEditorOpenChange( value: boolean ): void {
 function confirmDelete( schemaName: string ): void {
 	deletingSchemaName.value = schemaName;
 	isDeleteConfirmOpen.value = true;
+}
+
+function onSchemaDeleted(): void {
+	schemaStore.removeSchema( deletingSchemaName.value );
+	fetchSchemas( lastOffset.value, pageSize.value );
 }
 
 onMounted( async () => {

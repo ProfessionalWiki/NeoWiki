@@ -47,7 +47,7 @@ const menuItems = computed<MenuItemData[]>( () => {
 
 onMounted( async () => {
 	try {
-		summaries.value = await schemaStore.getAllSchemaSummaries();
+		summaries.value = await schemaStore.fetchAllSchemaSummaries();
 	} catch ( error ) {
 		console.error( 'Failed to load schemas for the picker:', error );
 	}

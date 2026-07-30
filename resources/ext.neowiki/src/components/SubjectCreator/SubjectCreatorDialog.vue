@@ -374,7 +374,8 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 	markChanged();
 
 	try {
-		loadedSchema.value = await schemaStore.getOrFetchSchema( schemaName );
+		await schemaStore.fetchSchema( schemaName );
+		loadedSchema.value = schemaStore.getSchema( schemaName );
 	} catch ( error ) {
 		console.error( 'Failed to load schema:', error );
 		loadedSchema.value = null;

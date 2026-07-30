@@ -1,6 +1,7 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
@@ -9,6 +10,8 @@ import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHe
 import { CdxButton } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { newSchema } from '@/TestHelpers.ts';
 
 const canCreateSchemasRef = ref( false );
 const canEditSchemaRef = ref( false );
@@ -16,6 +19,8 @@ const checkCreatePermissionMock = vi.fn();
 const checkEditPermissionMock = vi.fn();
 
 let schemasResponse: { schemas: unknown[]; nextCursor: string | null } = { schemas: [], nextCursor: null };
+let pinia: ReturnType<typeof createPinia>;
+let schemaStore: ReturnType<typeof useSchemaStore>;
 
 vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	useSchemaPermissions: () => ( {
@@ -26,16 +31,11 @@ vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	} ),
 } ) );
 
+// The store is real (backed by Pinia) so removeSchema/getSchema exercise their actual
+// semantics; only fetchSchema is overridden per test to avoid a real network call. getSchema
+// is a Pinia getter (read-only), so tests that need it to resolve seed the map via setSchema
+// instead of mocking the getter itself.
 const fetchSchemaMock = vi.fn();
-const getSchemaMock = vi.fn();
-
-vi.mock( '@/stores/SchemaStore.ts', () => ( {
-	useSchemaStore: () => ( {
-		fetchSchema: fetchSchemaMock,
-		getSchema: getSchemaMock,
-		saveSchema: vi.fn(),
-	} ),
-} ) );
 
 vi.mock( '@/NeoWikiExtension.ts', () => ( {
 	NeoWikiExtension: {
@@ -89,6 +89,7 @@ function mountComponent( summaries: unknown[] = [], nextCursor: string | null = 
 
 	return mount( SchemasPage, {
 		global: {
+			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
 			stubs: {
 				SchemaCreatorDialog: SchemaCreatorDialogStub,
@@ -107,8 +108,12 @@ describe( 'SchemasPage', () => {
 		checkCreatePermissionMock.mockClear();
 		checkEditPermissionMock.mockClear();
 		fetchSchemaMock.mockClear();
-		getSchemaMock.mockClear();
 		schemasResponse = { schemas: [], nextCursor: null };
+
+		pinia = createPinia();
+		setActivePinia( pinia );
+		schemaStore = useSchemaStore();
+		schemaStore.fetchSchema = fetchSchemaMock;
 	} );
 
 	it( 'shows create button when user has create permission', async () => {
@@ -225,7 +230,7 @@ describe( 'SchemasPage', () => {
 	it( 'opens editor dialog when edit button is clicked', async () => {
 		canEditSchemaRef.value = true;
 		const mockSchema = new Schema( 'Person', '', new PropertyDefinitionList( [] ) );
-		getSchemaMock.mockReturnValue( mockSchema );
+		schemaStore.setSchema( 'Person', mockSchema );
 
 		const wrapper = mountComponent( [
 			{ name: 'Person', description: '', propertyCount: 3 },
@@ -242,7 +247,7 @@ describe( 'SchemasPage', () => {
 	it( 'does not render SchemaEditorDialog when user lacks edit permission', async () => {
 		canEditSchemaRef.value = true;
 		const mockSchema = new Schema( 'Person', '', new PropertyDefinitionList( [] ) );
-		getSchemaMock.mockReturnValue( mockSchema );
+		schemaStore.setSchema( 'Person', mockSchema );
 
 		const wrapper = mountComponent( [
 			{ name: 'Person', description: '', propertyCount: 3 },
@@ -274,5 +279,28 @@ describe( 'SchemasPage', () => {
 		expect( dialog.props( 'pageTitle' ) ).toBe( 'Schema:Person' );
 		expect( dialog.props( 'displayName' ) ).toBe( 'Person' );
 		expect( dialog.props( 'typeLabel' ) ).toBe( 'neowiki-schema-noun' );
+	} );
+
+	it( 'removes the deleted schema from the store and refetches the list', async () => {
+		canEditSchemaRef.value = true;
+		const wrapper = mountComponent( [
+			{ name: 'Person', description: '', propertyCount: 3 },
+		] );
+		await flushPromises();
+
+		schemaStore.setSchema( 'Person', newSchema( { title: 'Person' } ) );
+
+		await findDeleteButtons( wrapper )[ 0 ].trigger( 'click' );
+
+		// A different fixture than the initial mount proves the @deleted handler
+		// actually refetched rather than just closing the dialog.
+		schemasResponse = { schemas: [ { name: 'Company', description: '', propertyCount: 1 } ], nextCursor: null };
+
+		wrapper.findComponent( DeletePageDialog ).vm.$emit( 'deleted' );
+		await flushPromises();
+
+		expect( () => schemaStore.getSchema( 'Person' ) ).toThrow();
+		expect( wrapper.text() ).toContain( 'Company' );
+		expect( wrapper.text() ).not.toContain( 'Person' );
 	} );
 } );
