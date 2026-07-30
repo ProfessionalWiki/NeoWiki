@@ -248,6 +248,15 @@ describe( 'EditMainSubjectDialog', () => {
 		expect( state.subjectId ).toBeNull();
 	} );
 
+	it( 'closes when dismissed', async () => {
+		const wrapper = await openForSubject();
+
+		await wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+
+		expect( state.open ).toBe( false );
+		expect( state.subjectId ).toBeNull();
+	} );
+
 	it( 'shows no previously loaded subject while the next one is loading', async () => {
 		const wrapper = await openForSubject();
 		await wrapper.findComponent( CdxDialog ).vm.$emit( 'default' );

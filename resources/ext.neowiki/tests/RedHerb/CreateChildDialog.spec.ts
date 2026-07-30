@@ -221,6 +221,14 @@ describe( 'CreateChildDialog', () => {
 		expect( open.value ).toBe( false );
 	} );
 
+	it( 'closes when dismissed', async () => {
+		const wrapper = await openDialog();
+
+		await wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+
+		expect( open.value ).toBe( false );
+	} );
+
 	it( 'forgets the previous label when reopened', async () => {
 		const wrapper = await openDialog();
 		await typeLabel( wrapper, 'Acme' );

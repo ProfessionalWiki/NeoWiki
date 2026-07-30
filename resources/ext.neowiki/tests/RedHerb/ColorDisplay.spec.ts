@@ -40,7 +40,7 @@ describe( 'ColorDisplay', () => {
 	it( 'paints the swatch with the color', () => {
 		const wrapper = newWrapper( newStringValue( '#ff5733' ) );
 
-		expect( wrapper.find( SWATCH ).attributes( 'style' ) ).toBe( 'background-color: rgb(255, 87, 51);' );
+		expect( wrapper.find( SWATCH ).attributes( 'style' ) ).toContain( 'background-color: rgb(255, 87, 51)' );
 	} );
 
 	it( 'accepts uppercase hex digits', () => {

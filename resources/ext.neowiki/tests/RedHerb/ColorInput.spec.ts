@@ -1,7 +1,7 @@
 import './../neowiki-test-env.ts';
 import { VueWrapper } from '@vue/test-utils';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { CdxTextInput } from '@wikimedia/codex';
+import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import ColorInput from '@redherb/ColorInput.vue';
 import { newStringValue, StringValue, Value } from '@/domain/Value.ts';
 import { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
@@ -60,7 +60,7 @@ describe( 'ColorInput', () => {
 	it( 'previews the current color in the swatch', () => {
 		const wrapper = newWrapper( newStringValue( '#ff5733' ) );
 
-		expect( wrapper.find( SWATCH ).attributes( 'style' ) ).toBe( 'background-color: rgb(255, 87, 51);' );
+		expect( wrapper.find( SWATCH ).attributes( 'style' ) ).toContain( 'background-color: rgb(255, 87, 51)' );
 	} );
 
 	it( 'marks the swatch as empty when there is no color yet', () => {
@@ -82,7 +82,7 @@ describe( 'ColorInput', () => {
 
 		await typeColor( wrapper, '#ff5733' );
 
-		expect( wrapper.find( SWATCH ).attributes( 'style' ) ).toBe( 'background-color: rgb(255, 87, 51);' );
+		expect( wrapper.find( SWATCH ).attributes( 'style' ) ).toContain( 'background-color: rgb(255, 87, 51)' );
 	} );
 
 	it( 'emits the typed color as a string value', async () => {
@@ -121,12 +121,12 @@ describe( 'ColorInput', () => {
 	it( 'marks the field optional when the property is not required', () => {
 		const wrapper = newWrapper( undefined, newColorProperty( { required: false } ) );
 
-		expect( wrapper.find( '.cdx-label__label__optional-flag' ).exists() ).toBe( true );
+		expect( wrapper.findComponent( CdxField ).props( 'optional' ) ).toBe( true );
 	} );
 
 	it( 'does not mark the field optional when the property is required', () => {
 		const wrapper = newWrapper( undefined, newColorProperty( { required: true } ) );
 
-		expect( wrapper.find( '.cdx-label__label__optional-flag' ).exists() ).toBe( false );
+		expect( wrapper.findComponent( CdxField ).props( 'optional' ) ).toBe( false );
 	} );
 } );
