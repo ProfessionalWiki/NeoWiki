@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -88,6 +89,27 @@ class StatementListBuilderTest extends TestCase {
 
 		$this->assertNotNull( $list->getStatement( new PropertyName( 'Wanted' ) ) );
 		$this->assertNull( $list->getStatement( new PropertyName( 'Unwanted' ) ) );
+	}
+
+	/**
+	 * @dataProvider valueNotFittingItsTypeProvider
+	 */
+	public function testValueNotFittingItsPropertyTypeIsRejected( string $propertyType, mixed $value ): void {
+		$builder = $this->newBuilder();
+
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Mismatched' );
+
+		$builder->build( [ 'Mismatched' => [ 'propertyType' => $propertyType, 'value' => $value ] ] );
+	}
+
+	public static function valueNotFittingItsTypeProvider(): iterable {
+		yield 'text given a number' => [ 'text', 2019 ];
+		yield 'number given a string' => [ 'number', 'not a number' ];
+		yield 'number with no value' => [ 'number', null ];
+		yield 'boolean given a string' => [ 'boolean', 'yes' ];
+		yield 'relation given a scalar' => [ 'relation', 'sTargetIdWanted' ];
+		yield 'relation target missing' => [ 'relation', [ [ 'properties' => [] ] ] ];
 	}
 
 	/**

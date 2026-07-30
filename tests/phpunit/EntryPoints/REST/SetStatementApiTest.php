@@ -197,6 +197,29 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $this->getStoredValue( 'Website' ) );
 	}
 
+	public function testValueNotFittingItsPropertyTypeReturns400(): void {
+		$this->createSubjectPage();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Founded at', [ 'statement' => [ 'propertyType' => 'number', 'value' => 'not a number' ] ] )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertNull( $this->getStoredValue( 'Founded at' ) );
+	}
+
+	public function testStatementWithoutAValueReturns400(): void {
+		$this->createSubjectPage();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Founded at', [ 'statement' => [ 'propertyType' => 'number' ] ] )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
 	public function testMissingStatementReturns400(): void {
 		$this->createSubjectPage();
 

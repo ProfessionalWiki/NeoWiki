@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
@@ -20,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
+use TypeError;
 
 readonly class StatementListBuilder {
 
@@ -31,6 +33,8 @@ readonly class StatementListBuilder {
 
 	/**
 	 * @param array<string, mixed> $statements
+	 *
+	 * @throws InvalidArgumentException When a value does not fit the property type it declares.
 	 */
 	public function build( array $statements ): StatementList {
 		$built = [];
@@ -41,7 +45,7 @@ readonly class StatementListBuilder {
 			}
 
 			$propertyType = $entry['propertyType'];
-			$value = $this->deserializeValue( $propertyType, $entry['value'] );
+			$value = $this->deserializeValue( (string)$propertyName, $propertyType, $entry['value'] ?? null );
 
 			if ( $value->isEmpty() ) {
 				continue;
@@ -57,17 +61,31 @@ readonly class StatementListBuilder {
 		return new StatementList( $built );
 	}
 
-	private function deserializeValue( string $propertyType, mixed $value ): NeoValue {
+	/**
+	 * @throws InvalidArgumentException
+	 */
+	private function deserializeValue( string $propertyName, string $propertyType, mixed $value ): NeoValue {
 		$valueType = $this->propertyTypeLookup->getType( $propertyType )?->getValueType()
 			?? ValueType::UnregisteredType;
 
-		return match ( $valueType ) {
-			ValueType::String => new StringValue( ...(array)$value ),
-			ValueType::Number => new NumberValue( $value ),
-			ValueType::Relation => $this->deserializeRelationValue( $value ),
-			ValueType::Boolean => new BooleanValue( $value ),
-			ValueType::UnregisteredType => new UnregisteredTypeValue( $propertyType, $value ),
-		};
+		// The value types below declare what each shape accepts, so a value of the wrong shape
+		// arrives here as a TypeError. Every one of them comes from the caller's value, never from
+		// internal state, so they are reported as bad input rather than escaping as a server error.
+		try {
+			return match ( $valueType ) {
+				ValueType::String => new StringValue( ...(array)$value ),
+				ValueType::Number => new NumberValue( $value ),
+				ValueType::Relation => $this->deserializeRelationValue( $value ),
+				ValueType::Boolean => new BooleanValue( $value ),
+				ValueType::UnregisteredType => new UnregisteredTypeValue( $propertyType, $value ),
+			};
+		} catch ( TypeError $e ) {
+			throw new InvalidArgumentException(
+				"Value of \"{$propertyName}\" does not fit property type \"{$propertyType}\"",
+				0,
+				$e
+			);
+		}
 	}
 
 	private function deserializeRelationValue( array $json ): RelationValue {
@@ -77,7 +95,7 @@ readonly class StatementListBuilder {
 			if ( is_array( $relation ) ) {
 				$relations[] = new Relation(
 					id: $this->buildRelationId( $relation ),
-					targetId: new SubjectId( $relation['target'] ),
+					targetId: new SubjectId( $relation['target'] ?? null ),
 					properties: new RelationProperties( $relation['properties'] ?? [] )
 				);
 			}
