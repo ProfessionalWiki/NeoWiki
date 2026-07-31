@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
@@ -25,6 +26,7 @@ readonly class ReplaceSubjectAction {
 
 	public function __construct(
 		private SubjectRepository $subjectRepository,
+		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
@@ -44,11 +46,18 @@ readonly class ReplaceSubjectAction {
 			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
 		}
 
-		// Null identifiers (unresolvable Subject) make the authorizer fall back to the global 'edit'
-		// right. This cannot bypass page protection: an unresolvable Subject is not found below
-		// (getSubject returns null), so the request 404s before any write rather than touching a
-		// protected page.
+		// Null identifiers (unresolvable Subject) skip the read gate below and make the write
+		// authorizer fall back to the global 'edit' right. Neither can bypass page protection: an
+		// unresolvable Subject is not found below (getSubject returns null), so the request 404s
+		// before any write rather than touching a protected page.
 		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId );
+
+		// Gate on read before write: a page the caller may not read answers exactly like a Subject
+		// that does not exist, so restricted pages cannot be told apart from absent ones - and the
+		// page title and namespace this endpoint returns never reach a caller denied the page.
+		if ( $pageIdentifiers !== null && !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
+			throw SubjectNotFoundException::forId( $subjectId );
+		}
 
 		if ( !$this->writeAuthorizer->authorize( $pageIdentifiers?->getId() ) ) {
 			throw new SubjectEditNotAuthorizedException();

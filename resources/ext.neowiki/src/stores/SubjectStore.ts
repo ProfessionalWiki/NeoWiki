@@ -70,8 +70,11 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			this.mutationEpoch++;
 			// The response Subject, not the one passed in: only the server's copy carries the page
-			// context and the normalisation the write applied.
-			this.setSubject( result.subject );
+			// context and the normalisation the write applied. A response without that context
+			// records nothing and leaves the previous copy in place.
+			if ( result.subject !== null ) {
+				this.setSubject( result.subject );
+			}
 			recordBundledSchema( result.schema, schemaEpoch );
 		},
 		async deleteSubject( subjectId: SubjectId, comment?: string ): Promise<void> {
@@ -132,10 +135,12 @@ export const useSubjectStore = defineStore( 'subject', {
 			);
 
 			this.mutationEpoch++;
-			this.setSubject( result.subject );
+			if ( result.subject !== null ) {
+				this.setSubject( result.subject );
+			}
 			recordBundledSchema( result.schema, schemaEpoch );
 
-			return result.subject.getId();
+			return result.subjectId;
 		},
 		async createChildSubject( pageId: number, label: string, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
@@ -149,10 +154,12 @@ export const useSubjectStore = defineStore( 'subject', {
 			);
 
 			this.mutationEpoch++;
-			this.setSubject( result.subject );
+			if ( result.subject !== null ) {
+				this.setSubject( result.subject );
+			}
 			recordBundledSchema( result.schema, schemaEpoch );
 
-			return result.subject.getId();
+			return result.subjectId;
 		},
 
 		openSubjectCreator(): void {

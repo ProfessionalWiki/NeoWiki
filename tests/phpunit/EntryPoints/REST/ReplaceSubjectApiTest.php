@@ -7,8 +7,8 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -30,7 +30,9 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
-	use MockAuthorityTrait;
+	use NeoWikiMockAuthorityTrait;
+
+	private const string NAMESPACED_PAGE_SUBJECT_ID = 'sTestSA11111177';
 
 	public function testHappyPathReturns200WithUpdatedStatus(): void {
 		$this->createPages();
@@ -66,6 +68,32 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame(
 			$this->readSubjectEntryFromApi( 'sTestSA11111111' ),
+			$responseData['subject']
+		);
+	}
+
+	/**
+	 * The same parity, on a page whose title tells the Title accessors apart: getPrefixedText()
+	 * ("Help:Some page") differs from getText(), getDBkey() and getPrefixedDBkey(). On a
+	 * main-namespace title without spaces they all coincide, so the wrong one would pass unnoticed.
+	 */
+	public function testUpdatedResponseCarriesTheSubjectEntryTheReadEndpointServesForANamespacedTitle(): void {
+		$this->createNamespacedPage();
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestDataFor( self::NAMESPACED_PAGE_SUBJECT_ID, [
+				'label' => 'Subject on a namespaced page',
+				'statements' => [],
+			] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 'Help:Some page', $responseData['subject']['pageTitle'] );
+		$this->assertSame( 12, $responseData['subject']['pageNamespaceId'] );
+		$this->assertSame(
+			$this->readSubjectEntryFromApi( self::NAMESPACED_PAGE_SUBJECT_ID ),
 			$responseData['subject']
 		);
 	}
@@ -413,19 +441,38 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testPermissionDeniedReturns403(): void {
+	public function testReadableButNotEditablePageReturns403(): void {
 		$this->createPages();
 
+		// The caller can read the page - so its existence is already public - but cannot edit it.
 		$response = $this->executeHandler(
 			$this->newReplaceSubjectApi(),
 			$this->createValidRequestData(),
-			authority: $this->mockAnonAuthorityWithPermissions( [] )
+			authority: $this->authorityWithGlobalEditButNoPageEdit()
 		);
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
 
 		$this->assertSame( 403, $response->getStatusCode() );
 		$this->assertSame( 'error', $responseData['status'] );
+	}
+
+	public function testSubjectOnAnUnreadablePageAnswersLikeAnAbsentSubject(): void {
+		$this->createPages();
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createValidRequestData(),
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		// The very shape testNonExistentSubjectReturns404 asserts: a caller holding a harvested
+		// Subject id learns nothing about whether it exists, nor which page carries it.
+		$this->assertSame( 404, $response->getStatusCode() );
+		$this->assertSame( 'error', $responseData['status'] );
+		$this->assertSame( 'Subject not found: sTestSA11111111', $responseData['message'] );
 	}
 
 	public function testCommentIsAccepted(): void {
@@ -495,6 +542,17 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	private function createNamespacedPage(): void {
+		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+		$this->createPageWithSubjects(
+			'Help:Some page',
+			mainSubject: TestSubject::build(
+				id: self::NAMESPACED_PAGE_SUBJECT_ID,
+				label: new SubjectLabel( 'Test subject ' . self::NAMESPACED_PAGE_SUBJECT_ID ),
+			)
+		);
+	}
+
 	private function newReplaceSubjectApi(): ReplaceSubjectApi {
 		$csrfValidatorStub = $this->createStub( CsrfValidator::class );
 		$csrfValidatorStub->method( 'verifyCsrfToken' )->willReturn( true );
@@ -509,10 +567,14 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function createRequestData( array $body ): RequestData {
+		return $this->createRequestDataFor( 'sTestSA11111111', $body );
+	}
+
+	private function createRequestDataFor( string $subjectId, array $body ): RequestData {
 		return new RequestData( [
 			'method' => 'PUT',
 			'pathParams' => [
-				'subjectId' => 'sTestSA11111111',
+				'subjectId' => $subjectId,
 			],
 			'bodyContents' => json_encode( $body ),
 			'headers' => [

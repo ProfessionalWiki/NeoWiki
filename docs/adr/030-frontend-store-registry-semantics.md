@@ -28,8 +28,9 @@ reason.
 
 ## Decision
 
-Stores are page-scoped registries of server state, not caches. A registry holds only what the
-server said — the page payload seeded at load, and what mutation responses returned.
+Stores are page-scoped registries of server state, not caches. A registry holds the page payload
+seeded at load and what acknowledged mutations put there: for Subjects the mutation response's
+canonical entity, for Schemas and Layouts the authored object the save committed.
 
 1. **Reads are explicit.** `getX` reads the registry synchronously, over that page payload and
    those writes. Editing UIs always open on freshly fetched data, read through the repositories
@@ -44,10 +45,9 @@ server said — the page payload seeded at load, and what mutation responses ret
 2. **Mutations keep the registry consistent with the session's own writes, on every path.**
    Each store has a `mutationEpoch` counter that is bumped when the backend acknowledges a
    write. Saves write through, deletes remove the entity from all registry state, and
-   invalidation that must survive a rejected save runs in a `finally` block. A save writes the
-   response's entity through, never the client's: a Subject write answers with the persisted
-   Subject — carrying the page context the editor's copy lacks — and the Schema it instantiates.
-   Schema and Layout saves write the authored object through; the editor is its sole author. A
+   invalidation that must survive a rejected save runs in a `finally` block. A Subject write
+   answers with the persisted Subject — carrying the page context the editor's copy lacks — and
+   the Schema it instantiates, so its write-through never uses the client's copy. A
    mutation must also detach any derived in-flight request slot its store holds, so the next
    caller starts a fresh request instead of joining one that predates the write — `SchemaStore`'s
    `summariesRequest` slot (behind `fetchAllSchemaSummaries`) is the current instance: both

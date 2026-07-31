@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
@@ -39,6 +40,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction
@@ -46,6 +48,8 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 class ReplaceSubjectActionTest extends TestCase {
 
 	private const string SUBJECT_ID = 's11111111111127';
+	private const string SUBJECT_ID_ON_EARLIER_PAGE = 's11111111111126';
+	private const string SUBJECT_ID_ON_LATER_PAGE = 's11111111111128';
 	private const string SCHEMA_NAME = 'TestSchema';
 
 	private InMemorySubjectRepository $subjectRepository;
@@ -61,6 +65,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	private function newAction(
 		?SubjectWriteAuthorizer $authorizer = null,
 		bool $validationEnforced = false,
+		?PageReadAuthorizer $readAuthorizer = null,
 	): ReplaceSubjectAction {
 		$registry = PropertyTypeRegistry::withCoreTypes();
 		$builder = new StatementListBuilder(
@@ -69,6 +74,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->subjectRepository,
+			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: $builder,
 			schemaLookup: $this->schemaLookup,
@@ -82,8 +88,13 @@ class ReplaceSubjectActionTest extends TestCase {
 			),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
+			// The Subject under test sits on a namespaced page between two others, so neither a
+			// hardcoded main-namespace id nor an implementation answering with some other seeded
+			// page passes.
 			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
-				[ new SubjectId( self::SUBJECT_ID ), new PageIdentifiers( new PageId( 7 ), 'Test page', 0 ) ]
+				[ new SubjectId( self::SUBJECT_ID_ON_EARLIER_PAGE ), new PageIdentifiers( new PageId( 6 ), 'Earlier page', 0 ) ],
+				[ new SubjectId( self::SUBJECT_ID ), new PageIdentifiers( new PageId( 7 ), 'Help:Test page', 12 ) ],
+				[ new SubjectId( self::SUBJECT_ID_ON_LATER_PAGE ), new PageIdentifiers( new PageId( 8 ), 'Talk:Later page', 1 ) ],
 			] ),
 		);
 	}
@@ -195,6 +206,37 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->expectException( SubjectEditNotAuthorizedException::class );
 
 		$action->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+	}
+
+	public function testUnreadablePageAnswersNotFound(): void {
+		// The caller may edit the page but may not read it. Answering anything other than not-found
+		// would confirm the Subject exists, and hand out the page title and namespace with it.
+		$this->subjectRepository->updateSubject( TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) ) );
+
+		$action = $this->newAction( readAuthorizer: new StubPageReadAuthorizer( allowed: false ) );
+
+		$this->expectException( SubjectNotFoundException::class );
+		$this->expectExceptionMessage( 'Subject not found: ' . self::SUBJECT_ID );
+
+		$action->replace( new SubjectId( self::SUBJECT_ID ), 'New Label', [], null );
+	}
+
+	public function testUnreadablePageIsRejectedBeforeTheWrite(): void {
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Original Label' ),
+		) );
+
+		try {
+			$this->newAction( readAuthorizer: new StubPageReadAuthorizer( allowed: false ) )
+				->replace( new SubjectId( self::SUBJECT_ID ), 'New Label', [], null );
+		} catch ( SubjectNotFoundException ) {
+		}
+
+		$this->assertSame(
+			'Original Label',
+			$this->subjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) )->getLabel()->text
+		);
 	}
 
 	public function testNonExistentSubjectThrows(): void {
@@ -331,8 +373,8 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
 
 		$this->assertSame( 7, $this->presenterSpy->subject?->pageId );
-		$this->assertSame( 'Test page', $this->presenterSpy->subject?->pageTitle );
-		$this->assertSame( 0, $this->presenterSpy->subject?->pageNamespaceId );
+		$this->assertSame( 'Help:Test page', $this->presenterSpy->subject?->pageTitle );
+		$this->assertSame( 12, $this->presenterSpy->subject?->pageNamespaceId );
 	}
 
 	public function testPresentsTheSchemaTheSubjectInstantiates(): void {

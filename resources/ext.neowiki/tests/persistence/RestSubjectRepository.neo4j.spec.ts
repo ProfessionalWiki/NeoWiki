@@ -13,12 +13,14 @@ import { UrlType } from '@/domain/propertyTypes/Url';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 
 function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSubjectRepository {
 	return new RestSubjectRepository(
 		apiUrl,
 		httpClient,
 		NeoWikiExtension.getInstance().getSubjectDeserializer(),
+		new SchemaDeserializer(),
 	);
 }
 
@@ -318,8 +320,8 @@ describe( 'RestSubjectRepository', () => {
 
 			const result = await repository.createMainSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
 
-			expect( result.subject.getId().text ).toEqual( 's33333333333333' );
-			expect( result.subject.getLabel() ).toEqual( 'John Doe' );
+			expect( result.subjectId.text ).toEqual( 's33333333333333' );
+			expect( result.subject?.getLabel() ).toEqual( 'John Doe' );
 			expect( result.schema ).toBeNull();
 		} );
 
@@ -358,9 +360,25 @@ describe( 'RestSubjectRepository', () => {
 			);
 
 			// The page context is what a client-built copy cannot reproduce, so it is the point.
-			expect( result.subject.getPageIdentifiers().getPageId() ).toEqual( 42 );
+			expect( result.subject?.getPageIdentifiers().getPageId() ).toEqual( 42 );
 			expect( result.schema?.getName() ).toEqual( 'Employee' );
 			expect( result.schema?.getDescription() ).toEqual( 'An employee' );
+		} );
+
+		it( 'reports no subject when the response omitted the page identifiers', async () => {
+			// The server omits them for a Subject whose page it cannot resolve. Deserializing that
+			// would mint a Subject with an undefined page id for links to follow.
+			const withoutPage = writeResponseJson();
+			delete ( withoutPage.subject as Record<string, unknown> ).pageId;
+			delete ( withoutPage.subject as Record<string, unknown> ).pageTitle;
+
+			const result = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
+					new Response( JSON.stringify( withoutPage ), { status: 200 } ),
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Updated', new StatementList( [] ) );
+
+			expect( result.subject ).toBeNull();
+			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 		} );
 
 		it( 'sends a PUT request', async () => {
@@ -442,7 +460,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const result = await repository.createChildSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
 
-			expect( result.subject.getId().text ).toEqual( 's33333333333333' );
+			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 		} );
 
 	} );
@@ -525,7 +543,7 @@ describe( 'RestSubjectRepository', () => {
 				[ subjectUrl ]: new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
 			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Updated', new StatementList( [] ) );
 
-			expect( result.subject.getId().text ).toEqual( 's33333333333333' );
+			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 		} );
 
 		it( 'throws generic Error on 500', async () => {

@@ -176,6 +176,29 @@ dropped without error. For schema/value validation outcomes see [Validation Code
 A relation may omit `id`; the server generates one. The Subject's `id`, `schema`, and page fields are immutable
 and ignored if sent.
 
+### Write responses
+
+Creating and writing a Subject both answer with the Subject as persisted and the Schema it instantiates, so a
+client does not have to re-read after a write:
+
+```json
+{
+  "status": "updated",
+  "subjectId": "s1demo5sssssss1",
+  "violations": [],
+  "subject": { "id": "s1demo5sssssss1", "label": "Updated Label", "schema": "Company", "pageId": 42,
+               "pageTitle": "Help:Installation", "pageNamespaceId": 12, "statements": {} },
+  "schema": { "description": "A company", "propertyDefinitions": {} }
+}
+```
+
+`subject` is the same shape `GET /subject/{subjectId}?expand=page` serves, so it reflects any normalisation the
+write applied. Its page fields are omitted when the server cannot resolve the Subject's page.
+
+`schema` carries no name of its own — that is the Subject's `schema` field — and is absent when the Schema does
+not exist or its page is unreadable. It is the Schema as of the write, which may define properties the client's
+copy does not.
+
 ## Complete example
 
 A page about Berlin with a main Subject and a child Subject for population data:

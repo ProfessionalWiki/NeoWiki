@@ -16,13 +16,22 @@ export interface SubjectWithReferencedSubjects {
 }
 
 /**
- * What a Subject write returns: the Subject as the server persisted it, carrying the context
- * (page identifiers) and normalisation a client-built copy cannot reproduce, plus the Schema it
- * is an instance of, so a display can render the saved values even when the Schema changed
- * out of band. The Schema is null when the server could not resolve it.
+ * What a Subject write returns.
  */
 export interface SubjectWriteResult {
-	subject: SubjectWithContext;
+	/** The id the server assigned or confirmed. Always known. */
+	subjectId: SubjectId;
+	/**
+	 * The Subject as the server persisted it, carrying the page context and normalisation a
+	 * client-built copy cannot reproduce. Null when the response omitted the page identifiers,
+	 * which a Subject on an unresolvable page does: recording it would put a Subject with no page
+	 * behind links that need one, so callers keep whatever copy they already had.
+	 */
+	subject: SubjectWithContext | null;
+	/**
+	 * The Schema the Subject instantiates, so a display can render values saved against a
+	 * property the Schema gained out of band. Null when the server could not resolve it.
+	 */
 	schema: Schema | null;
 }
 
@@ -120,16 +129,7 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 	public async updateSubject( id: SubjectId, label: string, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
 		const existing = await this.getSubject( id );
 
-		return {
-			subject: new SubjectWithContext(
-				id,
-				label,
-				existing.getSchemaName(),
-				statements,
-				new PageIdentifiers( 0, 'page-title' ),
-			),
-			schema: null,
-		};
+		return this.newWriteResult( id, 0, label, existing.getSchemaName(), statements );
 	}
 
 	private newWriteResult(
@@ -140,6 +140,7 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		statements: StatementList,
 	): SubjectWriteResult {
 		return {
+			subjectId: id,
 			subject: new SubjectWithContext( id, label, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ) ),
 			schema: null,
 		};

@@ -9,6 +9,7 @@ import { SubjectId } from '@/domain/SubjectId';
 import { Subject } from '@/domain/Subject';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { StatementList } from '@/domain/StatementList.ts';
+import type { Schema } from '@/domain/Schema.ts';
 
 describe( 'SubjectStore — subjectCreatorOpen', () => {
 	beforeEach( () => {
@@ -33,6 +34,10 @@ describe( 'SubjectStore — subjectCreatorOpen', () => {
 		expect( store.subjectCreatorOpen ).toBe( false );
 	} );
 } );
+
+function writeResult( subject: Subject | null, schema: Schema | null = null ): Record<string, unknown> {
+	return { subjectId: new SubjectId( 's11111111111111' ), subject, schema };
+}
 
 function withSubjectRepository( repository: Record<string, unknown> ): void {
 	vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue(
@@ -178,7 +183,7 @@ describe( 'SubjectStore ordering guards', () => {
 		} );
 		withSubjectRepository( {
 			getSubject: () => pending,
-			updateSubject: vi.fn().mockResolvedValue( { subject: updated, schema: null } ),
+			updateSubject: vi.fn().mockResolvedValue( writeResult( updated ) ),
 		} );
 		const store = useSubjectStore();
 
@@ -212,7 +217,7 @@ describe( 'SubjectStore ordering guards', () => {
 		} );
 		withSubjectRepository( {
 			getPageSubjects: () => pending,
-			updateSubject: vi.fn().mockResolvedValue( { subject: updated, schema: null } ),
+			updateSubject: vi.fn().mockResolvedValue( writeResult( updated ) ),
 		} );
 		const store = useSubjectStore();
 
@@ -277,7 +282,7 @@ describe( 'SubjectStore write results', () => {
 		const sent = newSubject( { id: id.text, label: 'as typed' } );
 		const canonical = newSubject( { id: id.text, label: 'as persisted' } );
 		withSubjectRepository( {
-			updateSubject: vi.fn().mockResolvedValue( { subject: canonical, schema: null } ),
+			updateSubject: vi.fn().mockResolvedValue( writeResult( canonical ) ),
 		} );
 		const store = useSubjectStore();
 
@@ -289,10 +294,7 @@ describe( 'SubjectStore write results', () => {
 	it( 'records the Schema the update bundled', async () => {
 		const schema = newSchema( { title: 'Person', description: 'as persisted' } );
 		withSubjectRepository( {
-			updateSubject: vi.fn().mockResolvedValue( {
-				subject: newSubject( { id: id.text } ),
-				schema,
-			} ),
+			updateSubject: vi.fn().mockResolvedValue( writeResult( newSubject( { id: id.text } ), schema ) ),
 		} );
 		const subjectStore = useSubjectStore();
 
@@ -319,7 +321,7 @@ describe( 'SubjectStore write results', () => {
 
 		const request = subjectStore.updateSubject( newSubject( { id: id.text } ) );
 		await schemaStore.saveSchema( savedElsewhere );
-		resolveUpdate( { subject: newSubject( { id: id.text } ), schema: bundled } );
+		resolveUpdate( writeResult( newSubject( { id: id.text } ), bundled ) );
 		await request;
 
 		expect( schemaStore.getSchema( 'Person' ) ).toStrictEqual( savedElsewhere );
@@ -328,7 +330,7 @@ describe( 'SubjectStore write results', () => {
 	it( 'records the Subject the creation returned', async () => {
 		const created = newSubject( { id: id.text, label: 'as persisted' } );
 		withSubjectRepository( {
-			createMainSubject: vi.fn().mockResolvedValue( { subject: created, schema: null } ),
+			createMainSubject: vi.fn().mockResolvedValue( writeResult( created ) ),
 		} );
 		const store = useSubjectStore();
 
@@ -338,10 +340,23 @@ describe( 'SubjectStore write results', () => {
 		expect( store.getSubject( id ) ).toStrictEqual( created );
 	} );
 
+	it( 'keeps the previous copy when the response omitted the page context', async () => {
+		// A Subject without page identifiers cannot back the links that read it, so the registry
+		// keeps what it had rather than recording a page-less copy.
+		const seeded = newSubject( { id: id.text, label: 'seeded' } );
+		withSubjectRepository( { updateSubject: vi.fn().mockResolvedValue( writeResult( null ) ) } );
+		const store = useSubjectStore();
+		store.setSubject( seeded );
+
+		await store.updateSubject( newSubject( { id: id.text, label: 'as typed' } ) );
+
+		expect( store.getSubject( id ) ).toStrictEqual( seeded );
+	} );
+
 	it( 'records the Subject a child creation returned', async () => {
 		const created = newSubject( { id: id.text, label: 'as persisted' } );
 		withSubjectRepository( {
-			createChildSubject: vi.fn().mockResolvedValue( { subject: created, schema: null } ),
+			createChildSubject: vi.fn().mockResolvedValue( writeResult( created ) ),
 		} );
 		const store = useSubjectStore();
 
