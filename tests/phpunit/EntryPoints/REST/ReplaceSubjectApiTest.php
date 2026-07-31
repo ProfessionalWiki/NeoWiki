@@ -468,11 +468,46 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
 
-		// The very shape testNonExistentSubjectReturns404 asserts: a caller holding a harvested
-		// Subject id learns nothing about whether it exists, nor which page carries it.
+		// A caller holding a harvested Subject id learns nothing about whether it exists, nor
+		// which page carries it. The companion test below pins that against an absent id for
+		// this same caller, which is what makes the two indistinguishable.
 		$this->assertSame( 404, $response->getStatusCode() );
 		$this->assertSame( 'error', $responseData['status'] );
 		$this->assertSame( 'Subject not found: sTestSA11111111', $responseData['message'] );
+	}
+
+	public function testAbsentAndUnreadableSubjectsAnswerAlikeForOneCaller(): void {
+		$this->createPages();
+
+		// One Authority for both requests. Comparing responses obtained under two different
+		// Authorities says nothing about what any single caller can tell apart, and this caller
+		// holds no wiki-global 'edit' right, so an absent id has no page to authorize against.
+		$authority = $this->authorityWithGlobalReadButNoPageRead();
+
+		$unreadable = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestDataFor( 'sTestSA11111111', $this->validBody() ),
+			authority: $authority
+		);
+
+		$absent = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestDataFor( 'sDoesNotExist99', $this->validBody() ),
+			authority: $authority
+		);
+
+		$unreadableData = json_decode( $unreadable->getBody()->getContents(), true );
+		$absentData = json_decode( $absent->getBody()->getContents(), true );
+
+		$this->assertSame( 404, $unreadable->getStatusCode() );
+		$this->assertSame( $unreadable->getStatusCode(), $absent->getStatusCode() );
+		$this->assertSame( $unreadableData['status'], $absentData['status'] );
+
+		// The echoed id is the one the caller supplied, so only that may differ.
+		$this->assertSame(
+			str_replace( 'sTestSA11111111', '<id>', $unreadableData['message'] ),
+			str_replace( 'sDoesNotExist99', '<id>', $absentData['message'] )
+		);
 	}
 
 	public function testCommentIsAccepted(): void {
