@@ -4,6 +4,10 @@
     "config:recommended",
     ":maintainLockFilesWeekly"
   ],
+  "description": "config:recommended ignores **/tests/**, which would leave the RedHerb example extension and its lock file unmanaged. RedHerb is a shipped project that happens to live under tests/, so that exclusion is dropped.",
+  "ignorePresets": [
+    ":ignoreModulesAndTests"
+  ],
   "minimumReleaseAge": "3 days",
   "dependencyDashboard": true,
   "prConcurrentLimit": 5,
