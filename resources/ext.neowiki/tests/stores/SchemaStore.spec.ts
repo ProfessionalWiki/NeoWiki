@@ -3,7 +3,6 @@ import { createPinia, setActivePinia } from 'pinia';
 import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { newSchema } from '@/TestHelpers.ts';
-import type { Schema } from '@/domain/Schema.ts';
 import type { SchemaSummary, SchemaSummaryPage } from '@/application/SchemaLookup.ts';
 
 interface Deferred<T> {
@@ -172,59 +171,6 @@ describe( 'SchemaStore fetchAllSchemaSummaries', () => {
 		await preSaveRequest;
 		expect( await retryRequest ).toEqual( [ summary( 'Alpha' ) ] );
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
-	} );
-
-} );
-
-describe( 'SchemaStore fetchSchema', () => {
-
-	beforeEach( () => {
-		setActivePinia( createPinia() );
-	} );
-
-	afterEach( () => {
-		vi.restoreAllMocks();
-	} );
-
-	it( 'stores the fetched schema', async () => {
-		const schema = newSchema( { title: 'Person' } );
-		withRepository( { getSchema: vi.fn().mockResolvedValue( schema ) } );
-		const store = useSchemaStore();
-
-		await store.fetchSchema( 'Person' );
-
-		expect( store.getSchema( 'Person' ) ).toStrictEqual( schema );
-	} );
-
-	it( 'discards a fetch that a save overtook', async () => {
-		const preSave = newSchema( { title: 'Person', description: 'pre-save' } );
-		const saved = newSchema( { title: 'Person', description: 'saved' } );
-		const fetch = deferred<Schema>();
-		withRepository( {
-			getSchema: vi.fn().mockReturnValueOnce( fetch.promise ),
-			saveSchema: vi.fn().mockResolvedValue( undefined ),
-		} );
-		const store = useSchemaStore();
-
-		const request = store.fetchSchema( 'Person' );
-		await store.saveSchema( saved );
-		fetch.resolve( preSave );
-		await request;
-
-		expect( store.getSchema( 'Person' ) ).toStrictEqual( saved );
-	} );
-
-	it( 'discards a fetch that a removal overtook', async () => {
-		const fetch = deferred<Schema>();
-		withRepository( { getSchema: vi.fn().mockReturnValueOnce( fetch.promise ) } );
-		const store = useSchemaStore();
-
-		const request = store.fetchSchema( 'Person' );
-		store.removeSchema( 'Person' );
-		fetch.resolve( newSchema( { title: 'Person' } ) );
-		await request;
-
-		expect( () => store.getSchema( 'Person' ) ).toThrow( 'Unknown schema: Person' );
 	} );
 
 } );

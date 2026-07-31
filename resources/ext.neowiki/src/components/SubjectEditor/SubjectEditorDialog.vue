@@ -62,18 +62,14 @@
 			</CdxMessage>
 
 			<SubjectEditor
-				v-if="statements"
 				ref="subjectEditorRef"
 				:statements="statements"
-				:schema="loadedSchema as Schema"
+				:schema="currentSchema"
 				:server-violations="serverViolations"
 				@change="handleEditorChange"
 				@focusout="handleEditorBlur"
 				@clear-server-violation="handleClearViolation"
 			/>
-			<div v-else>
-				Loading schema... <!-- Or some other loading indicator -->
-			</div>
 
 			<!-- TODO: We should make this into a component-->
 			<template #footer>
@@ -87,9 +83,8 @@
 		</CdxDialog>
 
 		<SchemaEditorDialog
-			v-if="loadedSchema"
 			:open="isSchemaEditorOpen"
-			:initial-schema="loadedSchema as Schema"
+			:initial-schema="currentSchema"
 			:on-save="props.onSaveSchema"
 			@saved="onSchemaSaved"
 			@update:open="isSchemaEditorOpen = $event"
@@ -104,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, watch } from 'vue';
+import { ref, shallowRef, nextTick, computed, watch } from 'vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
@@ -112,7 +107,6 @@ import { CdxButton, CdxDialog, CdxIcon, CdxMessage } from '@wikimedia/codex';
 import { cdxIconClose } from '@wikimedia/codex-icons';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
@@ -130,6 +124,7 @@ type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>
 
 const props = defineProps<{
 	subject: Subject;
+	schema: Schema;
 	onSave: SubjectSaveHandler;
 	onSaveSchema: SchemaSaveHandler;
 	open: boolean;
@@ -137,7 +132,6 @@ const props = defineProps<{
 
 const emit = defineEmits( [ 'update:open' ] );
 
-const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 
 interface SubjectEditorInstance {
@@ -146,7 +140,9 @@ interface SubjectEditorInstance {
 
 const isSchemaEditorOpen = ref( false );
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
-const loadedSchema = ref<Schema | null>( null );
+// Mirrors the prop so a schema saved through the nested SchemaEditorDialog takes effect here
+// without waiting for the host to pass a new one down.
+const currentSchema = shallowRef<Schema>( props.schema );
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
@@ -200,7 +196,7 @@ const anchorlessViolations = computed<SubjectViolation[]>( () => {
 	// raw subject — otherwise a violation on a missing-but-rendered field
 	// would be wrongly banner-routed even though the field is on screen.
 	const renderedPropertyNames = new Set(
-		[ ...( statements.value ?? [] ) ].map( ( s ) => s.propertyName.toString() )
+		[ ...statements.value ].map( ( s ) => s.propertyName.toString() )
 	);
 	return serverViolations.value.filter( ( v ) => {
 		if ( v.propertyName === null ) {
@@ -249,31 +245,16 @@ watch( subjectEditorRef, ( editor ) => {
 	}
 } );
 
-watch( () => props.subject, async ( newSubject ) => {
-	if ( newSubject ) {
-		await checkEditPermission( newSubject.getSchemaName() );
-		loadSchema();
-	}
+watch( () => props.subject, ( newSubject ) => {
+	checkEditPermission( newSubject.getSchemaName() );
 }, { immediate: true } );
 
-function loadSchema(): void {
-	try {
-		// Deliberately a registry read, not a fetch: hosts guarantee the schema is
-		// loaded (page seeding plus a fresh fetch in their openEditor), and this
-		// dialog is mounted inside every editable Infobox, so fetching here would
-		// fire a request per view at page load.
-		loadedSchema.value = schemaStore.getSchema( props.subject.getSchemaName() );
-	} catch ( error ) {
-		console.error( 'Failed to load schema:', error );
-		mw.notify(
-			`Failed to load schema ${ props.subject.getSchemaName() }: ${ error instanceof Error ? error.message : String( error ) }`,
-			{ type: 'error' }
-		);
-	}
-}
+watch( () => props.schema, ( newSchema ) => {
+	currentSchema.value = newSchema;
+} );
 
-const statements = computed( (): StatementList | null =>
-	loadedSchema.value?.statementsFrom( props.subject.getStatements() ) ?? null
+const statements = computed( (): StatementList =>
+	currentSchema.value.statementsFrom( props.subject.getStatements() )
 );
 
 const handleSave = async ( summary: string ): Promise<void> => {
@@ -316,7 +297,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 };
 
 const onSchemaSaved = ( schema: Schema ): void => {
-	loadedSchema.value = schema;
+	currentSchema.value = schema;
 };
 
 defineExpose( { hasChanged } );

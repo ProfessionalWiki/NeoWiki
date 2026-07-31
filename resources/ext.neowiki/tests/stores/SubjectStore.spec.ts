@@ -168,7 +168,7 @@ describe( 'SubjectStore ordering guards', () => {
 		vi.restoreAllMocks();
 	} );
 
-	it( 'discards a fetch that a mutation overtook', async () => {
+	it( 'discards a getOrFetchSubject miss-path fetch that a mutation overtook', async () => {
 		const stale = newSubject( { id: 's11111111111111', label: 'stale' } );
 		const updated = newSubject( { id: 's11111111111111', label: 'updated' } );
 		let resolveFetch!: ( subject: Subject ) => void;
@@ -181,12 +181,25 @@ describe( 'SubjectStore ordering guards', () => {
 		} );
 		const store = useSubjectStore();
 
-		const request = store.fetchSubject( new SubjectId( 's11111111111111' ) );
+		const request = store.getOrFetchSubject( new SubjectId( 's11111111111111' ) );
 		await store.updateSubject( updated );
 		resolveFetch( stale );
-		await request;
 
+		expect( await request ).toStrictEqual( updated );
 		expect( store.getSubject( new SubjectId( 's11111111111111' ) ) ).toStrictEqual( updated );
+	} );
+
+	it( 'does not fetch when getOrFetchSubject finds the subject in the registry', async () => {
+		const seeded = newSubject( { id: 's11111111111111', label: 'seeded' } );
+		const getSubject = vi.fn();
+		withSubjectRepository( { getSubject } );
+		const store = useSubjectStore();
+		store.setSubject( seeded );
+
+		const result = await store.getOrFetchSubject( new SubjectId( 's11111111111111' ) );
+
+		expect( result ).toStrictEqual( seeded );
+		expect( getSubject ).not.toHaveBeenCalled();
 	} );
 
 	it( 'discards loadPageSubjects subject writes when a mutation lands mid-flight', async () => {

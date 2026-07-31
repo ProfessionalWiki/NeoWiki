@@ -78,6 +78,7 @@ const currentLayout = shallowRef<Layout>( props.layout );
 const { canEditLayout, checkEditPermission } = useLayoutPermissions();
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
+const layoutRepo = NeoWikiServices.getLayoutRepository();
 const schemaProperties = shallowRef<PropertyDefinition[]>( [] );
 
 watch( () => props.layout, ( newLayout ) => {
@@ -136,8 +137,7 @@ const layoutStore = useLayoutStore();
 
 async function openEditor(): Promise<void> {
 	try {
-		await layoutStore.fetchLayout( currentLayout.value.getName() );
-		currentLayout.value = layoutStore.getLayout( currentLayout.value.getName() )!;
+		currentLayout.value = await layoutRepo.getLayout( currentLayout.value.getName() );
 		isEditorOpen.value = true;
 	} catch ( error ) {
 		mw.notify(

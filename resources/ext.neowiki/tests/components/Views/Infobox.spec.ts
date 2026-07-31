@@ -34,6 +34,8 @@ describe( 'Infobox', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore: any;
 	let subjectStore: any;
+	const getSubjectMock = vi.fn();
+	const getSchemaMock = vi.fn();
 
 	const mockSchema = new Schema(
 		'TestSchema',
@@ -79,6 +81,8 @@ describe( 'Infobox', () => {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
 				[ Service.SchemaPermissionHints ]: NeoWikiExtension.getInstance().newSchemaPermissionHints(),
 				[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
+				[ Service.SubjectRepository ]: { getSubject: getSubjectMock },
+				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
 			},
 		},
 	} );
@@ -93,6 +97,10 @@ describe( 'Infobox', () => {
 		subjectStore = useSubjectStore();
 		subjectStore.setSubject( mockSubject );
 		subjectStore.validateSubjectUpdate = vi.fn().mockResolvedValue( [] );
+
+		// openEditor reads through the injected repositories, not the stores the display renders from.
+		getSubjectMock.mockReset();
+		getSchemaMock.mockReset();
 	} );
 
 	it( 'renders the title correctly', () => {
@@ -151,22 +159,33 @@ describe( 'Infobox', () => {
 		expect( editButton.exists() ).toBe( true );
 	} );
 
-	it( 'fetches latest schema and subject before opening dialog when edit button is clicked', async () => {
-		schemaStore.fetchSchema = vi.fn().mockResolvedValue( undefined );
-		subjectStore.fetchSubject = vi.fn().mockResolvedValue( undefined );
+	it( 'opens the dialog on the subject and schema fetched from the repositories', async () => {
+		// Values the stores do not hold, so the assertions can only pass if the dialog was
+		// handed the repositories' data rather than a registry read.
+		const freshSubject = new Subject(
+			mockSubject.getId(),
+			'Fetched Subject',
+			'TestSchema',
+			new StatementList( [] ),
+		);
+		const freshSchema = new Schema( 'TestSchema', 'Fetched schema', new PropertyDefinitionList( [] ) );
+		getSubjectMock.mockResolvedValue( freshSubject );
+		getSchemaMock.mockResolvedValue( freshSchema );
 
 		const wrapper = mountComponent( mockSubject, true );
 
-		const dialog = wrapper.findComponent( SubjectEditorDialog );
-		expect( dialog.props( 'open' ) ).toBe( false );
+		expect( wrapper.findComponent( SubjectEditorDialog ).exists() ).toBe( false );
 
 		const editButton = wrapper.findComponent( { name: 'CdxButton', props: { 'aria-label': 'neowiki-infobox-edit-link' } } );
 		await editButton.trigger( 'click' );
 		await flushPromises();
 
-		expect( schemaStore.fetchSchema ).toHaveBeenCalledWith( mockSubject.getSchemaName() );
-		expect( subjectStore.fetchSubject ).toHaveBeenCalledWith( mockSubject.getId() );
+		expect( getSubjectMock ).toHaveBeenCalledWith( mockSubject.getId() );
+		expect( getSchemaMock ).toHaveBeenCalledWith( 'TestSchema' );
+		const dialog = wrapper.findComponent( SubjectEditorDialog );
 		expect( dialog.props( 'open' ) ).toBe( true );
+		expect( dialog.props( 'subject' ) ).toStrictEqual( freshSubject );
+		expect( dialog.props( 'schema' ) ).toStrictEqual( freshSchema );
 	} );
 
 	it( 'renders schema name as a link to the Schema page', () => {
@@ -175,5 +194,100 @@ describe( 'Infobox', () => {
 		const schemaLink = wrapper.find( '.ext-neowiki-infobox__schema a' );
 		expect( schemaLink.text() ).toBe( 'TestSchema' );
 		expect( schemaLink.attributes( 'href' ) ).toBe( '/wiki/Schema:TestSchema' );
+	} );
+
+	describe( 'publishing the editor-open fetch into the stores', () => {
+		// This view renders from the stores, so what openEditor fetched has to land there too:
+		// otherwise a property another session added stays unrenderable and a value saved against
+		// it is invisible until reload.
+		const schemaWithCostCentre = new Schema(
+			'TestSchema',
+			'A test schema',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Cost centre', { type: TextType.typeName } ),
+			] ),
+		);
+		// The infobox renders a value only when the schema it holds defines that property, so a
+		// subject carrying a value for a property the stale schema lacks renders as nothing.
+		const subjectWithCostCentre = new Subject(
+			mockSubject.getId(),
+			'Test Subject',
+			'TestSchema',
+			new StatementList( [
+				new Statement( new PropertyName( 'Cost centre' ), TextType.typeName, newStringValue( 'CC-42' ) ),
+			] ),
+		);
+		const relabelledSubject = new Subject(
+			mockSubject.getId(), 'Relabelled', 'TestSchema', new StatementList( [] ),
+		);
+
+		async function openEditor( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.findComponent(
+				{ name: 'CdxButton', props: { 'aria-label': 'neowiki-infobox-edit-link' } },
+			).trigger( 'click' );
+			await flushPromises();
+		}
+
+		it( 'renders a value whose property only the fetched schema defines', async () => {
+			getSubjectMock.mockResolvedValue( subjectWithCostCentre );
+			getSchemaMock.mockResolvedValue( schemaWithCostCentre );
+
+			const wrapper = mountComponent( mockSubject, true );
+			await openEditor( wrapper );
+
+			expect( schemaStore.getSchema( 'TestSchema' ) ).toStrictEqual( schemaWithCostCentre );
+			expect( wrapper.text() ).toContain( 'Cost centre' );
+			expect( wrapper.text() ).toContain( 'CC-42' );
+		} );
+
+		it( 'renders the fetched subject after the editor opens', async () => {
+			getSubjectMock.mockResolvedValue( relabelledSubject );
+			getSchemaMock.mockResolvedValue( mockSchema );
+
+			const wrapper = mountComponent( mockSubject, true );
+			await openEditor( wrapper );
+
+			expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'Relabelled' );
+		} );
+
+		it( 'discards the schema it fetched when a schema mutation lands mid-fetch', async () => {
+			const saved = new Schema( 'TestSchema', 'Saved elsewhere', new PropertyDefinitionList( [] ) );
+			let resolveSchema!: ( schema: Schema ) => void;
+			getSubjectMock.mockResolvedValue( mockSubject );
+			getSchemaMock.mockReturnValue( new Promise<Schema>( ( resolve ) => {
+				resolveSchema = resolve;
+			} ) );
+
+			const wrapper = mountComponent( mockSubject, true );
+			await openEditor( wrapper );
+
+			schemaStore.mutationEpoch++;
+			schemaStore.setSchema( 'TestSchema', saved );
+			resolveSchema( schemaWithCostCentre );
+			await flushPromises();
+
+			expect( schemaStore.getSchema( 'TestSchema' ) ).toStrictEqual( saved );
+		} );
+
+		it( 'discards the subject it fetched when a subject mutation lands mid-fetch', async () => {
+			const saved = new Subject(
+				mockSubject.getId(), 'Saved elsewhere', 'TestSchema', new StatementList( [] ),
+			);
+			let resolveSubject!: ( subject: Subject ) => void;
+			getSchemaMock.mockResolvedValue( mockSchema );
+			getSubjectMock.mockReturnValue( new Promise<Subject>( ( resolve ) => {
+				resolveSubject = resolve;
+			} ) );
+
+			const wrapper = mountComponent( mockSubject, true );
+			await openEditor( wrapper );
+
+			subjectStore.mutationEpoch++;
+			subjectStore.setSubject( saved );
+			resolveSubject( relabelledSubject );
+			await flushPromises();
+
+			expect( subjectStore.getSubject( mockSubject.getId() ) ).toStrictEqual( saved );
+		} );
 	} );
 } );

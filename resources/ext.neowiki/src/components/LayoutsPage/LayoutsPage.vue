@@ -104,6 +104,7 @@ import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useCursorPagination } from '@/composables/useCursorPagination.ts';
 import { useLayoutPermissions } from '@/composables/useLayoutPermissions.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { Layout } from '@/domain/Layout.ts';
 import LayoutCreatorDialog from './LayoutCreatorDialog.vue';
@@ -129,6 +130,7 @@ const totalRows = ref<number | undefined>( undefined );
 const { cursorFor, recordNextCursor } = useCursorPagination();
 const { canCreateLayouts, canEditLayout: canEditLayouts, checkCreatePermission, checkEditPermission } = useLayoutPermissions();
 const layoutStore = useLayoutStore();
+const layoutRepo = NeoWikiServices.getLayoutRepository();
 
 const isEditorOpen = ref( false );
 const editingLayout = shallowRef<Layout | null>( null );
@@ -226,21 +228,10 @@ async function openEditor( layoutName: string ): Promise<void> {
 		editingLayout.value = null;
 		await nextTick();
 
-		await Promise.all( [
-			layoutStore.fetchLayout( layoutName ),
+		const [ layout ] = await Promise.all( [
+			layoutRepo.getLayout( layoutName ),
 			fetchLayouts( lastOffset.value, pageSize.value )
 		] );
-
-		const layout = layoutStore.getLayout( layoutName );
-		if ( layout === undefined ) {
-			// The epoch guard discarded this fetch's write-back (a mutation landed
-			// mid-flight), so the store has no fresh data for this layout. Don't open
-			// the editor on stale/null data; the user can retry the edit. SchemasPage's
-			// equivalent throws into its catch below instead (getSchema throws rather than
-			// returning undefined); this converges the two on showing the same kind of toast.
-			mw.notify( mw.msg( 'neowiki-layouts-edit-stale-error' ), { type: 'error' } );
-			return;
-		}
 
 		editingLayout.value = layout;
 		isEditorOpen.value = true;

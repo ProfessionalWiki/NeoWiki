@@ -1,11 +1,12 @@
 # Frontend Stores Are Registries, Not Caches
 
-Date: 2026-07-29
+Date: 2026-07-31
 
 Status: Accepted
 
-Extends [ADR 16](016-frontend-state-management.md), which settles which components read the
-stores but is silent on fetching, caching and invalidation.
+Amends [ADR 16](016-frontend-state-management.md), which settles which components read the
+stores but is silent on fetching, caching and invalidation: its editing-UI rule now applies
+to reads, while mutations and validation still go through store actions.
 
 ## Context
 
@@ -28,14 +29,17 @@ reason.
 ## Decision
 
 Stores are page-scoped registries of server state, not caches. A registry holds the page
-payload seeded at load, the session's own acknowledged writes, and explicitly fetched values.
+payload seeded at load and the session's own acknowledged writes.
 
-1. **Reads are explicit.** `fetchX` always calls the backend and records the result. `getX`
-   reads the registry synchronously. The store API offers no fetch-on-miss reads, with two
-   exceptions:
-   - `SubjectStore.getOrFetchSubject` resolves display labels over the deliberately seeded
-     page payload. Referenced Subjects arrive bundled with the page payload precisely so that
-     N relation displays do not fire N requests.
+1. **Reads are explicit.** `getX` reads the registry synchronously, over that page payload and
+   those writes. Editing UIs always open on freshly fetched data, read through the repositories
+   and taken as props ([ADR 16](016-frontend-state-management.md)); they still call store
+   actions to mutate and to validate. That fetch is the job of the code that opens the editor.
+   A host that renders from the stores installs what it fetched into them, unless a save-path
+   re-sync already keeps its display current (as on the manage-subjects page). The store API
+   offers no fetch-on-miss reads, with two exceptions:
+   - `SubjectStore.getOrFetchSubject` resolves display labels over the seeded page payload,
+     which bundles referenced Subjects precisely so N relation displays do not fire N requests.
    - `SchemaStore.fetchAllSchemaSummaries` lets concurrent callers share one in-flight
      pagination. Results are not retained, so every new caller cohort fetches fresh data.
 2. **Mutations keep the registry consistent with the session's own writes, on every path.**
@@ -51,32 +55,26 @@ payload seeded at load, the session's own acknowledged writes, and explicitly fe
    from the map. `SubjectStore.deleteSubject`/`pageSubjects` is the current instance — the map
    entry is dropped only once `pageSubjects` itself no longer lists the id, so a render caught
    between the two writes never sees a name `getSubject` cannot resolve.
-3. **Asynchronous write-backs are epoch-guarded.** Every fetch that writes into a store
-   snapshots that store's `mutationEpoch` before awaiting and discards the write into it when
-   the epoch moved, because a response that raced a mutation may predate that mutation. A fetch
-   that writes into more than one store snapshots and guards each store's epoch separately —
-   `SubjectStore.loadPageSubjects` and `StoreStateLoader.loadForSubject` both snapshot the
-   Subject and Schema stores' epochs up front and apply each write only if its own store's
-   epoch still matches by the time the response lands. The epoch is store-wide by design:
-   discarding an unrelated in-flight fetch costs one refetch and keeps the rule simple.
+3. **Asynchronous write-backs are epoch-guarded.** Every store write that follows a server read
+   snapshots that store's `mutationEpoch` beforehand and discards the write when the epoch moved,
+   because a response that raced a mutation may predate that mutation. Page seeding
+   (`StoreStateLoader`), `SubjectStore.loadPageSubjects`, `getOrFetchSubject`'s miss path and the
+   hosts that install what their editor-open fetch returned all follow it. A write into more than
+   one store snapshots and guards each store's epoch separately. The epoch is store-wide by
+   design: discarding an unrelated in-flight fetch costs one refetch and keeps the rule simple.
 
 The epoch guard covers store write-backs only; ordering component-local async state — a
-debounced validation run, a picker's in-flight request — remains each component's own job. The
-`requestSequence` counter in `useSubjectValidation` (mirrored in `SchemaCreator.vue`,
-`LayoutCreator.vue` and `SubjectLookup.vue`) applies the same discard-the-stale-response idea to
-local refs instead of store state.
+debounced validation run, a picker's in-flight request, an editor's schema fetch — remains each
+component's own job. The `requestSequence` counter in `useSubjectValidation` (mirrored in
+`SchemaCreator.vue`, `LayoutCreator.vue`, `SubjectLookup.vue` and `SubjectCreatorDialog.vue`)
+applies the same discard-the-stale-response idea to local refs instead of store state.
 
-Store action names follow a fixed vocabulary. `fetchX` hits the network, returns nothing, and
-records into the registry. `getX` reads the registry synchronously. `saveX` and `deleteSubject`
-are the server mutations. `removeX` is a local registry removal after a delete some other code
-path already executed server-side — Schema and Layout deletion goes through the shared
-`DeletePageDialog`, not a store action, so `removeSchema`/`removeLayout` exist to tell the store
-its copy is now gone. `fetchAllSchemaSummaries` is the deliberate exception that returns data
-directly: its results are not retained in the registry, so returning them is the only way
-callers see them at all.
-
-Editing UIs always open on freshly fetched data. That obligation sits with the code that opens
-the editor.
+Store action names follow a fixed vocabulary. `getX` reads the registry synchronously; the
+`fetchX` entity reads are gone, since reads for editing belong to the repositories. `removeX`
+is a local registry removal after a delete another code path already executed server-side:
+Schema and Layout deletion goes through the shared `DeletePageDialog`, so
+`removeSchema`/`removeLayout` tell the store its copy is gone. `fetchAllSchemaSummaries`
+returns its data directly because nothing retains it.
 
 Reloading the page remains legitimate where server-rendered output must reflect a change,
 because no store update can refresh views that the wiki rendered. The Subject-creation flow
@@ -84,14 +82,12 @@ reloads for this reason.
 
 ## Consequences
 
-* The public store API offers no fetch-on-miss reads for Schemas or Layouts
-  (`getOrFetchSchema` and `getOrFetchLayout` were removed). Extensions fetch explicitly and
-  read the registry; the RedHerb example extension demonstrates the pattern.
+* Fetching a Schema, Layout or Subject to edit is the caller's job, not a store action.
+  Extensions read through the repositories and pass the result down; RedHerb demonstrates it.
 * Schema pickers fetch summaries per mount cohort. A few requests per dialog open, bounded by
   the scale targets in [ADR 29](029-scalability-targets.md), buy freshness: Schemas created or
   deleted elsewhere appear without a reload.
-* New store actions must follow the three rules above. The store test suites demonstrate the
-  expected shape.
+* New store actions must follow the three rules above; the store test suites show the shape.
 
 ## Alternatives Considered
 
@@ -101,6 +97,14 @@ Epoch-guarding every read and invalidating on every mutation while keeping the `
 semantics. Rejected because it hand-rolls the hard parts of a query library to protect cache
 hits that stay session-stale anyway, and because every future action would have to remember
 the discipline.
+
+### Stores as the single data-access façade
+
+Routing editing reads through store fetch actions, so all server reads have one entry point.
+Rejected because it puts values only one component needs into shared state, which forces onto
+every fetch an epoch guard and a caller contract where a resolved fetch may have written
+nothing to the registry, and because
+[ADR 16](016-frontend-state-management.md) already decided editing UIs do not use the stores.
 
 ### Adopting a query library (TanStack Query or Pinia Colada)
 

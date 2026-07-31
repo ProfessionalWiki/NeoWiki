@@ -91,6 +91,7 @@ const props = defineProps( {
 } );
 
 const schemaStore = useSchemaStore();
+const schemaRepo = NeoWikiServices.getSchemaRepository();
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
 
 const isEditorOpen = shallowRef( false );
@@ -139,8 +140,7 @@ function getTypeLabel( propertyType: string ): string {
 
 async function openEditor(): Promise<void> {
 	try {
-		await schemaStore.fetchSchema( currentSchema.value.getName() );
-		currentSchema.value = schemaStore.getSchema( currentSchema.value.getName() );
+		currentSchema.value = await schemaRepo.getSchema( currentSchema.value.getName() );
 		isEditorOpen.value = true;
 	} catch ( error ) {
 		mw.notify(

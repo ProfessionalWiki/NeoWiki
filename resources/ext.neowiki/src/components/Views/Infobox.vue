@@ -29,9 +29,10 @@
 				<CdxIcon :icon="cdxIconEdit" />
 			</CdxButton>
 			<SubjectEditorDialog
-				v-if="canEditSubject"
+				v-if="editingSubject !== null && editingSchema !== null"
 				v-model:open="isEditorOpen"
-				:subject="subject"
+				:subject="editingSubject as Subject"
+				:schema="editingSchema as Schema"
 				:on-save="handleSaveSubject"
 				:on-save-schema="handleSaveSchema"
 			/>
@@ -59,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { Component, computed, ref } from 'vue';
+import { Component, computed, ref, shallowRef } from 'vue';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -77,18 +78,41 @@ const props = defineProps<ViewProps>();
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
 const layoutStore = useLayoutStore();
+const subjectRepo = NeoWikiServices.getSubjectRepository();
+const schemaRepo = NeoWikiServices.getSchemaRepository();
 
 const isEditorOpen = ref( false );
+// The dialog edits its own copy rather than the registry entry (ADR 16).
+const editingSubject = shallowRef<Subject | null>( null );
+const editingSchema = shallowRef<Schema | null>( null );
 
 const subject = computed( () => subjectStore.getSubject( props.subjectId ) ); // TODO: handle not found
 const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) ); // TODO: handle not found
 
 async function openEditor(): Promise<void> {
 	try {
-		await Promise.all( [
-			schemaStore.fetchSchema( subject.value.getSchemaName() ),
-			subjectStore.fetchSubject( props.subjectId )
+		const schemaName = subject.value.getSchemaName();
+		const subjectEpoch = subjectStore.mutationEpoch;
+		const schemaEpoch = schemaStore.mutationEpoch;
+
+		const [ freshSubject, freshSchema ] = await Promise.all( [
+			subjectRepo.getSubject( props.subjectId ),
+			schemaRepo.getSchema( schemaName )
 		] );
+
+		// This view renders from the registries, so publish the server truth we just fetched into
+		// them: otherwise a schema another session changed stays invisible here, and a value saved
+		// against a property this display does not know about renders as nothing. Each write is
+		// epoch-guarded against its own store (ADR 30 rule 3).
+		if ( subjectEpoch === subjectStore.mutationEpoch ) {
+			subjectStore.setSubject( freshSubject );
+		}
+		if ( schemaEpoch === schemaStore.mutationEpoch ) {
+			schemaStore.setSchema( schemaName, freshSchema );
+		}
+
+		editingSubject.value = freshSubject;
+		editingSchema.value = freshSchema;
 		isEditorOpen.value = true;
 	} catch ( error ) {
 		mw.notify(

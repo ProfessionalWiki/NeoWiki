@@ -61,18 +61,6 @@ export const useSchemaStore = defineStore( 'schema', {
 		setSchema( name: string, schema: Schema ): void { // TODO: just take Schema
 			this.schemas.set( name, schema );
 		},
-		// A resolved call may have recorded nothing: the epoch guard below discards the write-back
-		// when a mutation landed mid-flight, leaving the registry unchanged. Callers must read the
-		// result via getSchema afterwards and handle a miss, rather than assuming this call alone
-		// guarantees fresh data is present.
-		async fetchSchema( name: string ): Promise<void> {
-			const epoch = this.mutationEpoch;
-			const schema = await NeoWikiExtension.getInstance().getSchemaRepository().getSchema( name );
-			if ( epoch !== this.mutationEpoch ) {
-				return;
-			}
-			this.setSchema( name, schema );
-		},
 		// Always fetches. Concurrent callers (e.g. several relation-property pickers
 		// mounting in the same render) share one in-flight pagination rather than each
 		// running a full one; results are not retained, so each new caller cohort gets
@@ -93,7 +81,7 @@ export const useSchemaStore = defineStore( 'schema', {
 			}
 		},
 		// Checks existence via the schema-names search (a 200 response) rather
-		// than fetchSchema, which 404s for a missing name — those 404s are
+		// than a schema fetch, which 404s for a missing name — those 404s are
 		// avoidable console/network noise when checking a not-yet-created name.
 		// The name is normalised so e.g. "person" or "Foo_Bar" matches the
 		// existing "Person" / "Foo Bar" the same way a save would.

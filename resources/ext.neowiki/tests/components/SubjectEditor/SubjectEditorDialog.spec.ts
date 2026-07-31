@@ -7,8 +7,9 @@ import { StatementList } from '@/domain/StatementList.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition.ts';
+import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { createPinia, setActivePinia } from 'pinia';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
@@ -55,7 +56,6 @@ describe( 'SubjectEditorDialog', () => {
 	} );
 
 	let pinia: ReturnType<typeof createPinia>;
-	let schemaStore;
 	let schemaPermissionHints: any;
 
 	const mockSchema = new Schema(
@@ -75,6 +75,7 @@ describe( 'SubjectEditorDialog', () => {
 		canEditSchema: boolean,
 		stubs: Record<string, any>,
 		onSave?: ( subject: any, comment: string ) => Promise<void>,
+		schema: Schema = mockSchema,
 	): VueWrapper => {
 		schemaPermissionHints = {
 			canEditSchema: vi.fn().mockResolvedValue( canEditSchema ),
@@ -83,6 +84,7 @@ describe( 'SubjectEditorDialog', () => {
 		return mount( SubjectEditorDialog, {
 			props: {
 				subject: mockSubject,
+				schema,
 				onSave: onSave ?? vi.fn(),
 				onSaveSchema: vi.fn(),
 				open: true,
@@ -109,12 +111,57 @@ describe( 'SubjectEditorDialog', () => {
 		pinia = createPinia();
 		setActivePinia( pinia );
 
-		schemaStore = useSchemaStore();
-		schemaStore.setSchema( 'TestSchema', mockSchema );
-
 		// The dry-run validation runs alongside the live validators; stub it so
 		// it does not reach the network and stays out of the way of these tests.
 		useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [] );
+	} );
+
+	function schemaWithProperty( propertyName: string ): Schema {
+		return new Schema(
+			'TestSchema',
+			'A test schema',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( propertyName, { type: TextType.typeName } ),
+			] ),
+		);
+	}
+
+	function editedPropertyNames( wrapper: VueWrapper ): string[] {
+		const statements = wrapper.findComponent( SubjectEditor ).props( 'statements' ) as StatementList;
+		return [ ...statements ].map( ( s ) => s.propertyName.toString() );
+	}
+
+	it( 'materialises one editable statement per property of the schema prop', async () => {
+		const wrapper = mountComponent(
+			false, { SubjectEditor: SubjectEditorStub }, undefined, schemaWithProperty( 'name' ),
+		);
+		await flushPromises();
+
+		expect( editedPropertyNames( wrapper ) ).toEqual( [ 'name' ] );
+	} );
+
+	it( 'follows the schema prop when the host replaces it', async () => {
+		const wrapper = mountComponent(
+			false, { SubjectEditor: SubjectEditorStub }, undefined, schemaWithProperty( 'name' ),
+		);
+		await flushPromises();
+
+		await wrapper.setProps( { schema: schemaWithProperty( 'nickname' ) } );
+
+		expect( editedPropertyNames( wrapper ) ).toEqual( [ 'nickname' ] );
+	} );
+
+	it( 'follows a schema saved through the nested schema editor', async () => {
+		const wrapper = mountComponent(
+			false, { SubjectEditor: SubjectEditorStub, SchemaEditorDialog: true }, undefined,
+			schemaWithProperty( 'name' ),
+		);
+		await flushPromises();
+
+		wrapper.findComponent( SchemaEditorDialog ).vm.$emit( 'saved', schemaWithProperty( 'nickname' ) );
+		await flushPromises();
+
+		expect( editedPropertyNames( wrapper ) ).toEqual( [ 'nickname' ] );
 	} );
 
 	it( 'renders schema as a link when user has edit permissions', async () => {

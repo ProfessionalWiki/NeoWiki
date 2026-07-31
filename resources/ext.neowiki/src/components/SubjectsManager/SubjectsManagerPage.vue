@@ -426,9 +426,10 @@
 		/>
 
 		<SubjectEditorDialog
-			v-if="editingSubject !== null"
+			v-if="editingSubject !== null && editingSchema !== null"
 			v-model:open="editorOpen"
 			:subject="editingSubject as Subject"
+			:schema="editingSchema as Schema"
 			:on-save="handleEditSave"
 			:on-save-schema="handleSchemaSave"
 		/>
@@ -458,7 +459,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, nextTick } from 'vue';
+import { computed, onMounted, onUnmounted, ref, shallowRef, nextTick } from 'vue';
 import {
 	CdxButton,
 	CdxDialog,
@@ -477,6 +478,7 @@ import {
 	cdxIconPushPin,
 	cdxIconTrash
 } from '@wikimedia/codex-icons';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
@@ -505,6 +507,8 @@ const subjectIriBase = ( mw.config.get( 'wgNeoWikiSubjectIriBase' ) as string | 
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
+const subjectRepo = NeoWikiServices.getSubjectRepository();
+const schemaRepo = NeoWikiServices.getSchemaRepository();
 const {
 	canCreateMainSubject,
 	canCreateChildSubject,
@@ -543,20 +547,19 @@ function scrollBehavior(): 'auto' | 'smooth' {
 	return window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches ? 'auto' : 'smooth';
 }
 
-const editingSubjectId = ref<SubjectId | null>( null );
+// Editor state is component-local (ADR 16): the dialog opens on data fetched straight from the
+// repositories, not on the store the list below renders from.
+const editingSubject = shallowRef<Subject | null>( null );
+const editingSchema = shallowRef<Schema | null>( null );
 const editorOpen = ref( false );
 
 const deleteConfirmOpen = ref( false );
 const deletingSubject = ref<Subject | null>( null );
 
-// Read subjects through the reactive store so refreshes (e.g. on openEditor) flow into the list.
+// Read subjects through the reactive store so the session's own writes flow into the list.
 const subjects = computed<Subject[]>( () =>
 	subjectStore.pageSubjects?.getSubjects()
 		.map( ( s ) => subjectStore.getSubject( s.getId() ) ) ?? []
-);
-
-const editingSubject = computed<Subject | null>( () =>
-	editingSubjectId.value === null ? null : subjectStore.getSubject( editingSubjectId.value )
 );
 
 const canCreate = computed( () => canCreateMainSubject.value || canCreateChildSubject.value );
@@ -836,14 +839,15 @@ async function demoteFromMain(): Promise<void> {
 
 async function openEditor( subject: Subject ): Promise<void> {
 	try {
-		// Refresh both subject and schema so the editor never opens against stale data
+		// Fetch both subject and schema so the editor never opens against stale data
 		// (e.g. after the subject or its schema was edited in another tab).
-		await Promise.all( [
-			subjectStore.fetchSubject( subject.getId() ),
-			schemaStore.fetchSchema( subject.getSchemaName() )
+		const [ freshSubject, schema ] = await Promise.all( [
+			subjectRepo.getSubject( subject.getId() ),
+			schemaRepo.getSchema( subject.getSchemaName() )
 		] );
 
-		editingSubjectId.value = subject.getId();
+		editingSubject.value = freshSubject;
+		editingSchema.value = schema;
 		editorOpen.value = true;
 	} catch ( error ) {
 		mw.notify(

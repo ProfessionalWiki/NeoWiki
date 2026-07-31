@@ -12,6 +12,9 @@ import { StatementList } from '@/domain/StatementList.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import SummaryAction from '@/components/common/SummaryAction.vue';
+import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import { Service } from '@/NeoWikiServices.ts';
+import { newSchema } from '@/TestHelpers.ts';
 
 // Two subject-id-shaped ids (s + 14 base58 chars), so the deep-link fragment parser accepts them.
 const ID_A = 's1aaaaaaaaaaaa1';
@@ -61,21 +64,25 @@ vi.mock( '@/stores/SubjectStore.ts', async ( importOriginal ) => {
 
 vi.mock( '@/stores/SchemaStore.ts', () => ( {
 	useSchemaStore: () => ( {
-		fetchSchema: vi.fn(),
 		saveSchema: vi.fn(),
 		getSchema: vi.fn(),
 	} ),
 } ) );
 
-// A module-level ref (rather than one freshly created per useSubjectPermissions() call) so the
-// delete-flow tests below can flip it on; every other describe block leaves it at the default off.
+// Module-level refs (rather than ones freshly created per useSubjectPermissions() call) so the
+// edit- and delete-flow tests below can flip them on; every other describe leaves them off.
 const canDeleteSubjectRef = ref( false );
+const canEditSubjectRef = ref( false );
+
+// openEditor reads through the injected repositories; the edit-flow describe below arms these.
+const getSubjectRepoMock = vi.fn();
+const getSchemaRepoMock = vi.fn();
 
 vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 	useSubjectPermissions: () => ( {
 		canCreateMainSubject: ref( false ),
 		canCreateChildSubject: ref( false ),
-		canEditSubject: ref( false ),
+		canEditSubject: canEditSubjectRef,
 		canDeleteSubject: canDeleteSubjectRef,
 		checkPermissions: vi.fn().mockResolvedValue( undefined ),
 	} ),
@@ -122,6 +129,10 @@ async function mountPage(): Promise<VueWrapper> {
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
+			provide: {
+				[ Service.SubjectRepository ]: { getSubject: getSubjectRepoMock },
+				[ Service.SchemaRepository ]: { getSchema: getSchemaRepoMock },
+			},
 			stubs: { CdxIcon: true, CdxDialog: CdxDialogStub },
 		},
 	} );
@@ -324,6 +335,67 @@ describe( 'SubjectsManagerPage row copy-link action', () => {
 		expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-managesubjects-link-copied', { type: 'success' } );
 	} );
 
+} );
+
+describe( 'SubjectsManagerPage edit flow', () => {
+
+	beforeEach( () => {
+		storeSubjects = [ subject( ID_A ) ];
+		mainSubjectId = null;
+		canEditSubjectRef.value = true;
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+
+		getSubjectRepoMock.mockReset();
+		getSchemaRepoMock.mockReset();
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		window.location.hash = '';
+		canEditSubjectRef.value = false;
+		vi.restoreAllMocks();
+	} );
+
+	it( 'opens the editor on the subject and schema fetched from the repositories', async () => {
+		// Values the store stub does not hold, so the assertions can only pass if the dialog was
+		// handed the repositories' data rather than a registry read.
+		const freshSubject = new Subject(
+			new SubjectId( ID_A ),
+			'Fetched label',
+			'Person',
+			new StatementList( [] ),
+		);
+		const freshSchema = newSchema( { title: 'Person' } );
+		getSubjectRepoMock.mockResolvedValue( freshSubject );
+		getSchemaRepoMock.mockResolvedValue( freshSchema );
+
+		const wrapper = await mountPage();
+
+		await wrapper.find( '[aria-label="neowiki-managesubjects-row-edit"]' ).trigger( 'click' );
+		await flushPromises();
+
+		expect( getSubjectRepoMock ).toHaveBeenCalledWith( expect.objectContaining( { text: ID_A } ) );
+		expect( getSchemaRepoMock ).toHaveBeenCalledWith( 'Person' );
+		const dialog = wrapper.findComponent( SubjectEditorDialog );
+		expect( dialog.props( 'open' ) ).toBe( true );
+		expect( dialog.props( 'subject' ) ).toStrictEqual( freshSubject );
+		expect( dialog.props( 'schema' ) ).toStrictEqual( freshSchema );
+	} );
+
+	it( 'reports a failed fetch instead of opening the editor', async () => {
+		getSubjectRepoMock.mockRejectedValue( new Error( 'Unknown subject' ) );
+		getSchemaRepoMock.mockResolvedValue( newSchema( { title: 'Person' } ) );
+
+		const wrapper = await mountPage();
+
+		await wrapper.find( '[aria-label="neowiki-managesubjects-row-edit"]' ).trigger( 'click' );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SubjectEditorDialog ).exists() ).toBe( false );
+		expect( mw.notify ).toHaveBeenCalledWith( 'Unknown subject', { type: 'error' } );
+	} );
 } );
 
 describe( 'SubjectsManagerPage delete flow', () => {

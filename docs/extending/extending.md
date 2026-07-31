@@ -321,9 +321,11 @@ configuration (Display Rules and Settings) from the layout store using `layoutNa
 references it renders through your component instead of the built-in infobox.
 
 The `redherb-card` example reuses NeoWiki's own building blocks rather than rendering values by hand: the subject,
-schema, and layout stores; `nw.resolveDisplayProperties` together with the value-display component registry to
-render each value through its Property Type's component; and the shared `nw.SubjectEditorDialog` for editing when
-`canEditSubject` is true.
+schema, and layout stores for display; `nw.resolveDisplayProperties` together with the value-display component
+registry to render each value through its Property Type's component; and the shared `nw.SubjectEditorDialog` for
+editing when `canEditSubject` is true. Editing reads go through the repositories your component injects
+(`nw.NeoWikiServices.getSubjectRepository()`, `getSchemaRepository()`), not the stores, and reach the dialog as
+props; the card writes what it fetched back into the stores it renders from, so its display shows the fresh data.
 
 Full example: [`resources/init.js`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/init.js)
 with [`RedHerbCard.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/RedHerbCard.vue).
