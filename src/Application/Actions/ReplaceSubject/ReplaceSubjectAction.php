@@ -46,20 +46,22 @@ readonly class ReplaceSubjectAction {
 			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
 		}
 
-		// Null identifiers (unresolvable Subject) skip the read gate below and make the write
-		// authorizer fall back to the global 'edit' right. Neither can bypass page protection: an
-		// unresolvable Subject is not found below (getSubject returns null), so the request 404s
-		// before any write rather than touching a protected page.
 		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId );
 
 		// Gate on read before write: a page the caller may not read answers exactly like a Subject
 		// that does not exist, so restricted pages cannot be told apart from absent ones - and the
-		// page title and namespace this endpoint returns never reach a caller denied the page.
-		if ( $pageIdentifiers !== null && !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
+		// page title and namespace this endpoint returns never reach a caller denied the page. An
+		// unresolvable Subject takes that same path, since it has no page to authorize against.
+		// Reaching the write check with null identifiers would answer 403 where a restricted page
+		// answers 404, telling a caller who lacks the wiki-global 'edit' right which of the
+		// Subject ids they hold exist. Only a Subject on a page the caller can read (its existence
+		// already public) proceeds to the write check and its 403.
+		if ( $pageIdentifiers === null
+			|| !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
 			throw SubjectNotFoundException::forId( $subjectId );
 		}
 
-		if ( !$this->writeAuthorizer->authorize( $pageIdentifiers?->getId() ) ) {
+		if ( !$this->writeAuthorizer->authorize( $pageIdentifiers->getId() ) ) {
 			throw new SubjectEditNotAuthorizedException();
 		}
 
