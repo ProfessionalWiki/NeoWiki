@@ -15,7 +15,7 @@ NeoWiki needs to handle these sizes, counted per graph store (so for wiki farms 
 
 | Metric                 | Typical (90% case)  | Great up to                      | Acceptable up to |
 |------------------------|---------------------|----------------------------------|------------------|
-| Total Subjects         | << 1 million        | 1 million                        | 10 million       |
+| Total Subjects         | << 1 million        | 10 million                       | 50 million       |
 | Total Schemas          | < 30                | 100 (UX-bound; performance: 500) | 500              |
 | Subjects per Page      | < 10                | 50                               | 250              |
 | Statements per Subject | < 15                | 50                               | 100              |
