@@ -1,5 +1,5 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Infobox from '@/components/Views/Infobox.vue';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -17,6 +17,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { CdxButton } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -36,6 +37,7 @@ describe( 'Infobox', () => {
 	let subjectStore: any;
 	const getSubjectMock = vi.fn();
 	const getSchemaMock = vi.fn();
+	const updateSubjectMock = vi.fn();
 
 	const mockSchema = new Schema(
 		'TestSchema',
@@ -101,6 +103,16 @@ describe( 'Infobox', () => {
 		// openEditor reads through the injected repositories, not the stores the display renders from.
 		getSubjectMock.mockReset();
 		getSchemaMock.mockReset();
+
+		// Saving goes through SubjectStore, which reaches its repository off the extension
+		// singleton rather than through injection.
+		updateSubjectMock.mockReset();
+		vi.spyOn( NeoWikiExtension.getInstance(), 'getSubjectRepository' )
+			.mockReturnValue( { updateSubject: updateSubjectMock } as unknown as SubjectRepository );
+	} );
+
+	afterEach( () => {
+		vi.restoreAllMocks();
 	} );
 
 	it( 'renders the title correctly', () => {
@@ -196,10 +208,10 @@ describe( 'Infobox', () => {
 		expect( schemaLink.attributes( 'href' ) ).toBe( '/wiki/Schema:TestSchema' );
 	} );
 
-	describe( 'publishing the editor-open fetch into the stores', () => {
-		// This view renders from the stores, so what openEditor fetched has to land there too:
-		// otherwise a property another session added stays unrenderable and a value saved against
-		// it is invisible until reload.
+	describe( 'rendering a Subject saved against an out-of-band Schema change', () => {
+		// The display renders a value only when the Schema it holds defines that property, so a save
+		// against a Schema that gained a property in another session has to bring both the Subject and
+		// that Schema back — otherwise the value the user just entered is invisible until reload.
 		const schemaWithCostCentre = new Schema(
 			'TestSchema',
 			'A test schema',
@@ -207,9 +219,7 @@ describe( 'Infobox', () => {
 				createPropertyDefinitionFromJson( 'Cost centre', { type: TextType.typeName } ),
 			] ),
 		);
-		// The infobox renders a value only when the schema it holds defines that property, so a
-		// subject carrying a value for a property the stale schema lacks renders as nothing.
-		const subjectWithCostCentre = new Subject(
+		const savedSubject = new Subject(
 			mockSubject.getId(),
 			'Test Subject',
 			'TestSchema',
@@ -217,77 +227,43 @@ describe( 'Infobox', () => {
 				new Statement( new PropertyName( 'Cost centre' ), TextType.typeName, newStringValue( 'CC-42' ) ),
 			] ),
 		);
-		const relabelledSubject = new Subject(
-			mockSubject.getId(), 'Relabelled', 'TestSchema', new StatementList( [] ),
-		);
 
-		async function openEditor( wrapper: VueWrapper ): Promise<void> {
+		async function openEditorAndSave( wrapper: VueWrapper ): Promise<void> {
 			await wrapper.findComponent(
 				{ name: 'CdxButton', props: { 'aria-label': 'neowiki-infobox-edit-link' } },
 			).trigger( 'click' );
 			await flushPromises();
+
+			const onSave = wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' ) as
+				( subject: Subject, comment: string ) => Promise<void>;
+			await onSave( savedSubject, 'summary' );
+			await flushPromises();
 		}
 
-		it( 'renders a value whose property only the fetched schema defines', async () => {
-			getSubjectMock.mockResolvedValue( subjectWithCostCentre );
+		it( 'renders the value once the save answers with the Subject and its Schema', async () => {
+			getSubjectMock.mockResolvedValue( savedSubject );
 			getSchemaMock.mockResolvedValue( schemaWithCostCentre );
+			updateSubjectMock.mockResolvedValue( { subject: savedSubject, schema: schemaWithCostCentre } );
 
 			const wrapper = mountComponent( mockSubject, true );
-			await openEditor( wrapper );
+			await openEditorAndSave( wrapper );
 
-			expect( schemaStore.getSchema( 'TestSchema' ) ).toStrictEqual( schemaWithCostCentre );
 			expect( wrapper.text() ).toContain( 'Cost centre' );
 			expect( wrapper.text() ).toContain( 'CC-42' );
 		} );
 
-		it( 'renders the fetched subject after the editor opens', async () => {
-			getSubjectMock.mockResolvedValue( relabelledSubject );
-			getSchemaMock.mockResolvedValue( mockSchema );
-
-			const wrapper = mountComponent( mockSubject, true );
-			await openEditor( wrapper );
-
-			expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'Relabelled' );
-		} );
-
-		it( 'discards the schema it fetched when a schema mutation lands mid-fetch', async () => {
-			const saved = new Schema( 'TestSchema', 'Saved elsewhere', new PropertyDefinitionList( [] ) );
-			let resolveSchema!: ( schema: Schema ) => void;
-			getSubjectMock.mockResolvedValue( mockSubject );
-			getSchemaMock.mockReturnValue( new Promise<Schema>( ( resolve ) => {
-				resolveSchema = resolve;
-			} ) );
-
-			const wrapper = mountComponent( mockSubject, true );
-			await openEditor( wrapper );
-
-			schemaStore.mutationEpoch++;
-			schemaStore.setSchema( 'TestSchema', saved );
-			resolveSchema( schemaWithCostCentre );
-			await flushPromises();
-
-			expect( schemaStore.getSchema( 'TestSchema' ) ).toStrictEqual( saved );
-		} );
-
-		it( 'discards the subject it fetched when a subject mutation lands mid-fetch', async () => {
-			const saved = new Subject(
-				mockSubject.getId(), 'Saved elsewhere', 'TestSchema', new StatementList( [] ),
+		it( 'renders the Subject the save returned, not the one handed to it', async () => {
+			const canonical = new Subject(
+				mockSubject.getId(), 'Server label', 'TestSchema', new StatementList( [] ),
 			);
-			let resolveSubject!: ( subject: Subject ) => void;
+			getSubjectMock.mockResolvedValue( savedSubject );
 			getSchemaMock.mockResolvedValue( mockSchema );
-			getSubjectMock.mockReturnValue( new Promise<Subject>( ( resolve ) => {
-				resolveSubject = resolve;
-			} ) );
+			updateSubjectMock.mockResolvedValue( { subject: canonical, schema: null } );
 
 			const wrapper = mountComponent( mockSubject, true );
-			await openEditor( wrapper );
+			await openEditorAndSave( wrapper );
 
-			subjectStore.mutationEpoch++;
-			subjectStore.setSubject( saved );
-			resolveSubject( relabelledSubject );
-			await flushPromises();
-
-			expect( subjectStore.getSubject( mockSubject.getId() ) ).toStrictEqual( saved );
+			expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'Server label' );
 		} );
 	} );
 } );
