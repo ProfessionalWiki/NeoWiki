@@ -33,9 +33,25 @@ class Neo4jPageRelationUpdater {
 			return;
 		}
 
+		$relationsBySubjectId = array_map( $this->withoutRepeatedIds( ... ), $relationsBySubjectId );
+
 		$this->removeNonexistentRelations( $relationsBySubjectId );
 		$this->removeRelationsWithChangedTypeOrTarget( $relationsBySubjectId );
 		$this->createOrUpdateRelations( $relationsBySubjectId );
+	}
+
+	/**
+	 * A relation id addresses one edge of one Subject, so a repeated id keeps the last relation
+	 * holding it: without this the batch would ask for two edges under the same id at once.
+	 */
+	private function withoutRepeatedIds( TypedRelationList $relations ): TypedRelationList {
+		$byId = [];
+
+		foreach ( $relations->relations as $relation ) {
+			$byId[$relation->id->asString()] = $relation;
+		}
+
+		return new TypedRelationList( array_values( $byId ) );
 	}
 
 	/**

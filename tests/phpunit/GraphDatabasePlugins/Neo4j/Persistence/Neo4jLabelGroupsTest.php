@@ -51,6 +51,19 @@ class Neo4jLabelGroupsTest extends TestCase {
 		);
 	}
 
+	public function testLabelsContainingTheSeparatorStayInTheirOwnGroup(): void {
+		$this->assertSame(
+			[
+				[ 'labels' => [ 'Country', 'Subject' ], 'subjectIds' => [ 's1' ] ],
+				[ 'labels' => [ 'Country:Subject' ], 'subjectIds' => [ 's2' ] ],
+			],
+			Neo4jLabelGroups::build( [
+				's1' => [ 'Country', 'Subject' ],
+				's2' => [ 'Country:Subject' ],
+			] )
+		);
+	}
+
 	public function testSubjectsWithoutLabelsAreLeftOut(): void {
 		$this->assertSame(
 			[ [ 'labels' => [ 'Country' ], 'subjectIds' => [ 's2' ] ] ],
