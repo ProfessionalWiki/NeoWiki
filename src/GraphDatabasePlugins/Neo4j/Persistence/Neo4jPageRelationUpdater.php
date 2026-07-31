@@ -129,7 +129,7 @@ class Neo4jPageRelationUpdater {
 				'subjectId' => $subjectId,
 				'relationId' => $relation->id->asString(),
 				'targetId' => $relation->targetId->text,
-				'properties' => $this->getPropertiesForNeo4j( $relation ),
+				'properties' => $this->relationProperties( $relation ),
 			];
 		}
 
@@ -153,7 +153,7 @@ class Neo4jPageRelationUpdater {
 		}
 	}
 
-	private function getPropertiesForNeo4j( TypedRelation $relation ): array {
+	private function relationProperties( TypedRelation $relation ): array {
 		return array_merge(
 			$relation->properties->map,
 			[ 'id' => $relation->id->asString() ]
