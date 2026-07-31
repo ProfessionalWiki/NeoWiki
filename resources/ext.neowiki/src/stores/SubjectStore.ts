@@ -31,25 +31,17 @@ export const useSubjectStore = defineStore( 'subject', {
 		setSubject( subject: Subject ): void { // TODO: just take Subject
 			this.subjects.set( subject.getId().text, subject );
 		},
-		// A resolved call may have recorded nothing: the epoch guard below discards the write-back
-		// when a mutation landed mid-flight, leaving the registry unchanged. Callers must read the
-		// result via getSubject afterwards and handle a miss (getSubject throws), rather than
-		// assuming this call alone guarantees fresh data is present.
-		async fetchSubject( id: SubjectId ): Promise<void> {
-			const epoch = this.mutationEpoch;
-			const subject = await NeoWikiExtension.getInstance().getSubjectRepository().getSubject( id );
-			if ( epoch !== this.mutationEpoch ) {
-				return;
-			}
-			this.setSubject( subject );
-		},
 		// Display-only read over the seeded registry: returns the page-payload /
 		// own-write value when present and fetches only on a genuine miss (e.g. a
 		// Subject picked from search that the page does not reference). Editors must
-		// not use this — always fetch fresh before opening an editor (see ADR 30).
+		// not use this — they read through the repositories (see ADR 30).
 		async getOrFetchSubject( id: SubjectId ): Promise<Subject> {
 			if ( !this.subjects.has( id.text ) ) {
-				await this.fetchSubject( id );
+				const epoch = this.mutationEpoch;
+				const subject = await NeoWikiExtension.getInstance().getSubjectRepository().getSubject( id );
+				if ( epoch === this.mutationEpoch ) {
+					this.setSubject( subject );
+				}
 			}
 			return this.getSubject( id );
 		},

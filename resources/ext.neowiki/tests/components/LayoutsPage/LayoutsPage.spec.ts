@@ -7,6 +7,7 @@ import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import LayoutEditorDialog from '@/components/LayoutEditor/LayoutEditorDialog.vue';
 import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHelpers.ts';
 import { CdxButton } from '@wikimedia/codex';
+import { Service } from '@/NeoWikiServices.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { Layout } from '@/domain/Layout.ts';
 
@@ -40,9 +41,10 @@ vi.mock( '@/composables/useLayoutPermissions.ts', () => ( {
 	} ),
 } ) );
 
-// The store is real (backed by Pinia). Most tests never drive the editor path
-// (fetchLayout/getLayout), so those actions never reach the network here; the test that does
-// drive it overrides fetchLayout directly on the store instance instead of hitting the network.
+// The store is real (backed by Pinia) so removeLayout/getLayout exercise their actual
+// semantics. The editor reads through the repository, which is mocked here so the edit
+// path never reaches the network.
+const getLayoutMock = vi.fn();
 
 vi.mock( '@/NeoWikiExtension.ts', () => ( {
 	NeoWikiExtension: {
@@ -91,6 +93,9 @@ function mountComponent( summaries: LayoutSummary[] = [], nextCursor: string | n
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
+			provide: {
+				[ Service.LayoutRepository ]: { getLayout: getLayoutMock },
+			},
 			stubs: {
 				LayoutCreatorDialog: true,
 				LayoutEditorDialog: true,
@@ -115,6 +120,7 @@ describe( 'LayoutsPage', () => {
 		canEditLayoutRef.value = false;
 		checkCreatePermissionMock.mockClear();
 		checkEditPermissionMock.mockClear();
+		getLayoutMock.mockReset();
 		layoutsResponse = { layouts: [], nextCursor: null };
 
 		pinia = createPinia();
@@ -186,12 +192,28 @@ describe( 'LayoutsPage', () => {
 		expect( wrapper.find( 'a[href="/wiki/Layout:CompanyOverview"]' ).exists() ).toBe( false );
 	} );
 
-	it( 'does not open the editor when the epoch guard discarded the fetchLayout write-back', async () => {
+	it( 'opens the editor on the layout fetched from the repository', async () => {
 		canEditLayoutRef.value = true;
-		// Simulates the epoch guard discarding fetchLayout's write-back (a mutation landed
-		// mid-flight): the fetch resolves but never seeds the store, so getLayout keeps
-		// returning undefined for this layout.
-		layoutStore.fetchLayout = vi.fn().mockResolvedValue( undefined );
+		// A description the store copy does not have, so the assertion can only pass if the
+		// dialog received the repository's layout rather than a registry read.
+		const fetched = new Layout( 'CompanyOverview', 'Company', 'infobox', 'from the repository', [], {} );
+		getLayoutMock.mockResolvedValue( fetched );
+		layoutStore.setLayout( 'CompanyOverview', newLayout( 'CompanyOverview' ) );
+		const wrapper = mountComponent( [ sampleLayout ] );
+		await flushPromises();
+
+		await findEditButtons( wrapper )[ 0 ].trigger( 'click' );
+		await flushPromises();
+
+		expect( getLayoutMock ).toHaveBeenCalledWith( 'CompanyOverview' );
+		const dialog = wrapper.findComponent( LayoutEditorDialog );
+		expect( dialog.props( 'open' ) ).toBe( true );
+		expect( dialog.props( 'initialLayout' ) ).toStrictEqual( fetched );
+	} );
+
+	it( 'reports a failed layout fetch instead of opening the editor', async () => {
+		canEditLayoutRef.value = true;
+		getLayoutMock.mockRejectedValue( new Error( 'Unknown layout: CompanyOverview' ) );
 		const wrapper = mountComponent( [ sampleLayout ] );
 		await flushPromises();
 
@@ -199,7 +221,7 @@ describe( 'LayoutsPage', () => {
 		await flushPromises();
 
 		expect( wrapper.findComponent( LayoutEditorDialog ).exists() ).toBe( false );
-		expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-layouts-edit-stale-error', { type: 'error' } );
+		expect( mw.notify ).toHaveBeenCalledWith( 'Unknown layout: CompanyOverview', { type: 'error' } );
 	} );
 
 	it( 'disables next when a full page ends the listing', async () => {

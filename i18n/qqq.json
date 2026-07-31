@@ -153,7 +153,6 @@
 	"neowiki-layouts-column-type": "Column header for the view type in the layouts list table on [[Special:Layouts]].",
 	"neowiki-layouts-column-description": "Column header for layout description in the layouts list table on [[Special:Layouts]].",
 	"neowiki-layouts-empty": "Message shown when no layouts exist yet on [[Special:Layouts]].",
-	"neowiki-layouts-edit-stale-error": "Error notification shown on [[Special:Layouts]] when the layout could not be opened for editing because its data changed while loading (a concurrent save was detected).",
 
 	"neowiki-special-mappings": "Title and description of the [[Special:Mappings]] page, which lists the ontology mapping pages.",
 	"neowiki-mappings-column-name": "Column header for mapping name in the mappings list table on [[Special:Mappings]].",

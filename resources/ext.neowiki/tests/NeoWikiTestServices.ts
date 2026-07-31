@@ -1,6 +1,8 @@
 import { NeoWikiServices, Service } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { InMemorySchemaRepository } from '@/application/SchemaRepository.ts';
+import { InMemoryLayoutLookup } from '@/application/LayoutLookup.ts';
+import { StubSubjectRepository } from '@/domain/SubjectRepository.ts';
 import type { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 
 export class NeoWikiTestServices extends NeoWikiServices {
@@ -14,8 +16,12 @@ export class NeoWikiTestServices extends NeoWikiServices {
 			[ Service.SubjectPermissionHints ]: neoWiki.newSubjectPermissionHints(),
 			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry(),
 			[ Service.SchemaRepository ]: new InMemorySchemaRepository( [] ),
+			[ Service.SubjectRepository ]: new StubSubjectRepository( [] ),
 			[ Service.SubjectLabelSearch ]: { searchSubjectLabels: () => Promise.resolve( [] ) } as SubjectLabelSearch,
 			[ Service.ViewTypeRegistry ]: neoWiki.getViewTypeRegistry(),
+			[ Service.LayoutPermissionHints ]: neoWiki.newLayoutPermissionHints(),
+			[ Service.LayoutRepository ]: new InMemoryLayoutLookup( [] ),
+			[ Service.MappingPermissionHints ]: neoWiki.newMappingPermissionHints(),
 		};
 	}
 

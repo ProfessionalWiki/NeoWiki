@@ -119,6 +119,7 @@ describe( 'SubjectCreatorDialog', () => {
 	let subjectStore: ReturnType<typeof useSubjectStore>;
 	let schemaStore: ReturnType<typeof useSchemaStore>;
 	const canCreateSchemas = ref( true );
+	const getSchemaMock = vi.fn();
 
 	const mountComponent = (
 		stubs: Record<string, any> = {},
@@ -154,6 +155,7 @@ describe( 'SubjectCreatorDialog', () => {
 				provide: {
 					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
 					[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
+					[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
 				},
 				mocks: {
 					$i18n: createI18nMock(),
@@ -166,6 +168,10 @@ describe( 'SubjectCreatorDialog', () => {
 		wrapper.findComponent( { name: 'CdxToggleButtonGroup' } )
 			.vm.$emit( 'update:modelValue', 'new' );
 		await flushPromises();
+	}
+
+	async function goBack( wrapper: VueWrapper ): Promise<void> {
+		await wrapper.find( '.ext-neowiki-subject-creator-back-button' ).trigger( 'click' );
 	}
 
 	async function clickContinue( wrapper: VueWrapper ): Promise<void> {
@@ -201,9 +207,10 @@ describe( 'SubjectCreatorDialog', () => {
 		subjectStore.validateSubject = vi.fn().mockResolvedValue( [] );
 
 		schemaStore = useSchemaStore();
-		schemaStore.setSchema( SCHEMA_NAME, newSchema( { title: SCHEMA_NAME } ) );
-		schemaStore.fetchSchema = vi.fn().mockResolvedValue( undefined );
 		schemaStore.saveSchema = vi.fn().mockResolvedValue( undefined );
+
+		// The dialog reads the picked schema through the injected repository, not the store.
+		getSchemaMock.mockReset().mockResolvedValue( newSchema( { title: SCHEMA_NAME } ) );
 
 		canCreateSchemas.value = true;
 		( useSchemaPermissions as any ).mockReturnValue( {
@@ -269,6 +276,65 @@ describe( 'SubjectCreatorDialog', () => {
 
 		expect( wrapper.find( '.subject-editor-stub' ).exists() ).toBe( false );
 		expect( wrapper.find( '.edit-summary-stub' ).exists() ).toBe( false );
+	} );
+
+	it( 'loads the picked schema through the repository', async () => {
+		const picked = newSchema( { title: SCHEMA_NAME, description: 'from the repository' } );
+		getSchemaMock.mockResolvedValue( picked );
+		const wrapper = mountComponent();
+
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+		await flushPromises();
+
+		expect( getSchemaMock ).toHaveBeenCalledWith( SCHEMA_NAME );
+		expect( wrapper.findComponent( SubjectEditor ).props( 'schema' ) ).toStrictEqual( picked );
+	} );
+
+	it( 'ignores a schema fetch that a re-pick after going back overtook', async () => {
+		// The back button appears as soon as a schema is picked, so the user can go back and pick
+		// another one while the first fetch is still in flight.
+		const first = newSchema( { title: 'First' } );
+		const second = newSchema( { title: 'Second' } );
+		let resolveFirst!: ( schema: Schema ) => void;
+		getSchemaMock
+			.mockReturnValueOnce( new Promise<Schema>( ( resolve ) => {
+				resolveFirst = resolve;
+			} ) )
+			.mockResolvedValueOnce( second );
+		const wrapper = mountComponent();
+
+		// The first fetch stays in flight until the end.
+		wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', 'First' );
+		await flushPromises();
+
+		await goBack( wrapper );
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', 'Second' );
+		await flushPromises();
+
+		resolveFirst( first );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SubjectEditor ).props( 'schema' ) ).toStrictEqual( second );
+	} );
+
+	it( 'ignores a schema fetch that going back invalidated', async () => {
+		let resolveFirst!: ( schema: Schema ) => void;
+		getSchemaMock.mockReturnValueOnce( new Promise<Schema>( ( resolve ) => {
+			resolveFirst = resolve;
+		} ) );
+		const wrapper = mountComponent();
+
+		wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', 'First' );
+		await flushPromises();
+
+		await goBack( wrapper );
+		await switchToNewSchema( wrapper );
+		await clickContinue( wrapper );
+
+		resolveFirst( newSchema( { title: 'First' } ) );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SubjectEditor ).props( 'schema' ).getName() ).toBe( NEW_SCHEMA_NAME );
 	} );
 
 	it( 'shows label input and SubjectEditor after schema selection', async () => {

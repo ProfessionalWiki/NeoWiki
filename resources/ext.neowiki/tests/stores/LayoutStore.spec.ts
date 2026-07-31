@@ -3,7 +3,6 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { Layout } from '@/domain/Layout.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
-import { InMemoryLayoutLookup } from '@/application/LayoutLookup.ts';
 
 vi.mock( '@/NeoWikiExtension.ts', () => ( {
 	NeoWikiExtension: {
@@ -36,39 +35,35 @@ describe( 'LayoutStore', () => {
 		expect( store.getLayout( 'FinancialOverview' ) ).toEqual( layout );
 	} );
 
-	it( 'fetches and stores a layout via fetchLayout', async () => {
-		const layout = newLayout( 'CompanyInfo' );
-		const layoutLookup = new InMemoryLayoutLookup( [ layout ] );
-		vi.mocked( NeoWikiExtension.getInstance ).mockReturnValue( {
-			getLayoutRepository: () => layoutLookup,
-		} as unknown as NeoWikiExtension );
-
-		const store = useLayoutStore();
-		await store.fetchLayout( 'CompanyInfo' );
-
-		expect( store.getLayout( 'CompanyInfo' ) ).toEqual( layout );
-	} );
-
-	it( 'discards a fetch that a save overtook', async () => {
-		let resolveFetch!: ( layout: Layout ) => void;
-		const pending = new Promise<Layout>( ( resolve ) => {
-			resolveFetch = resolve;
-		} );
-		const saved = new Layout( 'CompanyInfo', 'Company', 'infobox', 'saved', [], {} );
+	it( 'writes the saved layout into the registry', async () => {
+		const saved = newLayout( 'CompanyInfo' );
 		vi.mocked( NeoWikiExtension.getInstance ).mockReturnValue( {
 			getLayoutRepository: () => ( {
-				getLayout: () => pending,
 				saveLayout: vi.fn().mockResolvedValue( undefined ),
 			} ),
 		} as unknown as NeoWikiExtension );
 		const store = useLayoutStore();
 
-		const request = store.fetchLayout( 'CompanyInfo' );
 		await store.saveLayout( saved );
-		resolveFetch( new Layout( 'CompanyInfo', 'Company', 'infobox', 'pre-save', [], {} ) );
-		await request;
 
 		expect( store.getLayout( 'CompanyInfo' ) ).toStrictEqual( saved );
+	} );
+
+	it( 'bumps the mutation epoch once the backend acknowledges the save', async () => {
+		// The epoch is what makes concurrent write-backs into this store discard themselves
+		// (ADR 30 rule 3); LayoutStore's only such writer lives in StoreStateLoader, so the
+		// counter is asserted here rather than through it.
+		vi.mocked( NeoWikiExtension.getInstance ).mockReturnValue( {
+			getLayoutRepository: () => ( {
+				saveLayout: vi.fn().mockResolvedValue( undefined ),
+			} ),
+		} as unknown as NeoWikiExtension );
+		const store = useLayoutStore();
+		const before = store.mutationEpoch;
+
+		await store.saveLayout( newLayout( 'CompanyInfo' ) );
+
+		expect( store.mutationEpoch ).not.toBe( before );
 	} );
 
 	it( 'does not write through when the repository rejects the save', async () => {

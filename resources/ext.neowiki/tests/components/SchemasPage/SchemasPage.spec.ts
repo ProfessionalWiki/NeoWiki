@@ -10,6 +10,7 @@ import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHe
 import { CdxButton } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
@@ -32,10 +33,9 @@ vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 } ) );
 
 // The store is real (backed by Pinia) so removeSchema/getSchema exercise their actual
-// semantics; only fetchSchema is overridden per test to avoid a real network call. getSchema
-// is a Pinia getter (read-only), so tests that need it to resolve seed the map via setSchema
-// instead of mocking the getter itself.
-const fetchSchemaMock = vi.fn();
+// semantics. The editor reads through the repository, which is mocked here so the edit
+// path never reaches the network.
+const getSchemaMock = vi.fn();
 
 vi.mock( '@/NeoWikiExtension.ts', () => ( {
 	NeoWikiExtension: {
@@ -91,6 +91,9 @@ function mountComponent( summaries: unknown[] = [], nextCursor: string | null = 
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
+			provide: {
+				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
+			},
 			stubs: {
 				SchemaCreatorDialog: SchemaCreatorDialogStub,
 				SchemaEditorDialog: SchemaEditorDialogStub,
@@ -107,13 +110,12 @@ describe( 'SchemasPage', () => {
 		canEditSchemaRef.value = false;
 		checkCreatePermissionMock.mockClear();
 		checkEditPermissionMock.mockClear();
-		fetchSchemaMock.mockClear();
+		getSchemaMock.mockReset();
 		schemasResponse = { schemas: [], nextCursor: null };
 
 		pinia = createPinia();
 		setActivePinia( pinia );
 		schemaStore = useSchemaStore();
-		schemaStore.fetchSchema = fetchSchemaMock;
 	} );
 
 	it( 'shows create button when user has create permission', async () => {
@@ -227,10 +229,13 @@ describe( 'SchemasPage', () => {
 		expect( findDeleteButtons( wrapper ) ).toHaveLength( 0 );
 	} );
 
-	it( 'opens editor dialog when edit button is clicked', async () => {
+	it( 'opens the editor on the schema fetched from the repository', async () => {
 		canEditSchemaRef.value = true;
-		const mockSchema = new Schema( 'Person', '', new PropertyDefinitionList( [] ) );
-		schemaStore.setSchema( 'Person', mockSchema );
+		// A description the store copy does not have, so the assertion can only pass if the
+		// dialog received the repository's schema rather than a registry read.
+		const fetched = new Schema( 'Person', 'from the repository', new PropertyDefinitionList( [] ) );
+		getSchemaMock.mockResolvedValue( fetched );
+		schemaStore.setSchema( 'Person', new Schema( 'Person', 'stale', new PropertyDefinitionList( [] ) ) );
 
 		const wrapper = mountComponent( [
 			{ name: 'Person', description: '', propertyCount: 3 },
@@ -240,14 +245,31 @@ describe( 'SchemasPage', () => {
 		await findEditButtons( wrapper )[ 0 ].trigger( 'click' );
 		await flushPromises();
 
-		expect( fetchSchemaMock ).toHaveBeenCalledWith( 'Person' );
-		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( true );
+		expect( getSchemaMock ).toHaveBeenCalledWith( 'Person' );
+		const dialog = wrapper.findComponent( SchemaEditorDialog );
+		expect( dialog.props( 'open' ) ).toBe( true );
+		expect( dialog.props( 'initialSchema' ) ).toStrictEqual( fetched );
+	} );
+
+	it( 'reports a failed schema fetch instead of opening the editor', async () => {
+		canEditSchemaRef.value = true;
+		getSchemaMock.mockRejectedValue( new Error( 'Unknown schema: Person' ) );
+
+		const wrapper = mountComponent( [
+			{ name: 'Person', description: '', propertyCount: 3 },
+		] );
+		await flushPromises();
+
+		await findEditButtons( wrapper )[ 0 ].trigger( 'click' );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaEditorDialog ).exists() ).toBe( false );
+		expect( mw.notify ).toHaveBeenCalledWith( 'Unknown schema: Person', { type: 'error' } );
 	} );
 
 	it( 'does not render SchemaEditorDialog when user lacks edit permission', async () => {
 		canEditSchemaRef.value = true;
-		const mockSchema = new Schema( 'Person', '', new PropertyDefinitionList( [] ) );
-		schemaStore.setSchema( 'Person', mockSchema );
+		getSchemaMock.mockResolvedValue( new Schema( 'Person', '', new PropertyDefinitionList( [] ) ) );
 
 		const wrapper = mountComponent( [
 			{ name: 'Person', description: '', propertyCount: 3 },
