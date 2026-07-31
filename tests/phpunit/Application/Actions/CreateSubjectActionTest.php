@@ -34,6 +34,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
@@ -58,6 +59,7 @@ class CreateSubjectActionTest extends TestCase {
 	private SubjectWriteAuthorizer $authorizer;
 	private InMemorySchemaLookup $schemaLookup;
 	private InMemoryPageIdentifiersLookup $pageIdentifiersLookup;
+	private InMemoryPageIdentifiersResolver $pageIdentifiersResolver;
 
 	public function setUp(): void {
 		$this->subjectRepository = new InMemorySubjectRepository();
@@ -67,6 +69,9 @@ class CreateSubjectActionTest extends TestCase {
 		$this->authorizer = new SpySubjectWriteAuthorizer( allowed: true );
 		$this->schemaLookup = new InMemorySchemaLookup();
 		$this->pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+		$this->pageIdentifiersResolver = new InMemoryPageIdentifiersResolver( [
+			new PageIdentifiers( new PageId( 1 ), 'Help:Bunnies', 12 )
+		] );
 	}
 
 	private function newCreateSubjectAction( bool $validationEnforced = false ): CreateSubjectAction {
@@ -91,6 +96,7 @@ class CreateSubjectActionTest extends TestCase {
 				),
 			),
 			$this->pageIdentifiersLookup,
+			$this->pageIdentifiersResolver,
 			$validationEnforced,
 		);
 	}
@@ -744,6 +750,87 @@ class CreateSubjectActionTest extends TestCase {
 		);
 
 		$this->assertSame( 'presentSubjectAlreadyExists', $this->presenterSpy->result );
+	}
+
+	public function testPresentsTheServerNormalizedSubject(): void {
+		$this->registerSelectSchema();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: self::SELECT_SCHEMA_NAME,
+				statements: [
+					'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ],
+				]
+			)
+		);
+
+		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->subject?->id );
+		$this->assertSame( 'Some Label', $this->presenterSpy->subject?->label );
+		$this->assertSame( self::SELECT_SCHEMA_NAME, $this->presenterSpy->subject?->schemaName );
+		$this->assertSame(
+			// The label the request supplied was resolved to the option id.
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'opt_approved' ] ] ],
+			$this->presenterSpy->subject?->statements
+		);
+	}
+
+	public function testPresentsThePageIdentifiersOfTheTargetPage(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: 'some-schema',
+				statements: []
+			)
+		);
+
+		$this->assertSame( 1, $this->presenterSpy->subject?->pageId );
+		$this->assertSame( 'Help:Bunnies', $this->presenterSpy->subject?->pageTitle );
+		$this->assertSame( 12, $this->presenterSpy->subject?->pageNamespaceId );
+	}
+
+	public function testPresentsTheSchemaTheSubjectInstantiates(): void {
+		$this->registerSelectSchema();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: self::SELECT_SCHEMA_NAME,
+				statements: []
+			)
+		);
+
+		$this->assertSame(
+			self::SELECT_SCHEMA_NAME,
+			$this->presenterSpy->schema?->getName()->getText()
+		);
+	}
+
+	public function testPresentsNoSchemaWhenTheNamedSchemaDoesNotExist(): void {
+		$this->registerSelectSchema();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: 'NonexistentSchema',
+				statements: []
+			)
+		);
+
+		$this->assertNull( $this->presenterSpy->schema );
 	}
 
 	public function testCreateWithoutSuppliedIdSkipsTheGraphInUseCheck(): void {

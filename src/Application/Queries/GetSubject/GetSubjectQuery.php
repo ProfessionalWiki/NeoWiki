@@ -8,7 +8,6 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
-use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
@@ -89,30 +88,10 @@ readonly class GetSubjectQuery {
 		bool $includePageIdentifiers,
 		?PageIdentifiers $pageIdentifiers
 	): GetSubjectResponseItem {
-		$includedIdentifiers = $includePageIdentifiers ? $pageIdentifiers : null;
-
-		return new GetSubjectResponseItem(
-			id: $subject->id->text,
-			label: $subject->label->text,
-			schemaName: $subject->getSchemaName()->getText(),
-			statements: $this->arrayifyStatements( $subject->getStatements() ),
-			pageId: $includedIdentifiers?->getId()->id,
-			pageTitle: $includedIdentifiers?->getTitle(),
-			pageNamespaceId: $includedIdentifiers?->getNamespaceId(),
+		return GetSubjectResponseItem::fromSubject(
+			$subject,
+			$includePageIdentifiers ? $pageIdentifiers : null
 		);
-	}
-
-	private function arrayifyStatements( StatementList $statements ): array {
-		$array = [];
-
-		foreach ( $statements->asArray() as $statement ) {
-			$array[$statement->getPropertyName()->text] = [
-				'propertyType' => $statement->getPropertyType(),
-				'value' => $statement->getValue()->toScalars()
-			];
-		}
-
-		return $array;
 	}
 
 }

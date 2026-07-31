@@ -36,6 +36,7 @@ use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigValidator;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigLookup;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigSource;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
@@ -113,6 +114,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedPageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource;
@@ -912,7 +914,14 @@ class NeoWikiExtension {
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			validationEnforced: $this->isValidationEnforced(),
+		);
+	}
+
+	private function getPageIdentifiersResolver(): PageIdentifiersResolver {
+		return new TitleBasedPageIdentifiersResolver(
+			MediaWikiServices::getInstance()->getTitleFactory()
 		);
 	}
 

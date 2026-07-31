@@ -12,6 +12,7 @@ use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
@@ -46,6 +47,104 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'sTestSA11111111', $responseData['subjectId'] );
 		$this->assertArrayHasKey( 'violations', $responseData );
 		$this->assertSame( [], $responseData['violations'] );
+	}
+
+	/**
+	 * The point of bundling the Subject is that the client can store server truth instead of its own
+	 * copy, so the entry must be the one the read endpoint serves, down to the page identifiers the
+	 * client cannot know.
+	 */
+	public function testUpdatedResponseCarriesTheSubjectEntryTheReadEndpointServes(): void {
+		$this->createPages();
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createValidRequestData()
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame(
+			$this->readSubjectEntryFromApi( 'sTestSA11111111' ),
+			$responseData['subject']
+		);
+	}
+
+	public function testUpdatedResponseCarriesTheSchemaBodyTheReadEndpointServes(): void {
+		$this->createPages();
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createValidRequestData()
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame(
+			$this->readSchemaBodyFromApi( 'ReplaceSubjectApiTest', TestSubject::DEFAULT_SCHEMA_ID ),
+			$responseData['schema']
+		);
+	}
+
+	public function testUpdatedResponseOmitsTheSchemaWhenTheSchemaIsMissing(): void {
+		$this->createSchema( 'GoneSchema' );
+		$this->createPageWithSubjects(
+			'ReplaceSubjectApiGoneSchemaTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSA11111166',
+				label: new SubjectLabel( 'Orphaned subject' ),
+				schemaName: new SchemaName( 'GoneSchema' ),
+			)
+		);
+		$this->deletePage(
+			$this->getServiceContainer()->getWikiPageFactory()->newFromTitle(
+				Title::newFromText( 'GoneSchema', NeoWikiExtension::NS_SCHEMA )
+			)
+		);
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			new RequestData( [
+				'method' => 'PUT',
+				'pathParams' => [ 'subjectId' => 'sTestSA11111166' ],
+				'bodyContents' => json_encode( [
+					'label' => 'Still orphaned',
+					'statements' => [],
+				] ),
+				'headers' => [ 'Content-Type' => 'application/json' ],
+			] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertArrayHasKey( 'subject', $responseData );
+		$this->assertArrayNotHasKey( 'schema', $responseData );
+	}
+
+	private function readSubjectEntryFromApi( string $subjectId ): array {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => $subjectId ],
+				'queryParams' => [ 'expand' => 'page' ],
+			] )
+		);
+
+		return json_decode( $response->getBody()->getContents(), true )['subjects'][$subjectId];
+	}
+
+	private function readSchemaBodyFromApi( string $pageName, string $schemaName ): array {
+		$response = $this->executeHandler(
+			new GetPageSubjectsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'pageId' => Title::newFromText( $pageName )->getId() ],
+				'queryParams' => [ 'expand' => 'schemas' ],
+			] )
+		);
+
+		return json_decode( $response->getBody()->getContents(), true )['schemas'][$schemaName];
 	}
 
 	public function testResponseIncludesViolationsWhenRequiredPropertyMissing(): void {
