@@ -43,6 +43,8 @@ export * from './domain/PropertyDefinitionList';
 export * from './domain/PropertyType';
 export * from './domain/PropertyTypeRegistration';
 export * from './domain/Schema';
+export * from './domain/Severity';
+export * from './domain/SeverityNormalizer';
 export * from './domain/Statement';
 export * from './domain/StatementList';
 export * from './domain/Subject';

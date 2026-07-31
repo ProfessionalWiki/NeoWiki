@@ -8,6 +8,7 @@ describe( 'ValidationFailedError', () => {
 		propertyName: 'Status',
 		code: 'required',
 		args: [],
+		severity: 'error',
 		valuePartIndex: null,
 	};
 

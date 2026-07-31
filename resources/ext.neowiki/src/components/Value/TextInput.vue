@@ -2,7 +2,7 @@
 	<CdxField
 		:is-fieldset="true"
 		:messages="fieldMessages"
-		:status="fieldMessages.error && !props.property.multiple ? 'error' : 'default'"
+		:status="props.property.multiple ? 'default' : violationStatus( fieldMessages )"
 		:optional="props.property.required === false"
 	>
 		<template #label>
@@ -40,6 +40,7 @@ import NeoMultiTextInput from '@/components/common/NeoMultiTextInput.vue';
 import { TextProperty, TextType } from '@/domain/propertyTypes/Text.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { useStringValueInput } from '@/composables/useStringValueInput.ts';
+import { violationStatus } from '@/composables/useServerViolations.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 const props = withDefaults(
 	defineProps<ValueInputProps<TextProperty>>(),

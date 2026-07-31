@@ -1,4 +1,5 @@
 import { computed, ComputedRef, Ref } from 'vue';
+import { ValidationMessages } from '@wikimedia/codex';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import { ValueInputEmitFunction } from '@/components/Value/ValueInputContract.ts';
@@ -20,13 +21,39 @@ export type ClearScope = 'all' | readonly number[];
 export interface UseServerViolationsReturn {
 	relevant: () => readonly SubjectViolation[];
 	format: ( violation: SubjectViolation ) => string;
-	firstMessage: ComputedRef<string | null>;
-	fieldLevelMessage: ComputedRef<string | null>;
+	firstMessages: ComputedRef<ValidationMessages>;
+	fieldLevelMessages: ComputedRef<ValidationMessages>;
 	emitClears: ( touched: ClearScope ) => void;
 }
 
 function isFieldLevel( violation: SubjectViolation ): boolean {
 	return violation.valuePartIndex === null || violation.valuePartIndex === undefined;
+}
+
+/**
+ * The violation to display when several compete for one slot: the first error,
+ * so a blocker is never masked by an earlier advisory warning, else the first
+ * violation. The backend does not order violations by severity.
+ */
+export function preferErrorViolation(
+	violations: readonly SubjectViolation[],
+): SubjectViolation | undefined {
+	return violations.find( ( v ) => v.severity === 'error' ) ?? violations[ 0 ];
+}
+
+/**
+ * The Codex Field/input `status` matching a violation-messages object. CdxField
+ * only renders the message whose key equals the current status, so the two must
+ * be derived together. Error wins when both severities carry a message.
+ */
+export function violationStatus( messages: ValidationMessages ): 'default' | 'error' | 'warning' {
+	if ( messages.error !== undefined ) {
+		return 'error';
+	}
+	if ( messages.warning !== undefined ) {
+		return 'warning';
+	}
+	return 'default';
 }
 
 /**
@@ -68,15 +95,17 @@ export function useServerViolations<P extends PropertyDefinition>(
 		).text();
 	}
 
-	const firstMessage = computed<string | null>( () => {
-		const hit = relevant()[ 0 ];
-		return hit ? format( hit ) : null;
-	} );
+	function toMessages( hit: SubjectViolation | undefined ): ValidationMessages {
+		return hit ? { [ hit.severity ]: format( hit ) } : {};
+	}
 
-	const fieldLevelMessage = computed<string | null>( () => {
-		const hit = relevant().find( isFieldLevel );
-		return hit ? format( hit ) : null;
-	} );
+	const firstMessages = computed<ValidationMessages>(
+		() => toMessages( preferErrorViolation( relevant() ) ),
+	);
+
+	const fieldLevelMessages = computed<ValidationMessages>(
+		() => toMessages( preferErrorViolation( relevant().filter( isFieldLevel ) ) ),
+	);
 
 	function emitClears( touched: ClearScope ): void {
 		const held = relevant();
@@ -99,5 +128,5 @@ export function useServerViolations<P extends PropertyDefinition>(
 		}
 	}
 
-	return { relevant, format, firstMessage, fieldLevelMessage, emitClears };
+	return { relevant, format, firstMessages, fieldLevelMessages, emitClears };
 }

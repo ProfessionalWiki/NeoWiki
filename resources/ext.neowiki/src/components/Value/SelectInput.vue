@@ -1,7 +1,7 @@
 <template>
 	<CdxField
-		:status="validationError === null ? 'default' : 'error'"
-		:messages="validationError === null ? {} : { error: validationError }"
+		:status="violationStatus( validationMessages )"
+		:messages="validationMessages"
 		:optional="props.property.required === false"
 	>
 		<template #label>
@@ -49,7 +49,7 @@ import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, ValueType } from '@/domain/Value';
 import { resolveSelectLabel, SelectProperty } from '@/domain/propertyTypes/Select.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { useServerViolations } from '@/composables/useServerViolations.ts';
+import { useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<SelectProperty>>(),
@@ -61,9 +61,10 @@ const props = withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
-// For Select (single and multi) the field shows one aggregate error — the first
-// relevant server violation — so an edit clears every held violation ('all').
-const { firstMessage: validationError, emitClears } = useServerViolations(
+// For Select (single and multi) the field shows one aggregate message — the first
+// relevant server violation, keyed by its severity — so an edit clears every held
+// violation ('all').
+const { firstMessages: validationMessages, emitClears } = useServerViolations(
 	toRef( props, 'property' ),
 	toRef( props, 'serverViolations' ),
 	emit

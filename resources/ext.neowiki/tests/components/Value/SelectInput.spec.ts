@@ -39,7 +39,7 @@ describe( 'SelectInput', () => {
 	it( 'still surfaces a server-sourced violation on the select', () => {
 		const wrapper = newWrapper( {
 			serverViolations: [
-				{ propertyName: 'Status', code: 'required', args: [], valuePartIndex: null },
+				{ propertyName: 'Status', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 			],
 		} );
 
@@ -47,11 +47,22 @@ describe( 'SelectInput', () => {
 		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-required' );
 	} );
 
+	it( 'shows a warning violation with the warning status', () => {
+		const wrapper = newWrapper( {
+			serverViolations: [
+				{ propertyName: 'Status', code: 'invalid-option', args: [ 'bogus' ], severity: 'warning', valuePartIndex: 0 },
+			],
+		} );
+
+		expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'warning' );
+		expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'warning', 'neowiki-field-invalid-option' );
+	} );
+
 	describe( 'clearing server violations', () => {
 		it( 'clears a part-indexed violation using its own index', async () => {
 			const wrapper = newWrapper( {
 				serverViolations: [
-					{ propertyName: 'Status', code: 'invalid-option', args: [ 'bogus' ], valuePartIndex: 0 },
+					{ propertyName: 'Status', code: 'invalid-option', args: [ 'bogus' ], severity: 'error', valuePartIndex: 0 },
 				],
 			} );
 
@@ -68,7 +79,7 @@ describe( 'SelectInput', () => {
 		it( 'does not emit when the property has no violation', async () => {
 			const wrapper = newWrapper( {
 				serverViolations: [
-					{ propertyName: 'Other', code: 'required', args: [], valuePartIndex: null },
+					{ propertyName: 'Other', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -81,7 +92,7 @@ describe( 'SelectInput', () => {
 		it( 'clears a field-level (null-index) violation on the property', async () => {
 			const wrapper = newWrapper( {
 				serverViolations: [
-					{ propertyName: 'Status', code: 'required', args: [], valuePartIndex: null },
+					{ propertyName: 'Status', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -107,8 +118,8 @@ describe( 'SelectInput', () => {
 					],
 				} ),
 				serverViolations: [
-					{ propertyName: 'Status', code: 'invalid-option', args: [ 'a' ], valuePartIndex: 0 },
-					{ propertyName: 'Status', code: 'invalid-option', args: [ 'b' ], valuePartIndex: 2 },
+					{ propertyName: 'Status', code: 'invalid-option', args: [ 'a' ], severity: 'error', valuePartIndex: 0 },
+					{ propertyName: 'Status', code: 'invalid-option', args: [ 'b' ], severity: 'error', valuePartIndex: 2 },
 				],
 			} );
 

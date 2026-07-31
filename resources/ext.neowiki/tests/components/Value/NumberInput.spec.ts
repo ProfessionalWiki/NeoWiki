@@ -81,7 +81,7 @@ describe( 'NumberInput', () => {
 			const wrapper = newWrapper( {
 				property: newNumberProperty( { name: 'Foo' } ),
 				serverViolations: [
-					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'number', 'string' ], valuePartIndex: null },
+					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'number', 'string' ], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -89,11 +89,23 @@ describe( 'NumberInput', () => {
 			expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-type-mismatch' );
 		} );
 
+		it( 'shows a warning violation with the warning status', () => {
+			const wrapper = newWrapper( {
+				property: newNumberProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'max-value', args: [ '100' ], severity: 'warning', valuePartIndex: null },
+				],
+			} );
+
+			expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'warning' );
+			expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'warning', 'neowiki-field-max-value' );
+		} );
+
 		it( 'emits clear-server-violation when the user edits the field', async () => {
 			const wrapper = newWrapper( {
 				property: newNumberProperty( { name: 'Foo' } ),
 				serverViolations: [
-					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'number', 'string' ], valuePartIndex: null },
+					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'number', 'string' ], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
