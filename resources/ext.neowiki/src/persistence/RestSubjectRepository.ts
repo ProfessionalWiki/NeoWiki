@@ -64,23 +64,29 @@ export class RestSubjectRepository implements SubjectRepository {
 		private readonly mediaWikiRestApiUrl: string,
 		private readonly httpClient: HttpClient,
 		private readonly subjectDeserializer: SubjectDeserializer,
+		private readonly schemaDeserializer: SchemaDeserializer,
 		private readonly revisionId?: number,
-		private readonly schemaDeserializer: SchemaDeserializer = new SchemaDeserializer(),
 	) {
 	}
 
 	/**
 	 * A write answers with the Subject as persisted and the Schema it instantiates. The Schema
 	 * name is not repeated in the schema body — it is the Subject's own `schema` field.
+	 *
+	 * The page identifiers are omitted when the server could not resolve the Subject's page.
+	 * Deserializing that would mint a Subject whose page id is undefined, which anything
+	 * rendering a link to it would then follow; report no Subject instead, so the caller keeps
+	 * the copy it already had.
 	 */
 	private deserializeWriteResult( json: SubjectWriteResponseJson ): SubjectWriteResult {
-		const subject = this.subjectDeserializer.deserialize( json.subject );
+		const hasPageContext = json.subject.pageId !== undefined && json.subject.pageTitle !== undefined;
 
 		return {
-			subject,
+			subjectId: new SubjectId( json.subject.id ),
+			subject: hasPageContext ? this.subjectDeserializer.deserialize( json.subject ) : null,
 			schema: json.schema === undefined ?
 				null :
-				this.schemaDeserializer.deserialize( subject.getSchemaName(), json.schema ),
+				this.schemaDeserializer.deserialize( json.subject.schema, json.schema ),
 		};
 	}
 

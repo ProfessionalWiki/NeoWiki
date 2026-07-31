@@ -144,6 +144,29 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * The same parity, on a page whose title tells the Title accessors apart: getPrefixedText()
+	 * ("Help:Some page") differs from getText(), getDBkey() and getPrefixedDBkey(). On a
+	 * main-namespace title without spaces they all coincide, so the wrong one would pass unnoticed.
+	 */
+	public function testCreatedResponseCarriesTheSubjectEntryTheReadEndpointServesForANamespacedTitle(): void {
+		$this->createSchema( 'Employee' );
+
+		$response = $this->executeCreate(
+			$this->pageIdOfNewPage( 'Help:Some page' ),
+			$this->validBody(),
+			isMainSubject: true
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 'Help:Some page', $responseData['subject']['pageTitle'] );
+		$this->assertSame(
+			$this->readSubjectEntryFromApi( $responseData['subjectId'] ),
+			$responseData['subject']
+		);
+	}
+
 	public function testCreatedResponseCarriesTheSchemaBodyTheReadEndpointServes(): void {
 		$this->createSchema( 'Employee' );
 

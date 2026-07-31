@@ -69,8 +69,12 @@ class CreateSubjectActionTest extends TestCase {
 		$this->authorizer = new SpySubjectWriteAuthorizer( allowed: true );
 		$this->schemaLookup = new InMemorySchemaLookup();
 		$this->pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+		// The page the requests target sits between two others, so neither a hardcoded
+		// main-namespace id nor an implementation answering with some other seeded page passes.
 		$this->pageIdentifiersResolver = new InMemoryPageIdentifiersResolver( [
-			new PageIdentifiers( new PageId( 1 ), 'Help:Bunnies', 12 )
+			new PageIdentifiers( new PageId( 2 ), 'Carrots', 0 ),
+			new PageIdentifiers( new PageId( 1 ), 'Help:Bunnies', 12 ),
+			new PageIdentifiers( new PageId( 3 ), 'Talk:Hutches', 1 ),
 		] );
 	}
 

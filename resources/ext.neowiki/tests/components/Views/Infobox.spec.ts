@@ -17,6 +17,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { CdxButton } from '@wikimedia/codex';
@@ -219,13 +221,19 @@ describe( 'Infobox', () => {
 				createPropertyDefinitionFromJson( 'Cost centre', { type: TextType.typeName } ),
 			] ),
 		);
-		const savedSubject = new Subject(
+		// What the editor hands to onSave: a plain Subject, without the page context the registry
+		// entry carries, and here also without the statement the server ends up storing.
+		const clientCopy = new Subject(
+			mockSubject.getId(), 'Test Subject', 'TestSchema', new StatementList( [] ),
+		);
+		const persistedSubject = new SubjectWithContext(
 			mockSubject.getId(),
 			'Test Subject',
 			'TestSchema',
 			new StatementList( [
 				new Statement( new PropertyName( 'Cost centre' ), TextType.typeName, newStringValue( 'CC-42' ) ),
 			] ),
+			new PageIdentifiers( 7, 'Some page' ),
 		);
 
 		async function openEditorAndSave( wrapper: VueWrapper ): Promise<void> {
@@ -236,14 +244,20 @@ describe( 'Infobox', () => {
 
 			const onSave = wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' ) as
 				( subject: Subject, comment: string ) => Promise<void>;
-			await onSave( savedSubject, 'summary' );
+			await onSave( clientCopy, 'summary' );
 			await flushPromises();
 		}
 
 		it( 'renders the value once the save answers with the Subject and its Schema', async () => {
-			getSubjectMock.mockResolvedValue( savedSubject );
+			// Both halves of the response are load-bearing here: the value lives only on the
+			// response Subject, and only the response Schema defines the property it sits under.
+			getSubjectMock.mockResolvedValue( clientCopy );
 			getSchemaMock.mockResolvedValue( schemaWithCostCentre );
-			updateSubjectMock.mockResolvedValue( { subject: savedSubject, schema: schemaWithCostCentre } );
+			updateSubjectMock.mockResolvedValue( {
+				subjectId: mockSubject.getId(),
+				subject: persistedSubject,
+				schema: schemaWithCostCentre,
+			} );
 
 			const wrapper = mountComponent( mockSubject, true );
 			await openEditorAndSave( wrapper );
@@ -253,17 +267,37 @@ describe( 'Infobox', () => {
 		} );
 
 		it( 'renders the Subject the save returned, not the one handed to it', async () => {
-			const canonical = new Subject(
+			const canonical = new SubjectWithContext(
 				mockSubject.getId(), 'Server label', 'TestSchema', new StatementList( [] ),
+				new PageIdentifiers( 7, 'Some page' ),
 			);
-			getSubjectMock.mockResolvedValue( savedSubject );
+			getSubjectMock.mockResolvedValue( clientCopy );
 			getSchemaMock.mockResolvedValue( mockSchema );
-			updateSubjectMock.mockResolvedValue( { subject: canonical, schema: null } );
+			updateSubjectMock.mockResolvedValue( {
+				subjectId: mockSubject.getId(),
+				subject: canonical,
+				schema: null,
+			} );
 
 			const wrapper = mountComponent( mockSubject, true );
 			await openEditorAndSave( wrapper );
 
 			expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'Server label' );
+		} );
+
+		it( 'leaves the display alone when the save answers without page context', async () => {
+			getSubjectMock.mockResolvedValue( clientCopy );
+			getSchemaMock.mockResolvedValue( mockSchema );
+			updateSubjectMock.mockResolvedValue( {
+				subjectId: mockSubject.getId(),
+				subject: null,
+				schema: null,
+			} );
+
+			const wrapper = mountComponent( mockSubject, true );
+			await openEditorAndSave( wrapper );
+
+			expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'Test Subject' );
 		} );
 	} );
 } );
