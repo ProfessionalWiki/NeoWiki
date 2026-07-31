@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 
+use JsonException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jLabelGroups;
 
@@ -62,6 +63,12 @@ class Neo4jLabelGroupsTest extends TestCase {
 				's2' => [ 'Country:Subject' ],
 			] )
 		);
+	}
+
+	public function testLabelsThatCannotBeKeyedAreRejected(): void {
+		$this->expectException( JsonException::class );
+
+		Neo4jLabelGroups::build( [ 's1' => [ "\xB1\x31" ] ] );
 	}
 
 	public function testSubjectsWithoutLabelsAreLeftOut(): void {

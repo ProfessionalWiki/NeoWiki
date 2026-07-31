@@ -29,8 +29,8 @@ class Neo4jLabelGroups {
 			sort( $labels, SORT_STRING );
 
 			// Labels are Schema names, which may hold any character, so the key has to be unambiguous
-			// rather than a join on some separator.
-			$key = json_encode( $labels );
+			// rather than a join on some separator, and has to fail rather than fall back to one key.
+			$key = json_encode( $labels, JSON_THROW_ON_ERROR );
 
 			$groups[$key] ??= [ 'labels' => $labels, 'subjectIds' => [] ];
 			$groups[$key]['subjectIds'][] = (string)$subjectId;

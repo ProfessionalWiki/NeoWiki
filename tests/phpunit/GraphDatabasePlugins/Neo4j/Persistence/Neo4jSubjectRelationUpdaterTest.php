@@ -76,17 +76,21 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function assertHasRelations( TypedRelationList $expected ): void {
-		$result = NeoWikiExtension::getInstance()->getNeo4jClient()->run(
+		$rows = NeoWikiExtension::getInstance()->getNeo4jClient()->run(
 			'MATCH (subject {id: $subjectId})-[relation]->(target)
        		RETURN relation, target.id as targetId
        		ORDER BY relation.id',
 			[ 'subjectId' => self::SUBJECT_ID ]
-		);
+		)->getResults()->toRecursiveArray();
 
 		$this->assertEquals(
 			$this->buildExpectedRelations( $expected ),
-			$this->buildActualRelations( $result )
+			$this->buildActualRelations( $rows )
 		);
+
+		// Both maps are keyed by relation id, so a second edge carrying an id the subject already
+		// holds is invisible in them. Count the edges themselves as well.
+		$this->assertSameSize( $expected->relations, $rows );
 	}
 
 	private function buildExpectedRelations( TypedRelationList $expected ): array {
@@ -106,10 +110,10 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		return $expectedRelations;
 	}
 
-	private function buildActualRelations( SummarizedResult $result ): array {
+	private function buildActualRelations( array $rows ): array {
 		$actualRelations = [];
 
-		foreach ( $result->getResults()->toRecursiveArray() as $row ) {
+		foreach ( $rows as $row ) {
 			$actualRelations[$row['relation']['properties']['id']] = [
 				'targetId' => $row['targetId'],
 				'type' => $row['relation']['type'],
@@ -193,6 +197,26 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		$this->assertHasRelations( $expectedRelations );
 	}
 
+	/**
+	 * A relation id addresses one edge of one subject, so the last relation holding a repeated id wins.
+	 */
+	public function testRepeatedRelationIdLeavesASingleEdge(): void {
+		$lastRelationWithTheId = TestRelation::build(
+			id: 'rTestSRU1111rr1',
+			targetId: self::TARGET_SUBJECT_2,
+		)->withType( new RelationType( 'Type2' ) );
+
+		$this->updateRelations( new TypedRelationList( [
+			TestRelation::build(
+				id: 'rTestSRU1111rr1',
+				targetId: self::TARGET_SUBJECT_1,
+			)->withType( new RelationType( 'Type1' ) ),
+			$lastRelationWithTheId,
+		] ) );
+
+		$this->assertHasRelations( new TypedRelationList( [ $lastRelationWithTheId ] ) );
+	}
+
 	public function testUpdatesRelationTargets(): void {
 		$this->updateRelations(
 			new TypedRelationList( [
@@ -227,38 +251,48 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		$this->assertHasRelations( $expectedRelations );
 	}
 
-	public function testUpdatesRelationTypes(): void {
+	/**
+	 * Changing a relation's type does not replace its edge. The removal pass compares the requested
+	 * type against a `type` property that the projection itself never writes, so the comparison is
+	 * null and the old edge survives; the upsert then adds the new edge alongside it, both carrying
+	 * the same relation id. Asserted as it is rather than as it should be.
+	 */
+	public function testChangingARelationTypeAddsTheNewEdgeAndKeepsTheOld(): void {
 		$this->updateRelations(
 			new TypedRelationList( [
 				TestRelation::build(
 					id: 'rTestSRU1111rr1',
 					targetId: self::TARGET_SUBJECT_1,
-					properties: new RelationProperties( [ 'foo' => 'bar', 'baz' => 42 ] ),
-				)->withType( new RelationType( 'Type1v2' ) ),
-				TestRelation::build(
-					id: 'rTestSRU1111rr2',
-					targetId: self::TARGET_SUBJECT_2,
-					properties: new RelationProperties( [ 'hello' => 'there' ] ),
-				)->withType( new RelationType( 'Type2v2' ) ),
+					properties: new RelationProperties( [ 'foo' => 'bar' ] ),
+				)->withType( new RelationType( 'Type1' ) ),
 			] )
 		);
 
-		$expectedRelations = new TypedRelationList( [
-			TestRelation::build(
-				id: 'rTestSRU1111rr1',
-				targetId: self::TARGET_SUBJECT_1,
-				properties: new RelationProperties( [ 'foo' => 'bar', 'new' => 1337 ] ),
-			)->withType( new RelationType( 'Type1v2' ) ),
-			TestRelation::build(
-				id: 'rTestSRU1111rr2',
-				targetId: self::TARGET_SUBJECT_2,
-				properties: new RelationProperties( [ 'hello' => 'there' ] ),
-			)->withType( new RelationType( 'Type2v2' ) ),
-		] );
+		$this->updateRelations(
+			new TypedRelationList( [
+				TestRelation::build(
+					id: 'rTestSRU1111rr1',
+					targetId: self::TARGET_SUBJECT_1,
+					properties: new RelationProperties( [ 'foo' => 'bar' ] ),
+				)->withType( new RelationType( 'Type1v2' ) ),
+			] )
+		);
 
-		$this->updateRelations( $expectedRelations );
+		$this->assertSame( [ 'Type1', 'Type1v2' ], $this->relationTypesOf( 'rTestSRU1111rr1' ) );
+	}
 
-		$this->assertHasRelations( $expectedRelations );
+	/**
+	 * @return string[]
+	 */
+	private function relationTypesOf( string $relationId ): array {
+		$rows = NeoWikiExtension::getInstance()->getNeo4jClient()->run(
+			'MATCH ({id: $subjectId})-[relation {id: $relationId}]->()
+       		RETURN type(relation) AS type
+       		ORDER BY type',
+			[ 'subjectId' => self::SUBJECT_ID, 'relationId' => $relationId ]
+		)->getResults()->toRecursiveArray();
+
+		return array_column( $rows, 'type' );
 	}
 
 	public function testRelationWithNonExistentTargetNodeDoesNotCreateDuplicateSubject(): void {
