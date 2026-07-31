@@ -82,7 +82,8 @@ const subjectRepo = NeoWikiServices.getSubjectRepository();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 
 const isEditorOpen = ref( false );
-// The dialog edits its own copy rather than the registry entry (ADR 16).
+// The dialog edits its own copy rather than the registry entry (ADR 16). The display below stays
+// on the stores until a save, whose response carries the Subject and Schema as persisted.
 const editingSubject = shallowRef<Subject | null>( null );
 const editingSchema = shallowRef<Schema | null>( null );
 
@@ -91,25 +92,10 @@ const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaNam
 
 async function openEditor(): Promise<void> {
 	try {
-		const schemaName = subject.value.getSchemaName();
-		const subjectEpoch = subjectStore.mutationEpoch;
-		const schemaEpoch = schemaStore.mutationEpoch;
-
 		const [ freshSubject, freshSchema ] = await Promise.all( [
 			subjectRepo.getSubject( props.subjectId ),
-			schemaRepo.getSchema( schemaName )
+			schemaRepo.getSchema( subject.value.getSchemaName() )
 		] );
-
-		// This view renders from the registries, so publish the server truth we just fetched into
-		// them: otherwise a schema another session changed stays invisible here, and a value saved
-		// against a property this display does not know about renders as nothing. Each write is
-		// epoch-guarded against its own store (ADR 30 rule 3).
-		if ( subjectEpoch === subjectStore.mutationEpoch ) {
-			subjectStore.setSubject( freshSubject );
-		}
-		if ( schemaEpoch === schemaStore.mutationEpoch ) {
-			schemaStore.setSchema( schemaName, freshSchema );
-		}
 
 		editingSubject.value = freshSubject;
 		editingSchema.value = freshSchema;

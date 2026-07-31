@@ -1,4 +1,4 @@
-import type { SubjectRepository, SubjectWithReferencedSubjects } from '@/domain/SubjectRepository';
+import type { SubjectRepository, SubjectWithReferencedSubjects, SubjectWriteResult } from '@/domain/SubjectRepository';
 import { SubjectId } from '@/domain/SubjectId';
 import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
 import {
@@ -8,6 +8,7 @@ import {
 } from '@/persistence/PageSubjectsDeserializer';
 import { StatementList, statementsToJson } from '@/domain/StatementList';
 import { type SchemaName } from '@/domain/Schema';
+import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { Subject } from '@/domain/Subject';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
@@ -52,6 +53,11 @@ type SubjectBundleJson = {
 	subjects: Record<string, SubjectJson>;
 };
 
+type SubjectWriteResponseJson = {
+	subject: SubjectJson;
+	schema?: Record<string, unknown>;
+};
+
 export class RestSubjectRepository implements SubjectRepository {
 
 	public constructor(
@@ -59,7 +65,23 @@ export class RestSubjectRepository implements SubjectRepository {
 		private readonly httpClient: HttpClient,
 		private readonly subjectDeserializer: SubjectDeserializer,
 		private readonly revisionId?: number,
+		private readonly schemaDeserializer: SchemaDeserializer = new SchemaDeserializer(),
 	) {
+	}
+
+	/**
+	 * A write answers with the Subject as persisted and the Schema it instantiates. The Schema
+	 * name is not repeated in the schema body — it is the Subject's own `schema` field.
+	 */
+	private deserializeWriteResult( json: SubjectWriteResponseJson ): SubjectWriteResult {
+		const subject = this.subjectDeserializer.deserialize( json.subject );
+
+		return {
+			subject,
+			schema: json.schema === undefined ?
+				null :
+				this.schemaDeserializer.deserialize( subject.getSchemaName(), json.schema ),
+		};
 	}
 
 	public async getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects> {
@@ -185,7 +207,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		schemaName: SchemaName,
 		statements: StatementList,
 		comment?: string,
-	): Promise<SubjectId> {
+	): Promise<SubjectWriteResult> {
 		const payload = {
 			label: label,
 			schema: schemaName,
@@ -209,8 +231,7 @@ export class RestSubjectRepository implements SubjectRepository {
 			throw new Error( 'Error creating main subject' );
 		}
 
-		const data = await response.json();
-		return new SubjectId( data.subjectId );
+		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );
 	}
 
 	public async createChildSubject(
@@ -219,7 +240,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		schemaName: SchemaName,
 		statements: StatementList,
 		comment?: string,
-	): Promise<SubjectId> {
+	): Promise<SubjectWriteResult> {
 		const payload = {
 			label: label,
 			schema: schemaName,
@@ -243,11 +264,10 @@ export class RestSubjectRepository implements SubjectRepository {
 			throw new Error( 'Error creating child subject' );
 		}
 
-		const data = await response.json();
-		return new SubjectId( data.subjectId );
+		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );
 	}
 
-	public async updateSubject( id: SubjectId, label: string, statements: StatementList, comment?: string ): Promise<object> {
+	public async updateSubject( id: SubjectId, label: string, statements: StatementList, comment?: string ): Promise<SubjectWriteResult> {
 		const response = await this.httpClient.put(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
 			{
@@ -268,7 +288,7 @@ export class RestSubjectRepository implements SubjectRepository {
 			throw new Error( 'Error updating subject' );
 		}
 
-		return await response.json();
+		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );
 	}
 
 	public async deleteSubject( id: SubjectId, comment?: string ): Promise<boolean> {

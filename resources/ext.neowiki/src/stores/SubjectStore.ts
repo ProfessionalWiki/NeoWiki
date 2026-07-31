@@ -2,13 +2,26 @@ import { defineStore } from 'pinia';
 import { SubjectId } from '@/domain/SubjectId';
 import { Subject } from '@/domain/Subject';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
-import { SchemaName } from '@/domain/Schema.ts';
+import { Schema, SchemaName } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
-import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+
+/**
+ * A Subject write answers with the Schema the Subject instantiates, so a display can render the
+ * saved values even when the Schema gained a property out of band. That Schema is a server read
+ * riding along with the write, not the write's own result, so it takes the read guard (ADR 30
+ * rule 3): the caller snapshots the Schema epoch before awaiting and passes it here.
+ */
+function recordBundledSchema( schema: Schema | null, epochBeforeRequest: number ): void {
+	const schemaStore = useSchemaStore();
+
+	if ( schema !== null && epochBeforeRequest === schemaStore.mutationEpoch ) {
+		schemaStore.setSchema( schema.getName(), schema );
+	}
+}
+
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
 		subjects: new Map<string, Subject>(),
@@ -46,9 +59,20 @@ export const useSubjectStore = defineStore( 'subject', {
 			return this.getSubject( id );
 		},
 		async updateSubject( subject: Subject, comment?: string ): Promise<void> {
-			await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject( subject.getId(), subject.getLabel(), subject.getStatements(), comment );
+			const schemaEpoch = useSchemaStore().mutationEpoch;
+
+			const result = await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject(
+				subject.getId(),
+				subject.getLabel(),
+				subject.getStatements(),
+				comment,
+			);
+
 			this.mutationEpoch++;
-			this.setSubject( subject );
+			// The response Subject, not the one passed in: only the server's copy carries the page
+			// context and the normalisation the write applied.
+			this.setSubject( result.subject );
+			recordBundledSchema( result.schema, schemaEpoch );
 		},
 		async deleteSubject( subjectId: SubjectId, comment?: string ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSubjectRepository().deleteSubject( subjectId, comment );
@@ -97,51 +121,38 @@ export const useSubjectStore = defineStore( 'subject', {
 			return NeoWikiExtension.getInstance().getSubjectRepository().validateSubjectUpdate( id, label, statements );
 		},
 		async createMainSubject( pageId: number, label: string, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
-			const subjectId = await NeoWikiExtension.getInstance().getSubjectRepository().createMainSubject(
+			const schemaEpoch = useSchemaStore().mutationEpoch;
+
+			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createMainSubject(
 				pageId,
 				label,
 				schemaName,
 				statements,
 				comment,
 			);
-			this.mutationEpoch++;
 
-			this.setSubject(
-				new SubjectWithContext(
-					subjectId,
-					label,
-					schemaName,
-					statements,
-					// FIXME: 'page-title', assuming we need to actually set the Subject here.
-					// Perhaps we are better off getting the entire thing from the backend.
-					// Maybe the backend should respond with the entire thing instead of just the ID.
-					// Getting the subject from the backend is safer, since we avoid inconsistencies in
-					// case normalization happened or someone else edited as well.
-					new PageIdentifiers( pageId, 'page-title' ),
-				),
-			);
-			return subjectId;
+			this.mutationEpoch++;
+			this.setSubject( result.subject );
+			recordBundledSchema( result.schema, schemaEpoch );
+
+			return result.subject.getId();
 		},
 		async createChildSubject( pageId: number, label: string, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
-			const subjectId = await NeoWikiExtension.getInstance().getSubjectRepository().createChildSubject(
+			const schemaEpoch = useSchemaStore().mutationEpoch;
+
+			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createChildSubject(
 				pageId,
 				label,
 				schemaName,
 				statements,
 				comment,
 			);
-			this.mutationEpoch++;
 
-			this.setSubject(
-				new SubjectWithContext(
-					subjectId,
-					label,
-					schemaName,
-					statements,
-					new PageIdentifiers( pageId, 'page-title' ),
-				),
-			);
-			return subjectId;
+			this.mutationEpoch++;
+			this.setSubject( result.subject );
+			recordBundledSchema( result.schema, schemaEpoch );
+
+			return result.subject.getId();
 		},
 
 		openSubjectCreator(): void {

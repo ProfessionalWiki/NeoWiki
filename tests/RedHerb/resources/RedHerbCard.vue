@@ -183,23 +183,13 @@ module.exports = exports = {
 
 		// Editing UIs read through the repositories rather than the stores
 		// (NeoWiki ADR 30 / ADR 16): the stores hold page state, not editor state.
-		// This card renders from the stores, so it also publishes what it fetched
-		// back into them — epoch-guarded, so a mutation that lands mid-fetch wins.
+		// Saving updates the stores, because the write answers with the Subject and
+		// Schema as the server has them.
 		function openEditor() {
-			const schemaName = subject.value.getSchemaName();
-			const subjectEpoch = subjectStore.mutationEpoch;
-			const schemaEpoch = schemaStore.mutationEpoch;
-
 			Promise.all( [
 				subjectRepo.getSubject( props.subjectId ),
-				schemaRepo.getSchema( schemaName )
+				schemaRepo.getSchema( subject.value.getSchemaName() )
 			] ).then( ( [ freshSubject, freshSchema ] ) => {
-				if ( subjectEpoch === subjectStore.mutationEpoch ) {
-					subjectStore.setSubject( freshSubject );
-				}
-				if ( schemaEpoch === schemaStore.mutationEpoch ) {
-					schemaStore.setSchema( schemaName, freshSchema );
-				}
 				editingSubject.value = freshSubject;
 				editingSchema.value = freshSchema;
 				editorOpen.value = true;

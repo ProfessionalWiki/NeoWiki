@@ -325,7 +325,8 @@ schema, and layout stores for display; `nw.resolveDisplayProperties` together wi
 registry to render each value through its Property Type's component; and the shared `nw.SubjectEditorDialog` for
 editing when `canEditSubject` is true. Editing reads go through the repositories your component injects
 (`nw.NeoWikiServices.getSubjectRepository()`, `getSchemaRepository()`), not the stores, and reach the dialog as
-props; the card writes what it fetched back into the stores it renders from, so its display shows the fresh data.
+props. Saving updates the stores on its own: a Subject write answers with the Subject as persisted and the Schema
+it instantiates, and `nw.useSubjectStore()` records both.
 
 Full example: [`resources/init.js`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/init.js)
 with [`RedHerbCard.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/RedHerbCard.vue).
