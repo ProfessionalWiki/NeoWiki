@@ -1,0 +1,94 @@
+name: Refresh npm lockfiles
+
+# Runs `npm update` against both npm projects so transitive packages move to their
+# latest in-range release. Dependabot opens pull requests for dependencies named in
+# a manifest; nested transitive packages otherwise sit at whatever version was
+# resolved when their parent was last touched, until an advisory lands on them.
+#
+# The job verifies the refreshed tree before opening the pull request. That pull
+# request carries no checks of its own, because GitHub does not start workflow runs
+# for events raised with GITHUB_TOKEN — the verification lives in this run's log.
+# Push any commit to the branch to run the normal CI workflows on it.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 1'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    name: "Refresh"
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Update lockfiles
+        run: |
+          for dir in resources/ext.neowiki tests/RedHerb; do
+            ( cd "$dir" && npm update --package-lock-only )
+          done
+
+      - name: Look for changes
+        id: changes
+        run: |
+          if git diff --quiet -- resources/ext.neowiki/package-lock.json tests/RedHerb/package-lock.json; then
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify frontend
+        if: steps.changes.outputs.found == 'true'
+        working-directory: ./resources/ext.neowiki
+        run: |
+          npm ci
+          npm run test
+          npm run build
+          npm run lint
+
+      - name: Verify RedHerb
+        if: steps.changes.outputs.found == 'true'
+        working-directory: ./tests/RedHerb
+        run: |
+          npm ci
+          npm run lint
+
+      - name: Open pull request
+        if: steps.changes.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch=deps/npm-lockfile-refresh
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$branch"
+          git commit -m 'Refresh npm lockfiles' -- \
+            resources/ext.neowiki/package-lock.json tests/RedHerb/package-lock.json
+
+          # The branch is machine-owned and rewritten on every run. The lease still
+          # protects a commit someone pushed onto it in the meantime.
+          if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+            git fetch origin "$branch:refs/remotes/origin/$branch"
+            git push --force-with-lease origin "HEAD:$branch"
+          else
+            git push origin "HEAD:$branch"
+          fi
+
+          body=$'Moves transitive npm packages to their latest release inside the ranges the manifests already declare. Lockfiles only.\n\nThe scheduled run that produced this branch ran `npm ci`, the test suite, the build and the linters against the refreshed tree. GitHub does not start CI for a pull request opened with `GITHUB_TOKEN`, so those checks are absent here; push any commit to the branch to run them.'
+
+          if [ -z "$( gh pr list --head "$branch" --state open --json number --jq '.[].number' )" ]; then
+            gh pr create --base master --head "$branch" --title 'Refresh npm lockfiles' --body "$body"
+          fi
