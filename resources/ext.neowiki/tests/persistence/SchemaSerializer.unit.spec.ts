@@ -129,6 +129,100 @@ describe( 'SchemaSerializer', () => {
 		} );
 	} );
 
+	describe( 'Constraint severity round-trip', () => {
+		it( 'round-trips error-annotated Constraints back to the object form', () => {
+			const json = {
+				description: 'Schema with annotated Constraints',
+				propertyDefinitions: {
+					Score: {
+						type: 'number',
+						description: '',
+						required: { severity: 'error' },
+						minimum: 0,
+						maximum: { value: 100, severity: 'error' },
+					},
+				},
+			};
+
+			const schema = new SchemaDeserializer().deserialize( 'Test', json );
+
+			expect( JSON.parse( serializer.serializeSchema( schema ) ) ).toEqual( json );
+		} );
+
+		it( 'emits the shorthand for a warning-annotated Constraint', () => {
+			const schema = new SchemaDeserializer().deserialize( 'Test', {
+				description: '',
+				propertyDefinitions: {
+					Name: {
+						type: 'text',
+						description: '',
+						required: false,
+						multiple: false,
+						uniqueItems: false,
+						minLength: { value: 2, severity: 'warning' },
+					},
+				},
+			} );
+
+			const parsed = JSON.parse( serializer.serializeSchema( schema ) );
+
+			expect( parsed.propertyDefinitions.Name.minLength ).toBe( 2 );
+		} );
+
+		it( 'serializes an unchecked core boolean Constraint as bare false, dropping its annotation', () => {
+			// The schema editor can uncheck an annotated required/uniqueItems while its
+			// severity entry survives on the domain object. The object form cannot carry
+			// false, so serialization must emit the bare scalar the backend accepts.
+			const schema = new SchemaDeserializer().deserialize( 'Test', {
+				description: '',
+				propertyDefinitions: {
+					Name: {
+						type: 'text',
+						description: '',
+						required: { severity: 'error' },
+						multiple: true,
+						uniqueItems: { severity: 'error' },
+					},
+				},
+			} );
+
+			const unchecked = new Schema(
+				schema.getName(),
+				schema.getDescription(),
+				new PropertyDefinitionList(
+					[ ...schema.getPropertyDefinitions() ].map( ( property ) => ( {
+						...property,
+						required: false,
+						uniqueItems: false,
+					} ) ),
+				),
+			);
+
+			const parsed = JSON.parse( serializer.serializeSchema( unchecked ) );
+
+			expect( parsed.propertyDefinitions.Name.required ).toBe( false );
+			expect( parsed.propertyDefinitions.Name.uniqueItems ).toBe( false );
+		} );
+
+		it( 'round-trips an annotated key of an unregistered type', () => {
+			const json = {
+				description: '',
+				propertyDefinitions: {
+					Swatch: {
+						type: 'zzz-color',
+						description: '',
+						required: false,
+						palette: { value: 'warm', severity: 'error' },
+					},
+				},
+			};
+
+			const schema = new SchemaDeserializer().deserialize( 'Test', json );
+
+			expect( JSON.parse( serializer.serializeSchema( schema ) ) ).toEqual( json );
+		} );
+	} );
+
 	describe( 'serialization formatting', () => {
 		it( 'uses 4 spaces for indentation', () => {
 			const schema = new Schema(

@@ -31,6 +31,7 @@ function fieldViolation( overrides: Partial<SubjectViolation> = {} ): SubjectVio
 		propertyName: PROPERTY_NAME,
 		code: 'required',
 		args: [],
+		severity: 'error',
 		valuePartIndex: null,
 		...overrides,
 	};
@@ -52,65 +53,78 @@ describe( 'useFieldServerViolation', () => {
 		vi.clearAllMocks();
 	} );
 
-	describe( 'validationError', () => {
-		it( 'is null when there are no violations', () => {
-			const { validationError } = setup( [] );
+	describe( 'validationMessages and validationStatus', () => {
+		it( 'is empty with default status when there are no violations', () => {
+			const { validationMessages, validationStatus } = setup( [] );
 
-			expect( validationError.value ).toBeNull();
+			expect( validationMessages.value ).toEqual( {} );
+			expect( validationStatus.value ).toBe( 'default' );
 		} );
 
-		it( 'formats the field-level server violation', () => {
-			const { validationError } = setup( [ fieldViolation( { code: 'type-mismatch', args: [ 'url', 'number' ] } ) ] );
+		it( 'keys the field-level server violation by its severity', () => {
+			const { validationMessages, validationStatus } = setup(
+				[ fieldViolation( { code: 'type-mismatch', args: [ 'url', 'number' ] } ) ],
+			);
 
-			expect( validationError.value ).toBe( 'neowiki-field-type-mismatch|url|number' );
+			expect( validationMessages.value ).toEqual( { error: 'neowiki-field-type-mismatch|url|number' } );
+			expect( validationStatus.value ).toBe( 'error' );
+		} );
+
+		it( 'renders a warning violation with the warning status', () => {
+			const { validationMessages, validationStatus } = setup(
+				[ fieldViolation( { code: 'max-value', args: [ '100' ], severity: 'warning' } ) ],
+			);
+
+			expect( validationMessages.value ).toEqual( { warning: 'neowiki-field-max-value|100' } );
+			expect( validationStatus.value ).toBe( 'warning' );
 		} );
 
 		it( 'stops surfacing the violation when the parent removes it', () => {
-			const { validationError, serverViolations } = setup( [ fieldViolation() ] );
-			expect( validationError.value ).toBe( 'neowiki-field-required' );
+			const { validationMessages, serverViolations } = setup( [ fieldViolation() ] );
+			expect( validationMessages.value ).toEqual( { error: 'neowiki-field-required' } );
 
 			serverViolations.value = [];
 
-			expect( validationError.value ).toBeNull();
+			expect( validationMessages.value ).toEqual( {} );
 		} );
 
 		it( 'ignores violations belonging to a different property', () => {
-			const { validationError } = setup( [ fieldViolation( { propertyName: 'OtherProperty' } ) ] );
+			const { validationMessages } = setup( [ fieldViolation( { propertyName: 'OtherProperty' } ) ] );
 
-			expect( validationError.value ).toBeNull();
+			expect( validationMessages.value ).toEqual( {} );
 		} );
 
 		it( 'ignores per-index violations, since single-value inputs have no per-index slot', () => {
-			const { validationError } = setup( [ fieldViolation( { valuePartIndex: 2 } ) ] );
+			const { validationMessages } = setup( [ fieldViolation( { valuePartIndex: 2 } ) ] );
 
-			expect( validationError.value ).toBeNull();
+			expect( validationMessages.value ).toEqual( {} );
 		} );
 
 		it( 'selects the field-level violation from among per-index ones for the same property', () => {
-			const { validationError } = setup( [
+			const { validationMessages } = setup( [
 				fieldViolation( { code: 'invalid-url', valuePartIndex: 0 } ),
 				fieldViolation( { code: 'required', valuePartIndex: null } ),
 				fieldViolation( { code: 'invalid-url', valuePartIndex: 1 } ),
 			] );
 
-			expect( validationError.value ).toBe( 'neowiki-field-required' );
+			expect( validationMessages.value ).toEqual( { error: 'neowiki-field-required' } );
 		} );
 
 		it( 'passes args through unchanged when no formatter is given', () => {
-			const { validationError } = setup( [ fieldViolation( { code: 'min-value', args: [ '42' ] } ) ] );
+			const { validationMessages } = setup( [ fieldViolation( { code: 'min-value', args: [ '42' ] } ) ] );
 
-			expect( validationError.value ).toBe( 'neowiki-field-min-value|42' );
+			expect( validationMessages.value ).toEqual( { error: 'neowiki-field-min-value|42' } );
 		} );
 
 		it( 'applies the arg formatter to message args', () => {
-			const { validationError } = useFieldServerViolation(
+			const { validationMessages } = useFieldServerViolation(
 				shallowRef( newProperty() ),
 				ref<readonly SubjectViolation[] | undefined>( [ fieldViolation( { code: 'min-value', args: [ '2025-01-01' ] } ) ] ),
 				vi.fn(),
 				( arg ) => `formatted(${ arg })`,
 			);
 
-			expect( validationError.value ).toBe( 'neowiki-field-min-value|formatted(2025-01-01)' );
+			expect( validationMessages.value ).toEqual( { error: 'neowiki-field-min-value|formatted(2025-01-01)' } );
 		} );
 	} );
 

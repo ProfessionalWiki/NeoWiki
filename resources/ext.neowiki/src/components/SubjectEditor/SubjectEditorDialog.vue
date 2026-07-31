@@ -63,19 +63,7 @@
 				</CdxButton>
 			</template>
 
-			<CdxMessage
-				v-if="anchorlessViolations.length > 0"
-				type="error"
-			>
-				<ul class="ext-neowiki-subject-editor__form-errors">
-					<li
-						v-for="( v, idx ) in anchorlessViolations"
-						:key="idx"
-					>
-						{{ formatViolationMessage( v ) }}
-					</li>
-				</ul>
-			</CdxMessage>
+			<SubjectViolationBanners :violations="anchorlessViolations" />
 
 			<SubjectEditor
 				ref="subjectEditorRef"
@@ -117,9 +105,10 @@
 <script setup lang="ts">
 import { ref, shallowRef, nextTick, computed, watch } from 'vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
+import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
-import { CdxButton, CdxDialog, CdxIcon, CdxMessage } from '@wikimedia/codex';
+import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import EditableText from '@/components/common/EditableText.vue';
 import { cdxIconClose } from '@wikimedia/codex-icons';
 import { StatementList } from '@/domain/StatementList.ts';
@@ -241,6 +230,8 @@ const anchorlessViolations = computed<SubjectViolation[]>( () => {
 	} );
 } );
 
+// The label violation renders in the header rather than in a banner, so it is
+// formatted here. It is always an error, so it carries no severity styling.
 function formatViolationMessage( v: SubjectViolation ): string {
 	return mw.message( `neowiki-field-${ v.code }`, ...( v.args as string[] ) ).text();
 }

@@ -87,7 +87,7 @@ describe( 'DateTimeInput', () => {
 			modelValue: newStringValue( '2025-06-15T14:00:00Z' ),
 			property: newDateTimeProperty( { name: 'Foo', required: true } ),
 			serverViolations: [
-				{ propertyName: 'Foo', code: 'required', args: [], valuePartIndex: null },
+				{ propertyName: 'Foo', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 			],
 		} );
 
@@ -189,7 +189,7 @@ describe( 'DateTimeInput', () => {
 			const wrapper = newWrapper( {
 				property: newDateTimeProperty( { name: 'Foo' } ),
 				serverViolations: [
-					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'dateTime', 'string' ], valuePartIndex: null },
+					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'dateTime', 'string' ], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -197,11 +197,23 @@ describe( 'DateTimeInput', () => {
 			expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'error', 'neowiki-field-type-mismatch' );
 		} );
 
+		it( 'shows a warning violation with the warning status', () => {
+			const wrapper = newWrapper( {
+				property: newDateTimeProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'required', args: [], severity: 'warning', valuePartIndex: null },
+				],
+			} );
+
+			expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'warning' );
+			expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toHaveProperty( 'warning', 'neowiki-field-required' );
+		} );
+
 		it( 'emits clear-server-violation when the user edits the field', async () => {
 			const wrapper = newWrapper( {
 				property: newDateTimeProperty( { name: 'Foo' } ),
 				serverViolations: [
-					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'dateTime', 'string' ], valuePartIndex: null },
+					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'dateTime', 'string' ], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -217,7 +229,7 @@ describe( 'DateTimeInput', () => {
 			newWrapper( {
 				property: newDateTimeProperty( { name: 'Foo' } ),
 				serverViolations: [
-					{ propertyName: 'Foo', code: 'min-value', args: [ minimum ], valuePartIndex: null },
+					{ propertyName: 'Foo', code: 'min-value', args: [ minimum ], severity: 'error', valuePartIndex: null },
 				],
 			} );
 

@@ -125,6 +125,17 @@ describe( 'TextInput', () => {
 			expect( field.props( 'status' ) ).toBe( 'error' );
 		} );
 
+		it( 'sets status to warning when fieldMessages carries a warning (single input)', () => {
+			mockFieldMessages.value = { warning: 'Advisory only' };
+			const wrapper = newWrapper( {
+				property: newTextProperty( { multiple: false } ),
+			} );
+			const field = wrapper.findComponent( CdxField );
+
+			expect( field.props( 'messages' ) ).toEqual( { warning: 'Advisory only' } );
+			expect( field.props( 'status' ) ).toBe( 'warning' );
+		} );
+
 		it( 'sets CdxField status to default if no fieldMessages.error (single input)', () => {
 			const wrapper = newWrapper( {
 				property: newTextProperty( { multiple: false } ),
@@ -198,7 +209,7 @@ describe( 'TextInput', () => {
 
 	describe( 'Server violations', () => {
 		it( 'passes serverViolations to useStringValueInput as the fifth argument', () => {
-			const violation = { propertyName: 'Foo', code: 'required', args: [], valuePartIndex: null };
+			const violation = { propertyName: 'Foo', code: 'required', args: [], severity: 'error' as const, valuePartIndex: null };
 			newWrapper( {
 				property: newTextProperty( { name: 'Foo', multiple: false } ),
 				serverViolations: [ violation ],
@@ -215,7 +226,7 @@ describe( 'TextInput', () => {
 			const wrapper = newWrapper( {
 				property: newTextProperty( { name: 'Foo', multiple: false } ),
 				serverViolations: [
-					{ propertyName: 'Foo', code: 'required', args: [], valuePartIndex: null },
+					{ propertyName: 'Foo', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -224,7 +235,7 @@ describe( 'TextInput', () => {
 
 		it( 'passes server violations for a different property name through to the composable unchanged', () => {
 			// The composable is responsible for filtering by propertyName; the component passes it as-is.
-			const violation = { propertyName: 'OtherProp', code: 'required', args: [], valuePartIndex: null };
+			const violation = { propertyName: 'OtherProp', code: 'required', args: [], severity: 'error' as const, valuePartIndex: null };
 			newWrapper( {
 				property: newTextProperty( { name: 'Foo', multiple: false } ),
 				serverViolations: [ violation ],
@@ -235,7 +246,7 @@ describe( 'TextInput', () => {
 		} );
 
 		it( 'emits clear-server-violation when the composable emits it via the shared emit function', async () => {
-			const violation = { propertyName: 'Foo', code: 'required', args: [], valuePartIndex: null };
+			const violation = { propertyName: 'Foo', code: 'required', args: [], severity: 'error' as const, valuePartIndex: null };
 			const wrapper = newWrapper( {
 				property: newTextProperty( { name: 'Foo', multiple: false } ),
 				serverViolations: [ violation ],

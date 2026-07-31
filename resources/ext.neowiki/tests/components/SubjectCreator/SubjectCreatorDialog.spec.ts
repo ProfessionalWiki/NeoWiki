@@ -1020,6 +1020,7 @@ describe( 'SubjectCreatorDialog', () => {
 			propertyName: 'Color',
 			code: 'required',
 			args: [],
+			severity: 'error',
 			valuePartIndex: null,
 		};
 
@@ -1058,6 +1059,22 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( true );
 		} );
 
+		it( 'does not treat a warning-only dry-run result as blocking the save', async () => {
+			subjectStore.validateSubject = vi.fn().mockResolvedValue( [ {
+				propertyName: null,
+				code: 'schema-not-found',
+				args: [ 'Person' ],
+				severity: 'warning',
+				valuePartIndex: null,
+			} ] );
+			const wrapper = mountComponent();
+
+			await openSelectSchemaAndSave( wrapper );
+
+			expect( subjectStore.createMainSubject ).toHaveBeenCalledTimes( 1 );
+			expect( reloadMock ).toHaveBeenCalled();
+		} );
+
 		it( 'shows the validation-failed toast with the subject label', async () => {
 			subjectStore.createMainSubject = vi.fn().mockRejectedValue(
 				new ValidationFailedError( [ violation ] ),
@@ -1077,6 +1094,7 @@ describe( 'SubjectCreatorDialog', () => {
 				propertyName: null,
 				code: 'schema-not-found',
 				args: [ 'Person' ],
+				severity: 'error',
 				valuePartIndex: null,
 			};
 			subjectStore.createMainSubject = vi.fn().mockRejectedValue(
@@ -1158,6 +1176,7 @@ describe( 'SubjectCreatorDialog', () => {
 			propertyName: 'Color',
 			code: 'max-length',
 			args: [ 5 ],
+			severity: 'error',
 			valuePartIndex: null,
 		};
 
@@ -1200,8 +1219,8 @@ describe( 'SubjectCreatorDialog', () => {
 
 		it( 'does not surface missing-value violations (required, label-required) from the dry-run; they wait for save', async () => {
 			subjectStore.validateSubject = vi.fn().mockResolvedValue( [
-				{ propertyName: 'Color', code: 'required', args: [], valuePartIndex: null },
-				{ propertyName: null, code: 'label-required', args: [], valuePartIndex: null },
+				{ propertyName: 'Color', code: 'required', args: [], severity: 'error', valuePartIndex: null },
+				{ propertyName: null, code: 'label-required', args: [], severity: 'error', valuePartIndex: null },
 			] );
 			const wrapper = mountComponent();
 			await selectSchema( wrapper );

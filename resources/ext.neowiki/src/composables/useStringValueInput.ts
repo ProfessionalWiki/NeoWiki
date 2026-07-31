@@ -8,7 +8,7 @@ import { PropertyType } from '@/domain/PropertyType.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { ValueInputEmitFunction } from '@/components/Value/ValueInputContract.ts';
-import { useServerViolations } from '@/composables/useServerViolations.ts';
+import { preferErrorViolation, useServerViolations } from '@/composables/useServerViolations.ts';
 
 interface UseStringValueInputReturn {
 	displayValues: ComputedRef<string[]>;
@@ -65,17 +65,17 @@ export function useStringValueInput<P extends MultiStringProperty>(
 
 	function mergeServerIntoInputMessages( baseMessages: ValidationMessages[] ): ValidationMessages[] {
 		const merged = [ ...baseMessages ];
+		const perIndex = new Map<number, SubjectViolation[]>();
 		for ( const v of relevant() ) {
-			if ( typeof v.valuePartIndex !== 'number' ) {
-				continue;
+			if ( typeof v.valuePartIndex === 'number' && v.valuePartIndex >= 0 && v.valuePartIndex < merged.length ) {
+				perIndex.set( v.valuePartIndex, [ ...( perIndex.get( v.valuePartIndex ) ?? [] ), v ] );
 			}
-			const i = v.valuePartIndex;
-			if ( i < 0 || i >= merged.length ) {
-				continue;
-			}
+		}
+		for ( const [ i, violations ] of perIndex ) {
 			const existing = merged[ i ];
-			if ( !existing || Object.keys( existing ).length === 0 ) {
-				merged[ i ] = { error: format( v ) };
+			const hit = preferErrorViolation( violations );
+			if ( hit && ( !existing || Object.keys( existing ).length === 0 ) ) {
+				merged[ i ] = { [ hit.severity ]: format( hit ) };
 			}
 		}
 		return merged;
@@ -86,15 +86,15 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		// per-input slot to attach to, so we surface it through the field-level
 		// summary regardless of multi/single — otherwise something like a
 		// "required" violation on a multi-value property would silently vanish.
-		const fieldLevel = relevant().find(
+		const fieldLevel = preferErrorViolation( relevant().filter(
 			( v ) => v.valuePartIndex === null || v.valuePartIndex === undefined,
-		);
+		) );
 
 		if ( property.value.multiple ) {
 			// For multi: per-input server violations stay in their slots; only a
 			// server-sourced field-level violation surfaces in the summary slot.
 			if ( fieldLevel ) {
-				return { error: format( fieldLevel ) };
+				return { [ fieldLevel.severity ]: format( fieldLevel ) };
 			}
 			return {};
 		}
@@ -107,7 +107,7 @@ export function useStringValueInput<P extends MultiStringProperty>(
 		}
 
 		if ( fieldLevel ) {
-			return { error: format( fieldLevel ) };
+			return { [ fieldLevel.severity ]: format( fieldLevel ) };
 		}
 
 		return {};
