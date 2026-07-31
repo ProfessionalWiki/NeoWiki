@@ -28,7 +28,9 @@ readonly class SubjectIdsByHostingPage {
 		$idsByPageId = [];
 
 		foreach ( $this->pageIdentifiersLookup->getPageIdsOfSubjects( $subjectIds ) as $idText => $pageIdentifiers ) {
-			$idsByPageId[$pageIdentifiers->getId()->id][] = $idsByText[$idText];
+			if ( array_key_exists( $idText, $idsByText ) ) {
+				$idsByPageId[$pageIdentifiers->getId()->id][] = $idsByText[$idText];
+			}
 		}
 
 		return $idsByPageId;

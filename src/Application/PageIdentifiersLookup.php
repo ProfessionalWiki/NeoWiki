@@ -13,7 +13,8 @@ interface PageIdentifiersLookup {
 	public function getPageIdOfSubject( SubjectId $subjectId ): ?PageIdentifiers;
 
 	/**
-	 * Keyed by Subject id text. Ids hosted by no page are absent from the map.
+	 * Keyed by Subject id text. Ids hosted by no page are absent from the map; ids beyond those
+	 * requested carry no meaning and are ignored.
 	 *
 	 * @return array<string, PageIdentifiers>
 	 */
