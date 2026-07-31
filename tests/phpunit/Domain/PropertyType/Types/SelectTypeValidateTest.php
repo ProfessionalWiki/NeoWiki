@@ -5,9 +5,12 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 
@@ -95,6 +98,29 @@ class SelectTypeValidateTest extends TestCase {
 		$this->assertNull( $violations[1]->propertyName );
 	}
 
+	public function testInvalidOptionUsesErrorWhenOptionsAnnotated(): void {
+		$definition = PropertyDefinition::fromJson(
+			[
+				'type' => 'select',
+				'multiple' => true,
+				'options' => [
+					'value' => [
+						[ 'id' => 'opt_a', 'label' => 'A' ],
+						[ 'id' => 'opt_b', 'label' => 'B' ],
+					],
+					'severity' => 'error',
+				],
+			],
+			PropertyTypeRegistry::withCoreTypes(),
+		);
+
+		$violations = $this->type->validate( new StringValue( 'opt_a', 'opt_c', 'opt_b' ), $definition );
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'invalid-option', $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
+	}
+
 	public function testSingleValueOnlyWhenMultipleIsFalseAndMoreThanOnePart(): void {
 		$violations = $this->type->validate(
 			new StringValue( 'red', 'green' ),
@@ -107,6 +133,7 @@ class SelectTypeValidateTest extends TestCase {
 		$singleViolation = array_values( array_filter( $violations, static fn( $v ) => $v->code === 'single-value-only' ) )[0];
 		$this->assertNull( $singleViolation->valuePartIndex );
 		$this->assertNull( $singleViolation->propertyName );
+		$this->assertSame( Severity::Error, $singleViolation->severity );
 	}
 
 	public function testMultipleTrueAndManyValidPartsReturnsNoViolations(): void {

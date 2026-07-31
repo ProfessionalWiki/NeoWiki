@@ -98,7 +98,7 @@ class MappingContentHandler extends JsonContentHandler {
 
 		$rendering = $builder->build( $mapping );
 
-		$parserOutput->setRawText( $rendering->html );
+		$parserOutput->setContentHolderText( $rendering->html );
 		$this->registerLinks( $parserOutput, $rendering );
 		$parserOutput->addModuleStyles( [ 'mediawiki.content.json', 'ext.neowiki.styles' ] );
 	}

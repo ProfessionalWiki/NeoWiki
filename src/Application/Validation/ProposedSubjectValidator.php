@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Validation;
 
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 /**
@@ -41,6 +42,7 @@ readonly class ProposedSubjectValidator {
 					propertyName: null,
 					code: 'schema-not-found',
 					args: [ $subject->getSchemaName()->getText() ],
+					severity: Severity::Warning,
 				),
 			];
 		}

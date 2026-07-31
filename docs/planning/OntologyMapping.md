@@ -14,7 +14,7 @@ Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 > ([#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)) — and an ontology projection
 > selectable alongside the native one on the RDF export endpoint and `DumpRdf`. See the
 > [Ontology Mapping reference](../rdf/ontology-mapping.md) and the worked
-> [Person → EDM example](../examples/person-to-edm.md). The structural / node-synthesis
+> [Person → EDM example](../rdf/person-to-edm.md). The structural / node-synthesis
 > tier and the mapping-formalism question (Q1, [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995))
 > remain open; the stored `"version": 1` format is provisional. Provisional answers v1 gives to some open
 > questions below are noted inline.

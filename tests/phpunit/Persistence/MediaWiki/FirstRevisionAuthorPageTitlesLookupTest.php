@@ -20,11 +20,6 @@ use User;
  */
 class FirstRevisionAuthorPageTitlesLookupTest extends NeoWikiIntegrationTestCase {
 
-	protected function setUp(): void {
-		parent::setUp();
-		$this->markPageTableAsUsed();
-	}
-
 	public function testReturnsAPageTheImporterCreated(): void {
 		$this->editAs( $this->importer(), 'Importer page', 'created by the importer' );
 

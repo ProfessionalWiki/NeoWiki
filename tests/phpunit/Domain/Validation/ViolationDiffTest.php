@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Validation;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Validation\ViolationDiff;
 
@@ -122,6 +123,13 @@ class ViolationDiffTest extends TestCase {
 		);
 
 		$this->assertSame( [ $indexNull ], $result );
+	}
+
+	public function testSameViolationWithDifferentSeverityIsNotNew(): void {
+		$asWarning = new Violation( new PropertyName( 'Age' ), 'max-value', args: [ 100 ], severity: Severity::Warning );
+		$asError = new Violation( new PropertyName( 'Age' ), 'max-value', args: [ 100 ], severity: Severity::Error );
+
+		$this->assertSame( [], ViolationDiff::newViolations( proposed: [ $asError ], prior: [ $asWarning ] ) );
 	}
 
 	private function required( string $property ): Violation {

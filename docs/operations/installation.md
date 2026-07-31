@@ -176,7 +176,7 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | For features |
 | `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | For features |
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
-| `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new constraint violations | `false` | No |
+| `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new `error`-severity violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
 
@@ -258,7 +258,7 @@ $wgNeoWikiSparqlStores = [
 
 Sibling projections mint the same entity IRIs, so one query can combine data from both — the target ontology's terms
 alongside a property that ontology does not model. The
-[Person-to-EDM example](../examples/person-to-edm.md#querying-via-sparql) shows such a query.
+[Person-to-EDM example](../rdf/person-to-edm.md#querying-via-sparql) shows such a query.
 
 A newly added entry only receives pages saved from then on. Backfill it by
 [rebuilding the graph](maintenance.md#rebuilding-the-graph).

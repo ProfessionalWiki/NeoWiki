@@ -16,6 +16,7 @@ final class ViolationSerializer {
 			'propertyName' => $violation->propertyName?->__toString(),
 			'code' => $violation->code,
 			'args' => $violation->args,
+			'severity' => $violation->severity->value,
 		];
 
 		if ( $violation->valuePartIndex !== null ) {

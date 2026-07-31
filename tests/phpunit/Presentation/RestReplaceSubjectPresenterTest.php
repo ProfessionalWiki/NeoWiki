@@ -61,8 +61,8 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 		$this->assertSame( 's1demo1aaaaaaa1', $presenter->getJsonArray()['subjectId'] );
 		$this->assertSame(
 			[
-				[ 'propertyName' => 'Status', 'code' => 'required', 'args' => [] ],
-				[ 'propertyName' => null, 'code' => 'schema-not-found', 'args' => [ 'Person' ] ],
+				[ 'propertyName' => 'Status', 'code' => 'required', 'args' => [], 'severity' => 'warning' ],
+				[ 'propertyName' => null, 'code' => 'schema-not-found', 'args' => [ 'Person' ], 'severity' => 'warning' ],
 			],
 			$presenter->getJsonArray()['violations']
 		);
@@ -158,7 +158,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 				'status' => 'error',
 				'message' => 'Validation failed',
 				'violations' => [
-					[ 'propertyName' => 'Status', 'code' => 'required', 'args' => [] ],
+					[ 'propertyName' => 'Status', 'code' => 'required', 'args' => [], 'severity' => 'warning' ],
 				],
 			],
 			$presenter->getJsonArray()

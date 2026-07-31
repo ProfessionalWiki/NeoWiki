@@ -1,10 +1,10 @@
 ---
-title: Person to EDM
-order: 1
+title: Person to EDM example
+order: 3
 ---
 # Worked example: projecting a Person to EDM
 
-End-to-end walkthrough of the [Ontology Mapping](../rdf/ontology-mapping.md) v1 projection: a NeoWiki-native `Person`
+End-to-end walkthrough of the [Ontology Mapping](ontology-mapping.md) v1 projection: a NeoWiki-native `Person`
 Schema, an EDM Mapping, and a demo page projected into
 [Europeana Data Model](https://pro.europeana.eu/page/edm-documentation) (EDM) RDF, shown against the native projection.
 
@@ -51,7 +51,7 @@ The demo `City` Schema ([`DemoData/Schema/City.json`](../../DemoData/Schema/City
 ## 2. The Mapping
 
 One Mapping page, **[`Mapping:EDM`](../../DemoData/Mapping/EDM.json)**, holds an entry per mapped Schema; its title
-(`EDM`) is the projection name (see [Ontology Mapping](../rdf/ontology-mapping.md) for the format). Abbreviated to the
+(`EDM`) is the projection name (see [Ontology Mapping](ontology-mapping.md) for the format). Abbreviated to the
 two entries this walkthrough uses — the shipped file also maps `Artwork` and `Artist` and declares the
 `dc`/`dcterms`/`foaf`/`xsd` prefixes those need:
 
@@ -90,7 +90,7 @@ its `Birth place` relation pointing at [`Málaga`](../../DemoData/Subject/Málag
 
 ## 4. Running the projection
 
-Per page, via the [RDF export endpoint](../rdf/rdf-export.md#endpoint) — the `projection` query parameter selects the
+Per page, via the [RDF export endpoint](rdf-export.md#endpoint) — the `projection` query parameter selects the
 vocabulary:
 
 ```sh
@@ -109,7 +109,7 @@ php maintenance/run.php NeoWiki:DumpRdf --projection=EDM > dump-edm.trig
 ## 5. Native vs EDM output
 
 Real output from the demo wiki (Turtle; shared prefix header trimmed — the `neo*` CURIEs are the
-[IRI scheme](../rdf/rdf-export.md#iri-scheme)). The **native** projection of `Pablo_Picasso` —
+[IRI scheme](rdf-export.md#iri-scheme)). The **native** projection of `Pablo_Picasso` —
 NeoWiki's own vocabulary, lossless, with page metadata and the two-layer relation:
 
 ```turtle

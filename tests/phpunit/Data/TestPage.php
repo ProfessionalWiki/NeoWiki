@@ -18,7 +18,7 @@ class TestPage {
 
 	public static function build(
 		?int $id = null,
-		PageProperties $properties = null,
+		?PageProperties $properties = null,
 		?Subject $mainSubject = null,
 		SubjectMap $childSubjects = new SubjectMap()
 	): Page {

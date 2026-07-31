@@ -529,7 +529,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->createSchema(
 			'EnforcementSchema',
-			'{"title":"EnforcementSchema","propertyDefinitions":{"Required":{"type":"text","required":true}}}'
+			'{"title":"EnforcementSchema","propertyDefinitions":{"Required":{"type":"text","required":{"severity":"error"}}}}'
 		);
 		$this->createPageWithSubjects(
 			'ReplaceSubjectApiEnforcementTest',
@@ -564,6 +564,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertNotEmpty( $responseData['violations'] );
 		$this->assertSame( 'Required', $responseData['violations'][0]['propertyName'] );
 		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
+		$this->assertSame( 'error', $responseData['violations'][0]['severity'] );
 	}
 
 	private function createPages(): void {

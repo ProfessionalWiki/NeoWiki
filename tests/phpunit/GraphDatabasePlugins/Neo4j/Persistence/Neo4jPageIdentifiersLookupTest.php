@@ -38,7 +38,7 @@ class Neo4jPageIdentifiersLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $this->newLookup()->getPageIdOfSubject( new SubjectId( self::GUID_404 ) ) );
 	}
 
-	private function newLookup( ClientInterface $client = null ): Neo4jPageIdentifiersLookup {
+	private function newLookup( ?ClientInterface $client = null ): Neo4jPageIdentifiersLookup {
 		return new Neo4jPageIdentifiersLookup(
 			client: $client ?? $this->getClient()
 		);

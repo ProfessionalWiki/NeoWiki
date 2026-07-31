@@ -81,7 +81,9 @@ module.exports = {
 		'spaced-comment': 'off',
 		'no-tabs': 'off',
 		'@typescript-eslint/explicit-module-boundary-types': 'off',
-		'es-x/no-iterator': 'warn'
+		'es-x/no-iterator': 'warn',
+		// Messages can be overridden on-wiki, so v-html is an injection point, not a style preference.
+		'vue/no-v-html': 'error'
 	},
 	overrides: [
 		{

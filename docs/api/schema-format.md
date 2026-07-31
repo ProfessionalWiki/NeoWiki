@@ -38,8 +38,37 @@ Every property definition carries the common fields below plus the type-specific
 |-------|------|----------|---------|-------------|
 | `type` | string | Yes | - | The property type. See [Property Types](#property-types). |
 | `description` | string | No | `""` | Human-readable description of the property |
-| `required` | boolean | No | `false` | Whether a value is required for this property |
+| `required` | boolean or object | No | `false` | Whether a value is required. Accepts a [severity](#constraint-severity). |
 | `default` | varies | No | `null` | Default value when none is provided |
+
+## Constraint severity
+
+Every Constraint carries a severity of `error` or `warning`, which decides whether violating it can
+block a write. Write a Constraint either as the bare value, which keeps the default `warning`, or as
+an object carrying the severity:
+
+```json
+{
+  "type": "number",
+  "required": { "severity": "error" },
+  "minimum": 0,
+  "maximum": { "value": 100, "severity": "error" }
+}
+```
+
+Boolean Constraints (`required`, `uniqueItems`) take no `value` in the object form — writing the
+object at all implies `true`. Every other Constraint carries its value under `value`, including
+`options`, whose `value` is the options array.
+
+The Constraints that accept a severity are `required`, `minimum`, `maximum`, `minLength`,
+`maxLength`, `uniqueItems`, and `options`. Severity is a Constraint concept, so it does not apply to
+Display Attributes such as `precision`, where it is discarded, nor to the shape-declaring fields
+`type`, `multiple`, `relation`, and `targetSchema`, where it is rejected when the Schema is saved.
+
+Canonical output emits the bare form whenever the severity is the default, so a Schema that sets no
+severities round-trips unchanged. Which violation each Constraint produces, and the fixed severities
+of the codes no Constraint backs, are covered in
+[Validation codes](validation-codes.md#severity-blocking-and-enforcement).
 
 ## Property Types
 

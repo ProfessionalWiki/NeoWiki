@@ -93,5 +93,5 @@ How a property renders is set by Display Attributes and [Layouts](glossary.md#la
 
 - [Glossary](glossary.md) — Subject, Statement, Relation, Schema, Layout
 - [Subject Format](api/subject-format.md) and [Graph Model](api/graph-model.md)
-- [Worked example: Person to EDM](examples/person-to-edm.md) — ontology mapping end to end; its CIDOC-CRM tier
+- [Worked example: Person to EDM](rdf/person-to-edm.md) — ontology mapping end to end; its CIDOC-CRM tier
   revisits intermediate-node modelling at the RDF level

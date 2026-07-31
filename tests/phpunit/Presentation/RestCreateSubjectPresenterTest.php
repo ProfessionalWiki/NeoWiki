@@ -59,7 +59,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 		$this->assertSame( 'created', $presenter->getJsonArray()['status'] );
 		$this->assertSame( 's1demo1aaaaaaa1', $presenter->getJsonArray()['subjectId'] );
 		$this->assertSame(
-			[ [ 'propertyName' => 'Status', 'code' => 'required', 'args' => [] ] ],
+			[ [ 'propertyName' => 'Status', 'code' => 'required', 'args' => [], 'severity' => 'warning' ] ],
 			$presenter->getJsonArray()['violations']
 		);
 	}
@@ -166,7 +166,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 				'status' => 'error',
 				'message' => 'Validation failed',
 				'violations' => [
-					[ 'propertyName' => 'Required', 'code' => 'required', 'args' => [] ],
+					[ 'propertyName' => 'Required', 'code' => 'required', 'args' => [], 'severity' => 'warning' ],
 				],
 			],
 			$presenter->getJsonArray()

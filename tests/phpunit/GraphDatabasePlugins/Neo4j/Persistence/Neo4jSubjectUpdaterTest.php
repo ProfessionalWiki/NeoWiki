@@ -54,7 +54,7 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 		);
 	}
 
-	private function newSubjectUpdater( Neo4jValueBuilderRegistry $valueBuilderRegistry = null ): Neo4jSubjectUpdater {
+	private function newSubjectUpdater( ?Neo4jValueBuilderRegistry $valueBuilderRegistry = null ): Neo4jSubjectUpdater {
 		return new Neo4jSubjectUpdater(
 			$this->transaction,
 			$this->pageId,

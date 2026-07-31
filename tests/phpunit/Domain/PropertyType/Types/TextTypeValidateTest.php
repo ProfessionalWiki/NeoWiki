@@ -5,9 +5,12 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 
@@ -73,6 +76,18 @@ class TextTypeValidateTest extends TestCase {
 		$this->assertNull( $violations[0]->valuePartIndex );
 	}
 
+	public function testUniqueViolationUsesErrorWhenUniqueItemsAnnotated(): void {
+		$definition = PropertyDefinition::fromJson(
+			[ 'type' => 'text', 'multiple' => true, 'uniqueItems' => [ 'severity' => 'error' ] ],
+			PropertyTypeRegistry::withCoreTypes(),
+		);
+
+		$violations = $this->type->validate( new StringValue( 'foo', 'bar', 'foo' ), $definition );
+
+		$this->assertSame( 'unique', $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
+	}
+
 	public function testUniqueItemsWithAllDistinctReturnsNoViolation(): void {
 		$violations = $this->type->validate(
 			new StringValue( 'foo', 'bar', 'baz' ),
@@ -114,6 +129,18 @@ class TextTypeValidateTest extends TestCase {
 		$this->assertSame( 1, $violations[0]->valuePartIndex );
 	}
 
+	public function testMinLengthViolationUsesErrorWhenMinLengthAnnotated(): void {
+		$definition = PropertyDefinition::fromJson(
+			[ 'type' => 'text', 'multiple' => true, 'minLength' => [ 'value' => 3, 'severity' => 'error' ] ],
+			PropertyTypeRegistry::withCoreTypes(),
+		);
+
+		$violations = $this->type->validate( new StringValue( 'abc', 'ab' ), $definition );
+
+		$this->assertSame( 'min-length', $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
+	}
+
 	public function testPartLongerThanMaxLengthProducesMaxLengthViolation(): void {
 		$violations = $this->type->validate(
 			new StringValue( 'ok', 'toolong' ),
@@ -124,6 +151,18 @@ class TextTypeValidateTest extends TestCase {
 		$this->assertSame( 'max-length', $violations[0]->code );
 		$this->assertSame( [ 4 ], $violations[0]->args );
 		$this->assertSame( 1, $violations[0]->valuePartIndex );
+	}
+
+	public function testMaxLengthViolationUsesErrorWhenMaxLengthAnnotated(): void {
+		$definition = PropertyDefinition::fromJson(
+			[ 'type' => 'text', 'multiple' => true, 'maxLength' => [ 'value' => 4, 'severity' => 'error' ] ],
+			PropertyTypeRegistry::withCoreTypes(),
+		);
+
+		$violations = $this->type->validate( new StringValue( 'ok', 'toolong' ), $definition );
+
+		$this->assertSame( 'max-length', $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
 	public function testTrimmedLengthBelowMinimumProducesViolation(): void {

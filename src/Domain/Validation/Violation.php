@@ -8,18 +8,12 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 
 readonly class Violation {
 
-	/**
-	 * System conditions rather than user-correctable Constraints: the wiki, not the edit,
-	 * is in a degraded state. They are reported but never reject a write. These are the
-	 * `warning` tier that ADR 26 will make configurable per Constraint.
-	 */
-	private const NON_BLOCKING_CODES = [ 'schema-not-found', 'unregistered-type', 'relation-target-not-found' ];
-
 	public function __construct(
 		public ?PropertyName $propertyName,
 		public string $code,
 		public array $args = [],
 		public ?int $valuePartIndex = null,
+		public Severity $severity = Severity::Warning,
 	) {
 	}
 
@@ -29,14 +23,15 @@ readonly class Violation {
 			code: $this->code,
 			args: $this->args,
 			valuePartIndex: $this->valuePartIndex,
+			severity: $this->severity,
 		);
 	}
 
 	/**
-	 * Whether this Violation should block writes under enforcement.
+	 * Whether this Violation should block writes under enforcement (ADR 26).
 	 */
 	public function isBlocking(): bool {
-		return !in_array( $this->code, self::NON_BLOCKING_CODES, true );
+		return $this->severity === Severity::Error;
 	}
 
 }

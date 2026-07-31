@@ -82,8 +82,9 @@ A Property Definition has:
 - Boolean **required**
 - Optional **description** string
 - Optional **default**, which is a Value
-- **Constraints**: validation and data rules specific to the Property Type. Example: `"minimum": 42`. Not overridable
-  in Layouts.
+- **Constraints**: validation and data rules specific to the Property Type. Example: `"minimum": 42`. Each carries a
+  severity of `error` or `warning` (default `warning`) that decides whether violating it can block a write — see
+  [Constraint severity](api/schema-format.md#constraint-severity). Not overridable in Layouts.
 - **Display Attributes**: presentation configuration specific to the Property Type. Example: `"precision": 2`,
   `"color": "blue"`. These serve as defaults that can be overridden per-Layout via Display Rules.
 

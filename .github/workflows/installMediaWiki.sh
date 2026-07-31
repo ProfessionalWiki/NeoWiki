@@ -3,10 +3,9 @@
 MW_BRANCH=$1
 EXTENSION_NAME=$2
 
-wget https://github.com/wikimedia/mediawiki/archive/$MW_BRANCH.tar.gz -nv
-
-tar -zxf $MW_BRANCH.tar.gz
-mv mediawiki-$MW_BRANCH mediawiki
+# Cloned rather than fetched as a tarball: phpunit.xml.template is export-ignore'd
+# in MediaWiki's .gitattributes, and `composer phpunit:config` needs it.
+git clone --depth 1 --branch "$MW_BRANCH" https://github.com/wikimedia/mediawiki.git mediawiki
 
 cd mediawiki
 
@@ -45,4 +44,4 @@ cat <<EOT >> composer.local.json
 EOT
 
 cd extensions
-git clone -b $MW_BRANCH https://gerrit.wikimedia.org/r/p/mediawiki/extensions/Scribunto.git --depth 1
+git clone -b $MW_BRANCH https://github.com/wikimedia/mediawiki-extensions-Scribunto.git Scribunto --depth 1

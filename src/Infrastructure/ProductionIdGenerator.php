@@ -15,7 +15,7 @@ class ProductionIdGenerator implements IdGenerator {
 	private Randomizer $randomizer;
 	private Clock $clock;
 
-	public function __construct( Randomizer $randomizer = null, Clock $clock = null ) {
+	public function __construct( ?Randomizer $randomizer = null, ?Clock $clock = null ) {
 		$this->randomizer = $randomizer ?? new Randomizer();
 		$this->clock = $clock ?? new SystemClock();
 	}

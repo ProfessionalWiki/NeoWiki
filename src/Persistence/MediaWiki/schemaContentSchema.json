@@ -1,6 +1,42 @@
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema#",
 	"type": "object",
+	"$defs": {
+		"severity": {
+			"enum": [ "error", "warning" ]
+		},
+		"booleanConstraint": {
+			"oneOf": [
+				{ "type": "boolean" },
+				{
+					"type": "object",
+					"required": [ "severity" ],
+					"additionalProperties": false,
+					"properties": { "severity": { "$ref": "#/$defs/severity" } }
+				}
+			]
+		},
+		"scalarConstraint": {
+			"if": { "type": "object" },
+			"then": {
+				"required": [ "value", "severity" ],
+				"additionalProperties": false,
+				"properties": {
+					"value": true,
+					"severity": { "$ref": "#/$defs/severity" }
+				}
+			}
+		},
+		"customConstraint": {
+			"if": {
+				"type": "object",
+				"required": [ "severity" ]
+			},
+			"then": {
+				"properties": { "severity": { "$ref": "#/$defs/severity" } }
+			}
+		}
+	},
 	"properties": {
 		"description": {
 			"type": "string"
@@ -10,7 +46,7 @@
 			"patternProperties": {
 				"^.*$": {
 					"type": "object",
-					"additionalProperties": true,
+					"additionalProperties": { "$ref": "#/$defs/customConstraint" },
 					"required": [
 						"type"
 					],
@@ -22,15 +58,17 @@
 							"type": "string",
 							"minLength": 1
 						},
-						"required": {
-							"type": "boolean"
-						},
+						"default": true,
+						"required": { "$ref": "#/$defs/booleanConstraint" },
 						"multiple": {
 							"type": "boolean"
 						},
-						"uniqueItems": {
-							"type": "boolean"
-						}
+						"uniqueItems": { "$ref": "#/$defs/booleanConstraint" },
+						"minimum": { "$ref": "#/$defs/scalarConstraint" },
+						"maximum": { "$ref": "#/$defs/scalarConstraint" },
+						"minLength": { "$ref": "#/$defs/scalarConstraint" },
+						"maxLength": { "$ref": "#/$defs/scalarConstraint" },
+						"options": { "$ref": "#/$defs/scalarConstraint" }
 					},
 					"allOf": [
 						{
