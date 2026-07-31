@@ -5,50 +5,48 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
-use Laudis\Neo4j\Databags\SummarizedResult;
 
 /**
- * Reads and removes the labels of a Subject node identified by its id, within a given transaction.
+ * Adds and removes labels on Subject nodes identified by their id, within a given transaction.
  *
- * Shared by Neo4jSubjectUpdater (reconciling a subject's labels with its schema) and
- * Neo4jProjectionStore (stripping a subject down to a stub). Those classes hold their transaction
- * differently, so the transaction is passed in per call rather than owned here.
+ * Shared by Neo4jSubjectUpdater (reconciling subjects with their schemas) and Neo4jProjectionStore
+ * (stripping subjects down to stubs). Those classes hold their transaction differently, so the
+ * transaction is passed in per call rather than owned here.
  *
  * Only Subject nodes are addressed: passing the id of any other kind of node matches nothing.
  */
 class Neo4jNodeLabels {
 
 	/**
-	 * @return string[]
+	 * @param array<string, string[]> $labelsBySubjectId
 	 */
-	public static function read( TransactionInterface $transaction, string $subjectId ): array {
-		/**
-		 * @var SummarizedResult $result
-		 */
-		$result = $transaction->run(
-			'MATCH (n:Subject {id: $id}) RETURN labels(n) AS labels',
-			[ 'id' => $subjectId ]
-		);
-
-		if ( $result->isEmpty() ) {
-			return [];
-		}
-
-		return $result->first()->get( 'labels' )->toArray();
+	public static function add( TransactionInterface $transaction, array $labelsBySubjectId ): void {
+		self::applyLabels( $transaction, 'SET', $labelsBySubjectId );
 	}
 
 	/**
-	 * @param string[] $labels
+	 * @param array<string, string[]> $labelsBySubjectId
 	 */
-	public static function remove( TransactionInterface $transaction, string $subjectId, array $labels ): void {
-		if ( $labels === [] ) {
-			return;
-		}
+	public static function remove( TransactionInterface $transaction, array $labelsBySubjectId ): void {
+		self::applyLabels( $transaction, 'REMOVE', $labelsBySubjectId );
+	}
 
-		$transaction->run(
-			'MATCH (n:Subject {id: $id}) REMOVE n:' . Cypher::buildLabelList( $labels ),
-			[ 'id' => $subjectId ]
-		);
+	/**
+	 * @param array<string, string[]> $labelsBySubjectId
+	 */
+	private static function applyLabels(
+		TransactionInterface $transaction,
+		string $cypherClause,
+		array $labelsBySubjectId
+	): void {
+		foreach ( Neo4jLabelGroups::build( $labelsBySubjectId ) as $group ) {
+			$transaction->run(
+				'UNWIND $subjectIds AS subjectId
+					MATCH (node:Subject {id: subjectId})
+					' . $cypherClause . ' node:' . Cypher::buildLabelList( $group['labels'] ),
+				[ 'subjectIds' => $group['subjectIds'] ]
+			);
+		}
 	}
 
 }
