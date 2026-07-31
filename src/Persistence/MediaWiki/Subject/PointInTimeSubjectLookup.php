@@ -66,7 +66,7 @@ class PointInTimeSubjectLookup implements SubjectLookup {
 	}
 
 	private function getRevisionAtOrBefore( PageId $pageId ): ?RevisionRecord {
-		$revisionId = $this->findRevisionAtOrBefore( $pageId );
+		$revisionId = $this->findRevisionIdAtOrBefore( $pageId );
 
 		if ( $revisionId === null ) {
 			return null;
@@ -75,7 +75,7 @@ class PointInTimeSubjectLookup implements SubjectLookup {
 		return $this->revisionLookup->getRevisionById( $revisionId );
 	}
 
-	private function findRevisionAtOrBefore( PageId $pageId ): ?int {
+	private function findRevisionIdAtOrBefore( PageId $pageId ): ?int {
 		$dbr = $this->connectionProvider->getReplicaDatabase();
 
 		$row = $dbr->newSelectQueryBuilder()

@@ -572,6 +572,10 @@ class SubjectValidatorTest extends TestCase {
 		);
 
 		$this->assertSame( 1, $subjectLookup->getSubjectsCallCount );
+
+		// Batching the resolution buys nothing if the targets are then fetched again where they are
+		// checked, which is what the per-target round trips this replaces looked like.
+		$this->assertSame( 0, $subjectLookup->getSubjectCallCount );
 	}
 
 	// --- Helpers ---

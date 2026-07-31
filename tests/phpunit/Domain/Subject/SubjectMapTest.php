@@ -154,6 +154,19 @@ class SubjectMapTest extends TestCase {
 		);
 	}
 
+	public function testOnlyWithIdsOrdersByTheGivenIds(): void {
+		$subject1 = TestSubject::build( self::GUID_123 );
+		$subject2 = TestSubject::build( self::GUID_456 );
+		$subject3 = TestSubject::build( self::GUID_789 );
+
+		$subjectMap = new SubjectMap( $subject1, $subject2, $subject3 );
+
+		$this->assertEquals(
+			[ $subject3, $subject1 ],
+			$subjectMap->onlyWithIds( new SubjectIdList( [ $subject3->id, $subject1->id ] ) )->asArray()
+		);
+	}
+
 	public function testOnlyWithIdsDoesNotMutate(): void {
 		$subject1 = TestSubject::build( self::GUID_123 );
 		$subject2 = TestSubject::build( self::GUID_456 );

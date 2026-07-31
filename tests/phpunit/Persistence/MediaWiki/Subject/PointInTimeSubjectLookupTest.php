@@ -215,6 +215,37 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 1, $pageIdentifiersLookup->getPageIdsOfSubjectsCallCount );
 	}
 
+	public function testGetSubjectsOmitsSubjectsSharingAPageWithARequestedOne(): void {
+		$requestedOnPrimary = TestSubject::build( id: 'sPitSubset11111', label: new SubjectLabel( 'Requested on primary' ) );
+		$decoyOnPrimary = TestSubject::build( id: 'sPitSubset11112', label: new SubjectLabel( 'Decoy on primary' ) );
+		$requestedOnOther = TestSubject::build( id: 'sPitSubset11113', label: new SubjectLabel( 'Requested on other' ) );
+		$decoyOnOther = TestSubject::build( id: 'sPitSubset11114', label: new SubjectLabel( 'Decoy on other' ) );
+
+		$otherRevision = $this->createPageWithSubjects(
+			'PitTestSubsetOther',
+			mainSubject: $requestedOnOther,
+			childSubjects: new SubjectMap( $decoyOnOther ),
+		);
+
+		$primaryRevision = $this->createPageWithSubjects(
+			'PitTestSubsetPrimary',
+			mainSubject: $requestedOnPrimary,
+			childSubjects: new SubjectMap( $decoyOnPrimary ),
+		);
+
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+		$this->registerHostingPage( $pageIdentifiersLookup, $requestedOnOther->id, $otherRevision, 'PitTestSubsetOther' );
+
+		$subjects = $this->newLookup( $primaryRevision, $pageIdentifiersLookup )->getSubjects(
+			new SubjectIdList( [ $requestedOnPrimary->id, $requestedOnOther->id ] )
+		);
+
+		$this->assertSame(
+			[ 'sPitSubset11111', 'sPitSubset11113' ],
+			$subjects->getIdsAsTextArray()
+		);
+	}
+
 	private function registerHostingPage(
 		InMemoryPageIdentifiersLookup $pageIdentifiersLookup,
 		SubjectId $subjectId,

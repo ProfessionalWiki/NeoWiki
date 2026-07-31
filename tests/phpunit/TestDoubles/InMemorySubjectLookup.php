@@ -19,6 +19,8 @@ class InMemorySubjectLookup implements SubjectLookup {
 
 	public int $getSubjectsCallCount = 0;
 
+	public int $getSubjectCallCount = 0;
+
 	public function __construct( Subject ...$subjects ) {
 		foreach ( $subjects as $subject ) {
 			$this->subjects[$subject->id->text] = $subject;
@@ -26,6 +28,8 @@ class InMemorySubjectLookup implements SubjectLookup {
 	}
 
 	public function getSubject( SubjectId $subjectId ): ?Subject {
+		$this->getSubjectCallCount++;
+
 		return $this->subjects[$subjectId->text] ?? null;
 	}
 
