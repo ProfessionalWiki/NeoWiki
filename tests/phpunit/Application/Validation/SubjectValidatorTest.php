@@ -541,6 +541,39 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertSame( 1, $violations[0]->valuePartIndex );
 	}
 
+	/**
+	 * Resolving a target where it is used costs a round trip apiece, paid serially by every Subject
+	 * that carries more than one relation.
+	 */
+	public function testResolvesEveryRelationTargetInOneLookup(): void {
+		$subjectLookup = $this->newSubjectLookup();
+		$validator = new SubjectValidator(
+			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes(),
+			subjectLookup: $subjectLookup,
+		);
+
+		$validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				$this->newRelationStatement( self::MATCHING_TARGET_ID, self::MISMATCHING_TARGET_ID ),
+				new Statement(
+					new PropertyName( 'Employers' ),
+					'relation',
+					new RelationValue(
+						TestRelation::build( targetId: self::NONEXISTENT_TARGET_ID ),
+						TestRelation::build( targetId: 'srt111111111ccc' ),
+					)
+				),
+			] ),
+			$this->newSchema( [
+				'Links' => $this->newRelationProperty(),
+				'Employers' => $this->newRelationProperty(),
+			] ),
+		);
+
+		$this->assertSame( 1, $subjectLookup->getSubjectsCallCount );
+	}
+
 	// --- Helpers ---
 
 	private function newRelationProperty( bool $multiple = true ): RelationProperty {

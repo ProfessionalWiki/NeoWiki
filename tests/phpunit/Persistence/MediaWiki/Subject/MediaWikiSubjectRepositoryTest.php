@@ -4,15 +4,19 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository
@@ -180,6 +184,73 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 				new SubjectId( 'sTestMSR1111113' )
 			)
 		);
+	}
+
+	public function testGetSubjectsReturnsSubjectsFromEveryHostingPage(): void {
+		$this->createPages();
+
+		$subjects = $this->newRepository()->getSubjects(
+			new SubjectIdList( [
+				new SubjectId( 'sTestMSR1111113' ),
+				new SubjectId( 'sTestMSR1111115' ),
+			] )
+		);
+
+		$this->assertEqualsCanonicalizing(
+			[
+				TestSubject::build( id: 'sTestMSR1111113', label: new SubjectLabel( 'Test subject 3' ) ),
+				TestSubject::build( id: 'sTestMSR1111115', label: new SubjectLabel( 'Test subject 5' ) ),
+			],
+			$subjects->asArray()
+		);
+	}
+
+	public function testGetSubjectsOmitsUnknownIds(): void {
+		$this->createPages();
+
+		$subjects = $this->newRepository()->getSubjects(
+			new SubjectIdList( [
+				new SubjectId( 'sTestMSR1111111' ),
+				new SubjectId( 'sTestMSR1111114' ),
+				new SubjectId( 'sTestMSR1111199' ),
+			] )
+		);
+
+		$this->assertSame( [ 'sTestMSR1111114' ], $subjects->getIdsAsTextArray() );
+	}
+
+	public function testGetSubjectsResolvesEveryIdInOneLookup(): void {
+		$this->createPages();
+
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+
+		foreach ( [ 'sTestMSR1111112', 'sTestMSR1111113', 'sTestMSR1111114' ] as $subjectId ) {
+			$pageIdentifiersLookup->addIdentifiers(
+				new SubjectId( $subjectId ),
+				new PageIdentifiers( $this->getPageId( 'SubjectRepoTestOne' ), 'SubjectRepoTestOne', 0 )
+			);
+		}
+
+		$repository = new MediaWikiSubjectRepository(
+			pageIdentifiersLookup: $pageIdentifiersLookup,
+			revisionLookup: $this->getServiceContainer()->getRevisionLookup(),
+			pageContentSaver: NeoWikiExtension::getInstance()->getPageContentSaver(),
+		);
+
+		$subjects = $repository->getSubjects(
+			new SubjectIdList( [
+				new SubjectId( 'sTestMSR1111112' ),
+				new SubjectId( 'sTestMSR1111113' ),
+				new SubjectId( 'sTestMSR1111114' ),
+			] )
+		);
+
+		$this->assertCount( 3, $subjects );
+		$this->assertSame( 1, $pageIdentifiersLookup->getPageIdsOfSubjectsCallCount );
+	}
+
+	private function getPageId( string $pageName ): PageId {
+		return new PageId( Title::newFromText( $pageName )->getId() );
 	}
 
 }
