@@ -66,6 +66,22 @@ class SubjectMap implements Countable {
 		return new self( ...$subjects );
 	}
 
+	/**
+	 * The Subjects carrying the given ids, in the order those ids were given. Ids this map does not
+	 * hold are skipped, so the result is never larger than the id list.
+	 */
+	public function onlyWithIds( SubjectIdList $subjectIds ): self {
+		$subjects = [];
+
+		foreach ( $subjectIds->asStringArray() as $idText ) {
+			if ( array_key_exists( $idText, $this->subjects ) ) {
+				$subjects[] = $this->subjects[$idText];
+			}
+		}
+
+		return new self( ...$subjects );
+	}
+
 	public function without( SubjectId $id ): self {
 		$subjects = $this->subjects;
 

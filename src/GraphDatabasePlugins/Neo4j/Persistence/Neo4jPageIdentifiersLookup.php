@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 
 class Neo4jPageIdentifiersLookup implements PageIdentifiersLookup {
 
@@ -20,38 +21,71 @@ class Neo4jPageIdentifiersLookup implements PageIdentifiersLookup {
 	}
 
 	public function getPageIdOfSubject( SubjectId $subjectId ): ?PageIdentifiers {
+		return $this->getPageIdsOfSubjects( new SubjectIdList( [ $subjectId ] ) )[$subjectId->text] ?? null;
+	}
+
+	/**
+	 * Pages are reached by traversing HasSubject from globally-unique Subject ids, so the result is
+	 * unambiguous without wiki-scoping: a Subject is only ever linked to its own wiki's page node.
+	 *
+	 * @return array<string, PageIdentifiers>
+	 */
+	public function getPageIdsOfSubjects( SubjectIdList $subjectIds ): array {
+		$ids = $subjectIds->asStringArray();
+
+		if ( $ids === [] ) {
+			return [];
+		}
+
 		return $this->client->readTransaction(
-			function ( TransactionInterface $transaction ) use ( $subjectId ): ?PageIdentifiers {
+			function ( TransactionInterface $transaction ) use ( $ids ): array {
 				/**
 				 * @var SummarizedResult $result
 				 */
-				// The page is reached by traversing HasSubject from a globally-unique
-				// Subject id, so it is unambiguous without wiki-scoping: a Subject is only
-				// ever linked to its own wiki's page node.
 				$result = $transaction->run(
 					'
-					MATCH (page:Page)-[:HasSubject]->(subject:Subject {id: $subjectId})
-					RETURN page.id AS id, page.name AS name, page.namespaceId AS namespaceId',
-					[ 'subjectId' => $subjectId->text ]
+					MATCH (page:Page)-[:HasSubject]->(subject:Subject)
+					WHERE subject.id IN $subjectIds
+					RETURN subject.id AS subjectId, page.id AS id, page.name AS name, page.namespaceId AS namespaceId',
+					[ 'subjectIds' => $ids ]
 				);
 
-				$arrayResult = $result->getResults()->toRecursiveArray();
-
-				if ( array_key_exists( 0, $arrayResult ) && is_array( $arrayResult[0] ) ) {
-					$page = $arrayResult[0];
-
-					if ( array_key_exists( 'id', $page ) && array_key_exists( 'name', $page ) && array_key_exists( 'namespaceId', $page ) ) {
-						return new PageIdentifiers(
-							id: new PageId( (int)$page['id'] ),
-							title: $page['name'],
-							namespaceId: (int)$page['namespaceId'],
-						);
-					}
-				}
-
-				return null;
+				return $this->newPageIdentifiersMap( $result->getResults()->toRecursiveArray() );
 			}
 		);
+	}
+
+	/**
+	 * @param array<mixed> $rows
+	 * @return array<string, PageIdentifiers>
+	 */
+	private function newPageIdentifiersMap( array $rows ): array {
+		$pageIdentifiers = [];
+
+		foreach ( $rows as $row ) {
+			if ( is_array( $row ) && $this->hasAllColumns( $row ) ) {
+				$pageIdentifiers[(string)$row['subjectId']] = new PageIdentifiers(
+					id: new PageId( (int)$row['id'] ),
+					title: $row['name'],
+					namespaceId: (int)$row['namespaceId'],
+				);
+			}
+		}
+
+		return $pageIdentifiers;
+	}
+
+	/**
+	 * @param array<mixed> $row
+	 */
+	private function hasAllColumns( array $row ): bool {
+		foreach ( [ 'subjectId', 'id', 'name', 'namespaceId' ] as $column ) {
+			if ( !array_key_exists( $column, $row ) ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 }

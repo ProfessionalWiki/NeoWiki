@@ -14,7 +14,9 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
@@ -37,11 +39,17 @@ readonly class SubjectValidator {
 			$violations[] = new Violation( propertyName: null, code: 'label-required', severity: Severity::Error );
 		}
 
+		$relationTargets = $this->resolveRelationTargets( $statements, $schema );
+
 		foreach ( $statements->asArray() as $statement ) {
 			if ( $schema->hasProperty( $statement->getPropertyName() ) ) {
 				$violations = array_merge(
 					$violations,
-					$this->validateStatement( $statement, $schema->getProperty( $statement->getPropertyName() ) )
+					$this->validateStatement(
+						$statement,
+						$schema->getProperty( $statement->getPropertyName() ),
+						$relationTargets
+					)
 				);
 			}
 		}
@@ -50,9 +58,49 @@ readonly class SubjectValidator {
 	}
 
 	/**
+	 * Every relation target the Subject reaches, resolved in one lookup ahead of the per-Statement
+	 * pass: resolving them where they are used costs a round trip per target, paid serially. Ids
+	 * absent from the map resolved to no Subject.
+	 */
+	private function resolveRelationTargets( StatementList $statements, Schema $schema ): SubjectMap {
+		$targetIds = [];
+
+		foreach ( $statements->asArray() as $statement ) {
+			if ( !$schema->hasProperty( $statement->getPropertyName() ) ) {
+				continue;
+			}
+
+			$relations = $this->getRelations( $statement, $schema->getProperty( $statement->getPropertyName() ) );
+
+			foreach ( $relations as $relation ) {
+				$targetIds[] = $relation->targetId;
+			}
+		}
+
+		return $this->subjectLookup->getSubjects( new SubjectIdList( $targetIds ) );
+	}
+
+	/**
+	 * @return Relation[]
+	 */
+	private function getRelations( Statement $statement, PropertyDefinition $definition ): array {
+		$value = $statement->getValue();
+
+		if ( !$definition instanceof RelationProperty || !$value instanceof RelationValue ) {
+			return [];
+		}
+
+		return $value->relations;
+	}
+
+	/**
 	 * @return Violation[]
 	 */
-	private function validateStatement( Statement $statement, PropertyDefinition $definition ): array {
+	private function validateStatement(
+		Statement $statement,
+		PropertyDefinition $definition,
+		SubjectMap $relationTargets
+	): array {
 		$propertyName = $statement->getPropertyName();
 
 		// Writer's-schema drift (ADR 11 / ADR 12): the Schema property's type
@@ -83,7 +131,7 @@ readonly class SubjectValidator {
 			$violations[] = $rawViolation->withPropertyName( $propertyName );
 		}
 
-		return array_merge( $violations, $this->validateRelationTargets( $statement, $definition ) );
+		return array_merge( $violations, $this->validateRelationTargets( $statement, $definition, $relationTargets ) );
 	}
 
 	/**
@@ -106,21 +154,24 @@ readonly class SubjectValidator {
 	 *
 	 * @return Violation[]
 	 */
-	private function validateRelationTargets( Statement $statement, PropertyDefinition $definition ): array {
-		$value = $statement->getValue();
-
-		if ( !$definition instanceof RelationProperty || !$value instanceof RelationValue ) {
+	private function validateRelationTargets(
+		Statement $statement,
+		PropertyDefinition $definition,
+		SubjectMap $relationTargets
+	): array {
+		if ( !$definition instanceof RelationProperty ) {
 			return [];
 		}
 
 		$violations = [];
 
-		foreach ( $value->relations as $index => $relation ) {
+		foreach ( $this->getRelations( $statement, $definition ) as $index => $relation ) {
 			$violation = $this->validateRelationTarget(
 				$relation,
 				$statement->getPropertyName(),
 				$definition->getTargetSchema(),
-				(int)$index
+				(int)$index,
+				$relationTargets
 			);
 
 			if ( $violation !== null ) {
@@ -140,9 +191,10 @@ readonly class SubjectValidator {
 		Relation $relation,
 		PropertyName $propertyName,
 		SchemaName $targetSchema,
-		int $valuePartIndex
+		int $valuePartIndex,
+		SubjectMap $relationTargets
 	): ?Violation {
-		$target = $this->subjectLookup->getSubject( $relation->targetId );
+		$target = $relationTargets->getSubject( $relation->targetId );
 
 		if ( $target === null ) {
 			return new Violation(

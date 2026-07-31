@@ -9,6 +9,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 
 class InMemorySubjectRepository implements SubjectRepository {
@@ -38,6 +40,18 @@ class InMemorySubjectRepository implements SubjectRepository {
 
 	public function getSubject( SubjectId $subjectId ): ?Subject {
 		return $this->subjects[$subjectId->text] ?? null;
+	}
+
+	public function getSubjects( SubjectIdList $subjectIds ): SubjectMap {
+		$found = new SubjectMap();
+
+		foreach ( $subjectIds->asStringArray() as $idText ) {
+			if ( array_key_exists( $idText, $this->subjects ) ) {
+				$found->addOrUpdateSubject( $this->subjects[$idText] );
+			}
+		}
+
+		return $found;
 	}
 
 	public function updateSubject( Subject $subject, ?string $comment = null ): void {
