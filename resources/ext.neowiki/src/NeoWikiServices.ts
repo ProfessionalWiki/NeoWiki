@@ -5,6 +5,7 @@ import { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts'
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
+import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
 import { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
@@ -17,6 +18,7 @@ export enum Service { // TODO: make private
 	SubjectPermissionHints = 'SubjectPermissionHints',
 	PropertyTypeRegistry = 'PropertyTypeRegistry',
 	SchemaRepository = 'SchemaRepository',
+	SubjectRepository = 'SubjectRepository',
 	SubjectLabelSearch = 'SubjectLabelSearch',
 	ViewTypeRegistry = 'ViewTypeRegistry',
 	LayoutPermissionHints = 'LayoutPermissionHints',
@@ -41,6 +43,7 @@ export class NeoWikiServices {
 			[ Service.SubjectPermissionHints ]: neoWiki.newSubjectPermissionHints(),
 			[ Service.PropertyTypeRegistry ]: neoWiki.getPropertyTypeRegistry(),
 			[ Service.SchemaRepository ]: neoWiki.getSchemaRepository(),
+			[ Service.SubjectRepository ]: neoWiki.getSubjectRepository(),
 			[ Service.SubjectLabelSearch ]: neoWiki.getSubjectLabelSearch(),
 			[ Service.ViewTypeRegistry ]: neoWiki.getViewTypeRegistry(),
 			[ Service.LayoutPermissionHints ]: neoWiki.newLayoutPermissionHints(),
@@ -67,6 +70,10 @@ export class NeoWikiServices {
 
 	public static getSchemaRepository(): SchemaRepository {
 		return inject( Service.SchemaRepository ) as SchemaRepository;
+	}
+
+	public static getSubjectRepository(): SubjectRepository {
+		return inject( Service.SubjectRepository ) as SubjectRepository;
 	}
 
 	public static getSubjectLabelSearch(): SubjectLabelSearch {

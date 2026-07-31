@@ -11,10 +11,8 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 
@@ -44,14 +42,14 @@ readonly class GetPageSubjectsQuery {
 		$subjectItems = [];
 
 		if ( $mainSubject !== null ) {
-			$subjectItems[$mainSubject->id->text] = $this->buildResponseItem(
+			$subjectItems[$mainSubject->id->text] = GetSubjectResponseItem::fromSubject(
 				$mainSubject,
 				$this->pageIdentifiersLookup->getPageIdOfSubject( $mainSubject->id )
 			);
 		}
 
 		foreach ( $pageSubjects->getChildSubjects()->asArray() as $childSubject ) {
-			$subjectItems[$childSubject->id->text] = $this->buildResponseItem(
+			$subjectItems[$childSubject->id->text] = GetSubjectResponseItem::fromSubject(
 				$childSubject,
 				$this->pageIdentifiersLookup->getPageIdOfSubject( $childSubject->id )
 			);
@@ -75,18 +73,6 @@ readonly class GetPageSubjectsQuery {
 				referencedSubjects: $referencedSubjectItems,
 				schemas: $schemas,
 			)
-		);
-	}
-
-	private function buildResponseItem( Subject $subject, ?PageIdentifiers $pageIdentifiers ): GetSubjectResponseItem {
-		return new GetSubjectResponseItem(
-			id: $subject->id->text,
-			label: $subject->label->text,
-			schemaName: $subject->getSchemaName()->getText(),
-			statements: $this->arrayifyStatements( $subject->getStatements() ),
-			pageId: $pageIdentifiers?->getId()->id,
-			pageTitle: $pageIdentifiers?->getTitle(),
-			pageNamespaceId: $pageIdentifiers?->getNamespaceId(),
 		);
 	}
 
@@ -120,7 +106,7 @@ readonly class GetPageSubjectsQuery {
 					continue;
 				}
 
-				$referenced[$referencedId->text] = $this->buildResponseItem( $referencedSubject, $pageIdentifiers );
+				$referenced[$referencedId->text] = GetSubjectResponseItem::fromSubject( $referencedSubject, $pageIdentifiers );
 			}
 		}
 
@@ -151,22 +137,6 @@ readonly class GetPageSubjectsQuery {
 		}
 
 		return $schemas;
-	}
-
-	/**
-	 * @return array<string, mixed>
-	 */
-	private function arrayifyStatements( StatementList $statements ): array {
-		$array = [];
-
-		foreach ( $statements->asArray() as $statement ) {
-			$array[$statement->getPropertyName()->text] = [
-				'propertyType' => $statement->getPropertyType(),
-				'value' => $statement->getValue()->toScalars()
-			];
-		}
-
-		return $array;
 	}
 
 }

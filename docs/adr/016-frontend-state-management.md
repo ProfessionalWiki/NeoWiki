@@ -2,7 +2,7 @@
 
 Date: 2025-04-17
 
-Status: Accepted
+Status: Accepted. Amended by [ADR 30](030-frontend-store-registry-semantics.md), which adds fetching and invalidation semantics and scopes the editing-UI rule to reads.
 
 ## Context
 

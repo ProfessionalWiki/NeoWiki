@@ -86,7 +86,7 @@
 			:display-name="deletingSchemaName"
 			:type-label="$i18n( 'neowiki-schema-noun' ).text()"
 			@update:open="isDeleteConfirmOpen = $event"
-			@deleted="fetchSchemas( lastOffset, pageSize )"
+			@deleted="onSchemaDeleted"
 		/>
 	</div>
 </template>
@@ -99,6 +99,7 @@ import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useCursorPagination } from '@/composables/useCursorPagination.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
@@ -125,6 +126,7 @@ const totalRows = ref<number | undefined>( undefined );
 const { cursorFor, recordNextCursor } = useCursorPagination();
 const { canEditSchema, canCreateSchemas, checkEditPermission, checkCreatePermission } = useSchemaPermissions();
 const schemaStore = useSchemaStore();
+const schemaRepo = NeoWikiServices.getSchemaRepository();
 
 const isEditorOpen = ref( false );
 const editingSchema = shallowRef<Schema | null>( null );
@@ -204,11 +206,12 @@ async function openEditor( schemaName: string ): Promise<void> {
 		editingSchema.value = null;
 		await nextTick();
 
-		await Promise.all( [
-			schemaStore.fetchSchema( schemaName ),
+		const [ schema ] = await Promise.all( [
+			schemaRepo.getSchema( schemaName ),
 			fetchSchemas( lastOffset.value, pageSize.value )
 		] );
-		editingSchema.value = schemaStore.getSchema( schemaName ) ?? null;
+
+		editingSchema.value = schema;
 		isEditorOpen.value = true;
 	} catch ( error ) {
 		mw.notify(
@@ -236,6 +239,11 @@ function onEditorOpenChange( value: boolean ): void {
 function confirmDelete( schemaName: string ): void {
 	deletingSchemaName.value = schemaName;
 	isDeleteConfirmOpen.value = true;
+}
+
+function onSchemaDeleted(): void {
+	schemaStore.removeSchema( deletingSchemaName.value );
+	fetchSchemas( lastOffset.value, pageSize.value );
 }
 
 onMounted( async () => {

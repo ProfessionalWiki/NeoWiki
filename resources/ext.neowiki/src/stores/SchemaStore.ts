@@ -17,11 +17,11 @@ export function normalizeSchemaName( name: string ): string {
 // Pages through the summaries endpoint (capped at 50) by following the response's
 // cursor until it is null. The cursor, not the page length, decides whether more
 // pages follow: a page can come back shorter than requested when a readable Schema
-// fails to load (malformed). Deliberately not a store action: it neither reads nor
-// maintains the cache, so exposing it alongside getAllSchemaSummaries would offer
-// callers a way to page the whole endpoint while bypassing both the cache and the
-// invalidation guard.
-async function fetchAllSchemaSummaries(): Promise<SchemaSummary[]> {
+// fails to load (malformed). Deliberately not a store action: it neither reads store state nor manages
+// the in-flight slot, so exposing it alongside fetchAllSchemaSummaries would
+// let callers page the whole endpoint outside the dedup/detach machinery
+// that action provides.
+async function pageThroughSchemaSummaries(): Promise<SchemaSummary[]> {
 	const repository = NeoWikiExtension.getInstance().getSchemaRepository();
 	const pageSize = 50;
 	const summaries: SchemaSummary[] = [];
@@ -39,8 +39,12 @@ async function fetchAllSchemaSummaries(): Promise<SchemaSummary[]> {
 export const useSchemaStore = defineStore( 'schema', {
 	state: () => ( {
 		schemas: new Map<string, Schema>(),
-		allSummaries: null as SchemaSummary[] | null,
 		summariesRequest: null as Promise<SchemaSummary[]> | null,
+		// Bumped when a write is acknowledged (save or removal). Async reads snapshot it
+		// before their await and discard the write-back when it moved: a response that
+		// raced a mutation may predate that mutation. Store-wide by design — discarding
+		// an unrelated in-flight fetch costs one refetch and keeps the rule simple.
+		mutationEpoch: 0,
 	} ),
 	getters: {
 		getSchemas: ( state ) => state.schemas,
@@ -57,41 +61,19 @@ export const useSchemaStore = defineStore( 'schema', {
 		setSchema( name: string, schema: Schema ): void { // TODO: just take Schema
 			this.schemas.set( name, schema );
 		},
-		async fetchSchema( name: string ): Promise<void> {
-			const schema = await NeoWikiExtension.getInstance().getSchemaRepository().getSchema( name );
-			this.setSchema( name, schema );
-		},
-		async getOrFetchSchema( name: string ): Promise<Schema> {
-			if ( !this.schemas.has( name ) ) {
-				await this.fetchSchema( name );
-			}
-			return this.getSchema( name );
-		},
-		// Loads every Schema summary (name + description) once and caches it so the
-		// schema picker can show the full list and filter client-side. The cache is
-		// cleared on saveSchema. Concurrent callers (e.g. several relation-property
-		// pickers mounting in the same render) share one in-flight request rather
-		// than each running a full pagination. Only the request the slot still holds
-		// caches its summaries and releases the slot.
-		async getAllSchemaSummaries(): Promise<SchemaSummary[]> {
-			if ( this.allSummaries !== null ) {
-				return this.allSummaries;
-			}
-
+		// Always fetches. Concurrent callers (e.g. several relation-property pickers
+		// mounting in the same render) share one in-flight pagination rather than each
+		// running a full one; results are not retained, so each new caller cohort gets
+		// fresh data and pickers never show session-stale summaries.
+		async fetchAllSchemaSummaries(): Promise<SchemaSummary[]> {
 			if ( this.summariesRequest === null ) {
-				this.summariesRequest = fetchAllSchemaSummaries();
+				this.summariesRequest = pageThroughSchemaSummaries();
 			}
 
 			const request = this.summariesRequest;
 
 			try {
-				const summaries = await request;
-
-				if ( this.summariesRequest === request ) {
-					this.allSummaries = summaries;
-				}
-
-				return summaries;
+				return await request;
 			} finally {
 				if ( this.summariesRequest === request ) {
 					this.summariesRequest = null;
@@ -99,7 +81,7 @@ export const useSchemaStore = defineStore( 'schema', {
 			}
 		},
 		// Checks existence via the schema-names search (a 200 response) rather
-		// than getOrFetchSchema, which 404s for a missing name — those 404s are
+		// than a schema fetch, which 404s for a missing name — those 404s are
 		// avoidable console/network noise when checking a not-yet-created name.
 		// The name is normalised so e.g. "person" or "Foo_Bar" matches the
 		// existing "Person" / "Foo Bar" the same way a save would.
@@ -109,9 +91,20 @@ export const useSchemaStore = defineStore( 'schema', {
 			return matches.some( ( match ) => normalizeSchemaName( match ) === normalized );
 		},
 		async saveSchema( schema: Schema, comment?: string ): Promise<void> {
-			await NeoWikiExtension.getInstance().getSchemaRepository().saveSchema( schema, comment );
-			this.setSchema( schema.getName(), schema );
-			this.allSummaries = null;
+			try {
+				await NeoWikiExtension.getInstance().getSchemaRepository().saveSchema( schema, comment );
+				this.mutationEpoch++;
+				this.setSchema( schema.getName(), schema );
+			} finally {
+				// Even a save whose reply was lost may have committed: detach any in-flight
+				// summaries pagination so the next picker mount fetches fresh instead of
+				// joining a pre-save request.
+				this.summariesRequest = null;
+			}
+		},
+		removeSchema( name: string ): void {
+			this.mutationEpoch++;
+			this.schemas.delete( name );
 			this.summariesRequest = null;
 		},
 	},

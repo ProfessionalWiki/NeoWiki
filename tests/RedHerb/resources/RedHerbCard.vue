@@ -76,9 +76,10 @@
 			</dl>
 		</div>
 		<subject-editor-dialog
-			v-if="canEditSubject"
+			v-if="editingSubject && editingSchema"
 			:open="editorOpen"
-			:subject="subject"
+			:subject="editingSubject"
+			:schema="editingSchema"
 			:on-save="handleSaveSubject"
 			:on-save-schema="handleSaveSchema"
 			@update:open="editorOpen = $event"
@@ -95,10 +96,11 @@ const nw = require( 'ext.neowiki' );
 // the "document control" header BlueSpice shows on controlled documents. It
 // demonstrates assembling NeoWiki's building blocks from a separate extension:
 // the ViewProps contract ( subjectId, canEditSubject, layoutName ); the
-// subject / schema / layout stores; resolveDisplayProperties + the value-display
+// subject / schema / layout stores for display; the repositories for the editing
+// reads ( NeoWiki ADR 30 / ADR 16 ); resolveDisplayProperties + the value-display
 // component registry to render each value with its property type's component;
-// and the shared SubjectEditorDialog for editing, shown only when the contract
-// reports canEditSubject. It also reads the Layout's settings — a
+// and the shared SubjectEditorDialog for editing, reachable only through the edit
+// button the contract's canEditSubject gates. It also reads the Layout's settings — a
 // fullWidthProperties list — to decide which properties span the full width
 // instead of sitting in a column. NeoWiki populates the stores before mounting.
 // @vue/component
@@ -117,8 +119,13 @@ module.exports = exports = {
 		const schemaStore = nw.useSchemaStore();
 		const layoutStore = nw.useLayoutStore();
 		const componentRegistry = nw.NeoWikiServices.getComponentRegistry();
+		const subjectRepo = nw.NeoWikiServices.getSubjectRepository();
+		const schemaRepo = nw.NeoWikiServices.getSchemaRepository();
 
 		const editorOpen = vue.ref( false );
+		// The dialog edits its own copy rather than the registry entry.
+		const editingSubject = vue.shallowRef( null );
+		const editingSchema = vue.shallowRef( null );
 
 		const subject = vue.computed( () => subjectStore.getSubject( props.subjectId ) );
 
@@ -174,11 +181,17 @@ module.exports = exports = {
 			return componentRegistry.getValueDisplayComponent( propertyType );
 		}
 
+		// Editing UIs read through the repositories rather than the stores
+		// (NeoWiki ADR 30 / ADR 16): the stores hold page state, not editor state.
+		// Saving updates the stores, because the write answers with the Subject and
+		// Schema as the server has them.
 		function openEditor() {
 			Promise.all( [
-				schemaStore.fetchSchema( subject.value.getSchemaName() ),
-				subjectStore.fetchSubject( props.subjectId )
-			] ).then( () => {
+				subjectRepo.getSubject( props.subjectId ),
+				schemaRepo.getSchema( subject.value.getSchemaName() )
+			] ).then( ( [ freshSubject, freshSchema ] ) => {
+				editingSubject.value = freshSubject;
+				editingSchema.value = freshSchema;
 				editorOpen.value = true;
 			} ).catch( ( error ) => {
 				mw.notify(
@@ -202,6 +215,8 @@ module.exports = exports = {
 			schemaUrl: schemaUrl,
 			layoutSections: layoutSections,
 			editorOpen: editorOpen,
+			editingSubject: editingSubject,
+			editingSchema: editingSchema,
 			valueComponent: valueComponent,
 			openEditor: openEditor,
 			handleSaveSubject: handleSaveSubject,

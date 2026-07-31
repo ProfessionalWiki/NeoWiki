@@ -29,9 +29,10 @@
 				<CdxIcon :icon="cdxIconEdit" />
 			</CdxButton>
 			<SubjectEditorDialog
-				v-if="canEditSubject"
+				v-if="editingSubject !== null && editingSchema !== null"
 				v-model:open="isEditorOpen"
-				:subject="subject"
+				:subject="editingSubject as Subject"
+				:schema="editingSchema as Schema"
 				:on-save="handleSaveSubject"
 				:on-save-schema="handleSaveSchema"
 			/>
@@ -59,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { Component, computed, ref } from 'vue';
+import { Component, computed, ref, shallowRef } from 'vue';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -77,18 +78,27 @@ const props = defineProps<ViewProps>();
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
 const layoutStore = useLayoutStore();
+const subjectRepo = NeoWikiServices.getSubjectRepository();
+const schemaRepo = NeoWikiServices.getSchemaRepository();
 
 const isEditorOpen = ref( false );
+// The dialog edits its own copy rather than the registry entry (ADR 16). The display below stays
+// on the stores until a save, whose response carries the Subject and Schema as persisted.
+const editingSubject = shallowRef<Subject | null>( null );
+const editingSchema = shallowRef<Schema | null>( null );
 
 const subject = computed( () => subjectStore.getSubject( props.subjectId ) ); // TODO: handle not found
 const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) ); // TODO: handle not found
 
 async function openEditor(): Promise<void> {
 	try {
-		await Promise.all( [
-			schemaStore.fetchSchema( subject.value.getSchemaName() ),
-			subjectStore.fetchSubject( props.subjectId )
+		const [ freshSubject, freshSchema ] = await Promise.all( [
+			subjectRepo.getSubject( props.subjectId ),
+			schemaRepo.getSchema( subject.value.getSchemaName() )
 		] );
+
+		editingSubject.value = freshSubject;
+		editingSchema.value = freshSchema;
 		isEditorOpen.value = true;
 	} catch ( error ) {
 		mw.notify(

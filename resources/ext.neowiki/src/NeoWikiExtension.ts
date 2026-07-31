@@ -260,6 +260,7 @@ export class NeoWikiExtension {
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
 			this.getSubjectDeserializer(),
+			new SchemaDeserializer(),
 			this.getRevisionId(),
 		);
 	}

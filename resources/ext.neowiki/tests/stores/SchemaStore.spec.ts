@@ -11,6 +11,36 @@ interface Deferred<T> {
 	reject: ( error: Error ) => void;
 }
 
+function summary( name: string ): SchemaSummary {
+	return { name, description: '', propertyCount: 0 };
+}
+
+function manySummaries( count: number, prefix: string ): SchemaSummary[] {
+	return Array.from( { length: count }, ( _value, index ) => summary( `${ prefix }${ index }` ) );
+}
+
+function lastPage( summaries: SchemaSummary[] ): SchemaSummaryPage {
+	return { schemas: summaries, nextCursor: null };
+}
+
+function deferred<T>(): Deferred<T> {
+	let resolve!: ( value: T ) => void;
+	let reject!: ( error: Error ) => void;
+
+	const promise = new Promise<T>( ( resolveValue, rejectValue ) => {
+		resolve = resolveValue;
+		reject = rejectValue;
+	} );
+
+	return { promise, resolve, reject };
+}
+
+function withRepository( repository: Record<string, unknown> ): void {
+	vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue(
+		{ getSchemaRepository: () => repository } as unknown as NeoWikiExtension,
+	);
+}
+
 describe( 'normalizeSchemaName', () => {
 	it( 'upper-cases the first character', () => {
 		expect( normalizeSchemaName( 'person' ) ).toBe( 'Person' );
@@ -34,37 +64,7 @@ describe( 'normalizeSchemaName', () => {
 	} );
 } );
 
-describe( 'SchemaStore getAllSchemaSummaries', () => {
-
-	function summary( name: string ): SchemaSummary {
-		return { name, description: '', propertyCount: 0 };
-	}
-
-	function manySummaries( count: number, prefix: string ): SchemaSummary[] {
-		return Array.from( { length: count }, ( _value, index ) => summary( `${ prefix }${ index }` ) );
-	}
-
-	function lastPage( summaries: SchemaSummary[] ): SchemaSummaryPage {
-		return { schemas: summaries, nextCursor: null };
-	}
-
-	function deferred<T>(): Deferred<T> {
-		let resolve!: ( value: T ) => void;
-		let reject!: ( error: Error ) => void;
-
-		const promise = new Promise<T>( ( resolveValue, rejectValue ) => {
-			resolve = resolveValue;
-			reject = rejectValue;
-		} );
-
-		return { promise, resolve, reject };
-	}
-
-	function withRepository( repository: Record<string, unknown> ): void {
-		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue(
-			{ getSchemaRepository: () => repository } as unknown as NeoWikiExtension,
-		);
-	}
+describe( 'SchemaStore fetchAllSchemaSummaries', () => {
 
 	beforeEach( () => {
 		setActivePinia( createPinia() );
@@ -80,7 +80,7 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 			.mockResolvedValueOnce( { schemas: manySummaries( 10, 'B' ), nextCursor: null } );
 		withRepository( { getSchemaSummaries } );
 
-		const result = await useSchemaStore().getAllSchemaSummaries();
+		const result = await useSchemaStore().fetchAllSchemaSummaries();
 
 		expect( result ).toHaveLength( 60 );
 		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 1, null, 50 );
@@ -95,22 +95,11 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 			.mockResolvedValueOnce( { schemas: manySummaries( 10, 'B' ), nextCursor: null } );
 		withRepository( { getSchemaSummaries } );
 
-		const result = await useSchemaStore().getAllSchemaSummaries();
+		const result = await useSchemaStore().fetchAllSchemaSummaries();
 
 		expect( result ).toHaveLength( 59 );
 		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, 'cursor-1', 50 );
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
-	} );
-
-	it( 'caches the summaries and does not refetch on the next call', async () => {
-		const getSchemaSummaries = vi.fn().mockResolvedValue( { schemas: [ summary( 'A' ) ], nextCursor: null } );
-		withRepository( { getSchemaSummaries } );
-		const store = useSchemaStore();
-
-		await store.getAllSchemaSummaries();
-		await store.getAllSchemaSummaries();
-
-		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 1 );
 	} );
 
 	it( 'shares one in-flight request across concurrent callers', async () => {
@@ -118,7 +107,7 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 		withRepository( { getSchemaSummaries } );
 		const store = useSchemaStore();
 
-		await Promise.all( [ store.getAllSchemaSummaries(), store.getAllSchemaSummaries() ] );
+		await Promise.all( [ store.fetchAllSchemaSummaries(), store.fetchAllSchemaSummaries() ] );
 
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 1 );
 	} );
@@ -130,115 +119,123 @@ describe( 'SchemaStore getAllSchemaSummaries', () => {
 		withRepository( { getSchemaSummaries } );
 		const store = useSchemaStore();
 
-		await expect( store.getAllSchemaSummaries() ).rejects.toThrow( 'load failed' );
-		const result = await store.getAllSchemaSummaries();
+		await expect( store.fetchAllSchemaSummaries() ).rejects.toThrow( 'load failed' );
+		const result = await store.fetchAllSchemaSummaries();
 
 		expect( result ).toEqual( [ summary( 'A' ) ] );
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
 	} );
 
-	it( 'refetches summaries after a schema is saved', async () => {
+	it( 'fetches fresh summaries for each new caller cohort', async () => {
 		const getSchemaSummaries = vi.fn().mockResolvedValue( { schemas: [ summary( 'A' ) ], nextCursor: null } );
-		const saveSchema = vi.fn().mockResolvedValue( undefined );
-		withRepository( { getSchemaSummaries, saveSchema } );
+		withRepository( { getSchemaSummaries } );
 		const store = useSchemaStore();
 
-		await store.getAllSchemaSummaries();
-		await store.saveSchema( newSchema( { title: 'B' } ) );
-		await store.getAllSchemaSummaries();
+		await store.fetchAllSchemaSummaries();
+		await store.fetchAllSchemaSummaries();
 
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
 	} );
 
-	it( 'does not cache the result of a request that a save invalidated while it ran', async () => {
-		const beforeSave = [ summary( 'Alpha' ), summary( 'Beta' ) ];
-		const afterSave = [ summary( 'Alpha' ), summary( 'Beta' ), summary( 'Gamma' ) ];
-		const invalidatedPage = deferred<SchemaSummaryPage>();
+	it( 'detaches the in-flight request on save so the next caller fetches fresh', async () => {
+		const preSavePage = deferred<SchemaSummaryPage>();
 		const getSchemaSummaries = vi.fn()
-			.mockReturnValueOnce( invalidatedPage.promise )
-			.mockResolvedValue( lastPage( afterSave ) );
+			.mockReturnValueOnce( preSavePage.promise )
+			.mockResolvedValue( lastPage( [ summary( 'Alpha' ), summary( 'Gamma' ) ] ) );
 		withRepository( { getSchemaSummaries, saveSchema: vi.fn().mockResolvedValue( undefined ) } );
 		const store = useSchemaStore();
 
-		const invalidatedRequest = store.getAllSchemaSummaries();
+		const preSaveRequest = store.fetchAllSchemaSummaries();
 		await store.saveSchema( newSchema( { title: 'Gamma' } ) );
-		invalidatedPage.resolve( lastPage( beforeSave ) );
-		await invalidatedRequest;
-		const reloaded = await store.getAllSchemaSummaries();
+		const postSaveRequest = store.fetchAllSchemaSummaries();
+		preSavePage.resolve( lastPage( [ summary( 'Alpha' ) ] ) );
 
-		expect( reloaded ).toEqual( afterSave );
+		expect( await preSaveRequest ).toEqual( [ summary( 'Alpha' ) ] );
+		expect( await postSaveRequest ).toEqual( [ summary( 'Alpha' ), summary( 'Gamma' ) ] );
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
 	} );
 
-	it( 'does not cache the result of a request that started while a save was still running', async () => {
-		const beforeSave = [ summary( 'Alpha' ), summary( 'Beta' ) ];
-		const afterSave = [ summary( 'Alpha' ), summary( 'Beta' ), summary( 'Gamma' ) ];
-		const invalidatedPage = deferred<SchemaSummaryPage>();
-		const save = deferred<void>();
+	it( 'detaches the in-flight request even when the save rejects', async () => {
+		const preSavePage = deferred<SchemaSummaryPage>();
 		const getSchemaSummaries = vi.fn()
-			.mockReturnValueOnce( invalidatedPage.promise )
-			.mockResolvedValue( lastPage( afterSave ) );
-		withRepository( { getSchemaSummaries, saveSchema: () => save.promise } );
+			.mockReturnValueOnce( preSavePage.promise )
+			.mockResolvedValue( lastPage( [ summary( 'Alpha' ) ] ) );
+		withRepository( { getSchemaSummaries, saveSchema: vi.fn().mockRejectedValue( new Error( 'save failed' ) ) } );
 		const store = useSchemaStore();
 
-		const savingSchema = store.saveSchema( newSchema( { title: 'Gamma' } ) );
-		const invalidatedRequest = store.getAllSchemaSummaries();
-		save.resolve();
-		await savingSchema;
-		invalidatedPage.resolve( lastPage( beforeSave ) );
-		await invalidatedRequest;
-		const reloaded = await store.getAllSchemaSummaries();
+		const preSaveRequest = store.fetchAllSchemaSummaries();
+		await expect( store.saveSchema( newSchema( { title: 'Beta' } ) ) ).rejects.toThrow( 'save failed' );
+		const retryRequest = store.fetchAllSchemaSummaries();
+		preSavePage.resolve( lastPage( [] ) );
 
-		expect( reloaded ).toEqual( afterSave );
+		await preSaveRequest;
+		expect( await retryRequest ).toEqual( [ summary( 'Alpha' ) ] );
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
 	} );
 
-	it( 'lets later callers share the replacement request when an invalidated one fails', async () => {
-		const afterSave = [ summary( 'Alpha' ), summary( 'Beta' ) ];
-		const invalidatedPage = deferred<SchemaSummaryPage>();
-		const currentPage = deferred<SchemaSummaryPage>();
-		const getSchemaSummaries = vi.fn()
-			.mockReturnValueOnce( invalidatedPage.promise )
-			.mockReturnValueOnce( currentPage.promise )
-			.mockResolvedValue( lastPage( [ summary( 'Redundant fetch' ) ] ) );
-		withRepository( { getSchemaSummaries, saveSchema: vi.fn().mockResolvedValue( undefined ) } );
-		const store = useSchemaStore();
+} );
 
-		const invalidatedRequest = store.getAllSchemaSummaries();
-		await store.saveSchema( newSchema( { title: 'Beta' } ) );
-		const currentRequest = store.getAllSchemaSummaries();
-		invalidatedPage.reject( new Error( 'load failed' ) );
-		await expect( invalidatedRequest ).rejects.toThrow( 'load failed' );
-		const laterRequest = store.getAllSchemaSummaries();
-		currentPage.resolve( lastPage( afterSave ) );
-		await currentRequest;
+describe( 'SchemaStore saveSchema', () => {
 
-		expect( await laterRequest ).toEqual( afterSave );
-		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
+	beforeEach( () => {
+		setActivePinia( createPinia() );
 	} );
 
-	it( 'lets later callers share the replacement request when an invalidated one succeeds', async () => {
-		const afterSave = [ summary( 'Alpha' ), summary( 'Beta' ) ];
-		const invalidatedPage = deferred<SchemaSummaryPage>();
-		const currentPage = deferred<SchemaSummaryPage>();
-		const getSchemaSummaries = vi.fn()
-			.mockReturnValueOnce( invalidatedPage.promise )
-			.mockReturnValueOnce( currentPage.promise )
-			.mockResolvedValue( lastPage( [ summary( 'Redundant fetch' ) ] ) );
-		withRepository( { getSchemaSummaries, saveSchema: vi.fn().mockResolvedValue( undefined ) } );
+	afterEach( () => {
+		vi.restoreAllMocks();
+	} );
+
+	it( 'writes the saved schema into the registry', async () => {
+		const saved = newSchema( { title: 'Person' } );
+		withRepository( { saveSchema: vi.fn().mockResolvedValue( undefined ) } );
 		const store = useSchemaStore();
 
-		const invalidatedRequest = store.getAllSchemaSummaries();
-		await store.saveSchema( newSchema( { title: 'Beta' } ) );
-		const currentRequest = store.getAllSchemaSummaries();
-		invalidatedPage.resolve( lastPage( [ summary( 'Stale' ) ] ) );
-		await invalidatedRequest;
-		const laterRequest = store.getAllSchemaSummaries();
-		currentPage.resolve( lastPage( afterSave ) );
-		await currentRequest;
+		await store.saveSchema( saved );
 
-		expect( await laterRequest ).toEqual( afterSave );
-		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
+		expect( store.getSchema( 'Person' ) ).toStrictEqual( saved );
+	} );
+
+	it( 'does not write through when the repository rejects', async () => {
+		withRepository( { saveSchema: vi.fn().mockRejectedValue( new Error( 'save failed' ) ) } );
+		const store = useSchemaStore();
+
+		await expect( store.saveSchema( newSchema( { title: 'Person' } ) ) ).rejects.toThrow( 'save failed' );
+
+		expect( () => store.getSchema( 'Person' ) ).toThrow( 'Unknown schema: Person' );
+	} );
+
+	it( 'clears the in-flight summaries request even when the save rejects', async () => {
+		const summariesDeferred = deferred<SchemaSummaryPage>();
+		withRepository( {
+			getSchemaSummaries: vi.fn().mockReturnValueOnce( summariesDeferred.promise ),
+			saveSchema: vi.fn().mockRejectedValue( new Error( 'save failed' ) ),
+		} );
+		const store = useSchemaStore();
+
+		const summariesRequest = store.fetchAllSchemaSummaries();
+		await expect( store.saveSchema( newSchema( { title: 'Person' } ) ) ).rejects.toThrow( 'save failed' );
+
+		expect( store.summariesRequest ).toBeNull();
+
+		summariesDeferred.resolve( lastPage( [] ) );
+		await summariesRequest;
+	} );
+
+} );
+
+describe( 'SchemaStore removeSchema', () => {
+
+	beforeEach( () => {
+		setActivePinia( createPinia() );
+	} );
+
+	it( 'removes the schema from the registry', () => {
+		const store = useSchemaStore();
+		store.setSchema( 'Person', newSchema( { title: 'Person' } ) );
+
+		store.removeSchema( 'Person' );
+
+		expect( () => store.getSchema( 'Person' ) ).toThrow( 'Unknown schema: Person' );
 	} );
 
 } );

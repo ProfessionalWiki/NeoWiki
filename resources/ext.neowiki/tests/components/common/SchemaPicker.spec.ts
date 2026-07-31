@@ -54,7 +54,7 @@ describe( 'SchemaPicker', () => {
 		setActivePinia( pinia );
 
 		schemaStore = useSchemaStore();
-		schemaStore.getAllSchemaSummaries = vi.fn().mockResolvedValue( SUMMARIES );
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( SUMMARIES );
 	} );
 
 	describe( 'browsing and filtering', () => {
@@ -108,7 +108,7 @@ describe( 'SchemaPicker', () => {
 
 		it( 'leaves the menu empty without throwing when loading schemas fails', async () => {
 			const consoleError = vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
-			schemaStore.getAllSchemaSummaries = vi.fn().mockRejectedValue( new Error( 'load failed' ) );
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockRejectedValue( new Error( 'load failed' ) );
 
 			const wrapper = await mountLoaded();
 			const combobox = wrapper.findComponent( CdxComboboxStub );

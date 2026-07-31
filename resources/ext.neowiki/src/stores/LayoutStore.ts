@@ -5,6 +5,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 export const useLayoutStore = defineStore( 'layout', {
 	state: () => ( {
 		layouts: new Map<string, Layout>(),
+		mutationEpoch: 0, // See SchemaStore.mutationEpoch — same guard contract.
 	} ),
 	getters: {
 		getLayout: ( state ) => ( layoutName: string ): Layout | undefined => state.layouts.get( layoutName ) as Layout | undefined,
@@ -13,19 +14,14 @@ export const useLayoutStore = defineStore( 'layout', {
 		setLayout( name: string, layout: Layout ): void {
 			this.layouts.set( name, layout );
 		},
-		async fetchLayout( name: string ): Promise<void> {
-			const layout = await NeoWikiExtension.getInstance().getLayoutRepository().getLayout( name );
-			this.setLayout( name, layout );
-		},
-		async getOrFetchLayout( name: string ): Promise<Layout> {
-			if ( !this.layouts.has( name ) ) {
-				await this.fetchLayout( name );
-			}
-			return this.layouts.get( name ) as Layout;
-		},
 		async saveLayout( layout: Layout, comment?: string ): Promise<void> {
 			await NeoWikiExtension.getInstance().getLayoutRepository().saveLayout( layout, comment );
+			this.mutationEpoch++;
 			this.setLayout( layout.getName(), layout );
+		},
+		removeLayout( name: string ): void {
+			this.mutationEpoch++;
+			this.layouts.delete( name );
 		},
 	},
 } );

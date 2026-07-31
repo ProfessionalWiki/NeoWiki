@@ -3,7 +3,6 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { Layout } from '@/domain/Layout.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
-import { InMemoryLayoutLookup } from '@/application/LayoutLookup.ts';
 
 vi.mock( '@/NeoWikiExtension.ts', () => ( {
 	NeoWikiExtension: {
@@ -36,33 +35,57 @@ describe( 'LayoutStore', () => {
 		expect( store.getLayout( 'FinancialOverview' ) ).toEqual( layout );
 	} );
 
-	it( 'fetches and stores a layout via fetchLayout', async () => {
-		const layout = newLayout( 'CompanyInfo' );
-		const layoutLookup = new InMemoryLayoutLookup( [ layout ] );
+	it( 'writes the saved layout into the registry', async () => {
+		const saved = newLayout( 'CompanyInfo' );
 		vi.mocked( NeoWikiExtension.getInstance ).mockReturnValue( {
-			getLayoutRepository: () => layoutLookup,
+			getLayoutRepository: () => ( {
+				saveLayout: vi.fn().mockResolvedValue( undefined ),
+			} ),
 		} as unknown as NeoWikiExtension );
-
 		const store = useLayoutStore();
-		await store.fetchLayout( 'CompanyInfo' );
 
-		expect( store.getLayout( 'CompanyInfo' ) ).toEqual( layout );
+		await store.saveLayout( saved );
+
+		expect( store.getLayout( 'CompanyInfo' ) ).toStrictEqual( saved );
 	} );
 
-	it( 'returns cached layout from getOrFetchLayout without fetching again', async () => {
-		const store = useLayoutStore();
-		const layout = newLayout( 'CachedLayout' );
-		store.setLayout( 'CachedLayout', layout );
-
-		const getLayoutRepositorySpy = vi.fn();
+	it( 'bumps the mutation epoch once the backend acknowledges the save', async () => {
+		// The epoch is what makes concurrent write-backs into this store discard themselves
+		// (ADR 30 rule 3); LayoutStore's only such writer lives in StoreStateLoader, so the
+		// counter is asserted here rather than through it.
 		vi.mocked( NeoWikiExtension.getInstance ).mockReturnValue( {
-			getLayoutRepository: getLayoutRepositorySpy,
+			getLayoutRepository: () => ( {
+				saveLayout: vi.fn().mockResolvedValue( undefined ),
+			} ),
 		} as unknown as NeoWikiExtension );
+		const store = useLayoutStore();
+		const before = store.mutationEpoch;
 
-		const result = await store.getOrFetchLayout( 'CachedLayout' );
+		await store.saveLayout( newLayout( 'CompanyInfo' ) );
 
-		expect( result ).toEqual( layout );
-		expect( getLayoutRepositorySpy ).not.toHaveBeenCalled();
+		expect( store.mutationEpoch ).not.toBe( before );
+	} );
+
+	it( 'does not write through when the repository rejects the save', async () => {
+		vi.mocked( NeoWikiExtension.getInstance ).mockReturnValue( {
+			getLayoutRepository: () => ( {
+				saveLayout: vi.fn().mockRejectedValue( new Error( 'save failed' ) ),
+			} ),
+		} as unknown as NeoWikiExtension );
+		const store = useLayoutStore();
+
+		await expect( store.saveLayout( newLayout( 'CompanyInfo' ) ) ).rejects.toThrow( 'save failed' );
+
+		expect( store.getLayout( 'CompanyInfo' ) ).toBeUndefined();
+	} );
+
+	it( 'removes the layout from the registry', () => {
+		const store = useLayoutStore();
+		store.setLayout( 'CompanyInfo', newLayout( 'CompanyInfo' ) );
+
+		store.removeLayout( 'CompanyInfo' );
+
+		expect( store.getLayout( 'CompanyInfo' ) ).toBeUndefined();
 	} );
 
 } );

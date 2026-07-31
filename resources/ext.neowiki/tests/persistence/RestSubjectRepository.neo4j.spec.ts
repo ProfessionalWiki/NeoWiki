@@ -13,12 +13,14 @@ import { UrlType } from '@/domain/propertyTypes/Url';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 
 function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSubjectRepository {
 	return new RestSubjectRepository(
 		apiUrl,
 		httpClient,
 		NeoWikiExtension.getInstance().getSubjectDeserializer(),
+		new SchemaDeserializer(),
 	);
 }
 
@@ -46,6 +48,24 @@ const mockResponse = {
 		s33333333333333: subjectResponse,
 	},
 };
+
+// The Subject write endpoints answer with the Subject as persisted plus the Schema it
+// instantiates, in the same shape the read endpoints use.
+function writeResponseJson( overrides: Record<string, unknown> = {} ): Record<string, unknown> {
+	return {
+		status: 'updated',
+		subject: {
+			id: 's33333333333333',
+			label: 'John Doe',
+			schema: 'Employee',
+			pageId: 42,
+			pageTitle: 'Employees',
+			pageNamespaceId: 0,
+			statements: {},
+		},
+		...overrides,
+	};
+}
 
 describe( 'RestSubjectRepository', () => {
 
@@ -290,36 +310,19 @@ describe( 'RestSubjectRepository', () => {
 			).rejects.toThrowError( 'Error creating main subject' );
 		} );
 
-		it( 'creates new main subject', async () => {
-			const mockSubjectResponse = {
-				subject: {
-					id: 's33333333333333',
-					label: 'John Doe',
-					schema: 'Employee',
-					properties: new StatementList( [
-						new Statement( new PropertyName( 'label' ), TextType.typeName, newStringValue( 'John Doe' ) ),
-						new Statement( new PropertyName( 'WorkUrl' ), UrlType.typeName, newStringValue( 'https://pro.wiki' ) ),
-					] ),
-				},
-			};
-
+		it( 'returns the created subject as the server persisted it', async () => {
 			const inMemoryHttpClient = new InMemoryHttpClient( {
 				'https://example.com/rest.php/neowiki/v0/page/42/mainSubject':
-					new Response( JSON.stringify( { subjectId: 's33333333333333' } ), { status: 200 } ),
+					new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
 			} );
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			const subjectId = await repository.createMainSubject(
-				42,
-				mockSubjectResponse.subject.label,
-				mockSubjectResponse.subject.schema,
-				mockSubjectResponse.subject.properties,
-			);
+			const result = await repository.createMainSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
 
-			expect( subjectId.text ).toEqual( mockSubjectResponse.subject.id );
-
-			// TODO: check that it is actually the main subject?
+			expect( result.subjectId.text ).toEqual( 's33333333333333' );
+			expect( result.subject?.getLabel() ).toEqual( 'John Doe' );
+			expect( result.schema ).toBeNull();
 		} );
 
 	} );
@@ -339,36 +342,49 @@ describe( 'RestSubjectRepository', () => {
 			).rejects.toThrowError( 'Error updating subject' );
 		} );
 
-		it( 'returns original request', async () => {
-			const mockUpdateResponse = {
-				properties: new StatementList( [
-					new Statement( new PropertyName( 'label' ), TextType.typeName, newStringValue( 'John Doe' ) ),
-					new Statement( new PropertyName( 'WorkUrl' ), UrlType.typeName, newStringValue( 'https://pro.wiki' ) ),
-				] ),
-				comment: 'Edit comment',
-			};
-
+		it( 'returns the subject and schema the server answered with', async () => {
 			const inMemoryHttpClient = new InMemoryHttpClient( {
 				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
-					new Response( JSON.stringify( mockUpdateResponse ), { status: 200 } ),
+					new Response( JSON.stringify( writeResponseJson( {
+						schema: { description: 'An employee', propertyDefinitions: {} },
+					} ) ), { status: 200 } ),
 			} );
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			const response = await repository.updateSubject(
+			const result = await repository.updateSubject(
 				new SubjectId( 's11111111111111' ),
 				'Subject label',
-				mockUpdateResponse.properties,
-				mockUpdateResponse.comment,
+				new StatementList( [] ),
+				'Edit comment',
 			);
 
-			expect( response ).toEqual( mockUpdateResponse );
+			// The page context is what a client-built copy cannot reproduce, so it is the point.
+			expect( result.subject?.getPageIdentifiers().getPageId() ).toEqual( 42 );
+			expect( result.schema?.getName() ).toEqual( 'Employee' );
+			expect( result.schema?.getDescription() ).toEqual( 'An employee' );
+		} );
+
+		it( 'reports no subject when the response omitted the page identifiers', async () => {
+			// The server omits them for a Subject whose page it cannot resolve. Deserializing that
+			// would mint a Subject with an undefined page id for links to follow.
+			const withoutPage = writeResponseJson();
+			delete ( withoutPage.subject as Record<string, unknown> ).pageId;
+			delete ( withoutPage.subject as Record<string, unknown> ).pageTitle;
+
+			const result = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
+					new Response( JSON.stringify( withoutPage ), { status: 200 } ),
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Updated', new StatementList( [] ) );
+
+			expect( result.subject ).toBeNull();
+			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 		} );
 
 		it( 'sends a PUT request', async () => {
 			const inMemoryHttpClient = new InMemoryHttpClient( {
 				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
-					new Response( JSON.stringify( {} ), { status: 200 } ),
+					new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
 			} );
 			const putSpy = vi.spyOn( inMemoryHttpClient, 'put' );
 			const patchSpy = vi.spyOn( inMemoryHttpClient, 'patch' );
@@ -434,36 +450,17 @@ describe( 'RestSubjectRepository', () => {
 			).rejects.toThrowError( 'Error creating child subject' );
 		} );
 
-		it( 'creates new child subject', async () => {
-			const mockSubjectResponse = {
-				subject: {
-					id: 's33333333333333',
-					label: 'John Doe',
-					schema: 'Employee',
-					properties: new StatementList( [
-						new Statement( new PropertyName( 'label' ), TextType.typeName, newStringValue( 'John Doe' ) ),
-						new Statement( new PropertyName( 'WorkUrl' ), UrlType.typeName, newStringValue( 'https://pro.wiki' ) ),
-					] ),
-				},
-			};
-
+		it( 'returns the created subject as the server persisted it', async () => {
 			const inMemoryHttpClient = new InMemoryHttpClient( {
 				'https://example.com/rest.php/neowiki/v0/page/42/childSubjects':
-					new Response( JSON.stringify( { subjectId: 's33333333333333' } ), { status: 200 } ),
+					new Response( JSON.stringify( writeResponseJson( { status: 'created' } ) ), { status: 200 } ),
 			} );
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			const subjectId = await repository.createChildSubject(
-				42,
-				mockSubjectResponse.subject.label,
-				mockSubjectResponse.subject.schema,
-				mockSubjectResponse.subject.properties,
-			);
+			const result = await repository.createChildSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
 
-			expect( subjectId.text ).toEqual( mockSubjectResponse.subject.id );
-
-			// TODO: check that it is not the main subject?
+			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 		} );
 
 	} );
@@ -542,12 +539,11 @@ describe( 'RestSubjectRepository', () => {
 		} );
 
 		it( 'resolves normally on 200 (existing behaviour preserved)', async () => {
-			const mockResponse = { label: 'Updated' };
-			const response = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
-				[ subjectUrl ]: new Response( JSON.stringify( mockResponse ), { status: 200 } ),
+			const result = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ subjectUrl ]: new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
 			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Updated', new StatementList( [] ) );
 
-			expect( response ).toEqual( mockResponse );
+			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 		} );
 
 		it( 'throws generic Error on 500', async () => {

@@ -1,15 +1,19 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader';
 import { StubSubjectRepository } from '@/domain/SubjectRepository';
-import type { SubjectWithReferencedSubjects } from '@/domain/SubjectRepository';
+import type { SubjectRepository, SubjectWithReferencedSubjects } from '@/domain/SubjectRepository';
 import { InMemorySchemaRepository } from '@/application/SchemaRepository';
+import type { SchemaRepository } from '@/application/SchemaRepository';
 import { InMemoryLayoutLookup } from '@/application/LayoutLookup';
+import type { LayoutLookup } from '@/application/LayoutLookup';
 import { SubjectId } from '@/domain/SubjectId';
 import { Subject } from '@/domain/Subject';
+import { Layout } from '@/domain/Layout';
 import { newSchema, newSubject } from '@/TestHelpers';
 import { useSubjectStore } from '@/stores/SubjectStore';
 import { useSchemaStore } from '@/stores/SchemaStore';
+import { useLayoutStore } from '@/stores/LayoutStore';
 import { RelationType } from '@/domain/propertyTypes/Relation';
 import { Neo } from '@/Neo';
 
@@ -110,6 +114,50 @@ describe( 'StoreStateLoader', () => {
 		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
 
 		expect( useSchemaStore().getSchema( 'Company' ) ).toEqual( newSchema( { title: 'Company' } ) );
+	} );
+
+	it( 'discards layout write-backs that a mutation overtook', async () => {
+		let resolveLayout!: ( layout: Layout ) => void;
+		const pending = new Promise<Layout>( ( resolve ) => {
+			resolveLayout = resolve;
+		} );
+		const loader = new StoreStateLoader(
+			{} as unknown as SubjectRepository,
+			{} as unknown as SchemaRepository,
+			{ getLayout: () => pending } as unknown as LayoutLookup,
+		);
+		const layoutStore = useLayoutStore();
+
+		const loading = loader.loadLayouts( new Set( [ 'CompanyInfo' ] ) );
+		layoutStore.removeLayout( 'CompanyInfo' );
+		resolveLayout( new Layout( 'CompanyInfo', 'Company', 'infobox', '', [], {} ) );
+		await loading;
+
+		expect( layoutStore.getLayout( 'CompanyInfo' ) ).toBeUndefined();
+	} );
+
+	it( 'discards subject and schema write-backs that mutations overtook', async () => {
+		const subject = newSubject( { id: 's11111111111111' } );
+		let resolveSubjects!: ( value: unknown ) => void;
+		const pending = new Promise( ( resolve ) => {
+			resolveSubjects = resolve;
+		} );
+		const loader = new StoreStateLoader(
+			{ getSubjectWithReferencedSubjects: () => pending } as unknown as SubjectRepository,
+			{ getSchema: vi.fn().mockResolvedValue( newSchema() ) } as unknown as SchemaRepository,
+			{} as unknown as LayoutLookup,
+		);
+		const subjectStore = useSubjectStore();
+		const schemaStore = useSchemaStore();
+
+		const loading = loader.loadSubjectsAndSchemas( new Set( [ 's11111111111111' ] ) );
+		subjectStore.mutationEpoch++; // Stands in for any acknowledged subject mutation — SubjectStore has no repo-free mutating action.
+		schemaStore.removeSchema( subject.getSchemaName() );
+		resolveSubjects( { requestedSubject: subject, referencedSubjects: [] } );
+		await loading;
+
+		expect( subjectStore.subjects.has( 's11111111111111' ) ).toBe( false );
+		expect( () => schemaStore.getSchema( subject.getSchemaName() ) ).toThrow();
 	} );
 
 } );

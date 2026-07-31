@@ -16,6 +16,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
@@ -119,6 +121,108 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->editPage( $title, 'Whatever wikitext' );
 		return MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title )->getId();
+	}
+
+	/**
+	 * The point of bundling the Subject is that the client can store server truth instead of its own
+	 * copy, so the entry must be the one the read endpoint serves, down to the page identifiers the
+	 * client cannot know.
+	 */
+	public function testCreatedResponseCarriesTheSubjectEntryTheReadEndpointServes(): void {
+		$this->createSchema( 'Employee' );
+
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createValidRequestData()
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame(
+			$this->readSubjectEntryFromApi( $responseData['subjectId'] ),
+			$responseData['subject']
+		);
+	}
+
+	/**
+	 * The same parity, on a page whose title tells the Title accessors apart: getPrefixedText()
+	 * ("Help:Some page") differs from getText(), getDBkey() and getPrefixedDBkey(). On a
+	 * main-namespace title without spaces they all coincide, so the wrong one would pass unnoticed.
+	 */
+	public function testCreatedResponseCarriesTheSubjectEntryTheReadEndpointServesForANamespacedTitle(): void {
+		$this->createSchema( 'Employee' );
+
+		$response = $this->executeCreate(
+			$this->pageIdOfNewPage( 'Help:Some page' ),
+			$this->validBody(),
+			isMainSubject: true
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 'Help:Some page', $responseData['subject']['pageTitle'] );
+		$this->assertSame(
+			$this->readSubjectEntryFromApi( $responseData['subjectId'] ),
+			$responseData['subject']
+		);
+	}
+
+	public function testCreatedResponseCarriesTheSchemaBodyTheReadEndpointServes(): void {
+		$this->createSchema( 'Employee' );
+
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createValidRequestData()
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame(
+			$this->readSchemaBodyFromApi( 'CreateSubjectApiTest', 'Employee' ),
+			$responseData['schema']
+		);
+	}
+
+	public function testCreatedResponseOmitsTheSchemaWhenTheSchemaIsMissing(): void {
+		$response = $this->executeHandler(
+			$this->newCreateSubjectApi(),
+			$this->createRequestData( [
+				'label' => 'Test subject',
+				'schema' => 'NoSuchSchema',
+				'statements' => [],
+			] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertArrayHasKey( 'subject', $responseData );
+		$this->assertArrayNotHasKey( 'schema', $responseData );
+	}
+
+	private function readSubjectEntryFromApi( string $subjectId ): array {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => $subjectId ],
+				'queryParams' => [ 'expand' => 'page' ],
+			] )
+		);
+
+		return json_decode( $response->getBody()->getContents(), true )['subjects'][$subjectId];
+	}
+
+	private function readSchemaBodyFromApi( string $pageName, string $schemaName ): array {
+		$response = $this->executeHandler(
+			new GetPageSubjectsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'pageId' => Title::newFromText( $pageName )->getId() ],
+				'queryParams' => [ 'expand' => 'schemas' ],
+			] )
+		);
+
+		return json_decode( $response->getBody()->getContents(), true )['schemas'][$schemaName];
 	}
 
 	public function testReadableButNotEditablePageReturns403(): void {

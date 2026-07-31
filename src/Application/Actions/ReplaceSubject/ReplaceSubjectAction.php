@@ -6,6 +6,8 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
@@ -14,7 +16,7 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundExcept
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
-use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -24,6 +26,7 @@ readonly class ReplaceSubjectAction {
 
 	public function __construct(
 		private SubjectRepository $subjectRepository,
+		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
@@ -43,12 +46,22 @@ readonly class ReplaceSubjectAction {
 			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
 		}
 
-		// A null pageId (unresolvable Subject) makes the authorizer fall back to the global 'edit' right.
-		// This cannot bypass page protection: an unresolvable Subject is not found below (getSubject
-		// returns null), so the request 404s before any write rather than touching a protected page.
-		$pageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
+		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId );
 
-		if ( !$this->writeAuthorizer->authorize( $pageId ) ) {
+		// Gate on read before write: a page the caller may not read answers exactly like a Subject
+		// that does not exist, so restricted pages cannot be told apart from absent ones - and the
+		// page title and namespace this endpoint returns never reach a caller denied the page. An
+		// unresolvable Subject takes that same path, since it has no page to authorize against.
+		// Reaching the write check with null identifiers would answer 403 where a restricted page
+		// answers 404, telling a caller who lacks the wiki-global 'edit' right which of the
+		// Subject ids they hold exist. Only a Subject on a page the caller can read (its existence
+		// already public) proceeds to the write check and its 403.
+		if ( $pageIdentifiers === null
+			|| !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
+			throw SubjectNotFoundException::forId( $subjectId );
+		}
+
+		if ( !$this->writeAuthorizer->authorize( $pageIdentifiers->getId() ) ) {
 			throw new SubjectEditNotAuthorizedException();
 		}
 
@@ -58,11 +71,13 @@ readonly class ReplaceSubjectAction {
 			throw SubjectNotFoundException::forId( $subjectId );
 		}
 
+		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+
 		$priorViolations = $this->proposedSubjectValidator->validate( $subject );
 
 		$subject->setLabel( new SubjectLabel( $label ) );
 		$subject->setStatements(
-			$this->statementListBuilder->build( $this->resolveStatements( $subject, $statements ) )
+			$this->statementListBuilder->build( $this->resolveStatements( $schema, $statements ) )
 		);
 
 		$proposedViolations = $this->proposedSubjectValidator->validate( $subject );
@@ -79,7 +94,13 @@ readonly class ReplaceSubjectAction {
 
 		$this->subjectRepository->updateSubject( $subject, $comment );
 
-		$this->presenter->presentUpdated( $subjectId->text, $proposedViolations );
+		// The mutated Subject is the persisted state: the builder and the resolver above already
+		// normalized what the request supplied.
+		$this->presenter->presentUpdated(
+			GetSubjectResponseItem::fromSubject( $subject, $pageIdentifiers ),
+			$schema,
+			$proposedViolations
+		);
 	}
 
 	/**
@@ -87,9 +108,7 @@ readonly class ReplaceSubjectAction {
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function resolveStatements( Subject $subject, array $statements ): array {
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
-
+	private function resolveStatements( ?Schema $schema, array $statements ): array {
 		if ( $schema === null ) {
 			return $statements;
 		}

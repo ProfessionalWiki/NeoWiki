@@ -7,11 +7,12 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
@@ -29,7 +30,9 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
-	use MockAuthorityTrait;
+	use NeoWikiMockAuthorityTrait;
+
+	private const string NAMESPACED_PAGE_SUBJECT_ID = 'sTestSA11111177';
 
 	public function testHappyPathReturns200WithUpdatedStatus(): void {
 		$this->createPages();
@@ -46,6 +49,130 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'sTestSA11111111', $responseData['subjectId'] );
 		$this->assertArrayHasKey( 'violations', $responseData );
 		$this->assertSame( [], $responseData['violations'] );
+	}
+
+	/**
+	 * The point of bundling the Subject is that the client can store server truth instead of its own
+	 * copy, so the entry must be the one the read endpoint serves, down to the page identifiers the
+	 * client cannot know.
+	 */
+	public function testUpdatedResponseCarriesTheSubjectEntryTheReadEndpointServes(): void {
+		$this->createPages();
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createValidRequestData()
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame(
+			$this->readSubjectEntryFromApi( 'sTestSA11111111' ),
+			$responseData['subject']
+		);
+	}
+
+	/**
+	 * The same parity, on a page whose title tells the Title accessors apart: getPrefixedText()
+	 * ("Help:Some page") differs from getText(), getDBkey() and getPrefixedDBkey(). On a
+	 * main-namespace title without spaces they all coincide, so the wrong one would pass unnoticed.
+	 */
+	public function testUpdatedResponseCarriesTheSubjectEntryTheReadEndpointServesForANamespacedTitle(): void {
+		$this->createNamespacedPage();
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestDataFor( self::NAMESPACED_PAGE_SUBJECT_ID, [
+				'label' => 'Subject on a namespaced page',
+				'statements' => [],
+			] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 'Help:Some page', $responseData['subject']['pageTitle'] );
+		$this->assertSame( 12, $responseData['subject']['pageNamespaceId'] );
+		$this->assertSame(
+			$this->readSubjectEntryFromApi( self::NAMESPACED_PAGE_SUBJECT_ID ),
+			$responseData['subject']
+		);
+	}
+
+	public function testUpdatedResponseCarriesTheSchemaBodyTheReadEndpointServes(): void {
+		$this->createPages();
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createValidRequestData()
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame(
+			$this->readSchemaBodyFromApi( 'ReplaceSubjectApiTest', TestSubject::DEFAULT_SCHEMA_ID ),
+			$responseData['schema']
+		);
+	}
+
+	public function testUpdatedResponseOmitsTheSchemaWhenTheSchemaIsMissing(): void {
+		$this->createSchema( 'GoneSchema' );
+		$this->createPageWithSubjects(
+			'ReplaceSubjectApiGoneSchemaTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSA11111166',
+				label: new SubjectLabel( 'Orphaned subject' ),
+				schemaName: new SchemaName( 'GoneSchema' ),
+			)
+		);
+		$this->deletePage(
+			$this->getServiceContainer()->getWikiPageFactory()->newFromTitle(
+				Title::newFromText( 'GoneSchema', NeoWikiExtension::NS_SCHEMA )
+			)
+		);
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			new RequestData( [
+				'method' => 'PUT',
+				'pathParams' => [ 'subjectId' => 'sTestSA11111166' ],
+				'bodyContents' => json_encode( [
+					'label' => 'Still orphaned',
+					'statements' => [],
+				] ),
+				'headers' => [ 'Content-Type' => 'application/json' ],
+			] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertArrayHasKey( 'subject', $responseData );
+		$this->assertArrayNotHasKey( 'schema', $responseData );
+	}
+
+	private function readSubjectEntryFromApi( string $subjectId ): array {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => $subjectId ],
+				'queryParams' => [ 'expand' => 'page' ],
+			] )
+		);
+
+		return json_decode( $response->getBody()->getContents(), true )['subjects'][$subjectId];
+	}
+
+	private function readSchemaBodyFromApi( string $pageName, string $schemaName ): array {
+		$response = $this->executeHandler(
+			new GetPageSubjectsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'pageId' => Title::newFromText( $pageName )->getId() ],
+				'queryParams' => [ 'expand' => 'schemas' ],
+			] )
+		);
+
+		return json_decode( $response->getBody()->getContents(), true )['schemas'][$schemaName];
 	}
 
 	public function testResponseIncludesViolationsWhenRequiredPropertyMissing(): void {
@@ -314,19 +441,73 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testPermissionDeniedReturns403(): void {
+	public function testReadableButNotEditablePageReturns403(): void {
 		$this->createPages();
 
+		// The caller can read the page - so its existence is already public - but cannot edit it.
 		$response = $this->executeHandler(
 			$this->newReplaceSubjectApi(),
 			$this->createValidRequestData(),
-			authority: $this->mockAnonAuthorityWithPermissions( [] )
+			authority: $this->authorityWithGlobalEditButNoPageEdit()
 		);
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
 
 		$this->assertSame( 403, $response->getStatusCode() );
 		$this->assertSame( 'error', $responseData['status'] );
+	}
+
+	public function testSubjectOnAnUnreadablePageAnswersLikeAnAbsentSubject(): void {
+		$this->createPages();
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createValidRequestData(),
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		// A caller holding a harvested Subject id learns nothing about whether it exists, nor
+		// which page carries it. The companion test below pins that against an absent id for
+		// this same caller, which is what makes the two indistinguishable.
+		$this->assertSame( 404, $response->getStatusCode() );
+		$this->assertSame( 'error', $responseData['status'] );
+		$this->assertSame( 'Subject not found: sTestSA11111111', $responseData['message'] );
+	}
+
+	public function testAbsentAndUnreadableSubjectsAnswerAlikeForOneCaller(): void {
+		$this->createPages();
+
+		// One Authority for both requests. Comparing responses obtained under two different
+		// Authorities says nothing about what any single caller can tell apart, and this caller
+		// holds no wiki-global 'edit' right, so an absent id has no page to authorize against.
+		$authority = $this->authorityWithGlobalReadButNoPageRead();
+
+		$unreadable = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestDataFor( 'sTestSA11111111', $this->validBody() ),
+			authority: $authority
+		);
+
+		$absent = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestDataFor( 'sDoesNotExist99', $this->validBody() ),
+			authority: $authority
+		);
+
+		$unreadableData = json_decode( $unreadable->getBody()->getContents(), true );
+		$absentData = json_decode( $absent->getBody()->getContents(), true );
+
+		$this->assertSame( 404, $unreadable->getStatusCode() );
+		$this->assertSame( $unreadable->getStatusCode(), $absent->getStatusCode() );
+		$this->assertSame( $unreadableData['status'], $absentData['status'] );
+
+		// The echoed id is the one the caller supplied, so only that may differ.
+		$this->assertSame(
+			str_replace( 'sTestSA11111111', '<id>', $unreadableData['message'] ),
+			str_replace( 'sDoesNotExist99', '<id>', $absentData['message'] )
+		);
 	}
 
 	public function testCommentIsAccepted(): void {
@@ -397,6 +578,17 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	private function createNamespacedPage(): void {
+		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+		$this->createPageWithSubjects(
+			'Help:Some page',
+			mainSubject: TestSubject::build(
+				id: self::NAMESPACED_PAGE_SUBJECT_ID,
+				label: new SubjectLabel( 'Test subject ' . self::NAMESPACED_PAGE_SUBJECT_ID ),
+			)
+		);
+	}
+
 	private function newReplaceSubjectApi(): ReplaceSubjectApi {
 		$csrfValidatorStub = $this->createStub( CsrfValidator::class );
 		$csrfValidatorStub->method( 'verifyCsrfToken' )->willReturn( true );
@@ -411,10 +603,14 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function createRequestData( array $body ): RequestData {
+		return $this->createRequestDataFor( 'sTestSA11111111', $body );
+	}
+
+	private function createRequestDataFor( string $subjectId, array $body ): RequestData {
 		return new RequestData( [
 			'method' => 'PUT',
 			'pathParams' => [
-				'subjectId' => 'sTestSA11111111',
+				'subjectId' => $subjectId,
 			],
 			'bodyContents' => json_encode( $body ),
 			'headers' => [

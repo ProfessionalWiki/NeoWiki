@@ -184,6 +184,7 @@ import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 
 const props = defineProps<{
@@ -200,8 +201,13 @@ const schemaCreatorRef = ref<SchemaCreatorExposes | null>( null );
 
 const draftSchema = shallowRef<Schema | null>( null );
 
+// Guards loadedSchema against a stale schema fetch: picking a different schema, and leaving the
+// picked one (going back, or the dialog closing), both invalidate an in-flight response.
+let requestSequence = 0;
+
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
+const schemaRepo = NeoWikiServices.getSchemaRepository();
 const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
@@ -373,9 +379,21 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 	subjectLabel.value = String( mw.config.get( 'wgTitle' ) ?? '' );
 	markChanged();
 
+	const currentSequence = ++requestSequence;
+
 	try {
-		loadedSchema.value = await schemaStore.getOrFetchSchema( schemaName );
+		const schema = await schemaRepo.getSchema( schemaName );
+
+		if ( currentSequence !== requestSequence ) {
+			return;
+		}
+
+		loadedSchema.value = schema;
 	} catch ( error ) {
+		if ( currentSequence !== requestSequence ) {
+			return;
+		}
+
 		console.error( 'Failed to load schema:', error );
 		loadedSchema.value = null;
 	}
@@ -420,6 +438,7 @@ watch( () => subjectStore.subjectCreatorOpen, async ( isOpen ) => {
 } );
 
 function resetForm(): void {
+	requestSequence++;
 	selectedSchemaName.value = null;
 	loadedSchema.value = null;
 	draftSchema.value = null;
@@ -430,6 +449,7 @@ function resetForm(): void {
 }
 
 function goBack(): void {
+	requestSequence++;
 	selectedSchemaName.value = null;
 	loadedSchema.value = null;
 	subjectLabel.value = '';

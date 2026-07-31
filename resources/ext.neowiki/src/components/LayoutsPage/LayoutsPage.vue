@@ -91,7 +91,7 @@
 			:display-name="deletingLayoutName"
 			:type-label="$i18n( 'neowiki-layout-noun' ).text()"
 			@update:open="isDeleteConfirmOpen = $event"
-			@deleted="fetchLayouts( lastOffset, pageSize )"
+			@deleted="onLayoutDeleted"
 		/>
 	</div>
 </template>
@@ -104,6 +104,7 @@ import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useCursorPagination } from '@/composables/useCursorPagination.ts';
 import { useLayoutPermissions } from '@/composables/useLayoutPermissions.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { Layout } from '@/domain/Layout.ts';
 import LayoutCreatorDialog from './LayoutCreatorDialog.vue';
@@ -129,6 +130,7 @@ const totalRows = ref<number | undefined>( undefined );
 const { cursorFor, recordNextCursor } = useCursorPagination();
 const { canCreateLayouts, canEditLayout: canEditLayouts, checkCreatePermission, checkEditPermission } = useLayoutPermissions();
 const layoutStore = useLayoutStore();
+const layoutRepo = NeoWikiServices.getLayoutRepository();
 
 const isEditorOpen = ref( false );
 const editingLayout = shallowRef<Layout | null>( null );
@@ -226,11 +228,12 @@ async function openEditor( layoutName: string ): Promise<void> {
 		editingLayout.value = null;
 		await nextTick();
 
-		await Promise.all( [
-			layoutStore.fetchLayout( layoutName ),
+		const [ layout ] = await Promise.all( [
+			layoutRepo.getLayout( layoutName ),
 			fetchLayouts( lastOffset.value, pageSize.value )
 		] );
-		editingLayout.value = layoutStore.getLayout( layoutName ) ?? null;
+
+		editingLayout.value = layout;
 		isEditorOpen.value = true;
 	} catch ( error ) {
 		mw.notify(
@@ -262,6 +265,11 @@ function onEditorOpenChange( value: boolean ): void {
 function confirmDelete( layoutName: string ): void {
 	deletingLayoutName.value = layoutName;
 	isDeleteConfirmOpen.value = true;
+}
+
+function onLayoutDeleted(): void {
+	layoutStore.removeLayout( deletingLayoutName.value );
+	fetchLayouts( lastOffset.value, pageSize.value );
 }
 
 onMounted( async () => {

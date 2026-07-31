@@ -1,6 +1,7 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
@@ -9,6 +10,9 @@ import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHe
 import { CdxButton } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { Service } from '@/NeoWikiServices.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { newSchema } from '@/TestHelpers.ts';
 
 const canCreateSchemasRef = ref( false );
 const canEditSchemaRef = ref( false );
@@ -16,6 +20,8 @@ const checkCreatePermissionMock = vi.fn();
 const checkEditPermissionMock = vi.fn();
 
 let schemasResponse: { schemas: unknown[]; nextCursor: string | null } = { schemas: [], nextCursor: null };
+let pinia: ReturnType<typeof createPinia>;
+let schemaStore: ReturnType<typeof useSchemaStore>;
 
 vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	useSchemaPermissions: () => ( {
@@ -26,16 +32,10 @@ vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	} ),
 } ) );
 
-const fetchSchemaMock = vi.fn();
+// The store is real (backed by Pinia) so removeSchema/getSchema exercise their actual
+// semantics. The editor reads through the repository, which is mocked here so the edit
+// path never reaches the network.
 const getSchemaMock = vi.fn();
-
-vi.mock( '@/stores/SchemaStore.ts', () => ( {
-	useSchemaStore: () => ( {
-		fetchSchema: fetchSchemaMock,
-		getSchema: getSchemaMock,
-		saveSchema: vi.fn(),
-	} ),
-} ) );
 
 vi.mock( '@/NeoWikiExtension.ts', () => ( {
 	NeoWikiExtension: {
@@ -89,7 +89,11 @@ function mountComponent( summaries: unknown[] = [], nextCursor: string | null = 
 
 	return mount( SchemasPage, {
 		global: {
+			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
+			provide: {
+				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
+			},
 			stubs: {
 				SchemaCreatorDialog: SchemaCreatorDialogStub,
 				SchemaEditorDialog: SchemaEditorDialogStub,
@@ -106,9 +110,12 @@ describe( 'SchemasPage', () => {
 		canEditSchemaRef.value = false;
 		checkCreatePermissionMock.mockClear();
 		checkEditPermissionMock.mockClear();
-		fetchSchemaMock.mockClear();
-		getSchemaMock.mockClear();
+		getSchemaMock.mockReset();
 		schemasResponse = { schemas: [], nextCursor: null };
+
+		pinia = createPinia();
+		setActivePinia( pinia );
+		schemaStore = useSchemaStore();
 	} );
 
 	it( 'shows create button when user has create permission', async () => {
@@ -222,10 +229,13 @@ describe( 'SchemasPage', () => {
 		expect( findDeleteButtons( wrapper ) ).toHaveLength( 0 );
 	} );
 
-	it( 'opens editor dialog when edit button is clicked', async () => {
+	it( 'opens the editor on the schema fetched from the repository', async () => {
 		canEditSchemaRef.value = true;
-		const mockSchema = new Schema( 'Person', '', new PropertyDefinitionList( [] ) );
-		getSchemaMock.mockReturnValue( mockSchema );
+		// A description the store copy does not have, so the assertion can only pass if the
+		// dialog received the repository's schema rather than a registry read.
+		const fetched = new Schema( 'Person', 'from the repository', new PropertyDefinitionList( [] ) );
+		getSchemaMock.mockResolvedValue( fetched );
+		schemaStore.setSchema( 'Person', new Schema( 'Person', 'stale', new PropertyDefinitionList( [] ) ) );
 
 		const wrapper = mountComponent( [
 			{ name: 'Person', description: '', propertyCount: 3 },
@@ -235,14 +245,31 @@ describe( 'SchemasPage', () => {
 		await findEditButtons( wrapper )[ 0 ].trigger( 'click' );
 		await flushPromises();
 
-		expect( fetchSchemaMock ).toHaveBeenCalledWith( 'Person' );
-		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( true );
+		expect( getSchemaMock ).toHaveBeenCalledWith( 'Person' );
+		const dialog = wrapper.findComponent( SchemaEditorDialog );
+		expect( dialog.props( 'open' ) ).toBe( true );
+		expect( dialog.props( 'initialSchema' ) ).toStrictEqual( fetched );
+	} );
+
+	it( 'reports a failed schema fetch instead of opening the editor', async () => {
+		canEditSchemaRef.value = true;
+		getSchemaMock.mockRejectedValue( new Error( 'Unknown schema: Person' ) );
+
+		const wrapper = mountComponent( [
+			{ name: 'Person', description: '', propertyCount: 3 },
+		] );
+		await flushPromises();
+
+		await findEditButtons( wrapper )[ 0 ].trigger( 'click' );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaEditorDialog ).exists() ).toBe( false );
+		expect( mw.notify ).toHaveBeenCalledWith( 'Unknown schema: Person', { type: 'error' } );
 	} );
 
 	it( 'does not render SchemaEditorDialog when user lacks edit permission', async () => {
 		canEditSchemaRef.value = true;
-		const mockSchema = new Schema( 'Person', '', new PropertyDefinitionList( [] ) );
-		getSchemaMock.mockReturnValue( mockSchema );
+		getSchemaMock.mockResolvedValue( new Schema( 'Person', '', new PropertyDefinitionList( [] ) ) );
 
 		const wrapper = mountComponent( [
 			{ name: 'Person', description: '', propertyCount: 3 },
@@ -274,5 +301,28 @@ describe( 'SchemasPage', () => {
 		expect( dialog.props( 'pageTitle' ) ).toBe( 'Schema:Person' );
 		expect( dialog.props( 'displayName' ) ).toBe( 'Person' );
 		expect( dialog.props( 'typeLabel' ) ).toBe( 'neowiki-schema-noun' );
+	} );
+
+	it( 'removes the deleted schema from the store and refetches the list', async () => {
+		canEditSchemaRef.value = true;
+		const wrapper = mountComponent( [
+			{ name: 'Person', description: '', propertyCount: 3 },
+		] );
+		await flushPromises();
+
+		schemaStore.setSchema( 'Person', newSchema( { title: 'Person' } ) );
+
+		await findDeleteButtons( wrapper )[ 0 ].trigger( 'click' );
+
+		// A different fixture than the initial mount proves the @deleted handler
+		// actually refetched rather than just closing the dialog.
+		schemasResponse = { schemas: [ { name: 'Company', description: '', propertyCount: 1 } ], nextCursor: null };
+
+		wrapper.findComponent( DeletePageDialog ).vm.$emit( 'deleted' );
+		await flushPromises();
+
+		expect( () => schemaStore.getSchema( 'Person' ) ).toThrow();
+		expect( wrapper.text() ).toContain( 'Company' );
+		expect( wrapper.text() ).not.toContain( 'Person' );
 	} );
 } );
