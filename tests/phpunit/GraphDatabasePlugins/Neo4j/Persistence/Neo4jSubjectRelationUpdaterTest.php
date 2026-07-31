@@ -256,6 +256,8 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 	 * type against a `type` property that the projection itself never writes, so the comparison is
 	 * null and the old edge survives; the upsert then adds the new edge alongside it, both carrying
 	 * the same relation id. Asserted as it is rather than as it should be.
+	 *
+	 * @see https://github.com/ProfessionalWiki/NeoWiki/issues/1135 Fixing that flips this expectation.
 	 */
 	public function testChangingARelationTypeAddsTheNewEdgeAndKeepsTheOld(): void {
 		$this->updateRelations(
@@ -334,7 +336,8 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 			[ 'targetId' => $targetId ]
 		);
 
-		$this->assertFalse( $result->isEmpty(), 'Stub target should exist' );
+		// Counted rather than read through first(), which would not see a second node under the same id.
+		$this->assertCount( 1, $result->toArray(), 'The relation should create a single stub target' );
 
 		$row = $result->first()->toRecursiveArray();
 
