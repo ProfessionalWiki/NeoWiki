@@ -6,7 +6,9 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
@@ -14,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -36,6 +39,7 @@ readonly class CreateSubjectAction {
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
+		private PageIdentifiersResolver $pageIdentifiersResolver,
 		private bool $validationEnforced,
 	) {
 	}
@@ -60,7 +64,9 @@ readonly class CreateSubjectAction {
 			throw new RuntimeException( 'You do not have the necessary permissions to create this subject' );
 		}
 
-		$subject = $this->buildSubject( $request );
+		$schema = $this->schemaLookup->getSchema( new SchemaName( $request->schemaName ) );
+
+		$subject = $this->buildSubject( $request, $schema );
 
 		if ( $request->id !== null && $this->subjectIdIsInUse( $subject->id ) ) {
 			$this->presenter->presentSubjectAlreadyExists();
@@ -96,7 +102,17 @@ readonly class CreateSubjectAction {
 			return;
 		}
 
-		$this->presenter->presentCreated( $subject->id->text, $violations );
+		// The page identifiers come from the page id the request named, not from the subject -> page
+		// index: that index is the graph projection, which a read replica may not carry yet for the
+		// revision just written.
+		$this->presenter->presentCreated(
+			GetSubjectResponseItem::fromSubject(
+				$subject,
+				$this->pageIdentifiersResolver->getIdentifiersOfPage( $pageId )
+			),
+			$schema,
+			$violations
+		);
 	}
 
 	/**
@@ -110,11 +126,11 @@ readonly class CreateSubjectAction {
 		) );
 	}
 
-	private function buildSubject( CreateSubjectRequest $request ): Subject {
+	private function buildSubject( CreateSubjectRequest $request, ?Schema $schema ): Subject {
 		$schemaName = new SchemaName( $request->schemaName );
 		$label = new SubjectLabel( $request->label );
 		$statements = $this->statementListBuilder->build(
-			$this->resolveSelectValues( $schemaName, $request->statements )
+			$this->resolveSelectValues( $schema, $request->statements )
 		);
 
 		if ( $request->id === null ) {
@@ -147,9 +163,7 @@ readonly class CreateSubjectAction {
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function resolveSelectValues( SchemaName $schemaName, array $statements ): array {
-		$schema = $this->schemaLookup->getSchema( $schemaName );
-
+	private function resolveSelectValues( ?Schema $schema, array $statements ): array {
 		if ( $schema === null ) {
 			return $statements;
 		}

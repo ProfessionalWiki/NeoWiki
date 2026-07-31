@@ -300,6 +300,65 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->assertSame( 'Status', $violations[0]->propertyName?->text );
 	}
 
+	public function testPresentsTheServerNormalizedSubject(): void {
+		$this->registerSchemaWithSelect();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Original Label' ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		) );
+
+		$this->newAction()->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'New Label',
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ] ],
+			null
+		);
+
+		$this->assertSame( self::SUBJECT_ID, $this->presenterSpy->subject?->id );
+		$this->assertSame( 'New Label', $this->presenterSpy->subject?->label );
+		$this->assertSame( self::SCHEMA_NAME, $this->presenterSpy->subject?->schemaName );
+		$this->assertSame(
+			// The label the request supplied was resolved to the option id.
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'opt_approved' ] ] ],
+			$this->presenterSpy->subject?->statements
+		);
+	}
+
+	public function testPresentsThePageIdentifiersOfTheHostingPage(): void {
+		$this->subjectRepository->updateSubject( TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) ) );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+
+		$this->assertSame( 7, $this->presenterSpy->subject?->pageId );
+		$this->assertSame( 'Test page', $this->presenterSpy->subject?->pageTitle );
+		$this->assertSame( 0, $this->presenterSpy->subject?->pageNamespaceId );
+	}
+
+	public function testPresentsTheSchemaTheSubjectInstantiates(): void {
+		$this->registerSchemaWithSelect();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		) );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+
+		$this->assertSame( self::SCHEMA_NAME, $this->presenterSpy->schema?->getName()->getText() );
+	}
+
+	public function testPresentsNoSchemaWhenTheNamedSchemaDoesNotExist(): void {
+		$this->registerSchemaWithSelect();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( 'NonexistentSchema' ),
+		) );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+
+		$this->assertNull( $this->presenterSpy->schema );
+	}
+
 	public function testReplaceWithMissingSchemaPresentsSchemaNotFound(): void {
 		$subject = TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),

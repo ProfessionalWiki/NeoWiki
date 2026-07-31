@@ -11,6 +11,11 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseIt
 class RestGetSubjectPresenter implements GetSubjectPresenter {
 
 	private array $apiResponse = [];
+	private readonly SubjectPresentationSerializer $subjectSerializer;
+
+	public function __construct() {
+		$this->subjectSerializer = new SubjectPresentationSerializer();
+	}
 
 	public function getJsonArray(): array {
 		return $this->apiResponse;
@@ -30,19 +35,7 @@ class RestGetSubjectPresenter implements GetSubjectPresenter {
 		$map = [];
 
 		foreach ( $subjects as $subject ) {
-			$map[$subject->id] = [
-				'id' => $subject->id,
-				'label' => $subject->label,
-				'schema' => $subject->schemaName,
-			];
-
-			if ( $subject->pageId !== null ) {
-				$map[$subject->id]['pageId'] = $subject->pageId;
-				$map[$subject->id]['pageTitle'] = $subject->pageTitle;
-				$map[$subject->id]['pageNamespaceId'] = $subject->pageNamespaceId;
-			}
-
-			$map[$subject->id]['statements'] = $subject->statements;
+			$map[$subject->id] = $this->subjectSerializer->serialize( $subject );
 		}
 
 		return $map;
