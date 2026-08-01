@@ -34,7 +34,7 @@ class DatabaseSubjectPageIdsLookup implements SubjectPageIdsLookup {
 
 		$pageIds = $this->newSubjectPageQuery( $roleId )
 			->select( 'page_id' )
-			->where( $this->db->expr( 'page_id', '>', $afterPageId ) )
+			->where( $this->db->buildComparison( '>', [ 'page_id' => $afterPageId ] ) )
 			->orderBy( 'page_id' )
 			->limit( $limit )
 			->caller( __METHOD__ )

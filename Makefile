@@ -322,7 +322,7 @@ endif
 
 # ---- PHP code quality (dual-mode: works inside or outside container) ---------
 
-.PHONY: phpunit perf phpcs stan psalm cs ci test stan-baseline psalm-baseline
+.PHONY: phpunit perf dbschema phpcs stan psalm cs ci test stan-baseline psalm-baseline
 
 ci: test cs ## Run all PHP CI checks
 test: phpunit ## Run PHP test suite
@@ -349,6 +349,13 @@ ifeq ($(INSIDE_CONTAINER),1)
 	composer phpunit -- --group Performance < /dev/null
 else
 	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make perf' < /dev/null
+endif
+
+dbschema: ## Regenerate the per-DBMS SQL from the abstract schema in sql/
+ifeq ($(INSIDE_CONTAINER),1)
+	composer dbschema < /dev/null
+else
+	$(EXEC_MW) bash -c 'cd extensions/NeoWiki && make dbschema' < /dev/null
 endif
 
 phpcs:

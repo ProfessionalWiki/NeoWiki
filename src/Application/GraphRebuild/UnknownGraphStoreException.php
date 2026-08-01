@@ -14,7 +14,7 @@ class UnknownGraphStoreException extends RuntimeException {
 	/**
 	 * @param string[] $knownStores
 	 */
-	public function __construct( public readonly string $store, public readonly array $knownStores ) {
+	public function __construct( string $store, array $knownStores ) {
 		parent::__construct(
 			'Unknown graph store "' . $store . '". Configured stores: '
 			. ( $knownStores === [] ? '(none)' : implode( ', ', $knownStores ) ) . '.'

@@ -37,7 +37,7 @@ class RebuildRunsSchemaTest extends MediaWikiIntegrationTestCase {
 				$extensionPath . '/sql/' . $databaseType . '/neowiki_rebuild_runs.sql'
 			) ),
 			self::withoutSourcePath( (string)file_get_contents( $generatedPath ) ),
-			'run `composer dbschema` to regenerate the ' . $databaseType . ' schema'
+			'run `make dbschema` to regenerate the ' . $databaseType . ' schema'
 		);
 	}
 

@@ -113,15 +113,28 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 		return $row === false ? null : self::newRunFromRow( $row );
 	}
 
-	private static function newRunFromRow( stdClass $row ): RebuildRun {
+	/**
+	 * A row whose status or trigger this version does not recognise — written by a newer one, or edited
+	 * by hand — reads as no run at all, rather than throwing from wherever a rebuild happens to ask. The
+	 * cost is that a rebuild may be started alongside such a row; the cost of the alternative is a fatal
+	 * in the middle of one.
+	 */
+	private static function newRunFromRow( stdClass $row ): ?RebuildRun {
+		$status = RebuildStatus::tryFrom( (string)$row->nwrr_status );
+		$trigger = RebuildTrigger::tryFrom( (string)$row->nwrr_trigger );
+
+		if ( $status === null || $trigger === null ) {
+			return null;
+		}
+
 		return new RebuildRun(
 			id: (int)$row->nwrr_id,
 			store: (string)$row->nwrr_store,
-			status: RebuildStatus::from( (string)$row->nwrr_status ),
+			status: $status,
 			cursor: (int)$row->nwrr_cursor,
 			processed: (int)$row->nwrr_processed,
 			failed: (int)$row->nwrr_failed,
-			trigger: RebuildTrigger::from( (string)$row->nwrr_trigger ),
+			trigger: $trigger,
 			error: $row->nwrr_error === null ? null : (string)$row->nwrr_error,
 		);
 	}

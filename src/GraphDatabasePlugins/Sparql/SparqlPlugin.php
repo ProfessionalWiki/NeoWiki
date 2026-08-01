@@ -53,14 +53,6 @@ readonly class SparqlPlugin {
 		);
 	}
 
-	/**
-	 * The name identifying this store among the configured graph stores: what a scoped rebuild is
-	 * addressed by, and what its run records are filed under. See {@see SparqlStoreConfig::$name}.
-	 */
-	public function getStoreName(): string {
-		return $this->store->name;
-	}
-
 	public function getGraphDatabasePlugin(): GraphDatabasePlugin {
 		return $this->projectionStore;
 	}
