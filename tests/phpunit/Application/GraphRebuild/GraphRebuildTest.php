@@ -25,6 +25,8 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\NullRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
+use RuntimeException;
+use TestLogger;
 use Wikimedia\Rdbms\DBUnexpectedError;
 
 /**
@@ -38,6 +40,9 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	private const STORE = 'scoped-store';
 	private const OTHER_STORE = 'other-store';
 	private const WIKI_DATABASE_FAILURE_MESSAGE = 'the wiki database is gone';
+	private const PASSWORD = 'sekrit';
+	private const CREDENTIAL_BEARING_MESSAGE =
+		"Cannot connect to any server on alias: bolt with Uris: ('bolt://neo4j:sekrit@neo:7687')";
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -321,6 +326,45 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->rebuild();
 
 		$this->assertNull( $this->newRunRepository()->getActiveRun( self::STORE ) );
+	}
+
+	/**
+	 * A backend client reports an unreachable server by quoting the connection URI it tried, credentials
+	 * and all, and the run records outlive the run: they are read from the database long afterwards.
+	 */
+	public function testTheRecordedRunErrorCarriesNoCredentials(): void {
+		$this->createSubjectPages( 'Page nobody projects' );
+		$this->registerStore( new ThrowingGraphDatabasePlugin( self::CREDENTIAL_BEARING_MESSAGE ) );
+
+		$this->rebuild();
+		$storedRun = $this->newRunRepository()->getLatestRun( self::STORE );
+
+		$this->assertNotNull( $storedRun?->error );
+		$this->assertStringNotContainsString( self::PASSWORD, $storedRun->error );
+		$this->assertStringContainsString( 'bolt://neo:7687', $storedRun->error, 'the server itself still says which one' );
+	}
+
+	/**
+	 * A SPARQL store reports a refused page by quoting the endpoint URL it posted to, which carries the
+	 * basic-auth credentials when it has any.
+	 */
+	public function testTheLoggedPageFailureCarriesNoCredentials(): void {
+		$logger = new TestLogger( true );
+		$this->setLogger( 'NeoWiki', $logger );
+		$pageIds = $this->createSubjectPages( 'Page the store rejects' );
+		$this->registerStore( new SpyGraphDatabasePlugin(
+			refusedPageIds: $pageIds,
+			failure: new RuntimeException( self::CREDENTIAL_BEARING_MESSAGE )
+		) );
+
+		$this->rebuild();
+
+		$this->assertStringNotContainsString( self::PASSWORD, $this->loggedText( $logger ) );
+		$this->assertStringContainsString( 'bolt://neo:7687', $this->loggedText( $logger ) );
+	}
+
+	private function loggedText( TestLogger $logger ): string {
+		return implode( "\n", array_map( static fn ( array $record ): string => $record[1], $logger->getBuffer() ) );
 	}
 
 	private function rebuild(

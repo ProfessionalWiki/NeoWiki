@@ -8,6 +8,7 @@ use Exception;
 use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -73,10 +74,28 @@ class GraphRebuildExecutor {
 		} catch ( Throwable $e ) {
 			// Broader than the Exception boundary elsewhere: a run left recorded as still going blocks
 			// every later rebuild of that store, so even a programming bug has to be recorded as its end.
-			return $this->finish( $progress->applyTo( $run )->failed( $e->getMessage() ) );
+			return $this->finish( $this->endRunWith( $run, $progress, $e ) );
 		}
 
 		return $this->finish( $progress->applyTo( $run )->succeeded() );
+	}
+
+	/**
+	 * Records what ended the run both on the run and on the NeoWiki channel: the run keeps the reason an
+	 * operator reads back later, and the log keeps the exception class and backtrace the run cannot hold.
+	 */
+	private function endRunWith( RebuildRun $run, RebuildProgress $progress, Throwable $e ): RebuildRun {
+		$reason = BackendFailureMessage::withoutCredentials( $e->getMessage() );
+		$failedRun = $progress->applyTo( $run )->failed( $reason === '' ? null : $reason );
+
+		$this->logger->error(
+			'NeoWiki graph rebuild of store "' . $failedRun->store . '" ended before reconciling the wiki. '
+			. 'Re-run it with --resume to continue from page ' . $failedRun->cursor . '. '
+			. 'Underlying error: ' . $reason,
+			[ 'exception' => $e, 'store' => $failedRun->store, 'cursor' => $failedRun->cursor ]
+		);
+
+		return $failedRun;
 	}
 
 	private function finish( RebuildRun $run ): RebuildRun {
@@ -205,7 +224,7 @@ class GraphRebuildExecutor {
 		$this->logger->error(
 			'NeoWiki graph rebuild failed to ' . $operation . ' page ' . $pageId
 			. '. The rebuild continued, so this page is still out of sync in that store. '
-			. 'Underlying error: ' . $e->getMessage(),
+			. 'Underlying error: ' . BackendFailureMessage::withoutCredentials( $e->getMessage() ),
 			[ 'exception' => $e, 'pageId' => $pageId ]
 		);
 	}

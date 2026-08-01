@@ -41,9 +41,10 @@ readonly class RebuildRun {
 
 	/**
 	 * The run hit something that stops it reconciling any further page — the store being unreachable,
-	 * say — so it ends here, with the cursor a later `--resume` picks up from.
+	 * say — so it ends here, with the cursor a later `--resume` picks up from. The error is null when
+	 * whatever ended the run said nothing about why.
 	 */
-	public function failed( string $error ): self {
+	public function failed( ?string $error ): self {
 		return $this->with( status: RebuildStatus::Failed, error: $error );
 	}
 

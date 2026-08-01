@@ -23,6 +23,7 @@ use MediaWiki\User\UserIdentity;
 use MessageLocalizer;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigExample;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -216,7 +217,7 @@ class NeoWikiHooks {
 	}
 
 	private static function reportFailedGraphDatabaseInitialization( DatabaseUpdater $updater, Exception $e ): void {
-		$reason = self::withoutCredentials( $e->getMessage() );
+		$reason = BackendFailureMessage::withoutCredentials( $e->getMessage() );
 
 		$updater->output(
 			"failed.\n"
@@ -233,20 +234,6 @@ class NeoWikiHooks {
 			'NeoWiki failed to initialize its graph databases during update.php. The wiki is updated, but '
 			. 'the store-level structures its projection relies on are missing. Underlying error: ' . $reason
 		);
-	}
-
-	/**
-	 * Strips the userinfo out of any URI in a message. A backend client reports an unreachable server by
-	 * quoting the connection URI it tried, credentials included, and this message goes to the operator's
-	 * terminal and to deployment logs.
-	 *
-	 * The run is bounded only by whitespace and matched greedily up to its last `@`, because a password
-	 * may itself contain `/`, `@` or a quote: stopping at the first of those leaves the rest of it in
-	 * the message. The cost is that a credential-free URI whose path holds an `@` loses that path, which
-	 * is the right way round for a redaction.
-	 */
-	private static function withoutCredentials( string $message ): string {
-		return (string)preg_replace( '#(?<=://)\S*@#', '', $message );
 	}
 
 	public static function onParserFirstCallInit( Parser $parser ): void {

@@ -132,12 +132,17 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 			. $run->failed . ' failed.'
 		);
 
+		if ( $run->status !== RebuildStatus::Failed ) {
+			return;
+		}
+
 		if ( $run->error !== null ) {
 			$this->outputChanneled( $run->store . ': ' . $run->error );
-			$this->outputChanneled(
-				$run->store . ': re-run with --resume to continue from page ' . $run->cursor . '.'
-			);
 		}
+
+		$this->outputChanneled(
+			$run->store . ': re-run with --resume to continue from page ' . $run->cursor . '.'
+		);
 	}
 
 	/**
