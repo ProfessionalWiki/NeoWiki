@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivelyFailingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
+use Wikimedia\TestingAccessWrapper;
 
 // The maintenance script is not PSR-4 autoloadable (it lives outside src/), so load it explicitly.
 // Its RUN_MAINTENANCE_IF_MAIN guard is a no-op under PHPUnit, so this does not execute the script.
@@ -216,12 +217,27 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
+	 * Since MediaWiki 1.46 a script only gets fatalError()'s test behaviour — throwing rather than
+	 * exiting, which would end the whole suite — once it is flagged as being under test. Older supported
+	 * versions have no such flag and go by the MW_PHPUNIT_TEST constant alone.
+	 */
+	private static function newScript(): RebuildGraphDatabases {
+		$script = new RebuildGraphDatabases();
+
+		if ( property_exists( $script, 'isTesting' ) ) {
+			TestingAccessWrapper::newFromObject( $script )->isTesting = true;
+		}
+
+		return $script;
+	}
+
+	/**
 	 * Drives the script the way the command line does, so the run covers option parsing too.
 	 *
 	 * @param string[] $arguments
 	 */
 	private function runRebuild( array $arguments = [] ): string {
-		$script = new RebuildGraphDatabases();
+		$script = self::newScript();
 		$script->loadWithArgv( $arguments );
 
 		ob_start();
