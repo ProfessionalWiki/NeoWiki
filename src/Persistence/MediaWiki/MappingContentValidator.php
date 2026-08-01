@@ -16,19 +16,25 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use RuntimeException;
 
 /**
- * Validates the JSON of a Mapping page against the v1 format, in three stages:
+ * Validates the JSON of a Mapping page against the Mapping format, in three stages:
  *
  *  1. Structural validation against mappingContentSchema.json (versioned, deliberately minimal).
- *  2. Semantic IRI-safety validation: every declared prefix namespace, and every class, predicate and
- *     datatype term across all Schema entries, must expand to a valid, safe absolute IRI (the #1029
- *     lesson). A term that cannot be resolved against the declared prefixes, or that would break out of
- *     its IRI, is rejected here rather than percent-encoded — a Mapping must reproduce the ontology's
- *     exact terms.
+ *  2. Semantic IRI-safety validation: every declared prefix namespace, and every class, label predicate,
+ *     node class, node link predicate, predicate and datatype term across all Schema entries, must expand
+ *     to a valid, safe absolute IRI (the #1029 lesson). A term that cannot be resolved against the declared
+ *     prefixes, or that would break out of its IRI, is rejected here rather than percent-encoded — a
+ *     Mapping must reproduce the ontology's exact terms. The node graph is checked in the same stage:
+ *     every node reference names a declared node, and the shapes the projector supports are enforced
+ *     (see {@see nodeGraphErrors()}).
  *  3. Schema-name validation: each key under `schemas` must be a usable Schema name written exactly as
  *     its Schema page title. The projector matches keys against a Subject's Schema name byte for byte,
  *     while a page lookup normalizes, so "Person_X" would resolve to the Schema page yet never project.
  *     Requiring the canonical form keeps those two agreeing, and makes the read view's red or blue link
  *     an honest signal of whether the Schema is there.
+ *
+ * Property, node-attached property, and contribution relation names are **not** checked against the
+ * actual Schema, for the same reason Schema names are not checked for existence: a Mapping may be
+ * authored or installed before the Schema it maps.
  */
 class MappingContentValidator {
 
@@ -90,25 +96,28 @@ class MappingContentValidator {
 	}
 
 	/**
-	 * The structure has already passed JSON-Schema validation, so the fields are present and well-typed;
-	 * the guards here keep the analyser happy and make a hand-called validator robust to raw input.
+	 * Runs only after the structural stage passed, so every field that is present has the type the JSON
+	 * Schema declares; only optional fields need an absent case.
 	 *
 	 * @param array<string, mixed> $data
 	 * @return array<string, string>
 	 */
 	private function semanticErrors( array $data ): array {
-		$prefixes = $this->stringMap( $data['prefixes'] ?? [] );
+		/** @var array<string, string> $prefixes */
+		$prefixes = $data['prefixes'] ?? [];
 		$expander = new CurieExpander( $prefixes );
 
 		$errors = $this->prefixErrors( $prefixes );
 
-		$schemas = is_array( $data['schemas'] ?? null ) ? $data['schemas'] : [];
-		foreach ( $schemas as $schemaName => $entry ) {
-			$errors = array_merge( $errors, $this->schemaNameErrors( (string)$schemaName ) );
+		/** @var array<string, array<string, mixed>> $schemas */
+		$schemas = $data['schemas'];
 
-			if ( is_array( $entry ) ) {
-				$errors = array_merge( $errors, $this->schemaErrors( (string)$schemaName, $entry, $expander ) );
-			}
+		foreach ( $schemas as $schemaName => $entry ) {
+			$errors = array_merge(
+				$errors,
+				$this->schemaNameErrors( (string)$schemaName ),
+				$this->schemaErrors( (string)$schemaName, $entry, $expander )
+			);
 		}
 
 		return $errors;
@@ -165,65 +174,227 @@ class MappingContentValidator {
 	 */
 	private function schemaErrors( string $schemaName, array $entry, CurieExpander $expander ): array {
 		$base = '/schemas/' . $schemaName;
+
+		return array_merge(
+			$this->subjectErrors( $base, $this->arrayValue( $entry, 'subject' ), $expander ),
+			$this->nodeTermErrors( $base, $this->arrayValue( $entry, 'nodes' ), $expander ),
+			$this->nodeGraphErrors( $base, $entry ),
+			$this->propertiesErrors( $base . '/properties', $this->arrayValue( $entry, 'properties' ), $expander ),
+			$this->contributionsErrors( $base, $entry, $expander ),
+		);
+	}
+
+	/**
+	 * @param array<mixed> $subject
+	 * @return array<string, string>
+	 */
+	private function subjectErrors( string $base, array $subject, CurieExpander $expander ): array {
+		return array_merge(
+			$this->termErrors( $base . '/subject/class', $subject['class'] ?? null, $expander ),
+			$this->termErrors( $base . '/subject/labelPredicate', $subject['labelPredicate'] ?? null, $expander ),
+		);
+	}
+
+	/**
+	 * @param array<mixed> $nodes
+	 * @return array<string, string>
+	 */
+	private function nodeTermErrors( string $base, array $nodes, CurieExpander $expander ): array {
 		$errors = [];
 
-		$subject = $entry['subject'] ?? null;
-		$class = is_array( $subject ) ? $this->stringOrNull( $subject['class'] ?? null ) : null;
-		if ( $class !== null && $expander->expand( $class ) === null ) {
-			$errors[$base . '/subject/class'] = $this->unresolvedTermMessage( $class );
-		}
-
-		$properties = is_array( $entry['properties'] ?? null ) ? $entry['properties'] : [];
-		foreach ( $properties as $name => $propertyEntry ) {
-			if ( is_array( $propertyEntry ) ) {
-				$errors = array_merge( $errors, $this->propertyErrors( $base, (string)$name, $propertyEntry, $expander ) );
+		foreach ( $nodes as $key => $node ) {
+			if ( is_array( $node ) ) {
+				$errors = array_merge(
+					$errors,
+					$this->termErrors( $base . '/nodes/' . $key . '/class', $node['class'] ?? null, $expander ),
+					$this->termErrors(
+						$base . '/nodes/' . $key . '/linkPredicate',
+						$node['linkPredicate'] ?? null,
+						$expander
+					),
+				);
 			}
 		}
 
 		return $errors;
+	}
+
+	/**
+	 * The shape rules the projector's node handling relies on: every `node` and `parent` names a declared
+	 * node, the parent chain reaches the Subject rather than looping, and a per-value node stays a leaf
+	 * carrying one property — the projector mints one instance of it per value of that property, so a
+	 * second referrer or a child hanging off it would have no single instance to attach to.
+	 *
+	 * @param array<mixed> $entry
+	 * @return array<string, string>
+	 */
+	private function nodeGraphErrors( string $base, array $entry ): array {
+		$nodes = $this->arrayValue( $entry, 'nodes' );
+		$errors = $this->numericNodeKeyErrors( $base, $nodes );
+
+		foreach ( $nodes as $key => $node ) {
+			$parent = is_array( $node ) ? $this->stringOrNull( $node['parent'] ?? null ) : null;
+
+			if ( $parent === null ) {
+				continue;
+			}
+
+			$pointer = $base . '/nodes/' . $key;
+
+			if ( !array_key_exists( $parent, $nodes ) ) {
+				$errors[$pointer . '/parent'] = 'The node "' . $parent . '" is not declared.';
+			}
+			elseif ( $this->isPerValue( $nodes[$parent] ) ) {
+				$errors[$pointer . '/parent'] = 'The node "' . $parent . '" is per value, so it cannot be a parent.';
+			}
+			elseif ( self::chainLoops( (string)$key, $nodes ) ) {
+				$errors[$pointer . '/parent'] = 'The node "' . $key . '" is its own ancestor.';
+			}
+		}
+
+		return array_merge( $errors, $this->perValueReferrerErrors( $base, $nodes, $this->arrayValue( $entry, 'properties' ) ) );
+	}
+
+	/**
+	 * An all-digit node key survives JSON parsing as an integer key, which the JSON Schema's
+	 * `propertyNames` pattern cannot see because a pattern only constrains strings. Rejecting it here
+	 * keeps every stored node key identifier-shaped — and such a node is unreachable anyway, since the
+	 * `parent` and `node` references that would name it are pattern-checked.
+	 *
+	 * @param array<mixed> $nodes
+	 * @return array<string, string>
+	 */
+	private function numericNodeKeyErrors( string $base, array $nodes ): array {
+		$errors = [];
+
+		foreach ( array_keys( $nodes ) as $key ) {
+			if ( !is_string( $key ) ) {
+				$errors[$base . '/nodes/' . $key] =
+					'The node key "' . $key . '" must start with a letter or an underscore.';
+			}
+		}
+
+		return $errors;
+	}
+
+	/**
+	 * @param array<mixed> $nodes
+	 * @param array<mixed> $properties
+	 * @return array<string, string>
+	 */
+	private function perValueReferrerErrors( string $base, array $nodes, array $properties ): array {
+		$errors = [];
+		$referrers = [];
+
+		foreach ( $properties as $name => $property ) {
+			$node = is_array( $property ) ? $this->stringOrNull( $property['node'] ?? null ) : null;
+
+			if ( $node === null ) {
+				continue;
+			}
+
+			if ( !array_key_exists( $node, $nodes ) ) {
+				$errors[$base . '/properties/' . $name . '/node'] = 'The node "' . $node . '" is not declared.';
+				continue;
+			}
+
+			$referrers[$node] ??= 0;
+			$referrers[$node]++;
+
+			if ( $referrers[$node] > 1 && $this->isPerValue( $nodes[$node] ) ) {
+				$errors[$base . '/properties/' . $name . '/node'] =
+					'The node "' . $node . '" is per value, so only one property can attach to it.';
+			}
+		}
+
+		return $errors;
+	}
+
+	private function isPerValue( mixed $node ): bool {
+		return is_array( $node ) && ( $node['per'] ?? null ) === 'value';
+	}
+
+	/**
+	 * @param array<mixed> $nodes
+	 */
+	private static function chainLoops( string $key, array $nodes ): bool {
+		$seen = [];
+		$current = $key;
+
+		while ( is_string( $current ) && is_array( $nodes[$current] ?? null ) ) {
+			if ( array_key_exists( $current, $seen ) ) {
+				return true;
+			}
+
+			$seen[$current] = true;
+			$current = $nodes[$current]['parent'] ?? null;
+		}
+
+		return false;
 	}
 
 	/**
 	 * @param array<mixed> $entry
 	 * @return array<string, string>
 	 */
-	private function propertyErrors( string $base, string $name, array $entry, CurieExpander $expander ): array {
+	private function contributionsErrors( string $base, array $entry, CurieExpander $expander ): array {
 		$errors = [];
 
-		$predicate = $this->stringOrNull( $entry['predicate'] ?? null );
-		if ( $predicate !== null && $expander->expand( $predicate ) === null ) {
-			$errors[$base . '/properties/' . $name . '/predicate'] = $this->unresolvedTermMessage( $predicate );
-		}
-
-		$datatype = $this->stringOrNull( $entry['datatype'] ?? null );
-		if ( $datatype !== null && $expander->expand( $datatype ) === null ) {
-			$errors[$base . '/properties/' . $name . '/datatype'] = $this->unresolvedTermMessage( $datatype );
+		foreach ( $this->arrayValue( $entry, 'contributions' ) as $relation => $properties ) {
+			if ( is_array( $properties ) ) {
+				$errors = array_merge(
+					$errors,
+					$this->propertiesErrors( $base . '/contributions/' . $relation, $properties, $expander )
+				);
+			}
 		}
 
 		return $errors;
 	}
 
-	private function stringOrNull( mixed $value ): ?string {
-		return is_string( $value ) ? $value : null;
+	/**
+	 * @param array<mixed> $properties
+	 * @return array<string, string>
+	 */
+	private function propertiesErrors( string $base, array $properties, CurieExpander $expander ): array {
+		$errors = [];
+
+		foreach ( $properties as $name => $property ) {
+			if ( is_array( $property ) ) {
+				$errors = array_merge(
+					$errors,
+					$this->termErrors( $base . '/' . $name . '/predicate', $property['predicate'] ?? null, $expander ),
+					$this->termErrors( $base . '/' . $name . '/datatype', $property['datatype'] ?? null, $expander ),
+				);
+			}
+		}
+
+		return $errors;
 	}
 
 	/**
 	 * @return array<string, string>
 	 */
-	private function stringMap( mixed $value ): array {
-		if ( !is_array( $value ) ) {
+	private function termErrors( string $pointer, mixed $term, CurieExpander $expander ): array {
+		$term = $this->stringOrNull( $term );
+
+		if ( $term === null || $expander->expand( $term ) !== null ) {
 			return [];
 		}
 
-		$map = [];
+		return [ $pointer => $this->unresolvedTermMessage( $term ) ];
+	}
 
-		foreach ( $value as $key => $entry ) {
-			if ( is_string( $key ) && is_string( $entry ) ) {
-				$map[$key] = $entry;
-			}
-		}
+	/**
+	 * @param array<mixed> $data
+	 * @return array<mixed>
+	 */
+	private function arrayValue( array $data, string $key ): array {
+		return is_array( $data[$key] ?? null ) ? $data[$key] : [];
+	}
 
-		return $map;
+	private function stringOrNull( mixed $value ): ?string {
+		return is_string( $value ) ? $value : null;
 	}
 
 	private function unresolvedTermMessage( string $term ): string {

@@ -183,6 +183,7 @@
 	"neowiki-mapping-page-prefixes-heading": "Heading for the table on the read view of a Mapping page that lists the namespace prefixes the mapping declares.",
 	"neowiki-mapping-page-prefix-column": "Column header for the prefix in the prefixes table on a Mapping page.",
 	"neowiki-mapping-page-namespace-column": "Column header for the namespace IRI in the prefixes table on a Mapping page.",
+	"neowiki-mapping-unsupported-version": "Warning shown above the JSON of a Mapping page written in a format version this NeoWiki cannot read. Parameters:\n* $1 - the format version found on the page",
 
 	"neowiki-layout-creator-title": "Title of the dialog for creating a new layout.",
 	"neowiki-layout-creator-button": "Label for the button that opens the layout creation dialog on [[Special:Layouts]].",

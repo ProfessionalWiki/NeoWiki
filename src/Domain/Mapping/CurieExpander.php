@@ -43,7 +43,7 @@ readonly class CurieExpander {
 
 		// Not a declared CURIE. Accept only an explicit absolute IRI with an authority (`scheme://…`);
 		// a bare `prefix:local` with an undeclared prefix is a typo'd CURIE and is rejected, not
-		// silently treated as an IRI. Non-authority schemes (urn:, mailto:) are out of scope for v1.
+		// silently treated as an IRI. Non-authority schemes (urn:, mailto:) are out of scope.
 		if ( str_contains( $term, '://' ) ) {
 			return self::newSafeIri( $term );
 		}

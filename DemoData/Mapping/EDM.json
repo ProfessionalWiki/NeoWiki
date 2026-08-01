@@ -11,7 +11,7 @@
 	},
 	"schemas": {
 		"Person": {
-			"subject": { "class": "edm:Agent" },
+			"subject": { "class": "edm:Agent", "labelPredicate": "foaf:name" },
 			"properties": {
 				"Gender": { "predicate": "rdaGr2:gender" },
 				"Birth date": { "predicate": "rdaGr2:dateOfBirth" },
@@ -19,8 +19,16 @@
 				"Description": { "predicate": "skos:note", "lang": "en" }
 			}
 		},
+		"Birth": {
+			"contributions": {
+				"Brought into life": {
+					"Date": { "predicate": "rdaGr2:dateOfBirth" },
+					"Took place at": { "predicate": "rdaGr2:placeOfBirth" }
+				}
+			}
+		},
 		"Artist": {
-			"subject": { "class": "edm:Agent" },
+			"subject": { "class": "edm:Agent", "labelPredicate": "foaf:name" },
 			"properties": {
 				"Born": { "predicate": "rdaGr2:dateOfBirth", "datatype": "xsd:gYear" },
 				"Died": { "predicate": "rdaGr2:dateOfDeath", "datatype": "xsd:gYear" },
@@ -39,8 +47,10 @@
 			}
 		},
 		"City": {
-			"subject": { "class": "edm:Place" },
-			"properties": {}
+			"subject": { "class": "edm:Place" }
+		},
+		"Place": {
+			"subject": { "class": "edm:Place" }
 		}
 	}
 }

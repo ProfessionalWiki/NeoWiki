@@ -362,6 +362,57 @@ JSON
 		);
 	}
 
+	/**
+	 * End to end for the structural tier: a Mapping page whose entry sends a property's values to a
+	 * synthesized node produces that node, typed and linked from the Subject, in the exported document.
+	 */
+	public function testAMappingWithASynthesizedNodeExportsTheNodeItMints(): void {
+		$this->createMapping( 'CIDOC', <<<JSON
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"{$this->schemaName()}": {
+						"subject": { "class": "crm:E53_Place" },
+						"nodes": {
+							"naming": { "class": "crm:E41_Appellation", "linkPredicate": "crm:P1_is_identified_by" }
+						},
+						"properties": {
+							"population": { "predicate": "crm:P190_has_symbolic_content", "node": "naming" }
+						}
+					}
+				}
+			}
+			JSON );
+
+		$response = $this->export( query: [ 'projection' => 'CIDOC', 'format' => 'turtle' ] );
+		$body = $response->getBody()->getContents();
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertStringContainsString( '/node/' . self::SUBJECT_ID . '/naming', $body, 'The node IRI is minted from the Subject and the node key.' );
+		$this->assertStringContainsString( 'E41_Appellation', $body, 'The node carries its target class.' );
+		$this->assertStringContainsString( 'P1_is_identified_by', $body, 'The Subject links to the node.' );
+		$this->assertStringContainsString( 'P190_has_symbolic_content', $body, 'The value hangs off the node, not the Subject.' );
+	}
+
+	/**
+	 * A Mapping page the deserializer cannot read — here an unknown format version, which import can
+	 * still put on a wiki — must behave exactly like a name no Mapping page has: an unknown projection.
+	 */
+	public function testAMappingPageInAnUnreadableFormatIsAnUnknownProjection(): void {
+		$this->createMapping( 'Unreadableseed', '{ "version": 1, "schemas": {} }' );
+		$this->importXml( str_replace(
+			[ 'Mapping:Unreadableseed', '"version": 1' ],
+			[ 'Mapping:Unreadablemapping', '"version": 2' ],
+			$this->exportPageToXml( 'Mapping:Unreadableseed' )
+		) );
+
+		$response = $this->export( query: [ 'projection' => 'Unreadablemapping' ] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertStringContainsString( 'native', $response->getBody()->getContents(), 'The known-projection list is still reported.' );
+	}
+
 	private function createEdmMapping(): void {
 		$this->createMapping( 'EDM', <<<JSON
 			{

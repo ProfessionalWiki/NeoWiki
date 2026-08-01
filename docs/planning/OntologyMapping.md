@@ -9,15 +9,16 @@ Status: Draft strawman, for discussion with ECHOLOT partners (T2.3 and T3.x).
 
 Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 
-> **As-built (v1, 2026-07).** The near-1:1 term-substitution tier of this design has shipped: Mappings as
-> pages in a `Mapping:` namespace — one page per target ontology, the page title being the target name
-> ([#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)) — and an ontology projection
-> selectable alongside the native one on the RDF export endpoint and `DumpRdf`. See the
-> [Ontology Mapping reference](../rdf/ontology-mapping.md) and the worked
-> [Person → EDM example](../rdf/person-to-edm.md). The structural / node-synthesis
-> tier and the mapping-formalism question (Q1, [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995))
-> remain open; the stored `"version": 1` format is provisional. Provisional answers v1 gives to some open
-> questions below are noted inline.
+> **As-built (2026-08).** Mappings are pages in a `Mapping:` namespace — one page per target ontology, the
+> page title being the target name ([#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)) —
+> and an ontology projection is selectable alongside the native one on the RDF export endpoint and `DumpRdf`.
+> The near-1:1 term-substitution tier shipped first (2026-07); the **structural tier** followed as an optional
+> addition to the same format: node synthesis with deterministic IRIs, and contraction as source-side
+> contributions. See the [Ontology Mapping reference](../rdf/ontology-mapping.md) and the worked
+> [Person → EDM example](../rdf/person-to-edm.md). The rule format is NeoWiki-native, so the
+> mapping-formalism question (Q1, [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995)) stays open
+> at the authoring level; the stored format is provisional. Where the as-built provisionally answers an open
+> question below, that is noted inline.
 
 ## Summary
 
@@ -118,7 +119,10 @@ a target does not want, the mapping must walk it and collapse it — a Birth eve
 to `rdaGr2:dateOfBirth` on the flat EDM agent. Both directions are needed because a wiki serves several targets at once
 ([sibling projections](#projections-not-layers)) that disagree about shape, so at least one target mismatches whichever
 style the data is modelled in. Live on the demo wiki ([neowiki.dev](https://neowiki.dev)): flat-modelled Picasso
-projects fully to EDM; Bach, whose birth is an explicit Subject, projects sparse because contraction is unimplemented.
+projects fully to EDM and expands into `E67_Birth` for CIDOC-CRM; Bach, whose birth is an explicit Subject, has that
+Subject contribute the flat `rdaGr2:dateOfBirth` and `rdaGr2:placeOfBirth` back onto him. Contraction is source-side —
+the contributing page emits the triples into its own graph — so a store or bulk dump sees the complete flat agent
+while a per-page export of Bach alone does not.
 
 ### Flat vs nested native modelling (open fork)
 
@@ -324,6 +328,10 @@ collapsing it for a flatter target? Both directions are recorded as an evaluatio
 (SPARQL-based `sh:rule`) or `CONSTRUCT` the right executable substrate? Do partners already have CIDOC-CRM expansion
 patterns in an executable form we can target?
 
+*As built: the native format expresses both directions — synthesized nodes for expansion, contributions for
+contraction ([reference](../rdf/ontology-mapping.md)). Whether a higher-level formalism should author or compile to
+it stays open on Q1.*
+
 **Q3: Platka boundary.** Our understanding (to confirm): the T2.3 pattern library *creates* ontologies and derivatives
 (e.g. SHACL for validation) but does **not** perform ontology-to-ontology mapping. If so, NeoWiki owns Schema→ontology
 mappings, and the library supplies (a) the target patterns we project to and possibly (b) SHACL we validate against.
@@ -345,15 +353,16 @@ above, since the store has no sync-back to the wiki.
 mapping per Schema? Per-target is more modular and independently installable; combined may reduce duplication for shared
 sub-patterns.
 
-*v1: one Mapping page per target ontology, holding an entry for every mapped Schema — the page title is the target name,
-so uniqueness needs no save-time check ([#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)). Combined
-multi-target pages stay open for a later format version.*
+*As built: one Mapping page per target ontology, holding an entry for every mapped Schema — the page title is the
+target name, so uniqueness needs no save-time check
+([#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)). Combined multi-target pages stay open for a
+later format version.*
 
 **Q7: Authoring and distribution.** Where do Mappings live (a dedicated namespace? API-only?), who authors them (data
 modellers) vs installs them (wiki admins), and how are bundles (e.g. "CIDOC-CRM for Person / Place / Object") packaged
 and shared across wikis and a farm?
 
-*v1: Mappings live as pages in a dedicated `Mapping:` namespace (one page per target ontology, named after it —
+*As built: Mappings live as pages in a dedicated `Mapping:` namespace (one page per target ontology, named after it —
 [ADR 17](../adr/017-names-as-identifiers.md)-style), authored like Schemas/Layouts and gated by the
 `neowiki-mapping-edit` right, and seedable as demo/bundle data (the Person→EDM example ships this way). Packaging and
 farm-wide sharing of bundles is not yet addressed.*
@@ -366,11 +375,11 @@ the native projection vs Views?
 native + one or more ontologies), and is a native projection always available as a baseline? This makes "which
 vocabulary is in the store" a per-store configuration rather than a single global choice.
 
-*v1: yes for export — a wiki serves several projections at once, selected per request via the `projection` parameter,
-with `native` always the baseline and each Mapping page adding its target to the known set. Named graphs are qualified
-by projection ([#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)), so a single store can likewise hold
-several projections at once — see [Projections, not layers](#projections-not-layers). The projector/serializer seam
-#586 consumes is `newRdfProjection(name)`.*
+*As built: yes for export — a wiki serves several projections at once, selected per request via the `projection`
+parameter, with `native` always the baseline and each Mapping page adding its target to the known set. Named graphs
+are qualified by projection ([#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)), so a single store can
+likewise hold several projections at once — see [Projections, not layers](#projections-not-layers). The
+projector/serializer seam #586 consumes is `newRdfProjection(name)`.*
 
 **Q10: Flat vs nested native modelling.** The [fork above](#flat-vs-nested-native-modelling-open-fork): should
 case-study data live in flat Schemas with the mapping synthesizing intermediate nodes, or in nested Schemas with the

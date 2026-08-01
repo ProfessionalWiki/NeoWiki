@@ -8,9 +8,12 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeMapping;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeScope;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMappings;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\SchemaMapping;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\SubjectMapping;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
@@ -29,6 +32,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
@@ -44,9 +48,14 @@ class OntologyMappingProjectorTest extends TestCase {
 	private const string PERSON_ID = 's1janeaaaaaaaa2';
 	private const string CITY_ID = 's1cityaaaaaaaa3';
 	private const string GHOST_ID = 's1ghostaaaaaaa9';
+	private const string ARTWORK_ID = 's1artworkaaaaa4';
+	private const string TWIN_ID = 's1twinaaaaaaaa5';
+	private const string BIRTH_ID = 's1birthaaaaaaa6';
 
 	private const string EDM = 'http://www.europeana.eu/schemas/edm/';
 	private const string DC = 'http://purl.org/dc/elements/1.1/';
+	private const string CRM = 'http://www.cidoc-crm.org/cidoc-crm/';
+	private const string RDA_GR2 = 'http://rdvocab.info/ElementsGr2/';
 
 	private RdfNamespaces $ns;
 	private LegacyLoggerSpy $logger;
@@ -224,7 +233,7 @@ class OntologyMappingProjectorTest extends TestCase {
 
 	private function personMapping(): SchemaMapping {
 		return new SchemaMapping(
-			subjectClass: 'edm:ProvidedCHO',
+			subject: new SubjectMapping( 'edm:ProvidedCHO' ),
 			properties: new PropertyMappings( [
 				'Name' => new PropertyMapping( 'dc:title', 'en', null ),
 				'Homepage' => new PropertyMapping( 'edm:isShownAt' ),
@@ -236,7 +245,7 @@ class OntologyMappingProjectorTest extends TestCase {
 
 	private function cityMapping(): SchemaMapping {
 		return new SchemaMapping(
-			subjectClass: 'edm:Place',
+			subject: new SubjectMapping( 'edm:Place' ),
 			properties: new PropertyMappings( [
 				'Name' => new PropertyMapping( 'dc:title' ),
 			] )
@@ -338,7 +347,7 @@ class OntologyMappingProjectorTest extends TestCase {
 
 	private function personMappingWithNameLang( string $lang ): SchemaMapping {
 		return new SchemaMapping(
-			subjectClass: 'http://example.org/CHO',
+			subject: new SubjectMapping( 'http://example.org/CHO' ),
 			properties: new PropertyMappings( [
 				'Name' => new PropertyMapping( 'dc:title', $lang, null ),
 			] )
@@ -378,6 +387,11 @@ class OntologyMappingProjectorTest extends TestCase {
 		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
 
 		$this->assertStringNotContainsString( 'evil', $output, 'No injection term survives to the document.' );
+		$this->assertStringNotContainsString(
+			'/a> <b>',
+			$output,
+			'A node key that is IRI syntax is percent-encoded into the node IRI, not obeyed as syntax.'
+		);
 		$this->assertSame(
 			ParsedRdf::canonicalQuads( $this->expectedSafeAdversarialTriG() ),
 			ParsedRdf::canonicalQuads( $output ),
@@ -389,8 +403,12 @@ class OntologyMappingProjectorTest extends TestCase {
 
 	private function adversarialMapping(): SchemaMapping {
 		return new SchemaMapping(
-			// A subject class that would break out of its IRI: it must not produce an rdf:type triple.
-			subjectClass: 'http://x/> <http://evil.example/s> <http://evil.example/p> <http://evil.example/o',
+			subject: new SubjectMapping(
+				// A subject class that would break out of its IRI: it must not produce an rdf:type triple.
+				class: 'http://x/> <http://evil.example/s> <http://evil.example/p> <http://evil.example/o',
+				// A CURIE against the unsafe prefix: the extra label triple is dropped, rdfs:label stays.
+				labelPredicate: 'evil:name'
+			),
 			properties: new PropertyMappings( [
 				'Name' => new PropertyMapping( 'dc:title' ),
 				// A safe predicate with an injection datatype override: the value keeps its native datatype.
@@ -399,7 +417,12 @@ class OntologyMappingProjectorTest extends TestCase {
 				'Bio' => new PropertyMapping( 'http://x/> <http://evil.example/p2> <http://evil.example/o2' ),
 				// A CURIE against the unsafe prefix: dropped.
 				'Homepage' => new PropertyMapping( 'evil:foo' ),
-			] )
+				// Attached to a node whose key is IRI syntax: the key is encoded, not obeyed.
+				'Alias' => new PropertyMapping( predicate: 'dc:alternative', node: 'a> <b> <c' ),
+			] ),
+			nodes: [
+				'a> <b> <c' => new NodeMapping( class: 'http://example.org/Appellation', linkPredicate: 'dc:relation' ),
+			],
 		);
 	}
 
@@ -413,6 +436,7 @@ class OntologyMappingProjectorTest extends TestCase {
 				TestStatement::build( 'BirthYear', new NumberValue( 1990 ), 'number' ),
 				TestStatement::build( 'Bio', new StringValue( 'Hi' ), 'text' ),
 				TestStatement::build( 'Homepage', new StringValue( 'http://jane.example' ), 'text' ),
+				TestStatement::build( 'Alias', new StringValue( 'Janey' ), 'text' ),
 			] )
 		);
 	}
@@ -427,7 +451,11 @@ class OntologyMappingProjectorTest extends TestCase {
 			<https://wiki.example/graph/edm/page/42> {
 				neo-subj:s1janeaaaaaaaa2 rdfs:label "Jane" ;
 					dc:title "Jane" ;
-					dc:date "1990"^^xsd:integer .
+					dc:date "1990"^^xsd:integer ;
+					dc:relation <https://wiki.example/node/s1janeaaaaaaaa2/a%3E_%3Cb%3E_%3Cc> .
+
+				<https://wiki.example/node/s1janeaaaaaaaa2/a%3E_%3Cb%3E_%3Cc> a <http://example.org/Appellation> ;
+					dc:alternative "Janey" .
 			}
 			TRIG;
 	}
@@ -453,7 +481,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		// A url value projects as an IRI object by default, but an explicit `datatype` on the property
 		// mapping is deliberate configuration and wins: the value is emitted as a literal with that datatype.
 		$mapping = new SchemaMapping(
-			subjectClass: 'edm:ProvidedCHO',
+			subject: new SubjectMapping( 'edm:ProvidedCHO' ),
 			properties: new PropertyMappings( [
 				'Homepage' => new PropertyMapping( 'edm:isShownAt', null, 'http://www.w3.org/2001/XMLSchema#anyURI' ),
 			] )
@@ -491,7 +519,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		// Constructed directly, bypassing the save-time lang/datatype mutual-exclusion check, to prove
 		// the projector ignores literal overrides on a relation (its object is an IRI, not a literal).
 		$mapping = new SchemaMapping(
-			subjectClass: 'http://example.org/CHO',
+			subject: new SubjectMapping( 'http://example.org/CHO' ),
 			properties: new PropertyMappings( [
 				'BornIn' => new PropertyMapping( 'dc:spatial', 'en', 'edm:year' ),
 			] )
@@ -532,7 +560,7 @@ class OntologyMappingProjectorTest extends TestCase {
 
 	private function personBirthYearMappingWithLang( string $lang ): SchemaMapping {
 		return new SchemaMapping(
-			subjectClass: 'http://example.org/CHO',
+			subject: new SubjectMapping( 'http://example.org/CHO' ),
 			properties: new PropertyMappings( [
 				'BirthYear' => new PropertyMapping( 'dc:date', $lang, null ),
 			] )
@@ -586,10 +614,640 @@ class OntologyMappingProjectorTest extends TestCase {
 	}
 
 	/**
+	 * @param array<string, string> $extra
 	 * @return array<string, string>
 	 */
-	private function serializerPrefixes(): array {
-		return array_merge( $this->ns->prefixMap(), [ 'edm' => self::EDM, 'dc' => self::DC ] );
+	private function serializerPrefixes( array $extra = [] ): array {
+		return array_merge( $this->ns->prefixMap(), [ 'edm' => self::EDM, 'dc' => self::DC ], $extra );
+	}
+
+	// Structural transformation: synthesized nodes (expansion) and contributions (contraction).
+
+	private function newCrmProjector( string $schemaName, SchemaMapping $mapping ): OntologyMappingProjector {
+		return $this->newProjector( [ $schemaName => $mapping ], [ 'crm' => self::CRM, 'rdaGr2' => self::RDA_GR2 ] );
+	}
+
+	private function crmTriG( string $body ): string {
+		return <<<TRIG
+			@prefix neo-subj: <https://wiki.example/entity/> .
+			@prefix neo-graph: <https://wiki.example/graph/edm/page/> .
+			@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+			@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+			@prefix crm: <http://www.cidoc-crm.org/cidoc-crm/> .
+			@prefix rdaGr2: <http://rdvocab.info/ElementsGr2/> .
+
+			neo-graph:42 {
+			$body
+			}
+			TRIG;
+	}
+
+	private function assertProjectsTo( string $expectedTriG, QuadList $quads ): void {
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( $expectedTriG ),
+			ParsedRdf::canonicalQuads(
+				( new HardfRdfSerializer( $this->serializerPrefixes( [ 'crm' => self::CRM, 'rdaGr2' => self::RDA_GR2 ] ) ) )
+					->serialize( $quads, RdfFormat::TriG )
+			)
+		);
+	}
+
+	/**
+	 * A Person with the flat birth fields the near-1:1 tier consumes, which CIDOC-CRM mediates through an
+	 * E67_Birth event node.
+	 */
+	private function personWithFlatBirthFields(): Page {
+		return TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::PERSON_ID,
+			label: 'Jane',
+			schemaName: new SchemaName( 'Person' ),
+			statements: new StatementList( [
+				TestStatement::build( 'Birth date', new StringValue( '1990-01-31' ), 'date' ),
+				TestStatement::buildRelation( 'Birth place', [ TestRelation::build( targetId: self::CITY_ID ) ] ),
+			] )
+		) );
+	}
+
+	public function testEveryPropertyAttachedToASubjectScopedNodeSharesOneInstance(): void {
+		$quads = $this->newCrmProjector( 'Person', new SchemaMapping(
+			subject: new SubjectMapping( 'crm:E21_Person' ),
+			properties: new PropertyMappings( [
+				'Birth date' => new PropertyMapping( predicate: 'crm:P4_has_time-span', node: 'birth' ),
+				'Birth place' => new PropertyMapping( predicate: 'crm:P7_took_place_at', node: 'birth' ),
+			] ),
+			nodes: [
+				'birth' => new NodeMapping( class: 'crm:E67_Birth', linkPredicate: 'crm:P98i_was_born' ),
+			],
+		) )->projectPage( $this->personWithFlatBirthFields() );
+
+		// One E67_Birth, reached by one P98i_was_born, carrying both properties: the two flat fields are
+		// coordinated onto the same synthesized node.
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane" ;
+				crm:P98i_was_born <https://wiki.example/node/s1janeaaaaaaaa2/birth> .
+
+			<https://wiki.example/node/s1janeaaaaaaaa2/birth> a crm:E67_Birth ;
+				crm:P4_has_time-span "1990-01-31"^^xsd:date ;
+				crm:P7_took_place_at neo-subj:s1cityaaaaaaaa3 .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testNestedNodeHangsOffItsParentInstanceAndBringsTheChainAlong(): void {
+		$quads = $this->newCrmProjector( 'Person', new SchemaMapping(
+			subject: new SubjectMapping( 'crm:E21_Person' ),
+			properties: new PropertyMappings( [
+				// Only the deepest node carries a value: the E67_Birth between it and the Person is
+				// emitted because its descendant needs it.
+				'Birth date' => new PropertyMapping( predicate: 'crm:P82_at_some_time_within', node: 'birthTimespan' ),
+			] ),
+			nodes: [
+				'birth' => new NodeMapping( class: 'crm:E67_Birth', linkPredicate: 'crm:P98i_was_born' ),
+				'birthTimespan' => new NodeMapping(
+					class: 'crm:E52_Time-Span',
+					linkPredicate: 'crm:P4_has_time-span',
+					parent: 'birth'
+				),
+			],
+		) )->projectPage( $this->personWithFlatBirthFields() );
+
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane" ;
+				crm:P98i_was_born <https://wiki.example/node/s1janeaaaaaaaa2/birth> .
+
+			<https://wiki.example/node/s1janeaaaaaaaa2/birth> a crm:E67_Birth ;
+				crm:P4_has_time-span <https://wiki.example/node/s1janeaaaaaaaa2/birth/birthTimespan> .
+
+			<https://wiki.example/node/s1janeaaaaaaaa2/birth/birthTimespan> a crm:E52_Time-Span ;
+				crm:P82_at_some_time_within "1990-01-31"^^xsd:date .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testANodeIsNotEmittedForAPropertyTheSubjectDoesNotHave(): void {
+		// The mapping declares the birth node, but the Person carries no value for the property that
+		// attaches to it, so there must be no empty E67_Birth in the output.
+		$quads = $this->newCrmProjector( 'Person', new SchemaMapping(
+			subject: new SubjectMapping( 'crm:E21_Person' ),
+			properties: new PropertyMappings( [
+				'Death date' => new PropertyMapping( predicate: 'crm:P4_has_time-span', node: 'birth' ),
+			] ),
+			nodes: [
+				'birth' => new NodeMapping( class: 'crm:E67_Birth', linkPredicate: 'crm:P98i_was_born' ),
+			],
+		) )->projectPage( $this->personWithFlatBirthFields() );
+
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane" .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testANodeIsNotEmittedWhenItsPropertyProducesNoValueTriple(): void {
+		// The Subject does hold the attached property, but its Property Type has no RDF value mapper, so
+		// it produces nothing to hang off the node — and an event node with no content is worse than none.
+		$page = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::PERSON_ID,
+			label: 'Jane',
+			schemaName: new SchemaName( 'Person' ),
+			statements: new StatementList( [
+				TestStatement::build( 'Birth date', new StringValue( '1990-01-31' ), 'typewithoutanrdfmapper' ),
+			] )
+		) );
+
+		$quads = $this->newCrmProjector( 'Person', new SchemaMapping(
+			subject: new SubjectMapping( 'crm:E21_Person' ),
+			properties: new PropertyMappings( [
+				'Birth date' => new PropertyMapping( predicate: 'crm:P4_has_time-span', node: 'birth' ),
+			] ),
+			nodes: [
+				'birth' => new NodeMapping( class: 'crm:E67_Birth', linkPredicate: 'crm:P98i_was_born' ),
+			],
+		) )->projectPage( $page );
+
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane" .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testValueScopedNodeGetsOneRelationIdAnchoredInstancePerRelationValue(): void {
+		$artwork = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::ARTWORK_ID,
+			label: 'The Milkmaid',
+			schemaName: new SchemaName( 'Artwork' ),
+			statements: new StatementList( [
+				TestStatement::buildRelation( 'Creator', [
+					TestRelation::build( id: 'r1firstaaaaaaa2', targetId: self::PERSON_ID ),
+					TestRelation::build( id: 'r1secondaaaaaa3', targetId: self::CITY_ID ),
+				] ),
+			] )
+		) );
+
+		$quads = $this->newProjector(
+			[ 'Artwork' => new SchemaMapping(
+				subject: new SubjectMapping( 'crm:E22_Human-Made_Object' ),
+				properties: new PropertyMappings( [
+					'Creator' => new PropertyMapping( predicate: 'crm:P14_carried_out_by', node: 'production' ),
+				] ),
+				nodes: [
+					'production' => new NodeMapping(
+						class: 'crm:E12_Production',
+						linkPredicate: 'crm:P108i_was_produced_by',
+						scope: NodeScope::Value
+					),
+				],
+			) ],
+			[ 'crm' => self::CRM ]
+		)->projectPage( $artwork );
+
+		// Two creators, two production events, each IRI derived from its Relation's persistent ID.
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1artworkaaaaa4 a crm:E22_Human-Made_Object ;
+				rdfs:label "The Milkmaid" ;
+				crm:P108i_was_produced_by <https://wiki.example/node/r1firstaaaaaaa2>, <https://wiki.example/node/r1secondaaaaaa3> .
+
+			<https://wiki.example/node/r1firstaaaaaaa2> a crm:E12_Production ;
+				crm:P14_carried_out_by neo-subj:s1janeaaaaaaaa2 .
+
+			<https://wiki.example/node/r1secondaaaaaa3> a crm:E12_Production ;
+				crm:P14_carried_out_by neo-subj:s1cityaaaaaaaa3 .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testValueScopedNodeGetsOnePositionAnchoredInstancePerLiteralValue(): void {
+		$page = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::PERSON_ID,
+			label: 'Jane',
+			schemaName: new SchemaName( 'Person' ),
+			statements: new StatementList( [
+				TestStatement::build( 'Also known as', new StringValue( 'Janey', 'J. Doe' ), 'text' ),
+			] )
+		) );
+
+		$quads = $this->newCrmProjector( 'Person', new SchemaMapping(
+			subject: new SubjectMapping( 'crm:E21_Person' ),
+			properties: new PropertyMappings( [
+				'Also known as' => new PropertyMapping( predicate: 'crm:P190_has_symbolic_content', node: 'appellation' ),
+			] ),
+			nodes: [
+				'appellation' => new NodeMapping(
+					class: 'crm:E41_Appellation',
+					linkPredicate: 'crm:P1_is_identified_by',
+					scope: NodeScope::Value
+				),
+			],
+		) )->projectPage( $page );
+
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane" ;
+				crm:P1_is_identified_by <https://wiki.example/node/s1janeaaaaaaaa2/appellation/0>, <https://wiki.example/node/s1janeaaaaaaaa2/appellation/1> .
+
+			<https://wiki.example/node/s1janeaaaaaaaa2/appellation/0> a crm:E41_Appellation ;
+				crm:P190_has_symbolic_content "Janey" .
+
+			<https://wiki.example/node/s1janeaaaaaaaa2/appellation/1> a crm:E41_Appellation ;
+				crm:P190_has_symbolic_content "J. Doe" .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testAnUnusableNodeDropsItsWholeSubtreeButLeavesTheRestOfTheSubject(): void {
+		$quads = $this->newCrmProjector( 'Person', new SchemaMapping(
+			subject: new SubjectMapping( 'crm:E21_Person' ),
+			properties: new PropertyMappings( [
+				'Birth date' => new PropertyMapping( predicate: 'crm:P82_at_some_time_within', node: 'birthTimespan' ),
+				'Birth place' => new PropertyMapping( predicate: 'rdaGr2:placeOfBirth' ),
+			] ),
+			nodes: [
+				// An unresolvable class: the node and everything under it must be dropped.
+				'birth' => new NodeMapping( class: 'nosuchprefix:E67_Birth', linkPredicate: 'crm:P98i_was_born' ),
+				'birthTimespan' => new NodeMapping(
+					class: 'crm:E52_Time-Span',
+					linkPredicate: 'crm:P4_has_time-span',
+					parent: 'birth'
+				),
+			],
+		) )->projectPage( $this->personWithFlatBirthFields() );
+
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane" ;
+				rdaGr2:placeOfBirth neo-subj:s1cityaaaaaaaa3 .
+			TRIG ), $quads );
+		// One warning for the unusable node, one for the child it orphaned, one for the property that
+		// pointed at the child.
+		$this->assertCount( 3, $this->logger->getLogCalls()->getMessages() );
+	}
+
+	public function testLabelPredicateAddsATargetLabelTermWithoutReplacingRdfsLabel(): void {
+		$quads = $this->newCrmProjector( 'Person', new SchemaMapping(
+			subject: new SubjectMapping( class: 'crm:E21_Person', labelPredicate: 'rdaGr2:nameOfThePerson' ),
+		) )->projectPage( TestPage::build( id: 42, mainSubject: $this->examplePersonWithoutRelations() ) );
+
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane" ;
+				rdaGr2:nameOfThePerson "Jane" .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	/**
+	 * Contraction. The Birth Subject holds the structure a flat target does not want, so it emits its own
+	 * date and place as flat properties **of the people it brought into life** — twins share one Birth, so
+	 * both receive them — and the place, a relation-valued contribution property, arrives as the Place
+	 * Subject's IRI. All of it lands in the Birth page's graph, since that is the page being projected.
+	 */
+	public function testContributionEmitsThisSubjectsValuesAboutEveryTargetOfItsRelation(): void {
+		$birth = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::BIRTH_ID,
+			label: 'Birth of the twins',
+			schemaName: new SchemaName( 'Birth' ),
+			statements: new StatementList( [
+				TestStatement::buildRelation( 'Brought into life', [
+					TestRelation::build( targetId: self::PERSON_ID ),
+					TestRelation::build( targetId: self::TWIN_ID ),
+				] ),
+				TestStatement::buildRelation( 'Took place at', [ TestRelation::build( targetId: self::CITY_ID ) ] ),
+				TestStatement::build( 'Date', new StringValue( '1990-01-31' ), 'date' ),
+				TestStatement::build( 'Weather', new StringValue( 'Rainy' ), 'text' ),
+			] )
+		) );
+
+		$quads = $this->newProjector(
+			[ 'Birth' => new SchemaMapping(
+				subject: null,
+				contributions: [ 'Brought into life' => new PropertyMappings( [
+					'Date' => new PropertyMapping( 'rdaGr2:dateOfBirth' ),
+					'Took place at' => new PropertyMapping( 'rdaGr2:placeOfBirth' ),
+				] ) ],
+			) ],
+			[ 'rdaGr2' => self::RDA_GR2 ]
+		)->projectPage( $birth );
+
+		// No type or label for the Birth itself: the entry only contributes. The unmapped Weather is
+		// absent, as unmapped properties always are.
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 rdaGr2:dateOfBirth "1990-01-31"^^xsd:date ;
+				rdaGr2:placeOfBirth neo-subj:s1cityaaaaaaaa3 .
+
+			neo-subj:s1twinaaaaaaaa5 rdaGr2:dateOfBirth "1990-01-31"^^xsd:date ;
+				rdaGr2:placeOfBirth neo-subj:s1cityaaaaaaaa3 .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testContributionThroughARelationTheSubjectHasNoValueForIsSilentlySkipped(): void {
+		// An optional relation left empty produces no Statement at all, which is ordinary sparse data
+		// rather than a misconfigured Mapping, so it must not fill the log on every page it touches.
+		$page = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::BIRTH_ID,
+			label: 'A birth with no child',
+			schemaName: new SchemaName( 'Birth' ),
+			statements: new StatementList( [ TestStatement::build( 'Date', new StringValue( '1990-01-31' ), 'date' ) ] )
+		) );
+
+		$quads = $this->newProjector(
+			[ 'Birth' => $this->birthContributingItsDate() ],
+			[ 'rdaGr2' => self::RDA_GR2 ]
+		)->projectPage( $page );
+
+		$this->assertTrue( $quads->isEmpty() );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testContributionThroughAPropertyThatIsNotARelationIsLogged(): void {
+		// The Subject does hold the named property, but as text: the Mapping and the Schema disagree
+		// about what it is, which is worth telling the wiki about.
+		$page = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::BIRTH_ID,
+			label: 'A birth naming its child in prose',
+			schemaName: new SchemaName( 'Birth' ),
+			statements: new StatementList( [
+				TestStatement::build( 'Brought into life', new StringValue( 'Jane' ), 'text' ),
+				TestStatement::build( 'Date', new StringValue( '1990-01-31' ), 'date' ),
+			] )
+		) );
+
+		$quads = $this->newProjector(
+			[ 'Birth' => $this->birthContributingItsDate() ],
+			[ 'rdaGr2' => self::RDA_GR2 ]
+		)->projectPage( $page );
+
+		$this->assertTrue( $quads->isEmpty() );
+		$this->assertCount( 1, $this->logger->getLogCalls()->getMessages() );
+	}
+
+	private function birthContributingItsDate(): SchemaMapping {
+		return new SchemaMapping(
+			subject: null,
+			contributions: [ 'Brought into life' => new PropertyMappings( [
+				'Date' => new PropertyMapping( 'rdaGr2:dateOfBirth' ),
+			] ) ],
+		);
+	}
+
+	/**
+	 * An entry may project its own Subject and contribute at the same time, through more than one
+	 * relation: the Birth is an event in its own right for a target that has a class for it, and still
+	 * flattens its date onto both the child and the place it happened at.
+	 */
+	public function testAnEntryProjectsItsOwnSubjectAndContributesThroughSeveralRelations(): void {
+		$birth = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::BIRTH_ID,
+			label: 'Birth of Jane',
+			schemaName: new SchemaName( 'Birth' ),
+			statements: new StatementList( [
+				TestStatement::buildRelation( 'Brought into life', [ TestRelation::build( targetId: self::PERSON_ID ) ] ),
+				TestStatement::buildRelation( 'Took place at', [ TestRelation::build( targetId: self::CITY_ID ) ] ),
+				TestStatement::build( 'Date', new StringValue( '1990-01-31' ), 'date' ),
+			] )
+		) );
+
+		$quads = $this->newProjector(
+			[ 'Birth' => new SchemaMapping(
+				subject: new SubjectMapping( 'crm:E67_Birth' ),
+				properties: new PropertyMappings( [
+					'Brought into life' => new PropertyMapping( 'crm:P98_brought_into_life' ),
+				] ),
+				contributions: [
+					'Brought into life' => new PropertyMappings( [
+						'Date' => new PropertyMapping( 'rdaGr2:dateOfBirth' ),
+					] ),
+					'Took place at' => new PropertyMappings( [
+						'Date' => new PropertyMapping( 'rdaGr2:dateOfEstablishment' ),
+					] ),
+				],
+			) ],
+			[ 'crm' => self::CRM, 'rdaGr2' => self::RDA_GR2 ]
+		)->projectPage( $birth );
+
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1birthaaaaaaa6 a crm:E67_Birth ;
+				rdfs:label "Birth of Jane" ;
+				crm:P98_brought_into_life neo-subj:s1janeaaaaaaaa2 .
+
+			neo-subj:s1janeaaaaaaaa2 rdaGr2:dateOfBirth "1990-01-31"^^xsd:date .
+
+			neo-subj:s1cityaaaaaaaa3 rdaGr2:dateOfEstablishment "1990-01-31"^^xsd:date .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	// Shapes save-time validation rejects, which XML import can still put on a wiki. They reach the
+	// projector through the persistence deserializer, so these go in the same way rather than being
+	// hand-built, and must degrade the projection instead of aborting it.
+
+	private function newImportedProjector( string $json ): OntologyMappingProjector {
+		return new OntologyMappingProjector(
+			( new MappingPersistenceDeserializer() )->deserialize( new MappingName( 'edm' ), $json ),
+			$this->ns,
+			RdfValueMapperRegistry::withCoreMappers(),
+			$this->logger,
+		);
+	}
+
+	public function testAnAllDigitNodeKeyProjects(): void {
+		// json_decode turns an all-digit object key into an int array key, which every consumer of the
+		// key has to survive.
+		$quads = $this->newImportedProjector( <<<'JSON'
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person" },
+						"nodes": { "2024": { "class": "crm:E67_Birth", "linkPredicate": "crm:P98i_was_born" } },
+						"properties": { "Birth date": { "predicate": "crm:P82_at_some_time_within", "node": "2024" } }
+					}
+				}
+			}
+			JSON )->projectPage( $this->personWithFlatBirthFields() );
+
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane" ;
+				crm:P98i_was_born <https://wiki.example/node/s1janeaaaaaaaa2/2024> .
+
+			<https://wiki.example/node/s1janeaaaaaaaa2/2024> a crm:E67_Birth ;
+				crm:P82_at_some_time_within "1990-01-31"^^xsd:date .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testAnAllDigitPropertyNameProjects(): void {
+		// A year is a realistic property name, and is an int array key by the time json_decode is done.
+		$page = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::PERSON_ID,
+			label: 'Jane',
+			schemaName: new SchemaName( 'Person' ),
+			statements: new StatementList( [ TestStatement::build( '2020', new StringValue( 'Sabbatical' ), 'text' ) ] )
+		) );
+
+		$quads = $this->newImportedProjector( <<<'JSON'
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person" },
+						"properties": { "2020": { "predicate": "crm:P3_has_note" } }
+					}
+				}
+			}
+			JSON )->projectPage( $page );
+
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane" ;
+				crm:P3_has_note "Sabbatical" .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testANodeHangingOffAPerValueNodeIsDroppedWithWhatItCarries(): void {
+		// A per-value parent has one instance per value, so a child would have no single instance to hang
+		// off. The parent itself still projects.
+		$artwork = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::ARTWORK_ID,
+			label: 'The Milkmaid',
+			schemaName: new SchemaName( 'Artwork' ),
+			statements: new StatementList( [
+				TestStatement::buildRelation( 'Creator', [
+					TestRelation::build( id: 'r1firstaaaaaaa2', targetId: self::PERSON_ID ),
+				] ),
+				TestStatement::build( 'Year', new StringValue( '1658' ), 'text' ),
+			] )
+		) );
+
+		$quads = $this->newImportedProjector( <<<'JSON'
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Artwork": {
+						"subject": { "class": "crm:E22_Human-Made_Object" },
+						"nodes": {
+							"production": {
+								"class": "crm:E12_Production",
+								"linkPredicate": "crm:P108i_was_produced_by",
+								"per": "value"
+							},
+							"timespan": {
+								"class": "crm:E52_Time-Span",
+								"linkPredicate": "crm:P4_has_time-span",
+								"parent": "production"
+							}
+						},
+						"properties": {
+							"Creator": { "predicate": "crm:P14_carried_out_by", "node": "production" },
+							"Year": { "predicate": "crm:P82_at_some_time_within", "node": "timespan" }
+						}
+					}
+				}
+			}
+			JSON )->projectPage( $artwork );
+
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1artworkaaaaa4 a crm:E22_Human-Made_Object ;
+				rdfs:label "The Milkmaid" ;
+				crm:P108i_was_produced_by <https://wiki.example/node/r1firstaaaaaaa2> .
+
+			<https://wiki.example/node/r1firstaaaaaaa2> a crm:E12_Production ;
+				crm:P14_carried_out_by neo-subj:s1janeaaaaaaaa2 .
+			TRIG ), $quads );
+		// One for the child of the per-value node, one for the property that pointed at that child.
+		$this->assertCount( 2, $this->logger->getLogCalls()->getMessages() );
+	}
+
+	public function testAParentCycleDropsOnlyTheNodesInTheCycle(): void {
+		$page = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::PERSON_ID,
+			label: 'Jane',
+			schemaName: new SchemaName( 'Person' ),
+			statements: new StatementList( [
+				TestStatement::build( 'Birth date', new StringValue( '1990-01-31' ), 'date' ),
+				TestStatement::build( 'Also known as', new StringValue( 'Janey' ), 'text' ),
+			] )
+		) );
+
+		$quads = $this->newImportedProjector( <<<'JSON'
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person" },
+						"nodes": {
+							"birth": {
+								"class": "crm:E67_Birth",
+								"linkPredicate": "crm:P98i_was_born",
+								"parent": "birthTimespan"
+							},
+							"birthTimespan": {
+								"class": "crm:E52_Time-Span",
+								"linkPredicate": "crm:P4_has_time-span",
+								"parent": "birth"
+							},
+							"naming": { "class": "crm:E41_Appellation", "linkPredicate": "crm:P1_is_identified_by" }
+						},
+						"properties": {
+							"Birth date": { "predicate": "crm:P82_at_some_time_within", "node": "birthTimespan" },
+							"Also known as": { "predicate": "crm:P190_has_symbolic_content", "node": "naming" }
+						}
+					}
+				}
+			}
+			JSON )->projectPage( $page );
+
+		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane" ;
+				crm:P1_is_identified_by <https://wiki.example/node/s1janeaaaaaaaa2/naming> .
+
+			<https://wiki.example/node/s1janeaaaaaaaa2/naming> a crm:E41_Appellation ;
+				crm:P190_has_symbolic_content "Janey" .
+			TRIG ), $quads );
+		// One for each node in the cycle, one for the property that pointed into it.
+		$this->assertCount( 3, $this->logger->getLogCalls()->getMessages() );
+	}
+
+	public function testSynthesizedNodeIrisAreIdenticalAcrossProjectionsOfTheSamePage(): void {
+		// Re-projection must be byte-identical, because the per-page store sync replaces a graph with
+		// DROP + INSERT DATA: a node IRI that moved would leave the store inconsistent.
+		$mapping = new SchemaMapping(
+			subject: new SubjectMapping( 'crm:E21_Person' ),
+			properties: new PropertyMappings( [
+				'Birth date' => new PropertyMapping( predicate: 'crm:P82_at_some_time_within', node: 'birthTimespan' ),
+				'Birth place' => new PropertyMapping( predicate: 'crm:P7_took_place_at', node: 'birth' ),
+			] ),
+			nodes: [
+				'birth' => new NodeMapping( class: 'crm:E67_Birth', linkPredicate: 'crm:P98i_was_born' ),
+				'birthTimespan' => new NodeMapping(
+					class: 'crm:E52_Time-Span',
+					linkPredicate: 'crm:P4_has_time-span',
+					parent: 'birth'
+				),
+			],
+		);
+		$page = $this->personWithFlatBirthFields();
+
+		$first = $this->newCrmProjector( 'Person', $mapping )->projectPage( $page );
+		$second = $this->newCrmProjector( 'Person', $mapping )->projectPage( $page );
+
+		$serializer = new HardfRdfSerializer( $this->serializerPrefixes( [ 'crm' => self::CRM ] ) );
+		$this->assertSame(
+			$serializer->serialize( $first, RdfFormat::TriG ),
+			$serializer->serialize( $second, RdfFormat::TriG )
+		);
 	}
 
 }

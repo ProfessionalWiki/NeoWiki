@@ -166,9 +166,26 @@ class MappingPageHtmlBuilder {
 		return '';
 	}
 
+	/**
+	 * Every property the entry maps, whether onto the Subject itself or, through a contribution, onto the
+	 * Subjects it points at — so a contributes-only entry does not read as mapping nothing.
+	 */
 	private function propertyCount( mixed $schema ): int {
-		$properties = $schema instanceof stdClass ? ( $schema->properties ?? null ) : null;
+		if ( !$schema instanceof stdClass ) {
+			return 0;
+		}
 
+		$count = $this->countOf( $schema->properties ?? null );
+		$contributions = $schema->contributions ?? null;
+
+		foreach ( $contributions instanceof stdClass ? get_object_vars( $contributions ) : [] as $properties ) {
+			$count += $this->countOf( $properties );
+		}
+
+		return $count;
+	}
+
+	private function countOf( mixed $properties ): int {
 		return $properties instanceof stdClass ? count( get_object_vars( $properties ) ) : 0;
 	}
 

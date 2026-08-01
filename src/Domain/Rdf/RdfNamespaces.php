@@ -67,6 +67,31 @@ readonly class RdfNamespaces {
 		return new Iri( $this->baseUri . '/relation/' . $id->asString() );
 	}
 
+	/**
+	 * A synthesized intermediate node of an ontology projection, anchored on the Subject it expands
+	 * (OntologyMapping.md § Synthesized-node IRIs). For a subject-scoped node the keys are its chain of
+	 * Mapping node keys from the Subject down, so nesting reads off the IRI. For a value-scoped node they
+	 * are its own key and the value's position — its parent chain is left out.
+	 *
+	 * These IRIs are deliberately not in {@see prefixMap()}: like a graph IRI, their local part can start
+	 * with a digit, so a prefix would not abbreviate them anyway.
+	 */
+	public function synthesizedNode( SubjectId $subjectId, string ...$keys ): Iri {
+		return new Iri(
+			$this->baseUri . '/node/' . $subjectId->text . '/'
+				. implode( '/', array_map( self::localName( ... ), $keys ) )
+		);
+	}
+
+	/**
+	 * A synthesized intermediate node anchored on the Relation whose value it mediates. Relations carry a
+	 * persistent ID ([ADR 10](../../../docs/adr/010-add-guids-to-relations.md)), so the node for a given
+	 * relation value is the same node in every projection and across re-projections.
+	 */
+	public function synthesizedRelationNode( RelationId $relationId ): Iri {
+		return new Iri( $this->baseUri . '/node/' . $relationId->asString() );
+	}
+
 	public function page( PageId $id ): Iri {
 		return new Iri( $this->baseUri . '/page/' . $id->id );
 	}

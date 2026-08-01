@@ -12,25 +12,29 @@
 		},
 		"prefixes": {
 			"type": "object",
+			"maxProperties": 200,
 			"propertyNames": {
 				"pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
 			},
 			"additionalProperties": {
 				"type": "string",
 				"minLength": 1
+			},
+			"$error": {
+				"maxProperties": "A mapping may declare at most 200 prefixes."
 			}
 		},
 		"schemas": {
 			"type": "object",
+			"maxProperties": 1000,
 			"propertyNames": {
 				"minLength": 1
 			},
+			"$error": {
+				"maxProperties": "A mapping may hold at most 1000 schema entries."
+			},
 			"additionalProperties": {
 				"type": "object",
-				"required": [
-					"subject",
-					"properties"
-				],
 				"properties": {
 					"subject": {
 						"type": "object",
@@ -41,46 +45,178 @@
 							"class": {
 								"type": "string",
 								"minLength": 1
+							},
+							"labelPredicate": {
+								"type": "string",
+								"minLength": 1
 							}
 						},
 						"additionalProperties": false
 					},
-					"properties": {
+					"nodes": {
 						"type": "object",
+						"maxProperties": 64,
+						"propertyNames": {
+							"pattern": "^[A-Za-z_][A-Za-z0-9_-]*$",
+							"$error": "A node key must start with a letter or an underscore, and may only contain letters, digits, underscores and hyphens."
+						},
+						"$error": {
+							"maxProperties": "A schema entry may declare at most 64 nodes."
+						},
 						"additionalProperties": {
 							"type": "object",
 							"required": [
-								"predicate"
+								"class",
+								"linkPredicate"
 							],
 							"properties": {
-								"predicate": {
+								"class": {
 									"type": "string",
 									"minLength": 1
 								},
-								"lang": {
-									"type": "string",
-									"pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
-									"$error": "The language tag must be BCP-47-shaped (e.g. \"en\" or \"pt-BR\")."
-								},
-								"datatype": {
+								"linkPredicate": {
 									"type": "string",
 									"minLength": 1
+								},
+								"parent": {
+									"type": "string",
+									"pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"
+								},
+								"per": {
+									"enum": [
+										"subject",
+										"value"
+									],
+									"$error": "A node is either per \"subject\" or per \"value\"."
 								}
 							},
-							"additionalProperties": false,
-							"not": {
-								"required": [
-									"lang",
-									"datatype"
-								],
-								"$error": "A property mapping cannot set both a language tag and a datatype."
+							"additionalProperties": false
+						}
+					},
+					"properties": {
+						"type": "object",
+						"maxProperties": 500,
+						"additionalProperties": {
+							"$ref": "#/$defs/propertyMapping"
+						},
+						"$error": {
+							"maxProperties": "A schema entry may map at most 500 properties."
+						}
+					},
+					"contributions": {
+						"type": "object",
+						"minProperties": 1,
+						"maxProperties": 32,
+						"propertyNames": {
+							"minLength": 1
+						},
+						"additionalProperties": {
+							"type": "object",
+							"minProperties": 1,
+							"maxProperties": 100,
+							"additionalProperties": {
+								"$ref": "#/$defs/valueMapping"
+							},
+							"$error": {
+								"maxProperties": "A contribution may map at most 100 properties."
 							}
+						},
+						"$error": {
+							"maxProperties": "A schema entry may contribute through at most 32 relations."
 						}
 					}
 				},
-				"additionalProperties": false
+				"additionalProperties": false,
+				"anyOf": [
+					{
+						"required": [
+							"subject"
+						]
+					},
+					{
+						"required": [
+							"contributions"
+						]
+					}
+				],
+				"dependentRequired": {
+					"properties": [
+						"subject"
+					],
+					"nodes": [
+						"subject"
+					]
+				},
+				"$error": {
+					"anyOf": "A schema entry must project the Subject itself, contribute to other Subjects, or both.",
+					"dependentRequired": "\"properties\" and \"nodes\" project the Subject, so they need a \"subject\"."
+				}
 			}
 		}
 	},
-	"additionalProperties": false
+	"additionalProperties": false,
+	"$defs": {
+		"valueMapping": {
+			"type": "object",
+			"required": [
+				"predicate"
+			],
+			"properties": {
+				"predicate": {
+					"type": "string",
+					"minLength": 1
+				},
+				"lang": {
+					"type": "string",
+					"pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+					"$error": "The language tag must be BCP-47-shaped (e.g. \"en\" or \"pt-BR\")."
+				},
+				"datatype": {
+					"type": "string",
+					"minLength": 1
+				}
+			},
+			"additionalProperties": false,
+			"not": {
+				"required": [
+					"lang",
+					"datatype"
+				],
+				"$error": "A property mapping cannot set both a language tag and a datatype."
+			}
+		},
+		"propertyMapping": {
+			"type": "object",
+			"required": [
+				"predicate"
+			],
+			"properties": {
+				"predicate": {
+					"type": "string",
+					"minLength": 1
+				},
+				"lang": {
+					"type": "string",
+					"pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+					"$error": "The language tag must be BCP-47-shaped (e.g. \"en\" or \"pt-BR\")."
+				},
+				"datatype": {
+					"type": "string",
+					"minLength": 1
+				},
+				"node": {
+					"type": "string",
+					"pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"
+				}
+			},
+			"additionalProperties": false,
+			"not": {
+				"required": [
+					"lang",
+					"datatype"
+				],
+				"$error": "A property mapping cannot set both a language tag and a datatype."
+			}
+		}
+	}
 }

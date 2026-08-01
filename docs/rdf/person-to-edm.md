@@ -4,7 +4,7 @@ order: 3
 ---
 # Worked example: projecting a Person to EDM
 
-End-to-end walkthrough of the [Ontology Mapping](ontology-mapping.md) v1 projection: a NeoWiki-native `Person`
+End-to-end walkthrough of an [Ontology Mapping](ontology-mapping.md) projection: a NeoWiki-native `Person`
 Schema, an EDM Mapping, and a demo page projected into
 [Europeana Data Model](https://pro.europeana.eu/page/edm-documentation) (EDM) RDF, shown against the native projection.
 
@@ -12,14 +12,14 @@ It projects the EDM column of a small "person to many standards" toy model. Ever
 [demo data](../../DemoData/), so a wiki with the demo data imported (`php maintenance/run.php NeoWiki:ImportDemoData`)
 reproduces it — up to instance-specific page IDs and base URI (and, in the page metadata, timestamps and last editor).
 
-> **Scope: the near-1:1 tier only.** Event-based ontologies like CIDOC-CRM need the intermediate-node synthesis that v1
-> does not do — see [Known next tier: CIDOC-CRM](#known-next-tier-cidoc-crm).
+> **Scope: the near-1:1 tier.** EDM is flat, so this walkthrough is term substitution. For the structural tier, the
+> same demo data ships a `Mapping:CIDOC-CRM` — see [the same data in CIDOC-CRM](#the-same-data-in-cidoc-crm) below.
 
 ## The toy model
 
 | Neutral Person field | Example value | EDM target |
 |---|---|---|
-| Name | "Pablo Picasso" | `foaf:name` *(not in v1 — see [Findings](#findings))* |
+| Name | "Pablo Picasso" | `foaf:name`, alongside the always-emitted `rdfs:label` |
 | Gender | "Male" | `rdaGr2:gender` literal |
 | Birth date | 1881-10-25 | `rdaGr2:dateOfBirth` (`xsd:date`) |
 | Birth place | Málaga | `rdaGr2:placeOfBirth` → an `edm:Place` |
@@ -27,7 +27,7 @@ reproduces it — up to instance-specific page IDs and base URI (and, in the pag
 | Source | "A Life of Picasso I…" (ISBN) | **n/a in EDM** — unmapped |
 
 Prefixes: `edm: http://www.europeana.eu/schemas/edm/`, `rdaGr2: http://rdvocab.info/ElementsGr2/`,
-`skos: http://www.w3.org/2004/02/skos/core#`.
+`skos: http://www.w3.org/2004/02/skos/core#`, `foaf: http://xmlns.com/foaf/0.1/`.
 
 ## 1. The Schemas
 
@@ -52,8 +52,8 @@ The demo `City` Schema ([`DemoData/Schema/City.json`](../../DemoData/Schema/City
 
 One Mapping page, **[`Mapping:EDM`](../../DemoData/Mapping/EDM.json)**, holds an entry per mapped Schema; its title
 (`EDM`) is the projection name (see [Ontology Mapping](ontology-mapping.md) for the format). Abbreviated to the
-two entries this walkthrough uses — the shipped file also maps `Artwork` and `Artist` and declares the
-`dc`/`dcterms`/`foaf`/`xsd` prefixes those need:
+two entries this walkthrough uses — the shipped file also maps `Birth`, `Place`, `Artwork` and `Artist` and declares
+the `dc`/`dcterms`/`xsd` prefixes those need:
 
 ```json
 {
@@ -61,11 +61,12 @@ two entries this walkthrough uses — the shipped file also maps `Artwork` and `
     "prefixes": {
         "edm": "http://www.europeana.eu/schemas/edm/",
         "rdaGr2": "http://rdvocab.info/ElementsGr2/",
-        "skos": "http://www.w3.org/2004/02/skos/core#"
+        "skos": "http://www.w3.org/2004/02/skos/core#",
+        "foaf": "http://xmlns.com/foaf/0.1/"
     },
     "schemas": {
         "Person": {
-            "subject": { "class": "edm:Agent" },
+            "subject": { "class": "edm:Agent", "labelPredicate": "foaf:name" },
             "properties": {
                 "Gender":      { "predicate": "rdaGr2:gender" },
                 "Birth date":  { "predicate": "rdaGr2:dateOfBirth" },
@@ -74,8 +75,7 @@ two entries this walkthrough uses — the shipped file also maps `Artwork` and `
             }
         },
         "City": {
-            "subject": { "class": "edm:Place" },
-            "properties": {}
+            "subject": { "class": "edm:Place" }
         }
     }
 }
@@ -138,6 +138,7 @@ The **EDM** projection of the same page — target vocabulary only, no page meta
 ```turtle
 neo-subj:s2picasso2aaaa2 a edm:Agent;
     rdfs:label "Pablo Picasso";
+    foaf:name "Pablo Picasso";
     skos:note "Spanish painter, sculptor, and printmaker who co-founded the Cubist movement…"@en;
     rdaGr2:gender "Male";
     rdaGr2:dateOfBirth "1881-10-25"^^xsd:date;
@@ -155,7 +156,8 @@ What changed, native → EDM:
 
 - The Subject IRI is unchanged (`neo-subj:s2picasso2aaaa2`): the entity stays the wiki's own, only the vocabulary is
   EDM.
-- `rdf:type` and each mapped predicate are substituted; `rdfs:label` is a shared term, kept verbatim.
+- `rdf:type` and each mapped predicate are substituted; `rdfs:label` is a shared term, kept verbatim, and the entry's
+  `labelPredicate` repeats it as EDM's own `foaf:name`.
 - The datatype comes from the value mapper, not the Mapping: `"1881-10-25"^^xsd:date` is identical in both. A Mapping
   property may override it with `datatype`.
 - The birth-place relation becomes one direct triple. Its EDM predicate keys on the **property name** `Birth place`
@@ -180,13 +182,9 @@ share one triple store. A consumer that needs a relation target's type or label 
 
 ## Findings
 
-1. **The name projects only as `rdfs:label`; `foaf:name` is unreachable in v1.** A Subject's name is its built-in label,
-   not a property; the projector always emits it as `rdfs:label`, and v1 has no facility to also map the label to
-   another predicate. The toy model's `Name → foaf:name` therefore cannot be produced. Tracked at
-   [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
-2. **A `select` value projects its stored option id, not its label.** The v1 value mapper emits the stored id, so a
-   `select` `Gender` would carry an opaque `o1…` id instead of `"Male"`. The demo uses a `text` property to get a
-   meaningful literal; a select→label (or select→`skos:Concept` IRI) projection is later work.
+**A `select` value projects its stored option id, not its label.** The value mapper emits the stored id, so a `select`
+`Gender` would carry an opaque `o1…` id instead of `"Male"`. The demo uses a `text` property to get a meaningful
+literal; a select→label (or select→`skos:Concept` IRI) projection is later work.
 
 ## Querying via SPARQL
 
@@ -226,9 +224,12 @@ The two graph variables bind to `.../graph/EDM/page/115` and `.../graph/native/p
 
 For an ad-hoc load instead, feed the `DumpRdf --projection=EDM` output into any SPARQL engine (e.g. a local QLever).
 
-## Known next tier: CIDOC-CRM
+## The same data in CIDOC-CRM
 
-The toy model's CIDOC-CRM column is out of scope for v1. CIDOC-CRM mediates birth through a synthesized `E67_Birth`
-event node with no counterpart in NeoWiki's flat data, which v1's term substitution cannot mint. Choosing a formalism
-that can is the open mapping-formalism question ([OntologyMapping.md Q1](../planning/OntologyMapping.md#open-questions),
+The toy model's CIDOC-CRM column mediates birth through an `E67_Birth` event node and an `E52_Time-Span`, neither of
+which exists in NeoWiki's flat data. `Mapping:CIDOC-CRM`, also shipped as demo data, declares both as
+[synthesized nodes](ontology-mapping.md#synthesized-node-iris) and attaches `Birth place` and `Birth date` to them, so
+the same `Pablo_Picasso` page exports as an `E21_Person` whose birth hangs off minted event nodes. Which formalism
+authors should ultimately write such mappings in stays open
+([OntologyMapping.md Q1](../planning/OntologyMapping.md#open-questions),
 [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995)).
