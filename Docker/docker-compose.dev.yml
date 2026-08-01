@@ -194,8 +194,9 @@ services:
   # A second SPARQL 1.1 graph store engine (Oxigraph), alongside the QLever pair above, so the
   # SPARQL projection plugin (#586) can be exercised against more than one implementation. Dev-only
   # like them, and opt-in: SettingsTemplate.php still points $wgNeoWikiSparqlStores at QLever, so
-  # nothing writes here until you repoint it (in-network as http://oxigraph:7878/). A host port for
-  # manual inspection is opt-in via docker-compose.tools.yml.
+  # nothing writes here until you repoint it at http://oxigraph:7878/update and
+  # http://oxigraph:7878/query — separate paths, unlike QLever's single one, so an entry needs both
+  # updateUrl and queryUrl. A host port for manual inspection is opt-in via docker-compose.tools.yml.
   #
   # No entrypoint script: unlike QLever there is no index to build and no persistence flag to pass —
   # RocksDB persists to the volume by default, and the image's own command is the serve command.

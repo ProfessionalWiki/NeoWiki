@@ -94,7 +94,7 @@ demo: _preflight ## One-command demo: pull image, start stack, install + seed (i
 dev: _preflight bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
 
-dev-tools: _preflight bootstrap ensure-port ## Like 'dev' but also exposes Neo4j Browser/Bolt to host
+dev-tools: _preflight bootstrap ensure-port ## Like 'dev' but also exposes the Neo4j and SPARQL store ports to host
 	@$(MAKE) --no-print-directory _dev-tools-impl
 
 _dev-tools-impl:

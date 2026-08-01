@@ -237,8 +237,7 @@ A store entry whose `updateUrl` is missing or empty is skipped with a warning ra
 
 ### Stores with split endpoints
 
-`queryUrl` defaults to `updateUrl`, which only suits a store serving queries and updates on one path. A store that
-splits them must set both. Oxigraph, for instance, serves `/query` and `/update`:
+A store that serves queries and updates on separate paths must set both. Oxigraph serves `/query` and `/update`:
 
 ```php
 $wgNeoWikiSparqlStores = [
@@ -250,14 +249,14 @@ $wgNeoWikiSparqlStores = [
 ];
 ```
 
-There is no `accessToken` because Oxigraph has no authentication: it accepts every request, including updates, from
+Oxigraph has no authentication and so takes no `accessToken`: it accepts every request, including updates, from
 anyone who can reach it. Put it behind network isolation or an authenticating reverse proxy. A deployment that
 separates reads from writes can serve queries from a second instance started with `oxigraph serve-read-only`.
 
-Unscoped queries also behave differently. Under SPARQL 1.1 they see only the default graph, which stays empty here
-because NeoWiki writes pages into named graphs, so queries must say `GRAPH`. QLever ignores that and always searches
-every graph; to get the same from Oxigraph, start it with `--union-default-graph`. Its durability needs no such flag:
-data given a `--location` is persisted by default.
+Under SPARQL 1.1 an unscoped query sees only the default graph, which stays empty here because NeoWiki writes pages
+into named graphs — so queries must say `GRAPH`. QLever ignores that and always searches every graph; to get the same
+from Oxigraph, start it with `--union-default-graph`. Persistence needs no equivalent flag, but the server must be
+given a `--location`.
 
 ### Several projections in one store
 
@@ -327,7 +326,7 @@ also be changed at runtime through the store's endpoint by anyone holding its ac
 secret.
 
 Not every store can be told not to federate: Oxigraph has no such setting and will attempt the outbound request, so
-restrict it at the network layer instead. Check what your store offers before exposing its query surfaces.
+restricting it at the network layer is the only control.
 
 Restricting the store is worth combining with restricting who may query it. The query surfaces are gated by the
 `neowiki-query` right, which by default is granted to everyone including anonymous visitors; see

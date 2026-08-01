@@ -29,10 +29,10 @@ are already bound on the host.
 | `OXIGRAPH_PORT`    | (see below) | 7878    | Oxigraph SPARQL endpoint (opt-in) |
 
 Neo4j, QLever and Oxigraph ports are only exposed to the host when you run `make dev-tools`
-(which adds the `Docker/docker-compose.tools.yml` overlay). They use conventional defaults
-(7474, 7687, 7019, 7878) and are not auto-allocated, so `make dev-tools` is best used with one
-worktree at a time. Override `NEO_BROWSER_PORT` / `NEO_BOLT_PORT` / `QLEVER_PORT` /
-`OXIGRAPH_PORT` if you need to run two tools-mode worktrees simultaneously.
+(which adds the `Docker/docker-compose.tools.yml` overlay). They use the services' conventional
+ports and are not auto-allocated, so `make dev-tools` is best used with one worktree at a time.
+Override `NEO_BROWSER_PORT` / `NEO_BOLT_PORT` / `QLEVER_PORT` / `OXIGRAPH_PORT` if you need to
+run two tools-mode worktrees simultaneously.
 
 The MariaDB, (default) Neo4j, QLever and Oxigraph ports are not exposed to the host. Reach
 them from inside the stack via `make bash` or `docker compose exec`.
@@ -92,15 +92,15 @@ because its multi-step bring-up cannot be expressed as a GitHub Actions service 
 
 ## Oxigraph SPARQL store (dev)
 
-A second SPARQL engine, [Oxigraph](https://github.com/oxigraph/oxigraph), so the projection plugin
-can be exercised against more than one implementation. Unlike QLever it is not wired up by default:
-`SettingsTemplate.php` points the wiki at QLever, so nothing writes here until you repoint
-`$wgNeoWikiSparqlStores` at `http://oxigraph:7878/`. Queries and updates live on separate paths —
-`/query` and `/update` — so an entry for it must set `queryUrl` as well as `updateUrl`.
+The dev stack also bundles [Oxigraph](https://github.com/oxigraph/oxigraph), a second SPARQL engine,
+so the projection plugin can be exercised against more than one implementation. Unlike QLever it is
+not wired up by default: `SettingsTemplate.php` points the wiki at QLever, so nothing writes here
+until you repoint `$wgNeoWikiSparqlStores` at it, with `updateUrl` `http://oxigraph:7878/update` and
+`queryUrl` `http://oxigraph:7878/query`.
 
-It needs none of QLever's bring-up: no index to build, no persistence flag. RocksDB persists to the
-`oxigraph-data` named volume by default. No target empties that volume on its own; `make remove` (and
-`make reset`, which calls it) deletes every volume, so to reset only this store run `make down`, then
+It needs none of QLever's bring-up: no index to build, no persistence flag. Data persists in the
+`oxigraph-data` named volume. No target empties that volume alone — `make remove` (and `make reset`,
+which calls it) deletes every volume. To clear only this store: `make down`, then
 `docker volume rm <project>_oxigraph-data`, then `make dev`.
 
 The service runs with `--union-default-graph`, which makes an unscoped query see every named graph, as
@@ -116,8 +116,8 @@ curl http://localhost:7878/query \
   -H 'Accept: application/sparql-results+json'
 ```
 
-Oxigraph has no authentication, so neither reads nor writes take a token. Keep it off any network you
-do not control.
+Oxigraph has no authentication, so neither reads nor writes take a token — and `make dev-tools`
+publishes the port on every interface.
 
 ### `test_oxigraph` (SPARQL query system test)
 
@@ -126,10 +126,10 @@ the demo `oxigraph` service the way `test_qlever` is from `qlever`. `phpunit.xml
 at it via `OXIGRAPH_TEST_URL=http://test_oxigraph:7878`, a base URL the test derives both paths from;
 it is reached in-network only, with no host port.
 
-It deliberately runs **without** `--union-default-graph`, so the test faces spec-strict SPARQL 1.1.
-Between it and `test_qlever`, which always unions, the test proves NeoWiki's queries work under either
-semantics rather than relying on the more forgiving one. `make phpunit` brings it up as part of the
-dev stack; in CI it is started explicitly (see `.github/workflows/ci-php.yml`).
+It deliberately runs **without** `--union-default-graph`: with `test_qlever` always unioning, the pair
+proves NeoWiki's queries work under either semantics, not just the forgiving one. `make phpunit`
+brings it up as part of the dev stack; in CI it is started explicitly (see
+`.github/workflows/ci-php.yml`).
 
 ## Files
 
