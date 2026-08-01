@@ -11,7 +11,6 @@ use ProfessionalWiki\NeoWiki\Maintenance\RebuildGraphDatabases;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivelyFailingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
 
@@ -177,7 +176,7 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 	public function testAPageTheStoreRejectsExitsNonZero(): void {
 		$pageId = $this->createPageWithSubjects( 'Rejected page', TestSubject::build() )?->getPageId();
 		$this->registerNamedGraphDatabasePlugins( [
-			'picky' => new SelectivelyFailingGraphDatabasePlugin( (int)$pageId ),
+			'picky' => new SpyGraphDatabasePlugin( refusedPageIds: [ (int)$pageId ] ),
 		] );
 
 		$reconciled = $this->runRebuild( [ '--store=picky' ] );
