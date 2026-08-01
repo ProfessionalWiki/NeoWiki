@@ -124,14 +124,19 @@ class GraphRebuildExecutor {
 			}
 
 			foreach ( $pageIds as $pageId ) {
-				$this->projectPage( $pageId, $progress, $pageRebuilder );
+				$this->projectPage( $pageId, $progress, $pageRebuilder, $observer );
 			}
 
 			$observer->afterPageBatch( $this->recordProgress( $run, $progress ), $totalPages );
 		}
 	}
 
-	private function projectPage( int $pageId, RebuildProgress $progress, SubjectPageRebuilder $pageRebuilder ): void {
+	private function projectPage(
+		int $pageId,
+		RebuildProgress $progress,
+		SubjectPageRebuilder $pageRebuilder,
+		RebuildBatchObserver $observer
+	): void {
 		$title = $this->titleFactory->newFromID( $pageId );
 
 		if ( $title === null ) {
@@ -147,6 +152,7 @@ class GraphRebuildExecutor {
 		} catch ( Exception $e ) {
 			$this->logPageFailure( 'project', $pageId, $e );
 			$progress->pageFailed( $pageId );
+			$observer->pageFailed( $pageId );
 			return;
 		}
 
@@ -190,7 +196,7 @@ class GraphRebuildExecutor {
 
 		foreach ( array_chunk( $pageIds, $batchSize ) as $batch ) {
 			foreach ( $batch as $pageId ) {
-				if ( $this->removePage( $pageId, $progress, $store ) ) {
+				if ( $this->removePage( $pageId, $progress, $store, $observer ) ) {
 					$removedSoFar++;
 				}
 			}
@@ -199,7 +205,12 @@ class GraphRebuildExecutor {
 		}
 	}
 
-	private function removePage( int $pageId, RebuildProgress $progress, GraphDatabasePlugin $store ): bool {
+	private function removePage(
+		int $pageId,
+		RebuildProgress $progress,
+		GraphDatabasePlugin $store,
+		RebuildBatchObserver $observer
+	): bool {
 		try {
 			$store->deletePage( new PageId( $pageId ) );
 		} catch ( TimeoutException | DBError $e ) {
@@ -207,6 +218,7 @@ class GraphRebuildExecutor {
 		} catch ( Exception $e ) {
 			$this->logPageFailure( 'remove', $pageId, $e );
 			$progress->deletionFailed();
+			$observer->pageFailed( $pageId );
 			return false;
 		}
 

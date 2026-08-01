@@ -15,6 +15,12 @@ use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
  */
 interface RebuildBatchObserver {
 
+	/**
+	 * A page the rebuild could not reconcile, whether projecting it or removing it. The run counts these
+	 * but does not keep them, so this is a caller's one chance to say which pages they were.
+	 */
+	public function pageFailed( int $pageId ): void;
+
 	public function afterPageBatch( RebuildRun $run, int $totalPages ): void;
 
 	/**
