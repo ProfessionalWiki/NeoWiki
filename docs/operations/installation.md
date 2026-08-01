@@ -241,9 +241,10 @@ $wgNeoWikiSparqlStores = [
 A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
 
 Each store's `name` identifies it when [rebuilding one store](maintenance.md#rebuilding-one-store), so no two entries
-may share one, and none may be `neo4j`. Since the name defaults to the projection, two entries holding the same
-projection — mirroring it to a second endpoint, say — each need an explicit `name`. An entry repeating a name already
-taken is skipped with a warning, and stops receiving page changes along with it.
+may share one, and none may be `neo4j` in any casing — that name is reserved for the bundled Neo4j backend. Since the
+name defaults to the projection, two entries holding the same projection — mirroring it to a second endpoint, say —
+each need an explicit `name`. An entry whose name cannot identify it is skipped with a warning, and stops receiving
+page changes along with it.
 
 ### Oxigraph
 
