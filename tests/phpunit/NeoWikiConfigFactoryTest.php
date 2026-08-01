@@ -215,7 +215,7 @@ class NeoWikiConfigFactoryTest extends TestCase {
 			array_map( static fn ( SparqlStoreConfig $store ): string => $store->updateUrl, $config->sparqlStores ),
 			'the first entry claiming a name keeps it, and only the later duplicate is dropped'
 		);
-		$this->assertTrue( $logger->hasWarningRecords() );
+		$this->assertTrue( $logger->hasWarningThatContains( 'earlier entry' ) );
 	}
 
 	public function testSparqlStoreEntryTakingTheNeo4jNameIsSkippedWithWarning(): void {
@@ -227,7 +227,45 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		);
 
 		$this->assertSame( [], $config->sparqlStores, 'the bundled Neo4j backend keeps its own name' );
-		$this->assertTrue( $logger->hasWarningRecords() );
+		$this->assertTrue(
+			$logger->hasWarningThatContains( 'reserved' ),
+			'a name nothing else in the configuration claims needs its own reason'
+		);
+	}
+
+	/**
+	 * @dataProvider neo4jNameCasingProvider
+	 */
+	public function testSparqlStoreEntryTakingTheNeo4jNameInAnyCasingIsSkipped( string $name ): void {
+		$config = $this->buildSparqlConfig( [ [ 'updateUrl' => 'https://qlever.example/api', 'name' => $name ] ] );
+
+		$this->assertSame( [], $config->sparqlStores );
+	}
+
+	public function neo4jNameCasingProvider(): iterable {
+		yield 'as written' => [ 'neo4j' ];
+		yield 'capitalized' => [ 'Neo4j' ];
+		yield 'shouted' => [ 'NEO4J' ];
+	}
+
+	public function testSparqlStoreEntryWithANameTooLongToFileRunsUnderIsSkippedWithWarning(): void {
+		$logger = new TestLogger();
+
+		$config = $this->buildSparqlConfig(
+			[ [ 'updateUrl' => 'https://qlever.example/api', 'name' => str_repeat( 'a', 256 ) ] ],
+			$logger
+		);
+
+		$this->assertSame( [], $config->sparqlStores );
+		$this->assertTrue( $logger->hasWarningThatContains( 'longer than' ) );
+	}
+
+	public function testASparqlStoreNameOfTheGreatestLengthTheRunRecordsHoldIsKept(): void {
+		$config = $this->buildSparqlConfig(
+			[ [ 'updateUrl' => 'https://qlever.example/api', 'name' => str_repeat( 'a', 255 ) ] ]
+		);
+
+		$this->assertCount( 1, $config->sparqlStores );
 	}
 
 	public function testExplicitNamesLetSiblingProjectionsRepeatATargetOntology(): void {

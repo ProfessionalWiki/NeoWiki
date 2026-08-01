@@ -13,6 +13,13 @@ use Psr\Log\NullLogger;
 
 class NeoWikiConfigFactory {
 
+	/**
+	 * What a graph rebuild's run records can file a store under. A longer name would be truncated there
+	 * without a word, so two stores could end up sharing one row — and with it the check that stops two
+	 * rebuilds of one store running at once.
+	 */
+	private const MAX_NAME_LENGTH = 255;
+
 	public function __construct(
 		private readonly LoggerInterface $logger = new NullLogger(),
 	) {
@@ -35,8 +42,8 @@ class NeoWikiConfigFactory {
 	 * not take down the wiki, but it must not be silent either.
 	 *
 	 * A store name must identify exactly one store, since that is how a scoped rebuild addresses it, so
-	 * an entry repeating a name already taken is skipped the same way. The first entry claiming a name
-	 * keeps it: dropping the later duplicate leaves the stores before it configured as they were.
+	 * an entry whose name cannot do that is skipped the same way. The first entry claiming a name keeps
+	 * it: dropping the later duplicate leaves the stores before it configured as they were.
 	 *
 	 * @return SparqlStoreConfig[]
 	 */
@@ -48,9 +55,7 @@ class NeoWikiConfigFactory {
 		}
 
 		$stores = [];
-		// The bundled Neo4j backend claims its name before any configured store can, so an entry taking
-		// it cannot silently replace the backend it names.
-		$takenNames = [ Neo4jPlugin::STORE_NAME => true ];
+		$takenNames = [];
 
 		foreach ( $raw as $index => $entry ) {
 			$store = $this->buildSparqlStore( $entry, $index );
@@ -59,10 +64,11 @@ class NeoWikiConfigFactory {
 				continue;
 			}
 
-			if ( isset( $takenNames[$store->name] ) ) {
+			$rejection = self::rejectionReason( $store->name, $takenNames );
+
+			if ( $rejection !== null ) {
 				$this->logger->warning(
-					'Ignoring NeoWikiSparqlStores entry {index}: the name "{name}" is already taken by an '
-					. 'earlier entry. Give one of them an explicit "name".',
+					'Ignoring NeoWikiSparqlStores entry {index}: ' . $rejection,
 					[ 'index' => $index, 'name' => $store->name ]
 				);
 				continue;
@@ -73,6 +79,33 @@ class NeoWikiConfigFactory {
 		}
 
 		return $stores;
+	}
+
+	/**
+	 * Why this name cannot identify a store, as a message to log, or null when it can. Each reason has
+	 * its own way out, so each says which one.
+	 *
+	 * @param array<string, true> $takenNames
+	 */
+	private static function rejectionReason( string $name, array $takenNames ): ?string {
+		// Whatever its casing: a store called "Neo4j" reads as the bundled backend wherever a name is
+		// written or reported, whether or not the two collide as array keys.
+		if ( strcasecmp( $name, Neo4jPlugin::STORE_NAME ) === 0 ) {
+			return 'the name "{name}" is reserved for the bundled Neo4j backend, in any casing. '
+				. 'Give this store another "name".';
+		}
+
+		if ( strlen( $name ) > self::MAX_NAME_LENGTH ) {
+			return 'the name "{name}" is longer than ' . self::MAX_NAME_LENGTH . ' bytes, which is all a '
+				. 'rebuild can file its run records under. Give this store a shorter "name".';
+		}
+
+		if ( isset( $takenNames[$name] ) ) {
+			return 'the name "{name}" is already taken by an earlier entry. '
+				. 'Give one of them an explicit "name".';
+		}
+
+		return null;
 	}
 
 	private function buildSparqlStore( mixed $entry, int|string $index ): ?SparqlStoreConfig {

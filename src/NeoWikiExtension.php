@@ -580,13 +580,33 @@ class NeoWikiExtension {
 	 * fires the NeoWikiRegistration hook and re-enters that accessor. Composing core here keeps the
 	 * registry extension-only and the plugin order deterministic.
 	 *
-	 * A core name wins over an extension's: `+` keeps the left operand's entry on a key collision. An
-	 * extension naming itself after a bundled backend is then ignored rather than shadowing it.
+	 * The two sets cannot collide: the registry is told the bundled names up front and refuses a plugin
+	 * taking one, which is what makes an extension naming itself after a bundled backend a warning
+	 * rather than a plugin dropped in silence here.
 	 *
 	 * @return array<string, GraphDatabasePlugin> Keys are store names
 	 */
 	public function getNamedGraphDatabasePlugins(): array {
 		return $this->getCoreGraphDatabasePlugins() + $this->getGraphDatabasePluginRegistry()->getPlugins();
+	}
+
+	/**
+	 * The names the bundled backends answer to, read from configuration rather than from the backends
+	 * themselves: building those fires the NeoWikiRegistration hook, which is what asks for these.
+	 *
+	 * Neo4j's name is reserved whether or not a Neo4j backend is configured, so a plugin cannot claim it
+	 * on one wiki and lose it on the next.
+	 *
+	 * @return string[]
+	 */
+	private function getBundledStoreNames(): array {
+		return array_merge(
+			[ Neo4jPlugin::STORE_NAME ],
+			array_map(
+				static fn ( SparqlStoreConfig $store ): string => $store->name,
+				$this->config->sparqlStores
+			)
+		);
 	}
 
 	/**
@@ -676,6 +696,7 @@ class NeoWikiExtension {
 			$this->graphDatabasePluginRegistry = new GraphDatabasePluginRegistry(
 				LoggerFactory::getInstance( 'NeoWiki' )
 			);
+			$this->graphDatabasePluginRegistry->reserveNames( ...$this->getBundledStoreNames() );
 		}
 
 		$this->ensureExtensionsRegistered();
