@@ -410,6 +410,27 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSingleNodeWithId( self::GUID_2 );
 	}
 
+	/**
+	 * Both relations are created by one query, so the row that runs second has to match the target
+	 * node the first row created rather than create a second one under the same id. This also pins
+	 * that the relations of more than one subject of a page are created at all.
+	 */
+	public function testTwoSubjectsOnOnePageRelatingToTheSameNewTargetCreateOneStub(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_3, 'rTestNQS1111rr1' ),
+			childSubjects: new SubjectMap(
+				$this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_3, 'rTestNQS1111rr2' ),
+			)
+		) );
+
+		$this->assertSingleNodeWithId( self::GUID_3 );
+		$this->assertRelationExists( self::GUID_1, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr1' );
+		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
+	}
+
 	private function assertSingleNodeWithId( string $id ): void {
 		// Deliberately unlabeled, so a node that failed to get the Subject label still counts.
 		$result = $this->readGraph( 'MATCH (node {id: $id}) RETURN count(node) AS count', [ 'id' => $id ] );
@@ -1187,6 +1208,39 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 				[ 'id' => self::GUID_2, 'labels' => [ 'Subject', TestSubject::DEFAULT_SCHEMA_ID ] ],
 				[ 'id' => self::GUID_3, 'labels' => [ 'Subject', self::SCHEMA_ID_Z ] ],
 				[ 'id' => self::GUID_4, 'labels' => [ 'Subject', TestSubject::DEFAULT_SCHEMA_ID ] ],
+			],
+			42
+		);
+	}
+
+	/**
+	 * The only case that exercises label removal: every other save either keeps the Schema or adds a
+	 * subject. The two Schemas are swapped rather than changed in one direction, so a save that mixed
+	 * up which labels belong to which subject would still produce the right label set overall.
+	 */
+	public function testChangingSubjectSchemasReplacesTheirSchemaLabels(): void {
+		$store = $this->newProjectionStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
+			)
+		) );
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
+			)
+		) );
+
+		$this->assertPageHasSubjectsWithLabels(
+			[
+				[ 'id' => self::GUID_1, 'labels' => [ 'Subject', self::SCHEMA_ID_Z ] ],
+				[ 'id' => self::GUID_2, 'labels' => [ 'Subject', self::SCHEMA_ID_A ] ],
 			],
 			42
 		);
