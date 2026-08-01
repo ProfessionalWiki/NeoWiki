@@ -146,6 +146,52 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'Unknown graph store "typo"', $this->getScriptOutput() );
 	}
 
+	public function testTheSummaryNamesTheStoresLeftOutOfSync(): void {
+		$this->createPageWithSubjects( 'Page the working store wants', TestSubject::build() );
+		$this->registerNamedGraphDatabasePlugins( [
+			'broken' => new ThrowingGraphDatabasePlugin(),
+			'working' => new SpyGraphDatabasePlugin(),
+		] );
+
+		$this->runRebuild();
+
+		$this->assertStringContainsString( 'Still out of sync: broken', $this->getScriptOutput() );
+	}
+
+	/**
+	 * A count of failures is not something an operator can act on. Naming the pages is, and naming only
+	 * the first few keeps a wiki-wide failure from burying the summary under its own page ids.
+	 */
+	public function testTheFailingPagesAreNamedUpToAHandful(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four', 'Five', 'Six' );
+		$this->registerNamedGraphDatabasePlugins( [
+			'picky' => new SpyGraphDatabasePlugin( refusedPageIds: $pageIds ),
+		] );
+
+		$this->runRebuild( [ '--store=picky' ] );
+
+		$this->assertStringContainsString(
+			implode( ', ', array_slice( $pageIds, 0, 5 ) ),
+			$this->getScriptOutput()
+		);
+		$this->assertStringContainsString( 'and 1 more', $this->getScriptOutput() );
+	}
+
+	/**
+	 * @return int[]
+	 */
+	private function createSubjectPages( string ...$pageNames ): array {
+		$pageIds = [];
+
+		foreach ( $pageNames as $pageName ) {
+			$revision = $this->createPageWithSubjects( $pageName, TestSubject::build() );
+			$this->assertNotNull( $revision );
+			$pageIds[] = $revision->getPageId();
+		}
+
+		return $pageIds;
+	}
+
 	public function testAStoreThatCannotBeReachedExitsNonZero(): void {
 		$this->createPageWithSubjects( 'Page nobody projects', TestSubject::build() );
 		$this->registerNamedGraphDatabasePlugins( [ 'broken' => new ThrowingGraphDatabasePlugin() ] );

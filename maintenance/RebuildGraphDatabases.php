@@ -29,6 +29,16 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 
 	private const DEFAULT_BATCH_SIZE = 200;
 
+	/**
+	 * How many of a store's failing pages the report names before pointing at the log for the rest.
+	 */
+	private const REPORTED_FAILED_PAGES = 5;
+
+	/**
+	 * @var int[] The pages the store now being rebuilt could not reconcile
+	 */
+	private array $failedPageIds = [];
+
 	public function __construct() {
 		parent::__construct();
 
@@ -72,23 +82,28 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 			return true;
 		}
 
-		$storesInSync = 0;
+		$outOfSyncStores = [];
 
 		foreach ( $storeNames as $storeName ) {
-			if ( $this->rebuildStore( $coordinator, $storeName, $batchSize ) ) {
-				$storesInSync++;
+			if ( !$this->rebuildStore( $coordinator, $storeName, $batchSize ) ) {
+				$outOfSyncStores[] = $storeName;
 			}
 		}
 
 		$this->outputChanneled(
-			'Rebuild finished. ' . $storesInSync . ' of ' . count( $storeNames ) . ' stores are in sync.'
+			'Rebuild finished. ' . ( count( $storeNames ) - count( $outOfSyncStores ) ) . ' of '
+			. count( $storeNames ) . ' graph stores are in sync with the wiki.'
 		);
 
-		if ( $storesInSync < count( $storeNames ) ) {
-			$this->error( 'Not every page was reconciled. The failures are logged on the NeoWiki channel.' );
+		if ( $outOfSyncStores === [] ) {
+			return true;
 		}
 
-		return $storesInSync === count( $storeNames );
+		// Named rather than counted, because what an operator does next is per store: rebuild this one,
+		// resume that one. Why each is out of sync was reported as it happened.
+		$this->error( 'Still out of sync: ' . implode( ', ', $outOfSyncStores ) . '.' );
+
+		return false;
 	}
 
 	/**
@@ -114,26 +129,48 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	 */
 	private function rebuildStore( GraphRebuildCoordinator $coordinator, string $storeName, int $batchSize ): bool {
 		$this->outputChanneled( $storeName . ': starting' );
+		$this->failedPageIds = [];
 
 		try {
 			$run = $this->hasOption( 'resume' )
 				? $coordinator->resume( $storeName, $batchSize, $this )
 				: $coordinator->rebuild( $storeName, RebuildTrigger::Cli, $batchSize, $this );
 		} catch ( NothingToResumeException $e ) {
-			// Resuming every store passes over the ones already reconciled, since their last rebuild
-			// finished with nothing left. A store that has never been rebuilt, or whose last run left
-			// pages behind, also has nothing to continue but is not in sync. Asking for one store by name
-			// is a different thing again: the operator asked for something that could not be done.
-			$this->outputChanneled( $storeName . ': ' . $e->getMessage() );
-			return !$this->hasOption( 'store' ) && self::isReconciled( $e->latestRun );
+			return $this->reportNothingToResume( $storeName, $e );
 		} catch ( Exception $e ) {
-			$this->outputChanneled( $storeName . ': ' . $e->getMessage() );
+			$this->reportStoreFailure( $storeName, $e->getMessage() );
 			return false;
 		}
 
 		$this->reportRun( $run );
 
 		return self::isReconciled( $run );
+	}
+
+	/**
+	 * Resuming every store passes over the ones already reconciled, since their last rebuild finished
+	 * with nothing left. A store that has never been rebuilt, or whose last run left pages behind, also
+	 * has nothing to continue but is not in sync. Asking for one store by name is a different thing
+	 * again: the operator asked for something that could not be done.
+	 *
+	 * @return bool Whether the store is in sync with the wiki despite having nothing to resume
+	 */
+	private function reportNothingToResume( string $storeName, NothingToResumeException $e ): bool {
+		if ( !$this->hasOption( 'store' ) && self::isReconciled( $e->latestRun ) ) {
+			$this->outputChanneled( $storeName . ': ' . $e->getMessage() );
+			return true;
+		}
+
+		$this->reportStoreFailure( $storeName, $e->getMessage() );
+		return false;
+	}
+
+	/**
+	 * To stderr, so a scheduled rebuild's failure reaches whoever reads that rather than only the log
+	 * file its output went to.
+	 */
+	private function reportStoreFailure( string $storeName, string $reason ): void {
+		$this->error( $storeName . ': ' . $reason );
 	}
 
 	/**
@@ -149,17 +186,34 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 			. $run->failed . ' failed.'
 		);
 
+		if ( $this->failedPageIds !== [] ) {
+			$this->reportStoreFailure( $run->store, $this->describeFailedPages() );
+		}
+
 		if ( $run->status !== RebuildStatus::Failed ) {
 			return;
 		}
 
 		if ( $run->error !== null ) {
-			$this->outputChanneled( $run->store . ': ' . $run->error );
+			$this->reportStoreFailure( $run->store, $run->error );
 		}
 
 		$this->outputChanneled(
 			$run->store . ': re-run with --resume to continue from page ' . $run->cursor . '.'
 		);
+	}
+
+	/**
+	 * Names enough of the failing pages to see what they have in common, and points at the log for the
+	 * rest: a store rejecting the whole wiki must not bury the summary under its page ids.
+	 */
+	private function describeFailedPages(): string {
+		$named = array_slice( $this->failedPageIds, 0, self::REPORTED_FAILED_PAGES );
+		$rest = count( $this->failedPageIds ) - count( $named );
+
+		return 'failed on pages ' . implode( ', ', $named )
+			. ( $rest === 0 ? '' : ' and ' . $rest . ' more' )
+			. '. The NeoWiki log channel says why.';
 	}
 
 	/**
@@ -184,6 +238,10 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 		$batchSize = (int)$requested;
 
 		return $batchSize < 1 ? null : $batchSize;
+	}
+
+	public function pageFailed( int $pageId ): void {
+		$this->failedPageIds[] = $pageId;
 	}
 
 	public function afterPageBatch( RebuildRun $run, int $totalPages ): void {
