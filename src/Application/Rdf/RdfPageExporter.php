@@ -9,8 +9,8 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfSerializer;
 
 /**
- * Exports a single page as a self-contained RDF document. Returns null when the page has no NeoWiki
- * data to export (missing page or no Subject slot), so callers can map that to a 404.
+ * Exports a single page as a self-contained RDF document. Returns null when there is no page to export,
+ * so callers can map that to a 404.
  */
 readonly class RdfPageExporter {
 

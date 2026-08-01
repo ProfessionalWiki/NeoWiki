@@ -4,9 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Maintenance;
 
+use Exception;
 use Maintenance;
-use MediaWiki\MediaWikiServices;
-use MediaWiki\Storage\NameTableAccessException;
 use ProfessionalWiki\NeoWiki\Application\Rdf\PageProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
@@ -14,7 +13,6 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfStreamWriter;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../..';
 
@@ -27,7 +25,7 @@ class DumpRdf extends Maintenance {
 
 		$this->requireExtension( 'NeoWiki' );
 		$this->addDescription(
-			'Streams an RDF projection of every subject page to stdout as TriG, one named graph per '
+			'Streams an RDF projection of every page on the wiki to stdout as TriG, one named graph per '
 			. 'page. Progress is written to stderr so stdout stays a clean RDF document.'
 		);
 		$this->addOption(
@@ -55,62 +53,55 @@ class DumpRdf extends Maintenance {
 		$projector = $projection->projector;
 		$writer = $projection->serializer->newWriter( RdfFormat::TriG );
 
-		$pageIds = $this->getSubjectPageIds();
-		$this->error( 'Dumping RDF for ' . count( $pageIds ) . ' subject pages...' );
+		$this->error( 'Dumping RDF...' );
 
 		$dumped = 0;
+		$total = 0;
 
-		foreach ( $pageIds as $pageId ) {
+		foreach ( $extension->newPageIdsLookup()->getPageIds() as $pageId ) {
+			$total++;
+
 			if ( $this->dumpPage( $pageId, $loader, $projector, $writer ) ) {
 				$dumped++;
 			}
 		}
 
 		$this->output( $writer->finish() );
-		$this->error( "Dumped $dumped of " . count( $pageIds ) . ' pages.' );
+		$this->error( "Dumped $dumped of $total pages." );
 	}
 
+	/**
+	 * A page that cannot be loaded or projected is reported to stderr and skipped, as on the rebuild
+	 * path: one unreadable page out of a wiki must not truncate the dump into an invalid document.
+	 */
 	private function dumpPage(
 		int $pageId,
 		RdfPageLoader $loader,
 		PageProjector $projector,
 		RdfStreamWriter $writer
 	): bool {
-		$page = $loader->loadByPageId( new PageId( $pageId ) );
-
-		if ( $page === null ) {
+		try {
+			$page = $loader->loadByPageId( new PageId( $pageId ) );
+		} catch ( Exception $e ) {
+			$this->error( "Skipped page $pageId: " . $e->getMessage() );
 			return false;
 		}
 
-		$this->output( $writer->write( $projector->projectPage( $page ) ) );
-
-		return true;
-	}
-
-	/**
-	 * @return int[] Page IDs of every page whose latest revision carries the NeoWiki subject slot.
-	 */
-	private function getSubjectPageIds(): array {
-		$services = MediaWikiServices::getInstance();
-
-		try {
-			$roleId = $services->getSlotRoleStore()->getId( MediaWikiSubjectRepository::SLOT_NAME );
-		} catch ( NameTableAccessException ) {
-			// No page has ever stored a Subject, so the slot role was never registered. There is
-			// nothing to dump; emit an empty document instead of crashing.
-			return [];
+		if ( $page === null ) {
+			$this->error( "Skipped page $pageId: it no longer exists or its subject slot does not hold Subject data" );
+			return false;
 		}
 
-		$rows = $this->getReplicaDB()->newSelectQueryBuilder()
-			->select( 'page_id' )
-			->from( 'page' )
-			->join( 'slots', null, 'slot_revision_id = page_latest' )
-			->where( [ 'slot_role_id' => $roleId ] )
-			->orderBy( 'page_id' )
-			->caller( __METHOD__ )
-			->fetchFieldValues();
+		try {
+			$quads = $projector->projectPage( $page );
+		} catch ( Exception $e ) {
+			$this->error( "Skipped page $pageId: " . $e->getMessage() );
+			return false;
+		}
 
-		return array_map( 'intval', $rows );
+		$this->output( $writer->write( $quads ) );
+
+		return true;
 	}
 
 }

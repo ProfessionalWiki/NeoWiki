@@ -19,7 +19,10 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepos
  * The revision slot is the source of truth (as in OnRevisionCreatedHandler and the graph rebuild),
  * so the export reflects the stored data rather than the secondary graph projection.
  *
- * Returns null when the page does not exist or its current revision carries no Subject slot.
+ * Every page is exported, with the Subjects it holds and with none when it holds none, which keeps the
+ * RDF surfaces describing the same pages as the graph databases. Returns null when the page does not
+ * exist, and for the one page state the write path also refuses to touch: a subject slot holding content
+ * that is not Subject data, which the export must not describe as a page without Subjects.
  */
 class RdfPageLoader {
 
@@ -50,32 +53,27 @@ class RdfPageLoader {
 	}
 
 	private function buildPage( RevisionRecord $revision ): ?Page {
-		$content = $this->getSubjectContent( $revision );
+		$subjects = $this->getPageSubjects( $revision );
 
-		if ( $content === null ) {
+		if ( $subjects === null ) {
 			return null;
 		}
-
-		$subjects = $content->getPageSubjects();
 
 		return new Page(
 			id: new PageId( $revision->getPageId() ),
 			properties: $this->pagePropertiesBuilder->getPagePropertiesFor( $revision, $revision->getUser() ),
-			subjects: new PageSubjects(
-				mainSubject: $subjects->getMainSubject(),
-				childSubjects: $subjects->getChildSubjects()
-			)
+			subjects: $subjects
 		);
 	}
 
-	private function getSubjectContent( RevisionRecord $revision ): ?SubjectContent {
+	private function getPageSubjects( RevisionRecord $revision ): ?PageSubjects {
 		if ( !$revision->hasSlot( MediaWikiSubjectRepository::SLOT_NAME ) ) {
-			return null;
+			return PageSubjects::newEmpty();
 		}
 
 		$content = $revision->getSlots()->getContent( MediaWikiSubjectRepository::SLOT_NAME );
 
-		return $content instanceof SubjectContent ? $content : null;
+		return $content instanceof SubjectContent ? $content->getPageSubjects() : null;
 	}
 
 }

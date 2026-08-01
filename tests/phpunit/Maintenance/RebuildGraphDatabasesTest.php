@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Maintenance;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildGraphDatabases;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -36,27 +37,9 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		NeoWikiExtension::resetInstance();
 	}
 
-	public function testRebuildSucceedsOnAWikiThatHasNeverStoredASubject(): void {
-		// A wiki with no Subjects has never registered the 'neo' slot role, so the role-id lookup
-		// throws NameTableAccessException. Forcing that state (empty table + a store without a warmed
-		// cache) proves the rebuild treats it as an empty run instead of crashing.
-		$this->truncateTable( 'slot_roles' );
-		$this->getServiceContainer()->resetServiceForTesting( 'SlotRoleStore' );
-
-		$spy = new SpyGraphDatabasePlugin();
-		$this->registerGraphDatabasePlugins( $spy );
-
-		$this->runRebuild();
-
-		$this->assertSame( [], $spy->savedPages, 'a wiki with no Subjects has nothing to project' );
-	}
-
-	public function testRebuildRemovesADeletedSubjectPageFromTheGraph(): void {
-		$this->createPageWithSubjects( 'Surviving page before', TestSubject::build() );
-		$deleted = $this->createPageWithSubjects( 'Deleted during outage', TestSubject::build() );
-		$this->createPageWithSubjects( 'Surviving page after', TestSubject::build() );
-
-		$this->deletePageByName( 'Deleted during outage' );
+	public function testRebuildProjectsPagesWithAndWithoutSubjects(): void {
+		$subjectPageId = $this->createPageWithSubjects( 'Page with subjects', TestSubject::build() )->getPageId();
+		$plainPageId = $this->insertPage( 'Plain page', 'No subjects here.' )['id'];
 
 		$spy = new SpyGraphDatabasePlugin();
 		$this->registerGraphDatabasePlugins( $spy );
@@ -64,9 +47,30 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$this->runRebuild();
 
 		$this->assertSame(
-			[ $deleted->getPageId() ],
+			[ $subjectPageId, $plainPageId ],
+			$this->savedPageIdsAfter( $spy, $subjectPageId - 1 ),
+			'the rebuild should project every page, whether or not it holds Subjects'
+		);
+	}
+
+	public function testRebuildRemovesDeletedPagesFromTheGraph(): void {
+		$this->createPageWithSubjects( 'Surviving page before', TestSubject::build() );
+		$deletedSubjectPage = $this->createPageWithSubjects( 'Deleted during outage', TestSubject::build() );
+		$deletedPlainPage = $this->editPage( 'Deleted plain page', 'No subjects here.' )->getNewRevision();
+		$this->createPageWithSubjects( 'Surviving page after', TestSubject::build() );
+
+		$this->deletePageByName( 'Deleted during outage' );
+		$this->deletePageByName( 'Deleted plain page' );
+
+		$spy = new SpyGraphDatabasePlugin();
+		$this->registerGraphDatabasePlugins( $spy );
+
+		$this->runRebuild();
+
+		$this->assertSame(
+			[ $deletedSubjectPage->getPageId(), $deletedPlainPage->getPageId() ],
 			array_map( static fn ( PageId $pageId ) => $pageId->id, $spy->deletedPageIds ),
-			'the rebuild should remove exactly the page MediaWiki no longer has'
+			'the rebuild should remove exactly the pages MediaWiki no longer has'
 		);
 	}
 
@@ -107,6 +111,18 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 			// Must not throw despite there being no store to initialize.
 			$extension->getGraphDatabasePlugin()->initialize();
 		} );
+	}
+
+	/**
+	 * The rebuild projects every page on the wiki, so a test asserting a full list has to bound it: this
+	 * drops the pages that exist before the ones the test creates, such as its Schema page.
+	 *
+	 * @return int[]
+	 */
+	private function savedPageIdsAfter( SpyGraphDatabasePlugin $spy, int $firstPageId ): array {
+		$pageIds = array_map( static fn ( Page $page ): int => $page->getId()->id, $spy->savedPages );
+
+		return array_values( array_filter( $pageIds, static fn ( int $pageId ): bool => $pageId > $firstPageId ) );
 	}
 
 	private function runRebuild(): void {

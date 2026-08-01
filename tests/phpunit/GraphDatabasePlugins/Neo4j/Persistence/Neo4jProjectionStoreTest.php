@@ -50,10 +50,9 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	private const WIKI_ID = 'my_wiki';
 
 	public function setUp(): void {
+		// No Schema pages: these tests drive the store directly, with the Schemas their subjects reference
+		// injected through an InMemorySchemaLookup, and assert over a graph holding only what they write.
 		$this->setUpNeo4j();
-		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
-		$this->createSchema( self::SCHEMA_ID_A );
-		$this->createSchema( self::SCHEMA_ID_Z );
 	}
 
 	protected function newProjectionStore(): GraphDatabasePlugin {

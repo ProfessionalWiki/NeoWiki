@@ -31,23 +31,29 @@ class DumpRdfTest extends MaintenanceBaseTestCase {
 		$this->maintenance->execute();
 	}
 
-	public function testEmitsAnEmptyDocumentWhenNoSubjectSlotRoleExists(): void {
-		// A wiki that has never stored a Subject has no 'neowiki-subjects' slot role, so the role-id
-		// lookup throws NameTableAccessException. Forcing that state (empty table + a store without a
-		// warmed cache) proves the dump degrades to an empty document instead of crashing.
-		$this->truncateTable( 'slot_roles' );
-		$this->getServiceContainer()->resetServiceForTesting( 'SlotRoleStore' );
+	public function testEmitsAnEmptyDocumentOnAWikiWithoutPages(): void {
+		$this->truncateTable( 'page' );
 
+		// The document is empty: no page named-graph block, which a real dump would open with `{`.
+		$this->assertStringNotContainsString( '{', $this->runDump() );
+	}
+
+	public function testDumpsPageMetadataOfPagesWithoutSubjects(): void {
+		$this->insertPage( 'DumpRdfTest plain page', 'No subjects here.' );
+
+		$this->assertStringContainsString( 'DumpRdfTest plain page', $this->runDump() );
+	}
+
+	private function runDump(): string {
 		ob_start();
+
 		try {
 			$this->maintenance->execute();
 		} finally {
 			$output = ob_get_clean();
 		}
 
-		// Reaching this point means execute() did not throw on the missing slot role (the N1 fix).
-		// The document is empty: no page named-graph block (which a real dump would open with `{`).
-		$this->assertStringNotContainsString( '{', $output );
+		return (string)$output;
 	}
 
 }

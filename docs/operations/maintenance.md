@@ -17,8 +17,8 @@ From the MediaWiki root:
 php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
 
-It re-saves every Subject from each page's latest revision into every backend, and removes the pages MediaWiki no
-longer has. Run it to:
+It re-projects every page on the wiki from its latest revision into every backend, and removes the pages MediaWiki
+no longer has. Run it to:
 
 - Recover after a backend wipe or restore.
 - Fix any drift between a backend's copy and the canonical revision slots.

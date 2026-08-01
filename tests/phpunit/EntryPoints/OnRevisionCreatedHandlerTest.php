@@ -4,12 +4,17 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
+use MediaWiki\Content\Content;
+use MediaWiki\Content\FallbackContent;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionSlots;
 use MediaWiki\User\UserIdentityValue;
+use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
+use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderContext;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
@@ -18,6 +23,8 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
 use Psr\Log\NullLogger;
+use Psr\Log\Test\TestLogger;
+use RuntimeException;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler
@@ -26,32 +33,76 @@ use Psr\Log\NullLogger;
 class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 
 	private SpyGraphDatabasePlugin $graphStore;
+	private TestLogger $logger;
 
 	protected function setUp(): void {
 		parent::setUp();
 		$this->setUpNeo4j();
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
 		$this->graphStore = new SpyGraphDatabasePlugin();
+		$this->logger = new TestLogger();
 	}
 
-	public function testReturnsTrueAndSavesPageWhenSubjectSlotPresent(): void {
+	public function testSavesPageWithSubjects(): void {
 		$revision = $this->createPageWithSubjects( 'Page with subject', TestSubject::build() );
 
-		$wrote = $this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		$outcome = $this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
 
-		$this->assertTrue( $wrote );
+		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 		$this->assertCount( 1, $this->graphStore->savedPages );
 	}
 
-	public function testReturnsFalseAndDoesNotSaveWhenSubjectSlotMissing(): void {
-		$pageId = $this->insertPage( 'Plain page', 'Just wikitext, no subjects.' )['id'];
-		$revision = $this->getServiceContainer()->getRevisionStore()->getRevisionByPageId( $pageId );
-		$this->assertInstanceOf( RevisionRecord::class, $revision );
+	public function testSavesPageWithoutSubjects(): void {
+		$revision = $this->newPlainPageRevision( 'Plain page' );
 
-		$wrote = $this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		$outcome = $this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
 
-		$this->assertFalse( $wrote );
+		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
+		$this->assertCount( 1, $this->graphStore->savedPages );
+		$this->assertFalse( $this->graphStore->savedPages[0]->getSubjects()->hasSubjects() );
+	}
+
+	public function testSavesPageWhoseSubjectsWereAllDeleted(): void {
+		$revision = $this->createPageWithSubjects( 'Page that lost its subjects' );
+
+		$outcome = $this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+
+		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
+		$this->assertCount( 1, $this->graphStore->savedPages );
+		$this->assertSame( [], $this->graphStore->deletedPageIds );
+	}
+
+	public function testWritesNothingWhenThePagePropertiesCannotBeBuilt(): void {
+		// Building the properties parses the page and runs every provider, which throws for a page
+		// MediaWiki can no longer handle or a provider that fails. That must not abort the triggering edit.
+		$registry = new PagePropertyProviderRegistry();
+		$registry->addProvider( new class implements PagePropertyProvider {
+			public function getProperties( PagePropertyProviderContext $context ): array {
+				throw new RuntimeException( 'unknown content model' );
+			}
+		} );
+
+		$revision = $this->newPlainPageRevision( 'Page with unbuildable properties' );
+
+		$outcome = $this->newHandlerWith( $this->graphStore, $registry )
+			->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+
+		$this->assertSame( PageRefreshOutcome::SkippedUnreadablePageProperties, $outcome );
 		$this->assertSame( [], $this->graphStore->savedPages );
+		$this->assertTrue( $this->logger->hasWarningRecords(), 'the skipped page should be logged' );
+	}
+
+	public function testWritesNothingWhenTheSubjectSlotDoesNotHoldSubjectContent(): void {
+		// An unregistered content model hands back FallbackContent rather than SubjectContent. Projecting
+		// the page as holding no Subjects would wipe the ones it does hold, so nothing is written.
+		$revision = $this->newRevisionWithSlotContent( new FallbackContent( '{"subjects":{}}', 'unregistered-model' ) );
+
+		$outcome = $this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+
+		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
+		$this->assertSame( [], $this->graphStore->savedPages );
+		$this->assertSame( [], $this->graphStore->deletedPageIds );
+		$this->assertTrue( $this->logger->hasWarningRecords(), 'the skipped page should be logged' );
 	}
 
 	public function testPropagatesReadFailureWhenSubjectSlotIsPresentButUnreadable(): void {
@@ -68,14 +119,6 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
 	}
 
-	public function testOnPageUndeleteReprojectsRestoredPage(): void {
-		$revision = $this->createPageWithSubjects( 'Restored page', TestSubject::build() );
-
-		$this->newHandler()->onPageUndelete( $revision );
-
-		$this->assertCount( 1, $this->graphStore->savedPages );
-	}
-
 	public function testUnreachableBackendDoesNotHardFailRevisionHandling(): void {
 		$revision = $this->createPageWithSubjects( 'Page with a failing backend', TestSubject::build() );
 
@@ -85,16 +128,43 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 			new FailureIsolatingGraphDatabasePlugin( new ThrowingGraphDatabasePlugin(), new NullLogger() )
 		);
 
-		$wrote = $handler->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		$outcome = $handler->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
 
-		$this->assertTrue( $wrote, 'a projection write to an unreachable backend must not propagate out of the handler' );
+		$this->assertSame(
+			PageRefreshOutcome::Refreshed,
+			$outcome,
+			'a projection write to an unreachable backend must not propagate out of the handler'
+		);
+	}
+
+	private function newRevisionWithSlotContent( Content $content ): RevisionRecord {
+		$slots = $this->createStub( RevisionSlots::class );
+		$slots->method( 'getContent' )->willReturn( $content );
+
+		$revision = $this->createStub( RevisionRecord::class );
+		$revision->method( 'getPageId' )->willReturn( 42 );
+		$revision->method( 'hasSlot' )->willReturn( true );
+		$revision->method( 'getSlots' )->willReturn( $slots );
+
+		return $revision;
+	}
+
+	private function newPlainPageRevision( string $pageName ): RevisionRecord {
+		$pageId = $this->insertPage( $pageName, 'Just wikitext, no subjects.' )['id'];
+		$revision = $this->getServiceContainer()->getRevisionStore()->getRevisionByPageId( $pageId );
+		$this->assertInstanceOf( RevisionRecord::class, $revision );
+
+		return $revision;
 	}
 
 	private function newHandler(): OnRevisionCreatedHandler {
 		return $this->newHandlerWith( $this->graphStore );
 	}
 
-	private function newHandlerWith( GraphDatabasePlugin $graphStore ): OnRevisionCreatedHandler {
+	private function newHandlerWith(
+		GraphDatabasePlugin $graphStore,
+		?PagePropertyProviderRegistry $providerRegistry = null
+	): OnRevisionCreatedHandler {
 		$services = $this->getServiceContainer();
 
 		return new OnRevisionCreatedHandler(
@@ -103,8 +173,9 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 				revisionStore: $services->getRevisionStore(),
 				contentHandlerFactory: $services->getContentHandlerFactory(),
 				titleFormatter: $services->getTitleFormatter(),
-				providerRegistry: new PagePropertyProviderRegistry(),
-			)
+				providerRegistry: $providerRegistry ?? new PagePropertyProviderRegistry(),
+			),
+			$this->logger
 		);
 	}
 

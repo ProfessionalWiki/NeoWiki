@@ -44,9 +44,9 @@ class ExportPageRdfApi extends SimpleHandler {
 
 		$page = new PageId( $pageId );
 
-		// Denial reuses the exact no-data response so unreadable pages are indistinguishable
-		// from pages without NeoWiki data. The gate lives here rather than in RdfPageLoader
-		// because maintenance/DumpRdf.php shares the loader and must stay unfiltered.
+		// Denial reuses the exact no-data response so unreadable pages are indistinguishable from pages
+		// that do not exist. The gate lives here rather than in RdfPageLoader because
+		// maintenance/DumpRdf.php shares the loader and must stay unfiltered.
 		if ( !$extension->newPageReadAuthorizer( $this->getAuthority() )->authorizeReadByPageId( $page ) ) {
 			return $this->noDataResponse( $pageId );
 		}

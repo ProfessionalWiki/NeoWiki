@@ -19,7 +19,7 @@ use RuntimeException;
  * falsely report every page as rebuilt.
  *
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension
- * @covers \ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder
+ * @covers \ProfessionalWiki\NeoWiki\Application\PageRebuilder
  * @group Database
  */
 class RebuildPathPropagatesProjectionFailureTest extends NeoWikiIntegrationTestCase {
@@ -41,7 +41,7 @@ class RebuildPathPropagatesProjectionFailureTest extends NeoWikiIntegrationTestC
 		$this->createPageWithSubjects( 'Rebuild failure page', TestSubject::build() );
 
 		$this->registerGraphDatabasePlugins( new ThrowingGraphDatabasePlugin() );
-		$rebuilder = NeoWikiExtension::getInstance()->newSubjectPageRebuilder();
+		$rebuilder = NeoWikiExtension::getInstance()->newPageRebuilder();
 
 		$this->expectException( RuntimeException::class );
 		$this->expectExceptionMessage( ThrowingGraphDatabasePlugin::FAILURE_MESSAGE );

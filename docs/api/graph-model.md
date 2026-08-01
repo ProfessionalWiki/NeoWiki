@@ -21,7 +21,9 @@ Two node types and two relationship categories:
 
 ## Page Nodes
 
-Every page that contains structured data has a `:Page` node.
+Every page is projected as a `:Page` node when it is saved and by
+[`RebuildGraphDatabases.php`](../operations/maintenance.md#rebuilding-the-graph), whether or not it holds Subjects, so
+after a rebuild every page on the wiki has one.
 
 A shared graph can hold pages from multiple wikis (a wiki farm), and MediaWiki page ids are unique only within a wiki,
 so a page is identified by the `(wiki_id, id)` pair, not `id` alone ([ADR 22](../adr/022-multi-wiki-node-identity.md)).

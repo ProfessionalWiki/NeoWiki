@@ -16,6 +16,7 @@ use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -224,6 +225,23 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 			static function ( NeoWikiRegistrar $registrar ) use ( $plugins ): void {
 				foreach ( $plugins as $plugin ) {
 					$registrar->addGraphDatabasePlugin( $plugin );
+				}
+			}
+		);
+
+		NeoWikiExtension::resetInstance();
+	}
+
+	/**
+	 * Registers extra Page Property Providers through the NeoWikiRegistration hook and rebuilds the
+	 * singleton, so their properties reach the page nodes the write paths project.
+	 */
+	protected function registerPagePropertyProviders( PagePropertyProvider ...$providers ): void {
+		$this->setTemporaryHook(
+			'NeoWikiRegistration',
+			static function ( NeoWikiRegistrar $registrar ) use ( $providers ): void {
+				foreach ( $providers as $provider ) {
+					$registrar->addPagePropertyProvider( $provider );
 				}
 			}
 		);

@@ -5,17 +5,13 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Maintenance;
 
 use Exception;
-use LogicException;
 use Maintenance;
-use MediaWiki\MediaWikiServices;
-use MediaWiki\Storage\NameTableAccessException;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
-use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../..';
 
@@ -28,29 +24,31 @@ class RebuildGraphDatabases extends Maintenance {
 
 		$this->requireExtension( 'NeoWiki' );
 		$this->addDescription(
-			'Rebuilds the graph databases by re-saving every Subject from the latest revision of its page. ' .
-			'Useful after a graph database has been wiped or has otherwise drifted from the MediaWiki source of truth.'
+			'Rebuilds the graph databases by re-projecting every page on the wiki from its latest ' .
+			'revision. Useful after a graph database has been wiped or has otherwise drifted from the ' .
+			'MediaWiki source of truth.'
 		);
 	}
 
 	public function execute(): void {
 		$this->initializeGraphDatabases();
 
-		$pageIds = $this->getSubjectPageIds();
+		$this->outputChanneled( 'Rebuilding graph databases...' );
 
-		$this->outputChanneled( 'Rebuilding graph databases for ' . count( $pageIds ) . ' subject pages...' );
-
-		$rebuilder = NeoWikiExtension::getInstance()->newSubjectPageRebuilder();
+		$rebuilder = NeoWikiExtension::getInstance()->newPageRebuilder();
 
 		$rebuilt = 0;
+		$total = 0;
 
-		foreach ( $pageIds as $pageId ) {
+		foreach ( NeoWikiExtension::getInstance()->newPageIdsLookup()->getPageIds() as $pageId ) {
+			$total++;
+
 			if ( $this->rebuildPage( $pageId, $rebuilder ) ) {
 				$rebuilt++;
 			}
 		}
 
-		$this->outputChanneled( "Rebuild finished. Rebuilt $rebuilt of " . count( $pageIds ) . ' pages.' );
+		$this->outputChanneled( "Rebuild finished. Rebuilt $rebuilt of $total pages." );
 
 		$this->removeDeletedPages();
 	}
@@ -73,25 +71,24 @@ class RebuildGraphDatabases extends Maintenance {
 	 * already absent is a no-op, so this is safe to repeat.
 	 */
 	private function removeDeletedPages(): void {
-		$pageIds = NeoWikiExtension::getInstance()->newDeletedSubjectPageIdsLookup()->getDeletedSubjectPageIds();
-
-		if ( $pageIds === [] ) {
-			return;
-		}
-
-		$this->outputChanneled( 'Removing ' . count( $pageIds ) . ' deleted pages from the graph databases...' );
-
 		$graphDatabasePlugin = NeoWikiExtension::getInstance()->getGraphDatabasePlugin();
 
 		$removed = 0;
+		$total = 0;
 
-		foreach ( $pageIds as $pageId ) {
+		foreach ( NeoWikiExtension::getInstance()->newDeletedPageIdsLookup()->getDeletedPageIds() as $pageId ) {
+			$total++;
+
 			if ( $this->removePage( $pageId, $graphDatabasePlugin ) ) {
 				$removed++;
 			}
 		}
 
-		$this->outputChanneled( "Removed $removed of " . count( $pageIds ) . ' deleted pages.' );
+		if ( $total === 0 ) {
+			return;
+		}
+
+		$this->outputChanneled( "Removed $removed of $total deleted pages from the graph databases." );
 	}
 
 	private function removePage( int $pageId, GraphDatabasePlugin $graphDatabasePlugin ): bool {
@@ -106,7 +103,7 @@ class RebuildGraphDatabases extends Maintenance {
 		return true;
 	}
 
-	private function rebuildPage( int $pageId, SubjectPageRebuilder $rebuilder ): bool {
+	private function rebuildPage( int $pageId, PageRebuilder $rebuilder ): bool {
 		$title = Title::newFromID( $pageId );
 
 		if ( $title === null ) {
@@ -129,42 +126,8 @@ class RebuildGraphDatabases extends Maintenance {
 			return true;
 		}
 
-		$this->outputChanneled( "Skipped $name: " . self::skipReason( $outcome ) );
+		$this->outputChanneled( "Skipped $name: " . $outcome->skipReason() );
 		return false;
-	}
-
-	private static function skipReason( PageRefreshOutcome $outcome ): string {
-		return match ( $outcome ) {
-			PageRefreshOutcome::SkippedMissingRevision => 'no current revision',
-			PageRefreshOutcome::SkippedMissingSubjectSlot => 'no subject slot',
-			PageRefreshOutcome::Refreshed => throw new LogicException( 'Refreshed is not a skip reason' ),
-		};
-	}
-
-	/**
-	 * @return int[] Page IDs of every page whose latest revision carries the NeoWiki subject slot.
-	 */
-	private function getSubjectPageIds(): array {
-		$services = MediaWikiServices::getInstance();
-
-		try {
-			$roleId = $services->getSlotRoleStore()->getId( MediaWikiSubjectRepository::SLOT_NAME );
-		} catch ( NameTableAccessException ) {
-			// No page has ever stored a Subject, so the slot role was never registered. There is
-			// nothing to rebuild; report an empty run instead of crashing.
-			return [];
-		}
-
-		$rows = $this->getReplicaDB()->newSelectQueryBuilder()
-			->select( 'page_id' )
-			->from( 'page' )
-			->join( 'slots', null, 'slot_revision_id = page_latest' )
-			->where( [ 'slot_role_id' => $roleId ] )
-			->orderBy( 'page_id' )
-			->caller( __METHOD__ )
-			->fetchFieldValues();
-
-		return array_map( 'intval', $rows );
 	}
 
 }

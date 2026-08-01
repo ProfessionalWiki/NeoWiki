@@ -9,7 +9,7 @@ use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use Wikimedia\Rdbms\IDBAccessObject;
 
-class SubjectPageRebuilder {
+class PageRebuilder {
 
 	public function __construct(
 		private readonly OnRevisionCreatedHandler $handler,
@@ -40,9 +40,7 @@ class SubjectPageRebuilder {
 			return PageRefreshOutcome::SkippedMissingRevision;
 		}
 
-		return $this->handler->onRevisionCreated( $revision, $revision->getUser() )
-			? PageRefreshOutcome::Refreshed
-			: PageRefreshOutcome::SkippedMissingSubjectSlot;
+		return $this->handler->onRevisionCreated( $revision, $revision->getUser() );
 	}
 
 }

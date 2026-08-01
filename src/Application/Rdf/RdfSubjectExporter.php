@@ -15,8 +15,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
  * hosting page's per-projection named graph (the same graph the Subject's triples occupy in the page
  * export and the store sync). Returns null — which the REST handler maps to one indistinguishable
  * 404 — for every reason the Subject cannot be served: it is not in the graph, its hosting page is
- * gone or carries no Subject slot, the current revision no longer holds it (a graph lagging the slot),
- * or the hosting page is not readable.
+ * gone, the current revision no longer holds it (a graph lagging the slot), or the hosting page is not
+ * readable.
  *
  * The read gate lives here rather than in the REST handler, where the page export keeps it (its page
  * id is a path parameter known up front): a Subject's hosting page is only known after the graph

@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
+use MediaWiki\Title\Title;
 use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -156,22 +157,31 @@ JSON
 		$this->assertSame( 404, $response->getStatusCode() );
 	}
 
-	public function testReturns404ForPageWithoutSubjectSlot(): void {
+	public function testExportsThePageMetadataOfAPageWithoutSubjects(): void {
 		$plainPage = $this->insertPage( 'ExportPageRdfApiTest_Plain', 'Just wikitext, no NeoWiki subjects.' );
 
 		$response = $this->export( pageId: $plainPage['id'] );
 
-		$this->assertSame( 404, $response->getStatusCode() );
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertStringContainsString(
+			'neo:pageName "ExportPageRdfApiTest Plain"',
+			$response->getBody()->getContents()
+		);
 	}
 
-	public function testAbsentAndDeniedPagesProduceByteIdenticalResponses(): void {
-		$plainPage = $this->insertPage( 'ExportPageRdfApiTest_PlainForByteIdentity', 'Just wikitext, no NeoWiki subjects.' );
+	public function testDeniedPageIsByteIdenticalToAnAbsentOne(): void {
+		// A page the caller may not read must be indistinguishable from a page that does not exist, so the
+		// endpoint cannot be used to probe which pages a wiki has. Both responses name the page id they
+		// were asked for, so the comparison uses one id: the existing page, denied, against the same id
+		// once it is not there.
+		$deniedResponse = $this->export( authority: $this->authorityWithGlobalReadButNoPageRead() );
 
-		$absentResponse = $this->export( pageId: $plainPage['id'] );
-		$deniedResponse = $this->export(
-			pageId: $plainPage['id'],
-			authority: $this->authorityWithGlobalReadButNoPageRead()
+		$this->deletePage(
+			$this->getServiceContainer()->getWikiPageFactory()->newFromID( $this->pageId ),
+			'making the page absent'
 		);
+
+		$absentResponse = $this->export();
 
 		$this->assertSame( $absentResponse->getStatusCode(), $deniedResponse->getStatusCode() );
 		$this->assertSame(
@@ -188,7 +198,7 @@ JSON
 		);
 	}
 
-	public function testUnreadablePageIsIndistinguishableFromAPageWithoutData(): void {
+	public function testUnreadablePageIsIndistinguishableFromAnAbsentPage(): void {
 		$response = $this->export( authority: $this->authorityWithGlobalReadButNoPageRead() );
 
 		$this->assertSame( 404, $response->getStatusCode() );
