@@ -111,11 +111,12 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 				? $coordinator->resume( $storeName, $this->getRebuildBatchSize(), $this )
 				: $coordinator->rebuild( $storeName, RebuildTrigger::Cli, $this->getRebuildBatchSize(), $this );
 		} catch ( NothingToResumeException $e ) {
-			// Resuming every store passes over the ones that have nothing to continue, since their last
-			// rebuild finished. Asking for one store by name and finding nothing to resume is a different
-			// thing: the operator asked for something that could not be done.
+			// Resuming every store passes over the ones already reconciled, since their last rebuild
+			// finished with nothing left. A store that has never been rebuilt, or whose last run left
+			// pages behind, also has nothing to continue but is not in sync. Asking for one store by name
+			// is a different thing again: the operator asked for something that could not be done.
 			$this->outputChanneled( $storeName . ': ' . $e->getMessage() );
-			return !$this->hasOption( 'store' );
+			return !$this->hasOption( 'store' ) && self::isReconciled( $e->latestRun );
 		} catch ( Exception $e ) {
 			$this->outputChanneled( $storeName . ': ' . $e->getMessage() );
 			return false;
@@ -123,7 +124,14 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 
 		$this->reportRun( $run );
 
-		return $run->status === RebuildStatus::Succeeded && $run->failed === 0;
+		return self::isReconciled( $run );
+	}
+
+	/**
+	 * A store is in sync with the wiki only when a rebuild of it both finished and reconciled every page.
+	 */
+	private static function isReconciled( ?RebuildRun $run ): bool {
+		return $run !== null && $run->status === RebuildStatus::Succeeded && $run->failed === 0;
 	}
 
 	private function reportRun( RebuildRun $run ): void {
