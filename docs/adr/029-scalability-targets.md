@@ -9,9 +9,7 @@ Status: Draft
 To make good design and implementation decisions, we need to know how far NeoWiki should scale, so we avoid both
 degraded performance at scale and accidental complexity via unnecessary optimization.
 
-For grounding, informed estimates of what real deployments look like. Only collection size is surveyed (~75% of
-GLAM institutions hold under 100 thousand objects, ~17% up to 1 million, ~7% more — ICOM, n=1,132; enterprise wikis
-run one to two orders smaller); the rest extrapolates from partner soundings and modelling practice:
+Informed estimates of what real deployments look like:
 
 | Metric                 | 80% of wikis stay under | 99% of wikis stay under |
 |------------------------|-------------------------|-------------------------|
@@ -20,7 +18,7 @@ run one to two orders smaller); the rest extrapolates from partner soundings and
 | Subjects per Page      | 10                      | 50                      |
 | Statements per Subject | 15                      | 50                      |
 
-The Great tier below matches the 99% column by design.
+The Great tier below matches the 99% column.
 
 ## Decision
 
