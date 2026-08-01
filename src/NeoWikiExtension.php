@@ -187,7 +187,7 @@ class NeoWikiExtension {
 	private CompositeGraphDatabasePlugin $isolatingGraphDatabasePlugin;
 	private GraphDatabasePluginRegistry $graphDatabasePluginRegistry;
 	private ?Neo4jPlugin $neo4jPlugin = null;
-	/** @var SparqlPlugin[]|null */
+	/** @var array<string, SparqlPlugin>|null Keys are store names */
 	private ?array $sparqlPlugins = null;
 	private ClientInterface $neo4jClient;
 	private ClientInterface $readOnlyNeo4jClient;
@@ -650,25 +650,29 @@ class NeoWikiExtension {
 			$plugins[Neo4jPlugin::STORE_NAME] = $neo4jPlugin->getGraphDatabasePlugin();
 		}
 
-		foreach ( $this->getSparqlPlugins() as $sparqlPlugin ) {
-			$plugins[$sparqlPlugin->getStoreName()] = $sparqlPlugin->getGraphDatabasePlugin();
+		foreach ( $this->getSparqlPlugins() as $storeName => $sparqlPlugin ) {
+			$plugins[$storeName] = $sparqlPlugin->getGraphDatabasePlugin();
 		}
 
 		return $plugins;
 	}
 
 	/**
-	 * One SPARQL plugin per configured store, cached like the Neo4j plugin. Construction is I/O-free
-	 * (no HTTP, no projection resolution), so building these outside the failure isolation is safe.
+	 * One SPARQL plugin per configured store, under the name that store is addressed by, and cached like
+	 * the Neo4j plugin. Construction is I/O-free (no HTTP, no projection resolution), so building these
+	 * outside the failure isolation is safe.
 	 *
-	 * @return SparqlPlugin[]
+	 * @return array<string, SparqlPlugin> Keys are store names, in configuration order
 	 */
 	private function getSparqlPlugins(): array {
 		if ( $this->sparqlPlugins === null ) {
-			$this->sparqlPlugins = array_map(
-				fn ( SparqlStoreConfig $store ): SparqlPlugin => $this->buildSparqlPlugin( $store ),
-				$this->config->sparqlStores
-			);
+			$plugins = [];
+
+			foreach ( $this->config->sparqlStores as $store ) {
+				$plugins[$store->name] = $this->buildSparqlPlugin( $store );
+			}
+
+			$this->sparqlPlugins = $plugins;
 		}
 
 		return $this->sparqlPlugins;
@@ -679,7 +683,7 @@ class NeoWikiExtension {
 	 * (parser function, Lua, REST) target this one store; multi-store query addressing is a follow-up.
 	 */
 	public function getFirstSparqlPlugin(): ?SparqlPlugin {
-		return $this->getSparqlPlugins()[0] ?? null;
+		return array_values( $this->getSparqlPlugins() )[0] ?? null;
 	}
 
 	// Guard for surfaces whose registration is already gated on a configured store, so callers get a
@@ -973,13 +977,15 @@ class NeoWikiExtension {
 	}
 
 	public function newGraphRebuildCoordinator(): GraphRebuildCoordinator {
+		$runs = $this->newRebuildRunRepository();
+
 		return new GraphRebuildCoordinator(
 			stores: $this->getNamedGraphDatabasePlugins(),
-			runs: $this->newRebuildRunRepository(),
+			runs: $runs,
 			executor: new GraphRebuildExecutor(
 				subjectPageIds: $this->newSubjectPageIdsLookup(),
 				deletedSubjectPageIds: $this->newDeletedSubjectPageIdsLookup(),
-				runs: $this->newRebuildRunRepository(),
+				runs: $runs,
 				titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 				logger: LoggerFactory::getInstance( 'NeoWiki' ),
 			),
@@ -994,14 +1000,14 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newSubjectPageIdsLookup(): SubjectPageIdsLookup {
+	private function newSubjectPageIdsLookup(): SubjectPageIdsLookup {
 		return new DatabaseSubjectPageIdsLookup(
 			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
 			MediaWikiServices::getInstance()->getSlotRoleStore()
 		);
 	}
 
-	public function newDeletedSubjectPageIdsLookup(): DeletedSubjectPageIdsLookup {
+	private function newDeletedSubjectPageIdsLookup(): DeletedSubjectPageIdsLookup {
 		return new DatabaseDeletedSubjectPageIdsLookup(
 			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
 			MediaWikiServices::getInstance()->getSlotRoleStore()
