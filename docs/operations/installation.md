@@ -231,11 +231,17 @@ $wgNeoWikiSparqlStores = [
 		// Mapping page title without the prefix ('EDM' for Mapping:EDM). As with any page title,
 		// only the first letter is case-insensitive.
 		'projection' => 'native',
+		// Optional: what to call this store when rebuilding it. Defaults to the projection.
+		'name' => 'native',
 	],
 ];
 ```
 
 A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
+
+Each store's `name` identifies it when [rebuilding one store](maintenance.md#rebuilding-one-store), so no two entries
+may share one. Since the name defaults to the projection, two entries holding the same projection — mirroring it to a
+second endpoint, say — each need an explicit `name`. An entry repeating a name already taken is skipped with a warning.
 
 ### Oxigraph
 
@@ -280,8 +286,8 @@ Sibling projections mint the same entity IRIs, so one query can combine data fro
 alongside a property that ontology does not model. The
 [Person-to-EDM example](../rdf/person-to-edm.md#querying-via-sparql) shows such a query.
 
-A newly added entry only receives pages saved from then on. Backfill it by
-[rebuilding the graph](maintenance.md#rebuilding-the-graph).
+A newly added entry only receives pages saved from then on. Backfill it, and only it, with
+`NeoWiki:RebuildGraphDatabases --store <name>` — see [rebuilding one store](maintenance.md#rebuilding-one-store).
 
 ### Querying a SPARQL store
 

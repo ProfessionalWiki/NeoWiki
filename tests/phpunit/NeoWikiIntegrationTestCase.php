@@ -38,6 +38,9 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	use TempUserTestTrait;
 
 	/** @var GraphDatabasePlugin[] */
+	/**
+	 * @var array<string, GraphDatabasePlugin> Keys are store names
+	 */
 	private array $registeredGraphDatabasePlugins = [];
 
 	/** @var PagePropertyProvider[] */
@@ -223,10 +226,25 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	/**
 	 * Registers extra graph database plugins through the NeoWikiRegistration hook and rebuilds the singleton
 	 * so they are composed into the write paths, letting a test drive the real hook wiring with a backend of
-	 * its choosing (a spy, or one that always throws).
+	 * its choosing (a spy, or one that always throws). Names them after their position, for tests that only
+	 * care about what reaches the backends; use {@see self::registerNamedGraphDatabasePlugins} to address
+	 * one by name.
 	 */
 	protected function registerGraphDatabasePlugins( GraphDatabasePlugin ...$plugins ): void {
-		array_push( $this->registeredGraphDatabasePlugins, ...$plugins );
+		$named = [];
+
+		foreach ( $plugins as $index => $plugin ) {
+			$named['test-store-' . $index] = $plugin;
+		}
+
+		$this->registerNamedGraphDatabasePlugins( $named );
+	}
+
+	/**
+	 * @param array<string, GraphDatabasePlugin> $plugins Keys are store names
+	 */
+	protected function registerNamedGraphDatabasePlugins( array $plugins ): void {
+		$this->registeredGraphDatabasePlugins = $plugins + $this->registeredGraphDatabasePlugins;
 
 		$this->registerWithNeoWiki();
 	}
@@ -254,8 +272,8 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		$this->setTemporaryHook(
 			'NeoWikiRegistration',
 			static function ( NeoWikiRegistrar $registrar ) use ( $plugins, $providers ): void {
-				foreach ( $plugins as $plugin ) {
-					$registrar->addGraphDatabasePlugin( $plugin );
+				foreach ( $plugins as $name => $plugin ) {
+					$registrar->addGraphDatabasePlugin( $name, $plugin );
 				}
 
 				foreach ( $providers as $provider ) {

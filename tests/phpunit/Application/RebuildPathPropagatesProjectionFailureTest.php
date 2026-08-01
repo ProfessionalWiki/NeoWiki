@@ -12,11 +12,11 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
 use RuntimeException;
 
 /**
- * Guards the split between the two write paths at the wiring level: the maintenance rebuild path
- * must run the propagating composite, so a backend failure escapes the rebuilder to where the
- * RebuildGraphDatabases per-page catch reports it. If the rebuild path were wired with the hook
- * path's failure-isolating composite instead, the throw would be swallowed and the script would
- * falsely report every page as rebuilt.
+ * Guards the split between the two write paths at the wiring level: the maintenance rebuild path must
+ * project through the scoped store unwrapped, so a backend failure escapes the rebuilder to the
+ * rebuild, which decides whether it costs one page or the whole run. Wiring the rebuild path with the
+ * hook path's failure-isolating decorator instead would swallow the throw and report every page as
+ * rebuilt.
  *
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension
  * @covers \ProfessionalWiki\NeoWiki\Application\PageRebuilder
@@ -30,18 +30,10 @@ class RebuildPathPropagatesProjectionFailureTest extends NeoWikiIntegrationTestC
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
 	}
 
-	protected function tearDown(): void {
-		parent::tearDown();
-		// The test rebuilds the singleton with a throwing plugin registered; reset it so later tests
-		// get a clean instance rebuilt without the temporary hook.
-		NeoWikiExtension::resetInstance();
-	}
-
-	public function testRebuildPropagatesBackendFailureSoTheScriptCanReportIt(): void {
+	public function testRebuildPropagatesBackendFailureSoTheRebuildCanReportIt(): void {
 		$this->createPageWithSubjects( 'Rebuild failure page', TestSubject::build() );
 
-		$this->registerGraphDatabasePlugins( new ThrowingGraphDatabasePlugin() );
-		$rebuilder = NeoWikiExtension::getInstance()->newPageRebuilder();
+		$rebuilder = NeoWikiExtension::getInstance()->newPageRebuilderFor( new ThrowingGraphDatabasePlugin() );
 
 		$this->expectException( RuntimeException::class );
 		$this->expectExceptionMessage( ThrowingGraphDatabasePlugin::FAILURE_MESSAGE );

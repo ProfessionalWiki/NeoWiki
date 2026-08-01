@@ -59,9 +59,11 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 	public function testEveryConfiguredSparqlStoreReceivesThePageEdit(): void {
 		$this->installMockHttp( $this->capturingHttp() );
+		// Both stores hold the same projection, so neither can take the default name and each names
+		// itself. A store name identifies one store, which is what a scoped rebuild is addressed by.
 		$this->overrideConfigValue( 'NeoWikiSparqlStores', [
-			[ 'updateUrl' => self::ENDPOINT ],
-			[ 'updateUrl' => self::SECOND_ENDPOINT ],
+			[ 'updateUrl' => self::ENDPOINT, 'name' => 'primary' ],
+			[ 'updateUrl' => self::SECOND_ENDPOINT, 'name' => 'mirror' ],
 		] );
 
 		$pageId = $this->runWithoutGraphBackend(

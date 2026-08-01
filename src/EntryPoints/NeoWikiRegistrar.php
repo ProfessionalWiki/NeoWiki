@@ -51,8 +51,15 @@ readonly class NeoWikiRegistrar {
 		$this->pagePropertyProviderRegistry->addProvider( $provider );
 	}
 
-	public function addGraphDatabasePlugin( GraphDatabasePlugin $plugin ): void {
-		$this->graphDatabasePluginRegistry->addPlugin( $plugin );
+	/**
+	 * Registers a graph database backend to project page changes into.
+	 *
+	 * The name identifies the backend across runs and installs: a graph rebuild is scoped to one store
+	 * by it, and its run records are filed under it. Pick a stable one, and namespace it to your
+	 * extension so it cannot collide with another's — a name already taken is ignored.
+	 */
+	public function addGraphDatabasePlugin( string $name, GraphDatabasePlugin $plugin ): void {
+		$this->graphDatabasePluginRegistry->addPlugin( $name, $plugin );
 	}
 
 }
