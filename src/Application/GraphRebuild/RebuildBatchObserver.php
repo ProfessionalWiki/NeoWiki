@@ -17,6 +17,9 @@ interface RebuildBatchObserver {
 
 	public function afterPageBatch( RebuildRun $run, int $totalPages ): void;
 
-	public function afterDeletionBatch( RebuildRun $run, int $removed, int $totalDeleted ): void;
+	/**
+	 * @param int $removedSoFar Pages removed by this batch and the ones before it, not by this one alone.
+	 */
+	public function afterDeletionBatch( RebuildRun $run, int $removedSoFar, int $totalDeleted ): void;
 
 }

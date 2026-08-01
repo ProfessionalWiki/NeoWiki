@@ -8,7 +8,6 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NothingToResumeException;
-use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NullRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildAlreadyRunningException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\UnknownGraphStoreException;
@@ -22,12 +21,11 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\DatabaseFailingGraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\DeletionFailingGraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivelyFailingGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\NullRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
+use Wikimedia\Rdbms\DBUnexpectedError;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator
@@ -39,6 +37,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 	private const STORE = 'scoped-store';
 	private const OTHER_STORE = 'other-store';
+	private const WIKI_DATABASE_FAILURE_MESSAGE = 'the wiki database is gone';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -117,7 +116,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 	public function testAPageTheStoreRejectsIsCountedAndTheRestStillProject(): void {
 		$pageIds = $this->createSubjectPages( 'Fine before', 'Rejected', 'Fine after' );
-		$store = new SelectivelyFailingGraphDatabasePlugin( $pageIds[1] );
+		$store = new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[1] ] );
 		$this->registerStore( $store );
 
 		$run = $this->rebuild();
@@ -177,7 +176,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->createSubjectPages( 'Surviving page' );
 		$this->createSubjectPages( 'Page deleted during the outage' );
 		$this->deletePageByName( 'Page deleted during the outage' );
-		$this->registerStore( new DeletionFailingGraphDatabasePlugin() );
+		$this->registerStore( new SpyGraphDatabasePlugin( refusesDeletions: true ) );
 
 		$run = $this->rebuild();
 
@@ -195,18 +194,18 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->rebuild( batchSize: 2, observer: $observer );
 
-		$this->assertSame( [ 2, 3 ], $observer->removedPerDeletionBatch );
+		$this->assertSame( [ 2, 3 ], $observer->removedSoFar, 'each batch reports the running total' );
 		$this->assertSame( [ 3, 3 ], $observer->reportedDeletionTotals );
 	}
 
 	public function testAWikiDatabaseFailureEndsTheRunRatherThanCountingOnePage(): void {
-		$this->createSubjectPages( 'One', 'Two', 'Three' );
-		$this->registerStore( new DatabaseFailingGraphDatabasePlugin() );
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three' );
+		$this->registerStore( $this->newStoreFailingOnTheWikiDatabase( refusedPageIds: $pageIds ) );
 
 		$run = $this->rebuild();
 
 		$this->assertSame( RebuildStatus::Failed, $run->status, 'the pages after it would fail identically' );
-		$this->assertSame( DatabaseFailingGraphDatabasePlugin::FAILURE_MESSAGE, $run->error );
+		$this->assertSame( self::WIKI_DATABASE_FAILURE_MESSAGE, $run->error );
 		$this->assertSame( 0, $run->failed, 'the run ended rather than counting a page against the store' );
 	}
 
@@ -375,9 +374,23 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
+	 * Stands in for a backend whose projection hits the wiki's own database — a page property provider
+	 * reading from it, say — at the moment that database gives out. Every page after this one would fail
+	 * the same way, which is what separates it from a page the store merely rejects.
+	 *
+	 * @param int[] $refusedPageIds
+	 */
+	private function newStoreFailingOnTheWikiDatabase( array $refusedPageIds ): SpyGraphDatabasePlugin {
+		return new SpyGraphDatabasePlugin(
+			refusedPageIds: $refusedPageIds,
+			failure: new DBUnexpectedError( null, self::WIKI_DATABASE_FAILURE_MESSAGE )
+		);
+	}
+
+	/**
 	 * @return int[]
 	 */
-	private static function savedPageIds( SpyGraphDatabasePlugin|SelectivelyFailingGraphDatabasePlugin $store ): array {
+	private static function savedPageIds( SpyGraphDatabasePlugin $store ): array {
 		return array_map( static fn ( Page $page ): int => $page->getId()->id, $store->savedPages );
 	}
 

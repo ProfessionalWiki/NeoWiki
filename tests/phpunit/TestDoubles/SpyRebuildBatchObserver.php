@@ -19,19 +19,14 @@ class SpyRebuildBatchObserver implements RebuildBatchObserver {
 	public array $pageBatches = [];
 
 	/**
-	 * @var RebuildRun[]
-	 */
-	public array $deletionBatches = [];
-
-	/**
 	 * @var int[]
 	 */
 	public array $reportedPageTotals = [];
 
 	/**
-	 * @var int[]
+	 * @var int[] The running total each deletion batch reported, not what that batch removed on its own.
 	 */
-	public array $removedPerDeletionBatch = [];
+	public array $removedSoFar = [];
 
 	/**
 	 * @var int[]
@@ -43,9 +38,8 @@ class SpyRebuildBatchObserver implements RebuildBatchObserver {
 		$this->reportedPageTotals[] = $totalPages;
 	}
 
-	public function afterDeletionBatch( RebuildRun $run, int $removed, int $totalDeleted ): void {
-		$this->deletionBatches[] = $run;
-		$this->removedPerDeletionBatch[] = $removed;
+	public function afterDeletionBatch( RebuildRun $run, int $removedSoFar, int $totalDeleted ): void {
+		$this->removedSoFar[] = $removedSoFar;
 		$this->reportedDeletionTotals[] = $totalDeleted;
 	}
 

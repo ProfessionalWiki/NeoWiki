@@ -167,16 +167,16 @@ class GraphRebuildExecutor {
 			return;
 		}
 
-		$removed = 0;
+		$removedSoFar = 0;
 
 		foreach ( array_chunk( $pageIds, $batchSize ) as $batch ) {
 			foreach ( $batch as $pageId ) {
 				if ( $this->removePage( $pageId, $progress, $store ) ) {
-					$removed++;
+					$removedSoFar++;
 				}
 			}
 
-			$observer->afterDeletionBatch( $this->recordProgress( $run, $progress ), $removed, count( $pageIds ) );
+			$observer->afterDeletionBatch( $this->recordProgress( $run, $progress ), $removedSoFar, count( $pageIds ) );
 		}
 	}
 
