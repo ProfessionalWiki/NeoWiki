@@ -229,9 +229,6 @@ $wgNeoWikiSparqlStores = [
 		// Mapping page title without the prefix ('EDM' for Mapping:EDM). As with any page title,
 		// only the first letter is case-insensitive.
 		'projection' => 'native',
-		// Optional: what to call this store when rebuilding it. Defaults to the projection, which is
-		// what you want unless another entry already holds that projection.
-		'name' => 'primary',
 	],
 ];
 ```
@@ -270,7 +267,8 @@ alongside a property that ontology does not model. The
 [Person-to-EDM example](../rdf/person-to-edm.md#querying-via-sparql) shows such a query.
 
 A newly added entry only receives pages saved from then on. Backfill it, and only it, with
-`NeoWiki:RebuildGraphDatabases --store <name>` — see [rebuilding one store](maintenance.md#rebuilding-one-store).
+`php maintenance/run.php NeoWiki:RebuildGraphDatabases --store <name>` — see
+[rebuilding one store](maintenance.md#rebuilding-one-store).
 
 ### Querying a SPARQL store
 
