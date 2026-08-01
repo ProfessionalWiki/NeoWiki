@@ -10,6 +10,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\Test\TestLogger;
 use ProfessionalWiki\NeoWiki\NeoWikiConfig;
 use ProfessionalWiki\NeoWiki\NeoWikiConfigFactory;
+use ProfessionalWiki\NeoWiki\SparqlStoreConfig;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiConfigFactory
@@ -168,6 +169,65 @@ class NeoWikiConfigFactoryTest extends TestCase {
 
 	public function testEmptySparqlStoresConfigProducesEmptyList(): void {
 		$this->assertSame( [], $this->buildSparqlConfig( [] )->sparqlStores );
+	}
+
+	public function testSparqlStoreNameDefaultsToItsProjection(): void {
+		$config = $this->buildSparqlConfig( [
+			[ 'updateUrl' => 'https://qlever.example/api' ],
+			[ 'updateUrl' => 'https://qlever.example/api', 'projection' => 'EDM' ],
+		] );
+
+		$this->assertSame( 'native', $config->sparqlStores[0]->name );
+		$this->assertSame( 'EDM', $config->sparqlStores[1]->name );
+	}
+
+	public function testExplicitSparqlStoreNameOverridesTheProjectionDefault(): void {
+		$config = $this->buildSparqlConfig( [
+			[ 'updateUrl' => 'https://qlever.example/api', 'projection' => 'EDM', 'name' => 'edm-public' ],
+		] );
+
+		$this->assertSame( 'edm-public', $config->sparqlStores[0]->name );
+		$this->assertSame( 'EDM', $config->sparqlStores[0]->projection );
+	}
+
+	public function testBlankSparqlStoreNameFallsBackToTheProjection(): void {
+		$config = $this->buildSparqlConfig( [
+			[ 'updateUrl' => 'https://qlever.example/api', 'projection' => 'EDM', 'name' => '   ' ],
+		] );
+
+		$this->assertSame( 'EDM', $config->sparqlStores[0]->name );
+	}
+
+	public function testSparqlStoreEntryWithADuplicateNameIsSkippedWithWarning(): void {
+		$logger = new TestLogger();
+
+		$config = $this->buildSparqlConfig(
+			[
+				[ 'updateUrl' => 'https://first.example/api', 'projection' => 'EDM' ],
+				[ 'updateUrl' => 'https://second.example/api', 'projection' => 'EDM' ],
+				[ 'updateUrl' => 'https://third.example/api', 'projection' => 'native' ],
+			],
+			$logger
+		);
+
+		$this->assertSame(
+			[ 'https://first.example/api', 'https://third.example/api' ],
+			array_map( static fn ( SparqlStoreConfig $store ): string => $store->updateUrl, $config->sparqlStores ),
+			'the first entry claiming a name keeps it, and only the later duplicate is dropped'
+		);
+		$this->assertTrue( $logger->hasWarningRecords() );
+	}
+
+	public function testExplicitNamesLetSiblingProjectionsRepeatATargetOntology(): void {
+		$config = $this->buildSparqlConfig( [
+			[ 'updateUrl' => 'https://public.example/api', 'projection' => 'EDM', 'name' => 'edm-public' ],
+			[ 'updateUrl' => 'https://internal.example/api', 'projection' => 'EDM', 'name' => 'edm-internal' ],
+		] );
+
+		$this->assertSame(
+			[ 'edm-public', 'edm-internal' ],
+			array_map( static fn ( SparqlStoreConfig $store ): string => $store->name, $config->sparqlStores )
+		);
 	}
 
 	/**

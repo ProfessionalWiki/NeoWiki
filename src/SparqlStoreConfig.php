@@ -14,6 +14,11 @@ namespace ProfessionalWiki\NeoWiki;
  *
  * The projection names the RDF vocabulary the store holds — "native" or any Mapping target. It is
  * resolved lazily on each save (not here), so a store always tracks the current Mapping definitions.
+ *
+ * The name identifies the store across runs and installs: it is what a scoped graph rebuild is
+ * addressed by, and what its run records are filed under. It defaults to the projection, which is
+ * unique for as long as a store holds one projection each; entries that would otherwise collide
+ * (the same projection twice) name themselves explicitly.
  */
 readonly class SparqlStoreConfig {
 
@@ -22,6 +27,7 @@ readonly class SparqlStoreConfig {
 		public string $queryUrl,
 		public ?string $accessToken,
 		public string $projection,
+		public string $name,
 	) {
 	}
 

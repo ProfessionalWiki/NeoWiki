@@ -30,9 +30,9 @@ use Wikimedia\RequestTimeout\TimeoutException;
  *   swallowing it would only mask the root cause of the commit failure that is coming anyway.
  *
  * Isolation is per plugin, so composing several of these (one per backend) lets one backend fail
- * without starving the others. This decorator is used only on the hook-facing write path; the
- * RebuildGraphDatabases maintenance path deliberately runs the propagating
- * CompositeGraphDatabasePlugin so it can report which pages failed to reconcile. See NeoWikiExtension.
+ * without starving the others. This decorator is used only on the hook-facing write path; a rebuild
+ * deliberately projects through its store unwrapped, so it can tell a page it cannot reconcile from a
+ * store it cannot reach. See NeoWikiExtension.
  */
 class FailureIsolatingGraphDatabasePlugin implements GraphDatabasePlugin {
 

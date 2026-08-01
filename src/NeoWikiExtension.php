@@ -145,6 +145,12 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\Sparql
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlRouteRegistration;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
 use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildRunRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
+use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
@@ -296,14 +302,6 @@ class NeoWikiExtension {
 	 */
 	public function getStoreContentUC(): OnRevisionCreatedHandler {
 		return $this->newStoreContentHandler( $this->getIsolatingGraphDatabasePlugin() );
-	}
-
-	/**
-	 * Maintenance rebuild path (RebuildGraphDatabases). Failures propagate so the script reports which
-	 * pages failed to reconcile, rather than the hook path's per-plugin isolation swallowing them.
-	 */
-	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
-		return $this->newStoreContentHandler( $this->getGraphDatabasePlugin() );
 	}
 
 	private function newStoreContentHandler( GraphDatabasePlugin $graphDatabasePlugin ): OnRevisionCreatedHandler {
@@ -564,38 +562,48 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * The graph database plugins to fan out to: core (bundled) plugins first, then extension plugins.
+	 * The graph database plugins to fan out to, in the order they are projected into.
+	 *
+	 * @return GraphDatabasePlugin[]
+	 */
+	private function getGraphDatabasePlugins(): array {
+		return array_values( $this->getNamedGraphDatabasePlugins() );
+	}
+
+	/**
+	 * Every configured graph database backend under the name that identifies it: core (bundled) plugins
+	 * first, then extension plugins. A rebuild is scoped to one store by looking it up here.
 	 *
 	 * Core's plugins are seeded directly here, not via the registry. Registering the Neo4j plugin via
 	 * the registry would make getGraphDatabasePluginRegistry() build it, whose construction transitively
 	 * fires the NeoWikiRegistration hook and re-enters that accessor. Composing core here keeps the
 	 * registry extension-only and the plugin order deterministic.
 	 *
-	 * @return GraphDatabasePlugin[]
+	 * A core name wins over an extension's: `+` keeps the left operand's entry on a key collision. An
+	 * extension naming itself after a bundled backend is then ignored rather than shadowing it.
+	 *
+	 * @return array<string, GraphDatabasePlugin> Keys are store names
 	 */
-	private function getGraphDatabasePlugins(): array {
-		return array_merge(
-			$this->getCoreGraphDatabasePlugins(),
-			$this->getGraphDatabasePluginRegistry()->getPlugins()
-		);
+	public function getNamedGraphDatabasePlugins(): array {
+		return $this->getCoreGraphDatabasePlugins() + $this->getGraphDatabasePluginRegistry()->getPlugins();
 	}
 
 	/**
 	 * The bundled backends, in deterministic order: Neo4j first when configured, then one SPARQL plugin
 	 * per configured store (#586). Empty when neither is configured.
 	 *
-	 * @return GraphDatabasePlugin[]
+	 * @return array<string, GraphDatabasePlugin> Keys are store names
 	 */
 	private function getCoreGraphDatabasePlugins(): array {
 		$plugins = [];
 
 		$neo4jPlugin = $this->getNeo4jPlugin();
 		if ( $neo4jPlugin !== null ) {
-			$plugins[] = $neo4jPlugin->getGraphDatabasePlugin();
+			$plugins[Neo4jPlugin::STORE_NAME] = $neo4jPlugin->getGraphDatabasePlugin();
 		}
 
 		foreach ( $this->getSparqlPlugins() as $sparqlPlugin ) {
-			$plugins[] = $sparqlPlugin->getGraphDatabasePlugin();
+			$plugins[$sparqlPlugin->getStoreName()] = $sparqlPlugin->getGraphDatabasePlugin();
 		}
 
 		return $plugins;
@@ -876,8 +884,14 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newSubjectPageRebuilder(): SubjectPageRebuilder {
-		return $this->newSubjectPageRebuilderWith( $this->newRebuildStoreContentHandler() );
+	/**
+	 * Maintenance rebuild path: projects into the one store the run is scoped to, and no other. The
+	 * plugin is used unwrapped, so a projection failure escapes to the rebuild, which decides whether it
+	 * costs a page or the whole run — the hook path's isolation would swallow it and report every page
+	 * as rebuilt.
+	 */
+	public function newSubjectPageRebuilderFor( GraphDatabasePlugin $store ): SubjectPageRebuilder {
+		return $this->newSubjectPageRebuilderWith( $this->newStoreContentHandler( $store ) );
 	}
 
 	/**
@@ -892,6 +906,35 @@ class NeoWikiExtension {
 		return new SubjectPageRebuilder(
 			$handler,
 			MediaWikiServices::getInstance()->getWikiPageFactory()
+		);
+	}
+
+	public function newGraphRebuildCoordinator(): GraphRebuildCoordinator {
+		return new GraphRebuildCoordinator(
+			stores: $this->getNamedGraphDatabasePlugins(),
+			runs: $this->newRebuildRunRepository(),
+			executor: new GraphRebuildExecutor(
+				subjectPageIds: $this->newSubjectPageIdsLookup(),
+				deletedSubjectPageIds: $this->newDeletedSubjectPageIdsLookup(),
+				runs: $this->newRebuildRunRepository(),
+				titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+				logger: LoggerFactory::getInstance( 'NeoWiki' ),
+			),
+			newPageRebuilder: fn ( GraphDatabasePlugin $store ): SubjectPageRebuilder
+				=> $this->newSubjectPageRebuilderFor( $store ),
+		);
+	}
+
+	public function newRebuildRunRepository(): RebuildRunRepository {
+		return new DatabaseRebuildRunRepository(
+			MediaWikiServices::getInstance()->getConnectionProvider()
+		);
+	}
+
+	public function newSubjectPageIdsLookup(): SubjectPageIdsLookup {
+		return new DatabaseSubjectPageIdsLookup(
+			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
+			MediaWikiServices::getInstance()->getSlotRoleStore()
 		);
 	}
 
