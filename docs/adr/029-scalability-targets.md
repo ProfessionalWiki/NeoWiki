@@ -9,7 +9,7 @@ Status: Draft
 To make good design and implementation decisions, we need to know how far NeoWiki should scale, so we avoid both
 degraded performance at scale and accidental complexity via unnecessary optimization.
 
-Most real wikis sit well below these targets: under 100 thousand Subjects, 30 Schemas, 10 Subjects per page and
+Most real wikis sit well below the targets set here: under 100 thousand Subjects, 30 Schemas, 10 Subjects per page and
 15 Statements per Subject (per surveyed GLAM collection sizes; enterprise wikis run smaller still).
 
 ## Decision
@@ -35,7 +35,7 @@ Definitions:
 ### Writing Speed Targets
 
 NeoWiki needs to meet these write speeds at any size within the scalability targets above, with all configured
-projections included. The duration columns are at the Great rate:
+projections included. The duration columns follow from the target rate:
 
 | Write path                                          | Target               | 1 million    | 10 million |
 |-----------------------------------------------------|----------------------|--------------|------------|
