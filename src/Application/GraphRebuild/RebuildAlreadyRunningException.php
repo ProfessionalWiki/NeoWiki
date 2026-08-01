@@ -13,7 +13,7 @@ use RuntimeException;
  */
 class RebuildAlreadyRunningException extends RuntimeException {
 
-	public function __construct( public readonly RebuildRun $activeRun ) {
+	public function __construct( RebuildRun $activeRun ) {
 		parent::__construct(
 			'A rebuild of graph store "' . $activeRun->store . '" is already running (run '
 			. $activeRun->id . '). Wait for it to finish.'

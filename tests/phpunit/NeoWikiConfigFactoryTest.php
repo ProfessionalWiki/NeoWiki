@@ -171,6 +171,31 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		$this->assertSame( [], $this->buildSparqlConfig( [] )->sparqlStores );
 	}
 
+	/**
+	 * Surrounding whitespace is a typo in every one of these, and a padded name or projection would
+	 * silently fail to match what a rebuild or a Mapping lookup asks for.
+	 */
+	public function testSurroundingWhitespaceIsTrimmedOffEveryConfiguredString(): void {
+		$config = $this->buildSparqlConfig( [ [
+			'updateUrl' => "  https://qlever.example/api\n",
+			'queryUrl' => ' https://qlever.example/query ',
+			'accessToken' => "\tSECRET ",
+			'projection' => ' EDM ',
+			'name' => ' edm-public ',
+		] ] );
+
+		$this->assertEquals(
+			new SparqlStoreConfig(
+				updateUrl: 'https://qlever.example/api',
+				queryUrl: 'https://qlever.example/query',
+				accessToken: 'SECRET',
+				projection: 'EDM',
+				name: 'edm-public',
+			),
+			$config->sparqlStores[0]
+		);
+	}
+
 	public function testSparqlStoreNameDefaultsToItsProjection(): void {
 		$config = $this->buildSparqlConfig( [
 			[ 'updateUrl' => 'https://qlever.example/api' ],
