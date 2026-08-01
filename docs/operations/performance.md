@@ -16,30 +16,33 @@ Subject.
 
 | Measured | NeoWiki | Bulk import | Full rebuild | Validation |
 |---|---|---:|---:|---:|
-| 2026-07-31 | `0e7c5658` with [#1225](https://github.com/ProfessionalWiki/NeoWiki/pull/1225) and [#1224](https://github.com/ProfessionalWiki/NeoWiki/pull/1224) | 602 Subjects/second | 605 Subjects/second | 1.25 ms/Subject |
+| 2026-07-31 | `0e7c5658` with [#1225](https://github.com/ProfessionalWiki/NeoWiki/pull/1225) and [#1224](https://github.com/ProfessionalWiki/NeoWiki/pull/1224) | 602 Subjects/second | ~600 Subjects/second | 1.25 ms/Subject |
+
+#1225 is on master; #1224 is not merged yet, and without it the same benchmark measures 1.65 ms per validation.
 
 Each rate is the mean of two probes run alternately against the same graph: 605 and 598 Subjects/second importing,
-583 and 627 rebuilding. At those rates a million Subjects import in about half an hour and rebuild in about the same,
-extrapolated from the probes rather than timed end to end.
+58.3 and 62.7 pages/second rebuilding, at ten Subjects to a page. At those rates a million Subjects import in about
+half an hour and rebuild in about the same, extrapolated from the probes rather than timed end to end.
 
-Throughput holds as the graph grows: it does not decay across a 2 000-page import, and the probes against the
-million-node graph are no slower than a fresh wiki.
+Throughput does not decay as the graph grows: the rate holds flat across a 2 000-page import, and the probes against
+the million-node graph run no slower than those against a small one.
 
 That import rate is 16.6 ms per page of ten Subjects, MediaWiki's own revision write included. Page saves project in
 the same request rather than through the job queue, so an edit does that projection work too.
 
 Reference machine: a 16-core desktop (Ryzen 9 9950X, 60 GiB RAM, NVMe) running MediaWiki, MariaDB and Neo4j together
-in one Docker stack, so all three compete for the same cores. The million-node graph is padded with synthetic nodes
-carrying no relationships, where a real graph of that size carries millions of them, so expect these figures to be
-optimistic.
+in one Docker stack, so all three compete for the same cores, with Neo4j held to the stack's default 512 MB heap. The
+million-node graph is padded with synthetic nodes carrying no relationships, where a real graph of that size carries
+millions of them, and the wiki behind it held 4 000 pages rather than 100 000. Expect these figures to be optimistic.
 
 ## With a SPARQL store
 
-Project into a SPARQL store as well and bulk import runs at 36 Subjects/second. It falls as the store fills: over one
-2 000-page import into QLever the rate dropped from 101 to 21 Subjects/second while the store grew to 590 000 triples,
-with the SPARQL projection about 90% of the per-page cost across the run. It had not levelled off there, and nothing
-larger has been measured, so treat 21 Subjects/second as an upper bound for a fuller store rather than the 36 above.
-This is the write path's remaining bottleneck.
+Project into a SPARQL store as well and bulk import averages 36 Subjects/second, falling as the store fills: over one
+2 000-page import — two projections, native RDF and EDM, into one QLever store — the rate dropped from 101 to
+21 Subjects/second as the store grew to 590 000 triples. About 90% of the per-page cost across that run was the SPARQL
+projection, which is the write path's remaining bottleneck. It had not levelled off by the end, so a fuller store is
+slower than 21 Subjects/second, not the 36 above. ADR 29's targets count every configured projection, so this is the
+configuration to judge a SPARQL-backed wiki by.
 
 ## How it was measured
 
