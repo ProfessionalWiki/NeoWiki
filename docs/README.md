@@ -45,6 +45,7 @@ Project Subjects to RDF, natively or mapped onto standard ontologies.
 
 * [Installation](operations/installation.md) — the Docker demo, or adding NeoWiki to an existing MediaWiki
 * [Maintenance](operations/maintenance.md) — rebuilding the graph, upgrades, and current limitations
+* [Performance](operations/performance.md) — measured write throughput, and how to re-run the measurement
 
 ## Understand the architecture
 
