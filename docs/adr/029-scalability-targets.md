@@ -35,7 +35,9 @@ NeoWiki needs to meet these write speeds, with all configured projections includ
 | Projection rebuild (`RebuildGraphDatabases.php`)    | 500+ Subjects/second | 100 Subjects/second |
 | Latency an interactive save gains from projections  | under 100 ms         | under 1 second      |
 
-These hold flat across the size targets above; at the 10 million tier, a full rebuild then takes around six hours.
+These hold flat across the size targets above. At the Great rates, importing 1 million Subjects takes under three
+hours (rebuild: about half an hour), and 10 million just over a day (rebuild: under six hours). Common Wikibase
+tooling measures 1-4 entities per second, putting a 1 million import there at days to weeks.
 
 ### Definitions
 
