@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Maintenance;
 
-use MediaWiki\Maintenance\MaintenanceFatalError;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -15,7 +14,6 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivelyFailingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
-use Wikimedia\TestingAccessWrapper;
 
 // The maintenance script is not PSR-4 autoloadable (it lives outside src/), so load it explicitly.
 // Its RUN_MAINTENANCE_IF_MAIN guard is a no-op under PHPUnit, so this does not execute the script.
@@ -143,19 +141,23 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 	public function testRebuildingAnUnconfiguredStoreExitsNonZero(): void {
 		$this->registerNamedGraphDatabasePlugins( [ 'scoped' => new SpyGraphDatabasePlugin() ] );
 
-		$output = $this->runRebuildExpectingNonZeroExit( [ '--store=typo' ] );
+		$reconciled = $this->runRebuild( [ '--store=typo' ] );
 
-		$this->assertStringContainsString( 'Unknown graph store "typo"', $output );
+		$this->assertFalse( $reconciled );
+		$this->assertStringContainsString( 'Unknown graph store "typo"', $this->getScriptOutput() );
 	}
 
 	public function testAStoreThatCannotBeReachedExitsNonZero(): void {
 		$this->createPageWithSubjects( 'Page nobody projects', TestSubject::build() );
 		$this->registerNamedGraphDatabasePlugins( [ 'broken' => new ThrowingGraphDatabasePlugin() ] );
 
-		$output = $this->runRebuildExpectingNonZeroExit( [ '--store=broken' ] );
+		$reconciled = $this->runRebuild( [ '--store=broken' ] );
 
-		$this->assertStringContainsString( ThrowingGraphDatabasePlugin::FAILURE_MESSAGE, $output );
-		$this->assertStringContainsString( '--resume', $output, 'a failed run must say how to continue it' );
+		$this->assertFalse( $reconciled );
+		$this->assertStringContainsString( ThrowingGraphDatabasePlugin::FAILURE_MESSAGE, $this->getScriptOutput() );
+		$this->assertStringContainsString(
+			'--resume', $this->getScriptOutput(), 'a failed run must say how to continue it'
+		);
 	}
 
 	public function testOneStoreFailingDoesNotStopTheStoresAfterIt(): void {
@@ -166,8 +168,9 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 			'working' => $workingStore,
 		] );
 
-		$this->runRebuildExpectingNonZeroExit();
+		$reconciled = $this->runRebuild();
 
+		$this->assertFalse( $reconciled );
 		$this->assertCount( 1, $workingStore->savedPages );
 	}
 
@@ -177,9 +180,10 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 			'picky' => new SelectivelyFailingGraphDatabasePlugin( (int)$pageId ),
 		] );
 
-		$output = $this->runRebuildExpectingNonZeroExit( [ '--store=picky' ] );
+		$reconciled = $this->runRebuild( [ '--store=picky' ] );
 
-		$this->assertStringContainsString( '1 pages failed', $output );
+		$this->assertFalse( $reconciled );
+		$this->assertStringContainsString( 'Projected 0 pages, 1 failed.', $this->getScriptOutput() );
 	}
 
 	public function testProgressIsReportedPerBatchRatherThanPerPage(): void {
@@ -188,10 +192,10 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$this->createPageWithSubjects( 'Three', TestSubject::build() );
 		$this->registerNamedGraphDatabasePlugins( [ 'batched' => new SpyGraphDatabasePlugin() ] );
 
-		$output = $this->runRebuild( [ '--store=batched', '--batch-size=2' ] );
+		$this->runRebuild( [ '--store=batched', '--batch-size=2' ] );
 
-		$this->assertStringContainsString( 'batched: 2/3 pages (failed 0)', $output );
-		$this->assertStringContainsString( 'batched: 3/3 pages (failed 0)', $output );
+		$this->assertStringContainsString( 'batched: 2/3 pages (failed 0)', $this->getScriptOutput() );
+		$this->assertStringContainsString( 'batched: 3/3 pages (failed 0)', $this->getScriptOutput() );
 	}
 
 	public function testResumeContinuesTheStoresUnfinishedRebuild(): void {
@@ -199,7 +203,7 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$this->createPageWithSubjects( 'Page after the outage', TestSubject::build() );
 		$store = new SpyGraphDatabasePlugin();
 		$this->registerNamedGraphDatabasePlugins( [ 'recovering' => new ThrowingGraphDatabasePlugin() ] );
-		$this->runRebuildExpectingNonZeroExit( [ '--store=recovering' ] );
+		$this->runRebuild( [ '--store=recovering' ] );
 
 		// The store is back: the same name now resolves to a plugin that works.
 		$this->registerNamedGraphDatabasePlugins( [ 'recovering' => $store ] );
@@ -208,63 +212,69 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$this->assertCount( 2, $store->savedPages, 'the resumed run reconciles the pages the failed one did not' );
 	}
 
-	public function testResumingAStoreWithNothingToResumeExitsNonZero(): void {
+	public function testResumingANamedStoreWithNothingToResumeExitsNonZero(): void {
 		$this->registerNamedGraphDatabasePlugins( [ 'fresh' => new SpyGraphDatabasePlugin() ] );
 
-		$output = $this->runRebuildExpectingNonZeroExit( [ '--store=fresh', '--resume' ] );
+		$reconciled = $this->runRebuild( [ '--store=fresh', '--resume' ] );
 
-		$this->assertStringContainsString( 'no unfinished rebuild to resume', $output );
+		$this->assertFalse( $reconciled, 'the operator asked for something that could not be done' );
+		$this->assertStringContainsString( 'no unfinished rebuild to resume', $this->getScriptOutput() );
+	}
+
+	public function testResumingEveryStorePassesOverTheOnesWithNothingToResume(): void {
+		$this->createPageWithSubjects( 'Page for the recovering store', TestSubject::build() );
+		$recoveringStore = new SpyGraphDatabasePlugin();
+		$this->registerNamedGraphDatabasePlugins( [
+			'finished' => new SpyGraphDatabasePlugin(),
+			'recovering' => new ThrowingGraphDatabasePlugin(),
+		] );
+		$this->runRebuild();
+
+		$this->registerNamedGraphDatabasePlugins( [
+			'finished' => new SpyGraphDatabasePlugin(),
+			'recovering' => $recoveringStore,
+		] );
+		$reconciled = $this->runRebuild( [ '--resume' ] );
+
+		$this->assertTrue( $reconciled, 'a store whose last rebuild finished is not a failure to resume' );
+		$this->assertCount( 1, $recoveringStore->savedPages );
+	}
+
+	public function testRebuildingWithNoStoresConfiguredSucceeds(): void {
+		$reconciled = $this->runWithoutGraphBackend( function (): bool {
+			// Replaces the registration hook, so the bundled test extension contributes no store either.
+			$this->registerNamedGraphDatabasePlugins( [] );
+
+			return $this->runRebuild();
+		} );
+
+		$this->assertTrue( $reconciled );
+		$this->assertStringContainsString( 'No graph stores are configured', $this->getScriptOutput() );
 	}
 
 	/**
-	 * Since MediaWiki 1.46 a script only gets fatalError()'s test behaviour — throwing rather than
-	 * exiting, which would end the whole suite — once it is flagged as being under test. Older supported
-	 * versions have no such flag and go by the MW_PHPUNIT_TEST constant alone.
-	 */
-	private static function newScript(): RebuildGraphDatabases {
-		$script = new RebuildGraphDatabases();
-
-		if ( property_exists( $script, 'isTesting' ) ) {
-			TestingAccessWrapper::newFromObject( $script )->isTesting = true;
-		}
-
-		return $script;
-	}
-
-	/**
-	 * Drives the script the way the command line does, so the run covers option parsing too.
+	 * Drives the script the way the command line does, so the run covers option parsing too. It reports
+	 * failure by returning false, which is what MaintenanceRunner turns into the exit status.
 	 *
 	 * @param string[] $arguments
 	 */
-	private function runRebuild( array $arguments = [] ): string {
-		$script = self::newScript();
+	private function runRebuild( array $arguments = [] ): bool {
+		$script = new RebuildGraphDatabases();
 		$script->loadWithArgv( $arguments );
 
 		ob_start();
 		try {
-			$script->execute();
+			$reconciled = $script->execute();
 		} finally {
 			$script->cleanupChanneled();
 			$this->scriptOutput = (string)ob_get_clean();
 		}
 
-		return $this->scriptOutput;
+		return $reconciled;
 	}
 
-	/**
-	 * The script signals an unreconciled rebuild by exiting non-zero, which under PHPUnit surfaces as a
-	 * MaintenanceFatalError instead of ending the suite. Returns what it printed before giving up.
-	 *
-	 * @param string[] $arguments
-	 */
-	private function runRebuildExpectingNonZeroExit( array $arguments = [] ): string {
-		try {
-			$this->runRebuild( $arguments );
-		} catch ( MaintenanceFatalError ) {
-			return $this->scriptOutput;
-		}
-
-		$this->fail( 'the rebuild should have exited non-zero' );
+	private function getScriptOutput(): string {
+		return $this->scriptOutput;
 	}
 
 	private function deletePageByName( string $pageName ): void {

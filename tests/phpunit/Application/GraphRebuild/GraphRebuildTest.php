@@ -22,6 +22,8 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\DatabaseFailingGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\DeletionFailingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivelyFailingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyRebuildBatchObserver;
@@ -169,6 +171,43 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 			[ $deletedPageId ],
 			array_map( static fn ( PageId $pageId ): int => $pageId->id, $store->deletedPageIds )
 		);
+	}
+
+	public function testAPageTheStoreWillNotLetGoOfIsCountedAndTheRunStillFinishes(): void {
+		$this->createSubjectPages( 'Surviving page' );
+		$this->createSubjectPages( 'Page deleted during the outage' );
+		$this->deletePageByName( 'Page deleted during the outage' );
+		$this->registerStore( new DeletionFailingGraphDatabasePlugin() );
+
+		$run = $this->rebuild();
+
+		$this->assertSame( RebuildStatus::Succeeded, $run->status );
+		$this->assertSame( 1, $run->failed, 'a page left in the store is a page left unreconciled' );
+	}
+
+	public function testTheRemovalsAreReportedAsTheyAreMade(): void {
+		$this->createSubjectPages( 'First deleted', 'Second deleted', 'Third deleted' );
+		$this->deletePageByName( 'First deleted' );
+		$this->deletePageByName( 'Second deleted' );
+		$this->deletePageByName( 'Third deleted' );
+		$this->registerStore( new SpyGraphDatabasePlugin() );
+		$observer = new SpyRebuildBatchObserver();
+
+		$this->rebuild( batchSize: 2, observer: $observer );
+
+		$this->assertSame( [ 2, 3 ], $observer->removedPerDeletionBatch );
+		$this->assertSame( [ 3, 3 ], $observer->reportedDeletionTotals );
+	}
+
+	public function testAWikiDatabaseFailureEndsTheRunRatherThanCountingOnePage(): void {
+		$this->createSubjectPages( 'One', 'Two', 'Three' );
+		$this->registerStore( new DatabaseFailingGraphDatabasePlugin() );
+
+		$run = $this->rebuild();
+
+		$this->assertSame( RebuildStatus::Failed, $run->status, 'the pages after it would fail identically' );
+		$this->assertSame( DatabaseFailingGraphDatabasePlugin::FAILURE_MESSAGE, $run->error );
+		$this->assertSame( 0, $run->failed, 'the run ended rather than counting a page against the store' );
 	}
 
 	public function testRebuildingAStoreThatIsNotConfiguredIsRefused(): void {

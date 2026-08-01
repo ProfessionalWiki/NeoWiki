@@ -18,8 +18,10 @@ use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
  * another, so an unreachable store costs only its own run: the others still reconcile, and each is
  * resumable on its own. That is also why the run records are per store.
  *
- * Only one run of a store may be going at a time. Two would project over each other and file one
- * store's progress under two rows, leaving neither cursor safe to resume from.
+ * Starting a run of a store that already has one is refused: two would project over each other and
+ * file one store's progress under two rows, leaving neither cursor safe to resume from. The check reads
+ * the run records rather than holding a lock, so it stops the case it is meant to — a second rebuild
+ * started while one is under way — and not two started in the same instant.
  */
 class GraphRebuildCoordinator {
 

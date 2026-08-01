@@ -15,6 +15,10 @@ use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
  * The cursor advances past every page the run has dealt with, whether it projected, skipped or failed
  * on it. Resuming is about not redoing settled work, not about retrying failures: a page that failed is
  * counted and logged, and the next run over the wiki picks it up.
+ *
+ * It covers the walk over the wiki's pages only. Removing the pages MediaWiki no longer has is not
+ * checkpointed, so a resumed run redoes that phase — which is harmless, since removing a page the store
+ * does not have is a no-op, but does mean a removal that keeps failing is counted once per attempt.
  */
 class RebuildProgress {
 
