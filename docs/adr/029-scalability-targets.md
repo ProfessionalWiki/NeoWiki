@@ -37,9 +37,9 @@ Definitions:
 NeoWiki needs to meet these write speeds at any size within the scalability targets above, with all configured
 projections included. The duration columns follow from the target rate:
 
-| Write path                                          | Subjects/second      | 1 million Subjects    | 10 million Subjects |
-|-----------------------------------------------------|----------------------|--------------|------------|
-| Import throughput (`importDump.php`)                | 100+ Subjects/second | < 3 hours    | ~1 day     |
-| Projection rebuild (`RebuildGraphDatabases.php`)    | 500+ Subjects/second | ~30 minutes  | < 6 hours  |
+| Write path                                       | Subjects/second | 100 thousand Subjects | 1 million Subjects | 10 million Subjects |
+|--------------------------------------------------|-----------------|-----------------------|--------------------|---------------------|
+| Import throughput (`importDump.php`)             | 100+            | < 20 minutes          | < 3 hours          | ~1 day              |
+| Projection rebuild (`RebuildGraphDatabases.php`) | 500+            | ~3 minutes            | ~30 minutes        | < 6 hours           |
 
 Max latency an interactive save gains from projections: 100 ms
