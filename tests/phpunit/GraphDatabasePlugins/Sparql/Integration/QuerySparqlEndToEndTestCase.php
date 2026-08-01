@@ -39,6 +39,10 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  * Deliberately does NOT skip when a store is unreachable: an unset store URL fails the test through
  * {@see requireEnv}, and an unreachable store surfaces as a loud query/HTTP failure. A silently
  * skipped system test would leave the headline deliverable unverified.
+ *
+ * Every subclass must repeat `@covers` and `@group Database` in its own docblock. MediaWiki reads the
+ * group off the concrete class alone, without walking up to here, so a subclass that omits it runs
+ * without database support instead of failing.
  */
 abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 
@@ -68,6 +72,13 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 	 */
 	abstract protected function storeAccessToken(): ?string;
 
+	/**
+	 * Whether the store folds its named graphs into the default graph, so that a query without a
+	 * `GRAPH` clause still finds page data. QLever always does; SPARQL 1.1 says a store does not
+	 * unless asked to.
+	 */
+	abstract protected function storeUnionsNamedGraphsIntoTheDefaultGraph(): bool;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -93,9 +104,8 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 	/**
 	 * Reads a store URL from the environment, failing the test when it is unset. A failure and not a
 	 * skip deliberately: a system test that quietly does nothing leaves the write+query loop
-	 * unverified, which is the one thing it exists to prove.
-	 *
-	 * @param string $store Named in the failure message, so the reader knows which store to bring up.
+	 * unverified, which is the one thing it exists to prove. The store description goes into the
+	 * failure message, so name the dev-stack service the reader has to bring up.
 	 */
 	protected function requireEnv( string $variable, string $store ): string {
 		$value = getenv( $variable );
@@ -159,6 +169,29 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 			[],
 			$this->queryLabelsOf( $subjectId ),
 			'the deleted Subject must no longer be queryable'
+		);
+	}
+
+	/**
+	 * Guards the semantics each subclass's store is chosen for. The suite's claim to cover both is
+	 * only worth something while one store stays strict and the other lenient, and that difference
+	 * lives entirely in how the services are started — nothing else here would notice it changing.
+	 */
+	public function testUnscopedQueryFindsPageDataOnlyWhereTheStoreUnionsNamedGraphs(): void {
+		$subjectId = TestSubject::uniqueId();
+		$label = 'System test subject ' . uniqid( '', true );
+
+		$this->savePageWithSubjectLabel( $subjectId, $label );
+
+		$this->assertSame(
+			[ $label ],
+			$this->queryLabelsOf( $subjectId ),
+			'the GRAPH-scoped query must find the Subject on any store, or this test proves nothing'
+		);
+		$this->assertSame(
+			$this->storeUnionsNamedGraphsIntoTheDefaultGraph() ? [ $label ] : [],
+			$this->queryLabelsWithoutGraphScopeOf( $subjectId ),
+			'a query without a GRAPH clause reaches the page graphs only on a unioning store'
 		);
 	}
 
@@ -297,15 +330,34 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 		$subjectIri = NeoWikiExtension::getInstance()->getRdfNamespaces()->subject( $subjectId )->value;
 
 		// GRAPH-scoped, because NeoWiki writes each page into a named graph and never the default
-		// graph. An unscoped pattern matches only the default graph under SPARQL 1.1, so it finds
-		// nothing on a conforming store; it appears to work only against a store configured to union
-		// the named graphs in, as QLever unconditionally does.
+		// graph. See queryLabelsWithoutGraphScopeOf() for what dropping the clause costs.
+		return $this->labelsFrom(
+			'SELECT ?label WHERE { GRAPH ?graph { <' . $subjectIri . '> <'
+			. self::LABEL_PREDICATE . '> ?label } }'
+		);
+	}
+
+	/**
+	 * The same lookup written without a `GRAPH` clause, so it matches the default graph only. Under
+	 * SPARQL 1.1 that finds nothing here; a store that unions its named graphs in answers anyway.
+	 *
+	 * @return list<string>
+	 */
+	private function queryLabelsWithoutGraphScopeOf( SubjectId $subjectId ): array {
+		$subjectIri = NeoWikiExtension::getInstance()->getRdfNamespaces()->subject( $subjectId )->value;
+
+		return $this->labelsFrom(
+			'SELECT ?label WHERE { <' . $subjectIri . '> <' . self::LABEL_PREDICATE . '> ?label }'
+		);
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	private function labelsFrom( string $sparql ): array {
 		return array_map(
 			static fn ( array $binding ): string => $binding['label']['value'],
-			$this->runQuery(
-				'SELECT ?label WHERE { GRAPH ?graph { <' . $subjectIri . '> <'
-				. self::LABEL_PREDICATE . '> ?label } }'
-			)
+			$this->runQuery( $sparql )
 		);
 	}
 

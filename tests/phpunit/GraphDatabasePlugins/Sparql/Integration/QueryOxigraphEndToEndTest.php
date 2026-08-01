@@ -37,10 +37,18 @@ class QueryOxigraphEndToEndTest extends QuerySparqlEndToEndTestCase {
 	}
 
 	/**
+	 * The service is started without `--union-default-graph`, which is what makes this the strict
+	 * half of the pair.
+	 */
+	protected function storeUnionsNamedGraphsIntoTheDefaultGraph(): bool {
+		return false;
+	}
+
+	/**
 	 * Oxigraph splits queries and updates over two fixed paths, so one base URL configures both.
 	 */
 	private function storeBaseUrl(): string {
-		return rtrim( $this->requireEnv( 'OXIGRAPH_TEST_URL', 'Oxigraph' ), '/' );
+		return rtrim( $this->requireEnv( 'OXIGRAPH_TEST_URL', 'Oxigraph (the `test_oxigraph` service)' ), '/' );
 	}
 
 }

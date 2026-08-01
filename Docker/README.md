@@ -81,7 +81,7 @@ Without the tools overlay, run the same query from inside the stack, e.g.
 ### `test_qlever` (SPARQL query system test)
 
 A second, dedicated QLever store — `test_qlever` — backs the SPARQL query system test
-(`QuerySparqlEndToEndTest`), isolated from the demo `qlever` store the way `test_neo` is
+(`QueryQLeverEndToEndTest`), isolated from the demo `qlever` store the way `test_neo` is
 isolated from `neo`: the test writes and deletes Subjects, so it must not touch the demo
 data. `phpunit.xml.dist` points the test at it via `QLEVER_TEST_URL=http://test_qlever:7019/`
 (fixed token `neowiki_test_token`); it is reached in-network only, with no host port. Unlike
@@ -98,10 +98,15 @@ not wired up by default: `SettingsTemplate.php` points the wiki at QLever, so no
 until you repoint `$wgNeoWikiSparqlStores` at it, with `updateUrl` `http://oxigraph:7878/update` and
 `queryUrl` `http://oxigraph:7878/query`.
 
-It needs none of QLever's bring-up: no index to build, no persistence flag. Data persists in the
-`oxigraph-data` named volume. No target empties that volume alone — `make remove` (and `make reset`,
-which calls it) deletes every volume. To clear only this store: `make down`, then
-`docker volume rm <project>_oxigraph-data`, then `make dev`.
+It needs none of QLever's bring-up: no index to build, and `--location` is the whole of persistence —
+given one, the store is durable with no further flag. Data lives in the `oxigraph-data` named volume,
+which no target empties on its own:
+
+```sh
+make down
+docker volume rm <project>_oxigraph-data   # <project> is the name `make dev` prints
+make dev
+```
 
 The service runs with `--union-default-graph`, which makes an unscoped query see every named graph, as
 QLever does unconditionally. Without it Oxigraph follows SPARQL 1.1, where an unscoped query sees only
@@ -124,12 +129,13 @@ publishes the port on every interface.
 The system test runs against both engines, and `test_oxigraph` is its Oxigraph store — isolated from
 the demo `oxigraph` service the way `test_qlever` is from `qlever`. `phpunit.xml.dist` points the test
 at it via `OXIGRAPH_TEST_URL=http://test_oxigraph:7878`, a base URL the test derives both paths from;
-it is reached in-network only, with no host port.
+it is reached in-network only, with no host port. It runs with no `--location`, so the store is in
+memory: ephemeral scaffolding each run clears, like `test_qlever` without `--persist-updates`.
 
 It deliberately runs **without** `--union-default-graph`: with `test_qlever` always unioning, the pair
-proves NeoWiki's queries work under either semantics, not just the forgiving one. `make phpunit`
-brings it up as part of the dev stack; in CI it is started explicitly (see
-`.github/workflows/ci-php.yml`).
+proves NeoWiki's queries work under either semantics, not just the forgiving one. The test asserts
+that difference, so losing it fails rather than passing quietly. `make phpunit` brings it up as part
+of the dev stack; in CI it is started explicitly (see `.github/workflows/ci-php.yml`).
 
 ## Files
 

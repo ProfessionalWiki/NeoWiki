@@ -198,14 +198,12 @@ services:
   # http://oxigraph:7878/query — separate paths, unlike QLever's single one, so an entry needs both
   # updateUrl and queryUrl. A host port for manual inspection is opt-in via docker-compose.tools.yml.
   #
-  # No entrypoint script: unlike QLever there is no index to build and no persistence flag to pass —
-  # RocksDB persists to the volume by default, and the image's own command is the serve command.
+  # No entrypoint script: unlike QLever there is no index to build, and --location below is the whole
+  # of persistence — given one, the store is durable with no further flag.
   #
-  # No healthcheck either, deliberately. The image is distroless: /bin, /usr/bin and /sbin are empty,
-  # the only executable being /usr/local/bin/oxigraph, so a compose healthcheck (which runs *inside*
-  # the container) has no shell, curl or wget to run, and the oxigraph binary's own `query` subcommand
-  # takes a store directory rather than an endpoint — and could not open one the server holds open
-  # anyway. Wait for it from the host instead (see .github/workflows/ci-php.yml).
+  # No healthcheck either, deliberately. The image is distroless, its only executable being the
+  # oxigraph binary, so a compose healthcheck — which runs inside the container — has no shell or
+  # curl to run. Wait for it from the host instead (see .github/workflows/ci-php.yml).
   oxigraph:
     image: ghcr.io/oxigraph/oxigraph:latest
     restart: unless-stopped
@@ -233,13 +231,16 @@ services:
     image: ghcr.io/oxigraph/oxigraph:latest
     restart: unless-stopped
     mem_limit: 1536m
+    # No --location, so the store is in memory. Ephemeral test scaffolding, like test_qlever running
+    # without --persist-updates: every run clears it (DROP ALL) and nothing survives a restart by
+    # design. It is also exactly how CI starts it, so the two cannot drift apart.
+    #
     # Deliberately WITHOUT --union-default-graph, unlike the demo service above: spec-strict SPARQL
     # 1.1, where an unscoped query sees only the default graph. test_qlever already covers an engine
     # that always unions, so between the two the system test proves NeoWiki's queries work under
-    # either semantics rather than relying on the more forgiving one.
-    command: serve --location /data --bind 0.0.0.0:7878
-    volumes:
-      - test-oxigraph-data:/data
+    # either semantics rather than relying on the more forgiving one. QueryOxigraphEndToEndTest
+    # asserts this store really is the strict one, so removing the flag difference fails loudly.
+    command: serve --bind 0.0.0.0:7878
 
   node:
     image: node:24
@@ -275,4 +276,3 @@ volumes:
   qlever-index-data:
   test-qlever-index-data:
   oxigraph-data:
-  test-oxigraph-data:

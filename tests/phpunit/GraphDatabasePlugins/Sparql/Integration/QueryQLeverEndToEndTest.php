@@ -18,7 +18,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Sparql\Integration
 class QueryQLeverEndToEndTest extends QuerySparqlEndToEndTestCase {
 
 	protected function storeUpdateUrl(): string {
-		return $this->requireEnv( 'QLEVER_TEST_URL', 'QLever' );
+		return $this->requireEnv( 'QLEVER_TEST_URL', 'QLever (the `test_qlever` service)' );
 	}
 
 	/**
@@ -30,6 +30,13 @@ class QueryQLeverEndToEndTest extends QuerySparqlEndToEndTestCase {
 
 	protected function storeAccessToken(): ?string {
 		return getenv( 'QLEVER_TEST_ACCESS_TOKEN' ) ?: null;
+	}
+
+	/**
+	 * Unconditionally, with no way to turn it off.
+	 */
+	protected function storeUnionsNamedGraphsIntoTheDefaultGraph(): bool {
+		return true;
 	}
 
 }

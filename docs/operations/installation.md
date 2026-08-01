@@ -321,12 +321,12 @@ qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes -
 qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes https://sparql.example.org/
 ```
 
-The bundled development stack sets the deny-all value, so federation is off unless you change it. The setting can
-also be changed at runtime through the store's endpoint by anyone holding its access token, so keep that token
-secret.
+The bundled development stack sets the deny-all value on its QLever services, so they do not federate unless you
+change it. The setting can also be changed at runtime through the store's endpoint by anyone holding its access
+token, so keep that token secret.
 
 Not every store can be told not to federate: Oxigraph has no such setting and will attempt the outbound request, so
-restricting it at the network layer is the only control.
+restricting it at the network layer is the only control. The stack's Oxigraph services federate for that reason.
 
 Restricting the store is worth combining with restricting who may query it. The query surfaces are gated by the
 `neowiki-query` right, which by default is granted to everyone including anonymous visitors; see

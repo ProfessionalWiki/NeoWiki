@@ -21,6 +21,8 @@ services:
   # Exposes the dev Oxigraph SPARQL endpoint on the host. Its query and update operations live on
   # separate paths, unlike QLever's single one, e.g.
   #   curl http://localhost:7878/query --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' -H 'Accept: application/sparql-results+json'
+  # Bound to the loopback interface, unlike the services above: Oxigraph has no authentication, so a
+  # published port is an open read-write SPARQL endpoint to everything that can route to this host.
   oxigraph:
     ports:
-      - "${OXIGRAPH_PORT:-7878}:7878"
+      - "127.0.0.1:${OXIGRAPH_PORT:-7878}:7878"
