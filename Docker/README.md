@@ -26,15 +26,16 @@ are already bound on the host.
 | `NEO_BROWSER_PORT` | (see below) | 7474    | Neo4j Browser (opt-in)     |
 | `NEO_BOLT_PORT`    | (see below) | 7687    | Neo4j Bolt endpoint (opt-in) |
 | `QLEVER_PORT`      | (see below) | 7019    | QLever SPARQL endpoint (opt-in) |
+| `OXIGRAPH_PORT`    | (see below) | 7878    | Oxigraph SPARQL endpoint (opt-in) |
 
-Neo4j and QLever ports are only exposed to the host when you run `make dev-tools` (which
-adds the `Docker/docker-compose.tools.yml` overlay). They use conventional defaults
-(7474, 7687, 7019) and are not auto-allocated, so `make dev-tools` is best used with one
-worktree at a time. Override `NEO_BROWSER_PORT` / `NEO_BOLT_PORT` / `QLEVER_PORT` if you
-need to run two tools-mode worktrees simultaneously.
+Neo4j, QLever and Oxigraph ports are only exposed to the host when you run `make dev-tools`
+(which adds the `Docker/docker-compose.tools.yml` overlay). They use conventional defaults
+(7474, 7687, 7019, 7878) and are not auto-allocated, so `make dev-tools` is best used with one
+worktree at a time. Override `NEO_BROWSER_PORT` / `NEO_BOLT_PORT` / `QLEVER_PORT` /
+`OXIGRAPH_PORT` if you need to run two tools-mode worktrees simultaneously.
 
-The MariaDB, (default) Neo4j and QLever ports are not exposed to the host. Reach them
-from inside the stack via `make bash` or `docker compose exec`.
+The MariaDB, (default) Neo4j, QLever and Oxigraph ports are not exposed to the host. Reach
+them from inside the stack via `make bash` or `docker compose exec`.
 
 ## QLever SPARQL store (dev)
 
@@ -89,6 +90,47 @@ each run clears (`DROP ALL`), so keeping updates in memory is enough. `make phpu
 up as part of the dev stack; in CI it is started explicitly (see `.github/workflows/ci-php.yml`),
 because its multi-step bring-up cannot be expressed as a GitHub Actions service container.
 
+## Oxigraph SPARQL store (dev)
+
+A second SPARQL engine, [Oxigraph](https://github.com/oxigraph/oxigraph), so the projection plugin
+can be exercised against more than one implementation. Unlike QLever it is not wired up by default:
+`SettingsTemplate.php` points the wiki at QLever, so nothing writes here until you repoint
+`$wgNeoWikiSparqlStores` at `http://oxigraph:7878/`. Queries and updates live on separate paths —
+`/query` and `/update` — so an entry for it must set `queryUrl` as well as `updateUrl`.
+
+It needs none of QLever's bring-up: no index to build, no persistence flag. RocksDB persists to the
+`oxigraph-data` named volume by default. No target empties that volume on its own; `make remove` (and
+`make reset`, which calls it) deletes every volume, so to reset only this store run `make down`, then
+`docker volume rm <project>_oxigraph-data`, then `make dev`.
+
+The service runs with `--union-default-graph`, which makes an unscoped query see every named graph, as
+QLever does unconditionally. Without it Oxigraph follows SPARQL 1.1, where an unscoped query sees only
+the default graph — always empty here, since NeoWiki writes pages into named graphs.
+
+Expose it on the host with `make dev-tools` (or the `docker-compose.tools.yml` overlay), which maps
+`OXIGRAPH_PORT` (default 7878):
+
+```sh
+curl http://localhost:7878/query \
+  --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' \
+  -H 'Accept: application/sparql-results+json'
+```
+
+Oxigraph has no authentication, so neither reads nor writes take a token. Keep it off any network you
+do not control.
+
+### `test_oxigraph` (SPARQL query system test)
+
+The system test runs against both engines, and `test_oxigraph` is its Oxigraph store — isolated from
+the demo `oxigraph` service the way `test_qlever` is from `qlever`. `phpunit.xml.dist` points the test
+at it via `OXIGRAPH_TEST_URL=http://test_oxigraph:7878`, a base URL the test derives both paths from;
+it is reached in-network only, with no host port.
+
+It deliberately runs **without** `--union-default-graph`, so the test faces spec-strict SPARQL 1.1.
+Between it and `test_qlever`, which always unions, the test proves NeoWiki's queries work under either
+semantics rather than relying on the more forgiving one. `make phpunit` brings it up as part of the
+dev stack; in CI it is started explicitly (see `.github/workflows/ci-php.yml`).
+
 ## Files
 
 - `Dockerfile` — multi-stage build: `production-mw` (MediaWiki + NeoWiki on the
@@ -99,8 +141,8 @@ because its multi-step bring-up cannot be expressed as a GitHub Actions service 
   the profile-gated `caddy` (the `server` profile, for HTTPS hosting).
 - `docker-compose.dev.yml` — dev overlay; switches `mediawiki` to the dev image,
   bind-mounts the NeoWiki source, sets `MW_MODE=dev`, and adds the dev-only sidecars
-  `test_neo`, `qlever` (SPARQL store, see above), `node`, and `mailcatcher`.
-- `docker-compose.tools.yml` — opt-in overlay that exposes Neo4j and QLever to the host.
+  `test_neo`, `qlever` and `oxigraph` (SPARQL stores, see above), `node`, and `mailcatcher`.
+- `docker-compose.tools.yml` — opt-in overlay that exposes Neo4j, QLever and Oxigraph to the host.
 - `SettingsTemplate.php` — `LocalSettings.php` that branches on `MW_MODE`.
 - `.env.dist` — tracked defaults; auto-copied to `.env` on first `make dev`.
 - `scripts/set-port.sh` — host port allocator used by `make dev`.

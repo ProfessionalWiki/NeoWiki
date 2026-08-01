@@ -206,8 +206,8 @@ content model, validated, or read.
 ## Optional: SPARQL graph stores
 
 Alongside Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This
-works with QLever and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF: every page
-becomes a named graph, replaced on each edit and dropped on deletion.
+works with QLever, Oxigraph and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF:
+every page becomes a named graph, replaced on each edit and dropped on deletion.
 
 A SPARQL store does not yet replace Neo4j: NeoWiki's interactive features (the Subject editing UIs, views, and value
 accessors) still require a configured Neo4j backend.
@@ -234,6 +234,30 @@ $wgNeoWikiSparqlStores = [
 ```
 
 A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
+
+### Stores with split endpoints
+
+`queryUrl` defaults to `updateUrl`, which only suits a store serving queries and updates on one path. A store that
+splits them must set both. Oxigraph, for instance, serves `/query` and `/update`:
+
+```php
+$wgNeoWikiSparqlStores = [
+	[
+		'updateUrl' => 'https://oxigraph.example/update',
+		'queryUrl' => 'https://oxigraph.example/query',
+		'projection' => 'native',
+	],
+];
+```
+
+There is no `accessToken` because Oxigraph has no authentication: it accepts every request, including updates, from
+anyone who can reach it. Put it behind network isolation or an authenticating reverse proxy. A deployment that
+separates reads from writes can serve queries from a second instance started with `oxigraph serve-read-only`.
+
+Unscoped queries also behave differently. Under SPARQL 1.1 they see only the default graph, which stays empty here
+because NeoWiki writes pages into named graphs, so queries must say `GRAPH`. QLever ignores that and always searches
+every graph; to get the same from Oxigraph, start it with `--union-default-graph`. Its durability needs no such flag:
+data given a `--location` is persisted by default.
 
 ### Several projections in one store
 
@@ -300,7 +324,10 @@ qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes https://sp
 
 The bundled development stack sets the deny-all value, so federation is off unless you change it. The setting can
 also be changed at runtime through the store's endpoint by anyone holding its access token, so keep that token
-secret. Other SPARQL stores have equivalent settings — consult their documentation.
+secret.
+
+Not every store can be told not to federate: Oxigraph has no such setting and will attempt the outbound request, so
+restrict it at the network layer instead. Check what your store offers before exposing its query surfaces.
 
 Restricting the store is worth combining with restricting who may query it. The query surfaces are gated by the
 `neowiki-query` right, which by default is granted to everyone including anonymous visitors; see

@@ -3,9 +3,10 @@ services:
   # overlay alongside the dev overlay, or by running `make dev-tools` from the
   # extension root.
   #
-  # Default ports (7474, 7687, 7019) are the Neo4j and QLever conventions and are not
-  # auto-allocated, so run the tools overlay with one worktree at a time. Override via
-  # env (NEO_BROWSER_PORT / NEO_BOLT_PORT / QLEVER_PORT) to run several simultaneously.
+  # Default ports (7474, 7687, 7019, 7878) are the Neo4j, QLever and Oxigraph conventions
+  # and are not auto-allocated, so run the tools overlay with one worktree at a time.
+  # Override via env (NEO_BROWSER_PORT / NEO_BOLT_PORT / QLEVER_PORT / OXIGRAPH_PORT) to
+  # run several simultaneously.
   neo:
     ports:
       - "${NEO_BROWSER_PORT:-7474}:7474"
@@ -16,3 +17,10 @@ services:
   qlever:
     ports:
       - "${QLEVER_PORT:-7019}:7019"
+
+  # Exposes the dev Oxigraph SPARQL endpoint on the host. Its query and update operations live on
+  # separate paths, unlike QLever's single one, e.g.
+  #   curl http://localhost:7878/query --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' -H 'Accept: application/sparql-results+json'
+  oxigraph:
+    ports:
+      - "${OXIGRAPH_PORT:-7878}:7878"
