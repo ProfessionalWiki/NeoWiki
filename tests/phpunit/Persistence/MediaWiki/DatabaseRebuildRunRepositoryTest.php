@@ -66,6 +66,20 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 'the store went away', $storedRun->error );
 	}
 
+	/**
+	 * A driver quoting the query it choked on runs far longer than the error column holds, and losing
+	 * the tail of a message beats losing the record of the failure. Cutting bytes rather than characters
+	 * would leave a broken one at the end of what is kept.
+	 */
+	public function testAnErrorTooLongForTheColumnIsCutAtACharacterBoundary(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli );
+
+		$repository->updateRun( $run->failed( str_repeat( '★', 30000 ) ) );
+
+		$this->assertSame( str_repeat( '★', 21843 ), $repository->getLatestRun( self::STORE )?->error );
+	}
+
 	public function testAStoreWithNoRunsHasNoActiveRun(): void {
 		$this->assertNull( $this->newRepository()->getActiveRun( self::STORE ) );
 	}
