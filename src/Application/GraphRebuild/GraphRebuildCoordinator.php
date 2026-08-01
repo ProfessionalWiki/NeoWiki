@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\GraphRebuild;
 
 use Closure;
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
@@ -56,6 +57,7 @@ class GraphRebuildCoordinator {
 		int $batchSize,
 		RebuildBatchObserver $observer
 	): RebuildRun {
+		self::refuseAnEmptyBatch( $batchSize );
 		$store = $this->getStore( $storeName );
 		$this->refuseWhenAlreadyRunning( $storeName );
 		// Built before the run is recorded as started, because building it can fail on its own — a
@@ -80,6 +82,7 @@ class GraphRebuildCoordinator {
 	 * @param int<1, max> $batchSize
 	 */
 	public function resume( string $storeName, int $batchSize, RebuildBatchObserver $observer ): RebuildRun {
+		self::refuseAnEmptyBatch( $batchSize );
 		$store = $this->getStore( $storeName );
 		$this->refuseWhenAlreadyRunning( $storeName );
 		$pageRebuilder = ( $this->newPageRebuilder )( $store );
@@ -100,6 +103,19 @@ class GraphRebuildCoordinator {
 			batchSize: $batchSize,
 			observer: $observer
 		);
+	}
+
+	/**
+	 * A batch of nothing reads no page, so the walk over the wiki would never advance and the run would
+	 * end reporting a reconciled wiki it never touched. Checked rather than left to the parameter type,
+	 * which only binds the callers that are statically analysed.
+	 */
+	private static function refuseAnEmptyBatch( int $batchSize ): void {
+		if ( $batchSize < 1 ) {
+			throw new InvalidArgumentException(
+				'A rebuild batch must hold at least one page, not ' . $batchSize . '.'
+			);
+		}
 	}
 
 	private function getStore( string $storeName ): GraphDatabasePlugin {

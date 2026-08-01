@@ -57,6 +57,13 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	 * start, or could not reconcile every page — is a rebuild that cannot be called done.
 	 */
 	public function execute(): bool {
+		$batchSize = $this->getRebuildBatchSize();
+
+		if ( $batchSize === null ) {
+			$this->error( '--batch-size must be a whole number of pages, and at least 1.' );
+			return false;
+		}
+
 		$coordinator = NeoWikiExtension::getInstance()->newGraphRebuildCoordinator();
 		$storeNames = $this->getStoreNames( $coordinator );
 
@@ -68,7 +75,7 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 		$storesInSync = 0;
 
 		foreach ( $storeNames as $storeName ) {
-			if ( $this->rebuildStore( $coordinator, $storeName ) ) {
+			if ( $this->rebuildStore( $coordinator, $storeName, $batchSize ) ) {
 				$storesInSync++;
 			}
 		}
@@ -101,15 +108,17 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	 * A store whose rebuild cannot start, or that fails partway, must not stop the stores queued after
 	 * it: scoping a run to one store is what makes each store independently recoverable.
 	 *
+	 * @param int<1, max> $batchSize
+	 *
 	 * @return bool Whether the store came out of this in sync with the wiki
 	 */
-	private function rebuildStore( GraphRebuildCoordinator $coordinator, string $storeName ): bool {
+	private function rebuildStore( GraphRebuildCoordinator $coordinator, string $storeName, int $batchSize ): bool {
 		$this->outputChanneled( $storeName . ': starting' );
 
 		try {
 			$run = $this->hasOption( 'resume' )
-				? $coordinator->resume( $storeName, $this->getRebuildBatchSize(), $this )
-				: $coordinator->rebuild( $storeName, RebuildTrigger::Cli, $this->getRebuildBatchSize(), $this );
+				? $coordinator->resume( $storeName, $batchSize, $this )
+				: $coordinator->rebuild( $storeName, RebuildTrigger::Cli, $batchSize, $this );
 		} catch ( NothingToResumeException $e ) {
 			// Resuming every store passes over the ones already reconciled, since their last rebuild
 			// finished with nothing left. A store that has never been rebuilt, or whose last run left
@@ -154,13 +163,27 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	}
 
 	/**
-	 * A batch of nothing would report a rebuild that reconciled the whole wiki without reading a single
-	 * page, so a nonsensical --batch-size becomes the smallest one that makes progress.
+	 * How many pages to project between recordings. Read from the raw option rather than through
+	 * Maintenance, which turns anything unparseable into 0: a batch of nothing would report a rebuild
+	 * that reconciled the whole wiki without reading a single page, and rounding one up to 1 would walk
+	 * the wiki a page at a time under an option the operator got wrong, saying nothing about it.
 	 *
-	 * @return int<1, max>
+	 * @return int<1, max>|null Null when --batch-size is not a whole number of at least one page
 	 */
-	private function getRebuildBatchSize(): int {
-		return max( 1, $this->getBatchSize() ?? self::DEFAULT_BATCH_SIZE );
+	private function getRebuildBatchSize(): ?int {
+		$requested = $this->getOption( 'batch-size' );
+
+		if ( $requested === null ) {
+			return self::DEFAULT_BATCH_SIZE;
+		}
+
+		if ( !ctype_digit( (string)$requested ) ) {
+			return null;
+		}
+
+		$batchSize = (int)$requested;
+
+		return $batchSize < 1 ? null : $batchSize;
 	}
 
 	public function afterPageBatch( RebuildRun $run, int $totalPages ): void {
