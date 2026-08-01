@@ -6,11 +6,14 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\GraphRebuild;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use LogicException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NothingToResumeException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildAlreadyRunningException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\UnknownGraphStoreException;
+use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
@@ -19,12 +22,17 @@ use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
+use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryDeletedSubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\NullRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use RuntimeException;
 use TestLogger;
 use Wikimedia\Rdbms\DBUnexpectedError;
@@ -232,6 +240,38 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->rebuild();
 	}
 
+	/**
+	 * The rebuilder is what projects into the store, and building it can fail on its own — a backend
+	 * whose configuration will not resolve, say. A run recorded before that is one nothing ran, and it
+	 * blocks every later rebuild of the store, which both starting and resuming refuse while one is on.
+	 */
+	public function testARebuilderThatCannotBeBuiltLeavesNoRunBehind(): void {
+		$coordinator = $this->newCoordinatorThatCannotBuildARebuilder();
+
+		try {
+			$coordinator->rebuild( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
+		} catch ( LogicException ) {
+		}
+
+		$this->assertNull( $this->newRunRepository()->getLatestRun( self::STORE ) );
+	}
+
+	public function testARebuilderThatCannotBeBuiltLeavesTheRunItWouldHaveResumedResumable(): void {
+		$this->recordFailedRunStoppedAt( cursor: 0, processed: 0 );
+		$coordinator = $this->newCoordinatorThatCannotBuildARebuilder();
+
+		try {
+			$coordinator->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+		} catch ( LogicException ) {
+		}
+
+		$this->assertSame(
+			RebuildStatus::Failed,
+			$this->newRunRepository()->getLatestRun( self::STORE )?->status,
+			'the run is left as the terminal one a later --resume can still pick up'
+		);
+	}
+
 	public function testAStoreRebuildingDoesNotBlockAnotherStore(): void {
 		$this->createSubjectPages( 'Page for the free store' );
 		$this->registerNamedGraphDatabasePlugins( [
@@ -388,6 +428,28 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 	private function newRunRepository(): RebuildRunRepository {
 		return NeoWikiExtension::getInstance()->newRebuildRunRepository();
+	}
+
+	/**
+	 * Wired by hand, because the production factory cannot be made to fail from the outside.
+	 */
+	private function newCoordinatorThatCannotBuildARebuilder(): GraphRebuildCoordinator {
+		return new GraphRebuildCoordinator(
+			stores: [ self::STORE => new SpyGraphDatabasePlugin() ],
+			runs: $this->newRunRepository(),
+			executor: $this->newExecutor( new InMemorySubjectPageIdsLookup(), new NullLogger() ),
+			newPageRebuilder: static fn (): SubjectPageRebuilder => throw new LogicException( 'unresolvable backend' ),
+		);
+	}
+
+	private function newExecutor( SubjectPageIdsLookup $subjectPageIds, LoggerInterface $logger ): GraphRebuildExecutor {
+		return new GraphRebuildExecutor(
+			subjectPageIds: $subjectPageIds,
+			deletedSubjectPageIds: new InMemoryDeletedSubjectPageIdsLookup(),
+			runs: $this->newRunRepository(),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			logger: $logger,
+		);
 	}
 
 	private function recordFailedRunStoppedAt( int $cursor, int $processed ): RebuildRun {

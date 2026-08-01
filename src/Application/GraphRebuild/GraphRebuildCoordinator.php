@@ -58,8 +58,18 @@ class GraphRebuildCoordinator {
 	): RebuildRun {
 		$store = $this->getStore( $storeName );
 		$this->refuseWhenAlreadyRunning( $storeName );
+		// Built before the run is recorded as started, because building it can fail on its own — a
+		// backend whose configuration will not resolve — and a store must not be left with a run nothing
+		// ever ran, which every later rebuild of it then refuses to start alongside.
+		$pageRebuilder = ( $this->newPageRebuilder )( $store );
 
-		return $this->executeRun( $this->runs->startRun( $storeName, $trigger ), $store, $batchSize, $observer );
+		return $this->executor->execute(
+			run: $this->runs->startRun( $storeName, $trigger ),
+			store: $store,
+			pageRebuilder: $pageRebuilder,
+			batchSize: $batchSize,
+			observer: $observer
+		);
 	}
 
 	/**
@@ -72,6 +82,7 @@ class GraphRebuildCoordinator {
 	public function resume( string $storeName, int $batchSize, RebuildBatchObserver $observer ): RebuildRun {
 		$store = $this->getStore( $storeName );
 		$this->refuseWhenAlreadyRunning( $storeName );
+		$pageRebuilder = ( $this->newPageRebuilder )( $store );
 
 		$latestRun = $this->runs->getLatestRun( $storeName );
 
@@ -82,22 +93,10 @@ class GraphRebuildCoordinator {
 		$reopenedRun = $latestRun->reopened();
 		$this->runs->updateRun( $reopenedRun );
 
-		return $this->executeRun( $reopenedRun, $store, $batchSize, $observer );
-	}
-
-	/**
-	 * @param int<1, max> $batchSize
-	 */
-	private function executeRun(
-		RebuildRun $run,
-		GraphDatabasePlugin $store,
-		int $batchSize,
-		RebuildBatchObserver $observer
-	): RebuildRun {
 		return $this->executor->execute(
-			run: $run,
+			run: $reopenedRun,
 			store: $store,
-			pageRebuilder: ( $this->newPageRebuilder )( $store ),
+			pageRebuilder: $pageRebuilder,
 			batchSize: $batchSize,
 			observer: $observer
 		);
