@@ -29,7 +29,8 @@ Two things to plan around:
   say, or a named graph left behind in a SPARQL store — is not something the rebuild can find. For a guaranteed-clean
   result, empty the graph store before rebuilding: wipe Neo4j's data volume, or drop the wiki's named graphs from it.
 - Each store is rebuilt after the previous one, so the time scales with the number of pages times the number of
-  configured stores.
+  configured stores. Long rebuilds are interruptible: a stopped run is continued with `--resume`, and `--store`
+  rebuilds only the store that needs it.
 
 ### Rebuilding one store
 
@@ -64,7 +65,7 @@ A rebuild killed outright — `kill -9`, or the machine going down — leaves it
 recording the run as cancelled, which keeps the cursor `--resume` continues from:
 
 ```sql
-UPDATE neowiki_rebuild_runs SET nwrr_status = 'cancelled' WHERE nwrr_id = <id>;
+UPDATE neowiki_rebuild_runs SET nwrr_status = 'cancelled' WHERE nwrr_store = '<name>' AND nwrr_status = 'running';
 ```
 
 ## Upgrades
