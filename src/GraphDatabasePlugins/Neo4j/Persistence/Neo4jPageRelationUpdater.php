@@ -138,9 +138,12 @@ class Neo4jPageRelationUpdater {
 			// the id and wiki_id properties and the Subject label. ON CREATE keeps an already-existing
 			// target (a real Subject or an earlier stub) untouched. The stub is upgraded in place when the
 			// real Subject is later saved, since the save path matches the same :Subject label and id.
+			// The source is stamped the same way rather than relying on the caller having created it:
+			// wiki_id is what scopes a node to its wiki, so no path may leave a node without one.
 			$this->transaction->run(
 				'UNWIND $relations AS row
 					MERGE (subject:Subject {id: row.subjectId})
+					ON CREATE SET subject.wiki_id = $wikiId
 					MERGE (target:Subject {id: row.targetId})
 					ON CREATE SET target.wiki_id = $wikiId
 					MERGE (subject)-[relation:' . Cypher::escape( (string)$relationType ) . ' {id: row.relationId}]->(target)

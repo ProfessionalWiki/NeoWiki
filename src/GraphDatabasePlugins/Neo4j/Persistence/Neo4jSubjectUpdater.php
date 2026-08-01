@@ -12,7 +12,6 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -46,14 +45,6 @@ class Neo4jSubjectUpdater {
 		$this->updateRelations( $subjects );
 		$this->updateHasSubjectRelations( $subjects );
 		$this->updateNodeLabels( $subjects, $currentLabels );
-	}
-
-	public function updateSubject( Subject $subject, bool $isMainSubject ): void {
-		$this->updateSubjects(
-			$isMainSubject
-				? new PageSubjects( $subject, new SubjectMap() )
-				: new PageSubjects( null, new SubjectMap( $subject ) )
-		);
 	}
 
 	/**

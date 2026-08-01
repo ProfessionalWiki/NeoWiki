@@ -4,24 +4,25 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 
-use Laudis\Neo4j\Databags\SummarizedResult;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jOrphanCandidates;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectRelationUpdater;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jPageRelationUpdater;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectRelationUpdater
+ * Drives the relation reconciliation for a single Subject. The multi-Subject batching it exists for
+ * is covered by Neo4jProjectionStoreTest, which saves whole pages.
+ *
+ * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jPageRelationUpdater
  * @group Database
  */
-class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
+class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 
 	private const string SUBJECT_ID = 'sTestSRU1111111';
 	private const string TARGET_SUBJECT_1 = 'sTestSRU1111112';
@@ -37,7 +38,7 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
 
 		$this->createPageWithSubjects(
-			pageName: 'SubjectRelationUpdaterTest',
+			pageName: 'PageRelationUpdaterTest',
 			mainSubject: TestSubject::build( id: self::SUBJECT_ID, label: 'Relation holder' ),
 			childSubjects: new SubjectMap(
 				TestSubject::build( id: self::TARGET_SUBJECT_1, label: 'Target 1' ),
@@ -65,14 +66,11 @@ class Neo4jSubjectRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function updateRelations( TypedRelationList $relations ): void {
-		$updater = new Neo4jSubjectRelationUpdater(
-			new SubjectId( self::SUBJECT_ID ),
-			$relations,
+		( new Neo4jPageRelationUpdater(
 			NeoWikiExtension::getInstance()->getNeo4jClient(),
 			self::WIKI_ID,
 			new Neo4jOrphanCandidates()
-		);
-		$updater->updateRelations();
+		) )->updateRelations( [ self::SUBJECT_ID => $relations ] );
 	}
 
 	private function assertHasRelations( TypedRelationList $expected ): void {

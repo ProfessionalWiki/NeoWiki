@@ -8,11 +8,13 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Types\Date;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use DateTimeImmutable;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
@@ -66,16 +68,22 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 		);
 	}
 
-	public function testUpdateSubjectWithMissingSchemaDoesNotRunTransaction(): void {
+	private function updateSubject(): void {
+		$this->newSubjectUpdater()->updateSubjects(
+			new PageSubjects( null, new SubjectMap( $this->subject ) )
+		);
+	}
+
+	public function testSubjectWithMissingSchemaDoesNotRunTransaction(): void {
 		$this->transaction
 			->expects( $this->never() )
 			->method( 'run' );
 
-		$this->newSubjectUpdater()->updateSubject( $this->subject, false );
+		$this->updateSubject();
 	}
 
-	public function testUpdateSubjectWithMissingSchemaLogsWarning(): void {
-		$this->newSubjectUpdater()->updateSubject( $this->subject, false );
+	public function testSubjectWithMissingSchemaLogsWarning(): void {
+		$this->updateSubject();
 
 		$this->assertSame(
 			[ 'Schema not found: SubjectUpdaterTestSchema' ],
