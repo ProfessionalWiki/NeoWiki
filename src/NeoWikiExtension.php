@@ -923,10 +923,11 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Import path: projects the current revision of a page like the rebuild path, but with the hook
-	 * path's failure isolation, since a projection failure must not abort the user's import.
+	 * Projects the current revision of a page into every graph store with the hook path's failure
+	 * isolation: a store failure is logged and skipped, because a refresh must not abort its caller —
+	 * a user's import, or an extension reacting to a change of its own page data.
 	 */
-	public function newImportSubjectPageRebuilder(): SubjectPageRebuilder {
+	public function newSubjectPageRebuilder(): SubjectPageRebuilder {
 		return $this->newSubjectPageRebuilderWith( $this->getStoreContentUC() );
 	}
 

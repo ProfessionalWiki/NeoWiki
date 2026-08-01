@@ -298,7 +298,7 @@ class NeoWikiHooks {
 		int $sRevCount,
 		array $pageInfo
 	): void {
-		NeoWikiExtension::getInstance()->newImportSubjectPageRebuilder()->rebuildFromPrimary( $title );
+		NeoWikiExtension::getInstance()->newSubjectPageRebuilder()->rebuildFromPrimary( $title );
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
