@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\GraphDatabase;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
+use Psr\Log\Test\TestLogger;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 
 /**
@@ -42,6 +43,16 @@ class GraphDatabasePluginRegistryTest extends TestCase {
 		$registry->addPlugin( 'store', new SpyGraphDatabasePlugin() );
 
 		$this->assertSame( [ 'store' => $first ], $registry->getPlugins() );
+	}
+
+	public function testAPluginRepeatingATakenNameIsWarnedAbout(): void {
+		$logger = new TestLogger();
+		$registry = new GraphDatabasePluginRegistry( $logger );
+
+		$registry->addPlugin( 'store', new SpyGraphDatabasePlugin() );
+		$registry->addPlugin( 'store', new SpyGraphDatabasePlugin() );
+
+		$this->assertTrue( $logger->hasWarningRecords() );
 	}
 
 	public function testEmptyRegistryHasNoPlugins(): void {

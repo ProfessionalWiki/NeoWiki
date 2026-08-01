@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
 use Psr\Log\LoggerInterface;
+use Throwable;
 use Wikimedia\Rdbms\DBError;
 use Wikimedia\RequestTimeout\TimeoutException;
 
@@ -26,18 +27,21 @@ use Wikimedia\RequestTimeout\TimeoutException;
  * a page deleted while the store was unreachable would otherwise stay queryable for good. Deleting a
  * page that is already absent is a no-op, so repeating the second phase is safe.
  *
- * Both phases run in batches, recording progress after each one. That is what makes a rebuild
- * resumable, and it bounds the memory a rebuild needs regardless of how large the wiki is.
+ * The first phase runs in batches, recording progress after each one. That is what makes a rebuild
+ * resumable, and it bounds the memory the walk over the wiki needs. The second phase is batched for
+ * progress and replication only: the pages MediaWiki no longer has are looked up in one go, since a
+ * wiki accumulates far fewer of those than it has pages.
  *
  * Failures are separated by what they say about the rest of the run:
  *
  * - A page that fails to project or to be removed is logged and counted, and the run carries on. One
  *   unreadable page must not cost the wiki its whole rebuild.
- * - Anything that says the store itself cannot be reached — including a failure to initialize it — ends
- *   the run. Continuing would only pile up one failure per remaining page, and the recorded cursor
- *   would then be worthless for resuming.
- * - A request timeout or a wiki-database error ends the run for the same reason: the pages after this
- *   one would fail identically.
+ * - A store that will not open — one whose initialize() throws — ends the run before a page is read.
+ *   Continuing would only pile up one failure per page in the wiki, and the recorded cursor would then
+ *   be worthless for resuming. A store that dies *during* the walk is not recognised as such: its pages
+ *   fail one by one, and the run ends as one that reconciled nothing. The exit status still reports it.
+ * - A request timeout or a wiki-database error ends the run: the pages after this one would fail
+ *   identically.
  */
 class GraphRebuildExecutor {
 
@@ -66,7 +70,9 @@ class GraphRebuildExecutor {
 			$store->initialize();
 			$this->projectPages( $run, $progress, $pageRebuilder, $batchSize, $observer );
 			$this->removeDeletedPages( $run, $progress, $store, $batchSize, $observer );
-		} catch ( Exception $e ) {
+		} catch ( Throwable $e ) {
+			// Broader than the Exception boundary elsewhere: a run left recorded as still going blocks
+			// every later rebuild of that store, so even a programming bug has to be recorded as its end.
 			return $this->finish( $progress->applyTo( $run )->failed( $e->getMessage() ) );
 		}
 
@@ -110,7 +116,7 @@ class GraphRebuildExecutor {
 		$title = $this->titleFactory->newFromID( $pageId );
 
 		if ( $title === null ) {
-			// Deleted between enumerating the batch and reaching it. The deletion phase removes it.
+			$this->logSkippedPage( $pageId, 'MediaWiki no longer has it' );
 			$progress->pageSkipped( $pageId );
 			return;
 		}
@@ -130,7 +136,19 @@ class GraphRebuildExecutor {
 			return;
 		}
 
+		$this->logSkippedPage( $pageId, 'it carries no Subject to project' );
 		$progress->pageSkipped( $pageId );
+	}
+
+	/**
+	 * A skipped page is neither projected nor counted as failed, so without this it would leave no trace
+	 * at all — and a page skipped because a replica has not caught up is one the store is left stale on.
+	 */
+	private function logSkippedPage( int $pageId, string $reason ): void {
+		$this->logger->info(
+			'NeoWiki graph rebuild skipped page ' . $pageId . ': ' . $reason . '.',
+			[ 'pageId' => $pageId ]
+		);
 	}
 
 	/**

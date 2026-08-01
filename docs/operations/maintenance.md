@@ -45,8 +45,8 @@ that is unreachable therefore costs only its own rebuild: the other stores still
 
 ### Interrupted rebuilds
 
-The rebuild walks the wiki in batches, recording after each one how far it got. If it stops before the end — the store
-became unreachable, or you interrupted it — continue from there rather than starting over:
+The rebuild walks the wiki in batches, recording after each one how far it got. If a run ends before reconciling the
+whole wiki, continue it from where it stopped rather than starting over:
 
 ```sh
 php maintenance/run.php NeoWiki:RebuildGraphDatabases --store EDM --resume
@@ -55,7 +55,11 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases --store EDM --resume
 Pass `--batch-size` to change how many pages are projected between recordings; it defaults to 200.
 
 A page the store rejects is logged on the `NeoWiki` channel and counted, and the rebuild carries on. The script exits
-non-zero whenever anything was left unreconciled, so a scheduled rebuild cannot fail silently.
+non-zero whenever a store was left out of sync, so a scheduled rebuild cannot fail silently. Where a run reports pages
+it could not reconcile, the `NeoWiki` channel says which ones and why.
+
+A rebuild killed outright — `kill -9`, or the machine going down — leaves its run recorded as still going, and every
+later rebuild of that store refuses to start while it is. Clear the run's row to release it.
 
 ## Upgrades
 

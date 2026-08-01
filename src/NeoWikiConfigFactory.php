@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki;
 use MediaWiki\Config\Config;
 use MediaWiki\WikiMap\WikiMap;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -47,7 +48,9 @@ class NeoWikiConfigFactory {
 		}
 
 		$stores = [];
-		$takenNames = [];
+		// The bundled Neo4j backend claims its name before any configured store can, so an entry taking
+		// it cannot silently replace the backend it names.
+		$takenNames = [ Neo4jPlugin::STORE_NAME => true ];
 
 		foreach ( $raw as $index => $entry ) {
 			$store = $this->buildSparqlStore( $entry, $index );
