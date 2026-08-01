@@ -55,6 +55,35 @@ class GraphDatabasePluginRegistryTest extends TestCase {
 		$this->assertTrue( $logger->hasWarningRecords() );
 	}
 
+	public function testAPluginTakingAReservedNameIsIgnored(): void {
+		$registry = new GraphDatabasePluginRegistry();
+		$registry->reserveNames( 'neo4j' );
+
+		$registry->addPlugin( 'neo4j', new SpyGraphDatabasePlugin() );
+
+		$this->assertSame( [], $registry->getPlugins() );
+	}
+
+	public function testAPluginTakingAReservedNameIsWarnedAbout(): void {
+		$logger = new TestLogger();
+		$registry = new GraphDatabasePluginRegistry( $logger );
+		$registry->reserveNames( 'neo4j' );
+
+		$registry->addPlugin( 'neo4j', new SpyGraphDatabasePlugin() );
+
+		$this->assertTrue( $logger->hasWarningThatContains( 'already taken' ) );
+	}
+
+	public function testReservingANameLeavesTheOtherNamesFree(): void {
+		$registry = new GraphDatabasePluginRegistry();
+		$registry->reserveNames( 'neo4j', 'EDM' );
+		$plugin = new SpyGraphDatabasePlugin();
+
+		$registry->addPlugin( 'redherb', $plugin );
+
+		$this->assertSame( [ 'redherb' => $plugin ], $registry->getPlugins() );
+	}
+
 	public function testEmptyRegistryHasNoPlugins(): void {
 		$this->assertSame( [], ( new GraphDatabasePluginRegistry() )->getPlugins() );
 	}

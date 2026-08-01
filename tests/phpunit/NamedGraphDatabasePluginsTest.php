@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use TestLogger;
 
 /**
  * Every configured graph database backend is addressable by name, which is what scopes a rebuild to
@@ -57,12 +58,31 @@ class NamedGraphDatabasePluginsTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testAnExtensionCannotShadowABundledBackend(): void {
+		$logger = new TestLogger( true, null, true );
+		$this->setLogger( 'NeoWiki', $logger );
 		$spy = new SpyGraphDatabasePlugin();
 		$this->registerNamedGraphDatabasePlugins( [ Neo4jPlugin::STORE_NAME => $spy ] );
 
 		$plugins = NeoWikiExtension::getInstance()->getNamedGraphDatabasePlugins();
+		$warnings = self::warnings( $logger );
 
 		$this->assertNotSame( $spy, $plugins[Neo4jPlugin::STORE_NAME] );
+		$this->assertCount( 1, $warnings, 'the plugin is dropped with a warning rather than in silence' );
+		$this->assertStringContainsString( 'already taken', $warnings[0][1] );
+		$this->assertSame(
+			[ 'name' => Neo4jPlugin::STORE_NAME ],
+			$warnings[0][2],
+			'the warning names the store the plugin tried to take'
+		);
+	}
+
+	/**
+	 * @return array[]
+	 */
+	private static function warnings( TestLogger $logger ): array {
+		return array_values(
+			array_filter( $logger->getBuffer(), static fn ( array $record ): bool => $record[0] === 'warning' )
+		);
 	}
 
 	/**

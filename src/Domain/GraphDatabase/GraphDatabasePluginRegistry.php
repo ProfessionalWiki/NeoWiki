@@ -13,7 +13,9 @@ use Psr\Log\NullLogger;
  * The name is what a scoped graph rebuild is addressed by, and what its run records are filed under, so
  * it must identify exactly one backend. A plugin repeating a name already taken is skipped with a
  * warning, the way a configured store repeating one is: keeping the first registration leaves the
- * backends registered before it projecting as they were.
+ * backends registered before it projecting as they were. The names the bundled backends answer to are
+ * reserved here for the same reason, so a plugin taking one is refused rather than quietly dropped
+ * where the two sets meet.
  */
 class GraphDatabasePluginRegistry {
 
@@ -22,13 +24,24 @@ class GraphDatabasePluginRegistry {
 	 */
 	private array $plugins = [];
 
+	/**
+	 * @var array<string, true> Keys are the store names the bundled backends hold
+	 */
+	private array $reservedNames = [];
+
 	public function __construct(
 		private readonly LoggerInterface $logger = new NullLogger(),
 	) {
 	}
 
+	public function reserveNames( string ...$names ): void {
+		foreach ( $names as $name ) {
+			$this->reservedNames[$name] = true;
+		}
+	}
+
 	public function addPlugin( string $name, GraphDatabasePlugin $plugin ): void {
-		if ( isset( $this->plugins[$name] ) ) {
+		if ( isset( $this->reservedNames[$name] ) || isset( $this->plugins[$name] ) ) {
 			$this->logger->warning(
 				'Ignoring the graph database plugin registered as "{name}": that name is already taken. '
 				. 'Namespace it to the extension registering it.',
