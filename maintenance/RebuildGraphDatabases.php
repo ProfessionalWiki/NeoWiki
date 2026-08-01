@@ -157,9 +157,9 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 		$this->waitForReplication();
 	}
 
-	public function afterDeletionBatch( RebuildRun $run, int $removed, int $totalDeleted ): void {
+	public function afterDeletionBatch( RebuildRun $run, int $removedSoFar, int $totalDeleted ): void {
 		$this->outputChanneled(
-			$run->store . ': ' . $removed . '/' . $totalDeleted . ' deleted pages removed'
+			$run->store . ': ' . $removedSoFar . '/' . $totalDeleted . ' deleted pages removed'
 		);
 		$this->waitForReplication();
 	}
