@@ -128,7 +128,8 @@ the Page node. No new revision is created. `rebuild()` returns a `PageRefreshOut
 - `SkippedUnreadablePageProperties` — the page's properties could not be built, for instance because a provider or the
   page's own parse threw.
 
-Genuine failures (such as the graph store being unreachable) throw rather than returning an outcome.
+A graph store that fails is logged and skipped, exactly as on a normal page save, so the refresh cannot abort
+your caller; only request timeouts and wiki-database errors throw.
 
 ### Graph Database Backends
 
