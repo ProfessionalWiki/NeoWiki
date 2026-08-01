@@ -183,6 +183,11 @@ class NeoWikiHooks {
 	 * @see LoadExtensionSchemaUpdatesHook
 	 */
 	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ): void {
+		$updater->addExtensionTable(
+			'neowiki_rebuild_runs',
+			dirname( __DIR__, 2 ) . '/sql/' . $updater->getDB()->getType() . '/neowiki_rebuild_runs.sql'
+		);
+
 		$updater->addExtensionUpdate( [ [ self::class, 'initializeGraphDatabases' ] ] );
 	}
 

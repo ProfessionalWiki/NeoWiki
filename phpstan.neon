@@ -21,3 +21,6 @@ parameters:
 		- '#function array_map expects#'
 		- '#generic interface Laudis#'
 		- '#generic class Laudis#'
+		# MediaWiki declares expr()'s operator as a union of literals written with escape sequences
+		# ('\x3E'), which PHPStan reads as four-character strings, so every real operator is rejected.
+		- '#\$op of method Wikimedia\\Rdbms\\IReadableDatabase::expr\(\) expects#'

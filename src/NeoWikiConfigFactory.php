@@ -33,6 +33,10 @@ class NeoWikiConfigFactory {
 	 * without a usable `updateUrl`) is skipped with a warning rather than throwing: a config typo must
 	 * not take down the wiki, but it must not be silent either.
 	 *
+	 * A store name must identify exactly one store, since that is how a scoped rebuild addresses it, so
+	 * an entry repeating a name already taken is skipped the same way. The first entry claiming a name
+	 * keeps it: dropping the later duplicate leaves the stores before it configured as they were.
+	 *
 	 * @return SparqlStoreConfig[]
 	 */
 	private function buildSparqlStores( Config $config ): array {
@@ -43,13 +47,26 @@ class NeoWikiConfigFactory {
 		}
 
 		$stores = [];
+		$takenNames = [];
 
 		foreach ( $raw as $index => $entry ) {
 			$store = $this->buildSparqlStore( $entry, $index );
 
-			if ( $store !== null ) {
-				$stores[] = $store;
+			if ( $store === null ) {
+				continue;
 			}
+
+			if ( isset( $takenNames[$store->name] ) ) {
+				$this->logger->warning(
+					'Ignoring NeoWikiSparqlStores entry {index}: the name "{name}" is already taken by an '
+					. 'earlier entry. Give one of them an explicit "name".',
+					[ 'index' => $index, 'name' => $store->name ]
+				);
+				continue;
+			}
+
+			$takenNames[$store->name] = true;
+			$stores[] = $store;
 		}
 
 		return $stores;
@@ -61,9 +78,9 @@ class NeoWikiConfigFactory {
 			return null;
 		}
 
-		$updateUrl = $entry['updateUrl'] ?? null;
+		$updateUrl = self::stringValue( $entry, 'updateUrl' );
 
-		if ( !is_string( $updateUrl ) || trim( $updateUrl ) === '' ) {
+		if ( $updateUrl === null ) {
 			$this->logger->warning(
 				'Ignoring NeoWikiSparqlStores entry {index}: missing or empty "updateUrl".',
 				[ 'index' => $index ]
@@ -71,20 +88,37 @@ class NeoWikiConfigFactory {
 			return null;
 		}
 
-		$accessToken = $entry['accessToken'] ?? null;
-		$projection = $entry['projection'] ?? null;
-
-		// The read surfaces query `queryUrl`; it defaults to `updateUrl` because for QLever the query and
-		// update endpoints are the same value. A store that separates them (e.g. a read replica or a
-		// read-protected endpoint) sets `queryUrl` explicitly.
-		$queryUrl = $entry['queryUrl'] ?? null;
+		$projection = self::stringValue( $entry, 'projection' ) ?? RdfPageProjector::PROJECTION;
 
 		return new SparqlStoreConfig(
 			updateUrl: $updateUrl,
-			queryUrl: is_string( $queryUrl ) && trim( $queryUrl ) !== '' ? $queryUrl : $updateUrl,
-			accessToken: is_string( $accessToken ) && $accessToken !== '' ? $accessToken : null,
-			projection: is_string( $projection ) && $projection !== '' ? $projection : RdfPageProjector::PROJECTION,
+			// The read surfaces query `queryUrl`; it defaults to `updateUrl` because for QLever the query
+			// and update endpoints are the same value. A store that separates them (e.g. a read replica or
+			// a read-protected endpoint) sets `queryUrl` explicitly.
+			queryUrl: self::stringValue( $entry, 'queryUrl' ) ?? $updateUrl,
+			accessToken: self::stringValue( $entry, 'accessToken' ),
+			projection: $projection,
+			// The projection is unique for as long as each store holds one, which makes it the name that
+			// needs no configuring. Entries that would collide name themselves.
+			name: self::stringValue( $entry, 'name' ) ?? $projection,
 		);
+	}
+
+	/**
+	 * A configured string, or null when the key is absent or holds nothing but whitespace. Surrounding
+	 * whitespace is a typo in every setting here, and a padded store name or URL would silently fail to
+	 * match, so it is trimmed off rather than carried.
+	 *
+	 * @param array<mixed> $entry
+	 */
+	private static function stringValue( array $entry, string $key ): ?string {
+		$value = $entry[$key] ?? null;
+
+		if ( !is_string( $value ) || trim( $value ) === '' ) {
+			return null;
+		}
+
+		return trim( $value );
 	}
 
 	/**

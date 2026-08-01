@@ -70,6 +70,7 @@ class NeoWikiConfigTest extends TestCase {
 				queryUrl: 'https://replica.example/api',
 				accessToken: null,
 				projection: 'native',
+				name: 'native',
 			),
 			$this->newStore( 'https://qlever.example/api', 'EDM' )
 		);
@@ -85,6 +86,7 @@ class NeoWikiConfigTest extends TestCase {
 				queryUrl: 'https://qlever.example/api',
 				accessToken: null,
 				projection: 'EDM',
+				name: 'EDM',
 			)
 		);
 
@@ -121,6 +123,7 @@ class NeoWikiConfigTest extends TestCase {
 			queryUrl: $url,
 			accessToken: null,
 			projection: $projection,
+			name: $projection,
 		);
 	}
 

@@ -5,23 +5,28 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Maintenance;
 
 use Exception;
-use LogicException;
 use Maintenance;
-use MediaWiki\MediaWikiServices;
-use MediaWiki\Storage\NameTableAccessException;
-use MediaWiki\Title\Title;
-use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
-use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
-use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildBatchObserver;
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../..';
 
 require_once $basePath . '/maintenance/Maintenance.php';
 
-class RebuildGraphDatabases extends Maintenance {
+/**
+ * Reconciles the graph stores with the wiki, one store per run.
+ *
+ * The script is a shell over {@see GraphRebuildCoordinator}: it decides which stores to rebuild and
+ * where the progress is printed, and the coordinator does the rebuilding. It observes its own runs, so
+ * each batch reports progress and waits for the replicas before the next one is read.
+ */
+class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver {
+
+	private const DEFAULT_BATCH_SIZE = 200;
 
 	public function __construct() {
 		parent::__construct();
@@ -31,140 +36,133 @@ class RebuildGraphDatabases extends Maintenance {
 			'Rebuilds the graph databases by re-saving every Subject from the latest revision of its page. ' .
 			'Useful after a graph database has been wiped or has otherwise drifted from the MediaWiki source of truth.'
 		);
+		$this->addOption(
+			'store',
+			'Rebuild only this graph store, by its configured name. Defaults to every configured store, ' .
+			'rebuilt one after another.',
+			false,
+			true
+		);
+		$this->addOption(
+			'resume',
+			"Continue each store's last unfinished rebuild from the page it got to, instead of starting over."
+		);
+		$this->setBatchSize( self::DEFAULT_BATCH_SIZE );
 	}
 
 	public function execute(): void {
-		$this->initializeGraphDatabases();
+		$coordinator = NeoWikiExtension::getInstance()->newGraphRebuildCoordinator();
+		$storeNames = $this->getStoreNames( $coordinator );
 
-		$pageIds = $this->getSubjectPageIds();
-
-		$this->outputChanneled( 'Rebuilding graph databases for ' . count( $pageIds ) . ' subject pages...' );
-
-		$rebuilder = NeoWikiExtension::getInstance()->newSubjectPageRebuilder();
-
-		$rebuilt = 0;
-
-		foreach ( $pageIds as $pageId ) {
-			if ( $this->rebuildPage( $pageId, $rebuilder ) ) {
-				$rebuilt++;
-			}
-		}
-
-		$this->outputChanneled( "Rebuild finished. Rebuilt $rebuilt of " . count( $pageIds ) . ' pages.' );
-
-		$this->removeDeletedPages();
-	}
-
-	/**
-	 * Initializing the backends before re-projecting guarantees a rebuilt graph carries any store-level
-	 * structures they need (e.g. uniqueness constraints). The rebuild is the production path that
-	 * (re)establishes the graph from the MediaWiki source of truth, so it is the natural, idempotent
-	 * point to ensure those structures exist (#874).
-	 */
-	private function initializeGraphDatabases(): void {
-		$this->outputChanneled( 'Initializing graph databases...' );
-		NeoWikiExtension::getInstance()->getGraphDatabasePlugin()->initialize();
-	}
-
-	/**
-	 * Re-saving the pages that still exist cannot undo a projection delete that failed, so a page deleted
-	 * while a backend was unreachable would otherwise stay in the graph for good, its Subjects still
-	 * queryable. Re-issue the delete for every page MediaWiki no longer has. Deleting a page that is
-	 * already absent is a no-op, so this is safe to repeat.
-	 */
-	private function removeDeletedPages(): void {
-		$pageIds = NeoWikiExtension::getInstance()->newDeletedSubjectPageIdsLookup()->getDeletedSubjectPageIds();
-
-		if ( $pageIds === [] ) {
+		if ( $storeNames === [] ) {
+			$this->outputChanneled( 'No graph stores are configured. There is nothing to rebuild.' );
 			return;
 		}
 
-		$this->outputChanneled( 'Removing ' . count( $pageIds ) . ' deleted pages from the graph databases...' );
+		$runs = [];
 
-		$graphDatabasePlugin = NeoWikiExtension::getInstance()->getGraphDatabasePlugin();
-
-		$removed = 0;
-
-		foreach ( $pageIds as $pageId ) {
-			if ( $this->removePage( $pageId, $graphDatabasePlugin ) ) {
-				$removed++;
-			}
+		foreach ( $storeNames as $storeName ) {
+			$runs[] = $this->rebuildStore( $coordinator, $storeName );
 		}
 
-		$this->outputChanneled( "Removed $removed of " . count( $pageIds ) . ' deleted pages.' );
-	}
-
-	private function removePage( int $pageId, GraphDatabasePlugin $graphDatabasePlugin ): bool {
-		try {
-			$graphDatabasePlugin->deletePage( new PageId( $pageId ) );
-		}
-		catch ( Exception $e ) {
-			$this->outputChanneled( "Failed to remove deleted page $pageId: " . $e->getMessage() );
-			return false;
-		}
-
-		return true;
-	}
-
-	private function rebuildPage( int $pageId, SubjectPageRebuilder $rebuilder ): bool {
-		$title = Title::newFromID( $pageId );
-
-		if ( $title === null ) {
-			$this->outputChanneled( "Skipped page $pageId: title not found" );
-			return false;
-		}
-
-		$name = $title->getPrefixedText();
-
-		try {
-			$outcome = $rebuilder->rebuild( $title );
-		}
-		catch ( Exception $e ) {
-			$this->outputChanneled( "Failed $name: " . $e->getMessage() );
-			return false;
-		}
-
-		if ( $outcome === PageRefreshOutcome::Refreshed ) {
-			$this->outputChanneled( "Rebuilt $name" );
-			return true;
-		}
-
-		$this->outputChanneled( "Skipped $name: " . self::skipReason( $outcome ) );
-		return false;
-	}
-
-	private static function skipReason( PageRefreshOutcome $outcome ): string {
-		return match ( $outcome ) {
-			PageRefreshOutcome::SkippedMissingRevision => 'no current revision',
-			PageRefreshOutcome::SkippedMissingSubjectSlot => 'no subject slot',
-			PageRefreshOutcome::Refreshed => throw new LogicException( 'Refreshed is not a skip reason' ),
-		};
+		$this->reportOutcome( $runs );
 	}
 
 	/**
-	 * @return int[] Page IDs of every page whose latest revision carries the NeoWiki subject slot.
+	 * @return string[]
 	 */
-	private function getSubjectPageIds(): array {
-		$services = MediaWikiServices::getInstance();
+	private function getStoreNames( GraphRebuildCoordinator $coordinator ): array {
+		$requestedStore = $this->getOption( 'store' );
+
+		return $requestedStore === null ? $coordinator->getStoreNames() : [ (string)$requestedStore ];
+	}
+
+	/**
+	 * A store whose rebuild cannot start, or that fails partway, must not stop the stores queued after
+	 * it: scoping a run to one store is what makes each store independently recoverable. Returns null
+	 * when no run happened at all.
+	 */
+	private function rebuildStore( GraphRebuildCoordinator $coordinator, string $storeName ): ?RebuildRun {
+		$this->outputChanneled( $storeName . ': starting' );
 
 		try {
-			$roleId = $services->getSlotRoleStore()->getId( MediaWikiSubjectRepository::SLOT_NAME );
-		} catch ( NameTableAccessException ) {
-			// No page has ever stored a Subject, so the slot role was never registered. There is
-			// nothing to rebuild; report an empty run instead of crashing.
-			return [];
+			$run = $this->hasOption( 'resume' )
+				? $coordinator->resume( $storeName, $this->getRebuildBatchSize(), $this )
+				: $coordinator->rebuild( $storeName, RebuildTrigger::Cli, $this->getRebuildBatchSize(), $this );
+		} catch ( Exception $e ) {
+			$this->outputChanneled( $storeName . ': ' . $e->getMessage() );
+			return null;
 		}
 
-		$rows = $this->getReplicaDB()->newSelectQueryBuilder()
-			->select( 'page_id' )
-			->from( 'page' )
-			->join( 'slots', null, 'slot_revision_id = page_latest' )
-			->where( [ 'slot_role_id' => $roleId ] )
-			->orderBy( 'page_id' )
-			->caller( __METHOD__ )
-			->fetchFieldValues();
+		$this->reportRun( $run );
 
-		return array_map( 'intval', $rows );
+		return $run;
+	}
+
+	/**
+	 * A batch of nothing would walk the wiki forever without projecting a page, so a nonsensical
+	 * --batch-size becomes the smallest one that makes progress.
+	 *
+	 * @return int<1, max>
+	 */
+	private function getRebuildBatchSize(): int {
+		return max( 1, $this->getBatchSize() ?? self::DEFAULT_BATCH_SIZE );
+	}
+
+	public function afterPageBatch( RebuildRun $run, int $totalPages ): void {
+		$this->outputChanneled(
+			$run->store . ': ' . $run->processed . '/' . $totalPages . ' pages (failed ' . $run->failed . ')'
+		);
+		$this->waitForReplication();
+	}
+
+	public function afterDeletionBatch( RebuildRun $run, int $removed, int $totalDeleted ): void {
+		$this->outputChanneled(
+			$run->store . ': ' . $removed . '/' . $totalDeleted . ' deleted pages removed'
+		);
+		$this->waitForReplication();
+	}
+
+	private function reportRun( RebuildRun $run ): void {
+		$this->outputChanneled(
+			$run->store . ': ' . $run->status->value . '. Projected ' . $run->processed . ' pages, '
+			. $run->failed . ' failed.'
+		);
+
+		if ( $run->error !== null ) {
+			$this->outputChanneled( $run->store . ': ' . $run->error );
+			$this->outputChanneled(
+				$run->store . ': re-run with --resume to continue from page ' . $run->cursor . '.'
+			);
+		}
+	}
+
+	/**
+	 * Exits non-zero when anything was left unreconciled — a store that failed or never started, or a
+	 * page within a store that did — so a scheduled rebuild cannot fail silently.
+	 *
+	 * @param array<int, RebuildRun|null> $runs One entry per store, null where no run happened
+	 */
+	private function reportOutcome( array $runs ): void {
+		$rebuiltStores = 0;
+		$failedPages = 0;
+
+		foreach ( $runs as $run ) {
+			if ( $run !== null && $run->status === RebuildStatus::Succeeded ) {
+				$rebuiltStores++;
+			}
+
+			$failedPages += $run?->failed ?? 0;
+		}
+
+		$this->outputChanneled(
+			'Rebuild finished. ' . $rebuiltStores . ' of ' . count( $runs ) . ' stores rebuilt, '
+			. $failedPages . ' pages failed.'
+		);
+
+		if ( $rebuiltStores < count( $runs ) || $failedPages > 0 ) {
+			$this->fatalError( 'Not every page was reconciled. The failures are logged on the NeoWiki channel.' );
+		}
 	}
 
 }

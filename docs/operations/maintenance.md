@@ -28,8 +28,34 @@ Two things to plan around:
 - It reconciles pages, not stray data. Anything the projection never knew about — a node written directly to Neo4j,
   say, or a named graph left behind in a SPARQL store — is not something the rebuild can find. For a guaranteed-clean
   result, empty the backend before rebuilding: wipe Neo4j's data volume, or drop the wiki's named graphs from the store.
-- It runs as a single sequential process with no batching or resume, so the time scales with the number of pages. Plan
-  downtime on large wikis.
+- Each store is rebuilt after the previous one, so the time scales with the number of pages times the number of
+  configured stores.
+
+### Rebuilding one store
+
+Each backend has a name: `neo4j` for Neo4j, and for a SPARQL store the `name` you configured, defaulting to its
+projection. Rebuild one on its own with:
+
+```sh
+php maintenance/run.php NeoWiki:RebuildGraphDatabases --store EDM
+```
+
+A rebuild is always of one store, so the run above is what running it for every store does, once per store. A store
+that is unreachable therefore costs only its own rebuild: the other stores still reconcile.
+
+### Interrupted rebuilds
+
+The rebuild walks the wiki in batches, recording after each one how far it got. If it stops before the end — the store
+became unreachable, or you interrupted it — continue from there rather than starting over:
+
+```sh
+php maintenance/run.php NeoWiki:RebuildGraphDatabases --store EDM --resume
+```
+
+Pass `--batch-size` to change how many pages are projected between recordings; it defaults to 200.
+
+A page the store rejects is logged on the `NeoWiki` channel and counted, and the rebuild carries on. The script exits
+non-zero whenever anything was left unreconciled, so a scheduled rebuild cannot fail silently.
 
 ## Upgrades
 
@@ -51,11 +77,10 @@ recover data the new version can no longer read.
   `NeoWiki` channel.
 - **Editing and displaying Subjects fails**, along with queries and anything else that reads the graph.
 
-Once Neo4j is back, [rebuild the graph](#rebuilding-the-graph): it repairs both a failed save and a failed delete. It
-names any page it could not reconcile; re-run it once you have cleared the cause.
+Once Neo4j is back, [rebuild the graph](#rebuilding-the-graph): it repairs both a failed save and a failed delete.
 
-Route the `NeoWiki` log channel somewhere you read. On a default MediaWiki install it goes nowhere, which leaves the
-rebuild's output as your only sign that anything went wrong.
+Route the `NeoWiki` log channel somewhere you read. On a default MediaWiki install it goes nowhere, and it is where
+both the outage and the pages a rebuild could not reconcile are reported.
 
 ## Backups
 

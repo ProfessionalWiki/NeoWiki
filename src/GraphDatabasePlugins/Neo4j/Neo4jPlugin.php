@@ -30,6 +30,13 @@ use Psr\Log\LoggerInterface;
  */
 readonly class Neo4jPlugin {
 
+	/**
+	 * The name identifying this backend among the configured graph stores: what a scoped rebuild is
+	 * addressed by, and what its run records are filed under. There is at most one Neo4j backend per
+	 * wiki, so the name is a constant rather than configuration.
+	 */
+	public const STORE_NAME = 'neo4j';
+
 	private GraphDatabasePlugin $projectionStore;
 	private Neo4jReadQueryEngine $readQueryEngine;
 	private Neo4jWriteQueryEngine $writeQueryEngine;
