@@ -118,6 +118,42 @@ class RdfNamespacesTest extends TestCase {
 		);
 	}
 
+	public function testSubjectAnchoredSynthesizedNodeIriUsesNodePathUnderTheSubjectId(): void {
+		$this->assertSame(
+			'https://wiki.example/node/s1demo8aaaaaab5/birth',
+			$this->namespaces()->synthesizedNode( new SubjectId( 's1demo8aaaaaab5' ), 'birth' )->value
+		);
+	}
+
+	public function testNestedSynthesizedNodeIriExtendsItsParentsPath(): void {
+		$this->assertSame(
+			'https://wiki.example/node/s1demo8aaaaaab5/birth/timespan',
+			$this->namespaces()->synthesizedNode( new SubjectId( 's1demo8aaaaaab5' ), 'birth', 'timespan' )->value
+		);
+	}
+
+	public function testPerValueSynthesizedNodeIriEndsInTheValuePosition(): void {
+		$this->assertSame(
+			'https://wiki.example/node/s1demo8aaaaaab5/dimension/2',
+			$this->namespaces()->synthesizedNode( new SubjectId( 's1demo8aaaaaab5' ), 'dimension', '2' )->value
+		);
+	}
+
+	public function testSynthesizedNodeIriPercentEncodesIriIllegalCharactersInAKey(): void {
+		// Node keys are restricted at save time, but an imported Mapping bypasses that.
+		$this->assertSame(
+			'https://wiki.example/node/s1demo8aaaaaab5/a%3Eb',
+			$this->namespaces()->synthesizedNode( new SubjectId( 's1demo8aaaaaab5' ), 'a>b' )->value
+		);
+	}
+
+	public function testRelationAnchoredSynthesizedNodeIriUsesTheRelationId(): void {
+		$this->assertSame(
+			'https://wiki.example/node/r1demo8aaaaaaD6',
+			$this->namespaces()->synthesizedRelationNode( new RelationId( 'r1demo8aaaaaaD6' ) )->value
+		);
+	}
+
 	public function testVocabularyTermUsesOntologyPath(): void {
 		$this->assertSame(
 			'https://wiki.example/ontology/hasSubject',

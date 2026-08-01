@@ -8,6 +8,8 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeMapping;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeScope;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPersistenceDeserializer;
 
@@ -36,8 +38,8 @@ class MappingPersistenceDeserializerTest extends TestCase {
 	public function testDeserializesEverySchemaEntrySubjectClass(): void {
 		$mapping = $this->deserialize( $this->validJson() );
 
-		$this->assertSame( 'edm:ProvidedCHO', $mapping->forSchema( new SchemaName( 'Person' ) )?->subjectClass );
-		$this->assertSame( 'edm:Place', $mapping->forSchema( new SchemaName( 'City' ) )?->subjectClass );
+		$this->assertSame( 'edm:ProvidedCHO', $mapping->forSchema( new SchemaName( 'Person' ) )?->subject?->class );
+		$this->assertSame( 'edm:Place', $mapping->forSchema( new SchemaName( 'City' ) )?->subject?->class );
 	}
 
 	public function testUnmappedSchemaHasNoEntry(): void {
@@ -60,8 +62,8 @@ class MappingPersistenceDeserializerTest extends TestCase {
 			}
 			JSON );
 
-		$this->assertSame( 'edm:Agent', $mapping->forSchema( new SchemaName( 'Person' ) )?->subjectClass );
-		$this->assertSame( 'edm:Place', $mapping->forSchema( new SchemaName( 'City' ) )?->subjectClass );
+		$this->assertSame( 'edm:Agent', $mapping->forSchema( new SchemaName( 'Person' ) )?->subject?->class );
+		$this->assertSame( 'edm:Place', $mapping->forSchema( new SchemaName( 'City' ) )?->subject?->class );
 		$this->assertNull(
 			$mapping->forSchema( new SchemaName( 'Broken' ) ),
 			'the entry missing subject.class is skipped, not included'
@@ -85,8 +87,8 @@ class MappingPersistenceDeserializerTest extends TestCase {
 			}
 			JSON );
 
-		$this->assertSame( 'edm:Agent', $mapping->forSchema( new SchemaName( 'Person' ) )?->subjectClass );
-		$this->assertSame( 'edm:Place', $mapping->forSchema( new SchemaName( 'City' ) )?->subjectClass );
+		$this->assertSame( 'edm:Agent', $mapping->forSchema( new SchemaName( 'Person' ) )?->subject?->class );
+		$this->assertSame( 'edm:Place', $mapping->forSchema( new SchemaName( 'City' ) )?->subject?->class );
 	}
 
 	public function testDeserializesAPropertyWithALanguageTag(): void {
@@ -115,6 +117,188 @@ class MappingPersistenceDeserializerTest extends TestCase {
 	public function testThrowsOnInvalidJson(): void {
 		$this->expectException( InvalidArgumentException::class );
 		$this->deserialize( 'not json' );
+	}
+
+	/**
+	 * Only the one known format version is read: a page in any other reads as no Mapping at all, which
+	 * degrades to an unknown projection rather than a half-understood one.
+	 */
+	public function testThrowsOnAnUnknownFormatVersion(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->deserialize( '{ "version": 2, "schemas": { "Person": { "subject": { "class": "edm:Agent" } } } }' );
+	}
+
+	// Structural tier: synthesized nodes and contributions.
+
+	public function testDeserializesTheSubjectsExtraLabelPredicate(): void {
+		$subject = $this->deserialize( $this->structuralJson() )->forSchema( new SchemaName( 'Person' ) )?->subject;
+
+		$this->assertSame( 'crm:E21_Person', $subject?->class );
+		$this->assertSame( 'foaf:name', $subject->labelPredicate );
+	}
+
+	public function testDeserializesASubjectScopedNode(): void {
+		$birth = $this->personNodes()['birth'] ?? null;
+
+		$this->assertSame( 'crm:E67_Birth', $birth?->class );
+		$this->assertSame( 'crm:P98i_was_born', $birth->linkPredicate );
+		$this->assertNull( $birth->parent );
+		$this->assertSame( NodeScope::Subject, $birth->scope );
+	}
+
+	public function testDeserializesANestedNodesParent(): void {
+		$this->assertSame( 'birth', $this->personNodes()['birthTimespan']?->parent );
+	}
+
+	public function testDeserializesAPerValueNodesScope(): void {
+		$this->assertSame( NodeScope::Value, $this->personNodes()['appellation']?->scope );
+	}
+
+	public function testSkipsANodeWithoutTheTermsItNeeds(): void {
+		// Shapes save validation rejects: a node with no class, and one with no link predicate. Neither
+		// can be placed in the graph, so both are dropped while their valid sibling survives.
+		$nodes = $this->deserialize( <<<'JSON'
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person" },
+						"nodes": {
+							"classless": { "linkPredicate": "crm:P98i_was_born" },
+							"birth": { "class": "crm:E67_Birth", "linkPredicate": "crm:P98i_was_born" },
+							"unlinked": { "class": "crm:E52_Time-Span" }
+						}
+					}
+				}
+			}
+			JSON )->forSchema( new SchemaName( 'Person' ) )?->nodes ?? [];
+
+		$this->assertSame( [ 'birth' ], array_keys( $nodes ) );
+	}
+
+	/**
+	 * @return array<string, NodeMapping>
+	 */
+	private function personNodes(): array {
+		return $this->deserialize( $this->structuralJson() )->forSchema( new SchemaName( 'Person' ) )?->nodes ?? [];
+	}
+
+	public function testDeserializesThePropertysNodeAttachment(): void {
+		$properties = $this->deserialize( $this->structuralJson() )->forSchema( new SchemaName( 'Person' ) )?->properties;
+
+		$this->assertSame( 'birthTimespan', $properties?->get( 'Birth date' )?->node );
+		$this->assertNull( $properties->get( 'Description' )?->node );
+	}
+
+	public function testDeserializesAContributionKeyedByItsRelation(): void {
+		$contributions = $this->deserialize( $this->structuralJson() )->forSchema( new SchemaName( 'Birth' ) )?->contributions;
+
+		$this->assertSame( [ 'Brought into life' ], array_keys( $contributions ?? [] ) );
+		$this->assertSame(
+			'rdaGr2:dateOfBirth',
+			$contributions['Brought into life']->get( 'Date' )?->predicate
+		);
+	}
+
+	public function testSkipsAContributionWithNoUsableProperties(): void {
+		// Save validation requires at least one property; an import can store an entry whose only
+		// property lacks a predicate, which would contribute nothing.
+		$birth = $this->deserialize( <<<'JSON'
+			{
+				"version": 1,
+				"schemas": {
+					"Birth": {
+						"contributions": {
+							"Brought into life": { "Date": { "lang": "en" } }
+						}
+					}
+				}
+			}
+			JSON )->forSchema( new SchemaName( 'Birth' ) );
+
+		$this->assertNull( $birth, 'An entry left with neither a subject nor a contribution is skipped whole.' );
+	}
+
+	public function testDeserializesAPropertyWhoseNameIsAllDigits(): void {
+		// A year column is a realistic property name, and json_decode makes it an int array key.
+		$properties = $this->deserialize( <<<'JSON'
+			{
+				"version": 1,
+				"schemas": {
+					"Person": {
+						"subject": { "class": "http://example.org/Person" },
+						"properties": { "2020": { "predicate": "http://example.org/note" } }
+					}
+				}
+			}
+			JSON )->forSchema( new SchemaName( 'Person' ) )?->properties;
+
+		$this->assertSame( 'http://example.org/note', $properties?->get( '2020' )?->predicate );
+	}
+
+	public function testAContributesOnlyEntryHasNoSubject(): void {
+		$this->assertNull( $this->deserialize( $this->structuralJson() )->forSchema( new SchemaName( 'Birth' ) )?->subject );
+	}
+
+	public function testSkipsAnEntryThatNeitherProjectsNorContributes(): void {
+		// A shape only an import can store, since save validation rejects it.
+		$mapping = $this->deserialize( <<<JSON
+			{
+				"version": 1,
+				"schemas": {
+					"Person": { "subject": { "class": "http://example.org/Person" } },
+					"Empty": {}
+				}
+			}
+			JSON );
+
+		$this->assertNotNull( $mapping->forSchema( new SchemaName( 'Person' ) ) );
+		$this->assertNull( $mapping->forSchema( new SchemaName( 'Empty' ) ) );
+	}
+
+	private function structuralJson(): string {
+		return <<<JSON
+			{
+				"version": 1,
+				"prefixes": {
+					"crm": "http://www.cidoc-crm.org/cidoc-crm/",
+					"rdaGr2": "http://rdvocab.info/ElementsGr2/",
+					"foaf": "http://xmlns.com/foaf/0.1/"
+				},
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person", "labelPredicate": "foaf:name" },
+						"nodes": {
+							"birth": { "class": "crm:E67_Birth", "linkPredicate": "crm:P98i_was_born" },
+							"birthTimespan": {
+								"class": "crm:E52_Time-Span",
+								"linkPredicate": "crm:P4_has_time-span",
+								"parent": "birth"
+							},
+							"appellation": {
+								"class": "crm:E41_Appellation",
+								"linkPredicate": "crm:P1_is_identified_by",
+								"per": "value"
+							}
+						},
+						"properties": {
+							"Description": { "predicate": "crm:P3_has_note" },
+							"Birth date": { "predicate": "crm:P82_at_some_time_within", "node": "birthTimespan" },
+							"Also known as": { "predicate": "crm:P190_has_symbolic_content", "node": "appellation" }
+						}
+					},
+					"Birth": {
+						"contributions": {
+							"Brought into life": {
+								"Date": { "predicate": "rdaGr2:dateOfBirth" },
+								"Took place at": { "predicate": "rdaGr2:placeOfBirth" }
+							}
+						}
+					}
+				}
+			}
+			JSON;
 	}
 
 	private function validJson(): string {

@@ -11,10 +11,15 @@ namespace ProfessionalWiki\NeoWiki\Domain\Mapping;
  */
 readonly class PropertyMapping {
 
+	/**
+	 * @param string|null $node The key of a {@see NodeMapping} on the same Schema entry. The property's
+	 *   values then attach to that synthesized node's instance instead of to the Subject.
+	 */
 	public function __construct(
 		public string $predicate,
 		public ?string $language = null,
 		public ?string $datatype = null,
+		public ?string $node = null,
 	) {
 	}
 

@@ -67,7 +67,7 @@ class MappingContentValidatorTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	public function testRejectsAWrongFormatVersion(): void {
+	public function testRejectsAnUnknownFormatVersion(): void {
 		$this->assertInvalidAt(
 			<<<JSON
 			{ "version": 2, "schemas": { "Person": { "subject": { "class": "edm:X" }, "properties": {} } }, "prefixes": { "edm": "http://europeana.eu/edm/" } }
@@ -311,6 +311,396 @@ class MappingContentValidatorTest extends MediaWikiIntegrationTestCase {
 			JSON,
 			'/schemas/Person/properties/Name'
 		);
+	}
+
+	// Structural tier: synthesized nodes and contributions.
+
+	public function testAcceptsAMappingWithANestedNodeChainAndAContribution(): void {
+		$this->assertValid( $this->structuralMapping() );
+	}
+
+	/**
+	 * A Schema entry may project its Subject, contribute to others, or both — but an empty entry says
+	 * nothing and is a mistake worth catching.
+	 */
+	public function testRejectsAnEntryThatNeitherProjectsNorContributes(): void {
+		$this->assertInvalidAt( '{ "version": 1, "schemas": { "Person": {} } }', '/schemas/Person' );
+	}
+
+	public function testRejectsPropertiesWithoutASubjectToHangThemOn(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"prefixes": { "dc": "http://purl.org/dc/elements/1.1/" },
+				"schemas": {
+					"Person": { "properties": { "Name": { "predicate": "dc:title" } } }
+				}
+			}
+			JSON,
+			'/schemas/Person'
+		);
+	}
+
+	public function testRejectsALabelPredicateThatWouldBreakOutOfItsIri(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"prefixes": { "foaf": "http://xmlns.com/foaf/0.1/" },
+				"schemas": {
+					"Person": {
+						"subject": {
+							"class": "http://example.org/Person",
+							"labelPredicate": "foaf:name> <http://evil.example/s> <http://evil/p> <http://evil/o"
+						}
+					}
+				}
+			}
+			JSON,
+			'/schemas/Person/subject/labelPredicate'
+		);
+	}
+
+	public function testRejectsANodeClassWhoseCurieDoesNotResolve(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person" },
+						"nodes": { "birth": { "class": "nosuch:E67_Birth", "linkPredicate": "crm:P98i_was_born" } }
+					}
+				}
+			}
+			JSON,
+			'/schemas/Person/nodes/birth/class'
+		);
+	}
+
+	public function testRejectsANodeLinkPredicateThatWouldBreakOutOfItsIri(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person" },
+						"nodes": {
+							"birth": {
+								"class": "crm:E67_Birth",
+								"linkPredicate": "crm:P98i> <http://evil.example/s> <http://evil/p> <http://evil/o"
+							}
+						}
+					}
+				}
+			}
+			JSON,
+			'/schemas/Person/nodes/birth/linkPredicate'
+		);
+	}
+
+	public function testRejectsANodeKeyThatIsNotIdentifierShaped(): void {
+		foreach ( [ '-birth', 'birth place', '' ] as $nodeKey ) {
+			$this->assertInvalidAt( $this->mappingWithNodeKey( $nodeKey ), '/schemas/Person/nodes' );
+		}
+	}
+
+	/**
+	 * An all-digit node key survives JSON parsing as an integer key, which every consumer of the key
+	 * would then have to handle — and nothing can reference it, since a `node` or `parent` naming it is
+	 * pattern-checked as a string. Rejecting it removes the class of bug.
+	 */
+	public function testRejectsAnAllDigitNodeKey(): void {
+		$this->assertInvalidAt( $this->mappingWithNodeKey( '2024' ), '/schemas/Person/nodes/2024' );
+	}
+
+	private function mappingWithNodeKey( string $nodeKey ): string {
+		return (string)json_encode( [
+			'version' => 1,
+			'schemas' => [
+				'Person' => [
+					'subject' => [ 'class' => 'http://example.org/Person' ],
+					'nodes' => [
+						$nodeKey => [
+							'class' => 'http://example.org/Birth',
+							'linkPredicate' => 'http://example.org/wasBorn',
+						],
+					],
+				],
+			],
+		] );
+	}
+
+	public function testRejectsANodeScopeThatIsNeitherSubjectNorValue(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"schemas": {
+					"Person": {
+						"subject": { "class": "http://example.org/Person" },
+						"nodes": {
+							"birth": {
+								"class": "http://example.org/Birth",
+								"linkPredicate": "http://example.org/wasBorn",
+								"per": "page"
+							}
+						}
+					}
+				}
+			}
+			JSON,
+			'/schemas/Person/nodes/birth/per'
+		);
+	}
+
+	public function testRejectsAPropertyAttachedToAnUndeclaredNode(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person" },
+						"nodes": { "birth": { "class": "crm:E67_Birth", "linkPredicate": "crm:P98i_was_born" } },
+						"properties": { "Birth date": { "predicate": "crm:P82_at_some_time_within", "node": "death" } }
+					}
+				}
+			}
+			JSON,
+			'/schemas/Person/properties/Birth date/node'
+		);
+	}
+
+	public function testRejectsANodeWhoseParentIsNotDeclared(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person" },
+						"nodes": {
+							"timespan": {
+								"class": "crm:E52_Time-Span",
+								"linkPredicate": "crm:P4_has_time-span",
+								"parent": "birth"
+							}
+						}
+					}
+				}
+			}
+			JSON,
+			'/schemas/Person/nodes/timespan/parent'
+		);
+	}
+
+	public function testRejectsAParentCycle(): void {
+		// A cycle never reaches the Subject, so nothing the nodes carry could be anchored.
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person" },
+						"nodes": {
+							"birth": { "class": "crm:E67_Birth", "linkPredicate": "crm:P98i_was_born", "parent": "timespan" },
+							"timespan": {
+								"class": "crm:E52_Time-Span",
+								"linkPredicate": "crm:P4_has_time-span",
+								"parent": "birth"
+							}
+						}
+					}
+				}
+			}
+			JSON,
+			'/schemas/Person/nodes/birth/parent'
+		);
+	}
+
+	public function testRejectsASecondPropertyAttachedToAPerValueNode(): void {
+		// A per-value node has one instance per value of the property that attaches to it, so a second
+		// property would have no single instance to attach to.
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Artwork": {
+						"subject": { "class": "crm:E22_Human-Made_Object" },
+						"nodes": {
+							"production": {
+								"class": "crm:E12_Production",
+								"linkPredicate": "crm:P108i_was_produced_by",
+								"per": "value"
+							}
+						},
+						"properties": {
+							"Creator": { "predicate": "crm:P14_carried_out_by", "node": "production" },
+							"Technique": { "predicate": "crm:P32_used_general_technique", "node": "production" }
+						}
+					}
+				}
+			}
+			JSON,
+			'/schemas/Artwork/properties/Technique/node'
+		);
+	}
+
+	public function testRejectsAPerValueNodeUsedAsAParent(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Artwork": {
+						"subject": { "class": "crm:E22_Human-Made_Object" },
+						"nodes": {
+							"production": {
+								"class": "crm:E12_Production",
+								"linkPredicate": "crm:P108i_was_produced_by",
+								"per": "value"
+							},
+							"timespan": {
+								"class": "crm:E52_Time-Span",
+								"linkPredicate": "crm:P4_has_time-span",
+								"parent": "production"
+							}
+						}
+					}
+				}
+			}
+			JSON,
+			'/schemas/Artwork/nodes/timespan/parent'
+		);
+	}
+
+	public function testRejectsAContributionWithNoProperties(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"schemas": {
+					"Birth": { "contributions": { "Brought into life": {} } }
+				}
+			}
+			JSON,
+			'/schemas/Birth/contributions/Brought%20into%20life'
+		);
+	}
+
+	public function testRejectsAContributionThroughANamelessRelation(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"schemas": {
+					"Birth": { "contributions": { "": { "Date": { "predicate": "http://example.org/born" } } } }
+				}
+			}
+			JSON,
+			'/schemas/Birth/contributions'
+		);
+	}
+
+	public function testRejectsAContributionPredicateWhoseCurieDoesNotResolve(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"schemas": {
+					"Birth": {
+						"contributions": {
+							"Brought into life": { "Date": { "predicate": "rdaGr2:dateOfBirth" } }
+						}
+					}
+				}
+			}
+			JSON,
+			'/schemas/Birth/contributions/Brought into life/Date/predicate'
+		);
+	}
+
+	/**
+	 * A contribution names properties of the contributing Schema, which attach to the target Subject, so
+	 * there is no node of the contributing entry for them to hang off.
+	 */
+	public function testRejectsANodeReferenceInsideAContribution(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"prefixes": { "crm": "http://www.cidoc-crm.org/cidoc-crm/" },
+				"schemas": {
+					"Birth": {
+						"subject": { "class": "crm:E67_Birth" },
+						"nodes": { "timespan": { "class": "crm:E52_Time-Span", "linkPredicate": "crm:P4_has_time-span" } },
+						"contributions": {
+							"Brought into life": {
+								"Date": { "predicate": "crm:P82_at_some_time_within", "node": "timespan" }
+							}
+						}
+					}
+				}
+			}
+			JSON,
+			'/schemas/Birth/contributions/Brought%20into%20life/Date'
+		);
+	}
+
+	private function structuralMapping(): string {
+		return <<<JSON
+			{
+				"version": 1,
+				"prefixes": {
+					"crm": "http://www.cidoc-crm.org/cidoc-crm/",
+					"rdaGr2": "http://rdvocab.info/ElementsGr2/",
+					"foaf": "http://xmlns.com/foaf/0.1/"
+				},
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person", "labelPredicate": "foaf:name" },
+						"nodes": {
+							"birth": { "class": "crm:E67_Birth", "linkPredicate": "crm:P98i_was_born" },
+							"birthTimespan": {
+								"class": "crm:E52_Time-Span",
+								"linkPredicate": "crm:P4_has_time-span",
+								"parent": "birth"
+							},
+							"appellation": {
+								"class": "crm:E41_Appellation",
+								"linkPredicate": "crm:P1_is_identified_by",
+								"per": "value"
+							}
+						},
+						"properties": {
+							"Birth date": { "predicate": "crm:P82_at_some_time_within", "node": "birthTimespan" },
+							"Birth place": { "predicate": "crm:P7_took_place_at", "node": "birth" },
+							"Also known as": { "predicate": "crm:P190_has_symbolic_content", "node": "appellation" }
+						}
+					},
+					"Birth": {
+						"contributions": {
+							"Brought into life": {
+								"Date": { "predicate": "rdaGr2:dateOfBirth" },
+								"Took place at": { "predicate": "rdaGr2:placeOfBirth" }
+							}
+						}
+					}
+				}
+			}
+			JSON;
 	}
 
 	private function validMapping(): string {

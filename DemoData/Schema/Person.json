@@ -1,5 +1,5 @@
 {
-	"description": "A human being. Maps to CIDOC CRM E21 Person (http://www.cidoc-crm.org/cidoc-crm/E21_Person) and, via the EDM Mapping, to EDM edm:Agent. Life events such as birth can be modelled richly as their own event Subjects (see the Birth schema), or flatly via the Birth date and Birth place fields here — the flat form is what the near-1:1 EDM projection consumes.",
+	"description": "A human being. Maps to CIDOC CRM E21 Person (http://www.cidoc-crm.org/cidoc-crm/E21_Person) and, via the EDM Mapping, to EDM edm:Agent. Life events such as birth can be modelled richly as their own event Subjects (see the Birth schema), or flatly via the Birth date and Birth place fields here — the EDM Mapping reaches both, projecting the flat fields directly and letting a Birth Subject contribute its own.",
 	"propertyDefinitions": {
 		"Description": {
 			"type": "text",
@@ -12,7 +12,7 @@
 		},
 		"Gender": {
 			"type": "text",
-			"description": "Gender, as a literal (EDM rdaGr2:gender). Kept as text rather than select on purpose: the v1 ontology projection emits a select value's stored option id, not its label, so a controlled-vocabulary select would project an opaque id."
+			"description": "Gender, as a literal (EDM rdaGr2:gender). Kept as text rather than select on purpose: the ontology projection emits a select value's stored option id, not its label, so a controlled-vocabulary select would project an opaque id."
 		},
 		"Birth date": {
 			"type": "date",

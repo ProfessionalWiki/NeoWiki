@@ -285,6 +285,7 @@
 	"neowiki-mapping-page-prefixes-heading": "Prefixes",
 	"neowiki-mapping-page-prefix-column": "Prefix",
 	"neowiki-mapping-page-namespace-column": "Namespace IRI",
+	"neowiki-mapping-unsupported-version": "This Mapping page uses format version $1. Only format version 1 is supported; the page defines no projection.",
 
 	"neowiki-layout-creator-title": "Create layout",
 	"neowiki-layout-creator-button": "Create",

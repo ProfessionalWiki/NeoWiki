@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabaseP
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\UnknownProjectionException;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
@@ -88,6 +89,21 @@ class FailureIsolatingGraphDatabasePluginTest extends TestCase {
 		$this->assertStringContainsString( 'delete', $message, 'reflects the actual operation, not a hardcoded edit/save' );
 		$this->assertStringContainsString( '42', $message );
 		$this->assertStringContainsString( 'RebuildGraphDatabases', $message );
+	}
+
+	/**
+	 * A Mapping page the deserializer cannot read makes its projection unknown, and a SPARQL store
+	 * configured for that projection throws when the page is saved. Saving a page must still succeed:
+	 * an unreadable Mapping degrades the store's sync, it does not break editing.
+	 */
+	public function testUnknownProjectionOnSaveIsSwallowedAndLogged(): void {
+		$decorator = $this->newDecorator( $this->pluginThrowing(
+			new UnknownProjectionException( 'https://qlever.example/api/neowiki', 'EDM', [ 'native' ] )
+		) );
+
+		$decorator->savePage( TestPage::build( id: 42 ) );
+
+		$this->assertTrue( $this->logger->hasErrorRecords() );
 	}
 
 	public function testRequestTimeoutIsReThrownRatherThanSwallowed(): void {

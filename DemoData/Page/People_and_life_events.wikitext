@@ -16,7 +16,9 @@ Each birth is its own Subject linking a child, mother, father, place, and date. 
 
 == Mapping to CIDOC CRM ==
 
-This dataset partially maps to [http://www.cidoc-crm.org/ CIDOC CRM]. The canonical statements run from the event to the person (E67 Birth, P98 brought into life, E21 Person); the reverse "was born" (P98i) is not stored as a separate edge but derived by [[Module:NeoWikiDemo]] reverse-querying the graph, which is how CIDOC inverse properties work.
+This dataset partially maps to [http://www.cidoc-crm.org/ CIDOC CRM], via [[Mapping:CIDOC-CRM]]. The canonical statements run from the event to the person (E67 Birth, P98 brought into life, E21 Person); the reverse "was born" (P98i) is not stored as a separate edge but derived by [[Module:NeoWikiDemo]] reverse-querying the graph, which is how CIDOC inverse properties work.
+
+A person who carries the flat Birth date and Birth place fields instead of a Birth Subject still gets a birth event in the projection: the Mapping synthesizes the E67 Birth and the E52 Time-Span the CIDOC path runs through.
 
 {| class="wikitable"
 ! NeoWiki !! CIDOC CRM !! URI
@@ -37,13 +39,17 @@ This dataset partially maps to [http://www.cidoc-crm.org/ CIDOC CRM]. The canoni
 |-
 | Birth: Date || P4 has time-span (E52 Time-Span; the date is the time-span's P82 value, collapsed to one date) || http://www.cidoc-crm.org/cidoc-crm/P4_has_time-span
 |-
-| Person: Also known as || P1 is identified by (E41 Appellation) || http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by
+| Person: Also known as || P1 is identified by, to one synthesized E41 Appellation per name, carrying P190 has symbolic content || http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by
+|-
+| Person: Birth date || P98i was born, to a synthesized E67 Birth, then P4 has time-span (E52 Time-Span) and P82 at some time within || http://www.cidoc-crm.org/cidoc-crm/P82_at_some_time_within
+|-
+| Person: Birth place || P98i was born, to that same synthesized E67 Birth, then P7 took place at || http://www.cidoc-crm.org/cidoc-crm/P7_took_place_at
 |-
 | Person / Place: Description || P3 has note (E62 String) || http://www.cidoc-crm.org/cidoc-crm/P3_has_note
 |-
-| Place: Coordinates || P168 place is defined by (E94 Space Primitive); stored as a lat/long display label, not a WKT/GML geometry literal || http://www.cidoc-crm.org/cidoc-crm/P168_place_is_defined_by
+| Place: Coordinates || P168 place is defined by (E94 Space Primitive). Not projected: the stored value is a lat/long display label, not the WKT/GML geometry literal P168 expects || http://www.cidoc-crm.org/cidoc-crm/P168_place_is_defined_by
 |-
-| Place: Country || No direct CIDOC property: denormalised country-name label (a faithful model would use P89 falls within a containing E53 Place) || http://www.cidoc-crm.org/cidoc-crm/P89_falls_within
+| Place: Country || Not projected: no direct CIDOC property for a denormalised country-name label (a faithful model would use P89 falls within a containing E53 Place) || http://www.cidoc-crm.org/cidoc-crm/P89_falls_within
 |}
 
 == How this is built ==

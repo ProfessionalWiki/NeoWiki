@@ -13,11 +13,20 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
  * page holds an entry for every mapped Schema, so a Schema is mapped by adding an entry rather than by
  * creating a page — and a page cannot list the same Schema twice, so uniqueness needs no save-time check.
  *
- * This is the deliberately minimal v1 shape: term substitution only (a target class for each Subject and
- * one predicate per mapped property), no intermediate-node synthesis. The stored format is versioned and
- * provisional; the mapping-formalism question (OntologyMapping.md Q1, #995) stays open.
+ * On top of term substitution — a target class per Subject, one predicate per mapped property — the
+ * format expresses both structural transformations of OntologyMapping.md: synthesizing the intermediate
+ * nodes an event-centric target needs, and contributing a Subject's values to the Subjects it points at
+ * for a target that wants them flat. The stored format is versioned and provisional; the
+ * mapping-formalism question (OntologyMapping.md Q1, #995) stays open at the authoring level.
  */
 readonly class Mapping {
+
+	/**
+	 * The one format version that can be read. The format so far grows by optional additions, which leave
+	 * existing documents valid and unchanged in meaning, so this bumps only once a change breaks them. A
+	 * page in any other version is unreadable and its projection is simply unknown.
+	 */
+	public const int FORMAT_VERSION = 1;
 
 	/**
 	 * @param array<string, string> $prefixes Prefix label to namespace IRI, shared by every entry, for

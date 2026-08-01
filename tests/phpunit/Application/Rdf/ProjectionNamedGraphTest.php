@@ -9,8 +9,8 @@ use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
-use ProfessionalWiki\NeoWiki\Domain\Mapping\PropertyMappings;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\SchemaMapping;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\SubjectMapping;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Quad;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\QuadList;
@@ -108,10 +108,7 @@ class ProjectionNamedGraphTest extends TestCase {
 			name: new MappingName( 'edm' ),
 			prefixes: [ 'edm' => 'http://www.europeana.eu/schemas/edm/' ],
 			schemas: [
-				'Person' => new SchemaMapping(
-					subjectClass: 'edm:Agent',
-					properties: new PropertyMappings( [] )
-				),
+				'Person' => new SchemaMapping( subject: new SubjectMapping( 'edm:Agent' ) ),
 			],
 		);
 	}

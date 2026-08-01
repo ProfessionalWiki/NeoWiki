@@ -1,0 +1,56 @@
+{
+	"version": 1,
+	"prefixes": {
+		"crm": "http://www.cidoc-crm.org/cidoc-crm/"
+	},
+	"schemas": {
+		"Person": {
+			"subject": { "class": "crm:E21_Person" },
+			"nodes": {
+				"birth": { "class": "crm:E67_Birth", "linkPredicate": "crm:P98i_was_born" },
+				"birthTimespan": { "class": "crm:E52_Time-Span", "linkPredicate": "crm:P4_has_time-span", "parent": "birth" },
+				"appellation": { "class": "crm:E41_Appellation", "linkPredicate": "crm:P1_is_identified_by", "per": "value" }
+			},
+			"properties": {
+				"Description": { "predicate": "crm:P3_has_note" },
+				"Also known as": { "predicate": "crm:P190_has_symbolic_content", "node": "appellation" },
+				"Birth date": { "predicate": "crm:P82_at_some_time_within", "node": "birthTimespan" },
+				"Birth place": { "predicate": "crm:P7_took_place_at", "node": "birth" }
+			}
+		},
+		"Birth": {
+			"subject": { "class": "crm:E67_Birth" },
+			"nodes": {
+				"timespan": { "class": "crm:E52_Time-Span", "linkPredicate": "crm:P4_has_time-span" }
+			},
+			"properties": {
+				"Brought into life": { "predicate": "crm:P98_brought_into_life" },
+				"By mother": { "predicate": "crm:P96_by_mother" },
+				"From father": { "predicate": "crm:P97_from_father" },
+				"Took place at": { "predicate": "crm:P7_took_place_at" },
+				"Date": { "predicate": "crm:P82_at_some_time_within", "node": "timespan" }
+			}
+		},
+		"Place": {
+			"subject": { "class": "crm:E53_Place" },
+			"properties": {
+				"Description": { "predicate": "crm:P3_has_note" }
+			}
+		},
+		"City": {
+			"subject": { "class": "crm:E53_Place" }
+		},
+		"Artwork": {
+			"subject": { "class": "crm:E22_Human-Made_Object" },
+			"nodes": {
+				"production": { "class": "crm:E12_Production", "linkPredicate": "crm:P108i_was_produced_by", "per": "value" }
+			},
+			"properties": {
+				"Creator": { "predicate": "crm:P14_carried_out_by", "node": "production" }
+			}
+		},
+		"Artist": {
+			"subject": { "class": "crm:E21_Person" }
+		}
+	}
+}

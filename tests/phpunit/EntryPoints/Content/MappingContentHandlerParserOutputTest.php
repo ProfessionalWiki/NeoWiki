@@ -79,6 +79,45 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 		$this->assertStringContainsString( '>City</a></td><td>edm:Place</td><td>0</td>', $html );
 	}
 
+	public function testOverviewCountsContributedPropertiesOfAContributesOnlyEntry(): void {
+		// No target class of its own, but it does map two properties — onto the Subjects it points at.
+		$this->assertStringContainsString(
+			'>Birth</a></td><td></td><td>2</td>',
+			$this->render( $this->structural() )
+		);
+	}
+
+	private function structural(): string {
+		return <<<JSON
+			{
+				"version": 1,
+				"prefixes": {
+					"crm": "http://www.cidoc-crm.org/cidoc-crm/",
+					"rdaGr2": "http://rdvocab.info/ElementsGr2/"
+				},
+				"schemas": {
+					"Person": {
+						"subject": { "class": "crm:E21_Person" },
+						"nodes": {
+							"birth": { "class": "crm:E67_Birth", "linkPredicate": "crm:P98i_was_born" }
+						},
+						"properties": {
+							"Birth place": { "predicate": "crm:P7_took_place_at", "node": "birth" }
+						}
+					},
+					"Birth": {
+						"contributions": {
+							"Brought into life": {
+								"Date": { "predicate": "rdaGr2:dateOfBirth" },
+								"Took place at": { "predicate": "rdaGr2:placeOfBirth" }
+							}
+						}
+					}
+				}
+			}
+			JSON;
+	}
+
 	public function testFormatVersionIsRenderedAsASubtleLine(): void {
 		$this->assertStringContainsString(
 			'ext-neowiki-mapping-page__version',
@@ -187,11 +226,26 @@ class MappingContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase
 		$this->assertStringNotContainsString( 'mw-json', $html );
 	}
 
-	public function testNonV1ShapeFallsBackToTheDefaultJsonTable(): void {
+	public function testAnUnsupportedFormatVersionFallsBackToTheDefaultJsonTable(): void {
 		$html = $this->render( '{ "version": 2, "schemas": {} }' );
 
 		$this->assertStringContainsString( 'mw-json', $html );
 		$this->assertStringNotContainsString( 'ext-neowiki-mapping-page', $html );
+	}
+
+	/**
+	 * Raw JSON on its own looks like an ordinary Mapping page, so the version it is written in — the
+	 * reason it defines no projection and fails every export — has to be said out loud.
+	 */
+	public function testAnUnsupportedFormatVersionIsNamedAboveTheRawJson(): void {
+		$html = $this->render( '{ "version": 2, "schemas": {} }' );
+
+		$this->assertStringContainsString( 'format version 2', $html );
+		$this->assertLessThan( strpos( $html, 'mw-json' ), strpos( $html, 'format version 2' ) );
+	}
+
+	public function testContentThatIsNotAMappingDocumentGetsNoVersionNotice(): void {
+		$this->assertStringNotContainsString( 'format version', $this->render( '[ 1, 2, 3 ]' ) );
 	}
 
 	public function testInvalidJsonFallsBackToTheDefaultRendering(): void {

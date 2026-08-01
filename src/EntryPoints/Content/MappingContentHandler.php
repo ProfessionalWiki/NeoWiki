@@ -9,11 +9,13 @@ use MediaWiki\Content\Content;
 use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Content\ValidationParams;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\PageReference;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleValue;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingContentValidator;
@@ -60,8 +62,8 @@ class MappingContentHandler extends JsonContentHandler {
 	/**
 	 * Renders the Mapping as a header (mapped-schemas overview, prefixes, format version) plus one section
 	 * per schema whose body stays the default mw-json table. Falls back to the inherited JSON rendering when
-	 * the content does not parse or is not the expected v1 shape (XML import and future versions bypass save
-	 * validation), so display never fatals.
+	 * the content does not parse or is not the expected shape (XML import and other format versions bypass
+	 * save validation), so display never fatals.
 	 */
 	protected function fillParserOutput(
 		Content $content,
@@ -75,9 +77,36 @@ class MappingContentHandler extends JsonContentHandler {
 				$this->renderMapping( $content, $mapping, $cpoParams->getPage(), $parserOutput );
 				return;
 			}
+
+			parent::fillParserOutput( $content, $cpoParams, $parserOutput );
+			$this->addUnsupportedVersionNotice( $mapping, $parserOutput );
+			return;
 		}
 
 		parent::fillParserOutput( $content, $cpoParams, $parserOutput );
+	}
+
+	/**
+	 * A page written in another format version renders as plain JSON, which on its own looks like an
+	 * ordinary Mapping page even though it defines no projection and every export of it fails. Saying so
+	 * is the only signal the reader gets.
+	 */
+	private function addUnsupportedVersionNotice( mixed $mapping, ParserOutput $parserOutput ): void {
+		$version = $mapping instanceof stdClass ? ( $mapping->version ?? null ) : null;
+
+		if ( !is_scalar( $version ) || $version === Mapping::FORMAT_VERSION ) {
+			return;
+		}
+
+		$parserOutput->setContentHolderText(
+			Html::warningBox(
+				wfMessage( 'neowiki-mapping-unsupported-version' )
+					->params( (string)$version )
+					->inContentLanguage()
+					->escaped()
+			) . $parserOutput->getContentHolderText()
+		);
+		$parserOutput->addModuleStyles( [ 'mediawiki.codex.messagebox.styles' ] );
 	}
 
 	private function renderMapping(
@@ -118,15 +147,17 @@ class MappingContentHandler extends JsonContentHandler {
 	 */
 	private function isRenderableMapping( mixed $mapping ): bool {
 		return $mapping instanceof stdClass
-			&& ( $mapping->version ?? null ) === 1
+			&& ( $mapping->version ?? null ) === Mapping::FORMAT_VERSION
 			&& isset( $mapping->schemas )
 			&& $mapping->schemas instanceof stdClass;
 	}
 
 	public function makeEmptyContent(): MappingContent {
+		$version = Mapping::FORMAT_VERSION;
+
 		return new MappingContent( <<<JSON
 {
-	"version": 1,
+	"version": {$version},
 	"prefixes": {},
 	"schemas": {}
 }

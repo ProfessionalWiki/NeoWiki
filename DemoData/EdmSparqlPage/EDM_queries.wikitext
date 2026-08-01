@@ -4,15 +4,15 @@ Every example below uses the <code><nowiki>{{#sparql_raw}}</nowiki></code> parse
 
 == Query in EDM terms ==
 
-The Person and Artist Schemas both map to <code>edm:Agent</code>, so a query in EDM terms spans them without knowing either Schema:
+The Person and Artist Schemas both map to <code>edm:Agent</code>, so a query in EDM terms spans them without knowing either Schema. The birth date sits in its own <code>GRAPH</code> block because it does not always live with the agent: where a birth is modelled as its own Subject, [[Mapping:EDM]] contributes <code>rdaGr2:dateOfBirth</code> from the Birth page's graph instead.
 
 <syntaxhighlight lang="mediawiki">
-{{#sparql_raw:PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX rdaGr2: <http://rdvocab.info/ElementsGr2/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?agent ?dateOfBirth WHERE { GRAPH ?graph { ?a a edm:Agent ; rdfs:label ?agent ; rdaGr2:dateOfBirth ?dateOfBirth } } ORDER BY ?agent}}
+{{#sparql_raw:PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX rdaGr2: <http://rdvocab.info/ElementsGr2/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?agent ?dateOfBirth WHERE { GRAPH ?agentGraph { ?a a edm:Agent ; rdfs:label ?agent } GRAPH ?birthGraph { ?a rdaGr2:dateOfBirth ?dateOfBirth } } ORDER BY ?agent}}
 </syntaxhighlight>
 
 Result:
 
-{{#sparql_raw:PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX rdaGr2: <http://rdvocab.info/ElementsGr2/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?agent ?dateOfBirth WHERE { GRAPH ?graph { ?a a edm:Agent ; rdfs:label ?agent ; rdaGr2:dateOfBirth ?dateOfBirth } } ORDER BY ?agent}}
+{{#sparql_raw:PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX rdaGr2: <http://rdvocab.info/ElementsGr2/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?agent ?dateOfBirth WHERE { GRAPH ?agentGraph { ?a a edm:Agent ; rdfs:label ?agent } GRAPH ?birthGraph { ?a rdaGr2:dateOfBirth ?dateOfBirth } } ORDER BY ?agent}}
 
 A relation projects as a direct triple between two entity IRIs, so a query follows it the way it would in any EDM dataset. The artwork and its creator live on separate wiki pages, hence in separate named graphs:
 

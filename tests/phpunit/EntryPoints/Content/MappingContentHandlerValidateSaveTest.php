@@ -35,7 +35,7 @@ class MappingContentHandlerValidateSaveTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testStructurallyInvalidMappingFailsValidation(): void {
-		$this->assertFalse( $this->validate( '{ "version": 2, "schemas": {} }' )->isOK() );
+		$this->assertFalse( $this->validate( '{ "version": 1, "schemas": { "Person": {} } }' )->isOK() );
 	}
 
 	public function testUnresolvableCuriePredicateFailsValidation(): void {
