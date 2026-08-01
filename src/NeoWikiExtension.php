@@ -559,7 +559,8 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Propagating fan-out over every backend, used by the maintenance rebuild path so failures surface.
+	 * Propagating fan-out over every backend, used by update.php's initialization so an unreachable
+	 * backend is reported rather than passed over. A rebuild does not use it: it is scoped to one store.
 	 */
 	public function getGraphDatabasePlugin(): GraphDatabasePlugin {
 		if ( !isset( $this->graphDatabasePlugin ) ) {
@@ -699,7 +700,9 @@ class NeoWikiExtension {
 
 	public function getGraphDatabasePluginRegistry(): GraphDatabasePluginRegistry {
 		if ( !isset( $this->graphDatabasePluginRegistry ) ) {
-			$this->graphDatabasePluginRegistry = new GraphDatabasePluginRegistry();
+			$this->graphDatabasePluginRegistry = new GraphDatabasePluginRegistry(
+				LoggerFactory::getInstance( 'NeoWiki' )
+			);
 		}
 
 		$this->ensureExtensionsRegistered();

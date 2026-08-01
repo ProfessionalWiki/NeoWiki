@@ -23,7 +23,20 @@ class SpyRebuildBatchObserver implements RebuildBatchObserver {
 	 */
 	public array $deletionBatches = [];
 
+	/**
+	 * @var int[]
+	 */
 	public array $reportedPageTotals = [];
+
+	/**
+	 * @var int[]
+	 */
+	public array $removedPerDeletionBatch = [];
+
+	/**
+	 * @var int[]
+	 */
+	public array $reportedDeletionTotals = [];
 
 	public function afterPageBatch( RebuildRun $run, int $totalPages ): void {
 		$this->pageBatches[] = $run;
@@ -32,6 +45,8 @@ class SpyRebuildBatchObserver implements RebuildBatchObserver {
 
 	public function afterDeletionBatch( RebuildRun $run, int $removed, int $totalDeleted ): void {
 		$this->deletionBatches[] = $run;
+		$this->removedPerDeletionBatch[] = $removed;
+		$this->reportedDeletionTotals[] = $totalDeleted;
 	}
 
 }

@@ -10,7 +10,6 @@ use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use stdClass;
 use Wikimedia\Rdbms\IConnectionProvider;
-use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * Stores rebuild runs in the `neowiki_rebuild_runs` table.
@@ -21,6 +20,12 @@ use Wikimedia\Rdbms\IReadableDatabase;
 class DatabaseRebuildRunRepository implements RebuildRunRepository {
 
 	private const TABLE = 'neowiki_rebuild_runs';
+
+	/**
+	 * What fits in the error column. A driver quoting the query it choked on can run far longer than
+	 * that, and losing the tail of a message beats losing the record of the failure.
+	 */
+	private const MAX_ERROR_LENGTH = 65530;
 
 	public function __construct(
 		private readonly IConnectionProvider $connectionProvider,
@@ -72,7 +77,7 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 				'nwrr_processed' => $run->processed,
 				'nwrr_failed' => $run->failed,
 				'nwrr_finished' => $run->status->isTerminal() ? $db->timestamp() : null,
-				'nwrr_error' => $run->error,
+				'nwrr_error' => $run->error === null ? null : mb_strcut( $run->error, 0, self::MAX_ERROR_LENGTH ),
 			] )
 			->where( [ 'nwrr_id' => $run->id ] )
 			->caller( __METHOD__ )
@@ -97,7 +102,7 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 	 * @param array<string, string> $conditions
 	 */
 	private function getMostRecentRun( array $conditions ): ?RebuildRun {
-		$row = $this->getDb()->newSelectQueryBuilder()
+		$row = $this->connectionProvider->getPrimaryDatabase()->newSelectQueryBuilder()
 			->select( '*' )
 			->from( self::TABLE )
 			->where( $conditions )
@@ -106,10 +111,6 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 			->fetchRow();
 
 		return $row === false ? null : self::newRunFromRow( $row );
-	}
-
-	private function getDb(): IReadableDatabase {
-		return $this->connectionProvider->getPrimaryDatabase();
 	}
 
 	private static function newRunFromRow( stdClass $row ): RebuildRun {

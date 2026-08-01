@@ -218,6 +218,18 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		$this->assertTrue( $logger->hasWarningRecords() );
 	}
 
+	public function testSparqlStoreEntryTakingTheNeo4jNameIsSkippedWithWarning(): void {
+		$logger = new TestLogger();
+
+		$config = $this->buildSparqlConfig(
+			[ [ 'updateUrl' => 'https://qlever.example/api', 'name' => 'neo4j' ] ],
+			$logger
+		);
+
+		$this->assertSame( [], $config->sparqlStores, 'the bundled Neo4j backend keeps its own name' );
+		$this->assertTrue( $logger->hasWarningRecords() );
+	}
+
 	public function testExplicitNamesLetSiblingProjectionsRepeatATargetOntology(): void {
 		$config = $this->buildSparqlConfig( [
 			[ 'updateUrl' => 'https://public.example/api', 'projection' => 'EDM', 'name' => 'edm-public' ],

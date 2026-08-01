@@ -231,8 +231,9 @@ $wgNeoWikiSparqlStores = [
 		// Mapping page title without the prefix ('EDM' for Mapping:EDM). As with any page title,
 		// only the first letter is case-insensitive.
 		'projection' => 'native',
-		// Optional: what to call this store when rebuilding it. Defaults to the projection.
-		'name' => 'native',
+		// Optional: what to call this store when rebuilding it. Defaults to the projection, which is
+		// what you want unless another entry already holds that projection.
+		'name' => 'primary',
 	],
 ];
 ```
@@ -240,8 +241,9 @@ $wgNeoWikiSparqlStores = [
 A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
 
 Each store's `name` identifies it when [rebuilding one store](maintenance.md#rebuilding-one-store), so no two entries
-may share one. Since the name defaults to the projection, two entries holding the same projection — mirroring it to a
-second endpoint, say — each need an explicit `name`. An entry repeating a name already taken is skipped with a warning.
+may share one, and none may be `neo4j`. Since the name defaults to the projection, two entries holding the same
+projection — mirroring it to a second endpoint, say — each need an explicit `name`. An entry repeating a name already
+taken is skipped with a warning, and stops receiving page changes along with it.
 
 ### Oxigraph
 
