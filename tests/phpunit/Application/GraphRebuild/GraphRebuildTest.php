@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\GraphRebuild;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use InvalidArgumentException;
 use LogicException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
@@ -220,6 +221,14 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( RebuildStatus::Failed, $run->status, 'the pages after it would fail identically' );
 		$this->assertSame( self::WIKI_DATABASE_FAILURE_MESSAGE, $run->error );
 		$this->assertSame( 0, $run->failed, 'the run ended rather than counting a page against the store' );
+	}
+
+	public function testABatchOfNothingIsRefused(): void {
+		$this->registerStore( new SpyGraphDatabasePlugin() );
+
+		$this->expectException( InvalidArgumentException::class );
+
+		$this->rebuild( batchSize: 0 );
 	}
 
 	public function testRebuildingAStoreThatIsNotConfiguredIsRefused(): void {
