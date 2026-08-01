@@ -239,6 +239,32 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$this->assertCount( 1, $recoveringStore->savedPages );
 	}
 
+	/**
+	 * A store added to the configuration since the last rebuild holds none of the wiki, and has no
+	 * unfinished run to continue either. Reporting that as in sync is how a scheduled `--resume` leaves
+	 * a store empty and still says it is done.
+	 */
+	public function testResumingEveryStoreReportsAStoreThatWasNeverRebuilt(): void {
+		$this->registerNamedGraphDatabasePlugins( [ 'newly-added' => new SpyGraphDatabasePlugin() ] );
+
+		$reconciled = $this->runRebuild( [ '--resume' ] );
+
+		$this->assertFalse( $reconciled );
+		$this->assertStringContainsString( 'newly-added', $this->getScriptOutput() );
+	}
+
+	public function testResumingEveryStoreReportsAStoreWhoseLastRunLeftPagesBehind(): void {
+		$pageId = $this->createPageWithSubjects( 'Rejected page', TestSubject::build() )?->getPageId();
+		$this->registerNamedGraphDatabasePlugins( [
+			'picky' => new SpyGraphDatabasePlugin( refusedPageIds: [ (int)$pageId ] ),
+		] );
+		$this->runRebuild();
+
+		$reconciled = $this->runRebuild( [ '--resume' ] );
+
+		$this->assertFalse( $reconciled, 'a run that finished without reconciling every page is not in sync' );
+	}
+
 	public function testRebuildingWithNoStoresConfiguredSucceeds(): void {
 		$reconciled = $this->runWithoutGraphBackend( function (): bool {
 			// Replaces the registration hook, so the bundled test extension contributes no store either.

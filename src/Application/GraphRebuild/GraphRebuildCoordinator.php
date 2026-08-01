@@ -87,7 +87,7 @@ class GraphRebuildCoordinator {
 		$latestRun = $this->runs->getLatestRun( $storeName );
 
 		if ( $latestRun === null || !$latestRun->status->isResumable() ) {
-			throw new NothingToResumeException( $storeName );
+			throw new NothingToResumeException( $storeName, $latestRun );
 		}
 
 		$reopenedRun = $latestRun->reopened();
