@@ -27,17 +27,16 @@ Most real wikis sit well below these targets: under ~100 thousand Subjects, 30 S
 
 ### Writing Speed Targets
 
-NeoWiki needs to meet these write speeds, with all configured projections included:
+NeoWiki needs to meet these write speeds at any size within the scalability targets above, with all configured
+projections included. The duration columns are at the Great rate:
 
-| Write path                                          | Great                | Acceptable          |
-|-----------------------------------------------------|----------------------|---------------------|
-| Import throughput (`importDump.php`)                | 100+ Subjects/second | 25 Subjects/second  |
-| Projection rebuild (`RebuildGraphDatabases.php`)    | 500+ Subjects/second | 100 Subjects/second |
-| Latency an interactive save gains from projections  | under 100 ms         | under 1 second      |
+| Write path                                          | Great                | Acceptable          | 1 million    | 10 million |
+|-----------------------------------------------------|----------------------|---------------------|--------------|------------|
+| Import throughput (`importDump.php`)                | 100+ Subjects/second | 25 Subjects/second  | < 3 hours    | ~1 day     |
+| Projection rebuild (`RebuildGraphDatabases.php`)    | 500+ Subjects/second | 100 Subjects/second | ~30 minutes  | < 6 hours  |
+| Latency an interactive save gains from projections  | under 100 ms         | under 1 second      | —            | —          |
 
-These hold flat across the size targets above. At the Great rates, importing 1 million Subjects takes under three
-hours (rebuild: about half an hour), and 10 million just over a day (rebuild: under six hours). Common Wikibase
-tooling measures 1-4 entities per second, putting a 1 million import there at days to weeks.
+Common Wikibase tooling measures 1-4 entities per second, putting a 1 million import there at days to weeks.
 
 ### Definitions
 
