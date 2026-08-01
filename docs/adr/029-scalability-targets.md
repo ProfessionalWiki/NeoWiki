@@ -9,8 +9,9 @@ Status: Draft
 To make good design and implementation decisions, we need to know how far NeoWiki should scale, so we avoid both
 degraded performance at scale and accidental complexity via unnecessary optimization.
 
-Most real wikis sit well below the targets set here: under 100 thousand Subjects, 30 Schemas, 10 Subjects per page and
-15 Statements per Subject (per surveyed GLAM collection sizes; enterprise wikis run smaller still).
+For grounding: ~75% of surveyed GLAM institutions hold under 100 thousand objects, ~17% between 100 thousand and
+1 million, and ~7% more (ICOM, n=1,132); enterprise wikis run one to two orders smaller. Typical wikis also stay
+under 30 Schemas, 10 Subjects per page and 15 Statements per Subject.
 
 ## Decision
 
