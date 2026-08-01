@@ -197,6 +197,31 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'batched: 3/3 pages (failed 0)', $this->getScriptOutput() );
 	}
 
+	/**
+	 * Rounding one of these up to the smallest batch that works would rebuild the whole wiki one page
+	 * at a time under an option the operator got wrong, and say nothing about it.
+	 *
+	 * @dataProvider nonsensicalBatchSizeProvider
+	 */
+	public function testANonsensicalBatchSizeIsRefusedRatherThanRounded( string $batchSize ): void {
+		$this->createPageWithSubjects( 'Page nobody gets to', TestSubject::build() );
+		$store = new SpyGraphDatabasePlugin();
+		$this->registerNamedGraphDatabasePlugins( [ 'batched' => $store ] );
+
+		$reconciled = $this->runRebuild( [ '--batch-size=' . $batchSize ] );
+
+		$this->assertFalse( $reconciled );
+		$this->assertStringContainsString( '--batch-size', $this->getScriptOutput() );
+		$this->assertSame( [], $store->savedPages, 'nothing is rebuilt under an option that makes no sense' );
+	}
+
+	public function nonsensicalBatchSizeProvider(): iterable {
+		yield 'nothing at all' => [ '0' ];
+		yield 'less than nothing' => [ '-5' ];
+		yield 'a fraction of a page' => [ '2.5' ];
+		yield 'not a number' => [ 'lots' ];
+	}
+
 	public function testResumeContinuesTheStoresUnfinishedRebuild(): void {
 		$this->createPageWithSubjects( 'Page before the outage', TestSubject::build() );
 		$this->createPageWithSubjects( 'Page after the outage', TestSubject::build() );
