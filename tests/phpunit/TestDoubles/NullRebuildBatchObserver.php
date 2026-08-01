@@ -13,6 +13,9 @@ use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
  */
 class NullRebuildBatchObserver implements RebuildBatchObserver {
 
+	public function pageFailed( int $pageId ): void {
+	}
+
 	public function afterPageBatch( RebuildRun $run, int $totalPages ): void {
 	}
 

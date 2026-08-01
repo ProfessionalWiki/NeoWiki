@@ -33,6 +33,15 @@ class SpyRebuildBatchObserver implements RebuildBatchObserver {
 	 */
 	public array $reportedDeletionTotals = [];
 
+	/**
+	 * @var int[]
+	 */
+	public array $failedPageIds = [];
+
+	public function pageFailed( int $pageId ): void {
+		$this->failedPageIds[] = $pageId;
+	}
+
 	public function afterPageBatch( RebuildRun $run, int $totalPages ): void {
 		$this->pageBatches[] = $run;
 		$this->reportedPageTotals[] = $totalPages;
