@@ -12,6 +12,9 @@ namespace ProfessionalWiki\NeoWiki\Domain\GraphRebuild;
  * counts the pages projected, and `failed` every page the run could not reconcile, whether projecting
  * or removing it.
  *
+ * Only `failed()` leaves an error behind; every other transition clears it, so a run never carries the
+ * error of something it has since moved past.
+ *
  * Timestamps are assigned where the run is stored, so this stays free of both a clock and a database.
  */
 readonly class RebuildRun {
