@@ -60,13 +60,37 @@ Pass `--batch-size` to change how many pages are projected between recordings; i
 A page the store rejects is counted and the rebuild carries on; the `NeoWiki` channel says which pages failed and why.
 The script exits non-zero whenever a store was left out of sync, so a scheduled rebuild cannot fail silently.
 
-A rebuild killed outright — `kill -9`, or the machine going down — leaves its run recorded as still going in the
-`neowiki_rebuild_runs` table, and every later rebuild of that store refuses to start while it is. Release it by
-recording the run as cancelled, which keeps the cursor `--resume` continues from:
+A rebuild killed outright — `kill -9`, or the machine going down — leaves its run recorded as still going, and every
+later rebuild of that store refuses to start while it is. Release it by cancelling it on
+[Special:GraphStores](#background-rebuilds), which keeps the cursor `--resume` continues from.
 
-```sql
-UPDATE neowiki_rebuild_runs SET nwrr_status = 'cancelled' WHERE nwrr_store = '<name>' AND nwrr_status = 'running';
-```
+## Background rebuilds
+
+Rebuilds can also be started from the wiki, without shell access. **Special:GraphStores** lists every configured
+store with its projection, whether it is in sync, stale or never built, and what its last rebuild got through, and
+offers a button to rebuild one or to cancel a rebuild under way. The same three things are available over the REST
+API — `GET /neowiki/v0/graph-stores` and `POST`/`DELETE /neowiki/v0/graph-stores/{name}/rebuild` — for scripting.
+Both need the `neowiki-admin` right, which administrators have by default.
+
+A rebuild started this way runs on MediaWiki's job queue, a batch of pages per job, so the page comes back at once
+and progress appears on reload.
+
+Two things to know:
+
+- **A store rebuilt this way needs a job runner that actually runs jobs.** A default MediaWiki install runs a job or
+  two at the end of each web request, which is enough for a small wiki but will stretch a large rebuild over days.
+  Run [the job queue](https://www.mediawiki.org/wiki/Manual:Job_queue) from cron or a service instead.
+- **Rebuilds are the same runs however they are started.** A store has one rebuild at a time whether it came from the
+  script, the API or the page, they share one record each, and any of them can cancel or resume the others.
+
+### Stale stores
+
+A store is reported as stale when the Mapping page defining its projection was edited after its last rebuild began:
+the store still describes every page projected before that edit in the old vocabulary. Rebuilding it is the fix.
+
+To have that happen without being asked, set `$wgNeoWikiAutoRebuildOnMappingChange = true;` — saving or deleting a
+Mapping page then rebuilds every store holding that projection in the background. It is off by default, because a
+rebuild reprojects every page carrying a Subject and is worth deciding to spend on a large wiki.
 
 ## Upgrades
 

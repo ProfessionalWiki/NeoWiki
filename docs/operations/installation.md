@@ -179,6 +179,16 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new `error`-severity violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
+| `$wgNeoWikiAutoRebuildOnMappingChange` | Rebuilds a store in the background when the Mapping defining its projection changes | `false` | No |
+
+## User rights
+
+NeoWiki adds one right beyond the per-namespace editing ones: `neowiki-admin`, which allows reporting and
+rebuilding the wiki's graph stores, through [Special:GraphStores](maintenance.md#background-rebuilds) or the
+matching REST endpoints. Administrators have it by default. It is about the installation rather than about what the
+wiki says, so it grants nothing over content, and no OAuth grant carries it.
+
+The query surfaces have their own right, `neowiki-query`; see [Permissions](../api/query-api.md#permissions).
 
 ## On-wiki configuration
 
@@ -268,6 +278,11 @@ alongside a property that ontology does not model. The
 
 A newly added entry only receives pages saved from then on. Backfill it, and only it, by
 [rebuilding that one store](maintenance.md#rebuilding-one-store).
+
+Editing the Mapping page behind a store's projection has the same effect in reverse: the store keeps describing every
+page projected so far in the old vocabulary until it is rebuilt. Set
+`$wgNeoWikiAutoRebuildOnMappingChange = true;` to have that rebuild queued automatically; otherwise the store is
+reported as [stale](maintenance.md#stale-stores) until someone starts it.
 
 ### Querying a SPARQL store
 
