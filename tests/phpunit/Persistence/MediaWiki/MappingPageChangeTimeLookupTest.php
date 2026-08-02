@@ -5,7 +5,9 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\ProjectionChangeTimeLookup;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPageChangeTimeLookup;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
@@ -25,7 +27,7 @@ class MappingPageChangeTimeLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testAProjectionNoMappingPageDefinesHasNeverChanged(): void {
+	public function testAProjectionNoMappingPageEverDefinedHasNeverChanged(): void {
 		$this->assertNull( $this->newLookup()->getLastChangeTime( 'EDM' ) );
 	}
 
@@ -33,10 +35,62 @@ class MappingPageChangeTimeLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $this->newLookup()->getLastChangeTime( '<not a title>' ) );
 	}
 
+	/**
+	 * Every page projected under a deleted Mapping still carries the vocabulary it described, so the
+	 * stores holding that projection are exactly as far from the wiki as an edit would have left them.
+	 */
+	public function testAProjectionChangedWhenItsMappingPageWasDeleted(): void {
+		$this->createMapping( 'EDM', '{"version":1,"schemas":{}}' );
+		$this->deleteMapping( 'EDM' );
+
+		$this->assertMatchesRegularExpression(
+			'/^\d{14}$/',
+			(string)$this->newLookup()->getLastChangeTime( 'EDM' )
+		);
+	}
+
+	public function testAProjectionWhoseMappingPageWasRestoredChangedWhenItWasLastEdited(): void {
+		$latestRevision = $this->createMapping( 'EDM', '{"version":1,"schemas":{}}' );
+		$this->deleteMapping( 'EDM' );
+		$this->undeleteMapping( 'EDM' );
+
+		$this->assertSame( $latestRevision?->getTimestamp(), $this->newLookup()->getLastChangeTime( 'EDM' ) );
+	}
+
+	private function deleteMapping( string $name ): void {
+		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage(
+			MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $this->mappingTitle( $name ) ),
+			$this->getTestSysop()->getUser()
+		);
+
+		$this->assertStatusGood( $deletePage->deleteUnsafe( 'test deletion' ) );
+	}
+
+	private function undeleteMapping( string $name ): void {
+		$this->assertStatusGood(
+			MediaWikiServices::getInstance()->getUndeletePageFactory()
+				->newUndeletePage(
+					MediaWikiServices::getInstance()->getWikiPageFactory()
+						->newFromTitle( $this->mappingTitle( $name ) ),
+					$this->getTestSysop()->getAuthority()
+				)
+				->undeleteUnsafe( 'test undeletion' )
+		);
+	}
+
+	private function mappingTitle( string $name ): Title {
+		$title = MediaWikiServices::getInstance()->getTitleFactory()
+			->newFromText( $name, NeoWikiExtension::NS_MAPPING );
+		$this->assertNotNull( $title );
+
+		return $title;
+	}
+
 	private function newLookup(): ProjectionChangeTimeLookup {
 		return new MappingPageChangeTimeLookup(
 			MediaWikiServices::getInstance()->getTitleFactory(),
 			MediaWikiServices::getInstance()->getRevisionLookup(),
+			MediaWikiServices::getInstance()->getConnectionProvider(),
 		);
 	}
 

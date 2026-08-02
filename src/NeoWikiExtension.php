@@ -996,6 +996,7 @@ class NeoWikiExtension {
 			projectionChanges: new MappingPageChangeTimeLookup(
 				MediaWikiServices::getInstance()->getTitleFactory(),
 				MediaWikiServices::getInstance()->getRevisionLookup(),
+				MediaWikiServices::getInstance()->getConnectionProvider(),
 			),
 		);
 	}
