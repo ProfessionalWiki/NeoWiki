@@ -264,6 +264,58 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 		$this->assertNull( $this->readFinishedTime( $run ) );
 	}
 
+	/**
+	 * A batch reads the run, spends minutes projecting, and writes back what it got through. Whether that
+	 * write landed is what tells it the run is still its own to advance.
+	 */
+	public function testWritingBackARunThatIsStillGoingReportsTheRunAsWritten(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+
+		$writtenRun = $repository->updateRunWhileActive( $run->withProgress( cursor: 7, processed: 7, failed: 0 ) );
+
+		$this->assertSame( 7, $writtenRun?->processed );
+		$this->assertSame( RebuildStatus::Running, $writtenRun->status );
+	}
+
+	/**
+	 * What the caller does next depends on which status ended the run, so it is reported rather than left
+	 * to a second read — which, inside a transaction opened before the cancellation, would still see the
+	 * run as going.
+	 *
+	 * The cancellation is made on this connection, because the harness wraps each test in one transaction
+	 * on one connection: a genuinely concurrent one, from a connection whose commit this one's snapshot
+	 * predates, cannot be produced from inside a test. What is asserted here is that the write is refused
+	 * and what refused it is reported; that the refusal is seen at all across connections is what the
+	 * affected-row count and the locking read are for.
+	 */
+	public function testWritingBackARunSomethingElseEndedReportsWhatEndedIt(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+		$repository->updateRun( $run->cancelled() );
+
+		$storedRun = $repository->updateRunWhileActive( $run->withProgress( cursor: 7, processed: 7, failed: 0 ) );
+
+		$this->assertSame( RebuildStatus::Cancelled, $storedRun?->status );
+		$this->assertSame( 0, $storedRun->processed, 'what the refused batch got through is not written' );
+	}
+
+	public function testWritingBackARunNothingWasFiledUnderReportsNoRun(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+		$this->deleteRunRow( $run );
+
+		$this->assertNull( $repository->updateRunWhileActive( $run->withProgress( cursor: 7, processed: 7, failed: 0 ) ) );
+	}
+
+	private function deleteRunRow( RebuildRun $run ): void {
+		$this->getDb()->newDeleteQueryBuilder()
+			->deleteFrom( 'neowiki_rebuild_runs' )
+			->where( [ 'nwrr_id' => $run->id ] )
+			->caller( __METHOD__ )
+			->execute();
+	}
+
 	private function readFinishedTime( RebuildRun $run ): ?string {
 		$finished = $this->getDb()->newSelectQueryBuilder()
 			->select( 'nwrr_finished' )

@@ -39,9 +39,10 @@ interface RebuildRunRepository {
 	 * status it read. Something ending the run in that window — a cancellation, most of all — would be
 	 * written straight back over. This is how that write is refused instead.
 	 *
-	 * @return bool Whether the run was still going, and so whether anything was written.
+	 * @return ?RebuildRun The run as the records now hold it: the one just written when the write landed,
+	 *         and whatever ended it when it did not. Null only when there is no such run to write to.
 	 */
-	public function updateRunWhileActive( RebuildRun $run ): bool;
+	public function updateRunWhileActive( RebuildRun $run ): ?RebuildRun;
 
 	/**
 	 * The run under this id, whatever its status. How a process that did not start a run reads what has

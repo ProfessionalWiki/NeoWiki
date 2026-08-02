@@ -31,6 +31,7 @@ use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLockUnavailableException;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\CancellingRebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryDeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\RefusingRebuildStartLock;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectPageIdsLookup;
@@ -412,6 +413,54 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	 */
 	private static function batchCursors( SpyRebuildBatchObserver $observer ): array {
 		return array_map( static fn ( RebuildRun $run ): int => $run->cursor, $observer->pageBatches );
+	}
+
+	/**
+	 * Taking a queued run up is a write like any other a batch makes, so it too must land only while the
+	 * records still have the run going. A batch reading a stale copy would otherwise write Running back
+	 * over the cancellation that ended it, resurrecting a run the admin was told had stopped — and, with
+	 * an automatic rebuild filed in its place, leave the store with two.
+	 */
+	public function testARunCancelledBeforeItsFirstBatchIsNotTakenUpAgain(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two' );
+		$store = new SpyGraphDatabasePlugin();
+		$this->registerStore( $store );
+		$queuedRun = $this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Api, RebuildStatus::Queued );
+
+		$run = $this->executeOneBatchWithTheRunCancelledAsItIsRead( $queuedRun, $store, $pageIds );
+
+		$this->assertSame( RebuildStatus::Cancelled, $run->status );
+		$this->assertSame( [], $store->savedPages, 'a cancelled run projects nothing' );
+		$this->assertSame(
+			RebuildStatus::Cancelled,
+			$this->newRunRepository()->getRun( $queuedRun->id )?->status,
+			'and the record keeps the status that ended it'
+		);
+	}
+
+	/**
+	 * @param int[] $pageIds
+	 */
+	private function executeOneBatchWithTheRunCancelledAsItIsRead(
+		RebuildRun $run,
+		GraphDatabasePlugin $store,
+		array $pageIds
+	): RebuildRun {
+		$executor = new GraphRebuildExecutor(
+			subjectPageIds: new InMemorySubjectPageIdsLookup( ...$pageIds ),
+			deletedSubjectPageIds: new InMemoryDeletedSubjectPageIdsLookup(),
+			runs: new CancellingRebuildRunRepository( $this->newRunRepository() ),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			logger: new NullLogger(),
+		);
+
+		return $executor->executeOneBatch(
+			run: $run,
+			store: $store,
+			pageRebuilder: NeoWikiExtension::getInstance()->newSubjectPageRebuilderFor( $store ),
+			batchSize: 200,
+			observer: new NullRebuildBatchObserver()
+		);
 	}
 
 	/**

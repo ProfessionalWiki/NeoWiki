@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use stdClass;
 use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\SelectQueryBuilder;
 
 /**
  * Stores rebuild runs in the `neowiki_rebuild_runs` table.
@@ -79,22 +80,30 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 
 	/**
 	 * The status is part of what the write is conditional on, so a run something else has ended is left
-	 * as that something else left it. Whether it landed is read back rather than taken from the affected
-	 * row count, which a database is free to report as zero for a write that changed nothing.
+	 * as that something else left it.
+	 *
+	 * Whether it landed is taken from the row count the write matched, not read back: these connections
+	 * ask their server for matched rows rather than changed ones, so a write that changed nothing still
+	 * counts — and a read-back is served from the reading transaction's own snapshot, which a job runner
+	 * opens before the batch and which therefore predates the very cancellation this exists to notice.
+	 * That is also why what ended the run is read under a lock: a locking read sees the latest committed
+	 * row rather than the snapshot's.
 	 */
-	public function updateRunWhileActive( RebuildRun $run ): bool {
-		$this->write( $run, [
+	public function updateRunWhileActive( RebuildRun $run ): ?RebuildRun {
+		$matchedRows = $this->write( $run, [
 			'nwrr_id' => $run->id,
 			'nwrr_status' => [ RebuildStatus::Queued->value, RebuildStatus::Running->value ],
 		] );
 
-		return $this->getRun( $run->id )?->status === $run->status;
+		return $matchedRows > 0 ? $run : $this->getRunUnderLock( $run->id );
 	}
 
 	/**
 	 * @param array<string, string|string[]|int> $conditions
+	 *
+	 * @return int How many rows the write matched.
 	 */
-	private function write( RebuildRun $run, array $conditions ): void {
+	private function write( RebuildRun $run, array $conditions ): int {
 		$db = $this->connectionProvider->getPrimaryDatabase();
 
 		$db->newUpdateQueryBuilder()
@@ -111,6 +120,8 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 			->where( $conditions )
 			->caller( __METHOD__ )
 			->execute();
+
+		return $db->affectedRows();
 	}
 
 	public function getRun( int $id ): ?RebuildRun {
@@ -142,15 +153,32 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 	 * @param array<string, string|string[]|int> $conditions
 	 */
 	private function getMostRecentRun( array $conditions ): ?RebuildRun {
-		$row = $this->connectionProvider->getPrimaryDatabase()->newSelectQueryBuilder()
+		return self::newRunFromResult( $this->newRunQuery( $conditions )->fetchRow() );
+	}
+
+	/**
+	 * The run as the database now holds it, rather than as the reading transaction's snapshot has it. Only
+	 * for finding out what ended a run, which is the one read whose answer another connection has just
+	 * changed. Every other read here is of this process's own run and is happy with the snapshot.
+	 */
+	private function getRunUnderLock( int $id ): ?RebuildRun {
+		return self::newRunFromResult( $this->newRunQuery( [ 'nwrr_id' => $id ] )->forUpdate()->fetchRow() );
+	}
+
+	/**
+	 * @param array<string, string|string[]|int> $conditions
+	 */
+	private function newRunQuery( array $conditions ): SelectQueryBuilder {
+		return $this->connectionProvider->getPrimaryDatabase()->newSelectQueryBuilder()
 			->select( '*' )
 			->from( self::TABLE )
 			->where( $conditions )
 			->orderBy( [ 'nwrr_started', 'nwrr_id' ], 'DESC' )
-			->caller( __METHOD__ )
-			->fetchRow();
+			->caller( __METHOD__ );
+	}
 
-		return $row === false ? null : self::newRunFromRow( $row );
+	private static function newRunFromResult( stdClass|bool $row ): ?RebuildRun {
+		return $row instanceof stdClass ? self::newRunFromRow( $row ) : null;
 	}
 
 	/**

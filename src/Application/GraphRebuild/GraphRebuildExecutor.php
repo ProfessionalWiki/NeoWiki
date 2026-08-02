@@ -154,8 +154,13 @@ class GraphRebuildExecutor {
 		}
 
 		if ( $current->status === RebuildStatus::Queued ) {
-			$current = $current->started();
-			$this->runs->updateRun( $current );
+			// Conditionally, like every other write a batch makes: the copy just read can predate a
+			// cancellation, and taking the run up unconditionally would write Running back over it.
+			$current = $this->recordRun( $current->started() );
+
+			if ( $current->status->isTerminal() ) {
+				return $current;
+			}
 		}
 
 		return match ( $current->phase ) {
@@ -351,11 +356,7 @@ class GraphRebuildExecutor {
 	 * own cursor.
 	 */
 	private function recordRun( RebuildRun $run ): RebuildRun {
-		if ( $this->runs->updateRunWhileActive( $run ) ) {
-			return $run;
-		}
-
-		return $this->runs->getRun( $run->id ) ?? $run->cancelled();
+		return $this->runs->updateRunWhileActive( $run ) ?? $run->cancelled();
 	}
 
 	private function logPageFailure( string $operation, int $pageId, Exception $e ): void {
