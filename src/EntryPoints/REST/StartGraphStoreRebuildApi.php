@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildAlreadyRunningExcep
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\UnknownGraphStoreException;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLockUnavailableException;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -42,6 +43,10 @@ class StartGraphStoreRebuildApi extends SimpleHandler {
 			return $this->errorResponse( 404, 'unknownStore', $e->getMessage() );
 		} catch ( RebuildAlreadyRunningException $e ) {
 			return $this->errorResponse( 409, 'rebuildAlreadyRunning', $e->getMessage() );
+		} catch ( RebuildStartLockUnavailableException $e ) {
+			// Something else is starting a rebuild of this store right now. Not an error to report to a
+			// person: the same call a moment later is the answer.
+			return $this->errorResponse( 409, 'rebuildBeingStarted', $e->getMessage() );
 		}
 
 		$response = $this->getResponseFactory()->createJson( $this->newSerializer()->runToArray( $run ) );

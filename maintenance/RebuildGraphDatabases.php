@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Maintenance;
 
+use Closure;
 use Exception;
 use Maintenance;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
@@ -251,18 +252,18 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 		$this->failedPageIds[] = $pageId;
 	}
 
-	public function afterPageBatch( RebuildRun $run, int $totalPages ): void {
+	public function afterPageBatch( RebuildRun $run, Closure $totalPages ): void {
 		$this->outputChanneled(
-			$run->store . ': ' . $run->processed . '/' . $totalPages . ' pages (failed ' . $run->failed . ')'
+			$run->store . ': ' . $run->processed . '/' . $totalPages() . ' pages (failed ' . $run->failed . ')'
 		);
 		$this->waitForReplication();
 	}
 
-	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch, int $totalDeleted ): void {
+	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch, Closure $totalDeleted ): void {
 		$this->removedPages += $removedInBatch;
 
 		$this->outputChanneled(
-			$run->store . ': ' . $this->removedPages . '/' . $totalDeleted . ' deleted pages removed'
+			$run->store . ': ' . $this->removedPages . '/' . $totalDeleted() . ' deleted pages removed'
 		);
 		$this->waitForReplication();
 	}

@@ -41,6 +41,10 @@ class GraphStoreStatusSerializer {
 	}
 
 	/**
+	 * The reason a run ended is deliberately absent. A backend reports an unreachable server by quoting
+	 * the endpoint it tried, and the run keeps that message for an operator reading the records — which
+	 * is not the same audience as whoever may call this.
+	 *
 	 * @return array{
 	 *     id: int,
 	 *     store: string,
@@ -49,8 +53,7 @@ class GraphStoreStatusSerializer {
 	 *     processed: int,
 	 *     failed: int,
 	 *     trigger: string,
-	 *     started: ?string,
-	 *     error: ?string
+	 *     started: ?string
 	 * }
 	 */
 	public function runToArray( RebuildRun $run ): array {
@@ -63,7 +66,6 @@ class GraphStoreStatusSerializer {
 			'failed' => $run->failed,
 			'trigger' => $run->trigger->value,
 			'started' => self::asIso8601( $run->started ),
-			'error' => $run->error,
 		];
 	}
 

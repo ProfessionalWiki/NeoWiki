@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
+use MediaWiki\Utils\MWTimestamp;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildPhase;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
@@ -64,7 +65,7 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 			processed: 0,
 			failed: 0,
 			trigger: $trigger,
-			started: $started,
+			started: self::asMediaWikiTimestamp( $started ),
 		);
 	}
 
@@ -73,6 +74,27 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 	 * still going yet finished, or as ended without saying when. Picking a terminal run back up clears it.
 	 */
 	public function updateRun( RebuildRun $run ): void {
+		$this->write( $run, [ 'nwrr_id' => $run->id ] );
+	}
+
+	/**
+	 * The status is part of what the write is conditional on, so a run something else has ended is left
+	 * as that something else left it. Whether it landed is read back rather than taken from the affected
+	 * row count, which a database is free to report as zero for a write that changed nothing.
+	 */
+	public function updateRunWhileActive( RebuildRun $run ): bool {
+		$this->write( $run, [
+			'nwrr_id' => $run->id,
+			'nwrr_status' => [ RebuildStatus::Queued->value, RebuildStatus::Running->value ],
+		] );
+
+		return $this->getRun( $run->id )?->status === $run->status;
+	}
+
+	/**
+	 * @param array<string, string|string[]|int> $conditions
+	 */
+	private function write( RebuildRun $run, array $conditions ): void {
 		$db = $this->connectionProvider->getPrimaryDatabase();
 
 		$db->newUpdateQueryBuilder()
@@ -86,7 +108,7 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 				'nwrr_finished' => $run->status->isTerminal() ? $db->timestamp() : null,
 				'nwrr_error' => $run->error === null ? null : mb_strcut( $run->error, 0, self::MAX_ERROR_LENGTH ),
 			] )
-			->where( [ 'nwrr_id' => $run->id ] )
+			->where( $conditions )
 			->caller( __METHOD__ )
 			->execute();
 	}
@@ -156,9 +178,23 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 			failed: (int)$row->nwrr_failed,
 			trigger: $trigger,
 			error: $row->nwrr_error === null ? null : (string)$row->nwrr_error,
-			started: (string)$row->nwrr_started,
-			finished: $row->nwrr_finished === null ? null : (string)$row->nwrr_finished,
+			started: self::asMediaWikiTimestamp( $row->nwrr_started ),
+			finished: self::asMediaWikiTimestamp( $row->nwrr_finished ),
 		);
+	}
+
+	/**
+	 * Timestamp columns come back in the database's own format — Postgres hands back something quite
+	 * unlike the MediaWiki timestamps every comparison and every display here is written against.
+	 */
+	private static function asMediaWikiTimestamp( mixed $timestamp ): ?string {
+		if ( !is_scalar( $timestamp ) ) {
+			return null;
+		}
+
+		$converted = MWTimestamp::convert( TS_MW, (string)$timestamp );
+
+		return $converted === false ? null : $converted;
 	}
 
 }

@@ -11,7 +11,7 @@ Upkeep tasks for an evaluation NeoWiki instance. For first-time setup, see [inst
 
 NeoWiki stores its canonical data in MediaWiki revision slots and keeps a regenerable copy in each configured graph
 store — Neo4j and any SPARQL store — for querying. You can wipe and rebuild that copy from the canonical slots at any
-time. From the MediaWiki root:
+time, from the shell or [from the wiki](#background-rebuilds). From the MediaWiki root:
 
 ```sh
 php maintenance/run.php NeoWiki:RebuildGraphDatabases
@@ -62,35 +62,41 @@ The script exits non-zero whenever a store was left out of sync, so a scheduled 
 
 A rebuild killed outright — `kill -9`, or the machine going down — leaves its run recorded as still going, and every
 later rebuild of that store refuses to start while it is. Release it by cancelling it on
-[Special:GraphStores](#background-rebuilds), which keeps the cursor `--resume` continues from.
+[Special:GraphStores](#background-rebuilds), which keeps the cursor `--resume` continues from. With no wiki to reach,
+record the run as cancelled directly:
+
+```sql
+UPDATE neowiki_rebuild_runs SET nwrr_status = 'cancelled' WHERE nwrr_store = '<name>' AND nwrr_status = 'running';
+```
 
 ## Background rebuilds
 
 Rebuilds can also be started from the wiki, without shell access. **Special:GraphStores** lists every configured
-store with its projection, whether it is in sync, stale or never built, and what its last rebuild got through, and
-offers a button to rebuild one or to cancel a rebuild under way. The same three things are available over the REST
-API — `GET /neowiki/v0/graph-stores` and `POST`/`DELETE /neowiki/v0/graph-stores/{name}/rebuild` — for scripting.
-Both need the `neowiki-admin` right, which administrators have by default.
+store with its projection, its state, and what its last successful rebuild got through. Each row offers a button to
+rebuild that store, or to cancel the rebuild it has queued or running. The REST API does the same three things for
+scripting: `GET /neowiki/v0/graph-stores` and `POST`/`DELETE /neowiki/v0/graph-stores/{name}/rebuild`. Both need the
+`neowiki-admin` right, which administrators have by default.
 
 A rebuild started this way runs on MediaWiki's job queue, a batch of pages per job, so the page comes back at once
 and progress appears on reload.
 
-Two things to know:
-
-- **A store rebuilt this way needs a job runner that actually runs jobs.** A default MediaWiki install runs a job or
-  two at the end of each web request, which is enough for a small wiki but will stretch a large rebuild over days.
-  Run [the job queue](https://www.mediawiki.org/wiki/Manual:Job_queue) from cron or a service instead.
-- **Rebuilds are the same runs however they are started.** A store has one rebuild at a time whether it came from the
-  script, the API or the page, they share one record each, and any of them can cancel or resume the others.
+- **A background rebuild is only as fast as the job runner.** A default MediaWiki install runs one job per web
+  request, which paces a rebuild at 200 pages per request. Run
+  [the job queue](https://www.mediawiki.org/wiki/Manual:Job_queue) from cron or a service instead.
+- **A store has one rebuild at a time, whoever started it.** The script, the API and the page write the same run
+  record, so a rebuild started on the page blocks one started by the script and the other way round. Cancelling is on
+  the page and the API; continuing a cancelled or failed run is `--resume` on the script.
 
 ### Stale stores
 
-A store is reported as stale when the Mapping page defining its projection was edited after its last rebuild began:
-the store still describes every page projected before that edit in the old vocabulary. Rebuilding it is the fix.
+A store is reported as stale when the Mapping page defining its projection was edited after that store's last
+successful rebuild started: the store still describes every page projected before that edit in the old vocabulary.
+Rebuilding it is the fix. Only a store holding an ontology projection can go stale this way; the native projection and
+Neo4j have no editable definition, so they are only ever never built or in sync.
 
-To have that happen without being asked, set `$wgNeoWikiAutoRebuildOnMappingChange = true;` — saving or deleting a
-Mapping page then rebuilds every store holding that projection in the background. It is off by default, because a
-rebuild reprojects every page carrying a Subject and is worth deciding to spend on a large wiki.
+Set `$wgNeoWikiAutoRebuildOnMappingChange = true;` to have saving or deleting a Mapping page rebuild every store
+holding that projection in the background. It is off by default: such a rebuild reprojects every page carrying a
+Subject, and it needs a job runner as much as any other background rebuild does.
 
 ## Upgrades
 

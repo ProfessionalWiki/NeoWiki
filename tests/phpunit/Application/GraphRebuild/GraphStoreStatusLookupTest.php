@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\GraphRebuild;
 
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphStoreStatus;
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphStoreStatusLookup;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\StoreSyncState;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
@@ -83,7 +84,7 @@ class GraphStoreStatusLookupTest extends MediaWikiIntegrationTestCase {
 		$status = $this->statusOf( self::NATIVE_STORE, projectionChanged: self::justAfter( $rebuild ) );
 
 		$this->assertSame( StoreSyncState::InSync, $status->state );
-		$this->assertSame( 'native', $status->projection );
+		$this->assertSame( RdfPageProjector::PROJECTION, $status->projection );
 	}
 
 	public function testAProjectionNoMappingDefinesLeavesTheStoreInSync(): void {
@@ -147,10 +148,15 @@ class GraphStoreStatusLookupTest extends MediaWikiIntegrationTestCase {
 			projectionsByStore: [
 				self::NEO4J_STORE => null,
 				self::SPARQL_STORE => self::PROJECTION,
-				self::NATIVE_STORE => 'native',
+				self::NATIVE_STORE => RdfPageProjector::PROJECTION,
 			],
 			runs: $this->newRunRepository(),
-			projectionChanges: new InMemoryProjectionChangeTimeLookup( [ self::PROJECTION => $projectionChanged ] ),
+			// The native projection is given a change time too, so a store holding it is reported in sync
+			// because nothing defines it — not because the fake happened to know nothing about it.
+			projectionChanges: new InMemoryProjectionChangeTimeLookup( [
+				self::PROJECTION => $projectionChanged,
+				RdfPageProjector::PROJECTION => $projectionChanged,
+			] ),
 		);
 	}
 

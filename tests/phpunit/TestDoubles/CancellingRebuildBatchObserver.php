@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
+use Closure;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
@@ -26,14 +27,14 @@ class CancellingRebuildBatchObserver implements RebuildBatchObserver {
 	public function pageFailed( int $pageId ): void {
 	}
 
-	public function afterPageBatch( RebuildRun $run, int $totalPages ): void {
+	public function afterPageBatch( RebuildRun $run, Closure $totalPages ): void {
 		if ( !$this->cancelled ) {
 			$this->cancelled = true;
 			$this->coordinator->cancel( $this->storeName );
 		}
 	}
 
-	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch, int $totalDeleted ): void {
+	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch, Closure $totalDeleted ): void {
 	}
 
 }

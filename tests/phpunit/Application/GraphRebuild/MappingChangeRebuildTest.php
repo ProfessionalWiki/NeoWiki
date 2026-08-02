@@ -63,6 +63,21 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( RebuildTrigger::Auto, $run->trigger );
 	}
 
+	/**
+	 * A projection is a Mapping page name, whose first letter MediaWiki capitalises, so configuration
+	 * naming it in lower case still matches an edit to that page.
+	 */
+	public function testAProjectionConfiguredInLowerCaseMatchesItsMappingPage(): void {
+		$this->overrideConfigValue( 'NeoWikiSparqlStores', [
+			[ 'updateUrl' => 'http://sparql.invalid/edm', 'projection' => 'edm', 'name' => self::MAPPED_STORE ],
+		] );
+		NeoWikiExtension::resetInstance();
+
+		$this->createMapping( 'Edm', self::MAPPING_JSON );
+
+		$this->assertSame( RebuildStatus::Queued, $this->activeRunOf( self::MAPPED_STORE )?->status );
+	}
+
 	public function testAStoreHoldingAnotherProjectionIsLeftAlone(): void {
 		$this->createMapping( self::PROJECTION, self::MAPPING_JSON );
 

@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 
 use MediaWiki\Html\Html;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Message\Message;
 use MediaWiki\Session\CsrfTokenSet;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -13,11 +14,12 @@ use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NothingToCancelException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildAlreadyRunningException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\StoreSyncState;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\UnknownGraphStoreException;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use RuntimeException;
+use Throwable;
 
 /**
  * Shows how far each graph store is from the wiki, and rebuilds one on request.
@@ -44,6 +46,7 @@ class SpecialGraphStores extends SpecialPage {
 		parent::execute( $subPage );
 
 		if ( $this->getRequest()->wasPosted() ) {
+			$this->checkReadOnly();
 			$this->act();
 			return;
 		}
@@ -90,11 +93,21 @@ class SpecialGraphStores extends SpecialPage {
 			return 'alreadyrunning';
 		} catch ( NothingToCancelException ) {
 			return 'nothingtocancel';
-		} catch ( RuntimeException ) {
-			// The queue would not take the batch, or the store's start lock was held. Both leave the store
-			// exactly as it was, and both are worth saying rather than answering with an unchanged table.
+		} catch ( Throwable $e ) {
+			// The queue would not take the batch, or the store's start lock was held, or the queue backend
+			// itself is unreachable. All leave the store exactly as it was, and all are worth saying rather
+			// than answering with a table that looks unchanged for no stated reason.
+			$this->logFailedAction( $storeName, $e );
 			return 'notqueued';
 		}
+	}
+
+	private function logFailedAction( string $storeName, Throwable $e ): void {
+		LoggerFactory::getInstance( 'NeoWiki' )->error(
+			'NeoWiki could not act on graph store "' . $storeName . '" from Special:GraphStores. The store is '
+			. 'unchanged. Underlying error: ' . BackendFailureMessage::withoutCredentials( $e->getMessage() ),
+			[ 'exception' => $e, 'store' => $storeName ]
+		);
 	}
 
 	private function redirectWithOutcome( string $outcome, string $storeName ): void {

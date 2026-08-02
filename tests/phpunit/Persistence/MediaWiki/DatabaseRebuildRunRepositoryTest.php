@@ -100,8 +100,23 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 
 		$storedRun = $repository->getLatestRun( self::STORE );
 
-		$this->assertNotNull( $storedRun?->started );
+		$this->assertSame( $run->started, $storedRun?->started, 'the start time survives the round trip' );
 		$this->assertNotNull( $storedRun->finished );
+	}
+
+	/**
+	 * Every comparison and every display of these is written against MediaWiki timestamps, but a database
+	 * hands its timestamp columns back in whatever format it stores them in.
+	 */
+	public function testTimesAreReadBackAsMediaWikiTimestamps(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+		$repository->updateRun( $run->succeeded() );
+
+		$storedRun = $repository->getLatestRun( self::STORE );
+
+		$this->assertMatchesRegularExpression( '/^\d{14}$/', (string)$storedRun?->started );
+		$this->assertMatchesRegularExpression( '/^\d{14}$/', (string)$storedRun->finished );
 	}
 
 	public function testThePhaseARunReachedIsReadBack(): void {

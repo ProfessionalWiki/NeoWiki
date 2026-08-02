@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\GraphRebuild;
 
+use Closure;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 
 /**
@@ -15,10 +16,10 @@ class NullRebuildBatchObserver implements RebuildBatchObserver {
 	public function pageFailed( int $pageId ): void {
 	}
 
-	public function afterPageBatch( RebuildRun $run, int $totalPages ): void {
+	public function afterPageBatch( RebuildRun $run, Closure $totalPages ): void {
 	}
 
-	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch, int $totalDeleted ): void {
+	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch, Closure $totalDeleted ): void {
 	}
 
 }

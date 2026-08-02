@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\GraphRebuild;
 
+use Closure;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
@@ -133,6 +134,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		try {
 			$coordinator->startBackground( self::STORE, RebuildTrigger::Api );
+			$this->fail( 'a rebuild whose batch cannot be queued has to say so' );
 		} catch ( RuntimeException ) {
 		}
 
@@ -192,6 +194,62 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( RebuildStatus::Cancelled, $run->status );
 		$this->assertSame( [ $pageIds[0], $pageIds[1] ], self::savedPageIds( $store ) );
+	}
+
+	/**
+	 * A batch reads the run, then spends minutes projecting before writing back what it got through. A
+	 * cancellation landing in that window must not be written straight back over — the admin was told the
+	 * rebuild had stopped.
+	 */
+	public function testARebuildCancelledWhileABatchWasWorkingStaysCancelled(): void {
+		$this->createSubjectPages( 'One', 'Two' );
+		$this->registerStore( new SpyGraphDatabasePlugin( whileSavingEachPage: $this->cancelOnce() ) );
+		$run = $this->newCoordinator( batchSize: 2 )->startBackground( self::STORE, RebuildTrigger::Api );
+
+		$this->newCoordinator( batchSize: 2 )->continueInBackground( $run->id, self::STORE );
+
+		$this->assertSame( RebuildStatus::Cancelled, $this->readRun( $run )?->status );
+	}
+
+	public function testABatchCancelledWhileItWorkedQueuesNoFurtherBatch(): void {
+		$this->createSubjectPages( 'One', 'Two' );
+		$this->registerStore( new SpyGraphDatabasePlugin( whileSavingEachPage: $this->cancelOnce() ) );
+		$jobQueue = new SpyRebuildJobQueue();
+		$run = $this->newCoordinatorWithJobQueue( $jobQueue )->startBackground( self::STORE, RebuildTrigger::Api );
+		$jobQueue->pushedBatches = [];
+
+		$this->newCoordinatorWithJobQueue( $jobQueue )->continueInBackground( $run->id, self::STORE );
+
+		$this->assertSame( [], $jobQueue->pushedBatches );
+	}
+
+	public function testEachBatchOfARunQueuesExactlyOneFurtherBatch(): void {
+		$this->createSubjectPages( 'One', 'Two' );
+		$this->registerStore( new SpyGraphDatabasePlugin() );
+		$jobQueue = new SpyRebuildJobQueue();
+		$coordinator = $this->newCoordinatorWithJobQueue( $jobQueue );
+		$run = $coordinator->startBackground( self::STORE, RebuildTrigger::Api );
+		$jobQueue->pushedBatches = [];
+
+		$coordinator->continueInBackground( $run->id, self::STORE );
+
+		$this->assertSame( [ [ 'runId' => $run->id, 'store' => self::STORE ] ], $jobQueue->pushedBatches );
+	}
+
+	/**
+	 * Each background batch runs in a process that has opened nothing, so every one of them opens the
+	 * store rather than trusting a previous batch to have done it.
+	 */
+	public function testEveryBackgroundBatchOpensTheStore(): void {
+		$this->createSubjectPages( 'One', 'Two', 'Three' );
+		$store = new SpyGraphDatabasePlugin();
+		$this->registerStore( $store );
+
+		$run = $this->newCoordinator( batchSize: 1 )->startBackground( self::STORE, RebuildTrigger::Api );
+		$this->newCoordinator( batchSize: 1 )->continueInBackground( $run->id, self::STORE );
+		$this->newCoordinator( batchSize: 1 )->continueInBackground( $run->id, self::STORE );
+
+		$this->assertSame( 2, $store->initializeCount );
 	}
 
 	public function testCancellingAStoreWithNoRebuildIsRefused(): void {
@@ -281,11 +339,26 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		return NeoWikiExtension::getInstance()->newGraphRebuildCoordinator( $batchSize );
 	}
 
+	/**
+	 * @return Closure(): void Cancels the store's rebuild the first time it is called, standing in for
+	 *         someone pressing cancel while a batch is working.
+	 */
+	private function cancelOnce(): Closure {
+		$cancelled = false;
+
+		return function () use ( &$cancelled ): void {
+			if ( !$cancelled ) {
+				$cancelled = true;
+				$this->newCoordinator()->cancel( self::STORE );
+			}
+		};
+	}
+
 	private function newCoordinatorWithJobQueue( SpyRebuildJobQueue $jobQueue ): GraphRebuildCoordinator {
 		$extension = NeoWikiExtension::getInstance();
 
 		return new GraphRebuildCoordinator(
-			stores: [ self::STORE => new SpyGraphDatabasePlugin() ],
+			stores: $extension->getNamedGraphDatabasePlugins(),
 			runs: $extension->newRebuildRunRepository(),
 			startLock: $extension->newRebuildStartLock(),
 			executor: $extension->newGraphRebuildExecutor(),

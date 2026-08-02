@@ -26,8 +26,22 @@ interface RebuildRunRepository {
 	/**
 	 * Writes a run's status, phase, progress and error back over the stored copy. A run that has reached
 	 * a terminal status is stamped with the time it did.
+	 *
+	 * Unconditional, so it is for the transitions made from outside a run — cancelling one, or picking a
+	 * terminal one back up. A rebuild recording its own progress uses {@see self::updateRunWhileActive()}.
 	 */
 	public function updateRun( RebuildRun $run ): void;
+
+	/**
+	 * Writes the run back only if the records still have it queued or running.
+	 *
+	 * A batch reads the run, spends minutes projecting, and writes back what it got through, carrying the
+	 * status it read. Something ending the run in that window — a cancellation, most of all — would be
+	 * written straight back over. This is how that write is refused instead.
+	 *
+	 * @return bool Whether the run was still going, and so whether anything was written.
+	 */
+	public function updateRunWhileActive( RebuildRun $run ): bool;
 
 	/**
 	 * The run under this id, whatever its status. How a process that did not start a run reads what has

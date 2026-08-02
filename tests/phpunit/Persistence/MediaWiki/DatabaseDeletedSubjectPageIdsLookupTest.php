@@ -88,8 +88,15 @@ class DatabaseDeletedSubjectPageIdsLookupTest extends NeoWikiIntegrationTestCase
 	 * first would fill a batch with one page repeated and never reach the next.
 	 */
 	public function testAPageWithSeveralArchivedRevisionsFillsOneSlotOfTheBatch(): void {
-		$this->createPageWithSubjects( 'Twice edited page', TestSubject::build() );
-		$this->createPageWithSubjects( 'Twice edited page', TestSubject::build() );
+		$firstRevision = $this->createPageWithSubjects( 'Twice edited page', TestSubject::build() );
+		$secondRevision = $this->createPageWithSubjects(
+			'Twice edited page',
+			TestSubject::build( label: 'A different label' )
+		);
+		// The premise: two archived revisions of one page. An edit storing identical content is a null
+		// edit, which creates no revision and would leave this testing nothing.
+		$this->assertNotSame( $firstRevision?->getId(), $secondRevision?->getId() );
+
 		$next = $this->createPageWithSubjects( 'Later page', TestSubject::build() );
 		$this->deletePageByName( 'Twice edited page' );
 		$this->deletePageByName( 'Later page' );

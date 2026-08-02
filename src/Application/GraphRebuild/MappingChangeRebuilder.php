@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\GraphRebuild;
 
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -55,7 +56,8 @@ class MappingChangeRebuilder {
 			$this->logger->error(
 				'NeoWiki could not rebuild graph store "' . $storeName . '" after the Mapping defining its '
 				. 'projection changed, so the store still holds the old vocabulary. Rebuild it from '
-				. 'Special:GraphStores. Underlying error: ' . $e->getMessage(),
+				. 'Special:GraphStores. Underlying error: '
+				. BackendFailureMessage::withoutCredentials( $e->getMessage() ),
 				[ 'exception' => $e, 'store' => $storeName ]
 			);
 		}

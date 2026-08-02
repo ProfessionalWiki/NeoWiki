@@ -35,10 +35,9 @@ you may not read and for a Subject id that does not exist.
 The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
 [Query API](query-api.md)).
 
-The graph-store endpoints are gated only by the `neowiki-admin` right, and answer `403` without it. They report and
-change the installation's own machinery rather than anything the wiki says, so no page's permissions stand in for it.
-They never return a store's endpoint URL or access token: being allowed to rebuild a store is not being allowed to read
-the credentials for it.
+The graph-store endpoints are gated by the `neowiki-admin` right and answer `403` without it; no page's permissions
+apply. The two rebuild endpoints also require an `X-CSRF-TOKEN` header, and answer `403` without one. No response
+carries a store's endpoint URL or access token.
 
 ## Endpoints
 
@@ -114,14 +113,15 @@ An ontology Mapping projects native Schemas to a target ontology. For the format
 
 ### Graph stores
 
-Report and rebuild the graph stores this wiki projects into. All three require the `neowiki-admin` right, granted to
-administrators by default. See [Background rebuilds](../operations/maintenance.md#background-rebuilds).
+Report and rebuild the graph stores this wiki projects into. A queued rebuild is worked through by MediaWiki's job
+queue, so a `202` means filed, not started: watch `activeRun` on `GET /neowiki/v0/graph-stores` until it is `null` and
+`lastSuccessfulRun` has moved. See [Background rebuilds](../operations/maintenance.md#background-rebuilds).
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/graph-stores` | Report every configured store: its projection, whether it is in sync, stale or never built, the rebuild it has going, and what its last finished rebuild got through. |
-| `POST /neowiki/v0/graph-stores/{name}/rebuild` | Queue a rebuild of one store. `202` with the run; `409` when that store already has one; `404` when no such store is configured. |
-| `DELETE /neowiki/v0/graph-stores/{name}/rebuild` | Cancel the rebuild a store has queued or going. `200` with the cancelled run; `404` when it has none. |
+| `GET /neowiki/v0/graph-stores` | Report every configured store: its `projection`, its `state` (`in-sync`, `stale` or `never-built`), the `activeRun` it has queued or running, and the `processed`/`failed` counts of its `lastSuccessfulRun`. |
+| `POST /neowiki/v0/graph-stores/{name}/rebuild` | Queue a rebuild of one store. `202` with the run; `409` when that store already has one, or one is being started for it; `404` when no such store is configured. |
+| `DELETE /neowiki/v0/graph-stores/{name}/rebuild` | Cancel the rebuild a store has queued or running. `200` with the cancelled run; `404` when it has none, and when no such store is configured. |
 
 <!-- REST-ENDPOINTS:END -->
 

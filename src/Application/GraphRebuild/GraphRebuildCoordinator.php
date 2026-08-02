@@ -70,10 +70,6 @@ class GraphRebuildCoordinator {
 		return array_keys( $this->stores );
 	}
 
-	public function hasStore( string $storeName ): bool {
-		return isset( $this->stores[$storeName] );
-	}
-
 	/**
 	 * Rebuilds the store here and now, returning the run as it ended.
 	 *
@@ -173,7 +169,19 @@ class GraphRebuildCoordinator {
 	public function continueInBackground( int $runId, string $storeName ): void {
 		$run = $this->runs->getRun( $runId );
 
-		if ( $run === null || $run->status->isTerminal() ) {
+		if ( $run === null ) {
+			// Not the usual "the run has ended" case, which is silent by design: there is no record at all,
+			// so nothing will ever advance whatever filed this. Worth a line, because the store may be left
+			// with a run recorded as queued that only cancelling releases.
+			$this->logger->warning(
+				'NeoWiki background graph rebuild of store "' . $storeName . '" was asked to continue run '
+				. $runId . ', which the records do not have.',
+				[ 'store' => $storeName, 'runId' => $runId ]
+			);
+			return;
+		}
+
+		if ( $run->status->isTerminal() ) {
 			return;
 		}
 
@@ -192,8 +200,16 @@ class GraphRebuildCoordinator {
 			return;
 		}
 
-		if ( !$run->status->isTerminal() ) {
+		if ( $run->status->isTerminal() ) {
+			return;
+		}
+
+		try {
 			$this->jobQueue->pushRebuildBatch( $runId, $storeName );
+		} catch ( Throwable $e ) {
+			// The same reasoning as the first batch's push: a run nothing will carry forward blocks the
+			// store until someone cancels it, so it is ended here instead.
+			$this->endCrashedRun( $run, $e );
 		}
 	}
 

@@ -20,6 +20,7 @@ use RuntimeException;
 class DatabaseRebuildStartLockTest extends MediaWikiIntegrationTestCase {
 
 	private const STORE = 'EDM';
+	private const LOCK_NAME = 'NeoWiki-graph-rebuild-start:' . self::STORE;
 
 	public function testTheRunStartedUnderTheLockIsWhatTheCallerGets(): void {
 		$run = self::newRun();
@@ -28,10 +29,9 @@ class DatabaseRebuildStartLockTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testAStoresLockIsReleasedOnceItsRunIsStarted(): void {
-		$lock = $this->newLock();
-		$lock->whileHeld( self::STORE, static fn (): RebuildRun => self::newRun() );
+		$this->newLock()->whileHeld( self::STORE, static fn (): RebuildRun => self::newRun() );
 
-		$this->assertNotNull( $lock->whileHeld( self::STORE, static fn (): RebuildRun => self::newRun() ) );
+		$this->assertLockIsFree();
 	}
 
 	/**
@@ -39,14 +39,33 @@ class DatabaseRebuildStartLockTest extends MediaWikiIntegrationTestCase {
 	 * that store unable to start another for as long as the connection lived.
 	 */
 	public function testTheLockIsReleasedWhenStartingTheRunThrows(): void {
-		$lock = $this->newLock();
-
 		try {
-			$lock->whileHeld( self::STORE, static fn (): RebuildRun => throw new RuntimeException( 'no store' ) );
+			$this->newLock()->whileHeld(
+				self::STORE,
+				static fn (): RebuildRun => throw new RuntimeException( 'no store' )
+			);
+			$this->fail( 'what the lock guards was supposed to throw' );
 		} catch ( RuntimeException ) {
 		}
 
-		$this->assertNotNull( $lock->whileHeld( self::STORE, static fn (): RebuildRun => self::newRun() ) );
+		$this->assertLockIsFree();
+	}
+
+	public function testTheLockIsHeldWhileTheRunIsBeingStarted(): void {
+		$caller = __METHOD__;
+
+		$this->newLock()->whileHeld( self::STORE, function () use ( $caller ): RebuildRun {
+			$this->assertFalse(
+				$this->getDb()->lockIsFree( self::LOCK_NAME, $caller ),
+				'the store must be locked while its run is filed'
+			);
+
+			return self::newRun();
+		} );
+	}
+
+	private function assertLockIsFree(): void {
+		$this->assertTrue( $this->getDb()->lockIsFree( self::LOCK_NAME, __METHOD__ ) );
 	}
 
 	private static function newRun(): RebuildRun {

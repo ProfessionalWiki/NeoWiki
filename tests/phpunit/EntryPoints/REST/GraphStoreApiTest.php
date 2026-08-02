@@ -81,7 +81,21 @@ class GraphStoreApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'in-sync', $store['state'] );
 		$this->assertSame( 8, $store['lastSuccessfulRun']['processed'] );
 		$this->assertSame( 1, $store['lastSuccessfulRun']['failed'] );
-		$this->assertNotNull( $store['lastSuccessfulRun']['finished'] );
+		$this->assertMatchesRegularExpression(
+			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/',
+			(string)$store['lastSuccessfulRun']['finished'],
+			'times are reported as ISO 8601, not as the wiki stores them'
+		);
+	}
+
+	/**
+	 * A backend reports an unreachable server by quoting the endpoint it tried, and the run keeps that
+	 * message for whoever reads the records. That is not the same audience as whoever may call this.
+	 */
+	public function testAReportedRunDoesNotCarryWhyAnEarlierOneFailed(): void {
+		$response = $this->executeAsAdmin( $this->newStartApi(), 'POST', self::STORE );
+
+		$this->assertArrayNotHasKey( 'error', $response['body'] );
 	}
 
 	public function testStartingARebuildQueuesItAndReportsTheRun(): void {

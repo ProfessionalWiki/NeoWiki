@@ -244,6 +244,23 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
+	 * Each batch reports what it removed, and the script keeps the running total, because a run continued
+	 * in another process has no memory of what the batches before it removed.
+	 */
+	public function testRemovalProgressAddsUpAcrossBatches(): void {
+		foreach ( [ 'First gone', 'Second gone', 'Third gone' ] as $pageName ) {
+			$this->createPageWithSubjects( $pageName, TestSubject::build() );
+			$this->deletePageByName( $pageName );
+		}
+		$this->registerNamedGraphDatabasePlugins( [ 'batched' => new SpyGraphDatabasePlugin() ] );
+
+		$this->runRebuild( [ '--store=batched', '--batch-size=2' ] );
+
+		$this->assertStringContainsString( 'batched: 2/3 deleted pages removed', $this->getScriptOutput() );
+		$this->assertStringContainsString( 'batched: 3/3 deleted pages removed', $this->getScriptOutput() );
+	}
+
+	/**
 	 * Rounding one of these up to the smallest batch that works would rebuild the whole wiki one page
 	 * at a time under an option the operator got wrong, and say nothing about it.
 	 *

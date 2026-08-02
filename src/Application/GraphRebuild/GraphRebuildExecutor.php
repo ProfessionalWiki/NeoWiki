@@ -169,8 +169,7 @@ class GraphRebuildExecutor {
 	 * operator reads back later, and the log keeps the exception class and backtrace the run cannot hold.
 	 */
 	private function failRun( RebuildRun $run, string $reason, ?Throwable $e ): RebuildRun {
-		$failedRun = $run->failed( $reason === '' ? null : $reason );
-		$this->runs->updateRun( $failedRun );
+		$failedRun = $this->recordRun( $run->failed( $reason === '' ? null : $reason ) );
 
 		$this->logger->error(
 			'NeoWiki graph rebuild of store "' . $failedRun->store . '" ended before reconciling the wiki. '
@@ -199,16 +198,21 @@ class GraphRebuildExecutor {
 
 		$progress = new RebuildProgress( $run );
 		$failures = [];
+		$offered = 0;
 
 		foreach ( $pageIds as $pageId ) {
-			$failure = $this->projectPage( $pageId, $progress, $pageRebuilder, $observer );
+			$outcome = $this->projectPage( $pageId, $progress, $pageRebuilder, $observer );
 
-			if ( $failure !== null ) {
-				$failures[] = $failure;
+			if ( $outcome->wasOfferedToTheStore ) {
+				$offered++;
+			}
+
+			if ( $outcome->failure !== null ) {
+				$failures[] = $outcome->failure;
 			}
 		}
 
-		if ( self::wholeBatchFailed( count( $failures ), count( $pageIds ) ) ) {
+		if ( self::wholeBatchFailed( count( $failures ), $offered ) ) {
 			$failure = $failures[array_key_last( $failures )];
 
 			// The run rather than its progress, so the cursor stays where this batch began and a resumed
@@ -217,13 +221,18 @@ class GraphRebuildExecutor {
 		}
 
 		$updated = $this->recordRun( $progress->applyTo( $run ) );
-		$observer->afterPageBatch( $updated, $this->subjectPageIds->countSubjectPages() );
+		$observer->afterPageBatch( $updated, fn (): int => $this->subjectPageIds->countSubjectPages() );
 
 		return $updated;
 	}
 
-	private static function wholeBatchFailed( int $failureCount, int $batchPageCount ): bool {
-		return $batchPageCount >= self::MIN_BATCH_SIZE_FOR_STORE_DEATH && $failureCount === $batchPageCount;
+	/**
+	 * Counted over the pages the store was actually offered, not over the batch: a page the walk found and
+	 * the wiki has since dropped never reached the store, and letting one of those spare the store its
+	 * verdict would walk the whole wiki one failure at a time.
+	 */
+	private static function wholeBatchFailed( int $failureCount, int $offeredPageCount ): bool {
+		return $offeredPageCount >= self::MIN_BATCH_SIZE_FOR_STORE_DEATH && $failureCount === $offeredPageCount;
 	}
 
 	private static function describeWholeBatchFailure( Throwable $failure ): string {
@@ -232,21 +241,18 @@ class GraphRebuildExecutor {
 			. BackendFailureMessage::withoutCredentials( $failure->getMessage() );
 	}
 
-	/**
-	 * @return Throwable|null What the store said about the page, when it refused it.
-	 */
 	private function projectPage(
 		int $pageId,
 		RebuildProgress $progress,
 		SubjectPageRebuilder $pageRebuilder,
 		RebuildBatchObserver $observer
-	): ?Throwable {
+	): ProjectedPageOutcome {
 		$title = $this->titleFactory->newFromID( $pageId );
 
 		if ( $title === null ) {
 			$this->logSkippedPage( $pageId, 'MediaWiki no longer has it' );
 			$progress->pageSkipped( $pageId );
-			return null;
+			return ProjectedPageOutcome::skipped();
 		}
 
 		try {
@@ -257,18 +263,18 @@ class GraphRebuildExecutor {
 			$this->logPageFailure( 'project', $pageId, $e );
 			$progress->pageFailed( $pageId );
 			$observer->pageFailed( $pageId );
-			return $e;
+			return ProjectedPageOutcome::refused( $e );
 		}
 
 		if ( $outcome === PageRefreshOutcome::Refreshed ) {
 			$progress->pageProjected( $pageId );
-			return null;
+			return ProjectedPageOutcome::projected();
 		}
 
 		$this->logSkippedPage( $pageId, 'it carries no Subject to project' );
 		$progress->pageSkipped( $pageId );
 
-		return null;
+		return ProjectedPageOutcome::skipped();
 	}
 
 	/**
@@ -307,7 +313,11 @@ class GraphRebuildExecutor {
 		}
 
 		$updated = $this->recordRun( $progress->applyTo( $run ) );
-		$observer->afterDeletionBatch( $updated, $removed, $this->deletedSubjectPageIds->countDeletedSubjectPages() );
+		$observer->afterDeletionBatch(
+			$updated,
+			$removed,
+			fn (): int => $this->deletedSubjectPageIds->countDeletedSubjectPages()
+		);
 
 		return $updated;
 	}
@@ -334,10 +344,18 @@ class GraphRebuildExecutor {
 		return true;
 	}
 
+	/**
+	 * A batch's write only lands while the records still have the run going. One ended in the meantime —
+	 * cancelled, most of all — keeps the status that ended it, and this batch's work is dropped rather
+	 * than written over it: what it projected stays in the store, and resuming re-reads it from the run's
+	 * own cursor.
+	 */
 	private function recordRun( RebuildRun $run ): RebuildRun {
-		$this->runs->updateRun( $run );
+		if ( $this->runs->updateRunWhileActive( $run ) ) {
+			return $run;
+		}
 
-		return $run;
+		return $this->runs->getRun( $run->id ) ?? $run->cancelled();
 	}
 
 	private function logPageFailure( string $operation, int $pageId, Exception $e ): void {

@@ -266,6 +266,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		try {
 			$coordinator->rebuild( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
+			$this->fail( 'a rebuilder that cannot be built has to say so' );
 		} catch ( LogicException ) {
 		}
 
@@ -278,6 +279,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		try {
 			$coordinator->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+			$this->fail( 'a rebuilder that cannot be built has to say so' );
 		} catch ( LogicException ) {
 		}
 
@@ -490,6 +492,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		try {
 			$coordinator->rebuild( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
+			$this->fail( 'a rebuild that cannot take the start lock has to say so' );
 		} catch ( RebuildStartLockUnavailableException ) {
 		}
 
@@ -502,6 +505,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		try {
 			$coordinator->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+			$this->fail( 'a resume that cannot take the start lock has to say so' );
 		} catch ( RebuildStartLockUnavailableException ) {
 		}
 

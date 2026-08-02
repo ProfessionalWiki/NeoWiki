@@ -9,6 +9,7 @@ use MediaWiki\Session\CsrfTokenSet;
 use MediaWiki\User\User;
 use PermissionsError;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialGraphStores;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -72,6 +73,66 @@ class SpecialGraphStoresTest extends SpecialPageTestBase {
 		$this->assertSame( RebuildStatus::Queued, $this->newRunRepository()->getActiveRun( self::STORE )?->status );
 	}
 
+	/**
+	 * @dataProvider outcomeProvider
+	 */
+	public function testWhatEachActionDidIsCarriedToThePageItRedirectsTo(
+		string $action,
+		?string $storeName,
+		bool $startFirst,
+		string $expectedOutcome
+	): void {
+		$admin = $this->newAdmin();
+
+		if ( $startFirst ) {
+			$this->postAction( 'rebuild', $admin );
+		}
+
+		[ , $response ] = $this->postAction( $action, $admin, $storeName );
+
+		$this->assertStringContainsString( 'outcome=' . $expectedOutcome, (string)$response->getHeader( 'Location' ) );
+	}
+
+	public function outcomeProvider(): iterable {
+		yield 'a rebuild is queued' => [ 'rebuild', null, false, 'queued' ];
+		yield 'a rebuild is cancelled' => [ 'cancel', null, true, 'cancelled' ];
+		yield 'a second rebuild is refused' => [ 'rebuild', null, true, 'alreadyrunning' ];
+		yield 'a store with no rebuild cannot be cancelled' => [ 'cancel', null, false, 'nothingtocancel' ];
+		yield 'an unconfigured store cannot be rebuilt' => [ 'rebuild', 'no-such-store', false, 'unknownstore' ];
+	}
+
+	public function testAFormWithoutAValidTokenSaysTheSessionExpired(): void {
+		$request = new FauxRequest(
+			[ 'nwAction' => 'rebuild', 'nwStore' => self::STORE, 'wpEditToken' => 'not-the-token' ],
+			true
+		);
+
+		[ , $response ] = $this->executeSpecialPage( '', $request, null, $this->newAdmin() );
+
+		$this->assertStringContainsString( 'outcome=sessionfailure', (string)$response->getHeader( 'Location' ) );
+	}
+
+	public function testARunningRebuildIsShownWithWhatItHasGotThrough(): void {
+		$repository = $this->newRunRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Api, RebuildStatus::Running );
+		$repository->updateRun( $run->withProgress( cursor: 40, processed: 37, failed: 2 ) );
+
+		[ $html ] = $this->executeSpecialPage( '', null, null, $this->newAdmin() );
+
+		$this->assertStringContainsString( 'neowiki-graphstores-state-running: 37, 2', $html );
+	}
+
+	public function testARebuiltStoreIsShownWithWhenItWasRebuiltAndWhatThatGotThrough(): void {
+		$repository = $this->newRunRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+		$repository->updateRun( $run->withProgress( cursor: 40, processed: 40, failed: 0 )->succeeded() );
+
+		[ $html ] = $this->executeSpecialPage( '', null, null, $this->newAdmin() );
+
+		$this->assertStringContainsString( 'neowiki-graphstores-state-insync', $html );
+		$this->assertStringContainsString( 'neowiki-graphstores-lastrebuild:', $html );
+	}
+
 	public function testTheQueuedRebuildIsWhatTheTableThenShows(): void {
 		$admin = $this->newAdmin();
 		$this->postAction( 'rebuild', $admin );
@@ -116,6 +177,25 @@ class SpecialGraphStoresTest extends SpecialPageTestBase {
 		$this->executeSpecialPage( '', $request, null, $this->newAdmin() );
 
 		$this->assertNull( $this->newRunRepository()->getActiveRun( self::STORE ) );
+	}
+
+	/**
+	 * A store name is whatever configuration says, and the page renders it back into a form field.
+	 */
+	public function testAStoreNameCarryingMarkupIsEscaped(): void {
+		$this->clearHook( 'NeoWikiRegistration' );
+		$this->setTemporaryHook(
+			'NeoWikiRegistration',
+			static function ( NeoWikiRegistrar $registrar ): void {
+				$registrar->addGraphDatabasePlugin( '"><script>alert(1)</script>', new SpyGraphDatabasePlugin() );
+			}
+		);
+		NeoWikiExtension::resetInstance();
+
+		[ $html ] = $this->executeSpecialPage( '', null, null, $this->newAdmin() );
+
+		$this->assertStringNotContainsString( '<script>', $html );
+		$this->assertStringContainsString( '&lt;script&gt;', $html );
 	}
 
 	public function testRebuildingAStoreThisWikiHasNotConfiguredChangesNothing(): void {
