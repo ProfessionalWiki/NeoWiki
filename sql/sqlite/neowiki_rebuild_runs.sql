@@ -5,6 +5,7 @@
 CREATE TABLE /*_*/neowiki_rebuild_runs (
   nwrr_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   nwrr_store BLOB NOT NULL, nwrr_status BLOB NOT NULL,
+  nwrr_phase BLOB DEFAULT 'pages' NOT NULL,
   nwrr_cursor INTEGER UNSIGNED DEFAULT 0 NOT NULL,
   nwrr_processed INTEGER UNSIGNED DEFAULT 0 NOT NULL,
   nwrr_failed INTEGER UNSIGNED DEFAULT 0 NOT NULL,

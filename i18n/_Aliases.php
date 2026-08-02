@@ -7,4 +7,5 @@ $specialPageAliases['en'] = [
 	'Schemas' => [ 'Schemas' ],
 	'Layouts' => [ 'Layouts' ],
 	'Mappings' => [ 'Mappings' ],
+	'GraphStores' => [ 'GraphStores' ],
 ];

@@ -68,6 +68,13 @@
 		"ScribuntoExternalLibraries": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onScribuntoExternalLibraries"
 	},
 
+	"JobClasses": {
+		"neowikiGraphRebuild": {
+			"class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Jobs\\GraphRebuildJob",
+			"needsPage": false
+		}
+	},
+
 	"ContentHandlers": {
 		"NeoWikiSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SubjectContentHandler",
 		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SchemaContentHandler",
@@ -127,7 +134,8 @@
 		"neowiki-schema-edit",
 		"neowiki-layout-edit",
 		"neowiki-mapping-edit",
-		"neowiki-query"
+		"neowiki-query",
+		"neowiki-admin"
 	],
 
 	"GroupPermissions": {
@@ -138,6 +146,9 @@
 			"neowiki-schema-edit": true,
 			"neowiki-layout-edit": true,
 			"neowiki-mapping-edit": true
+		},
+		"sysop": {
+			"neowiki-admin": true
 		}
 	},
 
@@ -164,7 +175,8 @@
 		"NeoJson": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson",
 		"Schemas": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSchemas",
 		"Layouts": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialLayouts",
-		"Mappings": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialMappings"
+		"Mappings": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialMappings",
+		"GraphStores": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialGraphStores"
 	},
 
 	"Actions": {
@@ -214,6 +226,10 @@
 		"NeoWikiDereferenceSubjectsToDataTab": {
 			"description": "Whether a browser dereferencing a Subject's concept URI (Accept: text/html) is sent to the hosting page's Data tab (?action=subjects) opened on the Subject's row (expanded, scrolled to, highlighted). True by default; when false, it is sent to the plain hosting page.",
 			"value": true
+		},
+		"NeoWikiAutoRebuildOnMappingChange": {
+			"description": "Whether saving or deleting a Mapping page automatically rebuilds, in the background, every configured graph store that holds that Mapping's projection. False by default: such a rebuild reprojects every page carrying a Subject into that store, which on a large wiki is substantial work an administrator should choose to take on. While it is false, Special:GraphStores reports such a store as stale and offers the rebuild.",
+			"value": false
 		},
 		"NeoWikiSparqlStores": {
 			"description": "SPARQL 1.1 graph stores to keep in sync with page changes and to query, in addition to any Neo4j backend. A list of objects, each with: 'updateUrl' (required, the store's SPARQL 1.1 Update endpoint, e.g. a QLever instance); 'queryUrl' (optional, the store's SPARQL 1.1 Query endpoint the read surfaces use; defaults to 'updateUrl', which is correct for QLever where the two are the same); 'accessToken' (optional, sent as an HTTP Bearer token on both update and query requests, e.g. for a QLever access token or a read-protected endpoint); 'projection' (optional, the RDF vocabulary written to the store: 'native' by default, or any configured Mapping target); and 'name' (optional, what to call this store when rebuilding it, defaulting to the projection, and unique across entries). The query surfaces (the {{#sparql_raw}} parser function, nw.sparqlQuery() in Lua, and POST /neowiki/v0/query/sparql) target the first configured store. Works with QLever and any SPARQL 1.1 store. Empty by default.",
@@ -332,6 +348,21 @@
 			"path": "/neowiki/v0/subject/{subjectId}/validate",
 			"method": [ "POST" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newValidateSubjectUpdateApi"
+		},
+		{
+			"path": "/neowiki/v0/graph-stores",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetGraphStoresApi"
+		},
+		{
+			"path": "/neowiki/v0/graph-stores/{name}/rebuild",
+			"method": [ "POST" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newStartGraphStoreRebuildApi"
+		},
+		{
+			"path": "/neowiki/v0/graph-stores/{name}/rebuild",
+			"method": [ "DELETE" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCancelGraphStoreRebuildApi"
 		}
 	],
 

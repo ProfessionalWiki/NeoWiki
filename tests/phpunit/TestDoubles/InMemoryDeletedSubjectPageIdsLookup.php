@@ -17,8 +17,14 @@ class InMemoryDeletedSubjectPageIdsLookup implements DeletedSubjectPageIdsLookup
 		$this->pageIds = $pageIds;
 	}
 
-	public function getDeletedSubjectPageIds(): array {
-		return $this->pageIds;
+	public function getDeletedSubjectPageIdsAfter( int $afterPageId, int $limit ): array {
+		$remaining = array_filter( $this->pageIds, static fn ( int $pageId ): bool => $pageId > $afterPageId );
+
+		return array_slice( array_values( $remaining ), 0, $limit );
+	}
+
+	public function countDeletedSubjectPages(): int {
+		return count( $this->pageIds );
 	}
 
 }

@@ -23,7 +23,7 @@
 			},
 			{
 				"name": "nwrr_status",
-				"comment": "running, succeeded, failed or cancelled",
+				"comment": "queued, running, succeeded, failed or cancelled",
 				"type": "binary",
 				"options": {
 					"notnull": true,
@@ -31,8 +31,18 @@
 				}
 			},
 			{
+				"name": "nwrr_phase",
+				"comment": "Which half of the rebuild the run is in: pages (reprojecting the wiki's pages) or deletions (removing the pages MediaWiki no longer has). The cursor is a position within this phase.",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 32,
+					"default": "pages"
+				}
+			},
+			{
 				"name": "nwrr_cursor",
-				"comment": "Page id the run last projected. A resumed run continues after it. 0 before the first batch.",
+				"comment": "Page id the run last dealt with in its current phase. A resumed run continues after it. 0 before the phase has read a page.",
 				"type": "integer",
 				"options": {
 					"notnull": true,
@@ -62,7 +72,7 @@
 			},
 			{
 				"name": "nwrr_trigger",
-				"comment": "What started the run: cli",
+				"comment": "What started the run: cli, api, ui or auto",
 				"type": "binary",
 				"options": {
 					"notnull": true,

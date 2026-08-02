@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\GraphRebuild;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildPhase;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
@@ -44,28 +45,72 @@ class RebuildRunTest extends TestCase {
 		$this->assertSame( 2, $run->failed );
 	}
 
-	public function testReopeningAFailedRunPutsItBackToRunning(): void {
-		$run = self::newRun()->failed( 'the store went away' )->reopened();
+	public function testStartingAFailedRunAgainPutsItBackToRunning(): void {
+		$run = self::newRun()->failed( 'the store went away' )->started();
 
 		$this->assertSame( RebuildStatus::Running, $run->status );
 	}
 
-	public function testReopeningAFailedRunClearsTheErrorThatEndedIt(): void {
-		$run = self::newRun()->failed( 'the store went away' )->reopened();
+	public function testStartingAFailedRunAgainClearsTheErrorThatEndedIt(): void {
+		$run = self::newRun()->failed( 'the store went away' )->started();
 
 		$this->assertNull( $run->error );
 	}
 
 	public function testRecordingProgressClearsTheErrorOfTheAttemptBeforeIt(): void {
-		$run = self::newRun()->failed( 'the store went away' )->reopened();
+		$run = self::newRun()->failed( 'the store went away' )->started();
 
 		$this->assertNull( $run->withProgress( cursor: 700, processed: 600, failed: 5 )->error );
 	}
 
 	public function testASucceededRunCarriesNoError(): void {
-		$run = self::newRun()->failed( 'the store went away' )->reopened();
+		$run = self::newRun()->failed( 'the store went away' )->started();
 
 		$this->assertNull( $run->succeeded()->error );
+	}
+
+	/**
+	 * The two phases walk different sets of page ids, so carrying the page cursor into the second would
+	 * have it start past pages it has never looked at.
+	 */
+	public function testEnteringTheDeletionPhaseRestartsTheCursor(): void {
+		$run = self::newRun()->enteredDeletionPhase();
+
+		$this->assertSame( RebuildPhase::Deletions, $run->phase );
+		$this->assertSame( 0, $run->cursor );
+	}
+
+	public function testEnteringTheDeletionPhaseKeepsWhatThePageWalkGotThrough(): void {
+		$run = self::newRun()->enteredDeletionPhase();
+
+		$this->assertSame( 90, $run->processed );
+		$this->assertSame( 2, $run->failed );
+	}
+
+	/**
+	 * A rebuild interrupted during its removals must not restart at the wiki's pages, or every page would
+	 * be projected a second time before it got back to where it was.
+	 */
+	public function testStartingARunAgainKeepsThePhaseItStoppedIn(): void {
+		$run = self::newRun()->enteredDeletionPhase()->withProgress( cursor: 12, processed: 90, failed: 2 )
+			->failed( 'the store went away' )->started();
+
+		$this->assertSame( RebuildPhase::Deletions, $run->phase );
+		$this->assertSame( 12, $run->cursor );
+	}
+
+	public function testAQueuedRunThatStartsIsRunning(): void {
+		$run = self::newQueuedRun()->started();
+
+		$this->assertSame( RebuildStatus::Running, $run->status );
+	}
+
+	public function testACancelledRunKeepsWhatItGotThroughBeforeItWasStopped(): void {
+		$run = self::newRun()->cancelled();
+
+		$this->assertSame( RebuildStatus::Cancelled, $run->status );
+		$this->assertSame( 100, $run->cursor );
+		$this->assertSame( 90, $run->processed );
 	}
 
 	/**
@@ -81,19 +126,26 @@ class RebuildRunTest extends TestCase {
 		yield 'progress recorded' => [ self::newRun()->withProgress( cursor: 700, processed: 600, failed: 5 ) ];
 		yield 'succeeded' => [ self::newRun()->succeeded() ];
 		yield 'failed' => [ self::newRun()->failed( 'the store went away' ) ];
-		yield 'reopened' => [ self::newRun()->failed( 'the store went away' )->reopened() ];
+		yield 'started again' => [ self::newRun()->failed( 'the store went away' )->started() ];
+		yield 'cancelled' => [ self::newRun()->cancelled() ];
+		yield 'entered the deletion phase' => [ self::newRun()->enteredDeletionPhase() ];
 	}
 
-	private static function newRun(): RebuildRun {
+	private static function newRun( RebuildStatus $status = RebuildStatus::Running ): RebuildRun {
 		return new RebuildRun(
 			id: 42,
 			store: 'EDM',
-			status: RebuildStatus::Running,
+			status: $status,
+			phase: RebuildPhase::Pages,
 			cursor: 100,
 			processed: 90,
 			failed: 2,
 			trigger: RebuildTrigger::Cli,
 		);
+	}
+
+	private static function newQueuedRun(): RebuildRun {
+		return self::newRun( RebuildStatus::Queued );
 	}
 
 }

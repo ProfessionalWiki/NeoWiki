@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use Exception;
 use ManualLogEntry;
+use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
 use MediaWiki\Installer\DatabaseUpdater;
@@ -39,6 +40,7 @@ use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 use MediaWiki\SpecialPage\SpecialPage;
 use Skin;
 use SkinTemplate;
+use Throwable;
 use WikiPage;
 
 class NeoWikiHooks {
@@ -189,9 +191,13 @@ class NeoWikiHooks {
 	 * @see LoadExtensionSchemaUpdatesHook
 	 */
 	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ): void {
-		$updater->addExtensionTable(
+		$sqlDirectory = dirname( __DIR__, 2 ) . '/sql/' . $updater->getDB()->getType();
+
+		$updater->addExtensionTable( 'neowiki_rebuild_runs', $sqlDirectory . '/neowiki_rebuild_runs.sql' );
+		$updater->addExtensionField(
 			'neowiki_rebuild_runs',
-			dirname( __DIR__, 2 ) . '/sql/' . $updater->getDB()->getType() . '/neowiki_rebuild_runs.sql'
+			'nwrr_phase',
+			$sqlDirectory . '/patch-neowiki_rebuild_runs-nwrr_phase.sql'
 		);
 
 		$updater->addExtensionUpdate( [ [ self::class, 'initializeGraphDatabases' ] ] );
@@ -282,6 +288,50 @@ class NeoWikiHooks {
 	): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision, $user );
 		$wikiPage->doPurge(); // clear cache
+		self::rebuildStoresHoldingChangedMapping( $wikiPage->getTitle() );
+	}
+
+	/**
+	 * A saved or deleted Mapping page changes what every mapped page's graph should contain, and nothing
+	 * reprojects those pages. Wikis that have asked for it have the stores holding that projection
+	 * rebuilt here; the rest are left to Special:GraphStores, which reports them as stale.
+	 *
+	 * Deferred past the change's own transaction, because starting a rebuild takes a database lock that
+	 * flushes the connection's snapshot, which a transaction with writes pending may not do — and because
+	 * an edit must not wait on a lock or a queue to be saved. A wiki that has not asked for this registers
+	 * no update at all, so every Mapping edit on it costs nothing.
+	 */
+	private static function rebuildStoresHoldingChangedMapping( Title $title ): void {
+		if ( $title->getNamespace() !== NeoWikiExtension::NS_MAPPING
+			|| !NeoWikiExtension::getInstance()->shouldRebuildOnMappingChange() ) {
+			return;
+		}
+
+		$mappingName = $title->getText();
+
+		DeferredUpdates::addCallableUpdate( static function () use ( $mappingName ): void {
+			self::rebuildStoresHoldingMapping( $mappingName );
+		} );
+	}
+
+	/**
+	 * Nothing is thrown out of here: the Mapping has been saved or deleted by the time this runs. A store
+	 * whose rebuild could not even be assembled — a backend whose configuration will not resolve — is
+	 * reported rather than allowed to take the rest of the deferred work down with it, and
+	 * Special:GraphStores still shows the store as stale.
+	 */
+	private static function rebuildStoresHoldingMapping( string $mappingName ): void {
+		try {
+			NeoWikiExtension::getInstance()->newMappingChangeRebuilder()->onMappingChanged( $mappingName );
+		} catch ( Throwable $e ) {
+			LoggerFactory::getInstance( 'NeoWiki' )->error(
+				'NeoWiki could not rebuild the graph stores holding the projection Mapping page "'
+				. $mappingName . '" defines, so they still hold the old vocabulary. Rebuild them from '
+				. 'Special:GraphStores. Underlying error: '
+				. BackendFailureMessage::withoutCredentials( $e->getMessage() ),
+				[ 'exception' => $e, 'mapping' => $mappingName ]
+			);
+		}
 	}
 
 	/**
@@ -314,6 +364,9 @@ class NeoWikiHooks {
 
 	public static function onPageDeleteComplete( ProperPageIdentity $page, Authority $deleter, string $reason, int $pageId, RevisionRecord $deletedRev ): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageDelete( $pageId );
+
+		$title = Title::newFromPageIdentity( $page );
+		self::rebuildStoresHoldingChangedMapping( $title );
 	}
 
 	/**

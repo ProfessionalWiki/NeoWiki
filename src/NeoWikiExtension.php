@@ -93,11 +93,13 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\CancelGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetGraphStoresApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetMappingSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
@@ -109,6 +111,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQ
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRouteRegistration;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\StartGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetSubjectsOrderingApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
@@ -150,9 +153,15 @@ use ProfessionalWiki\NeoWiki\Persistence\PageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphStoreStatusLookup;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\MappingChangeRebuilder;
+use ProfessionalWiki\NeoWiki\Infrastructure\MediaWikiRebuildJobQueue;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildRunRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPageChangeTimeLookup;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
@@ -176,6 +185,13 @@ class NeoWikiExtension {
 	 * The page in the MediaWiki namespace holding the on-wiki JSON configuration (MediaWiki:NeoWiki).
 	 */
 	public const string CONFIG_PAGE_TITLE = 'NeoWiki';
+
+	/**
+	 * The right to administer NeoWiki's own machinery — reading how far each graph store is from the wiki,
+	 * and rebuilding one. Separate from editing content, because it is about the installation rather than
+	 * about what the wiki says.
+	 */
+	public const string ADMIN_RIGHT = 'neowiki-admin';
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
@@ -976,22 +992,106 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newGraphRebuildCoordinator(): GraphRebuildCoordinator {
+	/**
+	 * @param int<1, max> $backgroundBatchSize How many pages a background batch projects. Production
+	 *        callers pass {@see GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE}; a test passes a size it
+	 *        can drive several batches with.
+	 */
+	public function newGraphRebuildCoordinator( int $backgroundBatchSize ): GraphRebuildCoordinator {
 		$runs = $this->newRebuildRunRepository();
 
 		return new GraphRebuildCoordinator(
 			stores: $this->getNamedGraphDatabasePlugins(),
-			runs: $runs,
-			executor: new GraphRebuildExecutor(
-				subjectPageIds: $this->newSubjectPageIdsLookup(),
-				deletedSubjectPageIds: $this->newDeletedSubjectPageIdsLookup(),
-				runs: $runs,
-				titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
-				logger: LoggerFactory::getInstance( 'NeoWiki' ),
+			runs: $this->newRebuildRunRepository(),
+			startLock: $this->newRebuildStartLock(),
+			executor: $this->newGraphRebuildExecutor(),
+			jobQueue: new MediaWikiRebuildJobQueue(
+				MediaWikiServices::getInstance()->getJobQueueGroup()
 			),
 			newPageRebuilder: fn ( GraphDatabasePlugin $store ): PageRebuilder
 				=> $this->newPageRebuilderFor( $store ),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
+			backgroundBatchSize: $backgroundBatchSize,
 		);
+	}
+
+	public function newGraphRebuildExecutor(): GraphRebuildExecutor {
+		return new GraphRebuildExecutor(
+			subjectPageIds: $this->newSubjectPageIdsLookup(),
+			deletedSubjectPageIds: $this->newDeletedSubjectPageIdsLookup(),
+			runs: $this->newRebuildRunRepository(),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
+	public function newRebuildStartLock(): RebuildStartLock {
+		return new DatabaseRebuildStartLock( MediaWikiServices::getInstance()->getConnectionProvider() );
+	}
+
+	public function newGraphStoreStatusLookup(): GraphStoreStatusLookup {
+		return new GraphStoreStatusLookup(
+			projectionsByStore: $this->getStoreProjections(),
+			runs: $this->newRebuildRunRepository(),
+			projectionChanges: new MappingPageChangeTimeLookup(
+				MediaWikiServices::getInstance()->getTitleFactory(),
+				MediaWikiServices::getInstance()->getRevisionLookup(),
+				MediaWikiServices::getInstance()->getConnectionProvider(),
+			),
+		);
+	}
+
+	/**
+	 * Whether this wiki has asked for the stores a changed Mapping defines the contents of to be rebuilt.
+	 * Read live from MainConfig, so the setting applies per request.
+	 */
+	public function shouldRebuildOnMappingChange(): bool {
+		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiAutoRebuildOnMappingChange' ) === true;
+	}
+
+	public function newMappingChangeRebuilder(): MappingChangeRebuilder {
+		return new MappingChangeRebuilder(
+			projectionsByStore: $this->getMappingDefinedStoreProjections(),
+			coordinator: $this->newGraphRebuildCoordinator( GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE ),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
+	/**
+	 * The store projections a Mapping page defines, each read as the page name it is, so that a projection
+	 * configured as "edm" matches an edit to Mapping:Edm exactly as a link to it would.
+	 *
+	 * The native projection is not one of them: NeoWiki's own code defines it, and creating a page called
+	 * Mapping:Native changes nothing about what a store holding it should contain.
+	 *
+	 * @return array<string, ?string> Keys are store names
+	 */
+	private function getMappingDefinedStoreProjections(): array {
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+
+		return array_map(
+			static fn ( ?string $projection ): ?string
+				=> $projection === null || $projection === RdfPageProjector::PROJECTION
+					? null
+					: $titleFactory->newFromText( $projection, self::NS_MAPPING )?->getText(),
+			$this->getStoreProjections()
+		);
+	}
+
+	/**
+	 * What each configured store holds: the name of its RDF projection, or null for a backend that holds
+	 * no RDF at all — Neo4j, and any backend an extension contributed.
+	 *
+	 * @return array<string, ?string> Keys are store names, in the order they are projected into
+	 */
+	private function getStoreProjections(): array {
+		$projections = array_fill_keys( array_keys( $this->getNamedGraphDatabasePlugins() ), null );
+
+		foreach ( $this->config->sparqlStores as $store ) {
+			$projections[$store->name] = $store->projection;
+		}
+
+		return $projections;
 	}
 
 	public function newRebuildRunRepository(): RebuildRunRepository {
@@ -1000,14 +1100,14 @@ class NeoWikiExtension {
 		);
 	}
 
-	private function newSubjectPageIdsLookup(): SubjectPageIdsLookup {
+	public function newSubjectPageIdsLookup(): SubjectPageIdsLookup {
 		return new DatabaseSubjectPageIdsLookup(
 			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
 			MediaWikiServices::getInstance()->getSlotRoleStore()
 		);
 	}
 
-	private function newDeletedSubjectPageIdsLookup(): DeletedSubjectPageIdsLookup {
+	public function newDeletedSubjectPageIdsLookup(): DeletedSubjectPageIdsLookup {
 		return new DatabaseDeletedSubjectPageIdsLookup(
 			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
 			MediaWikiServices::getInstance()->getSlotRoleStore()
@@ -1411,6 +1511,18 @@ class NeoWikiExtension {
 
 	public static function newGetMappingSummariesApi(): GetMappingSummariesApi {
 		return new GetMappingSummariesApi();
+	}
+
+	public static function newGetGraphStoresApi(): GetGraphStoresApi {
+		return new GetGraphStoresApi();
+	}
+
+	public static function newStartGraphStoreRebuildApi(): StartGraphStoreRebuildApi {
+		return new StartGraphStoreRebuildApi( csrfValidator: self::getCsrfValidator() );
+	}
+
+	public static function newCancelGraphStoreRebuildApi(): CancelGraphStoreRebuildApi {
+		return new CancelGraphStoreRebuildApi( csrfValidator: self::getCsrfValidator() );
 	}
 
 	public static function newGetSubjectLabelsApi(): GetSubjectLabelsApi {

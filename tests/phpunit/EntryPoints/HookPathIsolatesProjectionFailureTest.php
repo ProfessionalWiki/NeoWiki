@@ -58,7 +58,7 @@ class HookPathIsolatesProjectionFailureTest extends NeoWikiIntegrationTestCase {
 		$this->createPageWithSubjects( 'Delete during outage', TestSubject::build() );
 		$this->registerGraphDatabasePlugins( new ThrowingGraphDatabasePlugin() );
 
-		$status = $this->deletePageByName( 'Delete during outage' );
+		$status = $this->deletePageAndGetStatus( 'Delete during outage' );
 
 		$this->assertStatusGood( $status, 'the deletion should still commit while a backend is unreachable' );
 	}
@@ -90,7 +90,7 @@ class HookPathIsolatesProjectionFailureTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function deletePageByName( string $pageName ): StatusValue {
+	private function deletePageAndGetStatus( string $pageName ): StatusValue {
 		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
 		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage(
 			$page,

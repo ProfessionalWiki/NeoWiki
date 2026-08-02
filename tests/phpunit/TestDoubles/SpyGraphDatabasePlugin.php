@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
+use Closure;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -39,11 +40,14 @@ class SpyGraphDatabasePlugin implements GraphDatabasePlugin {
 	 * @param bool $refusesDeletions Whether it also refuses to let go of the pages the wiki has deleted.
 	 * @param Throwable|null $failure What it throws when it refuses, defaulting to the kind of error a
 	 *        store raises about a page it cannot accept.
+	 * @param Closure(): void|null $whileSavingEachPage Run as each page is saved, standing in for whatever
+	 *        else the wiki does during the seconds a real store spends on a batch.
 	 */
 	public function __construct(
 		private readonly array $refusedPageIds = [],
 		private readonly bool $refusesDeletions = false,
 		private readonly ?Throwable $failure = null,
+		private readonly ?Closure $whileSavingEachPage = null,
 	) {
 	}
 
@@ -52,6 +56,10 @@ class SpyGraphDatabasePlugin implements GraphDatabasePlugin {
 	}
 
 	public function savePage( Page $page ): void {
+		if ( $this->whileSavingEachPage !== null ) {
+			( $this->whileSavingEachPage )();
+		}
+
 		if ( in_array( $page->getId()->id, $this->refusedPageIds, true ) ) {
 			throw $this->refusal();
 		}
