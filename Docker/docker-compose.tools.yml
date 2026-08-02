@@ -1,11 +1,11 @@
 services:
-  # Opt-in port exposure for graph inspection tools. Both services it touches come from
+  # Opt-in port exposure for graph inspection tools. Every service it touches comes from
   # docker-compose.yml, so this overlay works on the demo stack as well as the dev stack;
   # `make dev-tools` from the extension root adds it to the latter.
   #
-  # Default ports (7474, 7687, 7019) are the Neo4j and QLever conventions and are not
-  # auto-allocated, so run the tools overlay with one stack at a time. Override via
-  # env (NEO_BROWSER_PORT / NEO_BOLT_PORT / QLEVER_PORT) to run several simultaneously.
+  # Default ports (7474, 7687, 7019, 7878) are the Neo4j, QLever and Oxigraph conventions and are
+  # not auto-allocated, so run the tools overlay with one stack at a time. Override via env
+  # (NEO_BROWSER_PORT / NEO_BOLT_PORT / QLEVER_PORT / OXIGRAPH_PORT) to run several simultaneously.
   neo:
     ports:
       - "${NEO_BROWSER_PORT:-7474}:7474"
@@ -16,3 +16,13 @@ services:
   qlever:
     ports:
       - "${QLEVER_PORT:-7019}:7019"
+
+  # Exposes the stack's Oxigraph SPARQL endpoint on the host, once the `oxigraph` profile starts that
+  # service (see docker-compose.yml); until then there is no container to map a port for. Its
+  # query and update operations live on separate paths, unlike QLever's single one, e.g.
+  #   curl http://localhost:7878/query --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' -H 'Accept: application/sparql-results+json'
+  # Bound to the loopback interface, unlike the services above: Oxigraph has no authentication, so a
+  # published port is an open read-write SPARQL endpoint to everything that can route to this host.
+  oxigraph:
+    ports:
+      - "127.0.0.1:${OXIGRAPH_PORT:-7878}:7878"

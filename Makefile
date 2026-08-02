@@ -105,7 +105,7 @@ upgrade: _preflight ## Upgrade the demo stack: pull the latest image, restart, m
 dev: _preflight bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
 
-dev-tools: _preflight bootstrap ensure-port ## Like 'dev' but also exposes Neo4j Browser/Bolt to host
+dev-tools: _preflight bootstrap ensure-port ## Like 'dev' but also exposes the Neo4j and SPARQL store ports to host
 	@$(MAKE) --no-print-directory _dev-tools-impl
 
 _dev-tools-impl:
@@ -116,6 +116,12 @@ _dev-tools-impl:
 	@echo "Dev wiki ready at:    http://localhost:$$MW_SERVER_PORT"
 	@echo "Neo4j Browser:        http://localhost:$${NEO_BROWSER_PORT:-7474}"
 	@echo "Neo4j Bolt endpoint:  bolt://localhost:$${NEO_BOLT_PORT:-7687}"
+	@echo "QLever SPARQL:        http://localhost:$${QLEVER_PORT:-7019}/"
+	@# The tools overlay maps Oxigraph's port too, but that service only runs when its
+	@# profile is on (see Docker/docker-compose.dev.yml), so only then is there a URL.
+	@case ",$$COMPOSE_PROFILES," in \
+		*,oxigraph,*) echo "Oxigraph SPARQL:      http://localhost:$${OXIGRAPH_PORT:-7878}/query";; \
+	esac
 	@echo "Project:              $(PROJECT_NAME)"
 
 # ---- Bootstrap (one-time, idempotent) ----------------------------------------
@@ -278,7 +284,8 @@ load-neo4j-users:
 test-backends: ## Start and seed the test-only backends (the PHP test targets do this for you)
 ifeq ($(INSIDE_CONTAINER),1)
 	@if ! /wait-for-it.sh test_neo:7689 -t 1 >/dev/null 2>&1 \
-		|| ! /wait-for-it.sh test_qlever:7019 -t 1 >/dev/null 2>&1; then \
+		|| ! /wait-for-it.sh test_qlever:7019 -t 1 >/dev/null 2>&1 \
+		|| ! /wait-for-it.sh test_oxigraph:7878 -t 1 >/dev/null 2>&1; then \
 		echo "The test-only backends are not running. Start them on the host with" >&2; \
 		echo "'make test-backends', or run the PHP test targets from the host." >&2; \
 		exit 1; \
@@ -286,12 +293,12 @@ ifeq ($(INSIDE_CONTAINER),1)
 else
 	@if [ "$$(docker ps --filter label=com.docker.compose.project=$(PROJECT_NAME) \
 			--format '{{.Label "com.docker.compose.service"}}' \
-			| grep -cE '^(test_neo|test_qlever)$$')" = "2" ]; then \
+			| grep -cE '^(test_neo|test_qlever|test_oxigraph)$$')" = "3" ]; then \
 		exit 0; \
 	fi; \
 	$(DC_TEST) up -d; \
 	$(MAKE) --no-print-directory setup-test-neo; \
-	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_qlever:7019 -t 120'
+	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_qlever:7019 -t 120 && /wait-for-it.sh test_oxigraph:7878 -t 120'
 endif
 
 # Dev-only: wait for and seed the test_neo instance. Not called from prod or CI flows.

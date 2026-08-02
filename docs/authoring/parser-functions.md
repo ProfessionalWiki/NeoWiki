@@ -187,6 +187,8 @@ document — the standard `head` / `results` structure (or `boolean` for an `ASK
 - Output is HTML-escaped, so results containing `<`, `>`, `&`, etc. display safely.
 - The output is wrapped in `<div class="mw-neowiki-sparql-result"><pre>` and the error message in
   `<div class="error">`, so you can target either with CSS.
+- Pages are projected into named graphs, so which of them an unscoped query reaches depends on the store — see
+  [RDF Export](../rdf/rdf-export.md#iri-scheme).
 
 ### Examples
 

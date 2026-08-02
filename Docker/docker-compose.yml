@@ -134,6 +134,40 @@ services:
       timeout: 5s
       retries: 20
 
+  # A second SPARQL 1.1 graph store engine (Oxigraph), alongside the qlever service above, so the
+  # SPARQL projection plugin (#586) can be exercised against more than one implementation. Nothing
+  # points at it by default, so it sits behind its own profile and neither stack starts it: use
+  # `COMPOSE_PROFILES=oxigraph make dev`. QLEVER_URL is what the mediawiki service above is given, so
+  # even a started service holds nothing until you repoint $wgNeoWikiSparqlStores in
+  # Docker/LocalSettings.local.php at http://oxigraph:7878/update and http://oxigraph:7878/query —
+  # separate paths, unlike QLever's single one, so an entry needs both updateUrl and queryUrl. A host
+  # port for manual inspection is opt-in via docker-compose.tools.yml, which is also why this service
+  # is defined here rather than in the dev overlay: that overlay works on either stack, so a service
+  # it maps a port for has to exist in this file.
+  #
+  # No entrypoint script: unlike QLever there is no index to build, and --location below is the whole
+  # of persistence.
+  #
+  # No healthcheck either. The image is distroless, its only executable being the oxigraph binary,
+  # so a compose healthcheck — which runs inside the container — has no shell or curl to run. Wait
+  # for it from outside instead, as `make test-backends` and .github/workflows/ci-php.yml do.
+  oxigraph:
+    profiles:
+      - oxigraph
+    image: ghcr.io/oxigraph/oxigraph:latest
+    restart: unless-stopped
+    # Parity with the qlever service, so swapping which engine a stack points at does not change
+    # the stack's memory ceiling.
+    mem_limit: 1536m
+    # --union-default-graph: unscoped queries see every named graph, as QLever does (see Docker/README.md).
+    command: serve --location /data --bind 0.0.0.0:7878 --union-default-graph
+    volumes:
+      # Named volume, for the same reasons as qlever-index-data above.
+      - oxigraph-data:/data
+    # Oxigraph ignores SIGTERM as qlever does, so it gets the same short grace period to keep
+    # `make down` snappy. Safe: acknowledged updates survive a SIGKILL and reload on startup.
+    stop_grace_period: 2s
+
   # The dev-only sidecars (test_neo, node, mailcatcher) live in
   # docker-compose.dev.yml, not here, so `make up` stays minimal and `make down`
   # can clean them up as orphans on every compose backend (see that file).
@@ -161,5 +195,6 @@ volumes:
   mediawiki-images-data:
   neo4j-data:
   qlever-index-data:
+  oxigraph-data:
   caddy-data:
   caddy-config:
