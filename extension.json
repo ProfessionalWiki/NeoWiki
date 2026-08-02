@@ -228,7 +228,7 @@
 			"value": true
 		},
 		"NeoWikiAutoRebuildOnMappingChange": {
-			"description": "Whether saving or deleting a Mapping page automatically rebuilds, in the background, every configured graph store that holds that Mapping's projection. False by default: such a rebuild reprojects every page carrying a Subject into that store, which on a large wiki is substantial work an administrator should choose to spend. While it is false, Special:GraphStores reports such a store as stale and offers the rebuild there.",
+			"description": "Whether saving or deleting a Mapping page automatically rebuilds, in the background, every configured graph store that holds that Mapping's projection. False by default: such a rebuild reprojects every page carrying a Subject into that store, which on a large wiki is substantial work an administrator should choose to take on. While it is false, Special:GraphStores reports such a store as stale and offers the rebuild.",
 			"value": false
 		},
 		"NeoWikiSparqlStores": {

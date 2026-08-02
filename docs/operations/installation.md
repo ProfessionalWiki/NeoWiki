@@ -183,7 +183,7 @@ These are the settings you are most likely to change. For the full list with des
 
 ## User rights
 
-`neowiki-admin` allows reporting and rebuilding the wiki's graph stores, through
+`neowiki-admin` allows viewing and rebuilding the wiki's graph stores, through
 [Special:GraphStores](maintenance.md#background-rebuilds) or the matching REST endpoints. Administrators have it by
 default. It grants nothing over content, and no OAuth grant carries it.
 
@@ -280,9 +280,8 @@ alongside a property that ontology does not model. The
 A newly added entry only receives pages saved from then on. Backfill it, and only it, by
 [rebuilding that one store](maintenance.md#rebuilding-one-store).
 
-Editing a Mapping page leaves every page already projected under it described in the old vocabulary until the store
-is rebuilt: see [stale stores](maintenance.md#stale-stores), which also covers
-`$wgNeoWikiAutoRebuildOnMappingChange`.
+Editing a Mapping page leaves every page already projected under it in the old vocabulary until the store is
+rebuilt: see [stale stores](maintenance.md#stale-stores), which also covers `$wgNeoWikiAutoRebuildOnMappingChange`.
 
 ### Querying a SPARQL store
 

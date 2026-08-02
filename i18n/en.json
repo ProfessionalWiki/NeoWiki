@@ -379,7 +379,7 @@
 	"neowiki-graphstores-column-actions": "Actions",
 	"neowiki-graphstores-projection-none": "—",
 	"neowiki-graphstores-state-insync": "In sync",
-	"neowiki-graphstores-state-stale": "Stale: its mapping changed $1",
+	"neowiki-graphstores-state-stale": "Stale: its mapping changed at $1",
 	"neowiki-graphstores-state-neverbuilt": "Never built",
 	"neowiki-graphstores-state-queued": "Rebuild queued",
 	"neowiki-graphstores-state-running": "Rebuilding: $1 {{PLURAL:$1|page|pages}} projected, $2 failed",
@@ -392,6 +392,6 @@
 	"neowiki-graphstores-outcome-alreadyrunning": "\"$1\" already has a rebuild queued or running.",
 	"neowiki-graphstores-outcome-nothingtocancel": "\"$1\" has no rebuild to cancel.",
 	"neowiki-graphstores-outcome-unknownstore": "This wiki has no graph store called \"$1\".",
-	"neowiki-graphstores-outcome-notqueued": "The rebuild of \"$1\" could not be queued. The store is unchanged; the NeoWiki log channel says why.",
+	"neowiki-graphstores-outcome-notqueued": "A rebuild of \"$1\" could not be queued. The store is unchanged; the NeoWiki log channel says why.",
 	"neowiki-graphstores-outcome-sessionfailure": "Your session has expired, so nothing was changed. Try again."
 }

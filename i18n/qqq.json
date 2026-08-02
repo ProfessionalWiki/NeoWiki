@@ -310,7 +310,7 @@
 	"neowiki-graphstores-column-actions": "Column heading on [[Special:GraphStores]]: the buttons that start or stop a rebuild.\n{{Identical|Actions}}",
 	"neowiki-graphstores-projection-none": "{{optional}}\nShown in the projection column on [[Special:GraphStores]] for a backend that holds no RDF, such as Neo4j. The English message is an em dash.",
 	"neowiki-graphstores-state-insync": "State on [[Special:GraphStores]]: the store's copy matches the wiki.",
-	"neowiki-graphstores-state-stale": "State on [[Special:GraphStores]]: the Mapping page defining the store's projection was edited after that store's last successful rebuild started, so the store still describes pages with the old vocabulary.\n\nParameters:\n* $1 - when that Mapping page was last edited, already formatted as a date and time in the user's language",
+	"neowiki-graphstores-state-stale": "State on [[Special:GraphStores]]: the Mapping page defining the store's projection was edited or deleted after that store's last successful rebuild started, so the store still describes pages with the old vocabulary.\n\nParameters:\n* $1 - when that Mapping page last changed, already formatted as a date and time in the user's language",
 	"neowiki-graphstores-state-neverbuilt": "State on [[Special:GraphStores]]: no rebuild of this store ever reconciled the whole wiki.",
 	"neowiki-graphstores-state-queued": "State on [[Special:GraphStores]]: a rebuild has been queued but has not started.",
 	"neowiki-graphstores-state-running": "State on [[Special:GraphStores]]: a rebuild is under way.\n\nParameters:\n* $1 - number of pages projected so far\n* $2 - number of pages the rebuild could not reconcile",
