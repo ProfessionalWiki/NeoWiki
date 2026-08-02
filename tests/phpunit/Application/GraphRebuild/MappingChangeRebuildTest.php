@@ -189,10 +189,6 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private static function loggedText( TestLogger $logger ): string {
-		return implode( "\n", array_column( $logger->getBuffer(), 1 ) );
-	}
-
 	/**
 	 * The Mapping has been saved by the time this runs, so a store that cannot be rebuilt must be reported
 	 * rather than allowed to take the edit down with it.

@@ -799,10 +799,6 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( '--resume', $this->loggedText( $logger ) );
 	}
 
-	private function loggedText( TestLogger $logger ): string {
-		return implode( "\n", array_map( static fn ( array $record ): string => $record[1], $logger->getBuffer() ) );
-	}
-
 	private function rebuild(
 		int $batchSize = 200,
 		RebuildBatchObserver $observer = new NullRebuildBatchObserver()
@@ -921,21 +917,6 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @return int[]
-	 */
-	private function createSubjectPages( string ...$pageNames ): array {
-		$pageIds = [];
-
-		foreach ( $pageNames as $pageName ) {
-			$revision = $this->createPageWithSubjects( $pageName, TestSubject::build() );
-			$this->assertNotNull( $revision );
-			$pageIds[] = $revision->getPageId();
-		}
-
-		return $pageIds;
-	}
-
-	/**
 	 * Pages that carried a Subject and that MediaWiki no longer has, which is what the removal phase of a
 	 * rebuild walks.
 	 *
@@ -963,23 +944,6 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 			refusedPageIds: $refusedPageIds,
 			failure: new DBUnexpectedError( null, self::WIKI_DATABASE_FAILURE_MESSAGE )
 		);
-	}
-
-	/**
-	 * @return int[]
-	 */
-	private static function savedPageIds( SpyGraphDatabasePlugin $store ): array {
-		return array_map( static fn ( Page $page ): int => $page->getId()->id, $store->savedPages );
-	}
-
-	private function deletePageByName( string $pageName ): void {
-		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
-		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage(
-			$page,
-			$this->getTestSysop()->getUser()
-		);
-
-		$this->assertStatusGood( $deletePage->deleteUnsafe( 'test deletion' ) );
 	}
 
 }

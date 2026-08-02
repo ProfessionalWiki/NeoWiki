@@ -118,16 +118,6 @@ class DatabaseDeletedSubjectPageIdsLookupTest extends NeoWikiIntegrationTestCase
 		);
 	}
 
-	private function deletePageByName( string $pageName ): void {
-		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
-		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage(
-			$page,
-			$this->getTestSysop()->getUser()
-		);
-
-		$this->assertStatusGood( $deletePage->deleteUnsafe( 'test deletion' ) );
-	}
-
 	private function undeletePageByName( string $pageName ): void {
 		$undeletePage = MediaWikiServices::getInstance()->getUndeletePageFactory()->newUndeletePage(
 			MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) ),

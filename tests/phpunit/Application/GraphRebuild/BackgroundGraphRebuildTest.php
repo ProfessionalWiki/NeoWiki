@@ -360,10 +360,6 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'could not run a batch', self::loggedText( $logger ) );
 	}
 
-	private static function loggedText( TestLogger $logger ): string {
-		return implode( "\n", array_column( $logger->getBuffer(), 1 ) );
-	}
-
 	private function newCoordinator( int $batchSize = GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE ): GraphRebuildCoordinator {
 		return NeoWikiExtension::getInstance()->newGraphRebuildCoordinator( $batchSize );
 	}
@@ -425,38 +421,6 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 	private function readRun( RebuildRun $run ): ?RebuildRun {
 		return $this->newRunRepository()->getRun( $run->id );
-	}
-
-	/**
-	 * @return int[]
-	 */
-	private function createSubjectPages( string ...$pageNames ): array {
-		$pageIds = [];
-
-		foreach ( $pageNames as $pageName ) {
-			$revision = $this->createPageWithSubjects( $pageName, TestSubject::build() );
-			$this->assertNotNull( $revision );
-			$pageIds[] = $revision->getPageId();
-		}
-
-		return $pageIds;
-	}
-
-	/**
-	 * @return int[]
-	 */
-	private static function savedPageIds( SpyGraphDatabasePlugin $store ): array {
-		return array_map( static fn ( Page $page ): int => $page->getId()->id, $store->savedPages );
-	}
-
-	private function deletePageByName( string $pageName ): void {
-		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
-		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage(
-			$page,
-			$this->getTestSysop()->getUser()
-		);
-
-		$this->assertStatusGood( $deletePage->deleteUnsafe( 'test deletion' ) );
 	}
 
 }

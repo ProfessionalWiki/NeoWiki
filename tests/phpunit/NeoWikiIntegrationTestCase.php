@@ -16,6 +16,7 @@ use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -29,6 +30,8 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepos
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use TestLogger;
 use WikiExporter;
 
 class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
@@ -83,6 +86,49 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		);
 
 		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
+	}
+
+	/**
+	 * Pages carrying one Subject each, in the order they were created.
+	 *
+	 * @return int[] The page ids
+	 */
+	protected function createSubjectPages( string ...$pageNames ): array {
+		$pageIds = [];
+
+		foreach ( $pageNames as $pageName ) {
+			$revision = $this->createPageWithSubjects( $pageName, TestSubject::build() );
+			$this->assertNotNull( $revision );
+			$pageIds[] = $revision->getPageId();
+		}
+
+		return $pageIds;
+	}
+
+	protected function deletePageByName( string $pageName ): void {
+		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
+		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage(
+			$page,
+			$this->getTestSysop()->getUser()
+		);
+
+		$this->assertStatusGood( $deletePage->deleteUnsafe( 'test deletion' ) );
+	}
+
+	/**
+	 * The pages a graph store was given, in the order it was given them.
+	 *
+	 * @return int[] The page ids
+	 */
+	protected static function savedPageIds( SpyGraphDatabasePlugin $store ): array {
+		return array_map( static fn ( Page $page ): int => $page->getId()->id, $store->savedPages );
+	}
+
+	/**
+	 * Everything the logger was told, as one string to look for a phrase in.
+	 */
+	protected static function loggedText( TestLogger $logger ): string {
+		return implode( "\n", array_column( $logger->getBuffer(), 1 ) );
 	}
 
 	protected function createSchema( string $name, ?string $json = null ): ?RevisionRecord {

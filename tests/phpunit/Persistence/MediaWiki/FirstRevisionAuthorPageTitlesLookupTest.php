@@ -95,12 +95,4 @@ class FirstRevisionAuthorPageTitlesLookupTest extends NeoWikiIntegrationTestCase
 		$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'test edit' ) );
 	}
 
-	private function deletePageByName( string $pageName ): void {
-		$page = $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
-
-		$this->getServiceContainer()->getDeletePageFactory()
-			->newDeletePage( $page, $this->getTestSysop()->getUser() )
-			->deleteUnsafe( 'test cleanup' );
-	}
-
 }
