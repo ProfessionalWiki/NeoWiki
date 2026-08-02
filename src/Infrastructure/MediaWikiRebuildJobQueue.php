@@ -31,11 +31,11 @@ class MediaWikiRebuildJobQueue implements RebuildJobQueue {
 	) {
 	}
 
-	public function pushRebuildBatch( int $runId, string $storeName ): void {
+	public function pushRebuildBatch( int $runId ): void {
 		$this->jobQueueGroup->lazyPush(
 			new JobSpecification(
 				GraphRebuildJob::TYPE,
-				[ 'runId' => $runId, 'store' => $storeName ],
+				[ 'runId' => $runId ],
 				[ 'removeDuplicates' => true ]
 			)
 		);

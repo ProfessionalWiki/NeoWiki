@@ -12,6 +12,6 @@ namespace ProfessionalWiki\NeoWiki\Application\GraphRebuild;
  */
 interface RebuildJobQueue {
 
-	public function pushRebuildBatch( int $runId, string $storeName ): void;
+	public function pushRebuildBatch( int $runId ): void;
 
 }

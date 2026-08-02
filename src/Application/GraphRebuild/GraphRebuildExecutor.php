@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildPhase;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
@@ -179,12 +180,21 @@ class GraphRebuildExecutor {
 
 		$this->logger->error(
 			'NeoWiki graph rebuild of store "' . $failedRun->store . '" ended before reconciling the wiki. '
-			. 'Re-run it with --resume to continue from page ' . $failedRun->cursor . '. '
-			. 'Underlying error: ' . $reason,
+			. self::describeHowToContinue( $failedRun ) . ' Underlying error: ' . $reason,
 			[ 'exception' => $e, 'store' => $failedRun->store, 'cursor' => $failedRun->cursor ]
 		);
 
 		return $failedRun;
+	}
+
+	/**
+	 * `--resume` belongs to the maintenance script, so it is only an answer for whoever is at a shell.
+	 * Told to someone who started the rebuild from the wiki, it names a thing they cannot reach.
+	 */
+	private static function describeHowToContinue( RebuildRun $run ): string {
+		return $run->trigger === RebuildTrigger::Cli
+			? 'Re-run it with --resume to continue from page ' . $run->cursor . '.'
+			: 'Rebuild the store again from Special:GraphStores.';
 	}
 
 	/**

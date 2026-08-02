@@ -90,7 +90,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$coordinator = $this->newCoordinator( batchSize: 1 );
 
 		$run = $coordinator->startBackground( self::STORE, RebuildTrigger::Api );
-		$coordinator->continueInBackground( $run->id, self::STORE );
+		$coordinator->continueInBackground( $run->id );
 
 		$this->assertSame( RebuildStatus::Running, $this->readRun( $run )?->status );
 	}
@@ -153,7 +153,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$run = $this->newCoordinator()->startBackground( self::STORE, RebuildTrigger::Api );
 
 		$this->newCoordinatorWithJobQueue( SpyRebuildJobQueue::refusingEverything() )
-			->continueInBackground( $run->id, self::STORE );
+			->continueInBackground( $run->id );
 
 		$this->assertSame( RebuildStatus::Failed, $this->readRun( $run )?->status );
 		$this->assertNull( $this->newRunRepository()->getActiveRun( self::STORE ) );
@@ -186,7 +186,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$coordinator = $this->newCoordinator( batchSize: 2 );
 
 		$run = $coordinator->startBackground( self::STORE, RebuildTrigger::Api );
-		$coordinator->continueInBackground( $run->id, self::STORE );
+		$coordinator->continueInBackground( $run->id );
 		$coordinator->cancel( self::STORE );
 		$this->runJobs();
 
@@ -225,7 +225,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->registerStore( new SpyGraphDatabasePlugin( whileSavingEachPage: $this->cancelOnce() ) );
 		$run = $this->newCoordinator( batchSize: 2 )->startBackground( self::STORE, RebuildTrigger::Api );
 
-		$this->newCoordinator( batchSize: 2 )->continueInBackground( $run->id, self::STORE );
+		$this->newCoordinator( batchSize: 2 )->continueInBackground( $run->id );
 
 		$this->assertSame( RebuildStatus::Cancelled, $this->readRun( $run )?->status );
 	}
@@ -237,7 +237,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$run = $this->newCoordinatorWithJobQueue( $jobQueue )->startBackground( self::STORE, RebuildTrigger::Api );
 		$jobQueue->pushedBatches = [];
 
-		$this->newCoordinatorWithJobQueue( $jobQueue )->continueInBackground( $run->id, self::STORE );
+		$this->newCoordinatorWithJobQueue( $jobQueue )->continueInBackground( $run->id );
 
 		$this->assertSame( [], $jobQueue->pushedBatches );
 	}
@@ -250,9 +250,9 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$run = $coordinator->startBackground( self::STORE, RebuildTrigger::Api );
 		$jobQueue->pushedBatches = [];
 
-		$coordinator->continueInBackground( $run->id, self::STORE );
+		$coordinator->continueInBackground( $run->id );
 
-		$this->assertSame( [ [ 'runId' => $run->id, 'store' => self::STORE ] ], $jobQueue->pushedBatches );
+		$this->assertSame( [ $run->id ], $jobQueue->pushedBatches );
 	}
 
 	/**
@@ -265,8 +265,8 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->registerStore( $store );
 
 		$run = $this->newCoordinator( batchSize: 1 )->startBackground( self::STORE, RebuildTrigger::Api );
-		$this->newCoordinator( batchSize: 1 )->continueInBackground( $run->id, self::STORE );
-		$this->newCoordinator( batchSize: 1 )->continueInBackground( $run->id, self::STORE );
+		$this->newCoordinator( batchSize: 1 )->continueInBackground( $run->id );
+		$this->newCoordinator( batchSize: 1 )->continueInBackground( $run->id );
 
 		$this->assertSame( 2, $store->initializeCount );
 	}
@@ -294,7 +294,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$coordinator = $this->newCoordinator( batchSize: 2 );
 
 		$run = $coordinator->startBackground( self::STORE, RebuildTrigger::Api );
-		$coordinator->continueInBackground( $run->id, self::STORE );
+		$coordinator->continueInBackground( $run->id );
 		$coordinator->cancel( self::STORE );
 		$coordinator->resume( self::STORE, 200, new NullRebuildBatchObserver() );
 
@@ -325,7 +325,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$run = $coordinator->startBackground( self::STORE, RebuildTrigger::Api );
 		$coordinator->cancel( self::STORE );
 
-		$coordinator->continueInBackground( $run->id, self::STORE );
+		$coordinator->continueInBackground( $run->id );
 
 		$this->assertSame( [], $store->savedPages );
 		$this->assertSame( RebuildStatus::Cancelled, $this->readRun( $run )?->status );
@@ -342,7 +342,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$store = new SpyGraphDatabasePlugin();
 		$this->registerStore( $store );
 
-		$this->newCoordinator()->continueInBackground( 123456, self::STORE );
+		$this->newCoordinator()->continueInBackground( 123456 );
 
 		$this->assertSame( [], $store->savedPages );
 		$this->assertStringContainsString( 'which the records do not have', self::loggedText( $logger ) );
@@ -354,7 +354,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$coordinator = $this->newCoordinatorWithoutTheStoreItRebuilds( $logger );
 		$run = $this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Auto, RebuildStatus::Queued );
 
-		$coordinator->continueInBackground( $run->id, self::STORE );
+		$coordinator->continueInBackground( $run->id );
 
 		$this->assertSame( RebuildStatus::Failed, $this->readRun( $run )?->status );
 		$this->assertStringContainsString( 'could not run a batch', self::loggedText( $logger ) );

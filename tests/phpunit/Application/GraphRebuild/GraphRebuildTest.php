@@ -772,6 +772,33 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'bolt://neo:7687', $this->loggedText( $logger ) );
 	}
 
+	/**
+	 * --resume belongs to the maintenance script, so telling someone who started the rebuild from the wiki
+	 * to use it names something they cannot reach.
+	 */
+	public function testARebuildStartedFromTheWikiIsToldToRebuildRatherThanToResume(): void {
+		$logger = new TestLogger( true );
+		$this->setLogger( 'NeoWiki', $logger );
+		$this->createSubjectPages( 'Page nobody projects' );
+		$this->registerStore( new ThrowingGraphDatabasePlugin() );
+
+		$this->newCoordinator()->rebuild( self::STORE, RebuildTrigger::Ui, 200, new NullRebuildBatchObserver() );
+
+		$this->assertStringContainsString( 'Special:GraphStores', $this->loggedText( $logger ) );
+		$this->assertStringNotContainsString( '--resume', $this->loggedText( $logger ) );
+	}
+
+	public function testARebuildStartedFromTheShellIsToldHowToResumeIt(): void {
+		$logger = new TestLogger( true );
+		$this->setLogger( 'NeoWiki', $logger );
+		$this->createSubjectPages( 'Page nobody projects' );
+		$this->registerStore( new ThrowingGraphDatabasePlugin() );
+
+		$this->rebuild();
+
+		$this->assertStringContainsString( '--resume', $this->loggedText( $logger ) );
+	}
+
 	private function loggedText( TestLogger $logger ): string {
 		return implode( "\n", array_map( static fn ( array $record ): string => $record[1], $logger->getBuffer() ) );
 	}

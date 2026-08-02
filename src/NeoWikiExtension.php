@@ -1002,34 +1002,38 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Rebuilds the stores a changed Mapping defines the contents of, or null when this wiki has not asked
-	 * for that. Read live from MainConfig, so the setting applies per request.
+	 * Whether this wiki has asked for the stores a changed Mapping defines the contents of to be rebuilt.
+	 * Read live from MainConfig, so the setting applies per request.
 	 */
-	public function newMappingChangeRebuilder(): ?MappingChangeRebuilder {
-		if ( MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiAutoRebuildOnMappingChange' ) !== true ) {
-			return null;
-		}
+	public function shouldRebuildOnMappingChange(): bool {
+		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiAutoRebuildOnMappingChange' ) === true;
+	}
 
+	public function newMappingChangeRebuilder(): MappingChangeRebuilder {
 		return new MappingChangeRebuilder(
-			projectionsByStore: $this->getNormalisedStoreProjections(),
+			projectionsByStore: $this->getMappingDefinedStoreProjections(),
 			coordinator: $this->newGraphRebuildCoordinator(),
 			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
 
 	/**
-	 * The store projections with each one read as the Mapping page name it is, so that a projection
+	 * The store projections a Mapping page defines, each read as the page name it is, so that a projection
 	 * configured as "edm" matches an edit to Mapping:Edm exactly as a link to it would.
+	 *
+	 * The native projection is not one of them: NeoWiki's own code defines it, and creating a page called
+	 * Mapping:Native changes nothing about what a store holding it should contain.
 	 *
 	 * @return array<string, ?string> Keys are store names
 	 */
-	private function getNormalisedStoreProjections(): array {
+	private function getMappingDefinedStoreProjections(): array {
 		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
 
 		return array_map(
-			static fn ( ?string $projection ): ?string => $projection === null
-				? null
-				: $titleFactory->newFromText( $projection, self::NS_MAPPING )?->getText(),
+			static fn ( ?string $projection ): ?string
+				=> $projection === null || $projection === RdfPageProjector::PROJECTION
+					? null
+					: $titleFactory->newFromText( $projection, self::NS_MAPPING )?->getText(),
 			$this->getStoreProjections()
 		);
 	}
@@ -1040,7 +1044,7 @@ class NeoWikiExtension {
 	 *
 	 * @return array<string, ?string> Keys are store names, in the order they are projected into
 	 */
-	public function getStoreProjections(): array {
+	private function getStoreProjections(): array {
 		$projections = array_fill_keys( array_keys( $this->getNamedGraphDatabasePlugins() ), null );
 
 		foreach ( $this->config->sparqlStores as $store ) {

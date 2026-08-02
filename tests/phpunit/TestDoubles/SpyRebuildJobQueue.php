@@ -17,7 +17,7 @@ class SpyRebuildJobQueue implements RebuildJobQueue {
 	public const string FAILURE_MESSAGE = 'the job queue is unreachable';
 
 	/**
-	 * @var array<int, array{runId: int, store: string}>
+	 * @var int[] The ids of the runs the batches were filed for.
 	 */
 	public array $pushedBatches = [];
 
@@ -30,12 +30,12 @@ class SpyRebuildJobQueue implements RebuildJobQueue {
 		return new self( new RuntimeException( self::FAILURE_MESSAGE ) );
 	}
 
-	public function pushRebuildBatch( int $runId, string $storeName ): void {
+	public function pushRebuildBatch( int $runId ): void {
 		if ( $this->failure !== null ) {
 			throw $this->failure;
 		}
 
-		$this->pushedBatches[] = [ 'runId' => $runId, 'store' => $storeName ];
+		$this->pushedBatches[] = $runId;
 	}
 
 }

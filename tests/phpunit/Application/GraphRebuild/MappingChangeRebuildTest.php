@@ -31,6 +31,7 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 	private const MAPPED_STORE = 'EDM';
 	private const PROJECTION = 'EDM';
 	private const OTHER_STORE = 'CIDOC';
+	private const NATIVE_STORE = 'native-store';
 	private const MAPPING_JSON = '{"version":1,"schemas":{}}';
 
 	/**
@@ -107,6 +108,21 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 		$repository = $this->newRunRepository();
 		$this->assertSame( RebuildStatus::Cancelled, $repository->getRun( $firstRun->id )?->status );
 		$this->assertNotSame( $firstRun->id, $this->activeRunOf( self::MAPPED_STORE )?->id );
+	}
+
+	/**
+	 * NeoWiki's own code defines the native projection, so creating a page that happens to be called
+	 * Mapping:Native changes nothing about what a store holding it should contain.
+	 */
+	public function testAMappingNamedAfterTheNativeProjectionRebuildsNothing(): void {
+		$this->overrideConfigValue( 'NeoWikiSparqlStores', [
+			[ 'updateUrl' => 'http://sparql.invalid/native', 'projection' => 'native', 'name' => self::NATIVE_STORE ],
+		] );
+		NeoWikiExtension::resetInstance();
+
+		$this->createMapping( 'Native', self::MAPPING_JSON );
+
+		$this->assertNull( $this->activeRunOf( self::NATIVE_STORE ) );
 	}
 
 	public function testEditingAPageThatIsNotAMappingRebuildsNothing(): void {

@@ -149,7 +149,7 @@ class GraphRebuildCoordinator {
 
 	private function queueFirstBatchOf( RebuildRun $run ): RebuildRun {
 		try {
-			$this->jobQueue->pushRebuildBatch( $run->id, $run->store );
+			$this->jobQueue->pushRebuildBatch( $run->id );
 		} catch ( Throwable $e ) {
 			// A queued run nothing will ever pick up is worse than no run at all: it blocks every later
 			// rebuild of the store until someone edits the table. Recorded as ended, then re-thrown so
@@ -170,21 +170,24 @@ class GraphRebuildCoordinator {
 	 * Runs one batch of a background rebuild and queues the next, if the run has one left. Called once
 	 * per job, so this is where a run that has since been cancelled, or finished, stops.
 	 *
+	 * Which store the batch is of is read off the run rather than passed in, so that a job filed for one
+	 * store cannot advance another's run — the run record is the only thing saying which store it is.
+	 *
 	 * Nothing is thrown out of here: a job that fails is retried, and a retry of a batch that ended its
 	 * run reads the record and stops. The failure is recorded on the run and on the log, which is where
 	 * an operator looks for it.
 	 */
-	public function continueInBackground( int $runId, string $storeName ): void {
+	public function continueInBackground( int $runId ): void {
 		$run = $this->runs->getRun( $runId );
 
 		if ( $run === null ) {
 			// Not the usual "the run has ended" case, which is silent by design: there is no record at all,
-			// so nothing will ever advance whatever filed this. Worth a line, because the store may be left
+			// so nothing will ever advance whatever filed this. Worth a line, because a store may be left
 			// with a run recorded as queued that only cancelling releases.
 			$this->logger->warning(
-				'NeoWiki background graph rebuild of store "' . $storeName . '" was asked to continue run '
-				. $runId . ', which the records do not have.',
-				[ 'store' => $storeName, 'runId' => $runId ]
+				'NeoWiki background graph rebuild was asked to continue run ' . $runId
+				. ', which the records do not have.',
+				[ 'runId' => $runId ]
 			);
 			return;
 		}
@@ -194,7 +197,7 @@ class GraphRebuildCoordinator {
 		}
 
 		try {
-			$store = $this->getStore( $storeName );
+			$store = $this->getStore( $run->store );
 
 			$run = $this->executor->executeOneBatch(
 				run: $run,
@@ -213,7 +216,7 @@ class GraphRebuildCoordinator {
 		}
 
 		try {
-			$this->jobQueue->pushRebuildBatch( $runId, $storeName );
+			$this->jobQueue->pushRebuildBatch( $runId );
 		} catch ( Throwable $e ) {
 			// The same reasoning, and the same reach, as the first batch's push: a run nothing will carry
 			// forward blocks the store until someone cancels it, so it is ended here instead.

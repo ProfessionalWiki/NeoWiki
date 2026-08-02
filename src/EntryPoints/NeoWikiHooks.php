@@ -39,6 +39,7 @@ use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 use MediaWiki\SpecialPage\SpecialPage;
 use Skin;
 use SkinTemplate;
+use Throwable;
 use WikiPage;
 
 class NeoWikiHooks {
@@ -292,18 +293,40 @@ class NeoWikiHooks {
 	 *
 	 * Deferred past the change's own transaction, because starting a rebuild takes a database lock that
 	 * flushes the connection's snapshot, which a transaction with writes pending may not do — and because
-	 * an edit must not wait on a lock or a queue to be saved.
+	 * an edit must not wait on a lock or a queue to be saved. A wiki that has not asked for this registers
+	 * no update at all, so every Mapping edit on it costs nothing.
 	 */
 	private static function rebuildStoresHoldingChangedMapping( Title $title ): void {
-		if ( $title->getNamespace() !== NeoWikiExtension::NS_MAPPING ) {
+		if ( $title->getNamespace() !== NeoWikiExtension::NS_MAPPING
+			|| !NeoWikiExtension::getInstance()->shouldRebuildOnMappingChange() ) {
 			return;
 		}
 
 		$mappingName = $title->getText();
 
 		DeferredUpdates::addCallableUpdate( static function () use ( $mappingName ): void {
-			NeoWikiExtension::getInstance()->newMappingChangeRebuilder()?->onMappingChanged( $mappingName );
+			self::rebuildStoresHoldingMapping( $mappingName );
 		} );
+	}
+
+	/**
+	 * Nothing is thrown out of here: the Mapping has been saved or deleted by the time this runs. A store
+	 * whose rebuild could not even be assembled — a backend whose configuration will not resolve — is
+	 * reported rather than allowed to take the rest of the deferred work down with it, and
+	 * Special:GraphStores still shows the store as stale.
+	 */
+	private static function rebuildStoresHoldingMapping( string $mappingName ): void {
+		try {
+			NeoWikiExtension::getInstance()->newMappingChangeRebuilder()->onMappingChanged( $mappingName );
+		} catch ( Throwable $e ) {
+			LoggerFactory::getInstance( 'NeoWiki' )->error(
+				'NeoWiki could not rebuild the graph stores holding the projection Mapping page "'
+				. $mappingName . '" defines, so they still hold the old vocabulary. Rebuild them from '
+				. 'Special:GraphStores. Underlying error: '
+				. BackendFailureMessage::withoutCredentials( $e->getMessage() ),
+				[ 'exception' => $e, 'mapping' => $mappingName ]
+			);
+		}
 	}
 
 	/**
