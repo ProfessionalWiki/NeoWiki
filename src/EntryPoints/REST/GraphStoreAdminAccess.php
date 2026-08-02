@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\GraphStoreStatusSerializer;
@@ -25,6 +26,25 @@ trait GraphStoreAdminAccess {
 			403,
 			'permissionDenied',
 			'You do not have permission to administer NeoWiki\'s graph stores.'
+		);
+	}
+
+	/**
+	 * Starting or cancelling a rebuild writes: it files a run record, and queues the jobs that carry it.
+	 * A wiki locked to writes is answered here rather than left to fail somewhere further down, where a
+	 * half-filed rebuild is what would be left behind.
+	 */
+	private function refuseWhileTheWikiIsReadOnly(): ?Response {
+		$reason = MediaWikiServices::getInstance()->getReadOnlyMode()->getReason();
+
+		if ( $reason === false ) {
+			return null;
+		}
+
+		return $this->errorResponse(
+			503,
+			'readOnly',
+			'This wiki is read only, so its graph stores cannot be rebuilt. Reason: ' . $reason
 		);
 	}
 

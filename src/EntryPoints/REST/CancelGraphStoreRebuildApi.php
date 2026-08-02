@@ -26,7 +26,7 @@ class CancelGraphStoreRebuildApi extends SimpleHandler {
 	}
 
 	public function run( string $name ): Response {
-		$refusal = $this->refuseWithoutTheAdminRight();
+		$refusal = $this->refuseWithoutTheAdminRight() ?? $this->refuseWhileTheWikiIsReadOnly();
 
 		if ( $refusal !== null ) {
 			return $refusal;

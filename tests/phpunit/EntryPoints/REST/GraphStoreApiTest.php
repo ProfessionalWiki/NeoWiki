@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\MainConfigNames;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
@@ -30,6 +31,7 @@ class GraphStoreApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
 	private const STORE = 'rest-store';
+	private const READ_ONLY_REASON = 'the database is being moved';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -156,6 +158,33 @@ class GraphStoreApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 404, $response['status'] );
 		$this->assertSame( 'unknownStore', $response['body']['errorType'] );
+	}
+
+	/**
+	 * Filing a rebuild is a write, so a wiki locked to writes has to refuse it outright rather than leave
+	 * it to fail partway and leave a run record nothing will ever carry forward.
+	 */
+	public function testStartingARebuildOnAReadOnlyWikiIsRefused(): void {
+		$this->overrideConfigValue( MainConfigNames::ReadOnly, self::READ_ONLY_REASON );
+
+		$response = $this->executeAsAdmin( $this->newStartApi(), 'POST', self::STORE );
+
+		$this->assertSame( 503, $response['status'] );
+		$this->assertStringContainsString( self::READ_ONLY_REASON, (string)$response['body']['message'] );
+		$this->assertNull( $this->newRunRepository()->getLatestRun( self::STORE ), 'and nothing was filed' );
+	}
+
+	public function testCancellingARebuildOnAReadOnlyWikiIsRefused(): void {
+		$this->executeAsAdmin( $this->newStartApi(), 'POST', self::STORE );
+		$this->overrideConfigValue( MainConfigNames::ReadOnly, self::READ_ONLY_REASON );
+
+		$response = $this->executeAsAdmin( $this->newCancelApi(), 'DELETE', self::STORE );
+
+		$this->assertSame( 503, $response['status'] );
+		$this->assertNotNull(
+			$this->newRunRepository()->getActiveRun( self::STORE ),
+			'and the rebuild it would have cancelled is still going'
+		);
 	}
 
 	/**
