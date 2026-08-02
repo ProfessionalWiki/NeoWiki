@@ -35,6 +35,24 @@ class SpecialGraphStores extends SpecialPage {
 	private const REBUILD_ACTION = 'rebuild';
 	private const CANCEL_ACTION = 'cancel';
 
+	/**
+	 * Everything an action here can have done, each naming the message its box shows.
+	 */
+	private const array OUTCOMES = [
+		'queued',
+		'cancelled',
+		'alreadyrunning',
+		'nothingtocancel',
+		'unknownstore',
+		'notqueued',
+		'sessionfailure',
+	];
+
+	/**
+	 * The outcomes that did what was asked. The rest are reported as errors.
+	 */
+	private const array SUCCESSFUL_OUTCOMES = [ 'queued', 'cancelled' ];
+
 	public function __construct() {
 		// MediaWiki 1.46 deprecates passing the restriction here, but on 1.43 — the version this extension
 		// supports — the permission check reads the property this sets and not getRestriction(), so
@@ -119,21 +137,28 @@ class SpecialGraphStores extends SpecialPage {
 		);
 	}
 
+	/**
+	 * The outcome and the store it names both come off the query string, so a link handed to an
+	 * administrator decides both. The outcome is only ever one this page redirects with, rather than
+	 * anything a message key can be built out of, and the store name is substituted as plain text rather
+	 * than as wikitext the message transform would run.
+	 */
 	private function showReportedOutcome(): void {
 		$outcome = $this->getRequest()->getText( 'outcome' );
 
-		if ( $outcome === '' ) {
+		if ( !in_array( $outcome, self::OUTCOMES, true ) ) {
 			return;
 		}
 
-		$message = $this->msg( 'neowiki-graphstores-outcome-' . $outcome, $this->getRequest()->getText( 'store' ) );
+		$message = $this->msg( 'neowiki-graphstores-outcome-' . $outcome )
+			->plaintextParams( $this->getRequest()->getText( 'store' ) );
 
 		if ( $message->isDisabled() ) {
 			return;
 		}
 
 		$this->getOutput()->addHTML(
-			in_array( $outcome, [ 'queued', 'cancelled' ], true )
+			in_array( $outcome, self::SUCCESSFUL_OUTCOMES, true )
 				? Html::successBox( $message->escaped() )
 				: Html::errorBox( $message->escaped() )
 		);

@@ -168,6 +168,28 @@ class SpecialGraphStoresTest extends SpecialPageTestBase {
 		$this->assertStringContainsString( 'neowiki-graphstores-outcome-queued', $html );
 	}
 
+	/**
+	 * The reported store name comes straight off the query string, and the box reporting it is a message
+	 * the wiki transforms before showing. Substituted into that message as wikitext, a link anyone could
+	 * hand an administrator would run whatever it carried, on a GET.
+	 */
+	public function testAStoreNameInTheReportedOutcomeIsNotRunAsWikitext(): void {
+		$request = new FauxRequest( [ 'outcome' => 'queued', 'store' => '{{uc:injected}}' ] );
+
+		[ $html ] = $this->executeSpecialPage( '', $request, null, $this->newAdmin() );
+
+		$this->assertStringNotContainsString( 'INJECTED', $html );
+		$this->assertStringContainsString( '{{uc:injected}}', $html );
+	}
+
+	public function testAnOutcomeThisPageNeverReportsIsNotShownAtAll(): void {
+		$request = new FauxRequest( [ 'outcome' => 'somethingelse', 'store' => self::STORE ] );
+
+		[ $html ] = $this->executeSpecialPage( '', $request, null, $this->newAdmin() );
+
+		$this->assertStringNotContainsString( 'neowiki-graphstores-outcome-', $html );
+	}
+
 	public function testAFormWithoutAValidTokenChangesNothing(): void {
 		$request = new FauxRequest(
 			[ 'nwAction' => 'rebuild', 'nwStore' => self::STORE, 'wpEditToken' => 'not-the-token' ],
