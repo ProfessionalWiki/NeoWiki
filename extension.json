@@ -175,7 +175,8 @@
 		"NeoJson": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson",
 		"Schemas": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSchemas",
 		"Layouts": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialLayouts",
-		"Mappings": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialMappings"
+		"Mappings": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialMappings",
+		"GraphStores": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialGraphStores"
 	},
 
 	"Actions": {
