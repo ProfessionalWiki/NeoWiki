@@ -49,18 +49,19 @@ use Wikimedia\RequestTimeout\TimeoutException;
  * - A store that will not open — one whose initialize() throws — ends the run before a page is read.
  *   Continuing would only pile up one failure per page in the wiki, and the recorded cursor would then
  *   be worthless for resuming.
- * - A store that dies mid-walk is recognised by every page of a batch failing: nothing about a store
- *   that is answering makes a whole batch of unrelated pages fail at once. The run ends with its cursor
- *   left at the batch it was reading, so resuming retries that batch rather than skipping it as settled.
- *   A batch of one page is exempt, because there a whole-batch failure says nothing about the store —
- *   and treating it as a store failure would leave `--resume` retrying the same broken page for ever.
+ * - A store that dies mid-walk is recognised by a whole batch of it failing, in either phase: nothing
+ *   about a store that is answering makes a batch of unrelated pages fail at once. The run ends with its
+ *   cursor left at the batch it was reading, so resuming retries that batch rather than skipping it as
+ *   settled. What counts as a whole batch failing is narrow — see {@see self::storeLooksGone()} — because
+ *   every way of reading it too widely ends in `--resume` retrying pages that will never work.
  * - A request timeout or a wiki-database error ends the run: the pages after this one would fail
  *   identically.
  */
 class GraphRebuildExecutor {
 
 	/**
-	 * Below this, a batch failing entirely is not evidence of anything about the store.
+	 * How many pages a store has to have refused in one batch for that to be evidence about the store
+	 * rather than about the pages.
 	 */
 	private const int MIN_BATCH_SIZE_FOR_STORE_DEATH = 2;
 
@@ -206,24 +207,22 @@ class GraphRebuildExecutor {
 		$offered = 0;
 
 		foreach ( $pageIds as $pageId ) {
-			$outcome = $this->projectPage( $pageId, $progress, $pageRebuilder, $observer );
+			$outcome = $this->projectPage( $pageId, $progress, $pageRebuilder );
 
 			if ( $outcome->wasOfferedToTheStore ) {
 				$offered++;
 			}
 
 			if ( $outcome->failure !== null ) {
-				$failures[] = $outcome->failure;
+				$failures[$pageId] = $outcome->failure;
 			}
 		}
 
-		if ( self::wholeBatchFailed( count( $failures ), $offered ) ) {
-			$failure = $failures[array_key_last( $failures )];
-
-			// The run rather than its progress, so the cursor stays where this batch began and a resumed
-			// run retries it rather than walking past pages nothing is known to be wrong with.
-			return $this->failRun( $run, self::describeWholeBatchFailure( $failure ), $failure );
+		if ( self::storeLooksGone( count( $pageIds ), $batchSize, $offered, count( $failures ) ) ) {
+			return $this->failWholeBatch( $run, $failures );
 		}
+
+		$this->reportFailedPages( 'project', $failures, $observer );
 
 		$updated = $this->recordRun( $progress->applyTo( $run ) );
 		$observer->afterPageBatch( $updated, fn (): int => $this->subjectPageIds->countSubjectPages() );
@@ -232,25 +231,65 @@ class GraphRebuildExecutor {
 	}
 
 	/**
-	 * Counted over the pages the store was actually offered, not over the batch: a page the walk found and
-	 * the wiki has since dropped never reached the store, and letting one of those spare the store its
-	 * verdict would walk the whole wiki one failure at a time.
+	 * Whether a batch failing says something about the store rather than about its pages. Three things
+	 * have to hold at once, and each of them rules out a way of being wrong:
+	 *
+	 * - The batch was a full one. A short batch is the tail of the walk, where a handful of permanently
+	 *   unprojectable pages is enough to fail every page there is — and reading that as the store having
+	 *   gone would leave `--resume` retrying those same pages for ever.
+	 * - The store was offered enough of it for a wholly failed batch to mean anything. One page failing is
+	 *   one page failing, whether the batch held only it or the rest of the batch never reached the store.
+	 * - Every page the store was offered failed. Counted over those rather than over the batch, because a
+	 *   page the walk found and the wiki has since dropped never reached the store: letting one of those
+	 *   stand for a page the store took would walk the whole wiki one failure at a time.
 	 */
-	private static function wholeBatchFailed( int $failureCount, int $offeredPageCount ): bool {
-		return $offeredPageCount >= self::MIN_BATCH_SIZE_FOR_STORE_DEATH && $failureCount === $offeredPageCount;
+	private static function storeLooksGone(
+		int $batchPageCount,
+		int $batchSize,
+		int $offeredPageCount,
+		int $failureCount
+	): bool {
+		return $batchPageCount === $batchSize
+			&& $offeredPageCount >= self::MIN_BATCH_SIZE_FOR_STORE_DEATH
+			&& $failureCount === $offeredPageCount;
 	}
 
-	private static function describeWholeBatchFailure( Throwable $failure ): string {
-		return 'Every page of a batch failed, so the store is treated as gone rather than its pages as '
-			. 'unprojectable. Underlying error: '
-			. BackendFailureMessage::withoutCredentials( $failure->getMessage() );
+	/**
+	 * @param array<int, Throwable> $failures Keys are page ids
+	 */
+	private function failWholeBatch( RebuildRun $run, array $failures ): RebuildRun {
+		$failure = $failures[array_key_last( $failures )];
+
+		// The run rather than its progress, so the cursor stays where this batch began and a resumed run
+		// retries it rather than walking past pages nothing is known to be wrong with.
+		return $this->failRun(
+			$run,
+			'Every page of a batch failed, so the store is treated as gone rather than its pages as '
+				. 'unprojectable. Underlying error: '
+				. BackendFailureMessage::withoutCredentials( $failure->getMessage() ),
+			$failure
+		);
+	}
+
+	/**
+	 * A page the rebuild could not reconcile is reported once the batch it was in has been read as
+	 * something other than the store having gone. A batch the run ends on is retried from where it began,
+	 * so its pages are not recorded anywhere — on the run, in the log, or with whatever is watching — as
+	 * pages that failed.
+	 *
+	 * @param array<int, Throwable> $failures Keys are page ids
+	 */
+	private function reportFailedPages( string $operation, array $failures, RebuildBatchObserver $observer ): void {
+		foreach ( $failures as $pageId => $failure ) {
+			$this->logPageFailure( $operation, $pageId, $failure );
+			$observer->pageFailed( $pageId );
+		}
 	}
 
 	private function projectPage(
 		int $pageId,
 		RebuildProgress $progress,
-		SubjectPageRebuilder $pageRebuilder,
-		RebuildBatchObserver $observer
+		SubjectPageRebuilder $pageRebuilder
 	): ProjectedPageOutcome {
 		$title = $this->titleFactory->newFromID( $pageId );
 
@@ -265,9 +304,7 @@ class GraphRebuildExecutor {
 		} catch ( TimeoutException | DBError $e ) {
 			throw $e;
 		} catch ( Exception $e ) {
-			$this->logPageFailure( 'project', $pageId, $e );
 			$progress->pageFailed( $pageId );
-			$observer->pageFailed( $pageId );
 			return ProjectedPageOutcome::refused( $e );
 		}
 
@@ -309,13 +346,26 @@ class GraphRebuildExecutor {
 		}
 
 		$progress = new RebuildProgress( $run );
+		$failures = [];
 		$removed = 0;
 
 		foreach ( $pageIds as $pageId ) {
-			if ( $this->removePage( $pageId, $progress, $store, $observer ) ) {
+			$failure = $this->removePage( $pageId, $progress, $store );
+
+			if ( $failure === null ) {
 				$removed++;
+			} else {
+				$failures[$pageId] = $failure;
 			}
 		}
+
+		// Every page of a deletion batch is offered to the store: there is nothing to read off the wiki
+		// first, so none of them can be skipped the way a page the wiki has dropped is while projecting.
+		if ( self::storeLooksGone( count( $pageIds ), $batchSize, count( $pageIds ), count( $failures ) ) ) {
+			return $this->failWholeBatch( $run, $failures );
+		}
+
+		$this->reportFailedPages( 'remove', $failures, $observer );
 
 		$updated = $this->recordRun( $progress->applyTo( $run ) );
 		$observer->afterDeletionBatch(
@@ -327,26 +377,22 @@ class GraphRebuildExecutor {
 		return $updated;
 	}
 
-	private function removePage(
-		int $pageId,
-		RebuildProgress $progress,
-		GraphDatabasePlugin $store,
-		RebuildBatchObserver $observer
-	): bool {
+	/**
+	 * @return ?Throwable What the store said when it would not let go of the page, or null when it did.
+	 */
+	private function removePage( int $pageId, RebuildProgress $progress, GraphDatabasePlugin $store ): ?Throwable {
 		try {
 			$store->deletePage( new PageId( $pageId ) );
 		} catch ( TimeoutException | DBError $e ) {
 			throw $e;
 		} catch ( Exception $e ) {
-			$this->logPageFailure( 'remove', $pageId, $e );
 			$progress->removalFailed( $pageId );
-			$observer->pageFailed( $pageId );
-			return false;
+			return $e;
 		}
 
 		$progress->pageRemoved( $pageId );
 
-		return true;
+		return null;
 	}
 
 	/**
@@ -359,7 +405,7 @@ class GraphRebuildExecutor {
 		return $this->runs->updateRunWhileActive( $run ) ?? $run->cancelled();
 	}
 
-	private function logPageFailure( string $operation, int $pageId, Exception $e ): void {
+	private function logPageFailure( string $operation, int $pageId, Throwable $e ): void {
 		$this->logger->error(
 			'NeoWiki graph rebuild failed to ' . $operation . ' page ' . $pageId
 			. '. The rebuild continued, so this page is still out of sync in that store. '

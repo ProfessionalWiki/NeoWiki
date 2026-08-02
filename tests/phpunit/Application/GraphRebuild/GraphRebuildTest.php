@@ -56,6 +56,8 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	private const STORE = 'scoped-store';
 	private const OTHER_STORE = 'other-store';
 	private const WIKI_DATABASE_FAILURE_MESSAGE = 'the wiki database is gone';
+	private const PAGE_ID_THE_WIKI_NO_LONGER_HAS = 987654;
+	private const OTHER_PAGE_ID_THE_WIKI_NO_LONGER_HAS = 987655;
 	private const PASSWORD = 'sekrit';
 	private const CREDENTIAL_BEARING_MESSAGE =
 		"Cannot connect to any server on alias: bolt with Uris: ('bolt://neo4j:sekrit@neo:7687')";
@@ -398,7 +400,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$logger = new TestLogger( true );
 		$observer = new SpyRebuildBatchObserver();
 
-		$run = $this->executeOver( new InMemorySubjectPageIdsLookup( $pageId ), $store, $logger, $observer );
+		$run = $this->executeOver( new InMemorySubjectPageIdsLookup( $pageId ), $store, $logger, 200, $observer );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( 0, $run->processed );
@@ -503,6 +505,104 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( [ $pageIds[2], $pageIds[3] ], self::savedPageIds( $recoveredStore ) );
+	}
+
+	/**
+	 * The last batch of a walk is a short one, so a handful of permanently unprojectable pages is enough
+	 * to fail every page in it. Reading that as the store having gone would leave --resume retrying those
+	 * same pages for ever.
+	 */
+	public function testAShortLastBatchFailingEntirelyIsNotReadAsTheStoreHavingGone(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four', 'Five' );
+		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[3], $pageIds[4] ] ) );
+
+		$run = $this->rebuild( batchSize: 3 );
+
+		$this->assertSame( RebuildStatus::Succeeded, $run->status );
+		$this->assertSame( 2, $run->failed, 'the pages of a short batch are just pages that failed' );
+	}
+
+	/**
+	 * A page the walk found and the wiki has since dropped never reached the store, so letting it stand
+	 * for a page the store took would walk the whole wiki one failure at a time.
+	 */
+	public function testAPageTheWikiDroppedDoesNotSpareAStoreThatFailedEveryPageItWasOffered(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two' );
+		$store = new SpyGraphDatabasePlugin( refusedPageIds: $pageIds );
+
+		$run = $this->executeOver(
+			new InMemorySubjectPageIdsLookup( self::PAGE_ID_THE_WIKI_NO_LONGER_HAS, ...$pageIds ),
+			$store,
+			new NullLogger(),
+			batchSize: 3
+		);
+
+		$this->assertSame( RebuildStatus::Failed, $run->status );
+		$this->assertStringContainsString( SpyGraphDatabasePlugin::FAILURE_MESSAGE, (string)$run->error );
+	}
+
+	/**
+	 * With almost every page of a batch gone from the wiki, the one page that did reach the store failing
+	 * says no more about the store than a batch of one does.
+	 */
+	public function testABatchOnlyOnePageOfWhichReachedTheStoreIsNotReadAsTheStoreHavingGone(): void {
+		$pageIds = $this->createSubjectPages( 'One' );
+		$store = new SpyGraphDatabasePlugin( refusedPageIds: $pageIds );
+
+		$run = $this->executeOver(
+			new InMemorySubjectPageIdsLookup( self::PAGE_ID_THE_WIKI_NO_LONGER_HAS, self::OTHER_PAGE_ID_THE_WIKI_NO_LONGER_HAS, ...$pageIds ),
+			$store,
+			new NullLogger(),
+			batchSize: 3
+		);
+
+		$this->assertSame( RebuildStatus::Succeeded, $run->status );
+		$this->assertSame( 1, $run->failed );
+	}
+
+	/**
+	 * A store that will not let go of anything is as gone as one that will not take anything, and the
+	 * removal phase is where a rebuild finds that out: without this the run ends Succeeded, the store is
+	 * reported in sync, and every page the wiki deleted stays queryable in it for good.
+	 */
+	public function testAStoreThatRefusesAWholeBatchOfRemovalsFailsTheRun(): void {
+		$this->createDeletedSubjectPages( 'First deleted', 'Second deleted' );
+		$this->registerStore( new SpyGraphDatabasePlugin( refusesDeletions: true ) );
+
+		$run = $this->rebuild( batchSize: 2 );
+
+		$this->assertSame( RebuildStatus::Failed, $run->status );
+		$this->assertSame( RebuildPhase::Deletions, $run->phase );
+		$this->assertSame( 0, $run->cursor, 'the cursor is left where the failing batch began' );
+		$this->assertSame( 0, $run->failed, 'the pages of the batch are not counted against the wiki' );
+	}
+
+	public function testAStoreThatRefusedAWholeBatchOfRemovalsRetriesItOnResume(): void {
+		$this->createDeletedSubjectPages( 'First deleted', 'Second deleted' );
+		$this->registerStore( new SpyGraphDatabasePlugin( refusesDeletions: true ) );
+		$this->rebuild( batchSize: 2 );
+
+		$recoveredStore = new SpyGraphDatabasePlugin();
+		$this->registerStore( $recoveredStore );
+		$run = $this->newCoordinator()->resume( self::STORE, 2, new NullRebuildBatchObserver() );
+
+		$this->assertSame( RebuildStatus::Succeeded, $run->status );
+		$this->assertCount( 2, $recoveredStore->deletedPageIds );
+	}
+
+	/**
+	 * The batch is retried from where it began, so nothing may be left recording its pages as pages that
+	 * failed — least of all whatever is watching the rebuild, which is where an operator reads which
+	 * pages to go and look at.
+	 */
+	public function testThePagesOfARewoundBatchAreNotReportedAsFailed(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two' );
+		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: $pageIds ) );
+		$observer = new SpyRebuildBatchObserver();
+
+		$this->rebuild( batchSize: 2, observer: $observer );
+
+		$this->assertSame( [], $observer->failedPageIds );
 	}
 
 	/**
@@ -732,13 +832,14 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		SubjectPageIdsLookup $subjectPageIds,
 		GraphDatabasePlugin $store,
 		LoggerInterface $logger,
+		int $batchSize,
 		RebuildBatchObserver $observer = new NullRebuildBatchObserver()
 	): RebuildRun {
 		return $this->newExecutor( $subjectPageIds, $logger )->execute(
 			run: $this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running ),
 			store: $store,
 			pageRebuilder: NeoWikiExtension::getInstance()->newSubjectPageRebuilderFor( $store ),
-			batchSize: 200,
+			batchSize: $batchSize,
 			observer: $observer
 		);
 	}
@@ -791,6 +892,22 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 			$revision = $this->createPageWithSubjects( $pageName, TestSubject::build() );
 			$this->assertNotNull( $revision );
 			$pageIds[] = $revision->getPageId();
+		}
+
+		return $pageIds;
+	}
+
+	/**
+	 * Pages that carried a Subject and that MediaWiki no longer has, which is what the removal phase of a
+	 * rebuild walks.
+	 *
+	 * @return int[]
+	 */
+	private function createDeletedSubjectPages( string ...$pageNames ): array {
+		$pageIds = $this->createSubjectPages( ...$pageNames );
+
+		foreach ( $pageNames as $pageName ) {
+			$this->deletePageByName( $pageName );
 		}
 
 		return $pageIds;
