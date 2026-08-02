@@ -331,12 +331,21 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( RebuildStatus::Cancelled, $this->readRun( $run )?->status );
 	}
 
-	public function testABatchOfARunNothingWasFiledUnderDoesNothing(): void {
-		$this->registerStore( new SpyGraphDatabasePlugin() );
+	/**
+	 * Nothing will ever advance whatever filed such a batch, so it is worth a line: the store may be left
+	 * with a run recorded as queued that only cancelling releases.
+	 */
+	public function testABatchOfARunNothingWasFiledUnderProjectsNothingAndSaysSo(): void {
+		$logger = new TestLogger( true );
+		$this->setLogger( 'NeoWiki', $logger );
+		$this->createSubjectPages( 'Page nobody projects' );
+		$store = new SpyGraphDatabasePlugin();
+		$this->registerStore( $store );
 
 		$this->newCoordinator()->continueInBackground( 123456, self::STORE );
 
-		$this->assertNull( $this->newRunRepository()->getLatestRun( self::STORE ) );
+		$this->assertSame( [], $store->savedPages );
+		$this->assertStringContainsString( 'which the records do not have', self::loggedText( $logger ) );
 	}
 
 	public function testWhyABackgroundRebuildCouldNotRunABatchIsLogged(): void {
@@ -348,10 +357,11 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$coordinator->continueInBackground( $run->id, self::STORE );
 
 		$this->assertSame( RebuildStatus::Failed, $this->readRun( $run )?->status );
-		$this->assertStringContainsString(
-			'could not run a batch',
-			implode( "\n", array_map( static fn ( array $record ): string => $record[1], $logger->getBuffer() ) )
-		);
+		$this->assertStringContainsString( 'could not run a batch', self::loggedText( $logger ) );
+	}
+
+	private static function loggedText( TestLogger $logger ): string {
+		return implode( "\n", array_column( $logger->getBuffer(), 1 ) );
 	}
 
 	private function newCoordinator( int $batchSize = GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE ): GraphRebuildCoordinator {

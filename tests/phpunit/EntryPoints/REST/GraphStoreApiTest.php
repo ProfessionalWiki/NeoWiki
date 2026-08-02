@@ -5,8 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\MainConfigNames;
+use MediaWiki\Request\FauxRequest;
 use MediaWiki\Rest\Handler;
+use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
+use MediaWiki\Session\CsrfTokenSet;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
@@ -18,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\CancelGraphStoreRebuildApi
@@ -32,6 +36,10 @@ class GraphStoreApiTest extends NeoWikiIntegrationTestCase {
 
 	private const STORE = 'rest-store';
 	private const READ_ONLY_REASON = 'the database is being moved';
+	private const PROJECTION = 'EDM';
+	private const MAPPING_JSON = '{"version":1,"schemas":{}}';
+	private const REBUILT_AT = '20260101000000';
+	private const MAPPING_EDITED_AT = '20260102000000';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -54,12 +62,69 @@ class GraphStoreApiTest extends NeoWikiIntegrationTestCase {
 		$response = $this->executeAsReader( $this->newStartApi(), 'POST', self::STORE );
 
 		$this->assertSame( 403, $response['status'] );
+		$this->assertNull( $this->newRunRepository()->getLatestRun( self::STORE ), 'and files no rebuild' );
 	}
 
 	public function testCancellingARebuildWithoutTheAdminRightIsRefused(): void {
+		$this->executeAsAdmin( $this->newStartApi(), 'POST', self::STORE );
+
 		$response = $this->executeAsReader( $this->newCancelApi(), 'DELETE', self::STORE );
 
 		$this->assertSame( 403, $response['status'] );
+		$this->assertNotNull(
+			$this->newRunRepository()->getActiveRun( self::STORE ),
+			'and the rebuild it would have cancelled is still going'
+		);
+	}
+
+	/**
+	 * Both endpoints change the wiki off a request a browser can be made to send, so a request without the
+	 * token is refused before anything is written.
+	 */
+	public function testStartingARebuildWithoutACsrfTokenIsRefused(): void {
+		$exception = $this->executeAndGetHttpException(
+			new StartGraphStoreRebuildApi( csrfValidator: self::newTokenlessCsrfValidator() ),
+			'POST'
+		);
+
+		$this->assertSame( 403, $exception->getCode() );
+		$this->assertNull( $this->newRunRepository()->getLatestRun( self::STORE ), 'and files no rebuild' );
+	}
+
+	public function testCancellingARebuildWithoutACsrfTokenIsRefused(): void {
+		$this->executeAsAdmin( $this->newStartApi(), 'POST', self::STORE );
+
+		$exception = $this->executeAndGetHttpException(
+			new CancelGraphStoreRebuildApi( csrfValidator: self::newTokenlessCsrfValidator() ),
+			'DELETE'
+		);
+
+		$this->assertSame( 403, $exception->getCode() );
+		$this->assertNotNull(
+			$this->newRunRepository()->getActiveRun( self::STORE ),
+			'and the rebuild it would have cancelled is still going'
+		);
+	}
+
+	/**
+	 * A store holding an ontology projection goes stale on its own, because the Mapping page defining what
+	 * it should contain is editable and nothing reprojects the pages already in it.
+	 */
+	public function testAStoreWhoseMappingChangedSinceItsRebuildIsReportedAsStale(): void {
+		$this->overrideConfigValue( 'NeoWikiSparqlStores', [ [
+			'updateUrl' => 'http://sparql.invalid/edm',
+			'projection' => self::PROJECTION,
+			'name' => self::PROJECTION,
+		] ] );
+		NeoWikiExtension::resetInstance();
+		$this->atTime( self::REBUILT_AT, fn () => $this->recordSucceededRun( self::PROJECTION ) );
+		$this->atTime( self::MAPPING_EDITED_AT, fn () => $this->createMapping( self::PROJECTION, self::MAPPING_JSON ) );
+
+		$response = $this->executeAsAdmin( new GetGraphStoresApi(), 'GET' );
+
+		$store = self::storeNamed( $response['body']['stores'], self::PROJECTION );
+		$this->assertSame( 'stale', $store['state'] );
+		$this->assertSame( '2026-01-02T00:00:00Z', $store['projectionChanged'] );
 	}
 
 	public function testAStoreNothingHasRebuiltIsReportedAsNeverBuilt(): void {
@@ -275,6 +340,47 @@ class GraphStoreApiTest extends NeoWikiIntegrationTestCase {
 		$validator->method( 'verifyCsrfToken' )->willReturn( true );
 
 		return $validator;
+	}
+
+	/**
+	 * The real validator, reading a request that carries no token — which is what it refuses, and how it
+	 * refuses it.
+	 */
+	private static function newTokenlessCsrfValidator(): CsrfValidator {
+		$request = new FauxRequest();
+
+		return new CsrfValidator( $request, new CsrfTokenSet( $request ) );
+	}
+
+	private function executeAndGetHttpException( Handler $handler, string $method ): HttpException {
+		try {
+			$this->executeAsAdmin( $handler, $method, self::STORE );
+		} catch ( HttpException $e ) {
+			return $e;
+		}
+
+		$this->fail( 'the handler was supposed to refuse the request' );
+	}
+
+	/**
+	 * Runs $work as if it were happening then, so that a rebuild and an edit to a Mapping page can be put
+	 * in a known order rather than landing in whichever second the test happens to run in.
+	 */
+	private function atTime( string $timestamp, callable $work ): void {
+		ConvertibleTimestamp::setFakeTime( $timestamp );
+
+		try {
+			$work();
+		} finally {
+			ConvertibleTimestamp::setFakeTime( false );
+		}
+	}
+
+	private function recordSucceededRun( string $storeName ): void {
+		$repository = $this->newRunRepository();
+		$repository->updateRun(
+			$repository->startRun( $storeName, RebuildTrigger::Cli, RebuildStatus::Running )->succeeded()
+		);
 	}
 
 	/**

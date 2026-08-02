@@ -4,12 +4,15 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages;
 
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Session\CsrfTokenSet;
 use MediaWiki\User\User;
 use PermissionsError;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialGraphStores;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -17,6 +20,7 @@ use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Tests\HandlesNeo4jEnvOverrides;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use SpecialPageTestBase;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
  * The page is rendered in qqx, so what is asserted is which message each cell and box uses rather than
@@ -30,6 +34,10 @@ class SpecialGraphStoresTest extends SpecialPageTestBase {
 	use HandlesNeo4jEnvOverrides;
 
 	private const STORE = 'special-store';
+	private const PROJECTION = 'EDM';
+	private const MAPPING_JSON = '{"version":1,"schemas":{}}';
+	private const REBUILT_AT = '20260101000000';
+	private const MAPPING_EDITED_AT = '20260102000000';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -131,6 +139,26 @@ class SpecialGraphStoresTest extends SpecialPageTestBase {
 
 		$this->assertStringContainsString( 'neowiki-graphstores-state-insync', $html );
 		$this->assertStringContainsString( 'neowiki-graphstores-lastrebuild:', $html );
+	}
+
+	/**
+	 * A store holding an ontology projection goes stale on its own, because the Mapping page defining what
+	 * it should contain is editable and nothing reprojects the pages already in it. That is the one state
+	 * an operator can reach without a rebuild having failed, so it has to be reachable on the page too.
+	 */
+	public function testAStoreWhoseMappingChangedSinceItsRebuildIsShownAsStale(): void {
+		$this->overrideConfigValue( 'NeoWikiSparqlStores', [ [
+			'updateUrl' => 'http://sparql.invalid/edm',
+			'projection' => self::PROJECTION,
+			'name' => self::PROJECTION,
+		] ] );
+		NeoWikiExtension::resetInstance();
+		$this->atTime( self::REBUILT_AT, fn () => $this->recordSucceededRun( self::PROJECTION ) );
+		$this->atTime( self::MAPPING_EDITED_AT, fn () => $this->createMapping( self::PROJECTION ) );
+
+		[ $html ] = $this->executeSpecialPage( '', null, null, $this->newAdmin() );
+
+		$this->assertStringContainsString( 'neowiki-graphstores-state-stale', $html );
 	}
 
 	public function testTheQueuedRebuildIsWhatTheTableThenShows(): void {
@@ -268,6 +296,39 @@ class SpecialGraphStoresTest extends SpecialPageTestBase {
 
 	private function newRunRepository(): RebuildRunRepository {
 		return NeoWikiExtension::getInstance()->newRebuildRunRepository();
+	}
+
+	/**
+	 * Runs $work as if it were happening then, so that a rebuild and an edit to a Mapping page can be put
+	 * in a known order rather than landing in whichever second the test happens to run in.
+	 */
+	private function atTime( string $timestamp, callable $work ): void {
+		ConvertibleTimestamp::setFakeTime( $timestamp );
+
+		try {
+			$work();
+		} finally {
+			ConvertibleTimestamp::setFakeTime( false );
+		}
+	}
+
+	private function recordSucceededRun( string $storeName ): void {
+		$repository = $this->newRunRepository();
+		$repository->updateRun(
+			$repository->startRun( $storeName, RebuildTrigger::Cli, RebuildStatus::Running )->succeeded()
+		);
+	}
+
+	private function createMapping( string $name ): void {
+		$title = MediaWikiServices::getInstance()->getTitleFactory()
+			->newFromText( $name, NeoWikiExtension::NS_MAPPING );
+		$this->assertNotNull( $title );
+
+		$updater = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title )
+			->newPageUpdater( $this->getTestSysop()->getUser() );
+		$updater->setContent( 'main', new MappingContent( self::MAPPING_JSON ) );
+
+		$this->assertNotNull( $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'test mapping' ) ) );
 	}
 
 }

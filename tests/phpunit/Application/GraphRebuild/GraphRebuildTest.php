@@ -324,13 +324,33 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->deletePageByName( 'Page deleted during the outage' );
 		$store = new SpyGraphDatabasePlugin();
 		$this->registerStore( $store );
-		$this->recordFailedRunInTheDeletionPhase();
+		$this->recordFailedRunInTheDeletionPhase( cursor: 0 );
 
 		$run = $this->newCoordinator()->resume( self::STORE, 200, new NullRebuildBatchObserver() );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( [], $store->savedPages, 'the pages the run already projected are left alone' );
 		$this->assertCount( 1, $store->deletedPageIds, 'and the removals it never got to are made' );
+	}
+
+	/**
+	 * The removal phase walks its own page ids under its own cursor, so a run interrupted partway through
+	 * it continues after the page it got to rather than at the start of the phase.
+	 */
+	public function testResumingPartwayThroughTheRemovalsMakesOnlyTheOnesLeft(): void {
+		$deletedPageIds = $this->createDeletedSubjectPages( 'First deleted', 'Second deleted', 'Third deleted' );
+		$store = new SpyGraphDatabasePlugin();
+		$this->registerStore( $store );
+		$this->recordFailedRunInTheDeletionPhase( cursor: $deletedPageIds[0] );
+
+		$run = $this->newCoordinator()->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+
+		$this->assertSame( RebuildStatus::Succeeded, $run->status );
+		$this->assertSame(
+			[ $deletedPageIds[1], $deletedPageIds[2] ],
+			array_map( static fn ( PageId $pageId ): int => $pageId->id, $store->deletedPageIds ),
+			'the removals the run already made are not made again'
+		);
 	}
 
 	public function testResumingKeepsTheInterruptedRunAsOneRecord(): void {
@@ -844,14 +864,15 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * A run that got through the wiki's pages and stopped while removing the ones MediaWiki no longer has.
+	 * A run that got through the wiki's pages and stopped while removing the ones MediaWiki no longer has,
+	 * having removed everything up to and including $cursor.
 	 */
-	private function recordFailedRunInTheDeletionPhase(): RebuildRun {
+	private function recordFailedRunInTheDeletionPhase( int $cursor ): RebuildRun {
 		$repository = $this->newRunRepository();
 
 		$failedRun = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running )
-			->withProgress( cursor: 0, processed: 1, failed: 0 )
 			->enteredDeletionPhase()
+			->withProgress( cursor: $cursor, processed: 1, failed: 0 )
 			->failed( 'the store went away' );
 
 		$repository->updateRun( $failedRun );
