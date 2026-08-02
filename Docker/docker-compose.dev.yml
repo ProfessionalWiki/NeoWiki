@@ -57,7 +57,12 @@ services:
   # Dev-only sidecars. They live in this overlay (not the base file) so the base
   # "try-it-out" stack stays minimal and so `make down` removes them as orphans
   # regardless of the compose backend. See the Makefile `down` target.
+
+  # Only the PHP test targets use `test_neo`, so `make dev` should not pay for a second Neo4j
+  # JVM. `make phpunit` starts the profile on demand.
   test_neo:
+    profiles:
+      - test
     image: neo4j:enterprise
     restart: unless-stopped
     volumes:
@@ -83,10 +88,9 @@ services:
       timeout: 1s
       retries: 10
 
-  # SPARQL 1.1 graph store (QLever) for the SPARQL projection plugin (#586). Dev-only,
-  # like test_neo: the base "try-it-out"/demo stack does not use it — that stack runs the
-  # prebuilt image in production mode, where SettingsTemplate.php configures no SPARQL
-  # store. NeoWiki reaches this in-network as http://qlever:7019/; a host port for manual
+  # SPARQL 1.1 graph store (QLever) for the SPARQL projection plugin (#586). Dev-only: the
+  # base "try-it-out"/demo stack does not use it — that stack runs the prebuilt image in
+  # production mode, where SettingsTemplate.php configures no SPARQL store. NeoWiki reaches this in-network as http://qlever:7019/; a host port for manual
   # inspection is opt-in via docker-compose.tools.yml.
   qlever:
     image: docker.io/adfreiburg/qlever:latest
@@ -148,8 +152,11 @@ services:
   # Dedicated QLever store for the SPARQL query system test, isolated from the demo `qlever` service
   # above the way `test_neo` is isolated from `neo`: the system test writes and deletes Subjects, so it
   # must not mutate the demo data. It reaches this in-network as http://test_qlever:7019/ (see
-  # QLEVER_TEST_URL in phpunit.xml.dist); no host port is exposed.
+  # QLEVER_TEST_URL in phpunit.xml.dist); no host port is exposed. Behind the `test` profile,
+  # like `test_neo`.
   test_qlever:
+    profiles:
+      - test
     image: docker.io/adfreiburg/qlever:latest
     restart: unless-stopped
     # Same ceiling as qlever.
