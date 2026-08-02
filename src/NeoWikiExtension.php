@@ -147,10 +147,12 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
 use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphStoreStatusLookup;
 use ProfessionalWiki\NeoWiki\Infrastructure\MediaWikiRebuildJobQueue;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPageChangeTimeLookup;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
@@ -974,6 +976,33 @@ class NeoWikiExtension {
 
 	public function newRebuildStartLock(): RebuildStartLock {
 		return new DatabaseRebuildStartLock( MediaWikiServices::getInstance()->getConnectionProvider() );
+	}
+
+	public function newGraphStoreStatusLookup(): GraphStoreStatusLookup {
+		return new GraphStoreStatusLookup(
+			projectionsByStore: $this->getStoreProjections(),
+			runs: $this->newRebuildRunRepository(),
+			projectionChanges: new MappingPageChangeTimeLookup(
+				MediaWikiServices::getInstance()->getTitleFactory(),
+				MediaWikiServices::getInstance()->getRevisionLookup(),
+			),
+		);
+	}
+
+	/**
+	 * What each configured store holds: the name of its RDF projection, or null for a backend that holds
+	 * no RDF at all — Neo4j, and any backend an extension contributed.
+	 *
+	 * @return array<string, ?string> Keys are store names, in the order they are projected into
+	 */
+	public function getStoreProjections(): array {
+		$projections = array_fill_keys( array_keys( $this->getNamedGraphDatabasePlugins() ), null );
+
+		foreach ( $this->config->sparqlStores as $store ) {
+			$projections[$store->name] = $store->projection;
+		}
+
+		return $projections;
 	}
 
 	public function newRebuildRunRepository(): RebuildRunRepository {
