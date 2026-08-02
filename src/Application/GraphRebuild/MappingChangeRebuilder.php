@@ -16,9 +16,11 @@ use Throwable;
  * reprojects nothing: the stores holding that projection keep serving the old vocabulary until something
  * walks the wiki again. This is that something, for wikis that have asked for it.
  *
- * A store already rebuilding is restarted rather than left to finish, because a run that began under the
- * old Mapping has projected part of the wiki under rules that no longer apply. Restarting converges;
- * letting it finish would leave the store half in each vocabulary with nothing recording that it had.
+ * A store already rebuilding automatically is restarted rather than left to finish, because a run that
+ * began under the old Mapping has projected part of the wiki under rules that no longer apply. Restarting
+ * converges; letting it finish would leave the store half in each vocabulary with nothing recording that
+ * it had. A rebuild somebody started is left alone instead — see
+ * {@see GraphRebuildCoordinator::restartBackground()}.
  */
 class MappingChangeRebuilder {
 
@@ -52,6 +54,8 @@ class MappingChangeRebuilder {
 	private function restartRebuildOf( string $storeName ): void {
 		try {
 			$this->coordinator->restartBackground( $storeName, RebuildTrigger::Auto );
+		} catch ( RebuildAlreadyRunningException ) {
+			$this->reportRebuildLeftAlone( $storeName );
 		} catch ( Throwable $e ) {
 			$this->logger->error(
 				'NeoWiki could not rebuild graph store "' . $storeName . '" after the Mapping defining its '
@@ -61,6 +65,20 @@ class MappingChangeRebuilder {
 				[ 'exception' => $e, 'store' => $storeName ]
 			);
 		}
+	}
+
+	/**
+	 * Not a failure: somebody is waiting on that rebuild, and taking it away to start their wait over is
+	 * not something an edit to a Mapping page should be able to do.
+	 */
+	private function reportRebuildLeftAlone( string $storeName ): void {
+		$this->logger->info(
+			'NeoWiki left the rebuild graph store "' . $storeName . '" already had going to finish, rather '
+			. 'than restarting it for the Mapping that changed. It was started by hand, so somebody is '
+			. 'waiting on it. The store is reported as stale on Special:GraphStores once that run ends, and '
+			. 'rebuilding it from there picks up the new Mapping.',
+			[ 'store' => $storeName ]
+		);
 	}
 
 }

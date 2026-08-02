@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use MediaWiki\Deferred\DeferredUpdates;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyRebuildJobQueue;
+use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 use TestLogger;
 
@@ -133,18 +134,47 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * A rebuild started from anywhere else is replaced rather than refused alongside, for the same reason
-	 * an automatic one is: it began under rules that have since changed.
+	 * Somebody is waiting on a rebuild they started, and an edit to a Mapping page must not be able to
+	 * take it away and start their wait over. The store is reported stale once it ends.
 	 */
-	public function testAMappingChangeReplacesARebuildThatWasAlreadyRunning(): void {
+	public function testAMappingChangeLeavesARebuildSomebodyStartedToFinish(): void {
 		$runningRun = $this->newRunRepository()
 			->startRun( self::MAPPED_STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$this->createMapping( self::PROJECTION, self::MAPPING_JSON );
 
 		$activeRun = $this->activeRunOf( self::MAPPED_STORE );
-		$this->assertSame( RebuildStatus::Queued, $activeRun?->status );
-		$this->assertNotSame( $runningRun->id, $activeRun->id );
+		$this->assertSame( $runningRun->id, $activeRun?->id );
+		$this->assertSame( RebuildStatus::Running, $activeRun->status );
+	}
+
+	public function testARebuildLeftToFinishIsSaidSoRatherThanReportedAsAFailure(): void {
+		$logger = new TestLogger( true );
+		$this->setLogger( 'NeoWiki', $logger );
+		$this->newRunRepository()->startRun( self::MAPPED_STORE, RebuildTrigger::Ui, RebuildStatus::Running );
+
+		$this->createMapping( self::PROJECTION, self::MAPPING_JSON );
+		DeferredUpdates::doUpdates();
+
+		$this->assertStringContainsString( 'left the rebuild graph store', self::loggedText( $logger ) );
+		$this->assertSame( [], self::loggedErrors( $logger ), 'leaving a rebuild alone is not a failure' );
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private static function loggedErrors( TestLogger $logger ): array {
+		return array_column(
+			array_filter(
+				$logger->getBuffer(),
+				static fn ( array $record ): bool => $record[0] === LogLevel::ERROR
+			),
+			1
+		);
+	}
+
+	private static function loggedText( TestLogger $logger ): string {
+		return implode( "\n", array_column( $logger->getBuffer(), 1 ) );
 	}
 
 	/**
@@ -172,7 +202,7 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertStringContainsString(
 			'could not rebuild graph store "' . self::MAPPED_STORE . '"',
-			implode( "\n", array_map( static fn ( array $record ): string => $record[1], $logger->getBuffer() ) )
+			self::loggedText( $logger )
 		);
 	}
 

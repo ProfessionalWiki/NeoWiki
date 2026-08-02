@@ -120,19 +120,26 @@ class GraphRebuildCoordinator {
 	}
 
 	/**
-	 * Replaces whatever rebuild the store has with a fresh one, rather than refusing alongside it. For
-	 * when what a rebuild should produce has changed under it: a run that began under the old rules has
+	 * Replaces the store's automatic rebuild with a fresh one, rather than refusing alongside it. For when
+	 * what a rebuild should produce has changed under it: a run that began under the old rules has
 	 * projected part of the wiki under rules that no longer apply, and finishing it would leave the store
 	 * half in each with nothing recording that it had.
 	 *
+	 * A rebuild somebody started — from the script, the page or the API — is refused rather than replaced.
+	 * Whoever started it is watching it, and an unattended restart would take it away from them and start
+	 * their wait over. The store is reported stale once that run ends, so the change is not lost.
+	 *
 	 * The old run is ended and the new one filed under the same lock, so nothing can start a third in
 	 * between and find the store free.
+	 *
+	 * @throws RebuildAlreadyRunningException When the store's rebuild was started by hand.
 	 */
 	public function restartBackground( string $storeName, RebuildTrigger $trigger ): RebuildRun {
 		$this->getStore( $storeName );
 
 		return $this->queueFirstBatchOf(
 			$this->startLock->whileHeld( $storeName, function () use ( $storeName, $trigger ): RebuildRun {
+				$this->refuseWhenStartedByHand( $storeName );
 				$this->runs->cancelActiveRun( $storeName );
 
 				return $this->runs->startRun( $storeName, $trigger, RebuildStatus::Queued );
@@ -292,6 +299,14 @@ class GraphRebuildCoordinator {
 		$activeRun = $this->runs->getActiveRun( $storeName );
 
 		if ( $activeRun !== null ) {
+			throw new RebuildAlreadyRunningException( $activeRun );
+		}
+	}
+
+	private function refuseWhenStartedByHand( string $storeName ): void {
+		$activeRun = $this->runs->getActiveRun( $storeName );
+
+		if ( $activeRun !== null && $activeRun->trigger !== RebuildTrigger::Auto ) {
 			throw new RebuildAlreadyRunningException( $activeRun );
 		}
 	}

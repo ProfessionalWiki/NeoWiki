@@ -96,7 +96,9 @@ Neo4j have no editable definition, so they are only ever never built or in sync.
 
 Set `$wgNeoWikiAutoRebuildOnMappingChange = true;` to have saving or deleting a Mapping page rebuild every store
 holding that projection in the background. It is off by default: such a rebuild reprojects every page carrying a
-Subject, and it needs a job runner as much as any other background rebuild does.
+Subject, and it needs a job runner as much as any other background rebuild does. Turning it on also means anyone who
+may edit Mapping pages can set a full reprojection going, which is work `neowiki-admin` otherwise gates. A rebuild
+somebody started by hand is left to finish rather than restarted, so it cannot take one away.
 
 ## Upgrades
 
