@@ -157,10 +157,9 @@ class MyGraphDatabasePlugin implements GraphDatabasePlugin {
 Register with `NeoWikiRegistrar::addGraphDatabasePlugin( $name, $plugin )`. Example:
 [`src/RedHerbGraphDatabasePlugin.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbGraphDatabasePlugin.php).
 
-The name identifies your backend across runs and installs: it is what
-[`--store`](../operations/maintenance.md#rebuilding-one-store) addresses, and what a rebuild's run records are filed
-under. Pick a stable one and namespace it to your extension: a name already held by another plugin or by a bundled
-backend is refused with a warning on the `NeoWiki` channel, and a refused backend receives no page changes.
+The name is what [`--store`](../operations/maintenance.md#rebuilding-one-store) addresses. Pick a stable one and
+namespace it to your extension: a name already taken is refused with a warning on the `NeoWiki` channel, and a
+refused backend receives no page changes.
 
 `savePage` hands you the page with all of its Subjects and the Page Properties contributed by every
 `PagePropertyProvider`, and runs for every revision, so subject edits, undeletions and page moves all reach you as a
@@ -174,9 +173,8 @@ every time; it never runs on an individual edit.
 operation commit, so a backend being down never blocks the wiki or starves the other backends — your projection is
 simply out of sync until someone runs `RebuildGraphDatabases`. During a rebuild, failures reach the rebuild instead: a
 page you refuse is logged and counted and the rebuild carries on, while an `initialize` throw ends the run before a
-page is read. A rebuild is always of one store, so either way the other stores still reconcile. On `update.php` a
-failing `initialize` is reported and the update carries on, though the backends registered after yours do not
-initialize on that run.
+page is read. On `update.php` a failing `initialize` is reported and the update carries on, though the backends
+registered after yours do not initialize on that run.
 
 Make `deletePage` idempotent: the rebuild re-issues a delete for every page MediaWiki no longer has, so it will ask
 you to remove pages that are already gone from your store.

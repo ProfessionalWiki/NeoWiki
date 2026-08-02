@@ -30,8 +30,7 @@ Two things to plan around:
   say, or a named graph left behind in a SPARQL store — is not something the rebuild can find. For a guaranteed-clean
   result, empty the graph store before rebuilding: wipe Neo4j's data volume, or drop the wiki's named graphs from it.
 - Each store is rebuilt after the previous one, so the time scales with the number of pages times the number of
-  configured stores. Long rebuilds are interruptible: a stopped run is continued with `--resume`, and `--store`
-  rebuilds only the store that needs it.
+  configured stores.
 
 ### Rebuilding one store
 
@@ -47,9 +46,8 @@ still reconcile.
 
 ### Interrupted rebuilds
 
-The rebuild walks the wiki in batches, recording after each one how far it got — first through the pages it
-reprojects, then through the ones it removes — so `--resume` picks up in whichever of those two halves it stopped in.
-If a run failed before reconciling the whole wiki, continue it from where it stopped rather than starting over:
+The rebuild walks the wiki in batches, recording after each one how far it got. If a run failed before reconciling
+the whole wiki, continue it from where it stopped rather than starting over:
 
 ```sh
 php maintenance/run.php NeoWiki:RebuildGraphDatabases --store EDM --resume
@@ -61,9 +59,7 @@ Pass `--batch-size` to change how many pages are projected between recordings; i
 
 A page the store rejects is counted and the rebuild carries on; the `NeoWiki` channel says which pages failed and why.
 A store that stops answering partway is another matter: a whole batch failing ends the run, and `--resume` retries
-that batch. Recognising it takes a full batch, so on a wiki with fewer pages than `--batch-size` an unreachable store
-is still reported one page at a time. The script exits non-zero whenever a store was left out of sync, so a scheduled
-rebuild cannot fail silently.
+that batch. The script exits non-zero whenever a store was left out of sync.
 
 A rebuild killed outright — `kill -9`, or the machine going down — leaves its run recorded as still going, and every
 later rebuild of that store refuses to start while it is. Release it by cancelling it on
@@ -91,22 +87,18 @@ and progress appears on reload.
 - **A store has one rebuild at a time, whoever started it.** The script, the API and the page write the same run
   record. Cancelling is on the page and the API, including a rebuild the script is running: it stops at its next
   batch. Continuing a cancelled or failed run is `--resume` on the script.
-- **A queued rebuild waits for a job runner that loads NeoWiki.** On a wiki whose runner does not, the rebuild stays
-  queued — and blocks the next one — until it is cancelled on the page.
 
 ### Stale stores
 
 A store is reported as stale when the Mapping page defining its projection was edited or deleted after that store's
 last successful rebuild started: the store still describes every page projected before that change in the old
-vocabulary. Rebuilding it is the fix. Only a store holding an ontology projection can go stale this way; the native
-projection and Neo4j have no editable definition, so they are only ever not reconciled or in sync.
+vocabulary. Rebuilding it is the fix. Only a store holding an ontology projection can go stale; the native projection
+and Neo4j have no editable definition.
 
 Set `$wgNeoWikiAutoRebuildOnMappingChange = true;` to have saving or deleting a Mapping page rebuild every store
 holding that projection in the background. It is off by default: such a rebuild reprojects every page carrying a
-Subject, and it needs a job runner as much as any other background rebuild does. Turning it on also means anyone who
-may edit Mapping pages can set a full reprojection going, which is work `neowiki-admin` otherwise gates. A rebuild
-somebody started by hand is left to finish rather than restarted, so a Mapping edit cannot take one away — the edit
-is not queued behind it either; the store shows up stale once that run ends, and rebuilding it then is the fix.
+Subject, and it lets anyone who may edit Mapping pages set that going — work `neowiki-admin` otherwise gates. A
+rebuild somebody started by hand is left to finish rather than restarted; the store shows up stale once it ends.
 
 ## What happens during a Neo4j outage
 
