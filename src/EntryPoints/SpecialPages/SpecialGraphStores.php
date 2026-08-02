@@ -9,6 +9,7 @@ use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Message\Message;
 use MediaWiki\Session\CsrfTokenSet;
 use MediaWiki\SpecialPage\SpecialPage;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphStoreStatus;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NothingToCancelException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildAlreadyRunningException;
@@ -96,7 +97,8 @@ class SpecialGraphStores extends SpecialPage {
 	 * @return string The message key suffix naming what happened, for the box the redirect lands on.
 	 */
 	private function runRequestedAction( string $storeName ): string {
-		$coordinator = NeoWikiExtension::getInstance()->newGraphRebuildCoordinator();
+		$coordinator = NeoWikiExtension::getInstance()
+			->newGraphRebuildCoordinator( GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE );
 		$cancelling = $this->getRequest()->getText( self::ACTION_FIELD ) === self::CANCEL_ACTION;
 
 		try {

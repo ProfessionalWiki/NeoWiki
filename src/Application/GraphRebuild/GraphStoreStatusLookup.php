@@ -45,12 +45,6 @@ class GraphStoreStatusLookup {
 		);
 	}
 
-	public function getStatus( string $storeName ): ?GraphStoreStatus {
-		return array_key_exists( $storeName, $this->projectionsByStore )
-			? $this->newStatus( $storeName )
-			: null;
-	}
-
 	private function newStatus( string $storeName ): GraphStoreStatus {
 		$projection = $this->projectionsByStore[$storeName];
 		$lastSuccessfulRun = $this->runs->getLastSuccessfulRun( $storeName );

@@ -8,6 +8,7 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphStoreStatus;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\GraphStoreStatusSerializer;
 
 /**
  * Reports every configured graph store: what it holds, how far that is from the wiki, and what
@@ -24,7 +25,7 @@ class GetGraphStoresApi extends SimpleHandler {
 			return $refusal;
 		}
 
-		$serializer = $this->newSerializer();
+		$serializer = new GraphStoreStatusSerializer();
 
 		return $this->getResponseFactory()->createJson( [
 			'stores' => array_map(

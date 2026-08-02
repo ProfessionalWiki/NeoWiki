@@ -2,7 +2,7 @@
 
 declare( strict_types = 1 );
 
-namespace ProfessionalWiki\NeoWiki\Persistence;
+namespace ProfessionalWiki\NeoWiki\Application\GraphRebuild;
 
 use RuntimeException;
 

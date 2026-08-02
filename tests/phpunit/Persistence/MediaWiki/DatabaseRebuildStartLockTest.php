@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
-use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLock;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLock;
 use RuntimeException;
 
 /**
@@ -51,8 +51,10 @@ class DatabaseRebuildStartLockTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * That the work runs at all is the assertion: a lock still held, or one the timeout expired on, would
-	 * leave it never reached.
+	 * That the work runs at all is the assertion. It says nothing about a second process being able to
+	 * take the lock — MediaWiki's advisory locks are re-entrant within a session, so re-acquiring one on
+	 * this connection would succeed whether or not the first was released. What it does rule out is the
+	 * lock throwing or the run never being reached.
 	 */
 	private function assertStartsARunUnder( RebuildStartLock $lock ): void {
 		$started = false;

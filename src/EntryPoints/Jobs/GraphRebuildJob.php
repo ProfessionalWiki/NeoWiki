@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Jobs;
 
 use GenericParameterJob;
 use Job;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 /**
@@ -33,7 +34,8 @@ class GraphRebuildJob extends Job implements GenericParameterJob {
 	 * has since been removed.
 	 */
 	public function run(): bool {
-		NeoWikiExtension::getInstance()->newGraphRebuildCoordinator()
+		NeoWikiExtension::getInstance()
+			->newGraphRebuildCoordinator( GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE )
 			->continueInBackground( (int)( $this->params['runId'] ?? 0 ) );
 
 		return true;

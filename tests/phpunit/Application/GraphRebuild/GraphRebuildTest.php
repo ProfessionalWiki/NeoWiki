@@ -26,8 +26,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
-use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLock;
-use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLockUnavailableException;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLock;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLockUnavailableException;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -819,7 +819,8 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function newCoordinator(): GraphRebuildCoordinator {
-		return NeoWikiExtension::getInstance()->newGraphRebuildCoordinator();
+		return NeoWikiExtension::getInstance()
+			->newGraphRebuildCoordinator( GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE );
 	}
 
 	private function newRunRepository(): RebuildRunRepository {

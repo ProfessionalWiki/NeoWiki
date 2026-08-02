@@ -6,12 +6,14 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildAlreadyRunningException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\UnknownGraphStoreException;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLockUnavailableException;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLockUnavailableException;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\GraphStoreStatusSerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
@@ -37,7 +39,8 @@ class StartGraphStoreRebuildApi extends SimpleHandler {
 		$this->csrfValidator->verifyCsrfToken();
 
 		try {
-			$run = NeoWikiExtension::getInstance()->newGraphRebuildCoordinator()
+			$run = NeoWikiExtension::getInstance()
+				->newGraphRebuildCoordinator( GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE )
 				->startBackground( $name, RebuildTrigger::Api );
 		} catch ( UnknownGraphStoreException $e ) {
 			return $this->errorResponse( 404, 'unknownStore', $e->getMessage() );
@@ -49,7 +52,7 @@ class StartGraphStoreRebuildApi extends SimpleHandler {
 			return $this->errorResponse( 409, 'rebuildBeingStarted', $e->getMessage() );
 		}
 
-		$response = $this->getResponseFactory()->createJson( $this->newSerializer()->runToArray( $run ) );
+		$response = $this->getResponseFactory()->createJson( ( new GraphStoreStatusSerializer() )->runToArray( $run ) );
 		$response->setStatus( 202 );
 
 		return $response;

@@ -6,10 +6,12 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NothingToCancelException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\UnknownGraphStoreException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\GraphStoreStatusSerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
@@ -35,14 +37,16 @@ class CancelGraphStoreRebuildApi extends SimpleHandler {
 		$this->csrfValidator->verifyCsrfToken();
 
 		try {
-			$run = NeoWikiExtension::getInstance()->newGraphRebuildCoordinator()->cancel( $name );
+			$run = NeoWikiExtension::getInstance()
+				->newGraphRebuildCoordinator( GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE )
+				->cancel( $name );
 		} catch ( UnknownGraphStoreException $e ) {
 			return $this->errorResponse( 404, 'unknownStore', $e->getMessage() );
 		} catch ( NothingToCancelException $e ) {
 			return $this->errorResponse( 404, 'noRebuildToCancel', $e->getMessage() );
 		}
 
-		return $this->getResponseFactory()->createJson( $this->newSerializer()->runToArray( $run ) );
+		return $this->getResponseFactory()->createJson( ( new GraphStoreStatusSerializer() )->runToArray( $run ) );
 	}
 
 	public function getParamSettings(): array {

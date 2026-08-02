@@ -144,15 +144,14 @@ class GraphStoreStatusLookupTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	public function testAStoreThisWikiHasNotConfiguredHasNoStatus(): void {
-		$this->assertNull( $this->newLookup()->getStatus( 'no-such-store' ) );
-	}
-
 	private function statusOf( string $storeName, ?string $projectionChanged = null ): GraphStoreStatus {
-		$status = $this->newLookup( $projectionChanged )->getStatus( $storeName );
-		$this->assertNotNull( $status );
+		foreach ( $this->newLookup( $projectionChanged )->getStatuses() as $status ) {
+			if ( $status->name === $storeName ) {
+				return $status;
+			}
+		}
 
-		return $status;
+		$this->fail( 'The lookup does not report a store named ' . $storeName . '.' );
 	}
 
 	private function newLookup( ?string $projectionChanged = null ): GraphStoreStatusLookup {

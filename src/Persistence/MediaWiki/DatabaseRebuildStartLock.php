@@ -6,8 +6,8 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use Closure;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
-use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLock;
-use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLockUnavailableException;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLock;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLockUnavailableException;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**

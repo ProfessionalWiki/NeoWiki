@@ -88,7 +88,8 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 			return false;
 		}
 
-		$coordinator = NeoWikiExtension::getInstance()->newGraphRebuildCoordinator();
+		$coordinator = NeoWikiExtension::getInstance()
+			->newGraphRebuildCoordinator( GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE );
 		$storeNames = $this->getStoreNames( $coordinator );
 
 		if ( $storeNames === [] ) {

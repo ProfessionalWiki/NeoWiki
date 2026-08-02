@@ -158,7 +158,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPageChangeTimeLookup;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
-use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLock;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
@@ -955,11 +955,11 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * @param int<1, max> $backgroundBatchSize Test seam; see GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE.
+	 * @param int<1, max> $backgroundBatchSize How many pages a background batch projects. Production
+	 *        callers pass {@see GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE}; a test passes a size it
+	 *        can drive several batches with.
 	 */
-	public function newGraphRebuildCoordinator(
-		int $backgroundBatchSize = GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE
-	): GraphRebuildCoordinator {
+	public function newGraphRebuildCoordinator( int $backgroundBatchSize ): GraphRebuildCoordinator {
 		return new GraphRebuildCoordinator(
 			stores: $this->getNamedGraphDatabasePlugins(),
 			runs: $this->newRebuildRunRepository(),
@@ -1012,7 +1012,7 @@ class NeoWikiExtension {
 	public function newMappingChangeRebuilder(): MappingChangeRebuilder {
 		return new MappingChangeRebuilder(
 			projectionsByStore: $this->getMappingDefinedStoreProjections(),
-			coordinator: $this->newGraphRebuildCoordinator(),
+			coordinator: $this->newGraphRebuildCoordinator( GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE ),
 			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}

@@ -6,8 +6,8 @@ namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
 use Closure;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
-use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLock;
-use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLockUnavailableException;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLock;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLockUnavailableException;
 
 /**
  * Stands in for a start lock another process is holding on to, which one test cannot produce for itself.

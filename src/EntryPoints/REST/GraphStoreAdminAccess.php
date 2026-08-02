@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Presentation\GraphStoreStatusSerializer;
 
 /**
  * The access rule and error shape the graph-store endpoints share.
@@ -56,10 +55,6 @@ trait GraphStoreAdminAccess {
 		$response->setStatus( $status );
 
 		return $response;
-	}
-
-	private function newSerializer(): GraphStoreStatusSerializer {
-		return new GraphStoreStatusSerializer();
 	}
 
 }

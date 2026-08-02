@@ -28,10 +28,6 @@ class RebuildProgress {
 		$this->failed = $run->failed;
 	}
 
-	public function getCursor(): int {
-		return $this->cursor;
-	}
-
 	public function pageProjected( int $pageId ): void {
 		$this->cursor = $pageId;
 		$this->processed++;
