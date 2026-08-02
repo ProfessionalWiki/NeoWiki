@@ -38,7 +38,8 @@ class GraphRebuildCoordinator {
 
 	/**
 	 * How many pages a background batch projects. Sized for a job that finishes well inside a job
-	 * runner's patience rather than for throughput: the queue holds no fewer pages either way.
+	 * runner's patience rather than for throughput: the queue holds no fewer pages either way. Overridable
+	 * only as a test seam, so a test can drive a rebuild over several batches without a wiki of that size.
 	 */
 	public const int BACKGROUND_BATCH_SIZE = 200;
 
@@ -46,6 +47,7 @@ class GraphRebuildCoordinator {
 	 * @param array<string, GraphDatabasePlugin> $stores Keys are store names
 	 * @param Closure(GraphDatabasePlugin): SubjectPageRebuilder $newPageRebuilder Builds a rebuilder that
 	 *        projects into one store and no other
+	 * @param int<1, max> $backgroundBatchSize
 	 */
 	public function __construct(
 		private readonly array $stores,
@@ -55,6 +57,7 @@ class GraphRebuildCoordinator {
 		private readonly RebuildJobQueue $jobQueue,
 		private readonly Closure $newPageRebuilder,
 		private readonly LoggerInterface $logger,
+		private readonly int $backgroundBatchSize = self::BACKGROUND_BATCH_SIZE,
 	) {
 	}
 
@@ -152,7 +155,7 @@ class GraphRebuildCoordinator {
 				run: $run,
 				store: $store,
 				pageRebuilder: ( $this->newPageRebuilder )( $store ),
-				batchSize: self::BACKGROUND_BATCH_SIZE,
+				batchSize: $this->backgroundBatchSize,
 				observer: new NullRebuildBatchObserver()
 			);
 		} catch ( Throwable $e ) {

@@ -152,6 +152,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
+use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
@@ -940,29 +941,39 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newGraphRebuildCoordinator(): GraphRebuildCoordinator {
-		$runs = $this->newRebuildRunRepository();
-
+	/**
+	 * @param int<1, max> $backgroundBatchSize Test seam; see GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE.
+	 */
+	public function newGraphRebuildCoordinator(
+		int $backgroundBatchSize = GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE
+	): GraphRebuildCoordinator {
 		return new GraphRebuildCoordinator(
 			stores: $this->getNamedGraphDatabasePlugins(),
-			runs: $runs,
-			startLock: new DatabaseRebuildStartLock(
-				MediaWikiServices::getInstance()->getConnectionProvider()
-			),
-			executor: new GraphRebuildExecutor(
-				subjectPageIds: $this->newSubjectPageIdsLookup(),
-				deletedSubjectPageIds: $this->newDeletedSubjectPageIdsLookup(),
-				runs: $runs,
-				titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
-				logger: LoggerFactory::getInstance( 'NeoWiki' ),
-			),
+			runs: $this->newRebuildRunRepository(),
+			startLock: $this->newRebuildStartLock(),
+			executor: $this->newGraphRebuildExecutor(),
 			jobQueue: new MediaWikiRebuildJobQueue(
 				MediaWikiServices::getInstance()->getJobQueueGroup()
 			),
 			newPageRebuilder: fn ( GraphDatabasePlugin $store ): SubjectPageRebuilder
 				=> $this->newSubjectPageRebuilderFor( $store ),
 			logger: LoggerFactory::getInstance( 'NeoWiki' ),
+			backgroundBatchSize: $backgroundBatchSize,
 		);
+	}
+
+	public function newGraphRebuildExecutor(): GraphRebuildExecutor {
+		return new GraphRebuildExecutor(
+			subjectPageIds: $this->newSubjectPageIdsLookup(),
+			deletedSubjectPageIds: $this->newDeletedSubjectPageIdsLookup(),
+			runs: $this->newRebuildRunRepository(),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
+	public function newRebuildStartLock(): RebuildStartLock {
+		return new DatabaseRebuildStartLock( MediaWikiServices::getInstance()->getConnectionProvider() );
 	}
 
 	public function newRebuildRunRepository(): RebuildRunRepository {
