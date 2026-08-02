@@ -11,26 +11,32 @@ use LogicException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NothingToResumeException;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NullRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildAlreadyRunningException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\UnknownGraphStoreException;
 use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildPhase;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
+use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLock;
+use ProfessionalWiki\NeoWiki\Persistence\RebuildStartLockUnavailableException;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryDeletedSubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\RefusingRebuildStartLock;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectPageIdsLookup;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\NullRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyRebuildBatchObserver;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyRebuildJobQueue;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -209,7 +215,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->rebuild( batchSize: 2, observer: $observer );
 
-		$this->assertSame( [ 2, 3 ], $observer->removedSoFar, 'each batch reports the running total' );
+		$this->assertSame( [ 2, 1 ], $observer->removedInBatch, 'each batch reports what it removed' );
 		$this->assertSame( [ 3, 3 ], $observer->reportedDeletionTotals );
 	}
 
@@ -243,7 +249,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 	public function testStartingASecondRunOfAStoreAlreadyRebuildingIsRefused(): void {
 		$this->registerStore( new SpyGraphDatabasePlugin() );
-		$this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli );
+		$this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$this->expectException( RebuildAlreadyRunningException::class );
 
@@ -288,7 +294,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 			self::STORE => new SpyGraphDatabasePlugin(),
 			self::OTHER_STORE => new SpyGraphDatabasePlugin(),
 		] );
-		$this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli );
+		$this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$run = $this->newCoordinator()->rebuild(
 			self::OTHER_STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver()
@@ -312,6 +318,25 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		);
 		$this->assertSame( 4, $run->processed, 'the counters keep totalling the whole rebuild' );
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
+	}
+
+	/**
+	 * A run interrupted while removing deleted pages must not start over at the wiki's pages: everything
+	 * it already reconciled would be projected a second time before it reached where it stopped.
+	 */
+	public function testResumingARunInterruptedBetweenThePhasesOnlyFinishesTheRemovals(): void {
+		$this->createSubjectPages( 'Surviving page' );
+		$this->createSubjectPages( 'Page deleted during the outage' );
+		$this->deletePageByName( 'Page deleted during the outage' );
+		$store = new SpyGraphDatabasePlugin();
+		$this->registerStore( $store );
+		$this->recordFailedRunInTheDeletionPhase();
+
+		$run = $this->newCoordinator()->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+
+		$this->assertSame( RebuildStatus::Succeeded, $run->status );
+		$this->assertSame( [], $store->savedPages, 'the pages the run already projected are left alone' );
+		$this->assertCount( 1, $store->deletedPageIds, 'and the removals it never got to are made' );
 	}
 
 	public function testResumingKeepsTheInterruptedRunAsOneRecord(): void {
@@ -344,18 +369,20 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 	/**
 	 * A page that failed is settled work: the cursor moves past it, and the next run over the wiki picks
-	 * it up. Without that, a batch of nothing but failures would be read again, and again.
+	 * it up. Without that, a batch of nothing but failures would be read again, and again. Read a page at
+	 * a time, which is the batch size at which a wholly failed batch says nothing about the store.
 	 */
 	public function testABatchOfNothingButFailuresIsStillWalkedPast(): void {
 		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three' );
 		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: $pageIds ) );
+		$observer = new SpyRebuildBatchObserver();
 
-		$run = $this->rebuild( batchSize: 2 );
+		$run = $this->rebuild( batchSize: 1, observer: $observer );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( 3, $run->failed );
 		$this->assertSame( 0, $run->processed );
-		$this->assertSame( $pageIds[2], $run->cursor );
+		$this->assertSame( $pageIds, self::batchCursors( $observer ) );
 	}
 
 	/**
@@ -366,15 +393,119 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$pageId = $this->getExistingTestPage( 'Page without a Subject' )->getId();
 		$store = new SpyGraphDatabasePlugin();
 		$logger = new TestLogger( true );
+		$observer = new SpyRebuildBatchObserver();
 
-		$run = $this->executeOver( new InMemorySubjectPageIdsLookup( $pageId ), $store, $logger );
+		$run = $this->executeOver( new InMemorySubjectPageIdsLookup( $pageId ), $store, $logger, $observer );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( 0, $run->processed );
 		$this->assertSame( 0, $run->failed, 'a page with nothing to project has not failed' );
-		$this->assertSame( $pageId, $run->cursor );
+		$this->assertSame( [ $pageId ], self::batchCursors( $observer ) );
 		$this->assertSame( [], $store->savedPages );
 		$this->assertStringContainsString( 'skipped page ' . $pageId, $this->loggedText( $logger ) );
+	}
+
+	/**
+	 * @return int[]
+	 */
+	private static function batchCursors( SpyRebuildBatchObserver $observer ): array {
+		return array_map( static fn ( RebuildRun $run ): int => $run->cursor, $observer->pageBatches );
+	}
+
+	/**
+	 * Nothing about a store that is answering makes a whole batch of unrelated pages fail at once, so
+	 * that is read as the store having gone rather than as a wiki full of unprojectable pages.
+	 */
+	public function testAStoreThatFailsEveryPageOfABatchFailsTheRun(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
+		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: $pageIds ) );
+
+		$run = $this->rebuild( batchSize: 2 );
+
+		$this->assertSame( RebuildStatus::Failed, $run->status );
+		$this->assertStringContainsString( SpyGraphDatabasePlugin::FAILURE_MESSAGE, (string)$run->error );
+	}
+
+	/**
+	 * The batch is retried rather than walked past, because the pages in it are not known to be at fault:
+	 * the store was.
+	 */
+	public function testARunEndedByAWholeBatchFailingIsRewoundToThatBatch(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
+		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[2], $pageIds[3] ] ) );
+
+		$run = $this->rebuild( batchSize: 2 );
+
+		$this->assertSame( $pageIds[1], $run->cursor, 'the cursor is left where the failing batch began' );
+		$this->assertSame( 2, $run->processed );
+		$this->assertSame( 0, $run->failed, 'the pages of the batch are not counted against the wiki' );
+	}
+
+	public function testAStoreThatFailsEveryPageOfABatchIsRetriedFromThereOnResume(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
+		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[2], $pageIds[3] ] ) );
+		$this->rebuild( batchSize: 2 );
+
+		$recoveredStore = new SpyGraphDatabasePlugin();
+		$this->registerStore( $recoveredStore );
+		$run = $this->newCoordinator()->resume( self::STORE, 2, new NullRebuildBatchObserver() );
+
+		$this->assertSame( RebuildStatus::Succeeded, $run->status );
+		$this->assertSame( [ $pageIds[2], $pageIds[3] ], self::savedPageIds( $recoveredStore ) );
+	}
+
+	/**
+	 * One page failing is one page failing however small the batch, and calling that a store failure
+	 * would leave --resume retrying the same broken page for ever.
+	 */
+	public function testASinglePageBatchThatFailsIsJustAPageThatFailed(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two' );
+		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[0] ] ) );
+
+		$run = $this->rebuild( batchSize: 1 );
+
+		$this->assertSame( RebuildStatus::Succeeded, $run->status );
+		$this->assertSame( 1, $run->failed );
+		$this->assertSame( 1, $run->processed, 'the page after it was still reached' );
+	}
+
+	/**
+	 * A store has one rebuild ahead of it whether or not anything has begun working on it yet.
+	 */
+	public function testStartingARunOfAStoreWithOneAlreadyQueuedIsRefused(): void {
+		$this->registerStore( new SpyGraphDatabasePlugin() );
+		$this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Api, RebuildStatus::Queued );
+
+		$this->expectException( RebuildAlreadyRunningException::class );
+
+		$this->rebuild();
+	}
+
+	/**
+	 * The check for an active run and the row it guards are taken together under the store's start lock,
+	 * so a start that cannot take that lock is one that never decided anything and must leave no trace.
+	 */
+	public function testARebuildThatCannotTakeTheStartLockFilesNoRun(): void {
+		$coordinator = $this->newCoordinatorThatCannotTakeTheStartLock();
+
+		try {
+			$coordinator->rebuild( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
+		} catch ( RebuildStartLockUnavailableException ) {
+		}
+
+		$this->assertNull( $this->newRunRepository()->getLatestRun( self::STORE ) );
+	}
+
+	public function testAResumeThatCannotTakeTheStartLockLeavesTheRunResumable(): void {
+		$this->recordFailedRunStoppedAt( cursor: 0, processed: 0 );
+		$coordinator = $this->newCoordinatorThatCannotTakeTheStartLock();
+
+		try {
+			$coordinator->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+		} catch ( RebuildStartLockUnavailableException ) {
+		}
+
+		$this->assertSame( RebuildStatus::Failed, $this->newRunRepository()->getLatestRun( self::STORE )?->status );
 	}
 
 	public function testResumingAStoreThatIsNotConfiguredIsRefused(): void {
@@ -387,7 +518,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 	public function testResumingAStoreAlreadyRebuildingIsRefused(): void {
 		$this->registerStore( new SpyGraphDatabasePlugin() );
-		$this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli );
+		$this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$this->expectException( RebuildAlreadyRunningException::class );
 
@@ -410,7 +541,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testTheRunIsRecordedWithWhatItDidAndWhatStartedIt(): void {
-		$pageIds = $this->createSubjectPages( 'Recorded page' );
+		$this->createSubjectPages( 'Recorded page' );
 		$this->registerStore( new SpyGraphDatabasePlugin() );
 
 		$this->rebuild();
@@ -421,7 +552,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( RebuildTrigger::Cli, $storedRun->trigger );
 		$this->assertSame( 1, $storedRun->processed );
 		$this->assertSame( 0, $storedRun->failed );
-		$this->assertSame( $pageIds[0], $storedRun->cursor );
+		$this->assertSame( RebuildPhase::Deletions, $storedRun->phase, 'a run that reconciled the wiki got to its second phase' );
 	}
 
 	public function testAFailedRunIsRecordedSoItCanBeResumed(): void {
@@ -513,8 +644,31 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		return new GraphRebuildCoordinator(
 			stores: [ self::STORE => new SpyGraphDatabasePlugin() ],
 			runs: $this->newRunRepository(),
+			startLock: $this->newStartLock(),
 			executor: $this->newExecutor( new InMemorySubjectPageIdsLookup(), new NullLogger() ),
+			jobQueue: new SpyRebuildJobQueue(),
 			newPageRebuilder: static fn (): SubjectPageRebuilder => throw new LogicException( 'unresolvable backend' ),
+			logger: new NullLogger(),
+		);
+	}
+
+	private function newStartLock(): RebuildStartLock {
+		return new DatabaseRebuildStartLock( MediaWikiServices::getInstance()->getConnectionProvider() );
+	}
+
+	/**
+	 * Wired by hand, because a lock another process is holding cannot be produced from inside one test.
+	 */
+	private function newCoordinatorThatCannotTakeTheStartLock(): GraphRebuildCoordinator {
+		return new GraphRebuildCoordinator(
+			stores: [ self::STORE => new SpyGraphDatabasePlugin() ],
+			runs: $this->newRunRepository(),
+			startLock: new RefusingRebuildStartLock(),
+			executor: $this->newExecutor( new InMemorySubjectPageIdsLookup(), new NullLogger() ),
+			jobQueue: new SpyRebuildJobQueue(),
+			newPageRebuilder: static fn ( GraphDatabasePlugin $store ): SubjectPageRebuilder
+				=> NeoWikiExtension::getInstance()->newSubjectPageRebuilderFor( $store ),
+			logger: new NullLogger(),
 		);
 	}
 
@@ -524,14 +678,15 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	private function executeOver(
 		SubjectPageIdsLookup $subjectPageIds,
 		GraphDatabasePlugin $store,
-		LoggerInterface $logger
+		LoggerInterface $logger,
+		RebuildBatchObserver $observer = new NullRebuildBatchObserver()
 	): RebuildRun {
 		return $this->newExecutor( $subjectPageIds, $logger )->execute(
-			run: $this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli ),
+			run: $this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running ),
 			store: $store,
 			pageRebuilder: NeoWikiExtension::getInstance()->newSubjectPageRebuilderFor( $store ),
 			batchSize: 200,
-			observer: new NullRebuildBatchObserver()
+			observer: $observer
 		);
 	}
 
@@ -545,10 +700,26 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * A run that got through the wiki's pages and stopped while removing the ones MediaWiki no longer has.
+	 */
+	private function recordFailedRunInTheDeletionPhase(): RebuildRun {
+		$repository = $this->newRunRepository();
+
+		$failedRun = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running )
+			->withProgress( cursor: 0, processed: 1, failed: 0 )
+			->enteredDeletionPhase()
+			->failed( 'the store went away' );
+
+		$repository->updateRun( $failedRun );
+
+		return $failedRun;
+	}
+
 	private function recordFailedRunStoppedAt( int $cursor, int $processed ): RebuildRun {
 		$repository = $this->newRunRepository();
 
-		$failedRun = $repository->startRun( self::STORE, RebuildTrigger::Cli )
+		$failedRun = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running )
 			->withProgress( cursor: $cursor, processed: $processed, failed: 0 )
 			->failed( 'the store went away' );
 

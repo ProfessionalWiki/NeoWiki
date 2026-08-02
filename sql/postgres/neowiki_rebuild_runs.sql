@@ -6,6 +6,7 @@ CREATE TABLE neowiki_rebuild_runs (
   nwrr_id SERIAL NOT NULL,
   nwrr_store TEXT NOT NULL,
   nwrr_status TEXT NOT NULL,
+  nwrr_phase TEXT DEFAULT 'pages' NOT NULL,
   nwrr_cursor INT DEFAULT 0 NOT NULL,
   nwrr_processed INT DEFAULT 0 NOT NULL,
   nwrr_failed INT DEFAULT 0 NOT NULL,

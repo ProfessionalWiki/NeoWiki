@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildPhase;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
@@ -15,7 +16,8 @@ use Wikimedia\Rdbms\IConnectionProvider;
  * Stores rebuild runs in the `neowiki_rebuild_runs` table.
  *
  * Reads go to the primary database, not a replica: a run's own progress updates must be visible to the
- * batch that follows them, and the check for a concurrent run must see one started moments ago.
+ * batch that follows them, a cancellation must be visible to the batch that follows it, and the check
+ * for a concurrent run must see one started moments ago.
  */
 class DatabaseRebuildRunRepository implements RebuildRunRepository {
 
@@ -32,19 +34,21 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 	) {
 	}
 
-	public function startRun( string $store, RebuildTrigger $trigger ): RebuildRun {
+	public function startRun( string $store, RebuildTrigger $trigger, RebuildStatus $status ): RebuildRun {
 		$db = $this->connectionProvider->getPrimaryDatabase();
+		$started = $db->timestamp();
 
 		$db->newInsertQueryBuilder()
 			->insertInto( self::TABLE )
 			->row( [
 				'nwrr_store' => $store,
-				'nwrr_status' => RebuildStatus::Running->value,
+				'nwrr_status' => $status->value,
+				'nwrr_phase' => RebuildPhase::Pages->value,
 				'nwrr_cursor' => 0,
 				'nwrr_processed' => 0,
 				'nwrr_failed' => 0,
 				'nwrr_trigger' => $trigger->value,
-				'nwrr_started' => $db->timestamp(),
+				'nwrr_started' => $started,
 				'nwrr_finished' => null,
 				'nwrr_error' => null,
 			] )
@@ -54,17 +58,19 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 		return new RebuildRun(
 			id: $db->insertId(),
 			store: $store,
-			status: RebuildStatus::Running,
+			status: $status,
+			phase: RebuildPhase::Pages,
 			cursor: 0,
 			processed: 0,
 			failed: 0,
 			trigger: $trigger,
+			started: $started,
 		);
 	}
 
 	/**
 	 * The finish time follows from the status rather than being passed in, so a run cannot be stored as
-	 * still going yet finished, or as ended without saying when. Reopening a terminal run clears it.
+	 * still going yet finished, or as ended without saying when. Picking a terminal run back up clears it.
 	 */
 	public function updateRun( RebuildRun $run ): void {
 		$db = $this->connectionProvider->getPrimaryDatabase();
@@ -73,6 +79,7 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 			->update( self::TABLE )
 			->set( [
 				'nwrr_status' => $run->status->value,
+				'nwrr_phase' => $run->phase->value,
 				'nwrr_cursor' => $run->cursor,
 				'nwrr_processed' => $run->processed,
 				'nwrr_failed' => $run->failed,
@@ -84,10 +91,14 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 			->execute();
 	}
 
+	public function getRun( int $id ): ?RebuildRun {
+		return $this->getMostRecentRun( [ 'nwrr_id' => $id ] );
+	}
+
 	public function getActiveRun( string $store ): ?RebuildRun {
 		return $this->getMostRecentRun( [
 			'nwrr_store' => $store,
-			'nwrr_status' => RebuildStatus::Running->value,
+			'nwrr_status' => [ RebuildStatus::Queued->value, RebuildStatus::Running->value ],
 		] );
 	}
 
@@ -95,11 +106,18 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 		return $this->getMostRecentRun( [ 'nwrr_store' => $store ] );
 	}
 
+	public function getLastSuccessfulRun( string $store ): ?RebuildRun {
+		return $this->getMostRecentRun( [
+			'nwrr_store' => $store,
+			'nwrr_status' => RebuildStatus::Succeeded->value,
+		] );
+	}
+
 	/**
 	 * Ties on the start time are broken by id, so concurrent starts within one timestamp second still
 	 * order deterministically, and "the latest run" is always one run.
 	 *
-	 * @param array<string, string> $conditions
+	 * @param array<string, string|string[]|int> $conditions
 	 */
 	private function getMostRecentRun( array $conditions ): ?RebuildRun {
 		$row = $this->connectionProvider->getPrimaryDatabase()->newSelectQueryBuilder()
@@ -114,16 +132,17 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 	}
 
 	/**
-	 * A row whose status or trigger this version does not recognise — written by a newer one, or edited
-	 * by hand — reads as no run at all, rather than throwing from wherever a rebuild happens to ask. The
-	 * cost is that a rebuild may be started alongside such a row; the cost of the alternative is a fatal
-	 * in the middle of one.
+	 * A row whose status, phase or trigger this version does not recognise — written by a newer one, or
+	 * edited by hand — reads as no run at all, rather than throwing from wherever a rebuild happens to
+	 * ask. The cost is that a rebuild may be started alongside such a row; the cost of the alternative is
+	 * a fatal in the middle of one.
 	 */
 	private static function newRunFromRow( stdClass $row ): ?RebuildRun {
 		$status = RebuildStatus::tryFrom( (string)$row->nwrr_status );
+		$phase = RebuildPhase::tryFrom( (string)$row->nwrr_phase );
 		$trigger = RebuildTrigger::tryFrom( (string)$row->nwrr_trigger );
 
-		if ( $status === null || $trigger === null ) {
+		if ( $status === null || $phase === null || $trigger === null ) {
 			return null;
 		}
 
@@ -131,11 +150,14 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 			id: (int)$row->nwrr_id,
 			store: (string)$row->nwrr_store,
 			status: $status,
+			phase: $phase,
 			cursor: (int)$row->nwrr_cursor,
 			processed: (int)$row->nwrr_processed,
 			failed: (int)$row->nwrr_failed,
 			trigger: $trigger,
 			error: $row->nwrr_error === null ? null : (string)$row->nwrr_error,
+			started: (string)$row->nwrr_started,
+			finished: $row->nwrr_finished === null ? null : (string)$row->nwrr_finished,
 		);
 	}
 

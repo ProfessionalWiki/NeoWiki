@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use MediaWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildPhase;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
@@ -21,7 +22,7 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 	private const OTHER_STORE = 'EDM';
 
 	public function testAStartedRunIsRunningWithNothingDoneYet(): void {
-		$run = $this->newRepository()->startRun( self::STORE, RebuildTrigger::Cli );
+		$run = $this->newRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$this->assertSame( self::STORE, $run->store );
 		$this->assertSame( RebuildStatus::Running, $run->status );
@@ -35,15 +36,15 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 	public function testEachStartedRunGetsItsOwnId(): void {
 		$repository = $this->newRepository();
 
-		$first = $repository->startRun( self::STORE, RebuildTrigger::Cli );
-		$second = $repository->startRun( self::OTHER_STORE, RebuildTrigger::Cli );
+		$first = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+		$second = $repository->startRun( self::OTHER_STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$this->assertNotSame( $first->id, $second->id );
 	}
 
 	public function testProgressIsReadBackAsItWasWritten(): void {
 		$repository = $this->newRepository();
-		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli );
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$repository->updateRun( $run->withProgress( cursor: 4200, processed: 37, failed: 5 ) );
 
@@ -56,7 +57,7 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 
 	public function testTheErrorThatFailedARunIsReadBack(): void {
 		$repository = $this->newRepository();
-		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli );
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$repository->updateRun( $run->failed( 'the store went away' ) );
 
@@ -73,11 +74,98 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testAnErrorTooLongForTheColumnIsCutAtACharacterBoundary(): void {
 		$repository = $this->newRepository();
-		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli );
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$repository->updateRun( $run->failed( str_repeat( '★', 30000 ) ) );
 
 		$this->assertSame( str_repeat( '★', 21843 ), $repository->getLatestRun( self::STORE )?->error );
+	}
+
+	public function testAStartedRunBeginsAtTheWikisPages(): void {
+		$run = $this->newRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+
+		$this->assertSame( RebuildPhase::Pages, $run->phase );
+	}
+
+	public function testARunRecordsWhenItStarted(): void {
+		$run = $this->newRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+
+		$this->assertNotNull( $run->started );
+	}
+
+	public function testTheStoredRunSaysWhenItStartedAndFinished(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+		$repository->updateRun( $run->succeeded() );
+
+		$storedRun = $repository->getLatestRun( self::STORE );
+
+		$this->assertNotNull( $storedRun?->started );
+		$this->assertNotNull( $storedRun->finished );
+	}
+
+	public function testThePhaseARunReachedIsReadBack(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+
+		$repository->updateRun( $run->enteredDeletionPhase() );
+
+		$this->assertSame( RebuildPhase::Deletions, $repository->getActiveRun( self::STORE )?->phase );
+	}
+
+	/**
+	 * How a process that did not start a run — a background batch — finds out what has become of it.
+	 */
+	public function testARunIsReadBackById(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+		$repository->updateRun( $run->cancelled() );
+
+		$storedRun = $repository->getRun( $run->id );
+
+		$this->assertSame( $run->id, $storedRun?->id );
+		$this->assertSame( RebuildStatus::Cancelled, $storedRun->status );
+	}
+
+	public function testThereIsNoRunUnderAnIdNothingWasFiledUnder(): void {
+		$this->assertNull( $this->newRepository()->getRun( 123456 ) );
+	}
+
+	/**
+	 * A store has one rebuild ahead of it whether or not anything has begun working on it, so a queued
+	 * run has to block a second one just as a running one does.
+	 */
+	public function testAQueuedRunIsTheStoresActiveRun(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Api, RebuildStatus::Queued );
+
+		$activeRun = $repository->getActiveRun( self::STORE );
+
+		$this->assertSame( $run->id, $activeRun?->id );
+		$this->assertSame( RebuildStatus::Queued, $activeRun->status );
+	}
+
+	public function testAStoreThatWasNeverRebuiltToTheEndHasNoSuccessfulRun(): void {
+		$repository = $this->newRepository();
+		$repository->updateRun(
+			$repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running )->failed( 'boom' )
+		);
+
+		$this->assertNull( $repository->getLastSuccessfulRun( self::STORE ) );
+	}
+
+	public function testTheLastSuccessfulRunIsTheLastOneThatSucceeded(): void {
+		$repository = $this->newRepository();
+		$repository->updateRun(
+			$repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running )->succeeded()
+		);
+		$lastSucceeded = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+		$repository->updateRun( $lastSucceeded->succeeded() );
+		$repository->updateRun(
+			$repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running )->failed( 'boom' )
+		);
+
+		$this->assertSame( $lastSucceeded->id, $repository->getLastSuccessfulRun( self::STORE )?->id );
 	}
 
 	public function testAStoreWithNoRunsHasNoActiveRun(): void {
@@ -90,7 +178,7 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 
 	public function testAFinishedRunIsNoLongerActive(): void {
 		$repository = $this->newRepository();
-		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli );
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$repository->updateRun( $run->succeeded() );
 
@@ -99,7 +187,7 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 
 	public function testAFinishedRunIsStillTheLatestOne(): void {
 		$repository = $this->newRepository();
-		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli );
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 		$repository->updateRun( $run->succeeded() );
 
 		$latestRun = $repository->getLatestRun( self::STORE );
@@ -111,9 +199,9 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 
 	public function testTheLatestRunIsTheOneStartedLast(): void {
 		$repository = $this->newRepository();
-		$repository->updateRun( $repository->startRun( self::STORE, RebuildTrigger::Cli )->succeeded() );
-		$repository->updateRun( $repository->startRun( self::STORE, RebuildTrigger::Cli )->failed( 'boom' ) );
-		$lastStartedRun = $repository->startRun( self::STORE, RebuildTrigger::Cli );
+		$repository->updateRun( $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running )->succeeded() );
+		$repository->updateRun( $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running )->failed( 'boom' ) );
+		$lastStartedRun = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 		$repository->updateRun( $lastStartedRun->succeeded() );
 
 		$latestRun = $repository->getLatestRun( self::STORE );
@@ -124,39 +212,39 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 
 	public function testAnotherStoresRunIsNotThisStoresActiveRun(): void {
 		$repository = $this->newRepository();
-		$repository->startRun( self::OTHER_STORE, RebuildTrigger::Cli );
+		$repository->startRun( self::OTHER_STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$this->assertNull( $repository->getActiveRun( self::STORE ) );
 	}
 
 	public function testAnotherStoresRunIsNotThisStoresLatestRun(): void {
 		$repository = $this->newRepository();
-		$repository->startRun( self::OTHER_STORE, RebuildTrigger::Cli );
+		$repository->startRun( self::OTHER_STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$this->assertNull( $repository->getLatestRun( self::STORE ) );
 	}
 
 	public function testARunningRunHasNotEndedYet(): void {
-		$run = $this->newRepository()->startRun( self::STORE, RebuildTrigger::Cli );
+		$run = $this->newRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$this->assertNull( $this->readFinishedTime( $run ) );
 	}
 
 	public function testAFinishedRunRecordsWhenItEnded(): void {
 		$repository = $this->newRepository();
-		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli );
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 
 		$repository->updateRun( $run->succeeded() );
 
 		$this->assertNotNull( $this->readFinishedTime( $run ) );
 	}
 
-	public function testReopeningARunClearsWhenItEnded(): void {
+	public function testPickingAnEndedRunBackUpClearsWhenItEnded(): void {
 		$repository = $this->newRepository();
-		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli );
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
 		$repository->updateRun( $run->failed( 'boom' ) );
 
-		$repository->updateRun( $run->reopened() );
+		$repository->updateRun( $run->started() );
 
 		$this->assertNull( $this->readFinishedTime( $run ) );
 	}

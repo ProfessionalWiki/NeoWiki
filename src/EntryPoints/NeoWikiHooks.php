@@ -184,9 +184,13 @@ class NeoWikiHooks {
 	 * @see LoadExtensionSchemaUpdatesHook
 	 */
 	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ): void {
-		$updater->addExtensionTable(
+		$sqlDirectory = dirname( __DIR__, 2 ) . '/sql/' . $updater->getDB()->getType();
+
+		$updater->addExtensionTable( 'neowiki_rebuild_runs', $sqlDirectory . '/neowiki_rebuild_runs.sql' );
+		$updater->addExtensionField(
 			'neowiki_rebuild_runs',
-			dirname( __DIR__, 2 ) . '/sql/' . $updater->getDB()->getType() . '/neowiki_rebuild_runs.sql'
+			'nwrr_phase',
+			$sqlDirectory . '/patch-neowiki_rebuild_runs-nwrr_phase.sql'
 		);
 
 		$updater->addExtensionUpdate( [ [ self::class, 'initializeGraphDatabases' ] ] );

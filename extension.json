@@ -68,6 +68,13 @@
 		"ScribuntoExternalLibraries": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onScribuntoExternalLibraries"
 	},
 
+	"JobClasses": {
+		"neowikiGraphRebuild": {
+			"class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Jobs\\GraphRebuildJob",
+			"needsPage": false
+		}
+	},
+
 	"ContentHandlers": {
 		"NeoWikiSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SubjectContentHandler",
 		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SchemaContentHandler",

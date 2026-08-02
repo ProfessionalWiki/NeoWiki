@@ -27,7 +27,7 @@ require_once $basePath . '/maintenance/Maintenance.php';
  */
 class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver {
 
-	private const DEFAULT_BATCH_SIZE = 200;
+	private const DEFAULT_BATCH_SIZE = GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE;
 
 	/**
 	 * How many of a store's failing pages the report names before pointing at the log for the rest.
@@ -38,6 +38,12 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	 * @var int[] The pages the store now being rebuilt could not reconcile
 	 */
 	private array $failedPageIds = [];
+
+	/**
+	 * Pages this invocation has removed from the store now being rebuilt. Counted here rather than read
+	 * off the run, because a resumed run's earlier removals happened in another process.
+	 */
+	private int $removedPages = 0;
 
 	public function __construct() {
 		parent::__construct();
@@ -130,6 +136,7 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	private function rebuildStore( GraphRebuildCoordinator $coordinator, string $storeName, int $batchSize ): bool {
 		$this->outputChanneled( $storeName . ': starting' );
 		$this->failedPageIds = [];
+		$this->removedPages = 0;
 
 		try {
 			$run = $this->hasOption( 'resume' )
@@ -251,9 +258,11 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 		$this->waitForReplication();
 	}
 
-	public function afterDeletionBatch( RebuildRun $run, int $removedSoFar, int $totalDeleted ): void {
+	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch, int $totalDeleted ): void {
+		$this->removedPages += $removedInBatch;
+
 		$this->outputChanneled(
-			$run->store . ': ' . $removedSoFar . '/' . $totalDeleted . ' deleted pages removed'
+			$run->store . ': ' . $this->removedPages . '/' . $totalDeleted . ' deleted pages removed'
 		);
 		$this->waitForReplication();
 	}

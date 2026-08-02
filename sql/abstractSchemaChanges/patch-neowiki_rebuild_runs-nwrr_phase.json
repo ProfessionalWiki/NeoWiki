@@ -1,5 +1,115 @@
-[
-	{
+{
+	"before": {
+		"name": "neowiki_rebuild_runs",
+		"comment": "One row per graph rebuild run. A run reprojects the wiki into exactly one graph store, so rebuilding every store is one row each. The row carries the progress a resumed run picks up from, and outlives the run as its record.",
+		"columns": [
+			{
+				"name": "nwrr_id",
+				"type": "integer",
+				"options": {
+					"autoincrement": true,
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "nwrr_store",
+				"comment": "Name of the graph store this run rebuilds, as configured (see SparqlStoreConfig::$name and Neo4jPlugin::STORE_NAME)",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 255
+				}
+			},
+			{
+				"name": "nwrr_status",
+				"comment": "queued, running, succeeded, failed or cancelled",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 32
+				}
+			},
+			{
+				"name": "nwrr_cursor",
+				"comment": "Page id the run last dealt with in its current phase. A resumed run continues after it. 0 before the phase has read a page.",
+				"type": "integer",
+				"options": {
+					"notnull": true,
+					"unsigned": true,
+					"default": 0
+				}
+			},
+			{
+				"name": "nwrr_processed",
+				"comment": "Pages projected into the store so far",
+				"type": "integer",
+				"options": {
+					"notnull": true,
+					"unsigned": true,
+					"default": 0
+				}
+			},
+			{
+				"name": "nwrr_failed",
+				"comment": "Pages the run could not reconcile, having failed to project or to remove them",
+				"type": "integer",
+				"options": {
+					"notnull": true,
+					"unsigned": true,
+					"default": 0
+				}
+			},
+			{
+				"name": "nwrr_trigger",
+				"comment": "What started the run: cli, api, ui or auto",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 32
+				}
+			},
+			{
+				"name": "nwrr_started",
+				"type": "mwtimestamp",
+				"options": {
+					"notnull": true
+				}
+			},
+			{
+				"name": "nwrr_finished",
+				"comment": "When the run reached a terminal status. Null while it is running.",
+				"type": "mwtimestamp",
+				"options": {
+					"notnull": false
+				}
+			},
+			{
+				"name": "nwrr_error",
+				"comment": "The store-level error that failed the run. Null unless it failed.",
+				"type": "blob",
+				"options": {
+					"notnull": false,
+					"length": 65530
+				}
+			}
+		],
+		"indexes": [
+			{
+				"name": "nwrr_store_started",
+				"comment": "Index for finding a store's active run, and its most recent one",
+				"columns": [
+					"nwrr_store",
+					"nwrr_started"
+				],
+				"unique": false
+			}
+		],
+		"pk": [
+			"nwrr_id"
+		]
+	},
+	"after": {
 		"name": "neowiki_rebuild_runs",
 		"comment": "One row per graph rebuild run. A run reprojects the wiki into exactly one graph store, so rebuilding every store is one row each. The row carries the progress a resumed run picks up from, and outlives the run as its record.",
 		"columns": [
@@ -119,4 +229,4 @@
 			"nwrr_id"
 		]
 	}
-]
+}

@@ -147,7 +147,9 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
 use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
+use ProfessionalWiki\NeoWiki\Infrastructure\MediaWikiRebuildJobQueue;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildRunRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
@@ -944,6 +946,9 @@ class NeoWikiExtension {
 		return new GraphRebuildCoordinator(
 			stores: $this->getNamedGraphDatabasePlugins(),
 			runs: $runs,
+			startLock: new DatabaseRebuildStartLock(
+				MediaWikiServices::getInstance()->getConnectionProvider()
+			),
 			executor: new GraphRebuildExecutor(
 				subjectPageIds: $this->newSubjectPageIdsLookup(),
 				deletedSubjectPageIds: $this->newDeletedSubjectPageIdsLookup(),
@@ -951,8 +956,12 @@ class NeoWikiExtension {
 				titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 				logger: LoggerFactory::getInstance( 'NeoWiki' ),
 			),
+			jobQueue: new MediaWikiRebuildJobQueue(
+				MediaWikiServices::getInstance()->getJobQueueGroup()
+			),
 			newPageRebuilder: fn ( GraphDatabasePlugin $store ): SubjectPageRebuilder
 				=> $this->newSubjectPageRebuilderFor( $store ),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
 

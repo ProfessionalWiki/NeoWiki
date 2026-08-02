@@ -7,18 +7,14 @@ namespace ProfessionalWiki\NeoWiki\Application\GraphRebuild;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 
 /**
- * What a rebuild has got through so far, accumulated as it walks the wiki.
+ * What a rebuild batch got through, accumulated as it walks its pages.
  *
- * It is mutable where {@see RebuildRun} is not, because a run that fails partway must still be recorded
- * with everything it did reconcile before it stopped.
+ * It is mutable where {@see RebuildRun} is not, because a batch that fails partway must still be
+ * recorded with everything it did reconcile before it stopped.
  *
- * The cursor advances past every page the run has dealt with, whether it projected, skipped or failed
- * on it. Resuming is about not redoing settled work, not about retrying failures: a page that failed is
- * counted and logged, and the next run over the wiki picks it up.
- *
- * It covers the walk over the wiki's pages only. Removing the pages MediaWiki no longer has is not
- * checkpointed, so a resumed run redoes that phase — which is harmless, since removing a page the store
- * does not have is a no-op, but does mean a removal that keeps failing is counted once per attempt.
+ * The cursor advances past every page the batch has dealt with, whether it projected, skipped, removed
+ * or failed on it. Resuming is about not redoing settled work, not about retrying failures: a page that
+ * failed is counted and logged, and the next run over the wiki picks it up.
  */
 class RebuildProgress {
 
@@ -55,10 +51,19 @@ class RebuildProgress {
 	}
 
 	/**
+	 * A page MediaWiki no longer has is gone from the store too. Not counted as processed: `processed`
+	 * reports the wiki's pages projected, which is what progress is measured against.
+	 */
+	public function pageRemoved( int $pageId ): void {
+		$this->cursor = $pageId;
+	}
+
+	/**
 	 * A page MediaWiki no longer has could not be removed from the store, so the store still answers
 	 * queries about it. Counted with the projection failures: both are pages left unreconciled.
 	 */
-	public function deletionFailed(): void {
+	public function removalFailed( int $pageId ): void {
+		$this->cursor = $pageId;
 		$this->failed++;
 	}
 
