@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Maintenance;
 
-use Closure;
 use Exception;
 use Maintenance;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
@@ -45,6 +44,14 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	 * off the run, because a resumed run's earlier removals happened in another process.
 	 */
 	private int $removedPages = 0;
+
+	/**
+	 * What the store now being rebuilt has to get through in each phase, for the progress lines to count
+	 * against. Counted once per store: each is a scan of the wiki, and a rebuild is many batches. The
+	 * cost is that a wiki edited under a long rebuild is measured against the size it started at.
+	 */
+	private int $totalSubjectPages = 0;
+	private int $totalDeletedSubjectPages = 0;
 
 	public function __construct() {
 		parent::__construct();
@@ -138,6 +145,7 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 		$this->outputChanneled( $storeName . ': starting' );
 		$this->failedPageIds = [];
 		$this->removedPages = 0;
+		$this->countWhatThereIsToDo();
 
 		try {
 			$run = $this->hasOption( 'resume' )
@@ -248,22 +256,31 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 		return $batchSize < 1 ? null : $batchSize;
 	}
 
+	private function countWhatThereIsToDo(): void {
+		$extension = NeoWikiExtension::getInstance();
+
+		$this->totalSubjectPages = $extension->newSubjectPageIdsLookup()->countSubjectPages();
+		$this->totalDeletedSubjectPages = $extension->newDeletedSubjectPageIdsLookup()->countDeletedSubjectPages();
+	}
+
 	public function pageFailed( int $pageId ): void {
 		$this->failedPageIds[] = $pageId;
 	}
 
-	public function afterPageBatch( RebuildRun $run, Closure $totalPages ): void {
+	public function afterPageBatch( RebuildRun $run ): void {
 		$this->outputChanneled(
-			$run->store . ': ' . $run->processed . '/' . $totalPages() . ' pages (failed ' . $run->failed . ')'
+			$run->store . ': ' . $run->processed . '/' . $this->totalSubjectPages
+			. ' pages (failed ' . $run->failed . ')'
 		);
 		$this->waitForReplication();
 	}
 
-	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch, Closure $totalDeleted ): void {
+	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch ): void {
 		$this->removedPages += $removedInBatch;
 
 		$this->outputChanneled(
-			$run->store . ': ' . $this->removedPages . '/' . $totalDeleted() . ' deleted pages removed'
+			$run->store . ': ' . $this->removedPages . '/' . $this->totalDeletedSubjectPages
+			. ' deleted pages removed'
 		);
 		$this->waitForReplication();
 	}

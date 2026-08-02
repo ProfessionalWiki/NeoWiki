@@ -1055,14 +1055,14 @@ class NeoWikiExtension {
 		);
 	}
 
-	private function newSubjectPageIdsLookup(): SubjectPageIdsLookup {
+	public function newSubjectPageIdsLookup(): SubjectPageIdsLookup {
 		return new DatabaseSubjectPageIdsLookup(
 			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
 			MediaWikiServices::getInstance()->getSlotRoleStore()
 		);
 	}
 
-	private function newDeletedSubjectPageIdsLookup(): DeletedSubjectPageIdsLookup {
+	public function newDeletedSubjectPageIdsLookup(): DeletedSubjectPageIdsLookup {
 		return new DatabaseDeletedSubjectPageIdsLookup(
 			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
 			MediaWikiServices::getInstance()->getSlotRoleStore()

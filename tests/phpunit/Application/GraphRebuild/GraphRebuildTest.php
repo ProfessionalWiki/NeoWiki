@@ -127,16 +127,6 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testProgressIsReportedAgainstTheNumberOfSubjectPages(): void {
-		$this->createSubjectPages( 'One', 'Two', 'Three' );
-		$this->registerStore( new SpyGraphDatabasePlugin() );
-		$observer = new SpyRebuildBatchObserver();
-
-		$this->rebuild( batchSize: 2, observer: $observer );
-
-		$this->assertSame( [ 3, 3 ], $observer->reportedPageTotals );
-	}
-
 	public function testAPageTheStoreRejectsIsCountedAndTheRestStillProject(): void {
 		$pageIds = $this->createSubjectPages( 'Fine before', 'Rejected', 'Fine after' );
 		$store = new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[1] ] );
@@ -219,7 +209,6 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->rebuild( batchSize: 2, observer: $observer );
 
 		$this->assertSame( [ 2, 1 ], $observer->removedInBatch, 'each batch reports what it removed' );
-		$this->assertSame( [ 3, 3 ], $observer->reportedDeletionTotals );
 	}
 
 	public function testAWikiDatabaseFailureEndsTheRunRatherThanCountingOnePage(): void {

@@ -225,7 +225,7 @@ class GraphRebuildExecutor {
 		$this->reportFailedPages( 'project', $failures, $observer );
 
 		$updated = $this->recordRun( $progress->applyTo( $run ) );
-		$observer->afterPageBatch( $updated, fn (): int => $this->subjectPageIds->countSubjectPages() );
+		$observer->afterPageBatch( $updated );
 
 		return $updated;
 	}
@@ -368,11 +368,7 @@ class GraphRebuildExecutor {
 		$this->reportFailedPages( 'remove', $failures, $observer );
 
 		$updated = $this->recordRun( $progress->applyTo( $run ) );
-		$observer->afterDeletionBatch(
-			$updated,
-			$removed,
-			fn (): int => $this->deletedSubjectPageIds->countDeletedSubjectPages()
-		);
+		$observer->afterDeletionBatch( $updated, $removed );
 
 		return $updated;
 	}

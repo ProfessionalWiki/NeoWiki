@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\GraphRebuild;
 
-use Closure;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 
 /**
@@ -14,9 +13,9 @@ use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
  * reports progress and the one point at which it may hold the rebuild up — the maintenance script waits
  * for the replicas to catch up here.
  *
- * Each total is passed as something to call rather than as a number, because counting one is a scan of
- * the wiki that an observer reporting nothing must not pay for. Called, it counts afresh, so a rebuild
- * of a wiki being edited under it reports against the wiki's current size.
+ * What each batch reports is what that batch did. How much there is to do in total is not passed, because
+ * only one caller wants it and counting it is a scan of the wiki: an observer that wants a denominator
+ * counts one for itself, once, rather than being handed one per batch.
  */
 interface RebuildBatchObserver {
 
@@ -26,16 +25,12 @@ interface RebuildBatchObserver {
 	 */
 	public function pageFailed( int $pageId ): void;
 
-	/**
-	 * @param Closure(): int $totalPages How many pages of the wiki carry a Subject.
-	 */
-	public function afterPageBatch( RebuildRun $run, Closure $totalPages ): void;
+	public function afterPageBatch( RebuildRun $run ): void;
 
 	/**
 	 * @param int $removedInBatch Pages this batch removed, not counting the batches before it: a run
 	 *        continued in another process has no memory of what those removed.
-	 * @param Closure(): int $totalDeleted How many pages MediaWiki no longer has once carried Subjects.
 	 */
-	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch, Closure $totalDeleted ): void;
+	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch ): void;
 
 }

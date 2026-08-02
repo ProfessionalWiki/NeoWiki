@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
-use Closure;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 
@@ -20,19 +19,9 @@ class SpyRebuildBatchObserver implements RebuildBatchObserver {
 	public array $pageBatches = [];
 
 	/**
-	 * @var int[]
-	 */
-	public array $reportedPageTotals = [];
-
-	/**
 	 * @var int[] What each deletion batch removed on its own.
 	 */
 	public array $removedInBatch = [];
-
-	/**
-	 * @var int[]
-	 */
-	public array $reportedDeletionTotals = [];
 
 	/**
 	 * @var int[]
@@ -43,14 +32,12 @@ class SpyRebuildBatchObserver implements RebuildBatchObserver {
 		$this->failedPageIds[] = $pageId;
 	}
 
-	public function afterPageBatch( RebuildRun $run, Closure $totalPages ): void {
+	public function afterPageBatch( RebuildRun $run ): void {
 		$this->pageBatches[] = $run;
-		$this->reportedPageTotals[] = $totalPages();
 	}
 
-	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch, Closure $totalDeleted ): void {
+	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch ): void {
 		$this->removedInBatch[] = $removedInBatch;
-		$this->reportedDeletionTotals[] = $totalDeleted();
 	}
 
 }
