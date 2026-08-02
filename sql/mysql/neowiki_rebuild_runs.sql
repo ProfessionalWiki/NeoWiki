@@ -6,6 +6,7 @@ CREATE TABLE /*_*/neowiki_rebuild_runs (
   nwrr_id INT UNSIGNED AUTO_INCREMENT NOT NULL,
   nwrr_store VARBINARY(255) NOT NULL,
   nwrr_status VARBINARY(32) NOT NULL,
+  nwrr_phase VARBINARY(32) DEFAULT 'pages' NOT NULL,
   nwrr_cursor INT UNSIGNED DEFAULT 0 NOT NULL,
   nwrr_processed INT UNSIGNED DEFAULT 0 NOT NULL,
   nwrr_failed INT UNSIGNED DEFAULT 0 NOT NULL,

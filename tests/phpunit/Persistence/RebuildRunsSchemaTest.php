@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence;
 
+use GenerateSchemaChangeSql;
 use GenerateSchemaSql;
 use MediaWikiIntegrationTestCase;
 
@@ -38,6 +39,34 @@ class RebuildRunsSchemaTest extends MediaWikiIntegrationTestCase {
 			) ),
 			self::withoutSourcePath( (string)file_get_contents( $generatedPath ) ),
 			'run `make dbschema` to regenerate the ' . $databaseType . ' schema'
+		);
+	}
+
+	/**
+	 * The patch that adds a column to an already-installed table is generated the same way and drifts the
+	 * same way, and an install that has the table but not the column is exactly what it exists for.
+	 *
+	 * @dataProvider databaseTypeProvider
+	 */
+	public function testGeneratedPhasePatchMatchesTheAbstractSchemaChange( string $databaseType ): void {
+		$extensionPath = dirname( __DIR__, 3 );
+		$generatedPath = $this->getNewTempFile();
+
+		$script = new GenerateSchemaChangeSql();
+		$script->loadWithArgv( [
+			'--json=' . $extensionPath . '/sql/abstractSchemaChanges/patch-neowiki_rebuild_runs-nwrr_phase.json',
+			'--sql=' . $generatedPath,
+			'--type=' . $databaseType,
+			'--quiet',
+		] );
+		$script->execute();
+
+		$this->assertSame(
+			self::withoutSourcePath( (string)file_get_contents(
+				$extensionPath . '/sql/' . $databaseType . '/patch-neowiki_rebuild_runs-nwrr_phase.sql'
+			) ),
+			self::withoutSourcePath( (string)file_get_contents( $generatedPath ) ),
+			'run `make dbschema` to regenerate the ' . $databaseType . ' schema change'
 		);
 	}
 

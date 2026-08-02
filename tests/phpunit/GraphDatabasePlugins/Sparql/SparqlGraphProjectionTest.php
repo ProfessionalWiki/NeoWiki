@@ -130,7 +130,10 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( '/graph/native/page/' . $pageId, $update );
 	}
 
-	private function deletePageByName( string $pageName ): void {
+	/**
+	 * The base class's, plus the deferred updates the projection this test watches runs in.
+	 */
+	protected function deletePageByName( string $pageName ): void {
 		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
 		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage( $page, $this->getTestSysop()->getUser() );
 

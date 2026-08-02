@@ -27,7 +27,7 @@ require_once $basePath . '/maintenance/Maintenance.php';
  */
 class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver {
 
-	private const DEFAULT_BATCH_SIZE = 200;
+	private const DEFAULT_BATCH_SIZE = GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE;
 
 	/**
 	 * How many of a store's failing pages the report names before pointing at the log for the rest.
@@ -38,6 +38,20 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	 * @var int[] The pages the store now being rebuilt could not reconcile
 	 */
 	private array $failedPageIds = [];
+
+	/**
+	 * Pages this invocation has removed from the store now being rebuilt. Counted here rather than read
+	 * off the run, because a resumed run's earlier removals happened in another process.
+	 */
+	private int $removedPages = 0;
+
+	/**
+	 * What the store now being rebuilt has to get through in each phase, for the progress lines to count
+	 * against. Counted once per store: each is a scan of the wiki, and a rebuild is many batches. The
+	 * cost is that a wiki edited under a long rebuild is measured against the size it started at.
+	 */
+	private int $totalSubjectPages = 0;
+	private int $totalDeletedSubjectPages = 0;
 
 	public function __construct() {
 		parent::__construct();
@@ -74,7 +88,8 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 			return false;
 		}
 
-		$coordinator = NeoWikiExtension::getInstance()->newGraphRebuildCoordinator();
+		$coordinator = NeoWikiExtension::getInstance()
+			->newGraphRebuildCoordinator( GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE );
 		$storeNames = $this->getStoreNames( $coordinator );
 
 		if ( $storeNames === [] ) {
@@ -130,6 +145,8 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	private function rebuildStore( GraphRebuildCoordinator $coordinator, string $storeName, int $batchSize ): bool {
 		$this->outputChanneled( $storeName . ': starting' );
 		$this->failedPageIds = [];
+		$this->removedPages = 0;
+		$this->countWhatThereIsToDo();
 
 		try {
 			$run = $this->hasOption( 'resume' )
@@ -240,20 +257,31 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 		return $batchSize < 1 ? null : $batchSize;
 	}
 
+	private function countWhatThereIsToDo(): void {
+		$extension = NeoWikiExtension::getInstance();
+
+		$this->totalSubjectPages = $extension->newSubjectPageIdsLookup()->countSubjectPages();
+		$this->totalDeletedSubjectPages = $extension->newDeletedSubjectPageIdsLookup()->countDeletedSubjectPages();
+	}
+
 	public function pageFailed( int $pageId ): void {
 		$this->failedPageIds[] = $pageId;
 	}
 
-	public function afterPageBatch( RebuildRun $run, int $totalPages ): void {
+	public function afterPageBatch( RebuildRun $run ): void {
 		$this->outputChanneled(
-			$run->store . ': ' . $run->processed . '/' . $totalPages . ' pages (failed ' . $run->failed . ')'
+			$run->store . ': ' . $run->processed . '/' . $this->totalSubjectPages
+			. ' pages (failed ' . $run->failed . ')'
 		);
 		$this->waitForReplication();
 	}
 
-	public function afterDeletionBatch( RebuildRun $run, int $removedSoFar, int $totalDeleted ): void {
+	public function afterDeletionBatch( RebuildRun $run, int $removedInBatch ): void {
+		$this->removedPages += $removedInBatch;
+
 		$this->outputChanneled(
-			$run->store . ': ' . $removedSoFar . '/' . $totalDeleted . ' deleted pages removed'
+			$run->store . ': ' . $this->removedPages . '/' . $this->totalDeletedSubjectPages
+			. ' deleted pages removed'
 		);
 		$this->waitForReplication();
 	}

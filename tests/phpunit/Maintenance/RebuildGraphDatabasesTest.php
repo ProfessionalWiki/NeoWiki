@@ -180,18 +180,6 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 	/**
 	 * @return int[]
 	 */
-	private function createSubjectPages( string ...$pageNames ): array {
-		$pageIds = [];
-
-		foreach ( $pageNames as $pageName ) {
-			$revision = $this->createPageWithSubjects( $pageName, TestSubject::build() );
-			$this->assertNotNull( $revision );
-			$pageIds[] = $revision->getPageId();
-		}
-
-		return $pageIds;
-	}
-
 	public function testAStoreThatCannotBeReachedExitsNonZero(): void {
 		$this->createPageWithSubjects( 'Page nobody projects', TestSubject::build() );
 		$this->registerNamedGraphDatabasePlugins( [ 'broken' => new ThrowingGraphDatabasePlugin() ] );
@@ -241,6 +229,23 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertStringContainsString( 'batched: 2/3 pages (failed 0)', $this->getScriptOutput() );
 		$this->assertStringContainsString( 'batched: 3/3 pages (failed 0)', $this->getScriptOutput() );
+	}
+
+	/**
+	 * Each batch reports what it removed, and the script keeps the running total, because a run continued
+	 * in another process has no memory of what the batches before it removed.
+	 */
+	public function testRemovalProgressAddsUpAcrossBatches(): void {
+		foreach ( [ 'First gone', 'Second gone', 'Third gone' ] as $pageName ) {
+			$this->createPageWithSubjects( $pageName, TestSubject::build() );
+			$this->deletePageByName( $pageName );
+		}
+		$this->registerNamedGraphDatabasePlugins( [ 'batched' => new SpyGraphDatabasePlugin() ] );
+
+		$this->runRebuild( [ '--store=batched', '--batch-size=2' ] );
+
+		$this->assertStringContainsString( 'batched: 2/3 deleted pages removed', $this->getScriptOutput() );
+		$this->assertStringContainsString( 'batched: 3/3 deleted pages removed', $this->getScriptOutput() );
 	}
 
 	/**
@@ -371,16 +376,6 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 
 	private function getScriptOutput(): string {
 		return $this->scriptOutput;
-	}
-
-	private function deletePageByName( string $pageName ): void {
-		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
-		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage(
-			$page,
-			$this->getTestSysop()->getUser()
-		);
-
-		$this->assertStatusGood( $deletePage->deleteUnsafe( 'test deletion' ) );
 	}
 
 }

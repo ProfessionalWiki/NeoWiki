@@ -30,7 +30,7 @@ class DatabaseDeletedSubjectPageIdsLookupTest extends NeoWikiIntegrationTestCase
 
 		$this->deletePageByName( 'Deleted page' );
 
-		$this->assertSame( [ $deleted->getPageId() ], $this->newLookup()->getDeletedSubjectPageIds() );
+		$this->assertSame( [ $deleted->getPageId() ], $this->newLookup()->getDeletedSubjectPageIdsAfter( 0, 100 ) );
 	}
 
 	public function testUndeletedPageIsNoLongerReported(): void {
@@ -39,7 +39,7 @@ class DatabaseDeletedSubjectPageIdsLookupTest extends NeoWikiIntegrationTestCase
 		$this->deletePageByName( 'Restored page' );
 		$this->undeletePageByName( 'Restored page' );
 
-		$this->assertSame( [], $this->newLookup()->getDeletedSubjectPageIds() );
+		$this->assertSame( [], $this->newLookup()->getDeletedSubjectPageIdsAfter( 0, 100 ) );
 	}
 
 	public function testDeletedPageWithoutSubjectsIsNotReported(): void {
@@ -51,7 +51,7 @@ class DatabaseDeletedSubjectPageIdsLookupTest extends NeoWikiIntegrationTestCase
 		$this->deletePageByName( 'Plain page' );
 		$this->deletePageByName( 'Deleted subject page' );
 
-		$this->assertSame( [ $subjectPage->getPageId() ], $this->newLookup()->getDeletedSubjectPageIds() );
+		$this->assertSame( [ $subjectPage->getPageId() ], $this->newLookup()->getDeletedSubjectPageIdsAfter( 0, 100 ) );
 	}
 
 	/**
@@ -64,7 +64,51 @@ class DatabaseDeletedSubjectPageIdsLookupTest extends NeoWikiIntegrationTestCase
 
 		$this->archiveRevisionOfExistingPage( $revision );
 
-		$this->assertSame( [], $this->newLookup()->getDeletedSubjectPageIds() );
+		$this->assertSame( [], $this->newLookup()->getDeletedSubjectPageIdsAfter( 0, 100 ) );
+	}
+
+	public function testWalksOnePageAtATimeFromTheCursor(): void {
+		$first = $this->createPageWithSubjects( 'First deleted page', TestSubject::build() );
+		$second = $this->createPageWithSubjects( 'Second deleted page', TestSubject::build() );
+		$this->deletePageByName( 'First deleted page' );
+		$this->deletePageByName( 'Second deleted page' );
+
+		$lookup = $this->newLookup();
+
+		$this->assertSame( [ $first->getPageId() ], $lookup->getDeletedSubjectPageIdsAfter( 0, 1 ) );
+		$this->assertSame(
+			[ $second->getPageId() ],
+			$lookup->getDeletedSubjectPageIdsAfter( $first->getPageId(), 1 )
+		);
+		$this->assertSame( [], $lookup->getDeletedSubjectPageIdsAfter( $second->getPageId(), 1 ) );
+	}
+
+	/**
+	 * A deleted page leaves one archive row per revision it had, so paging without making the ids distinct
+	 * first would fill a batch with one page repeated and never reach the next.
+	 */
+	public function testAPageWithSeveralArchivedRevisionsFillsOneSlotOfTheBatch(): void {
+		$firstRevision = $this->createPageWithSubjects( 'Twice edited page', TestSubject::build() );
+		$secondRevision = $this->createPageWithSubjects(
+			'Twice edited page',
+			TestSubject::build( label: 'A different label' )
+		);
+		// The premise: two archived revisions of one page. An edit storing identical content is a null
+		// edit, which creates no revision and would leave this testing nothing.
+		$this->assertNotSame( $firstRevision?->getId(), $secondRevision?->getId() );
+
+		$next = $this->createPageWithSubjects( 'Later page', TestSubject::build() );
+		$this->deletePageByName( 'Twice edited page' );
+		$this->deletePageByName( 'Later page' );
+
+		$this->assertSame( 2, $this->newLookup()->countDeletedSubjectPages() );
+		$this->assertSame( $next->getPageId(), $this->newLookup()->getDeletedSubjectPageIdsAfter( 0, 2 )[1] );
+	}
+
+	public function testAWikiThatLostNoSubjectPageHasNoneToRemove(): void {
+		$this->createPageWithSubjects( 'Surviving page', TestSubject::build() );
+
+		$this->assertSame( 0, $this->newLookup()->countDeletedSubjectPages() );
 	}
 
 	private function newLookup(): DeletedSubjectPageIdsLookup {
@@ -72,16 +116,6 @@ class DatabaseDeletedSubjectPageIdsLookupTest extends NeoWikiIntegrationTestCase
 			$this->getDb(),
 			MediaWikiServices::getInstance()->getSlotRoleStore()
 		);
-	}
-
-	private function deletePageByName( string $pageName ): void {
-		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
-		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage(
-			$page,
-			$this->getTestSysop()->getUser()
-		);
-
-		$this->assertStatusGood( $deletePage->deleteUnsafe( 'test deletion' ) );
 	}
 
 	private function undeletePageByName( string $pageName ): void {

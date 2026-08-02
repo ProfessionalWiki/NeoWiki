@@ -81,19 +81,4 @@ class DatabaseSubjectPageIdsLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	/**
-	 * @return int[]
-	 */
-	private function createSubjectPages( string ...$pageNames ): array {
-		$pageIds = [];
-
-		foreach ( $pageNames as $pageName ) {
-			$revision = $this->createPageWithSubjects( $pageName, TestSubject::build() );
-			$this->assertNotNull( $revision );
-			$pageIds[] = $revision->getPageId();
-		}
-
-		return $pageIds;
-	}
-
 }
