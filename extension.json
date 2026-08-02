@@ -134,7 +134,8 @@
 		"neowiki-schema-edit",
 		"neowiki-layout-edit",
 		"neowiki-mapping-edit",
-		"neowiki-query"
+		"neowiki-query",
+		"neowiki-admin"
 	],
 
 	"GroupPermissions": {
@@ -145,6 +146,9 @@
 			"neowiki-schema-edit": true,
 			"neowiki-layout-edit": true,
 			"neowiki-mapping-edit": true
+		},
+		"sysop": {
+			"neowiki-admin": true
 		}
 	},
 
@@ -339,6 +343,21 @@
 			"path": "/neowiki/v0/subject/{subjectId}/validate",
 			"method": [ "POST" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newValidateSubjectUpdateApi"
+		},
+		{
+			"path": "/neowiki/v0/graph-stores",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetGraphStoresApi"
+		},
+		{
+			"path": "/neowiki/v0/graph-stores/{name}/rebuild",
+			"method": [ "POST" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newStartGraphStoreRebuildApi"
+		},
+		{
+			"path": "/neowiki/v0/graph-stores/{name}/rebuild",
+			"method": [ "DELETE" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCancelGraphStoreRebuildApi"
 		}
 	],
 

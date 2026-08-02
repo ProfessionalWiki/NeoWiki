@@ -93,11 +93,13 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\CancelGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetGraphStoresApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetMappingSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
@@ -109,6 +111,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQ
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRouteRegistration;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\StartGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetSubjectsOrderingApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
@@ -178,6 +181,13 @@ class NeoWikiExtension {
 	 * The page in the MediaWiki namespace holding the on-wiki JSON configuration (MediaWiki:NeoWiki).
 	 */
 	public const string CONFIG_PAGE_TITLE = 'NeoWiki';
+
+	/**
+	 * The right to administer NeoWiki's own machinery — reading how far each graph store is from the wiki,
+	 * and rebuilding one. Separate from editing content, because it is about the installation rather than
+	 * about what the wiki says.
+	 */
+	public const string ADMIN_RIGHT = 'neowiki-admin';
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
@@ -1422,6 +1432,18 @@ class NeoWikiExtension {
 
 	public static function newGetMappingSummariesApi(): GetMappingSummariesApi {
 		return new GetMappingSummariesApi();
+	}
+
+	public static function newGetGraphStoresApi(): GetGraphStoresApi {
+		return new GetGraphStoresApi();
+	}
+
+	public static function newStartGraphStoreRebuildApi(): StartGraphStoreRebuildApi {
+		return new StartGraphStoreRebuildApi( csrfValidator: self::getCsrfValidator() );
+	}
+
+	public static function newCancelGraphStoreRebuildApi(): CancelGraphStoreRebuildApi {
+		return new CancelGraphStoreRebuildApi( csrfValidator: self::getCsrfValidator() );
 	}
 
 	public static function newGetSubjectLabelsApi(): GetSubjectLabelsApi {

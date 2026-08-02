@@ -35,6 +35,11 @@ you may not read and for a Subject id that does not exist.
 The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
 [Query API](query-api.md)).
 
+The graph-store endpoints are gated only by the `neowiki-admin` right, and answer `403` without it. They report and
+change the installation's own machinery rather than anything the wiki says, so no page's permissions stand in for it.
+They never return a store's endpoint URL or access token: being allowed to rebuild a store is not being allowed to read
+the credentials for it.
+
 ## Endpoints
 
 <!-- REST-ENDPOINTS:START — drift-checked against extension.json by
@@ -106,6 +111,17 @@ An ontology Mapping projects native Schemas to a target ontology. For the format
 | Endpoint | Description |
 |---|---|
 | `POST /neowiki/v0/query/cypher` | Run a read-only Cypher query against the graph. See [Query API](query-api.md). |
+
+### Graph stores
+
+Report and rebuild the graph stores this wiki projects into. All three require the `neowiki-admin` right, granted to
+administrators by default. See [Background rebuilds](../operations/maintenance.md#background-rebuilds).
+
+| Endpoint | Description |
+|---|---|
+| `GET /neowiki/v0/graph-stores` | Report every configured store: its projection, whether it is in sync, stale or never built, the rebuild it has going, and what its last finished rebuild got through. |
+| `POST /neowiki/v0/graph-stores/{name}/rebuild` | Queue a rebuild of one store. `202` with the run; `409` when that store already has one; `404` when no such store is configured. |
+| `DELETE /neowiki/v0/graph-stores/{name}/rebuild` | Cancel the rebuild a store has queued or going. `200` with the cancelled run; `404` when it has none. |
 
 <!-- REST-ENDPOINTS:END -->
 
