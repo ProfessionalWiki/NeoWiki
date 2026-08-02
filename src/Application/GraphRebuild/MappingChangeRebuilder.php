@@ -1,0 +1,64 @@
+<?php
+
+declare( strict_types = 1 );
+
+namespace ProfessionalWiki\NeoWiki\Application\GraphRebuild;
+
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
+/**
+ * Rebuilds the graph stores a changed Mapping defines the contents of.
+ *
+ * A Mapping page describes what every page's graph should contain in that vocabulary, and editing it
+ * reprojects nothing: the stores holding that projection keep serving the old vocabulary until something
+ * walks the wiki again. This is that something, for wikis that have asked for it.
+ *
+ * A store already rebuilding is restarted rather than left to finish, because a run that began under the
+ * old Mapping has projected part of the wiki under rules that no longer apply. Restarting converges;
+ * letting it finish would leave the store half in each vocabulary with nothing recording that it had.
+ */
+class MappingChangeRebuilder {
+
+	/**
+	 * @param array<string, ?string> $projectionsByStore Keys are store names; the value is the RDF
+	 *        vocabulary that store holds, normalised as a Mapping page name
+	 */
+	public function __construct(
+		private readonly array $projectionsByStore,
+		private readonly GraphRebuildCoordinator $coordinator,
+		private readonly LoggerInterface $logger,
+	) {
+	}
+
+	/**
+	 * @param string $mappingName The name of the Mapping page that was saved or deleted, normalised.
+	 */
+	public function onMappingChanged( string $mappingName ): void {
+		foreach ( $this->projectionsByStore as $storeName => $projection ) {
+			if ( $projection === $mappingName ) {
+				$this->restartRebuildOf( (string)$storeName );
+			}
+		}
+	}
+
+	/**
+	 * Nothing is thrown out of here: this runs off a page having been saved or deleted, and that has
+	 * already happened. A store that could not be rebuilt is reported rather than allowed to take the
+	 * edit down with it, and Special:GraphStores still shows it as stale.
+	 */
+	private function restartRebuildOf( string $storeName ): void {
+		try {
+			$this->coordinator->restartBackground( $storeName, RebuildTrigger::Auto );
+		} catch ( Throwable $e ) {
+			$this->logger->error(
+				'NeoWiki could not rebuild graph store "' . $storeName . '" after the Mapping defining its '
+				. 'projection changed, so the store still holds the old vocabulary. Rebuild it from '
+				. 'Special:GraphStores. Underlying error: ' . $e->getMessage(),
+				[ 'exception' => $e, 'store' => $storeName ]
+			);
+		}
+	}
+
+}

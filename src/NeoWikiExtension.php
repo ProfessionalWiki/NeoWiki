@@ -151,6 +151,7 @@ use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphStoreStatusLookup;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\MappingChangeRebuilder;
 use ProfessionalWiki\NeoWiki\Infrastructure\MediaWikiRebuildJobQueue;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
@@ -996,6 +997,39 @@ class NeoWikiExtension {
 				MediaWikiServices::getInstance()->getTitleFactory(),
 				MediaWikiServices::getInstance()->getRevisionLookup(),
 			),
+		);
+	}
+
+	/**
+	 * Rebuilds the stores a changed Mapping defines the contents of, or null when this wiki has not asked
+	 * for that. Read live from MainConfig, so the setting applies per request.
+	 */
+	public function newMappingChangeRebuilder(): ?MappingChangeRebuilder {
+		if ( MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiAutoRebuildOnMappingChange' ) !== true ) {
+			return null;
+		}
+
+		return new MappingChangeRebuilder(
+			projectionsByStore: $this->getNormalisedStoreProjections(),
+			coordinator: $this->newGraphRebuildCoordinator(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
+	/**
+	 * The store projections with each one read as the Mapping page name it is, so that a projection
+	 * configured as "edm" matches an edit to Mapping:Edm exactly as a link to it would.
+	 *
+	 * @return array<string, ?string> Keys are store names
+	 */
+	private function getNormalisedStoreProjections(): array {
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+
+		return array_map(
+			static fn ( ?string $projection ): ?string => $projection === null
+				? null
+				: $titleFactory->newFromText( $projection, self::NS_MAPPING )?->getText(),
+			$this->getStoreProjections()
 		);
 	}
 

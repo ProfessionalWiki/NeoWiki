@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use Exception;
+use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
 use MediaWiki\Installer\DatabaseUpdater;
@@ -281,6 +282,28 @@ class NeoWikiHooks {
 	): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision, $user );
 		$wikiPage->doPurge(); // clear cache
+		self::rebuildStoresHoldingChangedMapping( $wikiPage->getTitle() );
+	}
+
+	/**
+	 * A saved or deleted Mapping page changes what every mapped page's graph should contain, and nothing
+	 * reprojects those pages. Wikis that have asked for it have the stores holding that projection
+	 * rebuilt here; the rest are left to Special:GraphStores, which reports them as stale.
+	 *
+	 * Deferred past the change's own transaction, because starting a rebuild takes a database lock that
+	 * flushes the connection's snapshot, which a transaction with writes pending may not do — and because
+	 * an edit must not wait on a lock or a queue to be saved.
+	 */
+	private static function rebuildStoresHoldingChangedMapping( Title $title ): void {
+		if ( $title->getNamespace() !== NeoWikiExtension::NS_MAPPING ) {
+			return;
+		}
+
+		$mappingName = $title->getText();
+
+		DeferredUpdates::addCallableUpdate( static function () use ( $mappingName ): void {
+			NeoWikiExtension::getInstance()->newMappingChangeRebuilder()?->onMappingChanged( $mappingName );
+		} );
 	}
 
 	/**
@@ -313,6 +336,9 @@ class NeoWikiHooks {
 
 	public static function onPageDeleteComplete( ProperPageIdentity $page, Authority $deleter, string $reason, int $pageId, RevisionRecord $deletedRev ): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageDelete( $pageId );
+
+		$title = Title::newFromPageIdentity( $page );
+		self::rebuildStoresHoldingChangedMapping( $title );
 	}
 
 	public static function onRevisionUndeleted( RevisionRecord $restoredRevision, ?int $oldPageId ): void {

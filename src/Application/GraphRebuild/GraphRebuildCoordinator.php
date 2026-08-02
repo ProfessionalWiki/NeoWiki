@@ -114,14 +114,43 @@ class GraphRebuildCoordinator {
 	public function startBackground( string $storeName, RebuildTrigger $trigger ): RebuildRun {
 		$this->getStore( $storeName );
 
-		$run = $this->startLock->whileHeld( $storeName, function () use ( $storeName, $trigger ): RebuildRun {
-			$this->refuseWhenAlreadyActive( $storeName );
+		return $this->queueFirstBatchOf(
+			$this->startLock->whileHeld( $storeName, function () use ( $storeName, $trigger ): RebuildRun {
+				$this->refuseWhenAlreadyActive( $storeName );
 
-			return $this->runs->startRun( $storeName, $trigger, RebuildStatus::Queued );
-		} );
+				return $this->runs->startRun( $storeName, $trigger, RebuildStatus::Queued );
+			} )
+		);
+	}
 
+	/**
+	 * Replaces whatever rebuild the store has with a fresh one, rather than refusing alongside it. For
+	 * when what a rebuild should produce has changed under it: a run that began under the old rules has
+	 * projected part of the wiki under rules that no longer apply, and finishing it would leave the store
+	 * half in each with nothing recording that it had.
+	 *
+	 * The old run is ended and the new one filed under the same lock, so nothing can start a third in
+	 * between and find the store free.
+	 */
+	public function restartBackground( string $storeName, RebuildTrigger $trigger ): RebuildRun {
+		$this->getStore( $storeName );
+
+		return $this->queueFirstBatchOf(
+			$this->startLock->whileHeld( $storeName, function () use ( $storeName, $trigger ): RebuildRun {
+				$activeRun = $this->runs->getActiveRun( $storeName );
+
+				if ( $activeRun !== null ) {
+					$this->runs->updateRun( $activeRun->cancelled() );
+				}
+
+				return $this->runs->startRun( $storeName, $trigger, RebuildStatus::Queued );
+			} )
+		);
+	}
+
+	private function queueFirstBatchOf( RebuildRun $run ): RebuildRun {
 		try {
-			$this->jobQueue->pushRebuildBatch( $run->id, $storeName );
+			$this->jobQueue->pushRebuildBatch( $run->id, $run->store );
 		} catch ( Throwable $e ) {
 			// A queued run nothing will ever pick up is worse than no run at all: it blocks every later
 			// rebuild of the store until someone edits the table. Recorded as ended, then re-thrown so
