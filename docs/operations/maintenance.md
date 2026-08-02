@@ -98,13 +98,14 @@ and progress appears on reload.
 A store is reported as stale when the Mapping page defining its projection was edited or deleted after that store's
 last successful rebuild started: the store still describes every page projected before that change in the old
 vocabulary. Rebuilding it is the fix. Only a store holding an ontology projection can go stale this way; the native
-projection and Neo4j have no editable definition, so they are only ever never built or in sync.
+projection and Neo4j have no editable definition, so they are only ever not reconciled or in sync.
 
 Set `$wgNeoWikiAutoRebuildOnMappingChange = true;` to have saving or deleting a Mapping page rebuild every store
 holding that projection in the background. It is off by default: such a rebuild reprojects every page carrying a
 Subject, and it needs a job runner as much as any other background rebuild does. Turning it on also means anyone who
 may edit Mapping pages can set a full reprojection going, which is work `neowiki-admin` otherwise gates. A rebuild
-somebody started by hand is left to finish rather than restarted, so a Mapping edit cannot take one away.
+somebody started by hand is left to finish rather than restarted, so a Mapping edit cannot take one away — the edit
+is not queued behind it either; the store shows up stale once that run ends, and rebuilding it then is the fix.
 
 ## Upgrades
 

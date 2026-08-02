@@ -36,8 +36,8 @@ The Cypher query endpoint is gated only by the `neowiki-query` right, with no pe
 [Query API](query-api.md)).
 
 The graph-store endpoints are gated by the `neowiki-admin` right and answer `403` without it; no page's permissions
-apply. The two rebuild endpoints also require an `X-CSRF-TOKEN` header, and answer `403` without one, and answer `503`
-while the wiki is read only. No response carries a store's endpoint URL or access token.
+apply. The two rebuild endpoints additionally answer `503` while the wiki is read only, then `403` without a valid
+`X-CSRF-TOKEN` header — checked in that order. No response carries a store's endpoint URL or access token.
 
 ## Endpoints
 

@@ -20,7 +20,7 @@ enum StoreSyncState: string {
 	case NeverBuilt = 'never-built';
 
 	/**
-	 * The Mapping that defines the store's projection has been edited since the last rebuild finished, so
+	 * The Mapping that defines the store's projection has been edited since the last rebuild started, so
 	 * every page projected before that edit is described by the old vocabulary.
 	 */
 	case Stale = 'stale';
