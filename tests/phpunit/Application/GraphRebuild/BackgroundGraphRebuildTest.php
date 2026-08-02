@@ -141,6 +141,25 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $this->newRunRepository()->getActiveRun( self::STORE ) );
 	}
 
+	/**
+	 * A rebuild is carried forward by each batch queueing the next, so a queue that stops taking them
+	 * partway leaves the run recorded as going with nothing going, blocking the store until someone
+	 * cancels it. What it projected up to there stays, and the run is resumable.
+	 */
+	public function testARunWhoseNextBatchCannotBeQueuedIsNotLeftBlockingTheStore(): void {
+		$this->createSubjectPages( 'One', 'Two' );
+		$store = new SpyGraphDatabasePlugin();
+		$this->registerStore( $store );
+		$run = $this->newCoordinator()->startBackground( self::STORE, RebuildTrigger::Api );
+
+		$this->newCoordinatorWithJobQueue( SpyRebuildJobQueue::refusingEverything() )
+			->continueInBackground( $run->id, self::STORE );
+
+		$this->assertSame( RebuildStatus::Failed, $this->readRun( $run )?->status );
+		$this->assertNull( $this->newRunRepository()->getActiveRun( self::STORE ) );
+		$this->assertCount( 2, $store->savedPages, 'what the batch projected before that stays projected' );
+	}
+
 	public function testCancellingAQueuedRunEndsItBeforeAnythingIsProjected(): void {
 		$this->createSubjectPages( 'Page nobody projects' );
 		$store = new SpyGraphDatabasePlugin();

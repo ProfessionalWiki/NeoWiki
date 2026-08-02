@@ -154,6 +154,11 @@ class GraphRebuildCoordinator {
 			// A queued run nothing will ever pick up is worse than no run at all: it blocks every later
 			// rebuild of the store until someone edits the table. Recorded as ended, then re-thrown so
 			// the caller reports the failure rather than a rebuild that is under way.
+			//
+			// Not every failed push gets here. A web request defers its push past the response, and what
+			// runs it there logs a failure rather than raising one; what reaches this is a job the queue
+			// refuses before the deferral, and every push made under the command line, where there is no
+			// deferral. A run the deferred path leaves queued is released by cancelling it.
 			$this->runs->updateRun( $run->failed( BackendFailureMessage::withoutCredentials( $e->getMessage() ) ) );
 			throw $e;
 		}
@@ -210,8 +215,8 @@ class GraphRebuildCoordinator {
 		try {
 			$this->jobQueue->pushRebuildBatch( $runId, $storeName );
 		} catch ( Throwable $e ) {
-			// The same reasoning as the first batch's push: a run nothing will carry forward blocks the
-			// store until someone cancels it, so it is ended here instead.
+			// The same reasoning, and the same reach, as the first batch's push: a run nothing will carry
+			// forward blocks the store until someone cancels it, so it is ended here instead.
 			$this->endCrashedRun( $run, $e );
 		}
 	}
