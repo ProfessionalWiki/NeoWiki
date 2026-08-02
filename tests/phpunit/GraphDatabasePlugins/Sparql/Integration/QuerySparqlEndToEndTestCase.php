@@ -33,8 +33,8 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  * Each subclass names one live store, so the loop runs once per SPARQL engine the development stack
  * ships — keeping NeoWiki honest about targeting SPARQL 1.1 itself rather than one implementation's
  * dialect and defaults. Those defaults differ in ways a query can silently come to depend on, most
- * sharply whether an unscoped query sees the named graphs NeoWiki writes into: SPARQL 1.1 says it
- * does not, and QLever nonetheless does.
+ * sharply whether an unscoped query sees the named graphs NeoWiki writes into: SPARQL 1.1 leaves
+ * that to the store — QLever always unions them in, a strict store keeps them out.
  *
  * Deliberately does NOT skip when a store is unreachable: an unset store URL fails the test through
  * {@see requireEnv}, and an unreachable store surfaces as a loud query/HTTP failure. A silently
@@ -73,8 +73,7 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 
 	/**
 	 * Whether the store folds its named graphs into the default graph, so that a query without a
-	 * `GRAPH` clause still finds page data. QLever always does; SPARQL 1.1 says a store does not
-	 * unless asked to.
+	 * `GRAPH` clause still finds page data. QLever always does; SPARQL 1.1 leaves it to the store.
 	 */
 	abstract protected function storeUnionsNamedGraphsIntoTheDefaultGraph(): bool;
 

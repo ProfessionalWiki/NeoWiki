@@ -297,9 +297,10 @@ Each is read-only: the query is sent as a SPARQL 1.1 *query* operation, posted o
 
 A projection configured on a different endpoint is therefore not reachable from these surfaces.
 
-Under SPARQL 1.1 an unscoped query sees only the default graph, which stays empty here because NeoWiki writes pages
-into named graphs — so queries must say `GRAPH`. QLever ignores that and always searches every graph; to get the same
-from Oxigraph, start it with `--union-default-graph`.
+An unscoped query searches the default graph, and whether that graph also contains the named graphs' triples is the
+store's choice. NeoWiki writes pages into named graphs, so on a store that keeps them out of the default graph,
+queries must say `GRAPH`. QLever always searches every graph; to get the same from Oxigraph, start it with
+`--union-default-graph`.
 
 The bundled development stack ships a working QLever example wired up this way — see
 [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`
