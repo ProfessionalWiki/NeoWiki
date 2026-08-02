@@ -187,7 +187,7 @@ These are the settings you are most likely to change. For the full list with des
 
 `neowiki-admin` allows viewing and rebuilding the wiki's graph stores, through
 [Special:GraphStores](maintenance.md#background-rebuilds) or the matching REST endpoints. Administrators have it by
-default. It grants nothing over content, and no OAuth grant carries it.
+default.
 
 `neowiki-query` gates the query surfaces; see [Permissions](../api/query-api.md#permissions). The remaining rights —
 `neowiki-schema-edit`, `neowiki-layout-edit` and `neowiki-mapping-edit` — gate editing in NeoWiki's own namespaces and
@@ -248,11 +248,11 @@ $wgNeoWikiSparqlStores = [
 
 A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
 
-Each store's `name` (at most 255 bytes) identifies it when
-[rebuilding one store](maintenance.md#rebuilding-one-store), so no two entries may share one, and none may be `neo4j`
-in any casing — reserved for the bundled Neo4j backend. Since the name defaults to the projection, two entries holding
-the same projection — mirroring it to a second endpoint, say — collide until one of them sets an explicit `name`. An
-entry whose name cannot identify it is skipped with a warning, so its store receives no page changes.
+Each store's `name` identifies it when [rebuilding one store](maintenance.md#rebuilding-one-store), so no two entries
+may share one, and none may be `neo4j` in any casing — reserved for the bundled Neo4j backend. Since the name defaults
+to the projection, two entries holding the same projection — mirroring it to a second endpoint, say — collide until
+one of them sets an explicit `name`. An entry whose name cannot identify it is skipped with a warning, so its store
+receives no page changes.
 
 ### Several projections in one store
 
