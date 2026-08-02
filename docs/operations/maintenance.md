@@ -46,8 +46,10 @@ still reconcile.
 
 ### Interrupted rebuilds
 
-The rebuild walks the wiki in batches, recording after each one how far it got. If a run failed before reconciling the
-whole wiki, continue it from where it stopped rather than starting over:
+The rebuild walks the wiki in batches, recording after each one how far it got. It reprojects every page carrying a
+Subject and then removes the pages MediaWiki no longer has, and `--resume` picks up in whichever of those two it
+stopped in. If a run failed before reconciling the whole wiki, continue it from where it stopped rather than starting
+over:
 
 ```sh
 php maintenance/run.php NeoWiki:RebuildGraphDatabases --store EDM --resume
@@ -58,7 +60,11 @@ A run that finished but left individual pages behind has nothing to continue: re
 Pass `--batch-size` to change how many pages are projected between recordings; it defaults to 200.
 
 A page the store rejects is counted and the rebuild carries on; the `NeoWiki` channel says which pages failed and why.
-The script exits non-zero whenever a store was left out of sync, so a scheduled rebuild cannot fail silently.
+A store that stops answering partway is another matter: a whole batch failing ends the run, so that `--resume` retries
+that batch rather than the rebuild counting every page left in the wiki against a store that is not there. Recognising
+it takes a full batch, so on a wiki with fewer pages than `--batch-size` an unreachable store is still reported one
+page at a time. The script exits non-zero whenever a store was left out of sync, so a scheduled rebuild cannot fail
+silently.
 
 A rebuild killed outright — `kill -9`, or the machine going down — leaves its run recorded as still going, and every
 later rebuild of that store refuses to start while it is. Release it by cancelling it on
@@ -85,14 +91,17 @@ and progress appears on reload.
   [the job queue](https://www.mediawiki.org/wiki/Manual:Job_queue) from cron or a service instead.
 - **A store has one rebuild at a time, whoever started it.** The script, the API and the page write the same run
   record, so a rebuild started on the page blocks one started by the script and the other way round. Cancelling is on
-  the page and the API; continuing a cancelled or failed run is `--resume` on the script.
+  the page and the API, including a rebuild the script is running: it stops at its next batch. Continuing a cancelled
+  or failed run is `--resume` on the script.
+- **A queued rebuild waits for a job runner that loads NeoWiki.** On a wiki whose runner does not, the rebuild stays
+  queued — and, since a store has one rebuild at a time, blocks the next one — until it is cancelled on the page.
 
 ### Stale stores
 
-A store is reported as stale when the Mapping page defining its projection was edited after that store's last
-successful rebuild started: the store still describes every page projected before that edit in the old vocabulary.
-Rebuilding it is the fix. Only a store holding an ontology projection can go stale this way; the native projection and
-Neo4j have no editable definition, so they are only ever never built or in sync.
+A store is reported as stale when the Mapping page defining its projection was edited or deleted after that store's
+last successful rebuild started: the store still describes every page projected before that change in the old
+vocabulary. Rebuilding it is the fix. Only a store holding an ontology projection can go stale this way; the native
+projection and Neo4j have no editable definition, so they are only ever never built or in sync.
 
 Set `$wgNeoWikiAutoRebuildOnMappingChange = true;` to have saving or deleting a Mapping page rebuild every store
 holding that projection in the background. It is off by default: such a rebuild reprojects every page carrying a
