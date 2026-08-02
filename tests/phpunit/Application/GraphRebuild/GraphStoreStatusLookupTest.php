@@ -38,6 +38,18 @@ class GraphStoreStatusLookupTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( StoreSyncState::NeverBuilt, $this->statusOf( self::SPARQL_STORE )->state );
 	}
 
+	/**
+	 * A rebuild that ran to the end but left pages behind is what the maintenance script calls out of
+	 * sync and exits non-zero over, so the page must not answer "in sync" to the same records.
+	 */
+	public function testAStoreWhoseRebuildLeftPagesBehindWasNeverBuilt(): void {
+		$repository = $this->newRunRepository();
+		$run = $this->startRun( $repository, self::SPARQL_STORE );
+		$repository->updateRun( $run->withProgress( cursor: 90, processed: 88, failed: 2 )->succeeded() );
+
+		$this->assertSame( StoreSyncState::NeverBuilt, $this->statusOf( self::SPARQL_STORE )->state );
+	}
+
 	public function testARebuiltStoreWhoseMappingHasNotChangedSinceIsInSync(): void {
 		$rebuild = $this->recordSucceededRun( self::SPARQL_STORE );
 

@@ -17,8 +17,12 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Jobs\GraphRebuildJob;
  * runner that reads no such run drops the batch, leaving the run queued with nothing to carry it on.
  * Under the command line there is no such round, and the push happens there and then.
  *
- * Filed without deduplication: consecutive batches of one run are deliberately identical parameters,
- * and the run's own record is what stops two of them doing the same work.
+ * Consecutive batches of one run are deliberately identical, so filing them as deduplicable does not
+ * collapse the chain: the queue only ever drops a batch that matches one still waiting to be claimed, and
+ * a batch pushing its successor was claimed to do so. What it does drop is the second copy of a batch
+ * that got run twice — a retry, or two runners racing the same job — which is where a run would otherwise
+ * fork into two chains advancing one cursor. Best-effort rather than a guarantee, which is all the run
+ * records need it to be: they already stop a duplicate from doing the same work twice.
  */
 class MediaWikiRebuildJobQueue implements RebuildJobQueue {
 
@@ -32,7 +36,7 @@ class MediaWikiRebuildJobQueue implements RebuildJobQueue {
 			new JobSpecification(
 				GraphRebuildJob::TYPE,
 				[ 'runId' => $runId, 'store' => $storeName ],
-				[]
+				[ 'removeDuplicates' => true ]
 			)
 		);
 	}

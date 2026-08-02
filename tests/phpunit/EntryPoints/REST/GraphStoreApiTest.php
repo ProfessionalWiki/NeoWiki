@@ -75,19 +75,35 @@ class GraphStoreApiTest extends NeoWikiIntegrationTestCase {
 	public function testARebuiltStoreReportsWhatThatRebuildGotThrough(): void {
 		$repository = $this->newRunRepository();
 		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
-		$repository->updateRun( $run->withProgress( cursor: 9, processed: 8, failed: 1 )->succeeded() );
+		$repository->updateRun( $run->withProgress( cursor: 9, processed: 9, failed: 0 )->succeeded() );
 
 		$response = $this->executeAsAdmin( new GetGraphStoresApi(), 'GET' );
 
 		$store = self::storeNamed( $response['body']['stores'], self::STORE );
 		$this->assertSame( 'in-sync', $store['state'] );
-		$this->assertSame( 8, $store['lastSuccessfulRun']['processed'] );
-		$this->assertSame( 1, $store['lastSuccessfulRun']['failed'] );
+		$this->assertSame( 9, $store['lastSuccessfulRun']['processed'] );
+		$this->assertSame( 0, $store['lastSuccessfulRun']['failed'] );
 		$this->assertMatchesRegularExpression(
 			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/',
 			(string)$store['lastSuccessfulRun']['finished'],
 			'times are reported as ISO 8601, not as the wiki stores them'
 		);
+	}
+
+	/**
+	 * The store holds a copy of the wiki with holes in it, which is the same position as one nothing has
+	 * ever rebuilt, and rebuilding is the answer to both.
+	 */
+	public function testAStoreWhoseRebuildLeftPagesBehindIsReportedAsNeverBuilt(): void {
+		$repository = $this->newRunRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+		$repository->updateRun( $run->withProgress( cursor: 9, processed: 8, failed: 1 )->succeeded() );
+
+		$response = $this->executeAsAdmin( new GetGraphStoresApi(), 'GET' );
+
+		$store = self::storeNamed( $response['body']['stores'], self::STORE );
+		$this->assertSame( 'never-built', $store['state'] );
+		$this->assertSame( 1, $store['lastSuccessfulRun']['failed'], 'and says how many pages that was' );
 	}
 
 	/**

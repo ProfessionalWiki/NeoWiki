@@ -11,9 +11,10 @@ use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 /**
  * Works out where each configured graph store stands, from the run records and the wiki.
  *
- * A store that has never been rebuilt through to the end holds only what the per-edit projection has put
- * there, which for a store added to a wiki that already had pages is nothing: that is reported ahead of
- * anything else, because rebuilding is the answer either way.
+ * A store that has never been reconciled with the whole wiki holds only what the per-edit projection has
+ * put there, which for a store added to a wiki that already had pages is nothing: that is reported ahead
+ * of anything else, because rebuilding is the answer either way. A rebuild that ran to the end but could
+ * not reconcile every page leaves the store in the same position, with holes rather than nothing.
  *
  * Beyond that, only a store holding an ontology projection can fall out of date without the wiki
  * changing, because only that projection is defined by something editable: the Mapping page. Editing it
@@ -65,8 +66,13 @@ class GraphStoreStatusLookup {
 		);
 	}
 
+	/**
+	 * A rebuild that ran to the end but left pages behind counts as no rebuild at all, because the store
+	 * holds a copy of the wiki with holes in it and rebuilding is the answer. It is also what the
+	 * maintenance script means by out of sync, so the page and the script's exit status agree.
+	 */
 	private static function stateOf( ?RebuildRun $lastSuccessfulRun, ?string $projectionChanged ): StoreSyncState {
-		if ( $lastSuccessfulRun === null ) {
+		if ( $lastSuccessfulRun === null || $lastSuccessfulRun->failed > 0 ) {
 			return StoreSyncState::NeverBuilt;
 		}
 
