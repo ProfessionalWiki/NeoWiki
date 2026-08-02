@@ -36,6 +36,9 @@ class SpecialGraphStores extends SpecialPage {
 	private const CANCEL_ACTION = 'cancel';
 
 	public function __construct() {
+		// MediaWiki 1.46 deprecates passing the restriction here, but on 1.43 — the version this extension
+		// supports — the permission check reads the property this sets and not getRestriction(), so
+		// overriding that instead would leave the page open to everyone there.
 		parent::__construct( 'GraphStores', NeoWikiExtension::ADMIN_RIGHT );
 	}
 

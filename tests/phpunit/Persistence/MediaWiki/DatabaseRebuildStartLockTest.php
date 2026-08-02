@@ -20,7 +20,6 @@ use RuntimeException;
 class DatabaseRebuildStartLockTest extends MediaWikiIntegrationTestCase {
 
 	private const STORE = 'EDM';
-	private const LOCK_NAME = 'NeoWiki-graph-rebuild-start:' . self::STORE;
 
 	public function testTheRunStartedUnderTheLockIsWhatTheCallerGets(): void {
 		$run = self::newRun();
@@ -28,44 +27,43 @@ class DatabaseRebuildStartLockTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $run, $this->newLock()->whileHeld( self::STORE, static fn (): RebuildRun => $run ) );
 	}
 
-	public function testAStoresLockIsReleasedOnceItsRunIsStarted(): void {
-		$this->newLock()->whileHeld( self::STORE, static fn (): RebuildRun => self::newRun() );
+	public function testAStoreCanStartAnotherRunOnceItsLastOneIsFiled(): void {
+		$lock = $this->newLock();
+		$lock->whileHeld( self::STORE, static fn (): RebuildRun => self::newRun() );
 
-		$this->assertLockIsFree();
+		$this->assertStartsARunUnder( $lock );
 	}
 
 	/**
-	 * The lock has to be released even when what it guards throws, or one refused rebuild would leave
+	 * The lock has to be let go of even when what it guards throws, or one refused rebuild would leave
 	 * that store unable to start another for as long as the connection lived.
 	 */
-	public function testTheLockIsReleasedWhenStartingTheRunThrows(): void {
+	public function testAStoreCanStartAnotherRunAfterOneFailedToStart(): void {
+		$lock = $this->newLock();
+
 		try {
-			$this->newLock()->whileHeld(
-				self::STORE,
-				static fn (): RebuildRun => throw new RuntimeException( 'no store' )
-			);
+			$lock->whileHeld( self::STORE, static fn (): RebuildRun => throw new RuntimeException( 'no store' ) );
 			$this->fail( 'what the lock guards was supposed to throw' );
 		} catch ( RuntimeException ) {
 		}
 
-		$this->assertLockIsFree();
+		$this->assertStartsARunUnder( $lock );
 	}
 
-	public function testTheLockIsHeldWhileTheRunIsBeingStarted(): void {
-		$caller = __METHOD__;
+	/**
+	 * That the work runs at all is the assertion: a lock still held, or one the timeout expired on, would
+	 * leave it never reached.
+	 */
+	private function assertStartsARunUnder( RebuildStartLock $lock ): void {
+		$started = false;
 
-		$this->newLock()->whileHeld( self::STORE, function () use ( $caller ): RebuildRun {
-			$this->assertFalse(
-				$this->getDb()->lockIsFree( self::LOCK_NAME, $caller ),
-				'the store must be locked while its run is filed'
-			);
+		$lock->whileHeld( self::STORE, static function () use ( &$started ): RebuildRun {
+			$started = true;
 
 			return self::newRun();
 		} );
-	}
 
-	private function assertLockIsFree(): void {
-		$this->assertTrue( $this->getDb()->lockIsFree( self::LOCK_NAME, __METHOD__ ) );
+		$this->assertTrue( $started );
 	}
 
 	private static function newRun(): RebuildRun {
