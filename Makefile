@@ -105,6 +105,8 @@ _dev-tools-impl:
 	@echo "Dev wiki ready at:    http://localhost:$$MW_SERVER_PORT"
 	@echo "Neo4j Browser:        http://localhost:$${NEO_BROWSER_PORT:-7474}"
 	@echo "Neo4j Bolt endpoint:  bolt://localhost:$${NEO_BOLT_PORT:-7687}"
+	@echo "QLever SPARQL:        http://localhost:$${QLEVER_PORT:-7019}/"
+	@echo "Oxigraph SPARQL:      http://localhost:$${OXIGRAPH_PORT:-7878}/query"
 	@echo "Project:              $(PROJECT_NAME)"
 
 # ---- Bootstrap (one-time, idempotent) ----------------------------------------

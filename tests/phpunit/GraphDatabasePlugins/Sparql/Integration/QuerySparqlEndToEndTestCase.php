@@ -330,9 +330,10 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 		$subjectIri = NeoWikiExtension::getInstance()->getRdfNamespaces()->subject( $subjectId )->value;
 
 		// GRAPH-scoped, because NeoWiki writes each page into a named graph and never the default
-		// graph. See queryLabelsWithoutGraphScopeOf() for what dropping the clause costs.
+		// graph. See queryLabelsWithoutGraphScopeOf() for what dropping the clause costs. DISTINCT
+		// because a Subject saved under several projections carries its label in each of their graphs.
 		return $this->labelsFrom(
-			'SELECT ?label WHERE { GRAPH ?graph { <' . $subjectIri . '> <'
+			'SELECT DISTINCT ?label WHERE { GRAPH ?graph { <' . $subjectIri . '> <'
 			. self::LABEL_PREDICATE . '> ?label } }'
 		);
 	}

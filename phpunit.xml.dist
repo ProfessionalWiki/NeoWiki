@@ -13,8 +13,7 @@
 		<env name="QLEVER_TEST_URL" value="http://test_qlever:7019/" />
 		<env name="QLEVER_TEST_ACCESS_TOKEN" value="neowiki_test_token" />
 		<!-- Live Oxigraph store for the same system test, run a second time against a second engine.
-		     A base URL: Oxigraph serves queries and updates on fixed separate paths, which the test
-		     derives. It needs no access token, having no authentication at all. -->
-		<env name="OXIGRAPH_TEST_URL" value="http://test_oxigraph:7878" />
+		     It needs no access token, having no authentication at all. -->
+		<env name="OXIGRAPH_TEST_BASE_URL" value="http://test_oxigraph:7878" />
 	</php>
 </phpunit>

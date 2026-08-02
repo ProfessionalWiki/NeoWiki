@@ -11,11 +11,11 @@ end
 function p.largestMuseums( frame )
 	local base = mw.site.server
 	local result = nw.sparqlQuery(
-		'SELECT ?label ?visitors WHERE { ' ..
+		'SELECT ?label ?visitors WHERE { GRAPH ?g { ' ..
 		'?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <' .. base .. '/schema/Museum> . ' ..
 		'?m <http://www.w3.org/2000/01/rdf-schema#label> ?label . ' ..
 		'?m <' .. base .. '/prop/Annual_visitors> ?visitors ' ..
-		'} ORDER BY DESC(?visitors) LIMIT 3'
+		'} } ORDER BY DESC(?visitors) LIMIT 3'
 	)
 
 	local list = {}

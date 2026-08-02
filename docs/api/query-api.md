@@ -165,7 +165,7 @@ Content-Type: application/json
 
 ```json
 {
-    "query": "SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 10"
+    "query": "SELECT ?label WHERE { GRAPH ?g { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } } LIMIT 10"
 }
 ```
 

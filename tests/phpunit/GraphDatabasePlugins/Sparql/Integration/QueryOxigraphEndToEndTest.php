@@ -44,11 +44,8 @@ class QueryOxigraphEndToEndTest extends QuerySparqlEndToEndTestCase {
 		return false;
 	}
 
-	/**
-	 * Oxigraph splits queries and updates over two fixed paths, so one base URL configures both.
-	 */
 	private function storeBaseUrl(): string {
-		return rtrim( $this->requireEnv( 'OXIGRAPH_TEST_URL', 'Oxigraph (the `test_oxigraph` service)' ), '/' );
+		return rtrim( $this->requireEnv( 'OXIGRAPH_TEST_BASE_URL', 'Oxigraph (the `test_oxigraph` service)' ), '/' );
 	}
 
 }

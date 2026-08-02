@@ -237,7 +237,7 @@ A store entry whose `updateUrl` is missing or empty is skipped with a warning ra
 
 ### Stores with split endpoints
 
-A store that serves queries and updates on separate paths must set both. Oxigraph serves `/query` and `/update`:
+Oxigraph serves queries on `/query` and updates on `/update`, so an entry needs both:
 
 ```php
 $wgNeoWikiSparqlStores = [
@@ -250,13 +250,10 @@ $wgNeoWikiSparqlStores = [
 ```
 
 Oxigraph has no authentication and so takes no `accessToken`: it accepts every request, including updates, from
-anyone who can reach it. Put it behind network isolation or an authenticating reverse proxy. A deployment that
-separates reads from writes can serve queries from a second instance started with `oxigraph serve-read-only`.
+anyone who can reach it. Put it behind network isolation or an authenticating reverse proxy. Neither restricts the
+outbound requests a `SERVICE` clause makes it issue; see [Restricting federation](#restricting-federation) for that.
 
-Under SPARQL 1.1 an unscoped query sees only the default graph, which stays empty here because NeoWiki writes pages
-into named graphs — so queries must say `GRAPH`. QLever ignores that and always searches every graph; to get the same
-from Oxigraph, start it with `--union-default-graph`. Persistence needs no equivalent flag, but the server must be
-given a `--location`.
+Start the server with `--location <dir>`; without it the store is in-memory only.
 
 ### Several projections in one store
 
@@ -299,6 +296,10 @@ Each is read-only: the query is sent as a SPARQL 1.1 *query* operation, posted o
 `updateUrl`.
 
 A projection configured on a different endpoint is therefore not reachable from these surfaces.
+
+Under SPARQL 1.1 an unscoped query sees only the default graph, which stays empty here because NeoWiki writes pages
+into named graphs — so queries must say `GRAPH`. QLever ignores that and always searches every graph; to get the same
+from Oxigraph, start it with `--union-default-graph`.
 
 The bundled development stack ships a working QLever example wired up this way — see
 [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`

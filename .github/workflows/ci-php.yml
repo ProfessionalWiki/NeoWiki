@@ -54,8 +54,8 @@ jobs:
       QLEVER_TEST_URL: http://localhost:7019/
       QLEVER_TEST_ACCESS_TOKEN: neowiki_test_token
       # Live Oxigraph store for the second engine the same system test runs against, published by the
-      # "Start Oxigraph" step. A base URL, from which the test derives the /query and /update paths.
-      OXIGRAPH_TEST_URL: http://localhost:7878
+      # "Start Oxigraph" step.
+      OXIGRAPH_TEST_BASE_URL: http://localhost:7878
 
     services:
       test_neo:
@@ -148,16 +148,15 @@ jobs:
 
       # Oxigraph, the second SPARQL engine the same system test runs against. Started explicitly next
       # to QLever rather than as a `services:` container so the serve command is stated here instead of
-      # inherited from the image's default: the flags are the point. It runs WITHOUT
-      # --union-default-graph, so the test faces spec-strict SPARQL 1.1, where an unscoped query sees
-      # only the default graph — matching the test_oxigraph dev-stack service (see
-      # Docker/docker-compose.dev.yml). --location is omitted: without it the store is in-memory, which
-      # is all a fresh-per-run CI store needs, and it saves the RocksDB write path.
-      # There is no access-token flag because Oxigraph has no authentication (oxigraph#88), and no
-      # federation flag because it has none either — see the docs on restricting federation.
+      # inherited from the image's default: the flags are the point. They mirror the test_oxigraph
+      # dev-stack service (see Docker/docker-compose.dev.yml) — no --union-default-graph, so the store
+      # is spec-strict; no --location, so it is in memory, which is all a fresh-per-run CI store needs.
+      # No access-token flag: Oxigraph has no authentication (oxigraph#88). No federation flag either:
+      # Oxigraph federates unconditionally and offers no option to restrict it — see the docs on
+      # restricting federation.
       - name: Start Oxigraph
         run: |
-          docker run -d --name test_oxigraph -p 7878:7878 \
+          docker run -d --name test_oxigraph -p 127.0.0.1:7878:7878 \
             ghcr.io/oxigraph/oxigraph:latest serve --bind 0.0.0.0:7878
 
       - name: Run update.php
@@ -177,8 +176,6 @@ jobs:
           done
           echo "QLever did not become ready in time; dumping logs:"; docker logs test_qlever; exit 1
 
-      # Waited for from the host, not by a container healthcheck: the Oxigraph image is distroless, so
-      # there is no shell, curl or wget inside it to probe with.
       - name: Wait for Oxigraph
         run: |
           for i in $(seq 1 40); do

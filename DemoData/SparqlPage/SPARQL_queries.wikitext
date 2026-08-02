@@ -5,12 +5,12 @@ NeoWiki keeps a [https://neowiki.ai/docs/operations/installation#optional-sparql
 The <code><nowiki>{{#sparql_raw}}</nowiki></code> parser function runs a read-only SPARQL query and returns the raw [https://www.w3.org/TR/sparql11-results-json/ SPARQL JSON results]. IRIs are minted under the wiki's own URL, which the examples write as <code><nowiki>{{SERVER}}</nowiki></code> so they work on any wiki.
 
 <syntaxhighlight lang="mediawiki">
-{{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
+{{#sparql_raw:SELECT ?museum ?visitors WHERE { GRAPH ?g { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } } ORDER BY DESC(?visitors) LIMIT 5}}
 </syntaxhighlight>
 
 Result:
 
-{{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
+{{#sparql_raw:SELECT ?museum ?visitors WHERE { GRAPH ?g { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } } ORDER BY DESC(?visitors) LIMIT 5}}
 
 Each page's triples live in their own named graph, <code>{{SERVER}}/graph/native/page/&lt;pageid&gt;</code>, so a result can show which page it came from:
 
@@ -30,11 +30,11 @@ Result:
 function p.largestMuseums( frame )
 	local base = mw.site.server
 	local result = nw.sparqlQuery(
-		'SELECT ?label ?visitors WHERE { ' ..
+		'SELECT ?label ?visitors WHERE { GRAPH ?g { ' ..
 		'?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <' .. base .. '/schema/Museum> . ' ..
 		'?m <http://www.w3.org/2000/01/rdf-schema#label> ?label . ' ..
 		'?m <' .. base .. '/prop/Annual_visitors> ?visitors ' ..
-		'} ORDER BY DESC(?visitors) LIMIT 3'
+		'} } ORDER BY DESC(?visitors) LIMIT 3'
 	)
 
 	local list = {}
@@ -62,7 +62,7 @@ The same queries work over the REST API, which returns the results as JSON:
 <code>POST {{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/query/sparql</code>
 
 <syntaxhighlight lang="json">
-{ "query": "SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 5" }
+{ "query": "SELECT ?label WHERE { GRAPH ?g { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } } LIMIT 5" }
 </syntaxhighlight>
 
 == Learn more ==

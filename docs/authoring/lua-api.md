@@ -263,7 +263,7 @@ Every call counts as an expensive parser function.
 
 ```lua
 local results = nw.sparqlQuery(
-    'SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 5'
+    'SELECT ?label WHERE { GRAPH ?g { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } } LIMIT 5'
 )
 
 for _, binding in ipairs( results.results.bindings ) do

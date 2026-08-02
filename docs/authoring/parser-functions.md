@@ -191,5 +191,5 @@ document — the standard `head` / `results` structure (or `boolean` for an `ASK
 ### Examples
 
 ```
-{{#sparql_raw: SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 10}}
+{{#sparql_raw: SELECT ?label WHERE { GRAPH ?g { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } } LIMIT 10}}
 ```
