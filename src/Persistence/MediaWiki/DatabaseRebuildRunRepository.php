@@ -95,7 +95,7 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 			'nwrr_status' => [ RebuildStatus::Queued->value, RebuildStatus::Running->value ],
 		] );
 
-		return $matchedRows > 0 ? $run : $this->getRunUnderLock( $run->id );
+		return $matchedRows > 0 ? $run : $this->getMostRecentRunUnderLock( [ 'nwrr_id' => $run->id ] );
 	}
 
 	/**
@@ -135,6 +135,32 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 		] );
 	}
 
+	public function cancelActiveRun( string $store ): ?RebuildRun {
+		$db = $this->connectionProvider->getPrimaryDatabase();
+
+		$db->newUpdateQueryBuilder()
+			->update( self::TABLE )
+			->set( [
+				'nwrr_status' => RebuildStatus::Cancelled->value,
+				'nwrr_finished' => $db->timestamp(),
+				'nwrr_error' => null,
+			] )
+			->where( [
+				'nwrr_store' => $store,
+				'nwrr_status' => [ RebuildStatus::Queued->value, RebuildStatus::Running->value ],
+			] )
+			->caller( __METHOD__ )
+			->execute();
+
+		if ( $db->affectedRows() === 0 ) {
+			return null;
+		}
+
+		// The store's latest run is the one just cancelled: a store has at most one queued or running run,
+		// and it is always the last one started.
+		return $this->getMostRecentRunUnderLock( [ 'nwrr_store' => $store ] );
+	}
+
 	public function getLatestRun( string $store ): ?RebuildRun {
 		return $this->getMostRecentRun( [ 'nwrr_store' => $store ] );
 	}
@@ -158,11 +184,13 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 
 	/**
 	 * The run as the database now holds it, rather than as the reading transaction's snapshot has it. Only
-	 * for finding out what ended a run, which is the one read whose answer another connection has just
-	 * changed. Every other read here is of this process's own run and is happy with the snapshot.
+	 * for reading back a row a write has just settled the fate of, which is where the snapshot is by
+	 * definition out of date. Every other read here is of this process's own run and is happy with it.
+	 *
+	 * @param array<string, string|string[]|int> $conditions
 	 */
-	private function getRunUnderLock( int $id ): ?RebuildRun {
-		return self::newRunFromResult( $this->newRunQuery( [ 'nwrr_id' => $id ] )->forUpdate()->fetchRow() );
+	private function getMostRecentRunUnderLock( array $conditions ): ?RebuildRun {
+		return self::newRunFromResult( $this->newRunQuery( $conditions )->forUpdate()->fetchRow() );
 	}
 
 	/**

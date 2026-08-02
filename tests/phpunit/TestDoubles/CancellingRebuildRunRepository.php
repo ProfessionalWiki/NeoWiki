@@ -53,6 +53,10 @@ class CancellingRebuildRunRepository implements RebuildRunRepository {
 		return $this->runs->getActiveRun( $store );
 	}
 
+	public function cancelActiveRun( string $store ): ?RebuildRun {
+		return $this->runs->cancelActiveRun( $store );
+	}
+
 	public function getLatestRun( string $store ): ?RebuildRun {
 		return $this->runs->getLatestRun( $store );
 	}

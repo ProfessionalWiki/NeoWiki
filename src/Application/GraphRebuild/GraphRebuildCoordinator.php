@@ -133,11 +133,7 @@ class GraphRebuildCoordinator {
 
 		return $this->queueFirstBatchOf(
 			$this->startLock->whileHeld( $storeName, function () use ( $storeName, $trigger ): RebuildRun {
-				$activeRun = $this->runs->getActiveRun( $storeName );
-
-				if ( $activeRun !== null ) {
-					$this->runs->updateRun( $activeRun->cancelled() );
-				}
+				$this->runs->cancelActiveRun( $storeName );
 
 				return $this->runs->startRun( $storeName, $trigger, RebuildStatus::Queued );
 			} )
@@ -236,16 +232,7 @@ class GraphRebuildCoordinator {
 	public function cancel( string $storeName ): RebuildRun {
 		$this->getStore( $storeName );
 
-		$activeRun = $this->runs->getActiveRun( $storeName );
-
-		if ( $activeRun === null ) {
-			throw new NothingToCancelException( $storeName );
-		}
-
-		$cancelledRun = $activeRun->cancelled();
-		$this->runs->updateRun( $cancelledRun );
-
-		return $cancelledRun;
+		return $this->runs->cancelActiveRun( $storeName ) ?? throw new NothingToCancelException( $storeName );
 	}
 
 	/**

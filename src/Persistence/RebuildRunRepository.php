@@ -57,6 +57,18 @@ interface RebuildRunRepository {
 	public function getActiveRun( string $store ): ?RebuildRun;
 
 	/**
+	 * Ends the store's rebuild, and returns it as it now stands. Null when the store had none to end.
+	 *
+	 * Which run that is and the write that ends it are one step, so a run that reaches the end of the wiki
+	 * while it is being cancelled stays recorded as having reconciled it. Read first and written back
+	 * after, cancelling would overwrite that, and the store would be reported as never rebuilt.
+	 *
+	 * Only the status is written: how far the run got is whatever the records say by then, not what the
+	 * caller last saw.
+	 */
+	public function cancelActiveRun( string $store ): ?RebuildRun;
+
+	/**
 	 * The store's most recently started run, whatever its status.
 	 */
 	public function getLatestRun( string $store ): ?RebuildRun;

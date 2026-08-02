@@ -300,6 +300,60 @@ class DatabaseRebuildRunRepositoryTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 0, $storedRun->processed, 'what the refused batch got through is not written' );
 	}
 
+	public function testCancellingAStoresRebuildEndsTheRunItHadGoing(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Api, RebuildStatus::Queued );
+
+		$cancelledRun = $repository->cancelActiveRun( self::STORE );
+
+		$this->assertSame( $run->id, $cancelledRun?->id );
+		$this->assertSame( RebuildStatus::Cancelled, $cancelledRun->status );
+		$this->assertNull( $repository->getActiveRun( self::STORE ) );
+	}
+
+	/**
+	 * A run reaching the end of the wiki while it is being cancelled must keep having done so. Read first
+	 * and written back after, the cancellation would land on top of it, and the store would then be
+	 * reported as never rebuilt.
+	 */
+	public function testCancellingAStoreWhoseRunHasSinceSucceededLeavesItSucceeded(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+		$repository->updateRun( $run->succeeded() );
+
+		$this->assertNull( $repository->cancelActiveRun( self::STORE ) );
+		$this->assertSame( RebuildStatus::Succeeded, $repository->getLatestRun( self::STORE )?->status );
+	}
+
+	public function testCancellingAStoreWithNoRebuildEndsNothing(): void {
+		$this->assertNull( $this->newRepository()->cancelActiveRun( self::STORE ) );
+	}
+
+	public function testCancellingAStoreLeavesAnotherStoresRebuildGoing(): void {
+		$repository = $this->newRepository();
+		$repository->startRun( self::OTHER_STORE, RebuildTrigger::Api, RebuildStatus::Queued );
+
+		$repository->cancelActiveRun( self::STORE );
+
+		$this->assertNotNull( $repository->getActiveRun( self::OTHER_STORE ) );
+	}
+
+	/**
+	 * A batch may have advanced the run since whoever pressed cancel last read it, so what the cancelled
+	 * run says it got through is the record's, not theirs.
+	 */
+	public function testCancellingKeepsHowFarTheRunHadGot(): void {
+		$repository = $this->newRepository();
+		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
+		$repository->updateRun( $run->withProgress( cursor: 40, processed: 37, failed: 2 ) );
+
+		$cancelledRun = $repository->cancelActiveRun( self::STORE );
+
+		$this->assertSame( 40, $cancelledRun?->cursor );
+		$this->assertSame( 37, $cancelledRun->processed );
+		$this->assertSame( 2, $cancelledRun->failed );
+	}
+
 	public function testWritingBackARunNothingWasFiledUnderReportsNoRun(): void {
 		$repository = $this->newRepository();
 		$run = $repository->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running );
