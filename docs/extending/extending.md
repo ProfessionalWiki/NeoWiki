@@ -126,8 +126,8 @@ the Page node. No new revision is created. `rebuild()` returns a `PageRefreshOut
 - `SkippedMissingRevision` — the page has no current revision.
 - `SkippedMissingSubjectSlot` — the page carries no NeoWiki subject slot, so there was nothing to write.
 
-A graph store that fails is logged and skipped, exactly as on a normal page save, so the refresh cannot abort
-your caller; only request timeouts and wiki-database errors throw.
+A graph store that fails is logged and skipped, exactly as on a normal page save; only request timeouts and
+wiki-database errors throw.
 
 ### Graph Database Backends
 
