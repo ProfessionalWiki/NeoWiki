@@ -235,7 +235,7 @@ $wgNeoWikiSparqlStores = [
 
 A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
 
-### Stores with split endpoints
+### Oxigraph
 
 Oxigraph serves queries on `/query` and updates on `/update`, so an entry needs both:
 

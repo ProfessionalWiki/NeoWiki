@@ -53,7 +53,7 @@ jobs:
       # reaches the QLever the "Start QLever" step publishes on the runner's localhost.
       QLEVER_TEST_URL: http://localhost:7019/
       QLEVER_TEST_ACCESS_TOKEN: neowiki_test_token
-      # Live Oxigraph store for the second engine the same system test runs against, published by the
+      # Live Oxigraph store for the same system test run against a second engine, published by the
       # "Start Oxigraph" step.
       OXIGRAPH_TEST_BASE_URL: http://localhost:7878
 
@@ -147,13 +147,13 @@ jobs:
               exec qlever-server -i neowiki -p 7019 -a "$QLEVER_ACCESS_TOKEN" -m 1G --service-allowed-iri-prefixes -'
 
       # Oxigraph, the second SPARQL engine the same system test runs against. Started explicitly next
-      # to QLever rather than as a `services:` container so the serve command is stated here instead of
-      # inherited from the image's default: the flags are the point. They mirror the test_oxigraph
+      # to QLever rather than as a `services:` container, so the serve flags are stated here rather than
+      # inherited from the image's default. They mirror the test_oxigraph
       # dev-stack service (see Docker/docker-compose.dev.yml) — no --union-default-graph, so the store
       # is spec-strict; no --location, so it is in memory, which is all a fresh-per-run CI store needs.
       # No access-token flag: Oxigraph has no authentication (oxigraph#88). No federation flag either:
-      # Oxigraph federates unconditionally and offers no option to restrict it — see the docs on
-      # restricting federation.
+      # Oxigraph federates unconditionally and offers no option to restrict it — see
+      # docs/operations/installation.md#restricting-federation.
       - name: Start Oxigraph
         run: |
           docker run -d --name test_oxigraph -p 127.0.0.1:7878:7878 \

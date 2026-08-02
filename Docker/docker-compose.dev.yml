@@ -199,11 +199,11 @@ services:
   # updateUrl and queryUrl. A host port for manual inspection is opt-in via docker-compose.tools.yml.
   #
   # No entrypoint script: unlike QLever there is no index to build, and --location below is the whole
-  # of persistence — given one, the store is durable with no further flag.
+  # of persistence.
   #
-  # No healthcheck either, deliberately. The image is distroless, its only executable being the
-  # oxigraph binary, so a compose healthcheck — which runs inside the container — has no shell or
-  # curl to run. Wait for it from the host instead (see .github/workflows/ci-php.yml).
+  # No healthcheck either. The image is distroless, its only executable being the oxigraph binary,
+  # so a compose healthcheck — which runs inside the container — has no shell or curl to run. Wait
+  # for it from the host instead (see .github/workflows/ci-php.yml).
   oxigraph:
     image: ghcr.io/oxigraph/oxigraph:latest
     restart: unless-stopped
@@ -213,8 +213,7 @@ services:
     # --union-default-graph: unscoped queries see every named graph, as QLever does (see Docker/README.md).
     command: serve --location /data --bind 0.0.0.0:7878 --union-default-graph
     volumes:
-      # Named volume for the same reasons as qlever-index-data: it avoids host SELinux labeling and
-      # ownership issues under rootless Podman, and the projected data survives container restarts.
+      # Named volume, for the same reasons as qlever-index-data above.
       - oxigraph-data:/data
     # No stop_grace_period override (unlike qlever, which ignores SIGTERM): Oxigraph exits cleanly on it.
 
@@ -228,7 +227,7 @@ services:
     mem_limit: 1536m
     # No --location, so the store is in memory. Ephemeral test scaffolding, like test_qlever running
     # without --persist-updates: every run clears it (DROP ALL) and nothing survives a restart by
-    # design. It is also exactly how CI starts it, so the two cannot drift apart.
+    # design. It matches how CI starts it.
     #
     # Deliberately WITHOUT --union-default-graph: the spec-strict half of the engine pair (see
     # Docker/README.md). QueryOxigraphEndToEndTest asserts it.

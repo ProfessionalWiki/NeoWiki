@@ -31,18 +31,17 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  * overwrite, and that one query can join across them.
  *
  * Each subclass names one live store, so the loop runs once per SPARQL engine the development stack
- * ships. Running it against more than one is the point: it keeps NeoWiki honest about targeting SPARQL
- * 1.1 itself rather than one implementation's dialect and defaults. Those defaults differ in ways a
- * query can silently come to depend on — most sharply whether an unscoped query sees the named graphs
- * NeoWiki writes into, which SPARQL 1.1 says it does not and QLever nonetheless does.
+ * ships — keeping NeoWiki honest about targeting SPARQL 1.1 itself rather than one implementation's
+ * dialect and defaults. Those defaults differ in ways a query can silently come to depend on, most
+ * sharply whether an unscoped query sees the named graphs NeoWiki writes into: SPARQL 1.1 says it
+ * does not, and QLever nonetheless does.
  *
  * Deliberately does NOT skip when a store is unreachable: an unset store URL fails the test through
  * {@see requireEnv}, and an unreachable store surfaces as a loud query/HTTP failure. A silently
  * skipped system test would leave the headline deliverable unverified.
  *
- * Every subclass must repeat `@covers` and `@group Database` in its own docblock. MediaWiki reads the
- * group off the concrete class alone, without walking up to here, so a subclass that omits it runs
- * without database support instead of failing.
+ * Each subclass carries its own `@covers` and `@group Database`; MediaWiki reads the group off the
+ * concrete class alone.
  */
 abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 
@@ -102,10 +101,9 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * Reads a store URL from the environment, failing the test when it is unset. A failure and not a
-	 * skip deliberately: a system test that quietly does nothing leaves the write+query loop
-	 * unverified, which is the one thing it exists to prove. The store description goes into the
-	 * failure message, so name the dev-stack service the reader has to bring up.
+	 * Reads a store URL from the environment, failing the test when it is unset rather than
+	 * skipping — see the class docblock for why. The store description goes into the failure
+	 * message, so name the dev-stack service the reader has to bring up.
 	 */
 	protected function requireEnv( string $variable, string $store ): string {
 		$value = getenv( $variable );
@@ -173,9 +171,9 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * Guards the semantics each subclass's store is chosen for. The suite's claim to cover both is
-	 * only worth something while one store stays strict and the other lenient, and that difference
-	 * lives entirely in how the services are started — nothing else here would notice it changing.
+	 * Guards the semantics each subclass's store is chosen for: the pair covers both only while one
+	 * store stays strict and the other lenient. That difference lives entirely in how the services
+	 * are started, and nothing else here would notice it changing.
 	 */
 	public function testUnscopedQueryFindsPageDataOnlyWhereTheStoreUnionsNamedGraphs(): void {
 		$subjectId = TestSubject::uniqueId();
@@ -340,7 +338,8 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 
 	/**
 	 * The same lookup written without a `GRAPH` clause, so it matches the default graph only. Under
-	 * SPARQL 1.1 that finds nothing here; a store that unions its named graphs in answers anyway.
+	 * SPARQL 1.1 that finds nothing here; a store that unions its named graphs into the default
+	 * graph answers anyway.
 	 *
 	 * @return list<string>
 	 */

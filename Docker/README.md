@@ -95,12 +95,11 @@ because its multi-step bring-up cannot be expressed as a GitHub Actions service 
 The dev stack also bundles [Oxigraph](https://github.com/oxigraph/oxigraph), a second SPARQL engine,
 so the projection plugin can be exercised against more than one implementation. Unlike QLever it is
 not wired up by default: `SettingsTemplate.php` points the wiki at QLever, so nothing writes here
-until you repoint `$wgNeoWikiSparqlStores` at it, with `updateUrl` `http://oxigraph:7878/update` and
-`queryUrl` `http://oxigraph:7878/query`.
+until you repoint `$wgNeoWikiSparqlStores` at it in `Docker/LocalSettings.local.php`, with
+`updateUrl` `http://oxigraph:7878/update` and `queryUrl` `http://oxigraph:7878/query`.
 
-It needs none of QLever's bring-up: no index to build, and `--location` is the whole of persistence —
-given one, the store is durable with no further flag. Data lives in the `oxigraph-data` named volume,
-which no target empties on its own:
+It needs none of QLever's bring-up: no index to build, and `--location` is the whole of persistence.
+Data lives in the `oxigraph-data` named volume, which no target empties on its own:
 
 ```sh
 make down
@@ -131,8 +130,8 @@ publishes this port on loopback only, unlike the Neo4j and QLever ones.
 The system test runs against both engines, and `test_oxigraph` is its Oxigraph store — isolated from
 the demo `oxigraph` service the way `test_qlever` is from `qlever`. `phpunit.xml.dist` points the test
 at it via `OXIGRAPH_TEST_BASE_URL=http://test_oxigraph:7878`; it is reached in-network only, with no
-host port. It runs with no `--location`, so the store is in memory: ephemeral scaffolding each run
-clears, like `test_qlever` without `--persist-updates`.
+host port. It runs with no `--location`, so the store is in memory: ephemeral scaffolding that each
+run clears, like `test_qlever` without `--persist-updates`.
 
 It runs **without** `--union-default-graph`, and the test asserts that. `make phpunit` brings it up as
 part of the dev stack; in CI it is started explicitly (see `.github/workflows/ci-php.yml`).

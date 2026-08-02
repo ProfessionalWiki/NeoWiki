@@ -33,7 +33,7 @@ class QueryQLeverEndToEndTest extends QuerySparqlEndToEndTestCase {
 	}
 
 	/**
-	 * Unconditionally, with no way to turn it off.
+	 * QLever unions unconditionally, with no way to turn it off.
 	 */
 	protected function storeUnionsNamedGraphsIntoTheDefaultGraph(): bool {
 		return true;

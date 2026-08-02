@@ -30,15 +30,14 @@ class QueryOxigraphEndToEndTest extends QuerySparqlEndToEndTestCase {
 	}
 
 	/**
-	 * Oxigraph has no authentication at all (oxigraph#88), so there is no token to send.
+	 * Oxigraph has no authentication (oxigraph#88), so there is no token to send.
 	 */
 	protected function storeAccessToken(): ?string {
 		return null;
 	}
 
 	/**
-	 * The service is started without `--union-default-graph`, which is what makes this the strict
-	 * half of the pair.
+	 * The service is started without `--union-default-graph`.
 	 */
 	protected function storeUnionsNamedGraphsIntoTheDefaultGraph(): bool {
 		return false;
