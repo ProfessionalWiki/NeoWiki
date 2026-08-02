@@ -276,6 +276,14 @@ class SpecialGraphStores extends SpecialPage {
 		return new CsrfTokenSet( $this->getRequest() );
 	}
 
+	/**
+	 * Starting or cancelling a rebuild writes a run record, so MediaWiki must route this page to the
+	 * primary database rather than serve it from a replica.
+	 */
+	public function doesWrites(): bool {
+		return true;
+	}
+
 	public function getGroupName(): string {
 		return 'neowiki';
 	}
