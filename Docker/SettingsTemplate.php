@@ -225,17 +225,19 @@ $wgNeoWikiEnableDevelopmentUI = true;
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://' . getenv( 'NEO4J_USERNAME' ) . ':' . getenv( 'NEO4J_PASSWORD' ) . '@neo:7687';
 $wgNeoWikiNeo4jInternalReadUrl = 'bolt://' . getenv( 'NEO4J_USERNAME_READ' ) . ':' . getenv( 'NEO4J_PASSWORD_READ' ) . '@neo:7687';
 
-// SPARQL graph store (QLever) for the SPARQL projection plugin (#586). Configured only in the dev
-// stack: the qlever service lives in docker-compose.dev.yml, so the production/demo image (which runs
-// this same file in production mode) never references a non-existent service. Skipped under PHPUnit so
-// integration tests never post updates to the dev QLever — they configure their own store with mocked
-// HTTP via overrideConfigValue(), so the default here must stay empty during tests.
+// SPARQL graph store (QLever) for the SPARQL projection plugin (#586). Configured in every mode, so
+// the demo stack has the same SPARQL surface as the dev stack — both run the qlever service from
+// docker-compose.yml. The gate is the QLever access token rather than the mode: it is set by the
+// compose stacks that run a qlever service, so an image started outside them gets no store instead of
+// a configuration pointing at a host that does not exist. Skipped under PHPUnit so integration tests
+// never post updates to this store — they configure their own with mocked HTTP via
+// overrideConfigValue(), so the default here must stay empty during tests.
 //
 // Two entries, one endpoint: the native projection and the EDM projection of the demo data's
 // Mapping:EDM page are kept in the same QLever index as sibling projections. Each lands in its own
 // family of per-page named graphs (#1053), so neither overwrites the other. The query surfaces
 // target the first entry's endpoint, which both entries share, so a query reaches both projections.
-if ( $mwIsDev && !defined( 'MW_PHPUNIT_TEST' ) ) {
+if ( getenv( 'QLEVER_ACCESS_TOKEN' ) !== false && !defined( 'MW_PHPUNIT_TEST' ) ) {
 	$wgNeoWikiSparqlStores = [
 		[
 			'updateUrl' => 'http://qlever:7019/',

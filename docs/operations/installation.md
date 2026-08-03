@@ -277,9 +277,9 @@ Each is read-only: the query is sent as a SPARQL 1.1 *query* operation, posted o
 
 A projection configured on a different endpoint is therefore not reachable from these surfaces.
 
-The bundled development stack ships a working QLever example wired up this way — see
-[`Docker/README.md`](../../Docker/README.md#qlever-sparql-store-dev) for the service, its `--persist-updates`
-requirement, and how to query it.
+The bundled Docker stack ships a working QLever example wired up this way, in both the demo and the development
+variant — see [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store) for the service, its
+`--persist-updates` requirement, and how to query it.
 
 ### Restricting federation
 
@@ -298,7 +298,7 @@ qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes -
 qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes https://sparql.example.org/
 ```
 
-The bundled development stack sets the deny-all value, so federation is off unless you change it. The setting can
+The bundled Docker stack sets the deny-all value, so federation is off unless you change it. The setting can
 also be changed at runtime through the store's endpoint by anyone holding its access token, so keep that token
 secret. Other SPARQL stores have equivalent settings — consult their documentation.
 
