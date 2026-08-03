@@ -33,7 +33,9 @@ This pulls the latest demo image, starts the stack, installs the wiki, and loads
 stops and removes the containers, and `make remove` also deletes the data volumes. To move a running stack to the
 latest NeoWiki, see [Upgrading](upgrading.md).
 
-For an empty wiki without the sample data, run `make up && make install-db && make load-neo4j-users` instead.
+For an empty wiki without the sample data, run `make up && make install-db && make load-neo4j-users` instead. That
+wiki has no `Mapping:EDM` page, so the stack's preconfigured EDM projection reports a failure on every save until you
+create that Mapping or remove its entry from `$wgNeoWikiSparqlStores`.
 
 Open `http://localhost:8484` and log in as `AdminName` with the password `AdminPassword`.
 
@@ -277,8 +279,8 @@ Each is read-only: the query is sent as a SPARQL 1.1 *query* operation, posted o
 
 A projection configured on a different endpoint is therefore not reachable from these surfaces.
 
-The bundled Docker stack ships a working QLever example wired up this way, in both the demo and the development
-variant — see [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store) for the service, its
+The bundled Docker stack ships a working QLever example wired up this way — the demo stack and the dev stack both
+run it — see [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store) for the service, its
 `--persist-updates` requirement, and how to query it.
 
 ### Restricting federation
