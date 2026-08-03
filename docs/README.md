@@ -44,7 +44,7 @@ Project Subjects to RDF, natively or mapped onto standard ontologies.
 ## Run NeoWiki
 
 * [Installation](operations/installation.md) — the Docker demo, or adding NeoWiki to an existing MediaWiki
-* [Upgrading](operations/upgrading.md) — moving either install to the latest NeoWiki
+* [Upgrading](operations/upgrading.md) — moving your wiki to the latest NeoWiki
 * [Maintenance](operations/maintenance.md) — rebuilding the graph, Neo4j outage behavior, and backups
 * [Performance](operations/performance.md) — measured write throughput, and how to re-run the measurement
 
