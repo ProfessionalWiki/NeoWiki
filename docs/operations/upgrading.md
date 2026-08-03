@@ -7,7 +7,7 @@ order: 2
 
 NeoWiki has no releases or version numbers yet, so upgrading means moving to the latest development state.
 
-## Method A: Docker
+## Upgrading a Docker install
 
 Update the copy of the repository the stack runs from: `git pull` in it, or re-download it if you took an archive.
 
@@ -29,7 +29,7 @@ If the new version can no longer read your evaluation data, start fresh with `ma
 `make import-demo-data` updates the demo pages to the current demo set, the same content as the public demo wiki. It
 overwrites your edits to those pages (still accessible via page history) and leaves pages you created alone.
 
-## Method B: An existing MediaWiki
+## Upgrading a manual install
 
 From the MediaWiki root, update the code, its dependencies, and the frontend bundle:
 
