@@ -29,7 +29,7 @@ are already bound on the host. The demo stack allocates nothing: it uses the val
 | `QLEVER_PORT`      | (see below) | 7019    | QLever SPARQL endpoint (opt-in) |
 
 Neo4j and QLever ports are only exposed to the host by the `Docker/docker-compose.tools.yml`
-overlay, which works with either stack and which `make dev-tools` adds to the dev stack. They use
+overlay, which works with either stack; `make dev-tools` adds it to the dev stack. They use
 conventional defaults (7474, 7687, 7019) and are not auto-allocated, so the overlay is best used
 with one stack at a time. Override `NEO_BROWSER_PORT` / `NEO_BOLT_PORT` / `QLEVER_PORT` if you
 need to run two tools-mode stacks simultaneously.
@@ -41,8 +41,8 @@ from inside the stack via `make bash` or `docker compose exec`.
 
 Both the demo stack and the dev stack bundle a [QLever](https://github.com/ad-freiburg/qlever)
 SPARQL 1.1 graph store as a working example of NeoWiki's SPARQL projection plugin (issue #586). The
-service is defined in `docker-compose.yml`, which both stacks build on, and which passes the wiki
-the store's endpoint as `QLEVER_URL`. `SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at that
+service is defined in `docker-compose.yml`, which both stacks build on, and which passes the store's
+endpoint to the wiki as `QLEVER_URL`. `SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at that
 endpoint, so every page save and `RebuildGraphDatabases.php` also projects the page's RDF into
 QLever as named graphs.
 
@@ -113,7 +113,7 @@ report the backends as missing instead of starting them.
   `LocalSettings.php`), and `dev-mw` (the dev image with mounted NeoWiki source).
 - `docker-compose.yml` — the demo stack's services (`mediawiki`, `db`, `neo`, `qlever`
   — SPARQL store, see above) plus the profile-gated `caddy` (the `server` profile, for
-  HTTPS hosting). The dev overlay builds on this file, so its services are in both stacks.
+  HTTPS hosting). The dev overlay builds on this file, so these services are in both stacks.
 - `docker-compose.dev.yml` — dev overlay; switches `mediawiki` to the dev image,
   bind-mounts the NeoWiki source, sets `MW_MODE=dev`, and adds the dev-only sidecars
   `node` and `mailcatcher`, plus `test_neo` and `test_qlever` behind the `test` profile.

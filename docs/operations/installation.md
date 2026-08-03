@@ -279,9 +279,9 @@ Each is read-only: the query is sent as a SPARQL 1.1 *query* operation, posted o
 
 A projection configured on a different endpoint is therefore not reachable from these surfaces.
 
-The bundled Docker stack ships a working QLever example wired up this way — the demo stack and the dev stack both
-run it — see [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store) for the service, its
-`--persist-updates` requirement, and how to query it.
+Both bundled Docker stacks, demo and dev, ship a working QLever example wired up this way — see
+[`Docker/README.md`](../../Docker/README.md#qlever-sparql-store) for the service, its `--persist-updates` requirement,
+and how to query it.
 
 ### Restricting federation
 
