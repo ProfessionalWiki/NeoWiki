@@ -3,7 +3,7 @@ title: Installation
 order: 1
 ---
 
-# Installing the NeoWiki Demo
+# Installing NeoWiki
 
 NeoWiki is pre-release software. It is not production ready, and breaking changes can land at any time without a
 migration path. Treat any install as an evaluation or pilot and run it on disposable data.
@@ -29,9 +29,9 @@ Download the `ProfessionalWiki/NeoWiki` repository and run this from its root:
 make demo
 ```
 
-This pulls the latest demo image, starts the stack, installs the wiki, and loads the demo
-data. Later, `make pull` refreshes the image, `make down` stops and removes the containers, and
-`make remove` also deletes the data volumes.
+This pulls the latest demo image, starts the stack, installs the wiki, and loads the demo data. Later, `make down`
+stops and removes the containers, and `make remove` also deletes the data volumes. To move a running stack to the
+latest NeoWiki, see [Upgrading](upgrading.md).
 
 For an empty wiki without the sample data, run `make up && make install-db && make load-neo4j-users` instead.
 
