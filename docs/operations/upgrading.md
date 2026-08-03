@@ -27,7 +27,8 @@ If the new version can no longer read your evaluation data, start fresh with `ma
 ### Optional: refresh the demo content
 
 `make import-demo-data` updates the demo pages to the current demo set, the same content as the public demo wiki. It
-overwrites your edits to those pages (still accessible via page history) and leaves pages you created alone.
+overwrites your edits to those pages (still accessible via page history) and leaves pages you created alone. Then run
+`make rebuild-graph-databases` so pages that predate the refresh reach every configured store.
 
 ## Upgrading a manual install
 
