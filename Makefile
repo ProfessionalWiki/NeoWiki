@@ -68,7 +68,7 @@ help:
 
 # ---- Lifecycle (host only) ---------------------------------------------------
 
-.PHONY: up pull demo dev dev-tools _dev-tools-impl down remove logs ps bash _preflight doctor
+.PHONY: up pull demo upgrade dev dev-tools _dev-tools-impl down remove logs ps bash _preflight doctor
 
 # Fail fast on a broken Docker runtime (Docker or Compose missing, daemon down or
 # denied) before the lifecycle targets do expensive work. Source: Docker/scripts/preflight.sh.
@@ -92,6 +92,15 @@ demo: _preflight ## One-command demo: pull image, start stack, install + seed (i
 	@echo ""
 	@echo "Demo wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Log in as AdminName (password: $$MW_ADMIN_PASSWORD)."
+
+upgrade: _preflight ## Upgrade the demo stack: pull the latest image, restart, migrate, rebuild the graph
+	$(DC) pull
+	$(DC) up -d
+	@$(MAKE) --no-print-directory _wait-mw
+	@$(MAKE) --no-print-directory update-dot-php
+	@$(MAKE) --no-print-directory rebuild-graph-databases
+	@echo ""
+	@echo "Upgrade complete: http://localhost:$$MW_SERVER_PORT"
 
 dev: _preflight bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl

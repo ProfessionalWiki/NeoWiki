@@ -1,11 +1,12 @@
 ---
 title: Maintenance
-order: 2
+order: 3
 ---
 
 # Maintaining NeoWiki
 
-Upkeep tasks for an evaluation NeoWiki instance. For first-time setup, see [installation](installation.md).
+Upkeep tasks for an evaluation NeoWiki instance. For first-time setup, see [installation](installation.md); for
+moving to a newer version, see [upgrading](upgrading.md).
 
 ## Rebuilding the graph
 
@@ -30,20 +31,6 @@ Two things to plan around:
   result, empty the backend before rebuilding: wipe Neo4j's data volume, or drop the wiki's named graphs from the store.
 - It runs as a single sequential process with no batching or resume, so the time scales with the number of pages. Plan
   downtime on large wikis.
-
-## Upgrades
-
-Update the NeoWiki code, then run MediaWiki's standard updater from the root:
-
-```sh
-php maintenance/run.php update --quick
-```
-
-If the new version changes how data is stored in the graph, [rebuild the projection](#rebuilding-the-graph) afterwards.
-
-NeoWiki is pre-release, so a new version can change the canonical revision-slot format with no migration path. Your
-evaluation data may not survive an upgrade, so be ready to recreate it from scratch — a projection rebuild does not
-recover data the new version can no longer read.
 
 ## What happens during a Neo4j outage
 
