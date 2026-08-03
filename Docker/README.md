@@ -36,14 +36,14 @@ need to run two tools-mode worktrees simultaneously.
 The MariaDB, (default) Neo4j and QLever ports are not exposed to the host. Reach them
 from inside the stack via `make bash` or `docker compose exec`.
 
-## QLever SPARQL store (dev)
+## QLever SPARQL store
 
-The dev stack bundles a [QLever](https://github.com/ad-freiburg/qlever) SPARQL 1.1 graph
-store as a working example of NeoWiki's SPARQL projection plugin (issue #586). It is a
-dev-only sidecar (in `docker-compose.dev.yml`); the base "try-it-out" / demo stack does not
-run it. `SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at it (`http://qlever:7019/`)
-only in dev mode, so every page save and `RebuildGraphDatabases.php` also projects the page's
-RDF into QLever as named graphs.
+The stack bundles a [QLever](https://github.com/ad-freiburg/qlever) SPARQL 1.1 graph store as a
+working example of NeoWiki's SPARQL projection plugin (issue #586). It is a base-stack service (in
+`docker-compose.yml`), so both the "try-it-out" / demo stack and the dev stack run it.
+`SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at it (`http://qlever:7019/`) whenever
+`QLEVER_ACCESS_TOKEN` is set — which is what running inside these stacks means — so every page save
+and `RebuildGraphDatabases.php` also projects the page's RDF into QLever as named graphs.
 
 Two entries point at that one endpoint: the `native` projection and the `EDM` one defined
 by the demo data's `Mapping:EDM` page. Each writes its own per-page named graphs, so one
@@ -80,11 +80,11 @@ Without the tools overlay, run the same query from inside the stack, e.g.
 ### `test_qlever` (SPARQL query system test)
 
 A second, dedicated QLever store — `test_qlever` — backs the SPARQL query system test
-(`QuerySparqlEndToEndTest`), isolated from the demo `qlever` store the way `test_neo` is
-isolated from `neo`: the test writes and deletes Subjects, so it must not touch the demo
+(`QuerySparqlEndToEndTest`), isolated from the `qlever` store the way `test_neo` is
+isolated from `neo`: the test writes and deletes Subjects, so it must not touch the wiki's
 data. `phpunit.xml.dist` points the test at it via `QLEVER_TEST_URL=http://test_qlever:7019/`
 (fixed token `neowiki_test_token`); it is reached in-network only, with no host port. Unlike
-the demo store it runs **without** `--persist-updates`: it is ephemeral test scaffolding that
+the `qlever` store it runs **without** `--persist-updates`: it is ephemeral test scaffolding that
 each run clears (`DROP ALL`), so keeping updates in memory is enough. `make phpunit` brings it
 up on demand via the `test` profile; in CI it is started explicitly (see
 `.github/workflows/ci-php.yml`), because its multi-step bring-up cannot be expressed as a
@@ -105,12 +105,12 @@ report the backends as missing instead of starting them.
   production `php.ini`; intermediate, no `LocalSettings.php`), `final-mw` (the prebuilt
   demo image published as `ghcr.io/professionalwiki/neowiki:latest`, which bakes in
   `LocalSettings.php`), and `dev-mw` (the dev image with mounted NeoWiki source).
-- `docker-compose.yml` — base "try-it-out" services (`mediawiki`, `db`, `neo`) plus
-  the profile-gated `caddy` (the `server` profile, for HTTPS hosting).
+- `docker-compose.yml` — base "try-it-out" services (`mediawiki`, `db`, `neo`, `qlever`
+  — SPARQL store, see above) plus the profile-gated `caddy` (the `server` profile, for
+  HTTPS hosting).
 - `docker-compose.dev.yml` — dev overlay; switches `mediawiki` to the dev image,
   bind-mounts the NeoWiki source, sets `MW_MODE=dev`, and adds the dev-only sidecars
-  `qlever` (SPARQL store, see above), `node`, and `mailcatcher`, plus `test_neo` and
-  `test_qlever` behind the `test` profile.
+  `node` and `mailcatcher`, plus `test_neo` and `test_qlever` behind the `test` profile.
 - `docker-compose.tools.yml` — opt-in overlay that exposes Neo4j and QLever to the host.
 - `SettingsTemplate.php` — `LocalSettings.php` that branches on `MW_MODE`.
 - `.env.dist` — tracked defaults; auto-copied to `.env` on first `make dev`.
