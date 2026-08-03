@@ -10,8 +10,8 @@ NeoWiki has no releases or version numbers yet, so upgrading means moving to the
 ## Method A: Docker
 
 Update the copy of the repository the stack runs from: `git pull` in it, or re-download it if you took an archive.
-Keep it at the same path, or `make` targets a different, empty stack and your `Docker/.env` settings are lost. Then,
-from the repository root:
+
+Then, from the repository root:
 
 ```sh
 make upgrade
@@ -27,7 +27,7 @@ If the new version can no longer read your evaluation data, start fresh with `ma
 ### Optional: refresh the demo content
 
 `make import-demo-data` updates the demo pages to the current demo set, the same content as the public demo wiki. It
-overwrites your edits to those pages, which the page history keeps, and leaves pages you created alone.
+overwrites your edits to those pages (still accessible via page history) and leaves pages you created alone.
 
 ## Method B: An existing MediaWiki
 
