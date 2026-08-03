@@ -21,10 +21,14 @@ services:
       - NEO4J_PASSWORD
       - NEO4J_USERNAME_READ
       - NEO4J_PASSWORD_READ
-      # Bearer token the wiki sends to authorize writes to the QLever SPARQL store
-      # (see the qlever service below and SettingsTemplate.php's $wgNeoWikiSparqlStores).
-      # Sourced from Docker/.env.
-      - QLEVER_ACCESS_TOKEN
+      # Endpoint of the qlever service below. Its presence is what makes SettingsTemplate.php
+      # configure $wgNeoWikiSparqlStores, so every stack built on this file gets the store while
+      # an image run outside one gets none.
+      - QLEVER_URL=http://qlever:7019/
+      # Bearer token the wiki sends to authorize SPARQL updates. Defaulted here instead of being
+      # required from Docker/.env, so a .env written before the variable existed still works; the
+      # qlever service below defaults it the same way, so wiki and server always agree.
+      - QLEVER_ACCESS_TOKEN=${QLEVER_ACCESS_TOKEN:-neowiki_dev_token}
     healthcheck:
       test: "curl -fs http://localhost:80/wiki/Special:Version | grep -q 'Jeroen De Dauw'"
       interval: 60s
@@ -65,13 +69,12 @@ services:
       timeout: 1s
       retries: 10
 
-  # SPARQL 1.1 graph store (QLever) for the SPARQL projection plugin (#586). Part of the base
-  # stack, so the demo wiki gets the same RDF/SPARQL surface as the dev stack: every page save
-  # and RebuildGraphDatabases.php also projects the page's RDF here as named graphs, and the
-  # query surfaces read from it. SettingsTemplate.php configures $wgNeoWikiSparqlStores when
-  # QLEVER_ACCESS_TOKEN is set, which is what running inside this stack signals. NeoWiki reaches
-  # it in-network as http://qlever:7019/; a host port for manual inspection is opt-in via
-  # docker-compose.tools.yml.
+  # SPARQL 1.1 graph store (QLever) for the SPARQL projection plugin (#586). Defined in this base
+  # file rather than the dev overlay, so the demo stack gets the same RDF/SPARQL surface as the dev
+  # stack: every page save and RebuildGraphDatabases.php also projects the page's RDF here as named
+  # graphs, and the query surfaces read from it. The wiki is pointed at it by QLEVER_URL above.
+  # NeoWiki reaches it in-network as http://qlever:7019/; a host port for manual inspection is
+  # opt-in via docker-compose.tools.yml.
   qlever:
     image: docker.io/adfreiburg/qlever:latest
     restart: unless-stopped
@@ -112,7 +115,9 @@ services:
         # after it would be read as another prefix.
         exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --persist-updates --service-allowed-iri-prefixes -
     environment:
-      - QLEVER_ACCESS_TOKEN
+      # Same default as the mediawiki service above, so the server and the wiki agree on the token
+      # even when Docker/.env predates the variable or leaves it empty.
+      - QLEVER_ACCESS_TOKEN=${QLEVER_ACCESS_TOKEN:-neowiki_dev_token}
     volumes:
       # Named volume (not a bind mount) so the index directory avoids host SELinux
       # labeling / ownership issues under rootless Podman, and so the index plus its

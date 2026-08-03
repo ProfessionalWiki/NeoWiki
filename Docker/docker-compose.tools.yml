@@ -1,17 +1,17 @@
 services:
-  # Opt-in port exposure for graph inspection tools. Activate by including this
-  # overlay alongside the dev overlay, or by running `make dev-tools` from the
-  # extension root.
+  # Opt-in port exposure for graph inspection tools. Both services it touches come from
+  # docker-compose.yml, so this overlay works on the demo stack as well as the dev stack;
+  # `make dev-tools` from the extension root adds it to the latter.
   #
   # Default ports (7474, 7687, 7019) are the Neo4j and QLever conventions and are not
-  # auto-allocated, so run the tools overlay with one worktree at a time. Override via
+  # auto-allocated, so run the tools overlay with one stack at a time. Override via
   # env (NEO_BROWSER_PORT / NEO_BOLT_PORT / QLEVER_PORT) to run several simultaneously.
   neo:
     ports:
       - "${NEO_BROWSER_PORT:-7474}:7474"
       - "${NEO_BOLT_PORT:-7687}:7687"
 
-  # Exposes the dev QLever SPARQL endpoint on the host for manual querying, e.g.
+  # Exposes the stack's QLever SPARQL endpoint on the host for manual querying, e.g.
   #   curl http://localhost:7019/ --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' -H 'Accept: application/sparql-results+json'
   qlever:
     ports:

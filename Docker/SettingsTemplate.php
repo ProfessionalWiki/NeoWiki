@@ -226,26 +226,30 @@ $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://' . getenv( 'NEO4J_USERNAME' ) . ':' .
 $wgNeoWikiNeo4jInternalReadUrl = 'bolt://' . getenv( 'NEO4J_USERNAME_READ' ) . ':' . getenv( 'NEO4J_PASSWORD_READ' ) . '@neo:7687';
 
 // SPARQL graph store (QLever) for the SPARQL projection plugin (#586). Configured in every mode, so
-// the demo stack has the same SPARQL surface as the dev stack — both run the qlever service from
-// docker-compose.yml. The gate is the QLever access token rather than the mode: it is set by the
-// compose stacks that run a qlever service, so an image started outside them gets no store instead of
-// a configuration pointing at a host that does not exist. Skipped under PHPUnit so integration tests
-// never post updates to this store — they configure their own with mocked HTTP via
-// overrideConfigValue(), so the default here must stay empty during tests.
+// the demo stack has the same SPARQL surface as the dev stack — both run the qlever service defined
+// in docker-compose.yml, and that file is what supplies the endpoint below. The endpoint is therefore
+// the gate: an image started outside those stacks gets no store rather than a configuration pointing
+// at a host that does not exist, and so does CI, whose docker-compose.ci.yml replaces that file and
+// sets neither variable. The access token is an ordinary optional credential, defaulted in the compose
+// file so a Docker/.env written before it existed still yields a working store. Skipped under PHPUnit
+// so integration tests never post updates here — they configure their own stores with mocked HTTP via
+// overrideConfigValue(), so the default must stay empty during tests.
 //
 // Two entries, one endpoint: the native projection and the EDM projection of the demo data's
 // Mapping:EDM page are kept in the same QLever index as sibling projections. Each lands in its own
 // family of per-page named graphs (#1053), so neither overwrites the other. The query surfaces
 // target the first entry's endpoint, which both entries share, so a query reaches both projections.
-if ( getenv( 'QLEVER_ACCESS_TOKEN' ) !== false && !defined( 'MW_PHPUNIT_TEST' ) ) {
+$qleverUrl = getenv( 'QLEVER_URL' );
+
+if ( $qleverUrl !== false && !defined( 'MW_PHPUNIT_TEST' ) ) {
 	$wgNeoWikiSparqlStores = [
 		[
-			'updateUrl' => 'http://qlever:7019/',
+			'updateUrl' => $qleverUrl,
 			'accessToken' => getenv( 'QLEVER_ACCESS_TOKEN' ) ?: null,
 			'projection' => 'native',
 		],
 		[
-			'updateUrl' => 'http://qlever:7019/',
+			'updateUrl' => $qleverUrl,
 			'accessToken' => getenv( 'QLEVER_ACCESS_TOKEN' ) ?: null,
 			'projection' => 'EDM',
 		],

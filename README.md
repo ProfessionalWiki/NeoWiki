@@ -95,7 +95,8 @@ name. After `perf-restore`:
 
 - Run `make update-dot-php`: the MediaWiki schema is the snapshot's, not this checkout's.
 - QLever is not part of the snapshot, and `make rebuild-graph-databases` only adds to it, so a
-  SPARQL store that has to match the restored wiki must start empty. No target empties it:
+  SPARQL store that has to match the restored wiki must start empty. `make remove` clears it
+  along with the wiki's own data; to empty only QLever, drop its volume while the stack is down:
 
   ```bash
   make down                                     # also removes the qlever container
@@ -128,7 +129,7 @@ Example:
 ```php
 <?php
 wfLoadExtension( 'SomeExtension' );
-$wgDebugLogGroups['neowiki'] = '/tmp/neowiki-debug.log';
+$wgDebugLogGroups['NeoWiki'] = '/tmp/neowiki-debug.log';
 ```
 
 ### Try-it-out and server deployment

@@ -75,7 +75,7 @@ class QuerySparqlEndToEndTest extends NeoWikiIntegrationTestCase {
 
 	/**
 	 * Points one store entry per projection at the single test store, so the projections are siblings in
-	 * one QLever index — the shape the development stack ships (native + EDM).
+	 * one QLever index — the shape the Docker stacks ship (native + EDM).
 	 */
 	private function configureStoresForProjections( string ...$projections ): void {
 		$this->overrideConfigValue(
