@@ -5,10 +5,7 @@ order: 2
 
 # Upgrading NeoWiki
 
-NeoWiki has no releases or version numbers yet, so upgrading means moving to the latest development state. For
-first-time setup, see [installation](installation.md). A new version can change the canonical revision-slot format
-with no migration path. Your evaluation data may not survive an upgrade, so be ready to recreate it; a projection
-rebuild does not recover data the new version can no longer read.
+NeoWiki has no releases or version numbers yet, so upgrading means moving to the latest development state.
 
 ## Method A: Docker
 
