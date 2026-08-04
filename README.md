@@ -3,7 +3,7 @@
 [NeoWiki](https://neowiki.ai) is a collaborative knowledge management system on top of MediaWiki and graph databases.
 
 [![Mastodon](https://img.shields.io/mastodon/follow/116122313808578574)](https://mastodon.social/@NeoWiki)
-[![Bluesky](https://img.shields.io/bluesky/followers/NeoWiki.bsky.social)](https://bsky.app/profile/neowiki.bsky.social)
+[![Bluesky](https://img.shields.io/bluesky/followers/neowiki.ai)](https://bsky.app/profile/neowiki.ai)
 [![X](https://img.shields.io/twitter/follow/NeoWikiAI)](https://x.com/NeoWikiAI)
 
 ## Installation
