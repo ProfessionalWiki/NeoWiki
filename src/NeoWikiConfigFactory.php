@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki;
 use MediaWiki\Config\Config;
 use MediaWiki\WikiMap\WikiMap;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphStoreName;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -18,8 +19,6 @@ class NeoWikiConfigFactory {
 	 * without a word, so two stores could end up sharing one row — and with it the check that stops two
 	 * rebuilds of one store running at once.
 	 */
-	private const MAX_NAME_LENGTH = 255;
-
 	public function __construct(
 		private readonly LoggerInterface $logger = new NullLogger(),
 	) {
@@ -95,8 +94,8 @@ class NeoWikiConfigFactory {
 				. 'Give this store another "name".';
 		}
 
-		if ( strlen( $name ) > self::MAX_NAME_LENGTH ) {
-			return 'the name "{name}" is longer than ' . self::MAX_NAME_LENGTH . ' bytes, which is all a '
+		if ( GraphStoreName::isTooLong( $name ) ) {
+			return 'the name "{name}" is longer than ' . GraphStoreName::MAX_LENGTH . ' bytes, which is all a '
 				. 'rebuild can file its run records under. Give this store a shorter "name".';
 		}
 

@@ -68,7 +68,7 @@ class NamedGraphDatabasePluginsTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertNotSame( $spy, $plugins[Neo4jPlugin::STORE_NAME] );
 		$this->assertCount( 1, $warnings, 'the plugin is dropped with a warning rather than in silence' );
-		$this->assertStringContainsString( 'already taken', $warnings[0][1] );
+		$this->assertStringContainsString( 'held by a bundled backend', $warnings[0][1] );
 		$this->assertSame(
 			[ 'name' => Neo4jPlugin::STORE_NAME ],
 			$warnings[0][2],

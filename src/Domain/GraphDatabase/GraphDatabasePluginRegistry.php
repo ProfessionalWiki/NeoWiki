@@ -41,16 +41,40 @@ class GraphDatabasePluginRegistry {
 	}
 
 	public function addPlugin( string $name, GraphDatabasePlugin $plugin ): void {
-		if ( isset( $this->reservedNames[$name] ) || isset( $this->plugins[$name] ) ) {
+		$rejection = $this->rejectionReason( $name );
+
+		if ( $rejection !== null ) {
 			$this->logger->warning(
-				'Ignoring the graph database plugin registered as "{name}": that name is already taken. '
-				. 'Namespace it to the extension registering it.',
+				'Ignoring the graph database plugin registered as "{name}": ' . $rejection,
 				[ 'name' => $name ]
 			);
 			return;
 		}
 
 		$this->plugins[$name] = $plugin;
+	}
+
+	/**
+	 * Why this name cannot identify a store, as a message to log, or null when it can. The same rules a
+	 * configured store's name is held to, because both end up as the key a rebuild is addressed by and
+	 * as the value its run records are filed under.
+	 */
+	private function rejectionReason( string $name ): ?string {
+		if ( GraphStoreName::isReserved( $name, $this->reservedNames ) ) {
+			return 'that name is held by a bundled backend, in any casing. Namespace it to the '
+				. 'extension registering it.';
+		}
+
+		if ( isset( $this->plugins[$name] ) ) {
+			return 'that name is already taken. Namespace it to the extension registering it.';
+		}
+
+		if ( GraphStoreName::isTooLong( $name ) ) {
+			return 'that name is longer than ' . GraphStoreName::MAX_LENGTH . ' bytes, which is all a '
+				. 'rebuild can file its run records under. Register it under a shorter name.';
+		}
+
+		return null;
 	}
 
 	/**
